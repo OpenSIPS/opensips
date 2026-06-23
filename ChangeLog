@@ -1,3 +1,209 @@
+=========================== Release 4.0.0 ==============================
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [18459029ac] :
+
+        opentelemetry: handle proc profiling events
+
+        (cherry picked from commit c61c65e7350e39758cef92e00ab1cc949a5bc40e)
+
+
+2026-06-23  Denys Pozniak  <denys.pozniak@gmail.com>
+        * [a8780f2bf6] :
+
+        mid_registrar, usrloc: replicate AoR with populated kv_storage
+
+        Fixes the race in `full-sharing-cluster` mode where peers received
+        REPL_URECORD_INSERT packets with an empty kv_storage. The serialization
+        that 343f452c1 added shipped whatever was in r->kv_storage at replicate
+        time, but mid_registrar's store_urecord_data() ran *after*
+        ul.insert_urecord() — so peers saw an empty store and later failed to
+        issue De-REGISTERs:
+
+          ERROR:usrloc:store_deserialize: bad JSON input or oom
+          ERROR:mid_registrar:unregister_record: 'from' key not found, skipping De-REGISTER
+          ERROR:mid_registrar:mid_reg_aor_event: failed to unregister contact
+
+        Mirror the existing ucontact pattern (ucontact_info_t.pre_replicate_cb):
+        extend insert_urecord() with an optional pre-replication callback that
+        the caller can use to attach record-level data between mem_insert and
+        replicate_urecord_insert. mid_registrar wires mid_reg_store_aor_data
+        into the throttle-AoR save path so the kv_storage is populated before
+        the INSERT packet is built.
+
+        Closes #3845
+
+        Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+        (cherry picked from commit 3400961523f4bf5108941806e840bfbc92d3ee0c)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [fc1b2c3c17] :
+
+        opentelemetry: fix C++ object build cleanup
+
+        (cherry picked from commit 4002a1a7080eca3c5a1f5e69ea5a9e894f38104b)
+
+
+2026-06-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [3a5b50849c] :
+
+        [auto-scaler] new procs to self update with latest reload cfg
+
+        As the attendant is the one forking all new procs (while doing auto-scaling), these new procs will inherite the cfg from attendant - but this proc is not updated with reloaded cfg (has no IPC, scripting support, etc). So all new auto-scaled procs will start with the original cfg. To fix this, when new auto-scaled procs are started, we run a self-upate - check if there was any successful script reload and if so, do a local cfg reload before start processing anything else.
+        Fixes #3947
+        Reported by @gcuppers
+
+        (cherry picked from commit bee7bf435853d04a1b81c8016f8aeae39edfe0a8)
+        (cherry picked from commit 1a1beafceb120ffb1f16201abb95424e0875fa82)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [1e07f93293] :
+
+        net: restore TCP worker auto-scaling
+
+        (cherry picked from commit 7bad0e8ae4b8768e0fabaed8ea2ac434bf6a651d)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [3727cac9c7] :
+
+        docs/mi: link transport module documentation [skip ci]
+
+        (cherry picked from commit b7fd498b476e6dc8ac394d8a0684c35c57566474)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [a9dcddadf3] :
+
+        docs/mi: document missing core commands [skip ci]
+
+        (cherry picked from commit 30b735974b18c940257aabe96df5654e314354ba)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [8c739f80aa] :
+
+        docs/script: document crc32 transformation [skip ci]
+
+        (cherry picked from commit 2560a405e02189aae97a875f783e4149e52f8e45)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [d4ec28ad70] :
+
+        docs/mi: group core commands by class [skip ci]
+
+        (cherry picked from commit 67521fe90ff1229dc92b50bf06ae8a1f0563de12)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [242e5a0343] :
+
+        docs/script: fix transformation reference [skip ci]
+
+        (cherry picked from commit 64ec3a5944e257a3e80e941c641a39b3b0203502)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [8edec4490e] :
+
+        docs/script: refresh route examples [skip ci]
+
+        (cherry picked from commit 4fd6491b95b46737dd6ce252320ea88846d1442d)
+
+
+2026-06-23  Razvan Crainea  <razvan@opensips.org>
+        * [dea21a7a90] :
+
+        docs/evi: clarify core event_route handling [skip ci]
+
+        (cherry picked from commit 6c9a802604df8ba5101ca7d97f1a1e12202c698e)
+
+
+2026-06-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [cb91891c14] :
+
+        [b2b_entities] prevent crashing if b2b_init() called after async
+
+        ..and changes are made to the request. This is a temporary work around (to prevent the crashing) until the full fix is tested (see 434162dd615893c5dd3340295e982b2a3f23cd4a).
+        Credits for the fix go to @NormB
+        Derived from a first itertation of #3822, fixing #3796
+
+
+2026-06-21  OpenSIPS  <github@opensips.org>
+        * [4bf7913a70] :
+
+        Rebuild documentation
+
+
+2026-06-18  dondetir  <ravitez.dondeti@gmail.com>
+        * [d6543cc31f] :
+
+        aaa_diameter: fix double-free of cJSON item in dm_avps2json()
+
+        After cJSON_AddItemToArray(avps, item) transfers ownership of item to
+        avps, item is not cleared.  Any subsequent FD_CHECK_GT failure in the
+        same or next loop iteration jumps to the out: label, which calls
+        cJSON_Delete(item) — freeing memory already owned by avps.
+
+        This double-free corrupts the SHM heap, affecting all worker processes.
+        The affected paths include:
+          - FD_CHECK_GT(fd_msg_browse()) at the skip: label (next-iteration
+            advance)
+          - FD_CHECK_GT(fd_msg_avp_hdr()) and FD_CHECK_GT(fd_dict_getval())
+            at the start of the next iteration
+
+        Fix: clear item immediately after the ownership transfer so that any
+        later cJSON_Delete(item) at out: is a safe no-op.
+
+        Found during a systematic audit following commit 1e8001fa0.
+
+        (cherry picked from commit 7fef0814dac887ad1041af97ccf4ac1ff457550a)
+
+
+2026-06-18  dondetir  <ravitez.dondeti@gmail.com>
+        * [f8cc1da014] :
+
+        aaa_diameter: always release reply cJSON regardless of output PV
+
+        _dm_release_message_response() is the only function that frees the
+        SHM-backed cJSON reply tree (cond->rpl.json).  In dm_send_request(),
+        the release call was gated inside "if (rpl_avps_pv)", so every call
+        without an output PV leaked the entire SHM cJSON tree.
+
+        The same issue existed in dm_send_request_async_reply(): the release
+        was guarded by "if (rpl_avps)", which was NULL both when no output PV
+        was configured and on the read() failure path — even though the reply
+        callback had already populated cond->rpl.json.
+
+        _dm_release_message_response() safely handles a NULL rpl_avps argument
+        (cJSON_PurgeString is a no-op on NULL), so removing both guards is safe.
+
+        Found during a systematic audit of dm_send_request() paths following
+        commit 1e8001fa0.
+
+        (cherry picked from commit f40e0dab7ef48010526ef0f7dd2c77d0215b1ceb)
+
+
+2026-06-18  Razvan Crainea  <razvan@opensips.org>
+        * [ceaf78aab0] :
+
+        cgrates: restore acc ctx on dialog var replication
+
+        Credits go to @NicoFrLy and @david-b71 for reporting this in
+        ticket #3720 and providing valuable troubleshooting information
+
+        (cherry picked from commit beb690d3c894b6903802b3bbac707f5fc46bfdfe)
+
+
+2026-06-17  Liviu Chircu  <liviu@opensips.org>
+        * [922192f60e] :
+
+        Fix ChangeLog
+
+
 =========================== Release 4.0.0-rc2 ==============================
 
 2026-06-17  Liviu Chircu  <liviu@opensips.org>
