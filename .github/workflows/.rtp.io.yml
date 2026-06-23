@@ -20,7 +20,11 @@ on:
       rtpp-tag:
         required: false
         type: string
-        default: debian_12-slim
+        default: debian_13-slim
+      pipcache-repo:
+        required: false
+        type: string
+        default: ghcr.io/sippy/b2bua/sippy-wheelset:latest
 
 jobs:
   get_container_platforms:
@@ -81,6 +85,7 @@ jobs:
       packages: write
     env:
       BASE_IMAGE: ${{ inputs.rtpp-repo }}-${{ inputs.rtpp-tag }}
+      PIPCACHE_IMAGE: ${{ inputs.pipcache-repo }}-${{ inputs.rtpp-tag }}
       BUILD_OS: ${{ needs.set_env.outputs.build-os }}
       PLATFORMS: ${{ needs.set_env.outputs.platforms }}
       BUILD_IMAGE: ${{ needs.set_env.outputs.build-image }}
@@ -154,6 +159,7 @@ jobs:
         file: ./docker/Dockerfile.rtp.io
         build-args: |
           BASE_IMAGE=${{ env.BASE_IMAGE }}
+          PIPCACHE_IMAGE=${{ env.PIPCACHE_IMAGE }}
           BUILD_OS=${{ env.BUILD_OS }}
           LLVM_VER=${{ inputs.llvm-version }}
           LLVM_VER_OLD=${{ inputs.llvm-version-old }}
@@ -174,6 +180,7 @@ jobs:
         platform: ${{ fromJSON(needs.set_env.outputs.build-matrix) }}
     env:
       BASE_IMAGE: ${{ inputs.rtpp-repo }}-${{ inputs.rtpp-tag }}
+      PIPCACHE_IMAGE: ${{ inputs.pipcache-repo }}-${{ inputs.rtpp-tag }}
       BUILD_OS: ${{ needs.set_env.outputs.build-os }}
 
     steps:
@@ -226,6 +233,7 @@ jobs:
         file: ./docker/Dockerfile.rtp.io
         build-args: |
           BASE_IMAGE=${{ env.BASE_IMAGE }}
+          PIPCACHE_IMAGE=${{ env.PIPCACHE_IMAGE }}
           BUILD_OS=${{ env.BUILD_OS }}
           LLVM_VER=${{ inputs.llvm-version }}
           LLVM_VER_OLD=${{ inputs.llvm-version-old }}
