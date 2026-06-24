@@ -472,10 +472,10 @@ sunpkg:
 	rm -rf tmp/$(NAME)_sun_pkg
 
 
-.PHONY: install-app install-modules-all install
+.PHONY: install-app install-config-templates install-modules-all install
 # Install app only, excluding console, modules and module docs
 install-app: mk-install-dirs install-cfg install-bin \
-	install-app-doc install-man
+	install-app-doc install-man install-config-templates
 
 # Install all module stuff (except modules-docbook?)
 install-modules-files: install-modules install-modules-doc
@@ -483,6 +483,17 @@ install-modules-all: install-modules-files install-modules-dbschema
 
 # Install everything (except modules-docbook?)
 install: install-app install-modules-all
+
+install-config-templates: $(data_prefix)/$(data_dir)
+	mkdir -p $(data_prefix)/$(data_dir)/examples/templates/
+	$(INSTALL_TOUCH) examples/templates/*.m4 examples/templates/README.md \
+		$(data_prefix)/$(data_dir)/examples/templates/
+	$(INSTALL_CFG) examples/templates/*.m4 \
+		$(data_prefix)/$(data_dir)/examples/templates/
+	$(INSTALL_DOC) examples/templates/README.md \
+		$(data_prefix)/$(data_dir)/examples/templates/README.md
+	sed -i -e "s#/usr/.*lib/$(NAME)/modules/#$(modules_target)#" \
+		$(data_prefix)/$(data_dir)/examples/templates/*.m4
 
 opensipsmc: $(cfg_prefix)/$(cfg_dir) $(data_prefix)/$(data_dir)
 	$(MAKE) -C menuconfig proper

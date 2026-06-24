@@ -134,7 +134,7 @@ Module, Registrar and User Location, Load Balaning/Dispatching/LCR,
 XMLRPC Interface.
 .
 This package contains the main OpenSIPS binary along with the principal modules
-and support binaries including opensipsmc configuration tool.
+and support binaries.
 
 %if 0%{?_with_auth_jwt:1}
 %package  auth-jwt-module
@@ -1137,9 +1137,13 @@ fi
 %dir %{_datadir}/opensips/
 %dir %{_datadir}/opensips/dbtext/
 %dir %{_datadir}/opensips/dbtext/opensips/
+%dir %{_datadir}/opensips/examples/
+%dir %{_datadir}/opensips/examples/templates/
 %dir %{_datadir}/opensips/menuconfig_templates/
 
 %{_datadir}/opensips/dbtext/opensips/*
+%{_datadir}/opensips/examples/templates/*.m4
+%{_datadir}/opensips/examples/templates/README.md
 %{_datadir}/opensips/menuconfig_templates/*.m4
 
 %{_mandir}/man5/opensips.cfg.5*
