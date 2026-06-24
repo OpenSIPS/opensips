@@ -60,22 +60,20 @@ int topology_hiding(struct sip_msg *req,int extra_flags, struct th_params *param
 {
 	struct dlg_cell *dlg;
 	struct cell* t;
-	str tag;
+	int is_sequential = 0;
 
-	/* we should only initialize topology hiding for initial requests */
-        if (!req->to && parse_headers(req, HDR_TO_F,0)==-1) {
-                LM_ERR("To parsing failed\n");
-                return -1;
-        }
-        if (!req->to) {
-                LM_ERR("no To\n");
-                return -1;
-        }
-        tag=get_to(req)->tag_value;
-        if (tag.len>0) {
-		LM_WARN("SCRIPT ERROR - trying to initialize topology hiding for sequential request \n");
+	if (!req->to && parse_headers(req, HDR_TO_F,0) == -1) {
+		LM_ERR("To parsing failed\n");
 		return -1;
-        }
+	}
+
+	if (!req->to) {
+		LM_ERR("no To\n");
+		return -1;
+	}
+
+	/* one way hiding will fail topology hiding match when going out the untrusted side */
+	is_sequential = get_to(req)->tag_value.len > 0;
 
 	t = tm_api.t_gett();
 	if (t == T_UNDEFINED)
@@ -99,13 +97,19 @@ int topology_hiding(struct sip_msg *req,int extra_flags, struct th_params *param
 			}
 		}
 
-		if (!dlg)
-			return topo_hiding_no_dlg(req,t,extra_flags,params);
-		else
-			return topo_hiding_with_dlg(req,t,dlg,extra_flags,params);
+		if (dlg) {
+			if (is_sequential) {
+				LM_WARN("SCRIPT ERROR - trying to initialize topology hiding for sequential request in dialog mode \n");
+				return -1;
+			}
+
+			return topo_hiding_with_dlg(req, t, dlg, extra_flags, params);
+		} else {
+			return topo_hiding_no_dlg(req, t, extra_flags, params);
+		}
 	}
 
-	return topo_hiding_no_dlg(req,t,extra_flags,params);
+	return topo_hiding_no_dlg(req, t, extra_flags, params);
 }
 
 /* internal functionality */
