@@ -2,6 +2,11 @@
 title: "Script Flags"
 ---
 
+## What are the flags?
+
+A flag is a TRUE or FALSE entity. The flags are 32 in number, for each type (see below). A flag is identified by its name - again, you cannot have more than 32 different names/flags. You do not have to declare or define the names of the flags, just use them.
+The flags may be used for whatever purpose, there is nothing pre-defined.
+
 ## Types of flags
 
 * **message flags** (or transaction flags) these flags are attached to the current SIP message or to the current transaction (if a transaction exists). So these flags are transaction persistent. They are visible in all routes and cases where the transaction or SIP message context is visible.
@@ -12,7 +17,7 @@ title: "Script Flags"
 
 ## Script Flag Functions
 
-Starting from OpenSIPS 1.9, **flags may receive alphanumerical values**. However, this does not affect performance, since they are converted into bit indexes upon startup. When it comes to DB persistency (only a few modules do this - e.g. usrloc), flags are generally stored in their string form, in order to preserve their semantics, and not the bit index they received during a given OpenSIPS run.
+There are a bunch a functions that helps into working with the flags from script level - to set, reset and check.
 
 ### Message/transaction flags
 
@@ -20,13 +25,13 @@ Starting from OpenSIPS 1.9, **flags may receive alphanumerical values**. However
 * resetflag(FLAG)
 * isflagset(FLAG)
 
-*Examples: setflag(accounting), resetflag(DO_NAT) or setflag(19)*
+*Examples: setflag(accounting), resetflag(DO_NAT) or setflag(1942)*
 
 ### Branch flags
 
-* setbflag/setbranchflag(branch_idx, FLAG)
-* resetbflag/resetbranchflag(branch_idx, FLAG)
-* isbflagset/isbranchflagset(branch_idx, FLAG)
+* setbflag(branch_idx, FLAG)
+* resetbflag(branch_idx, FLAG)
+* isbflagset(branch_idx, FLAG)
 
   
 
