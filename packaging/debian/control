@@ -121,7 +121,7 @@ Description: very fast and configurable SIP server
  XMLRPC Interface.
  .
  This package contains the main OpenSIPS binary along with the principal modules
- and support binaries including opensipsmc configuration tool.
+ and support binaries.
 
 Package: opensips-auth-jwt-module
 Architecture: any

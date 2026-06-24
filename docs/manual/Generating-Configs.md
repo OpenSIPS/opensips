@@ -1,73 +1,57 @@
 ---
 title: "Generating Config Files"
-description: "Generating OpenSIPS config files is accomplished by using the menuconfig tool. Because the graphical interface is ncurses based, please make sure to first in..."
+description: "Use the OpenSIPS GNU M4 templates to create residential, trunking, and load-balancer configurations."
 ---
 
-Generating OpenSIPS config files is accomplished by using the menuconfig tool. Because the graphical interface is ncurses based, please make sure to first install the ncurses development library ( typically libncurses5-dev ). 
+OpenSIPS provides ready-to-use GNU M4 configuration templates under
+`examples/templates/`:
 
-## Using the Menuconfig Tool
+* `residential.m4`
+* `trunking.m4`
+* `loadbalancer.m4`
 
-The menuconfig can be ran either directly from the OpenSIPS sources, or post installation, from the installation path :
+They are installed as shared examples under
+`$PREFIX/share/opensips/examples/templates/`. Distribution packages typically
+use `/usr/share/opensips/examples/templates/`.
 
-* From sources, you can run
+Each template starts with definitions for its listening interface, database
+URL, optional endpoints, and feature switches. Edit these definitions before
+using the template. Feature switches accept `yes` or `no`.
+
+## Run a template directly
+
+Use `-f` to select the template and `-p m4` to preprocess it before OpenSIPS
+parses it:
 
 ```bash
-make menuconfig
+opensips -C -f examples/templates/residential.m4 -p m4
+opensips -f examples/templates/residential.m4 -p m4
 ```
 
-* After installation, you can run menuconfig directly from the installation path, by running
+The first command checks the generated configuration. The second starts
+OpenSIPS. GNU M4 must be installed and available in `PATH`.
 
-```text
-[install_path]/sbin/osipsconfig
+For an installed distribution package, use the template from the shared
+examples directory:
+
+```bash
+opensips -f /usr/share/opensips/examples/templates/residential.m4 -p m4
 ```
 
-Once in the menuconfig tool, navigate to the 'Generate OpenSIPS Script' option, and then choose your desired script type.
-Once you have chosen you script type, you will be able to go to configure the various available options for that script ( described below ). Enabling certain options per script is done by using the spacebar key. Once you have configured your desired options, you can hit the 'q' key to go to the previous menu, and hit 'Save Changes'. Then, you can generate the OpenSIPS script with your configurations. At the end, the graphical tool will give you the path for your newly generated config file ( eg : Config generated : /usr/local/etc/opensips/opensips_residential_2013-6-21_12:39:48.cfg )
+## Create a standalone configuration
 
- ![menuconfig snapshot](/images/docs/tutorials/menuconfig_snapshot.png)
+You can render a template into a regular configuration file:
 
-## Types of Configs
+```bash
+m4 examples/templates/residential.m4 > opensips.cfg
+```
 
-So far, the OpenSIPS 3.6 menuconfig automated script generator supports 3 types of scripts. Here are the types of scripts, along with the available options per script :
+The resulting file no longer requires preprocessing. Edit it as needed, then
+check or start it normally:
 
-* Residential Script
+```bash
+opensips -C -f opensips.cfg
+opensips -f opensips.cfg
+```
 
-  * ENABLE_TCP : OpenSIPS will listen on TCP for SIP requests
-  * ENABLE_TLS : OpenSIPS will listen on TCP for SIP requests
-  * USE_ALIASES : OpenSIPS will allow the use of Aliases for SIP users
-  * USE_AUTH : OpenSIPS will authenticate Register & Invite requests
-  * USE_DBACC : OpenSIPS will save ACC entries in DB for all calls
-  * USE_DBUSRLOC : OpenSIPS will persistently store User Location entries in the DB
-  * USE_DIALOG : OpenSIPS will keep track of active dialogs
-  * USE_MULTIDOMAIN : OpenSIPS will handle multiple domains for subscribers
-  * USE_NAT : OpenSIPS will try to cope with NAT by fixing SIP msgs and engaging RTPProxy
-  * USE_PRESENCE : OpenSIPS will act as a Presence server
-  * USE_DIALPLAN : OpenSIPS will use dialplan for transformation of local numbers
-  * VM_DIVERSION : OpenSIPS will redirect to VM calls not reaching the subscribers 
-  * HAVE_INBOUND_PSTN : OpenSIPS will accept calls from PSTN gateways (with static IP authentication)
-  * HAVE_OUTBOUND_PSTN : OpenSIPS will send numerical dials to PSTN gateways (with static IP definition)
-  * USE_DR_PSTN : OpenSIPS will use Dynamic Routing Support ( LCR ) for PSTN interconnection
-
-* Trunking Script
-
-  * ENABLE_TCP : OpenSIPS will listen on TCP for SIP requests
-  * ENABLE_TLS : OpenSIPS will listen on TCP for SIP requests
-  * USE_DBACC : OpenSIPS will save ACC entries in DB for all calls
-  * USE_DIALPLAN : OpenSIPS will use dialplan for transformation of local numbers
-  * USE_DIALOG : OpenSIPS will keep track of active dialogs
-  * DO_CALL_LIMITATION : OpenSIPS will limit the number of parallel calls per trunk
-
-* Load-Balancer Script
-
-  * ENABLE_TCP : OpenSIPS will listen on TCP for SIP requests
-  * ENABLE_TLS : OpenSIPS will listen on TCP for SIP requests
-  * USE_DBACC : OpenSIPS will save ACC entries in DB for all calls
-  * USE_DISPATCHER : OpenSIPS will use DISPATCHER instead of Load-Balancer for distributing the traffic
-  * DISABLE_PINGING : OpenSIPS will not ping at all the destinations (otherwise it will ping when detected as failed)
-
-## Post-Generation Script editing
-
-After generating your OpenSIPS script with the menuconfig tool, you need to open the script with your favorite editor, and go through all the '# CUSTOMIZE ME' comments in the script. Those comments mark the places where user attention is needed, and usually refer to customizing the OpenSIPS listening address or setting the proper database URL.
-
-Upon making the appropriate '# CUSTOMIZE ME' changes, you can save your script
-and take it for a test drive.
+See `examples/templates/README.md` for additional examples.
