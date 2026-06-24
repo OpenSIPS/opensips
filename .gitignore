@@ -19,8 +19,6 @@ cscope*
 # /docs/
 /docs/database
 
-# /menuconfig/
-/menuconfig/configure
 /Makefile.conf
 /mem/mem_stats.c
 /mem/mem_stats.h

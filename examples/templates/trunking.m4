@@ -1,17 +1,27 @@
 #
-# OpenSIPS loadbalancer script
+# OpenSIPS trunking script
 #     by OpenSIPS Solutions <team@opensips-solutions.com>
 #
-# This script was generated via "make menuconfig", from
-#   the "Load Balancer" scenario.
-# You can enable / disable more features / functionalities by
-#   re-generating the scenario with different options.
+# Edit the feature definitions below to customize this configuration.
+# Start OpenSIPS with:
+#   opensips -f examples/templates/trunking.m4 -p m4
 #
-# Please refer to the Core CookBook at:
-#      https://opensips.org/Resources/DocsCookbooks
-# for a explanation of possible statements, functions and parameters.
+# Please refer to the OpenSIPS Manuals at:
+#      https://opensips.org/Documentation/Manuals
+# for an explanation of available statements, functions and parameters.
 #
 
+divert(-1)
+define(`LISTEN_IP', `127.0.0.1') # IP address or interface used by the SIP sockets
+define(`DB_URL', `mysql://opensips:opensipsrw@localhost/opensips') # Database URL used by modules
+define(`ENABLE_TCP', `no') # OpenSIPS will listen on TCP for SIP requests
+define(`ENABLE_TLS', `no') # OpenSIPS will listen on TLS for SIP requests
+define(`USE_DBACC', `no') # OpenSIPS will save ACC entries in DB for all calls
+define(`USE_DIALPLAN', `no') # OpenSIPS will use dialplan for transformation of local numbers
+define(`USE_DIALOG', `no') # OpenSIPS will keep track of active dialogs
+define(`DO_CALL_LIMITATION', `no') # OpenSIPS will limit the number of parallel calls per trunk
+define(`USE_HTTP_MANAGEMENT_INTERFACE', `no') # OpenSIPS will provide a WEB Management Interface on port 8888
+divert(0)dnl
 
 ####### Global Parameters #########
 
@@ -35,9 +45,9 @@ udp_workers=4
 #dns_try_ipv6=yes
 
 
-socket=udp:127.0.0.1:5060   # CUSTOMIZE ME
-ifelse(ENABLE_TCP, `yes', `socket=tcp:127.0.0.1:5060   # CUSTOMIZE ME',`')
-ifelse(ENABLE_TLS,`yes',`socket=tls:127.0.0.1:5061   # CUSTOMIZE ME',`')
+socket=udp:LISTEN_IP:5060
+ifelse(ENABLE_TCP, `yes', `socket=tcp:LISTEN_IP:5060',`')
+ifelse(ENABLE_TLS,`yes',`socket=tls:LISTEN_IP:5061',`')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
 
@@ -71,7 +81,7 @@ modparam("rr", "append_fromtag", 0)
 #### MAX ForWarD module
 loadmodule "maxfwd.so"
 
-#### SIP MSG OPerationS module
+#### SIP MSG OPerations module
 loadmodule "sipmsgops.so"
 
 #### FIFO Management Interface
@@ -85,6 +95,14 @@ loadmodule "db_mysql.so"
 #### SQLOPS module
 loadmodule "sqlops.so"
 
+####  DYNAMIC ROUTING module
+loadmodule "drouting.so"
+modparam("drouting", "db_url", "DB_URL")
+
+####  PERMISSIONS module
+loadmodule "permissions.so"
+modparam("permissions", "db_url", "DB_URL")
+
 #### ACCounting module
 loadmodule "acc.so"
 /* what special events should be accounted ? */
@@ -94,41 +112,24 @@ modparam("acc", "report_cancels", 0)
    if you enable this parameter, be sure to enable "append_fromtag"
    in "rr" module */
 modparam("acc", "detect_direction", 0)
-ifelse(USE_DBACC,`yes',`modparam("acc", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+ifelse(USE_DBACC,`yes',`modparam("acc", "db_url", "DB_URL")
 ', `')
 
-ifelse(USE_DISPATCHER,`no',`#### DIALOG module
+ifelse(USE_DIALOG,`yes',`#### DIALOG module
 loadmodule "dialog.so"
 modparam("dialog", "dlg_match_mode", 1)
 modparam("dialog", "default_timeout", 21600)  # 6 hours timeout
 modparam("dialog", "db_mode", 2)
-modparam("dialog", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("dialog", "db_url", "DB_URL")
+ifelse(DO_CALL_LIMITATION,`yes',`
+modparam("dialog", "profiles_with_value", "trunkCalls")
+',`')
 ',`')
 
-ifelse(USE_DISPATCHER,`yes',`#### DISPATCHER module
-loadmodule "dispatcher.so"
-modparam("dispatcher", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-modparam("dispatcher", "ds_ping_method", "OPTIONS")
-modparam("dispatcher", "ds_probing_mode", 0)
-ifelse(DISABLE_PROBING,`yes',`
-modparam("dispatcher", "ds_ping_interval", 0)
-', `
-modparam("dispatcher", "ds_ping_interval", 30)
-')
-', `#### LOAD BALANCER module
-loadmodule "load_balancer.so"
-modparam("load_balancer", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-modparam("load_balancer", "probing_method", "OPTIONS")
-ifelse(DISABLE_PROBING,`yes',`
-modparam("load_balancer", "probing_interval", 0)
-', `
-modparam("load_balancer", "probing_interval", 30)
-')
-')
+ifelse(USE_DIALPLAN,`yes',`####  DIALPLAN module
+loadmodule "dialplan.so"
+modparam("dialplan", "db_url", "DB_URL")
+',`')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
 loadmodule "mi_http.so"
@@ -152,13 +153,22 @@ modparam("tls_mgm","ca_list", "[default]/etc/opensips/tls/user/user-calist.pem")
 
 ####### Routing Logic ########
 
-
 # main request routing logic
 
 route{
 
 	if (!mf_process_maxfwd_header(10)) {
 		send_reply(483,"Too Many Hops");
+		exit;
+	}
+
+	if ( check_source_address( 1, $avp(trunk_attrs)) ) {
+		# request comes from trunks
+		setflag("IS_TRUNK");
+	} else if ( is_from_gw() ) {
+		# request comes from GWs
+	} else {
+		send_reply(403,"Forbidden");
 		exit;
 	}
 
@@ -178,13 +188,13 @@ route{
 			send_reply(404,"Not here");
 			exit;
 		}
-		ifelse(USE_DISPATCHER,`no',`
+		ifelse(USE_DIALOG,`yes',`
 		# validate the sequential request against dialog
 		if ( $DLG_status!=NULL && !validate_dialog() ) {
 			xlog("In-Dialog $rm from $si (callid=$ci) is not valid according to dialog\n");
 			## exit;
 		}
-		',`')dnl
+		',`')
 
 		if (is_method("BYE")) {
 			# do accounting even if the transaction fails
@@ -199,6 +209,12 @@ route{
 	}
 
 	#### INITIAL REQUESTS
+
+	if ( !isflagset("IS_TRUNK") ) {
+		## accept new calls only from trunks
+		send_reply(403,"Not from trunk");
+		exit;
+	}
 
 	# CANCEL processing
 	if (is_method("CANCEL")) {
@@ -233,15 +249,34 @@ route{
 	ifelse(USE_DBACC,`yes',`do_accounting("db");
 	', `do_accounting("log");')
 
-	ifelse(USE_DISPATCHER,`yes',`
-	if ( !ds_select_dst(1,4) ) {
-	',`
-	if ( !lb_start(1,"channel")) {
-	')
-		send_reply(500,"No Destination available");
+	ifelse(USE_DIALOG,`yes',`
+	# create dialog with timeout
+	if ( !create_dialog("bye-on-timeout") ) {
+		send_reply(500,"Internal Server Error");
 		exit;
 	}
 
+	ifelse(DO_CALL_LIMITATION,`yes',`
+	if ($avp(trunk_attrs) != NULL && $avp(trunk_attrs)=~"^[0-9]+$") {
+		get_profile_size("trunkCalls","$si",$var(size));
+		if ( $(var(size){s.int}) >= $(avp(trunk_attrs){s.int}) ) {
+			send_reply(486,"Busy Here");
+			exit;
+		}
+	}
+	set_dlg_profile("trunkCalls","$si");
+	',`')
+	',`')
+
+	ifelse(USE_DIALPLAN,`yes',`
+	# apply transformations from dialplan table
+	dp_translate( 0, "$rU", $rU);',`')
+
+	# route calls based on prefix
+	if ( !do_routing(1) ) {
+		send_reply(404,"No Route found");
+		exit;
+	}
 
 	t_on_failure("GW_FAILOVER");
 
@@ -262,15 +297,11 @@ failure_route[GW_FAILOVER] {
 		exit;
 	}
 
-	# failure detection with redirect to next available trunk
+	# detect failure and redirect to next available GW
 	if (t_check_status("(408)|([56][0-9][0-9])")) {
-		xlog("Failed trunk $rd/$du detected \n");
+		xlog("Failed GW $rd detected \n");
 
-		ifelse(USE_DISPATCHER,`yes',`
-		if ( ds_next_dst() ) {
-		',`
-		if ( lb_next() ) {
-		')
+		if ( use_next_gw() ) {
 			t_on_failure("GW_FAILOVER");
 			t_relay();
 			exit;
@@ -280,7 +311,7 @@ failure_route[GW_FAILOVER] {
 	}
 }
 
-ifelse(USE_DISPATCHER,`no',`
+ifelse(USE_DIALOG,`yes',`
 local_route {
 	if (is_method("BYE") && $DLG_dir=="UPSTREAM") {
 		ifelse(USE_DBACC,`yes',`
@@ -290,4 +321,3 @@ local_route {
 		')
 	}
 }',`')
-

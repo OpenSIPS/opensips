@@ -472,10 +472,10 @@ sunpkg:
 	rm -rf tmp/$(NAME)_sun_pkg
 
 
-.PHONY: install-app install-modules-all install
+.PHONY: install-app install-config-templates install-modules-all install
 # Install app only, excluding console, modules and module docs
 install-app: mk-install-dirs install-cfg install-bin \
-	install-app-doc install-man
+	install-app-doc install-man install-config-templates
 
 # Install all module stuff (except modules-docbook?)
 install-modules-files: install-modules install-modules-doc
@@ -484,16 +484,16 @@ install-modules-all: install-modules-files install-modules-dbschema
 # Install everything (except modules-docbook?)
 install: install-app install-modules-all
 
-opensipsmc: $(cfg_prefix)/$(cfg_dir) $(data_prefix)/$(data_dir)
-	$(MAKE) -C menuconfig proper
-	$(MAKE) -C menuconfig \
-		MENUCONFIG_CFG_PATH=$(data_target)/menuconfig_templates/ \
-		MENUCONFIG_GEN_PATH=$(cfg_target) MENUCONFIG_HAVE_SOURCES=0
-	mkdir -p $(data_prefix)/$(data_dir)/menuconfig_templates/
-	$(INSTALL_TOUCH) menuconfig/configs/* $(data_prefix)/$(data_dir)/menuconfig_templates/
-	$(INSTALL_CFG) menuconfig/configs/* $(data_prefix)/$(data_dir)/menuconfig_templates/
+install-config-templates: $(data_prefix)/$(data_dir)
+	mkdir -p $(data_prefix)/$(data_dir)/examples/templates/
+	$(INSTALL_TOUCH) examples/templates/*.m4 examples/templates/README.md \
+		$(data_prefix)/$(data_dir)/examples/templates/
+	$(INSTALL_CFG) examples/templates/*.m4 \
+		$(data_prefix)/$(data_dir)/examples/templates/
+	$(INSTALL_DOC) examples/templates/README.md \
+		$(data_prefix)/$(data_dir)/examples/templates/README.md
 	sed -i -e "s#/usr/.*lib/$(NAME)/modules/#$(modules_target)#" \
-		$(data_prefix)/$(data_dir)/menuconfig_templates/*
+		$(data_prefix)/$(data_dir)/examples/templates/*.m4
 
 .PHONY: dbschema
 dbschema:
@@ -521,13 +521,10 @@ install-cfg: $(cfg_prefix)/$(cfg_dir)
 				$(cfg_prefix)/$(cfg_dir)$(NAME).cfg; \
 		fi
 
-install-bin: app $(bin_prefix)/$(bin_dir) opensipsmc utils
+install-bin: app $(bin_prefix)/$(bin_dir) utils
 		# install opensips binary
 		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/$(NAME)
 		$(INSTALL_BIN) $(NAME) $(bin_prefix)/$(bin_dir)
-		# install opensips menuconfig
-		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/osipsconfig
-		$(INSTALL_BIN) menuconfig/configure $(bin_prefix)/$(bin_dir)/osipsconfig
 
 .PHONY: utils
 utils:
@@ -630,8 +627,3 @@ doxygen:
 	echo "HAVE_DOT=no" ;\
 	echo "PROJECT_NUMBER=$(NAME)-$(RELEASE)" )| doxygen -
 	-@echo "Doxygen documentation created"
-
-comp_menuconfig:
-	$(MAKE) -C menuconfig
-menuconfig: comp_menuconfig
-	./menuconfig/configure --local

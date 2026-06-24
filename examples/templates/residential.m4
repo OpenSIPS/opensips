@@ -2,16 +2,43 @@
 # OpenSIPS residential configuration script
 #     by OpenSIPS Solutions <team@opensips-solutions.com>
 #
-# This script was generated via "make menuconfig", from
-#   the "Residential" scenario.
-# You can enable / disable more features / functionalities by
-#   re-generating the scenario with different options.#
+# Edit the feature definitions below to customize this configuration.
+# Start OpenSIPS with:
+#   opensips -f examples/templates/residential.m4 -p m4
 #
-# Please refer to the Core CookBook at:
-#      https://opensips.org/Resources/DocsCookbooks
-# for a explanation of possible statements, functions and parameters.
+# Please refer to the OpenSIPS Manuals at:
+#      https://opensips.org/Documentation/Manuals
+# for an explanation of available statements, functions and parameters.
 #
 
+divert(-1)
+define(`LISTEN_IP', `127.0.0.1') # IP address or interface used by the SIP sockets
+define(`DB_URL', `mysql://opensips:opensipsrw@localhost/opensips') # Database URL used by modules
+define(`NATPING_FROM', `sip:pinger@127.0.0.1') # From URI used by NAT keepalive requests
+define(`RTPPROXY_SOCKET', `udp:localhost:12221') # RTPProxy control socket
+define(`PSTN_IP', `11.22.33.44') # Statically configured PSTN gateway address
+define(`PSTN_PORT', `5060') # Statically configured PSTN gateway port
+define(`VOICEMAIL_URI', `sip:127.0.0.2:5060') # Voicemail server destination
+define(`TLS_DOMAIN_1', `tls_domain1.net') # First domain routed over the forced TLS socket
+define(`TLS_DOMAIN_2', `tls_domain2.net') # Second domain routed over the forced TLS socket
+define(`TLS_SEND_SOCKET', `tls:LISTEN_IP:5061') # Forced socket for interdomain TLS traffic
+define(`ENABLE_TCP', `no') # OpenSIPS will listen on TCP for SIP requests
+define(`ENABLE_TLS', `no') # OpenSIPS will listen on TLS for SIP requests
+define(`USE_ALIASES', `no') # OpenSIPS will allow the use of Aliases for SIP users
+define(`USE_AUTH', `no') # OpenSIPS will authenticate Register & Invite requests
+define(`USE_DBACC', `no') # OpenSIPS will save ACC entries in DB for all calls
+define(`USE_DBUSRLOC', `no') # OpenSIPS will store UsrLoc entries in the DB
+define(`USE_DIALOG', `no') # OpenSIPS will keep track of active dialogs
+define(`USE_MULTIDOMAIN', `no') # OpenSIPS will handle multiple domains for subscribers
+define(`USE_NAT', `no') # OpenSIPS will try to cope with NAT by fixing SIP msgs and engaging RTPProxy
+define(`USE_PRESENCE', `no') # OpenSIPS will act as a Presence server
+define(`USE_DIALPLAN', `no') # OpenSIPS will use dialplan for transformation of local numbers
+define(`VM_DIVERSION', `no') # OpenSIPS will redirect to VM calls not reaching the subscribers
+define(`HAVE_INBOUND_PSTN', `no') # OpenSIPS will accept calls from PSTN gateways (with static IP authentication)
+define(`HAVE_OUTBOUND_PSTN', `no') # OpenSIPS will send numerical dials to PSTN gateways (with static IP definition)
+define(`USE_DR_PSTN', `no') # OpenSIPS will use Dynamic Routing Support for PSTN interconnection
+define(`USE_HTTP_MANAGEMENT_INTERFACE', `no') # OpenSIPS will provide a WEB Management Interface on port 8888
+divert(0)dnl
 
 ####### Global Parameters #########
 
@@ -35,9 +62,9 @@ udp_workers=4
 #dns_try_ipv6=yes
 
 
-socket=udp:127.0.0.1:5060   # CUSTOMIZE ME
-ifelse(ENABLE_TCP, `yes', `socket=tcp:127.0.0.1:5060   # CUSTOMIZE ME', `')
-ifelse(ENABLE_TLS,`yes',`socket=tls:127.0.0.1:5061   # CUSTOMIZE ME', `')
+socket=udp:LISTEN_IP:5060
+ifelse(ENABLE_TCP, `yes', `socket=tcp:LISTEN_IP:5060', `')
+ifelse(ENABLE_TLS,`yes',`socket=tls:LISTEN_IP:5061', `')
 
 ####### Modules Section ########
 
@@ -89,8 +116,7 @@ modparam("httpd", "port", 8888)
 loadmodule "usrloc.so"
 modparam("usrloc", "nat_bflag", "NAT")
 ifelse(USE_DBUSRLOC,`yes',`modparam("usrloc", "working_mode_preset", "single-instance-sql-write-back")
-modparam("usrloc", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("usrloc", "db_url", "DB_URL")
 ', `modparam("usrloc", "working_mode_preset", "single-instance-no-db")')
 
 #### REGISTRAR module
@@ -109,8 +135,7 @@ modparam("acc", "report_cancels", 0)
    if you enable this parameter, be sure to enable "append_fromtag"
    in "rr" module */
 modparam("acc", "detect_direction", 0)
-ifelse(USE_DBACC,`yes',`modparam("acc", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+ifelse(USE_DBACC,`yes',`modparam("acc", "db_url", "DB_URL")
 ', `')dnl
 
 ifelse(USE_AUTH,`yes',`#### AUTHentication modules
@@ -118,21 +143,18 @@ loadmodule "auth.so"
 loadmodule "auth_db.so"
 modparam("auth_db", "calculate_ha1", yes)
 modparam("auth_db", "password_column", "password")
-modparam("auth_db", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("auth_db", "db_url", "DB_URL")
 modparam("auth_db", "load_credentials", "")
 
 ', `')dnl
 ifelse(USE_ALIASES,`yes',`#### ALIAS module
 loadmodule "alias_db.so"
-modparam("alias_db", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("alias_db", "db_url", "DB_URL")
 
 ', `')dnl
 ifelse(USE_MULTIDOMAIN,`yes',`#### DOMAIN module
 loadmodule "domain.so"
-modparam("domain", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("domain", "db_url", "DB_URL")
 modparam("domain", "db_mode", 1)   # Use caching
 modparam("auth_db|usrloc", "use_domain", 1)
 
@@ -141,8 +163,7 @@ ifelse(USE_PRESENCE,`yes',`#### PRESENCE modules
 loadmodule "xcap.so"
 loadmodule "presence.so"
 loadmodule "presence_xml.so"
-modparam("xcap|presence", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("xcap|presence", "db_url", "DB_URL")
 modparam("presence_xml", "force_active", 1)
 modparam("presence", "fallback2db", 0)
 
@@ -152,8 +173,7 @@ loadmodule "dialog.so"
 modparam("dialog", "dlg_match_mode", 1)
 modparam("dialog", "default_timeout", 21600)  # 6 hours timeout
 modparam("dialog", "db_mode", 2)
-modparam("dialog", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("dialog", "db_url", "DB_URL")
 
 ',`')dnl
 ifelse(USE_NAT,`yes',`####  NAT modules
@@ -161,23 +181,21 @@ loadmodule "nathelper.so"
 modparam("nathelper", "natping_interval", 10)
 modparam("nathelper", "ping_nated_only", 1)
 modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
-modparam("nathelper", "sipping_from", "sip:pinger@127.0.0.1") #CUSTOMIZE ME
+modparam("nathelper", "sipping_from", "NATPING_FROM")
 modparam("nathelper", "received_avp", "$avp(received_nh)")
 
 loadmodule "rtpproxy.so"
-modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221") # CUSTOMIZE ME
+modparam("rtpproxy", "rtpproxy_sock", "RTPPROXY_SOCKET")
 
 ',`')dnl
 ifelse(USE_DIALPLAN,`yes',`####  DIALPLAN module
 loadmodule "dialplan.so"
-modparam("dialplan", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("dialplan", "db_url", "DB_URL")
 
 ',`')dnl
 ifelse(USE_DR_MODULE,`yes',`####  DYNAMMIC ROUTING module
 loadmodule "drouting.so"
-modparam("drouting", "db_url",
-	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
+modparam("drouting", "db_url", "DB_URL")
 
 ',`')dnl
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
@@ -281,7 +299,7 @@ ifelse(USE_NAT,`yes',`
 	# absorb retransmissions, but do not create transaction
 	t_check_trans();
 
-	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| ($si==11.22.33.44 && $sp=5060 /* CUSTOMIZE ME */)')',`') ) ) {
+	if ( !(is_method("REGISTER") ifelse(HAVE_INBOUND_PSTN,`yes',` ifelse(USE_DR_MODULE,`yes',`|| is_from_gw()',`|| ($si==PSTN_IP && $sp=PSTN_PORT)')',`') ) ) {
 		ifelse(USE_MULTIDOMAIN,`yes',`
 		if (is_from_local()) {',`
 		if (is_myself("$fd")) {
@@ -346,11 +364,10 @@ ifelse(USE_NAT,`yes',`
 		append_hf("P-hint: outbound\r\n"); 
 		ifelse(ENABLE_TLS,`yes',`
 		# if you have some interdomain connections via TLS
-		## CUSTOMIZE IF NEEDED
-		##if ($rd=="tls_domain1.net"
-		## || $rd=="tls_domain2.net"
+		##if ($rd=="TLS_DOMAIN_1"
+		## || $rd=="TLS_DOMAIN_2"
 		##) {
-		##	force_send_socket("tls:127.0.0.1:5061"); # CUSTOMIZE
+		##	force_send_socket("TLS_SEND_SOCKET");
 		##}
 		',`')
 		route(relay);
@@ -421,8 +438,8 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 			exit;
 		}
 		',`
-		$rd="11.22.33.44"; CUSTOMIZE ME
-		$rp=5060;
+		$rd="PSTN_IP";
+		$rp=PSTN_PORT;
 		')
 		route(relay);
 		exit;
@@ -437,7 +454,7 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 		}',`')
 		ifelse(VM_DIVERSION,`yes',`
 		# redirect to a different VM system
-		$du = "sip:127.0.0.2:5060"; # CUSTOMIZE ME
+		$du = "VOICEMAIL_URI";
 		route(relay);
 		',`
 		t_reply(404, "Not Found");
@@ -525,7 +542,7 @@ failure_route[missed_call] {
 	ifelse(VM_DIVERSION,`yes',`
 	# redirect the failed to a different VM system
 	if (t_check_status("486|408")) {
-		$du = "sip:127.0.0.2:5060"; # CUSTOMIZE ME
+		$du = "VOICEMAIL_URI";
 		# do not set the missed call flag again
 		route(relay);
 	}',`')

@@ -170,10 +170,6 @@ Files: mem/common.h
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: menuconfig/*
-Copyright: 2011-2015, OpenSIPS Solutions
-License: GPL-2+
-
 Files: mi/*
 Copyright: 2004-2009, Voice Sistem SRL
 License: GPL-2+

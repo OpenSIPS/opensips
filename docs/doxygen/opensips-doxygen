@@ -493,7 +493,6 @@ INPUT                  = ./ \
 			 lib/json \
 			 lib/reg \
                          mem \
-			 menuconfig \
                          mi \
                          modules/aaa_radius \
 			 modules/acc \

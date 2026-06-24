@@ -25,7 +25,6 @@ TOC
    B) Disclaimers
    C) Quick Start
    D) opensips with Persistent Data Storage
-   E) menuconfig installation
 4. Troubleshooting
 
 
@@ -37,7 +36,7 @@ Supported architectures: Linux/i386, Linux/armv4l, FreeBSD/i386, OpenBSD/i386
 Solaris/sparc64, NetBSD/sparc64
 (for other architectures the Makefiles might need to be edited)
 
-There are various configuration options defined in the Makefile.
+Build configuration options are stored in Makefile.conf.
 
 Requirements:
 
@@ -78,14 +77,40 @@ Requirements:
 - libldap libs and devel headers v2.1 or greater - if you want LDAP support
 - libconfuse and devel headers - if you want to compile the carrierroute
   module
-- libncurses5-dev and m4 - if you want to use the menuconfig graphical user interface
-  for configuring OpenSIPS compilation & cfg file options
+- m4 - if you want to use M4 templating
 
 OS Notes:
 
 - FreeBSD/OpenBSD/NetBSD: make sure gmake, bison or yacc & flex are installed
 - Solaris: as above; you can use Solaris's yacc instead of bison. You might
   need also gtar and ginstall.
+
+Build configuration is stored in Makefile.conf. The first make invocation
+copies Makefile.conf.template when Makefile.conf does not exist. You may also
+create it explicitly:
+
+cp Makefile.conf.template Makefile.conf
+
+Edit Makefile.conf before compiling:
+
+- exclude_modules lists modules omitted from the normal modules and all
+  targets. Add names to exclude more modules.
+- include_modules forces named modules into the build, including modules from
+  exclude_modules. Install each module's external dependencies first.
+- DEFS controls OpenSIPS compile-time definitions. The template documents the
+  available definitions. Some allocator and locking definitions are mutually
+  exclusive, so only enable options whose behavior is understood.
+- CC_EXTRA_OPTS and LD_EXTRA_OPTS add compiler and linker flags. For example:
+
+    CC_EXTRA_OPTS += -O2 -march=native
+    LD_EXTRA_OPTS += -Wl,--as-needed
+
+- PREFIX controls the default installation prefix and defaults to /usr/local/.
+  Use the same prefix while building and installing because the default
+  configuration path is compiled into the binary.
+
+Run make proper before rebuilding after changing DEFS, compiler flags, or
+linker flags.
 
 
 2. Howto Build opensips From Source Distribution
@@ -211,12 +236,8 @@ make prefix=/ all
 make prefix=/ install
 
 That applies to other make parameters as well (for example parameters
-"modules" or "excluded_modules").
-
-
-Start graphical user interface:
-
-make menuconfig
+"modules" or "exclude_modules"). Prefer storing persistent settings in
+Makefile.conf instead of repeating them on each make invocation.
 
 
 3. Quick-Start Installation Guide
@@ -371,48 +392,6 @@ proceed, you need to make sure MySQL is installed on your box.
 6) restart the server
     /etc/init.d/opensips restart
 7) you can now start  managing the server using the opensips-cli utility
-
-E) menuconfig installation
-
-The Interface allows the user to do the following :
-
-1. Configure OpenSIPS compilation related options such as :
-    - Compilation Flags. For example, the user can now easily compile in TCP
-      support from within the GUI, or enable memory allocation debugging, etc.
-      Each compilation flag functionality is explained in short in the GUI.
-    - Module Compilation Selection. The user can now easily select to compile
-      modules that have external dependencies, and that are not compiled in
-      by default. For example, the user can choose to also enable the MySQL
-      support by enabling the db_mysql module. The interface will also notify
-      the user about the dependencies that must be installed based on the modules
-      that the user has selected.
-    - Installation Prefix. The user can use the GUI to configure the OpenSIPS
-      installation path to be used
-
-2. Install OpenSIPS and Cleanup OpenSIPS sources
-    - Upon configuring OpenSIPS related options from above,
-      the user can choose to install OpenSIPS directly from the GUI.
-
-3. Generate OpenSIPS config files
-    - The tool can also generate OpenSIPS configuration files based on the 
-      user's preferences. So far, we have defined three main classes of OpenSIPS
-      configuration files :
-        - Residential
-        - Trunking
-        - Load-balancer
-
-   For each type of configuration file, the user can choose to enable/disable 
-   certain options. For example, for the Residential script, the user can choose
-   to enable presence support, to handle NAT, and many more. After the user has
-   properly configured it's desired OpenSIPS script in the GUI, it will have the
-   option to generate and obtain the final OpenSIPS cfg.
-
-
-If you have installed OpenSIPS from packages ( debs, rpms, etc ) and not from sources,
-you will still be able to use the graphical interface for generating configuration files,
-by running
-	osipsconfig
-
 
 4. Troubleshooting
 ------------------
