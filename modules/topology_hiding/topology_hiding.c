@@ -237,8 +237,8 @@ static int mod_init(void)
 			LM_ERR("cannot register callback for dialog loaded - topology "
 					"hiding signalling for ongoing calls will be lost after "
 					"restart\n");
-
-	if (th_set_use_param(&th_use_param) < 0) {
+	th_use_param.len = strlen(th_use_param.s);
+	if (th_set_use_param(&th_use_param) <= 0) {
 		LM_ERR("Param '%.*s' not in options\n", th_use_param.len, th_use_param.s);
 		return -1;
 	}
