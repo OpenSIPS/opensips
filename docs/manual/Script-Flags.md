@@ -91,15 +91,15 @@ In `request` route, you may have multiple branches (as a result of a `lookup()` 
    } else {
       # lookup will load the branch flag from location
       if (!lookup("location")) {
-         sl_send_reply("404","Not Found");
+         sl_send_reply(404,"Not Found");
          exit;
       }
-      t_on_branch("1")
+      t_on_branch("handle_branch")
       t_relay();
    }
  }
  
- branch_route[1] {
+ branch_route[handle_branch] {
    xlog("-------branch=$T_branch_idx, branch flags=$bf\n");
    if (isbflagset(NAT_BFLAG)) {
       #current branch is marked as natted
