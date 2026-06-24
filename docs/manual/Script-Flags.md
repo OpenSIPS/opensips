@@ -28,17 +28,17 @@ There are a bunch a functions that helps into working with the flags from script
 
 ### Branch flags
 
-* setbflag(branch_idx, FLAG)
-* resetbflag(branch_idx, FLAG)
-* isbflagset(branch_idx, FLAG)
+* [`setbflag`](Script-CoreFunctions.md#setbflagflag-branch_idx)`(FLAG, branch_idx)`
+* [`resetbflag`](Script-CoreFunctions.md#resetbflagflag-branch_idx)`(FLAG, branch_idx)`
+* [`isbflagset`](Script-CoreFunctions.md#isbflagsetflag-branch_idx)`(FLAG, branch_idx)`
 
   
 
 or, the shorter format, working on the default (branch 0) flags:
 
-* setbflag(FLAG)
-* resetbflag(FLAG)
-* isbflagset(FLAG)
+* [`setbflag`](Script-CoreFunctions.md#setbflagflag-branch_idx)`(FLAG)`
+* [`resetbflag`](Script-CoreFunctions.md#resetbflagflag-branch_idx)`(FLAG)`
+* [`isbflagset`](Script-CoreFunctions.md#isbflagsetflag-branch_idx)`(FLAG)`
 
 ---
 
@@ -46,11 +46,11 @@ or, the shorter format, working on the default (branch 0) flags:
 
 ### Message/transaction flags
 
-`$mf` - ReadOnly; outputs a list of flags
+[`$mf`](Script-CoreVar.md#message-flags---mf) - ReadOnly; outputs a list of flags
 
 ### Branch flags
 
-`$bf` - ReadOnly; returns a list of flags
+[`$bf`](Script-CoreVar.md#branch-flags-list---bf) - ReadOnly; returns a list of flags
 
 ---
 
