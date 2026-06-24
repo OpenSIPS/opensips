@@ -53,7 +53,9 @@ or, the shorter format, working on the default (branch 0) flags:
 
 ### Branch flags
 
-[`$bf`](Script-CoreVar.md#branch-flags-list---bf) - ReadOnly; returns a list of flags
+* [`$msg.branch.flag(name)`](Script-CoreVar.md#a-flag-of-a-message-branch---msgbranchflag) - reads/writes a certain branch flag
+
+* [`$msg.branch.flags`](Script-CoreVar.md#flags-of-a-message-branch---msgbranchflags) - ReadOnly; returns a list of all set branch flags
 
 ---
 
