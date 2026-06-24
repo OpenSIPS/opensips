@@ -46,7 +46,10 @@ or, the shorter format, working on the default (branch 0) flags:
 
 ### Message/transaction flags
 
-[`$mf`](Script-CoreVar.md#message-flags---mf) - ReadOnly; outputs a list of flags
+* [`$msg.flag(name)`](Script-CoreVar.md#message-flag---msgflag) - reads/writes a certain message flag
+
+* [`$mf`](Script-CoreVar.md#message-flags---mf) - ReadOnly; outputs a list of all set flags
+
 
 ### Branch flags
 
@@ -74,7 +77,6 @@ In `request` route, you may have multiple branches (as a result of a `lookup()` 
 ```c
 
  ..........
- # 3 - the nat flag
  modparam("usrloc", "nat_bflag", "NAT_BFLAG")
  ..........
  
