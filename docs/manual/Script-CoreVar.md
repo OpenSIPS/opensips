@@ -3,7 +3,10 @@ title: "Core variables"
 description: "The OpenSIPS variables can be easily identified in the script as all their names (or notations) start with the $ sign."
 ---
 
-**OpenSIPS** provides multiple type of variables to be used in the routing script. The difference between the types of variables comes from (1) the visibility of the variable (when it is visible), (2) what the variable is attached to (where the variable resides), (3) read-write status of the variable (some types of the variables are read-only and (4) how multiple values (for the same variable are handled).
+**OpenSIPS** provides multiple types of variables to be used in the routing script. The difference between the types of variables comes from:
+* *its context* - a variable is attached to a context, like the context of a SIP message, of a SIP transaction or dialog. The variable will be visible all the time within that context (across all the script routes where the context is present)
+* *read-write status* - some types of variables are read-only
+* *number of values* - some variables may keep multiple values at the same time
 
 The **OpenSIPS** variables can be easily identified in the script as all their names (or notations) start with the **$** sign.
 
@@ -14,9 +17,9 @@ The complete syntax for a pseudo variable is:
 
 The fields written in italics are optional.
 The fields meaning is:
-* **name**(compulsory) - the pseudo-variable name(type).  
-Ex: pvar, avp, ru, DLG_status, etc.
-* **subname** - the identifier of a certain pv from the given type.  
+* **name**(mandatory) - the pseudo-variable name(type).  
+Ex: var, avp, ru, DLG_status, etc.
+* **subname** - the identifier of a certain pv of a given type.  
 Ex: hdr(From), avp(name).
 * **index** - a pv can store more than one value - it can refer to a list of values. You can access a certain value from the list if you specify its index. You can also specify indexes with negative values, -1 means the last inserted, -2 the value before the previous inserted one.
 * **transformation** - a series of processing actions can be applied on pseudo-variable. You can find the whole list of possible transformations [here](Script-Tran.md). The transformations can be cascaded, using the output of one transformation as the input of another.     
@@ -26,7 +29,7 @@ Usage examples:
 * Only **name**: `$ru`
 * **Name** and *'subname*: `$hdr(Contact)`
 * **Name** and **index**: `$(ct[0])`
-* **Name**, **subname** and **index**: `$(avp(i:10)[2])`
+* **Name**, **subname** and **index**: `$(avp(caller_dids)[2])`
 * **Context** 
   * `$(<request>ru)` from a reply route will get the Request-URI from the request
   * `$(<reply>hdr(Contact))` context can be used from failure route to access information from the reply 
