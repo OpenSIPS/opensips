@@ -31,11 +31,8 @@ Parameters:
 * **size**: the total amount of private memory.
 * **pid**: the pid of the process that raises the event.
 
-> [!IMPORTANT]
->
-> > [!NOTE]
-> > If the event_pkg_threshold is not specified or 0, then this event is disabled.
->
+> [!NOTE]
+> If the event_pkg_threshold is not specified or 0, then this event is disabled.
 
 ## E_CORE_SHM_THRESHOLD
 
@@ -49,8 +46,5 @@ Parameters:
 * **used**: the amount of shared memory used.
 * **size**: the total amount of shared memory.
 
-> [!IMPORTANT]
->
-> > [!NOTE]
-> > If the event_shm_threshold is not specified or 0, then this event is disabled.
->
+> [!NOTE]
+> If the event_shm_threshold is not specified or 0, then this event is disabled.
