@@ -122,32 +122,32 @@ onreply_route[handle_reply] {
 * Multiple values example
 ```bash
 
-$avp(my_arr) = "one";
+$avp(demo) = "one";
 # we have a single value
 
-$avp(my_arr) = "two";
+$avp(demo) = "two";
 # we have two values ("two","one")
 
-$avp(my_arr) = "three";
+$avp(demo) = "three";
 # we have three values ("three","two","one")
 
-xlog("accessing values with no index: $avp(my_arr)\n");
+xlog("accessing values with no index: $avp(demo)\n");
 # this will print the first value, which is the last added value -> "three"
 
-xlog("accessing values with no index: $(avp(my_arr)[2])\n");
+xlog("accessing values with no index: $(avp(demo)[2])\n");
 # this will print the index 2 value (third one), -> "one"
 
 # remove the first value of the avp (lastly added one); if there is only one value, the AVP itself will be destroyed
-$avp(my_arr) = NULL;
+$avp(demo) = NULL;
 
 # delete all values and destroy the AVP
-$avp(my_arr) := NULL;
+avp_delete("$avp(demo)/g");
 
 # delete the value located at a certain index 
-$(avp(my_arr)[1]) = NULL;
+$(avp(demo)[1]) = NULL;
 
 # overwrite the value at a certain index
-$(avp(my_arr)[0]) = "zero";
+$(avp(demo)[0]) = "zero";
 
 ```
 
