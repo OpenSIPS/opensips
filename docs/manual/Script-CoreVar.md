@@ -825,7 +825,12 @@ For message fragment below, `$hdrcnt(Path)` will have value 1 and `$(hdr(Path)[0
 
 Note that both examples above are semantically equivalent but the variables take on different values.
 
+### Route Type - $rT
+
+`$rT` - Holds the current route type as a string. Useful for determining the original route type when inside another route in script, such as a route called from an onreply_route. Allows for more generic and reusable routes such as a logging route which includes the route type in the logged message.
+
 ### Route Name - $route
+
 `$route` - Access route names of the current route call stack.  Usage examples (assuming a route call stack of "route > route[A] > route[B]"):
 
 * `$route` and `$(route[0])` both return **"route[B]"** (current route)
