@@ -158,13 +158,13 @@ The **AVPOPS** module provides a lot of useful functions to operate AVPs (like c
 **Naming**: `$name`
 
 They provide access to information from the SIP message/transaction/dialog or OpenSIPS internals.
-For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, a.s.o) or from **OpenSIPS** inners (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
+For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, and so on) or from **OpenSIPS** internals (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
 Most of the reference variables are read-only and only several allow write operations. The reference variables may return several values or only one, depending of the referred info (if can have multiple values or not).  
-Standard reference variables are read-only and returns a single value (if not otherwise documented).
+Standard reference variables are read-only and return a single value (if not otherwise documented).
 
 **Hints**:
 * most of reference variables are made available by **OpenSIPS** core, but there are also module exporting such variables (to make available info specific to that module) - check the modules documentation.
-* the reference variables are also know as *pseudo-variables* or *PV*. This is an old termiology.
+* the reference variables are also known as *pseudo-variables* or *PV*. This is an old terminology.
 
 Predefined (provided by core) PVs are listed in alphabetical order:
 
@@ -226,7 +226,7 @@ Predefined (provided by core) PVs are listed in alphabetical order:
 
 ### Acc username - $Au
 
-`$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if exits or From username otherwise.
+`$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if it exists or From username otherwise.
 
 ### Argument options - $argv
 
@@ -716,9 +716,9 @@ Alias: `$src_ip`
 The variable also offers detailed read-only access to various attributes/sub-fields of the socket, as  `$socket_in()`. The sub-fields of the socket are:
 * ip - the IP part of the socket
 * port - the port part of the socket
-* proto - the name of the protocol of the socket (as "UDP", "TPC", etc)
-* advertised_ip - the advertised IP part of the socket (it may be NULL if no advertising is done on this particlar socket)
-* advertised_port - the advertised part part of the socket (it may be NULL if no advertising is done on this particlar socket)
+* proto - the name of the protocol of the socket (as "UDP", "TCP", etc)
+* advertised_ip - the advertised IP part of the socket (it may be NULL if no advertising is done on this particular socket)
+* advertised_port - the advertised port part of the socket (it may be NULL if no advertising is done on this particular socket)
 * tag - the socket internal tag/alias 
 * anycast - if the socket uses an anycast IP or not (returns 0 if not, 1 if yes)
 * af - the address family of the socket's IP. It's value is "INET" if IPv4 or "INET6" if IPv6.
@@ -798,11 +798,11 @@ Alias: `$to.user`
 
 ### SIP Headers - $hdr
 
-`$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is got when N=0, for the second N=1, a.s.o. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
+`$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is retrieved when N=0, for the second N=1, and so on. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
 
 The module should identify most of compact header names (the ones recognized by **OpenSIPS** which should be all at this moment), if not, the compact form has to be specified explicitly. It is recommended to use dedicated specifiers for headers (e.g., %ua for user agent header), if they are available -- they are faster.
 
-`$(hdr_name[N])` - returns the name of the N-th header. The first header name is obtained for N=0, the second for N=1, a.s.o. To print the last header name use -1, the second last -2 a.s.o. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all header names are printed.
+`$(hdr_name[N])` - returns the name of the N-th header. The first header name is obtained for N=0, the second for N=1, and so on. To print the last header name use -1, the second-to-last -2 and so on. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all header names are printed.
 
 `$(hdrcnt(name))` -- returns number of headers of type given by 'name'. Uses same rules for specifying header names as `$hdr(name)` above. Many headers (e.g., Via, Path, Record-Route) may appear more than once in the message. This variable returns the number of headers of a given type. 
 
