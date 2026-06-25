@@ -51,6 +51,7 @@
 #include "../../mem/mem.h"
 #include "../../parser/parser_f.h"
 #include "../../parser/parse_body.h"
+#include "../../context.h"
 #include "t_funcs.h"
 #include "t_hooks.h"
 #include "t_msgbuilder.h"
@@ -1062,14 +1063,39 @@ int t_wait_no_more_branches( struct cell *t, int extra)
 
 int t_wait_no_more_branches_timeout(struct cell *t, int code)
 {
+	static context_p my_ctx = NULL;
+	context_p old_ctx;
+	struct cell *old_t;
 	branch_bm_t cancel_bitmap = 0;
 	int b;
 
 	for (b = t->nr_of_outgoings - 1; b >= t->first_branch; b--) {
 		if (t->uac[b].flags & T_UAC_IS_PHONY) {
 			if (t->uac[b].last_received < 200) {
+				old_ctx = current_processing_ctx;
+				old_t = get_t();
+				if (my_ctx == NULL) {
+					my_ctx = context_alloc(CONTEXT_GLOBAL);
+					if (my_ctx == NULL) {
+						LM_ERR("failed to alloc new ctx in pkg\n");
+						return -1;
+					}
+				}
+				memset(my_ctx, 0, context_size(CONTEXT_GLOBAL));
+				set_global_context(my_ctx);
+				set_t(t);
+
+				_tm_branch_index = b;
 				LOCK_REPLIES(t);
 				relay_reply(t, FAKED_REPLY, b, code, &cancel_bitmap);
+				_tm_branch_index = 0;
+
+				if (current_processing_ctx == NULL)
+					my_ctx = NULL;
+				else
+					context_destroy(CONTEXT_GLOBAL, my_ctx);
+				set_global_context(old_ctx);
+				set_t(old_t);
 			}
 			t->uac[b].br_flags = t->nr_of_outgoings;
 			return 0;
