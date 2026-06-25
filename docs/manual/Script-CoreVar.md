@@ -151,8 +151,6 @@ $(avp(demo)[0]) = "zero";
 
 ```
 
-The **AVPOPS** module provides a lot of useful functions to operate AVPs (like checking values, pushing values into different other locations, deleting AVPs, etc).
-
 
 
 ## Reference Variables
