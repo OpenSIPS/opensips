@@ -160,13 +160,13 @@ The **AVPOPS** module provides a lot of useful functions to operate AVPs (like c
 **Naming**: `$name`
 
 They provide access to information from the SIP message/transaction/dialog or OpenSIPS internals.
-For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, a.s.o) or from **OpenSIPS** inners (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
+For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, and so on) or from **OpenSIPS** internals (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
 Most of the reference variables are read-only and only several allow write operations. The reference variables may return several values or only one, depending of the referred info (if can have multiple values or not).  
-Standard reference variables are read-only and returns a single value (if not otherwise documented).
+Standard reference variables are read-only and return a single value (if not otherwise documented).
 
 **Hints**:
 * most of reference variables are made available by **OpenSIPS** core, but there are also module exporting such variables (to make available info specific to that module) - check the modules documentation.
-* the reference variables are also know as *pseudo-variables* or *PV*. This is an old termiology.
+* the reference variables are also known as *pseudo-variables* or *PV*. This is an old terminology.
 
 Predefined (provided by core) PVs are listed in alphabetical order:
 
@@ -229,7 +229,7 @@ Predefined (provided by core) PVs are listed in alphabetical order:
 
 ### Acc username - $Au
 
-`$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if exits or From username otherwise.
+`$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if it exists or From username otherwise.
 
 ### Argument options - $argv
 
@@ -715,7 +715,7 @@ Alias: `$to.user`
 
 ### SIP Headers - $hdr
 
-`$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is got when N=0, for the second N=1, a.s.o. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
+`$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is retrieved when N=0, for the second N=1, and so on. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
 
 The module should identify most of compact header names (the ones recognized by **OpenSIPS** which should be all at this moment), if not, the compact form has to be specified explicitly. It is recommended to use dedicated specifiers for headers (e.g., %ua for user agent header), if they are available -- they are faster.
 
