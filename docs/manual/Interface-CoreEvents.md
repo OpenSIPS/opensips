@@ -7,9 +7,9 @@ Events are exported by the **OpenSIPS** core through the Event Interface.
 
 ---
 
-## Threshold limit exceeded
+## E_CORE_THRESHOLD
 
-**Event**: E_CORE_THRESHOLD
+Threshold limit exceeded.
 
 This event is triggered when a particular action takes longer than a specific threshold. It can be raised when a MySQL or DNS query takes too long, or a SIP message processing goes beyond a specific limit. For more information please see [this](http://lists.opensips.org/pipermail/users/2011-February/016918.html) post.
 
