@@ -106,12 +106,12 @@ route{
 ...
 $avp(tmp) = $Ts ; # store the current time (at request processing)
 ...
-t_onreply("1");
+t_onreply("handle_reply");
 t_relay();
 ...
 }
 
-onreply_route[1] {
+onreply_route[handle_reply] {
 	if (t_check_status("200")) {
 		# calculate the setup time
 		$var(setup_time) = $Ts - $avp(tmp);
