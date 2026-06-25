@@ -36,28 +36,30 @@ Usage examples:
 
 Types of variables:
 
-* [**script variables**](#script_variables) - as the name says, these variables are strictly bound to the script routes. The variables are visible only in the routing blocks - they are not message or transaction related, but they are process related (script variables will be inherited by script routes executed by the same **OpenSIPS** process).  
-Script variables are read write and they can have integer or string values. A script variable can only hold a single value. A new assignment (or write operation) will overwrite the existing value.
+* [**script variables**](#script_variables) - as the name says, these variables are strictly bound to the script routes.
 
-* [**AVP - Attribute Value Pair**](#avp_variables) - the AVPs are dynamic variables (as name) that can be created - the AVPS are linked to a singular message or transaction (if stateful processing is used). A message or a transaction will initially (when received or created) have an empty list of AVPS attached to it. During the routing script, the script directly or functions called from script may create new AVPS that will automatically attached to the message/transaction. The AVPS will be visible in all routes where any message (reply or request) of the transaction will be processed - branch_route , failure_route, onreply_route (for this last route you need to enable the TM parameter *onreply_avp_mode*).  
-AVPs are read write and an existing AVP can be even deleted (removed). An AVP may contain multiple values - a new assignment (or write operation) will add a new value to the AVP; the values are kept in "last added first to be used" order (stack).  
+* [**AVP - Attribute Value Pair**](#avp_variables) - the AVPs are dynamic variables (as name) that can be created and attached to a SIP message or transaction (if stateful processing is used). So, you may see them as transaction level variables.
 
-A special index **append** is defined to allow you to add a new value at the end of the list (at the bottom of the stack) - `$(avp(name)[append])` = "last value";
+* [**reference variables**](#reference_variables) - variables to provide access to information from the current context - the current SIP message, transaction, dialog, or from the current process (non SIP information).
 
-* [**pseudo variables**](#pseudo_variables) - pseudo-variables (or PV) provide access to information from the processed SIP message (headers, RURI, transport level info, a.s.o) or from **OpenSIPS** inners (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global). Most of the PVs are read-only and only several allow write operations. A PV may return several values or only one, depending of the referred info (if can have multiple values or not).  
-Standard PV is read-only and returns a single value (if not otherwise documented).
 
 * [**escape sequences**](#escape_sequences) - escape sequences used to format the strings; they are actually not variables, but rather formatters.
 
+
+
 ## Script variables
 
-**Naming**: `$var(name)` 
+**Naming**: `$var(name)`
+
+These variables are attached to the script, being persistent to the whole execution of a top route (including all its sub-routes). Once the execution of the top route ended, the script variables are lost, not to be used again. Also, be careful and initialize them when used for the first time (in a top route) as you may inherite garbage.
+Script variables are read write and they can have integer or string values.
+A script variable can only hold a single value. A new assignment (or write operation) will overwrite the existing value.
+
 
 **Hints**:
 * if you want to start using a script variable in a route, better initialize it with same value (or reset it), otherwise you may inherit a value from a previous route that was executed by the same process.
-* script variables are faster than AVPs, as they directly reference a memory location.
-* the value of script variables persists over a **OpenSIPS** process.
-* a script value can have only one value.
+* a script variable can only hold one value.
+
 
 Example of usage:
 
@@ -75,13 +77,18 @@ if( [ $var(a) & 4 ] ) {
 
 ```
 
-Setting a variable to NULL is actually initializing the value to integer '0'. Script variables don't have NULL value.
 
 ## AVP variables
 
 **Naming**: `$avp(name)` or `$(avp(name)[N])`
 
+A message or a transaction will initially (when received or created) have an empty list of AVPS attached to it. During the routing script, the script directly or functions called from script may create new AVPS that will automatically attached to the message/transaction. The AVPS will be visible in all routes where any message (reply or request) of the transaction will be processed - `branch_route` , `failure_route`, `onreply_route` (for this last route you need to enable the TM parameter *onreply_avp_mode*).
+AVPs are read write and an existing AVP can be even deleted (removed).
+An AVP may contain multiple values - a new assignment (or write operation) will add a new value to the AVP; the values are kept in "last added first to be used" order (stack).
+
 When using the index "N" you can force the AVP to return a certain value (the N-th value). If no index is given, the first value will be returned.
+A special index **append** is defined to allow you to add a new value at the end of the list (at the bottom of the stack) - `$(avp(name)[append])` = "last value";
+
 
 **Hints**:
 * to enable AVPs in onreply_route, use "modparam("tm", "onreply_avp_mode", 1)"
@@ -146,15 +153,22 @@ $(avp(17)[0]) = "zero";
 
 The **AVPOPS** module provides a lot of useful functions to operate AVPs (like checking values, pushing values into different other locations, deleting AVPs, etc).
 
-## Pseudo Variables
+
+
+## Reference Variables
 
 **Naming**: `$name`
 
-**Hints**:
-* the PV tokens can be given as parameters to different script functions and they will be replaced with a value before the execution of the function.
-* most of PVs are made available by **OpenSIPS** core, but there are also module exporting PV (to make available info specific to that module) - check the modules documentation.
+They provide access to information from the SIP message/transaction/dialog or OpenSIPS internals.
+For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, a.s.o) or from **OpenSIPS** inners (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
+Most of the reference variables are read-only and only several allow write operations. The reference variables may return several values or only one, depending of the referred info (if can have multiple values or not).  
+Standard reference variables are read-only and returns a single value (if not otherwise documented).
 
-Predefined (provided by core) PVs are listed in alphabetical order.
+**Hints**:
+* most of reference variables are made available by **OpenSIPS** core, but there are also module exporting such variables (to make available info specific to that module) - check the modules documentation.
+* the reference variables are also know as *pseudo-variables* or *PV*. This is an old termiology.
+
+Predefined (provided by core) PVs are listed in alphabetical order:
 
 ### URI in SIP Request's P-Asserted-Identity header
 
@@ -188,7 +202,11 @@ Predefined (provided by core) PVs are listed in alphabetical order.
 
 `$auth.nonce` - the nonce string from Authorization or Proxy-Authorization header
 
-### Auth opaque
+### Auth cnonce - $auth.cnonce
+
+`$auth.cnonce` - the client nonce string from Authorization or Proxy-Authorization header
+
+### Auth opaque - $auth.opaque
 
 `$auth.opaque` - the opaque string from Authorization or Proxy-Authorization header
 
@@ -241,7 +259,7 @@ Examples:
 
 ```
 
-### Branch fields
+### Branch fields - $branch(field)
 
 `$branch()` - this variable provides read/write access to all fields/attributes of an already existing branch (priorly created with append_branch() ). The fields of the branch are:
 * uri - the RURI of the branch  (string value)
@@ -280,7 +298,8 @@ Examples:
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Call-Id
+### Call-Id - $ci
+
 
 `$ci` - reference to body of call-id header
 
@@ -299,7 +318,7 @@ Examples:
 * `$(ct[n])` - the n-th contact instance form the beginning of message, starting with index 0
 * `$(ct[-n])` - the n-th contact instance form the end of the message, starting with index -1 (the last contact instance)
 
-### Fields of a contact instance
+### Fields of a contact instance - $ct.fields(field)
 
 `$ct.fields()` - reference to the fields of a contact instance/body (see above). Supported fields are:
 * name - display name
@@ -362,6 +381,8 @@ Examples:
 `$du` - reference to destination uri (outbound proxy to be used for sending the request)
 If loose_route() returns TRUE a destination uri is set according to the first Route header.
 
+Alias: `$duri`
+
 > [!IMPORTANT]
 > It is R/W variable (you can assign values to it from routing logic)
 
@@ -390,7 +411,9 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 
 `$fd` - reference to domain in URI of 'From' header
 
-### From display name
+Alias: `$from.domain`
+
+### From display name - $fn
 
 `$fn` - reference to display name of 'From' header
 
@@ -410,11 +433,15 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 
 `$fu` - reference to URI of 'From' header
 
-### From URI username
+Alias: `$from`
+
+### From URI username - $fU
 
 `$fU` - reference to username in URI of 'From' header
 
-### OpenSIPS Log level
+Alias: `$from.user`
+
+### OpenSIPS Log level - $log_level
 
 `$log_level` - changes the log level for the current process ; the log level can be set to a new value (see [possible values](Script-CoreParameters.md#log_level) or it can be reset back to the global log level.
 This function is very helpful if you are tracing and debugging only a specific piece of code. 
@@ -449,7 +476,8 @@ $log_level = NULL; # reset the log level of the current process to its default l
 
 `$ml` - reference to SIP message length
 
-### Domain in SIP Request's original URI
+### Domain in SIP Request's original URI - $od
+
 
 `$od` - reference to domain in request's original R-URI
 
@@ -465,11 +493,17 @@ $log_level = NULL; # reset the log level of the current process to its default l
 
 `$ou` - reference to request's original URI
 
-### Username in SIP Request's original URI
+Alias: `$ouri`
+
+### Username in SIP Request's original URI - $oU
 
 `$oU` - reference to username in request's original URI
 
-### Route parameter
+### Path header - $path
+
+`$path` - reference to the Path header body.
+
+### Route parameter - $param
 `$param(idx)` - retrieves the parameters of the route. The index can be an integer, or a pseudo-variable (index starts at 1).  
 
 Example:
@@ -515,6 +549,8 @@ Example:
 ### Domain in SIP Request's URI
 
 `$rd` - reference to domain in request's URI
+
+Alias: `$ruri.domain`
 
 > [!IMPORTANT]
 > It is R/W variable (you can assign values to it routing script)
@@ -572,6 +608,8 @@ Example:
 
 `$ru` - reference to request's URI
 
+Alias: `$ruri`
+
 > [!IMPORTANT]
 > It is R/W variable (you can assign values to it routing script)
 
@@ -579,6 +617,8 @@ Example:
 ### Username in SIP Request's URI
 
 `$rU` - reference to username in request's URI
+
+Alias: `$ruri.user`
 
 > [!IMPORTANT]
 > It is R/W variable (you can assign values to it routing script)
@@ -608,11 +648,14 @@ Example:
 
 `$sf` - displays a list with the script flags set for the current SIP request 
 
-### IP source address
+### IP source address - $si
 
 `$si` - reference to IP source address of the message
 
-### Source port
+Alias: `$src_ip`
+
+### Source port - $sp
+
 
 `$sp` - reference to the source port of the message
 
@@ -620,7 +663,9 @@ Example:
 
 `$td` - reference to domain in URI of 'To' header
 
-### To display name
+Alias: `$to.domain`
+
+### To display name - $tn
 
 `$tn` - reference to display name of 'To' header
 
@@ -632,11 +677,15 @@ Example:
 
 `$tu` - reference to URI of 'To' header
 
-### To URI Username
+Alias: `$to`
+
+### To URI Username - $tU
 
 `$tU` - reference to username in URI of 'To' header
 
-### Formatted date and time
+Alias: `$to.user`
+
+### Formatted date and time - $time
 
 `$time(format)` - returns the string formatted time according to UNIX date (see: **man date**).
 
