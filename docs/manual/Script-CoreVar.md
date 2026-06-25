@@ -158,13 +158,13 @@ $(avp(demo)[0]) = "zero";
 **Naming**: `$name`
 
 They provide access to information from the SIP message/transaction/dialog or OpenSIPS internals.
-For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, a.s.o) or from **OpenSIPS** inners (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
+For example, a reference variable may allow access to the processed SIP message (headers, RURI, transport level info, and so on) or from **OpenSIPS** internals (time values, process PID, return code of a function). Depending of what info they provide, the PVs are either bound to the message, either to nothing  (global).
 Most of the reference variables are read-only and only several allow write operations. The reference variables may return several values or only one, depending of the referred info (if can have multiple values or not).  
-Standard reference variables are read-only and returns a single value (if not otherwise documented).
+Standard reference variables are read-only and return a single value (if not otherwise documented).
 
 **Hints**:
 * most of reference variables are made available by **OpenSIPS** core, but there are also module exporting such variables (to make available info specific to that module) - check the modules documentation.
-* the reference variables are also know as *pseudo-variables* or *PV*. This is an old termiology.
+* the reference variables are also known as *pseudo-variables* or *PV*. This is an old terminology.
 
 Predefined (provided by core) PVs are listed in alphabetical order:
 
@@ -226,7 +226,7 @@ Predefined (provided by core) PVs are listed in alphabetical order:
 
 ### Acc username - $Au
 
-`$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if exits or From username otherwise.
+`$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if it exists or From username otherwise.
 
 ### Argument options - $argv
 
@@ -454,7 +454,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 `$msg.branch.uri` -  gives read / write access over the SIP URI (as string) of an existing message branch. The message branches are created via [append_msg_branch()](Script-CoreFunctions.md#append_branch) core function or by various modules (like "registrar" module). The message branches are consumed by the TM "t_relay()" function (they are converted to TM branches).  
 
 The variable supports indexing - it starts from 0, meaning the RURI (or message) branch. The newly added branches will start from 1. So the branch 0 exists all
-the time, there is no need to creat it. If no index is specified, the current/last added branch (or of the RURI branch if no additional branch was added so far) will be considered. Negative values are also accepted, meaning indexing from the last branch ( -1 is the latest/higher branch) to the RURI branch. An ***** / ALL index will return the comma separated list with the values from all branches.  
+the time, there is no need to create it. If no index is specified, the current/last added branch (or of the RURI branch if no additional branch was added so far) will be considered. Negative values are also accepted, meaning indexing from the last branch ( -1 is the latest/higher branch) to the RURI branch. An ***** / ALL index will return the comma separated list with the values from all branches.  
 
 The variable can be used in REQUEST and FAILURE routes.
 ```text
@@ -492,7 +492,7 @@ The variable can be used in REQUEST and FAILURE routes.
 
 `$msg.branch.flag()` -  similar to [`$msg.branch.uri`](#msg.branch.uri), but operating over a single branch flag (for the current branch).  
 
-The accepted values are 0 for FALSE, pozitive non-zero for TRUE. The returned values are 0 for FALSE and 1 for TRUE.  
+The accepted values are 0 for FALSE, positive non-zero for TRUE. The returned values are 0 for FALSE and 1 for TRUE.  
 
 > [!NOTE]
 > the */ALL index cannot be used here.
@@ -530,7 +530,7 @@ An attribute can have whatever name (no need to be pre-defined) and it can have 
 
 ### Index of the last message branch - $msg.branch.last_idx
 
-`$msg.branch.last_idx` -  returns the index of the last message branch. IF no additional branche were added, it will return 0, the index of the RURI branch. Then the returned value will get incremented with each append_msg_branch().  
+`$msg.branch.last_idx` -  returns the index of the last message branch. IF no additional branches were added, it will return 0, the index of the RURI branch. Then the returned value will get incremented with each append_msg_branch().  
 
 ### Message flag - $msg.flag
 
@@ -749,7 +749,7 @@ $(<reply>sdp) = $var(rtpengine_sdp);
 ```bash
 
 # Fetch the 1st, 2nd, 3rd, etc. attribute line (starting with "a=")
-$sdp.line(a=)         # fetch first "a=" lin
+$sdp.line(a=)         # fetch first "a=" line
 $sdp.line(a=[0])      # equivalent, "a=" line at index 0
 $sdp.line(a=ptime[1]) # "a=ptime" line at index 1
 $sdp.line(a=[100])    # will likely yield NULL
@@ -836,9 +836,9 @@ Alias: `$src_ip`
 The variable also offers detailed read-only access to various attributes/sub-fields of the socket, as  `$socket_in()`. The sub-fields of the socket are:
 * ip - the IP part of the socket
 * port - the port part of the socket
-* proto - the name of the protocol of the socket (as "UDP", "TPC", etc)
-* advertised_ip - the advertised IP part of the socket (it may be NULL if no advertising is done on this particlar socket)
-* advertised_port - the advertised part part of the socket (it may be NULL if no advertising is done on this particlar socket)
+* proto - the name of the protocol of the socket (as "UDP", "TCP", etc)
+* advertised_ip - the advertised IP part of the socket (it may be NULL if no advertising is done on this particular socket)
+* advertised_port - the advertised port part of the socket (it may be NULL if no advertising is done on this particular socket)
 * tag - the socket internal tag/alias 
 * anycast - if the socket uses an anycast IP or not (returns 0 if not, 1 if yes)
 * af - the address family of the socket's IP. It's value is "INET" if IPv4 or "INET6" if IPv6.
@@ -919,11 +919,11 @@ Alias: `$to.user`
 
 ### SIP Headers - $hdr
 
-`$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is got when N=0, for the second N=1, a.s.o. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
+`$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is retrieved when N=0, for the second N=1, and so on. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
 
 The module should identify most of compact header names (the ones recognized by **OpenSIPS** which should be all at this moment), if not, the compact form has to be specified explicitly. It is recommended to use dedicated specifiers for headers (e.g., %ua for user agent header), if they are available -- they are faster.
 
-`$(hdr_name[N])` - returns the name of the N-th header. The first header name is obtained for N=0, the second for N=1, a.s.o. To print the last header name use -1, the second last -2 a.s.o. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all header names are printed.
+`$(hdr_name[N])` - returns the name of the N-th header. The first header name is obtained for N=0, the second for N=1, and so on. To print the last header name use -1, the second-to-last -2 and so on. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all header names are printed.
 
 `$(hdrcnt(name))` -- returns number of headers of type given by 'name'. Uses same rules for specifying header names as `$hdr(name)` above. Many headers (e.g., Via, Path, Record-Route) may appear more than once in the message. This variable returns the number of headers of a given type. 
 
