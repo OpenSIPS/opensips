@@ -117,30 +117,30 @@ onreply_route[1] {
 * Multilple values example
 ```bash
 
-$avp(17) = "one";
+$avp(demo) = "one";
 # we have a single value
-$avp(17) = "two";
+$avp(demo) = "two";
 # we have two values ("two","one")
-$avp(17) = "three";
+$avp(demo) = "three";
 # we have three values ("three","two","one")
 
-xlog("accessing values with no index: $avp(17)\n");
+xlog("accessing values with no index: $avp(demo)\n");
 # this will print the first value, which is the last added value -> "three"
 
-xlog("accessing values with no index: $(avp(17)[2])\n");
+xlog("accessing values with no index: $(avp(demo)[2])\n");
 # this will print the index 2 value (third one), -> "one"
 
 # remove the last value of the avp; if there is only one value, the AVP itself will be destroyed
-$avp(17) = NULL;
+$avp(demo) = NULL;
 
 # delete all values and destroy the AVP
-avp_delete("$avp(17)/g");
+avp_delete("$avp(demo)/g");
 
 # delete the value located at a certain index 
-$(avp(17)[1]) = NULL;
+$(avp(demo)[1]) = NULL;
 
 #overwrite the value at a certain index
-$(avp(17)[0]) = "zero";
+$(avp(demo)[0]) = "zero";
 
 ```
 
