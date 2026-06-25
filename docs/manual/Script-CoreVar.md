@@ -463,7 +463,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 }
 ```
 
-### SIP message buffer
+### SIP message buffer - $mb
 
 `$mb` - reference to SIP message buffer
 
