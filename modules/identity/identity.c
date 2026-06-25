@@ -1420,13 +1420,13 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 		return -1;
 	}
 
-	if((ASN1_UTCTIME_check(dateString)) && (dateString->length == 13))
+	if((ASN1_UTCTIME_check(dateString)) && (ASN1_STRING_length(dateString) == 13))
 	{
 		/* UTCTIME string, GMT
 		YYMMDDhhmmssZ
 		*/
 
-		tmp = dateString->data;
+		tmp = (unsigned char *)ASN1_STRING_get0_data(dateString);
 
 		tmDate.tm_year = (tmp[0] - '0') * 10 + (tmp[1] - '0');
 		if(tmDate.tm_year < 50) //see chap. 4.1.2.5.1, rfc 3280
@@ -1444,12 +1444,12 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 	}
 
 	/* needed for years >= 2050 */
-	if ((ASN1_GENERALIZEDTIME_check(dateString)) && (dateString->length == 15))
+	if ((ASN1_GENERALIZEDTIME_check(dateString)) && (ASN1_STRING_length(dateString) == 15))
 	{
 		/* GENERALIZEDTIME string; GMT
 		YYYYMMDDhhmmssZ
 		*/
-		tmp = dateString->data;
+		tmp = (unsigned char *)ASN1_STRING_get0_data(dateString);
 
 		tmDate.tm_year = (tmp[0] - '0') * 1000 +
 			(tmp[1] - '0') * 100 + (tmp[2] - '0') * 10 + (tmp[3] - '0') - 1900;
