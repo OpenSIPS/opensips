@@ -3922,7 +3922,7 @@ dummy_reply:
 				}
 				else
 				{
-					b2b_dlginfo_t dlginfo;
+					b2b_dlginfo_t *dlginfo;
 					b2b_add_dlginfo_t add_infof= dlg->add_dlginfo;
 					int confirmed_leg_id = b2b_get_leg_index(dlg, &to_tag);
 
@@ -3937,9 +3937,22 @@ dummy_reply:
 					if (confirmed_leg_id >= 0)
 						leg->id = confirmed_leg_id;
 					dlg->tag[CALLEE_LEG] = leg->tag;
-					dlginfo.fromtag = to_tag;
-					dlginfo.callid = dlg->callid;
-					dlginfo.totag = dlg->tag[CALLER_LEG];
+
+					/* Deep-copy dialog info while holding the hash lock.
+					 * The previous code did shallow copies of dlg->callid
+					 * and dlg->tag[CALLER_LEG] (pointers into shm) and
+					 * used them after releasing the lock — a TOCTOU race
+					 * where another thread could modify the shm strings
+					 * between size calculation and memcpy, causing a
+					 * heap buffer overflow. */
+					dlginfo = b2b_new_dlginfo(&dlg->callid,
+						&to_tag, &dlg->tag[CALLER_LEG]);
+					if(dlginfo == NULL)
+					{
+						LM_ERR("Failed to create dlginfo\n");
+						goto error;
+					}
+
 					dlg->state = B2B_CONFIRMED;
 
 					current_dlg = dlg;
@@ -3955,11 +3968,13 @@ dummy_reply:
 					B2BE_LOCK_RELEASE(htable, hash_index);
 
 					if(add_infof && add_infof(logic_key.s?&logic_key:0, b2b_key,
-							etype,&dlginfo, b2b_param)< 0)
+							etype, dlginfo, b2b_param)< 0)
 					{
 						LM_ERR("Failed to add dialoginfo\n");
+						shm_free(dlginfo);
 						goto error1;
 					}
+					shm_free(dlginfo);
 
 					goto done1;
 				}
