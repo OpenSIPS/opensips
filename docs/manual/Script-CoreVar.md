@@ -478,7 +478,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 }
 ```
 
-### SIP message buffer
+### SIP message buffer - $mb
 
 `$mb` - reference to SIP message buffer
 
@@ -842,12 +842,12 @@ Note that both examples above are semantically equivalent but the variables take
 * `$(route[3])` and `$(route[-4])` both return **NULL** (index out of bounds)
 * `$(route[*])` returns **"route > route[A] > route[B]"** (entire call stack)
 
-### Current script line and file
+### Current script line and file - $cfg_line
 `$cfg_line` - Holds the current line from the script of the action being executed, useful for logging purposes   
 
 `$cfg_file` - Holds the current name of the cfg file being executed, useful when using multiple scripts via the include statement
 
-### Log level for xlog()
+### Log level for xlog() - $xlog_level
 
 `$xlog_level` - allows to set /reset the xlog() logging level on per-process bases. Shortly said, you can read the verbosity level for the xlog() calls or you can temporary change the level per process bases.
 
