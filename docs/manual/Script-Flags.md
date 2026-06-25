@@ -20,25 +20,25 @@ There are a bunch a functions that helps into working with the flags from script
 
 ### Message/transaction flags
 
-* setflag(FLAG)
-* resetflag(FLAG)
-* isflagset(FLAG)
+* [`setflag`](Script-CoreFunctions.md#setflag)`(FLAG)`
+* [`resetflag`](Script-CoreFunctions.md#resetflag)`(FLAG)`
+* [`isflagset`](Script-CoreFunctions.md#isflagset)`(FLAG)`
 
 *Examples: setflag(accounting), resetflag(DO_NAT) or setflag(1942)*
 
 ### Branch flags
 
-* [`setbflag`](Script-CoreFunctions.md#setbflagflag-branch_idx)`(FLAG, branch_idx)`
-* [`resetbflag`](Script-CoreFunctions.md#resetbflagflag-branch_idx)`(FLAG, branch_idx)`
-* [`isbflagset`](Script-CoreFunctions.md#isbflagsetflag-branch_idx)`(FLAG, branch_idx)`
+* [`setbflag`](Script-CoreFunctions.md#setbflag)`(FLAG, branch_idx)`
+* [`resetbflag`](Script-CoreFunctions.md#resetbflag)`(FLAG, branch_idx)`
+* [`isbflagset`](Script-CoreFunctions.md#isbflagset)`(FLAG, branch_idx)`
 
   
 
 or, the shorter format, working on the default (branch 0) flags:
 
-* [`setbflag`](Script-CoreFunctions.md#setbflagflag-branch_idx)`(FLAG)`
-* [`resetbflag`](Script-CoreFunctions.md#resetbflagflag-branch_idx)`(FLAG)`
-* [`isbflagset`](Script-CoreFunctions.md#isbflagsetflag-branch_idx)`(FLAG)`
+* [`setbflag`](Script-CoreFunctions.md#setbflag)`(FLAG)`
+* [`resetbflag`](Script-CoreFunctions.md#resetbflag)`(FLAG)`
+* [`isbflagset`](Script-CoreFunctions.md#isbflagset)`(FLAG)`
 
 ---
 
@@ -46,16 +46,16 @@ or, the shorter format, working on the default (branch 0) flags:
 
 ### Message/transaction flags
 
-* [`$msg.flag(name)`](Script-CoreVar.md#message-flag---msgflag) - reads/writes a certain message flag
+* [`$msg.flag(name)`](Script-CoreVar.md#msg.flag) - reads/writes a certain message flag
 
-* [`$mf`](Script-CoreVar.md#message-flags---mf) - ReadOnly; outputs a list of all set flags
+* [`$mf`](Script-CoreVar.md#mf) - ReadOnly; outputs a list of all set flags
 
 
 ### Branch flags
 
-* [`$msg.branch.flag(name)`](Script-CoreVar.md#a-flag-of-a-message-branch---msgbranchflag) - reads/writes a certain branch flag
+* [`$msg.branch.flag(name)`](Script-CoreVar.md#msg.branch.flag) - reads/writes a certain branch flag
 
-* [`$msg.branch.flags`](Script-CoreVar.md#flags-of-a-message-branch---msgbranchflags) - ReadOnly; returns a list of all set branch flags
+* [`$msg.branch.flags`](Script-CoreVar.md#msg.branch.flags) - ReadOnly; returns a list of all set branch flags
 
 ---
 
