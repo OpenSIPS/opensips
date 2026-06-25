@@ -154,64 +154,64 @@ The **AVPOPS** module provides a lot of useful functions to operate AVPs (like c
 
 Predefined (provided by core) PVs are listed in alphabetical order.
 
-### URI in SIP Request's P-Asserted-Identity header
+### URI in SIP Request's P-Asserted-Identity header - $ai
 
 `$ai` - reference to URI in request's P-Asserted-Identity header (see RFC 3325)
 
-### Authentication Digest URI
+### Authentication Digest URI - $adu
 
 `$adu` - URI from Authorization or Proxy-Authorization header. This URI is used when calculating the HTTP Digest Response.
 
-### Authentication realm
+### Authentication realm - $ar
 
 `$ar` - realm from Authorization or Proxy-Authorization header
 
-### Auth username user
+### Auth username user - $au
 
 `$au` - user part of username from Authorization or Proxy-Authorization header
 
-### Auth username domain
+### Auth username domain - $ad
 
 `$ad` - domain part of username from Authorization or Proxy-Authorization header
 
-### Auth nonce
+### Auth nonce - $an
 
 `$an` - the nonce from Authorization or Proxy-Authorization header
 
-### Auth response
+### Auth response - $auth.resp
 
 `$auth.resp` - the authentication response from Authorization or Proxy-Authorization header
 
-### Auth nonce
+### Auth nonce - $auth.nonce
 
 `$auth.nonce` - the nonce string from Authorization or Proxy-Authorization header
 
-### Auth opaque
+### Auth opaque - $auth.opaque
 
 `$auth.opaque` - the opaque string from Authorization or Proxy-Authorization header
 
-### Auth algorithm
+### Auth algorithm - $auth.alg
 
 `$auth.alg` - the algorithm string from Authorization or Proxy-Authorization header
 
 	
-### Auth QOP
+### Auth QOP - $auth.qop
 
 `$auth.qop` - the value of qop parameter from Authorization or Proxy-Authorization header
 
-### Auth nonce count (nc)
+### Auth nonce count (nc) - $auth.nc
 
 `$auth.nc` - the value of nonce count parameter from Authorization or Proxy-Authorization header
 
-### Auth whole username
+### Auth whole username - $aU
 
 `$aU` - whole username from Authorization or Proxy-Authorization header
 
-### Acc username
+### Acc username - $Au
 
 `$Au` - username for accounting purposes. It's a selective pseudo variable (inherited from acc module). It returns `$au` if exits or From username otherwise.
 
-### Argument options
+### Argument options - $argv
 
 `$argv` - provides access to command line arguments specified with '-o' option.
 Examples:
@@ -222,7 +222,7 @@ Examples:
 
 ```
 
-### Branch
+### Branch - $branch
 
 `$branch` - this variable is used for creating new branches by writing into it the value of a SIP URI.
 Examples:
@@ -235,7 +235,7 @@ Examples:
 
 ```
 
-### Branch fields
+### Branch fields - $branch
 
 `$branch()` - this variable provides read/write access to all fields/attributes of an already existing branch (priorly created with append_branch() ). The fields of the branch are:
 * uri - the RURI of the branch  (string value)
@@ -274,26 +274,26 @@ Examples:
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Call-Id
+### Call-Id - $ci
 
 `$ci` - reference to body of call-id header
 
-### Content-Length
+### Content-Length - $cl
 
 `$cl` - reference to body of content-length header
 
-### CSeq number
+### CSeq number - $cs
 
 `$cs` - reference to cseq number from cseq header
 
-### Contact instance
+### Contact instance - $ct
 
 `$ct` - reference to contact instance/body from the contact header. A contact instance is  display_name + URI + contact_params. As a Contact header may contain multiple Contact instances and a message may contain multiple Contact headers, an index was added to the `$ct` variable:
 * `$ct` -first contact instance from message
 * `$(ct[n])` - the n-th contact instance form the beginning of message, starting with index 0
 * `$(ct[-n])` - the n-th contact instance form the end of the message, starting with index -1 (the last contact instance)
 
-### Fields of a contact instance
+### Fields of a contact instance - $ct.fields
 
 `$ct.fields()` - reference to the fields of a contact instance/body (see above). Supported fields are:
 * name - display name
@@ -308,11 +308,11 @@ Examples:
 * `$ct.fields(uri)` - the URI of the first contact instance
 * `$(ct.fields(name)[1])` - the display name of the second contact instance
 
-### Content-Type
+### Content-Type - $cT
 
 `$cT` - reference to body of content-type header
 
-### Domain of destination URI
+### Domain of destination URI - $dd
 
 `$dd` - reference to domain of destination uri
 
@@ -320,19 +320,19 @@ Examples:
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Diversion header URI
+### Diversion header URI - $di
 
 `$di` - reference to Diversion header URI
 
-### Diversion "privacy" parameter
+### Diversion "privacy" parameter - $dip
 
 `$dip` - reference to Diversion header "privacy" parameter value
 
-### Diversion "reason" parameter
+### Diversion "reason" parameter - $dir
 
 `$dir` - reference to Diversion header "reason" parameter value
 
-### Port of destination URI
+### Port of destination URI - $dp
 
 `$dp` - reference to port of destination uri
 
@@ -340,15 +340,15 @@ Examples:
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Transport protocol of destination URI
+### Transport protocol of destination URI - $dP
 
 `$dP` - reference to transport protocol of destination uri
 
-### Destination set
+### Destination set - $ds
 
 `$ds` - reference to destination set
 
-### Destination URI
+### Destination URI - $du
 
 `$du` - reference to destination uri (outbound proxy to be used for sending the request)
 If loose_route() returns TRUE a destination uri is set according to the first Route header.
@@ -357,35 +357,35 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Error class
+### Error class - $err.class
 
 `$err.class` - the class of error (now is '1' for parsing errors)
 
-### Error level
+### Error level - $err.level
 
 `$err.level` - severity level for the error
 
-### Error info
+### Error info - $err.info
 
 `$err.info` - text describing the error
 
-### Error reply code
+### Error reply code - $err.rcode
 
 `$err.rcode` - recommended reply code
 
-### Error reply reason
+### Error reply reason - $err.rreason
 
 `$err.rreason` - recommended reply reason phrase
 
-### From URI domain
+### From URI domain - $fd
 
 `$fd` - reference to domain in URI of 'From' header
 
-### From display name
+### From display name - $fn
 
 `$fn` - reference to display name of 'From' header
 
-### Forced socket
+### Forced socket - $fs
 
 `$fs` - reference to the forced socket for message sending (if any) in the form proto:ip:port
 
@@ -393,23 +393,23 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it routing script)
 
 
-### From tag
+### From tag - $ft
 
 `$ft` - reference to tag parameter of 'From' header
 
-### From URI
+### From URI - $fu
 
 `$fu` - reference to URI of 'From' header
 
-### From URI username
+### From URI username - $fU
 
 `$fU` - reference to username in URI of 'From' header
 
-### SIP message buffer
+### SIP message buffer - $mb
 
 `$mb` - reference to SIP message buffer
 
-### Message Flags
+### Message Flags - $mf
 
 `$mf` - reference to message/transaction flags set for current SIP request
 
@@ -417,7 +417,7 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Message Flags in hexadecimal
+### Message Flags in hexadecimal - $mF
 
 `$mF` -reference to message/transaction flags set for current SIP request in hexa
 
@@ -425,58 +425,58 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### SIP message ID
+### SIP message ID - $mi
 
 `$mi` - reference to SIP message id
 
-### SIP message length
+### SIP message length - $ml
 
 `$ml` - reference to SIP message length
 
-### Domain in SIP Request's original URI
+### Domain in SIP Request's original URI - $od
 
 `$od` - reference to domain in request's original R-URI
 
-### Port of SIP request's original URI
+### Port of SIP request's original URI - $op
 
 `$op` - reference to port of original R-URI
 
-### Transport protocol of SIP request original URI
+### Transport protocol of SIP request original URI - $oP
 
 `$oP` - reference to transport protocol of original R-URI
 
-### SIP Request's original URI
+### SIP Request's original URI - $ou
 
 `$ou` - reference to request's original URI
 
-### Username in SIP Request's original URI
+### Username in SIP Request's original URI - $oU
 
 `$oU` - reference to username in request's original URI
 
-### Domain in SIP Request's P-Preferred-Identity header URI
+### Domain in SIP Request's P-Preferred-Identity header URI - $pd
 
 `$pd` - reference to domain in request's P-Preferred-Identity header URI (see RFC 3325)
 
-### Display Name in SIP Request's P-Preferred-Identity header
+### Display Name in SIP Request's P-Preferred-Identity header - $pn
 
 `$pn` - reference to Display Name in request's P-Preferred-Identity header (see RFC 3325)
 
-### Process id
+### Process id - $pp
 
 `$pp` - reference to process id (pid)
 
-### Protocol of received message
+### Protocol of received message - $pr
 `$pr` or `$proto` - protocol of received message (UDP, TCP, TLS, SCTP)
 
-### User in SIP Request's P-Preferred-Identity header URI
+### User in SIP Request's P-Preferred-Identity header URI - $pU
 
 `$pU` - reference to user in request's P-Preferred-Identity header URI (see RFC 3325)
 
-### URI in SIP Request's P-Preferred-Identity header
+### URI in SIP Request's P-Preferred-Identity header - $pu
 
 `$pu` - reference to URI in request's P-Preferred-Identity header (see RFC 3325)
 
-### Domain in SIP Request's URI
+### Domain in SIP Request's URI - $rd
 
 `$rd` - reference to domain in request's URI
 
@@ -484,25 +484,25 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it routing script)
 
 
-### Body of request/reply
+### Body of request/reply - $rb
 
 `$rb` - reference to message body
 
-### Returned code
+### Returned code - $rc
 
 `$rc` - reference to returned code by last invoked function
 
 `$retcode` - same as `$rc`
 
-### Remote-Party-ID header URI
+### Remote-Party-ID header URI - $re
 
 `$re` - reference to Remote-Party-ID header URI
 
-### SIP request's method
+### SIP request's method - $rm
 
 `$rm` - reference to request's method
 
-### SIP request's port
+### SIP request's port - $rp
 
 `$rp` - reference to port of R-URI
 
@@ -510,23 +510,23 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it routing script)
 
 
-### Transport protocol of SIP request URI
+### Transport protocol of SIP request URI - $rP
 
 `$rP` - reference to transport protocol of R-URI
 
-### SIP reply's reason
+### SIP reply's reason - $rr
 
 `$rr` - reference to reply's reason
 
-### SIP reply's status
+### SIP reply's status - $rs
 
 `$rs` - reference to reply's status
 
-### Refer-to URI
+### Refer-to URI - $rt
 
 `$rt` - reference to URI of refer-to header
 
-### SIP Request's URI
+### SIP Request's URI - $ru
 
 `$ru` - reference to request's URI
 
@@ -534,7 +534,7 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it routing script)
 
 
-### Username in SIP Request's URI
+### Username in SIP Request's URI - $rU
 
 `$rU` - reference to username in request's URI
 
@@ -542,7 +542,7 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it routing script)
 
 
-### Q value of the SIP Request's URI
+### Q value of the SIP Request's URI - $ru_q
 
 `$ru_q` - reference to q value of the R-URI
 
@@ -550,15 +550,15 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it routing script)
 
 
-### Received IP address
+### Received IP address - $Ri
 
 `$Ri` - reference to IP address of the interface where the request has been received
 
-### Received port
+### Received port - $Rp
 
 `$Rp` - reference to the port where the message was received
 
-### Script flags
+### Script flags - $sf
 
 `$sf` - reference to script flags - decimal output
 
@@ -566,7 +566,7 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### Script flags
+### Script flags - $sF
 
 `$sF` - reference to script flags - hexa output
 
@@ -574,63 +574,63 @@ If loose_route() returns TRUE a destination uri is set according to the first Ro
 > It is R/W variable (you can assign values to it from routing logic)
 
 
-### IP source address
+### IP source address - $si
 
 `$si` - reference to IP source address of the message
 
-### Source port
+### Source port - $sp
 
 `$sp` - reference to the source port of the message
 
-### To URI Domain
+### To URI Domain - $td
 
 `$td` - reference to domain in URI of 'To' header
 
-### To display name
+### To display name - $tn
 
 `$tn` - reference to display name of 'To' header
 
-### To tag
+### To tag - $tt
 
 `$tt` - reference to tag parameter of 'To' header
 
-### To URI
+### To URI - $tu
 
 `$tu` - reference to URI of 'To' header
 
-### To URI Username
+### To URI Username - $tU
 
 `$tU` - reference to username in URI of 'To' header
 
-### Formatted date and time
+### Formatted date and time - $time
 
 `$time(format)` - returns the string formatted time according to UNIX date (see: **man date**).
 
-### Branch index
+### Branch index - $T_branch_idx
 
 `$T_branch_idx` - the index (starting with 1 for the first branch) of the branch for which is executed the branch_route[]. If used outside of branch_route[] block, the value is '0'. This is exported by TM module.
 
-### String formatted time
+### String formatted time - $Tf
 
 `$Tf` - reference string formatted time
 
-### Current unix time stamp in seconds
+### Current unix time stamp in seconds - $Ts
 
 `$Ts` - reference to current unix time stamp in seconds
 
-### Current microseconds of the current second
+### Current microseconds of the current second - $Tsm
 
 `$Tsm` - reference to current microseconds of the current second
 
-### Startup unix time stamp
+### Startup unix time stamp - $TS
 
 `$TS` - reference to startup unix time stamp
 
-### User agent header
+### User agent header - $ua
 
 `$ua` - reference to user agent header field
 
-### SIP Headers
+### SIP Headers - $hdr
 
 `$(hdr(name)[N])` - represents the body of the N-th header identified by 'name'. If [N] is omitted then the body of the first header is printed. The first header is got when N=0, for the second N=1, a.s.o. To print the last header of that type, use -1, no other negative values are supported now. No white spaces are allowed inside the specifier (before `}`, before or after `{`, [, ] symbols). When N='*', all headers of that type are printed.
 
@@ -662,7 +662,7 @@ Note that both examples above are semantically equivalent but the variables take
 
 These sequences are exported, and mainly used, by xlog module to print messages in many colors (foreground and background) using escape sequences. 
 
-### Foreground and background colors
+### Foreground and background colors - $C
 
 `$C(xy)` - reference to an escape sequence. ¿x¿ represents the foreground color and ¿y¿ represents the background color.
 
