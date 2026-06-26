@@ -185,6 +185,6 @@ or
 Since the **async** operations are tightly coupled with the transactional engine, they can only be performed in routes where a SIP transaction is present and is awaiting completion:
 
 * request_route
-* onreply_route (*may be included in the future*)
+* onreply_route
 
 On the other hand, the **launch** statement should work from **any route**, as it is not dependent on the underlying SIP transaction.
