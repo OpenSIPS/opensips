@@ -64,7 +64,7 @@ static struct list_head *rtp_relay_contexts;
 
 
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
-static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx, str *to_tag);
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
 static void rtp_relay_dlg_req_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
 static void rtp_relay_ctx_release(void *param);
 
@@ -552,9 +552,15 @@ static inline void rtp_relay_fill_sess_leg(struct rtp_relay_ctx *ctx,
 		struct rtp_relay_sess *sess, int type, str *tag, int index)
 {
 	struct rtp_relay_leg *leg = rtp_relay_get_leg(ctx, tag, index);
-	if ((leg && index != RTP_RELAY_ALL_BRANCHES && sess->legs[RTP_RELAY_PEER(type)] == leg) ||
-			(!leg && index != RTP_RELAY_ALL_BRANCHES))
+	struct rtp_relay_leg *peer = sess->legs[RTP_RELAY_PEER(type)];
+
+	if (leg == peer)
+		leg = NULL;
+	if (!leg && index != RTP_RELAY_ALL_BRANCHES) {
 		leg = rtp_relay_get_leg(ctx, tag, RTP_RELAY_ALL_BRANCHES);
+		if (leg == peer)
+			leg = NULL;
+	}
 	rtp_relay_push_sess_leg(sess, leg, type);
 }
 
@@ -985,7 +991,11 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 		DLG_VAL_TYPE_NONE);
 
 	ctx->established = sess;
-	if (rtp_relay_dlg_callbacks(dlg, ctx, NULL) < 0)
+	rtp_relay_fill_dlg(ctx, &dlg->callid, dlg->h_id, dlg->h_entry,
+			NULL, &dlg->legs[DLG_CALLER_LEG].tag,
+			dlg->legs_no[DLG_LEG_200OK] ?
+				&dlg->legs[callee_idx(dlg)].tag : NULL);
+	if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
 		goto error;
 	rtp_relay_dlg_req_callbacks(dlg, ctx);
 
@@ -1674,16 +1684,10 @@ static void rtp_relay_dlg_req_callbacks(struct dlg_cell *dlg, struct rtp_relay_c
 }
 
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
-		struct rtp_relay_ctx *ctx, str *to_tag)
+		struct rtp_relay_ctx *ctx)
 {
 	if (rtp_relay_dlg_ctx_idx == -1)
 		return 0;
-
-	if (!to_tag && dlg->legs_no[DLG_LEG_200OK] != 0)
-		to_tag = &dlg->legs[callee_idx(dlg)].tag;
-
-	rtp_relay_fill_dlg(ctx, &dlg->callid, dlg->h_id, dlg->h_entry,
-			NULL, &dlg->legs[DLG_CALLER_LEG].tag, to_tag);
 
 	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
 			rtp_relay_dlg_mi, NULL, NULL) < 0)
@@ -1719,36 +1723,36 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 
 	rtp_sess_set_success(sess);
 	ctx->established = sess;
-	if (!rtp_relay_ctx_established(ctx)) {
-		dlg = rtp_relay_dlg.get_dlg();
-		if (!dlg) {
-			LM_ERR("could not find dialog!\n");
+
+	dlg = rtp_relay_dlg.get_dlg();
+	if (!dlg) {
+		LM_ERR("could not find dialog!\n");
+		return -1;
+	}
+
+	if (dlg->legs_no[DLG_LEG_200OK]) {
+		to_tag = &dlg->legs[callee_idx(dlg)].tag;
+	} else {
+		if (parse_headers(msg, HDR_TO_F, 0) < 0 || !msg->to ||
+				parse_to_header(msg) < 0) {
+			LM_ERR("failed to parse To header\n");
 			return -1;
 		}
+
+		to_tag = &get_to(msg)->tag_value;
+
+		if (to_tag->len == 0)
+			to_tag = NULL;
+	}
+	rtp_relay_fill_dlg(ctx, &dlg->callid, dlg->h_id, dlg->h_entry,
+			NULL, &dlg->legs[DLG_CALLER_LEG].tag, to_tag);
+
+	if (!rtp_relay_ctx_established(ctx)) {
 		/* reset old pointers */
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
 
-		/* if we have a to_tag, use it from dlg,
-		 * otherwise fetch it from tm */
-		if (!dlg->legs[callee_idx(dlg)].tag.len) {
-			if (parse_headers(msg, HDR_TO_F, 0) == -1) {
-				LM_ERR("failed to parse To header\n");
-				return -1;
-			}
-
-			if (!msg->to) {
-				LM_ERR("missing To header\n");
-				return -1;
-			}
-
-			to_tag = &get_to(msg)->tag_value;
-
-			if (to_tag->len == 0)
-				to_tag = NULL;
-		}
-
-		if (rtp_relay_dlg_callbacks(dlg, ctx, to_tag) < 0) {
+		if (rtp_relay_dlg_callbacks(dlg, ctx) < 0) {
 			/* restore the state */
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
@@ -1813,6 +1817,18 @@ static int rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_msg *ms
 	struct rtp_relay_session info;
 	memset(&info, 0, sizeof info);
 	info.msg = msg;
+	if (msg->REPLY_STATUS >= 200 && msg->REPLY_STATUS < 300) {
+		if (parse_headers(msg, HDR_TO_F, 0) < 0 || !msg->to ||
+				parse_to_header(msg) < 0) {
+			LM_ERR("To header field missing\n");
+			return -1;
+		}
+		if (get_to(msg)->tag_value.len &&
+				shm_str_sync(&ctx->to_tag, &get_to(msg)->tag_value) < 0) {
+			LM_ERR("could not store tag value\n");
+			return -1;
+		}
+	}
 	info.body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 	if (!info.body) {
 		if (msg->REPLY_STATUS < 200) {
@@ -1834,17 +1850,6 @@ static int rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_msg *ms
 		}
 	}
 	info.branch = sess->index;
-	if (msg->REPLY_STATUS >= 200 && msg->REPLY_STATUS < 300 && !ctx->to_tag.s) {
-		if (!msg->to && ((parse_headers(msg, HDR_TO_F, 0) == -1) || (!msg->to))) {
-			LM_ERR("To header field missing\n");
-			return -1;
-		}
-		if (get_to(msg)->tag_value.len &&
-				shm_str_sync(&ctx->to_tag, &get_to(msg)->tag_value) < 0) {
-			LM_ERR("could not store tag value\n");
-			return -1;
-		}
-	}
 
 	if (rtp_sess_late(sess))
 		ret = rtp_relay_offer(&info, ctx, sess, type, NULL);
@@ -1882,6 +1887,8 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 						rtp_sess_disabled(sess), rtp_sess_pending(sess));
 				goto end;
 			}
+			rtp_relay_fill_sess_leg(ctx, sess, RTP_RELAY_CALLEE,
+					NULL, rtp_relay_ctx_branch());
 			switch (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, p->req, sess, RTP_RELAY_CALLEE)) {
 				case 0:
 					rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess, RTP_RELAY_CALLEE);
@@ -1912,6 +1919,8 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 						rtp_relay_ctx_branch());
 				goto end;
 			}
+			rtp_relay_fill_sess_leg(ctx, sess, RTP_RELAY_CALLEE,
+					NULL, rtp_relay_ctx_branch());
 			memset(&info, 0, sizeof info);
 			info.body = get_body_part(p->req, TYPE_APPLICATION, SUBTYPE_SDP);
 			info.msg = p->req;
