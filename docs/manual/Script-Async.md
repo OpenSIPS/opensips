@@ -48,7 +48,7 @@ route
 {
     /* preparation code */
     ...
-    async(avp_db_query("SELECT credit FROM users WHERE uid='$avp(uid)'", "$avp(credit)"), resume_credit);
+    async( sql_query("SELECT credit FROM users WHERE uid='$avp(uid)'", "$avp(credit)"), resume_credit);
     /* script execution is paused right away! */
 }
 
