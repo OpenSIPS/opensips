@@ -1,20 +1,21 @@
 ---
 title: "Core Parameters"
-description: "This section lists the all the parameters exported by OpenSIPS core for script usage (to be used in opensips.cfg)."
+description: "This section lists all parameters exported by OpenSIPS core for script usage (to be used in opensips.cfg)."
 ---
 
-This section lists the all the parameters exported by **OpenSIPS** core for script usage (to be used in opensips.cfg).
+This section lists all parameters exported by **OpenSIPS** core for script usage (to be used in opensips.cfg).
 
 ## Core parameters
 
-Global parameters that can be set in configuration file. Accepted values are, depending on the actual parameters strings, numbers and yes/ no. If you need to specify either "yes" or "no" as part of a string, wrap this in double quotes.
+Global parameters available in the *opensips.cfg* configuration file. Accepted values depend on the parameter type: double-quoted strings, numbers or booleans (`true`/`false`).
 
 ### abort_on_assert
-Default value: false
+Default value is `false`.
 
   
 
-Only relevant if [asserts](https://docs.opensips.org/manual/3-1/script-corefunctions#assert) are enabled. Set to *true* in order to make OpenSIPS shut down immediately in case a script assert fails.
+Only relevant if [asserts](https://docs.opensips.org/manual/3-1/script-corefunctions#assert) are enabled. Set to `true` to make OpenSIPS shut down immediately when a script assert fails.
+
 
 Example of usage:
 ```text
@@ -25,84 +26,81 @@ Example of usage:
 
 ### advertised_address
 
-It can be an IP address or string and represents the address advertised in Via header and
-other destination lumps (e.g RR header). If empty or not set (default value) the socket
-address from where the request will be sent is used.
+This can be an IP address or string and represents the address advertised in the Via header and other destination lumps, such as Record-Route headers. If empty or not set, the socket address used to send the request is advertised.
 
 > [!WARNING]
-> Don't set it unless you know what you are doing (e.g. nat traversal).
-> You can set anything here, no check is made (e.g. foo.bar will be accepted even if foo.bar doesn't exist).
+> Do not set this unless you know what you are doing, for example when handling NAT traversal.
+> OpenSIPS does not validate this value; for example, `foo.bar` is accepted even if it does not exist.
 
 Example of usage:
 ```text
 
-    advertised_address="opensips.org"
+    advertised_address = "opensips.org"
 
 ```
 
 > [!NOTE]
-> Aside this global approach, you can also define an advertise IP and port in a per-interface manner (see the [socket](#socket) parameter). When advertise values are defined per interface, they will be used only for traffic leaving that interface only.
+> Besides this global approach, you can also define an advertised IP and port per interface using the [socket](#socket) parameter. Per-interface advertised values are used only for traffic leaving that interface.
 
 ### advertised_port
 
-The port advertised in Via header and other destination lumps (e.g. RR). If empty or not set (default value) the port from where the message will be sent is used. Same warnings as for 'advertised_address'.
+The port advertised in the Via header and other destination lumps, such as Record-Route headers. If empty or not set, the port used to send the message is advertised. The same warnings as for [advertised_address](#advertised_address) apply.
 
 Example of usage:
 ```text
 
-    advertised_port=5080
+    advertised_port = 5080
 
 ```
 
 > [!NOTE]
-> Aside this global approach, you can also define an advertise IP and port in a per-interface manner (see the [socket](#socket) parameter). When advertise values are defined per interface, they will be used only for traffic leaving that interface only.
+> Besides this global approach, you can also define an advertised IP and port per interface using the [socket](#socket) parameter. Per-interface advertised values are used only for traffic leaving that interface.
 
 ### alias
 
-Parameter to set alias hostnames for the server. It can be set many times, each value being added in a list to match the hostname when 'myself' is checked.
+Sets alias hostnames for the server. It can be set multiple times, with each value added to the list used to match the hostname when `myself` is checked.
 
-If the ":port" part is omitted, **all** ports of the given "hostname" will be considered an alias (similar behavior to port 0).
+If the `:port` part is omitted, **all** ports of the given hostname are considered aliases, similar to port `0`.
 
 > [!IMPORTANT]
-> It is necessary to include the port (the port value used in the "socket=" definitions) in the alias definition otherwise the loose_route() function will not work as expected for local forwards!
-
+> It is necessary to include the port used in the `socket` definitions in the alias definition otherwise the `loose_route()` function will not work as expected for local forwards!
 
 Example of usage:
 
 ```text
 
-    alias=udp:other.domain.com:5060
-    alias=tcp:another.domain.com:5060
+    alias = udp:other.domain.com:5060
+    alias = tcp:another.domain.com:5060
 
 ```
 
 ### auto_aliases
 
-This parameter controls if aliases should be automatically discovered and added during fixing listening sockets. The auto discovered aliases are result of the DNS lookup (if the 'socket' definition has a name and not IP) or of a reverse DNS lookup on the socket IP.
+This parameter controls whether aliases should be automatically discovered and added while fixing listening sockets. The auto-discovered aliases are the result of a DNS lookup, when the [socket](#socket) definition uses a hostname, or of a reverse DNS lookup on the socket IP.
 
-Far backward compatibility reasons, the default value is "off"/0.
+For backwards compatibility, the default value is `false`.
 
 Example of usage:
 ```text
 
-    auto_aliases=yes
-    auto_aliases=1
+    auto_aliases = true
 
 ```
 
 ### auto_scaling_cycle
-The number of seconds defining a auto-scaling cycle - the auto-scaling engine, at each cycle, is evaluating the internal load of the groups and decided if more processes needs to be created or if existing processes need to be terminated. Also see [auto_scaling_profile](#auto_scaling_profile) for more details on how the auto-scaling works.  
+The number of seconds defining an auto-scaling cycle. During each cycle, the auto-scaling engine evaluates the internal load of the process groups and decides whether more processes need to be created or existing processes need to be terminated. See [auto_scaling_profile](#auto_scaling_profile) for more details on how auto-scaling works.
 
-The default value is 1 second.
+The default value is `1` second.
+
 Example of usage:
 ```text
 
-    auto_scaling_cycle=3  # do auto-scaling checks once every 3 seconds
+    auto_scaling_cycle = 3  # do auto-scaling checks once every 3 seconds
 
 ```
 
 ### auto_scaling_profile
-Defines the behavior of the auto-scaling support, in terms of how many processes should be allowed and when to terminate or create new processes. These profiles may be used for the UDP processes (see [udp_workers](#udp_workers) or [socket](#socket) options) , TCP processes (see [tcp_workers](#tcp_workers) option) or TIMER processes (see [timer_workers](#timer_workers) option).  
+Defines the auto-scaling behavior: how many processes are allowed and when to create or terminate processes. These profiles may be used for UDP processes (see the [udp_workers](#udp_workers) or [socket](#socket) options), TCP processes (see the [tcp_workers](#tcp_workers) option) or timer processes (see the [timer_workers](#timer_workers) option).
 
 For more, see [this external description of auto-scaling](https://blog.opensips.org/2019/02/25/auto-process-scaling-a-cure-for-load-and-resources-concerns/).
 
@@ -110,253 +108,338 @@ Example of usage:
 ```text
 
     auto_scaling_profile = PROFILE_SIP
-     scale up to 6 on 70% for 4 cycles within 5   
-     scale down to 2 on 18% for 10 cycles
+        scale up to 6 on 70% for 4 cycles within 5
+        scale down to 2 on 18% for 10 cycles
 
 ```
-This profile will allow the group to fork up to 6 processes. A new process will be forked when the overall load of the group will be higher than 70% for more than 4 cycles during a 5 cycles monitoring window. A cycle is a time unit used for monitoring (like 2 seconds).  
+This profile allows the group to fork up to 6 processes. A new process is forked when the overall load of the group is higher than 70% for more than 4 cycles during a 5-cycle monitoring window. A cycle is the monitoring time unit, as defined by [auto_scaling_cycle](#auto_scaling_cycle).
 
-Also the profile will allow the group to scale down to a minimum of 2 processes. A process will be terminated when the overall load of the group will be lower than 20% during 10 cycles. The down scaling part of the profile is optional. If not defined, OpenSIPS will never down scale, but only up scale.
+The profile also allows the group to scale down to a minimum of 2 processes. A process is terminated when the overall load of the group is lower than 18% during 10 cycles. The down-scaling part of the profile is optional. If not defined, OpenSIPS will only scale up.
 
 ### check_via
 
-Check if the address in top most via of replies is local. Default value is 0 (check disabled).
+Checks whether the address in the topmost Via header of replies is local. Default value is `false` (check disabled).
 
 Example of usage:
 
 ```text
-check_via=1 
+
+    check_via = true
+
 ```
 
 ### chroot
 
-The value must be a valid path in the system. If set, **OpenSIPS** will chroot (change root directory) to its value.
+The value must be a valid path in the system. If set, **OpenSIPS** will chroot, changing its root directory to this path.
 
 Example of usage:
 
 ```text
-chroot=/other/fakeroot
+
+    chroot = "/other/fakeroot"
+
 ```
 
 ### debug_mode
-Enabling the **debug_mode** option is a fast way to debug your **OpenSIPS**. This option will automatically force:
-* staying in foreground (do not detach from console)
-* set logging level to 4 (debug)
-* set logging to standard error
-* enable core dumping
-* set UDP worker processes to 2
-* set TCP worker processes to 2
+Enabling **debug_mode** is a fast way to debug **OpenSIPS**. This option automatically forces:
+* foreground mode (do not detach from the console)
+* logging level 4 (debug)
+* logging to standard error
+* core dumping
+* UDP worker processes to 2, if UDP is enabled
+* TCP worker processes to 2, or the maximum configured value if lower than 2, if TCP is enabled
 
-Default value is false/0 (disabled).
+Default value is `false` (disabled).
 
-NOTE that enabling this option will override all the other individual parameters like foreground mode, log level, udp_workers, tcp_workers, etc.
+> [!NOTE]
+> Enabling this option overrides individual parameters such as foreground mode, log level, `udp_workers` and `tcp_workers`.
+
+Example of usage:
+```text
+
+    debug_mode = true
+
+```
 
 ### db_version_table
 
-The name of the table version to be used by the DB API to check the version of the used tables.  
+The name of the database table used by the DB API to check table versions.
 
-Default value is **"version"**
+Default value is `"version"`.
 
 Example of usage:
-
 ```text
-db_version_table="version_1_8"
+
+    db_version_table = "version_3_1"
+
 ```
 
 ### db_default_url
 
-The default DB URL to be used by modules if no per-module URL is given. Default is NULL (not defined)
+The default DB URL used by modules when no per-module URL is configured.
+
+Default value is `NULL` (not defined).
 
 Example of usage:
-
 ```text
-db_default_url="mysql://opensips:opensipsrw@localhost/opensips"
+
+    db_default_url = "mysql://opensips:opensipsrw@localhost/opensips"
+
 ```
 
 ### db_max_async_connections
 
-Maximum number of TCP connections opened from a single OpenSIPS worker to each individual SQL backend. Default value is 10.
+Maximum number of TCP connections opened from a single OpenSIPS worker to each individual SQL backend.
+
+Default value is `10`.
 
 Individual backends are determined from DB URLs as follows:
 ```text
-[ scheme, user, pass, host, port, database ]
+
+    [ scheme, user, pass, host, port, database ]
+
 ```
 
 Example of usage:
-
 ```text
 
-    db_max_async_connections=220
+    db_max_async_connections = 220
 
 ```
 
 ### disable_503_translation
 
-If 'yes', OpenSIPS will not translate the received 503 replies into 500 replies (RFC 3261 clearly states that a proxy should never relay a 503 response, but instead it must transform it into a 500).
+If set to `true`, OpenSIPS will not translate received 503 replies into 500 replies. RFC 3261 states that a proxy should never relay a 503 response, but transform it into a 500 response instead.
 
-Default value is 'no' (do translation).
+Default value is `false` (translation enabled).
+
+Example of usage:
+```text
+
+    disable_503_translation = true
+
+```
 
 ### disable_core_dump
 
-Can be 'yes' or 'no'. By default core dump limits are set to unlimited or
-a high enough value. Set this config variable to 'yes' to disable core dump-ing
-(will set core limits to 0).
+If set to `true`, OpenSIPS disables core dumps by setting the core dump size limit to 0. By default, core dump limits are set to unlimited or to a high enough value.
 
-Default value is 'no'.
+Default value is `false`.
 
 Example of usage:
+```text
 
-```c
-disable_core_dump=yes
+    disable_core_dump = true
+
 ```
 
 ### disable_dns_blacklist
 
-The DNS resolver, when configured with failover, can automatically store in a temporary blacklist the failed destinations. This will prevent (for a limited period of time) **OpenSIPS** to send requests to destination known as failed. So, the blacklist can be used as a memory for the DNS resolver. 
+When DNS failover is configured, the DNS resolver can temporarily blacklist failed destinations. This prevents **OpenSIPS**, for a limited time, from sending requests to destinations known to have failed. The blacklist acts as a memory for the DNS resolver.
 
-The temporary blacklist created by DNS resolver is named "dns" and it is by default selected for usage (no need use the use_blacklist()) function. The rules from this list have a life time of 4 minutes - you can change it at compile time, from resolve.c .
+The temporary blacklist created by the DNS resolver is named `dns` and is selected by default for failover usage, so there is no need to call `use_blacklist()` for it. The rules in this list have a lifetime of 4 minutes; this can be changed at compile time in `resolve.c`.
 
-Can be 'yes' or 'no'. By default the blacklist is disabled (Default value is 'yes').
+If set to `true`, this DNS blacklist is disabled.
+
+Default value is `true` (DNS blacklist disabled).
 
 Example of usage:
-
 ```text
-disable_dns_blacklist=no
+
+    disable_dns_blacklist = false
+
 ```
 
 ### disable_dns_failover
 
-Can be 'yes' or 'no'. By default DNS-based failover is enabled. Set this config variable to 'yes' to disable the DNS-based failover. This is a global option, affecting the core and the modules also.
+If set to `true`, OpenSIPS disables DNS-based failover. This is a global option, affecting both the core and the modules.
 
-Default value is 'no'.
+Default value is `false` (DNS-based failover enabled).
 
 Example of usage:
-
 ```text
-disable_dns_failover=yes
+
+    disable_dns_failover = true
+
 ```
 
 ### disable_stateless_fwd
 
-Can be 'yes' or 'no'. This parameter controls the handling of stateless replies:
+Controls the handling of stateless replies:
+
 ```text
 
-    yes - drop stateless replies if stateless fwd functions (like forward) are not used in script
-    no - forward stateless replies
+    true  - drop stateless replies if stateless forwarding functions, such as forward(), are not used in the script
+    false - forward stateless replies
 
 ```
-Default value is 'yes'.
+
+Default value is `true`.
+
+Example of usage:
+```text
+
+    disable_stateless_fwd = false
+
+```
 
 ### dns
 
-This parameter controls if the SIP server should attempt to lookup its own domain name in DNS. If this parameter is set to yes and the domain name is not in DNS a warning is printed on syslog and a "received=" field is added to the via header. 
+This parameter controls whether the SIP server should attempt to look up its own domain name in DNS. If this parameter is set to `true` and the domain name is not in DNS, a warning is printed to syslog and a `received=` field is added to the Via header.
 
-Default is no.
+Default value is `false`.
+
+Example of usage:
+```text
+
+    dns = true
+
+```
 
 ### dns_retr_time
 
-Time in seconds before retrying a dns request. Default value is system specific,
-depends also on the '/etc/resolv.conf' content (usually 5s).
+Time in seconds before retrying a DNS request. By default, this value is system-specific and also depends on the `/etc/resolv.conf` content, usually `5` seconds.
 
 Example of usage:
-
 ```text
-dns_retr_time=3
+
+    dns_retr_time = 3
+
 ```
 
 ### dns_retr_no
 
-Number of dns retransmissions before giving up. Default value is system specific,
-depends also on the '/etc/resolv.conf' content (usually 4).
+Number of DNS retransmissions before giving up. By default, this value is system-specific and also depends on the `/etc/resolv.conf` content, usually `4`.
 
 Example of usage:
-
 ```text
-dns_retr_no=3
+
+    dns_retr_no = 3
+
 ```
 
 ### dns_servers_no
 
-How many dns servers from the ones defined in '/etc/resolv.conf' will be used. 
-Default value is to use all of them.
+How many DNS servers from `/etc/resolv.conf` will be used.
+
+By default, all DNS servers are used.
 
 Example of usage:
-
 ```text
-dns_servers_no=2
+
+    dns_servers_no = 2
+
 ```
 
 ### dns_try_ipv6
 
-Can be 'yes' or 'no'. If it is set to 'yes' and a DNS lookup fails, it will retry it
-for ipv6 (AAAA record). Default value is 'no'.
+If set to `true` and a DNS lookup fails, OpenSIPS retries the lookup for IPv6 using an AAAA record.
+
+Default value is `false`.
 
 Example of usage:
-
 ```text
-dns_try_ipv6=yes
+
+    dns_try_ipv6 = true
+
 ```
 
 ### dns_try_naptr
 
-Disables the NAPTR lookups when doing DNS based routing for SIP requests - if disabled, the DNS lookup will start with SRV lookups.
-Can be 'yes' or 'no'. By default it is enabled, value 'yes'.
+Controls whether NAPTR lookups are performed when doing DNS-based routing for SIP requests. If disabled, DNS lookup starts with SRV lookups.
+
+Default value is `true`.
 
 Example of usage:
-
 ```text
-dns_try_naptr=no
+
+    dns_try_naptr = false
+
 ```
 
 ### dns_use_search_list
 
-Can be 'yes' or 'no'. If set to 'no', the search list in '/etc/resolv.conf'
-will be ignored (=> fewer lookups => gives up faster). Default value is 'yes'.
+If set to `false`, the search list in `/etc/resolv.conf` is ignored, which means fewer lookups and faster DNS failure handling.
 
-HINT: even if you don't have a search list defined, setting this option
-to 'no' will still be "faster", because an empty search list is in 
-fact search "" (so even if the search list is empty/missing there will
-still be 2 dns queries, eg. foo+'.' and foo+""+'.')
+Default value is `true`.
+
+> [!NOTE]
+> Even if you do not have a search list defined, setting this option to `false` can still be faster because an empty search list still causes two DNS queries, for example `foo.` and `foo`.
 
 Example of usage:
-
 ```text
-dns_use_search_list=no
+
+    dns_use_search_list = false
+
 ```
 
 ### dst_blacklist
 
-Definition of a static (read-only) IP/destination blacklist. These lists can be selected from script (at runtime) to filter  the outgoing requests, based on IP, protocol, port, etc.
+Defines an IP/destination blacklist. These lists can be selected from the script, at runtime, to filter outgoing requests based on IP, protocol, port, etc.
 
-Its primary purposes will be to prevent sending requests to critical IPs (like GWs) due DNS or to avoid sending to destinations that are known to be unavailable (temporary or permanent). 
+The primary purpose is to prevent sending requests to critical IPs, such as gateways, because of bad DNS entries or to avoid sending requests to destinations known to be unavailable, either temporarily or permanently.
 
-Example of usage:
+The grammar for specifying a list is:
 
 ```text
 
-   # filter out requests going to ips of my gws
-   dst_blacklist = gw:{( tcp , 192.168.3.100 , 5060 , "" ),( any , 192.168.3.101 , 0 , "" )}
-   # block requests going to "evil" networks
-   dst_blacklist = net_filter:{ ( any , 192.168.1.120/255.255.255.0 , 0 , "" )}
-   # block message requests with nasty words
-   dst_blacklist = msg_filter:{ ( any , 192.168.20.0/255.255.255.0 , 0 , "MESSAGE*ugly_word" )}
-   # block requests not going to a specific subnet
-   dst_blacklist = net_filter2:{ !( any , 193.168.30.0/255.255.255.0 , 0 , "" )}
+    dst_blacklist = id [/bl_flags] [: bl_rules]
 
 ```
 
-Each rule is defined by:
-* protocol : TCP, UDP, TLS or "any" for anything
-* port : number or 0 for any
-* ip/mask
-* test patter - is a filename like matching (see  "man 3 fnmatch") applied on the outgoing request buffer (first_line+hdrs+body) 
+* **id** is a unique identifier of the blacklist.
+* **bl_flags** contains a set of optional modifiers:
+
+```text
+
+    bl_flags = bl_flag [, bl_flag]*
+    bl_flag = "expire" | "default" | "readonly"
+
+```
+
+* **bl_rules** contains one or more blacklist rules:
+
+```text
+
+    bl_rules = [!] ipnet | { bl_rule [, bl_rule]* }
+    bl_rule = [!] ( [bl_proto, ] ipnet [, port [, bl_pattern]] )
+
+```
+
+The blacklist modifiers have the following meanings:
+* `expire`: the blacklist may contain entries that expire.
+* `default`: the blacklist is used by default when sending requests, without having to explicitly set it using the `use_blacklist()` function.
+* `readonly`: the blacklist is statically defined in the script and cannot change at runtime.
+
+When **bl_flags** is missing, the `readonly` flag is explicitly set.
+
+A rule has the following properties:
+* if `!` is at the beginning of the rule, it negates the entire rule.
+* **bl_proto**: any supported protocol, or `any` for any protocol; if missing, the default is `any`.
+* **ipnet**: IP or IP/MASK that should match the rule.
+* **port**: port number or `0` for any port.
+* **bl_pattern**: filename-like matching, see `man 3 fnmatch`, applied on the outgoing request buffer (`first_line + hdrs + body`).
+
+Example of usage:
+```text
+
+    # filter out requests going to IPs of my gateways
+    dst_blacklist = gw:{(tcp, 192.168.3.100, 5060, ""), (any, 192.168.3.101, 0, "")}
+    # block requests going to "evil" networks
+    dst_blacklist = net_filter:{(any, 192.168.1.120/255.255.255.0, 0, "")}
+    # block message requests with nasty words
+    dst_blacklist = msg_filter:{(any, 192.168.20.0/255.255.255.0, 0, "MESSAGE*ugly_word")}
+    # block requests not going to a specific subnet
+    dst_blacklist = net_filter2:{!(any, 193.168.30.0/255.255.255.0, 0, "")}
+    # define a dynamic list that is built at runtime and has expiring entries
+    dst_blacklist = net_dynamic/expire
+
+```
 
 ### enable_asserts
-Default value: false
+Default value is `false`.
 
-  
-
-Set to *true* in order to enable the [assert](https://docs.opensips.org/manual/3-1/script-corefunctions#assert) script statement.
+Set to `true` to enable the [assert](https://docs.opensips.org/manual/3-1/script-corefunctions#assert) script statement.
 
 Example of usage:
 ```text
@@ -367,59 +450,61 @@ Example of usage:
 
 ### event_pkg_threshold
 
-A number representing the percentage threshold above which the E_CORE_PKG_THRESHOLD event is raised, warning about low amount of free private memory. It accepts integer values between 0 and 100.
+A number representing the percentage threshold above which the E_CORE_PKG_THRESHOLD event is raised, warning about a low amount of free private memory. It accepts integer values between `0` and `100`.
 
-Default value is 0 ( event disabled ).
+Default value is `0` (event disabled).
 
 Example of usage:
-
 ```text
-event_pkg_threshold = 90
+
+    event_pkg_threshold = 90
+
 ```
 
 ### event_shm_threshold
 
-A number representing the percentage threshold above which the E_CORE_SHM_THRESHOLD event is raised, warning about low amount of free shared memory. It accepts integer values between 0 and 100.
+A number representing the percentage threshold above which the E_CORE_SHM_THRESHOLD event is raised, warning about a low amount of free shared memory. It accepts integer values between `0` and `100`.
 
-Default value is 0 ( event disabled ).
+Default value is `0` (event disabled).
 
 Example of usage:
-
 ```text
-event_shm_threshold = 90
+
+    event_shm_threshold = 90
+
 ```
 
 ### exec_dns_threshold
 
-A number representing the maximum number of microseconds a DNS query is expected to last. Anything above the set number will trigger a warning message to the logging facility.
+A number representing the maximum number of microseconds a DNS query is expected to take. Anything above the set number triggers a warning message to the logging facility.
 
-Default value is 0 ( logging disabled ).
+Default value is `0` (logging disabled).
 
 Example of usage:
-
 ```text
-exec_dns_threshold = 60000
+
+    exec_dns_threshold = 60000
+
 ```
 
 ### exec_msg_threshold
 
-A number representing the maximum number of microseconds the processing of a SIP msg is expected to last. Anything above the set number will trigger a warning message to the logging facility.
-Aside from the message and the processing time, the most time consuming function calls from the script will also be logged.
+A number representing the maximum number of microseconds the processing of a SIP message is expected to take. Anything above the set number triggers a warning message to the logging facility. Aside from the message and the processing time, the most time-consuming function calls from the script are also logged.
 
-Default value is 0 ( logging disabled ).
+Default value is `0` (logging disabled).
 
 Example of usage:
-
 ```text
-exec_msg_threshold = 60000
+
+    exec_msg_threshold = 60000
+
 ```
 
 ### include_file
 
-Can be called from outside route blocks to load additional routes/blocks or from inside them to simply perform more functions.  The file path can be relative or absolute.  If it is a relative path, first attempt to locate it is relative to the directory from which OpenSIPS is started.  If that fails, second try is relative to directory of the file that includes it.  Will throw an error if file is not found.
+Can be called outside route blocks to load additional routes or blocks, or inside route blocks to load additional script actions. The file path can be relative or absolute. If the path is relative, OpenSIPS first tries to locate it relative to the directory from which OpenSIPS was started. If that fails, it tries the directory of the file that includes it. An error is raised if the file is not found.
 
 Example of usage:
-
 ```text
 
     include_file "proxy_regs.cfg"
@@ -428,10 +513,9 @@ Example of usage:
 
 ### import_file
 
-Same as include_file.
+Alias for [include_file](#include_file).
 
 Example of usage:
-
 ```text
 
     import_file "proxy_regs.cfg"
@@ -441,106 +525,117 @@ Example of usage:
 ### listen
 
 > [!WARNING]
-> Replaced in OpenSIPS 3.1
+> Replaced in OpenSIPS 3.1.
 
-
-This parameter was replaced by the [#socket|socket]] parameter, preserving exactly the same format and behavior.
+This parameter was replaced by the [socket](#socket) parameter, preserving exactly the same format and behavior.
 
 ### log_facility
 
-If **OpenSIPS** logs to syslog, you can control the facility for logging. Very
-useful when you want to divert all **OpenSIPS** logs to a different log file.
-See the man page syslog(3) for more details.
+If **OpenSIPS** logs to syslog, this parameter controls the syslog facility. It is useful when diverting all **OpenSIPS** logs to a different log file. See `syslog(3)` for more details.
 
-Default value is LOG_DAEMON.
+Default value is `LOG_DAEMON`.
+
 
 Example of usage:
-
 ```text
-log_facility=LOG_LOCAL0
+
+    log_facility = LOG_LOCAL0
+
 ```
 
 ### log_level
 
-Set the logging level (how verbose OpenSIPS should be). Higher values make **OpenSIPS** print more  messages.
+Sets the logging level, controlling how verbose OpenSIPS should be. Higher values make **OpenSIPS** print more messages.
 
-Examples of usage:
+Default value is `2` (notice level).
 
+Example of usage:
 ```text
 
-    log_level=1 -- print only important messages (like errors or more critical situations) 
-    - recommended for running proxy as daemon
+    # print only important messages, such as errors or more critical situations;
+    # recommended for running a proxy as a daemon
+    log_level = 1
 
-    log_level=4 -- print a lot of debug messages - use it only when doing debugging sessions
+    # print many debug messages; use only during debugging sessions
+    log_level = 4
 
 ```
 
 Actual values are:
-* -3 - Alert level
-* -2 - Critical level
-* -1 - Error level
-* 1 - Warning level
-* 2 (default) - Notice level
-* 3 - Info level
-* 4 - Debug level
+* `-3`: alert level
+* `-2`: critical level
+* `-1`: error level
+* `1`: warning level
+* `2`: notice level
+* `3`: info level
+* `4`: debug level
 
-The *log_level* parameter is usually used in concordance with the [log_stderror](Script-CoreParameters.md#log_stderror) parameter.
+The `log_level` parameter is usually used together with [log_stderror](#log_stderror).
 
-The value of the *log_level* parameter can also be get and set dynamically using the [log_level](Interface-CoreMI.md#log_level) Core MI function or [`$log_level`](Script-CoreVar.md#log_level) script variable.
+The value of the `log_level` parameter can also be read and set dynamically using the [log_level](Interface-CoreMI.md#log_level) Core MI function or the [`$log_level`](Script-CoreVar.md#log_level) script variable.
 
 ### log_name
 
-Set the id to be printed in syslog. The value must be a string and has
-effect only when **OpenSIPS** runs in daemon mode (fork=yes), after daemonize.
-Default value is argv[0].
+Sets the identifier printed in syslog. The value must be a string and has effect only when **OpenSIPS** runs in daemon mode, after daemonizing.
+
+Default value is `argv[0]`.
 
 Example of usage:
-
 ```text
-log_name="osips-5070"
+
+    log_name = "osips-5070"
+
 ```
 
 ### log_stderror
 
-With this parameter you can make OpenSIPS write log messages to standard error. Possible values are:
+Controls whether **OpenSIPS** writes log messages to standard error.
 
-- "no" (default) - write the messages to syslog
+* `false` (default): write messages to syslog.
+* `true`: write messages to standard error.
 
-- "yes" - write the messages to standard error
+Default value is `false`.
 
 Example of usage:
+```text
 
-```c
-log_stderror=yes
+    log_stderror = true
+
 ```
 
 ### max_while_loops
 
-The parameters set the value of maximum loops that can be done within a "while". Comes as a protection to avoid infinite loops in config file execution. Default is 100.
+Sets the maximum number of loop iterations allowed within a `while` statement. This protects against infinite loops during configuration script execution.
+
+Default value is `10000`.
 
 Example of usage:
-
 ```text
-max_while_loops=200
+
+    max_while_loops = 200
+
 ```
 
 ### maxbuffer
 
-The size in bytes not to be exceeded during the auto-probing procedure of discovering the maximum buffer size for receiving UDP messages. Default value is 262144.
+The maximum receive buffer size, in bytes, that OpenSIPS will accept during the auto-probing procedure used to discover the maximum buffer size for receiving UDP messages.
+
+Default value is `262144` bytes.
 
 Example of usage:
-
 ```text
-maxbuffer=65536
+
+    maxbuffer = 65536
+
 ```
 
 ### mem-group
 
-Defines a group of modules (by name) to get separate memory statistics. OpenSIPS will provide per-group memory information - the number of allocated fragments, the amount of used memory and the amount of real used memory (with memory manager overhead). This is useful if you want to monitor the memory usage of a certain module (or group of modules).
+Defines a group of modules, by name, for separate memory statistics. OpenSIPS provides per-group memory information: number of allocated fragments, amount of used memory and amount of real used memory, including memory manager overhead. This is useful when monitoring memory usage for a specific module or group of modules.
 
-In order for the feature to work you have to run "make generate-mem-stats" and complile with the variable SHM_EXTRA_STATS defined.
+This feature requires running `make generate-mem-stats` and compiling with the `SHM_EXTRA_STATS` variable defined.
 
-Usage example:
+Example of usage:
 ```text
 
     mem-group = "interest": "core" "tm"
@@ -548,38 +643,33 @@ Usage example:
 
 ```
 
-For the above example the generated statistics will be named: shmem_group_interest:fragments, shmem_group_interest:memory_used, shmem_group_interest:real_used.
+For the above example, the generated statistics are named `shmem_group_interest:fragments`, `shmem_group_interest:memory_used` and `shmem_group_interest:real_used`.
 
 Multiple groups can be defined, but they must not have the same name.
 
-If you want to generate the statistics for the default group (all the other modules not included in a group) you have to complile with the variable SHM_SHOW_DEFAULT_GROUP defined.
+To generate statistics for the default group, which includes all modules not included in another group, compile with the `SHM_SHOW_DEFAULT_GROUP` variable defined.
 
 ### mem_warming
 
-Default value: off
+Only relevant when the `HP_MALLOC` compile flag is enabled. If set to `true`, on each startup, OpenSIPS attempts to restore the memory fragmentation pattern it had before the stop/restart. If no [mem_warming_pattern_file](#mem_warming_pattern_file) from a previous run is found, memory warming is skipped and the memory allocator starts with a large memory chunk, like all other allocators.
 
-  
+Memory warming is useful when dealing with high volumes of traffic, such as thousands of CPS on multi-core machines. The more cores are used, the more useful memory warming becomes, because processes must mutually exclude themselves when chopping up the initial large memory chunk. By performing fragmentation on startup, OpenSIPS also behaves optimally in the first minutes after a restart. Fragmentation usually lasts a few seconds, for example about 5 seconds on an 8GB shared memory pool and 4.1GHz CPU; traffic is not processed during this period.
 
-Only relevant when the HP_MALLOC compile flag is enabled. If set to "on", on each startup, OpenSIPS will attempt to restore the memory fragmentation pattern it had before the stop/restart. If no [pattern_file](https://docs.opensips.org/manual/3-1/script-coreparameters#tcp_accept_aliases) from a previous run is found, memory warming is skipped, and the memory allocator simply starts with a big chunk of memory, like all other allocators.
-
-  
-
-Memory warming is useful when dealing with high volumes of traffic (thousands of cps on multi-core machines - the more cores, the more useful), because processes must mutually exclude themselves when chopping up the initial big memory chunk. By performing fragmentation on startup, OpenSIPS will also behave optimally in the first minute(s) after a restart. Fragmentation usually lasts a few seconds (e.g. ~5 seconds on an 8GB shm pool and 3.1Ghz CPU) - traffic will not be processed at all during this period.
+Default value is `false`.
 
 Example of usage:
 ```text
 
-    mem_warming = on
+    mem_warming = true
 
 ```
 
 ### mem_warming_percentage
 
-Default value: 75
+How much of OpenSIPS memory should be fragmented with the pattern of the previous run, upon restart. Used at startup if [mem_warming](#mem_warming) is enabled.
 
-  
+Default value is `75`.
 
-How much of OpenSIPS's memory should be fragmented with the pattern of the previous run, upon a restart. Used at startup, if [mem_warming](https://docs.opensips.org/manual/3-1/script-coreparameters#socket) is enabled.
 
 Example of usage:
 ```text
@@ -590,11 +680,10 @@ Example of usage:
 
 ### mem_warming_pattern_file
 
-Default value: "CFG_DIR/mem_warming_pattern"
+Only relevant if [mem_warming](#mem_warming) is enabled. It contains the memory fragmentation pattern of a previous OpenSIPS run. This file is overwritten during each OpenSIPS shutdown and is used during startup in order to restore service behavior as soon as possible.
 
-  
+Default value is `"CFG_DIR/mem_warming_pattern"`.
 
-Only relevant if [mem_warming](https://docs.opensips.org/manual/3-1/script-coreparameters#socket) is enabled. It contains the memory fragmentation pattern of a previous OpenSIPS run. This file is overwritten during each OpenSIPS shutdown, and is used during startup in order to restore the service behavior as soon as possible.
 
 Example of usage:
 ```text
@@ -605,68 +694,83 @@ Example of usage:
 
 ### memdump | mem_dump
 
-Log level to print memory status information (runtime and shutdown). It has to be less than the value of 'log_level' parameter if you want memory info to be logged. Default: memdump=L_DBG (4)
+Log level used to print memory status information at runtime and shutdown. It must be lower than the value of the [log_level](#log_level) parameter in order for memory information to be logged.
+
+Default value is `14` (`L_DBG + 10`), which effectively disables memory dump logging because it is above the normal debug log level.
 
 Example of usage:
-
 ```text
-memdump=2
-```
 
-NOTE that setting memlog (see below), will also set the memdump parameter - if you want different values for memlog and memdump, you need to first set memlog and then memdump.
+    memdump = 2
 
-### memlog | mem_log
-
-Log level to print memory debug info. It has to be less than the value of 'log_level' parameter if you want memory info to be logged. Default: memlog=L_DBG (4)
-
-Example of usage:
-
-```text
-memlog=2
 ```
 
 > [!NOTE]
-> by setting memlog parameter, the memdump will automatically be set to the same value (see memdump docs).
+> Setting [memlog](#memlog--mem_log) also sets `memdump` to the same value. If you want different values for `memlog` and `memdump`, set `memlog` first, then set `memdump`.
+
+### memlog | mem_log
+
+Log level used to print memory debug information. It must be lower than the value of the [log_level](#log_level) parameter in order for memory debug information to be logged.
+
+Default value is `15` (`L_DBG + 11`), which effectively disables memory debug logging because it is above the normal debug log level.
+
+Example of usage:
+```text
+
+    memlog = 2
+
+```
+
+> [!NOTE]
+> Setting `memlog` automatically sets `memdump` to the same value.
 
 ### mcast_loopback
 
-It can be 'yes' or 'no'. If set to 'yes', multicast datagram are sent over loopback. Default value is 'no'.
+If set to `true`, multicast datagrams are sent over loopback.
+
+Default value is `false`.
 
 Example of usage:
-
 ```text
-mcast_loopback=yes
+
+    mcast_loopback = true
+
 ```
 
 ### mcast_ttl
 
-Set the value for multicast ttl. Default value is OS specific (usually 1).
+Sets the multicast TTL.
+
+Default value is `OS-specific`, usually `1`.
 
 Example of usage:
-
 ```text
-mcast_ttl=32
+
+    mcast_ttl = 32
+
 ```
 
 ### mhomed
 
-Set the server to try to locate outbound interface on multihomed host. By default is not (0) - it is rather time consuming.
+If set to `true`, OpenSIPS tries to locate the outbound interface on multihomed hosts. This lookup is time-consuming, so it is disabled by default.
+
+Default value is `false`.
 
 Example of usage:
-
 ```text
-mhomed=1
+
+    mhomed = true
+
 ```
 
 ### mpath
 
-Set the module search path.  This can be used to simplify the loadmodule parameter
+Sets the module search path. This can be used to simplify `loadmodule` statements.
 
 Example of usage:
+```text
 
-```c
-
-    mpath="/usr/local/lib/opensips/modules"
+    mpath = "/usr/local/lib/opensips/modules"
     loadmodule "mysql.so"
     loadmodule "uri.so"
     loadmodule "uri_db.so"
@@ -676,162 +780,209 @@ Example of usage:
 
 ```
 
+The parameter can be set multiple times, with paths evaluated in declaration order.
+
+
 ### open_files_limit
 
-If set and bigger than the current open file limit, **OpenSIPS** will try
-to increase its open file limit to this number. Note: **OpenSIPS** must be
-started as root to be able to increase a limit past the hard limit
-(which, for open files, is 1024 on most systems).
+If set and greater than the current open file limit, **OpenSIPS** tries to increase its open file limit to this number. **OpenSIPS** must be started as root in order to increase a limit past the hard limit, which is `1024` on most systems for open files.
+
+Default value is `-1` (do not change the open file limit).
 
 Example of usage:
-
 ```text
-open_files_limit=2048
+
+    open_files_limit = 2048
+
 ```
 
 ### poll_method
 
-The poll method to be used by the I/O internal reactor - by default the best one for the current OS is selected. The available types are: poll, epoll, sigio_rt, select, kqueue, /dev/poll.
+The poll method used by the internal I/O reactor. By default, the best method for the current OS is selected.
+
+Available values are `poll`, `epoll`, `sigio_rt`, `select`, `kqueue` and `/dev/poll`.
 
 Example of usage:
-
 ```text
-poll_method=select
-```
 
-### port
+    poll_method = select
 
-The port the SIP server listens to. The default value for it is 5060.
-
-Example of usage:
-
-```text
-port=5080
 ```
 
 ### pv_print_buf_size
 
-The maximum size of an expanded formatted string containing variables and/or pseudo-variables.  Default: 20,000 bytes.
+The maximum size, in bytes, of an expanded formatted string containing variables or pseudo-variables.
+
+Default value is `20000` bytes.
 
 Example of usage:
-
 ```text
-pv_print_buf_size = 60000
+
+    pv_print_buf_size = 60000
+
 ```
 
 ### query_buffer_size
 
-If set to a value greater than 1, inserts to DB will not be flushed one by one. Rows to be inserted will be kept in memory until until they gather up to query_buffer_size rows, and only then they will be flushed to the database.
+If set to a value greater than `1`, DB inserts are not flushed one by one. Rows to be inserted are kept in memory until they gather up to `query_buffer_size` rows, and only then are they flushed to the database.
+
+Default value is `0` (buffering disabled).
 
 Example of usage:
-
 ```text
-query_buffer_size=5
+
+    query_buffer_size = 5
+
 ```
 
 ### query_flush_time
 
-If query_buffer_size is set to a value greater than 1, a timer will trigger once every query_flush_time seconds,
-ensuring that no row will be kept for too long in memory.
+If [query_buffer_size](#query_buffer_size) is set to a value greater than `1`, a timer triggers once every `query_flush_time` seconds, ensuring that no row is kept in memory for too long.
+
+Default value is `0`.
 
 Example of usage:
-
 ```text
-query_flush_time=10
+
+    query_flush_time = 10
+
 ```
 
 ### restart_persistency_cache_file
 
-This parameter controls the name of the cache file that is used to store restart persistence memory.
+The name of the cache file used to store restart persistency memory.
 
-Default value is ".restart_persistency.cache".
+Default value is `".restart_persistency.cache"`.
+
+Example of usage:
+```text
+
+    restart_persistency_cache_file = "/var/tmp/opensips_restart.cache"
+
+```
 
 ### restart_persistency_size
 
-This parameter controls the size of the cache file. If this parameter is not specified, it defaults to the size of the shared memory.
+The size of the restart persistency cache file, in megabytes. If this parameter is not specified, it defaults to the size of the shared memory.
 
-Default value is the value of the shared memory, 32MB.
+By default, this value is the shared memory size, `32` MB.
+
+Example of usage:
+```text
+
+    restart_persistency_size = 64
+
+```
 
 ### rev_dns
 
-This parameter controls if the SIP server should attempt to lookup its own IP address in DNS. If this parameter is set to yes and the IP address is not in DNS a warning is printed on syslog and a "received=" field is added to the via header. 
+Controls whether the SIP server should attempt to look up its own IP address in DNS. If this parameter is set to `true` and the IP address is not in DNS, a warning is printed to syslog and a `received=` field is added to the Via header.
 
-Default is no.
+Default value is `false`.
+
+Example of usage:
+```text
+
+    rev_dns = true
+
+```
 
 ### server_header
 
-The body of Server header field generated by **OpenSIPS** when it sends a request as UAS.  It defaults to "OpenSIPS (`<version>` (`<arch>`/`<os>`))".  
+The body of the Server header field generated by **OpenSIPS** when it sends a reply as UAS.
+
+Default value is `"Server: OpenSIPS (<version> (<arch>/<os>))"`.
 
 Example of usage:
-
 ```text
 
-server_header="Server: My Company SIP Proxy"
+    server_header = "Server: My Company SIP Proxy"
 
 ```
 
-Please note that you have to add the header name "Server:", otherwise **OpenSIPS** will just write a header like:
-
-```text
-
-My Company SIP Proxy
-
-```
+> [!NOTE]
+> The value must include the header name, `Server:`. Otherwise, **OpenSIPS** writes only the configured body.
 
 ### server_signature
 
-This parameter controls the "Server" header in any locally generated message. 
+Controls whether the Server header is added to locally generated messages.
+
+Default value is `true`.
 
 Example of usage:
-
 ```text
-server_signature=no
+
+    server_signature = false
+
 ```
 
-If it is enabled (default=yes) a header is generated as in the following example:
-
+When enabled, the generated header looks like:
 ```text
-Server: OpenSIPS (0.9.5 (i386/linux))
+
+    Server: OpenSIPS (4.0.0 (x86_64/linux))
+
 ```
 
 ### shm_hash_split_percentage
 
-Only relevant when the HP_MALLOC compile flag is enabled. It controls how many memory buckets will be optimized. (e.g. setting it to 2% will optimize the first 81 most used buckets as frequency). The default value is 1.
+Only relevant when the `HP_MALLOC` compile flag is enabled. It controls how many memory buckets are optimized. For example, setting it to `2` optimizes the first `2%` of the most frequently used buckets.
+
+Default value is `1`.
+
+Example of usage:
+```text
+
+    shm_hash_split_percentage = 2
+
+```
+
 
 ### shm_secondary_hash_size
 
-Only relevant when the HP_MALLOC compile flag is enabled. It represents the optimization factor of a single bucket (e.g. setting it to 4 will cause the optimized buckets to be further split into 4). The default value is 8.
+Only relevant when the `HP_MALLOC` compile flag is enabled. It represents the optimization factor of a single bucket. For example, setting it to `4` causes optimized buckets to be further split into `4`.
+
+Default value is `8`.
+
+Example of usage:
+```text
+
+    shm_secondary_hash_size = 4
+
+```
 
 ### sip_warning
 
-Can be 0 or 1. If set to 1 (default value is 0) a 'Warning' header is added to each reply generated by **OpenSIPS**.
-The header contains several details that help troubleshooting using the network traffic dumps.
+If set to `true`, a Warning header is added to each reply generated by **OpenSIPS**. The header contains details that help troubleshooting using network traffic dumps.
+
+Default value is `false`.
 
 Example of usage:
-
 ```text
-sip_warning=0
+
+    sip_warning = true
+
 ```
 
 ### socket
 
-Set the network addresses/sockets the OpenSIPS server should listen on. Its syntax is `protocol:address[:port]`, where:
-* protocol: should be one of the transport modules loaded in the config file (e.g., udp, tcp, tls, bin, hep)
-* address: can be an IP address, a hostname, a network interface id, or the ***** wildcard which makes OpenSIPS listen on all possible interfaces for that protocol
-* port: optional, the port used by the listening socket - if absent, the default port exported by the transport module is used.
-This parameter can be set multiple times in same configuration file, the server listening on all specified sockets.
+Sets the network addresses/sockets the OpenSIPS server should listen on. Its syntax is `protocol:address[:port]`, where:
+* **protocol**: one of the transport modules loaded in the configuration file, such as `udp`, `tcp`, `tls`, `bin` or `hep`.
+* **address**: an IP address, hostname, network interface name or the `*` wildcard, which makes OpenSIPS listen on all possible interfaces for that protocol.
+* **port**: optional listening socket port; if absent, the default port exported by the transport module is used.
 
-The *socket* definition may accept several optional parameters:
-* "AS ip:port" - to configure an advertised IP and port only for an interface. Example "AS 11.23.13.44:5060"
-* "USE_WORKERS n" - to set a different number of workers for this socket only (for UDP, SCTP and HEP_UDP interfaces only). This will override the global "udp_worker" parameter. Example "use_workers 5"
-* "ANYCAST" - to marke the socket as an anycast IP
-* "USE_AUTO_SCALING_PROFILE" - to enforce a certain governing policy on how many UDP workers you have at runtime. Dynamically, UDP processes my be created or terminated, depending on the load/traffic. This parameter may be used ONLY for UDP sockets. Note that the per-socket defined auto-scaling profile will override this global UDP auto-scaling profile.
-* "TAG" - this is a non SIP name/tag of the socket to be used when replicating the socket identify across an OpenSIPS cluster, with other OpenSIPS nodes. By using same TAG value, you can correlate/link listening sockets with different IPs on different OpenSIPS nodes. This is useful when replicating dialogs between OpenSIPS instances with different IPs.
+This parameter can be set multiple times in the same configuration file, with the server listening on all specified sockets.
 
-Remember that the above parameters only affect the sockets they are configured for; if they are not defined for a given socket, the global values will be used instead.
 
-Examples of usage:
+The `socket` definition may accept several optional parameters:
+* `as ip[:port]`: configure an advertised IP and port only for this interface. Example: `as 11.24.14.14:5060`.
+* `use_workers n`: set a different number of workers for this socket only, for UDP, SCTP and HEP_UDP interfaces. This overrides the global `udp_workers` parameter.
+* `anycast`: mark the socket as an anycast IP.
+* `use_auto_scaling_profile PROFILE`: enforce an auto-scaling profile for this UDP socket. This option is only available for UDP sockets, and the per-socket profile overrides the global UDP auto-scaling profile.
+* `tag ID`: set a non-SIP name/tag for the socket, used when replicating socket identity across an OpenSIPS cluster.
 
+These options only affect the sockets they are configured for; if they are not defined for a given socket, the global values are used instead.
+
+Example of usage:
 ```text
 
     socket = udp:*
@@ -843,59 +994,70 @@ Examples of usage:
     socket = sctp:127.0.0.1:5060 as 99.88.44.33:5060 use_workers 3
     socket = udp:10.10.10.10:5060 anycast
     socket = udp:10.10.10.10:5060 use_workers 4 use_auto_scaling_profile PROFILE_SIP
-    
 
 ```
 
-On startup, OpenSIPS reports all the sockets that it is listening on.
+On startup, OpenSIPS reports all sockets that it is listening on.
 
 ### tcp_workers
-Number of worker processes to be created for reading from TCP connections. These workers are responsible for handling any traffic over any TCP based protocol, like SIP-TCP, SIP-TLS, SIP-WS, SIP-WSS, BIN or HEP.
-If no value is explicitly set, 8 TCP workers will be created.
-Optionally, you can define a auto-scaling profile to govern in a dynamic way the number of TCP workers (by creating or terminating processes, depending on load). See [auto_scaling_profile](#auto_scaling_profile) parameter for more.
+
+Number of worker processes created for reading from TCP connections. These workers handle traffic over any TCP-based protocol, such as SIP-TCP, SIP-TLS, SIP-WS, SIP-WSS, BIN or HEP.
+
+Default value is `8`.
+
+Optionally, you can define an auto-scaling profile to dynamically govern the number of TCP workers by creating or terminating processes depending on load. See [auto_scaling_profile](#auto_scaling_profile) for more details.
 
 Example of usage:
-
 ```text
-tcp_workers= 4
-tcp_workers= 3 use_auto_scaling_profile PROFILE_SIP
+
+    tcp_workers = 4
+    tcp_workers = 3 use_auto_scaling_profile PROFILE_SIP
+
 ```
 
 ### tcp_accept_aliases
 
-Default value *0* (disabled). If enabled, OpenSIPS will enforce RFC 5923 behaviour when detecting an *";alias"* Via header field parameter and will reuse **any** TCP (or TLS, WS, WSS) connection opened for such SIP requests (source IP + Via port + proto) when sending other SIP requests backwards, towards the same (source IP + Via port + proto) pair. The final purpose of RFC 5923, after all, is to minimize the number of TLS connections a SIP proxy must open, due to the large CPU overhead of the connection setup phase.
+If set to `true`, OpenSIPS enforces RFC 5923 behavior when detecting an `;alias` Via header field parameter, and reuses any TCP, TLS, WS or WSS connection opened for such SIP requests when sending other SIP requests backwards towards the same source IP, Via port and protocol tuple. The purpose of RFC 5923 is to minimize the number of TLS connections a SIP proxy must open, due to the large CPU overhead of connection setup.
 
-  
+Default value is `false`.
 
-On top of RFC 5923's connection reusage (aliasing) mechanism, TCP connections in OpenSIPS are also persistent across multiple SIP dialogs. This can be controlled with the [tcp_connection_lifetime](#tcp_connection_lifetime) global parameter.
-
-  
+On top of RFC 5923 connection reuse, TCP connections in OpenSIPS are also persistent across multiple SIP dialogs. This can be controlled with the [tcp_connection_lifetime](#tcp_connection_lifetime) global parameter.
 
 > [!WARNING]
-> Enabling the global **tcp_accept_aliases** parameter (RFC 5923) for end-user initiated connections (who are most likely grouped by one or more public IPs) is an open vector for call hijacking! In such platforms, we recommend using the [force_tcp_alias()](https://docs.opensips.org/manual/3-1/script-corefunctions#force_tcp_alias) core function, in order to employ RFC 5923 behaviour only in conjunction with adjacent SIP proxies.
+> Enabling the global `tcp_accept_aliases` parameter for end-user initiated connections, which are most likely grouped by one or more public IPs, is an open vector for call hijacking. In such platforms, use the [force_tcp_alias()](https://docs.opensips.org/manual/3-1/script-corefunctions#force_tcp_alias) core function to employ RFC 5923 behavior only with adjacent SIP proxies.
+
+Example of usage:
+```text
+
+    tcp_accept_aliases = true
+
+```
 
 ### tcp_listen_backlog
 
 > [!WARNING]
-> Replaced in OpenSIPS 3.1
-
+> Replaced in OpenSIPS 3.1.
 
 This parameter was replaced by the [tcp_socket_backlog](#tcp_socket_backlog) parameter, preserving exactly the same format and behavior.
 
 ### tcp_connect_timeout
 
-Time in milliseconds before an ongoing blocking attempt to connect will be aborted. Default value is 100ms.
+Time in milliseconds before an ongoing blocking connection attempt is aborted.
+
+Default value is `100` milliseconds.
 
 Example of usage:
 ```text
 
-    tcp_connect_timeout = 5
+    tcp_connect_timeout = 100
 
 ```
 
 ### tcp_connection_lifetime
 
-Lifetime in seconds for TCP sessions. TCP sessions which are inactive for >tcp_connection_lifetime will be closed by **OpenSIPS**. Default value is defined in tcp_conn.h: #define DEFAULT_TCP_CONNECTION_LIFETIME 120. Setting this value to 0 will close the TCP connection pretty quick ;-). You can also set the TCP lifetime to the expire value of the REGISTER by using the tcp_persistent_flag parameter of the registrar module.
+Lifetime in seconds for TCP sessions. TCP sessions inactive for more than `tcp_connection_lifetime` seconds are closed by **OpenSIPS**. Setting this value to `0` closes TCP connections quickly. You can also set the TCP lifetime to the expire value of the REGISTER by using the `tcp_persistent_flag` parameter of the registrar module.
+
+Default value is `120` seconds.
 
 Example of usage:
 ```text
@@ -906,7 +1068,9 @@ Example of usage:
 
 ### tcp_max_connections
 
-Maximum number of active TCP **accepted** connections (i.e. initiated by remote endpoints).  Once the limit is reached, any new incoming TCP connections will be rejected. The default is **2048**.  For outgoing TCP connections (initiated by OpenSIPS), there is currently no limit.
+Maximum number of active TCP accepted connections, meaning connections initiated by remote endpoints. Once the limit is reached, new incoming TCP connections are rejected. There is currently no limit for outgoing TCP connections initiated by OpenSIPS.
+
+Default value is `2048`.
 
 Example of usage:
 ```text
@@ -917,7 +1081,9 @@ Example of usage:
 
 ### tcp_max_msg_time
 
-The maximum number of seconds that a SIP message is expected to arrive via TCP. If a single SIP packet is still not fully received after this number of seconds, the connection is dropped ( either the connection is very overloaded and this leads to high fragmentation - or we are the victim of an ongoing attack where the attacker is sending the traffic very fragmented in order to decrease our performance ). Default value is 4
+The maximum number of seconds that a SIP message is expected to take to fully arrive over TCP. If a single SIP packet is still not fully received after this number of seconds, the connection is dropped. This may happen when the connection is overloaded and traffic is highly fragmented, or during attacks that intentionally fragment traffic in order to reduce performance.
+
+Default value is `4` seconds.
 
 Example of usage:
 ```text
@@ -928,75 +1094,102 @@ Example of usage:
 
 ### tcp_no_new_conn_bflag
 
-A branch flag to be used as marker to instruct OpenSIPS not to attempt to open a new TCP connection when delivering a request, but only to reuse an existing one (if available). If no existing conn, a generic send error will be returned.
+A branch flag used to instruct OpenSIPS not to open a new TCP connection when delivering a request, but only to reuse an existing one, if available. If no existing connection is available, a generic send error is returned.
 
-This is intended to be used in NAT scenarios, where makes no sense to open a TCP connection towards a destination behind a NAT (like TCP connection created during registration was lost, so there is no way to contact the device until it re-REGISTER). Also this can be used to detect when a NATed registered user lost his TCP connection, so that opensips can disable his registration as useless.
+This is intended for NAT scenarios where opening a TCP connection towards a destination behind NAT makes no sense, for example when the TCP connection created during registration was lost and the device cannot be contacted until it re-registers. It can also be used to detect when a NATed registered user lost its TCP connection, so OpenSIPS can disable that registration as unusable.
 
 Example of usage:
 ```text
 
-     tcp_no_new_conn_bflag = TCP_NO_CONNECT
-     ...
-     route {
-         ...
-         if (isflagset(DST_NATED) && $socket_in(proto) == "TCP")
-             setbflag(TCP_NO_CONNECT);
-         ...
-         t_relay("0x02"); # no auto error reply
-         $var(retcode) = $rc;
-         if ($var(retcode) == -6) {
-             #send error
-             xlog("unable to send request to destination");
-             send_reply("404", "Not Found");
-             exit;
-         } else if ($var(retcode) < 0) {
-             sl_reply_error();
-             exit;
-         }
-     }
+    tcp_no_new_conn_bflag = TCP_NO_CONNECT
+    ...
+    route {
+        ...
+        if (isflagset("DST_NATED") && $socket_in(proto) == "TCP")
+            setbflag("TCP_NO_CONNECT");
+        ...
+        t_relay("no-auto-477");
+        $var(retcode) = $rc;
+        if ($var(retcode) == -6) {
+            # send error
+            xlog("unable to send request to destination");
+            send_reply(404, "Not Found");
+            exit;
+        } else if ($var(retcode) < 0) {
+            sl_reply_error();
+            exit;
+        }
+    }
 
 ```
 
 ### tcp_no_new_conn_rplflag
 
-The same behavior as [tcp_no_new_conn_bflag](#tcp_no_new_conn_bflag), except it controls whether a connection should be opened for the replies of a transaction.
+A message flag, similar to [tcp_no_new_conn_bflag](#tcp_no_new_conn_bflag), used to prevent OpenSIPS from opening a new TCP connection when sending back a reply for the current request. If no existing connection is available, sending the reply may fail at transport level.
+
+Example of usage:
+```text
+
+    tcp_no_new_conn_rplflag = TCP_NO_RPL_CONNECT
+    ...
+    route {
+        ...
+        # if source is detected as NATed, prevent opening TCP connections for replies
+        if (isflagset("SRC_NATED") && $socket_in(proto) == "TCP")
+            setflag("TCP_NO_RPL_CONNECT");
+        ...
+        t_reply(302, "Redirected");
+    }
+
+```
+
 
 ### tcp_socket_backlog
 
-The backlog argument defines the maximum length to which the queue of pending connections for the TCP listening sockets may grow. If a connection  request arrives when the queue is full, the client may receive an error with an indication  of  ECONNREFUSED  or,  if  the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds.
+The maximum length to which the queue of pending connections for TCP listening sockets may grow. If a connection request arrives when the queue is full, the client may receive an error such as `ECONNREFUSED`; if the underlying protocol supports retransmission, the request may be ignored so a later connection attempt can succeed.
 
-Default configured value is 10.
-
-### tcp_threshold
-A number representing the maximum number of microseconds sending of a TCP request is expected to last. Anything above the set number will trigger a warning message to the logging facility.
-
-Default value is 0 ( logging disabled ).
+Default value is `10`.
 
 Example of usage:
-
 ```text
-tcp_threshold = 60000
+
+    tcp_socket_backlog = 20
+
+```
+
+### tcp_threshold
+
+A number representing the maximum number of microseconds sending a TCP request is expected to take. Anything above the set number triggers a warning message to the logging facility.
+
+Default value is `0` (logging disabled).
+
+Example of usage:
+```text
+
+    tcp_threshold = 60000
+
 ```
 
 ### tcp_keepalive
 
-Enable or disable TCP keepalive (OS level).
+Enables or disables TCP keepalive at OS level.
 
-*Enabled by default.*
+Default value is `true` if TCP keepalive is supported by the OS, `false` otherwise.
 
 Example of usage:
-
 ```text
 
-    tcp_keepalive = 1
+    tcp_keepalive = true
 
 ```
 
 ### tcp_keepcount
 
-Number of keepalives to send before closing the connection (Linux only). Default value is Operating System dependent and can be found using `cat /proc/sys/net/ipv4/tcp_keepalive_probes`. Common value is *9*.
+Number of keepalive probes to send before closing the connection. This option is available on Linux and other platforms with `TCP_KEEPCNT` support. The OS default can usually be found using `cat /proc/sys/net/ipv4/tcp_keepalive_probes`; a common value is `9`.
 
-*Setting [tcp_keepcount](Script-CoreParameters.md) to any value will enable [tcp_keepalive](Script-CoreParameters.md).*
+Default value is `OS-dependent`.
+
+Setting `tcp_keepcount` to any value also enables [tcp_keepalive](#tcp_keepalive).
 
 Example of usage:
 ```text
@@ -1007,9 +1200,11 @@ Example of usage:
 
 ### tcp_keepidle
 
-Amount of time before OpenSIPS will start to send keepalives if the connection is idle (Linux only). Default value is Operating System dependent and can be found using `cat /proc/sys/net/ipv4/tcp_keepalive_time`. Common value is *7200* seconds.
+Amount of idle time, in seconds, before OpenSIPS starts sending keepalive probes. This option is available on Linux and other platforms with `TCP_KEEPIDLE` support. The OS default can usually be found using `cat /proc/sys/net/ipv4/tcp_keepalive_time`; a common value is `7200` seconds.
 
-*Setting [tcp_keepidle](Script-CoreParameters.md) to any value will enable [tcp_keepalive](Script-CoreParameters.md).*
+Default value is `OS-dependent`.
+
+Setting `tcp_keepidle` to any value also enables [tcp_keepalive](#tcp_keepalive).
 
 Example of usage:
 ```text
@@ -1020,9 +1215,11 @@ Example of usage:
 
 ### tcp_keepinterval
 
-Interval between keepalive probes, if the previous one failed (Linux only). Default value is Operating System dependent and can be found using `cat /proc/sys/net/ipv4/tcp_keepalive_intvl`. Common value is *75* seconds.
+Interval, in seconds, between keepalive probes when the previous probe failed. This option is available on Linux and other platforms with `TCP_KEEPINTVL` support. The OS default can usually be found using `cat /proc/sys/net/ipv4/tcp_keepalive_intvl`; a common value is `75` seconds.
 
-*Setting [tcp_keepinterval](Script-CoreParameters.md) to any value will enable [tcp_keepalive](Script-CoreParameters.md).*
+Default value is `OS-dependent`.
+
+Setting `tcp_keepinterval` to any value also enables [tcp_keepalive](#tcp_keepalive).
 
 Example of usage:
 ```text
@@ -1032,8 +1229,12 @@ Example of usage:
 ```
 
 ### timer_workers
-The number of worker processes to be created exclusively for timer related tasks/processing. The default and minimum number is '1'.
-Optionally, you can define a auto-scaling profile to govern in a dynamic way the number of timer workers (by creating or terminating processes, depending on load). See [auto_scaling_profile](#auto_scaling_profile) parameter for more.
+
+The number of worker processes created exclusively for timer-related tasks. The minimum number is `1`.
+
+Default value is `1`.
+
+Optionally, you can define an auto-scaling profile to dynamically govern the number of timer workers by creating or terminating processes depending on load. See [auto_scaling_profile](#auto_scaling_profile) for more details.
 
 Example of usage:
 ```text
@@ -1045,90 +1246,81 @@ Example of usage:
 
 ### tos
 
-The TOS (Type Of Service) to be used for the sent IP packages (both TCP and UDP).
+The TOS (Type Of Service) to be used for the sent IP packets, for both TCP and UDP. The default value is `IPTOS_LOWDELAY`. To disable TOS setting, use `0`.
 
 Example of usage:
-
 ```text
 
-    tos=IPTOS_LOWDELAY
-    tos=0x10
-    tos=IPTOS_RELIABILITY
+    tos = IPTOS_LOWDELAY
+    tos = 0x10
 
 ```
 
 ### udp_workers
 
-Number of worker processes to be created for **each** UDP or SCTP interface you have defined. Default value is 8.
-Optionally, you can define a auto-scaling profile to govern in a dynamic way the number of UDP workers (by creating or terminating processes, depending on load). Note that the per-interface defined auto-scaling profile will override this global UDP auto-scaling profile.
-See [auto_scaling_profile](#auto_scaling_profile) parameter for more.
+Number of worker processes to be created for each UDP or SCTP interface. The default value is `8`.
+
+Optionally, you can define an auto-scaling profile to dynamically govern the number of UDP workers by creating or terminating processes depending on load. A per-interface auto-scaling profile overrides this global UDP auto-scaling profile.
+See the [auto_scaling_profile](#auto_scaling_profile) parameter for more details.
 
 Example of usage:
 ```text
 
-    udp_workers=16
-    udp_workers=4 use_auto_scaling_profile PROFILE_SIP 
+    udp_workers = 16
+    udp_workers = 4 use_auto_scaling_profile PROFILE_SIP
 
 ```
 
 > [!NOTE]
-> this global value (applicable for all UDP/SCTP interfaces) can be override if you set a different number of workers in the definition of a specific interface - so actually you can define a different number of workers for each interface (see the [listen](#listen) parameter for syntax).
+> This global value applies to all UDP/SCTP interfaces, but it can be overridden by setting a different number of workers in a specific interface definition. This allows defining a different number of workers for each interface; see the [socket](#socket) parameter for syntax.
 
 ### user_agent_header
 
-The body of User-Agent header field generated by **OpenSIPS** when it sends a request as UAC.  It defaults to "OpenSIPS (`<version>` (`<arch>`/`<os>`))". 
-Example of usage:
+The body of the User-Agent header field generated by **OpenSIPS** when it sends a request as UAC. It defaults to `OpenSIPS (<version> (<arch>/<os>))`.
 
+Example of usage:
 ```text
 
-user_agent_header="User-Agent: My Company SIP Proxy"
+    user_agent_header = "User-Agent: My Company SIP Proxy"
 
 ```
 
-Please note that you have to include the header name "User-Agent:" as **OpenSIPS** does not add it and you will get an erroneous header like:
+Please note that you have to include the `User-Agent:` header name, as **OpenSIPS** does not add it. Otherwise, you will get an erroneous header like:
+
 ```text
-
 My Company SIP Proxy
-
 ```
 
 ### wdir
 
-The working directory used by **OpenSIPS** at runtime. You might find it usefull when come to generating core files :)
+The working directory used by **OpenSIPS** at runtime. If not explicitly configured, **OpenSIPS** changes the working directory to `/`.
 
 Example of usage:
 ```text
 
-     wdir="/usr/local/opensips"
-     or
-     wdir=/usr/opensips_wd
+    wdir = "/usr/local/opensips"
+    wdir = /usr/opensips_wd
 
 ```
 
 ### xlog_buf_size
 
-Default value: 4096
+Size of the buffer used to print a single line through the selected **OpenSIPS** logging facility. If the buffer is too small, an overflow error will be printed and the line will be skipped. The default value is `4096` bytes.
 
-  
-
-Size of the buffer used to print a single line on the chosen logging facility of OpenSIPS. If the buffer is too small, an overflow error will be printed, and the concerned line will be skipped.
-
-Usage example:
+Example of usage:
 ```text
 
-    xlog_buf_size = 8388608 #given in bytes
+    xlog_buf_size = 8388608 # given in bytes
 
 ```
 
 ### xlog_force_color
 
-Default value: false
+Enables the use of [$C(xy)](Script-CoreVar.md#foreground-and-background-colors) color escape sequences in [xlog()](https://docs.opensips.org/manual/3-1/script-corefunctions#xlog). Otherwise, color escape sequences have no effect. The default value is `false`.
 
-  
 
-Only relevant when [xlog](https://docs.opensips.org/manual/3-1/script-corefunctions) is set to *true*. Enables the use of the [color escape sequences](https://docs.opensips.org/manual/3-1/script-corevar#TS), otherwise they will have no effect.
+Example of usage:
 
-Usage example:
 ```text
 
     xlog_force_color = true
@@ -1137,28 +1329,23 @@ Usage example:
 
 ### xlog_level
 
-Similar to  [log_level](#log_level) this parameter independently controls (from the rest of the OpenSIPS code) the verbosity of the xlog() functions. This give you the possibility to separately control the verbosity level for logs from code versus logs from xlog().
+Similar to [log_level](#log_level), this parameter independently controls the verbosity of the [xlog()](https://docs.opensips.org/manual/3-1/script-corefunctions#xlog) functions. This allows you to separately control the verbosity level for logs generated by code and logs generated by `xlog()`. The default value is `2` / `L_NOTICE`.
 
-Default value is 2 / L_NOTICE
-
-Usage example:
+Example of usage:
 ```text
 
-    xlog_level = 3 #L_DBG
+    xlog_level = 3 # L_DBG
 
 ```
 
 ### xlog_print_level
 
-Default value: -1 (L_ERR)
+Default level for printing logs generated by the [xlog()](https://docs.opensips.org/manual/3-1/script-corefunctions#xlog) core function when the `log_level` parameter is omitted. The default value is `-1` / `L_ERR`.
 
-  
+Example of usage:
 
-Default level for printing the logs generated by [xlog](https://docs.opensips.org/manual/3-1/script-corefunctions) core function, when the log_level parameter is omitted.
-
-Usage example:
 ```text
 
-    xlog_print_level = 2 #L_NOTICE
+    xlog_print_level = 2 # L_NOTICE
 
 ```
