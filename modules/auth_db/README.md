@@ -359,6 +359,31 @@ if (!proxy_authorize("", "subscriber)) {
 };
 ...
 ```
+
+### Tips & FAQ
+
+#### How to recalculate ha1 and ha1b
+
+When you change the `domain` column in the subscriber table, you have to recalculate `ha1` and `ha1b` fields. In order to do that you must have the password of each subscriber.
+
+HA1 is a MD5 hash of "username:domain:password". For example, if you have created a SIP account "1000@mydomain.com" using password "123456", then HA1 is the MD5 hash of "1000:mydomain.com:123456" (without quotes). On the other hand HA1B is the MD5 hash of "username@domain:domain:password"; so using the same example above, HA1B would be the MD5 hash of "1000@mydomain.com:mydomain.com:123456" (without quotes).
+
+To recalculate and update ha1 and ha1b columns in the subscriber table, just execute the following sql statement in mysql:
+
+```sql
+update subscriber
+set ha1 = md5(concat(username, ':', domain, ':', password)),
+ha1b = md5(concat(username, '@', domain, ':', domain, ':', password))
+```
+
+> \[!NOTE]
+> the above is only true if you have `use_domain` enabled *and* you do not use a static challenge parameter for `www_authorize()`.
+
+If you use a static challenge for `www_authorize()` (i.e. the first parameter of `www_authorize()` is not the empty string), then HA1 is MD5("username:challenge:password") and HA1B is MD5("username@challenge:challenge:password"). If the challenge parameter of `www_authorize()` is empty, OpenSIPS automatically selects the domain as the challenge value, which gives the solution presented above.
+
+If `use_domain` is false, then the HA1B field must be computed based on "username@:domain:password" or "username@:challenge:password", depending on whether challenge is empty or defined, respectively.
+
+
 <!-- CONTRIBUTORS -->
 
 ### License
