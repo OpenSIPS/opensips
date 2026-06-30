@@ -72,6 +72,7 @@ static char* profiles_nv_s = NULL;
 int dlg_bulk_del_no = 1; /* delete one by one */
 int seq_match_mode = SEQ_MATCH_FALLBACK;
 int options_ping_interval = 30;      /* seconds */
+int options_ping_max_retries = 0;    /* extra OPTIONS pings to send on timeout before declaring leg dead */
 int reinvite_ping_interval = 300;    /* seconds */
 int dlg_del_delay = 0;               /* in seconds, default off */
 str dlg_extra_hdrs = {NULL,0};
@@ -302,6 +303,7 @@ static const param_export_t mod_params[]={
 	{ "rr_param",              STR_PARAM, &rr_param.s               },
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
 	{ "options_ping_interval", INT_PARAM, &options_ping_interval    },
+	{ "options_ping_max_retries", INT_PARAM, &options_ping_max_retries },
 	{ "reinvite_ping_interval",INT_PARAM, &reinvite_ping_interval   },
 	{ "delete_delay",          INT_PARAM, &dlg_del_delay            },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
@@ -790,6 +792,11 @@ static int mod_init(void)
 
 	if (options_ping_interval<=0 || reinvite_ping_interval<=0) {
 		LM_ERR("Non-positive ping interval not accepted!!\n");
+		return -1;
+	}
+
+	if (options_ping_max_retries < 0) {
+		LM_ERR("Negative options_ping_max_retries not accepted!!\n");
 		return -1;
 	}
 
