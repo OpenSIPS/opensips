@@ -986,6 +986,8 @@ modparam("tls_mgm", "match_ip_address", "[dom1]10.0.0.10:5061, 10.0.0.11:5061")
 			The SIP domains used to match a TLS connection with a
 			virtual TLS domain. For TLS server domains, these values will be
 			matched against the hostname provided in the TLS Servername extension(SNI).
+			As the SNI hostname is a DNS name, the matching is case-insensitive
+			(as per RFC 6066).
 			For TLS client domains, the values will be compared with the value of
 			the <xref linkend="param_client_sip_domain_avp"/> AVP.
 			</para>
