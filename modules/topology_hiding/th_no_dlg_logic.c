@@ -488,7 +488,7 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 	int is_sequential = 0;
 	int rebuild_req_rrs = 0;
 	int one_way_hiding = th_no_dlg_one_way_hiding(t->uas.response.dst.send_sock);
-	int req_one_way_hiding = th_no_dlg_one_way_hiding(t->uac[t->first_branch]->request.dst.send_sock);
+	int req_one_way_hiding = th_no_dlg_one_way_hiding(TM_BRANCH(t, t->relaied_reply_branch).request.dst.send_sock);
 	route_count_t route_count = { 0 };
 
 	LM_DBG("Response callback with flags %u \n", flags);
