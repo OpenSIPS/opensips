@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Carsten Bock, Jeffrey Magder, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Dudu Ben Moshe, Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius, Andrej Solovjov, Jesus Rodrigues, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Ruslan Bukin, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), <ulink url="https://github.com/jalung">@jalung</ulink>, Tolga Tarhan, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Carsten Bock, Jeffrey Magder, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Dudu Ben Moshe, Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Denys Pozniak, Klaus Darilion, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius, Andrej Solovjov, Jesus Rodrigues, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Ruslan Bukin, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), <ulink url="https://github.com/jalung">@jalung</ulink>, Tolga Tarhan, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -143,43 +143,43 @@
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Denys Pozniak</entry>
+		<entry align="center">Apr 2026 - Apr 2026</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Andrej Solovjov</entry>
 		<entry align="center">Jul 2025 - Jul 2025</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Sep 2003 - May 2025</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Dudu Ben Moshe</entry>
 		<entry align="center">Feb 2024 - Feb 2024</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jul 2004 - Nov 2023</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - May 2023</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Sep 2011 - Nov 2022</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
-		<entry align="center">Jun 2018 - Feb 2020</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: <ulink url="https://github.com/jalung">@jalung</ulink>, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Julián Moreno Patiño, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Tolga Tarhan, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Phil D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ancuta Onofrei, Marcus Hunger, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), <ulink url="https://github.com/jalung">@jalung</ulink>, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Julián Moreno Patiño, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Tolga Tarhan, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Phil D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ancuta Onofrei, Marcus Hunger, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
