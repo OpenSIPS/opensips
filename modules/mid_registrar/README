@@ -1382,10 +1382,11 @@ Chapter 2. Contributors
    6. Maksym Sobolyev (@sobomax) 5 3 14 14
    7. Alexandra Titoc 5 3 7 7
    8. Dan Pascu (@danpascu) 4 2 4 4
-   9. Alexey Vasilyev (@vasilevalex) 3 1 2 5
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Denys Pozniak 3 1 32 2
+   10. Alexey Vasilyev (@vasilevalex) 3 1 2 5
 
-   All remaining contributors: Italo Rossi (@italorossi).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Italo
+   Rossi (@italorossi).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1409,16 +1410,17 @@ Chapter 2. Contributors
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Mar 2017 - Jun 2026
    2.  Liviu Chircu (@liviuchircu)         Jul 2016 - May 2026
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Apr 2026
-   4.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   5.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   7.  Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
-   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   9.  Italo Rossi (@italorossi)           Jul 2018 - Jul 2018
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Denys Pozniak                       Apr 2026 - Apr 2026
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Apr 2026
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   8.  Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
+   9.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   10. Italo Rossi (@italorossi)           Jul 2018 - Jul 2018
 
-   All remaining contributors: Chad Attermann (@attermann).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Chad
+   Attermann (@attermann).
 
    (1) including any documentation-related commits, excluding
    merge commits

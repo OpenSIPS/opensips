@@ -1496,12 +1496,12 @@ Chapter 3. Contributors
    Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov
    (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez, Carsten
    Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Dudu Ben Moshe,
-   Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus
-   Darilion, Damien Sandras (@dsandras), Irina-Maria Stanescu,
-   Dmitry Semyonov, Konstantin Bokarius, Andrej Solovjov, Jesus
-   Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl Ibarra
-   Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
-   Schubert.
+   Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Denys
+   Pozniak, Klaus Darilion, Damien Sandras (@dsandras),
+   Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius,
+   Andrej Solovjov, Jesus Rodrigues, Dusan Klinec (@ph4r05),
+   Ruslan Bukin, Saúl Ibarra Corretgé (@saghul), @jalung, Tolga
+   Tarhan, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1526,22 +1526,23 @@ Chapter 3. Contributors
    1.  Razvan Crainea (@razvancrainea)     Apr 2011 - Jun 2026
    2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2026
    3.  Damien Sandras (@dsandras)          May 2026 - May 2026
-   4.  Andrej Solovjov                     Jul 2025 - Jul 2025
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - May 2025
-   6.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
-   7.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
-   9.  Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   4.  Denys Pozniak                       Apr 2026 - Apr 2026
+   5.  Andrej Solovjov                     Jul 2025 - Jul 2025
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - May 2025
+   7.  Dudu Ben Moshe                      Feb 2024 - Feb 2024
+   8.  Maksym Sobolyev (@sobomax)          Jul 2004 - Nov 2023
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   10. Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
 
-   All remaining contributors: @jalung, Ovidiu Sas (@ovidiusas),
-   Ionut Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan
-   Klinec (@ph4r05), Nick Altmann (@nikbyte), Tolga Tarhan, Saúl
-   Ibarra Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu,
-   Kobi Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus
-   Darilion, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jesus Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
+   All remaining contributors: Peter Lemenkov (@lemenkov),
+   @jalung, Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Nick Altmann (@nikbyte), Tolga Tarhan, Saúl Ibarra
+   Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu, Kobi
+   Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus Darilion,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
+   Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
    Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Jeffrey
    Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan
    Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
