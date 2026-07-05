@@ -812,8 +812,10 @@ modparam("tls_mgm", "match_ip_address", "[dom1]10.0.0.10:5061, 10.0.0.11
    The SIP domains used to match a TLS connection with a virtual
    TLS domain. For TLS server domains, these values will be
    matched against the hostname provided in the TLS Servername
-   extension(SNI). For TLS client domains, the values will be
-   compared with the value of the client_sip_domain_avp AVP.
+   extension(SNI). As the SNI hostname is a DNS name, the matching
+   is case-insensitive (as per RFC 6066). For TLS client domains,
+   the values will be compared with the value of the
+   client_sip_domain_avp AVP.
 
    The parameter accepts a list of FQDNs or the special values:
      * * - match any sip domain( including no SNI provided, in
@@ -1531,9 +1533,9 @@ Chapter 3. Contributors
    10. Alexey Vasilyev (@vasilevalex) 4 2 33 19
 
    All remaining contributors: Callum Guy (@spacetourist), Ross
-   Henderson, Aleksei Vasilev, jupiter, Fabian Gast (@fgast), Nick
-   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Peter Lemenkov
-   (@lemenkov), Jupiter Tang.
+   Henderson, Nate Fischer, Aleksei Vasilev, jupiter, Fabian Gast
+   (@fgast), Nick Altmann (@nikbyte), Ovidiu Sas (@ovidiusas),
+   Peter Lemenkov (@lemenkov), Jupiter Tang.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1554,23 +1556,24 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                      Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Jun 2026
-   2.  Liviu Chircu (@liviuchircu)         Oct 2015 - Apr 2026
-   3.  Ross Henderson                      Feb 2026 - Feb 2026
-   4.  Jupiter Tang                        Nov 2025 - Nov 2025
-   5.  jupiter                             Apr 2025 - Apr 2025
-   6.  Maksym Sobolyev (@sobomax)          Mar 2016 - Nov 2023
-   7.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2023
-   8.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   9.  Aleksei Vasilev                     Apr 2021 - Apr 2021
-   10. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
+                    Name                 Commit Activity
+   1.  Nate Fischer                    Jun 2026 - Jun 2026
+   2.  Razvan Crainea (@razvancrainea) Sep 2015 - Jun 2026
+   3.  Liviu Chircu (@liviuchircu)     Oct 2015 - Apr 2026
+   4.  Ross Henderson                  Feb 2026 - Feb 2026
+   5.  Jupiter Tang                    Nov 2025 - Nov 2025
+   6.  jupiter                         Apr 2025 - Apr 2025
+   7.  Maksym Sobolyev (@sobomax)      Mar 2016 - Nov 2023
+   8.  Vlad Patrascu (@rvlad-patrascu) Apr 2017 - May 2023
+   9.  Nick Altmann (@nikbyte)         May 2021 - May 2021
+   10. Aleksei Vasilev                 Apr 2021 - Apr 2021
 
-   All remaining contributors: Dan Pascu (@danpascu), Fabian Gast
-   (@fgast), Alexey Vasilyev (@vasilevalex), Callum Guy
-   (@spacetourist), Peter Lemenkov (@lemenkov), Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
-   (@ionel-cerghit), Eseanu Marius Cristian (@eseanucristian).
+   All remaining contributors: Bogdan-Andrei Iancu
+   (@bogdan-iancu), Dan Pascu (@danpascu), Fabian Gast (@fgast),
+   Alexey Vasilyev (@vasilevalex), Callum Guy (@spacetourist),
+   Peter Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut
+   Ionita (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit),
+   Eseanu Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1579,11 +1582,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Dan Pascu (@danpascu), Callum Guy
-   (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu Marius
-   Cristian (@eseanucristian).
+   Last edited by: Nate Fischer, Razvan Crainea (@razvancrainea),
+   Vlad Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu (@danpascu),
+   Callum Guy (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu
+   Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 

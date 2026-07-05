@@ -816,7 +816,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 183 94 6839 1860
    2. Vlad Patrascu (@rvlad-patrascu) 128 62 5443 1147
-   3. Razvan Crainea (@razvancrainea) 105 84 1164 622
+   3. Razvan Crainea (@razvancrainea) 106 85 1184 627
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 69 57 655 309
    5. Ovidiu Sas (@ovidiusas) 59 44 990 348
    6. Liviu Chircu (@liviuchircu) 22 18 99 128
@@ -828,8 +828,8 @@ Chapter 3. Contributors
    All remaining contributors: Alexandra Titoc, Giedrius,
    Stanislaw Pitucha, Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), @DMOsipov, Stéphane Alnet (@shimaore),
-   Henk Hesselink, Ryan Bullock (@rrb3942), Ibrahim Shahzad,
-   Walter Doekes (@wdoekes).
+   Henk Hesselink, Ryan Bullock (@rrb3942), Norman Brandinger
+   (@NormB), Ibrahim Shahzad, Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -852,18 +852,18 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jun 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2026
-   3.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Apr 2026
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2026
-   5.  Ibrahim Shahzad                     Jul 2025 - Jul 2025
-   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Apr 2025
-   7.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
-   9.  Giedrius                            Apr 2023 - May 2023
-   10. Carsten Bock                        Mar 2022 - Apr 2022
+   2.  Norman Brandinger (@NormB)          Jun 2026 - Jun 2026
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2026
+   4.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Apr 2026
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2026
+   6.  Ibrahim Shahzad                     Jul 2025 - Jul 2025
+   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Apr 2025
+   8.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
+   10. Giedrius                            Apr 2023 - May 2023
 
-   All remaining contributors: Nick Altmann (@nikbyte), Peter
-   Lemenkov (@lemenkov), @DMOsipov, Ionut Ionita
+   All remaining contributors: Carsten Bock, Nick Altmann
+   (@nikbyte), Peter Lemenkov (@lemenkov), @DMOsipov, Ionut Ionita
    (@ionutrazvanionita), Walter Doekes (@wdoekes), Vlad Paiu
    (@vladpaiu), Ryan Bullock (@rrb3942), Stéphane Alnet
    (@shimaore), Anca Vamanu, Henk Hesselink, Stanislaw Pitucha.
