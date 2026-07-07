@@ -206,7 +206,7 @@ Default value is 'no'.
 
 Example of usage:
 
-```c
+```opensips
 disable_core_dump=yes
 ```
 
@@ -694,7 +694,7 @@ Set the module search path.  This can be used to simplify the loadmodule paramet
 
 Example of usage:
 
-```c
+```opensips
 
     mpath="/usr/local/lib/opensips/modules"
     loadmodule "mysql.so"

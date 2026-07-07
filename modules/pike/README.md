@@ -88,7 +88,7 @@ IMPORTANT: a too small value may lead to performance penalties due
 *Default value is 2.*
 
 
-```c title="Set sampling_time_unit parameter"
+```opensips title="Set sampling_time_unit parameter"
 ...
 modparam("pike", "sampling_time_unit", 10)
 ...
@@ -107,7 +107,7 @@ How many requests should be allowed per sampling_time_unit before
 *Default value is 30.*
 
 
-```c title="Set reqs_density_per_unit parameter"
+```opensips title="Set reqs_density_per_unit parameter"
 ...
 modparam("pike", "reqs_density_per_unit", 30)
 ...
@@ -132,7 +132,7 @@ For how long the IP address will be kept in memory after the last
 *Default value is 120.*
 
 
-```c title="Set remove_latency parameter"
+```opensips title="Set remove_latency parameter"
 ...
 modparam("pike", "remove_latency", 130)
 ...
@@ -155,7 +155,7 @@ By defining this parameter, the automatic checking mode is enabled.
 *Default value is NONE (no auto mode).*
 
 
-```c title="Set check_route parameter"
+```opensips title="Set check_route parameter"
 ...
 modparam("pike", "check_route", "pike")
 ...
@@ -178,7 +178,7 @@ Log level to be used by module to auto report the blocking (only first
 *Default value is 1 (L_WARN).*
 
 
-```c title="Set pike_log_level parameter"
+```opensips title="Set pike_log_level parameter"
 ...
 modparam("pike", "pike_log_level", -1)
 ...
@@ -211,7 +211,7 @@ Return codes:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="pike_check_req usage"
+```opensips title="pike_check_req usage"
 ...
 if (!pike_check_req()) { exit; };
 ...

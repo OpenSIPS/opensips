@@ -220,7 +220,7 @@ Note: OpenSIPS will validate each partition, so make sure to add any
 		through the 'db_url' property.
 
 
-```c title="Defining the 'pstn' partition"
+```opensips title="Defining the 'pstn' partition"
 ...
 modparam("dialplan", "partition", "
 	pstn:
@@ -231,7 +231,7 @@ modparam("dialplan", "partition", "
 ```
 
 
-```c title="Define the 'pstn' partition and make it the 'default' partition, so we avoid loading the 'dialplan' table"
+```opensips title="Define the 'pstn' partition and make it the 'default' partition, so we avoid loading the 'dialplan' table"
 ...
 db_default_url = "mysql://opensips:opensipsrw@localhost/opensips"
 
@@ -256,7 +256,7 @@ The default DB connection of the module, overriding the global
 *Default value is NULL (not set).*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("dialplan", "db_url", "mysql://user:passwd@localhost/db")
 ...
@@ -275,7 +275,7 @@ The default name of the table from which to load translation rules.
 *Default value is "dialplan".*
 
 
-```c title="Set table_name parameter"
+```opensips title="Set table_name parameter"
 ...
 modparam("dialplan", "table_name", "my_table")
 ...
@@ -292,7 +292,7 @@ The column name to store the dialplan ID group.
 *Default value is "dpid".*
 
 
-```c title="Set dpid_col parameter"
+```opensips title="Set dpid_col parameter"
 ...
 modparam("dialplan", "dpid_col", "column_name")
 ...
@@ -310,7 +310,7 @@ The column name to store the priority of the corresponding rule from
 *Default value is "pr".*
 
 
-```c title="Set pr_col parameter"
+```opensips title="Set pr_col parameter"
 ...
 modparam("dialplan", "pr_col", "column_name")
 ...
@@ -327,7 +327,7 @@ The column name to store the type of matching of the rule.
 *Default value is "match_op".*
 
 
-```c title="Set match_op_col parameter"
+```opensips title="Set match_op_col parameter"
 ...
 modparam("dialplan", "match_op_col", "column_name")
 ...
@@ -344,7 +344,7 @@ The column name to store the rule match expression.
 *Default value is "match_exp".*
 
 
-```c title="Set match_exp_col parameter"
+```opensips title="Set match_exp_col parameter"
 ...
 modparam("dialplan", "match_exp_col", "column_name")
 ...
@@ -362,7 +362,7 @@ The column name to store various matching flags. Currently
 *Default value is "match_flags".*
 
 
-```c title="Set match_flags_col parameter"
+```opensips title="Set match_flags_col parameter"
 ...
 modparam("dialplan", "match_flags_col", "column_name")
 ...
@@ -379,7 +379,7 @@ The column name to store the rule's substitution expression.
 *Default value is "subst_exp".*
 
 
-```c title="Set subs_exp_col parameter"
+```opensips title="Set subs_exp_col parameter"
 ...
 modparam("dialplan", "subst_exp_col", "column_name")
 ...
@@ -396,7 +396,7 @@ The column name to store the rule's replacement expression.
 *Default value is "repl_exp".*
 
 
-```c title="Set repl_exp_col parameter"
+```opensips title="Set repl_exp_col parameter"
 ...
 modparam("dialplan", "repl_exp_col", "column_name")
 ...
@@ -419,7 +419,7 @@ The column name that indicates an additional time recurrence check
 *Default value is "timerec".*
 
 
-```c title="Set timerec_col parameter"
+```opensips title="Set timerec_col parameter"
 ...
 modparam("dialplan", "timerec_col", "month_match")
 ...
@@ -436,7 +436,7 @@ The column name that indicates if the dialplan rule is disabled.
 *Default value is "disabled".*
 
 
-```c title="Set disabled_col parameter"
+```opensips title="Set disabled_col parameter"
 ...
 modparam("dialplan", "disabled_col", "disabled_column")
 ...
@@ -453,7 +453,7 @@ The column name to store rule-specific attributes.
 *Default value is "attrs".*
 
 
-```c title="Set attrs_col parameter"
+```opensips title="Set attrs_col parameter"
 ...
 modparam("dialplan", "attrs_col", "column_name")
 ...
@@ -490,7 +490,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE,
 	BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 dp_translate(240, $ru, $var(out));
 xlog("translated into '$var(out)' \n");
@@ -499,7 +499,7 @@ xlog("translated into '$var(out)' \n");
 ```
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 $avp(src) = $ruri.user;
 dp_translate($var(x), $avp(src), $var(y), $var(attrs));
@@ -509,7 +509,7 @@ xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ```
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 $var(id) = 10;
 dp_translate($var(id), $avp(in), , $avp(attrs), "example_partition");
@@ -519,7 +519,7 @@ xlog("matched with attributes '$avp(attrs) against example_partition'\n");
 ```
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 dp_translate(10, $var(in), , , $var(part));
 xlog("'$var(in)' matched against partition '$var(part)'\n")
