@@ -139,7 +139,7 @@ The following parameters can be used:
 *No default value, the parameter is mandatory.*
 
 
-```c title="Set modems parameter"
+```opensips title="Set modems parameter"
 ...
 modparam("sms", "modems", "Nokia [d=/dev/ttyS1;b=9600;m=new;l=30] ")
 modparam("sms", "modems", "Nokia[d=/dev/ttyS1];Siemens[d=/dev/ttyS2]")
@@ -179,7 +179,7 @@ Example of the starvation--a modem can send
 *No default value, the parameter is mandatory.*
 
 
-```c title="Set networks parameter"
+```opensips title="Set networks parameter"
 ...
 modparam("sms", "networks", "D1 [m=10] ;d2[ m=20]")
 ...
@@ -202,7 +202,7 @@ list_of_networks = network *( ";" network )
 *No default value, the parameter is mandatory.*
 
 
-```c title="Set links parameter"
+```opensips title="Set links parameter"
 ...
 modparam("sms", "links", "NOKIA[D1;d2]")
 ...
@@ -225,7 +225,7 @@ The default network to use. If no one specified, the first defined
 		(see [sec exported functions](#exported_functions)).
 
 
-```c title="Set default_net parameter"
+```opensips title="Set default_net parameter"
 ...
 modparam("sms", "default_net", "D1")
 ...
@@ -244,7 +244,7 @@ Shows in how many parts (SMS messages) a SIP
 *Default value is 4.*
 
 
-```c title="Set max_sms_parts parameter"
+```opensips title="Set max_sms_parts parameter"
 ...
 modparam("sms", "max_sms_parts", 10)
 ...
@@ -263,7 +263,7 @@ Specify a fake domain name to be used by the gateway. The Contact
 *Default is the name of the machine the gateway is running on.*
 
 
-```c title="Set domain_str parameter"
+```opensips title="Set domain_str parameter"
 ...
 modparam("sms", "domain_str", "foo.bar")
 ...
@@ -280,7 +280,7 @@ If a contact header should be added to the outgoing SIP messages.
 *Default is 0 (no).*
 
 
-```c title="Set use_contact parameter"
+```opensips title="Set use_contact parameter"
 ...
 modparam("sms", "use_contact", 1)
 ...
@@ -307,7 +307,7 @@ If the modem should ask for SMS confirmation from the
 *Default is 0 (no report).*
 
 
-```c title="Set sms_report_type parameter"
+```opensips title="Set sms_report_type parameter"
 ...
 modparam("sms", "sms_report_type", 1)
 ...
@@ -334,7 +334,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="sms_send_msg_to_net usage"
+```opensips title="sms_send_msg_to_net usage"
 ...
 if (sms_send_msg_to_net("D1"))
 {
@@ -364,7 +364,7 @@ The same as the previous one, but use the default network queue.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="sms_send_msg usage"
+```opensips title="sms_send_msg usage"
 ...
 if (sms_send_msg_to_net())
 {

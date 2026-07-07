@@ -47,7 +47,7 @@ The return code of the function executed in async mode is available in the very 
 
   
 
-```c
+```opensips
 
 route
 {
@@ -128,7 +128,7 @@ The return code of the function executed in async mode is available in the very 
 
   
 
-```c
+```opensips
 
 route
 {

@@ -50,7 +50,7 @@ The authorization is used to check if an account is allowed to start a new call
 Usage example:
 
 
-```c
+```opensips
 		...
 		if (cgrates_auth("$fU", "$rU"))
 			xlog("Call is allowed to run $cgrret seconds\n");
@@ -88,7 +88,7 @@ After the call is ended (by a BYE message), the CGRateS session is also ended.
 Usage example:
 
 
-```c
+```opensips
 		...
 		if (!cgrates_auth("$fU", "$rU")) {
 			sl_send_reply("403", "Forbidden");
@@ -118,7 +118,7 @@ You can use the *cgrates_cmd()* to send arbitrary
 The following example simulates the *cgrates_auth()* CGRateS call:
 
 
-```c
+```opensips
 		...
 		$cgr(Tenant) = $fd;
 		$cgr(Account) = $fU;
@@ -195,7 +195,7 @@ This parameter can have multiple values, for each server
 *Default value is "None".*
 
 
-```c title="Set cgrates_engine parameter"
+```opensips title="Set cgrates_engine parameter"
 ...
 modparam("cgrates", "cgrates_engine", "127.0.0.1")
 modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
@@ -216,7 +216,7 @@ IP used to bind the socket that communicates with the
 *Default value is "not set - any IP is used".*
 
 
-```c title="Set bind_ip parameter"
+```opensips title="Set bind_ip parameter"
 ...
 modparam("cgrates", "bind_ip", "10.0.0.100")
 ...
@@ -233,7 +233,7 @@ The maximum number of simultaneous asynchronous connections
 *Default value is "10".*
 
 
-```c title="Set max_async_connections parameter"
+```opensips title="Set max_async_connections parameter"
 ...
 modparam("cgrates", "max_async_connections", 20)
 ...
@@ -250,7 +250,7 @@ The number of seconds after which a disabled connection/engine
 *Default value is "60".*
 
 
-```c title="Set retry_timeout parameter"
+```opensips title="Set retry_timeout parameter"
 ...
 modparam("cgrates", "retry_timeout", 120)
 ...
@@ -326,7 +326,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="cgrates_acc() usage"
+```opensips title="cgrates_acc() usage"
 		...
 		if (!has_totag()) {
 			...
@@ -379,7 +379,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="cgrates_auth() usage"
+```opensips title="cgrates_auth() usage"
 		...
 		if (!has_totag()) {
 			...
@@ -427,7 +427,7 @@ The function can return the following values:
 This function can be used from any route.
 
 
-```c title="cgrates_cmd() usage"
+```opensips title="cgrates_cmd() usage"
 		...
 		# cgrates_auth("$fU", "$rU"); simulation
 		$cgr(Tenant) = $fd;
@@ -474,7 +474,7 @@ This variable consists of serveral sets of name-value pairs.
 				(no name) one is used.
 
 
-```c title="$cgr(name) simple usage"
+```opensips title="$cgr(name) simple usage"
 		...
 		if (!has_totag()) {
 			...
@@ -490,7 +490,7 @@ This variable consists of serveral sets of name-value pairs.
 ```
 
 
-```c title="$cgr(name) multiple sessions usage"
+```opensips title="$cgr(name) multiple sessions usage"
 		...
 		if (!has_totag()) {
 			...
@@ -525,7 +525,7 @@ This variable consists of serveral sets of name-value pairs.
 Returns the reply message of a CGRateS command in script.
 
 
-```c title="$cgrret usage"
+```opensips title="$cgrret usage"
 		...
 		cgrates_auth("$fU", "$rU");
 		xlog("Call is allowed to run $cgrret seconds\n");
@@ -573,7 +573,7 @@ The function can return the following values:
 - *-5* - CGRateS returned an invalid message.
 
 
-```c title="async cgrates_auth usage"
+```opensips title="async cgrates_auth usage"
 route {
 	...
 	async(cgrates_auth("$fU", "$rU"), auth_reply);
@@ -621,7 +621,7 @@ The function can return the following values:
 				message type (not an initial INVITE).
 
 
-```c title="async cgrates_cmd usage"
+```opensips title="async cgrates_cmd usage"
 route {
 	...
 	$cgr(Tenant) = $fd;

@@ -265,7 +265,7 @@ Each working mode behaves differently, as follows:
 Default value is **0** (contact mirroring mode)
 
 
-```c title="Setting the *mode* module parameter"
+```opensips title="Setting the *mode* module parameter"
 modparam("mid_registrar", "mode", 2)
 ```
 
@@ -285,7 +285,7 @@ SIP insertion mode of the module. Refer to
 Default value is **0** (route by Contact)
 
 
-```c title="Setting the *insertion_mode* module parameter"
+```opensips title="Setting the *insertion_mode* module parameter"
 modparam("mid_registrar", "insertion_mode", 1)
 ```
 
@@ -300,7 +300,7 @@ The minimum expires value of a Contact, values lower than this
 Default value is **10** (seconds)
 
 
-```c title="Setting the *min_expires* module parameter"
+```opensips title="Setting the *min_expires* module parameter"
 modparam("mid_registrar", "min_expires", 600)
 ```
 
@@ -316,7 +316,7 @@ If the processed message contains neither Expires HFs nor expires
 Default value is **3600** (seconds)
 
 
-```c title="Setting the *default_expires* module parameter"
+```opensips title="Setting the *default_expires* module parameter"
 modparam("mid_registrar", "default_expires", 1800)
 ```
 
@@ -331,7 +331,7 @@ The maximum expires value of a Contact, values higher than this
 Default value is **3600** (seconds)
 
 
-```c title="Setting the *max_expires* module parameter"
+```opensips title="Setting the *max_expires* module parameter"
 modparam("mid_registrar", "max_expires", 7200)
 ```
 
@@ -346,7 +346,7 @@ Only relevant in Contact/AOR throttling modes. Sets a minimal
 Default value is **3600** (seconds)
 
 
-```c title="Setting the *outgoing_expires* module parameter"
+```opensips title="Setting the *outgoing_expires* module parameter"
 modparam("mid_registrar", "outgoing_expires", 3600)
 ```
 
@@ -362,7 +362,7 @@ Only relevant in "Contact throttling" mode. Specifies the name of the
 Default value is **"rid"**
 
 
-```c title="Setting the *contact_match_param* module parameter"
+```opensips title="Setting the *contact_match_param* module parameter"
 modparam("mid_registrar", "contact_match_param", "regid")
 ```
 
@@ -381,7 +381,7 @@ Sets the default *"q"* value for new contacts.
 Default value is **0**
 
 
-```c title="Setting the *default_q* module parameter"
+```opensips title="Setting the *default_q* module parameter"
 modparam("mid_registrar", "default_q", 380)
 ```
 
@@ -401,7 +401,7 @@ Specifies the message flag to be used to control the
 Default value is **-1** (not set)
 
 
-```c title="Setting the *tcp_persistent_flag* module parameter"
+```opensips title="Setting the *tcp_persistent_flag* module parameter"
 modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATIONS")
 ```
 
@@ -428,7 +428,7 @@ It is meant as an alternative to DNS SRV records (not all SIP clients
 Default value is **NULL** (none)
 
 
-```c title="Setting the *realm_prefix* module parameter"
+```opensips title="Setting the *realm_prefix* module parameter"
 modparam("mid_registrar", "realm_prefix", "sip.")
 ```
 
@@ -444,7 +444,7 @@ If set to 1, then AOR comparison will be case
 Default value is **1** (true)
 
 
-```c title="Setting the *case_sensitive* module parameter"
+```opensips title="Setting the *case_sensitive* module parameter"
 modparam("mid_registrar", "case_sensitive", 0)
 ```
 
@@ -467,7 +467,7 @@ The module will store the value of the AVP configured by this
 Default value is **"NULL"** (disabled)
 
 
-```c title="Setting the *received_avp* module parameter"
+```opensips title="Setting the *received_avp* module parameter"
 modparam("mid_registrar", "received_avp", "$avp(rcv)")
 ```
 
@@ -487,7 +487,7 @@ The name of the parameter that will be appended to Contacts of
 Default value is **"received"**
 
 
-```c title="Setting the *received_param* module parameter"
+```opensips title="Setting the *received_param* module parameter"
 modparam("mid_registrar", "received_param", "rcv")
 ```
 
@@ -509,7 +509,7 @@ This is a global value and will only be used if no other value
 Default value is **0** (disabled)
 
 
-```c title="Setting the *max_contacts* module parameter"
+```opensips title="Setting the *max_contacts* module parameter"
 modparam("mid_registrar", "max_contacts", 10)
 ```
 
@@ -532,7 +532,7 @@ If you want to add the Retry-After header field in 5xx replies, set
 Default value is **0** (disabled)
 
 
-```c title="Setting the *retry_after* module parameter"
+```opensips title="Setting the *retry_after* module parameter"
 modparam("mid_registrar", "retry_after", 30)
 ```
 
@@ -546,7 +546,7 @@ Globally disable GRUU handling.
 Default value is **1** (GRUUs will not be handled)
 
 
-```c title="Setting the *gruu_secret* module parameter"
+```opensips title="Setting the *gruu_secret* module parameter"
 modparam("mid_registrar", "disable_gruu", 0)
 ```
 
@@ -561,7 +561,7 @@ The string that will be used in XORing when generating
 Default value is **"0p3nS1pS"**
 
 
-```c title="Setting the *gruu_secret* module parameter"
+```opensips title="Setting the *gruu_secret* module parameter"
 modparam("mid_registrar", "gruu_secret", "my_secret")
 ```
 
@@ -688,7 +688,7 @@ This parameter is a string composed of a set of flags.
 This function can only be used from the request route.
 
 
-```c title="*mid_registrar_save* usage"
+```opensips title="*mid_registrar_save* usage"
 ...
 if (is_method("REGISTER")) {
 	mid_registrar_save("location");
@@ -808,7 +808,7 @@ Meaning of the parameters is as follows:
 This function can only be used from the request route.
 
 
-```c title="*mid_registrar_lookup* usage"
+```opensips title="*mid_registrar_lookup* usage"
 ...
 	# initial invites from the main registrar - need to look them up!
 	if (is_method("INVITE") and $si == "10.0.0.3" and $sp == 5070) {
