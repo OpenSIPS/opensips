@@ -180,7 +180,7 @@ If this parameter is set, only the dialog element with the
 *Default value is "0".*
 
 
-```c title="Set parameter"
+```opensips title="Set parameter"
 ...
 modparam("presence_dialoginfo", "force_single_dialog", 1)
 ...

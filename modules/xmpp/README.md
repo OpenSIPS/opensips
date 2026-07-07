@@ -92,7 +92,7 @@ The mode you are using the module; it can be either component or server.
 *Default value is "component".*
 
 
-```c title="Set backend parameter"
+```opensips title="Set backend parameter"
 ...
  modparam("xmpp", "backend", "server")
 ...
@@ -108,7 +108,7 @@ The xmpp domain of the component or the server, depending on the mode we are in.
 *Default value is "127.0.0.1".*
 
 
-```c title="Set xmpp_domain parameter"
+```opensips title="Set xmpp_domain parameter"
 ...
  modparam("xmpp", "xmpp_domain", "xmpp.opensips.org")
 ...
@@ -124,7 +124,7 @@ The ip address or the name of the local jabber server, if the backend is set to 
 *Default value is "127.0.0.1".*
 
 
-```c title="Set xmpp_host parameter"
+```opensips title="Set xmpp_host parameter"
 ...
  modparam("xmpp", "xmpp_host", "xmpp.opensips.org")
 ...
@@ -150,7 +150,7 @@ This parameter must be set only if the xmpp module is used in component mode and
 *Default value is NULL.*
 
 
-```c title="Set xmpp_host parameter"
+```opensips title="Set xmpp_host parameter"
 ...
  modparam("xmpp", "sip_domain", "sip.opensips.org")
 ...
@@ -166,7 +166,7 @@ In the component mode, this is the port of the jabber router we connect to. In t
 *Default value is "5347", if backend is set to "component" and "5269", if backend is set to "server".*
 
 
-```c title="Set xmpp_port parameter"
+```opensips title="Set xmpp_port parameter"
 ...
  modparam("xmpp", "xmpp_port", 5269)
 ...
@@ -191,7 +191,7 @@ The password of the local jabber server.
 ```
 
 
-```c title="Set xmpp_password parameter"
+```opensips title="Set xmpp_password parameter"
 ...
  modparam("xmpp", "xmpp_password", "secret")
 ...
@@ -211,7 +211,7 @@ The SIP address used as next hop when sending the message. Very
 *Default value is NULL.*
 
 
-```c title="Set outbound_proxy parameter"
+```opensips title="Set outbound_proxy parameter"
 ...
  modparam("xmpp", "outbound_proxy", "sip:opensips.org;transport=tcp")
 ...
@@ -227,7 +227,7 @@ The SIP address used as next hop when sending the message. Very
 Converts SIP messages to XMPP(jabber) messages, in order to be relayed to a XMPP(jabber) client.
 
 
-```c title="xmpp_send_message() usage"
+```opensips title="xmpp_send_message() usage"
 ...
 xmpp_send_message();
 ...

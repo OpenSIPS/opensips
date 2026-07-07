@@ -85,7 +85,7 @@ If set, the module is a fully operational
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("presence", "db_url", 
 	"mysql://opensips:opensipsrw@192.168.2.132/opensips")
@@ -103,7 +103,7 @@ Setting this parameter enables a fallback to db mode of operation.
 		using the same database.
 
 
-```c title="Set fallback2db parameter"
+```opensips title="Set fallback2db parameter"
 ...
 modparam("presence", "fallback2db", 1)
 ...
@@ -126,7 +126,7 @@ For more on presence clustering see the
 *Default value is "None".*
 
 
-```c title="Set cluster_id parameter"
+```opensips title="Set cluster_id parameter"
 ...
 modparam("presence", "cluster_id", 2)
 ...
@@ -149,7 +149,7 @@ For more on presence clustering see the
 *Default value is "0" (disabled).*
 
 
-```c title="Set cluster_federation_mode parameter"
+```opensips title="Set cluster_federation_mode parameter"
 ...
 modparam("presence", "cluster_federation_mode", 1)
 ...
@@ -171,7 +171,7 @@ For more on presence clustering see the
 *Default value is "empty" (meaning all).*
 
 
-```c title="Set cluster_pres_events parameter"
+```opensips title="Set cluster_pres_events parameter"
 ...
 modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, message-summary")
 ...
@@ -197,7 +197,7 @@ For more on presence clustering see the
 *Default value is "empty" (none).*
 
 
-```c title="Set cluster_sharing_tags parameter"
+```opensips title="Set cluster_sharing_tags parameter"
 ...
 modparam("presence", "cluster_sharing_tags" ,"vip1=active")
 modparam("presence", "cluster_sharing_tags" ,"vip2=backup")
@@ -214,7 +214,7 @@ The extra time to store a subscription/publication.
 *Default value is "0".*
 
 
-```c title="Set expires_offset parameter"
+```opensips title="Set expires_offset parameter"
 ...
 modparam("presence", "expires_offset", 10)
 ...
@@ -231,7 +231,7 @@ The the maximum admissible expires value for SUBSCRIBE
 *Default value is "3600".*
 
 
-```c title="Set max_expires_subscribe parameter"
+```opensips title="Set max_expires_subscribe parameter"
 ...
 modparam("presence", "max_expires_subscribe", 3600)
 ...
@@ -248,7 +248,7 @@ The the maximum admissible expires value for PUBLISH
 *Default value is "3600".*
 
 
-```c title="Set max_expires_publish parameter"
+```opensips title="Set max_expires_publish parameter"
 ...
 modparam("presence", "max_expires_publish", 3600)
 ...
@@ -271,7 +271,7 @@ If not set (as it is by default), OpenSIPS will generate the Contact
 		URI based on the interface it received the SIP traffic.
 
 
-```c title="Set server_address parameter"
+```opensips title="Set server_address parameter"
 ...
 modparam("presence", "server_address", "sip:10.10.10.10:5060")
 ...
@@ -291,7 +291,7 @@ This parameter is a flag that should be set if permission rules
 *Default value is "0 ".*
 
 
-```c title="Set enable_sphere_check parameter"
+```opensips title="Set enable_sphere_check parameter"
 ...
 modparam("presence", "enable_sphere_check", 1)
 ...
@@ -313,7 +313,7 @@ The number of days to keep the record of a subscription in server
 			value is 30 days.*
 
 
-```c title="Set waiting_subs_daysno parameter"
+```opensips title="Set waiting_subs_daysno parameter"
 ...
 modparam("presence", "waiting_subs_daysno", 2)
 ...
@@ -335,7 +335,7 @@ This module parameter enables a very nice feature in the presence
 *Default value is "0".*
 
 
-```c title="Set mix_dialog_presence parameter"
+```opensips title="Set mix_dialog_presence parameter"
 ...
 modparam("presence", "mix_dialog_presence", 1)
 ...
@@ -360,7 +360,7 @@ By default the presentity uri for BLA subscribes (event=dialog;sla)
 *Default value is "NULL".*
 
 
-```c title="Set bla_presentity_spec parameter"
+```opensips title="Set bla_presentity_spec parameter"
 ...
 modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
 ...
@@ -387,7 +387,7 @@ In some cases(configurations) however this is not desirable, so
 *Default value is "1".*
 
 
-```c title="Set bla_fix_remote_target parameter"
+```opensips title="Set bla_fix_remote_target parameter"
 ...
 modparam("presence", "bla_fix_remote_target", 0)
 ...
@@ -407,7 +407,7 @@ If this parameter is set, when no published info is found for
 *Default value is "0".*
 
 
-```c title="Set notify_offline_body parameter"
+```opensips title="Set notify_offline_body parameter"
 ...
 modparam("presence", "notify_offline_body", 1)
 ...
@@ -426,7 +426,7 @@ If a presence subscription should be automatically terminated
 *Default value is "1" (enabled).*
 
 
-```c title="Set end_sub_on_timeout parameter"
+```opensips title="Set end_sub_on_timeout parameter"
 ...
 modparam("presence", "end_sub_on_timeout", 0)
 ...
@@ -444,7 +444,7 @@ The period at which to clean the expired subscription dialogs.
 		value disables this activity.*
 
 
-```c title="Set clean_period parameter"
+```opensips title="Set clean_period parameter"
 ...
 modparam("presence", "clean_period", 100)
 ...
@@ -462,7 +462,7 @@ The period at which to synchronize cached subscriber info with the
 		value disables synchronization.*
 
 
-```c title="Set db_update_period parameter"
+```opensips title="Set db_update_period parameter"
 ...
 modparam("presence", "db_update_period", 100)
 ...
@@ -478,7 +478,7 @@ The name of the db table where Publish information are stored.
 *Default value is "presentity".*
 
 
-```c title="Set presentity_table parameter"
+```opensips title="Set presentity_table parameter"
 ...
 modparam("presence", "presentity_table", "presentity")
 ...
@@ -495,7 +495,7 @@ The name of the db table where active subscription information are
 *Default value is "active_watchers".*
 
 
-```c title="Set active_watchers_table parameter"
+```opensips title="Set active_watchers_table parameter"
 ...
 modparam("presence", "active_watchers_table", "active_watchers")
 ...
@@ -511,7 +511,7 @@ The name of the db table where subscription states are stored.
 *Default value is "watchers".*
 
 
-```c title="Set watchers_table parameter"
+```opensips title="Set watchers_table parameter"
 ...
 modparam("presence", "watchers_table", "watchers")
 ...
@@ -528,7 +528,7 @@ The size of the hash table to store subscription dialogs.
 *Default value is "9 (512)".*
 
 
-```c title="Set subs_htable_size parameter"
+```opensips title="Set subs_htable_size parameter"
 ...
 modparam("presence", "subs_htable_size", 11)
 ...
@@ -546,7 +546,7 @@ The size of the hash table to store publish records.
 *Default value is "9 (512)".*
 
 
-```c title="Set pres_htable_size parameter"
+```opensips title="Set pres_htable_size parameter"
 ...
 modparam("presence", "pres_htable_size", 11)
 ...
@@ -587,7 +587,7 @@ The module sends an appropriate stateless reply
 			in all cases.
 
 
-```c title="handle_publish usage"
+```opensips title="handle_publish usage"
 ...
 	if(is_method("PUBLISH"))
 	{
@@ -633,7 +633,7 @@ There are scenarios where the presentity (the party you
 				chapter for more details.
 
 
-```c
+```opensips
    Ex: 
 	if($ru =~ "kphone@opensips.org")
 		handle_subscribe("1");
@@ -655,7 +655,7 @@ The module sends an appropriate stateless reply
 			in all cases.
 
 
-```c title="handle_subscribe usage"
+```opensips title="handle_subscribe usage"
 ...
 if($rm=="SUBSCRIBE")
     handle_subscribe();
