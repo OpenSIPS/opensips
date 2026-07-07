@@ -20,7 +20,7 @@ In order to send or listen for Binary Packets, an interface must be specified us
 
 Currently, the only module to make use of the interface is the **dialog** module, which can now replicate all dialog-related events to one or more OpenSIPS instances. Configuration can be done as follows:
 
-```c
+```opensips
 
    modparam("dialog", "accept_replicated_dialogs", 1)
    modparam("dialog", "replicate_dialogs_to", "78.46.64.50:5062")

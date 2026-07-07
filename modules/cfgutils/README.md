@@ -73,7 +73,7 @@ Default value is
 			"10".
 
 
-```c title="initial_probability parameter usage"
+```opensips title="initial_probability parameter usage"
    
 modparam("cfgutils", "initial_probability", 15)
    
@@ -90,7 +90,7 @@ There is no default value, is no parameter is given the hash functionality
 		is disabled.
 
 
-```c title="hash_file parameter usage"
+```opensips title="hash_file parameter usage"
    
 modparam("cfgutils", "hash_file", "/etc/opensips/opensips.cfg")
    
@@ -119,7 +119,7 @@ The value of the parameter has the format:
 Default value is "NULL".
 
 
-```c title="shvset parameter usage"
+```opensips title="shvset parameter usage"
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 modparam("cfgutils", "shvset", "pstngw=s:sip:10.10.10.10")
@@ -149,7 +149,7 @@ The value of the parameter has the format:
 Default value is "NULL".
 
 
-```c title="varset parameter usage"
+```opensips title="varset parameter usage"
 ...
 modparam("cfgutils", "varset", "init=i:1")
 modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
@@ -173,7 +173,7 @@ Note that the *lock_pool_size* parameter only affects
 Default value is "32".
 
 
-```c title="Setting lock_pool_size module parameter"
+```opensips title="Setting lock_pool_size module parameter"
 modparam("cfgutils", "lock_pool_size", "64")
 ```
 
@@ -189,7 +189,7 @@ Return true or false, depending on a random value and a
 			override the global parameter set by rand_set_prob() function.
 
 
-```c title="rand_event() usage"
+```opensips title="rand_event() usage"
 ...
 if (rand_event()) {
   append_to_reply("Retry-After: 120\n");
@@ -210,7 +210,7 @@ Set the "probability" of the decision.
 "probability" can have a value from the range 0..99.
 
 
-```c title="rand_set_prob() usage"
+```opensips title="rand_set_prob() usage"
 ...
 rand_set_prob("4");
 ...
@@ -223,7 +223,7 @@ rand_set_prob("4");
 Reset the probability back to the inital value.
 
 
-```c title="rand_reset_prob() usage"
+```opensips title="rand_reset_prob() usage"
 ...
 rand_reset_prob();
 ...
@@ -236,7 +236,7 @@ rand_reset_prob();
 Return the current probability setting, e.g. for logging purposes.
 
 
-```c title="rand_get_prob() usage"
+```opensips title="rand_get_prob() usage"
 ...
 rand_get_prob();
    
@@ -261,7 +261,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="sleep usage"
+```opensips title="sleep usage"
 ...
 sleep("1");
 ...
@@ -290,7 +290,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="usleep usage"
+```opensips title="usleep usage"
 ...
 usleep("500000"); # sleep half of sec
 ...
@@ -309,7 +309,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="abort usage"
+```opensips title="abort usage"
 ...
 abort();
 ...
@@ -330,7 +330,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="pkg_status usage"
+```opensips title="pkg_status usage"
 ...
 pkg_status();
 ...
@@ -351,7 +351,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="shm_status usage"
+```opensips title="shm_status usage"
 ...
 shm_status();
 ...
@@ -374,7 +374,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="set_count usage"
+```opensips title="set_count usage"
 ...
 set_count("$avp(10)", "$avp(result)");
 ...
@@ -396,7 +396,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="set_select_weight usage"
+```opensips title="set_select_weight usage"
 ...
 $avp(21) = set_select_weight("$avp(10)");
 ...
@@ -416,7 +416,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="ts_usec_delta usage"
+```opensips title="ts_usec_delta usage"
 ...
 ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 ...
@@ -453,7 +453,7 @@ The *time_string* parameter can have the following types:
 				existing pseudo-variable (as string value)
 
 
-```c title="check_time_rec usage"
+```opensips title="check_time_rec usage"
 ...
 # Only passing if still in 2012
 if (check_time_rec("20120101T000000|20121231T235959")) {
@@ -501,7 +501,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
 
 
-```c title="get_static_lock usage"
+```opensips title="get_static_lock usage"
 # acquire and release a static lock 
 ...
 get_static_lock("Zone_1");
@@ -534,7 +534,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
-```c title="release_static_lock usage"
+```opensips title="release_static_lock usage"
 # acquire and release a static lock 
 ...
 get_static_lock("Zone_1");
@@ -579,7 +579,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
-```c title="get_dynamic_lock usage"
+```opensips title="get_dynamic_lock usage"
 ...
 # acquire and release a dynamic lock on the "Call-ID" Header of a SIP message
 if (!get_dynamic_lock("$ci")) {
@@ -616,7 +616,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
-```c title="release_dynamic_lock usage"
+```opensips title="release_dynamic_lock usage"
 ...
 # acquire and release a dynamic lock on the "Call-ID" Header of a SIP message
 if (!get_dynamic_lock("$ci")) {
@@ -662,7 +662,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
-```c title="strings_share_lock usage"
+```opensips title="strings_share_lock usage"
 ...
 # Proper way of acquiring two dynamic locks successively
 if (!get_dynamic_lock("$avp(1)")) {
@@ -856,7 +856,7 @@ $ opensipsctl fifo shv_get
 This PV provides access to the environment variable 'name'.
 
 
-```c title="env(name) pseudo-variable usage"
+```opensips title="env(name) pseudo-variable usage"
 ...
 xlog("PATH environment variable is $env(PATH)\n");
 ...
@@ -870,7 +870,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 Returns a random value from the [0 - 2^31) range.
 
 
-```c title="RANDOM pseudo-variable usage"
+```opensips title="RANDOM pseudo-variable usage"
 ...
 $avp(10) = ($RANDOM / 16777216); # 2^24
 if ($avp(10) < 10) {
@@ -905,7 +905,7 @@ The "name" can be:
 - *isdst* - return daylight saving time status (int, 0 - DST off, >0 DST on)
 
 
-```c title="ctime(name) pseudo-variable usage"
+```opensips title="ctime(name) pseudo-variable usage"
 ...
 if ($ctime(year) == 2008) {
 	xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -926,7 +926,7 @@ It is a class of pseudo-variables stored in shared memory. The
 				functions to get/set the value of shared variables.
 
 
-```c title="shv(name) pseudo-variable usage"
+```opensips title="shv(name) pseudo-variable usage"
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...

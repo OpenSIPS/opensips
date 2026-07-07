@@ -229,7 +229,7 @@ Specifies the root path for pi HTTP requests.
 *The default value is "pi".*
 
 
-```c title="Set pi_http_root parameter"
+```opensips title="Set pi_http_root parameter"
 ...
 modparam("pi_http", "pi_http_root", "opensips_pi")
 ...
@@ -245,7 +245,7 @@ Specifies the full path for xml framework descriptor.
 *There's no default value. This parameter is mandatory.*
 
 
-```c title="Set framework parameter"
+```opensips title="Set framework parameter"
 ...
 modparam("pi_http", "framework", "/usr/local/etc/opensips/pi_framework.xml")
 ...
@@ -265,7 +265,7 @@ Specifies the HTTP request method to be used:
 *The default value is 0.*
 
 
-```c title="Set pi_http_method parameter"
+```opensips title="Set pi_http_method parameter"
 ...
 modparam("pi_http", "pi_http_method", 1)
 ...

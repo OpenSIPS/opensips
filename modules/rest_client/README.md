@@ -47,7 +47,7 @@ Maximum time allowed to establish a connection with the server.
 *Default value is "20" seconds.*
 
 
-```c title="Setting the connection_timeout parameter"
+```opensips title="Setting the connection_timeout parameter"
 ...
 modparam("rest_client", "connection_timeout", 300)
 ...
@@ -63,7 +63,7 @@ Maximum time allowed for the libcurl transfer to complete.
 *Default value is "20" seconds.*
 
 
-```c title="Setting the curl_timeout parameter"
+```opensips title="Setting the curl_timeout parameter"
 ...
 modparam("rest_client", "curl_timeout", 300)
 ...
@@ -106,7 +106,7 @@ This function can be used from the *startup, branch, failure,
 				request* and *timer* routes.
 
 
-```c title="rest_get usage"
+```opensips title="rest_get usage"
 ...
 # Example of querying a REST service to get the credit of an account
 
@@ -152,7 +152,7 @@ This function can be used from the *startup, branch, failure,
 				request* and *timer* routes.
 
 
-```c title="rest_post usage"
+```opensips title="rest_post usage"
 ...
 # Storing data using a RESTful service with an HTTP POST request
 

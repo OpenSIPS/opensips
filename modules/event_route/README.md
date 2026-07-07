@@ -31,7 +31,7 @@ In order to retrieve the parameters of an event, the
 		Example:
 
 
-```c
+```opensips
 fetch_even_params("$avp(first_param)");
 fetch_even_params("ip=$avp(pike_ip)");
 fetch_even_params("source=$avp(src);destination=$avp(dst)");
@@ -64,7 +64,7 @@ In order to handle the *E_PIKE_BLOCKED* event,
 
 			EVENT_ROUTE usage
 					
-```c
+```opensips
 
 	event_route[E_PIKE_BLOCKED] {
 		fetch_event_params("ip=$avp(pike-ip)");
@@ -130,7 +130,7 @@ The the pseudo variables list as described in [event route parameters](#route_ev
 This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
 
 
-```c title="fetch_event_params usage"
+```opensips title="fetch_event_params usage"
 ...
 fetch_even_params("$avp(first_param)"); # fetch the first parameter of an event
 fetch_even_params("ip=$avp(pike_ip)");  # fetch the ip parameter
