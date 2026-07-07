@@ -124,7 +124,7 @@ The domain suffix to be added to the domain name obtained from
 Default value is "e164.arpa."
 
 
-```c title="Setting domain_suffix module parameter"
+```opensips title="Setting domain_suffix module parameter"
 modparam("enum", "domain_suffix", "e1234.arpa.")
 ```
 
@@ -144,7 +144,7 @@ A string whose contents is appended to each new tel URI in the
 Default value is ""
 
 
-```c title="Setting tel_uri_params module parameter"
+```opensips title="Setting tel_uri_params module parameter"
 modparam("enum", "tel_uri_params", ";npdi")
 ```
 
@@ -159,7 +159,7 @@ The domain suffix to be used for i_enum_query() lookups.
 Default value is "e164.arpa."
 
 
-```c title="Setting i_enum_suffix module parameter"
+```opensips title="Setting i_enum_suffix module parameter"
 modparam("enum", "i_enum_suffix", "e1234.arpa.")
 ```
 
@@ -174,7 +174,7 @@ The domain suffix to be used for isn_query() lookups. Can
 Default value is "freenum.org."
 
 
-```c title="Setting isn_suffix module parameter"
+```opensips title="Setting isn_suffix module parameter"
 modparam("enum", "isn_suffix", "freenum.org.")
 ```
 
@@ -189,7 +189,7 @@ This parameter determines which label i_enum_query() will use
 Default value is ""i""
 
 
-```c title="Setting branchlabel module parameter"
+```opensips title="Setting branchlabel module parameter"
 modparam("enum", "branchlabel", "i")
 ```
 
@@ -237,7 +237,7 @@ i.1.e164.arpa.     TYPE65300  \# 14 (
 Default value is "cc"
 
 
-```c title="Setting the bl_algorithm module parameter"
+```opensips title="Setting the bl_algorithm module parameter"
 modparam("enum", "bl_algorithm", "txt")
 ```
 
@@ -269,7 +269,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="enum_query usage"
+```opensips title="enum_query usage"
 ...
 # search for "e2u+sip" in freenum.org 
 enum_query("freenum.org.", , $avp(number));
@@ -340,7 +340,7 @@ See ftp://www.ietf.org/rfc/rfc3872.txt and
 			regarding the ITAD part of the ISN string.
 
 
-```c title="isn_query usage"
+```opensips title="isn_query usage"
 ...
 # search for "e2u+sip" in freenum.org 
 isn_query("freenum.org.");
@@ -374,7 +374,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_from_user_enum usage"
+```opensips title="is_from_user_enum usage"
 ...
 if (is_from_user_enum()) {
 	....

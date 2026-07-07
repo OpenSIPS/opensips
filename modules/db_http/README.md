@@ -34,7 +34,7 @@ Even if using HTTPS the url must begin with "http://" , and the
 	SSL parameter for the module must be set to 1.
 
 
-```c title="Setting db_url for a module"
+```opensips title="Setting db_url for a module"
 ...
 modparam("presence", "db_url","http://user:pass@localhost:13100")
 or
@@ -74,7 +74,7 @@ If value is 1 the module will use https otherwise
 *Default value is " 0 ".*
 
 
-```c title="Set SSL parameter"
+```opensips title="Set SSL parameter"
 ...
 modparam("db_http", "SSL",1)
 ...
@@ -90,7 +90,7 @@ Whether or not the server supports raw queries.
 *Default value is "0".*
 
 
-```c title="Set cap_raw_query parameter"
+```opensips title="Set cap_raw_query parameter"
 ...
 modparam("db_http", "cap_raw_query", 1)
 ...
@@ -106,7 +106,7 @@ Whether or not the server supports replace capabilities.
 *Default value is "0".*
 
 
-```c title="Set cap_replace parameter"
+```opensips title="Set cap_replace parameter"
 ...
 modparam("db_http", "cap_replace", 1)
 ...
@@ -122,7 +122,7 @@ Whether or not the server supports insert_update capabilities.
 *Default value is "0".*
 
 
-```c title="Set cap_insert_update parameter"
+```opensips title="Set cap_insert_update parameter"
 ...
 modparam("db_http", "cap_insert_update", 1)
 ...
@@ -138,7 +138,7 @@ Whether or not the server supports last_inserted_id capabilities.
 *Default value is "0".*
 
 
-```c title="Set cap_last_inserted_id parameter"
+```opensips title="Set cap_last_inserted_id parameter"
 ...
 modparam("db_http", "cap_last_inserted_id", 1)
 ...
@@ -155,7 +155,7 @@ Character to be used to delimit fields in the reply.Only
 *Default value is ";"*
 
 
-```c title="Set field_delimiter parameter"
+```opensips title="Set field_delimiter parameter"
 ...
 modparam("db_http", "field_delimiter",";")
 ...
@@ -172,7 +172,7 @@ Character to be used to delimit rows in the reply.Only
 *Default value is "\n"*
 
 
-```c title="Set row_delimiter parameter"
+```opensips title="Set row_delimiter parameter"
 ...
 modparam("db_http", "row_delimiter","\n")
 ...
@@ -189,7 +189,7 @@ Character to be used to quote  fields that require quoting
 *Default value is "|"*
 
 
-```c title="Set quote_delimiter parameter"
+```opensips title="Set quote_delimiter parameter"
 ...
 modparam("db_http", "quote_delimiter","|")
 ...
@@ -207,7 +207,7 @@ The delimiter used to separate multiple fields of a single
 *Default value is ","*
 
 
-```c title="Set value_delimiter parameter"
+```opensips title="Set value_delimiter parameter"
 ...
 modparam("db_http", "value_delimiter",";")
 ...
@@ -223,7 +223,7 @@ The maximum number of milliseconds that the HTTP ops are allowed to last
 *Default value is "30000 ( 30 seconds )"*
 
 
-```c title="Set timeout parameter"
+```opensips title="Set timeout parameter"
 ...
 modparam("db_http", "timeout",5000)
 ...
@@ -241,7 +241,7 @@ Disables automatic 'Expect: 100-continue' behavior in libcurl for requests over 
 *Default value is "0 (off)"*
 
 
-```c title="Set disable_expect parameter"
+```opensips title="Set disable_expect parameter"
 ...
 modparam("db_http", "disable_expect",1)
 ...
