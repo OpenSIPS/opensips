@@ -132,7 +132,7 @@ The following libraries or applications must be installed before running
 Multiple value parameter used for virtual DB URLs declaration.
 
 
-```c title="Set db_urls parameter"
+```opensips title="Set db_urls parameter"
 ...
 
 modparam("group","db_url","virtual://set1")
@@ -160,7 +160,7 @@ Time interval after which a registered timer process attempts to check
 *Default value is 10 (10 sec).*
 
 
-```c title="Set db_probe_time parameter"
+```opensips title="Set db_probe_time parameter"
 ...
 modparam("db_virtual", "db_probe_time", 20)
 ...
@@ -181,7 +181,7 @@ After the timer process has reported that it can connect to the real db,
 *Default value is 10 (10 consecutive times).*
 
 
-```c title="Set db_max_consec_retrys parameter"
+```opensips title="Set db_max_consec_retrys parameter"
 ...
 modparam("db_virtual", "db_max_consec_retrys", 20)
 ...

@@ -54,7 +54,7 @@ DB URL for database connection. As the module allows the usage
 *This parameter is optional, it's default value being NULL.*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 # default URL
 modparam("sqlops","db_url","mysql://user:passwd@host/database")
@@ -75,7 +75,7 @@ DB table to be used for user preferences (AVPs)
 					"usr_preferences".*
 
 
-```c title="Set usr_table parameter"
+```opensips title="Set usr_table parameter"
 ...
 modparam("sqlops","usr_table","avptable")
 ...
@@ -107,7 +107,7 @@ Definition of a DB scheme. Scheme syntax is:
 *Default value is "NULL".*
 
 
-```c title="Set db_scheme parameter"
+```opensips title="Set db_scheme parameter"
 ...
 modparam("sqlops","db_scheme",
 "scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
@@ -126,7 +126,7 @@ If the domain part of the a SIP URI should be used for
 *Default value is *true* (enabled).*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("sqlops", "use_domain", true)
 ...
@@ -150,7 +150,7 @@ If the size is exceeded (when trying to build the PS query ID),
 *Default value is 1024.*
 
 
-```c title="Set ps_id_max_buf_len parameter"
+```opensips title="Set ps_id_max_buf_len parameter"
 ...
 modparam("sqlops","ps_id_max_buf_len", 2048)
 ...
@@ -171,7 +171,7 @@ Controls bigint conversion.
 *Default value is "0".*
 
 
-```c title="Set bigint_to_str parameter"
+```opensips title="Set bigint_to_str parameter"
 ...
 # Return bigint as string
 modparam("sqlops","bigint_to_str",1)
@@ -189,7 +189,7 @@ Name of column containing the uuid (unique user id).
 *Default value is "uuid".*
 
 
-```c title="Set uuid_column parameter"
+```opensips title="Set uuid_column parameter"
 ...
 modparam("sqlops","uuid_column","uuid")
 ...
@@ -206,7 +206,7 @@ Name of column containing the username.
 *Default value is "username".*
 
 
-```c title="Set username_column parameter"
+```opensips title="Set username_column parameter"
 ...
 modparam("sqlops","username_column","username")
 ...
@@ -223,7 +223,7 @@ Name of column containing the domain name.
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("sqlops","domain_column","domain")
 ...
@@ -240,7 +240,7 @@ Name of column containing the attribute name (AVP name).
 *Default value is "attribute".*
 
 
-```c title="Set attribute_column parameter"
+```opensips title="Set attribute_column parameter"
 ...
 modparam("sqlops","attribute_column","attribute")
 ...
@@ -257,7 +257,7 @@ Name of column containing the AVP value.
 *Default value is "value".*
 
 
-```c title="Set value_column parameter"
+```opensips title="Set value_column parameter"
 ...
 modparam("sqlops","value_column","value")
 ...
@@ -274,7 +274,7 @@ Name of column containing the AVP type.
 *Default value is "type".*
 
 
-```c title="Set type_column parameter"
+```opensips title="Set type_column parameter"
 ...
 modparam("sqlops","type_column","type")
 ...
@@ -327,7 +327,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="sql_query usage"
+```opensips title="sql_query usage"
 ...
 sql_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
 	"$avp(pass);$avp(hash)");
@@ -367,7 +367,7 @@ Similar to [sql query](#func_sql_query), it makes a generic raw
 This function can be used from any type of route.
 
 
-```c title="sql_query_one usage"
+```opensips title="sql_query_one usage"
 ...
 sql_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'",
 	"$var(pass);$var(hash)");
@@ -450,7 +450,7 @@ The meaning and usage of the parameters:
 This function can be used from any type of route.
 
 
-```c title="sql_select usage"
+```opensips title="sql_select usage"
 ...
 sql_select('["password","ha1"]', 'subscriber',
 	'[ {"username": "$tu"}, {"domain": {"!=", null}}]', ,
@@ -486,7 +486,7 @@ Similar to [sql select](#func_sql_select), it makes a SELECT SQL
 This function can be used from any type of route.
 
 
-```c title="sql_select_one usage"
+```opensips title="sql_select_one usage"
 ...
 sql_select_one('["value","type"]', 'usr_preferences',
 	'[ {"username": "$tu"}, {"attribute": "cfna"}]', ,
@@ -574,7 +574,7 @@ The meaning and usage of the parameters:
 This function can be used from any type of route.
 
 
-```c title="sql_insert usage"
+```opensips title="sql_insert usage"
 ...
 sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]' );
 ...
@@ -616,7 +616,7 @@ The meaning and usage of the parameters:
 This function can be used from any type of route.
 
 
-```c title="sql_delete usage"
+```opensips title="sql_delete usage"
 ...
 sql_delete( 'subscriber', '[{"username": "$tu"}]');
 ...
@@ -675,7 +675,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="sql_avp_load usage"
+```opensips title="sql_avp_load usage"
 ...
 sql_avp_load("$fu", "$avp(678)");
 sql_avp_load("$ru/domain", "i/domain_preferences");
@@ -710,7 +710,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="sql_avp_store usage"
+```opensips title="sql_avp_store usage"
 ...
 sql_avp_store("$tu", "$avp(678)");
 sql_avp_store("$ru/username", "$avp(email)");
@@ -737,7 +737,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="sql_avp_delete usage"
+```opensips title="sql_avp_delete usage"
 ...
 sql_avp_delete("$tu", "$avp(678)");
 sql_avp_delete("$ru/username", "$avp(email)");
@@ -766,7 +766,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="async sql_query usage"
+```opensips title="async sql_query usage"
 ...
 {
 ...
@@ -804,7 +804,7 @@ This function takes the same parameters and behaves identically
 This function can be used from any route.
 
 
-```c title="async sql_query_one usage"
+```opensips title="async sql_query_one usage"
 ...
 {
 ...

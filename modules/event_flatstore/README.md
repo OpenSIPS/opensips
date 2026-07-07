@@ -68,7 +68,7 @@ Defines the maximum number of simultaneously opened files by the
 *Default value is "100".*
 
 
-```c title="Set max_open_sockets parameter"
+```opensips title="Set max_open_sockets parameter"
 ...
 modparam("event_flatstore", "max_open_sockets", 200)
 ...
@@ -84,7 +84,7 @@ Sets the separator between the parameters of the event in the logging file.
 *Default value is ",".*
 
 
-```c title="Set delimiter parameter"
+```opensips title="Set delimiter parameter"
 ...
 modparam("event_flatstore", "delimiter", ";")
 ...
@@ -109,7 +109,7 @@ If set, its length *must be exactly equal* to the
 *Default value is """" (escaping disabled).*
 
 
-```c title="Enable escaping of ',' with '|'"
+```opensips title="Enable escaping of ',' with '|'"
 ...
 modparam("event_flatstore", "delimiter", ",")
 modparam("event_flatstore", "escape_delimiter", "|")
@@ -128,7 +128,7 @@ Sets the permissions for the newly created logs. It
 *Default value is "644".*
 
 
-```c title="Set file_permissions parameter"
+```opensips title="Set file_permissions parameter"
 ...
 modparam("event_flatstore", "file_permissions", "664")
 ...
@@ -144,7 +144,7 @@ Suppresses the name of the event in the log file.
 *Default value is "0/OFF" (the event's name is printed).*
 
 
-```c title="Set suppress_event_name parameter"
+```opensips title="Set suppress_event_name parameter"
 ...
 modparam("event_flatstore", "suppress_event_name", 1)
 ...
@@ -162,7 +162,7 @@ When used, it triggers a file auto-rotate. The period is matched
 *Default value is "0/OFF" (the file is never auto-rotated)*
 
 
-```c title="Set rotate_period parameter"
+```opensips title="Set rotate_period parameter"
 ...
 modparam("event_flatstore", "rotate_period", 60) # rotate every minute
 modparam("event_flatstore", "rotate_period", 3660) # rotate every hour
@@ -181,7 +181,7 @@ Defines after how many written lines the log file is rotated.
 *Default value is "0/OFF".*
 
 
-```c title="Rotate after five billion lines"
+```opensips title="Rotate after five billion lines"
 ...
 modparam("event_flatstore", "rotate_count", "5000000000")
 ...
@@ -202,7 +202,7 @@ Sets the maximum size of a file before it is rotated.  A size
 *Default value is "0/OFF".*
 
 
-```c title="Rotate at 2 GiB"
+```opensips title="Rotate at 2 GiB"
 ...
 modparam("event_flatstore", "rotate_size", "2g")
 ...
@@ -231,7 +231,7 @@ This parameter does not affect the matching of the event socket -
 *Default value is """" (no suffix is added)*
 
 
-```c title="Set suffix parameter"
+```opensips title="Set suffix parameter"
 ...
 modparam("event_flatstore", "suffix", "$time(%Y)")
 ...

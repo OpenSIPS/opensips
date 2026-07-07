@@ -112,7 +112,7 @@ The *key=callid* property does not have an effect for
 This parameter can be set multiple times.
 
 
-```c title="Set broker_id parameter"
+```opensips title="Set broker_id parameter"
 ...
 modparam("event_kafka", "broker_id", "[k1]127.0.0.1:9092/topic1?g.linger.ms=100&t.acks=all")
 ...
@@ -160,7 +160,7 @@ The function has the following parameters:
 					*$avp(kafka_msg)* - message payload
 
 
-```c title="kafka_publish() function usage"
+```opensips title="kafka_publish() function usage"
 	...
 	$var(msg) = "my msg content";
 	kafka_publish("k1", $var(kmsg), $ci, "kafka_report");

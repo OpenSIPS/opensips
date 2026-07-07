@@ -108,7 +108,7 @@ If turned on, request's from-tag is appended to record-route; that's
 *Default value is 1 (yes).*
 
 
-```c title="Set append_fromtag parameter"
+```opensips title="Set append_fromtag parameter"
 ...
 modparam("rr", "append_fromtag", 0)
 ...
@@ -128,7 +128,7 @@ There are some situations when the server needs to insert two
 *Default value is 1 (yes).*
 
 
-```c title="Set enable_double_rr parameter"
+```opensips title="Set enable_double_rr parameter"
 ...
 modparam("rr", "enable_double_rr", 0)
 ...
@@ -145,7 +145,7 @@ If set to a non 0 value (which means yes), the username part will
 *Default value is 0 (no).*
 
 
-```c title="Set add_username parameter"
+```opensips title="Set add_username parameter"
 ...
 modparam("rr", "add_username", 1)
 ...
@@ -166,7 +166,7 @@ When a preset record-route header is forced in OpenSIPS config and the
 *Default value is 1 (yes).*
 
 
-```c title="enable_socket_mismatch_warning usage"
+```opensips title="enable_socket_mismatch_warning usage"
 ...
 modparam("rr", "enable_socket_mismatch_warning", 0)
 ...
@@ -230,7 +230,7 @@ The loose_routing topic is very complex. See the RFC3261 for more
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="loose_route usage"
+```opensips title="loose_route usage"
 ...
 loose_route();
 ...
@@ -254,7 +254,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="record_route usage"
+```opensips title="record_route usage"
 ...
 record_route();
 ...
@@ -285,7 +285,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="record_route_preset usage"
+```opensips title="record_route_preset usage"
 ...
 record_route_preset("1.2.3.4:5090");
 ...
@@ -312,7 +312,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="add_rr_param usage"
+```opensips title="add_rr_param usage"
 ...
 add_rr_param(";nat=yes");
 ...
@@ -338,7 +338,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="check_route_param usage"
+```opensips title="check_route_param usage"
 ...
 if (check_route_param("nat=yes")) {
     setflag(6);
@@ -376,7 +376,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_direction usage"
+```opensips title="is_direction usage"
 ...
 if (is_direction("upstream")) {
     xdbg("upstream request ($rm)\n");

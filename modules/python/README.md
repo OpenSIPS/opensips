@@ -129,7 +129,7 @@ The script that contains the Python module.
 *Default value is "/usr/local/etc/opensips/handler.py".*
 
 
-```c title="Set script_name parameter"
+```opensips title="Set script_name parameter"
 ...
 modparam("python", "script_name", "/usr/local/bin/opensips_handler.py")
 ...
@@ -145,7 +145,7 @@ The method used to initialize the Python module and return the object.
 *Default value is "mod_init".*
 
 
-```c title="Set mod_init_function parameter"
+```opensips title="Set mod_init_function parameter"
 ...
 modparam("python", "mod_init_function", "module_initializer")
 ...
@@ -161,7 +161,7 @@ The method called for each child process.
 *Default value is "child_init".*
 
 
-```c title="Set child_init_method parameter"
+```opensips title="Set child_init_method parameter"
 ...
 modparam("python", "child_init_method", "child_initializer")
 ...

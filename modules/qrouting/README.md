@@ -82,7 +82,7 @@ An SQL database URL.
 *Default value is **NULL**.*
 
 
-```c title="Setting the db_url parameter"
+```opensips title="Setting the db_url parameter"
 modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 	
 ```
@@ -97,7 +97,7 @@ The name of the quality-based routing profiles table.
 *Default value is **"qr_profiles"**.*
 
 
-```c title="Setting the table_name parameter"
+```opensips title="Setting the table_name parameter"
 modparam("qrouting", "table_name", "qr_profiles_bak")
 	
 ```
@@ -138,7 +138,7 @@ Possible values:
 *Default value is **"dynamic-weights"**.*
 
 
-```c title="Setting the algorithm parameter"
+```opensips title="Setting the algorithm parameter"
 modparam("qrouting", "algorithm", "best-dest-first")
 	
 ```
@@ -154,7 +154,7 @@ The duration (in minutes) that a gateway's statistics for a given call
 *Default value is **30** minutes.*
 
 
-```c title="Setting the connection_timeout parameter"
+```opensips title="Setting the connection_timeout parameter"
 modparam("qrouting", "history_span", 15)
 	
 ```
@@ -178,7 +178,7 @@ A lower value will lead to a closer to realtime adjustment to traffic
 *Default value is **5** seconds.*
 
 
-```c title="Setting the connect_poll_interval parameter"
+```opensips title="Setting the connect_poll_interval parameter"
 modparam("qrouting", "sampling_interval", 5)
 	
 ```
@@ -224,7 +224,7 @@ The thresholds and penalties for a custom statistic must be provided
 *Default value is **NULL**.*
 
 
-```c title="Setting the extra_stats parameter"
+```opensips title="Setting the extra_stats parameter"
 modparam("qrouting", "extra_stats", "+mos/60; +r_factor; -503_replies/100")
 	
 ```
@@ -242,7 +242,7 @@ The minimally accepted amount of sampled ASR statistics for each
 *Default value is **30**.*
 
 
-```c title="Setting the min_samples_asr parameter"
+```opensips title="Setting the min_samples_asr parameter"
 modparam("qrouting", "min_samples_asr", 50)
 	
 ```
@@ -260,7 +260,7 @@ The minimally accepted amount of sampled CCR statistics for each
 *Default value is **30**.*
 
 
-```c title="Setting the min_samples_ccr parameter"
+```opensips title="Setting the min_samples_ccr parameter"
 modparam("qrouting", "min_samples_ccr", 50)
 	
 ```
@@ -278,7 +278,7 @@ The minimally accepted amount of sampled PDD statistics for each
 *Default value is **10**.*
 
 
-```c title="Setting the min_samples_pdd parameter"
+```opensips title="Setting the min_samples_pdd parameter"
 modparam("qrouting", "min_samples_pdd", 15)
 	
 ```
@@ -296,7 +296,7 @@ The minimally accepted amount of sampled AST statistics for each
 *Default value is **10**.*
 
 
-```c title="Setting the min_samples_ast parameter"
+```opensips title="Setting the min_samples_ast parameter"
 modparam("qrouting", "min_samples_ast", 15)
 	
 ```
@@ -314,7 +314,7 @@ The minimally accepted amount of sampled ACD statistics for each
 *Default value is **20**.*
 
 
-```c title="Setting the min_samples_acd parameter"
+```opensips title="Setting the min_samples_acd parameter"
 modparam("qrouting", "min_samples_acd", 30)
 	
 ```
@@ -333,7 +333,7 @@ The minimally accepted quality of a (prefix, destination) combination,
 *Default value is **NULL** (not set).*
 
 
-```c title="Setting the event_bad_dst_threshold parameter"
+```opensips title="Setting the event_bad_dst_threshold parameter"
 modparam("qrouting", "event_bad_dst_threshold", "0.5")
 	
 ```
@@ -348,7 +348,7 @@ The amount of decimal digits to use in logging or MI output.
 *Default value is **2**.*
 
 
-```c title="Setting the decimal_digits parameter"
+```opensips title="Setting the decimal_digits parameter"
 modparam("qrouting", "decimal_digits", 4)
 	
 ```
@@ -388,7 +388,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="qr_set_xstat() usage"
+```opensips title="qr_set_xstat() usage"
 # the MoS is set exactly once per call, so we can omit "inc_total"
 $var(rule_id) = 1574;
 $var(gw_name) = "GW-28";
@@ -420,7 +420,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="qr_disable_dst() usage"
+```opensips title="qr_disable_dst() usage"
 # the signaling quality for @rule_id through @dst_name is degrading, remove it!
 event_route [E_QROUTING_BAD_DST]
 {
@@ -450,7 +450,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="qr_enable_dst() usage"
+```opensips title="qr_enable_dst() usage"
 # the ban has expired, let's re-enable this gateway and see how it behaves
 qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
 	
