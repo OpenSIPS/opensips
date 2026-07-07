@@ -64,7 +64,7 @@ Database URL.
 *Default value is "".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 ...
@@ -80,7 +80,7 @@ Name of the table's name where to store the SIP messages.
 *Default value is "sip_capture".*
 
 
-```c title="Set sip_capture parameter"
+```opensips title="Set sip_capture parameter"
 ...
 modparam("sipcapture", "table_name", "homer_capture")
 ...
@@ -96,7 +96,7 @@ Parameter to enable/disable capture globaly (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set capture_on parameter"
+```opensips title="Set capture_on parameter"
 ...
 modparam("sipcapture", "capture_on", 1)
 ...
@@ -112,7 +112,7 @@ Parameter to enable/disable capture of HEP (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set hep_capture_on parameter"
+```opensips title="Set hep_capture_on parameter"
 ...
 modparam("sipcapture", "hep_capture_on", 1)
 ...
@@ -128,7 +128,7 @@ Parameter to enable/disable IPIP capturing (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set raw_ipip_capture_on parameter"
+```opensips title="Set raw_ipip_capture_on parameter"
 ...
 modparam("sipcapture", "raw_ipip_capture_on", 1)
 ...
@@ -146,7 +146,7 @@ Parameter to enable/disable monitoring/mirroring port capturing (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set raw_moni_capture_on parameter"
+```opensips title="Set raw_moni_capture_on parameter"
 ...
 modparam("sipcapture", "raw_moni_capture_on", 1)
 ...
@@ -171,7 +171,7 @@ Parameter indicate an listen IP address of RAW socket for IPIP capturing.
 *Default value is "".*
 
 
-```c title="Set raw_socket_listen parameter"
+```opensips title="Set raw_socket_listen parameter"
 ...
 modparam("sipcapture", "raw_socket_listen", "10.0.0.1:5060-5090")
 ...
@@ -189,7 +189,7 @@ Name of the interface to bind on the raw socket.
 *Default value is "".*
 
 
-```c title="Set raw_socket_listen parameter"
+```opensips title="Set raw_socket_listen parameter"
 ...
 modparam("sipcapture", "raw_interface", "eth0")
 ...
@@ -205,7 +205,7 @@ Parameter define how much children must be created to listen the raw socket.
 *Default value is "1".*
 
 
-```c title="Set raw_socket_listen parameter"
+```opensips title="Set raw_socket_listen parameter"
 ...
 modparam("sipcapture", "raw_sock_children", 6)
 ...
@@ -222,7 +222,7 @@ Parameter to enable/disable promiscuous mode on the raw socket.
 *Default value is "0".*
 
 
-```c title="Set promiscuous_on parameter"
+```opensips title="Set promiscuous_on parameter"
 ...
 modparam("sipcapture", "promiscuous_on", 1)
 ...
@@ -240,7 +240,7 @@ Activate Linux Socket Filter (LSF based on BPF) on the mirroring interface.
 *Default value is "0".*
 
 
-```c title="Set raw_moni_bpf_on parameter"
+```opensips title="Set raw_moni_bpf_on parameter"
 ...
 modparam("sipcapture", "raw_moni_bpf_on", 1)
 ...
@@ -256,7 +256,7 @@ Name of the capture node.
 *Default value is "homer01".*
 
 
-```c title="Set capture_node parameter"
+```opensips title="Set capture_node parameter"
 ...
 modparam("sipcapture", "capture_node", "homer03")
 ...

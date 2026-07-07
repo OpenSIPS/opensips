@@ -81,7 +81,7 @@ Set to 1 to enable setting all above-mentioned environment variables
 *Default value is 0 (disabled).*
 
 
-```c title="Set 'setvars' parameter"
+```opensips title="Set 'setvars' parameter"
 ...
 modparam("exec", "setvars", 1)
 ...
@@ -98,7 +98,7 @@ Specifies the longest time a program is allowed to execute. If the
 *Default value is 0 (disabled).*
 
 
-```c title="Set 'time_to_kill' parameter"
+```opensips title="Set 'time_to_kill' parameter"
 ...
 modparam("exec", "time_to_kill", 20)
 ...
@@ -116,7 +116,7 @@ Turns on the asynchronous mode for the 'exec_msg' function. All commands
 *Default value is 0 (disabled).*
 
 
-```c title="Set 'async' parameter"
+```opensips title="Set 'async' parameter"
 ...
 modparam("exec", "async", 1)
 ...
@@ -151,7 +151,7 @@ WARNING: most OpenSIPS scripting variables should be quoted before being
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="exec_dset usage"
+```opensips title="exec_dset usage"
 ...
 exec_dset("ruri-changer.sh");
 exec_dset("ruri-changer.sh '$ct'");
@@ -189,7 +189,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE,
 		TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="exec_msg usage"
+```opensips title="exec_msg usage"
 ...
 exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
 ...
@@ -225,7 +225,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="exec_avp usage"
+```opensips title="exec_avp usage"
 ...
 exec_avp("get-subscriber-details.sh '$rU'", "$avp(credit) $avp(contract_model)");
 ...
@@ -256,7 +256,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="exec_getenv usage"
+```opensips title="exec_getenv usage"
 ...
 exec_getenv("HOSTNAME");
 exec_getenv("HOSTNAME", "$avp(localhost)");

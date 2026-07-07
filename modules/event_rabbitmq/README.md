@@ -109,7 +109,7 @@ Enables heartbeat support for the AMQP communication. If the
 *Default value is "0 (disabled)".*
 
 
-```c title="Set heartbeat parameter"
+```opensips title="Set heartbeat parameter"
 ...
 modparam("event_rabbitmq", "heartbeat", 3)
 ...

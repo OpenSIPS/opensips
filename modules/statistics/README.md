@@ -54,7 +54,7 @@ Name of a new statistic variable. The name may be followed by additional
 - *no_reset* : variable cannot be reset.
 
 
-```c title="variable example"
+```opensips title="variable example"
 modparam("statistics", "variable", "register_counter")
 modparam("statistics", "variable", "active_calls/no_reset")
 ```
@@ -82,7 +82,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="update_stat usage"
+```opensips title="update_stat usage"
 ...
 update_stat("register_counter", "+1");
 ...
@@ -109,7 +109,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="reset_stat usage"
+```opensips title="reset_stat usage"
 ...
 reset_stat("register_counter");
 ...
@@ -130,7 +130,7 @@ Allows to get and reset core and modules exported statistics.
 			statistic that it want to get or reset.
 
 
-```c title="$stat usage"
+```opensips title="$stat usage"
 ...
 xlog("SHM used size = $stat(used_size) \n");
 ...
