@@ -79,7 +79,7 @@ The urls of the server groups that OpenSIPS will connect to in order
 			from the script.
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("cachedb_memcached", "cachedb_url","memcached:group1://localhost:9999,127.0.0.1/");
 modparam("cachedb_memcached", "cachedb_url","memcached:y://random_url:8888/");
@@ -88,7 +88,7 @@ modparam("cachedb_memcached", "cachedb_url","memcached:y://random_url:8888/");
 ```
 
 
-```c title="Use memcached servers"
+```opensips title="Use memcached servers"
 ...
 cache_store("memcached:group1","key","$ru value");
 cache_fetch("memcached:y","key",$avp(10));

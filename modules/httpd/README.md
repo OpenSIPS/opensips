@@ -53,7 +53,7 @@ The IP address used by the HTTP server to listen for incoming
 		will bind to all available IPs.
 
 
-```c title="Set ip parameter"
+```opensips title="Set ip parameter"
 ...
 modparam("httpd", "ip", "127.0.0.1")
 ...
@@ -71,7 +71,7 @@ The port number used by the HTTP server to listen for incoming
 		Ports lower than 1024 are not accepted.
 
 
-```c title="Set port parameter"
+```opensips title="Set port parameter"
 ...
 modparam("httpd", "port", 8000)
 ...
@@ -92,7 +92,7 @@ If the size of the buffer is set to zero, it will be automatically
 *The default value is 0.*
 
 
-```c title="Set buf_size parameter"
+```opensips title="Set buf_size parameter"
 ...
 modparam("httpd", "buf_size", 524288)
 ...
@@ -110,7 +110,7 @@ It specifies the length (in bytes) of the POST HTTP requests
 *The default value is 1024. The minumal value is 256.*
 
 
-```c title="Set post_buf_size parameter"
+```opensips title="Set post_buf_size parameter"
 ...
 modparam("httpd", "post_buf_size", 4096)
 ...

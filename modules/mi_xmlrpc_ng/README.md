@@ -59,7 +59,7 @@ Specifies the root path for xmlrpc requests:
 *The default value is "xmlrpc".*
 
 
-```c title="Set mi_xmlrpc_ng_root parameter"
+```opensips title="Set mi_xmlrpc_ng_root parameter"
 ...
 modparam("mi_xmlrpc_ng", "mi_xmlrpc_ng_root", "opensips_mi_xmlrpc")
 ...

@@ -75,7 +75,7 @@ The urls of the server groups that OpenSIPS will connect to in order
 			from the script.
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("cachedb_redis", "cachedb_url","redis:group1://localhost:6379/");
 modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/");
@@ -84,7 +84,7 @@ modparam("cachedb_redis", "cachedb_url","redis:cluster1://random_url:8888/");
 ```
 
 
-```c title="Use Redis servers"
+```opensips title="Use Redis servers"
 ...
 cache_store("redis:group1","key","$ru value");
 cache_fetch("redis:cluster1","key",$avp(10));

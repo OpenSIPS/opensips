@@ -45,7 +45,7 @@ The size of the hash table.
 *Default value is "9 (512)".*
 
 
-```c title="Set cache_table_size parameter"
+```opensips title="Set cache_table_size parameter"
 ...
 modparam("cachedb_local", "cache_table_size", 10)
 ...
@@ -63,7 +63,7 @@ The time interval in seconds at which to go through all the
 *Default value is "600 (10 minutes)".*
 
 
-```c title="Set cache_clean_period parameter"
+```opensips title="Set cache_clean_period parameter"
 ...
 modparam("cachedb_local", "cache_clean_period", 1200)
 ...
@@ -83,7 +83,7 @@ Remove all keys from local cache that match the *glob* pattern
 This function can be used from all routes
 
 
-```c title="cache_remove_chunk usage"
+```opensips title="cache_remove_chunk usage"
 	...
 	cache_remove_chunk("myinfo_*");
 	...
