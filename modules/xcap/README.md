@@ -50,7 +50,7 @@ The database url.
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("xcap", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -67,7 +67,7 @@ The name of the db table where XCAP documents are stored.
 *Default value is "xcap".*
 
 
-```c title="Set xcap_table parameter"
+```opensips title="Set xcap_table parameter"
 ...
 modparam("xcap", "xcap_table", "xcap")
 ...
@@ -89,7 +89,7 @@ This parameter is a flag for the type of XCAP server or servers
 *Default value is "0".*
 
 
-```c title="Set integrated_xcap_server parameter"
+```opensips title="Set integrated_xcap_server parameter"
 ...
 modparam("xcap", "integrated_xcap_server", 1)
 ...

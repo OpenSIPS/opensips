@@ -99,7 +99,7 @@ The URL pointing to the database where the load-balancing rules
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -115,7 +115,7 @@ The name of the DB table containing the load-balancing rules.
 *Default value is "load_balancer".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("load_balancer", "db_table", "lb")
 ...
@@ -133,7 +133,7 @@ How often (in seconds) the probing of a destination should be done. If
 *Default value is "30".*
 
 
-```c title="Set probing_interval parameter"
+```opensips title="Set probing_interval parameter"
 ...
 modparam("load_balancer", "probing_interval", 60)
 ...
@@ -149,7 +149,7 @@ The SIP method to be used for the probing requests.
 *Default value is ""OPTIONS"".*
 
 
-```c title="Set probing_method parameter"
+```opensips title="Set probing_method parameter"
 ...
 modparam("load_balancer", "probing_method", "INFO")
 ...
@@ -165,7 +165,7 @@ The FROM SIP URI to be advertised in the SIP probing requests.
 *Default value is ""sip:prober@localhost"".*
 
 
-```c title="Set probing_from parameter"
+```opensips title="Set probing_from parameter"
 ...
 modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 ...
@@ -183,7 +183,7 @@ A comma separted list of SIP reply codes. The codes defined here
 *Default value is "NULL".*
 
 
-```c title="Set probing_reply_codes parameter"
+```opensips title="Set probing_reply_codes parameter"
 ...
 modparam("load_balancer", "probing_reply_codes", "501, 403")
 ...
@@ -207,7 +207,7 @@ The extra logging will be done on INFO level.
 *Default value is "0" (disabled).*
 
 
-```c title="Set probing_verbose parameter"
+```opensips title="Set probing_verbose parameter"
 ...
 modparam("load_balancer", "probing_verbose", 1)
 ...
@@ -227,7 +227,7 @@ Multiple instances of this param are allowed.
 *Default value is "NULL".*
 
 
-```c title="Set the lb_define_blacklist parameter"
+```opensips title="Set the lb_define_blacklist parameter"
 ...
 modparam("load_balancer", "lb_define_blacklist", "list= 1,4,3")
 modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
@@ -291,7 +291,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="lb_start usage"
+```opensips title="lb_start usage"
 ...
 if (lb_start("1","trascoding;conference")) {
 	# dst URI points to the new destination
@@ -318,7 +318,7 @@ This function is mainly used for implementing failover for the LB
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_next() usage"
+```opensips title="lb_next() usage"
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	/* check next available LB destination */
@@ -363,7 +363,7 @@ Function to stop and flush a current LB session. To be used in
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_next() usage"
+```opensips title="lb_next() usage"
 ...
 if (t_check_status("(5[0-9][0-9])")) {
 	/* check next available LB destination */
@@ -406,7 +406,7 @@ Marks as disabled the last destination that was used for the current
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_disable_dst() usage"
+```opensips title="lb_disable_dst() usage"
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	lb_disable_dst();
@@ -450,7 +450,7 @@ Meaning of the parameters is as follows:
 			missing, the search will consider any kind of destinations.
 
 
-```c title="lb_is_destination usage"
+```opensips title="lb_is_destination usage"
 ...
 if (lb_is_destination("$si","$sp") ) {
 	# request from a LB destination
@@ -493,7 +493,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="lb_count_call usage"
+```opensips title="lb_count_call usage"
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {

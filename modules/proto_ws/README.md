@@ -112,7 +112,7 @@ Time in milliseconds after a WebSocket connection will be closed if it is
 *Default value is 100 ms.*
 
 
-```c title="Set ws_send_timeout parameter"
+```opensips title="Set ws_send_timeout parameter"
 ...
 modparam("proto_ws", "ws_send_timeout", 200)
 ...
@@ -133,7 +133,7 @@ The maximum number of chunks in which a SIP message is expected to
 *Default value is 4.*
 
 
-```c title="Set ws_max_msg_chunks parameter"
+```opensips title="Set ws_max_msg_chunks parameter"
 ...
 modparam("proto_ws", "ws_max_msg_chunks", 8)
 ...
