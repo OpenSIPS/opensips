@@ -54,7 +54,7 @@ URL of the database table to be used.
 			"mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("closeddial", "db_url", "mysql://username:password@dbhost/opensips")
 ...
@@ -70,7 +70,7 @@ Column of the table which stores the username
 *Default value is "username".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("closeddial", "user_column", "user")
 ...
@@ -87,7 +87,7 @@ Column of the table which stores the domain associated to
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("closeddial", "domain_column", "domain")
 ...
@@ -104,7 +104,7 @@ Column of the table which stores the group_id which groups
 *Default value is "group_id".*
 
 
-```c title="Set group_id_column parameter"
+```opensips title="Set group_id_column parameter"
 ...
 modparam("closeddial", "group_id_column", "groupid")
 ...
@@ -121,7 +121,7 @@ Column of the table which stores the closed dial code associated
 *Default value is "cd_username".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("closeddial", "cd_user_column", "cd_user")
 ...
@@ -138,7 +138,7 @@ Column of the table which stores the domain associated to closed dial
 *Default value is "cd_domain".*
 
 
-```c title="Set cd_domain_column parameter"
+```opensips title="Set cd_domain_column parameter"
 ...
 modparam("closeddial", "cd_domain_column", "cddomain")
 ...
@@ -155,7 +155,7 @@ Column of the table which stores the new URI which will be used
 *Default value is "new_uri".*
 
 
-```c title="Set new_uri_column parameter"
+```opensips title="Set new_uri_column parameter"
 ...
 modparam("closeddial", "new_uri_column", "new_uri")
 ...
@@ -173,7 +173,7 @@ If enabled (set to non zero value) then domain will be used
 *Default value is "0 (no)".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("closeddial", "use_domain", 1)
 ...
@@ -211,7 +211,7 @@ Both of the parameters can contain pseudovariables.
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="cd_lookup usage"
+```opensips title="cd_lookup usage"
 ...
 
 # Abbreviated code of two digits

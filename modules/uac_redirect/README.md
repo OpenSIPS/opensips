@@ -98,7 +98,7 @@ The default behavior in filtering contacts. It may be
 *The default value is "accept".*
 
 
-```c title="Set default_filter module parameter"
+```opensips title="Set default_filter module parameter"
 ...
 modparam("uac_redirect","default_filter","deny")
 ...
@@ -127,7 +127,7 @@ The parameter may be defined only one - multiple definition will
 					value being NULL.*
 
 
-```c title="Set deny_filter module parameter"
+```opensips title="Set deny_filter module parameter"
 ...
 modparam("uac_redirect","deny_filter",".*@siphub\.net")
 ...
@@ -156,7 +156,7 @@ The parameter may be defined only one - multiple definition will
 					value being NULL.*
 
 
-```c title="Set accept_filter module parameter"
+```opensips title="Set accept_filter module parameter"
 ...
 modparam("uac_redirect","accept_filter",".*@siphub\.net")
 ...
@@ -186,7 +186,7 @@ Its values my be:
 *The default value is "acc_log_request".*
 
 
-```c title="Set acc_function parameter"
+```opensips title="Set acc_function parameter"
 ...
 modparam("uac_redirect","acc_function","acc_db_request")
 ...
@@ -209,7 +209,7 @@ Specifies the accounting table to be used if DB accounting was
 *The default value is "acc".*
 
 
-```c title="Set acc_db_table parameter"
+```opensips title="Set acc_db_table parameter"
 ...
 modparam("uac_redirect","acc_db_table","acc_redirect")
 ...
@@ -245,7 +245,7 @@ Default or previous added deny filter may be reset depending of
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="set_deny_filter usage"
+```opensips title="set_deny_filter usage"
 ...
 set_deny_filter(".*@domain2.net","reset_all");
 set_deny_filter(".*@domain1.net","");
@@ -279,7 +279,7 @@ Default or previous added deny filter may be reset depending of
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="set_accept_filter usage"
+```opensips title="set_accept_filter usage"
 ...
 set_accept_filter(".*@domain2.net","reset_added");
 set_accept_filter(".*@domain1.net","");
@@ -323,7 +323,7 @@ This function will produce no accounting records.
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="get_redirects usage"
+```opensips title="get_redirects usage"
 ...
 # max 2 contacts per branch, but no overall limit
 get_redirects("*:2");
@@ -357,7 +357,7 @@ If this function appears in the script, at startup, the module
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="get_redirects usage"
+```opensips title="get_redirects usage"
 ...
 get_redirects("4:1","Redirected");
 ...
@@ -368,7 +368,7 @@ get_redirects("4:1","Redirected");
 ### Script Example
 
 
-```c title="Redirection script example"
+```opensips title="Redirection script example"
 loadmodule "modules/sl/sl.so"
 loadmodule "modules/usrloc/usrloc.so"
 loadmodule "modules/registrar/registrar.so"

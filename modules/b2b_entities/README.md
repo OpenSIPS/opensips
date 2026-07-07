@@ -63,7 +63,7 @@ The size of the hash table that stores the b2b server entities.
 		 (512 records).
 
 
-```c title="Set server_hsize parameter"
+```opensips title="Set server_hsize parameter"
 ...
 modparam("b2b_entities", "server_hsize", 10)
 ...
@@ -82,7 +82,7 @@ The size of the hash table that stores the b2b client entities.
 		 (512 records).
 
 
-```c title="Set client_hsize parameter"
+```opensips title="Set client_hsize parameter"
 ...
 modparam("b2b_entities", "client_hsize", 10)
 ...
@@ -97,7 +97,7 @@ The name of the b2b script route that will be called when
 			B2B requests are received.
 
 
-```c title="Set script_req_route parameter"
+```opensips title="Set script_req_route parameter"
 ...
 modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
@@ -112,7 +112,7 @@ The name of the b2b script route that will be called when
 			B2B replies are received.
 
 
-```c title="Set script_repl_route parameter"
+```opensips title="Set script_repl_route parameter"
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -127,7 +127,7 @@ Database URL. It is not compulsory, if not set
 			data is not stored in database.
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips")
 ...
@@ -144,7 +144,7 @@ The time interval at which to update the info in database.
 *Default value is "100".*
 
 
-```c title="Set update_period parameter"
+```opensips title="Set update_period parameter"
 ...
 modparam("b2b_entities", "update_period", 60)
 ...
@@ -166,7 +166,7 @@ The string to use when generating the key ( it is inserted
 *Default value is "B2B".*
 
 
-```c title="Set b2b_key_prefix parameter"
+```opensips title="Set b2b_key_prefix parameter"
 ...
 modparam("b2b_entities", "b2b_key_prefix", "B2B1")
 ...
@@ -222,7 +222,7 @@ typedef struct b2b_api {
 Field type:
 
 
-```c
+```opensips
 ...
 typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , void* param);
 ...

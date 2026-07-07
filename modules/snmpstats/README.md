@@ -196,7 +196,7 @@ This parameter describes the entity type for this OpenSIPS instance,
 *registrarServer, redirectServer, proxyServer, userAgent, other*
 
 
-```c title="Setting the sipEntityType parameter"
+```opensips title="Setting the sipEntityType parameter"
 ...
 modparam("snmpstats", "sipEntityType", "registrarServer")
 modparam("snmpstats", "sipEntityType", "proxyServer")
@@ -220,7 +220,7 @@ The SNMPStats module monitors the number of bytes waiting to be consumed by
 		with the MsgQueueMinorThreshold parameter.
 
 
-```c title="Setting the MsgQueueMinorThreshold parameter"
+```opensips title="Setting the MsgQueueMinorThreshold parameter"
 ...
 modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
 ...
@@ -241,7 +241,7 @@ The SNMPStats module monitors the number of bytes waiting to be consumed by
 		with the MsgQueueMajorThreshold parameter.
 
 
-```c title="Setting the MsgQueueMajorThreshold parameter"
+```opensips title="Setting the MsgQueueMajorThreshold parameter"
 ...
 modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
 ...
@@ -261,7 +261,7 @@ The SNMPStats module monitors the number of active dialogs.  If the number of
 		occured.  The minor threshold is set with the dlg_minor_threshold parameter.
 
 
-```c title="Setting the dlg_minor_threshold parameter"
+```opensips title="Setting the dlg_minor_threshold parameter"
 ...
   modparam("snmpstats", "dlg_minor_threshold", 500)
 ...
@@ -281,7 +281,7 @@ The SNMPStats module monitors the number of active dialogs.  If the number of
 		occured.  The major threshold is set with the dlg_major_threshold parameter.
 
 
-```c title="Setting the dlg_major_threshold parameter"
+```opensips title="Setting the dlg_major_threshold parameter"
 ...
   modparam("snmpstats", "dlg_major_threshold", 750)
 ...
@@ -304,7 +304,7 @@ The SNMPStats module provides the openserSIPServiceStartTime scalar.
 *Default value is "/usr/local/bin/".*
 
 
-```c title="Setting the snmpgetPath parameter"
+```opensips title="Setting the snmpgetPath parameter"
 ...
 modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
 ...
@@ -324,7 +324,7 @@ The SNMPStats module provides the openserSIPServiceStartTime scalar.
 *Default value is "public".*
 
 
-```c title="Setting the snmpCommunity parameter"
+```opensips title="Setting the snmpCommunity parameter"
 ...
 modparam("snmpstats", "snmpCommunity", "customCommunityString")
 ...

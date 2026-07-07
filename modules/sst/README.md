@@ -140,7 +140,7 @@ If the statistics support should be enabled or
 *Default value is "1" (enabled).*
 
 
-```c title="Set enable_stats parameter"
+```opensips title="Set enable_stats parameter"
 ...
 modparam("sst", "enable_stats", 0)
 ...
@@ -165,7 +165,7 @@ If not set and sstCheckMin() is called with the
 *Default value is "1800" seconds.*
 
 
-```c title="Set min_se parameter"
+```opensips title="Set min_se parameter"
 ...
 modparam("sst", "min_se", 2400)
 ...
@@ -186,7 +186,7 @@ Per default the interval used will be the min_se value
 *Default value is "0" seconds.*
 
 
-```c title="Set sst_interval parameter"
+```opensips title="Set sst_interval parameter"
 ...
 modparam("sst", "sst_interval", 2400)
 ...
@@ -208,7 +208,7 @@ This is how the sst module knows which avp in the
 *Default value is "NULL!" it is not set by default.*
 
 
-```c title="Set timeout_avp parameter"
+```opensips title="Set timeout_avp parameter"
 ...
 modparam("dialog", "timeout_avp", "$avp(i:10)")
 # Set the sst modules timeout_avp to be the same value
@@ -238,7 +238,7 @@ This flag if true will tell the SST module to
 *Default value is "1" (true/on).*
 
 
-```c title="Set reject_to_small parameter"
+```opensips title="Set reject_to_small parameter"
 ...
 modparam("sst", "reject_to_small", 0)
 ...
@@ -270,7 +270,7 @@ This parameter must be set of the module will
 *Default value is "Not set!".*
 
 
-```c title="Set sst_flag parameter"
+```opensips title="Set sst_flag parameter"
 ...
 modparam("dialog", "dlg_flag", 5)
 modparam("sst", "sst_flag", 6)
@@ -314,7 +314,7 @@ Meaning of the parameters is as follows:
 			to compare the MIN_SE header value to.
 
 
-```c title="sstCheckMin usage"
+```opensips title="sstCheckMin usage"
 ...
 modparam("dialog", "timeout_avp", "$avp(i:4242)")
 modparam("dialog", "dlg_flag", 5)

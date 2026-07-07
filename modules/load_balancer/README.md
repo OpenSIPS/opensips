@@ -99,7 +99,7 @@ The URL pointing to the database where the load-balancing rules
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -115,7 +115,7 @@ The name of the DB table containing the load-balancing rules.
 *Default value is "load_balancer".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("load_balancer", "db_table", "lb")
 ...
@@ -133,7 +133,7 @@ How often (in seconds) the probing of a destination should be done. If
 *Default value is "30".*
 
 
-```c title="Set probing_interval parameter"
+```opensips title="Set probing_interval parameter"
 ...
 modparam("load_balancer", "probing_interval", 60)
 ...
@@ -149,7 +149,7 @@ The SIP method to be used for the probing requests.
 *Default value is ""OPTIONS"".*
 
 
-```c title="Set probing_method parameter"
+```opensips title="Set probing_method parameter"
 ...
 modparam("load_balancer", "probing_method", "INFO")
 ...
@@ -165,7 +165,7 @@ The FROM SIP URI to be advertised in the SIP probing requests.
 *Default value is ""sip:prober@localhost"".*
 
 
-```c title="Set probing_from parameter"
+```opensips title="Set probing_from parameter"
 ...
 modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 ...
@@ -183,7 +183,7 @@ A comma separted list of SIP reply codes. The codes defined here
 *Default value is "NULL".*
 
 
-```c title="Set probing_reply_codes parameter"
+```opensips title="Set probing_reply_codes parameter"
 ...
 modparam("load_balancer", "probing_reply_codes", "501, 403")
 ...
@@ -231,7 +231,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="load_balance usage"
+```opensips title="load_balance usage"
 ...
 if (load_balance("1","trascoding;conference")) {
 	# dst URI points to the new destination
@@ -255,7 +255,7 @@ Marks as disabled the last destination that was used for the current
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_disable() usage"
+```opensips title="lb_disable() usage"
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	lb_disable();
