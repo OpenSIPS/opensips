@@ -54,7 +54,7 @@ The the address of the presence server. If set, it will be
 		used as outbound proxy when sending PUBLISH requests.
 
 
-```c title="Set presence_server parameter"
+```opensips title="Set presence_server parameter"
 ...
 modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
 ...

@@ -51,7 +51,7 @@ The *$uuid* variable returns a newly generated
 			current time and the local ethernet MAC address) will be generated.
 
 
-```c title="$uuid usage"
+```opensips title="$uuid usage"
 xlog("generated uuid: $uuid\n");
 				
 ```

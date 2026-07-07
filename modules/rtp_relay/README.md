@@ -131,7 +131,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="rtp_relay_engage usage"
+```opensips title="rtp_relay_engage usage"
 ...
 if (is_method("INVITE") && !has_totag()) {
 	xlog("SCRIPT: engaging RTPProxy relay for all branches\n");

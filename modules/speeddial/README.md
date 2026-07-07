@@ -49,7 +49,7 @@ The URL of database where the table containing speed dial records.
 *Default value is mysql://opensipsro:opensipsro@localhost/opensips.*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("speeddial", "db_url", "mysql://user:xxx@localhost/db_name")
 ...
@@ -66,7 +66,7 @@ The name of column storing the user name of the owner of the speed dial
 *Default value is "username".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("speeddial", "user_column", "userid")
 ...
@@ -83,7 +83,7 @@ The name of column storing the domain of the owner of the speed dial
 *Default value is  "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("speeddial", "domain_column", "userdomain")
 ...
@@ -99,7 +99,7 @@ The name of the column storing the user part of the short dial address.
 *Default value is  "sd_username".*
 
 
-```c title="Set sd_user_column parameter"
+```opensips title="Set sd_user_column parameter"
 ...
 modparam("speeddial", "sd_user_column", "short_user")
 ...
@@ -115,7 +115,7 @@ The name of the column storing the domain of the short dial address.
 *Default value is  "sd_domain".*
 
 
-```c title="Set sd_domain_column parameter"
+```opensips title="Set sd_domain_column parameter"
 ...
 modparam("speeddial", "sd_domain_column", "short_domain")
 ...
@@ -132,7 +132,7 @@ The name of the column containing the URI that will be use to replace
 *Default value is "new_uri".*
 
 
-```c title="Set new_uri_column parameter"
+```opensips title="Set new_uri_column parameter"
 ...
 modparam("speeddial", "new_uri_column", "real_uri")
 ...
@@ -149,7 +149,7 @@ If the domain of the owner (From URI) starts with the value of this parameter, t
 *Default value is NULL.*
 
 
-```c title="Set domain_prefix parameter"
+```opensips title="Set domain_prefix parameter"
 ...
 modparam("speeddial", "domain_prefix", "tel.")
 ...
@@ -167,7 +167,7 @@ The parameter specifies wheter or not to use the domain when searching a
 *Default value is 0.*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("speeddial", "use_domain", 1)
 ...
@@ -195,7 +195,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="sd_lookup usage"
+```opensips title="sd_lookup usage"
 ...
 # 'speed_dial' is the default table name created by opensips db script
 if($ru=~"sip:[0-9]{2}@.*")

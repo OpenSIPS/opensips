@@ -87,7 +87,7 @@ If set to 1, the "received" parameter of the first Route URI is evaluated and
 *Default value is 0.*
 
 
-```c title="Set use_received parameter"
+```opensips title="Set use_received parameter"
 ...
 modparam("path", "use_received", 1)
 ...
@@ -107,7 +107,7 @@ There are some situations when the server needs to insert two
 *Default value is 1 (yes).*
 
 
-```c title="Set enable_double_path parameter"
+```opensips title="Set enable_double_path parameter"
 ...
 modparam("path", "enable_double_path", 0)
 ...
@@ -134,7 +134,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_path(user) usage"
+```opensips title="add_path(user) usage"
 ...
 if (!add_path("loadbalancer")) {
 	sl_send_reply(503, "Internal Path Error");
@@ -164,7 +164,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_path_received(user) usage"
+```opensips title="add_path_received(user) usage"
 ...
 if (!add_path_received("inbound")) {
 	sl_send_reply(503, "Internal Path Error");

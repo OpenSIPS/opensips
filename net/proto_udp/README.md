@@ -58,7 +58,7 @@ If you want to change only the listening port for UDP, use the port
 *Default value is 5060.*
 
 
-```c title="Set udp_port parameter"
+```opensips title="Set udp_port parameter"
 ...
 modparam("proto_udp", "udp_port", 5070)
 ...

@@ -56,7 +56,7 @@ This is URL of the database to be used. Value of the parameter depends
 *Default value is "mysql://opensipsro:opensipsro@localhost/opensips".*
 
 
-```c title="db_url parameter usage"
+```opensips title="db_url parameter usage"
 modparam("auth_jwt", "db_url", "dbdriver://username:password@dbhost/dbname")
 ```
 
@@ -70,7 +70,7 @@ Name of the DB table containing the jwt profiles
 Default value of this parameter is jwt_profiles.
 
 
-```c title="profiles_table parameter usage"
+```opensips title="profiles_table parameter usage"
 modparam("auth_jwt", "profiles_table", "my_profiles")
 ```
 
@@ -84,7 +84,7 @@ Name of the DB table containing the jwt secrets
 Default value of this parameter is jwt_secrets.
 
 
-```c title="secrets_table parameter usage"
+```opensips title="secrets_table parameter usage"
 modparam("auth_jwt", "secrets_table", "my_secrets")
 ```
 
@@ -98,7 +98,7 @@ Column holding the JWT profile tag.
 *Default value is "tag".*
 
 
-```c title="Set tag_column parameter"
+```opensips title="Set tag_column parameter"
 ...
 modparam("auth_jwt", "tag_column", "my_tag_column")
 ...
@@ -114,7 +114,7 @@ Column holding the JWT profile associated SIP username.
 *Default value is "sip_username".*
 
 
-```c title="Set username_column parameter"
+```opensips title="Set username_column parameter"
 ...
 modparam("auth_jwt", "username_column", "my_username_column")
 ...
@@ -130,7 +130,7 @@ Column holding the JWT secret associated tag.
 *Default value is "corresponding_tag".*
 
 
-```c title="Set secret_tag_column parameter"
+```opensips title="Set secret_tag_column parameter"
 ...
 modparam("auth_jwt", "secret_tag_column", "my_secret_tag_column")
 ...
@@ -146,7 +146,7 @@ Column holding the actual jwt signing secret.
 *default value is "secret".*
 
 
-```c title="set secret_column parameter"
+```opensips title="set secret_column parameter"
 ...
 modparam("auth_jwt", "secret_column", "my_secret_column")
 ...
@@ -162,7 +162,7 @@ Column holding the JWT secret start UNIX timestamp.
 *default value is "start_ts".*
 
 
-```c title="set start_ts parameter"
+```opensips title="set start_ts parameter"
 ...
 modparam("auth_jwt", "start_ts", "my_start_ts_column")
 ...
@@ -178,7 +178,7 @@ column holding the jwt secret end unix timestamp.
 *default value is "end_ts".*
 
 
-```c title="set end_ts parameter"
+```opensips title="set end_ts parameter"
 ...
 modparam("auth_jwt", "end_ts", "my_end_ts_column")
 ...
@@ -194,7 +194,7 @@ The JWT claim which will be used to identify the JWT profile
 *default value is "tag".*
 
 
-```c title="set tag_claim parameter"
+```opensips title="set tag_claim parameter"
 ...
 modparam("auth_jwt", "tag_claim", "my_tag_claim")
 ...
@@ -222,7 +222,7 @@ Parameter syntax:
 Default value of this parameter is "none ( empty )".
 
 
-```c title="load_credentials parameter usage"
+```opensips title="load_credentials parameter usage"
 # load my_extra_column into $avp(extra_jwt_info)
 modparam("auth_jwt", "load_credentials", "$avp(extra_jwt_info)=my_extra_column")
 ```
@@ -255,7 +255,7 @@ The string may contain pseudo variables.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="www_authorize usage"
+```opensips title="www_authorize usage"
 ...
 if (!jwt_authorize("$avp(my_jwt_token)", $avp(decoded_token), $avp(sip_username) )) {
 	send_reply("401","Unauthorized");

@@ -78,7 +78,7 @@ The size of the hash table that stores the scenario instatiation entities.
 		 (512 records).
 
 
-```c title="Set server_hsize parameter"
+```opensips title="Set server_hsize parameter"
 ...
 modparam("b2b_logic_xml", "hash_size", 10)
 ...
@@ -97,7 +97,7 @@ This parameter should be set with the path of a document
 This parameter can be set more than once.
 
 
-```c title="Set script_scenario parameter"
+```opensips title="Set script_scenario parameter"
 ...
 modparam("b2b_logic_xml", "script_scenario", "/usr/local/opensips/scripts/b2b_prepaid.xml")
 ...
@@ -115,7 +115,7 @@ This parameter should be set with the path of a document
 This parameter can be set more than once.
 
 
-```c title="Set script_scenario parameter"
+```opensips title="Set script_scenario parameter"
 ...
 modparam("b2b_logic_xml", "extern_scenario", "/usr/local/opensips/scripts/b2b_marketing.xml")
 ...
@@ -136,7 +136,7 @@ The time interval at which to search for an hanged b2b context.
 *Default value is "100".*
 
 
-```c title="Set cleanup_period parameter"
+```opensips title="Set cleanup_period parameter"
 ...
 modparam("b2b_logic_xml", "cleanup_period", 60)
 ...
@@ -179,7 +179,7 @@ Meaning of the flags is as follows:
 *Default value is "NULL".*
 
 
-```c title="Set parameter"
+```opensips title="Set parameter"
 ...
 modparam("b2b_logic_xml", "custom_headers_regexp", "/^x-/i")
 ...
@@ -213,7 +213,7 @@ If you wish some other headers to be passed also you should define them
 *Default value is "NULL".*
 
 
-```c title="Set parameter"
+```opensips title="Set parameter"
 ...
 modparam("b2b_logic_xml", "custom_headers", "User-Agent;Date")
 ...
@@ -238,7 +238,7 @@ This parameter modifies the behaviour of the B2BUA when bridging
 *Default value is "0".*
 
 
-```c title="Set parameter"
+```opensips title="Set parameter"
 ...
 modparam("b2b_logic_xml", "use_init_sdp", 1)
 ...
@@ -252,7 +252,7 @@ modparam("b2b_logic_xml", "use_init_sdp", 1)
 Database URL.
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("b2b_logic_xml", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips")
 ...
@@ -269,7 +269,7 @@ The time interval at which to update the info in database.
 *Default value is "100".*
 
 
-```c title="Set update_period parameter"
+```opensips title="Set update_period parameter"
 ...
 modparam("b2b_logic_xml", "update_period", 60)
 ...
@@ -289,7 +289,7 @@ The maximum duration of a call.
 If you set it to 0, there will be no limitation.
 
 
-```c title="Set max_duration parameter"
+```opensips title="Set max_duration parameter"
 ...
 modparam("b2b_logic_xml", "max_duration", 7200)
 ...
@@ -308,7 +308,7 @@ The name of the pseudo variable for storing the new
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set b2bl_from_spec_param parameter"
+```opensips title="Set b2bl_from_spec_param parameter"
 ...
 modparam("b2b_logic_xml", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
@@ -335,7 +335,7 @@ The IP address of the machine that will be used as Contact in
 			scenario instantiation.
 
 
-```c title="Set server_address parameter"
+```opensips title="Set server_address parameter"
 ...
 modparam("b2b_logic_xml", "server_address", "sip:sa@10.10.10.10:5060")
 ...
@@ -351,7 +351,7 @@ The module offers the possibility to insert the original callid in a header
 			of the header in which to insert the original callid.
 
 
-```c title="Set init_callid_hdr parameter"
+```opensips title="Set init_callid_hdr parameter"
 ...
 modparam("b2b_logic_xml", "init_callid_hdr", "Init-CallID")
 ...
@@ -373,7 +373,7 @@ The B2B modules have support for the 3 type of database storage
 *Default value is "2" (WRITE BACK).*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("b2b_logic_xml", "db_mode", 1)
 ...
@@ -390,7 +390,7 @@ Name of the database table to be used
 *Default value is "b2b_logic"*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("b2b_logic_xml", "db_table", "some_table_name")
 ...
@@ -407,7 +407,7 @@ Call setup timeout for topology hiding scenario.
 *Default value is "60"*
 
 
-```c title="Set b2bl_th_init_timeout parameter"
+```opensips title="Set b2bl_th_init_timeout parameter"
 ...
 modparam("b2b_logic_xml", "b2bl_th_init_timeout", 60)
 ...
@@ -459,7 +459,7 @@ Parameters:
 		but the SIP pacakge may be invalid (as Contact, Via, etc).
 
 
-```c title="b2b_init_request usage"
+```opensips title="b2b_init_request usage"
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user())
    b2b_init_request("prepaid", "sip:320@opensips.org:5070",
@@ -486,7 +486,7 @@ Parameters:
 				holds the entity of the entity/participant to bridge.
 
 
-```c title="b2b_bridge_request usage"
+```opensips title="b2b_bridge_request usage"
 ...
 modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
@@ -617,7 +617,7 @@ The variable can be used in request route, local_route
 		*b2b_entities* module.
 
 
-```c title="$b2b_logic.key usage"
+```opensips title="$b2b_logic.key usage"
 ...
 local_route {
    ...
@@ -666,7 +666,7 @@ The variable can be used in request route, local_route
 		*b2b_entities* module.
 
 
-```c title="$b2b_logic.entity usage"
+```opensips title="$b2b_logic.entity usage"
 ...
 modparam("b2b_entities", "script_request_route", "b2b_request")
 ...
@@ -702,7 +702,7 @@ Setting the variable to *NULL* will delete the value
 		at the given key.
 
 
-```c title="$b2b_logic.ctx usage"
+```opensips title="$b2b_logic.ctx usage"
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -767,7 +767,7 @@ typedef struct b2bl_api
 Field type:
 
 
-```c
+```opensips
 ...
 typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5],
 		b2bl_cback_f, void* param);
