@@ -77,7 +77,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search usage"
+```opensips title="search usage"
 ...
 if ( search("[Ss][Ii][Pp]") ) { /*....*/ };
 ...
@@ -100,7 +100,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search_body usage"
+```opensips title="search_body usage"
 ...
 if ( search_body("[Ss][Ii][Pp]") ) { /*....*/ };
 ...
@@ -124,7 +124,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search_append usage"
+```opensips title="search_append usage"
 ...
 search_append("[Oo]pen[Ss]er", " SIP Proxy");
 ...
@@ -149,7 +149,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search_append_body usage"
+```opensips title="search_append_body usage"
 ...
 search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
 ...
@@ -173,7 +173,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace usage"
+```opensips title="replace usage"
 ...
 replace("opensips", "Open SIP Server");
 ...
@@ -198,7 +198,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_body usage"
+```opensips title="replace_body usage"
 ...
 replace_body("opensips", "Open SIP Server");
 ...
@@ -222,7 +222,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_all usage"
+```opensips title="replace_all usage"
 ...
 replace_all("opensips", "Open SIP Server");
 ...
@@ -247,7 +247,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_body_all usage"
+```opensips title="replace_body_all usage"
 ...
 replace_body_all("opensips", "Open SIP Server");
 ...
@@ -272,7 +272,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_body_atonce usage"
+```opensips title="replace_body_atonce usage"
 ...
 # strip the whole body from the message:
 if(has_body() && replace_body_atonce("^.+$", ""))
@@ -302,7 +302,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst usage"
+```opensips title="subst usage"
 ...
 # replace the uri in to: with the message uri (just an example)
 if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1\u\2/ig') ) {};
@@ -336,7 +336,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst_uri usage"
+```opensips title="subst_uri usage"
 ...
 # adds 3463 prefix to numeric uris, and save the original uri (\0 match)
 # as a parameter: orig_uri (just an example)
@@ -372,7 +372,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst usage"
+```opensips title="subst usage"
 ...
 # adds 3463 prefix to uris ending with 3642 (just an example)
 if (subst_user('/3642$/36423463/')){$
@@ -406,7 +406,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst_body usage"
+```opensips title="subst_body usage"
 ...
 if (subst_body("/^o=([^ ]*) /o=$fU /"))
 	xlog("successfully prepared an "o" line update!\n");

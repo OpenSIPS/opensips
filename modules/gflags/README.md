@@ -14,7 +14,7 @@ gflags module (global flags) keeps a bitmap of flags in shared memory
 	Example:
 
 
-```c
+```opensips
 	if (is_gflag("1")) {
 		t_relay("udp:10.0.0.1:5060");
 	} else {
@@ -57,7 +57,7 @@ The initial value of global flags bitmap.
 Default value is "0".
 
 
-```c title="initial parameter usage"
+```opensips title="initial parameter usage"
 modparam("gflags", "initial", 15)
 		
 ```
@@ -79,7 +79,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="set_gflag() usage"
+```opensips title="set_gflag() usage"
 ...
 set_gflag(4);
 ...
@@ -99,7 +99,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="reset_gflag() usage"
+```opensips title="reset_gflag() usage"
 ...
 reset_gflag(4);
 ...
@@ -120,7 +120,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="is_gflag() usage"
+```opensips title="is_gflag() usage"
 ...
 if(is_gflag(4))
 {

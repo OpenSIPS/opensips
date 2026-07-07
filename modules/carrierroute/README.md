@@ -98,7 +98,7 @@ Url to the database containing the routing data.
 *Default value is "mysql://opensipsro:opensipsro@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("carrierroute", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -115,7 +115,7 @@ Name of the table where the routing data is stored.
 *Default value is "carrierroute".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("carrierroute", "db_table", "carrierroute")
 ...
@@ -132,7 +132,7 @@ Name of the column containing the id identifier.
 *Default value is "id".*
 
 
-```c title="Set id_column parameter"
+```opensips title="Set id_column parameter"
 ...
 modparam("carrierroute", "id_column", "id")
 ...
@@ -149,7 +149,7 @@ Name of the column containing the  carrier id.
 *Default value is "carrier".*
 
 
-```c title="Set carrier_column parameter"
+```opensips title="Set carrier_column parameter"
 ...
 modparam("carrierroute", "carrier_column", "carrier")
 ...
@@ -171,7 +171,7 @@ Name of column containing the scan prefixes. Scan prefixes define
 *Default value is "scan_prefix".*
 
 
-```c title="Set scan_prefix_column parameter"
+```opensips title="Set scan_prefix_column parameter"
 ...
 modparam("carrierroute", "scan_prefix_column", "scan_prefix")
 ...
@@ -190,7 +190,7 @@ Name of column containing the rule domain. You can define several routing
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("carrierroute", "domain_column", "domain")
 ...
@@ -207,7 +207,7 @@ Name of the column containing the flags.
 *Default value is "flags".*
 
 
-```c title="Set flags_column parameter"
+```opensips title="Set flags_column parameter"
 ...
 modparam("carrierroute", "flags_column", "flags")
 ...
@@ -224,7 +224,7 @@ Name of the column containing the flags mask.
 *Default value is "mask".*
 
 
-```c title="Set mask_column parameter"
+```opensips title="Set mask_column parameter"
 ...
 modparam("carrierroute", "mask_column", "mask")
 ...
@@ -252,7 +252,7 @@ If all probabilities for a given prefix, tree and domain don't add to 100%,
 *Default value is "prob".*
 
 
-```c title="Set prob_column parameter"
+```opensips title="Set prob_column parameter"
 ...
 modparam("carrierroute", "prob_column", "prob")
 ...
@@ -271,7 +271,7 @@ Name of column containing rewrite host value. An empty field represents a
 *Default value is "rewrite_host".*
 
 
-```c title="Set rewrite_host_column parameter"
+```opensips title="Set rewrite_host_column parameter"
 ...
 modparam("carrierroute", "rewrite_host_column", "rewrite_host")
 ...
@@ -289,7 +289,7 @@ Name of the column containing the number of digits to be stripped of the
 *Default value is "strip".*
 
 
-```c title="Set strip_column parameter"
+```opensips title="Set strip_column parameter"
 ...
 modparam("carrierroute", "strip_column", "strip")
 ...
@@ -307,7 +307,7 @@ Name of the column containing an optional comment (useful in large routing table
 *Default value is "description".*
 
 
-```c title="Set comment_column parameter"
+```opensips title="Set comment_column parameter"
 ...
 modparam("carrierroute", "comment_column", "description")
 ...
@@ -325,7 +325,7 @@ The name of the table containing the existing carriers, consisting
 *Default value is "route_tree".*
 
 
-```c title="Set carrier_table parameter"
+```opensips title="Set carrier_table parameter"
 ...
 modparam("carrierroute", "carrier_table", "route_tree")
 ...
@@ -343,7 +343,7 @@ Name of column containing rewrite prefixes. Here you can define a rewrite
 *Default value is "rewrite_prefix".*
 
 
-```c title="Set rewrite_prefix_column parameter"
+```opensips title="Set rewrite_prefix_column parameter"
 ...
 modparam("carrierroute", "rewrite_prefix_column", "rewrite_prefix")
 ...
@@ -361,7 +361,7 @@ Name of column containing rewrite suffixes. Here you can define a rewrite
 *Default value is "rewrite_suffix".*
 
 
-```c title="Set rewrite_suffix_column parameter"
+```opensips title="Set rewrite_suffix_column parameter"
 			    ...
 modparam("carrierroute", "rewrite_suffix_column", "rewrite_suffix")
 			    ...
@@ -378,7 +378,7 @@ The name of the column in the carrier table containing the carrier id.
 *Default value is "id".*
 
 
-```c title="Set id_col parameter"
+```opensips title="Set id_col parameter"
 ...
 modparam("carrierroute", "carrier_id_col", "id")
 ...
@@ -395,7 +395,7 @@ The name of the column in the carrier table containing the carrier name.
 *Default value is "carrier".*
 
 
-```c title="Set carrier_name_col parameter"
+```opensips title="Set carrier_name_col parameter"
 ...
 modparam("carrierroute", "carrier_name_col", "carrier")
 ...
@@ -412,7 +412,7 @@ The name of the table containing the subscribers
 *Default value is "subscriber".*
 
 
-```c title="Set subscriber_table parameter"
+```opensips title="Set subscriber_table parameter"
 ...
 modparam("carrierroute", "subscriber_table", "subscriber")
 ...
@@ -429,7 +429,7 @@ The name of the column in the subscriber table containing the usernames.
 *Default value is "username".*
 
 
-```c title="Set subscriber_user_col parameter"
+```opensips title="Set subscriber_user_col parameter"
 ...
 modparam("carrierroute", "subscriber_user_col", "username")
 ...
@@ -447,7 +447,7 @@ The name of the column in the subscriber table containing the domain of
 *Default value is "domain".*
 
 
-```c title="Set subscriber_domain_col parameter"
+```opensips title="Set subscriber_domain_col parameter"
 ...
 modparam("carrierroute", "subscriber_domain_col", "domain")
 ...
@@ -465,7 +465,7 @@ The name of the column in the subscriber table containing the carrier id
 *Default value is "cr_preferred_carrier".*
 
 
-```c title="Set subscriber_carrier_col parameter"
+```opensips title="Set subscriber_carrier_col parameter"
 ...
 modparam("carrierroute", "subscriber_carrier_col", "cr_preferred_carrier")
 ...
@@ -483,7 +483,7 @@ Specifies whether the module loads its config data from a file or from a
 *Default value is "file".*
 
 
-```c title="Set config_source parameter"
+```opensips title="Set config_source parameter"
 ...
 modparam("carrierroute", "config_source", "file")
 ...
@@ -500,7 +500,7 @@ Specifies the path to the config file.
 *Default value is "/etc/opensips/carrierroute.conf".*
 
 
-```c title="Set config_file parameter"
+```opensips title="Set config_file parameter"
 ...
 modparam("carrierroute", "config_file", "/etc/opensips/carrierroute.conf")
 ...
@@ -518,7 +518,7 @@ The name of the carrier tree used per default (if the current
 *Default value is "default".*
 
 
-```c title="Set default_tree parameter"
+```opensips title="Set default_tree parameter"
 ...
 modparam("carrierroute", "default_tree", "default")
 ...
@@ -536,7 +536,7 @@ When using tree lookup per user, this parameter specifies whether
 *Default value is "0".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("carrierroute", "use_domain", 0)
 ...
@@ -556,7 +556,7 @@ This parameter defines the behaviour when using user-based tree
 *Default value is "1".*
 
 
-```c title="Set fallback_default parameter"
+```opensips title="Set fallback_default parameter"
 ...
 modparam("carrierroute", "fallback_default", 1)
 ...
@@ -573,7 +573,7 @@ Name of the table where the failure routing data is stored.
 *Default value is "carrierfailureroute".*
 
 
-```c title="Set db_failure_table parameter"
+```opensips title="Set db_failure_table parameter"
 ...
 modparam("carrierroute", "db_failure_table", "carrierfailureroute")
 ...
@@ -590,7 +590,7 @@ Name of the column containing the id identifier.
 *Default value is "id".*
 
 
-```c title="Set failure_id_column parameter"
+```opensips title="Set failure_id_column parameter"
 ...
 modparam("carrierroute", "failure_id_column", "id")
 ...
@@ -607,7 +607,7 @@ Name of the column containing the carrier id.
 *Default value is "carrier".*
 
 
-```c title="Set failure_carrier_column parameter"
+```opensips title="Set failure_carrier_column parameter"
 ...
 modparam("carrierroute", "failure_carrier_column", "carrier")
 ...
@@ -629,7 +629,7 @@ Name of column containing the scan prefixes. Scan prexies
 *Default value is "scan_prefix".*
 
 
-```c title="Set failure_scan_prefix_column parameter"
+```opensips title="Set failure_scan_prefix_column parameter"
 ...
 modparam("carrierroute", "failure_scan_prefix_column", "scan_prefix")
 ...
@@ -649,7 +649,7 @@ Name of column containing the rule domain. You can define
 *Default value is "domain".*
 
 
-```c title="Set failure_domain_column parameter"
+```opensips title="Set failure_domain_column parameter"
 ...
 modparam("carrierroute", "failure_domain_column", "domain")
 ...
@@ -667,7 +667,7 @@ Name of the column containing the host name of the last routing
 *Default value is "host_name".*
 
 
-```c title="Set failure_host_name_column parameter"
+```opensips title="Set failure_host_name_column parameter"
 ...
 modparam("carrierroute", "failure_host_name_column", "host_name")
 ...
@@ -684,7 +684,7 @@ Name of the column containing the reply code.
 *Default value is "reply_code".*
 
 
-```c title="Set failure_reply_code_column parameter"
+```opensips title="Set failure_reply_code_column parameter"
 ...
 modparam("carrierroute", "failure_reply_code_column", "reply_code")
 ...
@@ -701,7 +701,7 @@ Name of the column containing the flags.
 *Default value is "flags".*
 
 
-```c title="Set failure_flags_column parameter"
+```opensips title="Set failure_flags_column parameter"
 ...
 modparam("carrierroute", "failure_flags_column", "flags")
 ...
@@ -718,7 +718,7 @@ Name of the column containing the flags mask.
 *Default value is "mask".*
 
 
-```c title="Set failure_mask_column parameter"
+```opensips title="Set failure_mask_column parameter"
 ...
 modparam("carrierroute", "failure_mask_column", "mask")
 ...
@@ -735,7 +735,7 @@ Name of the column containing the next routing domain.
 *Default value is "next_domain".*
 
 
-```c title="Set failure_next_domain_column parameter"
+```opensips title="Set failure_next_domain_column parameter"
 ...
 modparam("carrierroute", "failure_next_domain_column", "next_domain")
 ...
@@ -752,7 +752,7 @@ Name of the column containing an optional comment.
 *Default value is "description".*
 
 
-```c title="Set failure_comment_column parameter"
+```opensips title="Set failure_comment_column parameter"
 ...
 modparam("carrierroute", "failure_comment_column", "description")
 ...
@@ -768,7 +768,7 @@ Previous versions of carrierroute had some more function. All the
     like this:
 
 
-```c
+```opensips
 cr_rewrite_uri(domain, hash_source)
 -> cr_route("default", domain, "$rU", "$rU", hash_source)
 
@@ -1103,7 +1103,7 @@ opensips-cli -x mi cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ### Examples
 
 
-```c title="Configuration example - Routing to default tree"
+```opensips title="Configuration example - Routing to default tree"
 ...
 route {
 	# route calls based on hash over callid
@@ -1140,7 +1140,7 @@ failure_route[2] {
 ```
 
 
-```c title="Configuration example - Routing to user tree"
+```opensips title="Configuration example - Routing to user tree"
 ...
 route[1] {
 	cr_user_carrier("$fU", "$fd", "$avp(carrier)");

@@ -157,7 +157,7 @@ The minimum value of the port used in the SDP sent to the SRS.
 *Default value is "35000".*
 
 
-```c title="Set media_port_min parameter"
+```opensips title="Set media_port_min parameter"
 ...
 modparam("siprec", "media_port_min", 10000)
 ...
@@ -176,7 +176,7 @@ The maximum value of the port used in the SDP sent to the SRS.
 *Default value is "65000".*
 
 
-```c title="Set media_port_max parameter"
+```opensips title="Set media_port_max parameter"
 ...
 modparam("siprec", "media_port_max", 20000)
 ...
@@ -194,7 +194,7 @@ A regular expression used to specify the codes that should prevent
 *By default any negative reply generates a failover.*
 
 
-```c title="Set skip_failover_codes parameter"
+```opensips title="Set skip_failover_codes parameter"
 ...
 # do not failover on 408 reply codes
 modparam("siprec", "skip_failover_codes", "408")
@@ -263,7 +263,7 @@ The function returns false when an internal error is triggered
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Use siprec_start_recording() function with a single SRS"
+```opensips title="Use siprec_start_recording() function with a single SRS"
 	...
 	if (!has_totag() && is_method("INVITE")) {
 		$var(srs) = "sip:127.0.0.1";
@@ -275,7 +275,7 @@ This function can be used from REQUEST_ROUTE.
 ```
 
 
-```c title="Use siprec_start_recording() function with multiple SRS servers"
+```opensips title="Use siprec_start_recording() function with multiple SRS servers"
 	...
 	if (!has_totag() && is_method("INVITE")) {
 		$var(srs) = "sip:127.0.0.1, sip:127.0.0.1;transport=TCP";
@@ -287,7 +287,7 @@ This function can be used from REQUEST_ROUTE.
 ```
 
 
-```c title="Use siprec_start_recording() function with custom XML values for participants"
+```opensips title="Use siprec_start_recording() function with custom XML values for participants"
 	...
 	$xml(caller_xml) = "<nameID></nameID>";
 	$xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:5090";

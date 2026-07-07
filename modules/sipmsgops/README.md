@@ -59,7 +59,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE, ERROR_ROUTE.
 
 
-```c title="append_to_reply usage"
+```opensips title="append_to_reply usage"
 ...
 append_to_reply("Foo: bar\r\n");
 append_to_reply("Foo: $rm at $Ts\r\n");
@@ -93,7 +93,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="append_hf usage"
+```opensips title="append_hf usage"
 ...
 append_hf("P-hint: VOICEMAIL\r\n");
 append_hf("From-username: $fU\r\n");
@@ -118,7 +118,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="insert_hf usage"
+```opensips title="insert_hf usage"
 ...
 insert_hf("P-hint: VOICEMAIL\r\n");
 insert_hf("To-username: $tU\r\n");
@@ -144,7 +144,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="insert_hf usage"
+```opensips title="insert_hf usage"
 ...
 insert_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 insert_hf("To-username: $tU\r\n", "Call-ID");
@@ -172,7 +172,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE.
 
 
-```c title="append_urihf usage"
+```opensips title="append_urihf usage"
 ...
 append_urihf("CC-Diversion: ", "\r\n");
 ...
@@ -201,7 +201,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="is_present_hf usage"
+```opensips title="is_present_hf usage"
 ...
 if (is_present_hf("From")) log(1, "From HF Present");
 ...
@@ -233,7 +233,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE.
 
 
-```c title="append_time usage"
+```opensips title="append_time usage"
 ...
 append_time();
 ...
@@ -273,7 +273,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, and BRANCH_ROUTE.
 
 
-```c title="is_method usage"
+```opensips title="is_method usage"
 ...
 if(is_method("INVITE"))
 {
@@ -306,7 +306,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="remove_hf usage"
+```opensips title="remove_hf usage"
 ...
 if(remove_hf("User-Agent"))
 {
@@ -336,7 +336,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="remove_hf_re usage"
+```opensips title="remove_hf_re usage"
 ...
 remove_hf_re("^X-g.+[0-9]");
 ...
@@ -363,7 +363,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="remove_hf_glob usage"
+```opensips title="remove_hf_glob usage"
 ...
 # removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, etc
 remove_hf_glob("X-Billing*");
@@ -381,7 +381,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="has_totag usage"
+```opensips title="has_totag usage"
 ...
 if (has_totag()) {
 	...
@@ -409,7 +409,7 @@ This function can be used from REQUEST_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="ruri_has_param usage"
+```opensips title="ruri_has_param usage"
 ...
 if (ruri_has_param("user","phone")) {
 	...
@@ -435,7 +435,7 @@ This function can be used from REQUEST_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="ruri_add_param usage"
+```opensips title="ruri_add_param usage"
 ...
 ruri_add_param("nat=yes");
 ...
@@ -458,7 +458,7 @@ This function can be used from REQUEST_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="ruri_del_param usage"
+```opensips title="ruri_del_param usage"
 ...
 ruri_del_param("user");
 ...
@@ -477,7 +477,7 @@ This function can be used from REQUEST_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="ruri_tel2sip usage"
+```opensips title="ruri_tel2sip usage"
 ...
 ruri_tel2sip();
 ...
@@ -499,7 +499,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="is_uri_user_e164 usage"
+```opensips title="is_uri_user_e164 usage"
 ...
 if (is_uri_user_e164($fu)) {  # Check From header URI user part
    ...
@@ -524,7 +524,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="has_body_part usage"
+```opensips title="has_body_part usage"
 ...
 if(has_body_part("application/sdp"))
 {
@@ -552,7 +552,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="is_audio_on_hold usage"
+```opensips title="is_audio_on_hold usage"
 ...
 if(is_audio_on_hold())
 {
@@ -584,7 +584,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="is_privacy usage"
+```opensips title="is_privacy usage"
 ...
 if(is_privacy("id"))
 {
@@ -622,7 +622,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="remove_body_part() usage"
+```opensips title="remove_body_part() usage"
 ...
 # delete entire body message (all parts)
 remove_body_part();
@@ -658,7 +658,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="add_body_part usage"
+```opensips title="add_body_part usage"
 ...
 add_body_part("Hello World!", "text/plain");
 ...
@@ -736,7 +736,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="sipmsg_validate usage"
+```opensips title="sipmsg_validate usage"
 ...
 if(!sipmsg_validate())
 {
@@ -777,7 +777,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_exists usage"
+```opensips title="codec_exists usage"
 ...
 codec_exists("speex");
 or
@@ -806,7 +806,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_delete usage"
+```opensips title="codec_delete usage"
 ...
 codec_delete("speex");
 or
@@ -836,7 +836,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_move_up usage"
+```opensips title="codec_move_up usage"
 ...
 codec_move_up("speex");
 or
@@ -869,7 +869,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_move_down usage"
+```opensips title="codec_move_down usage"
 ...
 codec_move_down("speex");
 or
@@ -878,7 +878,7 @@ codec_move_down("GSM", "8000");
 ```
 
 
-```c title="codec_move_down usage"
+```opensips title="codec_move_down usage"
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -906,7 +906,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_exists_re usage"
+```opensips title="codec_exists_re usage"
 ...
 codec_exists_re("sp[a-z]*");
 ...
@@ -926,7 +926,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_delete_re usage"
+```opensips title="codec_delete_re usage"
 ...
 codec_delete_re("PCMA|PCMU");
 ...
@@ -944,7 +944,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_delete_except_re usage"
+```opensips title="codec_delete_except_re usage"
 ...
 codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA and PCMU
 ...
@@ -964,7 +964,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_move_up_re usage"
+```opensips title="codec_move_up_re usage"
 ...
 codec_move_up_re("sp[a-z]*");
 ...
@@ -984,14 +984,14 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="codec_move_down_re usage"
+```opensips title="codec_move_down_re usage"
 ...
 codec_move_down_re("sp[a-z]*");
 ...
 ```
 
 
-```c title="codec_move_down usage"
+```opensips title="codec_move_down usage"
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -1023,7 +1023,7 @@ Meaning of the parameters is as follows:
 This function can be used from ONREPLY_ROUTE.
 
 
-```c title="change_reply_status usage"
+```opensips title="change_reply_status usage"
 ...
 onreply_route {
     if ($rs == "603") {
@@ -1056,7 +1056,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="stream_exists usage"
+```opensips title="stream_exists usage"
 ...
 # check for FAX
 stream_exists("image");
@@ -1085,7 +1085,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="stream_delete usage"
+```opensips title="stream_delete usage"
 ...
 # prevent usage of video
 stream_delete("video");
@@ -1120,7 +1120,7 @@ The function returns true if the options was found listed in one of the
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="list_hdr_has_option usage"
+```opensips title="list_hdr_has_option usage"
 ...
 # check if 100rel is advertised
 if (list_hdr_has_option("Supported", "100rel"))
@@ -1161,7 +1161,7 @@ The function returns true if the options was successfully added to
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="list_hdr_add_option usage"
+```opensips title="list_hdr_add_option usage"
 ...
 # add 100rel for advertising
 if (!list_hdr_has_option("Supported", "100rel"))
@@ -1204,7 +1204,7 @@ The function returns true if the options was successfully removed from
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="list_hdr_remove_option usage"
+```opensips title="list_hdr_remove_option usage"
 ...
 # add 100rel for advertising
 if (list_hdr_has_option("Supported", "100rel"))

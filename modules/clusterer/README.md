@@ -82,7 +82,7 @@ The id of the local instance. This parameter must be equal to one of the
 *No default value. This parameter must be explicitly set to a value greater than zero.*
 
 
-```c title="Set my_node_id parameter"
+```opensips title="Set my_node_id parameter"
 ...
 modparam("clusterer", "my_node_id", 1)
 ...
@@ -104,7 +104,7 @@ Specifies whether the node information for the local instance,
 *Default value is "1"*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("clusterer", "db_mode", 0)
 ...
@@ -121,7 +121,7 @@ The database url.
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("clusterer", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips")
@@ -139,7 +139,7 @@ The name of the table storing the clustering information.
 *Default value is "clusterer".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("clusterer", "db_table", "clusterer")
 ...
@@ -166,7 +166,7 @@ The format for this value is "tag_name / cluster_id = active/backup".
 Multiple definitions of this parameter are allowed. The default value is "none".
 
 
-```c title="Set sharing_tag parameter"
+```opensips title="Set sharing_tag parameter"
 ...
 modparam("clusterer", "sharing_tag", "vip1/2=active")
 modparam("clusterer", "sharing_tag", "node/10=backup")
@@ -195,7 +195,7 @@ This parameter is required if [db mode](#param_db_mode) is set
 			the local instance in the dynamic node learning process.
 
 
-```c title="Set my_node_info parameter"
+```opensips title="Set my_node_info parameter"
 ...
 modparam("clusterer", "my_node_info", "cluster_id=1, url=bin:192.168.0.5:5566")
 ...
@@ -227,7 +227,7 @@ This parameter should be set at least once if
 			the node topology is by other nodes connecting to the local instance.
 
 
-```c title="Set neighbor_node_info parameter"
+```opensips title="Set neighbor_node_info parameter"
 ...
 modparam("clusterer", "neighbor_node_info", "cluster_id=1,node_id=2,url=bin:192.168.0.6:5566")
 ...
@@ -244,7 +244,7 @@ The interval in seconds between regular pings sent to a neighbour node.
 *Default value is "4"*
 
 
-```c title="Set ping_interval parameter"
+```opensips title="Set ping_interval parameter"
 ...
 modparam("clusterer", "ping_interval", 1)
 ...
@@ -261,7 +261,7 @@ The time in milliseconds to wait for a reply to a previously sent ping before re
 *Default value is "1000"*
 
 
-```c title="Set ping_timeout parameter"
+```opensips title="Set ping_timeout parameter"
 ...
 modparam("clusterer", "ping_timeout", 500)
 ...
@@ -278,7 +278,7 @@ The time in seconds to wait before pinging is restarted for a failed node.
 *Default value is "60"*
 
 
-```c title="Set node_timeout parameter"
+```opensips title="Set node_timeout parameter"
 ...
 modparam("clusterer", "node_timeout", 10)
 ...
@@ -299,7 +299,7 @@ Only relevant for "seed" nodes.  The time, in seconds, to wait
 *Default value is "0".*
 
 
-```c title="Set seed_fallback_interval parameter"
+```opensips title="Set seed_fallback_interval parameter"
 ...
 modparam("clusterer", "seed_fallback_interval", 10)
 ...
@@ -316,7 +316,7 @@ The maximum size of the BIN packets sent while doing data synchronization. This 
 *Default value is "65535".*
 
 
-```c title="Set sync_packet_max_size parameter"
+```opensips title="Set sync_packet_max_size parameter"
 ...
 modparam("clusterer", "sync_packet_max_size", 32765)
 ...
@@ -333,7 +333,7 @@ The name of the column storing an id for the table rows.
 *Default value is "id".*
 
 
-```c title="Set id_col parameter"
+```opensips title="Set id_col parameter"
 ...
 modparam("clusterer", "id_col", "id")
 ...
@@ -350,7 +350,7 @@ The name of the column to store the id of a cluster.
 *Default value is "cluster_id".*
 
 
-```c title="Set cluster_id_col parameter"
+```opensips title="Set cluster_id_col parameter"
 ...
 modparam("clusterer", "cluster_id_col", "cluster_id")
 ...
@@ -367,7 +367,7 @@ The name of the column to store the id of an instance. The values must be greate
 *Default value is "node_id".*
 
 
-```c title="Set node_id_col parameter"
+```opensips title="Set node_id_col parameter"
 ...
 modparam("clusterer", "node_id_col", "node_id")
 ...
@@ -384,7 +384,7 @@ The name of the column containing the instance url. The values must be greater t
 *Default value is "url".*
 
 
-```c title="Set url_col parameter"
+```opensips title="Set url_col parameter"
 ...
 modparam("clusterer", "url_col", "url")
 ...
@@ -401,7 +401,7 @@ The name of the column storing the state of the node(enabled/disabled).
 *Default value is "state".*
 
 
-```c title="Set state_col parameter"
+```opensips title="Set state_col parameter"
 ...
 modparam("clusterer", "state_col", "state")
 ...
@@ -418,7 +418,7 @@ The name of the column containing the maximum number of ping retries before the 
 *Default value is "no_ping_retries".*
 
 
-```c title="Set no_ping_retries_col parameter"
+```opensips title="Set no_ping_retries_col parameter"
 ...
 modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
 ...
@@ -435,7 +435,7 @@ The name of the column storing the node priority to be chosen as next hop in cas
 *Default value is "priority".*
 
 
-```c title="Set priority_col parameter"
+```opensips title="Set priority_col parameter"
 ...
 modparam("clusterer", "priority_col", "priority")
 ...
@@ -452,7 +452,7 @@ The name of the column containing a SIP address for the node.
 *Default value is "sip_addr".*
 
 
-```c title="Set sip_addr_col parameter"
+```opensips title="Set sip_addr_col parameter"
 ...
 modparam("clusterer", "sip_addr_col", "sip_addr")
 ...
@@ -469,7 +469,7 @@ The name of the column containing the node flags.
 *Default value is "flags".*
 
 
-```c title="Set flags_col parameter"
+```opensips title="Set flags_col parameter"
 ...
 modparam("clusterer", "flags_col", "flags")
 ...
@@ -486,7 +486,7 @@ The name of the column containing a node description.
 *Default value is "description".*
 
 
-```c title="Set description_col parameter"
+```opensips title="Set description_col parameter"
 ...
 modparam("clusterer", "description_col", "description")
 ...
@@ -524,7 +524,7 @@ The function can return the following values:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
 
-```c title="cluster_send_req() usage"
+```opensips title="cluster_send_req() usage"
 ...
 # send a request
 cluster_send_req(1, 1, "Check USER: $fU", $var(req_tag));
@@ -568,7 +568,7 @@ The function can return the following values:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
 
-```c title="cluster_send_rpl() usage"
+```opensips title="cluster_send_rpl() usage"
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   cluster_send_rpl($param(cluster_id), $param(src_id), $var(my_reply), $param(tag));
@@ -599,7 +599,7 @@ The meaning of the parameters is the same as for `cluster_send_req()`.
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
 
-```c title="cluster_broadcast_req() usage"
+```opensips title="cluster_broadcast_req() usage"
 ...
 cluster_broadcast_req($var(cl_id), $var(share_data));
 ...
@@ -636,7 +636,7 @@ Parameters:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
 
-```c title="cluster_check_addr() usage"
+```opensips title="cluster_check_addr() usage"
 ...
 if (cluster_check_addr(1, $si)) {
 	...
@@ -1060,7 +1060,7 @@ After provisioning the two nodes in the database, we have to configure
 			A*:
 
 
-```c title="*Node A* configuration"
+```opensips title="*Node A* configuration"
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -1080,7 +1080,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 Similarly, the configuration for *Node B* is as follows:
 
 
-```c title="*Node B* configuration"
+```opensips title="*Node B* configuration"
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 

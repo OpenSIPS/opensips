@@ -122,7 +122,7 @@ Note that if you need a reliable communication with
 *Default value is "0 (disabled)".*
 
 
-```c title="Set sync_mode parameter"
+```opensips title="Set sync_mode parameter"
 ...
 modparam("event_jsonrpc", "sync_mode", yes)
 ...
@@ -148,7 +148,7 @@ NOTE that if the event is not using names for its parameters,
 *Default value is "1000 milliseconds = 1 second".*
 
 
-```c title="Set timeout parameter"
+```opensips title="Set timeout parameter"
 ...
 # only wait for 200 milliseonds for a reply
 modparam("event_jsonrpc", "timeout", 200)
@@ -169,7 +169,7 @@ By default, the name of the event subscribed to is not
 *Default value is "disabled" - event is not added.*
 
 
-```c title="Set event_param parameter"
+```opensips title="Set event_param parameter"
 ...
 modparam("event_jsonrpc", "event_param", "opensips_event")
 # json resulted will contain the "opensips_event": EVENT token
