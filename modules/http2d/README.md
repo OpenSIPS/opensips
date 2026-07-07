@@ -62,7 +62,7 @@ The listening IPv4 address.
 Default value is *"127.0.0.1"*.
 
 
-```c title="Setting the ip parameter"
+```opensips title="Setting the ip parameter"
 modparam("http2d", "ip", "127.0.0.2")
 ```
 
@@ -76,7 +76,7 @@ The listening port.
 Default value is *443*.
 
 
-```c title="Setting the port parameter"
+```opensips title="Setting the port parameter"
 modparam("http2d", "port", 5000)
 ```
 
@@ -90,7 +90,7 @@ File path to the TLS certificate, in PEM format.
 Default value is *NULL* (not set).
 
 
-```c title="Setting the tls_cert_path parameter"
+```opensips title="Setting the tls_cert_path parameter"
 modparam("http2d", "tls_cert_path", "/etc/pki/http2/cert.pem")
 ```
 
@@ -104,7 +104,7 @@ File path to the TLS private key, in PEM format.
 Default value is *NULL* (not set).
 
 
-```c title="Setting the tls_cert_key parameter"
+```opensips title="Setting the tls_cert_key parameter"
 modparam("http2d", "tls_cert_key", "/etc/pki/http2/private/key.pem")
 ```
 
@@ -121,7 +121,7 @@ The maximum amount of bytes allowed for all header field names and values
 Default value is *8192* bytes.
 
 
-```c title="Setting the max_headers_size parameter"
+```opensips title="Setting the max_headers_size parameter"
 modparam("http2d", "max_headers_size", 16384)
 ```
 
@@ -140,7 +140,7 @@ Once this timeout is reached, the module will auto-generate a
 Default value is *2000* ms.
 
 
-```c title="Setting the response_timeout parameter"
+```opensips title="Setting the response_timeout parameter"
 modparam("http2d", "response_timeout", 5000)
 ```
 
@@ -177,7 +177,7 @@ Sends a response for the HTTP/2 request being processed.  The *":status"*
 This function can only be used from an *EVENT_ROUTE*.
 
 
-```c title="http2_send_response() usage"
+```opensips title="http2_send_response() usage"
 event_route [E_HTTP2_REQUEST] {
   xlog(":: Method:  $param(method)\n");
   xlog(":: Path:    $param(path)\n");

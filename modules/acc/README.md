@@ -81,7 +81,7 @@ A very comprehensive description of how the accounting module works in
 #### General Example
 
 
-```c
+```opensips
 loadmodule "modules/acc/acc.so"
 
 if ($ru=~"sip:+40") /* calls to Romania */ {
@@ -164,7 +164,7 @@ Via *log_name* you define how/where the
 Declaring an extra in the format of
 
 
-```c
+```opensips
 modparam("acc", "extra_fields", "log: a -> test_a")
 ```
 
@@ -337,7 +337,7 @@ Should be early media (any provisional reply with body) accounted too ?
 Default value is 0 (no).
 
 
-```c title="early_media example"
+```opensips title="early_media example"
 modparam("acc", "early_media", 1)
 ```
 
@@ -353,7 +353,7 @@ By default, CANCEL reporting is disabled -- most accounting
 Default value is 0 (no).
 
 
-```c title="report_cancels example"
+```opensips title="report_cancels example"
 modparam("acc", "report_cancels", 1)
 ```
 
@@ -374,7 +374,7 @@ It affects all values related to TO and FROM headers (body, URI,
 Default value is 0 (disabled).
 
 
-```c title="detect_direction example"
+```opensips title="detect_direction example"
 modparam("acc", "detect_direction", 1)
 ```
 
@@ -393,7 +393,7 @@ If empty, extra accounting support will be disabled.
 Default value is 0 (disabled).
 
 
-```c title="Setting *extra_fields* example:"
+```opensips title="Setting *extra_fields* example:"
 # for syslog-based accounting, use any text you want to be printed
 # if setting $acc_extra(a) you will see "My_a_Field=<value> in logs
 # if setting $acc_extra(b) you will see "b=<value> in logs
@@ -422,7 +422,7 @@ If empty, multi-leg accounting support will be disabled.
 Default value is 0 (disabled).
 
 
-```c title="Setting *leg_fields* example:"
+```opensips title="Setting *leg_fields* example:"
 # for syslog-based accounting, use any text you want to be printed
 # if setting $(acc_leg(a)[0]) you will see "My_a_Field=<value> in logs
 # if setting $(acc_leg(b)[0]) you will see "b=<value> in logs
@@ -446,7 +446,7 @@ Log level at which accounting messages are issued to syslog.
 Default value is L_NOTICE.
 
 
-```c title="log_level example"
+```opensips title="log_level example"
 modparam("acc", "log_level", 2)   # Set log_level to 2
 ```
 
@@ -462,7 +462,7 @@ Log facility to which accounting messages are issued to syslog.
 Default value is LOG_DAEMON.
 
 
-```c title="log_facility example"
+```opensips title="log_facility example"
 modparam("acc", "log_facility", "LOG_DAEMON")
 ```
 
@@ -480,7 +480,7 @@ If the parameter is set to empty string, the AAA accounting support
 Default value is "NULL".
 
 
-```c title="Set aaa_url parameter"
+```opensips title="Set aaa_url parameter"
 ...
 modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 ...
@@ -496,7 +496,7 @@ AAA service type used for accounting.
 Default value is not-set.
 
 
-```c title="service_type example"
+```opensips title="service_type example"
 # Default value of service type for SIP is 15
 modparam("acc", "service_type", 15)
 ```
@@ -511,7 +511,7 @@ Table name of accounting successful calls -- database specific.
 Default value is "acc"
 
 
-```c title="db_table_acc example"
+```opensips title="db_table_acc example"
 modparam("acc", "db_table_acc", "myacc_table")
 ```
 
@@ -525,7 +525,7 @@ Table name for accounting missed calls -- database specific.
 Default value is "missed_calls"
 
 
-```c title="db_table_missed_calls example"
+```opensips title="db_table_missed_calls example"
 modparam("acc", "db_table_missed_calls", "myMC_table")
 ```
 
@@ -540,7 +540,7 @@ SQL address -- database specific. If is set to NULL or empty string,
 Default value is "NULL" (SQL disabled).
 
 
-```c title="db_url example"
+```opensips title="db_url example"
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 ```
 
@@ -555,7 +555,7 @@ Column name in accounting table to store the request's method name as
 Default value is "method".
 
 
-```c title="acc_method_column example"
+```opensips title="acc_method_column example"
 modparam("acc", "acc_method_column", "method")
 ```
 
@@ -569,7 +569,7 @@ Column name in accounting table to store the From header TAG parameter.
 Default value is "from_tag".
 
 
-```c title="acc_from_tag_column example"
+```opensips title="acc_from_tag_column example"
 modparam("acc", "acc_from_tag_column", "from_tag")
 ```
 
@@ -583,7 +583,7 @@ Column name in accounting table to store the To header TAG parameter.
 Default value is "to_tag".
 
 
-```c title="acc_to_tag_column example"
+```opensips title="acc_to_tag_column example"
 modparam("acc", "acc_to_tag_column", "to_tag")
 ```
 
@@ -597,7 +597,7 @@ Column name in accounting table to store the request's Callid value.
 Default value is "callid".
 
 
-```c title="acc_callid_column example"
+```opensips title="acc_callid_column example"
 modparam("acc", "acc_callid_column", "callid")
 ```
 
@@ -612,7 +612,7 @@ Column name in accounting table to store the final reply's numeric code
 Default value is "sip_code".
 
 
-```c title="acc_sip_code_column example"
+```opensips title="acc_sip_code_column example"
 modparam("acc", "acc_sip_code_column", "sip_code")
 ```
 
@@ -627,7 +627,7 @@ Column name in accounting table to store the final reply's reason
 Default value is "sip_reason".
 
 
-```c title="acc_sip_reason_column example"
+```opensips title="acc_sip_reason_column example"
 modparam("acc", "acc_sip_reason_column", "sip_reason")
 ```
 
@@ -642,7 +642,7 @@ Column name in accounting table to store the time stamp of the
 Default value is "time".
 
 
-```c title="acc_time_column example"
+```opensips title="acc_time_column example"
 modparam("acc", "acc_time_column", "time")
 ```
 
@@ -674,7 +674,7 @@ This variable can be addressed with the tag names defined
 			(the lastly added leg).
 
 
-```c
+```opensips
 # the "caller" value of the current leg
 $acc_leg(caller)
 
@@ -746,7 +746,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="do_accounting usage"
+```opensips title="do_accounting usage"
 		...
 		if (!has_totag()) {
 			if (is_method("INVITE")) {
@@ -802,7 +802,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="drop_accounting usage"
+```opensips title="drop_accounting usage"
 		...
 		acc_log_request("403 Destination not allowed");
 		if (!has_totag()) {
@@ -851,7 +851,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_log_request usage"
+```opensips title="acc_log_request usage"
 ...
 acc_log_request("403 Destination not allowed");
 ...
@@ -881,7 +881,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_db_request usage"
+```opensips title="acc_db_request usage"
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)", "acc");
@@ -911,7 +911,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_aaa_request usage"
+```opensips title="acc_aaa_request usage"
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -942,7 +942,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_evi_request usage"
+```opensips title="acc_evi_request usage"
 ...
 acc_evi_request("403 Destination not allowed");
 ...
@@ -961,7 +961,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_new_leg usage"
+```opensips title="acc_new_leg usage"
 ...
 	acc_new_leg();
 ...
@@ -992,7 +992,7 @@ NOTE: you cannot perform a new load until doing an unload - no nested
 This function can be used from any type of route.
 
 
-```c title="acc_load_ctx_from_dlg usage"
+```opensips title="acc_load_ctx_from_dlg usage"
 ...
 if ( load_dialog_ctx("$var(callid)") ) {
 	# we now have the dialog context of the new dialog

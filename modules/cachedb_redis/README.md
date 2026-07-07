@@ -79,7 +79,7 @@ The URLs of the server groups that OpenSIPS will connect to in order
 			the identifier that will be used from the script.
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 # single-instance URLs (Redis Server or Redis Cluster)
 modparam("cachedb_redis", "cachedb_url", "redis:group1://localhost:6379/")
@@ -89,7 +89,7 @@ modparam("cachedb_redis", "cachedb_url", "redis:cluster1://random_url:8888/")
 ```
 
 
-```c title="Use Redis servers"
+```opensips title="Use Redis servers"
 ...
 cache_store("redis:group1", "key", "$ru value");
 cache_fetch("redis:cluster1", "key", $avp(10));
@@ -109,7 +109,7 @@ This parameter specifies how many milliseconds OpenSIPS should wait
 *Default value is "5000 ms".*
 
 
-```c title="Set connect_timeout parameter"
+```opensips title="Set connect_timeout parameter"
 ...
 # wait 1 seconds for Redis to connect
 modparam("cachedb_redis", "connect_timeout",1000)
@@ -128,7 +128,7 @@ This parameter specifies how many milliseconds OpenSIPS should wait
 *Default value is "5000 ms".*
 
 
-```c title="Set connect_timeout parameter"
+```opensips title="Set connect_timeout parameter"
 ...
 # wait 1 seconds for Redis queries
 modparam("cachedb_redis", "query_timeout",1000)
@@ -148,7 +148,7 @@ By setting this parameter to 1, OpenSIPS will abort startup if
 *Default value is "0" (disabled).*
 
 
-```c title="Set the shutdown_on_error parameter"
+```opensips title="Set the shutdown_on_error parameter"
 ...
 # abort OpenSIPS startup if Redis is down
 modparam("cachedb_redis", "shutdown_on_error", 1)
@@ -180,7 +180,7 @@ Note that TLS is supported by Redis starting with version 6.0. Also, it is
 *Default value is **0** (not enabled)*
 
 
-```c title="Set the use_tls parameter"
+```opensips title="Set the use_tls parameter"
 ...
 modparam("tls_mgm", "client_domain", "redis")
 modparam("tls_mgm", "certificate", "[redis]/etc/pki/tls/certs/redis.pem")
@@ -211,7 +211,7 @@ The cachedb_redis module allows to run RAW queries, thus taking full advantage o
 Here are a couple examples of running some Redis queries :
 
 
-```c title="Redis Raw Query Examples"
+```opensips title="Redis Raw Query Examples"
 ...
 	$var(my_hash) = "my_hash_name";
 	$var(my_key) = "my_key_name";
