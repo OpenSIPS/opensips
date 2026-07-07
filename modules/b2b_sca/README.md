@@ -107,7 +107,7 @@ The size of the hash table internally used to keep the shared calls.
 *The default value is "10".*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("b2b_sca", "hash_size", "5")
 ...
@@ -126,7 +126,7 @@ The address of the presence server, where the PUBLISH
 *The default value is "NULL".*
 
 
-```c title="Set presence_server parameter"
+```opensips title="Set presence_server parameter"
 ...
 modparam("b2b_sca", "presence_server", "sip:opensips.org")
 ...
@@ -144,7 +144,7 @@ AVP that will hold one or more watcher URI(s).
 *The default value is "NULL".*
 
 
-```c title="Set watchers_avp_spec parameter"
+```opensips title="Set watchers_avp_spec parameter"
 ...
 modparam("b2b_sca", "watchers_avp_spec", "$avp(watchers_avp_spec)")
 ...
@@ -168,7 +168,7 @@ Mandatory parameter.
 *The default value is "NULL".*
 
 
-```c title="Set shared_line_spec_param parameter"
+```opensips title="Set shared_line_spec_param parameter"
 ...
 modparam("b2b_sca", "shared_line_spec_param", "$var(shared_line)")
 ...
@@ -188,7 +188,7 @@ Mandatory parameter.
 *The default value is "NULL".*
 
 
-```c title="Set appearance_name_addr_spec_param parameter"
+```opensips title="Set appearance_name_addr_spec_param parameter"
 ...
 modparam("b2b_sca", "appearance_name_addr_spec_param", "")
 ...
@@ -204,7 +204,7 @@ This is URL of the database to be used.
 *The default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[dbhost]/[dbname]")
 ...
@@ -227,7 +227,7 @@ The b2b_sca module can utilize database for persistent call appearance storage.
 *The default value is 0 (NO DB STORAGE).*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("b2b_sca", "db_mode", 1)
 ...
@@ -243,7 +243,7 @@ Identifies the table name from the defined database.
 *The default value is "b2b_sca".*
 
 
-```c title="Set table_name parameter"
+```opensips title="Set table_name parameter"
 ...
 modparam("b2b_sca", "table_name", "sla")
 ...
@@ -260,7 +260,7 @@ The column's name in the database storing the shared call/line id.
 *The default value is "shared_line".*
 
 
-```c title="Set shared_line_column parameter"
+```opensips title="Set shared_line_column parameter"
 ...
 modparam("b2b_sca", "shared_line_column", "")
 ...
@@ -277,7 +277,7 @@ The column's name in the database storing the list of watchers.
 *The default value is "watchers".*
 
 
-```c title="Set watchers_column parameter"
+```opensips title="Set watchers_column parameter"
 ...
 modparam("b2b_sca", "watchers_column", "")
 ...
@@ -296,7 +296,7 @@ The column's name in the database storing the shared entity of a
 		Index is an integer between 1 and 10.
 
 
-```c title="Set app[index]_shared_entity_column parameter"
+```opensips title="Set app[index]_shared_entity_column parameter"
 ...
 modparam("b2b_sca", "app1_shared_entity_column", "first_shared_entity")
 modparam("b2b_sca", "app2_shared_entity_column", "second_shared_entity")
@@ -321,7 +321,7 @@ The column's name in the database storing the call state of a
 		Index is an integer between 1 and 10.
 
 
-```c title="Set app[index]_call_state_column parameter"
+```opensips title="Set app[index]_call_state_column parameter"
 ...
 modparam("b2b_sca", "app1_call_state_column", "first_call_state")
 modparam("b2b_sca", "app2_call_state_column", "second_call_state")
@@ -340,7 +340,7 @@ The column's name in the database storing the call info URI of a
 		Index is an integer between 1 and 10.
 
 
-```c title="Set app[index]_call_info_uri_column parameter"
+```opensips title="Set app[index]_call_info_uri_column parameter"
 ...
 modparam("b2b_sca", "app1_call_info_uri_column", "first_call_info_uri")
 modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri")
@@ -361,7 +361,7 @@ The column's name in the database storing the call info appearance URI
 		Index is an integer between 1 and 10.
 
 
-```c title="Set app[index]_call_info_appearance_uri_column parameter"
+```opensips title="Set app[index]_call_info_appearance_uri_column parameter"
 ...
 modparam("b2b_sca", "app1_call_info_appearance_uri_column", "first_call_info_appearance_uri")
 modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_call_info_appearance_uri")
@@ -380,7 +380,7 @@ The column's name in the database storing the b2b_logic key of a
 		Index is an integer between 1 and 10.
 
 
-```c title="Set app[index]_b2bl_key_column parameter"
+```opensips title="Set app[index]_b2bl_key_column parameter"
 ...
 modparam("b2b_sca", "app1_b2bl_key_column", "first_b2bl_key")
 modparam("b2b_sca", "app2_b2bl_key_column", "second_b2bl_key")
@@ -409,7 +409,7 @@ Meaning of the parameters:
 			1: "appearance" call
 
 
-```c title="sca_init_request() usage"
+```opensips title="sca_init_request() usage"
 ...
 modparam("b2b_sca",
 	"shared_line_spec_param","$var(shared_line)")
@@ -466,7 +466,7 @@ Meaning of the parameters:
 		the shared line/call that was previously set by sca_init_request().
 
 
-```c
+```opensips
 ...
 	if ($rU==NULL && is_method("INVITE") &&
 		$fU==$tU && is_present_hf("Call-Info")) {

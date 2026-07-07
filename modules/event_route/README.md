@@ -43,7 +43,7 @@ In order to retrieve the parameters of an event, the
 		Example:
 
 
-```c
+```opensips
 xlog("first parameters is $param(1)\n");
 xlog("Pike Blocking IP is $param(ip)\n");
 ```
@@ -67,7 +67,7 @@ In order to handle the *E_PIKE_BLOCKED* event,
 
 			EVENT_ROUTE usage
 					
-```c
+```opensips
 
 	event_route[E_PIKE_BLOCKED] {
 		xlog("IP $param(ip) has been blocked\n");

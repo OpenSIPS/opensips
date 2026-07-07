@@ -98,7 +98,7 @@ The following parameters can be used:
 				[use tls](#param_use_tls) module parameter must be enabled.
 
 
-```c title="Set server_id parameter"
+```opensips title="Set server_id parameter"
 ...
 # connection to a RabbitMQ server on localhost, default port
 modparam("rabbitmq", "server_id","[ID1] uri = amqp://127.0.0.1")
@@ -131,7 +131,7 @@ When using this parameter, you must also ensure that
 *Default value is **0** (not enabled)*
 
 
-```c title="Set the use_tls parameter"
+```opensips title="Set the use_tls parameter"
 ...
 modparam("tls_mgm", "client_domain", "rmq")
 modparam("tls_mgm", "certificate", "[rmq]/etc/pki/tls/certs/rmq.pem")
@@ -174,7 +174,7 @@ Indicates the timeout (in milliseconds) of any command (i.e. publish)
 *Default value is **0** (no timeout - blocking mode)*
 
 
-```c title="Set the timeout parameter"
+```opensips title="Set the timeout parameter"
 ...
 modparam("rabbitmq", "timeout", 1000) # timeout after 1s
 ...
@@ -221,7 +221,7 @@ The function has the following parameters:
 						*headers* parameter must also be specified.
 
 
-```c title="rabbitmq_publish() function usage"
+```opensips title="rabbitmq_publish() function usage"
 	...
 	rabbitmq_publish("ID1", "call", "$fU called $rU");
 	...

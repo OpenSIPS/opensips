@@ -53,7 +53,7 @@ The amount of milliseconds OpenSIPS waits to connect to the the
 *Default value is "500 milliseconds".*
 
 
-```c title="Set connect_timeout parameter"
+```opensips title="Set connect_timeout parameter"
 ...
 modparam("jsonrpc", "connect_timeout", 200)
 ...
@@ -70,7 +70,7 @@ The amount of milliseconds OpenSIPS waits to send a RPC command to
 *Default value is "500 milliseconds".*
 
 
-```c title="Set write_timeout parameter"
+```opensips title="Set write_timeout parameter"
 ...
 modparam("jsonrpc", "write_timeout", 300)
 ...
@@ -89,7 +89,7 @@ The amount of milliseconds OpenSIPS waits for the JSON-RPC server
 *Default value is "500 milliseconds".*
 
 
-```c title="Set read_timeout parameter"
+```opensips title="Set read_timeout parameter"
 ...
 modparam("jsonrpc", "read_timeout", 300)
 ...
@@ -146,7 +146,7 @@ The function has the following return codes:
 						out more information.
 
 
-```c title="jsonrpc_request() function usage"
+```opensips title="jsonrpc_request() function usage"
 	...
 	if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", $var(ret))) {
 		xlog("JSON-RPC command failed with $var(ret)\n");
@@ -175,7 +175,7 @@ The function receives the same parameters as
 				[jsonrpc request](#func_jsonrpc_request), except for the *ret_pvar*. Also, the same values are returned.
 
 
-```c title="jsonrpc_notification() function usage"
+```opensips title="jsonrpc_notification() function usage"
 	...
 	if (!jsonrpc_notification("127.0.0.1", "block_ip", "{ \"ip": \"$si\" }")) {
 		xlog("JSON-RPC notification failed with $rc!\n");
