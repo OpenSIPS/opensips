@@ -47,7 +47,7 @@ The following libraries or applications must be installed before running
 This is the url representing the AAA protocol used and the location of the configuration file of this protocol.
 
 
-```c title="Set aaa_url parameter"
+```opensips title="Set aaa_url parameter"
 ...
 modparam("uri", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 ...
@@ -64,7 +64,7 @@ AAA service type used in
 *Default value is 10 (Call-Check).*
 
 
-```c title="Set service_type parameter"
+```opensips title="Set service_type parameter"
 ...
 modparam("uri", "service_type", 11)
 ...
@@ -84,7 +84,7 @@ If zero, `aaa_does_uri_exist`
 *Default value is 0.*
 
 
-```c title="Set use_sip_uri_host parameter"
+```opensips title="Set use_sip_uri_host parameter"
 ...
 modparam("uri", "use_sip_uri_host", 1)
 ...
@@ -104,7 +104,7 @@ If the db_url string is not set, you will not be able to use
 *Default value is ">NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("uri", "db_url", "mysql://username:password@localhost/opensips")
 ...
@@ -123,7 +123,7 @@ The DB table that should be used. Its possible to use the
 *Default value is "subscriber".*
 
 
-```c title="Set uri_table parameter"
+```opensips title="Set uri_table parameter"
 ...
 modparam("uri", "db_table", "uri")
 ...
@@ -139,7 +139,7 @@ Column holding usernames in the table.
 *Default value is "username".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("uri", "user_column", "username")
 ...
@@ -155,7 +155,7 @@ Column holding domain in the table.
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("uri", "domain_column", "domain")
 ...
@@ -171,7 +171,7 @@ Column holding URI username in the table.
 *Default value is "uri_user".*
 
 
-```c title="Set uriuser_column parameter"
+```opensips title="Set uriuser_column parameter"
 ...
 modparam("uri", "uriuser_column", "uri_user")
 ...
@@ -188,7 +188,7 @@ Specify if the "uri" table should be used for checkings
 *Default value is "0 (false)".*
 
 
-```c title="Set use_uri_table parameter"
+```opensips title="Set use_uri_table parameter"
 ...
 modparam("uri", "use_uri_table", 1)
 ...
@@ -211,7 +211,7 @@ This parameter is only evaluated for calls to "does_uri_exist",
 *Default value is "0 (false)".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("uri", "use_domain", 1)
 ...
@@ -231,7 +231,7 @@ Check To username against URI table (if use_uri_table is set) or
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="db_check_to usage"
+```opensips title="db_check_to usage"
 ...
 if (db_check_to()) {
 	...
@@ -250,7 +250,7 @@ Check From username against URI table (if use_uri_table is set) or
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="db_check_from usage"
+```opensips title="db_check_from usage"
 ...
 if (db_check_from()) {
 	...
@@ -273,7 +273,7 @@ Matching is done against the URI table (if
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="db_does_uri_exist usage"
+```opensips title="db_does_uri_exist usage"
 ...
 if (db_does_uri_exist()) {
 	...
@@ -294,7 +294,7 @@ Checks given uri-string username against URI table (if use_uri_table is set) or
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="db_get_auth_id usage"
+```opensips title="db_get_auth_id usage"
 ...
 if (db_get_auth_id("$ru", "$avp(auth_id)", "$avp(auth_realm)")) {
 	...
@@ -327,7 +327,7 @@ Returns 1 if Radius returns Access-Accept, -1 if Radius
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="aaa_does_uri_exist usage"
+```opensips title="aaa_does_uri_exist usage"
 ...
 if (aaa_does_uri_exist()) {
 	...
@@ -348,7 +348,7 @@ Similar to aaa_does_uri_exist, but check is done
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="aaa_does_uri_user_exist usage"
+```opensips title="aaa_does_uri_user_exist usage"
 ...
 if (aaa_does_uri_user_exist()) {
 	...
@@ -372,7 +372,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_user usage"
+```opensips title="is_user usage"
 ...
 if (is_user("john")) {
 	...
@@ -390,7 +390,7 @@ Check if To header field uri contains tag parameter.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="has_totag usage"
+```opensips title="has_totag usage"
 ...
 if (has_totag()) {
 	...
@@ -414,7 +414,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uri_param usage"
+```opensips title="uri_param usage"
 ...
 if (uri_param("param1")) {
 	...
@@ -439,7 +439,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uri_param usage"
+```opensips title="uri_param usage"
 ...
 if (uri_param("param1","value1")) {
 	...
@@ -464,7 +464,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_uri_param usage"
+```opensips title="add_uri_param usage"
 ...
 add_uri_param("nat=yes");
 ...
@@ -482,7 +482,7 @@ Converts RURI, if it is tel URI, to SIP URI.  Returns true, only if
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="tel2sip usage"
+```opensips title="tel2sip usage"
 ...
 tel2sip();
 ...
@@ -499,7 +499,7 @@ Checks if userpart of URI stored in pseudo variable is
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="is_uri_user_e164 usage"
+```opensips title="is_uri_user_e164 usage"
 ...
 if (is_uri_user_e164("$fu")) {  # Check From header URI user part
    ...

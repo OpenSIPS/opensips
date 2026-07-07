@@ -51,7 +51,7 @@ The default port to be used by all SCTP listeners.
 *Default value is 5060.*
 
 
-```c title="Set sctp_port parameter"
+```opensips title="Set sctp_port parameter"
 ...
 modparam("proto_sctp", "sctp_port", 5070)
 ...

@@ -175,7 +175,7 @@ Returns 1 if the message is received via TLS and the peer was verified
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_peer_verified usage"
+```opensips title="is_peer_verified usage"
 ...
 if (is_peer_verified()) {
         xlog("L_INFO","request from verified TLS peer\n");
@@ -201,7 +201,7 @@ Not specific to TLS. Allows to specify the protocol
 			listening server will be.
 
 
-```c title="Set listen variable"
+```opensips title="Set listen variable"
 ...
 listen = tls:1.2.3.4:5061
 ...
@@ -218,7 +218,7 @@ Sets the default TLS listening port.
 *Default value is 5061.*
 
 
-```c title="Set tls_port variable"
+```opensips title="Set tls_port variable"
 ...
 modparam("proto_tls", "tls_port", 5062)
 ...
@@ -268,7 +268,7 @@ If you want RFC3261 conformance and all your clients support
 			applications with SSL support use the SSLv23 method).
 
 
-```c title="Set tls_method variable"
+```opensips title="Set tls_method variable"
 ...
 modparam("proto_tls", "tls_method", "TLSv1")
 modparam("proto_tls", "tls_method", "dom:TLSv1")
@@ -289,7 +289,7 @@ Public certificate file for OpenSIPS. It will be used as
 *Default value is "CFG_DIR/cert.pem".*
 
 
-```c title="Set certificate variable"
+```opensips title="Set certificate variable"
 ...
 modparam("proto_tls", "certificate", "/mycerts/certs/opensips_server_cert.pem")
 modparam("proto_tls", "certificate", "dom:/mycerts/certs/opensips_server_cert.pem")
@@ -309,7 +309,7 @@ Private key of the above certificate. I must be kept in a
 *Default value is "CFG_DIR/cert.pem".*
 
 
-```c title="Set private_key variable"
+```opensips title="Set private_key variable"
 ...
 modparam("proto_tls", "private_key", "/mycerts/private/prik.pem")
 modparam("proto_tls", "private_key", "dom:/mycerts/private/prik.pem")
@@ -330,7 +330,7 @@ List of trusted CAs. The file contains the certificates
 *Default value is "".*
 
 
-```c title="Set ca_list variable"
+```opensips title="Set ca_list variable"
 ...
 modparam("proto_tls", "ca_list", "/mycerts/certs/ca_list.pem")
 modparam("proto_tls", "ca_list", "dom:/mycerts/certs/ca_list.pem")
@@ -351,7 +351,7 @@ Directory storing trusted CAs. The path contains the
 *Default value is "".*
 
 
-```c title="Set ca_dir variable"
+```opensips title="Set ca_dir variable"
 ...
 modparam("proto_tls", "ca_dir", "/mycerts/certs")
 modparam("proto_tls", "ca_dir", "dom:/mycerts/certs")
@@ -379,7 +379,7 @@ You can specify the list of algorithms for authentication
 *It defaults to the OpenSSL default ciphers.*
 
 
-```c title="Set ciphers_list variable"
+```opensips title="Set ciphers_list variable"
 ...
 modparam("proto_tls", "ciphers_list", "NULL")
 modparam("proto_tls", "ciphers_list", "dom:NULL")
@@ -400,7 +400,7 @@ You can specify a file which contains Diffie-Hellman
 *It defaults to not set a dh param file.*
 
 
-```c title="Set dh_params variable"
+```opensips title="Set dh_params variable"
 ...
 modparam("proto_tls", "dh_params", "/etc/pki/CA/dh1024.pem")
 modparam("proto_tls", "dh_params", "dom:/etc/pki/CA/dh1024.pem")
@@ -452,7 +452,7 @@ It's usable only if TLS support was compiled.
 *Default value for both is 1.*
 
 
-```c title="Set verify_cert & require_cert variable"
+```opensips title="Set verify_cert & require_cert variable"
 ...
 # turn on the strictest and strongest authentication possible
 modparam("proto_tls", "require_cert", "1")
@@ -473,7 +473,7 @@ Timeouts ... advanced users only
 *Default value for both is 30.*
 
 
-```c title="Set tls_handshake_timeout & tls_send_timeout variable"
+```opensips title="Set tls_handshake_timeout & tls_send_timeout variable"
 ...
 modparam("proto_tls", "tls_handshake_timeout", 119)		# number of seconds
 modparam("proto_tls", "tls_send_timeout", 121)			# number of seconds
@@ -496,7 +496,7 @@ It's usable only if TLS support was compiled.
 *Default value is 0.*
 
 
-```c title="Set tls_client_domain_avp variable"
+```opensips title="Set tls_client_domain_avp variable"
 ...
 modparam("proto_tls", "tls_client_domain_avp", "400")		# only integer named AVPs are supported
 ...
@@ -565,7 +565,7 @@ NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can b
 It's usable only if TLS support was compiled.
 
 
-```c title="Usage of tls_client_domain and tls_server_domain block"
+```opensips title="Usage of tls_client_domain and tls_server_domain block"
 ...
 listen=tls:IP_2:port2
 listen=tls:IP_3:port3
@@ -664,7 +664,7 @@ Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over TLS.
 *Default value is 1 (enabled).*
 
 
-```c title="Set tls_crlf_pingpong parameter"
+```opensips title="Set tls_crlf_pingpong parameter"
 ...
 modparam("proto_tls", "tls_crlf_pingpong", 0)
 ...
@@ -683,7 +683,7 @@ Drop CRLF (\r\n) ping messages. When this parameter is enabled,
 *Default value is 0 (disabled).*
 
 
-```c title="Set tls_crlf_drop parameter"
+```opensips title="Set tls_crlf_drop parameter"
 ...
 modparam("proto_tls", "tls_crlf_drop", 1)
 ...
@@ -704,7 +704,7 @@ The maximum number of chunks that a SIP message is expected to
 *Default value is 4.*
 
 
-```c title="Set tls_max_msg_chunks parameter"
+```opensips title="Set tls_max_msg_chunks parameter"
 ...
 modparam("proto_tls", "tls_max_msg_chunks", 8)
 ...
@@ -924,7 +924,7 @@ NOTE: Since the TLS engine is quite memory consuming, increase the
 - fork = yes
 
 
-```c title="Script with TLS support"
+```opensips title="Script with TLS support"
   # ----------- global configuration parameters ------------------------
   debug=3
   fork=yes
@@ -1103,7 +1103,7 @@ If you want to debug TLS connections, put the following log
 	This will dump all available TLS pseudo variables.
 
 
-```c title="Example of TLS logging"
+```opensips title="Example of TLS logging"
 xlog("L_INFO","==================== start TLS pseudo variables =================='\n");
 xlog("L_INFO","$$tls_version                    = '$tls_version'\n");
 xlog("L_INFO","$$tls_description                = '$tls_description'\n");

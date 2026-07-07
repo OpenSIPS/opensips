@@ -44,7 +44,7 @@ Specifies the root path for JSON requests:
 *The default value is "json".*
 
 
-```c title="Set mi_json_root parameter"
+```opensips title="Set mi_json_root parameter"
 ...
 modparam("mi_json", "mi_json_root", "opensips_mi_json")
 ...
