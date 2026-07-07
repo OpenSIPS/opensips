@@ -188,7 +188,7 @@ If the statistics support should be enabled or not. Via statistic
 *Default value is "1 (enabled)".*
 
 
-```c title="Set enable_stats parameter"
+```opensips title="Set enable_stats parameter"
 ...
 modparam("dialog", "enable_stats", 0)
 ...
@@ -212,7 +212,7 @@ IMPORTANT: If dialogs' information should be stored in a database,
 *Default value is "4096".*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("dialog", "hash_size", 1024)
 ...
@@ -232,7 +232,7 @@ The size of the hash table internally used to store  profile->dialog
 *Default value is "4".*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("dialog", "log_profile_hash_size", 5) #set a table size of 32
 ...
@@ -249,7 +249,7 @@ Name of the Record-Route parameter to be added with the dialog cookie.
 *Default value is "did".*
 
 
-```c title="Set rr_param parameter"
+```opensips title="Set rr_param parameter"
 ...
 modparam("dialog", "rr_param", "xyz")
 ...
@@ -265,7 +265,7 @@ The default dialog timeout (in seconds) if no custom one is set.
 *Default value is "43200 (12 hours)".*
 
 
-```c title="Set default_timeout parameter"
+```opensips title="Set default_timeout parameter"
 ...
 modparam("dialog", "default_timeout", 21600)
 ...
@@ -282,7 +282,7 @@ A string containing the extra headers (full format, with EOH)
 *Default value is "NULL".*
 
 
-```c title="Set dlf_extra_hdrs parameter"
+```opensips title="Set dlf_extra_hdrs parameter"
 ...
 modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 ...
@@ -322,7 +322,7 @@ NOTE that if you have call looping on your OpenSIPS server (passing
 		From TAGs are the same.
 
 
-```c title="Set dlg_match_mode parameter"
+```opensips title="Set dlg_match_mode parameter"
 ...
 modparam("dialog", "dlg_match_mode", 0)
 ...
@@ -339,7 +339,7 @@ If you want to store the information about the dialogs in a database
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("dialog", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -369,7 +369,7 @@ The supported modes are:
 *Default value is "0".*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("dialog", "db_mode", 1)
 ...
@@ -386,7 +386,7 @@ The interval (seconds) at which to update dialogs' information if you chose to s
 *Default value is "60".*
 
 
-```c title="Set db_update_period parameter"
+```opensips title="Set db_update_period parameter"
 ...
 modparam("dialog", "db_update_period", 120)
 ...
@@ -403,7 +403,7 @@ The interval (seconds) at which OpenSIPS will generate in-dialog
 *Default value is "30".*
 
 
-```c title="Set options_ping_interval parameter"
+```opensips title="Set options_ping_interval parameter"
 ...
 modparam("dialog", "options_ping_interval", 20)
 ...
@@ -431,7 +431,7 @@ The interval (seconds) at which OpenSIPS will generate in-dialog
 *Default value is "300".*
 
 
-```c title="Set reinvite_ping_interval parameter"
+```opensips title="Set reinvite_ping_interval parameter"
 ...
 modparam("dialog", "reinvite_ping_interval", 600)
 ...
@@ -448,7 +448,7 @@ If you want to store the information about the dialogs in a
 *Default value is "dialog".*
 
 
-```c title="Set table_name parameter"
+```opensips title="Set table_name parameter"
 ...
 modparam("dialog", "table_name", "my_dialog")
 ...
@@ -464,7 +464,7 @@ The column's name in the database to store the dialogs' callid.
 *Default value is "callid".*
 
 
-```c title="Set call_id_column parameter"
+```opensips title="Set call_id_column parameter"
 ...
 modparam("dialog", "call_id_column", "callid_c_name")
 ...
@@ -481,7 +481,7 @@ The column's name in the database to store the caller's
 *Default value is "from_uri".*
 
 
-```c title="Set from_uri_column parameter"
+```opensips title="Set from_uri_column parameter"
 ...
 modparam("dialog", "from_uri_column", "from_uri_c_name")
 ...
@@ -498,7 +498,7 @@ The column's name in the database to store the From tag from
 *Default value is "from_tag".*
 
 
-```c title="Set from_tag_column parameter"
+```opensips title="Set from_tag_column parameter"
 ...
 modparam("dialog", "from_tag_column", "from_tag_c_name")
 ...
@@ -514,7 +514,7 @@ The column's name in the database to store the calee's sip address.
 *Default value is "to_uri".*
 
 
-```c title="Set to_uri_column parameter"
+```opensips title="Set to_uri_column parameter"
 ...
 modparam("dialog", "to_uri_column", "to_uri_c_name")
 ...
@@ -531,7 +531,7 @@ The column's name in the database to store the To tag from
 *Default value is "to_tag".*
 
 
-```c title="Set to_tag_column parameter"
+```opensips title="Set to_tag_column parameter"
 ...
 modparam("dialog", "to_tag_column", "to_tag_c_name")
 ...
@@ -548,7 +548,7 @@ The column's name in the database to store the cseq from caller
 *Default value is "caller_cseq".*
 
 
-```c title="Set from_cseq_column parameter"
+```opensips title="Set from_cseq_column parameter"
 ...
 modparam("dialog", "from_cseq_column", "from_cseq_c_name")
 ...
@@ -565,7 +565,7 @@ The column's name in the database to store the cseq from callee
 *Default value is "callee_cseq".*
 
 
-```c title="Set to_cseq_column parameter"
+```opensips title="Set to_cseq_column parameter"
 ...
 modparam("dialog", "to_cseq_column", "to_cseq_c_name")
 ...
@@ -582,7 +582,7 @@ The column's name in the database to store the route records from
 *Default value is "caller_route_set".*
 
 
-```c title="Set from_route_column parameter"
+```opensips title="Set from_route_column parameter"
 ...
 modparam("dialog", "from_route_column", "from_route_c_name")
 ...
@@ -599,7 +599,7 @@ The column's name in the database to store the route records from
 *Default value is "callee_route_set".*
 
 
-```c title="Set to_route_column parameter"
+```opensips title="Set to_route_column parameter"
 ...
 modparam("dialog", "to_route_column", "to_route_c_name")
 ...
@@ -616,7 +616,7 @@ The column's name in the database to store the caller's contact
 *Default value is "caller_contact".*
 
 
-```c title="Set from_contact_column parameter"
+```opensips title="Set from_contact_column parameter"
 ...
 modparam("dialog", "from_contact_column", "from_contact_c_name")
 ...
@@ -633,7 +633,7 @@ The column's name in the database to store the callee's contact
 *Default value is "callee_contact".*
 
 
-```c title="Set to_contact_column parameter"
+```opensips title="Set to_contact_column parameter"
 ...
 modparam("dialog", "to_contact_column", "to_contact_c_name")
 ...
@@ -650,7 +650,7 @@ The column's name in the database to store the information about
 *Default value is "caller_sock".*
 
 
-```c title="Set from_sock_column parameter"
+```opensips title="Set from_sock_column parameter"
 ...
 modparam("dialog", "from_sock_column", "from_sock_c_name")
 ...
@@ -667,7 +667,7 @@ The column's name in the database to store information about the
 *Default value is "callee_sock".*
 
 
-```c title="Set to_sock_column parameter"
+```opensips title="Set to_sock_column parameter"
 ...
 modparam("dialog", "to_sock_column", "to_sock_c_name")
 ...
@@ -684,7 +684,7 @@ The column's name in the database to store the dialogs'
 *Default value is "hash_id".*
 
 
-```c title="Set dlg_id_column parameter"
+```opensips title="Set dlg_id_column parameter"
 ...
 modparam("dialog", "dlg_id_column", "dlg_id_c_name")
 ...
@@ -701,7 +701,7 @@ The column's name in the database to store the
 *Default value is "state".*
 
 
-```c title="Set state_column parameter"
+```opensips title="Set state_column parameter"
 ...
 modparam("dialog", "state_column", "state_c_name")
 ...
@@ -718,7 +718,7 @@ The column's name in the database to store the
 *Default value is "start_time".*
 
 
-```c title="Set start_time_column parameter"
+```opensips title="Set start_time_column parameter"
 ...
 modparam("dialog", "start_time_column", "start_time_c_name")
 ...
@@ -734,7 +734,7 @@ The column's name in the database to store the dialogs' timeout.
 *Default value is "timeout".*
 
 
-```c title="Set timeout_column parameter"
+```opensips title="Set timeout_column parameter"
 ...
 modparam("dialog", "timeout_column", "timeout_c_name")
 ...
@@ -750,7 +750,7 @@ The column's name in the database to store the dialogs' profiles.
 *Default value is "profiles".*
 
 
-```c title="Set profiles_column parameter"
+```opensips title="Set profiles_column parameter"
 ...
 modparam("dialog", "profiles_column", "profiles_c_name")
 ...
@@ -766,7 +766,7 @@ The column's name in the database to store the dialogs' vars.
 *Default value is "vars".*
 
 
-```c title="Set vars_column parameter"
+```opensips title="Set vars_column parameter"
 ...
 modparam("dialog", "vars_column", "vars_c_name")
 ...
@@ -782,7 +782,7 @@ The column's name in the database to store the dialogs' script flags.
 *Default value is "script_flags".*
 
 
-```c title="Set sflags_column parameter"
+```opensips title="Set sflags_column parameter"
 ...
 modparam("dialog", "sflags_column", "sflags_c_name")
 ...
@@ -798,7 +798,7 @@ The column's name in the database to store the dialogs' module flags.
 *Default value is "module_flags".*
 
 
-```c title="Set mflags_column parameter"
+```opensips title="Set mflags_column parameter"
 ...
 modparam("dialog", "mflags_column", "mflags_c_name")
 ...
@@ -814,7 +814,7 @@ The column's name in the database to store the dialogs' flags.
 *Default value is "flags".*
 
 
-```c title="Set flags_column parameter"
+```opensips title="Set flags_column parameter"
 ...
 modparam("dialog", "flags_column", "flags_c_name")
 ...
@@ -833,7 +833,7 @@ List of names for profiles with values. Flags
 *Default value is "empty".*
 
 
-```c title="Set profiles_with_value parameter"
+```opensips title="Set profiles_with_value parameter"
 ...
 modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;")
 ...
@@ -852,7 +852,7 @@ List of names for profiles without values. Flags
 *Default value is "empty".*
 
 
-```c title="Set profiles_no_value parameter"
+```opensips title="Set profiles_no_value parameter"
 ...
 modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s; repl/b;")
 ...
@@ -869,7 +869,7 @@ Pushes dialog values, profiles and flags into the database
 *Default value is "empty".*
 
 
-```c title="Set db_flush_vals_profiles parameter"
+```opensips title="Set db_flush_vals_profiles parameter"
 ...
 modparam("dialog", "db_flush_vals_profiles", 1)
 ...
@@ -887,7 +887,7 @@ The number of dialogs that should be attempted to be
 *Default value is "1".*
 
 
-```c title="Set timer_bulk_del_no parameter"
+```opensips title="Set timer_bulk_del_no parameter"
 ...
 modparam("dialog", "timer_bulk_del_no", 10)
 ...
@@ -903,7 +903,7 @@ If dialog is created using the 'E' flag, and a 200OK with CANCEL race condition 
 *Default value is "5" seconds.*
 
 
-```c title="Set race_condition_timeout parameter"
+```opensips title="Set race_condition_timeout parameter"
 ...
 modparam("dialog", "race_condition_timeout", 1)
 ...
@@ -920,7 +920,7 @@ Enables distributed dialog profiles and specifies the
 *Default value is "empty".*
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
 ...
@@ -938,7 +938,7 @@ Specifies what prefix should be added to the profiles with
 *Default value is "dlg_val_".*
 
 
-```c title="Set profile_value_prefix parameter"
+```opensips title="Set profile_value_prefix parameter"
 ...
 modparam("dialog", "profile_value_prefix", "dlgv_")
 ...
@@ -956,7 +956,7 @@ Specifies what prefix should be added to the profiles without
 *Default value is "dlg_noval_".*
 
 
-```c title="Set profile_no_value_prefix parameter"
+```opensips title="Set profile_no_value_prefix parameter"
 ...
 modparam("dialog", "profile_no_value_prefix", "dlgnv_")
 ...
@@ -974,7 +974,7 @@ Specifies what prefix should be added to the entity that holds
 *Default value is "dlg_size_".*
 
 
-```c title="Set profile_size_prefix parameter"
+```opensips title="Set profile_size_prefix parameter"
 ...
 modparam("dialog", "profile_size_prefix", "dlgs_")
 ...
@@ -992,7 +992,7 @@ Specifies how long a dialog profile should be kept in the CacheDB
 *Default value is "86400".*
 
 
-```c title="Set profile_timeout parameter"
+```opensips title="Set profile_timeout parameter"
 ...
 modparam("dialog", "profile_timeout", "43200")
 ...
@@ -1011,7 +1011,7 @@ Specifies the cluster ID for dialog replication using the
 *Default value is "0" (no replication).*
 
 
-```c title="Set dialog_replication_cluster parameter"
+```opensips title="Set dialog_replication_cluster parameter"
 ...
 modparam("dialog", "dialog_replication_cluster", 1)
 ...
@@ -1030,7 +1030,7 @@ Specifies the cluster ID for profile replication using the
 *Default value is "0" (no replication).*
 
 
-```c title="Set profile_replication_cluster parameter"
+```opensips title="Set profile_replication_cluster parameter"
 ...
 modparam("dialog", "profile_replication_cluster", 1)
 ...
@@ -1050,7 +1050,7 @@ Used to specify the length of the buffer used by the binary
 *Default value is 1400 bytes.*
 
 
-```c title="Set replicate_profiles_buffer parameter"
+```opensips title="Set replicate_profiles_buffer parameter"
 ...
 modparam("dialog", "replicate_profiles_buffer", 500)
 ...
@@ -1068,7 +1068,7 @@ Timer in seconds, used to specify how often the module should check
 *Default value is 10 s.*
 
 
-```c title="Set replicate_profiles_check parameter"
+```opensips title="Set replicate_profiles_check parameter"
 ...
 modparam("dialog", "replicate_profiles_check", 100)
 ...
@@ -1085,7 +1085,7 @@ Timer in milliseconds, used to specify how often the module
 *Default value is 10 ms.*
 
 
-```c title="Set replicate_profiles_timer parameter"
+```opensips title="Set replicate_profiles_timer parameter"
 ...
 modparam("dialog", "replicate_profiles_timer", 100)
 ...
@@ -1104,7 +1104,7 @@ Timer in seconds, used to specify when the profiles counters received
 *Default value is 10 s.*
 
 
-```c title="Set replicate_profiles_expire parameter"
+```opensips title="Set replicate_profiles_expire parameter"
 ...
 modparam("dialog", "replicate_profiles_expire", 10)
 ...
@@ -1155,7 +1155,7 @@ The function returns true if the dialog was successfully created or
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="create_dialog() usage"
+```opensips title="create_dialog() usage"
 ...
 create_dialog();
 ...
@@ -1204,7 +1204,7 @@ The function returns true if a dialog exists for the request.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="match_dialog() usage"
+```opensips title="match_dialog() usage"
 ...
     if (has_totag()) {
         loose_route();
@@ -1240,7 +1240,7 @@ The function returns true if a dialog exists for the request and if
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="validate_dialog() usage"
+```opensips title="validate_dialog() usage"
 ...
     if (has_totag()) {
         loose_route();
@@ -1266,7 +1266,7 @@ The function forces an in dialog SIP message to contain the ruri, route headers 
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="fix_route_dialog() usage"
+```opensips title="fix_route_dialog() usage"
 ...
     if (has_totag()) {
         loose_route();
@@ -1315,7 +1315,7 @@ Meaning of the parameters is as follows:
 This function can be used from ALL ROUTES.
 
 
-```c title="get_dialog_info usage"
+```opensips title="get_dialog_info usage"
 ...
 if ( get_dialog_info("callee",$avp(callee_array),"caller",$fu,$var(dlg_no)) ) {
 	xlog("caller $fu has $var(dlg_no) other ongoing calls, talking with :");	
@@ -1367,7 +1367,7 @@ Meaning of the parameters is as follows:
 This function can be used from any type of route.
 
 
-```c title="get_dialog_vals usage"
+```opensips title="get_dialog_vals usage"
 ...
 if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
 	xlog("the call $var(callid) has the variables:\n);
@@ -1404,7 +1404,7 @@ Meaning of the parameters is as follows:
 This function can be used from any type of route.
 
 
-```c title="get_dialog_vals usage"
+```opensips title="get_dialog_vals usage"
 ...
 if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 	xlog("Caller $fU has $avp(dlg_no) other calls \n);
@@ -1442,7 +1442,7 @@ Meaning of the parameters is as follows:
 This function can be used from any type of route.
 
 
-```c title="get_dialog_vals usage"
+```opensips title="get_dialog_vals usage"
 ...
 if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 	xlog("Caller $fU has $avp(dlg_no) other calls \n);
@@ -1483,7 +1483,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="set_dlg_profile usage"
+```opensips title="set_dlg_profile usage"
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller",$fu);
@@ -1515,7 +1515,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="unset_dlg_profile usage"
+```opensips title="unset_dlg_profile usage"
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller",$fu);
@@ -1551,7 +1551,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="is_in_profile usage"
+```opensips title="is_in_profile usage"
 ...
 if (is_in_profile("inbound_call")) {
 	log("this request belongs to a inbound call\n");
@@ -1590,7 +1590,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="get_profile_size usage"
+```opensips title="get_profile_size usage"
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1625,7 +1625,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="set_dlg_flag usage"
+```opensips title="set_dlg_flag usage"
 ...
 set_dlg_flag(3);
 ...
@@ -1652,7 +1652,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="test_and_set_dlg_flag usage"
+```opensips title="test_and_set_dlg_flag usage"
 ...
 test_and_set_dlg_flag(3, 0);
 ...
@@ -1681,7 +1681,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="reset_dlg_flag usage"
+```opensips title="reset_dlg_flag usage"
 ...
 reset_dlg_flag(16);
 ...
@@ -1710,7 +1710,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="is_dlg_flag_set usage"
+```opensips title="is_dlg_flag_set usage"
 ...
 if (is_dlg_flag_set(16)) {
 	xlog("dialog flag 16 is set\n");
@@ -1747,7 +1747,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="store_dlg_value usage"
+```opensips title="store_dlg_value usage"
 ...
 store_dlg_value("inv_src_ip",$si);
 store_dlg_value("account type","prepaid");
@@ -1785,7 +1785,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="fetch_dlg_value usage"
+```opensips title="fetch_dlg_value usage"
 ...
 fetch_dlg_value("inv_src_ip",$avp(2));
 fetch_dlg_value("account type",$var(account));
@@ -1821,7 +1821,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="set_dlg_sharing_tag usage"
+```opensips title="set_dlg_sharing_tag usage"
 ...
 set_dlg_sharing_tag("vip1");
 ...

@@ -44,7 +44,7 @@ Specifies the root path for HTTP requests:
 *The default value is "mi".*
 
 
-```c title="Set root parameter"
+```opensips title="Set root parameter"
 ...
 modparam("mi_http", "root", "opensips_mi")
 ...
@@ -67,7 +67,7 @@ Trace destination as defined in the tracing module. Currently
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
@@ -103,7 +103,7 @@ Defining a blacklists means all the commands that are not blacklisted
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced

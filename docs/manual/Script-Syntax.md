@@ -21,7 +21,7 @@ Configuring the network listeners, available transport protocols, forking (and n
 
 Example:
 
-```c
+```opensips
 
 disable_tcp = yes
 listen = udp:192.168.3.00:5060
@@ -41,7 +41,7 @@ In regards to the OpenSIPS modules,the modules that are to be loaded (no module 
 Once the modules are loaded, the parameters of the modules may be set using the **modparam** directive - to list of available parameters for each module, the type of parameter value (integer or string) can be found in the [documentation of the modules](Modules.md), the *Parameters* section.
 
 Examples:
-```c
+```opensips
 
 loadmodule "modules/mi_datagram/mi_datagram.so"
 modparam("mi_datagram", "socket_name", "udp:127.0.0.1:4343")
@@ -51,7 +51,7 @@ modparam("mi_datagram", "children_count", 3)
 
 or 
 
-```c
+```opensips
 
 mpath="/usr/local/opensips_proxy/lib/modules"
 loadmodule "mi_datagram.so"

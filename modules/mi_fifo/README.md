@@ -89,7 +89,7 @@ The name of the FIFO file to be created for listening and
 *Default value is NONE.*
 
 
-```c title="Set fifo_name parameter"
+```opensips title="Set fifo_name parameter"
 ...
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 ...
@@ -106,7 +106,7 @@ Permission to be used for creating the listening FIFO file. It
 *Default value is 0660 (rw-rw----).*
 
 
-```c title="Set fifo_mode parameter"
+```opensips title="Set fifo_mode parameter"
 ...
 modparam("mi_fifo", "fifo_mode", 0600)
 ...
@@ -122,7 +122,7 @@ Group to be used for creating the listening FIFO file.
 *Default value is the inherited one.*
 
 
-```c title="Set fifo_group parameter"
+```opensips title="Set fifo_group parameter"
 ...
 modparam("mi_fifo", "fifo_group", 0)
 modparam("mi_fifo", "fifo_group", "root")
@@ -139,7 +139,7 @@ User to be used for creating the listening FIFO file.
 *Default value is the inherited one.*
 
 
-```c title="Set fifo_user parameter"
+```opensips title="Set fifo_user parameter"
 ...
 modparam("mi_fifo", "fifo_user", 0)
 modparam("mi_fifo", "fifo_user", "root")
@@ -156,7 +156,7 @@ Directory to be used for creating the reply FIFO files.
 *Default value is "/tmp/"*
 
 
-```c title="Set reply_dir parameter"
+```opensips title="Set reply_dir parameter"
 ...
 modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
 ...
@@ -173,7 +173,7 @@ Indicates whether the JSONRPC responses sent through MI should
 *Default value is "0 - no pretty-printing".*
 
 
-```c title="Set pretty_printing parameter"
+```opensips title="Set pretty_printing parameter"
 ...
 modparam("mi_fifo", "pretty_printing", 1)
 ...
@@ -196,7 +196,7 @@ Trace destination as defined in the tracing module. Currently
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
@@ -232,7 +232,7 @@ Defining a blacklists means all the commands that are not blacklisted
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
