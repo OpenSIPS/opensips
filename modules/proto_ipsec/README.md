@@ -111,7 +111,7 @@ Default IPSec port used when no prot is being specified in the
 *Default value is 5062.*
 
 
-```c title="Set port parameter"
+```opensips title="Set port parameter"
 ...
 modparam("proto_ipsec", "port", 5100)
 ...
@@ -131,7 +131,7 @@ This parameter represents the minimum value for the Security
 *Default value is 65536.*
 
 
-```c title="Set min_spi parameter"
+```opensips title="Set min_spi parameter"
 ...
 modparam("proto_ipsec", "min_spi", 10000)
 ...
@@ -151,7 +151,7 @@ This parameter represents the maximum value for the Security
 *Default value is 262144.*
 
 
-```c title="Set max_spi parameter"
+```opensips title="Set max_spi parameter"
 ...
 modparam("proto_ipsec", "max_spi", 20000)
 ...
@@ -193,7 +193,7 @@ Default port value to be used when we act as clients in the
 			but needs to be different from the server socket.*
 
 
-```c title="Set default_client_port parameter"
+```opensips title="Set default_client_port parameter"
 ...
 modparam("proto_ipsec", "default_client_port", 5100)
 ...
@@ -211,7 +211,7 @@ Default port value to be used when we act as server in the
 			but needs to be different from the client socket.*
 
 
-```c title="Set default_server_port parameter"
+```opensips title="Set default_server_port parameter"
 ...
 modparam("proto_ipsec", "default_server_port", 6100)
 ...
@@ -251,7 +251,7 @@ Currently supported algorithms are:
 *Default value is none - this means that all algorithms can be used.*
 
 
-```c title="Set allowed_algorithms parameter"
+```opensips title="Set allowed_algorithms parameter"
 ...
 modparam("proto_ipsec", "allowed_algorithms", "null")
 modparam("proto_ipsec", "allowed_algorithms", "hmac-sha-1-96=null")
@@ -276,7 +276,7 @@ Indicates whether we should ignore deprecated algorithms,
 *Default value is false - all algorithms can be used.*
 
 
-```c title="Set disable_deprecated_algorithms parameter"
+```opensips title="Set disable_deprecated_algorithms parameter"
 ...
 modparam("proto_ipsec", "disable_deprecated_algorithms", yes)
 ...
@@ -324,7 +324,7 @@ Meaning of the parameters is as follows:
 This function can be used from REPLY_ROUTE.
 
 
-```c title="ipsec_create() usage"
+```opensips title="ipsec_create() usage"
 ...
 onreply_route[ipsec] {
 	if ($T_reply_code == 401)
@@ -368,7 +368,7 @@ The following fields can be retrieved:
 					chosen for communicating through the server channel.
 
 
-```c title="$ipsec(field) usage"
+```opensips title="$ipsec(field) usage"
 ...
 xlog("Using $ipsec(ip):$ipsec(port-c) and $ipsec(ip):$ipsec(port-s) socket\n");
 ...
@@ -406,7 +406,7 @@ The following fields can be retrieved:
 					chosen for communicating through the server channel.
 
 
-```c title="$ipsec_ue(field) usage"
+```opensips title="$ipsec_ue(field) usage"
 ...
 xlog("Using $ipsec_ue(ip):$ipsec_ue(port-c) and $ipsec_ue(ip):$ipsec_ue(port-s) socket\n");
 ...

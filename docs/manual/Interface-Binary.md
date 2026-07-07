@@ -11,7 +11,7 @@ The **Binary Internal Interface** is an OpenSIPS core interface which offers an 
 
 In order to listen for incoming Binary Packets, a **bin:** interface must be specified.  Its number of listener processes can be tuned with *[tcp_workers](https://docs.opensips.org/manual/devel/script-coreparameters#tcp_workers)* core parameter.
 
-```c
+```opensips
 
    listen = bin:10.0.0.150:5062
    ...
@@ -21,7 +21,7 @@ In order to listen for incoming Binary Packets, a **bin:** interface must be spe
 
 Examples of cluster-enabled modules which use the binary interface are **dialog** and **usrloc**, as they can now replicate all run-time events (creation/updating/deletion of dialogs/contacts) to one or more OpenSIPS instances.  Configuration can be done as follows:
 
-```c
+```opensips
 
    modparam("dialog", "dialog_replication_cluster", 1)
    modparam("dialog", "profile_replication_cluster", 2)

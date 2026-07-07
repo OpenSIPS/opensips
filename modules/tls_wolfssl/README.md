@@ -71,7 +71,7 @@ Try to use KTLS for RX and TX ( dependent on Kernel support and loaded modules h
 Default value is *0*.
 
 
-```c title="Set try_use_ktls variable"
+```opensips title="Set try_use_ktls variable"
 ...
 modparam("tls_wolfssl", "try_use_ktls", 1)
 ...

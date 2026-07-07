@@ -174,14 +174,14 @@ When running the route, the following values are expected to be returned:
 		*Default value is "rtp_relay_offer".*
 
 
-```c title="Set route_offer parameter"
+```opensips title="Set route_offer parameter"
 ...
 modparam("rtp_relay", "route_offer", "custom_rtp_offer")
 ...
 ```
 
 
-```c title="route_offer route usage"
+```opensips title="route_offer route usage"
 ...
 route[rtp_relay_offer] {
 	# manually engaging RTPEngine, get the SDP, and replace it in the message
@@ -236,14 +236,14 @@ When running the route, the following values are expected to be returned:
 		*Default value is "rtp_relay_answer".*
 
 
-```c title="Set route_answer parameter"
+```opensips title="Set route_answer parameter"
 ...
 modparam("rtp_relay", "route_answer", "custom_rtp_answer")
 ...
 ```
 
 
-```c title="route_answer route usage"
+```opensips title="route_answer route usage"
 ...
 route[rtp_relay_answer] {
 	# again, manually engaging RTPEngine
@@ -287,14 +287,14 @@ Return values are not needed.
 		*Default value is "rtp_relay_delete".*
 
 
-```c title="Set route_delete parameter"
+```opensips title="Set route_delete parameter"
 ...
 modparam("rtp_relay", "route_delete", "custom_rtp_delete")
 ...
 ```
 
 
-```c title="rtp_relay_delete route usage"
+```opensips title="rtp_relay_delete route usage"
 ...
 route[rtp_relay_delete] {
 	# manually removing RTPEngine session
@@ -340,14 +340,14 @@ When running the route, the following values are expected to be returned:
 		*Default value is "rtp_relay_copy_offer".*
 
 
-```c title="Set rtp_relay_copy_offer parameter"
+```opensips title="Set rtp_relay_copy_offer parameter"
 ...
 modparam("rtp_relay", "route_copy_offer", "custom_rtp_copy_offer")
 ...
 ```
 
 
-```c title="Set rtp_relay_copy_offer usage"
+```opensips title="Set rtp_relay_copy_offer usage"
 ...
 route[rtp_relay_copy_offer] {
 	# instruct a media engine to fork media and assign an identifier
@@ -391,14 +391,14 @@ When the route is executed, the following parameters are
 *Default value is "rtp_relay_copy_answer".*
 
 
-```c title="Set rtp_relay_copy_answer parameter"
+```opensips title="Set rtp_relay_copy_answer parameter"
 ...
 modparam("rtp_relay", "route_copy_answer", "custom_rtp_copy_answer")
 ...
 ```
 
 
-```c title="Set rtp_relay_copy_answer usage"
+```opensips title="Set rtp_relay_copy_answer usage"
 ...
 route[rtp_relay_copy_answer] {
 	# feed the received $param(body) to the media engine that is forking the call
@@ -443,14 +443,14 @@ Return values are not needed.
 *Default value is "rtp_relay_copy_delete".*
 
 
-```c title="Set rtp_relay_copy_delete parameter"
+```opensips title="Set rtp_relay_copy_delete parameter"
 ...
 modparam("rtp_relay", "route_copy_delete", "custom_rtp_copy_delete")
 ...
 ```
 
 
-```c title="Set rtp_relay_copy_delete usage"
+```opensips title="Set rtp_relay_copy_delete usage"
 ...
 route[rtp_relay_copy_delete] {
 	# remove the copy instance is identified by the $param(copy-ctx) variable
@@ -514,7 +514,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="rtp_relay_engage usage"
+```opensips title="rtp_relay_engage usage"
 ...
 if (is_method("INVITE") && !has_totag()) {
 	xlog("SCRIPT: engaging RTPProxy relay for all branches\n");

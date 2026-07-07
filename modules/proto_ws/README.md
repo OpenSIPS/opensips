@@ -112,7 +112,7 @@ Time in milliseconds after a WebSocket connection will be closed if it is
 *Default value is 100 ms.*
 
 
-```c title="Set ws_send_timeout parameter"
+```opensips title="Set ws_send_timeout parameter"
 ...
 modparam("proto_ws", "ws_send_timeout", 200)
 ...
@@ -133,7 +133,7 @@ The maximum number of chunks in which a SIP message is expected to
 *Default value is 4.*
 
 
-```c title="Set ws_max_msg_chunks parameter"
+```opensips title="Set ws_max_msg_chunks parameter"
 ...
 modparam("proto_ws", "ws_max_msg_chunks", 8)
 ...
@@ -160,7 +160,7 @@ Trace destination as defined in the tracing module. Currently
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
@@ -177,7 +177,7 @@ This controls whether tracing for ws is on or not. You still need to define
 			controlled using mi function [mi trace](#mi_trace).
 
 
-```c title="Set trace_on parameter"
+```opensips title="Set trace_on parameter"
 ...
 modparam("proto_ws", "trace_on", 1)
 ...
@@ -212,7 +212,7 @@ Define the name of a route in which you can filter which connections will
 			this route won't be called.
 
 
-```c title="Set trace_filter_route parameter"
+```opensips title="Set trace_filter_route parameter"
 ...
 modparam("proto_ws", "trace_filter_route", "ws_filter")
 ...
@@ -239,7 +239,7 @@ route[ws_filter] {
 Controls whether the module should require the Origin header or not.
 
 
-```c title="Set require_origin parameter"
+```opensips title="Set require_origin parameter"
 ...
 modparam("proto_ws", "require_origin", no)
 ...

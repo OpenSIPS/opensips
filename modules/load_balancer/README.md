@@ -104,7 +104,7 @@ The URL pointing to the database where the load-balancing rules
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -120,7 +120,7 @@ The name of the DB table containing the load-balancing rules.
 *Default value is "load_balancer".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("load_balancer", "db_table", "lb")
 ...
@@ -138,7 +138,7 @@ How often (in seconds) the probing of a destination should be done. If
 *Default value is "30".*
 
 
-```c title="Set probing_interval parameter"
+```opensips title="Set probing_interval parameter"
 ...
 modparam("load_balancer", "probing_interval", 60)
 ...
@@ -154,7 +154,7 @@ The SIP method to be used for the probing requests.
 *Default value is ""OPTIONS"".*
 
 
-```c title="Set probing_method parameter"
+```opensips title="Set probing_method parameter"
 ...
 modparam("load_balancer", "probing_method", "INFO")
 ...
@@ -170,7 +170,7 @@ The FROM SIP URI to be advertised in the SIP probing requests.
 *Default value is ""sip:prober@localhost"".*
 
 
-```c title="Set probing_from parameter"
+```opensips title="Set probing_from parameter"
 ...
 modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 ...
@@ -188,7 +188,7 @@ A comma separted list of SIP reply codes. The codes defined here
 *Default value is "NULL".*
 
 
-```c title="Set probing_reply_codes parameter"
+```opensips title="Set probing_reply_codes parameter"
 ...
 modparam("load_balancer", "probing_reply_codes", "501, 403")
 ...
@@ -212,7 +212,7 @@ The extra logging will be done on INFO level.
 *Default value is "0" (disabled).*
 
 
-```c title="Set probing_verbose parameter"
+```opensips title="Set probing_verbose parameter"
 ...
 modparam("load_balancer", "probing_verbose", 1)
 ...
@@ -232,7 +232,7 @@ Multiple instances of this param are allowed.
 *Default value is "NULL".*
 
 
-```c title="Set the lb_define_blacklist parameter"
+```opensips title="Set the lb_define_blacklist parameter"
 ...
 modparam("load_balancer", "lb_define_blacklist", "list= 1,4,3")
 modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
@@ -288,7 +288,7 @@ Given the following format for FreeSWITCH heartbeat messages:
 *Default value is "0" (disabled).*
 
 
-```c title="Set the fetch_freeswitch_load parameter"
+```opensips title="Set the fetch_freeswitch_load parameter"
 ...
 modparam("load_balancer", "fetch_freeswitch_stats", 1)
 ...
@@ -307,7 +307,7 @@ This parameter is only relevant for some seconds after module startup/reload,
 *Default value is "1000".*
 
 
-```c title="Set the initial_freeswitch_load parameter"
+```opensips title="Set the initial_freeswitch_load parameter"
 ...
 modparam("load_balancer", "initial_freeswitch_load", 200)
 ...
@@ -352,7 +352,7 @@ For more info on how to define and populate a cluster (with OpenSIPS
 *Default value is "0 (none)".*
 
 
-```c title="Set cluster_id parameter"
+```opensips title="Set cluster_id parameter"
 ...
 # replicate destination status with all OpenSIPS in cluster ID 9
 modparam("load_balancer", "cluster_id", 9)
@@ -382,7 +382,7 @@ This is an optional parameter. If not set, all the nodes in the cluster
 *Default value is "empty (none)".*
 
 
-```c title="Set cluster_sharing_tag parameter"
+```opensips title="Set cluster_sharing_tag parameter"
 ...
 # only the node with the active "vip" sharing tag will perform pinging
 # and broadcast the status changes
@@ -462,7 +462,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="lb_start usage"
+```opensips title="lb_start usage"
 ...
 if (lb_start(1,"trascoding;conference")) {
 	# dst URI points to the new destination
@@ -512,7 +512,7 @@ The function may return:
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_next() usage"
+```opensips title="lb_next() usage"
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	/* check next available LB destination */
@@ -557,7 +557,7 @@ Function to stop and flush a current LB session. To be used in
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_next() usage"
+```opensips title="lb_next() usage"
 ...
 if (t_check_status("(5[0-9][0-9])")) {
 	/* check next available LB destination */
@@ -600,7 +600,7 @@ Marks as disabled the last destination that was used for the current
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="lb_disable_dst() usage"
+```opensips title="lb_disable_dst() usage"
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	lb_disable_dst();
@@ -645,7 +645,7 @@ Meaning of the parameters is as follows:
 			to be populated with the attributes of the identified destination.
 
 
-```c title="lb_is_destination usage"
+```opensips title="lb_is_destination usage"
 ...
 if (lb_is_destination($si,$sp) ) {
 	# request from a LB destination
@@ -689,7 +689,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="lb_count_call usage"
+```opensips title="lb_count_call usage"
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination($si,$sp) ) {

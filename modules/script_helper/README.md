@@ -72,7 +72,7 @@ Enables dialog support. Note that the dialog module must be loaded before
 Default value is 0 (disabled)
 
 
-```c title="Setting use_dialog"
+```opensips title="Setting use_dialog"
 ...
 modparam("script_helper", "use_dialog", 1)
 ...
@@ -89,7 +89,7 @@ Flags used when creating dialogs. For details on these flags, please refer
 Default value is "" (no flags are set)
 
 
-```c title="Setting create_dialog_flags"
+```opensips title="Setting create_dialog_flags"
 ...
 modparam("script_helper", "create_dialog_flags", "options-ping-caller,options-ping-callee,bye-on-timeout")
 ...
@@ -107,7 +107,7 @@ Optional route to be run just before sequential requests are relayed.
 By default, this parameter is not set
 
 
-```c title="Setting sequential_route"
+```opensips title="Setting sequential_route"
 ...
 modparam("script_helper", "sequential_route", "sequential_handling")
 ...

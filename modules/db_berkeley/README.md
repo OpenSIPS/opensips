@@ -49,7 +49,7 @@ The auto-reload will close and reopen a Berkeley DB when the
 *Default value is 0 (1 - on / 0 - off).*
 
 
-```c title="Set auto_reload parameter"
+```opensips title="Set auto_reload parameter"
 ...
 modparam("db_berkeley", "auto_reload", 1)
 ...
@@ -75,7 +75,7 @@ The log_enable boolean controls when to create journal files.
 *Default value is 0 (1 - on / 0 - off).*
 
 
-```c title="Set log_enable parameter"
+```opensips title="Set log_enable parameter"
 ...
 modparam("db_berkeley", "log_enable", 1)
 ...
@@ -94,7 +94,7 @@ The journal_roll_interval will close and open a new log file.
 *Default value is 0 (off).*
 
 
-```c title="Set journal_roll_interval parameter"
+```opensips title="Set journal_roll_interval parameter"
 ...
 modparam("db_berkeley", "journal_roll_interval", 3600)
 ...
