@@ -55,7 +55,7 @@ Sets the ping time interval.
 *Default value is "300" seconds.*
 
 
-```c title="Set the 'ping_interval' parameter"
+```opensips title="Set the 'ping_interval' parameter"
 ...
 modparam("db_unixodbc", "ping_interval", 600)
 ...
@@ -71,7 +71,7 @@ Turns on or off the auto_reconnect mode.
 *Default value is "1", this means it is enabled.*
 
 
-```c title="Set the 'auto_reconnect' parameter"
+```opensips title="Set the 'auto_reconnect' parameter"
 ...
 modparam("db_unixodbc", "auto_reconnect", 0)
 ...
@@ -95,7 +95,7 @@ You should enable this parameter if you know that the ODBC driver
 *Default value is "0" (0 = disabled; 1 = enabled).*
 
 
-```c title="Set the 'use_escape_common' parameter"
+```opensips title="Set the 'use_escape_common' parameter"
 ...
 modparam("db_unixodbc", "use_escape_common", 1)
 ...
@@ -126,7 +126,7 @@ Prerequirement: you should first install unixodbc (or another program that
 In the opensips.conf file, add the line:
 
 
-```c
+```opensips
 ....
 loadmodule "/usr/local/lib/opensips/modules/db_unixodbc.so"
 ....
@@ -136,7 +136,7 @@ loadmodule "/usr/local/lib/opensips/modules/db_unixodbc.so"
 You should also uncomment this:
 
 
-```c
+```opensips
 ....
 loadmodule "/usr/local/lib/opensips/modules/auth.so"
 loadmodule "/usr/local/lib/opensips/modules/auth_db.so"
@@ -151,7 +151,7 @@ and setting the DSN specified in the odbc.ini, inserting this with the
 	url adding this line:
 
 
-```c
+```opensips
 ....
 modparam("usrloc|auth_db", "db_url", 
     "unixodbc://opensips:opensipsrw@localhost/my_dsn")

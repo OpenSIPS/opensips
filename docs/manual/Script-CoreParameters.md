@@ -97,7 +97,7 @@ It represents the value returned by last function executed (similar to $? from b
 
 Example of usage:
 
-```c
+```opensips
 route {
 route(1);
 if($retcode==1)
@@ -360,7 +360,7 @@ Far backward compatibility reasons, the default value is "on".
 
 Example of usage:
 
-```c
+```opensips
 auto_aliases=no
 auto_aliases=0
 ```
@@ -381,7 +381,7 @@ Number of children to fork for the UDP interfaces (one set for each interface - 
 
 Example of usage:
 
-```c
+```opensips
 children=16
 ```
 
@@ -444,7 +444,7 @@ Default value is 'no'.
 
 Example of usage:
 
-```c
+```opensips
 disable_core_dump=yes
 ```
 
@@ -608,7 +608,7 @@ Default value is 'yes'.
 
 Example of usage:
 
-```c
+```opensips
 fork=no
 ```
 
@@ -680,7 +680,7 @@ For more see: http://www.voice-system.ro/docs/ser-syslog/
 
 Example of usage:
 
-```c
+```opensips
 log_stderror=yes
 ```
 
@@ -765,7 +765,7 @@ Set the module search path.  This can be used to simplify the loadmodule paramet
 
 Example of usage:
 
-```c
+```opensips
 
     mpath="/usr/local/lib/opensips/modules"
     loadmodule "mysql.so"

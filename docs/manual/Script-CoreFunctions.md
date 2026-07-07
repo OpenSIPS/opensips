@@ -144,7 +144,7 @@ If the function is called in a 'onreply_route' then any provisional reply is dis
 
 Example of usage:
 
-```c
+```opensips
 onreply_route {
 if(status=="183") {
 drop();
@@ -166,7 +166,7 @@ xlog("L_NOTICE","method is $rm\n");
 }
 ```
 
-```c
+```opensips
 route[2] {
 if (is_method("INVITE")) {
 return(1);
@@ -354,7 +354,7 @@ route {
 }
 
 ```
-```c
+```opensips
 
 route[2] {
   if (is_method("INVITE")) {
@@ -541,7 +541,7 @@ Changes the debug level of the current process from script. If called without th
 
 Example of usage:
 
-```c
+```opensips
 debug= -1 # errors only
 .....
 {
