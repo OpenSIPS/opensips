@@ -106,7 +106,7 @@ The URL syntax is identical to the one used by MongoDB, including
 ```
 
 
-```c title="Reference MongoDB connections"
+```opensips title="Reference MongoDB connections"
 ...
 cache_store("mongodb", "key", "$ru value");
 cache_remove("mongodb:cluster", "key");
@@ -126,7 +126,7 @@ The maximum number of microseconds that a mongodb query can last.
 *Default value is "0 ( unlimited - no warnings )".*
 
 
-```c title="Set exec_threshold parameter"
+```opensips title="Set exec_threshold parameter"
 ...
 modparam("cachedb_mongodb", "exec_threshold", 100000)
 ...
@@ -150,7 +150,7 @@ Caveat: only the minimally required raw query options are
 *Default value is "0 (disabled)".*
 
 
-```c title="Setting the compat_mode_2.4 parameter"
+```opensips title="Setting the compat_mode_2.4 parameter"
 ...
 modparam("cachedb_mongodb", "compat_mode_2.4", 1)
 ...
@@ -174,7 +174,7 @@ Caveat: only the minimally required options for "find" raw queries are
 *Default value is "0 (disabled)".*
 
 
-```c title="Setting the compat_mode_3.0 parameter"
+```opensips title="Setting the compat_mode_3.0 parameter"
 ...
 modparam("cachedb_mongodb", "compat_mode_3.0", 1)
 ...
@@ -208,7 +208,7 @@ The query syntax is identical to the mongo cli. Documentation for it
 Some example raw queries:
 
 
-```c title="MongoDB Raw Insert"
+```opensips title="MongoDB Raw Insert"
 ...
 cache_raw_query("mongodb:cluster", "{ \
     \"insert\": \"ip_blacklist\", \
@@ -224,7 +224,7 @@ xlog("INSERT RAW QUERY returned $rc, output: '$avp(out)'\n");
 ```
 
 
-```c title="MongoDB Raw Update"
+```opensips title="MongoDB Raw Update"
 ...
 cache_raw_query("mongodb:cluster", "{ \
     \"update\": \"ip_blacklist\", \

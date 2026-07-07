@@ -75,7 +75,7 @@ When web3_ens_rpc_url is not configured, all blockchain operations use
                     the same network.
 
 
-```c
+```opensips
 # Single network configuration
 modparam("auth_web3", "web3_authentication_rpc_url", "https://ethereum-sepolia-rpc.publicnode.com")
 modparam("auth_web3", "web3_authentication_contract_address", "0xYourContract")
@@ -92,7 +92,7 @@ When web3_ens_rpc_url is configured, ENS resolution queries use the
                     Oasis Sapphire RPC endpoint. This is the recommended production configuration.
 
 
-```c
+```opensips
 # Dual network configuration
 # Authentication on Oasis Sapphire
 modparam("auth_web3", "web3_authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
@@ -115,7 +115,7 @@ Production deployments typically use Ethereum mainnet for ENS and
                     Oasis Sapphire mainnet for authentication:
 
 
-```c
+```opensips
 loadmodule "auth_web3.so"
 
 # Oasis Sapphire Mainnet
@@ -139,7 +139,7 @@ For testing and development, use Sepolia testnet for ENS and
                     Oasis Sapphire testnet for authentication:
 
 
-```c
+```opensips
 loadmodule "auth_web3.so"
 
 # Oasis Sapphire Testnet
@@ -200,7 +200,7 @@ This follows the standard ENS resolution pattern (EIP-137) and supports both
 Enable debug mode to see which RPC is used for each call:
 
 
-```c
+```opensips
 modparam("auth_web3", "web3_contract_debug_mode", 1)
             
 ```
@@ -245,7 +245,7 @@ This function extracts digest parameters from the Authorization header,
 *Example:*
 
 
-```c
+```opensips
 # REGISTER authentication
 if (is_method("REGISTER")) {
     if (!$hdr(Authorization)) {
@@ -293,7 +293,7 @@ This function works identically to web3_www_authenticate but is designed
 *Example:*
 
 
-```c
+```opensips
 # INVITE authentication with proxy auth
 if (is_method("INVITE")) {
     if (!$hdr(Authorization)) {
@@ -327,7 +327,7 @@ RPC URL for the blockchain network (e.g., Oasis Sapphire testnet or mainnet).
 *Example:*
 
 
-```c
+```opensips
 modparam("auth_web3", "authentication_rpc_url", "https://testnet.sapphire.oasis.dev")
             
 ```
@@ -346,7 +346,7 @@ Address of the smart contract that handles authentication verification.
 *Example:*
 
 
-```c
+```opensips
 modparam("auth_web3", "authentication_contract_address", "0xE773BB79689379d32Ad1Db839868b6756B493aea")
             
 ```
@@ -365,7 +365,7 @@ RPC URL for the Ethereum network used for ENS resolution.
 *Example:*
 
 
-```c
+```opensips
 modparam("auth_web3", "ens_rpc_url", "https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY")
             
 ```
@@ -384,7 +384,7 @@ Address of the ENS registry contract on Ethereum mainnet.
 *Example:*
 
 
-```c
+```opensips
 modparam("auth_web3", "ens_registry_address", "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e")
             
 ```
@@ -403,7 +403,7 @@ Enable debug logging for blockchain contract interactions.
 *Example:*
 
 
-```c
+```opensips
 modparam("auth_web3", "contract_debug_mode", 1)
             
 ```
@@ -422,7 +422,7 @@ Timeout in seconds for blockchain RPC calls.
 *Example:*
 
 
-```c
+```opensips
 modparam("auth_web3", "rpc_timeout", 15)
             
 ```

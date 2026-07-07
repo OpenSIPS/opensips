@@ -184,7 +184,7 @@ Syntax for *cachedb_url*
 *"dynamodb:///tableName?region=regionName"*
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 
 # single-instance URLs
@@ -196,7 +196,7 @@ modparam("cachedb_dynamodb", "cachedb_url", "dynamodb:///table2?region=central-1
 ```
 
 
-```c title="Use Dynamodb servers"
+```opensips title="Use Dynamodb servers"
 ...
 
 cache_store("dynamodb", "call1", "10");
