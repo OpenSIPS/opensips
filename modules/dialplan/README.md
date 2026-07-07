@@ -212,7 +212,7 @@ The translation rules will be loaded using this database url.
 				"mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 ...
@@ -229,7 +229,7 @@ The table's name from which to load the translation rules.
 *Default value is "dialplan".*
 
 
-```c title="Set table_name parameter"
+```opensips title="Set table_name parameter"
 ...
 modparam("dialplan", "table_name", "my_table")
 ...
@@ -246,7 +246,7 @@ The column name to store the dialplan ID group.
 *Default value is "dpid".*
 
 
-```c title="Set dpid_col parameter"
+```opensips title="Set dpid_col parameter"
 ...
 modparam("dialplan", "dpid_col", "column_name")
 ...
@@ -264,7 +264,7 @@ The column name to store the priority of the corresponding rule from
 *Default value is "pr".*
 
 
-```c title="Set pr_col parameter"
+```opensips title="Set pr_col parameter"
 ...
 modparam("dialplan", "pr_col", "column_name")
 ...
@@ -281,7 +281,7 @@ The column name to store the type of matching of the rule.
 *Default value is "match_op".*
 
 
-```c title="Set match_op_col parameter"
+```opensips title="Set match_op_col parameter"
 ...
 modparam("dialplan", "match_op_col", "column_name")
 ...
@@ -298,7 +298,7 @@ The column name to store the rule match expression.
 *Default value is "match_exp".*
 
 
-```c title="Set match_exp_col parameter"
+```opensips title="Set match_exp_col parameter"
 ...
 modparam("dialplan", "match_exp_col", "column_name")
 ...
@@ -316,7 +316,7 @@ The column name to store various matching flags. Currently
 *Default value is "match_flags".*
 
 
-```c title="Set match_flags_col parameter"
+```opensips title="Set match_flags_col parameter"
 ...
 modparam("dialplan", "match_flags_col", "column_name")
 ...
@@ -333,7 +333,7 @@ The column name to store the rule's substitution expression.
 *Default value is "subst_exp".*
 
 
-```c title="Set subs_exp_col parameter"
+```opensips title="Set subs_exp_col parameter"
 ...
 modparam("dialplan", "subst_exp_col", "column_name")
 ...
@@ -350,7 +350,7 @@ The column name to store the rule's replacement expression.
 *Default value is "repl_exp".*
 
 
-```c title="Set repl_exp_col parameter"
+```opensips title="Set repl_exp_col parameter"
 ...
 modparam("dialplan", "repl_exp_col", "column_name")
 ...
@@ -367,7 +367,7 @@ The column name to store the rule's attributes to be set to the message.
 *Default value is "attrs".*
 
 
-```c title="Set attrs_col parameter"
+```opensips title="Set attrs_col parameter"
 ...
 modparam("dialplan", "attrs_col", "column_name")
 ...
@@ -384,7 +384,7 @@ The column name that indicates if the dialplan rule is disabled.
 *Default value is "disabled".*
 
 
-```c title="Set disabled_col parameter"
+```opensips title="Set disabled_col parameter"
 ...
 modparam("dialplan", "disabled_col", "disabled_column")
 ...
@@ -432,7 +432,7 @@ The "dest" variable  can be also any type of
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 dp_translate("240", "$ruri.user/$avp(dest)");
 xlog("translated to var $avp(dest) \n");
@@ -441,7 +441,7 @@ xlog("translated to var $avp(dest) \n");
 ```
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 $avp(src) = $ruri.user;
 dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
@@ -451,7 +451,7 @@ xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ```
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 $avp(src) = $uri.user;
 dp_translate("example_table/$var(x)", "$avp(src)/$var(y)", "$avp(attrs)");

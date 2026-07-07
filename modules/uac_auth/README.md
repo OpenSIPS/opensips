@@ -60,7 +60,7 @@ NOTE that the password can be provided as a plain text password or
 *This parameter is required if UAC authentication is used.*
 
 
-```c title="Set credential parameter"
+```opensips title="Set credential parameter"
 ...
 modparam("uac_auth","credential","username:domain:password")
 modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e158504204629")
@@ -83,7 +83,7 @@ The definition of an AVP that might contain the realm to be used
 				([auth password avp id](#param_auth_password_avp)).*
 
 
-```c title="Set auth_realm_avp parameter"
+```opensips title="Set auth_realm_avp parameter"
 ...
 modparam("uac_auth","auth_realm_avp","$avp(10)")
 ...
@@ -105,7 +105,7 @@ The definition of an AVP that might contain the username to be used
 				([auth password avp id](#param_auth_password_avp)).*
 
 
-```c title="Set auth_username_avp parameter"
+```opensips title="Set auth_username_avp parameter"
 ...
 modparam("uac_auth","auth_username_avp","$avp(11)")
 ...
@@ -130,7 +130,7 @@ The definition of an AVP that might contain the password to be used
 				([auth password avp id](#param_auth_password_avp)).*
 
 
-```c title="Set auth_password_avp parameter"
+```opensips title="Set auth_password_avp parameter"
 ...
 modparam("uac_auth","auth_password_avp","$avp(12)")
 ...

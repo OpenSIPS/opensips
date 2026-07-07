@@ -61,7 +61,7 @@ string - might be any alphanumeric string, wich contain following
 		characters: [a-z] [A-Z] [0-9] '_'
 
 
-```c title="AVP naming examples"
+```opensips title="AVP naming examples"
 ...
 $avp(11) - the AVP identified by name 11
 $avp(foo) - the AVP identified by the string 'foo'
@@ -87,7 +87,7 @@ DB URL for database connection. As the module allows the usage
 *This parameter is optional, it's default value being NULL.*
 
 
-```c title="Set avp_url parameter"
+```opensips title="Set avp_url parameter"
 ...
 # default URL
 modparam("avpops","db_url","mysql://user:passwd@host/database")
@@ -107,7 +107,7 @@ DB table to be used.
 *This parameter is optional, it's default value being NULL.*
 
 
-```c title="Set avp_table parameter"
+```opensips title="Set avp_table parameter"
 ...
 modparam("avpops","avp_table","avptable")
 ...
@@ -125,7 +125,7 @@ If the domain part of the an URI should be used for
 *Default value is 0 (no).*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("avpops","use_domain",1)
 ...
@@ -142,7 +142,7 @@ Name of column containing the uuid (unique user id).
 *Default value is "uuid".*
 
 
-```c title="Set uuid_column parameter"
+```opensips title="Set uuid_column parameter"
 ...
 modparam("avpops","uuid_column","uuid")
 ...
@@ -159,7 +159,7 @@ Name of column containing the username.
 *Default value is "username".*
 
 
-```c title="Set username_column parameter"
+```opensips title="Set username_column parameter"
 ...
 modparam("avpops","username_column","username")
 ...
@@ -176,7 +176,7 @@ Name of column containing the domain name.
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("avpops","domain_column","domain")
 ...
@@ -193,7 +193,7 @@ Name of column containing the attribute name (AVP name).
 *Default value is "attribute".*
 
 
-```c title="Set attribute_column parameter"
+```opensips title="Set attribute_column parameter"
 ...
 modparam("avpops","attribute_column","attribute")
 ...
@@ -210,7 +210,7 @@ Name of column containing the AVP value.
 *Default value is "value".*
 
 
-```c title="Set value_column parameter"
+```opensips title="Set value_column parameter"
 ...
 modparam("avpops","value_column","value")
 ...
@@ -227,7 +227,7 @@ Name of column containing the AVP type.
 *Default value is "type".*
 
 
-```c title="Set type_column parameter"
+```opensips title="Set type_column parameter"
 ...
 modparam("avpops","type_column","type")
 ...
@@ -259,7 +259,7 @@ Definition of a DB scheme. Scheme syntax is:
 *Default value is "NULL".*
 
 
-```c title="Set db_scheme parameter"
+```opensips title="Set db_scheme parameter"
 ...
 modparam("avpops","db_scheme",
 "scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
@@ -277,7 +277,7 @@ Allocated size for AVP variables.
 *Default value is "1024".*
 
 
-```c title="Set buf_size parameter"
+```opensips title="Set buf_size parameter"
 ...
 modparam("avpops", "buf_size", 1024)
 ...
@@ -333,7 +333,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_db_load usage"
+```opensips title="avp_db_load usage"
 ...
 avp_db_load("$fu", "$avp(678)");
 avp_db_load("$ru/domain", "i/domain_preferences");
@@ -368,7 +368,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_db_store usage"
+```opensips title="avp_db_store usage"
 ...
 avp_db_store("$tu","$avp(678)");
 avp_db_store("$ru/username","$avp(email)");
@@ -395,7 +395,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_db_delete usage"
+```opensips title="avp_db_delete usage"
 ...
 avp_db_delete("$tu","$avp(678)");
 avp_db_delete("$ru/username","$avp(email)");
@@ -446,7 +446,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_db_query usage"
+```opensips title="avp_db_query usage"
 ...
 avp_db_query("select password, ha1 from subscriber where username='$tu'",
 	"$avp(678);$avp(679)");
@@ -480,7 +480,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_delete usage"
+```opensips title="avp_delete usage"
 ...
 avp_delete("$avp(678)/g");
 avp_delete("$avp(email)");
@@ -524,7 +524,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_pushto usage"
+```opensips title="avp_pushto usage"
 ...
 avp_pushto("$ru/domain","$fd");
 avp_pushto("$ru","$avp(678)");
@@ -581,7 +581,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_check usage"
+```opensips title="avp_check usage"
 ...
 avp_check("$avp(678)", "lt/345/g");
 avp_check("$fd","eq/$td/I");
@@ -619,7 +619,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_copy usage"
+```opensips title="avp_copy usage"
 ...
 avp_copy("$avp(678)", "$avp(345)/g");
 avp_copy("$avp(old)","$avp(new)/gd");
@@ -662,7 +662,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_subst usage"
+```opensips title="avp_subst usage"
 ...
 # if avp 678 has a string value in e-mail format, replace the
 # domain part with the value of domain part from R-URI
@@ -722,7 +722,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_op usage"
+```opensips title="avp_op usage"
 ...
 avp_op("$avp(678)", "add/345/g");
 avp_op("$avp(number)","sub/$avp(number2)/d");
@@ -752,7 +752,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="is_avp_set usage"
+```opensips title="is_avp_set usage"
 ...
 if(is_avp_set("$avp(678)"))
     log("AVP with integer id 678 exists\n");
@@ -772,7 +772,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="avp_print usage"
+```opensips title="avp_print usage"
 ...
 avp_print();
 ...
@@ -788,7 +788,7 @@ This function inserts an avp value at a certain position specified
 				the value will be inserted at the end.
 
 
-```c title="avp_print usage"
+```opensips title="avp_print usage"
 ...
 avp_insert("avp(20)", "$hdr(From)", 2);
 ...

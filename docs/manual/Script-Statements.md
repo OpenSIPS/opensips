@@ -58,7 +58,7 @@ SWITCH statement - it can be used to test the value of a pseudo-variable.
 IMPORTANT NOTE: 'break' can be used only to mark the end of a 'case' branch (as it is in shell scripts). If you are trying to use 'break' outside a 'case' block the script will return error -- you must use 'return' there.
 
 Example of usage:
-```c
+```opensips
 
     route {
         route(my_logic);
