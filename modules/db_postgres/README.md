@@ -49,7 +49,7 @@ If queries take longer than 'exec_query_threshold' microseconds, warning
 *Default value is 0 - disabled.*
 
 
-```c title="Set exec_query_threshold parameter"
+```opensips title="Set exec_query_threshold parameter"
 ...
 modparam("db_postgres", "exec_query_threshold", 60000)
 ...
@@ -66,7 +66,7 @@ The maximum number of database queries to be executed.
 *Default value is 2.*
 
 
-```c title="Set max_db_queries parameter"
+```opensips title="Set max_db_queries parameter"
 ...
 modparam("db_postgres", "max_db_queries", 2)
 ...
@@ -91,7 +91,7 @@ The number of seconds the PostgreSQL library waits to connect and query
 *Default value is 5.*
 
 
-```c title="Set timeout parameter"
+```opensips title="Set timeout parameter"
 ...
 modparam("db_postgres", "timeout", 2)
 ...

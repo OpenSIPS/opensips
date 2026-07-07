@@ -78,7 +78,7 @@ SL module provides statistics about how many replies were sent (
 Default value is 1 (enabled).
 
 
-```c title="enable_stats example"
+```opensips title="enable_stats example"
 modparam("sl", "enable_stats", 0)
 ```
 
@@ -106,7 +106,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ERROR_ROUTE.
 
 
-```c title="sl_send_reply usage"
+```opensips title="sl_send_reply usage"
 ...
 sl_send_reply(404, "Not found");
 ...
@@ -126,7 +126,7 @@ Sends back an error reply describing the nature of the last internal
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="sl_reply_error usage"
+```opensips title="sl_reply_error usage"
 ...
 sl_reply_error();
 ...

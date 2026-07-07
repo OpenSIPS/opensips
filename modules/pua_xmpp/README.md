@@ -49,7 +49,7 @@ The following libraries or applications must be installed before running
 The IP address of the server.
 
 
-```c title="Set server_address parameter"
+```opensips title="Set server_address parameter"
 ...
 modparam("pua_xmpp", "server_address", "sip:sa@opensips.org:5060")
 ...
@@ -63,7 +63,7 @@ The the address of the presence server. If set, it will be
 		used as outbound proxy when sending PUBLISH requests.
 
 
-```c title="Set presence_server parameter"
+```opensips title="Set presence_server parameter"
 ...
 modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 ...
@@ -89,7 +89,7 @@ Function that handles Notify messages addressed to a user from
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Notify2Xmpp usage"
+```opensips title="Notify2Xmpp usage"
 ...
 	if( is_method("NOTIFY") && $ru=~"sip:.+@sip-xmpp.siphub.ro")
 	{
@@ -123,7 +123,7 @@ Parameters:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="xmpp_send_winfo usage"
+```opensips title="xmpp_send_winfo usage"
 ...
 	if( is_method("SUBSCRIBE"))
 	{
