@@ -83,7 +83,7 @@ This parameter ranges from 1 to 9 and it specifies the level of compression you 
 		receive a warning.
 
 
-```c title="Set mc_level parameter"
+```opensips title="Set mc_level parameter"
 ...
 modparam("mc", "mc_level", "3")
 ...
@@ -142,7 +142,7 @@ The *flags* parameter can have the following values:
 This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
-```c title="mc_compress usage"
+```opensips title="mc_compress usage"
 ...
 if (!mc_compress(0, "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
 	xlog("compression failed\n");
@@ -151,7 +151,7 @@ if (!mc_compress(0, "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
 ```
 
 
-```c title="mc_compress usage"
+```opensips title="mc_compress usage"
 ...
 $avp(algo) = 1;
 $var(flags) = "bs";
@@ -203,7 +203,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
-```c title="mc_compress usage"
+```opensips title="mc_compress usage"
 ...
 if (!mc_compact("Max-Forwards|P-Asserted-Identity"))
 	xlog("compaction failed\n");
@@ -234,7 +234,7 @@ WARNING: This function replaces the original buffer of the message with the
 This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
-```c title="mc_decompress usage"
+```opensips title="mc_decompress usage"
 ...
 if (!mc_decompress())
 	xlog("decompression failed\n");
