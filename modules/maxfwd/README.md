@@ -59,7 +59,7 @@ The range of values stretches from 1 to 256, which is the maximum
 *Default value is "256".*
 
 
-```c title="Set max_limit parameter"
+```opensips title="Set max_limit parameter"
 ...
 modparam("maxfwd", "max_limit", 32)
 ...
@@ -104,7 +104,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="mx_process_maxfwd_header usage"
+```opensips title="mx_process_maxfwd_header usage"
 ...
 # initial sanity checks -- messages with
 # max_forwards==0, or excessively long requests
@@ -147,7 +147,7 @@ Meaning of the parameters is as follows:
 			Max-Forward.value against (as less than).
 
 
-```c title="is_maxfwd_lt usage"
+```opensips title="is_maxfwd_lt usage"
 ...
 # next hope is a gateway, so make no sens to
 # forward if MF is 0 (after decrement)

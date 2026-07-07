@@ -51,7 +51,7 @@ Returns 1 if the message is received via TLS and the peer was verified
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_peer_verified usage"
+```opensips title="is_peer_verified usage"
 ...
 if (is_peer_verified()) {
         xlog("L_INFO","request from verified TLS peer\n");
@@ -267,7 +267,7 @@ If you want to debug TLS connections, put the following log
 	This will dump all available TLS pseudo variables.
 
 
-```c title="Example of TLS logging"
+```opensips title="Example of TLS logging"
 xlog("L_INFO","==================== start TLS pseudo variables =================='\n");
 xlog("L_INFO","$$tls_version                    = '$tls_version'\n");
 xlog("L_INFO","$$tls_description                = '$tls_description'\n");

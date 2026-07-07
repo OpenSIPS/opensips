@@ -90,7 +90,7 @@ URL of the database table to be used.
 			"mysql://opensipsro:opensipsro@localhost/opensips".*
 
 
-```c title="Setting db_url module parameter"
+```opensips title="Setting db_url module parameter"
 ...
 modparam("lcr","db_url","dbdriver://username:password@dbhost/dbname")
 ...
@@ -106,7 +106,7 @@ Name of the table holding the gateways definitions.
 *Default value is "gw".*
 
 
-```c title="Setting gw_table module parameter"
+```opensips title="Setting gw_table module parameter"
 ...
 modparam("lcr","gw_table","gw")
 ...
@@ -122,7 +122,7 @@ Name of the column holding the gateway name.
 *Default value is "gw_name".*
 
 
-```c title="Setting gw_name_column module parameter"
+```opensips title="Setting gw_name_column module parameter"
 ...
 modparam("lcr","gw_name_column","gw_name")
 ...
@@ -139,7 +139,7 @@ Name of the column holding the group ID of gateway both
 *Default value is "grp_id".*
 
 
-```c title="Setting grp_id_column module parameter"
+```opensips title="Setting grp_id_column module parameter"
 ...
 modparam("lcr","grp_id_column","grp_id")
 ...
@@ -155,7 +155,7 @@ Name of the column holding the IP address of the gateway.
 *Default value is "ip_addr".*
 
 
-```c title="Setting ip_addr_column module parameter"
+```opensips title="Setting ip_addr_column module parameter"
 ...
 modparam("lcr","ip_addr_column","ip_addr")
 ...
@@ -171,7 +171,7 @@ Name of the column holding the port number of the gateway.
 *Default value is "port".*
 
 
-```c title="Setting port_column module parameter"
+```opensips title="Setting port_column module parameter"
 ...
 modparam("lcr","port_column","port")
 ...
@@ -187,7 +187,7 @@ Name of the column holding the uri scheme of the gateway.
 *Default value is "uri_scheme".*
 
 
-```c title="Setting uri_scheme_column module parameter"
+```opensips title="Setting uri_scheme_column module parameter"
 ...
 modparam("lcr","uri_scheme_column","scheme")
 ...
@@ -204,7 +204,7 @@ Name of the column holding the transport type to be used for
 *Default value is "transport".*
 
 
-```c title="Setting transport_column module parameter"
+```opensips title="Setting transport_column module parameter"
 ...
 modparam("lcr","transport_column","transport")
 ...
@@ -222,7 +222,7 @@ Name of the column holding the number of characters
 *Default value is "strip".*
 
 
-```c title="Setting strip_column module parameter"
+```opensips title="Setting strip_column module parameter"
 ...
 modparam("lcr","strip_column","strip_count")
 ...
@@ -238,7 +238,7 @@ Name of the column holding gateway specific tag string.
 *Default value is "tag".*
 
 
-```c title="Setting tag_column module parameter"
+```opensips title="Setting tag_column module parameter"
 ...
 modparam("lcr","tag_column","gw_tag")
 ...
@@ -254,7 +254,7 @@ Name of the column holding gateway specific flag values.
 *Default value is "flags".*
 
 
-```c title="Setting flags_column module parameter"
+```opensips title="Setting flags_column module parameter"
 ...
 modparam("lcr","flags_column","gw_flags")
 ...
@@ -270,7 +270,7 @@ Name of the table holding the LCR rules.
 *Default value is "lcr".*
 
 
-```c title="Setting lcr_table module parameter"
+```opensips title="Setting lcr_table module parameter"
 ...
 modparam("lcr","lcr_table","lcr")
 ...
@@ -287,7 +287,7 @@ Name of the column holding prefix of Request URI user
 *Default value is "prefix".*
 
 
-```c title="Setting prefix_column module parameter"
+```opensips title="Setting prefix_column module parameter"
 ...
 modparam("lcr","prefix_column","prefix")
 ...
@@ -303,7 +303,7 @@ Name of the column holding the FROM (source) URI.
 *Default value is "from_uri".*
 
 
-```c title="Setting from_uri_column module parameter"
+```opensips title="Setting from_uri_column module parameter"
 ...
 modparam("lcr","from_uri_column","from_uri")
 ...
@@ -319,7 +319,7 @@ Name of the column holding the priority of the rule.
 *Default value is "priority".*
 
 
-```c title="Setting priority_column module parameter"
+```opensips title="Setting priority_column module parameter"
 ...
 modparam("lcr","priority_column","priority")
 ...
@@ -337,7 +337,7 @@ Internal AVP that load_contacts function uses to store
 			be defined in opensips.cfg.*
 
 
-```c title="Setting contact_avp module parameter"
+```opensips title="Setting contact_avp module parameter"
 ...
 modparam("lcr", "contact_avp", "$avp(i:711)")
 ...
@@ -356,7 +356,7 @@ An AVP that contains a final response timeout
 			be defined in opensips.cfg.*
 
 
-```c title="Setting fr_inv_timer_avp module parameter"
+```opensips title="Setting fr_inv_timer_avp module parameter"
 ...
 modparam("lcr|tm", "fr_inv_timer_avp", "$avp(i:704)")
 ...
@@ -374,7 +374,7 @@ Internal AVP that load_gws function uses to store information of
 			be defined in opensips.cfg.*
 
 
-```c title="Setting gw_uri_avp module parameter"
+```opensips title="Setting gw_uri_avp module parameter"
 ...
 modparam("lcr", "gw_uri_avp", "$avp(i:709)")
 ...
@@ -391,7 +391,7 @@ An AVP that contains caller's RPID (if any).
 			be defined in opensips.cfg.*
 
 
-```c title="Setting rpid_avp module parameter"
+```opensips title="Setting rpid_avp module parameter"
 ...
 modparam("^auth$|lcr", "rpid_avp", "$avp(i:302)")
 ...
@@ -409,7 +409,7 @@ Internal AVP that next_gw function uses to store Request-URI user for
 			be defined in opensips.cfg.*
 
 
-```c title="Setting ruri_user_avp module parameter"
+```opensips title="Setting ruri_user_avp module parameter"
 ...
 modparam("lcr", "ruri_user_avp", "$avp(i:500)")
 ...
@@ -426,7 +426,7 @@ Sets the value of the fist INVITE's Final Response timeout to be used
 *Default value is 90.*
 
 
-```c title="Setting fr_inv_timer module parameter"
+```opensips title="Setting fr_inv_timer module parameter"
 ...
 modparam("lcr","fr_inv_timer",90)
 ...
@@ -449,7 +449,7 @@ Function next_contacts() sets tm fr_inv_timer to fr_inv_timer_next
 *Default value is 30.*
 
 
-```c title="Setting fr_inv_timer_next module parameter"
+```opensips title="Setting fr_inv_timer_next module parameter"
 ...
 modparam("lcr","fr_inv_timer_next",30)
 ...
@@ -467,7 +467,7 @@ An AVP where successful next_gw and from_gw functions
 			be defined in opensips.cfg.*
 
 
-```c title="Setting flags_avp module parameter"
+```opensips title="Setting flags_avp module parameter"
 ...
 modparam("lcr", "flags_avp", "$avp(i:712)")
 ...
@@ -488,7 +488,7 @@ Defines the prefix mode: string or regular expression.
 *Default value is 0.*
 
 
-```c title="Setting prefix_mode module parameter"
+```opensips title="Setting prefix_mode module parameter"
 ...
 /* Turning on the regex mode for prefix */
 modparam("lcr", "prefix_mode", 1)
@@ -514,7 +514,7 @@ Loads URI schemes, addresses, ports, and transports of
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="load_gws usage"
+```opensips title="load_gws usage"
 ...
 if (!load_gws("$var(caller_uri)")) {
 	sl_send_reply("500", "Server Internal Error - Cannot load gateways");
@@ -541,7 +541,7 @@ Loads URI schemes, addresses, ports, and transports of
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="load_gws_from_grp usage"
+```opensips title="load_gws_from_grp usage"
 ...
 if (!load_gws_from_grp("1")) {
 	sl_send_reply("500", "Server Internal Error - Cannot load gateways from group 1");
@@ -586,7 +586,7 @@ Must be preceded by successful load_gws() call.
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="next_gw usage from a route block"
+```opensips title="next_gw usage from a route block"
 ...
 if (!next_gw()) {
 	sl_send_reply("503", "Service not available - No gateways");
@@ -596,7 +596,7 @@ if (!next_gw()) {
 ```
 
 
-```c title="next_gw usage from a failure route block"
+```opensips title="next_gw usage from a failure route block"
 ...
 if (!next_gw()) {
 	t_reply("503", "Service not available - No more gateways");
@@ -621,7 +621,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE.
 
 
-```c title="from_gw usage"
+```opensips title="from_gw usage"
 ...
 if (from_gw()) {
 	...
@@ -630,7 +630,7 @@ if (from_gw()) {
 ```
 
 
-```c title="from_gw usage with pseudo variable argument"
+```opensips title="from_gw usage with pseudo variable argument"
 ...
 if (from_gw("$si")) {
 	...
@@ -652,7 +652,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE.
 
 
-```c title="from_gw_grp usage"
+```opensips title="from_gw_grp usage"
 ...
 if (from_gw_grp("1")) {
 	...
@@ -672,7 +672,7 @@ Checks if in-dialog request goes to a gateway. If an optional
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="to_gw usage"
+```opensips title="to_gw usage"
 ...
 if (to_gw()) {
 	...
@@ -682,7 +682,7 @@ if (to_gw()) {
 ```
 
 
-```c title="to_gw usage with group-id"
+```opensips title="to_gw usage with group-id"
 ...
 if (to_gw("1")) {
 	...
@@ -706,7 +706,7 @@ Loads contacts in destination set in increasing qvalue order as
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="load_contacts usage"
+```opensips title="load_contacts usage"
 ...
 if (!load_contacts()) {
 	sl_send_reply("500", "Server Internal Error - Cannot load contacts");
@@ -739,7 +739,7 @@ Must be preceded by successful load_contacts() call.
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="next_contacts usage from route block"
+```opensips title="next_contacts usage from route block"
 ...
 if (!next_contacts()) {
 	sl_send_reply("500", "Server Internal Error");
@@ -751,7 +751,7 @@ if (!next_contacts()) {
 ```
 
 
-```c title="next_contacts usage from failure route block"
+```opensips title="next_contacts usage from failure route block"
 if (next_contacts()) {
 	t_relay();
 };

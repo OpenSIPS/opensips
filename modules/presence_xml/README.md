@@ -59,7 +59,7 @@ The database url.
 *Default value is "mysql://opensips:opensipsrw@localhost/osips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("presence_xml", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -75,7 +75,7 @@ The name of the db table where XCAP documents are stored.
 *Default value is "xcap".*
 
 
-```c title="Set xcap_table parameter"
+```opensips title="Set xcap_table parameter"
 ...
 modparam("presence_xml", "xcap_table", "xcaps")
 ...
@@ -102,7 +102,7 @@ Note: When switching from one value to another, the watchers table must
 *Default value is "0".*
 
 
-```c title="Set force_active parameter"
+```opensips title="Set force_active parameter"
 ...
 modparam("presence_xml", "force_active", 1)
 ...
@@ -124,7 +124,7 @@ Setting this parameter to 1 enables the features described in RFC 4827.
 *Default value is "0".*
 
 
-```c title="Set pidf_manipulation parameter"
+```opensips title="Set pidf_manipulation parameter"
 ...
 modparam("presence_xml", "pidf_manipulation", 1)
 ...
@@ -149,7 +149,7 @@ Otherwise, it uses xcap_client module to fetch documents
 *Default value is "0".*
 
 
-```c title="Set integrated_xcap_server parameter"
+```opensips title="Set integrated_xcap_server parameter"
 ...
 modparam("presence_xml", "integrated_xcap_server", 1)
 ...
@@ -165,7 +165,7 @@ The address of the xcap servers used for storage.
 		list of trusted XCAP servers.
 
 
-```c title="Set xcap_server parameter"
+```opensips title="Set xcap_server parameter"
 ...
 modparam("presence_xml", "xcap_server", "xcap_server.example.org")
 modparam("presence_xml", "xcap_server", "xcap_server.ag.org")

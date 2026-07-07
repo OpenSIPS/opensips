@@ -61,7 +61,7 @@ Even when the module is loaded, benchmarking is not enabled
 *Default value is "0".*
 
 
-```c title="Set enable parameter"
+```opensips title="Set enable parameter"
 ...
 modparam("benchmark", "enable", 1)
 ...
@@ -79,7 +79,7 @@ Logging normally is not done for every reference to the log_timer()
 *Default value is "100".*
 
 
-```c title="Set granularity parameter"
+```opensips title="Set granularity parameter"
 ...
 modparam("benchmark", "granularity", 500)
 ...
@@ -104,7 +104,7 @@ Set the log level for the benchmark logs. These levels should be used:
 *Default value is "3" (L_INFO).*
 
 
-```c title="Set loglevel parameter"
+```opensips title="Set loglevel parameter"
 ...
 modparam("benchmark", "loglevel", 4)
 ...
@@ -124,7 +124,7 @@ Start timer "name". A later call to
 		"bm_log_timer()" logs this timer..
 
 
-```c title="bm_start_timer usage"
+```opensips title="bm_start_timer usage"
 ...
 bm_start_timer("test");
 ...
@@ -169,7 +169,7 @@ This function logs the timer with the given ID. The following data are
 - *Global avg* possibly the most interesting value.
 
 
-```c title="bm_log_timer usage"
+```opensips title="bm_log_timer usage"
 ...
 bm_log_timer("test");
 ...
@@ -233,7 +233,7 @@ Modifies the module log level. See "loglevel" variable.
 Measure the duration of user location lookup.
 
 
-```c title="benchmark usage"
+```opensips title="benchmark usage"
 ...
 bm_start_timer("usrloc-lookup");
 lookup("location");

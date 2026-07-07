@@ -33,7 +33,7 @@ Limiting the rate messages are processed on a system directly
 A sample configuration snippet might look like this:
 
 
-```c
+```opensips
 ...
 	if (is_method("INVITE|REGISTER|SUBSCRIBE") {
 		if (!rl_check()) {
@@ -174,7 +174,7 @@ IMPORTANT: A too small value may lead to performance penalties due to
 *Default value is 10.*
 
 
-```c title="Set timer_interval parameter"
+```opensips title="Set timer_interval parameter"
 ...
 modparam("ratelimit", "timer_interval", 5)
 ...
@@ -194,7 +194,7 @@ To specify a queue that accepts all methods, use * instead of METHOD.
 		match.  At this time, glob or regexp patterns are not supported.
 
 
-```c title="Set queue parameter"
+```opensips title="Set queue parameter"
 ...
 # assign pipe no 0 to method REGISTER
 # assign pipe no 3 to method INVITE
@@ -219,7 +219,7 @@ A pipe is characterised by its algorithm and limit (bandwidth, in ipfw terms).
 		whereas with the FEEDBACK algorithm, it means [CPU] load factor).
 
 
-```c title="Set pipe parameter"
+```opensips title="Set pipe parameter"
 ...
 # define pipe 0 with a limit of 200 pkts/sec using TAILDROP algorithm
 # define pipe 1 with a limit of 100 pkts/sec using RED algorithm
@@ -242,7 +242,7 @@ The code of the reply sent by OpenSIPS while limiting.
 *Default value is 503.*
 
 
-```c title="Set reply_code parameter"
+```opensips title="Set reply_code parameter"
 ...
 modparam("ratelimit", "reply_code", 505)
 ...
@@ -258,7 +258,7 @@ The reason of the reply sent by OpenSIPS while limiting.
 *Default value is "Server Unavailable".*
 
 
-```c title="Set reply_reason parameter"
+```opensips title="Set reply_reason parameter"
 ...
 modparam("ratelimit", "reply_reason", "Limiting")
 ...
@@ -294,7 +294,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="rl_check usage"
+```opensips title="rl_check usage"
 ...
 	# perform queue/pipe match for current method
 	if (!rl_check()) {
@@ -344,7 +344,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="rl_check_pipe usage"
+```opensips title="rl_check_pipe usage"
 ...
 	# perform queue/pipe match for current method
 	if (!rl_check_pipe()) {
@@ -384,7 +384,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="rl_drop usage"
+```opensips title="rl_drop usage"
 ...
 	if (!rl_check()) {
 		# send back a "503 - Server Unavailable"

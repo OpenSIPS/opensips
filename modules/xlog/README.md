@@ -74,7 +74,7 @@ Maximum size of the log message.
 *Default value is 4096.*
 
 
-```c title="Set buf_size parameter"
+```opensips title="Set buf_size parameter"
 ...
 modparam("xlog", "buf_size", 8192)
 ...
@@ -90,7 +90,7 @@ When set to 1, forces color printing even if log_stderror=0.
 *Default value is 0.*
 
 
-```c title="Set force_color parameter"
+```opensips title="Set force_color parameter"
 ...
 modparam("xlog", "force_color", 0)
 ...
@@ -131,7 +131,7 @@ If this parameter is missing, the implicit log level is 'L_ERR'.
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="xlog usage"
+```opensips title="xlog usage"
 ...
 xlog("L_ERR", "time [$Tf] method ($rm) r-uri ($ru) 2nd via ($hdr(via[1]))\n");
 ...
@@ -158,7 +158,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="xdbg usage"
+```opensips title="xdbg usage"
 ...
 xdbg("time $Cbx[$Tf]$Cxx method ($rm) r-uri ($ru)\n");
 ...

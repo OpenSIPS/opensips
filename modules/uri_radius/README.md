@@ -48,7 +48,7 @@ Radiusclient configuration file.
 *Default value is "/usr/local/etc/radiusclient-ng/radiusclient.conf".*
 
 
-```c title="Set param_name parameter"
+```opensips title="Set param_name parameter"
 ...
 modparam("uri_radius", "radius_config", "/etc/radiusclient.conf")
 ...
@@ -65,7 +65,7 @@ Radius service type used in
 *Default value is 10 (Call-Check).*
 
 
-```c title="Set service_type parameter"
+```opensips title="Set service_type parameter"
 ...
 modparam("uri_radius", "service_type", 11)
 ...
@@ -85,7 +85,7 @@ If zero, `radius_does_uri_exist`
 *Default value is 0.*
 
 
-```c title="Set use_sip_uri_host parameter"
+```opensips title="Set use_sip_uri_host parameter"
 ...
 modparam("uri_radius", "use_sip_uri_host", 1)
 ...
@@ -119,7 +119,7 @@ Returns 1 if Radius returns Access-Accept, -1 if Radius
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="radius_does_uri_exist usage"
+```opensips title="radius_does_uri_exist usage"
 ...
 if (radius_does_uri_exist()) {
 	...
@@ -140,7 +140,7 @@ Similar to radius_does_uri_exist, but check is done
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="radius_does_uri_user_exist usage"
+```opensips title="radius_does_uri_user_exist usage"
 ...
 if (radius_does_uri_user_exist()) {
 	...
