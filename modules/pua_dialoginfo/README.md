@@ -198,7 +198,7 @@ If this parameter is set, the optional call-id will be put into the
 *Default value is "1".*
 
 
-```c title="Set include_callid parameter"
+```opensips title="Set include_callid parameter"
 ...
 modparam("pua_dialoginfo", "include_callid", 0)
 ...
@@ -215,7 +215,7 @@ If this parameter is set, the local and remote tag will be put
 *Default value is "1".*
 
 
-```c title="Set include_tags parameter"
+```opensips title="Set include_tags parameter"
 ...
 modparam("pua_dialoginfo", "include_tags", 0)
 ...
@@ -233,7 +233,7 @@ If this parameter is set, the optional local and remote elements
 *Default value is "1".*
 
 
-```c title="Set include_localremote parameter"
+```opensips title="Set include_localremote parameter"
 ...
 modparam("pua_dialoginfo", "include_localremote", 0)
 ...
@@ -257,7 +257,7 @@ Usually the dialog-info of the caller will be
 *Default value is "0".*
 
 
-```c title="Set caller_confirmed parameter"
+```opensips title="Set caller_confirmed parameter"
 ...
 modparam("pua_dialoginfo", "caller_confirmed", 1)
 ...
@@ -283,7 +283,7 @@ The intended purpose of this parameter is to reduce the rate of notifications
 *Default value is "0".*
 
 
-```c title="Set publish_on_trying parameter to 0"
+```opensips title="Set publish_on_trying parameter to 0"
 ...
 modparam("pua_dialoginfo", "publish_on_trying", 0)
 
@@ -318,7 +318,7 @@ modparam("pua_dialoginfo", "publish_on_trying", 0)
 ```
 
 
-```c title="Set publish_on_trying parameter to 1"
+```opensips title="Set publish_on_trying parameter to 1"
 ...
 modparam("pua_dialoginfo", "publish_on_trying", 1)
 
@@ -368,7 +368,7 @@ By default, reINVITEs will trigger a PUBLISH. They are actually
 			specific reINVITE.
 
 
-```c title="Set nopublish_flag parameter"
+```opensips title="Set nopublish_flag parameter"
 ...
 modparam("pua_dialoginfo", "nopublish_flag", 5)
 ...
@@ -382,7 +382,7 @@ The address of the presence server, where the PUBLISH messages
 		should be sent (not compulsory).
 
 
-```c title="Set presence_server parameter"
+```opensips title="Set presence_server parameter"
 ...
 modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 ...
@@ -400,7 +400,7 @@ The name of the pseudovariable that will hold a custom caller URI.
 		"display_name<sip_uri>"  or "sip_uri".
 
 
-```c title="Set caller_spec_param parameter"
+```opensips title="Set caller_spec_param parameter"
 ...
 modparam("pua_dialoginfo", "caller_spec_param", "$avp(10)")
 ...
@@ -418,7 +418,7 @@ The name of the pseudovariable that will hold the callee URI.
 		the same as described in caller_spec_param section.
 
 
-```c title="Set caller_spec_param parameter"
+```opensips title="Set caller_spec_param parameter"
 ...
 modparam("pua_dialoginfo", "callee_spec_param", "$avp(11)")
 ...
@@ -440,7 +440,7 @@ It is advisable to specify if you use a different presence server
 *Default value is "1".*
 
 
-```c title="Set osips_ps parameter"
+```opensips title="Set osips_ps parameter"
 ...
 modparam("pua_dialoginfo", "osips_ps", 0)
 ...
@@ -466,7 +466,7 @@ Meaning of the parameters:
 			be published.
 
 
-```c title="dialoginfo_set usage"
+```opensips title="dialoginfo_set usage"
 ...
 	if(is_method("INVITE"))
 		if(uri =~ "opensips.org")

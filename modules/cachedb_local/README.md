@@ -54,7 +54,7 @@ URL parameter used to define cachedb_local collections. One collection
 					will be used.".*
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 ### for this example, if no collection is defined, the default collection named
 ### "default" shall be used
@@ -90,7 +90,7 @@ Using this parameter collections(hash tables) and their sizes can be defined. Ea
 				created.".*
 
 
-```c title="Set cache_collections parameter"
+```opensips title="Set cache_collections parameter"
 ...
 ## creating collection1 with default size (512) and collection2 with custom size
 ## 2^5 (32); we also changed the size of the default collection, which would have been
@@ -111,7 +111,7 @@ The time interval in seconds at which to go through all the
 *Default value is "600 (10 minutes)".*
 
 
-```c title="Set cache_clean_period parameter"
+```opensips title="Set cache_clean_period parameter"
 ...
 modparam("cachedb_local", "cache_clean_period", 1200)
 ...
@@ -134,7 +134,7 @@ Remove all keys from local cache that match the *glob* pattern
 This function can be used from all routes
 
 
-```c title="cache_remove_chunk usage"
+```opensips title="cache_remove_chunk usage"
 	...
 	cache_remove_chunk("myinfo_*");
 	cache_remove_chunk("collection1", "myinfo_*");
