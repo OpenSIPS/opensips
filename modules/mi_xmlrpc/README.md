@@ -89,7 +89,7 @@ The port number used by the XMLRPX server to listen for incoming
 		Ports lower than 1024 are not accepted.
 
 
-```c title="Set port parameter"
+```opensips title="Set port parameter"
 ...
 modparam("mi_xmlrpc", "port", 8000)
 ...
@@ -106,7 +106,7 @@ A log file to be used by the internal Abyss html server used by the
 *The default values NONE (no logging).*
 
 
-```c title="Set log_file parameter"
+```opensips title="Set log_file parameter"
 ...
 modparam("mi_xmlrpc", "log_file", "/var/log/abyss.log")
 ...
@@ -130,7 +130,7 @@ For a 0 value, a single string parameter will be replied (merging the
 *The default option is a string built response (0).*
 
 
-```c title="Set reply_option parameter"
+```opensips title="Set reply_option parameter"
 ...
 modparam("mi_xmlrpc", "reply_option", 0)
 ...
@@ -147,7 +147,7 @@ It specifies the maximum length of the buffer used to write in the MI
 *The default value is 8192.*
 
 
-```c title="Set reply_option parameter"
+```opensips title="Set reply_option parameter"
 ...
 modparam("mi_xmlrpc", "buffer_size", 8192)
 ...

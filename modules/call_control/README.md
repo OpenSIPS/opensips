@@ -124,7 +124,7 @@ Boolean flag that specifies if callcontrol should be disabled. This
 *Default value is "0".*
 
 
-```c title="Setting the disable parameter"
+```opensips title="Setting the disable parameter"
 ...
 modparam("call_control", "disable", 1)
 ...
@@ -143,7 +143,7 @@ It is the path to the filesystem socket where the callcontrol
             "/var/run/callcontrol/socket".*
 
 
-```c title="Setting the socket_name parameter"
+```opensips title="Setting the socket_name parameter"
 ...
 modparam("call_control", "socket_name", "/var/run/callcontrol/socket")
 ...
@@ -161,7 +161,7 @@ How much time (in milliseconds) to wait for an answer from the
 *Default value is "500" (ms).*
 
 
-```c title="Setting the socket_timeout parameter"
+```opensips title="Setting the socket_timeout parameter"
 ...
 modparam("call_control", "socket_timeout", 500)
 ...
@@ -195,7 +195,7 @@ This is used by the rating engine which finds the rates to apply to a
 *Default value is "$avp(s:signaling_ip)".*
 
 
-```c title="Setting the signaling_ip_avp parameter"
+```opensips title="Setting the signaling_ip_avp parameter"
 ...
 modparam("call_control", "signaling_ip_avp", "$avp(s:signaling_ip)")
 ...
@@ -217,7 +217,7 @@ Specification of the AVP which holds an optional application defined
 *Default value is "$avp(s:can_uri)".*
 
 
-```c title="Setting the canonical_uri_avp parameter"
+```opensips title="Setting the canonical_uri_avp parameter"
 ...
 modparam("call_control", "canonical_uri_avp", "$avp(s:can_uri)")
 ...
@@ -248,7 +248,7 @@ This is useful when a destination diverts a call, thus becoming the
 *Default value is "805".*
 
 
-```c title="Setting the diverter_avp_id parameter"
+```opensips title="Setting the diverter_avp_id parameter"
 ...
 modparam("call_control", "diverter_avp_id", 805)
 
@@ -295,7 +295,7 @@ This function has the following return codes:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Using the call_control function"
+```opensips title="Using the call_control function"
 ...
 if (is_avp_set("$avp(i:805)")) {
     # the diverter AVP is set, use it as billing party

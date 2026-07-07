@@ -498,7 +498,7 @@ The database url.
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("drouting", "db_url", 
 	"mysql://opensips:opensipsrw@localhost/opensips")
@@ -515,7 +515,7 @@ The name of the db table storing gateway addresses.
 *Default value is "dr_gateways".*
 
 
-```c title="Set drd_table parameter"
+```opensips title="Set drd_table parameter"
 ...
 modparam("drouting", "drd_table", "dr_gateways")
 ...
@@ -531,7 +531,7 @@ The name of the db table storing routing rules.
 *Default value is "dr_rules".*
 
 
-```c title="Set drr_table parameter"
+```opensips title="Set drr_table parameter"
 ...
 modparam("drouting", "drr_table", "rules")
 ...
@@ -547,7 +547,7 @@ The name of the db table storing groups.
 *Default value is "dr_groups".*
 
 
-```c title="Set drg_table parameter"
+```opensips title="Set drg_table parameter"
 ...
 modparam("drouting", "drg_table", "groups")
 ...
@@ -567,7 +567,7 @@ The name of the db table storing definitions of destination lists (to
 *Default value is "dr_gw_lists".*
 
 
-```c title="Set drl_table parameter"
+```opensips title="Set drl_table parameter"
 ...
 modparam("drouting", "drl_table", "my_gw_lists")
 ...
@@ -589,7 +589,7 @@ Defines how the destination list should be processed (ordering of
 *Default value is "0".*
 
 
-```c title="Set sort_order parameter"
+```opensips title="Set sort_order parameter"
 ...
 modparam("drouting", "sort_order", 2)
 ...
@@ -606,7 +606,7 @@ The name of the avp for storing Request URIs to be later used
 *Default value is "NULL".*
 
 
-```c title="Set ruri_avp parameter"
+```opensips title="Set ruri_avp parameter"
 ...
 modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
 modparam("drouting", "ruri_avp", '$avp(i:33)')
@@ -627,7 +627,7 @@ The name of the avp for storing the attribute of the current selected
 *Default value is "NULL".*
 
 
-```c title="Set attrs_avp parameter"
+```opensips title="Set attrs_avp parameter"
 ...
 modparam("drouting", "attrs_avp", '$avp(dr_attrs)')
 modparam("drouting", "atrrs_avp", '$avp(i:67)')
@@ -649,7 +649,7 @@ Multiple instances of this param are allowed.
 *Default value is "NULL".*
 
 
-```c title="Set define_blacklist parameter"
+```opensips title="Set define_blacklist parameter"
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
@@ -668,7 +668,7 @@ Flag to configure whether to use domain match when querying
 *Default value is "1".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("drouting", "use_domain", 0)
 ...
@@ -684,7 +684,7 @@ The name of the column in group db table where the username is stored.
 *Default value is "username".*
 
 
-```c title="Set drg_user_col parameter"
+```opensips title="Set drg_user_col parameter"
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
@@ -700,7 +700,7 @@ The name of the column in group db table where the domain is stored.
 *Default value is "domain".*
 
 
-```c title="Set drg_domain_col parameter"
+```opensips title="Set drg_domain_col parameter"
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
@@ -717,7 +717,7 @@ The name of the column in group db table where the
 *Default value is "groupid".*
 
 
-```c title="Set drg_grpid_col parameter"
+```opensips title="Set drg_grpid_col parameter"
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
@@ -730,7 +730,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 *Default value is "2000".*
 
 
-```c title="Set fetch_rows parameter"
+```opensips title="Set fetch_rows parameter"
 ...
 modparam("drouting", "fetch_rows", 1500)
 ...
@@ -748,7 +748,7 @@ Force DNS resolving of GW/destination names (if not IPs) during
 *Default value is "1 (enabled)".*
 
 
-```c title="Set force_dns parameter"
+```opensips title="Set force_dns parameter"
 ...
 modparam("drouting", "force_dns", 0)
 ...
@@ -775,7 +775,7 @@ The module can take one optional parameter: the routing group the
 		try to query the dr_group table to get this information.
 
 
-```c title="do_routing usage"
+```opensips title="do_routing usage"
 ...
 do_routing();
 ...
@@ -805,7 +805,7 @@ The function returns true only if a new RURI was set. False
 		of internal processing error.
 
 
-```c title="use_next_gw usage"
+```opensips title="use_next_gw usage"
 ...
 if (use_next_gw()) {
 	t_relay();
@@ -835,7 +835,7 @@ The function can take one optional parameter:
 - type
 
 
-```c title="goes_to_gw usage"
+```opensips title="goes_to_gw usage"
 ...
 if (goes_to_gw("1")) {
 	sl_send_reply("403","Forbidden");
@@ -863,7 +863,7 @@ The function can take one optional parameter:
 - flags
 
 
-```c title="is_from_gw usage"
+```opensips title="is_from_gw usage"
 ...
 if (is_from_gw("1") {
 }
@@ -888,7 +888,7 @@ The function can take two parameters:
 - flags
 
 
-```c title="is_from_gw usage"
+```opensips title="is_from_gw usage"
 ...
 if (is_from_gw("3","1") {
 }
