@@ -76,7 +76,7 @@ Name of a new statistic variable. The name may be followed by additional
 - *no_reset* : variable cannot be reset.
 
 
-```c title="variable example"
+```opensips title="variable example"
 modparam("statistics", "variable", "register_counter")
 modparam("statistics", "variable", "active_calls/no_reset")
 ```
@@ -90,7 +90,7 @@ A comma-separated values string, specifying the statistic groups that
 		trailing whitespace characters.
 
 
-```c title="setting the stat_groups parameter"
+```opensips title="setting the stat_groups parameter"
 modparam("statistics", "stat_groups", "method, packet, response")
 ```
 
@@ -116,7 +116,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="update_stat usage"
+```opensips title="update_stat usage"
 ...
 update_stat("register_counter", 1);
 ...
@@ -142,7 +142,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="reset_stat usage"
+```opensips title="reset_stat usage"
 ...
 reset_stat("register_counter");
 ...
@@ -171,7 +171,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="stat_iter_init usage"
+```opensips title="stat_iter_init usage"
 ...
 stat_iter_init("packet", "iter");
 ...
@@ -199,7 +199,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="stat_iter_next usage"
+```opensips title="stat_iter_next usage"
 ...
 # periodically clear packet-related data
 timer_route [clear_packet_stats, 7200] {
@@ -230,7 +230,7 @@ If a searching group is not provided, the statistic is first
 			grouped statistics which are not exported by the OpenSIPS core.
 
 
-```c title="$stat usage"
+```opensips title="$stat usage"
 ...
 xlog("SHM used size = $stat(used_size), no_invites = $stat(method:invite)\n");
 ...

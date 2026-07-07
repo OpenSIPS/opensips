@@ -92,7 +92,7 @@ The following parameters can be used:
 				server restarts. Optional parameter, default is persistent.
 
 
-```c title="Set server_id parameter"
+```opensips title="Set server_id parameter"
 ...
 # connection to a RabbitMQ server on localhost, default port
 modparam("rabbitmq", "server_id","[ID1] uri = amqp://127.0.0.1")
@@ -145,7 +145,7 @@ The function has the following parameters:
 						*headers* parameter must also be specified.
 
 
-```c title="rabbitmq_publish() function usage"
+```opensips title="rabbitmq_publish() function usage"
 	...
 	rabbitmq_publish("ID1", "call", "$fU called $rU");
 	...
