@@ -59,7 +59,7 @@ The size of the hash table that stores the MSRP session
 			 (1024 records).
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("msrp_ua", "hash_size", 16)
 ...
@@ -77,7 +77,7 @@ The interval between full iterations of the sessions table
 *Default value is "60".*
 
 
-```c title="Set cleanup_interval parameter"
+```opensips title="Set cleanup_interval parameter"
 ...
 modparam("msrp_ua", "cleanup_interval", 30)
 ...
@@ -94,7 +94,7 @@ The maximum duration of a call. If set to 0, there will be no limitation.
 The default value is 12 * 3600 seconds (12 hours).
 
 
-```c title="max_duration parameter example"
+```opensips title="max_duration parameter example"
 ...
 modparam("msrp_ua", "max_duration", 7200)
 ...
@@ -116,7 +116,7 @@ If the port is not set explicitly, the default value of 2855 wil
 		be assumed
 
 
-```c title="my_uri parameter usage"
+```opensips title="my_uri parameter usage"
 ...
 modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 ...
@@ -135,7 +135,7 @@ This parameter is mandatory when using the
 		[mi msrp ua start session](#mi_msrp_ua_start_session) MI function.
 
 
-```c title="advertised_contact parameter usage"
+```opensips title="advertised_contact parameter usage"
 ...
 modparam("msrp_ua", "advertised_contact", "sip:oss@opensips.org")
 ...
@@ -157,7 +157,7 @@ Credentials for the MSRP client are provided via the
 If not set, no relay will be used.
 
 
-```c title="relay_uri parameter usage"
+```opensips title="relay_uri parameter usage"
 ...
 modparam("msrp_ua", "relay_uri", "msrp://opensips.org:2856;tcp")
 ...
@@ -187,7 +187,7 @@ Parameters:
 This function can be used only from a request route.
 
 
-```c title="msrp_ua_answer() usage"
+```opensips title="msrp_ua_answer() usage"
 ...
 if (!has_totag() && is_method("INVITE")) {
 	msrp_ua_answer("text/plain");

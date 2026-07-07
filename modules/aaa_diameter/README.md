@@ -67,7 +67,7 @@ NOTE: since freeDiameter logs to standard output, you must also enable
 		before getting any logs from the library.
 
 
-```c title="Setting the fd_log_level parameter"
+```opensips title="Setting the fd_log_level parameter"
 modparam("aaa_diameter", "fd_log_level", 0)
 ```
 
@@ -81,7 +81,7 @@ The unique realm to be used by all participating Diameter peers.
 Default value is *"diameter.test"*.
 
 
-```c title="Setting the realm parameter"
+```opensips title="Setting the realm parameter"
 modparam("aaa_diameter", "realm", "opensips.org")
 ```
 
@@ -97,7 +97,7 @@ Default value is *"server"*
 				(i.e. "server.diameter.test").
 
 
-```c title="Setting the peer_identity parameter"
+```opensips title="Setting the peer_identity parameter"
 modparam("aaa_diameter", "peer_identity", "server")
 ```
 
@@ -110,7 +110,7 @@ Time, in milliseconds, after which a [dm send request](#func_dm_send_request)
 		**-2** code.
 
 
-```c title="Setting the answer_timeout parameter"
+```opensips title="Setting the answer_timeout parameter"
 modparam("aaa_diameter", "answer_timeout", 5000)
 ```
 
@@ -221,7 +221,7 @@ ANSWER 92001 My-Custom-Answer
 ```
 
 
-```c title="dm_send_request usage"
+```opensips title="dm_send_request usage"
 # Building an sending an My-Custom-Request (92001) for the
 # My Diameter Application (42)
 $var(payload) = "[

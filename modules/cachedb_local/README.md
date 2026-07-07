@@ -99,7 +99,7 @@ One collection can belong to multiple URLs, but one URL can have only one collec
 					will be used.".*
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 ### for this example, if no collection is defined, the default collection named
 ### "default" shall be used
@@ -138,7 +138,7 @@ The *"default"* collection always gets created, even when
 				not included in this list of collections.
 
 
-```c title="Set cache_collections parameter"
+```opensips title="Set cache_collections parameter"
 ...
 ## creating collection1 with default size (512) and collection2 with custom size
 ## 2^5 (32); we also changed the size of the default collection, which would have been
@@ -161,7 +161,7 @@ The time interval in seconds at which to go through all the
 *Default value is "600 (10 minutes)".*
 
 
-```c title="Set cache_clean_period parameter"
+```opensips title="Set cache_clean_period parameter"
 ...
 modparam("cachedb_local", "cache_clean_period", 1200)
 ...
@@ -179,7 +179,7 @@ Specifies the cluster ID which this instance will send to and receive
 Default value is 0 (replication disabled).
 
 
-```c title="Setting the cluster_id parameter"
+```opensips title="Setting the cluster_id parameter"
 ...
 modparam("cachedb_local", "cluster_id", 1)
 ...
@@ -211,7 +211,7 @@ This parameter may take the following values:
 				*"sync-from-cluster"*.*
 
 
-```c title="Set cluster_persistency parameter"
+```opensips title="Set cluster_persistency parameter"
 ...
 modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 ...
@@ -237,7 +237,7 @@ If cluster persistency is enabled as well, keys loaded from the persistent
 *Default value is "0 (disabled)".*
 
 
-```c title="Set enable_restart_persistency parameter"
+```opensips title="Set enable_restart_persistency parameter"
 ...
 modparam("cachedb_local", "enable_restart_persistency", yes)
 ...
@@ -266,7 +266,7 @@ Parameters:
 This function can be used from all routes
 
 
-```c title="cache_remove_chunk usage"
+```opensips title="cache_remove_chunk usage"
 	...
 	cache_remove_chunk("myinfo_*");
 	cache_remove_chunk("collection1", "myinfo_*");
