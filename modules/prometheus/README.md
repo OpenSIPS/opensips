@@ -63,7 +63,7 @@ Specifies the root metrics path Promethus uses to query the stats:
 *The default value is "metrics".*
 
 
-```c title="Set root parameter"
+```opensips title="Set root parameter"
 ...
 modparam("prometheus", "root", "prometheus")
 ...
@@ -79,7 +79,7 @@ Appends a prefix to each statistic exported.
 *The default value is "opensips".*
 
 
-```c title="Set prefix parameter"
+```opensips title="Set prefix parameter"
 ...
 modparam("prometheus", "prefix", "opensips_1")
 ...
@@ -95,7 +95,7 @@ Appends a prefix to the name of the group the statistic belongs to.
 *The default value is "" (no group prefix).*
 
 
-```c title="Set group_prefix parameter"
+```opensips title="Set group_prefix parameter"
 ...
 modparam("prometheus", "group_prefix", "opensips")
 ...
@@ -112,7 +112,7 @@ Specifies the delimiter to be used to separate *prefix*
 *The default value is "_".*
 
 
-```c title="Set delimiter parameter"
+```opensips title="Set delimiter parameter"
 ...
 modparam("prometheus", "delimiter", "-")
 ...
@@ -128,7 +128,7 @@ Specifies the label used to store the group when *group_mode* is 2.
 *The default value is "group".*
 
 
-```c title="Set group_label parameter"
+```opensips title="Set group_label parameter"
 ...
 modparam("prometheus", "group_label", "grp")
 ...
@@ -155,7 +155,7 @@ group_label
 *The default value is 0 (do not specify the group).*
 
 
-```c title="Set group_mode parameter"
+```opensips title="Set group_mode parameter"
 ...
 modparam("prometheus", "group_mode", 1)
 ...
@@ -181,7 +181,7 @@ This parameter can be defined multiple times.
 *The default value is empty: no metric is exported.*
 
 
-```c title="Set statistics parameter"
+```opensips title="Set statistics parameter"
 ...
 # export the number of active dialogs and the load statistics class
 modparam("prometheus", "statistics", "active_dialogs load:")

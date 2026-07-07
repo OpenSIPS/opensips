@@ -107,7 +107,7 @@ The send timeout is invoked for all TLS write operations,
 *Default value is 100 ms.*
 
 
-```c title="Set bins_send_timeout parameter"
+```opensips title="Set bins_send_timeout parameter"
 ...
 modparam("proto_bins", "bins_send_timeout", 200)
 ...
@@ -129,7 +129,7 @@ The maximum number of chunks in which a BINS message is
 *Default value is 32.*
 
 
-```c title="Set bins_max_msg_chunks parameter"
+```opensips title="Set bins_max_msg_chunks parameter"
 ...
 modparam("proto_bins", "bins_max_msg_chunks", 8)
 ...
@@ -148,7 +148,7 @@ Specifies whether the TCP/TLS connect and write operations
 *Default value is 1 (enabled).*
 
 
-```c title="Set bins_async parameter"
+```opensips title="Set bins_async parameter"
 ...
 modparam("proto_bins", "bins_async", 0)
 ...
@@ -167,7 +167,7 @@ If bins_async is enabled, this specifies the maximum number of
 *Default value is 32.*
 
 
-```c title="Set bins_async_max_postponed_chunks parameter"
+```opensips title="Set bins_async_max_postponed_chunks parameter"
 ...
 modparam("proto_bins", "bins_async_max_postponed_chunks", 16)
 ...
@@ -187,7 +187,7 @@ If bin_async is enabled, this specifies the number of
 *Default value is 100 ms.*
 
 
-```c title="Set bins_async_local_connect_timeout parameter"
+```opensips title="Set bins_async_local_connect_timeout parameter"
 ...
 modparam("proto_bins", "bins_async_local_connect_timeout", 200)
 ...
@@ -207,7 +207,7 @@ If *tls_async* is enabled, this specifies the
 *Default value is 10 ms.*
 
 
-```c title="Set bins_async_handshake_timeout parameter"
+```opensips title="Set bins_async_handshake_timeout parameter"
 	...
 	modparam("proto_tls", "bins_async_handshake_timeout", 100)
 	...

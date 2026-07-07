@@ -103,7 +103,7 @@ Definition of socket(s) used to connect to (a set) RTP proxy. It may
 *Default value is "NONE" (disabled).*
 
 
-```c title="Set rtpengine_sock parameter"
+```opensips title="Set rtpengine_sock parameter"
 ...
 # single rtproxy
 modparam("rtpengine", "rtpengine_sock", "udp:localhost:12221")
@@ -130,7 +130,7 @@ Once an RTP proxy was found unreachable and marked as disabled, the rtpengine
 *Default value is "60".*
 
 
-```c title="Set rtpengine_disable_tout parameter"
+```opensips title="Set rtpengine_disable_tout parameter"
 ...
 modparam("rtpengine", "rtpengine_disable_tout", 20)
 ...
@@ -146,7 +146,7 @@ Timeout value in waiting for reply from RTP proxy.
 *Default value is "1".*
 
 
-```c title="Set rtpengine_tout parameter"
+```opensips title="Set rtpengine_tout parameter"
 ...
 modparam("rtpengine", "rtpengine_tout", 2)
 ...
@@ -163,7 +163,7 @@ How many times the module should retry to send and receive after
 *Default value is "5".*
 
 
-```c title="Set rtpengine_retr parameter"
+```opensips title="Set rtpengine_retr parameter"
 ...
 modparam("rtpengine", "rtpengine_retr", 2)
 ...
@@ -185,7 +185,7 @@ Every notification received from RTPengine will trigger an
 *Default value is "none" - notifications are ignored.*
 
 
-```c title="Set notification_sock parameter"
+```opensips title="Set notification_sock parameter"
 ...
 modparam("rtpengine", "notification_sock", "127.0.0.1:9999")
 ...
@@ -203,7 +203,7 @@ The parameter sets the PV definition to use when the "via-branch=extra"
 Default is empty, the "via-branch=extra" option may not be used then.
 
 
-```c title="Set extra_id_pv parameter"
+```opensips title="Set extra_id_pv parameter"
 ...
 modparam("rtpengine", "extra_id_pv", "$avp(extra_id)")
 ...
@@ -223,7 +223,7 @@ The parameter defines an AVP that, if set,
 There is no default value.
 
 
-```c title="Set setid_avp parameter"
+```opensips title="Set setid_avp parameter"
 ...
 modparam("rtpengine", "setid_avp", "$avp(setid)")
 ...
@@ -243,7 +243,7 @@ Default value is "NULL", no database
 			is used.
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("rtpengine", "db_url", 
 		"mysql://opensips:opensipsrw@localhost/opensips")
@@ -261,7 +261,7 @@ The table where the RTPEngines sockets are stored.
 Default value is "rtpengine".
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("rtpengine", "db_table", "rtpengine_new")
 ...
@@ -277,7 +277,7 @@ The name of the rtpengine socket column in the database table.
 Default value is "socket".
 
 
-```c title="Set socket_column parameter"
+```opensips title="Set socket_column parameter"
 ...
 modparam("rtpengine", "socket_column", "sock")
 ...
@@ -293,7 +293,7 @@ The name of the rtpengine set column in the database table.
 Default value is "set_id".
 
 
-```c title="Set set_column parameter"
+```opensips title="Set set_column parameter"
 ...
 modparam("rtpengine", "set_column", "set_new")
 ...
@@ -315,7 +315,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE.
 
 
-```c title="rtpengine_use_set usage"
+```opensips title="rtpengine_use_set usage"
 ...
 rtpengine_use_set(2);
 rtpengine_offer();
@@ -534,7 +534,7 @@ Note: Please note, that this will only work properly with non-dual-stack user-ag
 This function can be used from ALL_ROUTES.
 
 
-```c title="rtpengine_offer usage"
+```opensips title="rtpengine_offer usage"
 route {
 ...
     if (is_method("INVITE")) {
@@ -581,7 +581,7 @@ if (rtpengine_offer(, $var(socket), $var(body), $rb)) {
 ```
 
 
-```c title="rtpengine_offer usage with call recording"
+```opensips title="rtpengine_offer usage with call recording"
 ...
 $var(rtpengine_flags) = $var(rtpengine_flags) + " record-call=yes";
 
@@ -599,7 +599,7 @@ rtpengine_offer($var(rtpengine_flags));
 ```
 
 
-```c title="rtpengine_offer usage for transcoding"
+```opensips title="rtpengine_offer usage for transcoding"
 ...
 # Goal: make A-side talk PCMA and B-side talk opus
 # * do not present PCMA to B-side: codec-mask-PCMA, but use it on A-side
@@ -643,7 +643,7 @@ See rtpengine_offer() function description above for the meaning of the
 This function can be used from ALL_ROUTES.
 
 
-```c title="rtpengine_delete usage"
+```opensips title="rtpengine_delete usage"
 ...
 rtpengine_delete();
 ...
@@ -678,7 +678,7 @@ Functionality:
 This function can be used from ALL_ROUTES.
 
 
-```c title="rtpengine_manage usage"
+```opensips title="rtpengine_manage usage"
 ...
 rtpengine_manage();
 ...
@@ -705,7 +705,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="rtpengine_start_recording usage"
+```opensips title="rtpengine_start_recording usage"
 ...
 rtpengine_start_recording();
 ...
@@ -733,7 +733,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="rtpengine_stop_recording usage"
+```opensips title="rtpengine_stop_recording usage"
 ...
 rtpengine_stop_recording();
 ...
@@ -774,7 +774,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="Ringback tone using rtpengine_play_media"
+```opensips title="Ringback tone using rtpengine_play_media"
 ...
 if (is_method("INVITE") && !has_totag())
 	rtpengine_play_media("file=/path/to/ringback_tone_file.wav");
@@ -783,7 +783,7 @@ if (is_method("INVITE") && !has_totag())
 ```
 
 
-```c title="Manage music on hold using rtpengine_play_media"
+```opensips title="Manage music on hold using rtpengine_play_media"
 ...
 if (is_method("INVITE") && has_totag()) {
 	if (is_audio_on_hold()) {
@@ -813,7 +813,7 @@ This function will stop playing a media file previously started
 This function can be used from any route.
 
 
-```c title="Ringback tone stop using rtpengine_stop_media"
+```opensips title="Ringback tone stop using rtpengine_stop_media"
 ...
 if (is_method("INVITE") && $rs == 200)
 	rtpengine_stop_media();
@@ -833,7 +833,7 @@ This function will block the media sent from one of the endpoints.
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_block_media usage"
+```opensips title="Example of rtpengine_block_media usage"
 ...
 rtpengine_block_media();
 ...
@@ -852,7 +852,7 @@ This function will resume/unblock the media sent from one of the endpoints.
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_unblock_media usage"
+```opensips title="Example of rtpengine_unblock_media usage"
 ...
 rtpengine_unblock_media();
 ...
@@ -871,7 +871,7 @@ This function will block the DTMF media sent from one of the endpoints.
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_block_dtmf usage"
+```opensips title="Example of rtpengine_block_dtmf usage"
 ...
 rtpengine_block_dtmf();
 ...
@@ -890,7 +890,7 @@ This function will resume/unblock the DTMF media sent from one of the endpoints.
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_unblock_dtmf usage"
+```opensips title="Example of rtpengine_unblock_dtmf usage"
 ...
 rtpengine_unblock_dtmf();
 ...
@@ -910,7 +910,7 @@ This function will start forwarding the media to a TLS destination specified
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_start_forwarding usage"
+```opensips title="Example of rtpengine_start_forwarding usage"
 ...
 rtpengine_start_forwarding();
 ...
@@ -928,7 +928,7 @@ This function will stop forwarding of the media previously started using the
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_stop_forwarding usage"
+```opensips title="Example of rtpengine_stop_forwarding usage"
 ...
 rtpengine_stop_forwarding();
 ...
@@ -957,7 +957,7 @@ This function can be used to convert SIP INFO DTMF keys to RTP DTMF.
 This function can be used from any route.
 
 
-```c title="Example of rtpengine_play_dtmf usage"
+```opensips title="Example of rtpengine_play_dtmf usage"
 ...
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
@@ -975,7 +975,7 @@ Returns the RTP statistics from the RTP proxy. The RTP statistics from the RTP p
 			are provided as a string and it does contain several packet counters.
 
 
-```c title="$rtpstat Usage"
+```opensips title="$rtpstat Usage"
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -1060,7 +1060,7 @@ Returnes one of the pre-fined statistics listed below:
 				the variable returns the *NULL* value.
 
 
-```c title="$rtpstat(STAT)"
+```opensips title="$rtpstat(STAT)"
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -1084,7 +1084,7 @@ You can use a *$json()* variable to parse
 			RTP statistics, or MOS values.
 
 
-```c title="$rtpquery Usage"
+```opensips title="$rtpquery Usage"
 ...
 	$json(reply) := $rtpquery;
 	xlog("Total RTP Stats: $json(reply/totals)\n");

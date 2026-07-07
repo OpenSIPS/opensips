@@ -62,7 +62,7 @@ This parameter is the content of the Accept header field. If
 *Default value is "*/*".*
 
 
-```c title="Set accept parameter"
+```opensips title="Set accept parameter"
 ...
 modparam("options", "accept", "application/*")
 ...
@@ -81,7 +81,7 @@ This parameter is the content of the Accept-Encoding header field.
 *Default value is "".*
 
 
-```c title="Set accept_encoding parameter"
+```opensips title="Set accept_encoding parameter"
 ...
 modparam("options", "accept_encoding", "gzip")
 ...
@@ -102,7 +102,7 @@ This parameter is the content of the Accept-Language header field.
 *Default value is "en".*
 
 
-```c title="Set accept_language parameter"
+```opensips title="Set accept_language parameter"
 ...
 modparam("options", "accept_language", "de")
 ...
@@ -121,7 +121,7 @@ This parameter is the content of the Support header field.
 *Default value is "".*
 
 
-```c title="Set support parameter"
+```opensips title="Set support parameter"
 ...
 modparam("options", "support", "100rel")
 ...
@@ -157,7 +157,7 @@ The check for the request method and the missing username is
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="options_reply usage"
+```opensips title="options_reply usage"
 ...
 if (is_myself("$rd")) {
 	if (is_method("OPTIONS") && (! $ru=~"sip:.*[@]+.*")) {
