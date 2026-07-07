@@ -60,7 +60,7 @@ The maximum allowed time for any HTTP(S) transfer to complete.  This
 *Default value is "20" seconds.*
 
 
-```c title="Setting the curl_timeout parameter"
+```opensips title="Setting the curl_timeout parameter"
 ...
 modparam("rest_client", "curl_timeout", 10)
 ...
@@ -76,7 +76,7 @@ The maximum allowed time to establish a connection with the server.
 *Default value is "20" seconds.*
 
 
-```c title="Setting the connection_timeout parameter"
+```opensips title="Setting the connection_timeout parameter"
 ...
 modparam("rest_client", "connection_timeout", 4)
 ...
@@ -96,7 +96,7 @@ Only relevant with async requests.  Allows complete control over how
 *Default value is "20" milliseconds.*
 
 
-```c title="Setting the connect_poll_interval parameter"
+```opensips title="Setting the connect_poll_interval parameter"
 ...
 modparam("rest_client", "connect_poll_interval", 2)
 ...
@@ -115,7 +115,7 @@ Maximum number of asynchronous HTTP transfers *a single*
 *Default value is "100".*
 
 
-```c title="Setting the max_async_transfers parameter"
+```opensips title="Setting the max_async_transfers parameter"
 ...
 modparam("rest_client", "max_async_transfers", 300)
 ...
@@ -133,7 +133,7 @@ Set this to 0 in order to disable the verification of the remote peer's
 *Default value is "1" (enabled).*
 
 
-```c title="Setting the ssl_verifypeer parameter"
+```opensips title="Setting the ssl_verifypeer parameter"
 ...
 modparam("rest_client", "ssl_verifypeer", 0)
 ...
@@ -150,7 +150,7 @@ Set this to 0 in order to disable the verification that the remote peer
 *Default value is "1" (enabled).*
 
 
-```c title="Setting the ssl_verifyhost parameter"
+```opensips title="Setting the ssl_verifyhost parameter"
 ...
 modparam("rest_client", "ssl_verifyhost", 0)
 ...
@@ -163,7 +163,7 @@ modparam("rest_client", "ssl_verifyhost", 0)
 An optional path for CA certificates to be used for host verifications.
 
 
-```c title="Setting the ssl_capath parameter"
+```opensips title="Setting the ssl_capath parameter"
 ...
 modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
@@ -196,7 +196,7 @@ Use a specific HTTP version for all requests. Possible values:
 			this setting was inspired (read: pilfered) from*
 
 
-```c title="Setting the curl_http_version parameter"
+```opensips title="Setting the curl_http_version parameter"
 ...
 modparam("rest_client", "curl_http_version", 3)
 ...
@@ -215,7 +215,7 @@ Include a "Expect: 100-continue" HTTP header field whenever the body
 *Default value is "false" (disabled).*
 
 
-```c title="Setting the enable_expect_100 parameter"
+```opensips title="Setting the enable_expect_100 parameter"
 ...
 modparam("rest_client", "enable_expect_100", true)
 ...
@@ -268,7 +268,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="rest_get usage"
+```opensips title="rest_get usage"
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
@@ -341,7 +341,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="rest_post usage"
+```opensips title="rest_post usage"
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
@@ -412,7 +412,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="rest_put usage"
+```opensips title="rest_put usage"
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT request
 $var(rc) = rest_put("https://myserver.org/users/$fU",
@@ -453,7 +453,7 @@ Parameters
 This function can be used from any route.
 
 
-```c title="rest_append_hf usage"
+```opensips title="rest_append_hf usage"
 ...
 # Example of querying a REST service requiring additional headers
 
@@ -484,7 +484,7 @@ Parameters
 This function can be used from any route.
 
 
-```c title="rest_init_client_tls usage"
+```opensips title="rest_init_client_tls usage"
 ...
 rest_init_client_tls("dom1");
 if (!rest_get("https://example.com"))
@@ -507,7 +507,7 @@ Perform an asynchronous HTTP GET.  This function behaves exactly the same as
 		entire content of the HTTP response is available.
 
 
-```c title="async rest_get usage"
+```opensips title="async rest_get usage"
 route {
 	...
 	async(rest_get("http://getcredit.org/?account=$fU",
@@ -543,7 +543,7 @@ Perform an asynchronous HTTP POST.  This function behaves exactly the same as
 		response is available.
 
 
-```c title="async rest_post usage"
+```opensips title="async rest_post usage"
 route {
 	...
 	async(rest_post("http://myserver.org/register_user",
@@ -578,7 +578,7 @@ Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
 		response is available.
 
 
-```c title="async rest_put usage"
+```opensips title="async rest_put usage"
 route {
 	...
 	async(rest_put("http://myserver.org/users/$fU", $var(userinfo), ,

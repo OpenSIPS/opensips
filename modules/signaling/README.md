@@ -93,7 +93,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ERROR_ROUTE.
 
 
-```c title="sl_send_reply usage"
+```opensips title="sl_send_reply usage"
 ...
 send_reply(404, "Not found");
 ...
