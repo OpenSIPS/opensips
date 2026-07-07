@@ -35,7 +35,7 @@ The acc module can be configured to use flatstore module as
 		database backend using the db_url_parameter:
 
 
-```c
+```opensips
 modparam("acc", "db_url", "flatstore:/var/log/acc")
 ```
 
@@ -140,7 +140,7 @@ Enable or disable flushing after each write.
 *Default value is 1.*
 
 
-```c title="Set 'flush' parameter"
+```opensips title="Set 'flush' parameter"
 ...
 modparam("db_flatstore", "flush", 0)
 ...

@@ -100,7 +100,7 @@ The following libraries or applications must be installed before running
 The ip of the interface SIP is working on.
 
 
-```c title="Set primary_ip parameter"
+```opensips title="Set primary_ip parameter"
 ...
 
 modparam("stun","primary_ip","192.168.0.100")
@@ -115,7 +115,7 @@ modparam("stun","primary_ip","192.168.0.100")
 The port SIP is working on.
 
 
-```c title="Set primary_port parameter"
+```opensips title="Set primary_port parameter"
 ...
 
 modparam("stun","primary_port","5060")
@@ -130,7 +130,7 @@ modparam("stun","primary_port","5060")
 Another ip from another interface.
 
 
-```c title="Set alternate_ip parameter"
+```opensips title="Set alternate_ip parameter"
 ...
 
 modparam("stun","alternate_ip","11.22.33.44")
@@ -145,7 +145,7 @@ modparam("stun","alternate_ip","11.22.33.44")
 Another port used by STUN.
 
 
-```c title="Set alternate_port parameter"
+```opensips title="Set alternate_port parameter"
 ...
 
 modparam("stun","alternate_port","3479")
