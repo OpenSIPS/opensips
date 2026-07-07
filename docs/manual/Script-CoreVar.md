@@ -88,7 +88,7 @@ When using the index "N" you can force the AVP to return a certain value (the N-
 
 Example of usage:
 * Transaction persistence example
-```c
+```opensips
 
 # enable avps in onreply route
 modparam("tm", "onreply_avp_mode", 1)
@@ -645,7 +645,7 @@ An attribute can have whatever name (no need to be pre-defined) and it can have 
 `$param(idx)` - retrieves the parameters of the route. The index can be an integer, or a pseudo-variable (index starts at 1).  
 
 Example:
-```c
+```opensips
 
    route {
       ...

@@ -55,7 +55,7 @@ The suffix to be appended to the end of the header field. You can use
 Default value is "" (empty string).
 
 
-```c title="suffix usage"
+```opensips title="suffix usage"
 modparam("diversion", "suffix", ";privacy=full")
 ```
 
@@ -86,7 +86,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="add_diversion usage"
+```opensips title="add_diversion usage"
 ...
 add_diversion("user-busy");
 ...
@@ -159,7 +159,7 @@ The following code snippet shows the code that invalidates the anchor, new ancho
 	created when the `anchor` variable is set to 0.
 
 
-```c
+```opensips
 static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 {
     static struct lump* anchor = 0;

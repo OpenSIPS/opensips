@@ -140,7 +140,7 @@ If the statistics support should be enabled or
 *Default value is "1" (enabled).*
 
 
-```c title="Set enable_stats parameter"
+```opensips title="Set enable_stats parameter"
 ...
 modparam("sst", "enable_stats", 0)
 ...
@@ -165,7 +165,7 @@ If not set and sstCheckMin() is called with the
 *Default value is "1800" seconds.*
 
 
-```c title="Set min_se parameter"
+```opensips title="Set min_se parameter"
 ...
 modparam("sst", "min_se", 2400)
 ...
@@ -186,7 +186,7 @@ Per default the interval used will be the min_se value
 *Default value is "0" seconds.*
 
 
-```c title="Set sst_interval parameter"
+```opensips title="Set sst_interval parameter"
 ...
 modparam("sst", "sst_interval", 2400)
 ...
@@ -214,7 +214,7 @@ This flag if true will tell the SST module to
 *Default value is "1" (true/on).*
 
 
-```c title="Set reject_to_small parameter"
+```opensips title="Set reject_to_small parameter"
 ...
 modparam("sst", "reject_to_small", 0)
 ...
@@ -246,7 +246,7 @@ This parameter must be set of the module will
 *Default value is "Not set!".*
 
 
-```c title="Set sst_flag parameter"
+```opensips title="Set sst_flag parameter"
 ...
 modparam("sst", "sst_flag", "SST_FLAG")
 ...
@@ -289,7 +289,7 @@ Meaning of the parameters is as follows:
 			to compare the MIN_SE header value to.
 
 
-```c title="sstCheckMin usage"
+```opensips title="sstCheckMin usage"
 ...
 modparam("sst", "sst_flag", "SST_FLAG")
 modparam("sst", "min_se", 2400) # Must be >= 90

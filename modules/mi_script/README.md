@@ -68,7 +68,7 @@ Indicates whether the JSON responses stored in the return
 *Default value is "0 - no pretty-printing".*
 
 
-```c title="Set pretty_printing parameter"
+```opensips title="Set pretty_printing parameter"
 ...
 modparam("mi_script", "pretty_printing", 1)
 ...
@@ -91,7 +91,7 @@ Trace destination as defined in the tracing module. Currently
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "trace_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
@@ -127,7 +127,7 @@ Defining a blacklists means all the commands that are not blacklisted
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
@@ -211,14 +211,14 @@ To specify *array values*, enclose your
 					*"__array(HEARTBEAT BACKGROUND_JOB)"*
 
 
-```c title="mi without params"
+```opensips title="mi without params"
 ...
 mi("shm_check");
 ...
 ```
 
 
-```c title="mi with params in command"
+```opensips title="mi with params in command"
 ...
 # this command is similar to the above
 mi("cache_remove local password_user1");
@@ -226,14 +226,14 @@ mi("cache_remove local password_user1");
 ```
 
 
-```c title="mi with return"
+```opensips title="mi with return"
 ...
 mi("ds_list", $var(ret));
 ...
 ```
 
 
-```c title="mi without return but with indexed params"
+```opensips title="mi without return but with indexed params"
 ...
 $avp(params) = "local";
 $avp(params) = "password_user1";
@@ -245,7 +245,7 @@ mi("cache_remove local password_user1");
 ```
 
 
-```c title="mi with return and named parameters"
+```opensips title="mi with return and named parameters"
 ...
 $avp(params) = "callid";
 $avp(vals) = "SEARCH_FOR_THIS_CALLID";
@@ -256,7 +256,7 @@ mi("dlg_list", $var(dlg), $avp(params), $avp(vals));
 ```
 
 
-```c title="mi without return, with an array parameter value"
+```opensips title="mi without return, with an array parameter value"
 ...
 $avp(params) = "freeswitch_url";
 $avp(vals) = "fs://:ClueCon@192.168.20.8:8021";
@@ -285,7 +285,7 @@ The function works is more or less the same as its
 			asynchronously cannot be traced through hep.
 
 
-```c title="async mi call usage"
+```opensips title="async mi call usage"
 ...
 xlog("reload starting\n");
 async(mi("dr_reload"), after_reload);

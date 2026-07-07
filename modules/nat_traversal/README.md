@@ -320,7 +320,7 @@ The time interval (in seconds) required to send a keepalive message to
 *Default value is "60".*
 
 
-```c title="Setting the keepalive_interval parameter"
+```opensips title="Setting the keepalive_interval parameter"
 ...
 modparam("nat_traversal", "keepalive_interval", 90)
 ...
@@ -354,7 +354,7 @@ What SIP method to use to send keepalive messages. Typical methods
 *Default value is "NOTIFY".*
 
 
-```c title="Setting the keepalive_method parameter"
+```opensips title="Setting the keepalive_method parameter"
 ...
 modparam("nat_traversal", "keepalive_method", "OPTIONS")
 ...
@@ -376,7 +376,7 @@ Indicates what SIP URI to use in the From header of the keepalive
           being the actual IP of the outgoing interface.*
 
 
-```c title="Setting the keepalive_from parameter"
+```opensips title="Setting the keepalive_from parameter"
 ...
 modparam("nat_traversal", "keepalive_from", "sip:keepalive@my-domain.com")
 ...
@@ -396,7 +396,7 @@ Specifies extra headers that should be added to the keepalive messages
 *Default value is undefined (send no extra headers).*
 
 
-```c title="Setting the keepalive_extra_headers parameter"
+```opensips title="Setting the keepalive_extra_headers parameter"
 ...
 modparam("nat_traversal", "keepalive_extra_headers", "User-Agent: OpenSIPS\r\nX-MyHeader: some_value\r\n")
 ...
@@ -426,7 +426,7 @@ The value of this parameter can be either a relative path, in which
 *Default value is undefined "keepalive_state".*
 
 
-```c title="Setting the keepalive_state_file parameter"
+```opensips title="Setting the keepalive_state_file parameter"
 ...
 modparam("nat_traversal", "keepalive_state_file", "/run/opensips/keepalive_state")
 ...
@@ -456,7 +456,7 @@ For more info on how to define and populate a cluster (with OpenSIPS
 *Default value is "0 (none)".*
 
 
-```c title="Set cluster_id parameter"
+```opensips title="Set cluster_id parameter"
 ...
 # Be part of cluster ID 9
 modparam("nat_traversal", "cluster_id", 9)
@@ -485,7 +485,7 @@ This is an optional parameter. If not set, all the nodes in the cluster
 *Default value is "empty (none)".*
 
 
-```c title="Set cluster_sharing_tag parameter"
+```opensips title="Set cluster_sharing_tag parameter"
 ...
 # only the node with the active "vip" sharing tag will perform pinging
 modparam("nat_traversal", "cluster_id", 9)
@@ -525,7 +525,7 @@ For example calling client_nat_test(3) will perform test 1 and
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="Using the client_nat_test function"
+```opensips title="Using the client_nat_test function"
 ...
 if (client_nat_test(3)) {
     .....
@@ -546,7 +546,7 @@ Will replace the IP and port in the Contact header with the
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="Using the fix_contact function"
+```opensips title="Using the fix_contact function"
 ...
 if (client_nat_test(3)) {
     fix_contact();
@@ -581,7 +581,7 @@ Trigger keepalive functionality for the source address of the request.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Using the nat_keepalive function"
+```opensips title="Using the nat_keepalive function"
 ...
 if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
     ($rm=="INVITE" && !has_totag())) && client_nat_test(3))
@@ -659,7 +659,7 @@ This can be useful to restore the sending socket when relaying messages
         with it.
 
 
-```c title="Using $keepalive.socket in multi-proxy environments"
+```opensips title="Using $keepalive.socket in multi-proxy environments"
 ...
 # This code runs on P1 which has received an INVITE from P2 to forward
 # it to the user agent behind NAT (because P1 has the NAT open with it).
@@ -697,7 +697,7 @@ Another use for this pseudo-variable is in multi-proxy environments to
         this user agent.
 
 
-```c title="Using $source_uri to set the received AVP on registrars"
+```opensips title="Using $source_uri to set the received AVP on registrars"
 ...
 modparam("registrar", "received_avp", "$avp(received_uri)")
 modparam("registrar", "tcp_persistent_flag", 10)
@@ -736,7 +736,7 @@ if ($rm=="REGISTER") {
 ```
 
 
-```c title="Using $source_uri in multi-proxy environments"
+```opensips title="Using $source_uri in multi-proxy environments"
 ...
 # This code runs on P1 which received the REGISTER request and has to
 # forward it to the registrar P2.

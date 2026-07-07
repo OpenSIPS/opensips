@@ -97,7 +97,7 @@ The URLs of the server groups that OpenSIPS will connect to in order
 			the identifier that will be used from the script.
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 # single-instance URLs (Redis Server or Redis Cluster)
 modparam("cachedb_redis", "cachedb_url", "redis:group1://localhost:6379/")
@@ -107,7 +107,7 @@ modparam("cachedb_redis", "cachedb_url", "redis:cluster1://random_url:8888/")
 ```
 
 
-```c title="Use Redis servers"
+```opensips title="Use Redis servers"
 ...
 cache_store("redis:group1", "key", "$ru value");
 cache_fetch("redis:cluster1", "key", $avp(10));
@@ -127,7 +127,7 @@ This parameter specifies how many milliseconds OpenSIPS should wait
 *Default value is "5000 ms".*
 
 
-```c title="Set connect_timeout parameter"
+```opensips title="Set connect_timeout parameter"
 ...
 # wait 1 seconds for Redis to connect
 modparam("cachedb_redis", "connect_timeout",1000)
@@ -146,7 +146,7 @@ This parameter specifies how many milliseconds OpenSIPS should wait
 *Default value is "5000 ms".*
 
 
-```c title="Set connect_timeout parameter"
+```opensips title="Set connect_timeout parameter"
 ...
 # wait 1 seconds for Redis queries
 modparam("cachedb_redis", "query_timeout",1000)
@@ -166,7 +166,7 @@ By setting this parameter to 1, OpenSIPS will abort startup if
 *Default value is "0" (disabled).*
 
 
-```c title="Set the shutdown_on_error parameter"
+```opensips title="Set the shutdown_on_error parameter"
 ...
 # abort OpenSIPS startup if Redis is down
 modparam("cachedb_redis", "shutdown_on_error", 1)
@@ -198,7 +198,7 @@ Note that TLS is supported by Redis starting with version 6.0. Also, it is
 *Default value is **0** (not enabled)*
 
 
-```c title="Set the use_tls parameter"
+```opensips title="Set the use_tls parameter"
 ...
 modparam("tls_mgm", "client_domain", "redis")
 modparam("tls_mgm", "certificate", "[redis]/etc/pki/tls/certs/redis.pem")
@@ -225,7 +225,7 @@ A global index name to be used for all internal JSON full-text search operations
 Default value is **"idx:usrloc"**.
 
 
-```c title="Set the ftsearch_index_name parameter"
+```opensips title="Set the ftsearch_index_name parameter"
 modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
 ```
 
@@ -244,7 +244,7 @@ A key naming prefix for all internally-created Redis JSON objects (e.g.
 Default value is **"usrloc:"**.
 
 
-```c title="Set the ftsearch_json_prefix parameter"
+```opensips title="Set the ftsearch_json_prefix parameter"
 modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
 ```
 
@@ -263,7 +263,7 @@ The maximum number of results returned by each internally-triggered
 Default value is **10000** max results.
 
 
-```c title="Set the ftsearch_max_results parameter"
+```opensips title="Set the ftsearch_max_results parameter"
 modparam("cachedb_redis", "ftsearch_max_results", 100)
 ```
 
@@ -283,7 +283,7 @@ A Redis EXPIRE timer to set/refresh on the JSON key after each JSON.MSET operati
 Default value is **3600** seconds.
 
 
-```c title="Set the ftsearch_json_mset_expire parameter"
+```opensips title="Set the ftsearch_json_mset_expire parameter"
 modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 ```
 
@@ -306,7 +306,7 @@ The cachedb_redis module allows to run RAW queries, thus taking full advantage o
 Here are a couple examples of running some Redis queries :
 
 
-```c title="Redis Raw Query Examples"
+```opensips title="Redis Raw Query Examples"
 ...
 	$var(my_hash) = "my_hash_name";
 	$var(my_key) = "my_key_name";
