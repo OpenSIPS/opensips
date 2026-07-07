@@ -103,7 +103,7 @@ Example of usage:
 It represents the value returned by last function executed (similar to $? from bash -- if you wish, you can use also $? in OpenSIPS config, both names '`$retcode`' and '$?' are supported). If tested after a call of a route, it is the value retuned by that route.
 
 Example of usage:
-```c
+```opensips
 
    route {
        route(1);
@@ -756,7 +756,7 @@ Default value is 'yes'.
 
 Example of usage:
 
-```c
+```opensips
 fork=no
 ```
 
@@ -860,7 +860,7 @@ For more see: http://www.voice-system.ro/docs/ser-syslog/
 
 Example of usage:
 
-```c
+```opensips
 log_stderror=yes
 ```
 
@@ -994,7 +994,7 @@ Set the module search path.  This can be used to simplify the loadmodule paramet
 
 Example of usage:
 
-```c
+```opensips
 
     mpath="/usr/local/lib/opensips/modules"
     loadmodule "mysql.so"

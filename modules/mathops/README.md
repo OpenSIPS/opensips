@@ -49,7 +49,7 @@ The precision of the results returned by all the module functions.
 Default value is "6".
 
 
-```c title="Setting the decimal_digits module parameter"
+```opensips title="Setting the decimal_digits module parameter"
 modparam("mathops", "decimal_digits", 10)
 ```
 
@@ -85,7 +85,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_eval usage"
+```opensips title="math_eval usage"
 ...
 # Compute some random math expression
 
@@ -137,7 +137,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_rpn usage"
+```opensips title="math_rpn usage"
 $avp(1) = "3";
 
 if (math_rpn("1 $avp(1) swap swap dup drop / exp ln 1 swap /", "$avp(result)")) {
@@ -176,7 +176,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_trunc usage"
+```opensips title="math_trunc usage"
 ...
 # Truncate a random number
 
@@ -214,7 +214,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_floor usage"
+```opensips title="math_floor usage"
 ...
 # Truncate a random number
 
@@ -252,7 +252,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_ceil usage"
+```opensips title="math_ceil usage"
 ...
 # Truncate a random number
 
@@ -298,7 +298,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_round usage"
+```opensips title="math_round usage"
 ...
 # Rounding PI
 
@@ -364,7 +364,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="math_round_sf usage"
+```opensips title="math_round_sf usage"
 ...
 # Rounding PI
 

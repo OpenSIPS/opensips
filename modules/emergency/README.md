@@ -71,7 +71,7 @@ The database url must be specified.
 *Default value is "NULL".*
 
 
-```c title="Setting the db_url parameter"
+```opensips title="Setting the db_url parameter"
 ...
 modparam("emergency", "db_url", "mysql://opensips:opensipsrw@localhost/opensips”)
 ...
@@ -88,7 +88,7 @@ The name of the db table storing routing information to emergency calls.
 *Default value is "emergency_routing".*
 
 
-```c title="Setting the db_table_routing parameter"
+```opensips title="Setting the db_table_routing parameter"
 ...
 modparam("emergency", "db_table_routing", "emergency_routing")
 ...
@@ -105,7 +105,7 @@ The name of the db table that stores the emergency call report.
 *Default value is "emergency_report".*
 
 
-```c title="Setting the db_table_report parameter"
+```opensips title="Setting the db_table_report parameter"
 ...
 modparam("emergency", "db_table_report", "emergency_report")
 ...
@@ -144,7 +144,7 @@ This parameter define what role the opensips will take to treat emergency
 *Default value is "0".*
 
 
-```c title="Setting the proxy_hole parameter"
+```opensips title="Setting the proxy_hole parameter"
 ...
 modparam("emergency", "proxy_hole", 0))
 ...
@@ -163,7 +163,7 @@ Indicates whether OpenSIPS is the VSP Call Server in Scenario I
 *Default value is "0".*
 
 
-```c title="Setting the flag_third_enterprise parameter"
+```opensips title="Setting the flag_third_enterprise parameter"
 ...
 modparam("emergency", "flag_third_enterprise ", 0)
 ...
@@ -181,7 +181,7 @@ The VPC url that opensips request the routing information to emergency
 *Default value is "empty string".*
 
 
-```c title="Setting the url_vpc parameter"
+```opensips title="Setting the url_vpc parameter"
 ...
 modparam("emergency", "url_vpc", “192.168.0.103:5060”)
 ...
@@ -202,7 +202,7 @@ Local emergency number. Opensips uses this number to recognize a emergency
 *Default value is "NULLg".*
 
 
-```c title="Setting the emergency_codes parameter"
+```opensips title="Setting the emergency_codes parameter"
 ...
 modparam("emergency", "emergency_codes", “911-us emegency code”)
 ...
@@ -221,7 +221,7 @@ The vsp_organization_name is VSP company name’s. VSP is the caller's voice
 *Default value is "NULL".*
 
 
-```c title="Setting the vsp_organization_name parameter"
+```opensips title="Setting the vsp_organization_name parameter"
 ...
 modparam("emergency", "vsp_organization_name", “Exemple provider VSP”)
 ...
@@ -241,7 +241,7 @@ The vsp_hostname is VSP hostname’s. VSP is the caller's voice service provider
 *Default value is "NULL".*
 
 
-```c title="Setting the vsp_hostname parameter"
+```opensips title="Setting the vsp_hostname parameter"
 ...
 modparam("emergency", "vsp_hostname", “exemple_vsp.com”)
 ...
@@ -260,7 +260,7 @@ The nena-id is the NENA administered company identifier (NENA Company ID)
 *Default value is "NULL".*
 
 
-```c title="Setting the vsp_nena_id parameter"
+```opensips title="Setting the vsp_nena_id parameter"
 ...
 modparam("emergency", "vsp_nena_id", “nena1”)
 ...
@@ -281,7 +281,7 @@ The contact is a telephone number by which the VSP operator can be reached
 *Default value is "NULL".*
 
 
-```c title="Setting the vsp_contact parameter"
+```opensips title="Setting the vsp_contact parameter"
 ...
 modparam("emergency", " vsp_contact", “tel:+398348975439823”)
 ...
@@ -301,7 +301,7 @@ The cert-uri provides a means of directly obtaining the VESA(Valid
 *Default value is "NULL".*
 
 
-```c title="Setting the vsp_cert_uri parameter"
+```opensips title="Setting the vsp_cert_uri parameter"
 ...
 modparam("emergency", " vsp_cert_uri",“https://cs34.exam.com/certificate.crt”)
 ...
@@ -320,7 +320,7 @@ The vpc_organization_name is VPC company name’s. VPC is the routing
 *Default value is "NULL".*
 
 
-```c title="Setting the vpc_organization_name parameter"
+```opensips title="Setting the vpc_organization_name parameter"
 ...
 modparam("emergency", " vpc_organization_name", “Exemple VPC”)
 ...
@@ -339,7 +339,7 @@ The vpc_hostname is VSP hostname’s. VPC is the routing information provider
 *Default value is "NULL".*
 
 
-```c title="Setting the vpc_hostname parameter"
+```opensips title="Setting the vpc_hostname parameter"
 ...
 modparam("emergency", "vpc_hostname", “exemple_vpc.com”)
 ...
@@ -358,7 +358,7 @@ The vpc_nena-id is the NENA administered company identifier (NENA Company
 *Default value is "NULL".*
 
 
-```c title="Setting the vpc_nena_id parameter"
+```opensips title="Setting the vpc_nena_id parameter"
 ...
 modparam("emergency", "vpc_nena_id", “nena2”)
 ...
@@ -378,7 +378,7 @@ The vpc_contact is a telephone number by which the directly VPC operator
 *Default value is "NULL".*
 
 
-```c title="Setting the source_contact parameter"
+```opensips title="Setting the source_contact parameter"
 ...
 modparam("emergency", "vpc_contact", “tel:+398348975439823”)
 ...
@@ -398,7 +398,7 @@ The vpc_cert_uri_vpc provides a means of directly obtaining the VESA(Valid
 *Default value is "NULL".*
 
 
-```c title="Setting the vpc_cert_uri parameter"
+```opensips title="Setting the vpc_cert_uri parameter"
 ...
 modparam("emergency", "vpc_cert_uri",“https://cs98.examvpc.com/certificate.crt”)
 ...
@@ -417,7 +417,7 @@ The source_organization_name is Source company name’s. Source is node
 *Default value is "NULL".*
 
 
-```c title="Setting the source_organization_name parameter"
+```opensips title="Setting the source_organization_name parameter"
 ...
 modparam("emergency", "source_organization_name", “Exemple Routing Source”)
 ...
@@ -436,7 +436,7 @@ The sorce_hostname is Source hostname’s. Source is node directly requesting
 *Default value is "NULL".*
 
 
-```c title="Setting the source_hostname parameter"
+```opensips title="Setting the source_hostname parameter"
 ...
 modparam("emergency", "source_hostname", “exemple_source.com”)
 ...
@@ -456,7 +456,7 @@ The source_nena-id is the NENA administered company identifier (NENA Company
 *Default value is "NULL".*
 
 
-```c title="Setting the source_nena_id parameter"
+```opensips title="Setting the source_nena_id parameter"
 ...
 modparam("emergency", "source_nena_id", “nena3”)
 ...
@@ -476,7 +476,7 @@ The source_contact is a telephone number by which the directly source operator
 *Default value is "NULL".*
 
 
-```c title="Setting the source_contact parameter"
+```opensips title="Setting the source_contact parameter"
 ...
 modparam("emergency", "source_contact", “tel:+398348975439823”)
 ...
@@ -496,7 +496,7 @@ The source_cert_uri provides a means of directly obtaining the VESA(Valid
 *Default value is "NULL".*
 
 
-```c title="Setting the source_cert_uri parameter"
+```opensips title="Setting the source_cert_uri parameter"
 ...
 modparam("emergency","source_cert_uri",“https://cs67.exsource.com/certificate.crt”
 ...
@@ -514,7 +514,7 @@ Sets the time interval polling to make the copy in memory of the
 *Default value is "10".*
 
 
-```c title="Setting the timer_interval parameter"
+```opensips title="Setting the timer_interval parameter"
 ...
 modparam("emergency","timer_interval",20)
 ...
@@ -532,7 +532,7 @@ The contingency_hostname is the url of the server que will route the call
 *Default value is "NULL".*
 
 
-```c title="Setting the contingency_hostname parameter"
+```opensips title="Setting the contingency_hostname parameter"
 ...
 modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 ...
@@ -552,7 +552,7 @@ The emergency_call_server is the url of the Routing Proxy/Redirect Server
 *Default value is "NULL".*
 
 
-```c title="Setting the emergency_call_server parameter"
+```opensips title="Setting the emergency_call_server parameter"
 ...
 modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 ...
@@ -575,7 +575,7 @@ Checks whether the incoming call is an emergency call, case it is treats, and
 This function can be used from the *REQUEST* routes.
 
 
-```c title="emergency_call() usage"
+```opensips title="emergency_call() usage"
 ...
 # Example of treat of emergency call
 
@@ -605,7 +605,7 @@ This function is used when trying to route the emergency call to the
 This function can be used from the *FAILURE* routes.
 
 
-```c title="failure() usage"
+```opensips title="failure() usage"
 ...
 # Example od treat of contingency in emergency call
 

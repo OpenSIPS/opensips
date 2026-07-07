@@ -49,7 +49,7 @@ If queries take longer than 'exec_query_threshold' microseconds, warning
 *Default value is 0 - disabled.*
 
 
-```c title="Set exec_query_threshold parameter"
+```opensips title="Set exec_query_threshold parameter"
 ...
 modparam("db_postgres", "exec_query_threshold", 60000)
 ...
