@@ -49,7 +49,7 @@ The following libraries or applications must be installed before running
 The IP address of the server.
 
 
-```c title="Set server_address parameter"
+```opensips title="Set server_address parameter"
 ...
 modparam("pua_xmpp", "server_address", "160.23.23.10")
 ...
@@ -74,7 +74,7 @@ Function that handles Notify messages addressed to a user from
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Notify2Xmpp usage"
+```opensips title="Notify2Xmpp usage"
 ...
 	if( is_method("NOTIFY") && uri=~"sip:.+@sip-xmpp.siphub.ro")
 	{
@@ -104,7 +104,7 @@ It takes 2 parameters: request_uri and the value of Expires header field
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="xmpp_send_winfo usage"
+```opensips title="xmpp_send_winfo usage"
 ...
 	if( is_method("SUBSCRIBE"))
 	{

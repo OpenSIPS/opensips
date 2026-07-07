@@ -50,7 +50,7 @@ If the db_url string is empty, the default database URL
 *Default value is "mysql://opensipsro:opensipsro@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("uri_db", "db_url", "mysql://username:password@localhost/opensips")
 ...
@@ -69,7 +69,7 @@ The DB table that should be used. Its possible to use the
 *Default value is "subscriber".*
 
 
-```c title="Set uri_table parameter"
+```opensips title="Set uri_table parameter"
 ...
 modparam("uri_db", "db_table", "uri")
 ...
@@ -85,7 +85,7 @@ Column holding usernames in the table.
 *Default value is "username".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("uri_db", "user_column", "username")
 ...
@@ -101,7 +101,7 @@ Column holding domain in the table.
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("uri_db", "domain_column", "domain")
 ...
@@ -117,7 +117,7 @@ Column holding URI username in the table.
 *Default value is "uri_user".*
 
 
-```c title="Set uriuser_column parameter"
+```opensips title="Set uriuser_column parameter"
 ...
 modparam("uri_db", "uriuser_column", "uri_user")
 ...
@@ -134,7 +134,7 @@ Specify if the "uri" table should be used for checkings
 *Default value is "0 (false)".*
 
 
-```c title="Set use_uri_table parameter"
+```opensips title="Set use_uri_table parameter"
 ...
 modparam("uri_db", "use_uri_table", 1)
 ...
@@ -157,7 +157,7 @@ This parameter is only evaluated for calls to "does_uri_exist",
 *Default value is "0 (false)".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("uri_db", "use_domain", 1)
 ...
@@ -177,7 +177,7 @@ Check To username against URI table (if use_uri_table is set) or
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="check_to usage"
+```opensips title="check_to usage"
 ...
 if (check_to()) {
 	...
@@ -196,7 +196,7 @@ Check From username against URI table (if use_uri_table is set) or
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="check_from usage"
+```opensips title="check_from usage"
 ...
 if (check_from()) {
 	...
@@ -218,7 +218,7 @@ As the checking is done against URI table (if use_uri_table is set)
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="does_uri_exist usage"
+```opensips title="does_uri_exist usage"
 ...
 if (does_uri_exist()) {
 	...

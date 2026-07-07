@@ -72,7 +72,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search usage"
+```opensips title="search usage"
 ...
 if ( search("[Ss][Ii][Pp]") ) { /*....*/ };
 ...
@@ -95,7 +95,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search_body usage"
+```opensips title="search_body usage"
 ...
 if ( search_body("[Ss][Ii][Pp]") ) { /*....*/ };
 ...
@@ -119,7 +119,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search_append usage"
+```opensips title="search_append usage"
 ...
 search_append("[Oo]pen[Ss]er", " SIP Proxy");
 ...
@@ -144,7 +144,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="search_append_body usage"
+```opensips title="search_append_body usage"
 ...
 search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
 ...
@@ -168,7 +168,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace usage"
+```opensips title="replace usage"
 ...
 replace("opensips", "Open SIP Server");
 ...
@@ -193,7 +193,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_body usage"
+```opensips title="replace_body usage"
 ...
 replace_body("opensips", "Open SIP Server");
 ...
@@ -217,7 +217,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_all usage"
+```opensips title="replace_all usage"
 ...
 replace_all("opensips", "Open SIP Server");
 ...
@@ -242,7 +242,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_body_all usage"
+```opensips title="replace_body_all usage"
 ...
 replace_body_all("opensips", "Open SIP Server");
 ...
@@ -267,7 +267,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="replace_body_atonce usage"
+```opensips title="replace_body_atonce usage"
 ...
 # strip the whole body from the message:
 if(has_body() && replace_body_atonce("^.+$", ""))
@@ -297,7 +297,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst usage"
+```opensips title="subst usage"
 ...
 # replace the uri in to: with the message uri (just an example)
 if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1\u\2/ig') ) {};
@@ -331,7 +331,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst_uri usage"
+```opensips title="subst_uri usage"
 ...
 # adds 3463 prefix to numeric uris, and save the original uri (\0 match)
 # as a parameter: orig_uri (just an example)
@@ -367,7 +367,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst usage"
+```opensips title="subst usage"
 ...
 # adds 3463 prefix to uris ending with 3642 (just an example)
 if (subst_user('/3642$/36423463/')){$
@@ -401,7 +401,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="subst_body usage"
+```opensips title="subst_body usage"
 ...
 if ( subst_body('/^o=(.*) /o=$fU ') ) {};
 
@@ -427,7 +427,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="filter_body usage"
+```opensips title="filter_body usage"
 ...
 if (has_body("multipart/mixed")) {
     if (filter_body("application/sdp") {
@@ -458,7 +458,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		ERROR_ROUTE.
 
 
-```c title="append_to_reply usage"
+```opensips title="append_to_reply usage"
 ...
 append_to_reply("Foo: bar\r\n");
 append_to_reply("Foo: $rm at $Ts\r\n");
@@ -490,7 +490,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="append_hf usage"
+```opensips title="append_hf usage"
 ...
 append_hf("P-hint: VOICEMAIL\r\n");
 append_hf("From-username: $fU\r\n");
@@ -518,7 +518,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="append_hf usage"
+```opensips title="append_hf usage"
 ...
 append_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 append_hf("From-username: $fU\r\n", "Call-ID");
@@ -544,7 +544,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="insert_hf usage"
+```opensips title="insert_hf usage"
 ...
 insert_hf("P-hint: VOICEMAIL\r\n");
 insert_hf("To-username: $tU\r\n");
@@ -572,7 +572,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="insert_hf usage"
+```opensips title="insert_hf usage"
 ...
 insert_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 insert_hf("To-username: $tU\r\n", "Call-ID");
@@ -600,7 +600,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE.
 
 
-```c title="append_urihf usage"
+```opensips title="append_urihf usage"
 ...
 append_urihf("CC-Diversion: ", "\r\n");
 ...
@@ -629,7 +629,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="is_present_hf usage"
+```opensips title="is_present_hf usage"
 ...
 if (is_present_hf("From")) log(1, "From HF Present");
 ...
@@ -661,7 +661,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE.
 
 
-```c title="append_time usage"
+```opensips title="append_time usage"
 ...
 append_time();
 ...
@@ -701,7 +701,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, and BRANCH_ROUTE.
 
 
-```c title="is_method usage"
+```opensips title="is_method usage"
 ...
 if(is_method("INVITE"))
 {
@@ -734,7 +734,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="remove_hf usage"
+```opensips title="remove_hf usage"
 ...
 if(remove_hf("User-Agent"))
 {
@@ -768,7 +768,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="has_body usage"
+```opensips title="has_body usage"
 ...
 if(has_body("application/sdp"))
 {
@@ -792,7 +792,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE.
 
 
-```c title="is_privacy usage"
+```opensips title="is_privacy usage"
 ...
 if(is_privacy("id"))
 {

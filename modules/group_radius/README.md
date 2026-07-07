@@ -52,7 +52,7 @@ Location of the configuration file of the radius client library.
 			"/usr/local/etc/radiusclient-ng/radiusclient.conf".*
 
 
-```c title="Set radius_config parameter"
+```opensips title="Set radius_config parameter"
 ...
 modparam("group_radius", "radius_config", "/etc/radiusclient.conf")
 ...
@@ -69,7 +69,7 @@ If set to 1 then username@domain will be used for lookup, if set to 0
 *Default value is 0 (no).*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("group_radius", "use_domain", 1)
 ...
@@ -110,7 +110,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="radius_is_user_in usage"
+```opensips title="radius_is_user_in usage"
 ...
 if (radius_is_user_in("Request-URI", "ld")) {
 	...

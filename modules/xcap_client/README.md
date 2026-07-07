@@ -67,7 +67,7 @@ The database url.
 *Default value is "mysql://opensips:opensipsrw@localhost/osips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("xcap_client", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -83,7 +83,7 @@ The name of the db table where XCAP documents are stored.
 *Default value is "xcap".*
 
 
-```c title="Set xcap_table parameter"
+```opensips title="Set xcap_table parameter"
 ...
 modparam("xcap_client", "xcap_table", "xcaps")
 ...
@@ -106,7 +106,7 @@ To disable it set this parameter to 0.
 *Default value is "1".*
 
 
-```c title="Set periodical_query parameter"
+```opensips title="Set periodical_query parameter"
 ...
 modparam("xcap_client", "periodical_query", 0)
 ...
@@ -127,7 +127,7 @@ To disable it set this parameter to 0.
 *Default value is "100".*
 
 
-```c title="Set query_period parameter"
+```opensips title="Set query_period parameter"
 ...
 modparam("xcap_client", "query_period", 50)
 ...

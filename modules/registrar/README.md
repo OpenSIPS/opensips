@@ -91,7 +91,7 @@ If the processed message contains neither Expires
 *Default value is 3600.*
 
 
-```c title="Set default_expires parameter"
+```opensips title="Set default_expires parameter"
 ...
 modparam("registrar", "default_expires", 1800)
 ...
@@ -109,7 +109,7 @@ The minimum expires value of a Contact, values lower than this
 *Default value is 60.*
 
 
-```c title="Set min_expires parameter"
+```opensips title="Set min_expires parameter"
 ...
 modparam("registrar", "min_expires", 60)
 ...
@@ -127,7 +127,7 @@ The maximum expires value of a Contact, values higher than this
 *Default value is 0.*
 
 
-```c title="Set max_expires parameter"
+```opensips title="Set max_expires parameter"
 ...
 modparam("registrar", "max_expires", 120)
 ...
@@ -146,7 +146,7 @@ The parameter represents default q value for new contacts. Because
 *Default value is 0.*
 
 
-```c title="Set default_q parameter"
+```opensips title="Set default_q parameter"
 ...
 modparam("registrar", "default_q", 1000)
 ...
@@ -167,7 +167,7 @@ The parameter specifies the message flag to be used to control the
 *Default value is -1 (disabled).*
 
 
-```c title="Set tcp_persistent_flag parameter"
+```opensips title="Set tcp_persistent_flag parameter"
 ...
 modparam("registrar", "tcp_persistent_flag", 7)
 ...
@@ -188,7 +188,7 @@ Prefix to be automatically strip from realm. As an alternative to
 *Default value is NULL (none).*
 
 
-```c title="Set realm_prefix parameter"
+```opensips title="Set realm_prefix parameter"
 ...
 modparam("registrar", "realm_prefix", "sip.")
 ...
@@ -210,7 +210,7 @@ The parameter controls how lookup function processes multiple
 *Default value is 1.*
 
 
-```c title="Set append_branches parameter"
+```opensips title="Set append_branches parameter"
 ...
 modparam("registrar", "append_branches", 0)
 ...
@@ -231,7 +231,7 @@ The AVP must contain a valid SIP URI. If no AVP is found, it will be
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set aor_avp parameter"
+```opensips title="Set aor_avp parameter"
 ...
 modparam("registrar", "aor_avp", "$avp(i:3223)")
 ...
@@ -249,7 +249,7 @@ If set to 1 then AOR comparison will be case
 *Default value is 0.*
 
 
-```c title="Set case_sensitive parameter"
+```opensips title="Set case_sensitive parameter"
 ...
 modparam("registrar", "case_sensitive", 1)
 ...
@@ -274,7 +274,7 @@ Registrar will store the value of the AVP configured by this
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set received_avp parameter"
+```opensips title="Set received_avp parameter"
 ...
 modparam("registrar", "received_avp", "$avp(s:rcv)")
 ...
@@ -291,7 +291,7 @@ The name of the parameter that will be appended to Contacts of
 *Default value is "received".*
 
 
-```c title="Set received_param parameter"
+```opensips title="Set received_param parameter"
 ...
 modparam("registrar", "received_param", "rcv")
 ...
@@ -309,7 +309,7 @@ The parameter can be used to limit the number of contacts per
 *Default value is 0.*
 
 
-```c title="Set max_contacts parameter"
+```opensips title="Set max_contacts parameter"
 ...
 # Allow no more than 10 contacts per AOR
 modparam("registrar", "max_contacts", 10)
@@ -336,7 +336,7 @@ If you want to add the Retry-After header field in 5xx replies, set
 *Default value is 0 (disabled).*
 
 
-```c title="Set retry_after parameter"
+```opensips title="Set retry_after parameter"
 ...
 modparam("registrar", "retry_after", 30)
 ...
@@ -359,7 +359,7 @@ This make sens only in multiple replicated servers scenarios.
 *Default value is -1 (no flag).*
 
 
-```c title="Set sock_flag parameter"
+```opensips title="Set sock_flag parameter"
 ...
 modparam("registrar", "sock_flag", 18)
 ...
@@ -381,7 +381,7 @@ This make sens only in multiple replicated servers scenarios.
 *Default value is NULL.*
 
 
-```c title="Set sock_hdr_namer parameter"
+```opensips title="Set sock_hdr_namer parameter"
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
@@ -400,7 +400,7 @@ Tells if the contact filtering based on supported methods should be
 *Default value is 0 (disabled).*
 
 
-```c title="Set method_filtering parameter"
+```opensips title="Set method_filtering parameter"
 ...
 modparam("registrar", "method_filtering", 1)
 ...
@@ -418,7 +418,7 @@ If set to 1, the Path header is handled according to the parameter
 *Default value is 0 (disabled).*
 
 
-```c title="Set use_path parameter"
+```opensips title="Set use_path parameter"
 ...
 modparam("registrar", "use_path", 1)
 ...
@@ -452,7 +452,7 @@ The registrar module implements three different modes regarding the
 *Default value is 2.*
 
 
-```c title="Set path_mode parameter"
+```opensips title="Set path_mode parameter"
 ...
 modparam("registrar", "path_mode", 0)
 ...
@@ -474,7 +474,7 @@ If set to 1, the "received" parameter of the first Path
 *Default value is 0 (disabled).*
 
 
-```c title="Set path_use_received parameter"
+```opensips title="Set path_use_received parameter"
 ...
 modparam("registrar", "path_use_received", 1)
 ...
@@ -506,7 +506,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="save usage"
+```opensips title="save usage"
 ...
 save("location");
 ...
@@ -539,7 +539,7 @@ The flags may be given in decimal or hexa format.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="save usage"
+```opensips title="save usage"
 ...
 save("location","0x01");
 ...
@@ -581,7 +581,7 @@ Return codes:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="lookup usage"
+```opensips title="lookup usage"
 ...
 lookup("location");
 switch ($retcode) {
@@ -616,7 +616,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="registered usage"
+```opensips title="registered usage"
 ...
 if (registered("location")) {
 	sl_send_reply("100", "Trying");
@@ -646,7 +646,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_sock_hdr usage"
+```opensips title="add_sock_hdr usage"
 ...
 add_sock_hdr("Sock-Info");
 ...

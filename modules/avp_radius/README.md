@@ -81,7 +81,7 @@ Default value is
 			"/usr/local/etc/radiusclient-ng/radiusclient.conf".
 
 
-```c title="radius_config parameter usage"
+```opensips title="radius_config parameter usage"
 modparam("avp_radius", "radius_config", "/etc/radiusclient.conf")
 ```
 
@@ -97,7 +97,7 @@ Default value is dictionary value of "SIP-Caller-AVPs"
 		Service-Type.
 
 
-```c title="caller_service_type parameter usage"
+```opensips title="caller_service_type parameter usage"
 modparam("avp_radius", "caller_service_type", 18)
 ```
 
@@ -113,7 +113,7 @@ Default value is dictionary value of "SIP-Callee-AVPs"
 		Service-Type.
 
 
-```c title="callee_service_type parameter usage"
+```opensips title="callee_service_type parameter usage"
 modparam("avp_radius", "callee_service_type", 19)
 ```
 
@@ -146,7 +146,7 @@ AVP name returned from Radius is prefixed by string
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="avp_load_radius() usage"
+```opensips title="avp_load_radius() usage"
 ...
 avp_load_radius("callee");
 ...

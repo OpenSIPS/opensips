@@ -63,7 +63,7 @@ The name of the FIFO file to be created for listening and
 *Default value is NONE.*
 
 
-```c title="Set fifo_name parameter"
+```opensips title="Set fifo_name parameter"
 ...
 modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 ...
@@ -80,7 +80,7 @@ Permission to be used for creating the listening FIFO file. It
 *Default value is 0660 (rw-rw----).*
 
 
-```c title="Set fifo_mode parameter"
+```opensips title="Set fifo_mode parameter"
 ...
 modparam("mi_fifo", "fifo_mode", 0600)
 ...
@@ -96,7 +96,7 @@ Group to be used for creating the listening FIFO file.
 *Default value is the inherited one.*
 
 
-```c title="Set fifo_group parameter"
+```opensips title="Set fifo_group parameter"
 ...
 modparam("mi_fifo", "fifo_group", 0)
 modparam("mi_fifo", "fifo_group", "root")
@@ -113,7 +113,7 @@ User to be used for creating the listening FIFO file.
 *Default value is the inherited one.*
 
 
-```c title="Set fifo_user parameter"
+```opensips title="Set fifo_user parameter"
 ...
 modparam("mi_fifo", "fifo_user", 0)
 modparam("mi_fifo", "fifo_user", "root")
@@ -130,7 +130,7 @@ Directory to be used for creating the reply FIFO files.
 *Default value is "/tmp/"*
 
 
-```c title="Set reply_dir parameter"
+```opensips title="Set reply_dir parameter"
 ...
 modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
 ...
@@ -147,7 +147,7 @@ Strings to be used for line indentation. As the MI data structure
 *Default value is ""\t" (TAB)".*
 
 
-```c title="Set reply_indent parameter"
+```opensips title="Set reply_indent parameter"
 ...
 modparam("mi_fifo", "reply_indent", "    ")
 ...

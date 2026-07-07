@@ -182,7 +182,7 @@ The translation rules will be loaded using this database url.
 				"mysql://opensips:opensipsrw@localhost/osips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 ...
@@ -199,7 +199,7 @@ The table's name from which to load the translation rules.
 *Default value is "dialplan".*
 
 
-```c title="Set table_name parameter"
+```opensips title="Set table_name parameter"
 ...
 modparam("dialplan", "table_name", "my_table")
 ...
@@ -216,7 +216,7 @@ The column name to store the dialplan ID group.
 *Default value is "dpid".*
 
 
-```c title="Set dpid_col parameter"
+```opensips title="Set dpid_col parameter"
 ...
 modparam("dialplan", "dpid_col", "column_name")
 ...
@@ -233,7 +233,7 @@ The column name to store the priority of the corresponding rule from the 		datab
 *Default value is "pr".*
 
 
-```c title="Set pr_col parameter"
+```opensips title="Set pr_col parameter"
 ...
 modparam("dialplan", "pr_col", "column_name")
 ...
@@ -250,7 +250,7 @@ The column name to store the type of matching of the rule.
 *Default value is "match_op".*
 
 
-```c title="Set match_op_col parameter"
+```opensips title="Set match_op_col parameter"
 ...
 modparam("dialplan", "match_op_col", "column_name")
 ...
@@ -267,7 +267,7 @@ The column name to store the rule match expression.
 *Default value is "match_exp".*
 
 
-```c title="Set match_exp_col parameter"
+```opensips title="Set match_exp_col parameter"
 ...
 modparam("dialplan", "match_exp_col", "column_name")
 ...
@@ -285,7 +285,7 @@ The column name to store the length of a string matching the
 *Default value is "match_len".*
 
 
-```c title="Set pr_col parameter"
+```opensips title="Set pr_col parameter"
 ...
 modparam("dialplan", "match_len_col", "column_name")
 ...
@@ -302,7 +302,7 @@ The column name to store the rule's substitution expression.
 *Default value is "subst_exp".*
 
 
-```c title="Set pr_col parameter"
+```opensips title="Set pr_col parameter"
 ...
 modparam("dialplan", "subst_exp_col", "column_name")
 ...
@@ -319,7 +319,7 @@ The column name to store the rule's replacement expression.
 *Default value is "repl_exp".*
 
 
-```c title="Set repl_exp_col parameter"
+```opensips title="Set repl_exp_col parameter"
 ...
 modparam("dialplan", "repl_exp_col", "column_name")
 ...
@@ -336,7 +336,7 @@ The column name to store the rule's attributes to be set to the message.
 *Default value is "attrs".*
 
 
-```c title="Set attrs_col parameter"
+```opensips title="Set attrs_col parameter"
 ...
 modparam("dialplan", "attrs_col", "column_name")
 ...
@@ -354,7 +354,7 @@ The pvar to store the rule's attributes, after translation (dp_translate() succe
 *Default value is "NULL".*
 
 
-```c title="Set attrs_pvar parameter"
+```opensips title="Set attrs_pvar parameter"
 ...
 modparam("dialplan", "attrs_pvar", "$avp(s:dest)")
 ...
@@ -371,7 +371,7 @@ The number of rows to be fetched at once from database/
 *Default value is "1000".*
 
 
-```c title="Set fetch_rows parameter"
+```opensips title="Set fetch_rows parameter"
 ...
 modparam("dialplan", "fetch_rows", 4000)
 ...
@@ -422,7 +422,7 @@ Both src and dest can have the following types:
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 dp_translate("240", "$ruri.user/$avp(s:dest)");
 xlog("translated to var $avp(s:dest) \n");
@@ -431,7 +431,7 @@ xlog("translated to var $avp(s:dest) \n");
 ```
 
 
-```c title="dp_translate usage"
+```opensips title="dp_translate usage"
 ...
 $avp(s:src) = $ruri.user;
 dp_translate("$var(x)", "$avp(s:src)/$var(y)");
