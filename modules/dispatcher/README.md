@@ -91,7 +91,7 @@ NOTE: if you intend to use the default partition you have to explicity
 			be defined for the dispatcher module to work.*
 
 
-```c title="Set the 'default' partition's'db_url' parameter"
+```opensips title="Set the 'default' partition's'db_url' parameter"
 ...
 modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 ...
@@ -114,7 +114,7 @@ The name of the avp to contain the attributes string of the current
 *Default value is "null" - don't provide ATTRIBUTEs.*
 
 
-```c title="Set the 'default' partition's 'attrs_avp' parameter"
+```opensips title="Set the 'default' partition's 'attrs_avp' parameter"
 ...
 modparam("dispatcher", "attrs_avp", "$avp(272)")
 ...
@@ -135,14 +135,14 @@ String with PVs used for the hashing algorithm 7.
 *Default value is "null" - disabled.*
 
 
-```c title="Use $avp(273) for hashing:"
+```opensips title="Use $avp(273) for hashing:"
 ...
 modparam("dispatcher", "hash_pvar", "$avp(273)")
 ...
 ```
 
 
-```c title="Use combination of PVs for hashing:"
+```opensips title="Use combination of PVs for hashing:"
 ...
 modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 ...
@@ -159,7 +159,7 @@ The name of the PV where to store the set ID (group ID) when calling
 *Default value is "null" - don't set PV.*
 
 
-```c title="Set the 'setid_pvar' parameter"
+```opensips title="Set the 'setid_pvar' parameter"
 ...
 modparam("dispatcher", "setid_pvar", "$var(setid)")
 ...
@@ -177,7 +177,7 @@ With this Method you can define, with which method you want to probe
 *Default value is "OPTIONS".*
 
 
-```c title="Set the 'ds_ping_method' parameter"
+```opensips title="Set the 'ds_ping_method' parameter"
 ...
 modparam("dispatcher", "ds_ping_method", "INFO")
 ...
@@ -195,7 +195,7 @@ With this Method you can define the "From:"-Line for the request,
 *Default value is "sip:dispatcher@localhost".*
 
 
-```c title="Set the 'ds_ping_from' parameter"
+```opensips title="Set the 'ds_ping_from' parameter"
 ...
 modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 ...
@@ -214,7 +214,7 @@ With this Method you can define the interval for sending a request to
 *Default value is "0" (disabled).*
 
 
-```c title="Set the 'ds_ping_interval' parameter"
+```opensips title="Set the 'ds_ping_interval' parameter"
 ...
 modparam("dispatcher", "ds_ping_interval", 30)
 ...
@@ -232,7 +232,7 @@ A socket description [proto:]host[:port] of the local socket (which
 *Default value is "NULL(none)".*
 
 
-```c title="Set the 'ds_probing_sock' parameter"
+```opensips title="Set the 'ds_probing_sock' parameter"
 ...
 modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
@@ -250,7 +250,7 @@ If you want to set a gateway into probing mode, you will need a
 *Default value is "3".*
 
 
-```c title="Set the 'ds_probing_threshhold' parameter"
+```opensips title="Set the 'ds_probing_threshhold' parameter"
 ...
 modparam("dispatcher", "ds_probing_threshhold", 10)
 ...
@@ -269,7 +269,7 @@ Controls what gateways are tested to see if they are reachable. If set
 *Default value is "0".*
 
 
-```c title="Set the 'ds_probing_mode' parameter"
+```opensips title="Set the 'ds_probing_mode' parameter"
 ...
 modparam("dispatcher", "ds_probing_mode", 1)
 ...
@@ -289,7 +289,7 @@ Defines a list of one or more setids that limits which
 *Default value is "NULL(none)".*
 
 
-```c title="Set the 'ds_probing_list' parameter"
+```opensips title="Set the 'ds_probing_list' parameter"
 ...
 modparam("dispatcher", "ds_probing_list", "1,2,3")
 ...
@@ -313,7 +313,7 @@ Multiple instances of this param are allowed.
 *Default value is "NULL".*
 
 
-```c title="Set the 'default' partition's 'ds_define_blacklist' parameter"
+```opensips title="Set the 'default' partition's 'ds_define_blacklist' parameter"
 ...
 modparam("dispatcher", "ds_define_blacklist", "list= 1,4,3")
 modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
@@ -332,7 +332,7 @@ This parameter must contain a list of SIP reply codes separated by
 *Default value is "NULL".*
 
 
-```c title="Set the 'options_reply_codes' parameter"
+```opensips title="Set the 'options_reply_codes' parameter"
 ...
 modparam("dispatcher", "options_reply_codes", "501, 403")
 ...
@@ -359,7 +359,7 @@ This is mainly for internal usage and represents the name of the avp
 			the default value is "$avp(ds_dst_failover_partitionname)".*
 
 
-```c title="Set the 'default' partition's 'dst_avp' parameter"
+```opensips title="Set the 'default' partition's 'dst_avp' parameter"
 ...
 modparam("dispatcher", "dst_avp", "$avp(271)")
 ...
@@ -382,7 +382,7 @@ This is mainly for internal usage and represents the name of the avp
 			the default value is "$avp(ds_grp_failover_partitionname)".*
 
 
-```c title="Set the 'default' partition's 'grp_avp' parameter"
+```opensips title="Set the 'default' partition's 'grp_avp' parameter"
 ...
 modparam("dispatcher", "grp_avp", "$avp(273)")
 ...
@@ -404,7 +404,7 @@ This is mainly for internal usage and represents the name of the avp
 			the default value is "$avp(ds_cnt_failover_partitionname)".*
 
 
-```c title="Set the 'default' partition's 'cnt_avp' parameter"
+```opensips title="Set the 'default' partition's 'cnt_avp' parameter"
 ...
 modparam("dispatcher", "cnt_avp", "$avp(274)")
 ...
@@ -427,7 +427,7 @@ This is mainly for internal usage and represents the name of the avp
 			the default value is "$avp(ds_sock_failover_partitionname)".*
 
 
-```c title="Set the 'default' partition's 'sock_avp' parameter"
+```opensips title="Set the 'default' partition's 'sock_avp' parameter"
 ...
 modparam("dispatcher", "sock_avp", "$avp(275)")
 ...
@@ -447,7 +447,7 @@ This parameter is used by the PVAR(9) algorithm to specify the
 *Default value is "none".*
 
 
-```c title="Set the 'pvar_algo_pattern' parameter"
+```opensips title="Set the 'pvar_algo_pattern' parameter"
 ...
 modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 ...
@@ -464,7 +464,7 @@ Specifies whether the *state* column
 *Default value is "1" (enabled).*
 
 
-```c title="Set the persistent_state parameter"
+```opensips title="Set the persistent_state parameter"
 ...
 # disable all DB operations with the state of a destination
 modparam("dispatcher", "persistent_state", 0)
@@ -485,7 +485,7 @@ If you want to load the sets of gateways from the database you must set
 *For every partition the default value is "dispatcher".*
 
 
-```c title="Set the 'default' partition's 'table_name' parameter"
+```opensips title="Set the 'default' partition's 'table_name' parameter"
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
 ...
@@ -507,7 +507,7 @@ Whenever a new partition_name is provided, a new partition will be automatically
 		The 'default' partition can also be defined using this parameter.
 
 
-```c title="Create a new partition called 'part2'"
+```opensips title="Create a new partition called 'part2'"
 ...
 modparam("dispatcher", "partition",
                 "part2:
@@ -528,7 +528,7 @@ The column's name in the database storing the gateway's group id.
 *Default value is "setid".*
 
 
-```c title="Set 'setid_col' parameter"
+```opensips title="Set 'setid_col' parameter"
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
@@ -545,7 +545,7 @@ The column's name in the database storing the destination's
 *Default value is "destination".*
 
 
-```c title="Set 'destination_col' parameter"
+```opensips title="Set 'destination_col' parameter"
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
@@ -562,7 +562,7 @@ The column's name in the database storing the state of the
 *Default value is "state".*
 
 
-```c title="Set 'state_col' parameter"
+```opensips title="Set 'state_col' parameter"
 ...
 modparam("dispatcher", "state_col", "dststate")
 ...
@@ -579,7 +579,7 @@ The column's name in the database storing the weight for
 *Default value is "weight".*
 
 
-```c title="Set 'weight_col' parameter"
+```opensips title="Set 'weight_col' parameter"
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
@@ -596,7 +596,7 @@ The column's name in the database storing the priority for
 *Default value is "priority".*
 
 
-```c title="Set 'priority_col' parameter"
+```opensips title="Set 'priority_col' parameter"
 ...
 modparam("dispatcher", "priority_col", "dstprio")
 ...
@@ -613,7 +613,7 @@ The column's name in the database storing the attributes (opaque
 *Default value is "attrs".*
 
 
-```c title="Set 'attrs_col' parameter"
+```opensips title="Set 'attrs_col' parameter"
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
@@ -630,7 +630,7 @@ The column's name in the database storing the socket (as
 *Default value is "socket".*
 
 
-```c title="Set 'socket_col' parameter"
+```opensips title="Set 'socket_col' parameter"
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
@@ -707,7 +707,7 @@ If the character 'f' in 'flags' is set, the rest of the addresses from the
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and FAILURE_ROUTE.
 
 
-```c title="ds_select_dst usage"
+```opensips title="ds_select_dst usage"
 ...
 ds_select_dst("1", "0");
 ...
@@ -835,7 +835,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
 		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
 
-```c title="ds_count usage"
+```opensips title="ds_count usage"
 ...
 if (ds_count("1", "a", "$avp(result)")) {
 	...
@@ -881,7 +881,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="ds_is_in_list usage"
+```opensips title="ds_is_in_list usage"
 ...
 if (ds_is_in_list("$si", "$sp")) {
 	# source IP:PORT is in a dispatcher list

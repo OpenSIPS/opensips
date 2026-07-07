@@ -40,7 +40,7 @@ With the Lua module, you can access to lua function on the
     write in your opensips.cfg
 
 
-```c
+```opensips
 ...
 if (lua_exec("mongo_alias")) {
 	...
@@ -112,7 +112,7 @@ This is the file name of your script. This may be set once
 The default value is "/etc/opensips/opensips.lua"
 
 
-```c title="Set luafilename parameter"
+```opensips title="Set luafilename parameter"
 ...
 modparam("lua", "luafilename", "/etc/opensips/opensips.lua")
 ...
@@ -164,7 +164,7 @@ Calls a Lua function with passing it the current SIP message.
       ONREPLY_ROUTE and BRANCH_ROUTE.
 
 
-```c title="lua_exec() usage"
+```opensips title="lua_exec() usage"
 ...
 if (lua_exec("mongo_alias")) {
 	...

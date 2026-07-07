@@ -54,7 +54,7 @@ First char of this parameter is used as separator for encoding/decoding
 *Default value is "*".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("mangler", "contact_flds_separator", "-")
 ...
@@ -96,7 +96,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="sdp_mangle_ip usage"
+```opensips title="sdp_mangle_ip usage"
 ...
 sdp_mangle_ip("10.0.0.0/8","193.175.135.38");
 ...
@@ -124,7 +124,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="sdp_mangle_port usage"
+```opensips title="sdp_mangle_port usage"
 ...
 sdp_mangle_port("-12000");
 ...
@@ -158,7 +158,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="encode_contact usage"
+```opensips title="encode_contact usage"
 ...
 if (src_ip == 10.0.0.0/8) encode_contact("enc_prefix","193.175.135.38"); 
 ...
@@ -184,7 +184,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="decode_contact usage"
+```opensips title="decode_contact usage"
 ...
 if (uri =~ "^enc*") { decode_contact(); }
 ...
@@ -209,7 +209,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
 
-```c title="decode_contact_header usage"
+```opensips title="decode_contact_header usage"
 ...
 if (uri =~ "^enc*") { decode_contact_header(); }
 ...
