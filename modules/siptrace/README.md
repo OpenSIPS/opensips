@@ -69,7 +69,7 @@ Database URL.
 *Default value is "".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
 ...
@@ -85,7 +85,7 @@ Name of the table where to store the SIP messages.
 *Default value is "sip_trace".*
 
 
-```c title="Set sip_trace parameter"
+```opensips title="Set sip_trace parameter"
 ...
 modparam("siptrace", "table", "strace")
 ...
@@ -101,7 +101,7 @@ Which flag is used to mark messages to trace
 *Default value is "0".*
 
 
-```c title="Set trace_flag parameter"
+```opensips title="Set trace_flag parameter"
 ...
 modparam("siptrace", "trace_flag", 22)
 ...
@@ -117,7 +117,7 @@ Parameter to enable/disable trace (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set trace_on parameter"
+```opensips title="Set trace_on parameter"
 ...
 modparam("siptrace", "trace_on", 1)
 ...
@@ -137,7 +137,7 @@ The name of the AVP storing the SIP URI of the traced user. If
 *Default value is "NULL" (feature disabled).*
 
 
-```c title="Set traced_user_avp parameter"
+```opensips title="Set traced_user_avp parameter"
 ...
 modparam("siptrace", "traced_user_avp", "$avp(i:123)")
 modparam("siptrace", "traced_user_avp", "$avp(s:user)")
@@ -159,7 +159,7 @@ The name of the AVP storing the name of the table where to
 *Default value is "NULL" (feature disabled).*
 
 
-```c title="Set trace_table_avp parameter"
+```opensips title="Set trace_table_avp parameter"
 ...
 modparam("siptrace", "trace_table_avp", "$avp(i:345)")
 modparam("siptrace", "trace_table_avp", "$avp(s:siptrace_table)")
@@ -177,7 +177,7 @@ The address in form of SIP uri where to send a duplicate
 *Default value is "NULL".*
 
 
-```c title="Set duplicate_uri parameter"
+```opensips title="Set duplicate_uri parameter"
 ...
 modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 ...
@@ -195,7 +195,7 @@ The address to be used in fromip field for local generated
 *Default value is "NULL".*
 
 
-```c title="Set trace_local_ip parameter"
+```opensips title="Set trace_local_ip parameter"
 ...
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
 ...
@@ -215,7 +215,7 @@ Store current processed SIP message in database. It is stored in the
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="sip_trace() usage"
+```opensips title="sip_trace() usage"
 ...
 sip_trace();
 ...

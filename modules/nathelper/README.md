@@ -121,7 +121,7 @@ Period of time in seconds between sending the NAT pings to all
 *Default value is 0.*
 
 
-```c title="Set natping_interval parameter"
+```opensips title="Set natping_interval parameter"
 ...
 modparam("nathelper", "natping_interval", 10)
 ...
@@ -139,7 +139,7 @@ If this variable is set then only contacts that have
 *Default value is 0.*
 
 
-```c title="Set ping_nated_only parameter"
+```opensips title="Set ping_nated_only parameter"
 ...
 modparam("nathelper", "ping_nated_only", 1)
 ...
@@ -156,7 +156,7 @@ How many timer processes should be created by the module for the
 *Default value is 1.*
 
 
-```c title="Set natping_processes parameter"
+```opensips title="Set natping_processes parameter"
 ...
 modparam("nathelper", "natping_processes", 3)
 ...
@@ -172,7 +172,7 @@ Spoof the natping's source-ip to this address. Works only for IPv4.
 *Default value is NULL.*
 
 
-```c title="Set natping_socket parameter"
+```opensips title="Set natping_socket parameter"
 ...
 modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 ...
@@ -199,7 +199,7 @@ The name of the Attribute-Value-Pair (AVP) used to store the URI
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set received_avp parameter"
+```opensips title="Set received_avp parameter"
 ...
 modparam("nathelper", "received_avp", "$avp(i:42)")
 ...
@@ -216,7 +216,7 @@ Definition of socket(s) used to connect to (a set) RTPProxy. It may
 *Default value is "NONE" (disabled).*
 
 
-```c title="Set rtpproxy_sock parameter"
+```opensips title="Set rtpproxy_sock parameter"
 ...
 # single rtproxy
 modparam("nathelper", "rtpproxy_sock", "udp:localhost:12221")
@@ -243,7 +243,7 @@ Once RTPProxy was found unreachable and marked as disable, nathelper
 *Default value is "60".*
 
 
-```c title="Set rtpproxy_disable_tout parameter"
+```opensips title="Set rtpproxy_disable_tout parameter"
 ...
 modparam("nathelper", "rtpproxy_disable_tout", 20)
 ...
@@ -259,7 +259,7 @@ Timeout value in waiting for reply from RTPProxy.
 *Default value is "1".*
 
 
-```c title="Set rtpproxy_tout parameter"
+```opensips title="Set rtpproxy_tout parameter"
 ...
 modparam("nathelper", "rtpproxy_tout", 2)
 ...
@@ -276,7 +276,7 @@ How many times nathelper should retry to send and receive after
 *Default value is "5".*
 
 
-```c title="Set rtpproxy_retr parameter"
+```opensips title="Set rtpproxy_retr parameter"
 ...
 modparam("nathelper", "rtpproxy_retr", 2)
 ...
@@ -293,7 +293,7 @@ Socket to be forced in communicating to RTPProxy. It makes sense only
 *Default value is "NULL".*
 
 
-```c title="Set force_socket parameter"
+```opensips title="Set force_socket parameter"
 ...
 modparam("nathelper", "force_socket", "localhost:33333")
 ...
@@ -311,7 +311,7 @@ What branch flag should be used by the module to identify NATed
 *Default value is -1 (disabled).*
 
 
-```c title="Set sipping_bflag parameter"
+```opensips title="Set sipping_bflag parameter"
 ...
 modparam("nathelper", "sipping_bflag", 7)
 ...
@@ -330,7 +330,7 @@ The parameter sets the SIP URI to be used in generating the SIP
 *Default value is "NULL".*
 
 
-```c title="Set sipping_from parameter"
+```opensips title="Set sipping_from parameter"
 ...
 modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 ...
@@ -347,7 +347,7 @@ The parameter sets the SIP method to be used in generating the SIP
 *Default value is "OPTIONS".*
 
 
-```c title="Set sipping_method parameter"
+```opensips title="Set sipping_method parameter"
 ...
 modparam("nathelper", "sipping_method", "INFO")
 ...
@@ -371,7 +371,7 @@ If empty string, no marker will be added or checked.
 *Default value is "a=nortpproxy:yes\r\n".*
 
 
-```c title="Set nortpproxy_str parameter"
+```opensips title="Set nortpproxy_str parameter"
 ...
 modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
@@ -391,7 +391,7 @@ Rewrites Contact HF to contain request's source
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="fix_nated_contact usage"
+```opensips title="fix_nated_contact usage"
 ...
 if (search("User-Agent: Cisco ATA.*") {fix_nated_contact();};
 ...
@@ -435,7 +435,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="fix_nated_sdp usage"
+```opensips title="fix_nated_sdp usage"
 ...
 if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 ...
@@ -453,7 +453,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		BRANCH_ROUTE.
 
 
-```c title="fix_nated_contact usage"
+```opensips title="fix_nated_contact usage"
 ...
 set_rtp_proxy_set("2");
 force_rtp_proxy();
@@ -514,7 +514,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="force_rtp_proxy usage"
+```opensips title="force_rtp_proxy usage"
 ...
 if (search("User-Agent: Cisco ATA.*") {force_rtp_proxy();};
 if (src_ip=1.2.3.4) {force_rtp_proxy("i");};
@@ -532,7 +532,7 @@ Tears down the RTPProxy session for the current call.
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="unforce_rtp_proxy usage"
+```opensips title="unforce_rtp_proxy usage"
 ...
 unforce_rtp_proxy();
 ...
@@ -564,7 +564,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_rcv_paramer usage"
+```opensips title="add_rcv_paramer usage"
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
@@ -585,7 +585,7 @@ The function creates a URI consisting of the source IP, port, and
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="fix_nated_register usage"
+```opensips title="fix_nated_register usage"
 ...
 fix_nated_register();
 ...
@@ -631,7 +631,7 @@ This command will send a signal to the RTP-Proxy to record
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="start_recording usage"
+```opensips title="start_recording usage"
 ...
 start_recording();
 ...

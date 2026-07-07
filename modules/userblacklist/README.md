@@ -67,7 +67,7 @@ Url to the database containing the routing data.
 *Default value is "mysql://opensipsro:opensipsro@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("userblacklist", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -84,7 +84,7 @@ Name of the table where the user blacklist data is stored.
 *Default value is "userblacklist".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("userblacklist", "db_table", "userblacklist")
 ...
@@ -101,7 +101,7 @@ If set to non-zero value, the domain column in the userblacklist is used.
 *Default value is "0".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("userblacklist", "use_domain", 0)
 ...
@@ -124,7 +124,7 @@ Finds the longest prefix that matches the request URI user (or the number
 		parameter can be used to check for example against the from URI user.
 
 
-```c title="check_user_blacklist usage"
+```opensips title="check_user_blacklist usage"
 ...
 $avp(i:80) = $rU;
 # rewrite the R-URI
@@ -145,7 +145,7 @@ Finds the longest prefix that matches the request URI for the
 		false is returned. Otherwise, true is returned.
 
 
-```c title="check_blacklist usage"
+```opensips title="check_blacklist usage"
 ...
 if (!check_blacklist("global_blacklist")))
 	sl_send_reply("403", "Forbidden");

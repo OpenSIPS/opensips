@@ -83,7 +83,7 @@ The index of the branch flag to be used as NAT marker (if the contact
 *Default value is "not set".*
 
 
-```c title="Set nat_bflag parameter"
+```opensips title="Set nat_bflag parameter"
 ...
 modparam("usrloc", "nat_bflag", 3)
 ...
@@ -99,7 +99,7 @@ Name of column containing usernames.
 *Default value is "username".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("usrloc", "user_column", "username")
 ...
@@ -115,7 +115,7 @@ Name of column containing domains.
 *Default value is "domain".*
 
 
-```c title="Set user_column parameter"
+```opensips title="Set user_column parameter"
 ...
 modparam("usrloc", "domain_column", "domain")
 ...
@@ -131,7 +131,7 @@ Name of column containing contacts.
 *Default value is "contact".*
 
 
-```c title="Set contact_column parameter"
+```opensips title="Set contact_column parameter"
 ...
 modparam("usrloc", "contact_column", "contact")
 ...
@@ -147,7 +147,7 @@ Name of column containing expires value.
 *Default value is "expires".*
 
 
-```c title="Set expires_column parameter"
+```opensips title="Set expires_column parameter"
 ...
 modparam("usrloc", "expires_column", "expires")
 ...
@@ -163,7 +163,7 @@ Name of column containing q values.
 *Default value is "q".*
 
 
-```c title="Set q_column parameter"
+```opensips title="Set q_column parameter"
 ...
 modparam("usrloc", "q_column", "q")
 ...
@@ -179,7 +179,7 @@ Name of column containing callid values.
 *Default value is "callid".*
 
 
-```c title="Set callid_column parameter"
+```opensips title="Set callid_column parameter"
 ...
 modparam("usrloc", "callid_column", "callid")
 ...
@@ -195,7 +195,7 @@ Name of column containing cseq numbers.
 *Default value is "cseq".*
 
 
-```c title="Set cseq_column parameter"
+```opensips title="Set cseq_column parameter"
 ...
 modparam("usrloc", "cseq_column", "cseq")
 ...
@@ -211,7 +211,7 @@ Name of column containing supported methods.
 *Default value is "methods".*
 
 
-```c title="Set methods_column parameter"
+```opensips title="Set methods_column parameter"
 ...
 modparam("usrloc", "methods_column", "methods")
 ...
@@ -227,7 +227,7 @@ Name of column to save the internal flags of the record.
 *Default value is "flags".*
 
 
-```c title="Set flags_column parameter"
+```opensips title="Set flags_column parameter"
 ...
 modparam("usrloc", "flags_column", "flags")
 ...
@@ -243,7 +243,7 @@ Name of column to save the branch/contact flags of the record.
 *Default value is "cflags".*
 
 
-```c title="Set cflags_column parameter"
+```opensips title="Set cflags_column parameter"
 ...
 modparam("usrloc", "cflags_column", "cflags")
 ...
@@ -259,7 +259,7 @@ Name of column containing user-agent values.
 *Default value is "user_agent".*
 
 
-```c title="Set user_agent_column parameter"
+```opensips title="Set user_agent_column parameter"
 ...
 modparam("usrloc", "user_agent_column", "user_agent")
 ...
@@ -276,7 +276,7 @@ Name of column containing the source IP, port, and protocol from the REGISTER
 *Default value is "received".*
 
 
-```c title="Set received_column parameter"
+```opensips title="Set received_column parameter"
 ...
 modparam("usrloc", "received_column", "received")
 ...
@@ -293,7 +293,7 @@ Name of column containing the received socket information (IP:port)
 *Default value is "socket".*
 
 
-```c title="Set socket_column parameter"
+```opensips title="Set socket_column parameter"
 ...
 modparam("usrloc", "socket_column", "socket")
 ...
@@ -309,7 +309,7 @@ Name of column containing the Path header.
 *Default value is "path".*
 
 
-```c title="Set path_column parameter"
+```opensips title="Set path_column parameter"
 ...
 modparam("usrloc", "path_column", "path")
 ...
@@ -327,7 +327,7 @@ If the domain part of the user should be also saved and used for
 *Default value is "0 (false)".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("usrloc", "use_domain", 1)
 ...
@@ -345,7 +345,7 @@ If the user's contacts should be kept timestamp ordered; otherwise the
 *Default value is "0 (false)".*
 
 
-```c title="Set desc_time_order parameter"
+```opensips title="Set desc_time_order parameter"
 ...
 modparam("usrloc", "desc_time_order", 1)
 ...
@@ -363,7 +363,7 @@ Number of seconds between two timer runs. The module uses timer to
 *Default value is 60.*
 
 
-```c title="Set timer_interval parameter"
+```opensips title="Set timer_interval parameter"
 ...
 modparam("usrloc", "timer_interval", 120)
 ...
@@ -379,7 +379,7 @@ URL of the database that should be used.
 *Default value is "mysql://opensips:opensipsrw@localhost/osips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("usrloc", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -434,7 +434,7 @@ The usrloc module can utilize database for persistent contact storage.
 *Default value is 0.*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("usrloc", "db_mode", 2)
 ...
@@ -461,7 +461,7 @@ The parameter may take the following values:
 *Default value is *0 (CONTACT_ONLY)*.*
 
 
-```c title="Set matching_mode parameter"
+```opensips title="Set matching_mode parameter"
 ...
 modparam("usrloc", "matching_mode", 1)
 ...
@@ -487,7 +487,7 @@ A value of 0 disable the retransmission detection.
 *Default value is "20 seconds".*
 
 
-```c title="Set cseq_delay parameter"
+```opensips title="Set cseq_delay parameter"
 ...
 modparam("usrloc", "cseq_delay", 5)
 ...
@@ -507,7 +507,7 @@ The number of the rows to be fetched at once from database
 *Default value is "2000".*
 
 
-```c title="Set fetch_rows parameter"
+```opensips title="Set fetch_rows parameter"
 ...
 modparam("usrloc", "fetch_rows", 3000)
 ...
@@ -525,7 +525,7 @@ The number of entries of the hash table used by usrloc to store the
 *Default value is "9".*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("usrloc", "hash_size", 10)
 ...

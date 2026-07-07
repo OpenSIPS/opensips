@@ -60,7 +60,7 @@ Name of Record-Route header parameter that will be used to store
 					"vsf".*
 
 
-```c title="Set rr_store_param parameter"
+```opensips title="Set rr_store_param parameter"
 ...
 modparam("uac","rr_store_param","my_param")
 ...
@@ -87,7 +87,7 @@ There are 3 mode of restoring the original FROM URI:
 					"auto".*
 
 
-```c title="Set from_restore_mode parameter"
+```opensips title="Set from_restore_mode parameter"
 ...
 modparam("uac","from_restore_mode","auto")
 ...
@@ -105,7 +105,7 @@ String password to be used to encrypt the RR storing paramter. If
 *Default value of this parameter is empty.*
 
 
-```c title="Set from_passwd parameter"
+```opensips title="Set from_passwd parameter"
 ...
 modparam("uac","from_passwd","my_secret_passwd")
 ...
@@ -123,7 +123,7 @@ Contains a multiple definition of credentials used to perform
 *This parameter is required if UAC authentication is used.*
 
 
-```c title="Set credential parameter"
+```opensips title="Set credential parameter"
 ...
 modparam("uac","credential","username:domain:password")
 ...
@@ -145,7 +145,7 @@ The definition of an AVP that might contain the realm to be used
 				([auth password avp id](#param_auth_password_avp)).*
 
 
-```c title="Set auth_realm_avp parameter"
+```opensips title="Set auth_realm_avp parameter"
 ...
 modparam("uac","auth_realm_avp","$avp(i:10)")
 ...
@@ -167,7 +167,7 @@ The definition of an AVP that might contain the username to be used
 				([auth password avp id](#param_auth_password_avp)).*
 
 
-```c title="Set auth_username_avp parameter"
+```opensips title="Set auth_username_avp parameter"
 ...
 modparam("uac","auth_username_avp","$avp(i:11)")
 ...
@@ -189,7 +189,7 @@ The definition of an AVP that might contain the password to be used
 				([auth password avp id](#param_auth_password_avp)).*
 
 
-```c title="Set auth_password_avp parameter"
+```opensips title="Set auth_password_avp parameter"
 ...
 modparam("uac","auth_password_avp","$avp(i:12)")
 ...
@@ -214,7 +214,7 @@ Replace in FROM header the *display* name and
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uac_replace_from usage"
+```opensips title="uac_replace_from usage"
 ...
 # replace both display and uri
 uac_replace_from("$avp(s:display)","$avp(s:uri)");
@@ -242,7 +242,7 @@ Replace in FROM header the *URI* part
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uac_replace_from usage"
+```opensips title="uac_replace_from usage"
 ...
 uac_replace_from("sip:batman@gotham.org");
 ...
@@ -261,7 +261,7 @@ This function will check if the FROM URI was modified and will
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uac_restore_from usage"
+```opensips title="uac_restore_from usage"
 ...
 uac_restore_from();
 ...
@@ -280,7 +280,7 @@ This function can be called only from failure route and will
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="uac_auth usage"
+```opensips title="uac_auth usage"
 ...
 uac_auth();
 ...

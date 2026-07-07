@@ -48,7 +48,7 @@ Time interval to send ping messages to MySQL server in order to keep
 *Default value is 300 (5 min).*
 
 
-```c title="Set ping_interval parameter"
+```opensips title="Set ping_interval parameter"
 ...
 modparam("db_mysql", "ping_interval", 600)
 ...
@@ -72,7 +72,7 @@ The read timeout parameter is ignored on driver versions prior to
 *Default value is 2 (6 sec).*
 
 
-```c title="Set timeout_interval parameter"
+```opensips title="Set timeout_interval parameter"
 ...
 modparam("db_mysql", "timeout_interval", 2)
 ...
@@ -89,7 +89,7 @@ Configure the module to auto reconnect to MySQL server if the
 *Default value is 1 (1 - on / 0 - off).*
 
 
-```c title="Set auto_reconnect parameter"
+```opensips title="Set auto_reconnect parameter"
 ...
 modparam("auto_reconnect", "auto_reconnect", 0)
 ...

@@ -77,7 +77,7 @@ Default value is
 			"/usr/local/etc/radiusclient-ng/radiusclient.conf".
 
 
-```c title="radius_config parameter usage"
+```opensips title="radius_config parameter usage"
 modparam("peering", "radius_config", "/etc/broker/radiusclient.conf")
 ```
 
@@ -94,7 +94,7 @@ Default value is dictionary value of "Sip-Verify-Destination"
 		Service-Type.
 
 
-```c title="verify_destination_service_type parameter usage"
+```opensips title="verify_destination_service_type parameter usage"
 modparam("peering", "verify_destination_service_type", 21)
 ```
 
@@ -111,7 +111,7 @@ Default value is dictionary value of "Sip-Verify-Source"
 		Service-Type.
 
 
-```c title="verify_source_service_type parameter usage"
+```opensips title="verify_source_service_type parameter usage"
 modparam("peering", "verify_source_service_type", 22)
 ```
 
@@ -167,7 +167,7 @@ This function can be used from REQUEST_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="verify_destination() usage"
+```opensips title="verify_destination() usage"
 ...
 if (verify_destination()) {
    append_hf("P-Request-Hash: $avp(i:200)\r\n");
@@ -216,7 +216,7 @@ This function can be used from REQUEST_ROUTE and
 		FAILURE_ROUTE.
 
 
-```c title="verify_source() usage"
+```opensips title="verify_source() usage"
 ...
 if (is_present_hf("P-Request-Hash")) {
    if (verify_source()) {
