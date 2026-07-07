@@ -75,7 +75,7 @@ The urls of the server groups that OpenSIPS will connect to in order
 Multiple hosts provisioning is not supported in this version.
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("cachedb_couchbase", "cachedb_url","couchbase:group1://localhost:6379/default");
 modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:8888/my_bucket");
@@ -91,7 +91,7 @@ The max duration in microseconds that a couchbase op is expected to last.
 			Default is 3000000 ( 3 seconds )
 
 
-```c title="Set timeout parameter"
+```opensips title="Set timeout parameter"
 ...
 modparam("cachedb_couchbase", "timeout",5000000);
 ...
@@ -99,7 +99,7 @@ modparam("cachedb_couchbase", "timeout",5000000);
 ```
 
 
-```c title="Use CouchBase servers"
+```opensips title="Use CouchBase servers"
 ...
 cache_store("couchbase:group1","key","$ru value");
 cache_fetch("couchbase:cluster1","key",$avp(10));
