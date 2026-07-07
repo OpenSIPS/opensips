@@ -583,7 +583,7 @@ static void ipc_update_rtpp_notify(int sender, void *param)
 void update_rtpp_notify(void)
 {
 	if (!rtpp_notify_process_no) {
-		LM_WARN("RTPProxy process not initialized\n");
+		LM_DBG("RTPProxy process not initialized\n");
 		return;
 	}
 	if (ipc_send_rpc(*rtpp_notify_process_no, ipc_update_rtpp_notify, NULL) != 0)
