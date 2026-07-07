@@ -48,7 +48,7 @@ The DB URL for querying the Vendors used by the module
 *Default value is "NULL".*
 
 
-```c title="Setting the vendors_db_url parameter"
+```opensips title="Setting the vendors_db_url parameter"
 ...
 modparam("rate_cacher", "vendors_db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 ...
@@ -64,7 +64,7 @@ The DB Table for querying the Vendors used by the module
 *Default value is "rc_vendors".*
 
 
-```c title="Setting the vendors_db_table parameter"
+```opensips title="Setting the vendors_db_table parameter"
 ...
 modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
 ...
@@ -82,7 +82,7 @@ The size of the hash table internally used to keep the vendors. A
 *Default value is "256".*
 
 
-```c title="Setting the vendors_hash_size parameter"
+```opensips title="Setting the vendors_hash_size parameter"
 ...
 modparam("rate_cacher", "vendors_hash_size", 1024)
 ...
@@ -98,7 +98,7 @@ The DB URL for querying the Clients used by the module
 *Default value is "NULL".*
 
 
-```c title="Setting the clients_db_url parameter"
+```opensips title="Setting the clients_db_url parameter"
 ...
 modparam("rate_cacher", "clients_db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 ...
@@ -114,7 +114,7 @@ The DB Table for querying the Clients used by the module
 *Default value is "rc_clients".*
 
 
-```c title="Setting the clients_db_table parameter"
+```opensips title="Setting the clients_db_table parameter"
 ...
 modparam("rate_cacher", "clients_db_table", "my_clients_view")
 ...
@@ -132,7 +132,7 @@ The size of the hash table internally used to keep the clients. A
 *Default value is "256".*
 
 
-```c title="Setting the vendors_hash_size parameter"
+```opensips title="Setting the vendors_hash_size parameter"
 ...
 modparam("rate_cacher", "clients_hash_size", 1024)
 ...
@@ -148,7 +148,7 @@ The DB URL for querying the Ratesheets used by the module
 *Default value is "NULL".*
 
 
-```c title="Setting the rates_db_url parameter"
+```opensips title="Setting the rates_db_url parameter"
 ...
 modparam("rate_cacher", "rates_db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 ...
@@ -164,7 +164,7 @@ The DB Table for querying the Ratesheets used by the module
 *Default value is "rc_ratesheets".*
 
 
-```c title="Setting the rates_db_table parameter"
+```opensips title="Setting the rates_db_table parameter"
 ...
 modparam("rate_cacher", "rates_db_table", "my_clients_view")
 ...
@@ -213,7 +213,7 @@ Possible parameter types
 This function can be used from any route.
 
 
-```c title="get_client_price usage"
+```opensips title="get_client_price usage"
 ...
 if (get_client_price("my_client",1,"4072794242",$var(prefix),$var(dest),$var(price),$var(min),$var(inc))) {
                         xlog("We matched $var(prefix) , $var(dest) , $var(price) , $var(min) , $var(inc) for the client's ratesheet\n");
@@ -259,7 +259,7 @@ Possible parameter types
 This function can be used from any route.
 
 
-```c title="get_vendor_price usage"
+```opensips title="get_vendor_price usage"
 ...
 if (get_vendor_price("my_vendor","4072794242",$var(prefix),$var(dest),$var(price),$var(min),$var(inc))) {
                         xlog("We matched $var(prefix) , $var(dest) , $var(price) , $var(min) , $var(inc) for the vendor's ratesheet\n");
@@ -302,7 +302,7 @@ Possible parameter types
 This function can be used from a REQUEST or FAILURE route.
 
 
-```c title="cost_based_filtering usage"
+```opensips title="cost_based_filtering usage"
 ...
 
 
@@ -358,7 +358,7 @@ Possible parameter types
 This function can be used from any route.
 
 
-```c title="cost_based_ordering usage"
+```opensips title="cost_based_ordering usage"
 ...
 # If we get a call from testClient on it's wholesale quality,
 # going to number 40720018124, and we have to pick from the list 

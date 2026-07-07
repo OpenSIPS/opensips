@@ -81,7 +81,7 @@ This is a global parameter that specifies what interface/IP and
 			port should handle WSS traffic.
 
 
-```c title="Set listen variable"
+```opensips title="Set listen variable"
 ...
 socket= wss:1.2.3.4:44344
 ...
@@ -105,7 +105,7 @@ If you want to change only the listening port for WSS, use the port
 *Default value is 443.*
 
 
-```c title="Set wss_port variable"
+```opensips title="Set wss_port variable"
 ...
 modparam("proto_wss", "wss_port", 44344)
 ...
@@ -127,7 +127,7 @@ The maximum number of chunks in which a SIP message is expected to
 *Default value is 4.*
 
 
-```c title="Set wss_max_msg_chunks parameter"
+```opensips title="Set wss_max_msg_chunks parameter"
 ...
 modparam("proto_wss", "wss_max_msg_chunks", 8)
 ...
@@ -143,7 +143,7 @@ The resource queried for when a WebSocket handshake is initiated.
 *Default value is "/".*
 
 
-```c title="Set wss_resource parameter"
+```opensips title="Set wss_resource parameter"
 ...
 modparam("proto_wss", "wss_resource", "/wss")
 ...
@@ -160,7 +160,7 @@ This parameter specifies the time in milliseconds the proto_wss module
 *Default value is 100.*
 
 
-```c title="Set wss_handshake_timeout parameter"
+```opensips title="Set wss_handshake_timeout parameter"
 ...
 modparam("proto_wss", "wss_handshake_timeout", 300)
 ...
@@ -187,7 +187,7 @@ This checking is done only when comes to send SIP traffic via TLS and
 *Default value is 0 (disabled).*
 
 
-```c title="Set cert_check_on_conn_reusage parameter"
+```opensips title="Set cert_check_on_conn_reusage parameter"
 ...
 modparam("proto_wss", "cert_check_on_conn_reusage", 1)
 ...
@@ -215,7 +215,7 @@ Trace destination as defined in the tracing module. Currently
 *Default value is none(not defined).*
 
 
-```c title="Set trace_destination parameter"
+```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
@@ -232,7 +232,7 @@ This controls whether tracing for wss is on or not. You still need to define
 			controlled using mi function [mi wss trace](#mi_wss_trace).
 
 
-```c title="Set trace_on parameter"
+```opensips title="Set trace_on parameter"
 ...
 modparam("proto_wss", "trace_on", 1)
 ...
@@ -267,7 +267,7 @@ Define the name of a route in which you can filter which connections will
 			this route won't be called.
 
 
-```c title="Set trace_filter_route parameter"
+```opensips title="Set trace_filter_route parameter"
 ...
 modparam("proto_wss", "trace_filter_route", "wss_filter")
 ...
@@ -323,7 +323,7 @@ The send timeout is invoked for all TLS write operations, excluding
 *Default value is 100.*
 
 
-```c title="Set wss_send_timeout variable"
+```opensips title="Set wss_send_timeout variable"
 modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds
 
 			
@@ -336,7 +336,7 @@ modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds
 Controls whether the module should require the Origin header or not.
 
 
-```c title="Set require_origin parameter"
+```opensips title="Set require_origin parameter"
 modparam("proto_wss", "require_origin", no)
 
 		

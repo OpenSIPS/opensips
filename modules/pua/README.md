@@ -117,7 +117,7 @@ The size of the hash table used for storing Subscribe and
 *Default value is "9".*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("pua", "hash_size", 11)
 ...
@@ -133,7 +133,7 @@ Database url.
 *Default value is ">mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("pua", "db_url" "dbdriver://username:password@dbhost/dbname")
 ...
@@ -149,7 +149,7 @@ The name of the database table.
 *Default value is "pua".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("pua", "db_table", "pua")
 ...
@@ -165,7 +165,7 @@ The inferior expires limit for both Publish and Subscribe.
 *Default value is "300".*
 
 
-```c title="Set min_expires parameter"
+```opensips title="Set min_expires parameter"
 ...
 modparam("pua", "min_expires", 0)
 ...
@@ -181,7 +181,7 @@ The default expires value used in case this information is not provisioned.
 *Default value is "3600".*
 
 
-```c title="Set default_expires parameter"
+```opensips title="Set default_expires parameter"
 ...
 modparam("pua", "default_expires", 3600)
 ...
@@ -203,7 +203,7 @@ IMPORTANT - if you use clustering support for this module, set a low
 		value here, like 2-5, see the clustering chapter above.
 
 
-```c title="Set update_period parameter"
+```opensips title="Set update_period parameter"
 ...
 modparam("pua", "update_period", 100)
 ...
@@ -226,7 +226,7 @@ For more on PUA clustering see the
 *Default value is "None".*
 
 
-```c title="Set cluster_id parameter"
+```opensips title="Set cluster_id parameter"
 ...
 modparam("pua", "cluster_id", 10)
 ...
@@ -252,7 +252,7 @@ For more on PUA clustering see the
 *Default value is "NULL".*
 
 
-```c title="Set cluster_sharing_tag parameter"
+```opensips title="Set cluster_sharing_tag parameter"
 ...
 modparam("pua", "cluster_sharing_tag", "vip")
 ...
@@ -283,7 +283,7 @@ This function can be used from REQUEST_ROUTE.
 - *-1 - if error*.
 
 
-```c title="pua_update_contact usage"
+```opensips title="pua_update_contact usage"
 ...
 if($rm=="NOTIFY")
     pua_update_contact();
@@ -469,7 +469,7 @@ This function checks is the parameter corresponds to a stored
 			Subscribe initiated dialog.
 
 
-```c title="pua_is_dialog usage example"
+```opensips title="pua_is_dialog usage example"
 ...	
 	if(pua_is_dialog(dialog) < 0)
 	{
