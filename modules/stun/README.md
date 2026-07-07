@@ -102,7 +102,7 @@ The ip of the an interface configured as UDP SIP listener
 			in OpenSIPS. It is a mandatory paramter, by default empty.
 
 
-```c title="Set primary_ip parameter"
+```opensips title="Set primary_ip parameter"
 ...
 modparam("stun","primary_ip","192.168.0.100")
 ...
@@ -117,7 +117,7 @@ The port configured (together with the primary_ip) as an UDP SIP
 			listener in OpenSIPS. It is a mandatory paramter, by default 5060.
 
 
-```c title="Set primary_port parameter"
+```opensips title="Set primary_port parameter"
 ...
 modparam("stun","primary_port","5060")
 ...
@@ -132,7 +132,7 @@ Another ip from another interface. It is mandatory to be set,
 			default is empty (not set).
 
 
-```c title="Set alternate_ip parameter"
+```opensips title="Set alternate_ip parameter"
 ...
 modparam("stun","alternate_ip","11.22.33.44")
 ...
@@ -147,7 +147,7 @@ Another port used by STUN. It is mandatory to be set, default
 			value is 3478 (default STUN port).
 
 
-```c title="Set alternate_port parameter"
+```opensips title="Set alternate_port parameter"
 ...
 modparam("stun","alternate_port","3479")
 ...
