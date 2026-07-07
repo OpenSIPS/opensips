@@ -83,7 +83,7 @@ When raising an event, pack the name and value of the
 *Default value is "0 (disabled)".*
 
 
-```c title="Set use_struct_param parameter"
+```opensips title="Set use_struct_param parameter"
 ...
 modparam("event_xmlrpc", "use_struct_param", 1)
 ...
@@ -99,7 +99,7 @@ Specifies whether an event raise operates synchronous or asynchronous relative t
 *Default value is "0 (asynchronous)".*
 
 
-```c title="Set sync_mode parameter"
+```opensips title="Set sync_mode parameter"
 ...
 modparam("event_xmlrpc", "sync_mode", 1)
 ...

@@ -123,7 +123,7 @@ Trying to replace or insert a value in a
 			describing the value of the json and the path used
 
 
-```c title="Accessing the $json variable"
+```opensips title="Accessing the $json variable"
 ...
 $json(obj1/key) = "value"; #replace or insert the (key,value)
 			   #pair into the json object;
@@ -138,7 +138,7 @@ xlog("$json(name/key1[0][-1]/key2)"); # a more complex example
 ```
 
 
-```c title="Iterating through an array using variables"
+```opensips title="Iterating through an array using variables"
 ...
 
 $json(ar1) := "[1,2,3,4]";
@@ -179,7 +179,7 @@ In order to explicitly iterate over a JSON object keys or values, you can use th
 			specified in the *id*.
 
 
-```c title="iteration over $json object keys"
+```opensips title="iteration over $json object keys"
 ...
 $json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
 for ($var(k) in $(json(foo.keys)[*]))
@@ -189,7 +189,7 @@ for ($var(k) in $(json(foo.keys)[*]))
 ```
 
 
-```c title="iteration over $json object values"
+```opensips title="iteration over $json object values"
 ...
 $json(foo) := "{\"a\": 1, \"b\": 2, \"c\": 3}";
 for ($var(v) in $(json(foo.values)[*]))
@@ -205,7 +205,7 @@ for ($var(v) in $(json(foo)[*]))
 ```
 
 
-```c title="iteration over $json array values"
+```opensips title="iteration over $json array values"
 ...
 $json(foo) := "[1, 2, 3]";
 for ($var(v) in $(json(foo)[*]))
@@ -256,7 +256,7 @@ Setting a value to NULL will cause it to be
 				deleted.
 
 
-```c title="Appending integers to arrays"
+```opensips title="Appending integers to arrays"
 ...
 $json(array1[]) = 1;
 ...
@@ -264,7 +264,7 @@ $json(array1[]) = 1;
 ```
 
 
-```c title="Deleting the last element in an array"
+```opensips title="Deleting the last element in an array"
 ...
 $json(array1[-1]) = NULL;
 ...
@@ -272,7 +272,7 @@ $json(array1[-1]) = NULL;
 ```
 
 
-```c title="Adding a string value to a json object"
+```opensips title="Adding a string value to a json object"
 ...
 $json(object1/some_key) = "some_value";
 ...
@@ -289,7 +289,7 @@ This will cause the value to be taken
 				 json inputs ).
 
 
-```c title="Initializing an array"
+```opensips title="Initializing an array"
 ...
 $json(array1) := "[]";
 ...
@@ -297,7 +297,7 @@ $json(array1) := "[]";
 ```
 
 
-```c title="Setting a boolean or null value"
+```opensips title="Setting a boolean or null value"
 ...
 $json(array1[]) := "null";
 $json(array1[]) := "true";
@@ -307,7 +307,7 @@ $json(array1[]) := "false";
 ```
 
 
-```c title="Adding a json to another json"
+```opensips title="Adding a json to another json"
 ...
 
 $json(array) := "[1,2,3]";
@@ -420,7 +420,7 @@ Test link :
 ```
 
 
-```c title="[LOGICAL ERROR] Creating a circular reference"
+```opensips title="[LOGICAL ERROR] Creating a circular reference"
 ...
 
 $json(b) := "[1]";

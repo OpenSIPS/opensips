@@ -52,7 +52,7 @@ This parameter is only relevant
 The default value is *60*.
 
 
-```c title="Set auth_date_freshness parameter"
+```opensips title="Set auth_date_freshness parameter"
 ...
 modparam("stir_shaken", "auth_date_freshness", 300)
 ...
@@ -81,7 +81,7 @@ This parameter is only relevant for the
 The default value is *60*.
 
 
-```c title="Set verify_date_freshness parameter"
+```opensips title="Set verify_date_freshness parameter"
 ...
 modparam("stir_shaken", "verify_date_freshness", 300)
 ...
@@ -95,7 +95,7 @@ Path to a file containing trusted CA certificates for the verifier.
 		The certificates must be in PEM format, one after another.
 
 
-```c title="Set ca_list parameter"
+```opensips title="Set ca_list parameter"
 ...
 modparam("stir_shaken", "ca_list", "/stir_certs/ca_list.pem")
 ...
@@ -111,7 +111,7 @@ Path to a directory containing trusted CA certificates for the verifier.
 		*Hashed Directory Method*.
 
 
-```c title="Set ca_dir parameter"
+```opensips title="Set ca_dir parameter"
 ...
 modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 ...
@@ -124,7 +124,7 @@ modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 Path to a file containing certificate revocation lists (CRLs) for the verifier.
 
 
-```c title="Set crl_list parameter"
+```opensips title="Set crl_list parameter"
 ...
 modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
 ...
@@ -140,7 +140,7 @@ Path to a directory containing certificate revocation lists (CRLs) for
 		*Hashed Directory Method*.
 
 
-```c title="Set crl_dir parameter"
+```opensips title="Set crl_dir parameter"
 ...
 modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 ...
@@ -160,7 +160,7 @@ Strictly check if the originating/destination identity derived from the
 The default value is *0* (disabled).
 
 
-```c title="Set e164_strict_mode parameter"
+```opensips title="Set e164_strict_mode parameter"
 ...
 modparam("stir_shaken", "e164_strict_mode", 1)
 ...
@@ -188,7 +188,7 @@ If the parameter is set to "not required" but the Date header is present in the
 The default value is *1* (required).
 
 
-```c title="Set require_date_hdr parameter"
+```opensips title="Set require_date_hdr parameter"
 ...
 modparam("stir_shaken", "require_date_hdr", 0)
 ...
@@ -255,7 +255,7 @@ The function returns the following values:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="stir_shaken_auth() usage"
+```opensips title="stir_shaken_auth() usage"
 ...
 stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
 	$var(cert), $var(privKey), "https://certs.example.org/cert.pem");
@@ -307,7 +307,7 @@ The function returns the following values:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="stir_shaken_verify() usage"
+```opensips title="stir_shaken_verify() usage"
 ...
 $var(rc) = stir_shaken_verify($var(cert), $var(err_code), $var(err_reason));
 if ($var(rc) < -1) {
@@ -339,7 +339,7 @@ The function returns the following values:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="stir_shaken_check() usage"
+```opensips title="stir_shaken_check() usage"
 ...
 if (stir_shaken_check()) {
 	xlog("forwarding call to stir/shaken verification service\n");
@@ -367,7 +367,7 @@ The function returns the following values:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="stir_shaken_check_cert() usage"
+```opensips title="stir_shaken_check_cert() usage"
 ...
 # update expired cached certificates
 cache_fetch("local", $identity(x5u), $var(cert));
@@ -402,7 +402,7 @@ This is a read-only pseudo-variable that provides access to the
 - *origid* - the value of the 'origid' PASSporT claim;
 
 
-```c title="identity usage"
+```opensips title="identity usage"
 ...
 	# acquire the certificate to use for the verification process
 	$var(rc) = rest_get($identity(x5u), $var(cert));

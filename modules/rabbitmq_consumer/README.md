@@ -93,7 +93,7 @@ The following parameters can be used:
 				to send heartbeat messages. Default is disabled.
 
 
-```c title="Set connection_id parameter"
+```opensips title="Set connection_id parameter"
 ...
 # connection to a RabbitMQ server on localhost, default port
 # with a 5 seconds interval for heartbeat messages
@@ -118,7 +118,7 @@ The maximally allowed duration (in milliseconds) for the establishment
 *Default value is "500" (milliseconds).*
 
 
-```c title="Setting the connect_timeout parameter"
+```opensips title="Setting the connect_timeout parameter"
 ...
 modparam("rabbitmq_consumer", "connect_timeout", 1000)
 ...
@@ -135,7 +135,7 @@ The interval (in milliseconds) after which OpenSIPS will try to
 *Default value is "5000" (milliseconds).*
 
 
-```c title="Setting the retry_timeout parameter"
+```opensips title="Setting the retry_timeout parameter"
 ...
 modparam("rabbitmq_consumer", "retry_timeout", 10000)
 ...

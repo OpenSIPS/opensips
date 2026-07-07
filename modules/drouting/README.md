@@ -325,7 +325,7 @@ The database url.
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("drouting", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips")
@@ -342,7 +342,7 @@ The name of the db table storing gateway addresses.
 *Default value is "dr_gateways".*
 
 
-```c title="Set drd_table parameter"
+```opensips title="Set drd_table parameter"
 ...
 modparam("drouting", "drd_table", "dr_gateways")
 ...
@@ -358,7 +358,7 @@ The name of the db table storing routing rules.
 *Default value is "dr_rules".*
 
 
-```c title="Set drr_table parameter"
+```opensips title="Set drr_table parameter"
 ...
 modparam("drouting", "drr_table", "rules")
 ...
@@ -374,7 +374,7 @@ The name of the db table storing groups.
 *Default value is "dr_groups".*
 
 
-```c title="Set drg_table parameter"
+```opensips title="Set drg_table parameter"
 ...
 modparam("drouting", "drg_table", "groups")
 ...
@@ -391,7 +391,7 @@ The name of the db table storing definitions of the carriers that will
 *Default value is "dr_carriers".*
 
 
-```c title="Set drc_table parameter"
+```opensips title="Set drc_table parameter"
 ...
 modparam("drouting", "drc_table", "my_dr_carriers")
 ...
@@ -410,7 +410,7 @@ The name of the avp for storing Request URIs to be later used
 		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
-```c title="Set ruri_avp parameter"
+```opensips title="Set ruri_avp parameter"
 ...
 modparam("drouting", "ruri_avp", '$avp(dr_ruri)')
 modparam("drouting", "ruri_avp", '$avp(33)')
@@ -433,7 +433,7 @@ The name of the avp for storing the id of the current selected
 		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
-```c title="Set gw_id_avp parameter"
+```opensips title="Set gw_id_avp parameter"
 ...
 modparam("drouting", "gw_id_avp", '$avp(gw_id)')
 modparam("drouting", "gw_id_avp", '$avp(334)')
@@ -454,7 +454,7 @@ The name of the avp for storing the PRI prefix of the current selected
 *Default value is "NULL".*
 
 
-```c title="Set gw_priprefix_avp parameter"
+```opensips title="Set gw_priprefix_avp parameter"
 ...
 modparam("drouting", "gw_priprefix_avp", '$avp(gw_priprefix)')
 ...
@@ -472,7 +472,7 @@ The name of the avp for storing the id of the current matched
 *Default value is "NULL".*
 
 
-```c title="Set rule_id_avp parameter"
+```opensips title="Set rule_id_avp parameter"
 ...
 modparam("drouting", "rule_id_avp", '$avp(rule_id)')
 modparam("drouting", "rule_id_avp", '$avp(335)')
@@ -491,7 +491,7 @@ The actual prefix that matched the routing rule (the part from RURI
 *Default value is "NULL".*
 
 
-```c title="Set rule_prefix_avp parameter"
+```opensips title="Set rule_prefix_avp parameter"
 ...
 modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 ...
@@ -509,7 +509,7 @@ AVP to be populate with the ID string for the carrier the
 *Default value is "NULL".*
 
 
-```c title="Set carrier_id_avp parameter"
+```opensips title="Set carrier_id_avp parameter"
 ...
 modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 ...
@@ -529,7 +529,7 @@ The name of the avp for storing sockets for alternative destinations
 		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
-```c title="Set gw_sock_avp parameter"
+```opensips title="Set gw_sock_avp parameter"
 ...
 modparam("drouting", "gw_sock_avp", '$avp(dr_sock)')
 modparam("drouting", "gw_sock_avp", '$avp(77)')
@@ -556,7 +556,7 @@ Multiple instances of this param are allowed.
 *Default value is "NULL".*
 
 
-```c title="Set define_blacklist parameter"
+```opensips title="Set define_blacklist parameter"
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
@@ -577,7 +577,7 @@ Group to be used if the caller (FROM user) is not found in the GROUP
 *Default value is "NONE".*
 
 
-```c title="Set default_group parameter"
+```opensips title="Set default_group parameter"
 ...
 modparam("drouting", "default_group", 4)
 ...
@@ -595,7 +595,7 @@ Force DNS resolving of GW/destination names (if not IPs) during
 *Default value is "1 (enabled)".*
 
 
-```c title="Set force_dns parameter"
+```opensips title="Set force_dns parameter"
 ...
 modparam("drouting", "force_dns", 0)
 ...
@@ -613,7 +613,7 @@ Specifies whether the *state* column
 *Default value is "1" (enabled).*
 
 
-```c title="Set the persistent_state parameter"
+```opensips title="Set the persistent_state parameter"
 ...
 # disable all DB operations with the state of a gateway
 modparam("drouting", "persistent_state", 0)
@@ -639,7 +639,7 @@ If you have a large routing set (millions of rules/prefixes), you
 *Default value is "0 (disabled)".*
 
 
-```c title="Set no_concurrent_reload parameter"
+```opensips title="Set no_concurrent_reload parameter"
 ...
 # do not allow parallel reload operations
 modparam("drouting", "no_concurrent_reload", 1)
@@ -658,7 +658,7 @@ How often (in seconds) the probing of a destination should be done. If
 *Default value is "30".*
 
 
-```c title="Set probing_interval parameter"
+```opensips title="Set probing_interval parameter"
 ...
 modparam("drouting", "probing_interval", 60)
 ...
@@ -674,7 +674,7 @@ The SIP method to be used for the probing requests.
 *Default value is ""OPTIONS"".*
 
 
-```c title="Set probing_method parameter"
+```opensips title="Set probing_method parameter"
 ...
 modparam("drouting", "probing_method", "INFO")
 ...
@@ -690,7 +690,7 @@ The FROM SIP URI to be advertised in the SIP probing requests.
 *Default value is ""sip:prober@localhost"".*
 
 
-```c title="Set probing_from parameter"
+```opensips title="Set probing_from parameter"
 ...
 modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 ...
@@ -708,7 +708,7 @@ A comma separted list of SIP reply codes. The codes defined here
 *Default value is "NULL".*
 
 
-```c title="Set probing_reply_codes parameter"
+```opensips title="Set probing_reply_codes parameter"
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
@@ -733,7 +733,7 @@ For probing gateway the highest priority has socket from gateway
 *Default value is "NULL".*
 
 
-```c title="Set probing_socket parameter"
+```opensips title="Set probing_socket parameter"
 ...
 modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 ...
@@ -769,7 +769,7 @@ For more info on how to define and populate a cluster (with OpenSIPS
 *Default value is "0 (none)".*
 
 
-```c title="Set cluster_id parameter"
+```opensips title="Set cluster_id parameter"
 ...
 # replicate gw/carrier status with all OpenSIPS in cluster ID 9
 modparam("drouting", "cluster_id", 9)
@@ -799,7 +799,7 @@ This is an optional parameter. If not set, all the nodes in the cluster
 *Default value is "empty (none)".*
 
 
-```c title="Set cluster_sharing_tag parameter"
+```opensips title="Set cluster_sharing_tag parameter"
 ...
 # only the node with the active "vip" sharing tag will perform pinging
 # and broadcast the status changes
@@ -819,7 +819,7 @@ Flag to configure whether to use domain match when querying
 *Default value is "1".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("drouting", "use_domain", 0)
 ...
@@ -835,7 +835,7 @@ The name of the column in group db table where the username is stored.
 *Default value is "username".*
 
 
-```c title="Set drg_user_col parameter"
+```opensips title="Set drg_user_col parameter"
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
@@ -851,7 +851,7 @@ The name of the column in group db table where the domain is stored.
 *Default value is "domain".*
 
 
-```c title="Set drg_domain_col parameter"
+```opensips title="Set drg_domain_col parameter"
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
@@ -868,7 +868,7 @@ The name of the column in group db table where the
 *Default value is "groupid".*
 
 
-```c title="Set drg_grpid_col parameter"
+```opensips title="Set drg_grpid_col parameter"
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
@@ -887,7 +887,7 @@ Flag to configure whether to use partitions for routing. If this
 *Default value is "0".*
 
 
-```c title="Set use_partitions parameter"
+```opensips title="Set use_partitions parameter"
 ...
 modparam("drouting", "use_partitions", 1)
 ...
@@ -909,7 +909,7 @@ The url to the database containing partition-specific
 *Default value is ""NULL"".*
 
 
-```c title="Set db_partitions_url parameter"
+```opensips title="Set db_partitions_url parameter"
 ...
 modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opensips_partitions")
 ...
@@ -926,7 +926,7 @@ The name of the table containing partition definitions. To be
 *Default value is "dr_partitions".*
 
 
-```c title="Set db_partitions_table parameter"
+```opensips title="Set db_partitions_table parameter"
 ...
 modparam("drouting", "db_partitions_table", "partition_defs")
 ...
@@ -948,7 +948,7 @@ NOTE: The variable must be WRITABLE!
 *Default value is "null(not used)".*
 
 
-```c title="Set partition_id_pvar parameter"
+```opensips title="Set partition_id_pvar parameter"
 ...
 modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 ...
@@ -974,7 +974,7 @@ NOTE: A reload will update the cached data.
 *Default value is "0 (disabled)".*
 
 
-```c title="Set enable_restart_persistency parameter"
+```opensips title="Set enable_restart_persistency parameter"
 ...
 modparam("drouting", "enable_restart_persistency", yes)
 ...
@@ -992,7 +992,7 @@ List of ASCII (0-127) characters to be additionally accepted in
 *Default value is "NULL".*
 
 
-```c title="Set extra_prefix_chars parameter"
+```opensips title="Set extra_prefix_chars parameter"
 ...
 modparam("drouting", "extra_prefix_chars", "#-%")
 ...
@@ -1110,7 +1110,7 @@ If you set `use_partitions` parameter to 1 you must
 					function.
 
 
-```c title="route_to_carrier usage"
+```opensips title="route_to_carrier usage"
 ...
 # use_partitions is not set
 if ( route_to_carrier("my_top_carrier, def_carrier", , $var(carrier_att)) ) {
@@ -1167,7 +1167,7 @@ If you set `use_partitions` parameter to 1 you must
 					function.
 
 
-```c title="route_to_gw usage"
+```opensips title="route_to_gw usage"
 ...
 # use_partitions is not set
 if ( route_to_gw("gw_europe") ) {
@@ -1241,7 +1241,7 @@ The function returns true only if a new RURI was set. False
 					function.
 
 
-```c title="use_next_gw usage"
+```opensips title="use_next_gw usage"
 ...
 # use_partitions is not set
 if (use_next_gw()) {
@@ -1323,7 +1323,7 @@ It may take the following optional parameters:
 				function.
 
 
-```c title="goes_to_gw usage"
+```opensips title="goes_to_gw usage"
 ...
 # use_partitions is not set
 if (goes_to_gw( 1, , $var(gw_attrs))) {
@@ -1390,7 +1390,7 @@ It may take the following optional parameters:
 				function.
 
 
-```c title="is_from_gw usage"
+```opensips title="is_from_gw usage"
 # use_partitions is not set
 # match the source IP (only) against all gateways
 if (is_from_gw(-1, "n")) {
@@ -1459,7 +1459,7 @@ It may take the following optional parameters:
 				function.
 
 
-```c title="dr_is_gw usage"
+```opensips title="dr_is_gw usage"
 # match the SIP URI host within $var(uac) against all gateways
 if (dr_is_gw( $var(uac), , "n")) {
 	...
@@ -1502,7 +1502,7 @@ It may take the following parameters:
 				function.
 
 
-```c title="dr_disable() usage"
+```opensips title="dr_disable() usage"
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
 	dr_disable();
@@ -1554,7 +1554,7 @@ The parameters are:
 			ONLY if the "use_partition" module parameter is turned on.
 
 
-```c title="dr_match usage"
+```opensips title="dr_match usage"
 ...
 if ( dr_match( 1, "L" , $fU, ,"dids") )
 	xlog("Full From Username $fU found in group 1 partition DIDS\n");
