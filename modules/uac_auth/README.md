@@ -55,7 +55,7 @@ Contains a multiple definition of credentials used to perform
 *This parameter is required if UAC authentication is used.*
 
 
-```c title="Set credential parameter"
+```opensips title="Set credential parameter"
 ...
 modparam("uac_auth","credential","username:domain:password")
 ...

@@ -91,7 +91,7 @@ If the processed message contains neither Expires
 *Default value is 3600.*
 
 
-```c title="Set default_expires parameter"
+```opensips title="Set default_expires parameter"
 ...
 modparam("registrar", "default_expires", 1800)
 ...
@@ -109,7 +109,7 @@ The minimum expires value of a Contact, values lower than this
 *Default value is 60.*
 
 
-```c title="Set min_expires parameter"
+```opensips title="Set min_expires parameter"
 ...
 modparam("registrar", "min_expires", 60)
 ...
@@ -127,7 +127,7 @@ The maximum expires value of a Contact, values higher than this
 *Default value is 0.*
 
 
-```c title="Set max_expires parameter"
+```opensips title="Set max_expires parameter"
 ...
 modparam("registrar", "max_expires", 120)
 ...
@@ -146,7 +146,7 @@ The parameter represents default q value for new contacts. Because
 *Default value is 0.*
 
 
-```c title="Set default_q parameter"
+```opensips title="Set default_q parameter"
 ...
 modparam("registrar", "default_q", 1000)
 ...
@@ -167,7 +167,7 @@ The parameter specifies the message flag to be used to control the
 *Default value is -1 (disabled).*
 
 
-```c title="Set tcp_persistent_flag parameter"
+```opensips title="Set tcp_persistent_flag parameter"
 ...
 modparam("registrar", "tcp_persistent_flag", 7)
 ...
@@ -188,7 +188,7 @@ Prefix to be automatically strip from realm. As an alternative to
 *Default value is NULL (none).*
 
 
-```c title="Set realm_prefix parameter"
+```opensips title="Set realm_prefix parameter"
 ...
 modparam("registrar", "realm_prefix", "sip.")
 ...
@@ -206,7 +206,7 @@ If set to 1 then AOR comparison will be case
 *Default value is 1.*
 
 
-```c title="Set case_sensitive parameter"
+```opensips title="Set case_sensitive parameter"
 ...
 modparam("registrar", "case_sensitive", 0)
 ...
@@ -231,7 +231,7 @@ Registrar will store the value of the AVP configured by this
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set received_avp parameter"
+```opensips title="Set received_avp parameter"
 ...
 modparam("registrar", "received_avp", "$avp(rcv)")
 ...
@@ -248,7 +248,7 @@ The name of the parameter that will be appended to Contacts of
 *Default value is "received".*
 
 
-```c title="Set received_param parameter"
+```opensips title="Set received_param parameter"
 ...
 modparam("registrar", "received_param", "rcv")
 ...
@@ -269,7 +269,7 @@ The parameter can be used to limit the number of contacts per
 *Default value is 0.*
 
 
-```c title="Set max_contacts parameter"
+```opensips title="Set max_contacts parameter"
 ...
 # Allow no more than 10 contacts per AOR
 modparam("registrar", "max_contacts", 10)
@@ -296,7 +296,7 @@ If you want to add the Retry-After header field in 5xx replies, set
 *Default value is 0 (disabled).*
 
 
-```c title="Set retry_after parameter"
+```opensips title="Set retry_after parameter"
 ...
 modparam("registrar", "retry_after", 30)
 ...
@@ -318,7 +318,7 @@ This make sens only in multiple replicated servers scenarios.
 *Default value is NULL.*
 
 
-```c title="Set sock_hdr_namer parameter"
+```opensips title="Set sock_hdr_namer parameter"
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
@@ -341,7 +341,7 @@ This make sens only in cached registrations scenario.
 *Default value is NULL.*
 
 
-```c title="Set mcontact_avp parameter"
+```opensips title="Set mcontact_avp parameter"
 ...
 modparam("registrar", "mcontact_avp", "$avp(register)")
 ...
@@ -423,7 +423,7 @@ This parameter is a string composed of a set of flags.
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="save usage"
+```opensips title="save usage"
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
@@ -492,7 +492,7 @@ Return codes:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="lookup usage"
+```opensips title="lookup usage"
 ...
 lookup("location");  # simple lookup
    #or
@@ -541,7 +541,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
 
-```c title="registered usage"
+```opensips title="registered usage"
 ...
 if (registered("location")) {
 	sl_send_reply("100", "Trying");
@@ -573,7 +573,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_other_contact usage"
+```opensips title="is_other_contact usage"
 ...
 
 if (is_other_contact("location", "$avp(ips)")) {
@@ -604,7 +604,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_sock_hdr usage"
+```opensips title="add_sock_hdr usage"
 ...
 add_sock_hdr("Sock-Info");
 ...

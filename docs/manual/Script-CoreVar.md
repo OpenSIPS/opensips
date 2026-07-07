@@ -89,7 +89,7 @@ When using the index "N" you can force the AVP to return a certain value (the N-
 
 Example of usage:
 * Transaction persistence example
-```c
+```opensips
 
 # enable avps in onreply route
 modparam("tm", "onreply_avp_mode", 1)

@@ -89,7 +89,7 @@ The size of the hash table internally used to keep the registrants.
 *Default value is 1.*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("uac_registrant", "hash_size", 2)
 ...
@@ -105,7 +105,7 @@ Defines the periodic timer for checking the registrations status.
 *Default value is 100.*
 
 
-```c title="Set timer_interval parameter"
+```opensips title="Set timer_interval parameter"
 ...
 modparam("uac_registrant", "timer_interval", 120)
 ...
@@ -151,7 +151,7 @@ Meaning of the fields is as follows:
 			There can be several uac defined in the config file.*
 
 
-```c title="Set uac parameter"
+```opensips title="Set uac parameter"
 ...
 modparam("uac_registrant", "uac",
 "sip:opensips.org,,sip:user@opensips.org,,user,password,sip:user@ip,,,")

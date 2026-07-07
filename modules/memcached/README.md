@@ -81,7 +81,7 @@ The names of the servers to connect to.
 			If port is missing the default value is used(11211).
 
 
-```c title="Set server parameter"
+```opensips title="Set server parameter"
 ...
 modparam("memcached", "server","group1 = localhost:9999,127.0.0.1" );
 modparam("memcached", "server","y = random_url:8888" );
@@ -90,7 +90,7 @@ modparam("memcached", "server","y = random_url:8888" );
 ```
 
 
-```c title="Use memcached servers"
+```opensips title="Use memcached servers"
 ...
 cache_store("memcached_group1","key","$ru value");
 cache_fetch("memcached_y","key",$avp(10));
