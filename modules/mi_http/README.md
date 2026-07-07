@@ -49,7 +49,7 @@ It specifies the root path for mi http requests.
 *The default value is "mi".*
 
 
-```c title="Set mi_http_root parameter"
+```opensips title="Set mi_http_root parameter"
 ...
 modparam("mi_http", "mi_http_root", "opensips_mi")
 ...

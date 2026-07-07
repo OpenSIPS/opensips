@@ -61,7 +61,7 @@ The url of the Database  that OpenSIPS will connect to in order
 			to use the from script cache_store,cache_fetch, etc operations.
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("cachedb_sql", "db_url","mysql://localhost/my_database");
 ...
@@ -69,7 +69,7 @@ modparam("cachedb_sql", "db_url","mysql://localhost/my_database");
 ```
 
 
-```c title="Usage example"
+```opensips title="Usage example"
 ...
 cache_store("sql","key","$ru value");
 cache_add("sql","counter",10);
@@ -85,7 +85,7 @@ The table of the Database  that OpenSIPS will connect to in order
 			to use the from script cache_store,cache_fetch, etc operations.
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("cachedb_sql", "db_table","my_table");
 ...
@@ -99,7 +99,7 @@ modparam("cachedb_sql", "db_table","my_table");
 The column where the key will be stored
 
 
-```c title="Set key_column parameter"
+```opensips title="Set key_column parameter"
 ...
 modparam("cachedb_sql", "key_column","some_name");
 ...
@@ -113,7 +113,7 @@ modparam("cachedb_sql", "key_column","some_name");
 The column where the value will be stored
 
 
-```c title="Set value_column parameter"
+```opensips title="Set value_column parameter"
 ...
 modparam("cachedb_sql", "value_column","some_name");
 ...
@@ -127,7 +127,7 @@ modparam("cachedb_sql", "value_column","some_name");
 The column where the counter value will be stored
 
 
-```c title="Set counter_column parameter"
+```opensips title="Set counter_column parameter"
 ...
 modparam("cachedb_sql", "counter_column","some_name");
 ...
@@ -141,7 +141,7 @@ modparam("cachedb_sql", "counter_column","some_name");
 The column where the expires will be stored
 
 
-```c title="Set expires_column parameter"
+```opensips title="Set expires_column parameter"
 ...
 modparam("cachedb_sql", "expires_column","some_name");
 ...
@@ -156,7 +156,7 @@ The interval in seconds at which the expired keys will be removed from
 			the database. Default value is 60 ( seconds )
 
 
-```c title="Set cache_clean_period parameter"
+```opensips title="Set cache_clean_period parameter"
 ...
 modparam("cachedb_sql", "cache_clean_period",10);
 ...

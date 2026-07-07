@@ -83,7 +83,7 @@ This sets in a memory-cache-like-storage system a new value for an attribute. Bo
 
 Function returns true is the new attribute was successfully inserted.
 
-```c
+```opensips
 
 cache_store("local","my_attr","$avp(i:55)",1200);
 
@@ -102,7 +102,7 @@ More complex examples can be found in the [Key-Value Interface Tutorial](https:/
 This removes an attribute from a memory-cache-like-storage system. The attribute name may contain pseudo-variables.
 Function returns false only if the *storage_id* is invalid.
 
-```c
+```opensips
 
 cache_remove("local","my_attr");
 
@@ -122,7 +122,7 @@ This function fetches from a memory-cache-like-storage system the value of an at
 
 Function returns true if the attribute was found and its value returned.
 
-```c
+```opensips
 
 cache_fetch("local","my_attr", $avp(i:11) );
 
@@ -142,7 +142,7 @@ This function fetches from a memory-cache-like-storage system the value of a cou
 
 Function returns true if the attribute was found and its value returned.
 
-```c
+```opensips
 
 cache_counter_fetch("local","my_counter", $avp(counter_val) );
 
@@ -160,7 +160,7 @@ This increments an attribute in a memory-cache-like-storage system that supports
 
 Function returns false if increment fails.
 
-```c
+```opensips
 
 modparam("cachedb_redis","cachedb_url","redis:cluster1://192.168.2.134:6379/")
 ...
@@ -176,7 +176,7 @@ This decrements an attribute in a memory-cache-like-storage system that supports
 
 Function returns false if decrement fails.
 
-```c
+```opensips
 
 modparam("cachedb_redis","cachedb_url","redis:cluster1://192.168.2.134:6379/")
 ...
@@ -230,7 +230,7 @@ If the function is called in a 'onreply_route' then any provisional reply is dis
 
 Example of usage:
 
-```c
+```opensips
 onreply_route {
 if(status=="183") {
 drop();
@@ -252,7 +252,7 @@ xlog("L_NOTICE","method is $rm\n");
 }
 ```
 
-```c
+```opensips
 route[2] {
 if (is_method("INVITE")) {
 return(1);
@@ -496,7 +496,7 @@ route {
 }
 
 ```
-```c
+```opensips
 
 route[2] {
   if (is_method("INVITE")) {
@@ -727,7 +727,7 @@ Changes the debug level of the current process from script. If called without th
 
 Example of usage:
 
-```c
+```opensips
 debug= -1 # errors only
 .....
 {
@@ -813,7 +813,7 @@ The first parameter is a string represents the name of the event an external app
 
 Example of usage (subscriber that never expires, notified by the RabbitMQ module):
 
-```c
+```opensips
 
 startup_route {
     subscribe_event("E_PIKE_BLOCKED", "rabbitmq:127.0.0.1/pike");
@@ -823,7 +823,7 @@ startup_route {
 
 Example of usage (subscriber expires every 5 seconds, notified through UDP):
 
-```c
+```opensips
 
 timer_route[event_subscribe, 4] {
     subscribe_event("E_PIKE_BLOCKED", "udp:127.0.0.1:5051", 5);
