@@ -58,14 +58,14 @@ If value of timeout parameter set to 0, module use synchronous
 		mode (without timeout).
 
 
-```c title="Set timeout parameter"
+```opensips title="Set timeout parameter"
 ...
 modparam("db_oracle", "timeout", 1.5)
 ...
 ```
 
 
-```c title="Disable asynchronous mode"
+```opensips title="Disable asynchronous mode"
 ...
 modparam("db_oracle", "timeout", 0)
 ...
@@ -84,7 +84,7 @@ Possible values is from 0.1 to 10.0 seconds.
 *Default value is 0.2 (200 milliseconds).*
 
 
-```c title="Set reconnect parameter"
+```opensips title="Set reconnect parameter"
 ...
 modparam("db_oracle", "reconnect", 0.5)
 ...
