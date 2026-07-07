@@ -187,7 +187,7 @@ Not specific to TLS. Allows to specify the protocol
 			listening server will be.
 
 
-```c title="Set listen variable"
+```opensips title="Set listen variable"
 ...
 listen = tls:1.2.3.4:5061
 ...
@@ -211,7 +211,7 @@ If you want to change only the listening port for TLS, use the port
 *Default value is 5061.*
 
 
-```c title="Set tls_port variable"
+```opensips title="Set tls_port variable"
 ...
 modparam("proto_tls", "tls_port", 5062)
 ...
@@ -229,7 +229,7 @@ Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over TLS.
 *Default value is 1 (enabled).*
 
 
-```c title="Set tls_crlf_pingpong parameter"
+```opensips title="Set tls_crlf_pingpong parameter"
 ...
 modparam("proto_tls", "tls_crlf_pingpong", 0)
 ...
@@ -248,7 +248,7 @@ Drop CRLF (\r\n) ping messages. When this parameter is enabled,
 *Default value is 0 (disabled).*
 
 
-```c title="Set tls_crlf_drop parameter"
+```opensips title="Set tls_crlf_drop parameter"
 ...
 modparam("proto_tls", "tls_crlf_drop", 1)
 ...
@@ -269,7 +269,7 @@ The maximum number of chunks that a SIP message is expected to
 *Default value is 4.*
 
 
-```c title="Set tls_max_msg_chunks parameter"
+```opensips title="Set tls_max_msg_chunks parameter"
 ...
 modparam("proto_tls", "tls_max_msg_chunks", 8)
 ...

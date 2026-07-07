@@ -79,7 +79,7 @@ Parameter to enable/disable trace (on(1)/off(0))
 *Default value is "1"(enabled).*
 
 
-```c title="Set trace_on parameter"
+```opensips title="Set trace_on parameter"
 ...
 modparam("siptrace", "trace_on", 1)
 ...
@@ -99,7 +99,7 @@ The address to be used in the fields that specify the source address
 *Default value is "NULL".*
 
 
-```c title="Set trace_local_ip parameter"
+```opensips title="Set trace_local_ip parameter"
 ...
 #Resulting address: udp:10.1.1.1:5064
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
@@ -153,7 +153,7 @@ All the old parameter such as db_url, table and duplicate_uri
 			not set, version 3 will be used by default.*
 
 
-```c title="Set trace_id parameter"
+```opensips title="Set trace_id parameter"
 ...
 /*DB trace id*/
 modparam("siptrace", "trace_id",
@@ -225,7 +225,7 @@ Types can be the following:
 			shall be stored in the trace_attrs column in the sip_trace table.
 
 
-```c title="sip_trace() usage"
+```opensips title="sip_trace() usage"
 ...
 /* see declaration of tid in trace_id section */
 	$var(trace_id) = "tid";

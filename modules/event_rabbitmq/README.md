@@ -111,7 +111,7 @@ Enables heartbeat support for the AMQP communication. If the
 *Default value is "0 (disabled)".*
 
 
-```c title="Set heartbeat parameter"
+```opensips title="Set heartbeat parameter"
 ...
 modparam("event_rabbitmq", "heartbeat", 3)
 ...
@@ -127,7 +127,7 @@ Specifies whether an event raise operates synchronous or asynchronous relative t
 *Default value is "0 (asynchronous)".*
 
 
-```c title="Set sync_mode parameter"
+```opensips title="Set sync_mode parameter"
 ...
 modparam("event_rabbitmq", "sync_mode", 1)
 ...

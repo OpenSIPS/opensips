@@ -86,7 +86,7 @@ The database url.
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("clusterer", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips")
@@ -103,7 +103,7 @@ The name of the table storing the clustering information.
 *Default value is "clusterer".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("clusterer", "db_table", "clusterer")
 ...
@@ -121,7 +121,7 @@ It specifies the *server_id* the current
 *Default value is 0.*
 
 
-```c title="Set server_id parameter"
+```opensips title="Set server_id parameter"
 ...
 modparam("clusterer", "server_id", 2)
 ...
@@ -139,7 +139,7 @@ If persistent mode is enabled, a timer synchronizes the
 *Default value is 0 (disabled).*
 
 
-```c title="Set persistent_mode parameter"
+```opensips title="Set persistent_mode parameter"
 ...
 modparam("clusterer", "persistent_mode", 1)
 ...
@@ -155,7 +155,7 @@ The name of the column in the db_table where the cluster_id is stored.
 *Default value is "cluster_id".*
 
 
-```c title="Set cluster_id_col parameter"
+```opensips title="Set cluster_id_col parameter"
 ...
 modparam("clusterer", "cluster_id_col", "cluster_id")
 ...
@@ -171,7 +171,7 @@ The name of the column in the db_table where the machine_id is stored.
 *Default value is "machine_id".*
 
 
-```c title="Set machine_id_col parameter"
+```opensips title="Set machine_id_col parameter"
 ...
 modparam("clusterer", "machine_id_col", "machine_id")
 ...
@@ -187,7 +187,7 @@ The name of the column in the db_table where the machine_id is stored.
 *Default value is "id".*
 
 
-```c title="Set clusterer_id_col parameter"
+```opensips title="Set clusterer_id_col parameter"
 ...
 modparam("clusterer", "clusterer_id_col", "clusterer_id")
 ...
@@ -203,7 +203,7 @@ The name of the column in the db_table where the state is stored.
 *Default value is "state".*
 
 
-```c title="Set state_col parameter"
+```opensips title="Set state_col parameter"
 ...
 modparam("clusterer", "state_col", "state")
 ...
@@ -219,7 +219,7 @@ The name of the column in the db_table where the url is stored.
 *Default value is "url".*
 
 
-```c title="Set url_col parameter"
+```opensips title="Set url_col parameter"
 ...
 modparam("clusterer", "url_col", "url")
 ...
@@ -235,7 +235,7 @@ The name of the column in the db_table where the machine's description is stored
 *Default value is "description".*
 
 
-```c title="Set description_col parameter"
+```opensips title="Set description_col parameter"
 ...
 modparam("clusterer", "description_col", "description")
 ...
@@ -252,7 +252,7 @@ The name of the column in the db_table where the maximum allowed number
 *Default value is "failed_attempts".*
 
 
-```c title="Set failed_attempts_col parameter"
+```opensips title="Set failed_attempts_col parameter"
 ...
 modparam("clusterer", "failed_attempts_col", "failed_attempts")
 ...
@@ -269,7 +269,7 @@ The name of the column in the db_table where the UNIX time of last
 *Default value is "last_attempt".*
 
 
-```c title="Set last_attempt_col parameter"
+```opensips title="Set last_attempt_col parameter"
 ...
 modparam("clusterer", "last_attempt_col", "last_attempt")
 ...
@@ -287,7 +287,7 @@ The name of the column in the db_table where the duration of a
 *Default value is "duration".*
 
 
-```c title="Set duration_col parameter"
+```opensips title="Set duration_col parameter"
 ...
 modparam("clusterer", "duration_col", "duration")
 ...
@@ -304,7 +304,7 @@ The name of the column in the db_table where the number of failed
 *Default value is "no_tries".*
 
 
-```c title="Set no_tries_col parameter"
+```opensips title="Set no_tries_col parameter"
 ...
 modparam("clusterer", "no_tries_col", "no_tries")
 ...
@@ -466,7 +466,7 @@ After provisioning the two nodes in the database, we have to configure
 			A*:
 
 
-```c title="*Node A* configuration"
+```opensips title="*Node A* configuration"
 ...
 listen = bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -492,7 +492,7 @@ modparam("ratelimit", "accept_pipes_timeout", 5)
 Similarly, the configuration for *Node B* is as follows:
 
 
-```c title="*Node B* configuration"
+```opensips title="*Node B* configuration"
 ...
 listen = bin:192.168.0.6:5566 # bin listener for Node B
 
@@ -551,7 +551,7 @@ Meaning of the parameters is as follows:
 - *int proto* - the protocol
 
 
-```c title="get_nodes usage"
+```opensips title="get_nodes usage"
 ...
 get_nodes(cluster_id, proto);
 ...
@@ -571,7 +571,7 @@ Meaning of the parameters is as follows:
                         returned by the get_nodes function
 
 
-```c title="free_nodes usage"
+```opensips title="free_nodes usage"
 ...
 free_nodes(nodes);
 ...
@@ -597,7 +597,7 @@ Meaning of the parameters is as follows:
 - *int proto* - protocol
 
 
-```c title="set_state usage"
+```opensips title="set_state usage"
 ...
 set_state(1,1,2,PROTO_BIN);
 ...
