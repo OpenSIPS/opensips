@@ -110,7 +110,7 @@ Enables heartbeat support for the AMQP communication. If the
 *Default value is "0 (disabled)".*
 
 
-```c title="Set heartbeat parameter"
+```opensips title="Set heartbeat parameter"
 ...
 modparam("event_rabbitmq", "heartbeat", 3)
 ...
@@ -127,7 +127,7 @@ The maximally allowed duration (in milliseconds) for the establishment
 *Default value is "500" (milliseconds).*
 
 
-```c title="Setting the connect_timeout parameter"
+```opensips title="Setting the connect_timeout parameter"
 ...
 modparam("event_rabbitmq", "connect_timeout", 1000)
 ...
@@ -152,7 +152,7 @@ When using this parameter, you must also ensure that
 *Default value is **0** (not enabled)*
 
 
-```c title="Set the use_tls parameter"
+```opensips title="Set the use_tls parameter"
 ...
 modparam("tls_mgm", "client_domain", "rmq")
 modparam("tls_mgm", "certificate", "[rmq]/etc/pki/tls/certs/rmq.pem")
@@ -180,7 +180,7 @@ Indicates the timeout (in milliseconds) of any command (i.e. publish)
 *Default value is **0** (no timeout - blocking mode)*
 
 
-```c title="Set the timeout parameter"
+```opensips title="Set the timeout parameter"
 ...
 modparam("event_rabbitmq", "timeout", 1000) # timeout after 1s
 ...

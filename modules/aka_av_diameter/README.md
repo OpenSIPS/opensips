@@ -88,7 +88,7 @@ This is the url representing the connection to the AAA server.
 		not start, or not work properly.
 
 
-```c title="aaa_url parameter usage"
+```opensips title="aaa_url parameter usage"
 modparam("auth_aaa", "aaa_url", "diameter:freeDiameter.conf;extra-avps-file:/etc/freeDiameter/aka_av_diameter.dictionary")
 		
 ```
@@ -103,7 +103,7 @@ The Realm used in the Origin Diameter commands.
 Default value is "diameter.test".
 
 
-```c title="realm parameter usage"
+```opensips title="realm parameter usage"
 		
 modparam("aka_av_diameter", "realm", "scscf.ims.mnc001.mcc001.3gppnetwork.org")
 		

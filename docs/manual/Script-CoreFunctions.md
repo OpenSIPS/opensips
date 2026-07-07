@@ -108,7 +108,7 @@ Parameters:
 * *value* (string)
 * *timeout* (int, optional)
 
-```c
+```opensips
 
 cache_store("local", "total_minutes_$fU", "$avp(mins)", 1200);
 
@@ -130,7 +130,7 @@ Parameters:
 * *storage_id* (string)
 * *attribute* (string)
 
-```c
+```opensips
 
 cache_remove("local", "total_minutes_$fU");
 
@@ -155,7 +155,7 @@ Parameters:
 * *attribute* (string)
 * *result_pv* (var)
 
-```c
+```opensips
 
 cache_fetch("local", "credit_$fU", $var(ret));
 
@@ -180,7 +180,7 @@ Parameters:
 * *attribute* (string)
 * *result* (var)
 
-```c
+```opensips
 
 cache_counter_fetch("local", "my_counter", $var(counter_val));
 
@@ -205,7 +205,7 @@ Parameters:
 * *expire* (int) - if greater than 0, the key will also expire in the specified number of seconds
 * *new_val* (var, optional) - variable in which to fetch the new value of the counter.
 
-```c
+```opensips
 
 modparam("cachedb_redis", "cachedb_url", "redis:cluster1://193.568.3.534:6379/")
 ...
@@ -228,7 +228,7 @@ Parameters:
 * *expire* (int) - if greater than 0, the key will also expire in the specified number of seconds
 * *new_val* (var, optional) - variable in which to fetch the new value of the counter.
 
-```c
+```opensips
 
 modparam("cachedb_redis", "cachedb_url", "redis:cluster1://193.568.3.534:6379/")
 ...
@@ -295,7 +295,7 @@ If the function is called in a 'onreply_route' then any provisional reply is dis
 
 Example of usage:
 
-```c
+```opensips
 onreply_route {
 if($rs=="183") {
 drop();
@@ -317,7 +317,7 @@ xlog("L_NOTICE","method is $rm\n");
 }
 ```
 
-```c
+```opensips
 route[2] {
 if (is_method("INVITE")) {
 return(1);
@@ -606,7 +606,7 @@ route {
 }
 
 ```
-```c
+```opensips
 
 route[2] {
   if (is_method("INVITE")) {
@@ -1006,7 +1006,7 @@ Parameters:
 
 Example of usage (subscriber that never expires, notified by the RabbitMQ module):
 
-```c
+```opensips
 
 startup_route {
     subscribe_event("E_PIKE_BLOCKED", "rabbitmq:127.0.0.1/pike");
@@ -1016,7 +1016,7 @@ startup_route {
 
 Example of usage (subscriber expires every 5 seconds, notified through UDP):
 
-```c
+```opensips
 
 timer_route[event_subscribe, 4] {
     subscribe_event("E_PIKE_BLOCKED", "udp:127.0.0.1:5051", 5);
