@@ -54,7 +54,7 @@ Path to the file with destination sets.
 			"/usr/local/etc/opensips/dispatcher.list".*
 
 
-```c title="Set the 'list_file' parameter"
+```opensips title="Set the 'list_file' parameter"
 ...
 modparam("dispatcher", "list_file", "/var/run/opensips/dispatcher.list")
 ...
@@ -71,7 +71,7 @@ If you want to load the sets of gateways from the database you must set
 *Default value is "NULL" (disable DB support).*
 
 
-```c title="Set 'db_url' parameter"
+```opensips title="Set 'db_url' parameter"
 ...
 modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 ...
@@ -88,7 +88,7 @@ If you want to load the sets of gateways from the database you must set
 *Default value is "dispatcher".*
 
 
-```c title="Set 'table_name' parameter"
+```opensips title="Set 'table_name' parameter"
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
 ...
@@ -104,7 +104,7 @@ The column's name in the database storing the gateway's group id.
 *Default value is "setid".*
 
 
-```c title="Set 'setid_col' parameter"
+```opensips title="Set 'setid_col' parameter"
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
@@ -121,7 +121,7 @@ The column's name in the database storing the destination's
 *Default value is "destination".*
 
 
-```c title="Set 'destination_col' parameter"
+```opensips title="Set 'destination_col' parameter"
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
@@ -138,7 +138,7 @@ The column's name in the database storing the flags for
 *Default value is "flags".*
 
 
-```c title="Set 'flags_col' parameter"
+```opensips title="Set 'flags_col' parameter"
 ...
 modparam("dispatcher", "flags_col", "dstflags")
 ...
@@ -155,7 +155,7 @@ If set to 1, force overwriting of destination address when that is
 *Default value is "0".*
 
 
-```c title="Set the 'force_dst' parameter"
+```opensips title="Set the 'force_dst' parameter"
 ...
 modparam("dispatcher", "force_dst", 1)
 ...
@@ -183,7 +183,7 @@ If flag 2 is set, then the failover support is enabled. The functions
 *Default value is "0".*
 
 
-```c title="Set the 'flags' parameter"
+```opensips title="Set the 'flags' parameter"
  ...
  modparam("dispatcher", "flags", 3)
  ...
@@ -203,7 +203,7 @@ If the parameter is set to 1, the last address in destination set
 *Default value is "0".*
 
 
-```c title="Set the 'use_default' parameter"
+```opensips title="Set the 'use_default' parameter"
  ...
  modparam("dispatcher", "use_default", 1)
  ...
@@ -230,7 +230,7 @@ The name of the avp which will hold the list with addresses, in the
 *Default value is "null" - don't add AVPs.*
 
 
-```c title="Set the 'dst_avp' parameter"
+```opensips title="Set the 'dst_avp' parameter"
  ...
  modparam("dispatcher", "dst_avp", "$avp(i:271)")
  ...
@@ -252,7 +252,7 @@ The name of the avp storing the group id of the destination set. Good
 *Default value is "null" - don't add AVP.*
 
 
-```c title="Set the 'grp_avp' parameter"
+```opensips title="Set the 'grp_avp' parameter"
  ...
  modparam("dispatcher", "grp_avp", "$avp(i:272)")
  ...
@@ -274,7 +274,7 @@ The name of the avp storing the number of destination addresses kept in
 *Default value is "null" - don't add AVP.*
 
 
-```c title="Set the 'cnt_avp' parameter"
+```opensips title="Set the 'cnt_avp' parameter"
  ...
  modparam("dispatcher", "cnt_avp", "$avp(i:273)")
  ...
@@ -296,7 +296,7 @@ String with PVs used for the hashing algorithm 7.
 *Default value is "null" - disabled.*
 
 
-```c title="Use $avp(i:273) for hashing:"
+```opensips title="Use $avp(i:273) for hashing:"
  ...
  modparam("dispatcher", "hash_pvar", "$avp(i:273)")
  ...
@@ -304,7 +304,7 @@ String with PVs used for the hashing algorithm 7.
 ```
 
 
-```c title="Use combination of PVs for hashing:"
+```opensips title="Use combination of PVs for hashing:"
  ...
  modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
  ...
@@ -322,7 +322,7 @@ The name of the PV where to store the set ID (group ID) when calling
 *Default value is "null" - don't set PV.*
 
 
-```c title="Set the 'setid_pvar' parameter"
+```opensips title="Set the 'setid_pvar' parameter"
  ...
  modparam("dispatcher", "setid_pvar", "$var(setid)")
  ...
@@ -340,7 +340,7 @@ With this Method you can define, with which method you want to probe the failed 
 *Default value is "OPTIONS".*
 
 
-```c title="Set the 'ds_ping_method' parameter"
+```opensips title="Set the 'ds_ping_method' parameter"
  ...
  modparam("dispatcher", "ds_ping_method", "INFO")
  ...
@@ -358,7 +358,7 @@ With this Method you can define the "From:"-Line for the request, sent to the fa
 *Default value is "sip:dispatcher@localhost".*
 
 
-```c title="Set the 'ds_ping_from' parameter"
+```opensips title="Set the 'ds_ping_from' parameter"
  ...
  modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
  ...
@@ -377,7 +377,7 @@ With this Method you can define the interval for sending a request to a failed g
 *Default value is "10".*
 
 
-```c title="Set the 'ds_ping_interval' parameter"
+```opensips title="Set the 'ds_ping_interval' parameter"
  ...
  modparam("dispatcher", "ds_ping_interval", 30)
  ...
@@ -395,7 +395,7 @@ If you want to set a gateway into probing mode, you will need a specific number 
 *Default value is "3".*
 
 
-```c title="Set the 'ds_probing_threshhold' parameter"
+```opensips title="Set the 'ds_probing_threshhold' parameter"
  ...
  modparam("dispatcher", "ds_probing_threshhold", 10)
  ...
@@ -415,7 +415,7 @@ Controls what gateways are tested to see if they are reachable. If set
 *Default value is "0".*
 
 
-```c title="Set the 'ds_probing_mode' parameter"
+```opensips title="Set the 'ds_probing_mode' parameter"
  ...
  modparam("dispatcher", "ds_probing_mode", 1)
  ...
@@ -434,7 +434,7 @@ This parameter must contain a list of SIP reply codes separated by comma.
 *Default value is "NULL".*
 
 
-```c title="Set the 'options_reply_codes' parameter"
+```opensips title="Set the 'options_reply_codes' parameter"
  ...
  modparam("dispatcher", "options_reply_codes", "501, 403")
  ...
@@ -482,7 +482,7 @@ If the bit 2 in 'flags' is set, the rest of the addresses from the
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="ds_select_dst usage"
+```opensips title="ds_select_dst usage"
 ...
 ds_select_dst("1", "0");
 ...

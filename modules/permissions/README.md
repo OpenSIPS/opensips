@@ -214,7 +214,7 @@ Default allow file used by functions without parameters. If you
 *Default value is "permissions.allow".*
 
 
-```c title="Set default_allow_file parameter"
+```opensips title="Set default_allow_file parameter"
 ...
 modparam("permissions", "default_allow_file", "/etc/permissions.allow")
 ...
@@ -232,7 +232,7 @@ Default file containing deny rules. The file is used by functions
 *Default value is "permissions.deny".*
 
 
-```c title="Set default_deny_file parameter"
+```opensips title="Set default_deny_file parameter"
 ...
 modparam("permissions", "default_deny_file", "/etc/permissions.deny")
 ...
@@ -255,7 +255,7 @@ If set then allow_routing functions will check Request-URI of all
 *Default value is 1.*
 
 
-```c title="Set check_all_branches parameter"
+```opensips title="Set check_all_branches parameter"
 ...
 modparam("permissions", "check_all_branches", 0)
 ...
@@ -278,7 +278,7 @@ Suffix to be appended to basename to create filename of the allow
 *Default value is ".allow".*
 
 
-```c title="Set allow_suffix parameter"
+```opensips title="Set allow_suffix parameter"
 ...
 modparam("permissions", "allow_suffix", ".allow")
 ...
@@ -301,7 +301,7 @@ Suffix to be appended to basename to create filename of the deny file
 *Default value is ".deny".*
 
 
-```c title="Set deny_suffix parameter"
+```opensips title="Set deny_suffix parameter"
 ...
 modparam("permissions", "deny_suffix", ".deny")
 ...
@@ -318,7 +318,7 @@ This is URL of the database to be used to store rules used by
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("permissions", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -337,7 +337,7 @@ Name of database table containing IP subnet information used by
 *Default value is "address".*
 
 
-```c title="Set address_table parameter"
+```opensips title="Set address_table parameter"
 ...
 modparam("permissions", "address_table", "addr")
 ...
@@ -354,7 +354,7 @@ Name of address table column containing group
 *Default value is "grp".*
 
 
-```c title="Set grp_col parameter"
+```opensips title="Set grp_col parameter"
 ...
 modparam("permissions", "grp_col", "group_id")
 ...
@@ -371,7 +371,7 @@ Name of address table column containing IP address
 *Default value is "ip_addr".*
 
 
-```c title="Set ip_addr_col parameter"
+```opensips title="Set ip_addr_col parameter"
 ...
 modparam("permissions", "ip_addr_col", "ip_address")
 ...
@@ -388,7 +388,7 @@ Name of address table column containing network mask of
 *Default value is "mask".*
 
 
-```c title="Set mask_col parameter"
+```opensips title="Set mask_col parameter"
 ...
 modparam("permissions", "mask_col", "subnet_length")
 ...
@@ -405,7 +405,7 @@ Name of address table column containing port
 *Default value is "port".*
 
 
-```c title="Set port_col parameter"
+```opensips title="Set port_col parameter"
 ...
 modparam("permissions", "port_col", "prt")
 ...
@@ -422,7 +422,7 @@ Database mode. 0 means non-caching, 1 means caching.
 *Default value is 0 (non-caching).*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("permissions", "db_mode", 1)
 ...
@@ -439,7 +439,7 @@ Name of database table containing matching rules used by
 *Default value is "trusted".*
 
 
-```c title="Set trusted_table parameter"
+```opensips title="Set trusted_table parameter"
 ...
 modparam("permissions", "trusted_table", "pbx")
 ...
@@ -457,7 +457,7 @@ Name of trusted table column containing source IP
 *Default value is "src_ip".*
 
 
-```c title="Set source_col parameter"
+```opensips title="Set source_col parameter"
 ...
 modparam("permissions", "source_col", "source_ip_address")
 ...
@@ -480,7 +480,7 @@ Name of trusted table column containing transport
 *Default value is "proto".*
 
 
-```c title="Set proto_col parameter"
+```opensips title="Set proto_col parameter"
 ...
 modparam("permissions", "proto_col", "transport")
 ...
@@ -497,7 +497,7 @@ Name of trusted table column containing regular
 *Default value is "from_pattern".*
 
 
-```c title="Set from_col parameter"
+```opensips title="Set from_col parameter"
 ...
 modparam("permissions", "from_col", "regexp")
 ...
@@ -515,7 +515,7 @@ Name of trusted table column containing a string
 *Default value is "tag".*
 
 
-```c title="Set tag_col parameter"
+```opensips title="Set tag_col parameter"
 ...
 modparam("permissions", "tag_col", "peer_tag")
 ...
@@ -533,7 +533,7 @@ If defined, the AVP will be
 *Default value is "undefined".*
 
 
-```c title="Set peer_tag_avp parameter"
+```opensips title="Set peer_tag_avp parameter"
 ...
 modparam("permissions", "peer_tag_avp", "$avp(i:707)")
 ...
@@ -555,7 +555,7 @@ Returns true if all pairs constructed as described in [sec call routing](#call_r
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_routing usage"
+```opensips title="allow_routing usage"
 ...
 if (allow_routing()) {
 	t_relay();
@@ -586,7 +586,7 @@ If the parameter doesn't contain full pathname then the function
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_routing(basename) usage"
+```opensips title="allow_routing(basename) usage"
 ...
 if (allow_routing("basename")) {
 	t_relay();
@@ -619,7 +619,7 @@ If the parameter doesn't contain full pathname then the function
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_routing(allow_file, deny_file) usage"
+```opensips title="allow_routing(allow_file, deny_file) usage"
 ...
 if (allow_routing("rules.allow", "rules.deny")) {
 	t_relay();
@@ -650,7 +650,7 @@ If the parameter doesn't contain full pathname then the function
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_register(basename) usage"
+```opensips title="allow_register(basename) usage"
 ...
 if (method=="REGISTER") {
 	if (allow_register("register")) {
@@ -688,7 +688,7 @@ If the parameter doesn't contain full pathname then the function
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_register(allow_file, deny_file) usage"
+```opensips title="allow_register(allow_file, deny_file) usage"
 ...
 if (method=="REGISTER") {
 	if (allow_register("register.allow", "register.deny")) {
@@ -726,7 +726,7 @@ If the parameter doesn't contain full pathname then the function
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_uri(basename, pvar) usage"
+```opensips title="allow_uri(basename, pvar) usage"
 ...
 if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
 	t_relay();
@@ -752,7 +752,7 @@ Returns true if IP address and port given as values of pvar
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_address() usage"
+```opensips title="allow_address() usage"
 ...
 
 // Check if source address/port is in group 1
@@ -776,7 +776,7 @@ Equal to allow_address(group_id, "$si", "$sp").
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_source_address(group_id) usage"
+```opensips title="allow_source_address(group_id) usage"
 ...
 
 // Check source address/port of request
@@ -799,7 +799,7 @@ Checks if source address/port is found in cached address or
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_source_address_group() usage"
+```opensips title="allow_source_address_group() usage"
 ...
 
 $var(group) = allow_source_address_group();
@@ -833,7 +833,7 @@ Source address and transport protocol given in pvar
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="allow_trusted() usage"
+```opensips title="allow_trusted() usage"
 ...
 if (allow_trusted()) {
 	t_relay();

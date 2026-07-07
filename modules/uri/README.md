@@ -55,7 +55,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="is_user usage"
+```opensips title="is_user usage"
 ...
 if (is_user("john")) {
 	...
@@ -73,7 +73,7 @@ Check if To header field uri contains tag parameter.
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="has_totag usage"
+```opensips title="has_totag usage"
 ...
 if (has_totag()) {
 	...
@@ -97,7 +97,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uri_param usage"
+```opensips title="uri_param usage"
 ...
 if (uri_param("param1")) {
 	...
@@ -122,7 +122,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="uri_param usage"
+```opensips title="uri_param usage"
 ...
 if (uri_param("param1","value1")) {
 	...
@@ -147,7 +147,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_uri_param usage"
+```opensips title="add_uri_param usage"
 ...
 add_uri_param("nat=yes");
 ...
@@ -165,7 +165,7 @@ Converts RURI, if it is tel URI, to SIP URI.  Returns true, only if
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="tel2sip usage"
+```opensips title="tel2sip usage"
 ...
 tel2sip();
 ...
@@ -182,7 +182,7 @@ Checks if userpart of URI stored in pseudo variable is
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="is_uri_user_e164 usage"
+```opensips title="is_uri_user_e164 usage"
 ...
 if (is_uri_user_e164("$fu")) {  # Check From header URI user part
    ...
