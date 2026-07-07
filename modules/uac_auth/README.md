@@ -60,7 +60,7 @@ NOTE that the password can be provided as a plain text password or
 *This parameter is required if UAC authentication is used.*
 
 
-```c title="Set credential parameter"
+```opensips title="Set credential parameter"
 ...
 modparam("uac_auth","credential","username:domain:password")
 modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e158504204629")
