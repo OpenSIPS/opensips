@@ -112,7 +112,7 @@ Enables or disables call_info event timeout notifications.
 *Default value is "1"* (enabled).
 
 
-```c title="Set call_info_timeout_notification parameter"
+```opensips title="Set call_info_timeout_notification parameter"
 ...
 modparam("presence_callinfo", "call_info_timeout_notification", 0)
 ...
@@ -129,7 +129,7 @@ Enables or disables line_seize event timeout notifications.
 *Default value is "0"* (disabled).
 
 
-```c title="Set line_seize_timeout_notification parameter"
+```opensips title="Set line_seize_timeout_notification parameter"
 ...
 modparam("presence_callinfo", "line_seize_timeout_notification", 1)
 ...

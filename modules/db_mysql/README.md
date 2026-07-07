@@ -48,7 +48,7 @@ If queries take longer than 'exec_query_threshold' microseconds, warning
 *Default value is 0 - disabled.*
 
 
-```c title="Set exec_query_threshold parameter"
+```opensips title="Set exec_query_threshold parameter"
 ...
 modparam("db_mysql", "exec_query_threshold", 60000)
 ...
@@ -72,7 +72,7 @@ The read timeout parameter is ignored on driver versions prior to
 *Default value is 2 (6 sec).*
 
 
-```c title="Set timeout_interval parameter"
+```opensips title="Set timeout_interval parameter"
 ...
 modparam("db_mysql", "timeout_interval", 2)
 ...

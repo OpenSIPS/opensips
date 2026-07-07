@@ -88,7 +88,7 @@ Hostname of the machine where the DIAMETER Client is running.
 *Default value is "localhost".*
 
 
-```c title="Set diameter_client_host parameter"
+```opensips title="Set diameter_client_host parameter"
 ...
 modparam("auth_diameter", "diameter_client_host", "10.10.10.10")
 ...
@@ -104,7 +104,7 @@ Port number where the DIAMETER Client is listening.
 *Default value is "3000".*
 
 
-```c title="Set diameter_client_port parameter"
+```opensips title="Set diameter_client_port parameter"
 ...
 modparam("auth_diameter", "diameter_client_port", 3000)
 ...
@@ -121,7 +121,7 @@ Specifies whether the domain name part of URI is used when checking the
 *Default value is "0 (0==false and 1==true )".*
 
 
-```c title="Set use_domain parameter"
+```opensips title="Set use_domain parameter"
 ...
 modparam("auth_diameter", "use_domain", 1)
 ...
@@ -159,7 +159,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="diameter_www_authorize usage"
+```opensips title="diameter_www_authorize usage"
 ...
 if(!diameter_www_authorize("siphub.net"))
 { /* user is not authorized */
@@ -190,7 +190,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="diameter_proxy_authorize usage"
+```opensips title="diameter_proxy_authorize usage"
 ...
 if(!diameter_proxy_authorize("siphub.net"))
 { /* user is not authorized */
@@ -220,7 +220,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="diameter_is_user_in usage"
+```opensips title="diameter_is_user_in usage"
 ...
 if(!diameter_is_user_in("From", "voicemail"))
 { /* user is not authorized */

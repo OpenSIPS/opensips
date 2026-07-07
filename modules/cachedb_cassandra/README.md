@@ -72,7 +72,7 @@ The urls of the server groups that OpenSIPS will connect to in order
 			The database part of the URL needs to be in the format Keyspace_ColumnFamily
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("cachedb_cassandra", "cachedb_url","cassandra:group1://localhost:9061/Keyspace1_Users");
 modparam("cachedb_cassandra", "cachedb_url","cassandra:cluster1://random_url:8888/Keyspace2_Keys");
@@ -81,7 +81,7 @@ modparam("cachedb_cassandra", "cachedb_url","cassandra:cluster1://random_url:888
 ```
 
 
-```c title="Use Cassandra servers"
+```opensips title="Use Cassandra servers"
 ...
 cache_store("cassandra:group1","key","$ru value");
 cache_fetch("cassandra:cluster1","key",$avp(10));
@@ -97,7 +97,7 @@ cache_remove("cassandra:cluster1","key");
 The timeout in ms that will be triggered in case a connection attempt fails.
 
 
-```c title="Set connection_timeout parameter"
+```opensips title="Set connection_timeout parameter"
 ...
 modparam("cachedb_cassandra", "connection_timeout",1000);
 ...
@@ -111,7 +111,7 @@ modparam("cachedb_cassandra", "connection_timeout",1000);
 The timeout in ms that will be triggered in case a Cassandra write takes too long
 
 
-```c title="Set send_timeout parameter"
+```opensips title="Set send_timeout parameter"
 ...
 modparam("cachedb_cassandra", "send_timeout",1000);
 ...
@@ -125,7 +125,7 @@ modparam("cachedb_cassandra", "send_timeout",1000);
 The timeout in ms that will be triggered in case a Cassandra read takes too long
 
 
-```c title="Set receive_timeout parameter"
+```opensips title="Set receive_timeout parameter"
 ...
 modparam("cachedb_cassandra", "receive_timeout",1000);
 ...
@@ -153,7 +153,7 @@ The consistency level desired for write operations.
 Default is 1
 
 
-```c title="Set wr_consistency_level parameter"
+```opensips title="Set wr_consistency_level parameter"
 ...
 modparam("cachedb_cassandra", "wr_consistency_level",7);
 ...
@@ -168,7 +168,7 @@ The consistency level desired for read operations.
 			Options are the same as for write consistency level.
 
 
-```c title="Set rd_consistency_level parameter"
+```opensips title="Set rd_consistency_level parameter"
 ...
 modparam("cachedb_cassandra", "rd_consistency_level",7);
 ...
