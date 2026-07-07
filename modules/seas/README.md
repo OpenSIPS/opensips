@@ -122,7 +122,7 @@ In case this parameter is ommited, SEAS listens on the default
           listen for Application Servers.
 
 
-```c title="Set listen_sockets parameter"
+```opensips title="Set listen_sockets parameter"
 ...
 modparam("seas", "listen_sockets","127.0.0.1:5080")
 ...
@@ -145,7 +145,7 @@ Creates a new transaction (if it isn't already created) and
 This function can be used within REQUEST_ROUTE.
 
 
-```c title="as_relay_t usage"
+```opensips title="as_relay_t usage"
 ...
 if (!as_relay_t("app_server_1")) { 
 log("Error sending to app server"); 
@@ -280,7 +280,7 @@ Examples of value-added services, are Virtual PBX or IPCentrex,
 This is the appearance a typical SipServlet:
 
 
-```c
+```opensips
 public class ProxyServlet extends SipServlet {
     protected void doInvite(SipServletRequest req) throws 
 ServletException, IOException
@@ -511,7 +511,7 @@ Specifies the SIP address and port in which the Application
 > [!WARNING]
 > this attribute MUST match one of the listening points
             declared within OpenSIPS in the "listen" parameters. For example in opensips.cfg:
-```c
+```opensips
 listen = tcp:localhost:5060
 listen = udp:localhost:5060
 ```
@@ -563,7 +563,7 @@ This property tells WeSIP and SEAS that every SipRequest
               through the OpenSIPS script, so that they can be accounted or
               whatever the configurator wants. For example, the configuration
               script could go:
-```c
+```opensips
 route{
         if(is_present_hf("X-WeSIP-SPIRAL")){
  /* account, log, register, or whatever */
@@ -689,7 +689,7 @@ In general, you can configure WeSIP to work with your OpenSIPS in
 ##### opensips.cfg in standalone
 
 
-```c
+```opensips
 log_level=3        # debug level (cmd line: -dddddddddd)
 log_stderror=no    # (cmd line: -E)
 check_via=no    # (cmd. line: -v)
@@ -755,7 +755,7 @@ route[1] {
 ##### opensips.cfg working as WeSIP front-end
 
 
-```c
+```opensips
 log_level=9       # debug level (cmd line: -dddddddddd)
 log_stderror=yes    # (cmd line: -E)
 

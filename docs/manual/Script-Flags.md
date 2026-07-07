@@ -71,7 +71,7 @@ In `request` route, you may have multiple branches (as a result of a `lookup()` 
 
 ### NAT flag handling
 
-```c
+```opensips
 
  ..........
  # 3 - the nat flag

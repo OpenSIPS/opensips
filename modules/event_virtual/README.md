@@ -88,7 +88,7 @@ The minimum duration in seconds that a failed subscriber is
 				available since OpenSIPS 2.4.7
 
 
-```c title="Setting the failover_timeout parameter"
+```opensips title="Setting the failover_timeout parameter"
 ...
 modparam("event_virtual", "failover_timeout", 5)
 ...

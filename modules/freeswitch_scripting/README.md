@@ -62,7 +62,7 @@ An SQL database URL which the module will use in order to
 *Default value is "NULL" (DB support disabled).*
 
 
-```c title="Setting the db_url parameter"
+```opensips title="Setting the db_url parameter"
 ...
 modparam("freeswitch_scripting", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -78,7 +78,7 @@ The SQL table name for this module.
 *Default value is "freeswitch".*
 
 
-```c title="Setting the db_table parameter"
+```opensips title="Setting the db_table parameter"
 ...
 modparam("freeswitch_scripting", "db_table", "freeswitch_sockets")
 ...
@@ -94,7 +94,7 @@ The SQL column name for the "username" ESL connect information.
 *Default value is "username".*
 
 
-```c title="Setting the db_col_username parameter"
+```opensips title="Setting the db_col_username parameter"
 ...
 modparam("freeswitch_scripting", "db_col_username", "user")
 ...
@@ -110,7 +110,7 @@ The SQL column name for the "password" ESL connect information.
 *Default value is "password".*
 
 
-```c title="Setting the db_col_password parameter"
+```opensips title="Setting the db_col_password parameter"
 ...
 modparam("freeswitch_scripting", "db_col_password", "pass")
 ...
@@ -126,7 +126,7 @@ The SQL column name for the "ip" ESL connect information.
 *Default value is "ip".*
 
 
-```c title="Setting the db_col_ip parameter"
+```opensips title="Setting the db_col_ip parameter"
 ...
 modparam("freeswitch_scripting", "db_col_ip", "ip_addr")
 ...
@@ -142,7 +142,7 @@ The SQL column name for the "port" ESL connect information.
 *Default value is "port".*
 
 
-```c title="Setting the db_col_port parameter"
+```opensips title="Setting the db_col_port parameter"
 ...
 modparam("freeswitch_scripting", "db_col_port", "tcp_port")
 ...
@@ -159,7 +159,7 @@ The SQL column name for the comma-separated, case-sensitive FreeSWITCH
 *Default value is "events_csv".*
 
 
-```c title="Setting the db_col_events parameter"
+```opensips title="Setting the db_col_events parameter"
 ...
 modparam("freeswitch_scripting", "db_col_events", "fs_events")
 ...
@@ -178,7 +178,7 @@ Add a FreeSWITCH ESL URL to which OpenSIPS will connect at startup.
 *This parameter can be set multiple times.*
 
 
-```c title="Setting the fs_subscribe parameter"
+```opensips title="Setting the fs_subscribe parameter"
 ...
 modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.10?CHANNEL_STATE")
 modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,BACKGROUND_JOB")
@@ -232,7 +232,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="*freeswitch_esl()* usage"
+```opensips title="*freeswitch_esl()* usage"
 ...
 	# ESL socket 10.0.0.10 is defined in the database (password "ClueCon")
 	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", "10.0.0.10", "$var(response)");
