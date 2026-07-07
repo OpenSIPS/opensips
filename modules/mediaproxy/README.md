@@ -118,7 +118,7 @@ Boolean flag that specifies if mediaproxy should be disabled. This
 *Default value is "0".*
 
 
-```c title="Setting the disable parameter"
+```opensips title="Setting the disable parameter"
 ...
 modparam("mediaproxy", "disable", 1)
 ...
@@ -137,7 +137,7 @@ It is the path to the filesystem socket where the mediaproxy dispatcher
             "/run/mediaproxy/dispatcher.sock".*
 
 
-```c title="Setting the mediaproxy_socket parameter"
+```opensips title="Setting the mediaproxy_socket parameter"
 ...
 modparam("mediaproxy", "mediaproxy_socket", "/run/mediaproxy/dispatcher.sock")
 ...
@@ -155,7 +155,7 @@ How much time (in milliseconds) to wait for an answer from the
 *Default value is "500".*
 
 
-```c title="Setting the mediaproxy_timeout parameter"
+```opensips title="Setting the mediaproxy_timeout parameter"
 ...
 modparam("mediaproxy", "mediaproxy_timeout", 500)
 ...
@@ -184,7 +184,7 @@ Specification of the AVP which holds the IP address from where
 *Default value is "$avp(signaling_ip)".*
 
 
-```c title="Setting the signaling_ip_avp parameter"
+```opensips title="Setting the signaling_ip_avp parameter"
 ...
 modparam("mediaproxy", "signaling_ip_avp", "$avp(nat_ip)")
 ...
@@ -206,7 +206,7 @@ Specification of the AVP which holds an optional application
 *Default value is "$avp(media_relay)".*
 
 
-```c title="Setting the media_relay_avp parameter"
+```opensips title="Setting the media_relay_avp parameter"
 ...
 modparam("mediaproxy", "media_relay_avp", "$avp(media_relay)")
 ...
@@ -227,7 +227,7 @@ Indicates the type of ICE candidate that will be added to the SDP.
 *Default value is "none".*
 
 
-```c title="Setting the ice_candidate parameter"
+```opensips title="Setting the ice_candidate parameter"
 ...
 modparam("mediaproxy", "ice_candidate", "low-priority")
 ...
@@ -251,7 +251,7 @@ Specification of the AVP which holds the ICE candidate that will be
 *Default value is "$avp(ice_candidate)".*
 
 
-```c title="Setting the ice_candidate_avp parameter"
+```opensips title="Setting the ice_candidate_avp parameter"
 ...
 modparam("mediaproxy", "ice_candidate_avp", "$avp(ice_candidate)")
 ...
@@ -295,7 +295,7 @@ This function is an advanced mechanism to use a media relay
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Using the engage_media_proxy function"
+```opensips title="Using the engage_media_proxy function"
 ...
 if (is_method("INVITE") && !has_totag()) {
     # We can also use a specific media relay if we need to
@@ -333,7 +333,7 @@ This function has the following return codes:
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="Using the use_media_proxy function"
+```opensips title="Using the use_media_proxy function"
 ...
 if (is_method("INVITE")) {
     # We can also use a specific media relay if we need to
@@ -361,7 +361,7 @@ This function should NOT be mixed with engage_media_proxy().
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="Using the end_media_session function"
+```opensips title="Using the end_media_session function"
 ...
 if (is_method("BYE")) {
     end_media_session();

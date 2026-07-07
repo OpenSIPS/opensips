@@ -92,7 +92,7 @@ The queue_url contains:
 This parameter can be set multiple times.
 
 
-```c title="Set queue_url parameter"
+```opensips title="Set queue_url parameter"
 ...
 
 modparam("event_sqs", "queue_url",
@@ -127,7 +127,7 @@ The function has the following parameters:
 - *message (string)* - The payload of the message to publish.
 
 
-```c title="sqs_publish_message() function usage"
+```opensips title="sqs_publish_message() function usage"
 ...
 
 $var(msg) = "Hello, this is a message to SQS!";

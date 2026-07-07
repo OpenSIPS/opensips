@@ -71,7 +71,7 @@ Database URL.
 *Default value is "".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 ...
@@ -89,7 +89,7 @@ Name of the table's name where to store the SIP messages. Since
 *Default value is "sip_capture".*
 
 
-```c title="Set table_name parameter"
+```opensips title="Set table_name parameter"
 ...
 modparam("sipcapture", "table_name", "homer_capture")
 
@@ -112,7 +112,7 @@ Name of the table's name where to store packets captured
 *Default value is "rtcp_capture".*
 
 
-```c title="Set rtcp_capture parameter"
+```opensips title="Set rtcp_capture parameter"
 ...
 modparam("sipcapture", "rtcp_table_name", "homer_capture")
 
@@ -132,7 +132,7 @@ Parameter to enable/disable capture globaly (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set capture_on parameter"
+```opensips title="Set capture_on parameter"
 ...
 modparam("sipcapture", "capture_on", 1)
 ...
@@ -148,7 +148,7 @@ Parameter to enable/disable capture of HEP (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set hep_capture_on parameter"
+```opensips title="Set hep_capture_on parameter"
 ...
 modparam("sipcapture", "hep_capture_on", 1)
 ...
@@ -169,7 +169,7 @@ Parameter to set the maximum number of 'INSERT' queries of captured
 *Default value is "5".*
 
 
-```c title="Set max_async_queries parameter"
+```opensips title="Set max_async_queries parameter"
 ...
 modparam("sipcapture", "max_async_queries", 3)
 ...
@@ -185,7 +185,7 @@ Parameter to enable/disable IPIP capturing (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set raw_ipip_capture_on parameter"
+```opensips title="Set raw_ipip_capture_on parameter"
 ...
 modparam("sipcapture", "raw_ipip_capture_on", 1)
 ...
@@ -203,7 +203,7 @@ Parameter to enable/disable monitoring/mirroring port capturing (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set raw_moni_capture_on parameter"
+```opensips title="Set raw_moni_capture_on parameter"
 ...
 modparam("sipcapture", "raw_moni_capture_on", 1)
 ...
@@ -228,7 +228,7 @@ Parameter indicate an listen IP address of RAW socket for IPIP capturing.
 *Default value is "".*
 
 
-```c title="Set raw_socket_listen parameter"
+```opensips title="Set raw_socket_listen parameter"
 ...
 modparam("sipcapture", "raw_socket_listen", "10.0.0.1:5060-5090")
 ...
@@ -246,7 +246,7 @@ Name of the interface to bind on the raw socket.
 *Default value is "".*
 
 
-```c title="Set raw_socket_listen parameter"
+```opensips title="Set raw_socket_listen parameter"
 ...
 modparam("sipcapture", "raw_interface", "eth0")
 ...
@@ -262,7 +262,7 @@ Parameter define how much children must be created to listen the raw socket.
 *Default value is "1".*
 
 
-```c title="Set raw_socket_listen parameter"
+```opensips title="Set raw_socket_listen parameter"
 ...
 modparam("sipcapture", "raw_sock_children", 6)
 ...
@@ -279,7 +279,7 @@ Parameter to enable/disable promiscuous mode on the raw socket.
 *Default value is "0".*
 
 
-```c title="Set promiscuous_on parameter"
+```opensips title="Set promiscuous_on parameter"
 ...
 modparam("sipcapture", "promiscuous_on", 1)
 ...
@@ -297,7 +297,7 @@ Activate Linux Socket Filter (LSF based on BPF) on the mirroring interface.
 *Default value is "0".*
 
 
-```c title="Set raw_moni_bpf_on parameter"
+```opensips title="Set raw_moni_bpf_on parameter"
 ...
 modparam("sipcapture", "raw_moni_bpf_on", 1)
 ...
@@ -313,7 +313,7 @@ Name of the capture node.
 *Default value is "homer01".*
 
 
-```c title="Set capture_node parameter"
+```opensips title="Set capture_node parameter"
 ...
 modparam("sipcapture", "capture_node", "homer03")
 ...
@@ -341,7 +341,7 @@ Specifies what path your hep messages should take. Possible
 *Default value is sip(going thorugh the main request route).*
 
 
-```c title="Set hep_route parameter"
+```opensips title="Set hep_route parameter"
 ...
 modparam("sipcapture", "hep_route", "my_hep_route")
 ...
@@ -380,7 +380,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
 
 
-```c title="sip_capture usage"
+```opensips title="sip_capture usage"
 ...
 if (is_method("REGISTER"))
 	sip_capture();
@@ -423,7 +423,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
 
 
-```c title="sip_capture usage"
+```opensips title="sip_capture usage"
 ...
 	hep_get("0x0011", "utf8-string", , $var(correlation_id));
 	if ($var(correlation_id) == null) {
@@ -592,7 +592,7 @@ Meaning of the parameters is as follows:
 				for more details.
 
 
-```c title="hep_set usage"
+```opensips title="hep_set usage"
 ...
 /* modify/add a generic chunk */
 hep_set("proto_type", "H321");
@@ -635,7 +635,7 @@ Meaning of the parameters is as follows:
 			of the chunk
 
 
-```c title="hep_set usage"
+```opensips title="hep_set usage"
 ...
 /* get a generic chunk */
 hep_get("proto_type", , $var(data), $var(vid));
@@ -685,7 +685,7 @@ Relay a message statefully to destination indicated in current URI.
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
 
 
-```c title="hep_relay usage"
+```opensips title="hep_relay usage"
 ...
 $du="sip:192.168.153.157";
 if (!hep_relay()) {
@@ -707,7 +707,7 @@ Break hep route execution and resume into the main request route.
 WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING *hep_route* PARAMETER.
 
 
-```c title="hep_resume_sip usage"
+```opensips title="hep_resume_sip usage"
 ...
 modparam("sipcapture", "hep_route", "my_hep_route")
 
@@ -736,7 +736,7 @@ Save the message inside the database. The query is being done
 	on the *max_async_queries* parameter.
 
 
-```c title="sip_capture usage"
+```opensips title="sip_capture usage"
 ...
 {
 	async(sip_capture(), capture_resume);

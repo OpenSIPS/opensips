@@ -48,7 +48,7 @@ The optional 'timeout' parameter is to control for how long the script should wa
 
   
 
-```c
+```opensips
 
 route
 {
@@ -106,7 +106,7 @@ The **launch()** statement comes with no additional module dependencies.
 ### Script syntax and usage
 
 Similarly to the **async()** statement, if your blocking function supports asynchronous mode (read the module documentation for this), then you can just throw it in the following function calls:
-```c
+```opensips
 
 launch(blocking_function(...));
 or
@@ -135,7 +135,7 @@ The return code of the function executed in async mode is available in the very 
 
   
 
-```c
+```opensips
 
 route
 {

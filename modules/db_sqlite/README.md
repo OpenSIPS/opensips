@@ -63,7 +63,7 @@ Since the library does not support a function to return the number of rows
 *Default value is 10.*
 
 
-```c title="Set alloc_limit parameter"
+```opensips title="Set alloc_limit parameter"
 ...
 modparam("db_sqlite", "alloc_limit", 25)
 ...
@@ -85,7 +85,7 @@ This parameter enables extension loading, similiar to ".load" functionality in s
 *By default, no extension is loaded.*
 
 
-```c title="Set load_extension parameter"
+```opensips title="Set load_extension parameter"
 ...
 modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so")
 modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite3_extension_init")
@@ -108,7 +108,7 @@ This parameter sets the default busy_handler for the SQLite library, that sleeps
 *Default value is 500.*
 
 
-```c title="Set busy_timeout parameter"
+```opensips title="Set busy_timeout parameter"
 ...
 modparam("db_sqlite", "busy_timeout", 5000)
 ...
@@ -129,7 +129,7 @@ This parameter allows configuring an SQLite database with "PRAGMA" statements, (
 *By default, no PRAGMA statements are executed.*
 
 
-```c title="Set exec_pragma parameter"
+```opensips title="Set exec_pragma parameter"
 ...
 modparam("db_sqlite", "exec_pragma", "journal_mode=wal")
 modparam("db_sqlite", "exec_pragma", "synchronous=normal")

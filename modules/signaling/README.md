@@ -93,7 +93,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ERROR_ROUTE.
 
 
-```c title="sl_send_reply usage"
+```opensips title="sl_send_reply usage"
 ...
 send_reply(404, "Not found");
 ...
@@ -126,7 +126,7 @@ NOTE: the variable returns the To-Tag that will be used by OpenSIPS
 		the To-tag in the replies received and forwarded by OpenSIPS.
 
 
-```c title="Usage of $sig_local_totag variable"
+```opensips title="Usage of $sig_local_totag variable"
 ...
 # stateful handling
 t_newtran();

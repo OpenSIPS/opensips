@@ -49,7 +49,7 @@ The default parameter used when the [example str](#func_example_str)
 *Default value is "" (empty sring).*
 
 
-```c title="Set 'default_str' parameter"
+```opensips title="Set 'default_str' parameter"
 ...
 modparam("example", "default_str", "TEST")
 ...
@@ -66,7 +66,7 @@ The default parameter used when the [example int](#func_example_int)
 *Default value is "0".*
 
 
-```c title="Set 'default_int' parameter"
+```opensips title="Set 'default_int' parameter"
 ...
 modparam("example", "default_int", -1)
 ...
@@ -85,7 +85,7 @@ Function that simply prints a message to log, saying that it has been called.
 This function can be used from any route.
 
 
-```c title="example usage"
+```opensips title="example usage"
 ...
 example();
 ...
@@ -109,7 +109,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="example_str() usage"
+```opensips title="example_str() usage"
 ...
 example_str("test");
 ...
@@ -133,7 +133,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="example_int() usage"
+```opensips title="example_int() usage"
 ...
 example_int(10);
 ...

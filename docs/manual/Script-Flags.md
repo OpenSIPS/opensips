@@ -67,7 +67,7 @@ In request route, you can have multiple branches (as a result of a lookup(), enu
 
 ### Nat flag handling
 
-```c
+```opensips
 
  ..........
  # 3 - the nat flag
