@@ -78,7 +78,7 @@ The urls of the server groups that OpenSIPS will connect to in order
 			as going to a replica set.
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("cachedb_mongodb", "cachedb_url","mongodb:instance1://localhost:27017/db.collection")
 modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2.3.4.5:27017,3.4.5.6:27017/replicaSetName.db.collection")
@@ -87,7 +87,7 @@ modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2
 ```
 
 
-```c title="Use MongoDB servers"
+```opensips title="Use MongoDB servers"
 ...
 cache_store("mongodb:group1","key","$ru value");
 cache_fetch("mongodb:replicaset1","key",$avp(10));
@@ -104,7 +104,7 @@ The timeout in ms that will be triggered in case a MongoDB op takes too long.
 			Default value is 3000 ( 3 seconds )
 
 
-```c title="Set op_timeout parameter"
+```opensips title="Set op_timeout parameter"
 ...
 modparam("cachedb_mongodb", "op_timeout",5000)
 ...
@@ -119,7 +119,7 @@ If set to 1, read operations are allowed to go to secondary MongoDB servers
 			Default value is 0 ( read and write requests will go to primary nodes = full consistency )
 
 
-```c title="Set slave_ok parameter"
+```opensips title="Set slave_ok parameter"
 ...
 modparam("cachedb_mongodb", "slave_ok",1);
 ...
@@ -134,7 +134,7 @@ The JSON containing the Mongo write concern that should affect all write
 			operations. More info can be found at http://docs.mongodb.org/manual/core/write-operations/
 
 
-```c title="Set write_concern parameter"
+```opensips title="Set write_concern parameter"
 ...
 modparam("cachedb_mongodb","write_concern","{ \"getLastError\": 1, "j" : "true" }")
 ...
@@ -160,7 +160,7 @@ The cachedb_mongodb module allows to run RAW queries, thus taking full advantage
 The syntax looks like the following :
 
 
-```c title="Mongo Raw Query Syntax"
+```opensips title="Mongo Raw Query Syntax"
 ...
 cache_raw_query("mongodb","{ \"op\" : \"desiredOP\", \"ns\" : \"db.collection\", \"query\": {\"_id\" : $rU} }","$avp(mongo_result)");
 ...
@@ -188,7 +188,7 @@ The currently suported operations that you can pass in the \"op\" JSON entry are
 Here are a couple examples of running some mongoDB queries :
 
 
-```c title="Mongo Raw Query Examples"
+```opensips title="Mongo Raw Query Examples"
 ...
 /* find documents where my_key has the value 345, and return just the entry1 and entry2 values from the matching documents */
 cache_raw_query("mongodb","{ \"op\" : \"find\", \"ns\" : \"my_db.my_col\", \"query\": {\"my_key\" : 345},\"fields\": { \"entry1\" : 1, \"entry2\" : 1 } }","$avp(mongo_result)");

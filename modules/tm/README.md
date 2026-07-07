@@ -204,7 +204,7 @@ Timer which hits if no final reply for a request or ACK for a
 *Default value is 30 seconds.*
 
 
-```c title="Set fr_timer parameter"
+```opensips title="Set fr_timer parameter"
 ...
 modparam("tm", "fr_timer", 10)
 ...
@@ -224,7 +224,7 @@ Timer which hits if no final reply for an INVITE arrives after a
 *Default value is 120 seconds.*
 
 
-```c title="Set fr_inv_timer parameter"
+```opensips title="Set fr_inv_timer parameter"
 ...
 modparam("tm", "fr_inv_timer", 200)
 ...
@@ -250,7 +250,7 @@ For non-INVITE transaction this timer relates to timer J of RFC 3261
 *Default value is 5 seconds.*
 
 
-```c title="Set wt_timer parameter"
+```opensips title="Set wt_timer parameter"
 ...
 modparam("tm", "wt_timer", 10)
 ...
@@ -267,7 +267,7 @@ Time after which a to-be-deleted transaction currently ref-ed by a
 *Default value is 2 seconds.*
 
 
-```c title="Set delete_timer parameter"
+```opensips title="Set delete_timer parameter"
 ...
 modparam("tm", "delete_timer", 5)
 ...
@@ -283,7 +283,7 @@ Retransmission T1 period, in milliseconds.
 *Default value is 500 milliseconds.*
 
 
-```c title="Set T1_timer parameter"
+```opensips title="Set T1_timer parameter"
 ...
 modparam("tm", "T1_timer", 700)
 ...
@@ -299,7 +299,7 @@ Maximum retransmission period, in milliseconds.
 *Default value is 4000 milliseconds.*
 
 
-```c title="Set T2_timer parameter"
+```opensips title="Set T2_timer parameter"
 ...
 modparam("tm", "T2_timer", 8000)
 ...
@@ -318,7 +318,7 @@ Should be request-uri matching used as a part of pre-3261 transaction
 *Default value is 1 (true).*
 
 
-```c title="Set ruri_matching parameter"
+```opensips title="Set ruri_matching parameter"
 ...
 modparam("tm", "ruri_matching", 0)
 ...
@@ -337,7 +337,7 @@ Should be top most VIA matching used as a part of pre-3261 transaction
 *Default value is 1 (true).*
 
 
-```c title="Set via1_matching parameter"
+```opensips title="Set via1_matching parameter"
 ...
 modparam("tm", "via1_matching", 0)
 ...
@@ -354,7 +354,7 @@ Send timeout to be used by function which use UNIX sockets
 *Default value is 2 seconds.*
 
 
-```c title="Set unix_tx_timeout parameter"
+```opensips title="Set unix_tx_timeout parameter"
 ...
 modparam("tm", "unix_tx_timeout", 5)
 ...
@@ -373,7 +373,7 @@ If true (non null value), the final response timer will be re-triggered
 *Default value is 1 (true).*
 
 
-```c title="Set restart_fr_on_each_reply parameter"
+```opensips title="Set restart_fr_on_each_reply parameter"
 ...
 modparam("tm", "restart_fr_on_each_reply", 0)
 ...
@@ -395,7 +395,7 @@ If set to empty string, the whole mechanism for variable timeout will
 *Default value is "NULL" (feature disabled).*
 
 
-```c title="Set fr_timer_avp parameter"
+```opensips title="Set fr_timer_avp parameter"
 ...
 modparam("tm", "fr_timer_avp", "$avp(fr_timer)")
 ...
@@ -417,7 +417,7 @@ If set to empty string, the whole mechanism for variable timeout will
 *Default value is "NULL" (feature disabled).*
 
 
-```c title="Set fr_inv_timer_avp parameter"
+```opensips title="Set fr_inv_timer_avp parameter"
 ...
 modparam("tm", "fr_inv_timer_avp", "$avp(fr_inv_timer)")
 ...
@@ -453,7 +453,7 @@ Each element will be appended per line in
 		definition string.
 
 
-```c title="Set tw_append parameter"
+```opensips title="Set tw_append parameter"
 ...
 modparam("tm", "tw_append",
    "test: ua=$hdr(User-Agent) ;avp=$avp(avp);$rb;time=$Ts")
@@ -470,7 +470,7 @@ Enable/disable passing of provisional replies to FIFO applications.
 *Default value is 0.*
 
 
-```c title="Set pass_provisional_replies parameter"
+```opensips title="Set pass_provisional_replies parameter"
 ...
 modparam("tm", "pass_provisional_replies", 1)
 ...
@@ -487,7 +487,7 @@ Enable/disable the usage of stateful synonym branch IDs in the
 *Default value is 1 (use synonym branches).*
 
 
-```c title="Set syn_branch parameter"
+```opensips title="Set syn_branch parameter"
 ...
 modparam("tm", "syn_branch", 0)
 ...
@@ -518,7 +518,7 @@ In mode 1, you can see the AVPs you set in request route, branch route
 *Default value is 0.*
 
 
-```c title="Set onreply_avp_mode parameter"
+```opensips title="Set onreply_avp_mode parameter"
 ...
 modparam("tm", "onreply_avp_mode", 1)
 ...
@@ -543,7 +543,7 @@ Tells how the 6xx replies should be internally handled:
 *Default value is 0.*
 
 
-```c title="Set disable_6xx_block parameter"
+```opensips title="Set disable_6xx_block parameter"
 ...
 modparam("tm", "disable_6xx_block", 1)
 ...
@@ -561,7 +561,7 @@ Enables statistics support in TM module - If enabled, the TM module
 *Default value is 1 (enabled).*
 
 
-```c title="Set enable_stats parameter"
+```opensips title="Set enable_stats parameter"
 ...
 modparam("tm", "enable_stats", 0)
 ...
@@ -590,7 +590,7 @@ Main applicability of minor branch is to fork a branch to a media
 *Default value is none (disabled).*
 
 
-```c title="Set minor_branch_flag parameter"
+```opensips title="Set minor_branch_flag parameter"
 ...
 modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 ...
@@ -611,7 +611,7 @@ If TM module should create its own timer process (timer is used for
 *Default value is 0 (disabled).*
 
 
-```c title="Set own_timer_proc parameter"
+```opensips title="Set own_timer_proc parameter"
 ...
 modparam("tm", "own_timer_proc", 1)
 ...
@@ -637,7 +637,7 @@ Creates a new transaction, returns a negative value on error. This is
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="t_newtran usage"
+```opensips title="t_newtran usage"
 ...
 if (t_newtran()) { 
 	log("UAS logic"); 
@@ -709,7 +709,7 @@ In case of error, the function returns the following codes:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="t_relay usage"
+```opensips title="t_relay usage"
 ...
 if (!t_relay()) {
     sl_reply_error();
@@ -737,7 +737,7 @@ The function may take as parameter an optional set of flags for
 This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="t_relay usage"
+```opensips title="t_relay usage"
 ...
 t_relay("tcp:192.168.1.10:5060");
 t_relay("mydomain.com:5070","0x1");
@@ -766,7 +766,7 @@ Both parameters accept any kind of pseudo-variables.
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="t_reply usage"
+```opensips title="t_reply usage"
 ...
 t_reply("404", "Use $rU not found");
 ...
@@ -794,7 +794,7 @@ All parameters accept any kind of pseudo-variables.
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="t_reply_with_body usage"
+```opensips title="t_reply_with_body usage"
 ...
 	if(is_method("INVITE"))
 	{
@@ -827,7 +827,7 @@ The function may take as parameter an optional set of flags for
 This functions can be used from REQUEST_ROUTE.
 
 
-```c title="t_replicate usage"
+```opensips title="t_replicate usage"
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
@@ -855,7 +855,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE and BRANCH_ROUTE .
 
 
-```c title="t_check_status usage"
+```opensips title="t_check_status usage"
 ...
 if (t_check_status("(487)|(408)")) {
     log("487 or 408 negative reply\n");
@@ -875,7 +875,7 @@ Flush the flags from current request into the already created
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
 
-```c title="t_flush_flags usage"
+```opensips title="t_flush_flags usage"
 ...
 t_flush_flags();
 ...
@@ -896,7 +896,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="t_local_replied usage"
+```opensips title="t_local_replied usage"
 ...
 if (t_local_replied("all")) {
 	log ("no reply received\n");
@@ -917,7 +917,7 @@ This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and
 		BRANCH_ROUTE.
 
 
-```c title="t_write_req/unix usage"
+```opensips title="t_write_req/unix usage"
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -959,7 +959,7 @@ Note: To detect retransmissions using this function you have to make sure
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
 
 
-```c title="t_check_trans usage"
+```opensips title="t_check_trans usage"
 ...
 if ( is_method("CANCEL") ) {
 	if ( t_check_trans() )
@@ -980,7 +980,7 @@ Retuns true if called for an INVITE transaction that was explicitly
 This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
 
 
-```c title="t_was_cancelled usage"
+```opensips title="t_was_cancelled usage"
 ...
 if (t_was_cancelled()) {
     log("transaction was cancelled by UAC\n");
@@ -1013,7 +1013,7 @@ Meaning of the parameters is as follows:
 This function can be used from ONREPLY_ROUTE.
 
 
-```c title="t_cancel_branch usage"
+```opensips title="t_cancel_branch usage"
 onreply_route[3] {
 ...
 	if (t_check_status("183")) {
@@ -1062,7 +1062,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		ONREPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="t_on_failure usage"
+```opensips title="t_on_failure usage"
 ...
 route { 
 	t_on_failure("1"); 
@@ -1121,7 +1121,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		ONREPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="t_on_reply usage"
+```opensips title="t_on_reply usage"
 ...
 route {
 	seturi("sip:bob@opensips.org");  # first branch
@@ -1189,7 +1189,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 		ONREPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="t_on_branch usage"
+```opensips title="t_on_branch usage"
 ...
 route { 
 	t_on_branch("1"); 

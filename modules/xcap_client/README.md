@@ -77,7 +77,7 @@ To disable it set this parameter to 0.
 *Default value is "1".*
 
 
-```c title="Set periodical_query parameter"
+```opensips title="Set periodical_query parameter"
 ...
 modparam("xcap_client", "periodical_query", 0)
 ...
@@ -98,7 +98,7 @@ To disable it set this parameter to 0.
 *Default value is "100".*
 
 
-```c title="Set query_period parameter"
+```opensips title="Set query_period parameter"
 ...
 modparam("xcap_client", "query_period", 50)
 ...
