@@ -81,7 +81,7 @@ Set to 1 to enable setting all above-mentioned environment variables
 *Default value is 0 (disabled).*
 
 
-```c title="Set 'setvars' parameter"
+```opensips title="Set 'setvars' parameter"
 ...
 modparam("exec", "setvars", 1)
 ...
@@ -98,7 +98,7 @@ Specifies the longest time a program is allowed to execute. If the
 *Default value is 0.*
 
 
-```c title="Set 'time_to_kill' parameter"
+```opensips title="Set 'time_to_kill' parameter"
 ...
 modparam("exec", "time_to_kill", 20)
 ...
@@ -116,7 +116,7 @@ Turns on the asynchronous mode for 'exec_msg' function. All commands
 *Default value is 0.*
 
 
-```c title="Set 'async' parameter"
+```opensips title="Set 'async' parameter"
 ...
 modparam("exec", "async", 1)
 ...
@@ -149,7 +149,7 @@ WARNING: if the var you are passing out has a bash special
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="exec_dset usage"
+```opensips title="exec_dset usage"
 ...
 exec_dset("echo TEST > /tmp/test.txt");
 exec_dset("echo TEST > /tmp/$rU.txt");
@@ -184,7 +184,7 @@ WARNING: if the var you are passing out has a bash special
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="exec_msg usage"
+```opensips title="exec_msg usage"
 ...
 exec_msg("echo TEST > /tmp/test.txt");
 exec_msg("echo TEST > /tmp/$rU.txt");
@@ -217,7 +217,7 @@ WARNING: if the var you are passing out has a bash special
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE.
 
 
-```c title="exec_avp usage"
+```opensips title="exec_avp usage"
 ...
 exec_avp("echo TEST");
 exec_avp("echo TEST", "$avp(test)");
@@ -250,7 +250,7 @@ WARNING: if the var you are passing out has a bash special
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE.
 
 
-```c title="exec_getenv usage"
+```opensips title="exec_getenv usage"
 ...
 exec_getenv("HOSTNAME");
 exec_getenv("HOSTNAME", "$avp(test)");

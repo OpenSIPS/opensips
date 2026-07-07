@@ -99,7 +99,7 @@ It represents the value returned by last function executed (similar to $? from b
 
 Example of usage:
 
-```c
+```opensips
 route {
 route(1);
 if($retcode==1)
