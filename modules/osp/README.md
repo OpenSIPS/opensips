@@ -40,7 +40,7 @@ The OSP module depends on the following modules which must be loaded before the 
 The work_mode (integer) parameter instructs the OSP module what mode it should work in. If this value is set to 0, the OSP module wokes in direct mode. If this value is set to 1, the OSP module works in indirect mode. The default value is 0.
 
 
-```c title="Instructing the module to work in direct mode"
+```opensips title="Instructing the module to work in direct mode"
 modparam("osp","work_mode",0)
         
 ```
@@ -52,7 +52,7 @@ modparam("osp","work_mode",0)
 The service_type (integer) parameter instructs the OSP module what services it should provide. If this value is set to 0, the OSP module provides normal voice service. If this value is set to 1, the OSP module provides ported number query service. The default value is 0.
 
 
-```c title="Instructing the module to provide normal voice service"
+```opensips title="Instructing the module to provide normal voice service"
 modparam("osp","service_type",0)
         
 ```
@@ -70,7 +70,7 @@ These sp_uri (string) parameters define peering servers to be used for requestin
 The uniform resource identifier for requests to the peering server. This component is not optional and must be included.
 
 
-```c title="Setting the OSP servers"
+```opensips title="Setting the OSP servers"
 modparam("osp","sp1_uri","http://osptestserver.transnexus.com:5045/osp")
 modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
         
@@ -83,7 +83,7 @@ modparam("osp","sp2_uri","https://[1.2.3.4]:1443/osp")
 These sp_weight (integer) parameters are used for load balancing peering requests to peering servers. These parameters are most effective when configured as factors of 1000. For example, if sp1_uri should manage twice the traffic load of sp2_uri, then set sp1_weight to 2000 and sp2_weight to 1000. Shared load balancing between peering servers is recommended. However, peering servers can be configured as primary and backup by assigning a sp_weight of 0 to the primary server and a non-zero sp_weight to the back-up server. The default values for sp1_weight and sp2_weight are 1000.
 
 
-```c title="Setting the OSP server weights"
+```opensips title="Setting the OSP server weights"
 modparam("osp","sp1_weight",1000)
         
 ```
@@ -95,7 +95,7 @@ modparam("osp","sp1_weight",1000)
 The device_ip (string) is a recommended parameter that explicitly defines the IP address of OpenSIPS in a peering request message (as SourceAlternate type=transport).  The dotted-decimal IP address must be in brackets as shown in the example below.
 
 
-```c title="Setting the device IP address"
+```opensips title="Setting the device IP address"
 modparam("osp","device_ip","[127.0.0.1]:5060")
         
 ```
@@ -107,7 +107,7 @@ modparam("osp","device_ip","[127.0.0.1]:5060")
 The use_security_features (integer) parameter instructs the OSP module how to use the OSP security features. If this value is set to 1, the OSP module uses the OSP security features. If this value is set to 0, the OSP module will not use the OSP security features. The default value is 0.
 
 
-```c title="Instructing the module not to use OSP security features"
+```opensips title="Instructing the module not to use OSP security features"
 modparam("osp","use_security_features",0)
         
 ```
@@ -131,7 +131,7 @@ If use_security_features parameter is set to 0, signed tokens cannot be validate
 2 - Validate both signed and unsigned tokens are allowed. Calls with valid tokens are allowed.
 
 
-```c title="Setting the token format"
+```opensips title="Setting the token format"
 modparam("osp","token_format",2)
         
 ```
@@ -149,7 +149,7 @@ If use_security_features parameter is set to 0, these parameters will be ignored
 If the default CFG_DIR value was used at compile time, the files will be loaded from:
 
 
-```c title="Set authorization files"
+```opensips title="Set authorization files"
 modparam("osp","private_key","/usr/local/etc/opensips/pkey.pem")
 modparam("osp","local_certificate","/usr/local/etc/opensips/localcert.pem")
 modparam("osp","ca_certificates","/usr/local/etc/opensips/cacert.pem")
@@ -163,7 +163,7 @@ modparam("osp","ca_certificates","/usr/local/etc/opensips/cacert.pem")
 The enable_crypto_hardware_support (integer) parameter is used to set the cryptographic hardware acceleration engine in the openssl library. The default value is 0 (no crypto hardware is present). If crypto hardware is used, the value should be set to 1.
 
 
-```c title="Setting the hardware support"
+```opensips title="Setting the hardware support"
 modparam("osp","enable_crypto_hardware_support",0)
         
 ```
@@ -175,7 +175,7 @@ modparam("osp","enable_crypto_hardware_support",0)
 The ssl_lifetime (integer) parameter defines the lifetime, in seconds, of a single SSL session key. Once this time limit is exceeded, the OSP module will negotiate a new session key. Communication exchanges in progress will not be interrupted when this time limit expires. This is an optional field with default value is 200 seconds.
 
 
-```c title="Setting the ssl lifetime"
+```opensips title="Setting the ssl lifetime"
 modparam("osp","ssl_lifetime",200)
         
 ```
@@ -187,7 +187,7 @@ modparam("osp","ssl_lifetime",200)
 The persistence (integer) parameter defines the time, in seconds, that an HTTP connection should be maintained after the completion of a communication exchange. The OSP module will maintain the connection for this time period in anticipation of future communication exchanges to the same peering server.
 
 
-```c title="Setting the persistence"
+```opensips title="Setting the persistence"
 modparam("osp","persistence",1000)
         
 ```
@@ -199,7 +199,7 @@ modparam("osp","persistence",1000)
 The retry_delay (integer) parameter defines the time, in seconds, between retrying connection attempts to an OSP peering server. After exhausting all peering servers the OSP module will delay for this amount of time before resuming connection attempts. This is an optional field with default value is 1 second.
 
 
-```c title="Setting the retry delay"
+```opensips title="Setting the retry delay"
 modparam("osp","retry_delay",1)
         
 ```
@@ -211,7 +211,7 @@ modparam("osp","retry_delay",1)
 The retry_limit (integer) parameter defines the maximum number of retries for connection attempts to a peering server. If no connection is established after this many retry attempts to all peering servers, the OSP module will cease connection attempts and return appropriate error codes. This number does not count the initial connection attempt, so that a retry_limit of 1 will result in a total of two connection attempts to every peering server. The default value is 2.
 
 
-```c title="Setting the retry limit"
+```opensips title="Setting the retry limit"
 modparam("osp","retry_limit",2)
         
 ```
@@ -223,7 +223,7 @@ modparam("osp","retry_limit",2)
 The timeout (integer) parameter defines the maximum time in milliseconds, to wait for a response from a peering server. If no response is received within this time, the current connection is aborted and the OSP module attempts to contact the next peering server. The default value is 10 seconds.
 
 
-```c title="Setting the timeout"
+```opensips title="Setting the timeout"
 modparam("osp","timeout",10)
         
 ```
@@ -235,7 +235,7 @@ modparam("osp","timeout",10)
 The support_nonsip_protocol (integer) parameter is used to tell the OSP module if non-SIP signaling protocol destination devices are supported. The default value is 0.
 
 
-```c title="Setting support non-SIP destination devices"
+```opensips title="Setting support non-SIP destination devices"
 modparam("osp","support_nonsip_protocol",0)
         
 ```
@@ -247,7 +247,7 @@ modparam("osp","support_nonsip_protocol",0)
 The max_destinations (integer) parameter defines the maximum number of destinations that OpenSIPS requests the peering server to return in a peering response. The OSP module supports up to 12 destiantions.  The default value is 12.
 
 
-```c title="Setting the number of destination"
+```opensips title="Setting the number of destination"
 modparam("osp","max_destinations",12)
         
 ```
@@ -259,7 +259,7 @@ modparam("osp","max_destinations",12)
 The report_networkid (integer) parameter is used to tell the OSP module if to report network ID in completed call CDRs. If it is set to 0, ths OSP module does not report any network ID. If it is set to 1, the OSP module reports source network ID. If it is set to 2, the OSP module reports destination network ID. If it is set to 3, the OSP module report both source and destination network IDs.  The default value is 3.
 
 
-```c title="Setting report network ID flag"
+```opensips title="Setting report network ID flag"
 modparam("osp","report_networkid",3)
         
 ```
@@ -271,7 +271,7 @@ modparam("osp","report_networkid",3)
 The validate_call_id (integer) parameter instructs the OSP module to validate call id in the peering token. If this value is set to 1, the OSP module validates that the call id in the SIP INVITE message matches the call id in the peering token. If they do not match the INVITE is rejected. If this value is set to 0, the OSP module will not validate the call id in the peering token. The default value is 1.
 
 
-```c title="Instructing the module to validate call id"
+```opensips title="Instructing the module to validate call id"
 modparam("osp","validate_call_id",1)
         
 ```
@@ -283,7 +283,7 @@ modparam("osp","validate_call_id",1)
 The use_number_portability (integer) parameter instructs the OSP module how to use the number portability parameters in the Request URI of the SIP INVITE message. If this value is set to 1, the OSP module uses the number portability parameters in the Request URI when these parameters exist. If this value is set to 0, the OSP module will not use the number portability parameters. The default value is 1.
 
 
-```c title="Instructing the module to use number portability parameters in Request URI"
+```opensips title="Instructing the module to use number portability parameters in Request URI"
 modparam("osp","use_number_portablity",1)
         
 ```
@@ -295,7 +295,7 @@ modparam("osp","use_number_portablity",1)
 The redirection_uri_format (integer) parameter instructs the OSP module to use the different URI format in the SIP redirection message. If this value is set to 0, the OSP module uses "xxxxxxxxxx@xxx.xxx.xxx.xxx" URI in the SIP redirection messages. If this value is set to 1, the OSP module will use "<xxxxxxxxxx@xxx.xxx.xxx.xxx>" URI in the SIP redirection messages. The default value is 1
 
 
-```c title="Setting the redirection URI format"
+```opensips title="Setting the redirection URI format"
 modparam("osp","redirection_uri_format",1)
         
 ```
@@ -307,7 +307,7 @@ modparam("osp","redirection_uri_format",1)
 The append_userphone (integer) parameter instructs the OSP module if to append "user=phone" parameter in URI. If this value is set to 0, the OSP module does not append "user=phone" parameter. If this value is set to 1, the OSP module will append "user=phone" parameter. The default value is 0
 
 
-```c title="Append user=phone parameter"
+```opensips title="Append user=phone parameter"
 modparam("osp","append_userphone",0)
         
 ```
@@ -331,7 +331,7 @@ The networkid_location (integer) parameter instructs the OSP module where the de
 3 - network ID is appended as header parameter. Only works when redirection_uri_format is 1.
 
 
-```c title="Append networkid location"
+```opensips title="Append networkid location"
 modparam("osp","networkid_location",2)
         
 ```
@@ -343,7 +343,7 @@ modparam("osp","networkid_location",2)
 The networkid_parameter (string) parameter instructs the OSP module to use which parameter name in outbound destination URIs to append destination network ID. The default value is "networkid"
 
 
-```c title="Networkid parameter name"
+```opensips title="Networkid parameter name"
 modparam("osp","networkid_param","networkid")
         
 ```
@@ -355,7 +355,7 @@ modparam("osp","networkid_param","networkid")
 The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(_osp_source_device_)".  Then the source device IP can be set by "$avp(_osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
 
 
-```c title="Setting the source device IP AVP"
+```opensips title="Setting the source device IP AVP"
 modparam("osp","source_device_avp","$avp(srcdev)")
         
 ```
@@ -367,7 +367,7 @@ modparam("osp","source_device_avp","$avp(srcdev)")
 The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(_osp_source_networkid_)".  Then the source network ID can be set by "$avp(_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
 
 
-```c title="Setting the source network ID AVP"
+```opensips title="Setting the source network ID AVP"
 modparam("osp","source_networkid_avp","$avp(snid)")
         
 ```
@@ -379,7 +379,7 @@ modparam("osp","source_networkid_avp","$avp(snid)")
 The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(_osp_custom_info_)".  Then the custom information can be set by "$avp(_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
 
 
-```c title="Setting the custom info AVP"
+```opensips title="Setting the custom info AVP"
 modparam("osp","custom_info_avp","$avp(cinfo)")
         
 ```
@@ -397,7 +397,7 @@ This function checks for the existence of the OSP-Auth-Token header field.
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="checkospheader usage"
+```opensips title="checkospheader usage"
 ...
 if (checkospheader()) {
   log(1,"OSP header field found.\n");
@@ -418,7 +418,7 @@ This function validates an OSP-Token specified in the OSP-Auth-Tokenheader field
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="validateospheader usage"
+```opensips title="validateospheader usage"
 ...
 if (validateospheader()) {
   log(1,"valid OSP header found\n");
@@ -442,7 +442,7 @@ The address of the called party must be a valid E164 number, otherwise this func
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="requestosprouting usage"
+```opensips title="requestosprouting usage"
 ...
 if (requestosprouting()) {
   log(1,"successfully queried OSP server, now relaying call\n");
@@ -463,7 +463,7 @@ This function is used to check if there is any route for the call.
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="checkosproute usage"
+```opensips title="checkosproute usage"
 ...
 if (checkosproute()) {
   log(1,"There is at least one route for the call\n");
@@ -484,7 +484,7 @@ This function tries to prepare the INVITE to be forwarded using the destination 
 This function can be used from BRANCH_ROUTE.
 
 
-```c title="prepareosproute usage"
+```opensips title="prepareosproute usage"
 ...
 if (prepareosproute()) {
   log(1,"successfully prepared the route, now relaying call\n");
@@ -505,7 +505,7 @@ This function tries to prepare all the routes in the list returned by the peerin
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="prepareredirectosproutes usage"
+```opensips title="prepareredirectosproutes usage"
 ...
 if (prepareredirectosproutes()) {
   log(1,"Routes are prepared, now redirecting the call\n");
@@ -526,7 +526,7 @@ This function tries to prepare all the routes in the list returned by the peerin
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
-```c title="prepareallosproutes usage"
+```opensips title="prepareallosproutes usage"
 ...
 if (prepareallosproutes()) {
   log(1,"Routes are prepared, now forking the call\n");
@@ -547,7 +547,7 @@ This function is used to check if the calling number is translated. Before calli
 This function can be used from BRANCH_ROUTE.
 
 
-```c title="checkcallingtranslation usage"
+```opensips title="checkcallingtranslation usage"
 ...
 if (checkcallingtranslation()) {
   # Remove the Remote_Party-ID from the received message
@@ -578,7 +578,7 @@ Meaning of the parameter is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="reportospusage usage"
+```opensips title="reportospusage usage"
 ...
 if (is_direction("downstream")) {
   log(1,"This BYE message is from SOURCE\n");

@@ -96,7 +96,7 @@ URL of the database table to be used.
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("pdt", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -112,7 +112,7 @@ Table name.
 *Default value is "pdt".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("pdt", "db_table", "pdt")
 ...
@@ -128,7 +128,7 @@ Name of 'sdomain' column.
 *Default value is "sdomain".*
 
 
-```c title="Set sdomain_column parameter"
+```opensips title="Set sdomain_column parameter"
 ...
 modparam("pdt", "domain_column", "source_domain")
 ...
@@ -144,7 +144,7 @@ Name of 'prefix' column.
 *Default value is "prefix".*
 
 
-```c title="Set prefix_column parameter"
+```opensips title="Set prefix_column parameter"
 ...
 modparam("pdt", "prefix_column", "prefix")
 ...
@@ -160,7 +160,7 @@ Name of 'domain' column.
 *Default value is "domain".*
 
 
-```c title="Set domain_column parameter"
+```opensips title="Set domain_column parameter"
 ...
 modparam("pdt", "domain_column", "hostname")
 ...
@@ -180,7 +180,7 @@ Default leading prefix who denotes what URI needs to be translated
 *Default value is NULL.*
 
 
-```c title="Set prefix parameter"
+```opensips title="Set prefix parameter"
 ...
 modparam("pdt", "prefix", "00")
 ...
@@ -196,7 +196,7 @@ The list with characters allowed in prefix.
 *Default value is "0123456789".*
 
 
-```c title="Set char_list parameter"
+```opensips title="Set char_list parameter"
 ...
 modparam("pdt", "char_list", "0123456789*+")
 ...
@@ -213,7 +213,7 @@ Module will check if destination domain is duplicated for same
 *Default value is 1.*
 
 
-```c title="Set check_domain parameter"
+```opensips title="Set check_domain parameter"
 ...
 modparam("pdt", "check_domain", 0)
 ...
@@ -271,7 +271,7 @@ The "multidomain_mode" parameter specifies the kind of multidomain
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
 
-```c title="prefix2domain usage"
+```opensips title="prefix2domain usage"
 ...
 prefix2domain("2", "2");
 ...
@@ -289,7 +289,7 @@ The same as prefix2domain(rewrite_mode, "0"), that is without
 		the source domain.
 
 
-```c
+```opensips
 ...
 prefix2domain("2");
 ...
@@ -302,7 +302,7 @@ prefix2domain("2");
 The same as prefix2domain("0", "0").
 
 
-```c
+```opensips
 ...
 prefix2domain();
 ...
