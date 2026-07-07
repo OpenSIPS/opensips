@@ -147,7 +147,7 @@ SQL address to the DB server -- database specific. This must be
 		and cc_calls tables).
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("call_center", "db_url", 
 	"mysql://opensips:opensipsrw@localhost/opensips")
@@ -162,7 +162,7 @@ SQL address to the DB server -- database specific. This must be
 		the Database where the CDRs table (cc_cdrs) is located.
 
 
-```c title="Set acc_db_url parameter"
+```opensips title="Set acc_db_url parameter"
 ...
 modparam("call_center", "acc_db_url", 
 	"mysql://opensips:opensipsrw@localhost/opensips_cdrs")
@@ -188,7 +188,7 @@ The module provides an B2B scenario file
 *Default value is "call center".*
 
 
-```c title="Set b2b_scenario parameter"
+```opensips title="Set b2b_scenario parameter"
 ...
 modparam("b2b_logic", "script_scenario", "/etc/opensips/scenario_callcenter.xml")
 modparam("call_center", "b2b_scenario", "call center")
@@ -207,7 +207,7 @@ Time for an agent between finishing a call and receiving the next
 *Default value is "30 seconds".*
 
 
-```c title="Set wrapup_time parameter"
+```opensips title="Set wrapup_time parameter"
 ...
 modparam("call_center", "wrapup_time", 45)
 ...
@@ -251,7 +251,7 @@ In case of error, FALSE is returned to the script with the following
 - **-5** - internal error;
 
 
-```c title="cc_handle_call usage"
+```opensips title="cc_handle_call usage"
 ...
 if (is_method("INVITE") and !has_totag()) {
 	if (!cc_handle_call("tech_support")) {
@@ -278,7 +278,7 @@ The **agentID** mandatory parameter is
 		anything else means logged in.
 
 
-```c title="cc_agent_login usage"
+```opensips title="cc_agent_login usage"
 ...
 # log off the 'agentX' agent
 cc_agent_login("agentX","0");

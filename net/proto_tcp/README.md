@@ -79,7 +79,7 @@ Time in milliseconds after a TCP connection will be closed if it is
 *Default value is 100 ms.*
 
 
-```c title="Set tcp_send_timeout parameter"
+```opensips title="Set tcp_send_timeout parameter"
 ...
 modparam("proto_tcp", "tcp_send_timeout", 200)
 ...
@@ -100,7 +100,7 @@ The maximum number of chunks that a SIP message is expected to
 *Default value is 4.*
 
 
-```c title="Set tcp_max_msg_chunks parameter"
+```opensips title="Set tcp_max_msg_chunks parameter"
 ...
 modparam("proto_tcp", "tcp_max_msg_chunks", 8)
 ...
@@ -117,7 +117,7 @@ Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over TCP.
 *Default value is 1 (enabled).*
 
 
-```c title="Set tcp_crlf_pingpong parameter"
+```opensips title="Set tcp_crlf_pingpong parameter"
 ...
 modparam("proto_tcp", "tcp_crlf_pingpong", 0)
 ...
@@ -136,7 +136,7 @@ Drop CRLF (\r\n) ping messages. When this parameter is enabled,
 *Default value is 0 (disabled).*
 
 
-```c title="Set tcp_crlf_drop parameter"
+```opensips title="Set tcp_crlf_drop parameter"
 ...
 modparam("proto_tcp", "tcp_crlf_drop", 1)
 ...
@@ -155,7 +155,7 @@ If the TCP connect and write operations should be done in an
 *Default value is 1 (enabled).*
 
 
-```c title="Set tcp_async parameter"
+```opensips title="Set tcp_async parameter"
 ...
 modparam("proto_tcp", "tcp_async", 0)
 ...
@@ -174,7 +174,7 @@ If *tcp_async* is enabled, this specifies the
 *Default value is 32.*
 
 
-```c title="Set tcp_async_max_postponed_chunks parameter"
+```opensips title="Set tcp_async_max_postponed_chunks parameter"
 ...
 modparam("proto_tcp", "tcp_async_max_postponed_chunks", 16)
 ...
@@ -194,7 +194,7 @@ If *tcp_async* is enabled, this specifies the
 *Default value is 100 ms.*
 
 
-```c title="Set tcp_async_local_connect_timeout parameter"
+```opensips title="Set tcp_async_local_connect_timeout parameter"
 ...
 modparam("proto_tcp", "tcp_async_local_connect_timeout", 200)
 ...
@@ -214,7 +214,7 @@ If *tcp_async* is enabled, this specifies the
 *Default value is 10 ms.*
 
 
-```c title="Set tcp_async_local_write_timeout parameter"
+```opensips title="Set tcp_async_local_write_timeout parameter"
 ...
 modparam("proto_tcp", "tcp_async_local_write_timeout", 100)
 ...

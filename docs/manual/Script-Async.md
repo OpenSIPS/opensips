@@ -40,7 +40,7 @@ Because the **async()** statement is *serial with script execution* (see below),
 The return code of the function executed in async mode is available in the very beginning of the `resume_route` in the `$rc` or `$retcode` variable. Also, all output parameters (variables in function parameters used to carry output values) will be available in `resume_route`.
 
 
-```c
+```opensips
 
 route
 {

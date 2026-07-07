@@ -84,7 +84,7 @@ NOTE: diameter support was developed for DISC (DIameter Server Client
 #### General Example
 
 
-```c
+```opensips
 loadmodule "modules/acc/acc.so"
 modparam("acc", "log_level", 1)
 modparam("acc", "log_flag", "LOG_FLAG")
@@ -359,7 +359,7 @@ Should be early media (any provisional reply with body) accounted too ?
 Default value is 0 (no).
 
 
-```c title="early_media example"
+```opensips title="early_media example"
 modparam("acc", "early_media", 1)
 ```
 
@@ -378,7 +378,7 @@ Per transaction flag which says if the transaction should be
 Default value is not-set (no flag).
 
 
-```c title="failed_transaction_flag example"
+```opensips title="failed_transaction_flag example"
 modparam("acc", "failed_transaction_flag", "FAIL_TRANS_FLAG")
 ```
 
@@ -394,7 +394,7 @@ By default, CANCEL reporting is disabled -- most accounting
 Default value is 0 (no).
 
 
-```c title="report_cancels example"
+```opensips title="report_cancels example"
 modparam("acc", "report_cancels", 1)
 ```
 
@@ -415,7 +415,7 @@ It affects all values related to TO and FROM headers (body, URI,
 Default value is 0 (disabled).
 
 
-```c title="detect_direction example"
+```opensips title="detect_direction example"
 modparam("acc", "detect_direction", 1)
 ```
 
@@ -434,7 +434,7 @@ If empty, the multi-leg accounting support will be disabled.
 Default value is 0 (disabled).
 
 
-```c title="multi_leg_info example"
+```opensips title="multi_leg_info example"
 # for syslog-based accounting, use any text you want to be printed
 modparam("acc", "multi_leg_info",
     "text1=$avp(src);text2=$avp(dst)")
@@ -470,7 +470,7 @@ If empty, the multi-leg support for BYE requests is disabled.
 Default value is 0 (disabled).
 
 
-```c title="multi_leg_bye_info example"
+```opensips title="multi_leg_bye_info example"
 # for syslog-based accounting, use any text you want to be printed
 modparam("acc", "multi_leg_bye_info",
     "text1=$avp(src);text2=$avp(dst)")
@@ -496,7 +496,7 @@ Request flag which needs to be set to account a transaction via syslog.
 Default value is not-set (no flag).
 
 
-```c title="log_flag example"
+```opensips title="log_flag example"
 modparam("acc", "log_flag", "LOG_FLAG")
 ```
 
@@ -514,7 +514,7 @@ Request flag which needs to be set to account missed calls via syslog.
 Default value is not-set (no flag).
 
 
-```c title="log_missed_flag example"
+```opensips title="log_missed_flag example"
 modparam("acc", "log_missed_flag", "LOG_MISSED_FLAG")
 ```
 
@@ -528,7 +528,7 @@ Log level at which accounting messages are issued to syslog.
 Default value is L_NOTICE.
 
 
-```c title="log_level example"
+```opensips title="log_level example"
 modparam("acc", "log_level", 2)   # Set log_level to 2
 ```
 
@@ -544,7 +544,7 @@ Log facility to which accounting messages are issued to syslog.
 Default value is LOG_DAEMON.
 
 
-```c title="log_facility example"
+```opensips title="log_facility example"
 modparam("acc", "log_facility", "LOG_DAEMON")
 ```
 
@@ -558,7 +558,7 @@ Extra values to be logged.
 Default value is NULL.
 
 
-```c title="log_extra example"
+```opensips title="log_extra example"
 modparam("acc", "log_extra",
 	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 ```
@@ -578,7 +578,7 @@ Extra values to be logged to logfile. Note that this parameter makes
 Default value is NULL.
 
 
-```c title="log_extra_bye example"
+```opensips title="log_extra_bye example"
 modparam("acc", "log_extra_bye",
 	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 ```
@@ -597,7 +597,7 @@ If the parameter is set to empty string, the AAA accounting support
 Default value is "NULL".
 
 
-```c title="Set aaa_url parameter"
+```opensips title="Set aaa_url parameter"
 ...
 modparam("acc", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 ...
@@ -618,7 +618,7 @@ Request flag which needs to be set to account a
 Default value is not-set (no flag).
 
 
-```c title="aaa_flag example"
+```opensips title="aaa_flag example"
 modparam("acc", "aaa_flag", "AAA_FLAG")
 ```
 
@@ -637,7 +637,7 @@ Request flag which needs to be set to account missed
 Default value is not-set (no flag).
 
 
-```c title="aaa_missed_flag example"
+```opensips title="aaa_missed_flag example"
 modparam("acc", "aaa_missed_flag", "AAA_MISSED_FLAG")
 ```
 
@@ -651,7 +651,7 @@ AAA service type used for accounting.
 Default value is not-set.
 
 
-```c title="service_type example"
+```opensips title="service_type example"
 # Default value of service type for SIP is 15
 modparam("acc", "service_type", 15)
 ```
@@ -666,7 +666,7 @@ Extra values to be logged via AAA - AAA specific.
 Default value is NULL.
 
 
-```c title="aaa_extra example"
+```opensips title="aaa_extra example"
 modparam("acc", "aaa_extra",
 	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 ```
@@ -687,7 +687,7 @@ Extra values to be logged via AAA when a BYE message is received -
 Default value is NULL.
 
 
-```c title="aaa_extra_bye example"
+```opensips title="aaa_extra_bye example"
 modparam("acc", "aaa_extra_bye",
 	"via=$hdr(Via[*]); email=$avp(email); Bcontact=$ct / reply")
 ```
@@ -707,7 +707,7 @@ Request flag which needs to be set to account a
 Default value is not-set (no flag).
 
 
-```c title="db_flag example"
+```opensips title="db_flag example"
 modparam("acc", "db_flag", "DB_FLAG")
 ```
 
@@ -726,7 +726,7 @@ Request flag which needs to be set to account missed
 Default value is not-set (no flag).
 
 
-```c title="db_missed_flag example"
+```opensips title="db_missed_flag example"
 modparam("acc", "db_missed_flag", "DB_MISSED_FLAG")
 ```
 
@@ -740,7 +740,7 @@ Table name of accounting successfull calls -- database specific.
 Default value is "acc"
 
 
-```c title="db_table_acc example"
+```opensips title="db_table_acc example"
 modparam("acc", "db_table_acc", "myacc_table")
 ```
 
@@ -763,7 +763,7 @@ NOTE: when using auto CDR generation, the AVP with the table name
 Default value is "acc"
 
 
-```c title="db_table_avp example"
+```opensips title="db_table_avp example"
 modparam("acc", "db_table_avp", "$avp(acc_table)")
 ...
 route(OUTBOUND_ACC) {
@@ -782,7 +782,7 @@ Table name for accounting missed calls -- database specific.
 Default value is "missed_calls"
 
 
-```c title="db_table_missed_calls example"
+```opensips title="db_table_missed_calls example"
 modparam("acc", "db_table_missed_calls", "myMC_table")
 ```
 
@@ -797,7 +797,7 @@ SQL address -- database specific. If is set to NULL or empty string,
 Default value is "NULL" (SQL disabled).
 
 
-```c title="db_url example"
+```opensips title="db_url example"
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 ```
 
@@ -812,7 +812,7 @@ Column name in accounting table to store the request's method name as
 Default value is "method".
 
 
-```c title="acc_method_column example"
+```opensips title="acc_method_column example"
 modparam("acc", "acc_method_column", "method")
 ```
 
@@ -826,7 +826,7 @@ Column name in accounting table to store the From header TAG parameter.
 Default value is "from_tag".
 
 
-```c title="acc_from_tag_column example"
+```opensips title="acc_from_tag_column example"
 modparam("acc", "acc_from_tag_column", "from_tag")
 ```
 
@@ -840,7 +840,7 @@ Column name in accounting table to store the To header TAG parameter.
 Default value is "to_tag".
 
 
-```c title="acc_to_tag_column example"
+```opensips title="acc_to_tag_column example"
 modparam("acc", "acc_to_tag_column", "to_tag")
 ```
 
@@ -854,7 +854,7 @@ Column name in accounting table to store the request's Callid value.
 Default value is "callid".
 
 
-```c title="acc_callid_column example"
+```opensips title="acc_callid_column example"
 modparam("acc", "acc_callid_column", "callid")
 ```
 
@@ -869,7 +869,7 @@ Column name in accounting table to store the final reply's numeric code
 Default value is "sip_code".
 
 
-```c title="acc_sip_code_column example"
+```opensips title="acc_sip_code_column example"
 modparam("acc", "acc_sip_code_column", "sip_code")
 ```
 
@@ -884,7 +884,7 @@ Column name in accounting table to store the final reply's reason
 Default value is "sip_reason".
 
 
-```c title="acc_sip_reason_column example"
+```opensips title="acc_sip_reason_column example"
 modparam("acc", "acc_sip_reason_column", "sip_reason")
 ```
 
@@ -899,7 +899,7 @@ Column name in accounting table to store the time stamp of the
 Default value is "time".
 
 
-```c title="acc_time_column example"
+```opensips title="acc_time_column example"
 modparam("acc", "acc_time_column", "time")
 ```
 
@@ -913,7 +913,7 @@ Extra values to be logged into database - DB specific.
 Default value is NULL.
 
 
-```c title="db_extra example"
+```opensips title="db_extra example"
 modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(email)")
 ```
 
@@ -932,7 +932,7 @@ Extra values to be logged into database when a BYE message is received
 Default value is NULL.
 
 
-```c title="db_extra_bye example"
+```opensips title="db_extra_bye example"
 modparam("acc", "db_extra_bye", "ct=$hdr(Content-type); email=$avp(email)")
 ```
 
@@ -951,7 +951,7 @@ Request flag which needs to be set to account a
 Default value is not-set (no flag).
 
 
-```c title="diameter_flag example"
+```opensips title="diameter_flag example"
 modparam("acc", "diameter_flag", "DIAMETER_FLAG")
 ```
 
@@ -970,7 +970,7 @@ Request flag which needs to be set to account missed
 Default value is not-set (no flag).
 
 
-```c title="diameter_missed_flag example"
+```opensips title="diameter_missed_flag example"
 modparam("acc", "diameter_missed_flag", "DIAMETER_MISSED_FLAG")
 ```
 
@@ -985,7 +985,7 @@ Hostname of the machine where the DIAMETER Client is
 Default value is "localhost".
 
 
-```c title="diameter_client_host example"
+```opensips title="diameter_client_host example"
 modparam("acc", "diameter_client_host", "3a_server.net")
 ```
 
@@ -1000,7 +1000,7 @@ Port number where the Diameter Client is
 Default value is "3000".
 
 
-```c title="diameter_client_host example"
+```opensips title="diameter_client_host example"
 modparam("acc", "diameter_client_port", 3000)
 ```
 
@@ -1014,7 +1014,7 @@ Extra values to be logged via DIAMETER - DIAMETER specific.
 Default value is NULL.
 
 
-```c title="diameter_extra example"
+```opensips title="diameter_extra example"
 modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(email)")
 ```
 
@@ -1033,7 +1033,7 @@ Request flag which needs to be set to account a transaction through
 Default value is not-set (no flag).
 
 
-```c title="evi_flag example"
+```opensips title="evi_flag example"
 modparam("acc", "evi_flag", "EVI_FLAG")
 ```
 
@@ -1052,7 +1052,7 @@ Request flag which needs to be set to account missed calls throught
 Default value is not-set (no flag).
 
 
-```c title="evi_missed_flag example"
+```opensips title="evi_missed_flag example"
 modparam("acc", "evi_missed_flag", "EVI_MISSED_FLAG")
 ```
 
@@ -1066,7 +1066,7 @@ Extra values to be attached as event's parameters.
 Default value is NULL.
 
 
-```c title="evi_extra example"
+```opensips title="evi_extra example"
 modparam("acc", "evi_extra",
 	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 ```
@@ -1086,7 +1086,7 @@ Extra values to be attached as event's parameters for BYE messages.
 Default value is NULL.
 
 
-```c title="evi_extra_bye example"
+```opensips title="evi_extra_bye example"
 modparam("acc", "evi_extra_bye",
 	"uaA=$hdr(User-Agent);uaB=$hdr(Server)/reply;uuid=$avp(123)")
 ```
@@ -1106,7 +1106,7 @@ Request flag which needs to be set to account a
 Default value is not-set (no flag).
 
 
-```c title="cdr_flag example"
+```opensips title="cdr_flag example"
 modparam("acc", "cdr_flag", "CDR_FLAG")
 ```
 
@@ -1122,7 +1122,7 @@ The name of the openSips avp that will be used to hold the
 Default value is "accX_created".
 
 
-```c title="acc_created_avp_name example"
+```opensips title="acc_created_avp_name example"
 modparam("acc", "acc_created_avp_name", "call_created_avp")
 ```
 
@@ -1153,7 +1153,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_log_request usage"
+```opensips title="acc_log_request usage"
 ...
 acc_log_request("403 Destination not allowed");
 ...
@@ -1183,7 +1183,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_db_request usage"
+```opensips title="acc_db_request usage"
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)","acc");
@@ -1213,7 +1213,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_aaa_request usage"
+```opensips title="acc_aaa_request usage"
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -1241,7 +1241,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_diam_request usage"
+```opensips title="acc_diam_request usage"
 ...
 acc_diam_request("403 Destination not allowed");
 ...
@@ -1273,7 +1273,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="acc_evi_request usage"
+```opensips title="acc_evi_request usage"
 ...
 acc_evi_request("403 Destination not allowed");
 ...

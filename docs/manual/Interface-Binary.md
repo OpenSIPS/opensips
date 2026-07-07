@@ -20,7 +20,7 @@ In order to listen for incoming Binary Packets, an interface must be specified u
 
 Currently, **dialog** and **usrloc** are the first modules to make use of this interface, and they can now replicate all run-time events (creation/updating/deletion of dialogs/contacts) to one or more OpenSIPS instances. Configuration can be done as follows:
 
-```c
+```opensips
 
    modparam("dialog", "accept_replicated_dialogs", 1)
    modparam("dialog", "replicate_dialogs_to", "78.46.64.50:5062")

@@ -83,7 +83,7 @@ Database where to load the rules from.
 			be defined for the fraud_detection module to work.*
 
 
-```c title="Set the 'db_url' parameter"
+```opensips title="Set the 'db_url' parameter"
 ...
 modparam("fraud_detection", "db_url", "mysql://user:passwb@localhost/database")
 ...
@@ -100,7 +100,7 @@ If you want to load the rules from the database you must set
 *The default value is "fraud_detection".*
 
 
-```c title="Set the 'table_name' parameter"
+```opensips title="Set the 'table_name' parameter"
 ...
 modparam("fraud_detection", "table_name", "my_fraud")
 ...
@@ -117,7 +117,7 @@ The column's name in the database storing the
 *Default value is "ruleid".*
 
 
-```c title="Set 'rid_col' parameter"
+```opensips title="Set 'rid_col' parameter"
 ...
 modparam("fraud_detection", "rid_col", "theruleid"")
 ...
@@ -138,7 +138,7 @@ Please keep in mind that a profile is merely
 *Default value is "profileid".*
 
 
-```c title="Set 'pid_col' parameter"
+```opensips title="Set 'pid_col' parameter"
 ...
 modparam("fraud_detection", "pid_col", "profile"")
 ...
@@ -155,7 +155,7 @@ The column's name in the database storing the
 *Default value is "prefix".*
 
 
-```c title="Set 'prefix_col' parameter"
+```opensips title="Set 'prefix_col' parameter"
 ...
 modparam("fraud_detection", "prefix_col", "myprefix")
 ...
@@ -177,7 +177,7 @@ The time needs to be specified as string using
 *Default value is "start_hour".*
 
 
-```c title="Set 'start_h' parameter"
+```opensips title="Set 'start_h' parameter"
 ...
 modparam("fraud_detection", "start_h", "the_start_time")
 ...
@@ -199,7 +199,7 @@ The time needs to be specified as string using
 *Default value is "end_hour".*
 
 
-```c title="Set 'end_h' parameter"
+```opensips title="Set 'end_h' parameter"
 ...
 modparam("fraud_detection", "end_h", "the_end_time")
 ...
@@ -224,7 +224,7 @@ The daysoftheweek needs to be specified as a
 *Default value is "daysoftheweek".*
 
 
-```c title="Set 'days_col' parameter"
+```opensips title="Set 'days_col' parameter"
 ...
 modparam("fraud_detection", "days_col", "days")
 ...
@@ -241,7 +241,7 @@ The column's name in the database storing the
 *Default value is "cpm_warning".*
 
 
-```c title="Set 'cpm_thresh_warn_col' parameter"
+```opensips title="Set 'cpm_thresh_warn_col' parameter"
 ...
 modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
 ...
@@ -258,7 +258,7 @@ The column's name in the database storing the
 *Default value is "cpm_critical".*
 
 
-```c title="Set 'cpm_thresh_crit_col' parameter"
+```opensips title="Set 'cpm_thresh_crit_col' parameter"
 ...
 modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
 ...
@@ -275,7 +275,7 @@ The column's name in the database storing the
 *Default value is "call_duration_warning".*
 
 
-```c title="Set 'calldur_thresh_warn_col' parameter"
+```opensips title="Set 'calldur_thresh_warn_col' parameter"
 ...
 modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thresh")
 ...
@@ -292,7 +292,7 @@ The column's name in the database storing the
 *Default value is "call_duration_critical".*
 
 
-```c title="Set 'calldur_thresh_crit_col' parameter"
+```opensips title="Set 'calldur_thresh_crit_col' parameter"
 ...
 modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thresh")
 ...
@@ -309,7 +309,7 @@ The column's name in the database storing the
 *Default value is "total_calls_warning".*
 
 
-```c title="Set 'totalc_thresh_warn_col' parameter"
+```opensips title="Set 'totalc_thresh_warn_col' parameter"
 ...
 modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thresh")
 ...
@@ -326,7 +326,7 @@ The column's name in the database storing the
 *Default value is "total_calls_critical".*
 
 
-```c title="Set 'totalc_thresh_crit_col' parameter"
+```opensips title="Set 'totalc_thresh_crit_col' parameter"
 ...
 modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thresh")
 ...
@@ -344,7 +344,7 @@ The column's name in the database storing the
 *Default value is "concurrent_calls_warning".*
 
 
-```c title="Set 'concalls_thresh_warn_col' parameter"
+```opensips title="Set 'concalls_thresh_warn_col' parameter"
 ...
 modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_thresh")
 ...
@@ -362,7 +362,7 @@ The column's name in the database storing the
 *Default value is "concurrent_calls_critical".*
 
 
-```c title="Set 'concalls_thresh_crit_col' parameter"
+```opensips title="Set 'concalls_thresh_crit_col' parameter"
 ...
 modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_thresh")
 ...
@@ -380,7 +380,7 @@ The column's name in the database storing the
 *Default value is "sequential_calls_warning".*
 
 
-```c title="Set 'seqcalls_thresh_warn_col' parameter"
+```opensips title="Set 'seqcalls_thresh_warn_col' parameter"
 ...
 modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
 ...
@@ -398,7 +398,7 @@ The column's name in the database storing the
 *Default value is "sequential_calls_critical".*
 
 
-```c title="Set 'seqcalls_thresh_crit_col' parameter"
+```opensips title="Set 'seqcalls_thresh_crit_col' parameter"
 ...
 modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 ...

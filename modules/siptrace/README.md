@@ -69,7 +69,7 @@ Database URL.
 *Default value is "".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("siptrace", "db_url", "mysql://user:passwd@host/dbname")
 ...
@@ -89,7 +89,7 @@ Which flag is used to mark messages to trace
 *Default value is "NULL" (not set).*
 
 
-```c title="Set trace_flag parameter"
+```opensips title="Set trace_flag parameter"
 ...
 modparam("siptrace", "trace_flag", "TRACE_FLAG")
 ...
@@ -105,7 +105,7 @@ Parameter to enable/disable trace (on(1)/off(0))
 *Default value is "0".*
 
 
-```c title="Set trace_on parameter"
+```opensips title="Set trace_on parameter"
 ...
 modparam("siptrace", "trace_on", 1)
 ...
@@ -122,7 +122,7 @@ Parameter to enable/disable tracing of statelessly received ACKs
 *Default value is "0".*
 
 
-```c title="Set enable_ack_trace parameter"
+```opensips title="Set enable_ack_trace parameter"
 ...
 modparam("siptrace", "enable_ack_trace", 1)
 ...
@@ -142,7 +142,7 @@ The name of the AVP storing the SIP URI of the traced user. If
 *Default value is "NULL" (feature disabled).*
 
 
-```c title="Set traced_user_avp parameter"
+```opensips title="Set traced_user_avp parameter"
 ...
 modparam("siptrace", "traced_user_avp", "$avp(123)")
 modparam("siptrace", "traced_user_avp", "$avp(user)")
@@ -164,7 +164,7 @@ The name of the AVP storing the name of the table where to
 *Default value is "NULL" (feature disabled).*
 
 
-```c title="Set trace_table_avp parameter"
+```opensips title="Set trace_table_avp parameter"
 ...
 modparam("siptrace", "trace_table_avp", "$avp(345)")
 modparam("siptrace", "trace_table_avp", "$avp(siptrace_table)")
@@ -182,7 +182,7 @@ The address in form of SIP uri where to send a duplicate
 *Default value is "NULL".*
 
 
-```c title="Set duplicate_uri parameter"
+```opensips title="Set duplicate_uri parameter"
 ...
 modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 ...
@@ -202,7 +202,7 @@ The address to be used in the fields that specify the source address
 *Default value is "NULL".*
 
 
-```c title="Set trace_local_ip parameter"
+```opensips title="Set trace_local_ip parameter"
 ...
 #Resulting address: udp:10.1.1.1:5064
 modparam("siptrace", "trace_local_ip", "10.1.1.1:5064")
@@ -234,7 +234,7 @@ Name of the table where to store the SIP messages.
 *Default value is "sip_trace".*
 
 
-```c title="Set sip_trace parameter"
+```opensips title="Set sip_trace parameter"
 ...
 modparam("siptrace", "table", "strace")
 ...
@@ -254,7 +254,7 @@ Store current processed SIP message in database. It is stored in the
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="sip_trace() usage"
+```opensips title="sip_trace() usage"
 ...
 sip_trace();
 ...
@@ -277,7 +277,7 @@ When using this function, you do not have to explicity set any tracing
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="trace_dialog() usage"
+```opensips title="trace_dialog() usage"
 ...
 if(is_method("INVITE") && !has_totag())
 	trace_dialog();
@@ -300,7 +300,7 @@ In case we only want to send the SIP-Messages to the
 *Default value is "1".*
 
 
-```c title="Set trace_to_databaseparameter"
+```opensips title="Set trace_to_databaseparameter"
 ...
 modparam("siptrace", "trace_to_database", 0)
 ...
@@ -317,7 +317,7 @@ Parameter to enable/disable homer encapsulate mode
 *Default value is "0".*
 
 
-```c title="Set duplicate_with_hep parameter"
+```opensips title="Set duplicate_with_hep parameter"
 ...
 modparam("siptrace", "duplicate_with_hep", 1)
 ...
@@ -335,7 +335,7 @@ The parameter indicate the version of HEP protocol.
 *Default value is "1".*
 
 
-```c title="Set hep_version parameter"
+```opensips title="Set hep_version parameter"
 ...
 modparam("siptrace", "hep_version", 2)
 ...
@@ -352,7 +352,7 @@ The parameter indicate the capture agent ID for HEPv2 protocol.
 *Default value is "1".*
 
 
-```c title="Set hep_capture_id parameter"
+```opensips title="Set hep_capture_id parameter"
 ...
 modparam("siptrace", "hep_capture_id", 234)
 ...

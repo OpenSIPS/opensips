@@ -86,7 +86,7 @@ There flags are available only in script and are reset after each top level rout
 
 ### NAT flag handling
 
-```c
+```opensips
 
  ..........
  # 3 - the nat flag

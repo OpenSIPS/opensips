@@ -98,7 +98,7 @@ A special index **append** is defined to allow you to add a new value at the end
 
 Example of usage:
 * Transaction persistence example
-```c
+```opensips
 
 # enable avps in onreply route
 modparam("tm", "onreply_avp_mode", 1)
@@ -505,7 +505,7 @@ Alias: `$ouri`
 `$param(idx)` - retrieves the parameters of the route. The index can be an integer, or a pseudo-variable (index starts at 1).  
 
 Example:
-```c
+```opensips
 
    route {
       ...
