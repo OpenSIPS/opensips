@@ -171,7 +171,7 @@ Set caching mode (0) or non-caching mode (1). In caching mode, data
 *Default value is "0".*
 
 
-```c title="Set db_mode parameter"
+```opensips title="Set db_mode parameter"
 ...
 modparam("db_text", "db_mode", 1)
 ...
@@ -187,7 +187,7 @@ Size of the buffer used to read the text file.
 *Default value is "4096".*
 
 
-```c title="Set buffer_size parameter"
+```opensips title="Set buffer_size parameter"
 ...
 modparam("db_text", "buffer_size", 8192)
 ...
@@ -289,7 +289,7 @@ REMINDER: when you use *db_text* in OpenSIPS,
 		"CFG_DIR" directory.
 
 
-```c title="Load the db_text module"
+```opensips title="Load the db_text module"
 ...
 loadmodule "/path/to/opensips/modules/db_text.so"
 ...

@@ -80,7 +80,7 @@ Time in milliseconds after a TCP connection will be closed if it is
 *Default value is 100 ms.*
 
 
-```c title="Set bin_send_timeout parameter"
+```opensips title="Set bin_send_timeout parameter"
 ...
 modparam("proto_bin", "bin_send_timeout", 200)
 ...
@@ -101,7 +101,7 @@ The maximum number of chunks in which a BIN message is expected to
 *Default value is 32.*
 
 
-```c title="Set bin_max_msg_chunks parameter"
+```opensips title="Set bin_max_msg_chunks parameter"
 ...
 modparam("proto_bin", "bin_max_msg_chunks", 8)
 ...
@@ -120,7 +120,7 @@ Specifies whether the TCP connect and write operations should be
 *Default value is 1 (enabled).*
 
 
-```c title="Set bin_async parameter"
+```opensips title="Set bin_async parameter"
 ...
 modparam("proto_bin", "bin_async", 0)
 ...
@@ -139,7 +139,7 @@ If *bin_async* is enabled, this specifies the
 *Default value is 1024.*
 
 
-```c title="Set bin_async_max_postponed_chunks parameter"
+```opensips title="Set bin_async_max_postponed_chunks parameter"
 ...
 modparam("proto_bin", "bin_async_max_postponed_chunks", 1024)
 ...
@@ -159,7 +159,7 @@ If *bin_async* is enabled, this specifies the
 *Default value is 10 ms.*
 
 
-```c title="Set bin_async_local_write_timeout parameter"
+```opensips title="Set bin_async_local_write_timeout parameter"
 ...
 modparam("proto_bin", "tcp_async_local_write_timeout", 100)
 ...
