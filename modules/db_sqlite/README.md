@@ -63,7 +63,7 @@ Since the library does not support a function to return the number of rows
 *Default value is 10.*
 
 
-```c title="Set alloc_limit parameter"
+```opensips title="Set alloc_limit parameter"
 ...
 modparam("db_sqlite", "alloc_limit", 25)
 ...
@@ -85,7 +85,7 @@ This parameter enables extension loading, similiar to ".load" functionality in s
 *By default, no extension is loaded.*
 
 
-```c title="Set db_sqlite_alloc_limit parameter"
+```opensips title="Set db_sqlite_alloc_limit parameter"
 ...
 modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so")
 modparam("db_sqlite", "load_extension", "/usr/lib/sqlite3/pcre.so;sqlite3_extension_init")
