@@ -62,7 +62,7 @@ The default expires value used when missing from SUBSCRIBE
 *Default value is "3600".*
 
 
-```c title="Set default_expires parameter"
+```opensips title="Set default_expires parameter"
         ...
         modparam("presence_reginfo", "default_expires", 3600)
         ...
@@ -81,7 +81,7 @@ Whether to aggregate in a single notify body all registration
 *Default value is "0" (disabled).*
 
 
-```c title="Set aggregate_presentities parameter"
+```opensips title="Set aggregate_presentities parameter"
 					...
 					modparam("presence_reginfo", "aggregate_presentities", 1)
 					...

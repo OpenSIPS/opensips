@@ -29,7 +29,7 @@ Below are some examples of using more advanced templating languages on top of op
 
 [GNU m4](https://www.gnu.org/software/m4/) is a simplistic preprocessor with a mild learning curve, equipped with textual substitution, if statements and file includes among the most notable features.  Here is an example integration with *opensips.cfg*:
 
-```c
+```opensips
 
 listen = udp:PRIVATE_IP:5060
 loadmodule "proto_udp.so"
@@ -68,7 +68,7 @@ First, install the **jinja2** Python module with: **"pip install jinja2"**.  Nex
 
   
 
-```c
+```opensips
 
 listen = udp:{{ private_ip }}:5060
 loadmodule "proto_udp.so"
@@ -123,7 +123,7 @@ First, install the ERB package (for Debian/Ubuntu: **"apt install ruby-ejs"**). 
 
   
 
-```c
+```opensips
 
 listen = udp:<%= private_ip %>:5060
 loadmodule "proto_udp.so"

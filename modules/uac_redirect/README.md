@@ -72,7 +72,7 @@ The default behavior in filtering contacts. It may be
 *The default value is "accept".*
 
 
-```c title="Set default_filter module parameter"
+```opensips title="Set default_filter module parameter"
 ...
 modparam("uac_redirect","default_filter","deny")
 ...
@@ -101,7 +101,7 @@ The parameter may be defined only one - multiple definition will
 					value being NULL.*
 
 
-```c title="Set deny_filter module parameter"
+```opensips title="Set deny_filter module parameter"
 ...
 modparam("uac_redirect","deny_filter",".*@siphub\.net")
 ...
@@ -130,7 +130,7 @@ The parameter may be defined only one - multiple definition will
 					value being NULL.*
 
 
-```c title="Set accept_filter module parameter"
+```opensips title="Set accept_filter module parameter"
 ...
 modparam("uac_redirect","accept_filter",".*@siphub\.net")
 ...
@@ -170,7 +170,7 @@ Default or previous added deny filter may be reset depending of
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="set_deny_filter usage"
+```opensips title="set_deny_filter usage"
 ...
 set_deny_filter(".*@domain2.net","reset_all");
 set_deny_filter(".*@domain1.net","");
@@ -208,7 +208,7 @@ Default or previous added deny filter may be reset depending of
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="set_accept_filter usage"
+```opensips title="set_accept_filter usage"
 ...
 set_accept_filter(".*@domain2.net","reset_added");
 set_accept_filter(".*@domain1.net","");
@@ -247,7 +247,7 @@ NOTE that during the selection process, each set of contacts
 This function can be used from FAILURE_ROUTE.
 
 
-```c title="get_redirects usage"
+```opensips title="get_redirects usage"
 ...
 # no restrictions
 get_redirects();
@@ -265,7 +265,7 @@ get_redirects(, 2);
 ### Script Example
 
 
-```c title="Redirection script example"
+```opensips title="Redirection script example"
 loadmodule "modules/sl/sl.so"
 loadmodule "modules/usrloc/usrloc.so"
 loadmodule "modules/registrar/registrar.so"
