@@ -94,7 +94,7 @@ This sets in a memory-cache-like-storage system a new value for an attribute. Bo
 
 Function returns true if the new attribute was successfully inserted.
 
-```c
+```opensips
 
 cache_store("local", "total_minutes_$fU", "$avp(mins)", 1200);
 
@@ -113,7 +113,7 @@ More complex examples can be found in the [Key-Value Interface Tutorial](https:/
 This removes an attribute from a memory-cache-like-storage system. The attribute name may contain pseudo-variables.
 Function returns false only if the *storage_id* is invalid.
 
-```c
+```opensips
 
 cache_remove("local", "total_minutes_$fU");
 
@@ -133,7 +133,7 @@ This function fetches from a memory-cache-like-storage system the value of an at
 
 Function returns true if the attribute was found and its value returned.
 
-```c
+```opensips
 
 cache_fetch("local", "credit_$fU", $avp(ret));
 
@@ -153,7 +153,7 @@ This function fetches from a memory-cache-like-storage system the value of a cou
 
 Function returns true if the attribute was found and its value returned.
 
-```c
+```opensips
 
 cache_counter_fetch("local", "my_counter", $avp(counter_val));
 
@@ -173,7 +173,7 @@ Function returns false if increment fails.
 
 Optionally, the function receives one last parameter as a pvar in which to fetch the new value of the counter.
 
-```c
+```opensips
 
 modparam("cachedb_redis", "cachedb_url", "redis:cluster1://192.368.2.334:6379/")
 ...
@@ -191,7 +191,7 @@ Function returns false if decrement fails.
 
 Optionally, the function receives one last parameter as a pvar in which to fetch the new value of the counter.
 
-```c
+```opensips
 
 modparam("cachedb_redis", "cachedb_url", "redis:cluster1://192.368.2.334:6379/")
 ...
@@ -245,7 +245,7 @@ If the function is called in a 'onreply_route' then any provisional reply is dis
 
 Example of usage:
 
-```c
+```opensips
 onreply_route {
 if(status=="183") {
 drop();
@@ -267,7 +267,7 @@ xlog("L_NOTICE","method is $rm\n");
 }
 ```
 
-```c
+```opensips
 route[2] {
 if (is_method("INVITE")) {
 return(1);
@@ -514,7 +514,7 @@ route {
 }
 
 ```
-```c
+```opensips
 
 route[2] {
   if (is_method("INVITE")) {
@@ -835,7 +835,7 @@ The first parameter is a string represents the name of the event an external app
 
 Example of usage (subscriber that never expires, notified by the RabbitMQ module):
 
-```c
+```opensips
 
 startup_route {
     subscribe_event("E_PIKE_BLOCKED", "rabbitmq:127.0.0.1/pike");
@@ -845,7 +845,7 @@ startup_route {
 
 Example of usage (subscriber expires every 5 seconds, notified through UDP):
 
-```c
+```opensips
 
 timer_route[event_subscribe, 4] {
     subscribe_event("E_PIKE_BLOCKED", "udp:127.0.0.1:5051", 5);

@@ -100,7 +100,7 @@ Period of time in seconds between sending the NAT pings to all
 *Default value is 0.*
 
 
-```c title="Set natping_interval parameter"
+```opensips title="Set natping_interval parameter"
 ...
 modparam("nathelper", "natping_interval", 10)
 ...
@@ -118,7 +118,7 @@ If this variable is set then only contacts that have
 *Default value is 0.*
 
 
-```c title="Set ping_nated_only parameter"
+```opensips title="Set ping_nated_only parameter"
 ...
 modparam("nathelper", "ping_nated_only", 1)
 ...
@@ -136,7 +136,7 @@ How many partitions/chunks to be used for sending the pingings.
 *Default value is 1.*
 
 
-```c title="Set natping_partitions parameter"
+```opensips title="Set natping_partitions parameter"
 ...
 modparam("nathelper", "natping_partitions", 4)
 ...
@@ -152,7 +152,7 @@ Spoof the natping's source-ip to this address. Works only for IPv4.
 *Default value is NULL.*
 
 
-```c title="Set natping_socket parameter"
+```opensips title="Set natping_socket parameter"
 ...
 modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 ...
@@ -179,7 +179,7 @@ The name of the Attribute-Value-Pair (AVP) used to store the URI
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set received_avp parameter"
+```opensips title="Set received_avp parameter"
 ...
 modparam("nathelper", "received_avp", "$avp(received)")
 ...
@@ -199,7 +199,7 @@ Sending socket to be used for pinging contacts without local socket
 *Default value is "NULL".*
 
 
-```c title="Set force_socket parameter"
+```opensips title="Set force_socket parameter"
 ...
 modparam("nathelper", "force_socket", "localhost:33333")
 ...
@@ -221,7 +221,7 @@ What branch flag should be used by the module to identify NATed
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set sipping_bflag parameter"
+```opensips title="Set sipping_bflag parameter"
 ...
 modparam("nathelper", "sipping_bflag", "SIP_PING_FLAG")
 ...
@@ -242,7 +242,7 @@ What flag to be used in order to activate usrloc contact removal when
 *Default value is "NULL" (disabled).*
 
 
-```c title="Set remove_on_timeout_bflag parameter"
+```opensips title="Set remove_on_timeout_bflag parameter"
 ...
 modparam("nathelper", "remove_on_timeout_bflag", "RM_ONTO_FLAG")
 ...
@@ -261,7 +261,7 @@ The parameter sets the SIP URI to be used in generating the SIP
 *Default value is "NULL".*
 
 
-```c title="Set sipping_from parameter"
+```opensips title="Set sipping_from parameter"
 ...
 modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
 ...
@@ -278,7 +278,7 @@ The parameter sets the SIP method to be used in generating the SIP
 *Default value is "OPTIONS".*
 
 
-```c title="Set sipping_method parameter"
+```opensips title="Set sipping_method parameter"
 ...
 modparam("nathelper", "sipping_method", "INFO")
 ...
@@ -302,7 +302,7 @@ If empty string, no marker will be added or checked.
 *Default value is "a=nortpproxy:yes\r\n".*
 
 
-```c title="Set nortpproxy_str parameter"
+```opensips title="Set nortpproxy_str parameter"
 ...
 modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
@@ -319,7 +319,7 @@ If the flag is set, TCP/TLS clients will also be pinged with
 *Default value is 0 (not set).*
 
 
-```c title="Set natping_interval parameter"
+```opensips title="Set natping_interval parameter"
 ...
 modparam("nathelper", "natping_tcp", 1)
 ...
@@ -338,7 +338,7 @@ Parameter which specifies whether old media ip and old origin ip
 *Default value is 0 (not set).*
 
 
-```c title="Set natping_interval parameter"
+```opensips title="Set natping_interval parameter"
 ...
 modparam("nathelper", "oldip_skip", "oc")
 ...
@@ -356,7 +356,7 @@ If a contact does not respond in *ping_threshold*
 *Default value is 3 (seconds).*
 
 
-```c title="Set ping_threshold parameter"
+```opensips title="Set ping_threshold parameter"
 ...
 modparam("nathelper", "ping_threshold", 10)
 ...
@@ -373,7 +373,7 @@ Number of unresponded pings after which the contact shall be removed
 *Default value is 3 (pings).*
 
 
-```c title="Set ping_threshold parameter"
+```opensips title="Set ping_threshold parameter"
 ...
 modparam("nathelper", "max_pings_lost", 5)
 ...
@@ -399,7 +399,7 @@ Rewrites the URI Contact HF to contain request's
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 
 
-```c title="fix_nated_contact usage"
+```opensips title="fix_nated_contact usage"
 ...
 if (search("User-Agent: Cisco ATA.*") {
     fix_nated_contact(";ata=cisco");
@@ -449,7 +449,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="fix_nated_sdp usage"
+```opensips title="fix_nated_sdp usage"
 ...
 if (search("User-Agent: Cisco ATA.*") {fix_nated_sdp("3");};
 ...
@@ -481,7 +481,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="add_rcv_paramer usage"
+```opensips title="add_rcv_paramer usage"
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
@@ -502,7 +502,7 @@ The function creates a URI consisting of the source IP, port, and
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="fix_nated_register usage"
+```opensips title="fix_nated_register usage"
 ...
 fix_nated_register();
 ...

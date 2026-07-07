@@ -45,7 +45,7 @@ Default value is
 			"mysql://opensipsro:opensipsro@localhost/opensips"
 
 
-```c title="Setting db_url parameter"
+```opensips title="Setting db_url parameter"
 modparam("domainpolicy", "db_url", "postgresql://user:pass@db_host/opensips")
 ```
 
@@ -59,7 +59,7 @@ Name of table containing the local support domain policy setup.
 Default value is "domainpolicy".
 
 
-```c title="Setting dp_table parameter"
+```opensips title="Setting dp_table parameter"
 modparam("domainpolicy", "dp_table", "supportedpolicies")
 ```
 
@@ -74,7 +74,7 @@ Name of column containing the domain policy rule name which is equal
 Default value is "rule".
 
 
-```c title="Setting dp_col_rule parameter"
+```opensips title="Setting dp_col_rule parameter"
 modparam("domainpolicy", "dp_col_rule", "rules")
 ```
 
@@ -91,7 +91,7 @@ Name of column containing the domain policy rule type.
 Default value is "type".
 
 
-```c title="Setting dp_col_rule parameter"
+```opensips title="Setting dp_col_rule parameter"
 modparam("domainpolicy", "dp_col_type", "type")
 ```
 
@@ -106,7 +106,7 @@ Name of column containing the AVP's name. If the rule stored in this
 Default value is "att".
 
 
-```c title="Setting dp_col_att parameter"
+```opensips title="Setting dp_col_att parameter"
 modparam("domainpolicy", "dp_col_att", "attribute")
 ```
 
@@ -120,7 +120,7 @@ Name of column containing the value for AVPs created by dp_can_connect().
 Default value is "val".
 
 
-```c title="Setting dp_col_val parameter"
+```opensips title="Setting dp_col_val parameter"
 modparam("domainpolicy", "dp_col_val", "values")
 ```
 
@@ -135,7 +135,7 @@ This parameter defines the name of the AVP where dp_apply_policy() will look
 Default value is "portoverride".
 
 
-```c title="Setting port_override_avp parameter"
+```opensips title="Setting port_override_avp parameter"
 # string named AVP
 modparam("domainpolicy", "port_override_avp", "portoverride")
 ```
@@ -150,7 +150,7 @@ Name of the AVP which contains the override transport setting.
 Default value is "transportoverride".
 
 
-```c title="Setting transport_override_avp parameter"
+```opensips title="Setting transport_override_avp parameter"
 # string named AVP
 modparam("domainpolicy", "transport_override_avp", "transportoverride")
 ```
@@ -165,7 +165,7 @@ Name of the AVP which contains a domain replacement.
 Default value is "domainreplacement".
 
 
-```c title="Setting domain_replacement_avp parameter"
+```opensips title="Setting domain_replacement_avp parameter"
 # string named AVP
 modparam("domainpolicy", "domain_replacement_avp", "domainreplacement")
 ```
@@ -180,7 +180,7 @@ Name of the AVP which contains a domain prefix.
 Default value is "domainprefix".
 
 
-```c title="Setting domain_prefix_avp parameter"
+```opensips title="Setting domain_prefix_avp parameter"
 # string named AVP
 modparam("domainpolicy", "domain_prefix_avp", "domainprefix")
 ```
@@ -195,7 +195,7 @@ Name of the AVP which contains a domain suffix.
 Default value is "domainsuffix".
 
 
-```c title="Setting domain_suffix_avp parameter"
+```opensips title="Setting domain_suffix_avp parameter"
 # string named AVP
 modparam("domainpolicy", "domain_suffix_avp", "domainsuffix")
 ```
@@ -214,7 +214,7 @@ Name of the AVP which contains a send_socket. The format of the
 Default value is "sendsocket".
 
 
-```c title="Setting send_socket_avp parameter"
+```opensips title="Setting send_socket_avp parameter"
 # string named AVP
 modparam("domainpolicy", "send_socket_avp", "sendsocket")
 ```
@@ -283,7 +283,7 @@ dp_can_connect returns:
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="dp_can_connect usage"
+```opensips title="dp_can_connect usage"
 ...
 dp_can_connect();
 switch(retcode) {
@@ -365,7 +365,7 @@ If both prefix/suffix and domain replacements are used, then the replacement is
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="dp_apply_policy usage"
+```opensips title="dp_apply_policy usage"
 ...
 if (dp_apply_policy()) {
 	t_relay();

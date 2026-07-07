@@ -52,7 +52,7 @@ The character to be used as separator in the subname of the *$isup_param* and *$
 *Default value is "|".*
 
 
-```c title="Set param_subfield_separator parameter"
+```opensips title="Set param_subfield_separator parameter"
 ...
 modparam("sip_i", "param_subfield_separator", ":")
 ...
@@ -68,7 +68,7 @@ The string to be used for the Content-Type header field of the ISUP MIME body wh
 *Default value is "application/ISUP;version=itu-t92+".*
 
 
-```c title="Set isup_mime_str parameter"
+```opensips title="Set isup_mime_str parameter"
 ...
 modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t")
 ...
@@ -89,7 +89,7 @@ Country Code that the first part of the number from
 *Default value is "+1".*
 
 
-```c title="Set country_code parameter"
+```opensips title="Set country_code parameter"
 ...
 modparam("sip_i", "country_code", "+4")
 ...
@@ -156,7 +156,7 @@ The abbreviations that can be given as *isup_msg_type* for each ISUP message typ
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,LOCAL_ROUTE.
 
 
-```c title="add_isup_part usage"
+```opensips title="add_isup_part usage"
 ...
 if ($rs == "183") {
 	# Encapsulate a CPG
@@ -203,7 +203,7 @@ String aliases are not available for all parameters or parameter subfields. Also
 For more information on supported subfields and aliases check [subfields aliases](#isup_parameter_subfields_and_string_aliases).
 
 
-```c title="isup_param usage"
+```opensips title="isup_param usage"
 ...
 	$isup_param(Called Party Number | Nature of address indicator) = 3;
 	...
@@ -239,7 +239,7 @@ The format of the subname for `$isup_param_str` is the following:
 - *subfield_name* - name of the subfield of the ISUP parameter as it appears in ITU-T Rec. Q.763
 
 
-```c title="isup_param_str usage"
+```opensips title="isup_param_str usage"
 ...
 	# may print: "NOA is: national"  
 	xlog("NOA is: $isup_param_str(Called Party Number|Nature of address indicator)");
@@ -260,7 +260,7 @@ The format of the subname for `$isup_param_str` is the following:
 Read-only variable, returns the ISUP message type as string.
 
 
-```c title="isup_msg_type usage"
+```opensips title="isup_msg_type usage"
 ...
 	# may print: "ISUP msg is: Initial address"
 	xlog("ISUP msg is: $isup_msg_type");

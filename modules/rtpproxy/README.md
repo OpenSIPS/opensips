@@ -163,7 +163,7 @@ Definition of socket(s) used to connect to (a set) RTPProxy. It may
 *Default value is "NONE" (disabled).*
 
 
-```c title="Set rtpproxy_sock parameter"
+```opensips title="Set rtpproxy_sock parameter"
 ...
 # single rtproxy with specific weight
 modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221=2")
@@ -190,7 +190,7 @@ Once RTPProxy was found unreachable and marked as disable, rtpproxy
 *Default value is "60".*
 
 
-```c title="Set rtpproxy_disable_tout parameter"
+```opensips title="Set rtpproxy_disable_tout parameter"
 ...
 modparam("rtpproxy", "rtpproxy_disable_tout", 20)
 ...
@@ -206,7 +206,7 @@ Timeout value in waiting for reply from RTPProxy.
 *Default value is "1".*
 
 
-```c title="Set rtpproxy_timeout parameter to 200ms"
+```opensips title="Set rtpproxy_timeout parameter to 200ms"
 ...
 modparam("rtpproxy", "rtpproxy_timeout", "0.2")
 ...
@@ -222,7 +222,7 @@ Enable auto-bridging feature. Does not properly function when doing serial/paral
 *Default value is "0".*
 
 
-```c title="Enable auto-bridging feature"
+```opensips title="Enable auto-bridging feature"
 ...
 modparam("rtpproxy", "rtpproxy_autobridge", 1)
 ...
@@ -245,7 +245,7 @@ How many times rtpproxy should retry to send and receive after
 *Default value is "5".*
 
 
-```c title="Set rtpproxy_retr parameter"
+```opensips title="Set rtpproxy_retr parameter"
 ...
 modparam("rtpproxy", "rtpproxy_retr", 2)
 ...
@@ -264,7 +264,7 @@ The parameter indicates the default RTPProxy set to be used when
 *Default value is set "0".*
 
 
-```c title="Set default_set parameter"
+```opensips title="Set default_set parameter"
 ...
 modparam("rtpproxy", "default_set", 1)
 ...
@@ -288,7 +288,7 @@ If empty string, no marker will be added or checked.
 *Default value is "a=nortpproxy:yes\r\n".*
 
 
-```c title="Set nortpproxy_str parameter"
+```opensips title="Set nortpproxy_str parameter"
 ...
 modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
@@ -310,7 +310,7 @@ The database url. This parameter should be set if you want to
 *Default value is "NULL".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("rtpproxy", "db_url", 
 		"mysql://opensips:opensipsrw@192.168.2.132/opensips")
@@ -328,7 +328,7 @@ The name of the database table containing definitions of
 *Default value is "rtpproxy_sockets".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("rtpproxy", "db_table", "nh_sockets") 
 ...
@@ -344,7 +344,7 @@ The name rtpp socket column in the database table.
 *Default value is "rtpproxy_sock".*
 
 
-```c title="Set rtpp_socket_col parameter"
+```opensips title="Set rtpp_socket_col parameter"
 ...
 modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket") 
 ...
@@ -360,7 +360,7 @@ The name set id column in the database table.
 *Default value is "set_id".*
 
 
-```c title="Set set_id parameter"
+```opensips title="Set set_id parameter"
 ...
 modparam("rtpproxy", "set_id_col", "rtpp_set_id") 
 ...
@@ -376,7 +376,7 @@ The socket used by OpenSIPS to receive timeout notifications.
 *Default value is "NULL".*
 
 
-```c title="Set rtpp_notify_socket parameter"
+```opensips title="Set rtpp_notify_socket parameter"
 ...
 modparam("rtpproxy", "rtpp_notify_socket", "tcp:10.10.10.10:9999")
 
@@ -476,7 +476,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="rtpproxy_engage usage"
+```opensips title="rtpproxy_engage usage"
 ...
 if (is_method("INVITE") && has_totag()) {
 	if ($var(setid) != 0) {
@@ -509,7 +509,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="rtpproxy_offer usage"
+```opensips title="rtpproxy_offer usage"
 route {
 ...
     if (is_method("INVITE")) {
@@ -580,7 +580,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="rtpproxy_unforce usage"
+```opensips title="rtpproxy_unforce usage"
 ...
 rtpproxy_unforce();
 ...
@@ -631,7 +631,7 @@ Meaning of the parameters is as follows:
 			socket chosen for this call.
 
 
-```c title="rtpproxy_stream2xxx usage"
+```opensips title="rtpproxy_stream2xxx usage"
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -689,7 +689,7 @@ Meaning of the parameters is as follows:
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
 
-```c title="rtpproxy_start_recording usage"
+```opensips title="rtpproxy_start_recording usage"
 ...
 rtpproxy_start_recording();
 ...
@@ -723,7 +723,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 			BRANCH_ROUTE and LOCAL_ROUTE.
 
 
-```c title="rtpproxy_stats usage"
+```opensips title="rtpproxy_stats usage"
 ...
 rtpproxy_stats("$var(up)","$var(down)","$var(sent)","$var(fail)");
 xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent) fail=$var(fail)\n");
@@ -784,7 +784,7 @@ Each statistic is stored at a specific index as it follows:
 						*$(avp(ret)[9])*
 
 
-```c title="rtpproxy_all_stats usage"
+```opensips title="rtpproxy_all_stats usage"
 ...
 rtpproxy_all_stats("$avp(stats)");
 xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");

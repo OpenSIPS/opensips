@@ -52,7 +52,7 @@ NOTE: that this behavior only makes sense when the pipe algorithm
 A sample configuration snippet might look like this:
 
 
-```c
+```opensips
 ...
 	if (!rl_check("$rU", "50", "TAILDROP")) {
 		sl_send_reply("503", "Server Unavailable");
@@ -218,7 +218,7 @@ IMPORTANT: A too small value may lead to performance penalties due to
 *Default value is 10.*
 
 
-```c title="Set timer_interval parameter"
+```opensips title="Set timer_interval parameter"
 ...
 modparam("ratelimit", "timer_interval", 5)
 ...
@@ -236,7 +236,7 @@ This parameter specifies how long a pipe should be kept in memory
 *Default value is 3600.*
 
 
-```c title="Set expire_time parameter"
+```opensips title="Set expire_time parameter"
 ...
 modparam("ratelimit", "expire_time", 1800)
 ...
@@ -254,7 +254,7 @@ The size of the hash table internally used to keep the pipes.
 *Default value is 1024.*
 
 
-```c title="Set hash_size parameter"
+```opensips title="Set hash_size parameter"
 ...
 modparam("ratelimit", "hash_size", 512)
 ...
@@ -271,7 +271,7 @@ Specifies which algorithm should be assumed in case it isn't
 *Default value is "TAILDROP".*
 
 
-```c title="Set default_algorithm parameter"
+```opensips title="Set default_algorithm parameter"
 ...
 modparam("ratelimit", "default_algorithm", "RED")
 ...
@@ -288,7 +288,7 @@ Enables distributed rate limiting and specifies the backend
 *Default value is "disabled".*
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
 modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 ...
@@ -305,7 +305,7 @@ Specifies what prefix should be added to the pipe name. This is
 *Default value is "rl_pipe_".*
 
 
-```c title="Set db_prefix parameter"
+```opensips title="Set db_prefix parameter"
 ...
 modparam("ratelimit", "db_prefix", "ratelimit_")
 ...
@@ -325,7 +325,7 @@ Used to specify the length of the buffer used by the binary
 *Default value is 1400 bytes.*
 
 
-```c title="Set repl_buffer_threshold parameter"
+```opensips title="Set repl_buffer_threshold parameter"
 ...
 modparam("ratelimit", "repl_buffer_threshold", 500)
 ...
@@ -342,7 +342,7 @@ Timer in milliseconds, used to specify how often the module
 *Default value is 10 ms.*
 
 
-```c title="Set repl_timer_interval parameter"
+```opensips title="Set repl_timer_interval parameter"
 ...
 modparam("ratelimit", "repl_timer_interval", 100)
 ...
@@ -361,7 +361,7 @@ Timer in seconds, used to specify when the counter received
 *Default value is 10 s.*
 
 
-```c title="Set repl_timer_expire parameter"
+```opensips title="Set repl_timer_expire parameter"
 ...
 modparam("ratelimit", "repl_timer_expire", 10)
 ...
@@ -378,7 +378,7 @@ Used to specify the instances, that belong to a certain cluster,
 *Default value is 0. (no replication destinations)*
 
 
-```c title="Set replicate_pipes_to parameter"
+```opensips title="Set replicate_pipes_to parameter"
 ...
 modparam("ratelimit", "replicate_pipes_to", 1)
 ...
@@ -395,7 +395,7 @@ Used to specify the instances, that belong to a certain cluster,
 *Default value is 0. (disabled)*
 
 
-```c title="Set accept_pipes_from parameter"
+```opensips title="Set accept_pipes_from parameter"
 ...
 modparam("ratelimit", "accept_pipes_from", 1)
 ...
@@ -411,7 +411,7 @@ The time between two succesive incoming packets.
 *Default value is 10.*
 
 
-```c title="Set accept_pipes_timeout parameter"
+```opensips title="Set accept_pipes_timeout parameter"
 ...
 modparam("ratelimit", "accept_pipes_timeout", 1)
 ...
@@ -427,7 +427,7 @@ Authentication check for incoming packets.
 *Default value is "0" (disabled).*
 
 
-```c title="Set repl_pipes_auth_check parameter"
+```opensips title="Set repl_pipes_auth_check parameter"
 ...
 modparam("ratelimit", "repl_pipes_auth_check", 1)
 ...
@@ -443,7 +443,7 @@ How long the history in SBT should be in seconds.
 *Default value is "10".*
 
 
-```c title="Set window_size parameter"
+```opensips title="Set window_size parameter"
 ...
 modparam("ratelimit", "window_size", 5)
 ...
@@ -461,7 +461,7 @@ Value of one slot in milliseconds. This parameter determines
 *Default value is "200".*
 
 
-```c title="Set slot_period parameter"
+```opensips title="Set slot_period parameter"
 ...
 modparam("ratelimit", "window_size", 5)
 #we will have 50 slots of 100 milliseconds
@@ -518,7 +518,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 			BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 
 
-```c title="rl_check usage"
+```opensips title="rl_check usage"
 ...
 	# perform a pipe match for all INVITE methods using RED algorithm
 	if (is_method("INVITE")) {
@@ -562,7 +562,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 			BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 
 
-```c title="rl_dec_count usage"
+```opensips title="rl_dec_count usage"
 ...
 	if (!rl_check("gw_$ru", "100", "TAILDROP")) {
 		exit;
@@ -590,7 +590,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
 			BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE, TIMER_ROUTE and EVENT_ROUTE.
 
 
-```c title="rl_reset_count usage"
+```opensips title="rl_reset_count usage"
 ...
 	if (!rl_check("gw_$ru", "100", "TAILDROP")) {
 		exit;
