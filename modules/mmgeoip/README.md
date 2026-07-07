@@ -57,7 +57,7 @@ Path to either a GeoLite or GeoIP City database file.
 *Mandatory parameter.*
 
 
-```c title="Set 'mmgeoip_city_db_path' parameter"
+```opensips title="Set 'mmgeoip_city_db_path' parameter"
 ...
 modparam("mmgeoip", "mmgeoip_city_db_path",
   "/usr/share/GeoIP/GeoLiteCity.dat")
@@ -99,7 +99,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		ONREPLY_ROUTE, BRANCH_ROUTE,ERROR_ROUTE, and LOCAL_ROUTE.
 
 
-```c title="mmg_lookup usage"
+```opensips title="mmg_lookup usage"
 ...
 if(mmg_lookup("lon:lat",$si,$avp(lat_lon))) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");

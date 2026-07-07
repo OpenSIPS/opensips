@@ -196,7 +196,7 @@ If this parameter is set, the optional call-id will be put into the
 *Default value is "1".*
 
 
-```c title="Set include_callid parameter"
+```opensips title="Set include_callid parameter"
 ...
 modparam("pua_dialoginfo", "include_callid", 0)
 ...
@@ -213,7 +213,7 @@ If this parameter is set, the local and remote tag will be put
 *Default value is "1".*
 
 
-```c title="Set include_tags parameter"
+```opensips title="Set include_tags parameter"
 ...
 modparam("pua_dialoginfo", "include_tags", 0)
 ...
@@ -231,7 +231,7 @@ If this parameter is set, the optional local and remote elements
 *Default value is "1".*
 
 
-```c title="Set include_localremote parameter"
+```opensips title="Set include_localremote parameter"
 ...
 modparam("pua_dialoginfo", "include_localremote", 0)
 ...
@@ -255,7 +255,7 @@ Usually the dialog-info of the caller will be
 *Default value is "0".*
 
 
-```c title="Set caller_confirmed parameter"
+```opensips title="Set caller_confirmed parameter"
 ...
 modparam("pua_dialoginfo", "caller_confirmed", 1)
 ...
@@ -269,7 +269,7 @@ The address of the presence server, where the PUBLISH messages
 		should be sent ( not compulsory).
 
 
-```c title="Set presence_server parameter"
+```opensips title="Set presence_server parameter"
 ...
 modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 ...

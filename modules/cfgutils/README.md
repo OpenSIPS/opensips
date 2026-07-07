@@ -73,7 +73,7 @@ Default value is
 			"10".
 
 
-```c title="initial_probability parameter usage"
+```opensips title="initial_probability parameter usage"
    
 modparam("cfgutils", "initial_probability", 15)
    
@@ -90,7 +90,7 @@ There is no default value, is no parameter is given the hash functionality
 		is disabled.
 
 
-```c title="hash_file parameter usage"
+```opensips title="hash_file parameter usage"
    
 modparam("cfgutils", "hash_file", "/etc/opensips/opensips.cfg")
    
@@ -119,7 +119,7 @@ The value of the parameter has the format:
 Default value is "NULL".
 
 
-```c title="shvset parameter usage"
+```opensips title="shvset parameter usage"
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 modparam("cfgutils", "shvset", "pstngw=s:sip:10.10.10.10")
@@ -149,7 +149,7 @@ The value of the parameter has the format:
 Default value is "NULL".
 
 
-```c title="varset parameter usage"
+```opensips title="varset parameter usage"
 ...
 modparam("cfgutils", "varset", "init=i:1")
 modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
@@ -167,7 +167,7 @@ Return true or false, depending on a random value and a
 			probability value.
 
 
-```c title="rand_event() usage"
+```opensips title="rand_event() usage"
 ...
 if (rand_event()) {
   append_to_reply("Retry-After: 120\n");
@@ -188,7 +188,7 @@ Set the "probability" of the decision.
 "probability" can have a value from the range 0..99.
 
 
-```c title="rand_set_prob() usage"
+```opensips title="rand_set_prob() usage"
 ...
 rand_set_prob("4");
 ...
@@ -201,7 +201,7 @@ rand_set_prob("4");
 Reset the probability back to the inital value.
 
 
-```c title="rand_reset_prob() usage"
+```opensips title="rand_reset_prob() usage"
 ...
 rand_reset_prob();
 ...
@@ -214,7 +214,7 @@ rand_reset_prob();
 Return the current probability setting, e.g. for logging purposes.
 
 
-```c title="rand_get_prob() usage"
+```opensips title="rand_get_prob() usage"
 ...
 rand_get_prob();
    
@@ -239,7 +239,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="sleep usage"
+```opensips title="sleep usage"
 ...
 sleep("1");
 ...
@@ -268,7 +268,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="usleep usage"
+```opensips title="usleep usage"
 ...
 usleep("500000"); # sleep half of sec
 ...
@@ -287,7 +287,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="abort usage"
+```opensips title="abort usage"
 ...
 abort();
 ...
@@ -308,7 +308,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="pkg_status usage"
+```opensips title="pkg_status usage"
 ...
 pkg_status();
 ...
@@ -329,7 +329,7 @@ This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 			FAILURE_ROUTE, BRANCH_ROUTE.
 
 
-```c title="shm_status usage"
+```opensips title="shm_status usage"
 ...
 shm_status();
 ...
@@ -505,7 +505,7 @@ $ opensipsctl fifo shv_get
 Returns a random value from the [0 - 2^31) range.
 
 
-```c title="RANDOM pseudo-variable usage"
+```opensips title="RANDOM pseudo-variable usage"
 ...
 if (get_random()) {
   $avp(i:10) = ($RANDOM / 16777216); # 2^24
@@ -542,7 +542,7 @@ The "name" can be:
 - *isdst* - return daylight saving time status (int, 0 - DST off, >0 DST on)
 
 
-```c title="time(name) pseudo-variable usage"
+```opensips title="time(name) pseudo-variable usage"
 ...
 if ($time(year) == 2008) {
 	xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -563,7 +563,7 @@ It is a class of pseudo-variables stored in shared memory. The
 				functions to get/set the value of shared variables.
 
 
-```c title="shv(name) pseudo-variable usage"
+```opensips title="shv(name) pseudo-variable usage"
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...

@@ -63,7 +63,7 @@ The URL pointing to the database where the load-balancing rules
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -79,7 +79,7 @@ The name of the DB table containing the load-balancing rules.
 *Default value is "load_balancer".*
 
 
-```c title="Set db_table parameter"
+```opensips title="Set db_table parameter"
 ...
 modparam("", "db_table", "lb")
 ...
@@ -116,7 +116,7 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 			REPLY_ROUTE and FAILURE_ROUTE.
 
 
-```c title="load_balance usage"
+```opensips title="load_balance usage"
 ...
 if (load_balance("1","trascoding;conference")) {
 	# dst URI points to the new destination
