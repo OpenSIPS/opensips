@@ -159,7 +159,7 @@ A regular expression used to specify the codes that should prevent
 *By default any negative reply generates a failover.*
 
 
-```c title="Set skip_failover_codes parameter"
+```opensips title="Set skip_failover_codes parameter"
 ...
 # do not failover on 408 reply codes
 modparam("siprec", "skip_failover_codes", "408")
@@ -255,7 +255,7 @@ The function returns false when an internal error is triggered
 This function can be used from REQUEST_ROUTE.
 
 
-```c title="Use siprec_start_recording() function with a single SRS"
+```opensips title="Use siprec_start_recording() function with a single SRS"
 	...
 	if (!has_totag() && is_method("INVITE")) {
 		$var(srs) = "sip:127.0.0.1";
@@ -267,7 +267,7 @@ This function can be used from REQUEST_ROUTE.
 ```
 
 
-```c title="Use siprec_start_recording() function with multiple SRS servers"
+```opensips title="Use siprec_start_recording() function with multiple SRS servers"
 	...
 	if (!has_totag() && is_method("INVITE")) {
 		$var(srs) = "sip:127.0.0.1, sip:127.0.0.1;transport=TCP";
@@ -279,7 +279,7 @@ This function can be used from REQUEST_ROUTE.
 ```
 
 
-```c title="Use siprec_start_recording() function with custom XML values for participants"
+```opensips title="Use siprec_start_recording() function with custom XML values for participants"
 	...
 	$xml(caller_xml) = "<nameID></nameID>";
 	$xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:5090";
@@ -291,7 +291,7 @@ This function can be used from REQUEST_ROUTE.
 ```
 
 
-```c title="Use siprec_start_recording() function with custom headers"
+```opensips title="Use siprec_start_recording() function with custom headers"
 	...
 	$siprec(headers) = "X-MY-CUSTOM_HDR: 1\r\n";
 	siprec_start_recording($var(srs));
@@ -300,7 +300,7 @@ This function can be used from REQUEST_ROUTE.
 ```
 
 
-```c title="Use siprec_start_recording() function with custom group and session extensions"
+```opensips title="Use siprec_start_recording() function with custom group and session extensions"
 	...
 	$var(temp) = "
 ```
@@ -325,7 +325,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="Use siprec_pause_recording()"
+```opensips title="Use siprec_pause_recording()"
 	...
 	if (has_totag() && is_method("INVITE")) {
 		if (is_audio_on_hold())
@@ -355,7 +355,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="Use siprec_resume_recording()"
+```opensips title="Use siprec_resume_recording()"
 	...
 	if (has_totag() && is_method("INVITE")) {
 		if (!is_audio_on_hold())
@@ -385,7 +385,7 @@ Parameters:
 This function can be used from any route.
 
 
-```c title="Use siprec_stop_recording()"
+```opensips title="Use siprec_stop_recording()"
 	...
 	if (has_totag() && is_method("INVITE")) {
 		if (is_audio_on_hold())
@@ -418,7 +418,7 @@ Parameters:
 					instance.
 
 
-```c title="Use siprec_send_indialog()"
+```opensips title="Use siprec_send_indialog()"
 	...
 	if (has_totag() && is_method("INFO")) {
 		siprec_send_indialog("Content-Type: $hdr(Content-Type)\r\n", $rb);

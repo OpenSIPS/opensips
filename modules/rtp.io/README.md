@@ -54,7 +54,7 @@ Command-line parameteres passed down to the embedded RTPProxy
 *Parameter has no default value.*
 
 
-```c title="Set rtpproxy_args parameter"
+```opensips title="Set rtpproxy_args parameter"
 ...
 modparam("rtp.io", "rtpproxy_args", "-m 12000 -M 15000 -l 0.0.0.0 -6 /::")
 ...

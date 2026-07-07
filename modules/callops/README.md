@@ -50,7 +50,7 @@ The module can also be used to catch *Notify refer* events
 		the NOTIFY to the end-point, you have to drop it, like below:
 
 
-```c title="Drop automatically handled NOTIFY refer events"
+```opensips title="Drop automatically handled NOTIFY refer events"
 ...
 if (has_totag() && loose_route() &&
 		is_method("NOTIFY") && $hdr(Event) == "refer")
@@ -114,7 +114,7 @@ This parameter can be used to change the mode that the module
 *Default value is "0 (auto mode using parameters)".*
 
 
-```c title="Set mode parameter"
+```opensips title="Set mode parameter"
 ...
 modparam("callops", "mode", "manual") # use your own logic
 ...
@@ -133,7 +133,7 @@ The parameter used to match the different calls together. This is
 *Default value is "osid".*
 
 
-```c title="Set match_param parameter"
+```opensips title="Set match_param parameter"
 ...
 modparam("callops", "match_param", "call")
 ...
@@ -166,7 +166,7 @@ Parameters:
 This function can be used only from a request route.
 
 
-```c title="Use call_blind_replace() function to match an existing leg."
+```opensips title="Use call_blind_replace() function to match an existing leg."
 ...
 if (!has_totag() && is_method("INVITE")) {
 	if (cache_fetch("local", "callid_$si", $avp(callid))) {
@@ -193,7 +193,7 @@ Note that if the function successfully handles the NOTIFY request,
 This function can be used from a request route, failure route and local route.
 
 
-```c title="Use call_transfer_notify() function to handle NOTIFY refer requests."
+```opensips title="Use call_transfer_notify() function to handle NOTIFY refer requests."
 ...
 if (has_totag() && is_method("NOTIFY") && loose_route()) {
 	call_transfer_notify();
@@ -224,7 +224,7 @@ Parameters:
 This function can be used from any route that has a dialog context.
 
 
-```c title="Use call_transfer() function to do a blind transfer of the caller to a new destination."
+```opensips title="Use call_transfer() function to do a blind transfer of the caller to a new destination."
 ...
 if (has_totag() && && loose_route()) {
 	call_transfer("caller", "sip:announcement@127.0.0.1");
@@ -262,7 +262,7 @@ Parameters:
 This function can be used from any route that has a dialog context.
 
 
-```c title="Use call_transfer() function to do an attended transfer of the caller to the callee of a different call."
+```opensips title="Use call_transfer() function to do an attended transfer of the caller to the callee of a different call."
 ...
 if (has_totag() && && loose_route()) {
 	call_transfer("caller", "ba55b1b3-459d-4e84-a6f8-14c40e4f6ace", "callee");

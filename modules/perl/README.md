@@ -56,7 +56,7 @@ The Perl module has two interfaces: The perl side, and the OpenSIPS side. Once a
 		a function "ldap_alias" in Perl, and then execute
 
 
-```c
+```opensips
 ...
 if (perl_exec("ldap_alias")) {
 	...
@@ -151,7 +151,7 @@ This is the file name of your script. This may be set once only, but it may incl
 *May not be empty!*
 
 
-```c title="Set filename parameter"
+```opensips title="Set filename parameter"
 ...
 modparam("perl", "filename", "/home/john/opensips/myperl.pl")
 ...
@@ -168,7 +168,7 @@ The path to the Perl modules included (OpenSIPS.pm et.al). It is not absolutely
 			is the standard behavior, though.
 
 
-```c title="Set modpath parameter"
+```opensips title="Set modpath parameter"
 ...
 modparam("perl", "modpath", "/usr/local/lib/opensips/perl/")
 ...
@@ -198,7 +198,7 @@ The function returns *1* if the perl function was successfully called
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE and BRANCH_ROUTE.
 
 
-```c title="perl_exec_simple() usage"
+```opensips title="perl_exec_simple() usage"
 ...
 if ($rm=="INVITE") {
 	perl_exec_simple("dosomething", "on invite messages");
@@ -227,7 +227,7 @@ The function returns back to the OpenSIPS script the value returned by the perl 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE and BRANCH_ROUTE.
 
 
-```c title="perl_exec() usage"
+```opensips title="perl_exec() usage"
 ...
 if (perl_exec("ldapalias")) {
 	...
@@ -426,7 +426,7 @@ Here is a list of functions that are expected to be working (not
 	claiming completeness):
 
 
-```c
+```opensips
 * alias_db_lookup
 * consume_credentials
 * is_rpid_user_e164

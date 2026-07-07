@@ -44,7 +44,7 @@ The name of the db table storing prefix rules.
 *Default value is "trie_table".*
 
 
-```c title="Set trie_table parameter"
+```opensips title="Set trie_table parameter"
 ...
 modparam("trie", "trie_table", "my_prefix_table")
 ...
@@ -69,7 +69,7 @@ If you have a large routing set (millions of rules/prefixes), you
 *Default value is "0 (disabled)".*
 
 
-```c title="Set no_concurrent_reload parameter"
+```opensips title="Set no_concurrent_reload parameter"
 ...
 # do not allow parallel reload operations
 modparam("trie", "no_concurrent_reload", 1)
@@ -89,7 +89,7 @@ Flag to configure whether to use partitions for tries. If this
 *Default value is "0".*
 
 
-```c title="Set use_partitions parameter"
+```opensips title="Set use_partitions parameter"
 ...
 modparam("trie", "use_partitions", 1)
 ...
@@ -107,7 +107,7 @@ The url to the database containing partition-specific
 *Default value is ""NULL"".*
 
 
-```c title="Set db_partitions_url parameter"
+```opensips title="Set db_partitions_url parameter"
 ...
 modparam("trie", "db_partitions_url", "mysql://user:password@localhost/opensips_partitions")
 ...
@@ -124,7 +124,7 @@ The name of the table containing partition definitions. To be
 *Default value is "trie_partitions".*
 
 
-```c title="Set db_partitions_table parameter"
+```opensips title="Set db_partitions_table parameter"
 ...
 modparam("trie", "db_partitions_table", "trie_partition_defs")
 ...
@@ -142,7 +142,7 @@ List of ASCII (0-127) characters to be additionally accepted in
 *Default value is "NULL".*
 
 
-```c title="Set extra_prefix_chars parameter"
+```opensips title="Set extra_prefix_chars parameter"
 ...
 modparam("trie", "extra_prefix_chars", "#-%")
 ...
@@ -188,7 +188,7 @@ All parameters are optional. Any of them may be ignored, provided
 			ONLY if the "use_partition" module parameter is turned on.
 
 
-```c title="trie_search usage"
+```opensips title="trie_search usage"
 ...
 if (trie_search("$rU","L",$avp(code_attrs),,"my_partition")) {
     # we found it in the trie, it's a match

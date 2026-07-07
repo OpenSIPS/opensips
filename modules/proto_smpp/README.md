@@ -164,7 +164,7 @@ The database handler where the SMPP connection will be
 *Default value is *unset*.*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("proto_smpp", "db_url", "dbdriver://username:password@dbhost/dbname")
 ...
@@ -181,7 +181,7 @@ Used to change the default value of the SMPP port used to
 *Default value is 2775.*
 
 
-```c title="Set smpp_port variable"
+```opensips title="Set smpp_port variable"
 ...
 modparam("proto_smpp", "smpp_port", 27775)
 ...
@@ -203,7 +203,7 @@ The maximum number of chunks in which a SMPP message is expected to
 *Default value is 8.*
 
 
-```c title="Set smpp_max_msg_chunks parameter"
+```opensips title="Set smpp_max_msg_chunks parameter"
 ...
 modparam("proto_smpp", "smpp_max_msg_chunks", 32)
 ...
@@ -221,7 +221,7 @@ Time in milliseconds after a TCP connection will be closed if it is
 *Default value is 100 ms.*
 
 
-```c title="Set smpp_send_timeout parameter"
+```opensips title="Set smpp_send_timeout parameter"
 ...
 modparam("proto_smpp", "smpp_send_timeout", 200)
 ...
@@ -238,7 +238,7 @@ This parameter represents the URI of the outbound proxy used to send
 *Default value is *None*.*
 
 
-```c title="Set outbound_uri parameter"
+```opensips title="Set outbound_uri parameter"
 ...
 modparam("proto_smpp", "outbound_uri", "sip:127.0.0.1:5060")
 ...
@@ -255,7 +255,7 @@ The name of the database table containing definitions
 *Default value is "smpp".*
 
 
-```c title="Set smpp_table parameter"
+```opensips title="Set smpp_table parameter"
 ...
 modparam("proto_smpp", "smpp_table", "smsc")
 ...
@@ -272,7 +272,7 @@ The name of the column that holds the SMSc identifier used by
 *Default value is "name".*
 
 
-```c title="Set name_col parameter"
+```opensips title="Set name_col parameter"
 ...
 modparam("proto_smpp", "name_col", "smsc_name")
 ...
@@ -288,7 +288,7 @@ The name of the column that holds the IP of the SMSc.
 *Default value is "ip".*
 
 
-```c title="Set ip_col parameter"
+```opensips title="Set ip_col parameter"
 ...
 modparam("proto_smpp", "ip_col", "smsc_ip")
 ...
@@ -304,7 +304,7 @@ The name of the column that holds the SMSc port.
 *Default value is "port".*
 
 
-```c title="Set port_col parameter"
+```opensips title="Set port_col parameter"
 ...
 modparam("proto_smpp", "port_col", "smsc_port")
 ...
@@ -320,7 +320,7 @@ The name of the column that holds the SMSc System ID.
 *Default value is "system_id".*
 
 
-```c title="Set system_id_col parameter"
+```opensips title="Set system_id_col parameter"
 ...
 modparam("proto_smpp", "system_id_col", "smsc_system_id")
 ...
@@ -336,7 +336,7 @@ The name of the password column used to authenticate the SMSc.
 *Default value is "password".*
 
 
-```c title="Set password_col parameter"
+```opensips title="Set password_col parameter"
 ...
 modparam("proto_smpp", "password_col", "smsc_password")
 ...
@@ -352,7 +352,7 @@ The name of the System Type column used to bind the SMSc.
 *Default value is "system_type".*
 
 
-```c title="Set system_type_col parameter"
+```opensips title="Set system_type_col parameter"
 ...
 modparam("proto_smpp", "system_type_col", "smsc_system_type")
 ...
@@ -368,7 +368,7 @@ The name of the column that holds the Source TON values.
 *Default value is "src_ton".*
 
 
-```c title="Set src_ton_col parameter"
+```opensips title="Set src_ton_col parameter"
 ...
 modparam("proto_smpp", "src_ton_col", "smsc_src_ton")
 ...
@@ -384,7 +384,7 @@ The name of the column that holds the Source NPI values.
 *Default value is "src_npi".*
 
 
-```c title="Set src_npi_col parameter"
+```opensips title="Set src_npi_col parameter"
 ...
 modparam("proto_smpp", "src_npi_col", "smsc_src_npi")
 ...
@@ -400,7 +400,7 @@ The name of the column that holds the Destination TON values.
 *Default value is "dst_ton".*
 
 
-```c title="Set dst_ton_col parameter"
+```opensips title="Set dst_ton_col parameter"
 ...
 modparam("proto_smpp", "dst_ton_col", "smsc_dst_ton")
 ...
@@ -416,7 +416,7 @@ The name of the column that holds the Destination NPI values.
 *Default value is "dst_npi".*
 
 
-```c title="Set dst_npi_col parameter"
+```opensips title="Set dst_npi_col parameter"
 ...
 modparam("proto_smpp", "dst_npi_col", "smsc_dst_npi")
 ...
@@ -432,7 +432,7 @@ The name of the column that holds the Session Type of the SMSc.
 *Default value is "session_type".*
 
 
-```c title="Set session_type_col parameter"
+```opensips title="Set session_type_col parameter"
 ...
 modparam("proto_smpp", "session_type_col", "smsc_session_type")
 ...
@@ -482,7 +482,7 @@ This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
 			or BRANCH_ROUTE.
 
 
-```c title="send_smpp_message() usage"
+```opensips title="send_smpp_message() usage"
 ...
     if (is_method("MESSAGE"))
 			send_smpp_message("MY_SMSC");
