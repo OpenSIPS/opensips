@@ -42,7 +42,7 @@ The return code of the function executed in async mode is available in the very 
 The optional 'timeout' parameter is to control for how long the script should wait for the blocking function to complete (independently from its implementation). If the blocking I/O is not completed before the given timeout, the async layer will force the function to complete (with timeout) its I/O and to resume the script.
 
 
-```c
+```opensips
 
 route
 {
@@ -89,7 +89,7 @@ The **launch()** statement comes with no additional module dependencies, being p
 ### Script syntax and usage
 
 Similarly to the **async()** statement, if your blocking function supports asynchronous mode (read the [module's documentation](Modules.md) for this), then you can just throw it in the following function calls:
-```c
+```opensips
 
 launch(blocking_function(...));
 or
@@ -109,7 +109,7 @@ The **launch()** statement is both asynchronous and parallel with the script exe
 The return code of the function executed in async mode is available in the very beginning of the `report_route` in the `$rc` or `$retcode` variable. Also, only the output parameters (variables in function parameters used to carry output values) will be available inside this route.
 
 
-```c
+```opensips
 
 route
 {
