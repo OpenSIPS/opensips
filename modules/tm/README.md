@@ -983,7 +983,7 @@ Meaning of the parameters is as follows (all do accept variables):
 			route)
 
 
-```c title="t_new_request usage"
+```opensips title="t_new_request usage"
 ...
 	# send a MESSAGE request
 	t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@mydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!")) {

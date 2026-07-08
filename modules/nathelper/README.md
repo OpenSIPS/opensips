@@ -463,7 +463,7 @@ The function may takean optional parameter (for set operations) -
 			a number in decimal format.
 
 
-```c title="nh_enable_ping usage"
+```bash title="nh_enable_ping usage"
 ...
 $ opensipsctl fifo nh_enable_ping
 Status:: 1
