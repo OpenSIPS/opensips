@@ -194,7 +194,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
   opensipsctl fifo lua_reload
   
 ```

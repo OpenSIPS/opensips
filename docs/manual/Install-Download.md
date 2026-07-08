@@ -17,7 +17,7 @@ OpenSIPS packages for various distributions are available for download in [our r
 
 Tarballs with the latest sources of the 2.4 release may be downloaded directly from the project web site:
 
-```text
+```bash
   [http://opensips.org/pub/opensips/2.4.x/](http://opensips.org/pub/opensips/2.4.x/) 
 ```
 
@@ -26,7 +26,7 @@ Tarballs with the latest sources of the 2.4 release may be downloaded directly f
 ## Tarballs from SourceForge
 
 The same release files we have on the website are also hosted on the SourceForge download area - it is advisable to use it as geographical mirrors are available for a faster download:
-```text
+```bash
   [https://sourceforge.net/projects/opensips/files/OpenSIPS/](https://sourceforge.net/projects/opensips/files/OpenSIPS/)
 ```
 

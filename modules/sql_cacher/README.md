@@ -248,7 +248,7 @@ The second parameter is the key.
 			This parameter is optional and only makes sense in *on demand* mode.
 
 
-```c title="sql_cacher_reload usage"
+```bash title="sql_cacher_reload usage"
 ...
 $ opensipsctl fifo sql_cacher_reload caching_name
 ...

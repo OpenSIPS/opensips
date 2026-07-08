@@ -17,7 +17,7 @@ Returns the full list of arguments used when **OpenSIPS** was started. As in UNI
 Example of usage:
 ```bash
 
-    # opensipsctl fifo arg
+    $ opensipsctl fifo arg
     ./opensips
     -f
     /etc/openser/test.cfg
@@ -34,7 +34,7 @@ The command will terminate **OpenSIPS** (and internal shutdown).
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo kill
+    $ opensipsctl fifo kill
 
 ```
 
@@ -47,13 +47,13 @@ Get or set the logging level of one or all OpenSIPS processes. If no argument is
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo log_level
+    $ opensipsctl fifo log_level
     Process::  PID=10670 Debug=2 Type=attendant
     Process::  PID=10672 Debug=3 Type=MI FIFO
     Process::  PID=10673 Debug=1 Type=SIP receiver udp:192.468.2.433:5060
-    # opensipsctl fifo log_level 1
+    $ opensipsctl fifo log_level 1
     New global debug:: 1
-    # opensipsctl fifo log_level 4 10670
+    $ opensipsctl fifo log_level 4 10670
     New debug:: 4
 
 ```
@@ -68,7 +68,7 @@ The command will list all all **OpenSIPS** processes, along with type and descri
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo ps
+    $ opensipsctl fifo ps
     Process::  ID=0 PID=16224 Type=attendant
     Process::  ID=1 PID=16225 Type=SIP receiver udp:192.468.1.2:5060
     Process::  ID=2 PID=16226 Type=timer
@@ -88,7 +88,7 @@ Prints the working directory of **OpenSIPS** instance.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo pwd
+    $ opensipsctl fifo pwd
     WD:: /
 
 ```
@@ -103,7 +103,7 @@ Prints various time information about **OpenSIPS** - when it started to run, for
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo uptime
+    $ opensipsctl fifo uptime
     Now:: Mon Jul 21 17:41:03 2008
     Up since:: Mon Jul 21 17:36:33 2008
     Up time:: 270 [sec]
@@ -120,7 +120,7 @@ Prints the version string of a running**OpenSIPS**.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo version
+    $ opensipsctl fifo version
     Server:: OpenSIPS (1.4.0dev14-notls (i386/linux))
 
 ```
@@ -135,7 +135,7 @@ Prints all available MI commands from the queried **OpenSIPS**instance.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo which
+    $ opensipsctl fifo which
     get_statistics
     list_statistics
     reset_statistics
@@ -170,7 +170,7 @@ The command lists all the defined (static or learned) blacklists from **OpenSIPS
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo list_blacklists
+    $ opensipsctl fifo list_blacklists
 
 ```
 
@@ -186,7 +186,7 @@ The command lists all ongoing TCP/TLS connection from **OpenSIPS**.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo list_tcp_conns
+    $ opensipsctl fifo list_tcp_conns
 
 ```
 
@@ -202,16 +202,16 @@ Prints the statistics (all, group or one) realtime values.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo get_statistics rcv_requests
+    $ opensipsctl fifo get_statistics rcv_requests
     core:rcv_requests = 35243
-    # opensipsctl fifo get_statistics shmem:
+    $ opensipsctl fifo get_statistics shmem:
     shmem:total_size = 33554432
     shmem:used_size = 1686952
     shmem:real_used_size = 1704592
     shmem:max_used_size = 1704592
     shmem:free_size = 31849840
     shmem:fragments = 1
-    # opensipsctl fifo get_statistics all
+    $ opensipsctl fifo get_statistics all
     ....
 
 ```
@@ -222,7 +222,7 @@ Prints a list of all available statistics in the current configuration of OpenSI
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo list_statistics
+    $ opensipsctl fifo list_statistics
 shmem:total_size:: incremental
 shmem:used_size:: incremental
 shmem:real_used_size:: incremental
@@ -248,10 +248,10 @@ Reset (to zero) the value of a statistic variable. Note that not all variables a
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo get_statistics received_replies
+    $ opensipsctl fifo get_statistics received_replies
     core:received_replies = 14543
-    # opensipsctl fifo reset_statistics received_replies
-    # opensipsctl fifo get_statistics received_replies
+    $ opensipsctl fifo reset_statistics received_replies
+    $ opensipsctl fifo get_statistics received_replies
     core:received_replies = 0
 
 ```
@@ -265,7 +265,7 @@ This command stores in a cache system a string value.
 
    - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'
 
-```text
+```bash
 - the label to be associated with this value \\
 - the string to be stored \\
 ```
@@ -274,7 +274,7 @@ This command stores in a cache system a string value.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo cache_store local password_user1 password
+    $ opensipsctl fifo cache_store local password_user1 password
 
 ```
 
@@ -285,7 +285,7 @@ This command queries for a stored value.
 
    - cache system to use - for the cache system implemented by **OpenSIPS** module 'localcache' the value of this parameter should be 'local'
 
-```text
+```bash
 - the label associated with the value \\
 ```
 **Output**: MI tree containing the value if a record is found or 'Value not found' string otherwise.
@@ -293,7 +293,7 @@ This command queries for a stored value.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo cache_fetch local password_user1
+    $ opensipsctl fifo cache_fetch local password_user1
 
 ```
 
@@ -302,7 +302,7 @@ This command removes a record from the cache system.
 
 **Arguments**:
 
-```text
+```bash
 - cache system to use\\
 - the label associated with the stored value \\
 ```
@@ -311,7 +311,7 @@ This command removes a record from the cache system.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo cache_remove local password_user1
+    $ opensipsctl fifo cache_remove local password_user1
 
 ```
 
@@ -322,7 +322,7 @@ Subscribes an external application to a certain event.
 
 **Arguments**:
 
-```text
+```bash
 - event name\\
 - external application socket \\
 - expire time, in seconds - if absent, the subscription is valid only one hour (3600 s)\\
@@ -332,7 +332,7 @@ Subscribes an external application to a certain event.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo event_subscribe E_PIKE_BLOCKED udp:127.0.0.1:8888 1200
+    $ opensipsctl fifo event_subscribe E_PIKE_BLOCKED udp:127.0.0.1:8888 1200
 
 ```
 
@@ -346,7 +346,7 @@ Lists all the events published through the Event Interface.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo events_list
+    $ opensipsctl fifo events_list
     Event:: E_CORE_THRESHOLD id=0
     Event:: E_RTPPROXY_STATUS id=1
     Event:: E_PIKE_BLOCKED id=2
@@ -358,7 +358,7 @@ Lists information about the subscribers
 
 **Arguments**:
 
-```text
+```bash
 - event name\\
 - external application socket \\
 ```
@@ -367,7 +367,7 @@ Lists information about the subscribers
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo subscribers_list
+    $ opensipsctl fifo subscribers_list
     Event:: E_CORE_THRESHOLD id=0
     Event:: E_RTPPROXY_STATUS id=1
 	Subscriber::  socket=unix:/tmp/event.sock expire=never
@@ -375,12 +375,12 @@ Examples of usage:
     Event:: E_PIKE_BLOCKED id=2
 	Subscriber::  socket=rabbitmq:guest@127.0.0.1/hello expire=never
 
-    # opensipsctl fifo subscribers_list E_RTPPROXY_STATUS
+    $ opensipsctl fifo subscribers_list E_RTPPROXY_STATUS
     Event:: E_RTPPROXY_STATUS id=1
 	Subscriber::  socket=unix:/tmp/event.sock expire=never
 	Subscriber::  socket=udp:127.0.0.1:8888 expire=1100
 
-    # opensipsctl fifo subscribers_list E_RTPPROXY_STATUS unix:/tmp/event.sock
+    $ opensipsctl fifo subscribers_list E_RTPPROXY_STATUS unix:/tmp/event.sock
     Event:: E_RTPPROXY_STATUS id=1
 	Subscriber::  socket=unix:/tmp/event.sock expire=never
 
@@ -398,6 +398,6 @@ Only available with *QM_MALLOC* + *DBG_MALLOC*.  Fully scans the shared memory p
 Example of usage:
 ```bash
 
-    # opensipsctl fifo shm_check
+    $ opensipsctl fifo shm_check
 
 ```

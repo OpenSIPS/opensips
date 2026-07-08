@@ -23,7 +23,7 @@ Only relevant if [asserts](https://docs.opensips.org/manual/2-4/script-corefunct
 
 
 Example of usage:
-```text
+```opensips
 
     abort_on_assert = true
 
@@ -38,7 +38,7 @@ This can be an IP address or string and represents the address advertised in the
 > OpenSIPS does not validate this value; for example, `foo.bar` is accepted even if it does not exist.
 
 Example of usage:
-```text
+```opensips
 
     advertised_address = "opensips.org"
 
@@ -53,7 +53,7 @@ Example of usage:
 The port advertised in the Via header and other destination lumps, such as Record-Route headers. If empty or not set, the port used to send the message is advertised. The same warnings as for [advertised_address](#advertised_address) apply.
 
 Example of usage:
-```text
+```opensips
 
     advertised_port = 5080
 
@@ -75,7 +75,7 @@ If the `:port` part is omitted, **all** ports of the given hostname are consider
 
 Example of usage:
 
-```text
+```opensips
 
     alias = udp:other.domain.com:5060
     alias = tcp:another.domain.com:5060
@@ -89,7 +89,7 @@ This parameter controls whether aliases should be automatically discovered and a
 For backwards compatibility, the default value is `true`.
 
 Example of usage:
-```text
+```opensips
 
     auto_aliases = false
 
@@ -108,7 +108,7 @@ Checks whether the address in the topmost Via header of replies is local. Defaul
 
 Example of usage:
 
-```text
+```opensips
 
     check_via = true
 
@@ -121,7 +121,7 @@ Number of child processes to be created for each UDP or SCTP interface.
 Default value is `8`.
 
 Example of usage:
-```text
+```opensips
 
     children = 16
 
@@ -136,7 +136,7 @@ The value must be a valid path in the system. If set, **OpenSIPS** will chroot, 
 
 Example of usage:
 
-```text
+```opensips
 
     chroot = "/other/fakeroot"
 
@@ -159,7 +159,7 @@ Default value is `false` (disabled).
 This parameter was introduced as a replacement for the old [fork](#fork) option.
 
 Example of usage:
-```text
+```opensips
 
     debug_mode = true
 
@@ -173,7 +173,7 @@ The name of the database table used by the DB API to check table versions.
 Default value is `"version"`.
 
 Example of usage:
-```text
+```opensips
 
     db_version_table = "version_2_4"
 
@@ -186,7 +186,7 @@ The default DB URL used by modules when no per-module URL is configured.
 Default value is `NULL` (not defined).
 
 Example of usage:
-```text
+```opensips
 
     db_default_url = "mysql://opensips:opensipsrw@localhost/opensips"
 
@@ -199,14 +199,14 @@ Maximum number of TCP connections opened from a single OpenSIPS child to each in
 Default value is `10`.
 
 Individual backends are determined from DB URLs as follows:
-```text
+```opensips
 
     [ scheme, user, pass, host, port, database ]
 
 ```
 
 Example of usage:
-```text
+```opensips
 
     db_max_async_connections = 220
 
@@ -219,7 +219,7 @@ If set to `true`, OpenSIPS will not translate received 503 replies into 500 repl
 Default value is `false` (translation enabled).
 
 Example of usage:
-```text
+```opensips
 
     disable_503_translation = true
 
@@ -232,7 +232,7 @@ If set to `true`, OpenSIPS disables core dumps by setting the core dump size lim
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     disable_core_dump = true
 
@@ -249,7 +249,7 @@ If set to `true`, this DNS blacklist is disabled.
 Default value is `true` (DNS blacklist disabled).
 
 Example of usage:
-```text
+```opensips
 
     disable_dns_blacklist = false
 
@@ -262,7 +262,7 @@ If set to `true`, OpenSIPS disables DNS-based failover. This is a global option,
 Default value is `false` (DNS-based failover enabled).
 
 Example of usage:
-```text
+```opensips
 
     disable_dns_failover = true
 
@@ -272,7 +272,7 @@ Example of usage:
 
 Controls the handling of stateless replies:
 
-```text
+```opensips
 
     true  - drop stateless replies if stateless forwarding functions, such as forward(), are not used in the script
     false - forward stateless replies
@@ -282,7 +282,7 @@ Controls the handling of stateless replies:
 Default value is `true`.
 
 Example of usage:
-```text
+```opensips
 
     disable_stateless_fwd = false
 
@@ -295,7 +295,7 @@ This parameter controls whether the SIP server should attempt to look up its own
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     dns = true
 
@@ -306,7 +306,7 @@ Example of usage:
 Time in seconds before retrying a DNS request. By default, this value is system-specific and also depends on the `/etc/resolv.conf` content, usually `5` seconds.
 
 Example of usage:
-```text
+```opensips
 
     dns_retr_time = 3
 
@@ -317,7 +317,7 @@ Example of usage:
 Number of DNS retransmissions before giving up. By default, this value is system-specific and also depends on the `/etc/resolv.conf` content, usually `4`.
 
 Example of usage:
-```text
+```opensips
 
     dns_retr_no = 3
 
@@ -330,7 +330,7 @@ How many DNS servers from `/etc/resolv.conf` will be used.
 By default, all DNS servers are used.
 
 Example of usage:
-```text
+```opensips
 
     dns_servers_no = 2
 
@@ -343,7 +343,7 @@ If set to `true` and a DNS lookup fails, OpenSIPS retries the lookup for IPv6 us
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     dns_try_ipv6 = true
 
@@ -356,7 +356,7 @@ Controls whether NAPTR lookups are performed when doing DNS-based routing for SI
 Default value is `true`.
 
 Example of usage:
-```text
+```opensips
 
     dns_try_naptr = false
 
@@ -372,7 +372,7 @@ Default value is `true`.
 > Even if you do not have a search list defined, setting this option to `false` can still be faster because an empty search list still causes two DNS queries, for example `foo.` and `foo`.
 
 Example of usage:
-```text
+```opensips
 
     dns_use_search_list = false
 
@@ -386,7 +386,7 @@ The primary purpose is to prevent sending requests to critical IPs, such as gate
 
 The grammar for specifying a list is:
 
-```text
+```opensips
 
     dst_blacklist = id [/bl_flags] [: bl_rules]
 
@@ -395,7 +395,7 @@ The grammar for specifying a list is:
 * **id** is a unique identifier of the blacklist.
 * **bl_flags** contains a set of optional modifiers:
 
-```text
+```opensips
 
     bl_flags = bl_flag [, bl_flag]*
     bl_flag = "expire" | "default" | "readonly"
@@ -404,7 +404,7 @@ The grammar for specifying a list is:
 
 * **bl_rules** contains one or more blacklist rules:
 
-```text
+```opensips
 
     bl_rules = [!] ipnet | { bl_rule [, bl_rule]* }
     bl_rule = [!] ( [bl_proto, ] ipnet [, port [, bl_pattern]] )
@@ -426,7 +426,7 @@ A rule has the following properties:
 * **bl_pattern**: filename-like matching, see `man 3 fnmatch`, applied on the outgoing request buffer (`first_line + hdrs + body`).
 
 Example of usage:
-```text
+```opensips
 
     # filter out requests going to IPs of my gateways
     dst_blacklist = gw:{(tcp, 192.168.3.100, 5060, ""), (any, 192.168.3.101, 0, "")}
@@ -448,7 +448,7 @@ Set to `true` to enable the [assert](https://docs.opensips.org/manual/2-4/script
 
 
 Example of usage:
-```text
+```opensips
 
     enable_asserts = true
 
@@ -461,7 +461,7 @@ A number representing the percentage threshold above which the E_CORE_PKG_THRESH
 Default value is `0` (event disabled).
 
 Example of usage:
-```text
+```opensips
 
     event_pkg_threshold = 90
 
@@ -474,7 +474,7 @@ A number representing the percentage threshold above which the E_CORE_SHM_THRESH
 Default value is `0` (event disabled).
 
 Example of usage:
-```text
+```opensips
 
     event_shm_threshold = 90
 
@@ -487,7 +487,7 @@ A number representing the maximum number of microseconds a DNS query is expected
 Default value is `0` (logging disabled).
 
 Example of usage:
-```text
+```opensips
 
     exec_dns_threshold = 60000
 
@@ -500,7 +500,7 @@ A number representing the maximum number of microseconds the processing of a SIP
 Default value is `0` (logging disabled).
 
 Example of usage:
-```text
+```opensips
 
     exec_msg_threshold = 60000
 
@@ -512,7 +512,7 @@ Can be called outside route blocks to load additional routes or blocks, or insid
 
 
 Example of usage:
-```text
+```opensips
 
     include_file "proxy_regs.cfg"
 
@@ -524,7 +524,7 @@ Alias for [include_file](#include_file).
 
 
 Example of usage:
-```text
+```opensips
 
     import_file "proxy_regs.cfg"
 
@@ -548,7 +548,7 @@ These options only affect the interfaces they are configured for; if they are no
 
 
 Example of usage:
-```text
+```opensips
 
     listen = udp:*
     listen = udp:eth1
@@ -573,7 +573,7 @@ Default value is `LOG_DAEMON`.
 
 
 Example of usage:
-```text
+```opensips
 
     log_facility = LOG_LOCAL0
 
@@ -587,7 +587,7 @@ Sets the logging level, controlling how verbose OpenSIPS should be. Higher value
 Default value is `2` (notice level).
 
 Example of usage:
-```text
+```opensips
 
     # print only important messages, such as errors or more critical situations;
     # recommended for running a proxy as a daemon
@@ -619,7 +619,7 @@ Sets the identifier printed in syslog. The value must be a string and has effect
 Default value is `argv[0]`.
 
 Example of usage:
-```text
+```opensips
 
     log_name = "osips-5070"
 
@@ -635,7 +635,7 @@ Controls whether **OpenSIPS** writes log messages to standard error.
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     log_stderror = true
 
@@ -648,7 +648,7 @@ Sets the maximum number of loop iterations allowed within a `while` statement. T
 Default value is `10000`.
 
 Example of usage:
-```text
+```opensips
 
     max_while_loops = 200
 
@@ -661,7 +661,7 @@ The maximum receive buffer size, in bytes, that OpenSIPS will accept during the 
 Default value is `262144` bytes.
 
 Example of usage:
-```text
+```opensips
 
     maxbuffer = 65536
 
@@ -674,7 +674,7 @@ Defines a group of modules, by name, for separate memory statistics. OpenSIPS pr
 This feature requires running `make generate-mem-stats` and compiling with the `SHM_EXTRA_STATS` variable defined.
 
 Example of usage:
-```text
+```opensips
 
     mem-group = "interest": "core" "tm"
     mem-group = "runtime": "dialog" "usrloc" "tm"
@@ -696,7 +696,7 @@ Memory warming is useful when dealing with high volumes of traffic, such as thou
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     mem_warming = true
 
@@ -710,7 +710,7 @@ Default value is `75`.
 
 
 Example of usage:
-```text
+```opensips
 
     mem_warming_percentage = 50
 
@@ -724,7 +724,7 @@ Default value is `"CFG_DIR/mem_warming_pattern"`.
 
 
 Example of usage:
-```text
+```opensips
 
     mem_warming_pattern_file = "/var/tmp/my_memory_pattern"
 
@@ -737,7 +737,7 @@ Log level used to print memory status information at runtime and shutdown. It mu
 Default value is `14` (`L_DBG + 10`), which effectively disables memory dump logging because it is above the normal debug log level.
 
 Example of usage:
-```text
+```opensips
 
     memdump = 2
 
@@ -753,7 +753,7 @@ Log level used to print memory debug information. It must be lower than the valu
 Default value is `15` (`L_DBG + 11`), which effectively disables memory debug logging because it is above the normal debug log level.
 
 Example of usage:
-```text
+```opensips
 
     memlog = 2
 
@@ -769,7 +769,7 @@ If set to `true`, multicast datagrams are sent over loopback.
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     mcast_loopback = true
 
@@ -782,7 +782,7 @@ Sets the multicast TTL.
 Default value is `OS-specific`, usually `1`.
 
 Example of usage:
-```text
+```opensips
 
     mcast_ttl = 32
 
@@ -795,7 +795,7 @@ If set to `true`, OpenSIPS tries to locate the outbound interface on multihomed 
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     mhomed = true
 
@@ -806,7 +806,7 @@ Example of usage:
 Sets the module search path. This can be used to simplify `loadmodule` statements.
 
 Example of usage:
-```text
+```opensips
 
     mpath = "/usr/local/lib/opensips/modules"
     loadmodule "mysql.so"
@@ -828,7 +828,7 @@ If set and greater than the current open file limit, **OpenSIPS** tries to incre
 Default value is `-1` (do not change the open file limit).
 
 Example of usage:
-```text
+```opensips
 
     open_files_limit = 2048
 
@@ -841,7 +841,7 @@ The poll method used by the internal I/O reactor. By default, the best method fo
 Available values are `poll`, `epoll`, `sigio_rt`, `select`, `kqueue` and `/dev/poll`.
 
 Example of usage:
-```text
+```opensips
 
     poll_method = select
 
@@ -855,7 +855,7 @@ If set to a value greater than `1`, DB inserts are not flushed one by one. Rows 
 Default value is `0` (buffering disabled).
 
 Example of usage:
-```text
+```opensips
 
     query_buffer_size = 5
 
@@ -868,7 +868,7 @@ If [query_buffer_size](#query_buffer_size) is set to a value greater than `1`, a
 Default value is `0`.
 
 Example of usage:
-```text
+```opensips
 
     query_flush_time = 10
 
@@ -882,7 +882,7 @@ Controls whether the SIP server should attempt to look up its own IP address in 
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     rev_dns = true
 
@@ -895,7 +895,7 @@ The body of the Server header field generated by **OpenSIPS** when it sends a re
 Default value is `"Server: OpenSIPS (<version> (<arch>/<os>))"`.
 
 Example of usage:
-```text
+```opensips
 
     server_header = "Server: My Company SIP Proxy"
 
@@ -911,14 +911,14 @@ Controls whether the Server header is added to locally generated messages.
 Default value is `true`.
 
 Example of usage:
-```text
+```opensips
 
     server_signature = false
 
 ```
 
 When enabled, the generated header looks like:
-```text
+```opensips
 
     Server: OpenSIPS (4.0.0 (x86_64/linux))
 
@@ -931,7 +931,7 @@ Only relevant when the `HP_MALLOC` compile flag is enabled. It controls how many
 Default value is `1`.
 
 Example of usage:
-```text
+```opensips
 
     shm_hash_split_percentage = 2
 
@@ -945,7 +945,7 @@ Only relevant when the `HP_MALLOC` compile flag is enabled. It represents the op
 Default value is `8`.
 
 Example of usage:
-```text
+```opensips
 
     shm_secondary_hash_size = 4
 
@@ -958,7 +958,7 @@ If set to `true`, a Warning header is added to each reply generated by **OpenSIP
 Default value is `false`.
 
 Example of usage:
-```text
+```opensips
 
     sip_warning = true
 
@@ -970,7 +970,7 @@ Number of child processes created for reading from TCP connections. If no value 
 
 
 Example of usage:
-```text
+```opensips
 
     tcp_children = 4
 
@@ -988,7 +988,7 @@ On top of RFC 5923 connection reuse, TCP connections in OpenSIPS are also persis
 > Enabling the global `tcp_accept_aliases` parameter for end-user initiated connections, which are most likely grouped by one or more public IPs, is an open vector for call hijacking. In such platforms, use the [force_tcp_alias()](https://docs.opensips.org/manual/2-4/script-corefunctions#force_tcp_alias) core function to employ RFC 5923 behavior only with adjacent SIP proxies.
 
 Example of usage:
-```text
+```opensips
 
     tcp_accept_aliases = true
 
@@ -1001,7 +1001,7 @@ The maximum length to which the queue of pending connections for TCP listeners m
 Default value is `10`.
 
 Example of usage:
-```text
+```opensips
 
     tcp_listen_backlog = 20
 
@@ -1014,7 +1014,7 @@ Time in milliseconds before an ongoing blocking connection attempt is aborted.
 Default value is `100` milliseconds.
 
 Example of usage:
-```text
+```opensips
 
     tcp_connect_timeout = 100
 
@@ -1027,7 +1027,7 @@ Lifetime in seconds for TCP sessions. TCP sessions inactive for more than `tcp_c
 Default value is `120` seconds.
 
 Example of usage:
-```text
+```opensips
 
     tcp_connection_lifetime = 3600
 
@@ -1040,7 +1040,7 @@ Maximum number of active TCP accepted connections, meaning connections initiated
 Default value is `2048`.
 
 Example of usage:
-```text
+```opensips
 
     tcp_max_connections = 4096
 
@@ -1053,7 +1053,7 @@ The maximum number of seconds that a SIP message is expected to take to fully ar
 Default value is `4` seconds.
 
 Example of usage:
-```text
+```opensips
 
     tcp_max_msg_time = 8
 
@@ -1066,7 +1066,7 @@ A branch flag used to instruct OpenSIPS not to open a new TCP connection when de
 This is intended for NAT scenarios where opening a TCP connection towards a destination behind NAT makes no sense, for example when the TCP connection created during registration was lost and the device cannot be contacted until it re-registers. It can also be used to detect when a NATed registered user lost its TCP connection, so OpenSIPS can disable that registration as unusable.
 
 Example of usage:
-```text
+```opensips
 
     tcp_no_new_conn_bflag = TCP_NO_CONNECT
     ...
@@ -1097,7 +1097,7 @@ A number representing the maximum number of microseconds sending a TCP request i
 Default value is `0` (logging disabled).
 
 Example of usage:
-```text
+```opensips
 
     tcp_threshold = 60000
 
@@ -1110,7 +1110,7 @@ Enables or disables TCP keepalive at OS level.
 Default value is `true` if TCP keepalive is supported by the OS, `false` otherwise.
 
 Example of usage:
-```text
+```opensips
 
     tcp_keepalive = true
 
@@ -1125,7 +1125,7 @@ Default value is `OS-dependent`.
 Setting `tcp_keepcount` to any value also enables [tcp_keepalive](#tcp_keepalive).
 
 Example of usage:
-```text
+```opensips
 
     tcp_keepcount = 5
 
@@ -1140,7 +1140,7 @@ Default value is `OS-dependent`.
 Setting `tcp_keepidle` to any value also enables [tcp_keepalive](#tcp_keepalive).
 
 Example of usage:
-```text
+```opensips
 
     tcp_keepidle = 30
 
@@ -1155,7 +1155,7 @@ Default value is `OS-dependent`.
 Setting `tcp_keepinterval` to any value also enables [tcp_keepalive](#tcp_keepalive).
 
 Example of usage:
-```text
+```opensips
 
     tcp_keepinterval = 10
 
@@ -1190,7 +1190,7 @@ Example of usage:
 The TOS (Type Of Service) to be used for the sent IP packets, for both TCP and UDP. The default value is `IPTOS_LOWDELAY`. To disable TOS setting, use `0`.
 
 Example of usage:
-```text
+```opensips
 
     tos = IPTOS_LOWDELAY
     tos = 0x10
@@ -1203,7 +1203,7 @@ Example of usage:
 The body of the User-Agent header field generated by **OpenSIPS** when it sends a request as UAC. It defaults to `OpenSIPS (<version> (<arch>/<os>))`.
 
 Example of usage:
-```text
+```opensips
 
     user_agent_header = "User-Agent: My Company SIP Proxy"
 
@@ -1211,7 +1211,7 @@ Example of usage:
 
 Please note that you have to include the `User-Agent:` header name, as **OpenSIPS** does not add it. Otherwise, you will get an erroneous header like:
 
-```text
+```opensips
 My Company SIP Proxy
 ```
 
@@ -1220,7 +1220,7 @@ My Company SIP Proxy
 The working directory used by **OpenSIPS** at runtime. If not explicitly configured, **OpenSIPS** changes the working directory to `/`.
 
 Example of usage:
-```text
+```opensips
 
     wdir = "/usr/local/opensips"
     wdir = /usr/opensips_wd
@@ -1232,7 +1232,7 @@ Example of usage:
 Size of the buffer used to print a single line through the selected **OpenSIPS** logging facility. If the buffer is too small, an overflow error will be printed and the line will be skipped. The default value is `4096` bytes.
 
 Example of usage:
-```text
+```opensips
 
     xlog_buf_size = 8388608 # given in bytes
 
@@ -1245,7 +1245,7 @@ Enables the use of [$C(xy)](Script-CoreVar.md#foreground-and-background-colors) 
 
 Example of usage:
 
-```text
+```opensips
 
     xlog_force_color = true
 
@@ -1256,7 +1256,7 @@ Example of usage:
 Default level for printing logs generated by the [xlog()](https://docs.opensips.org/manual/2-4/script-corefunctions#xlog) core function when the `log_level` parameter is omitted. The default value is `-1` / `L_ERR`.
 
 Example of usage:
-```text
+```opensips
 
     xlog_default_level = 2 # L_NOTICE
 

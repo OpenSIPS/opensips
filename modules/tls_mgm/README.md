@@ -470,7 +470,7 @@ It's usable only if TLS v1.1/1.2 support was compiled.
 			A list of curves which can be used you can get by
 
 
-```c
+```bash
 				openssl ecparam -list_curves
 			
 ```
