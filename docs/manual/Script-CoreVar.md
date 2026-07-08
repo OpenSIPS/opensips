@@ -61,7 +61,7 @@ A script variable can only hold a single value. A new assignment (or write opera
 
 Example of usage:
 
-```bash
+```opensips
 
 $var(a) = 2;  # sets the value of variable 'a' to integer '2'
 $var(a) = "2";  # sets the value of variable 'a' to string '2'
@@ -120,7 +120,7 @@ onreply_route[handle_reply] {
 ```
 
 * Multiple values example
-```bash
+```opensips
 
 $avp(demo) = "one";
 # we have a single value
@@ -232,7 +232,7 @@ Predefined (provided by core) PVs are listed in alphabetical order:
 
 `$argv` - provides access to command line arguments specified with '-o' option.
 Examples:
-```text
+```opensips
 
    # for option '-o foo=0'
    xlog("foo is $argv(foo) \n");
@@ -255,7 +255,7 @@ Use [`$socket_in(af)`](#socket_in) instead.
 
 `$branch` - this variable is used for creating new branches by writing into it the value of a SIP URI.
 Examples:
-```text
+```opensips
 
    # creates a new branch
    $branch = "sip:new@doamin.org";
@@ -278,7 +278,7 @@ The variable accepts also index `$(branch(uri)[1])` for accessing a specific bra
 To get all branches, use the * index - `$(branch(uri)[*])`.  
 
 Examples:
-```text
+```opensips
 
    # creates the first branch
    append_branch();
@@ -307,7 +307,7 @@ Examples:
 
 `$(branch.flag(flag_name)[branch])` - this variable provides read/write access to the value of a single certain branch flag (identified by name). The values accepted for writing are 1 (set) and 0 (unset). The returned values are 1/"true" (set) and 0/"false" (unset). An index is accepted, in order to access the flag for a certain branch. By default the 0 (or current) branch accessed (for more on index, see the the [branch.fields](#branch.fields) variable) - note that "*" is not accepted.
 
-```text
+```opensips
 
   setbflag("X");
   xlog("---- flag value is $branch.flag(X) \n");
@@ -466,7 +466,7 @@ This function is very helpful if you are tracing and debugging only a specific p
 
 Example of usage:
 
-```text
+```opensips
 log_level= -1 # errors only
 .....
 {
@@ -497,7 +497,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 ### Message flag - $msg.flag
 
 `$msg.flag(flag_name)` - this variable provides read/write access to the value of a single certain message flag (identified by name). The values accepted for writing are 1 (set) and 0 (unset). The returned values are 1/"true" (set) and 0/"false" (unset).
-```text
+```opensips
 
   setflag("X");
   xlog("---- flag value is $msg.flag(X) \n");
@@ -509,7 +509,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 ### Message is request  - $msg.is_request
 
 `$msg.is_request` - this variable tells if the current SIP message is a request or not. The returned values are 1/"true" (request) and 0/"false" (reply).
-```text
+```opensips
 
   xlog("---- this message is a request:  $msg.is_request \n");
   if ( $msg.is_request )
@@ -520,7 +520,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 ### Message type - $msg.type
 
 `$msg.type` - this variable returns the type of the current  message. The returned values are "request" (request) or "reply" (reply).
-```text
+```opensips
 
   xlog("---- this message is a SIP $msg.type \n");
 
@@ -731,7 +731,7 @@ For more details on the meaning of these sub-fields, please also read about the 
 
 The variable also offers detailed read-only access to various attributes/sub-fields of the socket, as  `$socket_out()`. **It provides the same sub-fields as the [`$socket_in`](#socket_in) variable.**
 
-```text
+```opensips
 
    $socket_out = "udp:11.11.11.11:5060";
    xlog("The outbound port is $socket_out(port)\n");
@@ -809,7 +809,7 @@ The module should identify most of compact header names (the ones recognized by 
 Note that some headers (e.g., Path) may be joined together with commas and appear as a single header line. This variable counts the number of header lines, not header values. 
 
 For message fragment below, `$hdrcnt(Path)` will have value 2 and `$(hdr(Path)[0])` will have value **`<a.com>`**:
-```text
+```opensips
 
     Path: <a.com>
     Path: <b.com>
@@ -817,7 +817,7 @@ For message fragment below, `$hdrcnt(Path)` will have value 2 and `$(hdr(Path)[0
 ```
 
 For message fragment below, `$hdrcnt(Path)` will have value 1 and `$(hdr(Path)[0])` will have value **`<a.com>`,`<b.com>`**:
-```text
+```opensips
 
     Path: <a.com>,<b.com>
 
@@ -852,7 +852,7 @@ Note that both examples above are semantically equivalent but the variables take
 `$xlog_level` - allows to set /reset the xlog() logging level on per-process bases. Shortly said, you can read the verbosity level for the xlog() calls or you can temporary change the level per process bases.
 
 Example:
-```text
+```opensips
 
 xlog("current verbosity is $xlog_level \n");
 $xlog_level = L_DBG; # force local xlogging limit to DBG
@@ -888,7 +888,7 @@ Colors could be:
 
 A few examples of usage.
 
-```text
+```opensips
 
 ...
 route {

@@ -222,7 +222,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi bm_enable_global 1
 			
 ```
@@ -244,7 +244,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c title="Enabling a timer"
+```bash title="Enabling a timer"
 ...
 opensips-cli -x mi bm_enable_timer test 1
 ...
@@ -267,7 +267,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi bm_granularity 300
 			
 ```
@@ -289,7 +289,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi bm_loglevel 4
 			
 ```
@@ -304,7 +304,7 @@ Returns the current and global results for each timer. This command is only avai
 If there were no new calls to *bm_log_timer* since last check, then all current values of a timer will be equal 0. Each call to *bm_poll_results* will reset current values (but not global ones).
 
 
-```c title="Getting the results via FIFO interface"
+```bash title="Getting the results via FIFO interface"
 ...
 opensips-cli -x mi bm_poll_results
 register_timer

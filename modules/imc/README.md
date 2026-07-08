@@ -196,7 +196,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi imc_list_rooms
 		
 ```
@@ -220,7 +220,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi imc_list_members sip:chat-000@opensips.org
 		
 ```
