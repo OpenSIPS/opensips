@@ -215,7 +215,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:domain_reload:_reply_fifo_file_
 		_empty_line_
 		
@@ -238,7 +238,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:domain_dump:_reply_fifo_file_
 		_empty_line_
 		

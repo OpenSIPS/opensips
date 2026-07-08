@@ -19,7 +19,7 @@ Returns the full list of arguments used when **OpenSIPS** was started. As in UNI
 Example of usage:
 ```bash
 
-    # opensipsctl fifo arg
+    $ opensipsctl fifo arg
     ./opensips
     -f
     /etc/openser/test.cfg
@@ -36,9 +36,9 @@ Gets or sets the value of the debug core variable. You may use it to dynamically
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo debug
+    $ opensipsctl fifo debug
     DEBUG:: 4
-    # opensipsctl fifo debug 1
+    $ opensipsctl fifo debug 1
 
 ```
 
@@ -52,7 +52,7 @@ The command will terminate **OpenSIPS** (and internal shutdown).
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo kill
+    $ opensipsctl fifo kill
 
 ```
 
@@ -66,7 +66,7 @@ The command will list all all **OpenSIPS** processes, along with type and descri
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo ps
+    $ opensipsctl fifo ps
     Process::  ID=0 PID=16224 Type=attendant
     Process::  ID=1 PID=16225 Type=SIP receiver udp:192.168.1.2:5060
     Process::  ID=2 PID=16226 Type=timer
@@ -86,7 +86,7 @@ Prints the working directory of **OpenSIPS** instance.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo pwd
+    $ opensipsctl fifo pwd
     WD:: /
 
 ```
@@ -101,7 +101,7 @@ Prints various time information about **OpenSIPS** - when it started to run, for
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo uptime
+    $ opensipsctl fifo uptime
     Now:: Mon Jul 21 17:41:03 2008
     Up since:: Mon Jul 21 17:36:33 2008
     Up time:: 270 [sec]
@@ -118,7 +118,7 @@ Prints the version string of a running**OpenSIPS**.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo version
+    $ opensipsctl fifo version
     Server:: OpenSIPS (1.4.0dev14-notls (i386/linux))
 
 ```
@@ -133,7 +133,7 @@ Prints all available MI commands from the queried **OpenSIPS**instance.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo which
+    $ opensipsctl fifo which
     get_statistics
     reset_statistics
     uptime
@@ -168,7 +168,7 @@ The command lists all the defined (static or learned) blacklists from **OpenSIPS
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo list_blacklists
+    $ opensipsctl fifo list_blacklists
 
 ```
 
@@ -184,16 +184,16 @@ Prints the statistics (all, group or one) realtime values.
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo get_statistics rcv_requests
+    $ opensipsctl fifo get_statistics rcv_requests
     core:rcv_requests = 35243
-    # opensipsctl fifo get_statistics shmem:
+    $ opensipsctl fifo get_statistics shmem:
     shmem:total_size = 33554432
     shmem:used_size = 1686952
     shmem:real_used_size = 1704592
     shmem:max_used_size = 1704592
     shmem:free_size = 31849840
     shmem:fragments = 1
-    # opensipsctl fifo get_statistics all
+    $ opensipsctl fifo get_statistics all
     ....
 
 ```
@@ -208,10 +208,10 @@ Reset (to zero) the value of a statistic variable. Note that not all variables a
 Examples of usage:
 ```bash
 
-    # opensipsctl fifo get_statistics received_replies
+    $ opensipsctl fifo get_statistics received_replies
     core:received_replies = 14543
-    # opensipsctl fifo reset_statistics received_replies
-    # opensipsctl fifo get_statistics received_replies
+    $ opensipsctl fifo reset_statistics received_replies
+    $ opensipsctl fifo get_statistics received_replies
     core:received_replies = 0
 
 ```
