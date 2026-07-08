@@ -1748,22 +1748,14 @@ Command to reload routing rules from database.
 
 
 - if `use_partition` is set to 0 - all routing rules will be reloaded.
-
-					
-						*inherit_state* (optional) : whether inherit old state of the gateway , default is y.
-							
-								"n": no inherit state
-								"y": inherit state
+	* *inherit_state* (optional) : whether inherit old state of the gateway , default is y.
+		"n": no inherit state
+		"y": inherit state
 - if `use_partition` is set to 1, the parameters are:
-					
-						*partition_name* (optional) - if not provided
-							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
-					
-
-					*inherit_state* (optional) : whether inherit old state of the gateway , default is y.
-							
-								"n": no inherit state
-								"y": inherit state
+	* *partition_name* (optional) - if not provided all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
+	* *inherit_state* (optional) : whether inherit old state of the gateway , default is y.
+		- "n": no inherit state
+		- "y": inherit state
 
 
 MI FIFO Command Format:
@@ -1782,25 +1774,13 @@ Gets the status (enabled or disabled) of one or multiple gateways. The function
 		can also be used to set the status of a single gateway.
 
 
-- if `use_partitions` is set to 0, the parameters are:
-				
-					*gw_id* (optional) - the id of
-					a gateway. If provided, the function will return/set (depnding if the second
-					parameter is given) the status of that gateway, otherwise it will list all
-					gateways along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a GW (0 - disable, 1 - enable). Only makes sense if
-					*gw_id* is provided.
+- if `use_partitions` is set to 0, the parameters are:		
+	* *gw_id* (optional) - the id of a gateway. If provided, the function will return/set (depending if the second parameter is given) the status of that gateway, otherwise it will list all gateways along with their statuses.
+	* *status* (optional) - the new status to be forced for a GW (0 - disable, 1 - enable). Only makes sense if *gw_id* is provided.
 - if `use_partitions` is set to 1, the parameters are:
-				
-					*partition_name*
-					*gw_id* (optional) - the id of
-					a gateway. If provided, the function will return/set (depnding if the third
-					parameter is given) the status of that gateway, otherwise it will list all
-					gateways in the given partition along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a GW (0 - disable, 1 - enable). Only makes sense if
-					*gw_id* is provided.
+	* *partition_name*
+	* *gw_id* (optional) - the id of a gateway. If provided, the function will return/set (depending if the third parameter is given) the status of that gateway, otherwise it will list all gateways in the given partition along with their statuses.
+	* *status* (optional) - the new status to be forced for a GW (0 - disable, 1 - enable). Only makes sense if *gw_id* is provided.
 
 
 ```bash title="dr_gw_status usage when use_partitions is set to 0"
@@ -1833,24 +1813,12 @@ Gets the status (enabled or disabled) of one or multiple carriers. The function
 
 
 - if `use_partitions` is set to 0, the parameters are:
-				
-					*carrier_id* (optional) - the id of
-					a carrier. If provided, the function will return/set (depnding if the second
-					parameter is given) the status of that carrier, otherwise it will list all
-					carriers along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if
-					*carrier_id* is provided.
+	* *carrier_id* (optional) - the id of a carrier. If provided, the function will return/set (depending if the second parameter is given) the status of that carrier, otherwise it will list all carriers along with their statuses.
+	* *status* (optional) - the new status to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if *carrier_id* is provided.
 - if `use_partitions` is set to 1, the parameters are:
-				
-					*partition_name*
-					*carrier_id* (optional) - the id of
-					a carrier. If provided, the function will return/set (depnding if the third
-					parameter is given) the status of that carrier, otherwise it will list all
-					carriers contained in the given partition along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if
-					*carrier_id* is provided.
+	* *partition_name*
+	* *carrier_id* (optional) - the id of a carrier. If provided, the function will return/set (depending if the third parameter is given) the status of that carrier, otherwise it will list all carriers contained in the given partition along with their statuses.
+	* *status* (optional) - the new status to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if *carrier_id* is provided.
 
 
 ```bash title="dr_carrier_status usage when use_partitions is 0"
@@ -1877,15 +1845,9 @@ Enabled:: yes
 Gets the time of the last reload for any partition.
 
 
-- if `use_partition` is set to 0 - the function
-					doesn't receive any parameter. It will list the date of the
-					last reload for the default (and only) partition.
+- if `use_partition` is set to 0 - the function doesn't receive any parameter. It will list the date of the last reload for the default (and only) partition.
 - if `use_partition` is set to 1, the parameters are:
-					
-						*partition_name* (optional) - if not provided
-							the function will list the time of the last update for every
-							partition. Otherwise, the function will list the time of the last
-							reload for the given partition.
+	* *partition_name* (optional) - if not provided the function will list the time of the last update for every partition. Otherwise, the function will list the time of the last reload for the given partition.
 
 
 ```bash title="dr_reload_status usage when use_partitions is 0"
@@ -1910,22 +1872,13 @@ Gets the matched prefix along with the list of the gateways / carriers to which 
 			would be routed when using the do_routing function.
 
 
-- if `use_partition` is set to 1 the function
-					will have 3 parameters:
-					
-						
-							*partition_name*
-						
-						
-							*group_id* (optional) - the group id of the rules to
-								check against
-						
-						
-							*number* - the number to test against
+- if `use_partition` is set to 1 the function will have 3 parameters:
+	* *partition_name*
+	* *group_id* (optional) - the group id of the rules to check against
+	* *number* - the number to test against
 - if `use_partition` is set to 0 the function will have 2 parameters:
-					
-						*group_id* (optional) - the group id of the rules to check against
-						*number* - the number to test against
+	* *group_id* (optional) - the group id of the rules to check against
+	* *number* - the number to test against
 
 
 MI FIFO Command Format:
@@ -1947,8 +1900,7 @@ Enables/disables gateway probing or returns the current gateway
 Parameters:
 
 
-- *status* (optional) - 1 - enable,
-				0 - disable gateway probing
+- *status* (optional) - 1 - enable, 0 - disable gateway probing
 
 
 ```bash title="dr_enable_probing usage"
