@@ -339,7 +339,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:pdt_add:_reply_fifo_file_
 		_sdomain_
 		_prefix_
@@ -368,7 +368,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:pdt_delete:_reply_fifo_file_
 		_sdomain_
 		_domain_
@@ -404,7 +404,7 @@ The comparison operation is 'START WITH' -- if domain is 'a' then all domains
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:pdt_list:_reply_fifo_file_
 		_sdomain_
 		_prefix_
@@ -443,7 +443,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:pdt_reload:_reply_fifo_file_
 		_empty_line_
 		
