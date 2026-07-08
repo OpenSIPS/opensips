@@ -208,7 +208,7 @@ Enable or disable a single timer. The following example enables
 				timer "test" (the second parameter must be 0 to disable):
 
 
-```c title="Enabling a timer"
+```bash title="Enabling a timer"
 ...
 opensipsctl fifo bm_enable_timer test 1
 ...

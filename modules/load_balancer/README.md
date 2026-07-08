@@ -146,7 +146,7 @@ Trigers the reload of the load balancing data from the DB.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_reload:_reply_fifo_file_
 		_empty_line_
 		
@@ -164,7 +164,7 @@ Changes the capacity for a resource of a destination. The function
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_resize:_reply_fifo_file_
 		11   /*dstination id*/
 		voicemail  /*resource name*/
@@ -184,7 +184,7 @@ Lists all the destinations and the maximum and current load for each
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_list:_reply_fifo_file_
 		_empty_line_
 		

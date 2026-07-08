@@ -1086,14 +1086,14 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dlg_list:_reply_fifo_file_
 		_empty_line_
 		
 ```
 
 
-```c
+```bash
 		:dlg_list:_reply_fifo_file_
 		abcdrssfrs122444@192.168.1.1
 		AAdfeEFF33
@@ -1119,7 +1119,7 @@ Parameters: *see "dlg_list"*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dlg_list_ctx:_reply_fifo_file_
 		_empty_line_
 		
@@ -1153,7 +1153,7 @@ The values for the h_entry and h_id can be get via the dlg_list
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dlg_end_dlg:_reply_fifo_file_
 		342
 		56
@@ -1188,7 +1188,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:profile_get_size:_reply_fifo_file_
 		inbound_calls
 		_empty_line_
@@ -1222,7 +1222,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:profile_list_dlgs:_reply_fifo_file_
 		inbound_calls
 		_empty_line_

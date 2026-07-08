@@ -9,7 +9,7 @@ A **Transformation** is basically a function that is applied to a variable(scrip
 
 Example of using different kind of variables in **OpenSIPS script**:
 
-```bash
+```opensips
 
 # check if username in From header is equal with username in To header
 if($fU==$tU) {
@@ -48,7 +48,7 @@ A transformation is represented in between `{` and `}` and follows the name of a
 
 Example:
 
-```bash
+```opensips
 
 # the length of From URI ($fu is pseudo-variable for From URI)
 
@@ -58,7 +58,7 @@ $(fu{s.len})
 
 Many transformations can be applied in the same time to a variable.
 
-```bash
+```opensips
 
 # the length of escaped 'Test' header body
 
@@ -80,7 +80,7 @@ Available transformations in this class:
 
 Return strlen of variable value
 
-```text
+```opensips
 
 $var(x) = "abc";
 if($(var(x){s.len}) == 3)
@@ -94,7 +94,7 @@ if($(var(x){s.len}) == 3)
 
 Return integer value of a string-represented number
 
-```text
+```opensips
 
 $var(x) = "1234";
 if($(var(x){s.int})==1234) {
@@ -107,7 +107,7 @@ if($(var(x){s.int})==1234) {
 
 Return md5 over variable value
 
-```text
+```opensips
 
 xlog("MD4 over From username: $(fU{s.md5})");
 
@@ -118,7 +118,7 @@ xlog("MD4 over From username: $(fU{s.md5})");
 Return substring starting at offset having size of 'length'. If offset is negative, then it is counted from the end of the value, -1 being the last char. In case of positive value, 0 is first char. Length must be non-negative; in case of 0 or a value greater than the remaining string length, substring to the end of variable value is returned. offset and length can be a varibale as well.
 
 Example:
-```text
+```opensips
 
 $var(x) = "abcd";
 $(var(x){s.substr,1,0}) = "bcd"
@@ -130,7 +130,7 @@ $(var(x){s.substr,1,0}) = "bcd"
 Return a field from the value of a variable. The field is selected based on separator and index. The separator must be a character used to identify the fields. Index must be a integer value or a variable. If index is negative, the count of fields starts from end of value, -1 being last field. If index is positive, 0 is the first field.
 
 Example:
-```text
+```opensips
 
 $var(x) = "12,34,56";
 $(var(x){s.select,1,,}) => "34" ;
@@ -255,7 +255,7 @@ Available transformations in this class:
 Returns the value of parameter 'name'
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.value,c} = "3"
 
@@ -268,7 +268,7 @@ Example:
 Returns the value of parameter at position give by 'index' (0-based index). Negative indexes are accepted, with -1 being the last parameter.
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.valueat,1} = "2"
 
@@ -281,7 +281,7 @@ Example:
 Returns the name of parameter at position 'index'. Negative indexes are accepted, with -1 being the last parameter. 'index' can be a variable.
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.name,1} = "b"
 
@@ -292,7 +292,7 @@ Example:
 Returns the number of parameters in the list.
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.count} = 3
 
@@ -309,7 +309,7 @@ Available transformations in this class:
 Returns the value of display name
 
 Example:
-```text
+```opensips
 
 '"test" <sip:test@opensips.org>' {nameaddr.name} = "test"
 
@@ -320,7 +320,7 @@ Example:
 Returns the value of URI
 
 Example:
-```text
+```opensips
 
 '"test" <sip:test@opensips.org>' {nameaddr.uri} = sip:test@opensips.org
 
@@ -336,7 +336,7 @@ Within a variable, many transformation can be applied, being executed from left 
 
 * The length of the value of parameter at postion 1 (remember 0 is first position, 1 is second position)
 
-```text
+```opensips
 
 $var(x) = "a=1;b=22;c=333";
 $(var(x){param.value,$(var(x){param.name,1})}{s.len}) = 2
@@ -345,7 +345,7 @@ $(var(x){param.value,$(var(x){param.name,1})}{s.len}) = 2
 
 * Test if whether is un-registration or not
 
-```text
+```opensips
 
 if(is_method("REGISTER") && is_present_hf("Expires") && $(hdr(Expires){s.int})==0)
     xlog("This is an un-registrationn");

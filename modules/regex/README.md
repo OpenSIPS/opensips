@@ -279,7 +279,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 :regex_reload:_reply_fifo_file_
 _empty_line_
 ```
