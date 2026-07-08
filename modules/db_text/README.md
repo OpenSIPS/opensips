@@ -218,7 +218,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi dbt_dump
 		
 ```
@@ -248,19 +248,19 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi dbt_reload
 		
 ```
 
 
-```c
+```bash
 opensips-cli -x mi dbt_reload /path/to/dbtext/database
 		
 ```
 
 
-```c
+```bash
 opensips-cli -x mi dbt_reload /path/to/dbtext/database table_name
 		
 ```

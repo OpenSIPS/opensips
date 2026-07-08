@@ -1052,7 +1052,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_reload
 ```
 
@@ -1073,7 +1073,7 @@ Parameters:
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_agent_login agentX 0
 ```
 
@@ -1094,7 +1094,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_list_queue
 ```
 
@@ -1114,7 +1114,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_list_flows
 ```
 
@@ -1133,7 +1133,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_list_agents
 ```
 
@@ -1153,7 +1153,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_list_agents
 ```
 
@@ -1190,7 +1190,7 @@ IMPORTANT: in order to be used, you need to be sure that the internal
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
 ```
 
@@ -1210,7 +1210,7 @@ It takes one optional parameter `dispatching` if the
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_internal_call_dispatching 0
 ```
 
@@ -1227,7 +1227,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi cc_reset_stats
 ```
 

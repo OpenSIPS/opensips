@@ -969,7 +969,7 @@ This command can replace the rewrite_host of a route rule, it is only
 Use the "null" prefix to specify an empty prefix.
 
 
-```c title="cr_replace_host usage"
+```bash title="cr_replace_host usage"
 ...
 opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 ...
@@ -998,7 +998,7 @@ When -t (new_host) is specified, the portion of traffic for the deactivated host
 Use the "null" prefix to specify an empty prefix.
 
 
-```c title="cr_deactivate_host usage"
+```bash title="cr_deactivate_host usage"
 ...
 opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
 ...
@@ -1021,7 +1021,7 @@ This command activates the specified host, i.e. it sets its status to 1.
 Use the "null" prefix to specify an empty prefix.
 
 
-```c title="cr_activate_host usage"
+```bash title="cr_activate_host usage"
 ...
 opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
 ...
@@ -1049,7 +1049,7 @@ This command adds a route rule, it is only usable in file mode. Following option
 Use the "null" prefix to specify an empty prefix.
 
 
-```c title="cr_add_host usage"
+```bash title="cr_add_host usage"
 ...
 opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
@@ -1078,7 +1078,7 @@ This command delete the specified hosts or rules, i.e. remove
 Use the "null" prefix to specify an empty prefix.
 
 
-```c title="cr_delete_host usage"
+```bash title="cr_delete_host usage"
 ...
 opensips-cli -x mi cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...

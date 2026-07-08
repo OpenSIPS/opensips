@@ -361,7 +361,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi rls_update_subscriptions sip:alice@atlanta.com
 	
 ```

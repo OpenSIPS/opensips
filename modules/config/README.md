@@ -248,7 +248,7 @@ Reloads all configuration variables from the database.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## reload configuration cache from the database
 		opensips-mi config_reload
 		opensips-cli -x mi config_reload
@@ -270,7 +270,7 @@ Lists all config variables currently loaded in cache,
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## list all configuration cache
 		opensips-mi config_list
 		opensips-cli -x mi config_list 1
@@ -297,7 +297,7 @@ Expected parameters are:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## push temporarily debug_mode configuration value
 		opensips-mi config_push debug_mode 1 "Enable Debug mode"
 		opensips-cli -x mi config_list 1
@@ -335,7 +335,7 @@ Expected parameters are:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## push bulk temporarily values to the config cache
 		opensips-mi config_push_bulk -j '[[{"name":"debug_mode","value":"1"},{"name":"debug_level","value":"5"}]]'
 		
@@ -362,7 +362,7 @@ Expected parameters are:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## Flush config variables to the database
 		opensips-mi config_flush
 		opensips-cli -x mi config_flush debug_mode

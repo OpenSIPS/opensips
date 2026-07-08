@@ -244,7 +244,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi flat_rotate
 		
 ```

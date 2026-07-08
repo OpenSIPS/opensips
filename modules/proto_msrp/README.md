@@ -111,7 +111,7 @@ The timeout is invoked during acceptance of a new connection
 *Default value is 100.*
 
 
-```c title="Set tls_handshake_timeout variable"
+```opensips title="Set tls_handshake_timeout variable"
 param("proto_msrp", "tls_handshake_timeout", 200) # number of milliseconds
 
 			
@@ -260,7 +260,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			:msrp_trace:_reply_fifo_file_
 			trace_mode
 			_empty_line_

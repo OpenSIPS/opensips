@@ -292,7 +292,7 @@ Parameters:
 - *key* (optional) - the specific key to be reloaded.
 
 
-```c title="sql_cacher_reload usage"
+```bash title="sql_cacher_reload usage"
 ...
 $ opensips-cli -x mi sql_cacher_reload subs_caching
 ...

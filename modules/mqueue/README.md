@@ -55,7 +55,7 @@ The URL to connect to database for loading values
 *Default value is NULL (do not connect).*
 
 
-```c title="Set db_url parameter"
+```opensips title="Set db_url parameter"
 ...
 modparam("mqueue", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 
@@ -215,7 +215,7 @@ Parameters:
 - name
 
 
-```c title="mq_get_size usage"
+```bash title="mq_get_size usage"
 ...
 opensips-cli -x mq_get_size xyz
 ...
@@ -236,7 +236,7 @@ Parameters:
 limit
 
 
-```c title="mq_fetch usage"
+```bash title="mq_fetch usage"
 ...
 opensips-cli -x mq_fetch xyz
 ...
@@ -252,7 +252,7 @@ Get the size for all memory queues.
 Parameters: none
 
 
-```c title="mq_get_sizes usage"
+```bash title="mq_get_sizes usage"
 ...
 opensips-cli -x mq_get_sizes
 ...
