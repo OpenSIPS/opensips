@@ -103,7 +103,7 @@ Command parameters:
 		It has to be a single line for FIFO transport.
 
 
-```c title="pua_publish FIFO example"
+```bash title="pua_publish FIFO example"
 ...
 
 :pua_publish:fifo_test_reply

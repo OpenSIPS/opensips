@@ -1402,7 +1402,7 @@ If `use_partitions` is 0 it takes no parameter.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_reload:fifo_reply
 		partition_name (optional)
 		_empty_line_
@@ -1436,13 +1436,13 @@ Gets or sets the status (enabled or disabled) of a gateway. The
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_gw_status:_reply_fifo_file_
 		partition_name (mandatory if 
 ```
 
 
-```c title="dr_gw_status usage when use_partitions is set to 0"
+```bash title="dr_gw_status usage when use_partitions is set to 0"
 $ ./opensipsctl fifo dr_gw_status 2
 State:: Active
 $ ./opensipsctl fifo dr_gw_status 2 0
@@ -1453,7 +1453,7 @@ Enabled:: Inactive
 ```
 
 
-```c title="dr_gw_status usage when use_partitionsis set to 1"
+```bash title="dr_gw_status usage when use_partitionsis set to 1"
 $ ./opensipsctl fifo dr_gw_status part_1 my_gw
 State:: Active
 $ ./opensipsctl fifo dr_gw_status my_partition 3 0
@@ -1490,13 +1490,13 @@ Gets or sets the status (enabled or disabled) of a carrier. The
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_carrier_status:_reply_fifo_file_
 		partition_name (mandatory if 
 ```
 
 
-```c title="dr_carrier_status usage when use_partitions is 0"
+```bash title="dr_carrier_status usage when use_partitions is 0"
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1
@@ -1505,7 +1505,7 @@ Enabled:: yes
 ```
 
 
-```c title="dr_carrier_status usage when use_partitions is 1"
+```bash title="dr_carrier_status usage when use_partitions is 1"
 $ ./opensipsctl fifo dr_carrier_status my_partition CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status partition_1 CR1 1
@@ -1534,19 +1534,19 @@ Gets the time of the last reload for any partition. The function
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_reload_status:_reply_fifo_file_
 		partition_name (if 
 ```
 
 
-```c title="dr_reload_status usage when use_partitions is 0"
+```bash title="dr_reload_status usage when use_partitions is 0"
 $ ./opensipsctl fifo dr_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 ```
 
 
-```c title="dr_reload_status usage when use_partitions is 1"
+```bash title="dr_reload_status usage when use_partitions is 1"
 $ ./opensipsctl fifo dr_reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
