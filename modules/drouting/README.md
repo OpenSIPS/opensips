@@ -1023,7 +1023,7 @@ This parameter may be set multiple times (each definition creates
 			a new mapping).
 
 
-```c title="Set the rule_tables_query parameter"
+```opensips title="Set the rule_tables_query parameter"
 ...
 # first, set the "dr_rules" table name to the name of your query
 modparam("drouting", "drr_table", "MY_RULES_QUERY")
@@ -1623,7 +1623,7 @@ Command to reload routing rules from database.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dr_reload part_1
 		
 ```
@@ -1657,7 +1657,7 @@ Gets the status (enabled or disabled) of one or multiple gateways. The function
 					*gw_id* is provided.
 
 
-```c title="dr_gw_status usage when use_partitions is set to 0"
+```bash title="dr_gw_status usage when use_partitions is set to 0"
 $ opensips-cli -x mi dr_gw_status gw_id=2
 State:: Active
 $ opensips-cli -x mi dr_gw_status gw_id=2 status=0
@@ -1668,7 +1668,7 @@ Enabled:: Inactive
 ```
 
 
-```c title="dr_gw_status usage when use_partitionsis set to 1"
+```bash title="dr_gw_status usage when use_partitionsis set to 1"
 $ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
 State:: Active
 $ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw status=0
@@ -1707,7 +1707,7 @@ Gets the status (enabled or disabled) of one or multiple carriers. The function
 					*carrier_id* is provided.
 
 
-```c title="dr_carrier_status usage when use_partitions is 0"
+```bash title="dr_carrier_status usage when use_partitions is 0"
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: no
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1 status=1
@@ -1716,7 +1716,7 @@ Enabled:: yes
 ```
 
 
-```c title="dr_carrier_status usage when use_partitions is 1"
+```bash title="dr_carrier_status usage when use_partitions is 1"
 $ opensips-cli -x mi dr_carrier_status partition_name=my_partition carrier_id=CR1
 Enabled:: no
 $ opensips-cli -x mi dr_carrier_status partition_name=partition_1 carrier_id=CR1 status=1
@@ -1742,13 +1742,13 @@ Gets the time of the last reload for any partition.
 							reload for the given partition.
 
 
-```c title="dr_reload_status usage when use_partitions is 0"
+```bash title="dr_reload_status usage when use_partitions is 0"
 $ opensips-cli -x mi dr_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 ```
 
 
-```c title="dr_reload_status usage when use_partitions is 1"
+```bash title="dr_reload_status usage when use_partitions is 1"
 $ opensips-cli -x mi dr_reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
@@ -1785,7 +1785,7 @@ Gets the matched prefix along with the list of the gateways / carriers to which 
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dr_number_routing partition_name=part1 group_id=3 number=012340987
 		
 ```
@@ -1805,7 +1805,7 @@ Parameters:
 				0 - disable gateway probing
 
 
-```c title="dr_enable_probing usage"
+```bash title="dr_enable_probing usage"
 $ opensips-cli -x mi dr_enable_probing
 Status:: 1
 $ opensips-cli -x mi dr_enable_probing 0

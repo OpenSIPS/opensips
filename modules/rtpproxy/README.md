@@ -866,7 +866,7 @@ NOTE: if a rtpproxy is defined multiple times (in the same or
 			no set ID provided (as second param).
 
 
-```c title="rtpproxy_enable usage"
+```bash title="rtpproxy_enable usage"
 ...
 ## disable a RTPProxy by URL only
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
@@ -887,7 +887,7 @@ Displays all the rtp proxies and their information: set and
 No parameter.
 
 
-```c title="rtpproxy_show usage"
+```bash title="rtpproxy_show usage"
 ...
 $ opensips-cli -x mi rtpproxy_show
 ...
@@ -907,7 +907,7 @@ Reload rtp proxies sets from database. The function will delete all
 No parameter.
 
 
-```c title="rtpproxy_reload usage"
+```bash title="rtpproxy_reload usage"
 ...
 $ opensips-cli -x mi rtpproxy_reload
 ...
