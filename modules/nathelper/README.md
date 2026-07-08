@@ -669,7 +669,7 @@ Parameters:
 					parameter value greater than 0 or disables natping if parameter value is 0.
 
 
-```c title="nh_enable_ping usage"
+```bash title="nh_enable_ping usage"
 ...
 $ opensips-cli -x mi nh_enable_ping
 Status:: 1

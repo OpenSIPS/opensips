@@ -103,7 +103,7 @@ All OpenSIPS [core](https://docs.opensips.org/manual/3-3/script-corefunctions) a
 
 * **any integer or string function parameter may also be passed using a "holder" variable**
 
-```text
+```opensips
 
 ds_select_dst(1, 1); 
 
@@ -111,7 +111,7 @@ ds_select_dst(1, 1);
 
 ... is equivalent to:
 
-```text
+```opensips
 
 $var(x) = 1;
 ds_select_dst($var(x), $var(x));
@@ -122,7 +122,7 @@ ds_select_dst($var(x), $var(x));
 
 * **any string function parameter can be passed as a format string**
 
-```text
+```opensips
 
 set_dlg_profile("caller", "$var(country_code)_$var(area)_$fU");
 
@@ -141,7 +141,7 @@ Literal **"$"** characters can be included in a format string using the **"$$"**
 
 * **input or output variables passed to functions must not be quoted**:
 
-```text
+```opensips
 
 ds_count(1, "a", $var(out_result));
 
@@ -151,12 +151,12 @@ ds_count(1, "a", $var(out_result));
 
 * **integers no longer need to be passed as double-quoted strings**:
 
-```text del={2-2}
+```opensips del={2-2}
 # this is deprecated
 ds_select_dst("1", "1");
 ```
 
-```text
+```opensips
 
 ds_select_dst(1, 1);
 

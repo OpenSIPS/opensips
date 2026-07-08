@@ -469,7 +469,7 @@ Reload all quality-based routing rules from the SQL database.
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi qr_reload
 		
 ```
@@ -497,7 +497,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi qr_status
 opensips-cli -x mi qr_status pstn
 opensips-cli -x mi qr_status pstn 11 MY-GW-3
@@ -525,7 +525,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi qr_disable_dst 14 MY-CARR-7
 opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
 		
@@ -550,7 +550,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi qr_enable_dst 14 MY-CARR-7
 opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
 		

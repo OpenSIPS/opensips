@@ -156,7 +156,7 @@ Perform a blocking Diameter request over to the interconnected peer
 This function can be used from any route.
 
 
-```c title="dictionary.opensips extended syntax"
+```json title="dictionary.opensips extended syntax"
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
 
