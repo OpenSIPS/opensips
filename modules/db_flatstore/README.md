@@ -171,7 +171,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:flat_rotate:_reply_fifo_file_
 		_empty_line_
 		

@@ -276,7 +276,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 	:b2b_trigger_scenario:fifo_reply
 	marketing
 	sip:bob@opensips.org
@@ -313,7 +313,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org
 	
 ```
