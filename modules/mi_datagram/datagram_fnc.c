@@ -590,10 +590,6 @@ free_resp:
 				free_async_handler(async_hdl);
 		if (response)
 			free_mi_response(response);
-	} else {
-		profiling_proc_exit( LEVEL_EXTRAPROCS, "MI_DATAGRAM", 0 );
-		profiling_proc_end( LEVEL_EXTRAPROCS, 0);
-		return 0;
 	}
 free_req:
 	free_mi_request_parsed(&request);
