@@ -85,7 +85,7 @@ Reload all TCP paths from the *tcp_mgm* table
 Example:
 
 
-```c
+```bash
 # reload all TCP paths
 $ opensips-cli -x mi tcp_mgm:reload
 $ "OK"

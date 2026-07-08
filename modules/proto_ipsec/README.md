@@ -175,7 +175,7 @@ The timeout signifies the duration elapsed after sending the
 *Default value is 30.*
 
 
-```c title="Set temporary_timeout variable"
+```opensips title="Set temporary_timeout variable"
 param("proto_ipsec", "temporary_timeout", 10) # number of seconds
 
 			

@@ -86,7 +86,7 @@ The timeout is invoked during acceptance of a new connection
 *Default value is 100.*
 
 
-```c title="Set bins_handshake_timeout variable"
+```opensips title="Set bins_handshake_timeout variable"
 param("proto_tls", "bins_handshake_timeout", 200) # number of milliseconds
 
 			
@@ -245,7 +245,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi bins:trace on
 			
 ```

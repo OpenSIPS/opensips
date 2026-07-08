@@ -497,7 +497,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:list
 ...
 opensips-cli -x mi uac_registrant:list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
@@ -538,7 +538,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:reload
 ...
 opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
@@ -571,7 +571,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		
 ```
@@ -611,7 +611,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		
 ```
@@ -651,7 +651,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:force_register sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		
 ```
@@ -689,7 +689,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:upsert aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 proxy="" third_party_registrant="" username="vlad" password="1234" binding_params="" expiry=60 forced_socket="" cluster_shtag="" state=0
 		
 ```
@@ -718,7 +718,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi uac_registrant:delete aor=sip:vlad@test.com contact=sip:test@localhost registrar=sip:127.0.0.1:5061 
 		
 ```
@@ -882,7 +882,7 @@ In terms of status, the following values will be reported:
 As reports, each identifier may provide information like:
 
 
-```c
+```json
 # opensips-cli -x mi  sr_list_reports uac_registrant
 [
    {

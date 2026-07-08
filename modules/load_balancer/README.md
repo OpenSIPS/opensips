@@ -261,7 +261,7 @@ The max value of a resource is updated every *event_heartbeat_interval*
 Given the following format for FreeSWITCH heartbeat messages:
 
 
-```c
+```json
 {
   ...
   "FreeSWITCH-Hostname": "pbx2",
@@ -725,7 +725,7 @@ Trigers the reload of the load balancing data from the DB.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi load_balancer:reload
 		
 ```
@@ -751,7 +751,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi load_balancer:resize 11 voicemail 56
 		
 ```
@@ -767,7 +767,7 @@ Lists all the destinations and the maximum and current load for each
 		resource of the destination.
 
 
-```c title="load_balancer:list usage"
+```bash title="load_balancer:list usage"
 $ opensips-cli -x mi load_balancer:list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
@@ -799,7 +799,7 @@ Parameters:
 				destination.
 
 
-```c title="load_balancer:status usage"
+```bash title="load_balancer:status usage"
 $ opensips-cli -x mi load_balancer:status 2
 enable:: no
 $ opensips-cli -x mi load_balancer:status 2 1

@@ -285,7 +285,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 opensips-cli -x mi regex:reload
 ...
@@ -315,7 +315,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 opensips-cli -x mi regex:match string="1234" pcre_regex="^1234$"
 "Match"
@@ -348,7 +348,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 opensips-cli -x mi regex:match_group string="1234" group="0"
 "Match"

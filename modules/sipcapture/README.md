@@ -663,7 +663,7 @@ Meaning of the parameters is as follows:
 				[hep set](#func_hep_set).
 
 
-```c title="hep_set usage"
+```opensips title="hep_set usage"
 ...
 /* get a generic chunk */
 hep_del("25"); /* removes chunk with chunk id 25 */
@@ -778,7 +778,7 @@ Possible values for it's name are the following:
 			port on which the message was received).
 
 
-```c title="hep_net usage"
+```opensips title="hep_net usage"
 ...
 	/* received this hep packet on interface 192.168.2.5*/
 	if ($hep_net(dst_ip) == "192.168.2.5") {
@@ -801,7 +801,7 @@ Possible values for it's name are the following:
 Holds the version of the hep packet received on the interface.
 
 
-```c title="HEPVERSION usage"
+```opensips title="HEPVERSION usage"
 ...
 	if ($HEPVERSION == 3) {
 		/* It's a HEPv3 packet*/
@@ -847,7 +847,7 @@ if the parameter is missing, the command will
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi sipcapture:capture off
 		
 ```

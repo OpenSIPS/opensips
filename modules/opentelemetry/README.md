@@ -192,7 +192,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## enable tracing
 		opensips-cli -x mi opentelemetry:enable enable=1
 		## disable tracing

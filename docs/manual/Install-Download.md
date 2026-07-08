@@ -15,6 +15,6 @@ OpenSIPS packages for various distributions are available for download in [our r
 
 GitHUB hosts the main repository for OpenSIPS. In order to checkout the latest version of OpenSIPS, you can run:
 
-```text
+```bash
 git clone --recurse-submodules https://github.com/OpenSIPS/opensips.git opensips-devel
 ```

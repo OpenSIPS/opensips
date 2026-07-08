@@ -728,7 +728,7 @@ If no parameter are passed to the function, all the active pipes
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi ratelimit:list pipe=gw_10.0.0.1
 		opensips-cli -x mi ratelimit:list filter=gw_*
 		
@@ -757,7 +757,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi ratelimit:dump_pipe gw_10.0.0.1
 		
 ```
@@ -785,7 +785,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi ratelimit:reset_pipe gw_10.0.0.1
 		
 ```
@@ -814,7 +814,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi ratelimit:set_pid 0.5 0.5 0.5
 		
 ```
@@ -838,7 +838,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi ratelimit:get_pid
 		
 ```
@@ -860,7 +860,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi rl_bin_status
 		
 ```

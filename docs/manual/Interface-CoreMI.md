@@ -15,9 +15,9 @@ Returns the full list of arguments used when **OpenSIPS** was started. As in UNI
 **Output**: an array with multiple strings representing the arguments.
 
 Example of usage:
-```text
+```bash
 
-    # opensips-mi arg
+    $ opensips-mi arg
     [
         "./opensips",
         "-f",
@@ -33,10 +33,10 @@ Prints MI command usage information. When *mi_cmd* is provided, the response inc
 * *mi_cmd* (optional) - MI command name
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi help
-    # opensips-mi help core:version
+    $ opensips-mi help
+    $ opensips-mi help core:version
 
 ```
 
@@ -48,9 +48,9 @@ The command will terminate **OpenSIPS** (and internal shutdown).
 **Output**: none
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi kill
+    $ opensips-mi kill
 
 ```
 
@@ -64,7 +64,7 @@ Get or set the logging level of one or all OpenSIPS processes. If no argument is
 Examples of usage:
 ```bash
 
-    # opensips-mi log_level
+    $ opensips-mi log_level
     {
         "Processes": [
             {
@@ -84,11 +84,11 @@ Examples of usage:
             },
         ]
     }
-    # opensipsctl fifo log_level 1
+    $ opensipsctl fifo log_level 1
     {
         "New global log level": 1
     }
-    # opensipsctl fifo log_level 4 10670
+    $ opensipsctl fifo log_level 4 10670
     {
         "Log level": 1
     }
@@ -103,13 +103,13 @@ Get or set the level of the extra filtering applied to log messages for a specif
 * *log_level_filter* (optional) - the log level filter.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi log_level_filter stderror
+    $ opensips-mi log_level_filter stderror
     {
         "Log level filter": 3
     }
-    # opensips-mi log_level_filter stderror 1
+    $ opensips-mi log_level_filter stderror 1
     "OK"
 
 ```
@@ -122,13 +122,13 @@ Get or set the mute state (printing enabled/disabled) of a specific logging "con
 * *mute_state* (optional) - the new mute state: *1* - muted or *0* - unmuted (enabled)
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi log_mute_state syslog
+    $ opensips-mi log_mute_state syslog
     {
         "mmute state": 0
     }
-    # opensips-mi log_mute_state syslog 1
+    $ opensips-mi log_mute_state syslog 1
     "OK"
 
 ```
@@ -142,9 +142,9 @@ Also see the [E_PROFILING_PROC event](Interface-CoreEvents.md#E_PROFILING_PROC) 
 * *ID* or *PID* (optional) - processes to work with;
 * *level* (optional) - the new verbosity level (if to be set)
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi mi core:profiling_proc id=8
+    $ opensips-mi mi core:profiling_proc id=8
     {
         "Processes": [
             {
@@ -155,7 +155,7 @@ Examples of usage:
             }
          ]
     }
-    # opensips-mi core:profiling_proc id=8 level=2
+    $ opensips-mi core:profiling_proc id=8 level=2
     "OK"
 
 ```
@@ -168,43 +168,43 @@ The command will list all all **OpenSIPS** processes, along with type and descri
 **Output**: multiple objects, each one containing a process ID (internal), PID (OS) and Type. 
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi ps
-{
-    "Processes": [
-        {
-            "ID": 0,
-            "PID": 27271,
-            "Type": "attendant"
-        },
-        {
-            "ID": 1,
-            "PID": 27272,
-            "Type": "MI FIFO"
-        },
-        {
-            "ID": 2,
-            "PID": 27273,
-            "Type": "time_keeper"
-        },
-        {
-            "ID": 3,
-            "PID": 27274,
-            "Type": "timer"
-        },
-        {
-            "ID": 4,
-            "PID": 27275,
-            "Type": "SIP receiver udp:127.0.0.1:5060"
-        },
-        {
-            "ID": 5,
-            "PID": 27276,
-            "Type": "Timer handler"
-        }
-    ]
-}
+    $ opensips-mi ps
+    {
+        "Processes": [
+            {
+                "ID": 0,
+                "PID": 27271,
+                "Type": "attendant"
+            },
+            {
+                "ID": 1,
+                "PID": 27272,
+                "Type": "MI FIFO"
+            },
+            {
+                "ID": 2,
+                "PID": 27273,
+                "Type": "time_keeper"
+            },
+            {
+                "ID": 3,
+                "PID": 27274,
+                "Type": "timer"
+            },
+            {
+                "ID": 4,
+                "PID": 27275,
+                "Type": "SIP receiver udp:127.0.0.1:5060"
+            },
+            {
+                "ID": 5,
+                "PID": 27276,
+                "Type": "Timer handler"
+            }
+        ]
+    }
 
 ```
 
@@ -216,9 +216,9 @@ Prints the working directory of **OpenSIPS** instance.
 **Output**: a single item containing the working directory full path.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi pwd
+    $ opensips-mi pwd
     {
         "WD": "/"
     }
@@ -243,14 +243,14 @@ Prints various time information about **OpenSIPS** - when it started to run, for
 **Output**: three items: "Now" - current time; "Up since" - start time ; "Up time" - number of seconds since started.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi uptime
-{
-    "Now": "Mon Jul 21 17:41:03 2008",
-    "Up since": "Mon Jul 21 17:36:33 2008",
-    "Up time": "270 [sec]"
-}
+    $ opensips-mi uptime
+    {
+        "Now": "Mon Jul 21 17:41:03 2008",
+        "Up since": "Mon Jul 21 17:36:33 2008",
+        "Up time": "270 [sec]"
+    }
 
 ```
 
@@ -262,12 +262,12 @@ Prints the version string of a running**OpenSIPS**.
 **Output**: one item (named "Server") containing the version string.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi version
-{
-    "Server": "OpenSIPS (4.1.0-dev (x86_64/linux))"
-}
+    $ opensips-mi version
+    {
+        "Server": "OpenSIPS (4.1.0-dev (x86_64/linux))"
+    }
 
 ```
 
@@ -279,29 +279,29 @@ Prints all available MI commands from the queried **OpenSIPS**instance.
 **Output**: an array of the names of available MI commands. NOTE that the list of available MI commands may differ depending of what modules your **OpenSIPS** is using.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi which
-[
-    "statistics:get",
-    "statistics:list",
-    "statistics:reset",
-    "uptime",
-    "version",
-    "pwd",
-    "arg",
-    "which",
-    "ps",
-    "kill",
-    "log_level",
-    "xlog_level",
-    "mem:shm_check",
-    "cache:store",
-    "cache:fetch",
-    "cache:remove",
-    "evi:subscribe",
-    "evi:list",
-...
+    $ opensips-mi which
+    [
+        "statistics:get",
+        "statistics:list",
+        "statistics:reset",
+        "uptime",
+        "version",
+        "pwd",
+        "arg",
+        "which",
+        "ps",
+        "kill",
+        "log_level",
+        "xlog_level",
+        "mem:shm_check",
+        "cache:store",
+        "cache:fetch",
+        "cache:remove",
+        "evi:subscribe",
+        "evi:list",
+    ...
 
 ```
 
@@ -312,9 +312,9 @@ Get or set the global xlogging level in OpenSIPS processes. If no argument is pa
 * *level* (optional)
 
 Example of usage:
-```text
+```bash
 
-    # opensips-mi xlog_level -2
+    $ opensips-mi xlog_level -2
 
 ```
 
@@ -328,9 +328,9 @@ The command lists all the defined (static or learned) blacklists from **OpenSIPS
 **Output**: an array with each object describing the list (name, owner, flags); the "Rules" item is an array with each object member describing the rules (blacklists) for each list (IP/mask, protocol, port, matching regexp, flags).
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi blacklists:list
+    $ opensips-mi blacklists:list
 
 ```
 
@@ -345,10 +345,10 @@ The command returns all the blacklists that match an proto:IP:port+pattern.
 **Output**: an array with the names of each blacklist that matched.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi blacklists:check_all 127.0.0.1
-    # opensips-mi blacklists:check_all udp 127.0.0.1 5060
+    $ opensips-mi blacklists:check_all 127.0.0.1
+    $ opensips-mi blacklists:check_all udp 127.0.0.1 5060
 
 ```
 
@@ -364,10 +364,10 @@ The command check whether a proto:IP:port+pattern matches any rule of a blacklis
 **Output**: an object containing the first rule that matched, or an error if nothing matched.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi blacklists:check net_dynamic 127.0.0.1
-    # opensips-mi blacklists:check_all net_dynamic udp 127.0.0.1 5060
+    $ opensips-mi blacklists:check net_dynamic 127.0.0.1
+    $ opensips-mi blacklists:check_all net_dynamic udp 127.0.0.1 5060
 
 ```
 
@@ -381,10 +381,10 @@ Adds a rule to a non-readonly blacklist.
 **Output**: success or failed object.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi blacklists:add_rule net_dynamic '!tcp,127.0.0.1,5060'
-    # opensips-mi blacklists:add_rule net_dynamic '!tcp,127.0.0.1,5060' 3600
+    $ opensips-mi blacklists:add_rule net_dynamic '!tcp,127.0.0.1,5060'
+    $ opensips-mi blacklists:add_rule net_dynamic '!tcp,127.0.0.1,5060' 3600
 
 ```
 
@@ -397,9 +397,9 @@ Removes a rule from a non-readonly blacklist.
 **Output**: success or failed object.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi blacklists:del_rule net_dynamic '!tcp,127.0.0.1,5060'
+    $ opensips-mi blacklists:del_rule net_dynamic '!tcp,127.0.0.1,5060'
 
 ```
 
@@ -414,9 +414,9 @@ The command lists all ongoing TCP/TLS connection from **OpenSIPS**.
 **Output**: an array with one object per connection with the following attributes : ID, type, state, source, destination, lifetime, alias port. For TLS connections, cipher information is also dumped.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi tcp:list
+    $ opensips-mi tcp:list
 
 ```
 
@@ -428,15 +428,15 @@ Command that terminates an ongoing TCP/TLS connection from **OpenSIPS**.
 * *ipport* - **ip:port** coordinates of the connection
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi tcp:close 127.0.0.1:9
+    $ opensips-mi tcp:close 127.0.0.1:9
 
 ```
 you can also terminate by id:
-```text
+```bash
 
-    # opensips-mi tcp:close 31646848
+    $ opensips-mi tcp:close 31646848
 
 ```
 ## Status Report
@@ -450,14 +450,14 @@ The MI equivalent of the [sr_check_status() script function](https://docs.opensi
 Examples of usage:
 ```bash
 
-# opensips-mi status_report:get core
+$ opensips-mi status_report:get core
 {
     "Readiness": true,
     "Status": 1,
     "Details": "running"
 }
 
-# opensips-mi status_report:get drouting all
+$ opensips-mi status_report:get drouting all
 {
     "Readiness": true,
     "Status": 1,
@@ -473,9 +473,9 @@ Command to list the status of the identifiers within one or all 'status/report' 
 **Output**: the readiness, the status and details for all the identifiers within the requested group, or within all defined/registered groups.
 
 Examples of usage:
-```text
+```bash
 
-#opensips-mi status_report:status 
+$ opensips-mi status_report:status 
 [
     {
         "Name": "drouting",
@@ -522,9 +522,9 @@ Command to list the full set of reports (logs) collected by 'status/report' iden
 **Output**: the reports/logs for the requested identifiers, or for all identifiers within the groups.
 
 Examples of usage:
-```text
+```bash
 
-#opensips-mi status_report:reports 
+$ opensips-mi status_report:reports 
 [
     {
         "Name": "drouting",
@@ -592,9 +592,9 @@ Command to list all the existing identifiers in OpenSIPS or only from a certain 
 **Output**: an array of groups, each group being an array of identifiers .
 
 Examples of usage:
-```text
+```bash
 
-#opensips-mi status_report:identifiers
+$ opensips-mi status_report:identifiers
 [
     {
         "Group": "clusterer",
@@ -629,7 +629,7 @@ Examples of usage:
         ]
     }
 ]
-#opensips-mi status_report:identifiers drouting
+$ opensips-mi status_report:identifiers drouting
 {
     "Group": "drouting",
     "Identifiers": [
@@ -653,13 +653,14 @@ Prints the statistics (all, group or one) realtime values.
 **Output**: an object containing the names and values of statistic variables.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi statistics:get rcv_requests
-   {
-       "core:rcv_requests": 35243
-   }
-    # opensipsc-cli -x mi statistics:get shmem:      
+    $ opensips-mi statistics:get rcv_requests
+    {
+        "core:rcv_requests": 35243
+    }
+
+    $ opensipsc-cli -x mi statistics:get shmem:      
     {
         "shmem:total_size": 1073741824,
         "shmem:max_used_size": 3389232,
@@ -668,7 +669,8 @@ Examples of usage:
         "shmem:real_used_size": 3389232,
         "shmem:fragments": 3769
     }
-    # opensips-mi statistics:get shmem: core:
+
+    $ opensips-mi statistics:get shmem: core:
     ....
 
 ```
@@ -679,19 +681,19 @@ Prints a list of available statistics in the current configuration of OpenSIPS.
 * *statistics* (optional) - an array of the same possible values as for **statistics:get** MI command, with the exception of "all". Omitting the parameter will list all available statistics.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi statistics:list
-{
-    "shmem:total_size": "non-incremental",
-    "shmem:max_used_size": "non-incremental",
-    "shmem:free_size": "non-incremental",
-    "shmem:used_size": "non-incremental",
-    "shmem:real_used_size": "non-incremental",
-    "shmem:fragments": "non-incremental",
-    "rpmem:rpm_total_size": "non-incremental",
-    "rpmem:rpm_used_size": "non-incremental",
-...
+    $ opensips-mi statistics:list
+    {
+        "shmem:total_size": "non-incremental",
+        "shmem:max_used_size": "non-incremental",
+        "shmem:free_size": "non-incremental",
+        "shmem:used_size": "non-incremental",
+        "shmem:real_used_size": "non-incremental",
+        "shmem:fragments": "non-incremental",
+        "rpmem:rpm_total_size": "non-incremental",
+        "rpmem:rpm_used_size": "non-incremental",
+    ...
 
 ```
 
@@ -703,17 +705,19 @@ Reset (to zero) the value of a statistic variable. Note that not all variables a
 **Output**: none.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi statistics:get received_replies
-   {
-       "tm:received_replies": 14543
-   }
-    # opensips-mi statistics:reset received_replies
-    # opensips-mi statistics:get received_replies
-   {
-       "tm:received_replies": 0
-   }
+    $ opensips-mi statistics:get received_replies
+    {
+        "tm:received_replies": 14543
+    }
+
+    $ opensips-mi statistics:reset received_replies
+
+    $ opensips-mi statistics:get received_replies
+    {
+        "tm:received_replies": 0
+    }
 
 ```
 
@@ -723,9 +727,9 @@ Reset (to zero) the value of all statistic variables that can be reset. Note tha
 **Output**: none.
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi statistics:reset_all
+    $ opensips-mi statistics:reset_all
 
 ```
 
@@ -742,9 +746,9 @@ This command stores in a cache system a string value.
 **Output**: none.   
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi cache:store local password_user1 password
+    $ opensips-mi cache:store local password_user1 password
 
 ```
 
@@ -757,9 +761,9 @@ This command queries for a stored value.
 **Output**: object containing the value if a record is found or 'Value not found' string otherwise.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi cache:fetch local password_user1
+    $ opensips-mi cache:fetch local password_user1
 
 ```
 
@@ -772,9 +776,9 @@ This command removes a record from the cache system.
 **Output**: None.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi cache:remove local password_user1
+    $ opensips-mi cache:remove local password_user1
 
 ```
 
@@ -790,9 +794,9 @@ Subscribes an external application to a certain event.
 **Output**: None.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi evi:subscribe E_PIKE_BLOCKED udp:127.0.0.1:8888 1200
+    $ opensips-mi evi:subscribe E_PIKE_BLOCKED udp:127.0.0.1:8888 1200
 
 ```
 
@@ -804,24 +808,24 @@ Lists all the events published through the Event Interface.
 **Output**: None.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi evi:list
-{
-    "Events": [
-        {
-            "name": "E_CORE_THRESHOLD",
-            "id": 0
-        },
-        {
-            "name": "E_CORE_SHM_THRESHOLD",
-            "id": 1
-        },
-        {
-            "name": "E_CORE_PKG_THRESHOLD",
-            "id": 2
-        },
-...
+    $ opensips-mi evi:list
+    {
+        "Events": [
+            {
+                "name": "E_CORE_THRESHOLD",
+                "id": 0
+            },
+            {
+                "name": "E_CORE_SHM_THRESHOLD",
+                "id": 1
+            },
+            {
+                "name": "E_CORE_PKG_THRESHOLD",
+                "id": 2
+            },
+    ...
 
 ```
 
@@ -836,9 +840,9 @@ Raises an event through the Event Interface using an MI command.
 Examples of usage:
 ```bash
 
-    # opensips-mi evi:raise E_PIKE_BLOCKED 127.0.0.1 # array mode
-    # opensips-mi evi:raise -j '{"event":"E_PIKE_BLOCKED", "params": {"ip":"127.0.0.1"}}' # json Mode
-    # opensips-cli -x mi -j evi:raise event=E_PIKE_BLOCKED params='{"ip":"127.0.0.1"}' # cli json mode
+    $ opensips-mi evi:raise E_PIKE_BLOCKED 127.0.0.1 # array mode
+    $ opensips-mi evi:raise -j '{"event":"E_PIKE_BLOCKED", "params": {"ip":"127.0.0.1"}}' # json Mode
+    $ opensips-cli -x mi -j evi:raise event=E_PIKE_BLOCKED params='{"ip":"127.0.0.1"}' # cli json mode
 
 ```
 
@@ -851,56 +855,56 @@ Lists information about the subscribers
 **Output**: If no parameter is specified, then the command returns information about all events and their subscribers. If the event is specified, only the external applications subscribed for that event are returned. If the socket is also specified, only one subscriber information is returned.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi evi:subscribers
-{
-  "Events": [{
-	  "name": "E_RTPPROXY_STATUS",
-	  "id": 1,
-	  "subscribers": [
-		...
-	  ]
-	},
-	{
-	  "name": "E_PIKE_BLOCKED",
-	  "id": 2,
-	  "subscribers": [
-		...
-	  ]
-	}
-  ]
-}
+    $ opensips-mi evi:subscribers
+    {
+    "Events": [{
+        "name": "E_RTPPROXY_STATUS",
+        "id": 1,
+        "subscribers": [
+            ...
+        ]
+        },
+        {
+        "name": "E_PIKE_BLOCKED",
+        "id": 2,
+        "subscribers": [
+            ...
+        ]
+        }
+    ]
+    }
 
-    # opensips-mi evi:subscribers E_RTPPROXY_STATUS
-{
-  "Event": {
-	"name": "E_RTPPROXY_STATUS",
-	"id": 1,
-	"subscribers": [{
-		  "socket": "unix:/tmp/event.sock",
-		  "expire": "never",
-		},
-		{
-		  "socket": "udp:127.0.0.1:8888",
-		  "expire": 1100,
-		  "ttl": 1046
-		}
-	]
-  } 
-}
+    $ opensips-mi evi:subscribers E_RTPPROXY_STATUS
+    {
+    "Event": {
+        "name": "E_RTPPROXY_STATUS",
+        "id": 1,
+        "subscribers": [{
+            "socket": "unix:/tmp/event.sock",
+            "expire": "never",
+            },
+            {
+            "socket": "udp:127.0.0.1:8888",
+            "expire": 1100,
+            "ttl": 1046
+            }
+        ]
+    } 
+    }
 
-    # opensips-mi evi:subscribers E_RTPPROXY_STATUS unix:/tmp/event.sock
-{
-  "Event": {
-	"name": "E_RTPPROXY_STATUS",
-	"id": 1,
-	"Subscriber": {
-	  "socket": "unix:/tmp/event.sock",
-	  "expire": "never"
-	}
-  } 
-}
+    $ opensips-mi evi:subscribers E_RTPPROXY_STATUS unix:/tmp/event.sock
+    {
+    "Event": {
+        "name": "E_RTPPROXY_STATUS",
+        "id": 1,
+        "Subscriber": {
+        "socket": "unix:/tmp/event.sock",
+        "expire": "never"
+        }
+    } 
+    }
 
 ```
 
@@ -915,9 +919,9 @@ Triggers a pkg memory dump for a given process. The memory dump will written to 
 **Output**: None.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi mem:pkg_dump 11854 -1
+    $ opensips-mi mem:pkg_dump 11854 -1
 
 ```
 
@@ -931,10 +935,10 @@ Triggers a restart-persistent memory dump. The memory dump is written to OpenSIP
 * *log_level* (optional) - logging level used for this dump
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi mem:rpm_dump
-    # opensips-mi mem:rpm_dump -1
+    $ opensips-mi mem:rpm_dump
+    $ opensips-mi mem:rpm_dump -1
 
 ```
 
@@ -946,9 +950,9 @@ Triggers a shm memory dump. The memory dump will written to OpenSIPS's log (sysl
 **Output**: None.  
 
 Examples of usage:
-```text
+```bash
 
-    # opensips-mi mem:shm_dump -1
+    $ opensips-mi mem:shm_dump -1
 
 ```
 
@@ -960,8 +964,8 @@ Only available with *QM_MALLOC* + *DBG_MALLOC*.  Fully scans the shared memory p
 **Output**: current number of fragments.  
 
 Example of usage:
-```text
+```bash
 
-    # opensips-mi mem:shm_check
+    $ opensips-mi mem:shm_check
 
 ```

@@ -266,7 +266,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi msrp_ua:send_message \
 	session_id=5addd9e7b74fa44fbace68a4fc562293 \
 	mime=text/plain body=Hello success_report=yes
@@ -307,7 +307,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi msrp_ua:start_session \
 	text/plain sip:oss@opensips.org \
 	sip:alice@opensips.org sip:alice@opensips.org
@@ -336,7 +336,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi msrp_ua:list_sessions
 		
 ```
@@ -364,7 +364,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi msrp_ua:end_session \
 	5addd9e7b74fa44fbace68a4fc562293
 		

@@ -195,7 +195,7 @@ Meaning of the parameters is as follows:
 This function can be used from any route.
 
 
-```c title="*janus_send_request()* usage"
+```opensips title="*janus_send_request()* usage"
 ...
 # if the DB contains: 
 #       id: 1

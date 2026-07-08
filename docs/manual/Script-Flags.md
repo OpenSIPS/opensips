@@ -114,7 +114,7 @@ In `request` route, you may have multiple branches (as a result of a `lookup()` 
 ```
 
 if no parallel forking is done, you can get rid of the branch route and add instead of t_on_branch():
-```text
+```opensips
 
    ........
    if (isbflagset(NAT_BFLAG)) {
