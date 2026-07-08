@@ -554,7 +554,7 @@ Parameters: *1*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialplan:reload
 		
 ```
@@ -586,7 +586,7 @@ Parameters: *3*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
         opensips-cli -x mi dialplan:translate 10 +40123456789
 		
 ```
@@ -615,7 +615,7 @@ Parameters: *2*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
         opensips-cli -x mi dialplan:show_partition default
 		
 ```
@@ -650,7 +650,7 @@ In terms of reports/logs, the following events will be reported:
 - N rules loaded (N discarded)
 
 
-```c
+```json
     {
         "Name": "default",
         "Reports": [

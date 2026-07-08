@@ -569,7 +569,7 @@ The response is a JSON array of connection objects. Each connection
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## list all Redis connections
 opensips-cli -x mi redis_cluster_info
 
@@ -609,7 +609,7 @@ The response is a JSON array of objects, one per connection, each
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## refresh all cluster connections
 opensips-cli -x mi redis_cluster_refresh
 
@@ -654,7 +654,7 @@ The response is a JSON array of connection objects. Each connection
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## ping all Redis nodes
 opensips-cli -x mi redis_ping_nodes
 

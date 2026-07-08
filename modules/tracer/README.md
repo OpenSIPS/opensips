@@ -413,7 +413,7 @@ If this parameter is missing but the first is set, the command will
 MI FIFO Command Format:
 
 
-```c
+```bash
 # Display global tracing mode and all trace destinations:
 opensips-cli -x mi trace
 # Turn off global tracing:
@@ -471,7 +471,7 @@ The filter is applied for any incoming request
 MI FIFO Command to start tracing calls from IP 127.0.0.1 to HEP destination 10.0.0.1:9060:
 
 
-```c
+```bash
 		opensips-cli -x mi tracer:start id=ip_filter uri=hep:10.0.0.1:9060 filter=ip=127.0.0.1
 		
 ```
@@ -480,7 +480,7 @@ MI FIFO Command to start tracing calls from IP 127.0.0.1 to HEP destination 10.0
 MI FIFO Command to start tracing calls from user Alice to user Bob:
 
 
-```c
+```bash
 		opensips-cli -x mi tracer:start id=alice_bob uri=hep:10.0.0.1:9060 filter=caller=Alice filter=caller=Bob
 		
 ```
@@ -508,7 +508,7 @@ Parameters:
 MI FIFO Command to stop tracing calls from user Alice to user Bob:
 
 
-```c
+```bash
 		opensips-cli -x mi tracer:stop alice_bob
 		
 ```

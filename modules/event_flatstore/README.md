@@ -265,7 +265,7 @@ Parameters: *path_to_file*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi event_flatstore:rotate _path_to_log_file_
 		
 ```

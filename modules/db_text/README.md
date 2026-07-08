@@ -221,7 +221,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi db_text:dump
 		
 ```
@@ -254,19 +254,19 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi db_text:reload
 		
 ```
 
 
-```c
+```bash
 opensips-cli -x mi db_text:reload /path/to/dbtext/database
 		
 ```
 
 
-```c
+```bash
 opensips-cli -x mi db_text:reload /path/to/dbtext/database table_name
 		
 ```

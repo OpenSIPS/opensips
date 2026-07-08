@@ -324,7 +324,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi httpd:list_root_path
 		
 ```
