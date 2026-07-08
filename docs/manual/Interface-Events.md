@@ -44,7 +44,7 @@ Currently, an external application can only subscribe to an event using the [eve
 
 In order to configure a RabbbitMQ server to be notified when a custom event is triggered, first you have to subscribe it to the event through MI, by sending a [event_subscribe](Interface-CoreMI.md#event_subscribe) command.
 
-```bash
+```opensips
 
     # opensipsctl fifo event_subscribe E_SCRIPT_CUSTOM_EVENT udp:127.0.0.1:8888
 
@@ -52,7 +52,7 @@ In order to configure a RabbbitMQ server to be notified when a custom event is t
 
 Then, in order to trigger the event from the script, call the [raise_event()](Script-CoreFunctions.md#raise_event) command when needed:
 
-```text
+```opensips
 
    ....
    raise_event("E_SCRIPT_CUSTOM_EVENT");     # raises an event without any parameters

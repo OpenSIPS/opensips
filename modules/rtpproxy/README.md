@@ -655,7 +655,7 @@ NOTE: if a rtpproxy is defined multiple times (in the same or
 			diferente sete), all its instances will be enables/disabled.
 
 
-```c title="nh_enable_rtpp usage"
+```bash title="nh_enable_rtpp usage"
 ...
 $ opensipsctl fifo nh_enable_rtpp udp:192.168.2.133:8081 0
 ...
@@ -673,7 +673,7 @@ Displays all the rtp proxies and their information: set and
 No parameter.
 
 
-```c title="nh_show_rtpp usage"
+```bash title="nh_show_rtpp usage"
 ...
 $ opensipsctl fifo nh_show_rtpp 
 ...
@@ -693,7 +693,7 @@ Reload rtp proxies sets from database. The function will delete all
 No parameter.
 
 
-```c title="nh_reload_rtpp usage"
+```bash title="nh_reload_rtpp usage"
 ...
 $ opensipsctl fifo nh_reload_rtpp 
 ...

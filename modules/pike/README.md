@@ -228,7 +228,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:pike_list:_reply_fifo_file_
 		_empty_line_
 		
