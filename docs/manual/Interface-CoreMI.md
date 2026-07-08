@@ -223,17 +223,17 @@ Examples of usage:
 ```bash
 
     $ opensipsctl fifo list_statistics
-shmem:total_size:: incremental
-shmem:used_size:: incremental
-shmem:real_used_size:: incremental
-shmem:max_used_size:: incremental
-shmem:free_size:: incremental
-shmem:fragments:: incremental
-core:rcv_requests:: incremental
-core:rcv_replies:: incremental
-core:fwd_requests:: incremental
-core:fwd_replies:: incremental
-core:drop_requests:: incremental
+    shmem:total_size:: incremental
+    shmem:used_size:: incremental
+    shmem:real_used_size:: incremental
+    shmem:max_used_size:: incremental
+    shmem:free_size:: incremental
+    shmem:fragments:: incremental
+    core:rcv_requests:: incremental
+    core:rcv_replies:: incremental
+    core:fwd_requests:: incremental
+    core:fwd_replies:: incremental
+    core:drop_requests:: incremental
     ....
 
 ```
