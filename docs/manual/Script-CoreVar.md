@@ -59,7 +59,7 @@ Standard PV is read-only and returns a single value (if not otherwise documented
 
 Example of usage:
 
-```bash
+```opensips
 
 $var(a) = 2;  # sets the value of variable 'a' to integer '2'
 $var(a) = "2";  # sets the value of variable 'a' to string '2'
@@ -113,7 +113,7 @@ onreply_route[1] {
 ```
 
 * Multilple values example
-```bash
+```opensips
 
 $avp(demo) = "one";
 # we have a single value
@@ -215,7 +215,7 @@ Predefined (provided by core) PVs are listed in alphabetical order.
 
 `$argv` - provides access to command line arguments specified with '-o' option.
 Examples:
-```text
+```opensips
 
    # for option '-o foo=0'
    xlog("foo is $argv(foo) \n");
@@ -226,7 +226,7 @@ Examples:
 
 `$branch` - this variable is used for creating new branches by writing into it the value of a SIP URI.
 Examples:
-```text
+```opensips
 
    # creates a new branch
    $branch = "sip:new@doamin.org";
@@ -249,7 +249,7 @@ The variable accepts also index `$(branch(uri)[1])` for accessing a specific bra
 To get all branches, use the * index - `$(branch(uri)[*])`.  
 
 Examples:
-```text
+```opensips
 
    # creates the first branch
    append_branch();
@@ -641,7 +641,7 @@ The module should identify most of compact header names (the ones recognized by 
 Note that some headers (e.g., Path) may be joined together with commas and appear as a single header line. This variable counts the number of header lines, not header values. 
 
 For message fragment below, `$hdrcnt(Path)` will have value 2 and `$(hdr(Path)[0])` will have value **`<a.com>`**:
-```text
+```opensips
 
     Path: <a.com>
     Path: <b.com>
@@ -649,7 +649,7 @@ For message fragment below, `$hdrcnt(Path)` will have value 2 and `$(hdr(Path)[0
 ```
 
 For message fragment below, `$hdrcnt(Path)` will have value 1 and `$(hdr(Path)[0])` will have value **`<a.com>`,`<b.com>`**:
-```text
+```opensips
 
     Path: <a.com>,<b.com>
 
@@ -682,7 +682,7 @@ Colors could be:
 
 A few examples of usage.
 
-```text
+```opensips
 
 ...
 route {
