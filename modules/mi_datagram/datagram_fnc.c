@@ -582,8 +582,7 @@ free_resp:
 				free_async_handler(async_hdl);
 		if (response)
 			free_mi_response(response);
-	} else
-		return 0;
+	}
 free_req:
 	free_mi_request_parsed(&request);
 	return 0;
