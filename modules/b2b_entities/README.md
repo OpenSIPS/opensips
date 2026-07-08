@@ -267,7 +267,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2be_list
 	
 ```

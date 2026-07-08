@@ -15,6 +15,6 @@ OpenSIPS packages for various distributions are available for download in [our r
 
 GitHUB hosts the main repository for OpenSIPS.  In order to checkout the latest OpenSIPS 3.1 sources, run:
 
-```text
+```bash
 git clone https://github.com/OpenSIPS/opensips.git -b 3.1 opensips-3.1
 ```

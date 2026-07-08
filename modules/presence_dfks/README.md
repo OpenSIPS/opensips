@@ -145,7 +145,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi dfks_set_feature sip:alice@10.0.0.11 CallForwardingNoAnswer 1 1 \
 ringCount/4 forwardTo/sip:bob@10.0.0.11
 ```

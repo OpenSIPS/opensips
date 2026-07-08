@@ -17,7 +17,7 @@ Returns the full list of arguments used when **OpenSIPS** was started. As in UNI
 Example of usage:
 ```bash
 
-    # opensips-cli -x mi arg
+    $ opensips-cli -x mi arg
     [
         "./opensips",
         "-f",
@@ -36,7 +36,7 @@ The command will terminate **OpenSIPS** (and internal shutdown).
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi kill
+    $ opensips-cli -x mi kill
 
 ```
 
@@ -50,7 +50,7 @@ Get or set the logging level of one or all OpenSIPS processes. If no argument is
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi log_level
+    $ opensips-cli -x mi log_level
     {
         "Processes": [
             {
@@ -70,11 +70,11 @@ Examples of usage:
             },
         ]
     }
-    # opensipsctl fifo log_level 1
+    $ opensipsctl fifo log_level 1
     {
         "New global log level": 1
     }
-    # opensipsctl fifo log_level 4 10670
+    $ opensipsctl fifo log_level 4 10670
     {
         "Log level": 1
     }
@@ -91,7 +91,7 @@ The command will list all all **OpenSIPS** processes, along with type and descri
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi ps
+    $ opensips-cli -x mi ps
 {
     "Processes": [
         {
@@ -139,7 +139,7 @@ Prints the working directory of **OpenSIPS** instance.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi pwd
+    $ opensips-cli -x mi pwd
     {
         "WD": "/"
     }
@@ -166,7 +166,7 @@ Prints various time information about **OpenSIPS** - when it started to run, for
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi uptime
+    $ opensips-cli -x mi uptime
 {
     "Now": "Mon Jul 21 17:41:03 2008",
     "Up since": "Mon Jul 21 17:36:33 2008",
@@ -185,7 +185,7 @@ Prints the version string of a running**OpenSIPS**.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi version
+    $ opensips-cli -x mi version
 {
     "Server": "OpenSIPS (3.1.0-dev (x86_64/linux))"
 }
@@ -202,7 +202,7 @@ Prints all available MI commands from the queried **OpenSIPS**instance.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi which
+    $ opensips-cli -x mi which
 [
     "get_statistics",
     "list_statistics",
@@ -235,7 +235,7 @@ Get or set the global xlogging level in OpenSIPS processes. If no argument is pa
 Example of usage:
 ```bash
 
-    # opensips-cli -x mi xlog_level -2
+    $ opensips-cli -x mi xlog_level -2
 
 ```
 
@@ -251,7 +251,7 @@ The command lists all the defined (static or learned) blacklists from **OpenSIPS
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi list_blacklists
+    $ opensips-cli -x mi list_blacklists
 
 ```
 
@@ -267,7 +267,7 @@ The command lists all ongoing TCP/TLS connection from **OpenSIPS**.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi list_tcp_conns
+    $ opensips-cli -x mi list_tcp_conns
 
 ```
 
@@ -286,11 +286,11 @@ Prints the statistics (all, group or one) realtime values.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi get_statistics rcv_requests
+    $ opensips-cli -x mi get_statistics rcv_requests
    {
        "core:rcv_requests": 35243
    }
-    # opensipsc-cli -x mi get_statistics shmem:
+    $ opensipsc-cli -x mi get_statistics shmem:
     {
         "shmem:total_size": 1073741824,
         "shmem:max_used_size": 3389232,
@@ -299,7 +299,7 @@ Examples of usage:
         "shmem:real_used_size": 3389232,
         "shmem:fragments": 3769
     }
-    # opensips-cli -x mi get_statistics shmem: core:
+    $ opensips-cli -x mi get_statistics shmem: core:
     ....
 
 ```
@@ -312,7 +312,7 @@ Prints a list of available statistics in the current configuration of OpenSIPS.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi list_statistics
+    $ opensips-cli -x mi list_statistics
 {
     "shmem:total_size": "non-incremental",
     "shmem:max_used_size": "non-incremental",
@@ -336,12 +336,12 @@ Reset (to zero) the value of a statistic variable. Note that not all variables a
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi get_statistics received_replies
+    $ opensips-cli -x mi get_statistics received_replies
    {
        "tm:received_replies": 14543
    }
-    # opensips-cli -x mi reset_statistics received_replies
-    # opensips-cli -x mi get_statistics received_replies
+    $ opensips-cli -x mi reset_statistics received_replies
+    $ opensips-cli -x mi get_statistics received_replies
    {
        "tm:received_replies": 0
    }
@@ -363,7 +363,7 @@ This command stores in a cache system a string value.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi cache_store local password_user1 password
+    $ opensips-cli -x mi cache_store local password_user1 password
 
 ```
 
@@ -378,7 +378,7 @@ This command queries for a stored value.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi cache_fetch local password_user1
+    $ opensips-cli -x mi cache_fetch local password_user1
 
 ```
 
@@ -393,7 +393,7 @@ This command removes a record from the cache system.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi cache_remove local password_user1
+    $ opensips-cli -x mi cache_remove local password_user1
 
 ```
 
@@ -411,7 +411,7 @@ Subscribes an external application to a certain event.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi event_subscribe E_PIKE_BLOCKED udp:127.0.0.1:8888 1200
+    $ opensips-cli -x mi event_subscribe E_PIKE_BLOCKED udp:127.0.0.1:8888 1200
 
 ```
 
@@ -425,7 +425,7 @@ Lists all the events published through the Event Interface.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi events_list
+    $ opensips-cli -x mi events_list
 {
     "Events": [
         {
@@ -455,8 +455,8 @@ Raises an event through the Event Interface using an MI command.
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi raise_event E_PIKE_BLOCKED 127.0.0.1 # array mode
-    # opensips-cli -x -- mi -j raise_event event=E_PIKE_BLOCKED params='{"ip":"127.0.0.1"}' # json mode
+    $ opensips-cli -x mi raise_event E_PIKE_BLOCKED 127.0.0.1 # array mode
+    $ opensips-cli -x -- mi -j raise_event event=E_PIKE_BLOCKED params='{"ip":"127.0.0.1"}' # json mode
 
 ```
 
@@ -471,7 +471,7 @@ Lists information about the subscribers
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi subscribers_list
+    $ opensips-cli -x mi subscribers_list
 {
   "Events": [{
 	  "name": "E_RTPPROXY_STATUS",
@@ -490,7 +490,7 @@ Examples of usage:
   ]
 }
 
-    # opensips-cli -x mi subscribers_list E_RTPPROXY_STATUS
+    $ opensips-cli -x mi subscribers_list E_RTPPROXY_STATUS
 {
   "Event": {
 	"name": "E_RTPPROXY_STATUS",
@@ -507,7 +507,7 @@ Examples of usage:
   }
 }
 
-    # opensips-cli -x mi subscribers_list E_RTPPROXY_STATUS unix:/tmp/event.sock
+    $ opensips-cli -x mi subscribers_list E_RTPPROXY_STATUS unix:/tmp/event.sock
 {
   "Event": {
 	"name": "E_RTPPROXY_STATUS",
@@ -534,7 +534,7 @@ Triggers a pkg memory dump for a given process. The memory dump will written to 
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi mem_pkg_dump 11854 -1
+    $ opensips-cli -x mi mem_pkg_dump 11854 -1
 
 ```
 
@@ -551,7 +551,7 @@ Triggers a shm memory dump. The memory dump will written to OpenSIPS's log (sysl
 Examples of usage:
 ```bash
 
-    # opensips-cli -x mi mem_shm_dump -1
+    $ opensips-cli -x mi mem_shm_dump -1
 
 ```
 
@@ -565,6 +565,6 @@ Only available with *QM_MALLOC* + *DBG_MALLOC*.  Fully scans the shared memory p
 Example of usage:
 ```bash
 
-    # opensips-cli -x mi shm_check
+    $ opensips-cli -x mi shm_check
 
 ```

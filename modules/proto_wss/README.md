@@ -312,7 +312,7 @@ The timeout is invoked during acceptance of a new connection (inbound) and
 *Default value is 100.*
 
 
-```c title="Set wss_tls_handshake_timeout variable"
+```opensips title="Set wss_tls_handshake_timeout variable"
 param("proto_wss", "wss_tls_handshake_timeout", 200) # number of milliseconds
 
 			
@@ -363,7 +363,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi wss_trace on
 			
 ```
