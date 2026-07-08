@@ -171,40 +171,40 @@ Examples of usage:
 ```bash
 
     $ opensips-mi ps
-{
-    "Processes": [
-        {
-            "ID": 0,
-            "PID": 27271,
-            "Type": "attendant"
-        },
-        {
-            "ID": 1,
-            "PID": 27272,
-            "Type": "MI FIFO"
-        },
-        {
-            "ID": 2,
-            "PID": 27273,
-            "Type": "time_keeper"
-        },
-        {
-            "ID": 3,
-            "PID": 27274,
-            "Type": "timer"
-        },
-        {
-            "ID": 4,
-            "PID": 27275,
-            "Type": "SIP receiver udp:127.0.0.1:5060"
-        },
-        {
-            "ID": 5,
-            "PID": 27276,
-            "Type": "Timer handler"
-        }
-    ]
-}
+    {
+        "Processes": [
+            {
+                "ID": 0,
+                "PID": 27271,
+                "Type": "attendant"
+            },
+            {
+                "ID": 1,
+                "PID": 27272,
+                "Type": "MI FIFO"
+            },
+            {
+                "ID": 2,
+                "PID": 27273,
+                "Type": "time_keeper"
+            },
+            {
+                "ID": 3,
+                "PID": 27274,
+                "Type": "timer"
+            },
+            {
+                "ID": 4,
+                "PID": 27275,
+                "Type": "SIP receiver udp:127.0.0.1:5060"
+            },
+            {
+                "ID": 5,
+                "PID": 27276,
+                "Type": "Timer handler"
+            }
+        ]
+    }
 
 ```
 
