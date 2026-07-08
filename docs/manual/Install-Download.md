@@ -11,7 +11,7 @@ There are multiple options when it comes to downloading **OpenSIPS** 2.3:
 
 Tarballs with the latest sources of the 2.3 release may be downloaded directly from the project web site:
 
-```text
+```bash
   [http://opensips.org/pub/opensips/2.3.x/](http://opensips.org/pub/opensips/2.3.x/) 
 ```
 
@@ -20,7 +20,7 @@ Tarballs with the latest sources of the 2.3 release may be downloaded directly f
 ## Tarballs from SourceForge
 
 The same release files we have on the website are also hosted on the SourceForge download area - it is advisable to use it as geographical mirrors are available for a faster download:
-```text
+```bash
   [https://sourceforge.net/projects/opensips/files/OpenSIPS/](https://sourceforge.net/projects/opensips/files/OpenSIPS/)
 ```
 

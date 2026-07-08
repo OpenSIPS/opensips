@@ -577,7 +577,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 :refreshWatchers:fifo_reply
 sip:11@192.168.2.132
 presence
@@ -603,7 +603,7 @@ Parameters:*none.*emphasis>
 MI FIFO Command Format:
 
 
-```c
+```bash
 :cleanup:fifo_reply
 _empty_line_
 	  
@@ -625,7 +625,7 @@ Parameters:*none.*
 MI FIFO Command Format:
 
 
-```c
+```bash
 :pres_phtable_list:fifo_reply
 _empty_line_
 	  
@@ -647,7 +647,7 @@ Parameters:*none.*
 MI FIFO Command Format:
 
 
-```c
+```bash
 :subs_phtable_list:fifo_reply
 _empty_line_
 	  
@@ -681,7 +681,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 :subs_phtable_list:fifo_reply
 _empty_line_
 	  

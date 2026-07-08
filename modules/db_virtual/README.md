@@ -212,7 +212,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 				db_get
 				_empty_line_
 			
@@ -253,7 +253,7 @@ db_set 3 2 0 1 means:
 MI FIFO Command Format:
 
 
-```c
+```bash
 				db_set 3 2 0 1
 				_empty_line_
 			

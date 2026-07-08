@@ -469,7 +469,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_reload
 ```
 
@@ -487,7 +487,7 @@ It takes two mandatory parameters, the ID of the agent and the
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_agent_login agentX 0
 ```
 
@@ -507,7 +507,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_list_queue
 ```
 
@@ -527,7 +527,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_list_flows
 ```
 
@@ -546,7 +546,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_list_agents
 ```
 
@@ -566,7 +566,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_list_agents
 ```
 
@@ -583,7 +583,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensipsctl fifo cc_reset_stats
 ```
 

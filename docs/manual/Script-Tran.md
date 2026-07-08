@@ -7,7 +7,7 @@ A **Transformation** is basically a function that is applied to a variable(scrip
 
 Example of using different kind of variables in **OpenSIPS script**:
 
-```bash
+```opensips
 
 # check if username in From header is equal with username in To header
 if($fU==$tU) {
@@ -46,7 +46,7 @@ A transformation is represented in between `{` and `}` and follows the name of a
 
 Example:
 
-```bash
+```opensips
 
 # the length of From URI ($fu is pseudo-variable for From URI)
 
@@ -56,7 +56,7 @@ $(fu{s.len})
 
 Multiple transformations can be applied to a variable at the same time.
 
-```bash
+```opensips
 
 # the length of escaped 'Test' header body
 
@@ -80,7 +80,7 @@ Available transformations in this class:
 
 Return strlen of variable value
 
-```text
+```opensips
 
 $var(x) = "abc";
 if($(var(x){s.len}) == 3)
@@ -94,7 +94,7 @@ if($(var(x){s.len}) == 3)
 
 Converts the initial part of the given string to an integer value. Returns 0 if there were no digits at all.
 
-```bash
+```opensips
 
 $var(dur) = "2868.12 sec";
 if ($(var(dur){s.int}) < 3600) {
@@ -107,7 +107,7 @@ if ($(var(dur){s.int}) < 3600) {
 
 Return md5 over variable value
 
-```text
+```opensips
 
 xlog("MD4 over From username: $(fU{s.md5})");
 
@@ -118,7 +118,7 @@ xlog("MD4 over From username: $(fU{s.md5})");
 Return substring starting at offset having size of 'length'. If offset is negative, then it is counted from the end of the value, -1 being the last char. In case of positive value, 0 is first char. Length must be non-negative; in case of 0 or a value greater than the remaining string length, substring to the end of variable value is returned. offset and length can be a varibale as well.
 
 Example:
-```text
+```opensips
 
 $var(x) = "abcd";
 $(var(x){s.substr,1,0}) = "bcd"
@@ -130,7 +130,7 @@ $(var(x){s.substr,1,0}) = "bcd"
 Return a field from the value of a variable. The field is selected based on separator and index. The separator must be a character used to identify the fields. Index must be a integer value or a variable. If index is negative, the count of fields starts from end of value, -1 being last field. If index is positive, 0 is the first field.
 
 Example:
-```text
+```opensips
 
 $var(x) = "12,34,56";
 $(var(x){s.select,1,,}) => "34" ;
@@ -185,7 +185,7 @@ Return string with upper case ASCII letters.
 Searches for one string within another starting at the beginning of the first string. Returns starting index of the string found or -1 if not found.
 The optional index specifies the offset to begin the search at in the string. Negative offsets are supported and will wrap.
 
-```bash
+```opensips
 
 $var(strtosearch) = 'onetwothreeone';
 $var(str) = 'one';
@@ -212,7 +212,7 @@ if ($(var(strtosearch){s.index, $var(str)}) >=0)
 Searches for one string within another starting at the end of the first string. Returns starting index of the string found or -1 if not found.
 The optional index specifies an offset to start the search before, e.g the start of the found string will be before the supplied offset. Negative offsets are supported and will wrap.
 
-```text
+```opensips
 
 $(var(strtosearch){s.rindex, $var(str)}) # will return 11
 $(var(strtosearch){s.rindex, $var(str), -3}) # will return 11
@@ -225,7 +225,7 @@ $(var(strtosearch){s.rindex, $var(str), -4}) # will return 0
 
 Fills a string to the left with a char/string until the given final length is reached. The initial string is returned if its length is greater or equal to the given final length.
 
-```text
+```opensips
 
 $var(in) = "485"; (also works for integer PVs)
 
@@ -242,7 +242,7 @@ $(var(in){s.fill.left, abc, 8})  => bcabc485
 
 Fills a string to the right with a char/string until the given final length is reached. The initial string is returned if its length is greater or equal to the given final length.
 
-```text
+```opensips
 
 $var(in) = 485; (also works for string PVs)
 
@@ -258,7 +258,7 @@ Truncates or expands the input to the given *len*. Expanding is done to the righ
 
 Fills a string to the right with a char/string until the given final length is reached. The initial string is returned if its length is greater or equal to the given final length. If used on pseudo-variables containing integers, it will convert them to strings.
 
-```text
+```opensips
 
 $var(in) = "transformation";
 
@@ -272,7 +272,7 @@ $(var(in){s.width, 9})   => "transform"
 
 Strips any leading or trailing whitespace from the input string. Trimmed characters are " " (space), \t (tab), \n (newline) and \r (carriage return).
 
-```text
+```opensips
 
 $var(in) = "\t \n input string  \r  ";
 
@@ -284,7 +284,7 @@ $(var(in){s.trim})   => "input string"
 
 Strips any trailing whitespace from the input string. Trimmed characters are " " (space), \t (tab), \n (newline) and \r (carriage return).
 
-```text
+```opensips
 
 $var(in) = "\t \n input string  \r  ";
 
@@ -296,7 +296,7 @@ $(var(in){s.trimr})   => "\t \n input string"
 
 Strips any leading whitespace from the input string. Trimmed characters are " " (space), \t (tab), \n (newline) and \r (carriage return).
 
-```text
+```opensips
 
 $var(in) = "\t \n input string  \r  ";
 
@@ -316,7 +316,7 @@ Converts a hexadecimal number (base 16) represented as string to decimal (base 1
 
 Represents binary input data in an ASCII string format.
 
-```text
+```opensips
 
 $var(in) = "\x2\x3\x4\x5!@#%^&*";
 $(var(in){s.b64encode})   => "AgMEBSFAIyVeJio="
@@ -327,7 +327,7 @@ $(var(in){s.b64encode})   => "AgMEBSFAIyVeJio="
 
 Assumes input is a Base64 string and decodes as many characters as possible.
 
-```text
+```opensips
 
 $var(in) = "AgMEBSFAIyVeJio=";
 $(var(in){s.b64decode})   => "\x2\x3\x4\x5!@#%^&*"
@@ -338,7 +338,7 @@ $(var(in){s.b64decode})   => "\x2\x3\x4\x5!@#%^&*"
 
 Performs one or more logical XOR operations with (a part of) the "secret" string parameter and the input string, depending on the lengths of the two strings.
 
-```text
+```opensips
 
 $var(in) = "aaaaaabbbbbb";
 $(var(in){s.xor,x})   => "!/>^P!/>^P!^U2^Q!^U2^Q"
@@ -418,7 +418,7 @@ Returns the schema part of the given URI.
 These transformations parse Via headers and all starts with `via.`. The value of the variable is considered to be a SIP Via header. This transformation returns parts of the via header (see struct via_body). If the requested part is missing, the returned value is an empty string. Transformation will fail (with script error) if variable holding the Via header is empty. Unless otherwise specified in descriptions below, the result of transform is a string (not an integer).
 
 Examples:
-```text
+```opensips
 $var(upstreamtransport) = $(hdr(Via)[1]{via.transport}{s.tolower});
 $var(upstreamip) = $(hdr(Via)[1]{via.param,received});
 $var(clientport) = $(hdr(Via)[-1]{via.param,rport});
@@ -483,7 +483,7 @@ Available transformations in this class:
 Returns the value of parameter 'name'
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.value,c} = "3"
 
@@ -496,7 +496,7 @@ Example:
 Returns 1 if the parameter `name` exists (with or without value), else 0. Returned value is both string and integer. `name` can be variable. This can be used to test existence of parameters that do not have values.
 
 Example:
-```text
+```opensips
 
 "a=0;b=2;ob;c=3"{param.exist,ob};         # returns 1
 "a=0;b=2;ob;c=3"{param.exist,a};          # returns 1
@@ -509,7 +509,7 @@ Example:
 Returns the value of parameter at position give by 'index' (0-based index). Negative indexes are accepted, with -1 being the last parameter.
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.valueat,1} = "2"
 
@@ -522,7 +522,7 @@ Example:
 Returns the name of parameter at position 'index'. Negative indexes are accepted, with -1 being the last parameter. 'index' can be a variable.
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.name,1} = "b"
 
@@ -533,7 +533,7 @@ Example:
 Returns the number of parameters in the list.
 
 Example:
-```text
+```opensips
 
 "a=1;b=2;c=3"{param.count} = 3
 
@@ -550,7 +550,7 @@ Available transformations in this class:
 Returns the value of display name
 
 Example:
-```text
+```opensips
 
 '"test" <sip:test@opensips.org>' {nameaddr.name} = "test"
 
@@ -561,7 +561,7 @@ Example:
 Returns the value of URI
 
 Example:
-```text
+```opensips
 
 '"test" <sip:test@opensips.org>' {nameaddr.uri} = sip:test@opensips.org
 
@@ -575,7 +575,7 @@ Returns the length of the entire name-addr part from the value.
 
 Returns the value of the parameter with name param_name.
 Example:
-```text
+```opensips
 
 '"test" <sip:test@opensips.org>;tag=dat43h' {nameaddr.param,tag} = dat43h
 
@@ -585,7 +585,7 @@ Example:
 
 Returns all the parameters and their corresponding values.
 Example:
-```text
+```opensips
 
 '"test" <sip:test@opensips.org>;tag=dat43h;private=yes' {nameaddr.params} = "tag=dat43h;private=yes"
 
@@ -599,7 +599,7 @@ The name of the transformation starts with 'ip.'. Available transformations in t
 
 Returns a binary representation of a string represented IP.
 Example:
-```text
+```opensips
 
 "192.368.2.334" {ip.pton} returns a 4 byte binary representation of the IP provided
 
@@ -609,7 +609,7 @@ Example:
 
 Returns a string representation of the binary IP provided
 Example:
-```text
+```opensips
 
 "192.368.2.334"{ip.pton}{ip.ntop} = "192.368.2.334"
 
@@ -619,7 +619,7 @@ Example:
 
 Returns 1 or 0, if the string provided is a valid IP or not.
 Example:
-```text
+```opensips
 
 "192.368.2.334" {ip.isip} = 1
 "192.368.2.334.1" {ip.isip} = 0
@@ -629,7 +629,7 @@ Example:
 ### {ip.family}
 Returns INET or INET6 if the binary IP representation provided is IPv4 or IPv6.
 Example:
-```text
+```opensips
 
 "192.368.2.334" {ip.pton}{ip.family} = "INET"
 
@@ -638,7 +638,7 @@ Example:
 ### {ip.resolve}
 Returns the resolved IP address coresponding to the string domain provided. Transformation has no effect if a string IP is provided.
 Example:
-```text
+```opensips
 
 "opensips.org" {ip.resolve} = "78.46.64.50"
 
@@ -653,7 +653,7 @@ Available transformations in this class:
 ### {csv.count}
 Returns the number of entries in the provided CSV.
 Example:
-```text
+```opensips
 
 "a,b,c" {csv.count} = 3
 
@@ -662,7 +662,7 @@ Example:
 ### {csv.value,index}
 Returns the entry at the specified position. Indexing starts from 0. Negative indexes are accepted, with -1 being the last entry. 'index' can be a variable.
 Example:
-```text
+```opensips
 
 "a,b,c" {csv.value,2} = c
 
@@ -677,7 +677,7 @@ Available transformations in this class:
 ### {sdp.line}
 Returns the specified line in the SDP body. The transformations also accepts a second parameter, that specifies the line number of the first parameter's type to get from the SDP body. Indexing starts from 0. If the second parameter is missing, it is assumed to be 0. 
 Example:
-```bash
+```opensips
 
 if (is_method("INVITE"))
    {
@@ -701,19 +701,19 @@ The name of the transformation starts with "re.". The input can be any string.
 
 The reg_exp parameter can either be a plain string or a variable.
 The format of the reg_exp is :
-```text
+```opensips
 /posix_match_expression/replacement_expression/flags
 ```
 
 The flags can be
-```text
+```opensips
 i - match ignore case
 s - match within multi-lines strings
 g - replace all matches
 ```
 
 Example:
-```text
+```opensips
 
 $var(reg_input)="abc";
 $var(reg) = "/a/A/g";
@@ -731,7 +731,7 @@ Within a variable, many transformation can be applied, being executed from left 
 
 * The length of the value of parameter at position 1 (remember 0 is first position, 1 is second position)
 
-```text
+```opensips
 
 $var(x) = "a=1;b=22;c=333";
 $(var(x){param.value,$(var(x){param.name,1})}{s.len}) = 2
@@ -740,7 +740,7 @@ $(var(x){param.value,$(var(x){param.name,1})}{s.len}) = 2
 
 * Test if whether is un-registration or not
 
-```text
+```opensips
 
 if(is_method("REGISTER") && is_present_hf("Expires") && $(hdr(Expires){s.int})==0)
     xlog("This is an un-registration");
