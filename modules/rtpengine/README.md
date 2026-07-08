@@ -557,7 +557,7 @@ NOTE: if a RTP proxy is defined multiple times (in the same or
 			diferente sete), all of its instances will be enables/disabled.
 
 
-```c title="rtpengine_enable usage"
+```bash title="rtpengine_enable usage"
 ...
 $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 ...
@@ -575,7 +575,7 @@ Displays all the RTP proxies and their information: set and
 No parameter.
 
 
-```c title="rtpengine_show usage"
+```bash title="rtpengine_show usage"
 ...
 $ opensipsctl fifo rtpengine_show
 ...
