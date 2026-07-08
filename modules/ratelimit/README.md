@@ -596,7 +596,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi rl_list gw_10.0.0.1
 		
 ```
@@ -621,7 +621,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
 		
 ```
@@ -647,7 +647,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
 		
 ```
@@ -668,7 +668,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi rl_get_pid
 		
 ```
@@ -690,7 +690,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi rl_bin_status
 		
 ```

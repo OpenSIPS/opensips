@@ -321,7 +321,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi wss_trace on
 			
 ```

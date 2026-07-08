@@ -545,7 +545,7 @@ Parameters: *1*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dp_reload
 		
 ```
@@ -574,7 +574,7 @@ Parameters: *3*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
         opensips-cli -x mi dp_translate 10 +40123456789
 		
 ```
@@ -600,7 +600,7 @@ Parameters: *2*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
         opensips-cli -x mi dp_translate default
 		
 ```

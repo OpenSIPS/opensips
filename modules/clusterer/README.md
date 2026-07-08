@@ -664,7 +664,7 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi clusterer_reload
 		
 ```
@@ -682,7 +682,7 @@ Name: *clusterer_list*
 Parameters:*none*
 
 
-```c title="clusterer_list usage"
+```bash title="clusterer_list usage"
 $ opensips-cli -x mi clusterer_list
 {
     "Clusters": [
@@ -720,7 +720,7 @@ Name: *clusterer_list_topology*
 Parameters:*none*
 
 
-```c title="clusterer_list_topology usage"
+```bash title="clusterer_list_topology usage"
 $ opensips-cli -x mi clusterer_list_topology
 {
     "Clusters": [
@@ -765,7 +765,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi clusterer_set_status 1 0
 		
 ```
@@ -797,7 +797,7 @@ Note that MI commands that require named parameters or arrays as
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi cluster_send_mi 1 3 lb_reload
 		
 ```
@@ -828,7 +828,7 @@ Note that MI commands that require named parameters or arrays as
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 		
 ```
@@ -846,7 +846,7 @@ Name: *clusterer_list_cap*
 Parameters:*none*
 
 
-```c title="clusterer_list_cap usage"
+```bash title="clusterer_list_cap usage"
 $ opensips-cli -x mi clusterer_list_cap
 {
     "Clusters": [
@@ -888,7 +888,7 @@ Parameters: *tag* - the name of
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi clusterer_shtag_set_active vip1/3
 		
 ```
@@ -909,7 +909,7 @@ Parameters: *Command takes no parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi clusterer_list_shtags
 		
 ```

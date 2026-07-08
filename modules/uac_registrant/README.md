@@ -425,7 +425,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_list
 		
 ```
@@ -446,7 +446,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_reload
 		
 ```

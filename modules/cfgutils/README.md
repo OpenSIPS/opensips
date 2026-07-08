@@ -743,7 +743,7 @@ Parameters:
 					a percent value (number from 0 to 99).
 
 
-```c title="rand_set_prob usage"
+```bash title="rand_set_prob usage"
 ...
 $ opensips-cli -x mi rand_set_prob 10
 ...
@@ -759,7 +759,7 @@ Reset the probability value to the inital start value.
 This command don't need a parameter.
 
 
-```c title="rand_reset_prob usage"
+```bash title="rand_reset_prob usage"
 ...
 $ opensips-cli -x mi rand_reset_prob
 ...
@@ -775,7 +775,7 @@ Return the actual probability setting.
 The function return the actual probability value.
 
 
-```c title="rand_get_prob usage"
+```bash title="rand_get_prob usage"
 ...
 $ opensips-cli -x mi get_prob
 The actual probability is 50 percent.
@@ -794,7 +794,7 @@ The function returns 200 OK if the hash values are identical, 400 if
 				and 500 on errors. Additional a short text message is printed.
 
 
-```c title="check_config_hash usage"
+```bash title="check_config_hash usage"
 ...
 $ opensips-cli -x mi check_config_hash
 The actual config file hash is identical to the stored one.
@@ -812,7 +812,7 @@ The function returns 200 OK and the hash value on success or 404 if no
 				file for hashing has been configured.
 
 
-```c title="get_config_hash usage"
+```bash title="get_config_hash usage"
 ...
 $ opensips-cli -x mi get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -837,7 +837,7 @@ Parameters:
 - *value* : value to be set
 
 
-```c title="shv_set usage"
+```bash title="shv_set usage"
 ...
 $ opensips-cli -x mi shv_set debug int 0
 ...
@@ -857,7 +857,7 @@ Parameters:
 			is missing, all shared variables are returned.
 
 
-```c title="shv_get usage"
+```bash title="shv_get usage"
 ...
 $ opensips-cli -x mi shv_get debug
 $ opensips-cli -x mi shv_get
