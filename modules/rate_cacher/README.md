@@ -402,9 +402,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Add a new Vendor
-# opensips-cli -x mi rc_addVendor myNewVendor
+$ opensips-cli -x mi rc_addVendor myNewVendor
 		
 ```
 
@@ -427,9 +427,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Delete a Vendor
-# opensipss-cli -x mi rc_deleteVendor myNewVendor
+$ opensipss-cli -x mi rc_deleteVendor myNewVendor
 		
 ```
 
@@ -453,9 +453,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_reloadVendorRate myVendor 3
+$ opensips-cli -x mi rc_reloadVendorRate myVendor 3
 		
 ```
 
@@ -478,9 +478,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_deleteVendorRate myVendor
+$ opensips-cli -x mi rc_deleteVendorRate myVendor
 		
 ```
 
@@ -504,7 +504,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Query for the price of myVendor for the 4072731825 number
 #/usr/local/bin/opensips-cli -x mi rc_getVendorPrice myVendor 4072731825
 {
@@ -537,9 +537,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Add a new Client
-# opensips-cli -x mi fifo rc_addClient myNewClient
+$ opensips-cli -x mi fifo rc_addClient myNewClient
 		
 ```
 
@@ -562,9 +562,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Delete a Client
-# opensips-cli -x mi rc_deleteClient myClient
+$ opensips-cli -x mi rc_deleteClient myClient
 		
 ```
 
@@ -589,9 +589,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
-# opensips-cli -x mi rc_reloadClientRate myClient 1 3
+$ opensips-cli -x mi rc_reloadClientRate myClient 1 3
 		
 ```
 
@@ -615,9 +615,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rc_deleteVendorRate myVendor
+$ opensips-cli -x mi rc_deleteVendorRate myVendor
 		
 ```
 
@@ -642,7 +642,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Query for the price of myClient, on the retail quality, for the 4072731825 number
 #/usr/local/bin/opensips-cli -x mi rc_getClientPrice myClient 0 4072731825
 {

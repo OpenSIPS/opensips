@@ -749,7 +749,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
 	
 ```
@@ -771,7 +771,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi cleanup
 	  
 ```
@@ -792,7 +792,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi pres_phtable_list
 	  
 ```
@@ -817,7 +817,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 	  
 ```
@@ -850,7 +850,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 	  
 ```

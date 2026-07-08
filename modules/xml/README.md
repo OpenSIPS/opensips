@@ -130,7 +130,7 @@ $xml(my_doc) = NULL;                                  # clear the entire documen
 ```
 
 
-```c title="Inserting nodes with indentation"
+```opensips title="Inserting nodes with indentation"
 ...
 $xml(my_doc) = "<doc>\n</doc>";
 $xml(my_doc/doc) = "\t<list></list>\n";

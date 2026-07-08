@@ -455,7 +455,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 # start streaming a callid to record media server
 opensips-cli -x mi media_fork_from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
@@ -497,7 +497,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 # start playing back an annoucement to caller
 opensips-cli -x mi media_exchange_from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
@@ -546,7 +546,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 # terminate a caller announcement
 opensips-cli -x mi media_terminate \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \

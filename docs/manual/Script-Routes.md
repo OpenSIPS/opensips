@@ -201,7 +201,7 @@ In error_route, the following pseudo-variables are available to get access to er
 * `$(err.rcode)` - recommended reply code
 * `$(err.rreason)` - recommended reply reason phrase
 
-```text
+```opensips
 
   error_route {
      xlog("--- error route class=$(err.class) level=$(err.level)
@@ -295,7 +295,7 @@ The **event_route** is used by the OpenSIPS Event Interface to execute script co
 
 **Default action** : no script code is executed when the event is raised.
 
-```text
+```opensips
 
   event_route[E_PIKE_BLOCKED] {
     xlog("The E_PIKE_BLOCKED event was raised\n");
