@@ -246,11 +246,11 @@ Examples of usage:
 ```bash
 
     $ opensips-mi uptime
-{
-    "Now": "Mon Jul 21 17:41:03 2008",
-    "Up since": "Mon Jul 21 17:36:33 2008",
-    "Up time": "270 [sec]"
-}
+    {
+        "Now": "Mon Jul 21 17:41:03 2008",
+        "Up since": "Mon Jul 21 17:36:33 2008",
+        "Up time": "270 [sec]"
+    }
 
 ```
 
@@ -265,9 +265,9 @@ Examples of usage:
 ```bash
 
     $ opensips-mi version
-{
-    "Server": "OpenSIPS (4.0.0-dev (x86_64/linux))"
-}
+    {
+        "Server": "OpenSIPS (4.0.0-dev (x86_64/linux))"
+    }
 
 ```
 
@@ -282,26 +282,26 @@ Examples of usage:
 ```bash
 
     $ opensips-mi which
-[
-    "statistics:get",
-    "statistics:list",
-    "statistics:reset",
-    "uptime",
-    "version",
-    "pwd",
-    "arg",
-    "which",
-    "ps",
-    "kill",
-    "log_level",
-    "xlog_level",
-    "mem:shm_check",
-    "cache:store",
-    "cache:fetch",
-    "cache:remove",
-    "evi:subscribe",
-    "evi:list",
-...
+    [
+        "statistics:get",
+        "statistics:list",
+        "statistics:reset",
+        "uptime",
+        "version",
+        "pwd",
+        "arg",
+        "which",
+        "ps",
+        "kill",
+        "log_level",
+        "xlog_level",
+        "mem:shm_check",
+        "cache:store",
+        "cache:fetch",
+        "cache:remove",
+        "evi:subscribe",
+        "evi:list",
+    ...
 
 ```
 
@@ -476,7 +476,7 @@ Command to list the status of the identifiers within one or all 'status/report' 
 Examples of usage:
 ```bash
 
-$opensips-mi status_report:status
+$ opensips-mi status_report:status
 [
     {
         "Name": "drouting",
@@ -525,7 +525,7 @@ Command to list the full set of reports (logs) collected by 'status/report' iden
 Examples of usage:
 ```bash
 
-$opensips-mi status_report:reports
+$ opensips-mi status_report:reports
 [
     {
         "Name": "drouting",
@@ -595,7 +595,7 @@ Command to list all the existing identifiers in OpenSIPS or only from a certain 
 Examples of usage:
 ```bash
 
-$opensips-mi status_report:identifiers
+$ opensips-mi status_report:identifiers
 [
     {
         "Group": "clusterer",
@@ -657,9 +657,10 @@ Examples of usage:
 ```bash
 
     $ opensips-mi statistics:get rcv_requests
-   {
-       "core:rcv_requests": 35243
-   }
+    {
+        "core:rcv_requests": 35243
+    }
+
     $ opensipsc-cli -x mi statistics:get shmem:
     {
         "shmem:total_size": 1073741824,
@@ -669,6 +670,7 @@ Examples of usage:
         "shmem:real_used_size": 3389232,
         "shmem:fragments": 3769
     }
+
     $ opensips-mi statistics:get shmem: core:
     ....
 
@@ -683,16 +685,16 @@ Examples of usage:
 ```bash
 
     $ opensips-mi statistics:list
-{
-    "shmem:total_size": "non-incremental",
-    "shmem:max_used_size": "non-incremental",
-    "shmem:free_size": "non-incremental",
-    "shmem:used_size": "non-incremental",
-    "shmem:real_used_size": "non-incremental",
-    "shmem:fragments": "non-incremental",
-    "rpmem:rpm_total_size": "non-incremental",
-    "rpmem:rpm_used_size": "non-incremental",
-...
+    {
+        "shmem:total_size": "non-incremental",
+        "shmem:max_used_size": "non-incremental",
+        "shmem:free_size": "non-incremental",
+        "shmem:used_size": "non-incremental",
+        "shmem:real_used_size": "non-incremental",
+        "shmem:fragments": "non-incremental",
+        "rpmem:rpm_total_size": "non-incremental",
+        "rpmem:rpm_used_size": "non-incremental",
+    ...
 
 ```
 
@@ -707,14 +709,15 @@ Examples of usage:
 ```bash
 
     $ opensips-mi statistics:get received_replies
-   {
-       "tm:received_replies": 14543
-   }
+    {
+        "tm:received_replies": 14543
+    }
+
     $ opensips-mi statistics:reset received_replies
     $ opensips-mi statistics:get received_replies
-   {
-       "tm:received_replies": 0
-   }
+    {
+        "tm:received_replies": 0
+    }
 
 ```
 
@@ -808,21 +811,21 @@ Examples of usage:
 ```bash
 
     $ opensips-mi evi:list
-{
-    "Events": [
-        {
-            "name": "E_CORE_THRESHOLD",
-            "id": 0
-        },
-        {
-            "name": "E_CORE_SHM_THRESHOLD",
-            "id": 1
-        },
-        {
-            "name": "E_CORE_PKG_THRESHOLD",
-            "id": 2
-        },
-...
+    {
+        "Events": [
+            {
+                "name": "E_CORE_THRESHOLD",
+                "id": 0
+            },
+            {
+                "name": "E_CORE_SHM_THRESHOLD",
+                "id": 1
+            },
+            {
+                "name": "E_CORE_PKG_THRESHOLD",
+                "id": 2
+            },
+    ...
 
 ```
 
@@ -855,53 +858,55 @@ Examples of usage:
 ```bash
 
     $ opensips-mi evi:subscribers
-{
-  "Events": [{
-	  "name": "E_RTPPROXY_STATUS",
-	  "id": 1,
-	  "subscribers": [
-		...
-	  ]
-	},
-	{
-	  "name": "E_PIKE_BLOCKED",
-	  "id": 2,
-	  "subscribers": [
-		...
-	  ]
-	}
-  ]
-}
+    {
+        "Events": [
+            {
+                "name": "E_RTPPROXY_STATUS",
+                "id": 1,
+                "subscribers": [
+                    ...
+                ]
+            },
+            {
+                "name": "E_PIKE_BLOCKED",
+                "id": 2,
+                "subscribers": [
+                    ...
+                ]
+            }
+        ]
+    }
 
     $ opensips-mi evi:subscribers E_RTPPROXY_STATUS
-{
-  "Event": {
-	"name": "E_RTPPROXY_STATUS",
-	"id": 1,
-	"subscribers": [{
-		  "socket": "unix:/tmp/event.sock",
-		  "expire": "never",
-		},
-		{
-		  "socket": "udp:127.0.0.1:8888",
-		  "expire": 1100,
-		  "ttl": 1046
-		}
-	]
-  }
-}
+    {
+        "Event": {
+            "name": "E_RTPPROXY_STATUS",
+            "id": 1,
+            "subscribers": [
+                {
+                    "socket": "unix:/tmp/event.sock",
+                    "expire": "never",
+                },
+                {
+                    "socket": "udp:127.0.0.1:8888",
+                    "expire": 1100,
+                    "ttl": 1046
+                }
+            ]
+        }
+    }
 
     $ opensips-mi evi:subscribers E_RTPPROXY_STATUS unix:/tmp/event.sock
-{
-  "Event": {
-	"name": "E_RTPPROXY_STATUS",
-	"id": 1,
-	"Subscriber": {
-	  "socket": "unix:/tmp/event.sock",
-	  "expire": "never"
-	}
-  }
-}
+    {
+        "Event": {
+            "name": "E_RTPPROXY_STATUS",
+            "id": 1,
+            "Subscriber": {
+                "socket": "unix:/tmp/event.sock",
+                "expire": "never"
+            }
+        }
+    }
 
 ```
 
