@@ -211,7 +211,7 @@ Enable or disable a single timer. The following example enables
 				timer "test" (the second parameter must be 0 to disable):
 
 
-```c title="Enabling a timer"
+```bash title="Enabling a timer"
 ...
 opensipsctl fifo bm_enable_timer test 1
 ...
@@ -239,7 +239,7 @@ Returns the current and global results for each timer. This command is only avai
 If there were no new calls to *bm_log_timer* since last check, then all current values of a timer will be equal 0. Each call to *bm_poll_results* will reset current values (but not global ones).
 
 
-```c title="Getting the results via FIFO interface"
+```bash title="Getting the results via FIFO interface"
 ...
 opensipsctl fifo bm_poll_results
 register_timer
