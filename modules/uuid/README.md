@@ -76,7 +76,7 @@ Generates a new UUID.
 
 - *out_var* (var) - an output variable
 						to return the generated UUID.
-- *version* (string, optional) - UUID version
+- *version* (number, optional) - UUID version
 						number. The supported values are:
 						
 							
