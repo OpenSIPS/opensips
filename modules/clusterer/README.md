@@ -337,7 +337,7 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_reload
 		_empty_line_
 		
@@ -359,7 +359,7 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_list
 		_empty_line_
 		
@@ -387,7 +387,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_set_status:
 		1
 		2

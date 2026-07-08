@@ -491,7 +491,7 @@ Parameters:
 MI FIFO Command format:
 
 
-```c
+```bash
                  :LOAD_CPL:_reply_fifo_file_
                  username
                  cpl_filename
@@ -519,7 +519,7 @@ Parameters:
 MI FIFO Command format:
 
 
-```c
+```bash
                  :REMOVE_CPL:_reply_fifo_file_
                  username
                  _empty_line_
@@ -544,7 +544,7 @@ Parameters:
 MI FIFO Command format:
 
 
-```c
+```bash
                  :GET_CPL:_reply_fifo_file_
                  username
                  _empty_line_

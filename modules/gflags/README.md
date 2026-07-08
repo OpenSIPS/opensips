@@ -152,7 +152,7 @@ The parameter value must be a bitmask in decimal or hexa format.
 			The bitmaks has a 32 bit size.
 
 
-```c title="set_gflag usage"
+```bash title="set_gflag usage"
 ...
 $ opensipsctl fifo set_gflag 1
 $ opensipsctl fifo set_gflag 0x3
@@ -170,7 +170,7 @@ The parameter value must be a bitmask in decimal or hexa format.
 			The bitmaks has a 32 bit size.
 
 
-```c title="reset_gflag usage"
+```bash title="reset_gflag usage"
 ...
 $ opensipsctl fifo reset_gflag 1
 $ opensipsctl fifo reset_gflag 0x3
@@ -192,7 +192,7 @@ The function returns TRUE if all the flags from the set are set
 			and FALSE if at least one is not set.
 
 
-```c title="is_gflag usage"
+```bash title="is_gflag usage"
 ...
 $ opensipsctl fifo set_gflag 1024
 $ opensipsctl fifo is_gflag 1024
@@ -219,7 +219,7 @@ Return the bitmap with all flags. The function gets no
 			parameters and returns the bitmap in hexa and decimal format.
 
 
-```c title="get_gflags usage"
+```bash title="get_gflags usage"
 ...
 $ opensipsctl fifo get_gflags
 0x3039

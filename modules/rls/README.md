@@ -351,7 +351,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 :rls_update_subscriptions:fifo_reply
 sip:alice@atlanta.com
 _empty_line_
