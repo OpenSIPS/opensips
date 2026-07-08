@@ -134,7 +134,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 :refreshXcapDoc:fifo_reply
 /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml

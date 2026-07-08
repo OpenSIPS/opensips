@@ -290,7 +290,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 :pi_reload_tbls_and_cmds:_reply_fifo_file_
 _empty_line_
 		
