@@ -61,7 +61,7 @@ A script variable can only hold a single value. A new assignment (or write opera
 
 Example of usage:
 
-```bash
+```opensips
 
 $var(a) = 2;  # sets the value of variable 'a' to integer '2'
 $var(a) = "2";  # sets the value of variable 'a' to string '2'
@@ -120,7 +120,7 @@ onreply_route[handle_reply] {
 ```
 
 * Multiple values example
-```bash
+```opensips
 
 $avp(demo) = "one";
 # we have a single value
@@ -232,7 +232,7 @@ Predefined (provided by core) PVs are listed in alphabetical order:
 
 `$argv` - provides access to command line arguments specified with '-o' option.
 Examples:
-```text
+```opensips
 
    # for option '-o foo=0'
    xlog("foo is $argv(foo) \n");
@@ -409,7 +409,7 @@ This function is very helpful if you are tracing and debugging only a specific p
 
 Example of usage:
 
-```text
+```opensips
 log_level= -1 # errors only
 .....
 {
@@ -440,7 +440,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 ### Message branch - $msg.branch
 
 `$msg.branch` - similar to [`$branch`](#branch), this variable is used for creating new message branches by writing into it the value of a SIP URI. By reading this variable, you get the SIP URI of the current/last added branch (or of the RURI branch if no additional branch was added so far).
-```text
+```opensips
 
    # creates a new branch
    $msg.branch = "sip:new@domain.org";
@@ -457,7 +457,7 @@ The variable supports indexing - it starts from 0, meaning the RURI (or message)
 the time, there is no need to create it. If no index is specified, the current/last added branch (or of the RURI branch if no additional branch was added so far) will be considered. Negative values are also accepted, meaning indexing from the last branch ( -1 is the latest/higher branch) to the RURI branch. An ***** / ALL index will return the comma separated list with the values from all branches.  
 
 The variable can be used in REQUEST and FAILURE routes.
-```text
+```opensips
 
    # creates a new branch
    $msg.branch = "sip:new@domain.org";
@@ -497,7 +497,7 @@ The accepted values are 0 for FALSE, positive non-zero for TRUE. The returned va
 > [!NOTE]
 > the */ALL index cannot be used here.
 
-```text
+```opensips
 
    # creates a new branch
    $msg.branch = "sip:new@domain.org";
@@ -518,7 +518,7 @@ An attribute can have whatever name (no need to be pre-defined) and it can have 
 > [!NOTE]
 > the */ALL index cannot be used here.
 
-```text
+```opensips
 
    # creates a new branch
    $msg.branch = "sip:new@domain.org";
@@ -535,7 +535,7 @@ An attribute can have whatever name (no need to be pre-defined) and it can have 
 ### Message flag - $msg.flag
 
 `$msg.flag(flag_name)` - this variable provides read/write access to the value of a single certain message flag (identified by name). The values accepted for writing are 1 (set) and 0 (unset). The returned values are 1/"true" (set) and 0/"false" (unset).
-```text
+```opensips
 
   setflag("X");
   xlog("---- flag value is $msg.flag(X) \n");
@@ -547,7 +547,7 @@ An attribute can have whatever name (no need to be pre-defined) and it can have 
 ### Message is request  - $msg.is_request
 
 `$msg.is_request` - this variable tells if the current SIP message is a request or not. The returned values are 1/"true" (request) and 0/"false" (reply).
-```text
+```opensips
 
   xlog("---- this message is a request:  $msg.is_request \n");
   if ( $msg.is_request )
@@ -558,7 +558,7 @@ An attribute can have whatever name (no need to be pre-defined) and it can have 
 ### Message type - $msg.type
 
 `$msg.type` - this variable returns the type of the current  message. The returned values are "request" (request) or "reply" (reply).
-```text
+```opensips
 
   xlog("---- this message is a SIP $msg.type \n");
 
@@ -726,7 +726,7 @@ Alias: `$ruri.user`
 
 `$sdp` - Read/Write reference to the SDP body of the current SIP message
 
-```bash
+```opensips
 
 # READ operation on the SIP msg SDP
 $sdp
@@ -746,7 +746,7 @@ $(<reply>sdp) = $var(rtpengine_sdp);
 
 `$sdp.line` - Read/Write reference to SDP body lines, with filtering support
 
-```bash
+```opensips
 
 # Fetch the 1st, 2nd, 3rd, etc. attribute line (starting with "a=")
 $sdp.line(a=)         # fetch first "a=" line
@@ -773,7 +773,7 @@ $sdp.line(m=audio[1]/RTQ)         # NULL
 
 `$sdp.stream` - Read/Write reference to SDP body streams, with filtering support
 
-```bash
+```opensips
 
 # Within a desired stream, you can first filter by line...
 $sdp.stream(/a=ptime);         # first “a=ptime” line from Stream #0 ("m=", matching any stream type)
@@ -794,7 +794,7 @@ $sdp.stream(video[1]/a=fmtp:115/bitrate=) = 48000; # set "bitrate=" to 48000, un
 
 `$sdp.session` - Read/Write reference to the SDP body session, with filtering support
 
-```bash
+```opensips
 
 # Within the SDP session (i.e. until the 1st "m=" line), you can first filter by line...
 $sdp.session(a=ptime);            # 1st “a=ptime” line at Session level
@@ -813,7 +813,7 @@ $sdp.session(a=rtpmap/telephone-event\/) = "8000";  # Match 1st "a=rtpmap" line 
 
 This variable is especially useful in order to match a line having one specific attribute (e.g. "the rtpmap= line for PCMU codec"), then changing a different attribute within the same stream.  Example:
 
-```text
+```opensips
 
 $var(line_idx) = $sdp.stream.idx(video/a=fmtp/packetization-mode=); # locate index of first "a=fmtp" line, containing a packetization-mode= attribute
 $var(data) = $sdp.line([$var(line_idx)]); # grab the full line data
@@ -852,7 +852,7 @@ For more details on the meaning of these sub-fields, please also read about the 
 
 The variable also offers detailed read-only access to various attributes/sub-fields of the socket, as  `$socket_out()`. **It provides the same sub-fields as the [`$socket_in`](#socket_in) variable.**
 
-```text
+```opensips
 
    $socket_out = "udp:11.11.11.11:5060";
    xlog("The outbound port is $socket_out(port)\n");
@@ -930,7 +930,7 @@ The module should identify most of compact header names (the ones recognized by 
 Note that some headers (e.g., Path) may be joined together with commas and appear as a single header line. This variable counts the number of header lines, not header values. 
 
 For message fragment below, `$hdrcnt(Path)` will have value 2 and `$(hdr(Path)[0])` will have value **`<a.com>`**:
-```text
+```opensips
 
     Path: <a.com>
     Path: <b.com>
@@ -938,7 +938,7 @@ For message fragment below, `$hdrcnt(Path)` will have value 2 and `$(hdr(Path)[0
 ```
 
 For message fragment below, `$hdrcnt(Path)` will have value 1 and `$(hdr(Path)[0])` will have value **`<a.com>`,`<b.com>`**:
-```text
+```opensips
 
     Path: <a.com>,<b.com>
 
@@ -984,7 +984,7 @@ Note that both examples above are semantically equivalent but the variables take
 `$xlog_level` - allows to set /reset the xlog() logging level on per-process bases. Shortly said, you can read the verbosity level for the xlog() calls or you can temporary change the level per process bases.
 
 Example:
-```text
+```opensips
 
 xlog("current verbosity is $xlog_level \n");
 $xlog_level = L_DBG; # force local xlogging limit to DBG
@@ -1019,7 +1019,7 @@ Colors could be:
 
 A few examples of usage.
 
-```text
+```opensips
 
 ...
 route {

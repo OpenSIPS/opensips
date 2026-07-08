@@ -501,7 +501,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 opensips-cli -x mi stir_shaken_ca_reload
 "OK"
@@ -525,7 +525,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 opensips-cli -x mi stir_shaken_crl_reload
 "OK"
