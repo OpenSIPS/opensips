@@ -275,7 +275,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi domain:reload
 		
 ```
@@ -300,7 +300,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi domain:dump
 		
 ```

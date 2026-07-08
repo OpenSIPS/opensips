@@ -239,7 +239,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi pike:list
 		
 ```
@@ -266,7 +266,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi pike:rm 10.0.0.106
 		
 ```

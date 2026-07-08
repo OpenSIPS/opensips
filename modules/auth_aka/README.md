@@ -618,7 +618,7 @@ Parameters:
 				algorithm.
 
 
-```c title="auth_aka:av_add usage"
+```bash title="auth_aka:av_add usage"
 ...
 ## adds an AKA AV
 $ opensips-cli -x mi auth_aka:av_add \
@@ -654,7 +654,7 @@ Parameters:
 				to indentify the authentication vector.
 
 
-```c title="auth_aka:av_drop usage"
+```bash title="auth_aka:av_drop usage"
 ...
 ## adds an AKA AV
 $ opensips-cli -x mi auth_aka:av_drop \
@@ -685,7 +685,7 @@ Parameters:
 				(IMPI) of the user to drop authentication vectors for.
 
 
-```c title="auth_aka:av_drop_all usage"
+```bash title="auth_aka:av_drop_all usage"
 ...
 ## adds an AKA AV
 $ opensips-cli -x mi auth_aka:av_drop_all \
@@ -723,7 +723,7 @@ Parameters:
 				authentication vectors failures.
 
 
-```c title="aka_av_drop usage"
+```bash title="aka_av_drop usage"
 ...
 ## adds an AKA AV
 $ opensips-cli -x mi aka_av_drop \

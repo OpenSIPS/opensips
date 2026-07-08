@@ -225,7 +225,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi msrp_gateway:list_sessions
 		
 ```
@@ -252,7 +252,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi msrp_gateway:end_session alice@opensips.org-bob@opensips.org
 		
 ```

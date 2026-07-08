@@ -503,7 +503,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2b_sca:list
 ```
 <!-- CONTRIBUTORS -->

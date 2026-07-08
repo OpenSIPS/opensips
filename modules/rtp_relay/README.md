@@ -553,7 +553,7 @@ Parameters:
 					parameter must also be specified.
 
 
-```c title="rtp_relay:list usage"
+```bash title="rtp_relay:list usage"
 ...
 ## list all sessions
 $ opensips-cli -x mi rtp_relay:list
@@ -619,7 +619,7 @@ Parameters:
 					same set will be used.
 
 
-```c title="rtp_relay:update usage"
+```bash title="rtp_relay:update usage"
 ...
 ## update all sessions that are using rtpproxy
 $ opensips-cli -x mi rtp_relay:update rtpproxy
@@ -668,7 +668,7 @@ Parameters:
 					explicitely specified flags will be overwritten.
 
 
-```c title="rtp_relay:update_callid usage"
+```bash title="rtp_relay:update_callid usage"
 ...
 ## update a call with a working RTPproxy node
 $ opensips-cli -x mi rtp_relay:update_callid 1-3758963@127.0.0.1 rtpproxy

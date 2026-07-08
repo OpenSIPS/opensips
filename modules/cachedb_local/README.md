@@ -307,7 +307,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi cachedb_local:remove_chunk "keyprefix*" collection
 		
 ```
@@ -333,7 +333,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi cachedb_local:fetch_chunk "keyprefix*" collection
 {
     "keys": [

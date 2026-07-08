@@ -27,7 +27,7 @@ The **async()** statement depends on the transaction module ([**TM**](../../modu
 ### Script syntax and usage
 
 Usage is straightforward: if your blocking function supports asynchronous mode (read the module documentation for this), then you can just throw it in the following function call:
-```text
+```opensips
 
 async(blocking_function(...), resume_route [,timeout]);
 
@@ -170,13 +170,13 @@ Examples of modules which are affected by this limitation:
 
 **Mitigation**: depending on your specific setup, you may be severely impacted by these blocking TCP connects or hardly at all.  For the former case, we suggest forking external processes responsible for your blocking operations, and invoking them asynchronously, using constructs such as:
 
-```bash
+```opensips
  async(exec("curl my_host", $var(response_body)), resume_route); 
 ```
 
 or
 
-```text
+```opensips
  async(exec("mysql-query 'SELECT * FROM subscriber...'", $var(result_row)), resume_route); 
 ```
 

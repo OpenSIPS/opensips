@@ -14,21 +14,21 @@ To this end, we have developed a set of tests set that execute OpenSIPS in diffe
 The first requirement is to install [SIPssert](https://github.com/OpenSIPS/SIPssert) - a testing framework capable of orchestrating complex conformance scenarios and verify their execution. You can follow the [install instructions](https://github.com/OpenSIPS/SIPssert#installation) on the project's page.
 
 Next, we need to fetch the tests available. For the initial setup, we need to clone the repository:
-```text
+```bash
 
 git clone git@github.com:OpenSIPS/sipssert-opensips-tests.git
 
 ```
 
 If you are targeting a stable release, make sure you specify the OpenSIPS branch/version you need:
-```text
+```bash
 
 git clone -b 4.1 git@github.com:OpenSIPS/sipssert-opensips-tests.git
 
 ```
 
 Navigate to the tests' directory. If the repository has been previously cloned, make sure you keep it up to date by running:
-```text
+```bash
 
 git pull --rebase
 
@@ -39,7 +39,7 @@ git pull --rebase
 ## Testing
 
 Once SIPssert is in place and the tests repository is cloned, you need to navigate to the tests repository and run:
-```text
+```bash
 
 sipssert *
 

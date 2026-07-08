@@ -275,7 +275,7 @@ MI command used to reload the sockets from the database.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## reload sockets from the database
 		opensips-mi sockets_mgm:reload
 		opensips-cli -x mi sockets_mgm:reload
@@ -295,7 +295,7 @@ MI command to list all the currently used dynamic sockets.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## reload sockets from the database
 		opensips-mi sockets_mgm:list
 		opensips-cli -x mi sockets_mgm:list
