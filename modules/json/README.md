@@ -373,7 +373,7 @@ WARNING: You should be careful when using references.
 			to get the value from the object you will crash OPENSIPS.
 
 
-```c title="Creating a reference"
+```opensips title="Creating a reference"
 ...
 
 $json(b) := "[{},{},{}]";

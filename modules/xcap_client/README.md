@@ -134,7 +134,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 ...
 opensips-cli -x mi refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml 8000
 ...

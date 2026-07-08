@@ -108,7 +108,7 @@ The [core functions](https://docs.opensips.org/manual/3-0/script-corefunctions) 
 
   
 
-```text
+```opensips
 
 cache_raw_query("mongodb", "{ \"op\" : \"count\",\"query\": { \"username\" : $rU} }", "$avp(mongo_count_result)");
 
@@ -118,7 +118,7 @@ cache_raw_query("mongodb", "{ \"op\" : \"count\",\"query\": { \"username\" : $rU
 
   
 
-```text
+```opensips
 
 cache_fetch("redis:cluster1", "my_counter", $var(redis_counter_val));
 
@@ -128,7 +128,7 @@ cache_fetch("redis:cluster1", "my_counter", $var(redis_counter_val));
 
   
 
-```text
+```opensips
 
 force_send_socket(tcp:10.10.10.10:5060);
 
@@ -148,7 +148,7 @@ force_send_socket(tcp:10.10.10.10:5060);
 
 * **any integer or string function parameter may also be passed using a "holder" variable**
 
-```text
+```opensips
 
 ds_select_dst(1, 1); 
 
@@ -156,7 +156,7 @@ ds_select_dst(1, 1);
 
 ... is equivalent to:
 
-```text
+```opensips
 
 $var(x) = 1;
 ds_select_dst($var(x), $var(x));
@@ -167,7 +167,7 @@ ds_select_dst($var(x), $var(x));
 
 * **any string function parameter can also be passed as a format string**
 
-```text
+```opensips
 
 set_dlg_profile("caller", "$var(country_code)_$var(area)_$fU");
 
@@ -182,7 +182,7 @@ set_dlg_profile("caller", "$var(country_code)_$var(area)_$fU");
 
 * **input or output variables passed to functions must not be quoted**:
 
-```text
+```opensips
 
 ds_count(1, "a", $var(out_result));
 
@@ -192,12 +192,12 @@ ds_count(1, "a", $var(out_result));
 
 * **integers no longer need to be passed as double-quoted strings**:
 
-```text del={2-2}
+```opensips del={2-2}
 # this is deprecated
 ds_select_dst("1", "1");
 ```
 
-```text
+```opensips
 
 ds_select_dst(1, 1);
 

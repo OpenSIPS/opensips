@@ -1095,7 +1095,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 ```
 
@@ -1119,7 +1119,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ds_list
 ```
 
@@ -1144,7 +1144,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ds_reload
 ```
 
