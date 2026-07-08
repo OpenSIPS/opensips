@@ -109,7 +109,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:cache_remove_chunk:_reply_fifo_file_
 		keyprefix*
 		_empty_line_

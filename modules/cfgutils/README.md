@@ -701,7 +701,7 @@ Set the probability value to the given parameter.
 The parameter value must be a number from 0 to 99.
 
 
-```c title="rand_set_prob usage"
+```bash title="rand_set_prob usage"
 ...
 $ opensipsctl fifo rand_set_prob 10
 ...
@@ -717,7 +717,7 @@ Reset the probability value to the inital start value.
 This command don't need a parameter.
 
 
-```c title="rand_reset_prob usage"
+```bash title="rand_reset_prob usage"
 ...
 $ opensipsctl fifo rand_reset_prob
 ...
@@ -733,7 +733,7 @@ Return the actual probability setting.
 The function return the actual probability value.
 
 
-```c title="rand_get_prob usage"
+```bash title="rand_get_prob usage"
 ...
 $ opensipsctl fifo get_prob
 The actual probability is 50 percent.
@@ -752,7 +752,7 @@ The function returns 200 OK if the hash values are identical, 400 if
 				and 500 on errors. Additional a short text message is printed.
 
 
-```c title="check_config_hash usage"
+```bash title="check_config_hash usage"
 ...
 $ opensipsctl fifo check_config_hash
 The actual config file hash is identical to the stored one.
@@ -770,7 +770,7 @@ The function returns 200 OK and the hash value on success or 404 if no
 				file for hashing has been configured.
 
 
-```c title="get_config_hash usage"
+```bash title="get_config_hash usage"
 ...
 $ opensipsctl fifo get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -798,7 +798,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:shv_set:_reply_fifo_file_
 		_name_
 		_type_
@@ -808,7 +808,7 @@ MI FIFO Command Format:
 ```
 
 
-```c title="shv_set usage"
+```bash title="shv_set usage"
 ...
 $ opensipsctl fifo shv_set debug int 0
 ...
@@ -831,7 +831,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:shv_get:_reply_fifo_file_
 		_name_
 		_empty_line_
@@ -839,7 +839,7 @@ MI FIFO Command Format:
 ```
 
 
-```c title="shv_get usage"
+```bash title="shv_get usage"
 ...
 $ opensipsctl fifo shv_get debug
 $ opensipsctl fifo shv_get

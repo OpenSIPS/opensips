@@ -1021,7 +1021,7 @@ It takes no parameter.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_reload:fifo_reply
 		_empty_line_
 		
@@ -1043,7 +1043,7 @@ Gets or sets the status (enabled or disabled) of a gateway. The
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_gw_status:_reply_fifo_file_
 		GW_id
 		status (optional)
@@ -1052,7 +1052,7 @@ MI FIFO Command Format:
 ```
 
 
-```c title="dr_gw_status usage"
+```bash title="dr_gw_status usage"
 $ ./opensipsctl fifo dr_gw_status 2
 Enabled:: no
 $ ./opensipsctl fifo dr_gw_status 2 1
@@ -1076,7 +1076,7 @@ Gets or sets the status (enabled or disabled) of a carrier. The
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_carrier_status:_reply_fifo_file_
 		carrier_id
 		status (optional)
@@ -1085,7 +1085,7 @@ MI FIFO Command Format:
 ```
 
 
-```c title="dr_carrier_status usage"
+```bash title="dr_carrier_status usage"
 $ ./opensipsctl fifo dr_carrier_status CR1
 Enabled:: no
 $ ./opensipsctl fifo dr_carrier_status CR1 1
