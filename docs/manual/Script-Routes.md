@@ -172,7 +172,7 @@ In error_route, the following pseudo-variables are available to get access to er
 * `$(err.rcode)` - recommended reply code
 * `$(err.rreason)` - recommended reply reason phrase
 
-```text
+```opensips
 
   error_route {
      xlog("--- error route class=$(err.class) level=$(err.level)

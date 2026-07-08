@@ -403,7 +403,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:refreshWatchers:fifo_reply
 		sip:11@192.168.2.132
 		presence
