@@ -697,7 +697,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 :refreshWatchers:fifo_reply
 sip:11@192.168.2.132
 presence
@@ -723,7 +723,7 @@ Parameters:*none.*emphasis>
 MI FIFO Command Format:
 
 
-```c
+```bash
 :cleanup:fifo_reply
 _empty_line_
 	  
@@ -745,7 +745,7 @@ Parameters:*none.*
 MI FIFO Command Format:
 
 
-```c
+```bash
 :pres_phtable_list:fifo_reply
 _empty_line_
 	  
@@ -771,7 +771,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 :subs_phtable_list:fifo_reply
 sip:222@domain2.com
 sip:user_1@example.com
@@ -807,7 +807,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 :pres_expose:fifo_reply
 _empty_line_
 	  
@@ -835,7 +835,7 @@ Parameters: *tag* - name of the tag to be set active
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo pres_set_sharing_tag_active vip1
 	  
 ```
@@ -859,7 +859,7 @@ Parameters: *Command takes no parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo pres_list_sharing_tags
 	  
 ```

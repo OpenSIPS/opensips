@@ -633,7 +633,7 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_reload
 		_empty_line_
 		
@@ -655,14 +655,14 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_list
 		_empty_line_
 		
 ```
 
 
-```c title="clusterer_list usage"
+```bash title="clusterer_list usage"
 $ ./opensipsctl fifo clusterer_list
 Cluster:: 1
 	Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up      Next_hop=4 Description=none
@@ -691,14 +691,14 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_list_topology
 		_empty_line_
 		
 ```
 
 
-```c title="clusterer_list_topology usage"
+```bash title="clusterer_list_topology usage"
 $ ./opensipsctl fifo clusterer_list_topology
 Cluster:: 1
 	Node:: 1 Neighbours=4
@@ -730,7 +730,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_set_status:
 		1
 		0
@@ -760,7 +760,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:cluster_mi:
 		1
 		3
@@ -790,7 +790,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:cluster_mi:
 		1
 		dr_reload_status
@@ -815,14 +815,14 @@ Parameters:*none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:clusterer_list_cap
 		_empty_line_
 		
 ```
 
 
-```c title="clusterer_list_cap usage"
+```bash title="clusterer_list_cap usage"
 $ ./opensipsctl fifo clusterer_list_cap
 Cluster:: 1
 	Capability:: dialog-dlg-repl State=Ok

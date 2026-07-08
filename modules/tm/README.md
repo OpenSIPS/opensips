@@ -1103,7 +1103,7 @@ Meaning of the parameters is as follows (all do accept variables):
 			route)
 
 
-```c title="t_new_request usage"
+```opensips title="t_new_request usage"
 ...
 	# send a MESSAGE request
 	t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@mydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!")) {
@@ -1617,7 +1617,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo t_uac_dlg INVITE "sip:123456@127.0.0.1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
 		
 ```
@@ -1641,7 +1641,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
 		
 ```
@@ -1662,7 +1662,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo t_hash
 		
 ```
@@ -1694,7 +1694,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo t_reply 403 Forbidden 46961:1279687637 abcde .
 		
 ```

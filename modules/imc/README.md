@@ -196,7 +196,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:imc_list_rooms:_reply_fifo_file_
 		_empty_line_
 		
@@ -221,7 +221,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:imc_list_members:_reply_fifo_file_
 		_room_
 		_empty_line_
