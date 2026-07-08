@@ -238,7 +238,7 @@ The second parameter must be a value of the key column from the SQL table.
 			For full caching this parameter is not needed.
 
 
-```c title="sql_cacher_reload usage"
+```bash title="sql_cacher_reload usage"
 ...
 $ opensipsctl fifo sql_cacher_reload caching_name
 ...

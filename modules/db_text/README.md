@@ -205,7 +205,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 :dbt_dump:_reply_fifo_file_
 _empty_line_
 		
@@ -236,14 +236,14 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 :dbt_reload:_reply_fifo_file_
 _empty_line_
 		
 ```
 
 
-```c
+```bash
 :dbt_reload:_reply_fifo_file_
 /path/to/dbtext/database
 _empty_line_
@@ -251,7 +251,7 @@ _empty_line_
 ```
 
 
-```c
+```bash
 :dbt_reload:_reply_fifo_file_
 /path/to/dbtext/database
 table_name

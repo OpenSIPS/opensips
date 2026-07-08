@@ -1812,7 +1812,7 @@ Parameters (with dialog counting):
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## list all ongoing dialogs
 		opensipsctl fifo dlg_list
 		## list the dialog by callid and From TAG
@@ -1845,7 +1845,7 @@ Parameters: *see "dlg_list"*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo dlg_list_ctx
 		
 ```
@@ -1883,7 +1883,7 @@ The "dialog_id" value can be get via the "dlg_list" MI command.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		# terminate the dialog via the internal Dialog-ID
 		opensipsctl fifo dlg_end_dlg 1391569858236
 		# terminate the dialog via its SIP Call-ID
@@ -1918,7 +1918,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo profile_get_size inbound_calls
 		
 ```
@@ -1952,7 +1952,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo profile_list_dlgs inbound_calls
 		
 ```
@@ -1980,7 +1980,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo profile_get_values inbound_calls
 		
 ```
@@ -2007,7 +2007,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo profile_end_dlgs inbound_calls
 		
 ```
@@ -2030,7 +2030,7 @@ It takes no parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo dlg_db_sync
 		
 ```
@@ -2052,7 +2052,7 @@ It takes no parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo dlg_restore_db
 		
 ```
@@ -2074,7 +2074,7 @@ Parameters: *It takes no parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensipsctl fifo list_all_profiles
 		
 ```

@@ -132,7 +132,7 @@ Parameters: *path_to_file*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:evi_flat_rotate:_path_to_log_file_ 
 		_empty_line_
 		

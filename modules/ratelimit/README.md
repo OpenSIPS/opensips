@@ -624,7 +624,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_list:_reply_fifo_file_
 		gw_10.0.0.1
 		_empty_line_
@@ -632,7 +632,7 @@ MI FIFO Command Format:
 ```
 
 
-```c
+```bash
 		:rl_list:_reply_fifo_file_
 		_empty_line_
 		
@@ -658,7 +658,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_reset_pipe:_reply_fifo_file_
 		gw_10.0.0.1
 		_empty_line_
@@ -686,7 +686,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_set_pid:_reply_fifo_file_
 		0.5
 		0.5
@@ -711,7 +711,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_get_pid:_reply_fifo_file_
 		_empty_line_
 		
@@ -734,7 +734,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_bin_status:_reply_fifo_file_
 		_empty_line_
 		

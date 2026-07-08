@@ -260,7 +260,7 @@ The max value of a resource is updated every 20 seconds, as the stats
 Given the following format for FreeSWITCH heartbeat messages:
 
 
-```c
+```json
 {
   ...
   "FreeSWITCH-Hostname": "pbx2",
@@ -683,7 +683,7 @@ Trigers the reload of the load balancing data from the DB.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_reload:_reply_fifo_file_
 		_empty_line_
 		
@@ -701,7 +701,7 @@ Changes the capacity for a resource of a destination. The function
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_resize:_reply_fifo_file_
 		11   /*dstination id*/
 		voicemail  /*resource name*/
@@ -721,14 +721,14 @@ Lists all the destinations and the maximum and current load for each
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_list:_reply_fifo_file_
 		_empty_line_
 		
 ```
 
 
-```c title="lb_list usage"
+```bash title="lb_list usage"
 $ ./opensipsctl fifo lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
@@ -755,7 +755,7 @@ Gets or sets the status (enabled or disabled) of a destination. The
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:lb_status:_reply_fifo_file_
 		id
 		status (optional)
@@ -764,7 +764,7 @@ MI FIFO Command Format:
 ```
 
 
-```c title="lb_status usage"
+```bash title="lb_status usage"
 $ ./opensipsctl fifo lb_status 2
 enable:: no
 $ ./opensipsctl fifo lb_status 2 1
