@@ -536,7 +536,7 @@ The meaning and usage of the parameters:
 This function can be used from any type of route.
 
 
-```c title="sql_update usage"
+```opensips title="sql_update usage"
 ...
 sql_update( '[{"password":"my_secret"}]', 'subscriber',
 	'[{"username": "$tu"}]');

@@ -478,7 +478,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_list
 ...
 opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
@@ -516,7 +516,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_reload
 ...
 opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
@@ -546,7 +546,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		
 ```
@@ -583,7 +583,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		
 ```
@@ -620,7 +620,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		
 ```

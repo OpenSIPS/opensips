@@ -104,7 +104,7 @@ Command parameters:
 		is provided, the *content_type* parameter is also required.
 
 
-```c title="pua_publish FIFO example"
+```bash title="pua_publish FIFO example"
 ...
 
 opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:params:xml:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpid='urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pidf:cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><basic>open</basic></status></tuple><dm:person id='pdd748945'><rpid:activities><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></dm:person></presence>
@@ -126,7 +126,7 @@ Command parameters:
 					- Relative time in seconds for the desired validity of the subscription.
 
 
-```c title="pua_subscribe FIFO example"
+```bash title="pua_subscribe FIFO example"
 ...
 
 opensips-cli -x mi pua_subscribe sip:system@opensips.org sip:400@opensips.org presence 3600

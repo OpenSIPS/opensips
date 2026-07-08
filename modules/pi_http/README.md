@@ -290,7 +290,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi pi_reload_tbls_and_cmds
 		
 ```

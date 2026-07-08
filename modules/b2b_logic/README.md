@@ -995,7 +995,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2b_trigger_scenario marketing client1,sip:bob@opensips.org client2,sip:322@opensips.org:5070 agent_uri=sip:alice@opensips.org
 		
 ```
@@ -1030,7 +1030,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
 	
 ```
@@ -1039,7 +1039,7 @@ MI FIFO Command Format:
 opensips-cli Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
 	
 ```
@@ -1060,7 +1060,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2b_list
 	
 ```
@@ -1086,7 +1086,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2b_terminate_call 159.0
 	
 ```

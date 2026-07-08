@@ -329,7 +329,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 # blind transfer to sip:agent@127.0.0.1
 opensips-cli -x mi call_transfer \
 	callid=4b664b48-5639-40bf-bff8-3a866c145c3b \
@@ -339,7 +339,7 @@ opensips-cli -x mi call_transfer \
 ```
 
 
-```c
+```bash
 # attended transfer between two calls
 opensips-cli -x mi call_transfer \
 	callid=e8d024db-78e5-4d18-9794-5b8ba837bed4
@@ -374,7 +374,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 # put a call on hold
 opensips-cli -x mi call_hold \
 	callid=921b00e4-fec0-4a36-9397-a40ab74e1893
@@ -407,7 +407,7 @@ Parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi call_unhold \
 	callid=921b00e4-fec0-4a36-9397-a40ab74e1893
 		
