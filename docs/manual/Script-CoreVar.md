@@ -32,7 +32,7 @@ Standard PV is read-only and returns a single value (if not otherwise documented
 
 Example of usage:
 
-```bash
+```opensips
 
 $var(a) = 2;  # sets the value of variable 'a' to integer '2'
 $var(a) = "2";  # sets the value of variable 'a' to string '2'
@@ -95,7 +95,7 @@ onreply_route[1] {
 ```
 
 * Multilple values example
-```bash
+```opensips
 
 $avp(i:17) = "one";
 # we have a sigle value
@@ -531,7 +531,7 @@ Colors could be:
 
 A few examples of usage.
 
-```text
+```opensips
 
 ...
 avp_aliases="uuid=I:50"

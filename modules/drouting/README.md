@@ -911,7 +911,7 @@ It takes no parameter.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_reload:fifo_reply
 		_empty_line_
 		
