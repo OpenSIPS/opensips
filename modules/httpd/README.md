@@ -137,7 +137,7 @@ Parameters: none
 MI FIFO Command Format:
 
 
-```c
+```bash
 :httpd_list_root_path:_reply_fifo_file_
 _empty_line_
 		
