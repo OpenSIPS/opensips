@@ -219,7 +219,7 @@ Command to reload trie rules from database.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi trie:reload part_1
 		
 ```
@@ -245,7 +245,7 @@ Gets the time of the last reload for any partition.
 							reload for the given partition.
 
 
-```c title="trie:reload_status usage when use_partitions is 0"
+```bash title="trie:reload_status usage when use_partitions is 0"
 $ opensips-cli -x mi trie:reload_status
 Date:: Tue Aug 12 12:26:00 2014
 ```
@@ -276,7 +276,7 @@ Tries to match a number in the existing tries loaded from the database.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi trie:search partition_name=part1 number=012340987
 		
 ```
@@ -304,7 +304,7 @@ Deletes individual entries in the trie, without reloading all of the data
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi trie:number_delete partition_name=part1 number=["012340987","4858345"]
 		
 ```
@@ -335,7 +335,7 @@ Upserts ( insert if not found, update is found ) an array of numbers in the trie
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi trie:number_upsert partition_name=part1 number=["012340987"] attrs=["my_attrs"]
 		
 ```

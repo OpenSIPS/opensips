@@ -215,7 +215,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 				opensips-cli -x mi db_virtual:get
 			
 ```
@@ -258,7 +258,7 @@ db_virtual:set 3 2 0 1 means:
 MI FIFO Command Format:
 
 
-```c
+```bash
 				opensips-cli -x mi db_virtual:set 3 2 0 1
 			
 ```

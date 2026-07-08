@@ -719,7 +719,7 @@ Parameters:
 					parameter value greater than 0 or disables natping if parameter value is 0.
 
 
-```c title="nathelper:enable_ping usage"
+```bash title="nathelper:enable_ping usage"
 ...
 $ opensips-cli -x mi nathelper:enable_ping
 Status:: 1

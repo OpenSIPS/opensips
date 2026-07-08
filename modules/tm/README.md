@@ -1165,7 +1165,7 @@ Meaning of the parameters is as follows (all do accept variables):
 			in local route)
 
 
-```c title="t_new_request usage"
+```opensips title="t_new_request usage"
 ...
 	# send a MESSAGE request
 	t_new_request("MESSAGE","sip:alice@192.168.2.2","BOB sip:userB@mydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!")) {
@@ -1981,7 +1981,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi tm:uac_dlg method=INVITE ruri="sip:alice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
 		
 ```
@@ -2008,7 +2008,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi tm:uac_cancel "1-23454@127.0.0.1" "1 INVITE"
 		
 ```
@@ -2032,7 +2032,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi tm:hash
 		
 ```
@@ -2065,7 +2065,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi tm:reply 403 Forbidden 46961:1279687637 abcde .
 		
 ```

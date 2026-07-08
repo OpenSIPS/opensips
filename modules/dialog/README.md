@@ -2357,7 +2357,7 @@ Parameters (with dialog counting):
 MI FIFO Command Format:
 
 
-```c
+```bash
 		## list all ongoing dialogs
 		opensips-cli -x mi dialog:list
 		## list the dialog by callid and From TAG
@@ -2393,7 +2393,7 @@ Parameters: *see "dialog:list"*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:list_ctx
 		
 ```
@@ -2434,7 +2434,7 @@ The "dialog_id" value can be get via the "dialog:list" MI command.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		# terminate the dialog via the internal Dialog-ID
 		opensips-cli -x mi dialog:end_dlg 6ae.4b38d013
 		# terminate the dialog via its SIP Call-ID
@@ -2472,7 +2472,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:profile_get_size inboundCalls
 		
 ```
@@ -2509,7 +2509,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:profile_list_dlgs inboundCalls
 		
 ```
@@ -2540,7 +2540,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:profile_get_values inboundCalls
 		
 ```
@@ -2570,7 +2570,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:profile_end_dlgs inboundCalls
 		
 ```
@@ -2597,7 +2597,7 @@ It takes no parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:db_sync
 		
 ```
@@ -2632,7 +2632,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:cluster_sync vip1
 		
 ```
@@ -2657,7 +2657,7 @@ It takes no parameters
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:restore_db
 		
 ```
@@ -2682,7 +2682,7 @@ Parameters: *It takes no parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:list_all_profiles
 		
 ```
@@ -2711,7 +2711,7 @@ Parameters: *It takes 3 or more parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
 		
 ```
@@ -2788,7 +2788,7 @@ This functions runs asynchronously and returns the status code and reason
 MI Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi dialog:send_sequential \
 				callid=5291231-testing@127.0.0.1
 		
@@ -2798,7 +2798,7 @@ MI Command Format:
 MI Command used to trigger media re-negotiation:
 
 
-```c
+```bash
 			opensips-cli -x mi dialog:send_sequential \
 				callid=5291231-testing@127.0.0.1 \
 				mode=challenge \
@@ -2810,7 +2810,7 @@ MI Command used to trigger media re-negotiation:
 MI Command used to UPDATE the callee's remote Contact after a server failover:
 
 
-```c
+```bash
 			opensips-cli -x mi dialog:send_sequential \
 				callid=5291231-testing@127.0.0.1 \
 				mode=challenge-callee \
@@ -2823,7 +2823,7 @@ MI Command used to UPDATE the callee's remote Contact after a server failover:
 MI Command used to send REFER to the callee, and add Refer-To header:
 
 
-```c
+```bash
 			opensips-cli -x mi dialog:send_sequential \
 				callid=usR8FlGOSMfCTAIHebHCOQ.. \
 				method=REFER \
@@ -2858,7 +2858,7 @@ Parameters: *It takes 2-4 parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:set_profile dlg_id=DID profile=my_profile value=my_value clear_values=1
 		
 ```
@@ -2887,7 +2887,7 @@ Parameters: *It takes 2-3 parameters*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi dialog:unset_profile dlg_id=DID profile=my_profile value=my_value
 		
 ```

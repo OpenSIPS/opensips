@@ -405,9 +405,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Add a new Vendor
-# opensips-cli -x mi rate_cacher:addVendor myNewVendor
+$ opensips-cli -x mi rate_cacher:addVendor myNewVendor
 		
 ```
 
@@ -433,9 +433,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Delete a Vendor
-# opensipss-cli -x mi rate_cacher:deleteVendor myNewVendor
+$ opensipss-cli -x mi rate_cacher:deleteVendor myNewVendor
 		
 ```
 
@@ -462,9 +462,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rate_cacher:reloadVendorRate myVendor 3
+$ opensips-cli -x mi rate_cacher:reloadVendorRate myVendor 3
 		
 ```
 
@@ -490,9 +490,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads a Vendor Ratesheet
-# opensips-cli -x mi rate_cacher:deleteVendorRate myVendor
+$ opensips-cli -x mi rate_cacher:deleteVendorRate myVendor
 		
 ```
 
@@ -519,7 +519,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Query for the price of myVendor for the 4072731825 number
 #/usr/local/bin/opensips-cli -x mi rate_cacher:getVendorPrice myVendor 4072731825
 {
@@ -555,9 +555,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Add a new Client
-# opensips-cli -x mi fifo rate_cacher:addClient myNewClient
+$ opensips-cli -x mi fifo rate_cacher:addClient myNewClient
 		
 ```
 
@@ -583,9 +583,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Delete a Client
-# opensips-cli -x mi rate_cacher:deleteClient myClient
+$ opensips-cli -x mi rate_cacher:deleteClient myClient
 		
 ```
 
@@ -613,9 +613,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
-# opensips-cli -x mi rate_cacher:reloadClientRate myClient 1 3
+$ opensips-cli -x mi rate_cacher:reloadClientRate myClient 1 3
 		
 ```
 
@@ -642,9 +642,9 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Deletes a Client Ratesheet
-# opensips-cli -x mi rate_cacher:deleteClientRate myClient 1
+$ opensips-cli -x mi rate_cacher:deleteClientRate myClient 1
 		
 ```
 
@@ -672,7 +672,7 @@ Parameters :
 MI FIFO Command Format:
 
 
-```c
+```bash
 ## Query for the price of myClient, on the retail quality, for the 4072731825 number
 #/usr/local/bin/opensips-cli -x mi rate_cacher:getClientPrice myClient 0 4072731825
 {

@@ -1055,7 +1055,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:reload
 ```
 
@@ -1079,7 +1079,7 @@ Parameters:
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:agent_login agentX 0
 ```
 
@@ -1103,7 +1103,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:list_queue
 ```
 
@@ -1126,7 +1126,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:list_flows
 ```
 
@@ -1148,7 +1148,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:list_agents
 ```
 
@@ -1171,7 +1171,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:list_agents
 ```
 
@@ -1211,7 +1211,7 @@ IMPORTANT: in order to be used, you need to be sure that the internal
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:dispatch_call_to_agent B2B452.dee2.33 agentX
 ```
 
@@ -1234,7 +1234,7 @@ It takes one optional parameter `dispatching` if the
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:internal_call_dispatching 0
 ```
 
@@ -1254,7 +1254,7 @@ It takes no parameter.
 MI FIFO Command usage:
 
 
-```c
+```bash
 opensips-cli -x mi call_center:reset_stats
 ```
 

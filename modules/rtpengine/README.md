@@ -691,7 +691,7 @@ onreply_route[2]
 ```
 
 
-```c title="rtpengine_offer usage with body replace"
+```opensips title="rtpengine_offer usage with body replace"
 ...
 if (rtpengine_offer(, $var(socket), $var(body), $rb)) {
     xlog("Used rtpengine $var(socket)\n");
@@ -1409,7 +1409,7 @@ NOTE: if a RTP proxy is defined multiple times (in the same or
 			different set), all of its instances will be enabled/disabled IF no set ID is provided.
 
 
-```c title="rtpengine:enable usage"
+```bash title="rtpengine:enable usage"
 ...
 ## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine:enable udp:192.168.2.133:8081 0
@@ -1433,7 +1433,7 @@ Displays all the RTP proxies and their information: set and
 No parameter.
 
 
-```c title="rtpengine:show usage"
+```bash title="rtpengine:show usage"
 ...
 $ opensips-cli -x mi rtpengine:show
 ...
@@ -1463,7 +1463,7 @@ Parameters:
 No parameter.
 
 
-```c title="rtpengine:reload usage"
+```bash title="rtpengine:reload usage"
 ...
 $ opensips-cli -x mi rtpengine:reload
 $ opensips-cli -x mi rtpengine:reload type=soft
@@ -1491,7 +1491,7 @@ Note this is a just a wrapper function over the
 			RTP timeouts.
 
 
-```c title="teardown usage"
+```bash title="teardown usage"
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...

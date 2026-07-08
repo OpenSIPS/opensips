@@ -494,7 +494,7 @@ Parameters:
 MI FIFO Command format:
 
 
-```c
+```bash
                  opensips-cli -x mi cpl_c:load sip:bob@domain.com cpl_script.xml
 ```
 
@@ -522,7 +522,7 @@ Parameters:
 MI FIFO Command format:
 
 
-```c
+```bash
                  opensips-cli -x mi cpl_c:remove sip:bob@domain.com
 ```
 
@@ -548,7 +548,7 @@ Parameters:
 MI FIFO Command format:
 
 
-```c
+```bash
                  opensips-cli -x mi cpl_c:get sip:bob@domain.com
 ```
 

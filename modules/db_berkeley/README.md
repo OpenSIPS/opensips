@@ -139,7 +139,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		opensips-cli -x mi db_berkeley:reload subscriber
 		
 ```
