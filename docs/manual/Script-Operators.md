@@ -9,7 +9,7 @@ Assignments, string and arithmetic operations can be done directly in the config
 
 Assignments can be done like in C, via '=' (equal) operator. Not that not all variables (from script) can be written, some are read-only. Check with [listing of variables](Script-CoreVar.md) to see which ones can be written too.
 
-```text
+```opensips
 
 $var(a) = 123;
 $ru = "sip:user@domain";
@@ -18,7 +18,7 @@ $ru = "sip:user@domain";
 
 There is a special assign operator ':=' (colon equal) that can be used with AVPs. If the right value is **null**, all AVPs with that name are deleted. If different, the new value will overwrite any existing values for the AVPs with than name (on other words, delete existing AVPs with same name, add a new one with the right side value).
 
-```text
+```opensips
 
 $avp(val) := 123;
 
@@ -28,7 +28,7 @@ $avp(val) := 123;
 
 For strings, '+' is available to concatenate.
 
-```text
+```opensips
 
 $var(a) = "test";
 $var(b) = "sip:" + $var(a) + "@" + $fd;
@@ -53,7 +53,7 @@ For numbers, one can use:
 
 Example:
 
-```text
+```opensips
 
 $var(a) = 4 + ( 7 & ( ~2 ) );
 
@@ -64,7 +64,7 @@ $var(a) = 4 + ( 7 & ( ~2 ) );
 
 Arithmetic expressions can be used in condition expressions via test operator ' [ ... ] '.
 
-```text
+```opensips
 
 if( [ $var(a) & 4 ] )
     log("var a has third bit set\n");

@@ -710,7 +710,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:ds_set_state:_reply_fifo_file_
 		_state_
 		_group_
@@ -735,7 +735,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:ds_list:_reply_fifo_file_
 		_empty_line_
 		
@@ -757,7 +757,7 @@ Parameters: *none*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
 		":ds_reload:\n."
 		
 ```

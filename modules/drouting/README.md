@@ -1071,7 +1071,7 @@ It takes no parameter.
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_reload:fifo_reply
 		_empty_line_
 		
@@ -1092,7 +1092,7 @@ Gets or sets the status (enabled or disabled) of a destination. The
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:dr_status:_reply_fifo_file_
 		id
 		status (optional)
@@ -1101,7 +1101,7 @@ MI FIFO Command Format:
 ```
 
 
-```c title="dr_status usage"
+```bash title="dr_status usage"
 $ ./opensipsctl fifo dr_status 2
 enable:: no
 $ ./opensipsctl fifo dr_status 2 1

@@ -228,7 +228,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:pike_list:_reply_fifo_file_
 		_empty_line_
 		
@@ -242,7 +242,7 @@ One single tree (for both IPv4 and IPv6) is used. Each node contains a byte, the
 	addresses stretching from root to the leafs.
 
 
-```c title="Tree of IP addresses"
+```bash title="Tree of IP addresses"
 	   / 193 - 175 - 132 - 164
 tree root /                  \ 142
 	  \ 195 - 37 - 78 - 163

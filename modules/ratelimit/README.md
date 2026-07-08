@@ -427,7 +427,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_stats:_reply_fifo_file_
 		_empty_line_
 		
@@ -456,7 +456,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_set_pipe:_reply_fifo_file_
 		2
 		RED
@@ -481,7 +481,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_get_pipes:_reply_fifo_file_
 		_empty_line_
 		
@@ -510,7 +510,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_set_queue:_reply_fifo_file_
 		3
 		INVITE
@@ -535,7 +535,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_get_queues:_reply_fifo_file_
 		_empty_line_
 		
@@ -562,7 +562,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_set_pid:_reply_fifo_file_
 		0.5
 		0.5
@@ -587,7 +587,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_get_pid:_reply_fifo_file_
 		_empty_line_
 		
@@ -614,7 +614,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_push_load:_reply_fifo_file_
 		0.85
 		_empty_line_
@@ -642,7 +642,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:rl_set_dbg:_reply_fifo_file_
 		1
 		_empty_line_
