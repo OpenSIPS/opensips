@@ -212,7 +212,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 				opensips-cli -x mi db_get
 			
 ```
@@ -252,7 +252,7 @@ db_set 3 2 0 1 means:
 MI FIFO Command Format:
 
 
-```c
+```bash
 				opensips-cli -x mi db_set 3 2 0 1
 			
 ```

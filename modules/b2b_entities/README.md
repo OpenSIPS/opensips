@@ -509,7 +509,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi b2be_list
 	
 ```
@@ -552,7 +552,7 @@ Parameters:
 opensips-cli Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ua_session_client_start ruri=sip:bob@opensips.org \
 to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
 ```
@@ -587,7 +587,7 @@ Parameters:
 opensips-cli Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIONS
 ```
 
@@ -623,7 +623,7 @@ Parameters:
 opensips-cli Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 method=OPTIONS code=200 reason=OK
 ```
 
@@ -650,7 +650,7 @@ Parameters:
 opensips-cli Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
 ```
 
@@ -676,7 +676,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 	opensips-cli -x mi ua_session_list
 	
 ```
