@@ -383,7 +383,7 @@ The parameter is optional - if missing, the command will
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:sip_trace:_reply_fifo_file_
 		trace_mode
 		_empty_line_
@@ -415,7 +415,7 @@ The parameter is optional - if missing, the command will
 MI FIFO Command Format:
 
 
-```c
+```bash
 		:trace_to_database:_reply_fifo_file_
 		trace_to_db_mode
 		_empty_line_

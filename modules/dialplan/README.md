@@ -484,7 +484,7 @@ Parameters: *1*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
 		:dp_reload:
 		_empty_line_
 		
@@ -511,7 +511,7 @@ Parameters: *2*
 MI DATAGRAM Command Format:
 
 
-```c
+```bash
         :dp_translate:
         dpid
         input

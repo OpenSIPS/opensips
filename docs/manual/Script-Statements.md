@@ -11,7 +11,7 @@ IF-ELSE statement
 
 Prototype:
 
-```text
+```opensips
 
     if (expr) {
        actions;
@@ -40,7 +40,7 @@ The logical operators that can be used in the logical expressions:
 
 Example of usage:
 
-```text
+```opensips
 
     if ( is_method("INVITE") && $rp==5060 )
     {
@@ -123,7 +123,7 @@ Example of usage:
 while statement
 
 Example of usage:
-```text
+```opensips
 
     $var(i) = 0;
     while($var(i) < 10)
@@ -139,7 +139,7 @@ Example of usage:
 for each statement - easy iteration over indexed pseudo variables
 
 Example of usage:
-```text
+```opensips
 
     $avp(arr) = 0;
     $avp(arr) = 1;

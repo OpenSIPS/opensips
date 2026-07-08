@@ -361,7 +361,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 :reg_list:_reply_fifo_file_
 _empty_line_
 		
@@ -383,7 +383,7 @@ Parameters: *none*
 MI FIFO Command Format:
 
 
-```c
+```bash
 :reg_reload:_reply_fifo_file_
 _empty_line_
 		
