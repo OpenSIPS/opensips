@@ -1315,7 +1315,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 ```
 
@@ -1341,7 +1341,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ds_list
 ```
 
@@ -1370,7 +1370,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 opensips-cli -x mi ds_reload
 opensips-cli -x mi ds_reload inherit_state=n
 ```
@@ -1398,8 +1398,8 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
-#opensips-cli -x mi ds_push_script_attrs '{"ping":"30000","load":"50"}' '192.168.0.107' 5091 1 main
+```bash
+$opensips-cli -x mi ds_push_script_attrs '{"ping":"30000","load":"50"}' '192.168.0.107' 5091 1 main
 ```
 
 
@@ -1456,7 +1456,7 @@ In terms of date reloading, the following events will be reported:
 - N destination loaded (N discarded)
 
 
-```c
+```json
         {
             "Name": "default",
             "Reports": [
@@ -1502,7 +1502,7 @@ So, each partition will provide the identified "partition_name;events" for
 	discarding the old ones.
 
 
-```c
+```json
         {
             "Name": "default;events",
             "Reports": [

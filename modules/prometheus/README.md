@@ -271,7 +271,7 @@ The AVP is expected to contain a JSON format, containing an array of arrays of c
 *The default value is "" - no custom route called.*
 
 
-```c title="Set script_route parameter"
+```opensips title="Set script_route parameter"
 ...
 modparam("prometheus", "script_route", "my_custom_prometheus_route")
 modparam("prometheus", "script_route_avp_result", "$avp(prometheus_out_json)")
