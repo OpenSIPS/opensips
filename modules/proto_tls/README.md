@@ -462,7 +462,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			opensips-cli -x mi tls_trace on
 			
 ```

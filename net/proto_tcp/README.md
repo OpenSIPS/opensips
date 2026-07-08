@@ -342,7 +342,7 @@ Parameters:
 MI FIFO Command Format:
 
 
-```c
+```bash
 			:tcp_trace:_reply_fifo_file_
 			trace_mode
 			_empty_line_
