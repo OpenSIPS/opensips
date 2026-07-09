@@ -10,8 +10,8 @@ description: "This is a module which provides topology hiding capabilities. The 
 
 
 This is a module which provides topology hiding capabilities.
-		The module can work on top of the dialog module, or as a standalone module ( thus alowing topology hiding for all
-		types of requests )
+The module can work on top of the dialog module, or as a standalone module ( thus alowing topology hiding for all
+types of requests )
 
 
 ### Dependencies
@@ -25,15 +25,15 @@ The following modules must be loaded before this module:
 
 - *TM - Transaction Module*.
 - *Dialog Module*, if "force_dialog"
-				module parameter is enabled, or a dialog is created from the
-				configuration script.
+module parameter is enabled, or a dialog is created from the
+configuration script.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*
@@ -158,7 +158,7 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
 
 
 When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. This parameter configures the encoding scheme to be used for the data stored in
-			the Contact URI param. Possible values are:
+the Contact URI param. Possible values are:
 
 
 - *base64*
@@ -211,12 +211,12 @@ modparam("topology_hiding", "th_contact_callee_username_var", "__topo_hiding_use
 
 
 Include the *from_tag* when encoding the
-			topology-hiding Call-ID to ensure correct decoding in looping scenarios,
-			(when the same call with a previously encoded Call-ID is being looped back).
+topology-hiding Call-ID to ensure correct decoding in looping scenarios,
+(when the same call with a previously encoded Call-ID is being looped back).
 
 
 Note that enabling this parameter will increase the generated Call-ID value,
-			due to the additional from_tag information being embedded.
+due to the additional from_tag information being embedded.
 
 
 *Default value is "0" / disabled.*
@@ -236,28 +236,28 @@ modparam("topology_hiding", "th_callid_loop_protection", 1)
 
 
 By calling this function on an initial request, the modules will
-			hide the topology, meaning that it will strip and restore all the Via,
-			Record-Route and Route headers and it will replace the contact with the
-			IP address of the interface where the request was received.
+hide the topology, meaning that it will strip and restore all the Via,
+Record-Route and Route headers and it will replace the contact with the
+IP address of the interface where the request was received.
 
 
 You must note however, that the detection of the future in-dialog requests(BYE, reInvite, etc.)
-			for these dialogs on which topology hiding is applied, is not done automatically.
-			Without topology hiding and only normal dialog, the detection was
-			done when loose_route was called. But now, for this dialogs where topology
-			hiding is applied, the in dialog requests reaching OpenSIPS won't have any Route headers
-			and the RURI will point to OpenSIPS machine.
-			So, to be able to match the in-dialog requests to the corresponding dialog, a script
-			function must be called. It's name is *topology_hiding_match* and you can read
-			it's description above.
-			The in-dialog topology requests are requests with a to tag,
-			RURI pointing to opensips and with a method specific to a
-			Invite dialog. For this kind of requests you should call
-			topology_hiding_match() function. If the request is successfully matched and fixed as according to the topology hiding logic,the function returns success.
+for these dialogs on which topology hiding is applied, is not done automatically.
+Without topology hiding and only normal dialog, the detection was
+done when loose_route was called. But now, for this dialogs where topology
+hiding is applied, the in dialog requests reaching OpenSIPS won't have any Route headers
+and the RURI will point to OpenSIPS machine.
+So, to be able to match the in-dialog requests to the corresponding dialog, a script
+function must be called. It's name is *topology_hiding_match* and you can read
+it's description above.
+The in-dialog topology requests are requests with a to tag,
+RURI pointing to opensips and with a method specific to a
+Invite dialog. For this kind of requests you should call
+topology_hiding_match() function. If the request is successfully matched and fixed as according to the topology hiding logic,the function returns success.
 
 
 Optionally,the function also receives a string parameter, which holds string flags.
-			Current options for the string flags are :
+Current options for the string flags are :
 
 
 - *U* - Propagate the Username in the Contact header URI
@@ -269,18 +269,18 @@ Optionally,the function also receives a string parameter, which holds string fla
 There are many cases where propagating the callid towards the callee side is not a good idea, since sometimes the callid contains the IP of the actual caller side, thus revealing part of the network topology.
 When using the "C" flag, the callid will be automatically encoded / decoded, transparent for the script writer - inside OpenSIPS (script,MI functions, etc ) all the variables related to the callid will represent the callid value for the caller side. If the callid for the callee side is needed, refer to the $TH_callee_callid pvar.
 *Note:* Changing the callid of the call using the "C" flag is only
-						available when doing topology_hiding with *dialog support*. Using this
-						flag without dialog support will not change the callid at all!.
+available when doing topology_hiding with *dialog support*. Using this
+flag without dialog support will not change the callid at all!.
 
 
 The second parameter can be used to advertise a particular
-			*username* in the Contact header URI, either on the
-			*caller*, either on the *callee*
-			leg, separated by */*. The format of the parameter is 
-			*caller_username|/[caller_contact_username][/callee_contact_username]*.
-			If the separator is missing, the same contact username is advertised on
-			both legs. If the separator is being used, you can control the username
-			put in contact per leg.
+*username* in the Contact header URI, either on the
+*caller*, either on the *callee*
+leg, separated by */*. The format of the parameter is 
+*caller_username|/[caller_contact_username][/callee_contact_username]*.
+If the separator is missing, the same contact username is advertised on
+both legs. If the separator is being used, you can control the username
+put in contact per leg.
 
 
 ```opensips title="topology_hiding usage"
@@ -336,13 +336,13 @@ if (has_totag())
 
 
 This function is to be used to match and fix a sequential request
-		belong to an existing topology hiding dialog.
+belong to an existing topology hiding dialog.
 
 
 With regards to dialog matching (including the optional parameter),
-		this function behaves identically to match_dialog(). Please see the
-		dialog module documentation for further details regarding dialog
-		matching options.
+this function behaves identically to match_dialog(). Please see the
+dialog module documentation for further details regarding dialog
+matching options.
 
 
 The function returns true if a topology hiding dialog exists for the request and the request has been successfully fixed.

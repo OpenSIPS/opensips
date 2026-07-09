@@ -10,13 +10,13 @@ description: "The *\"janus\"* module is a C driver for the Janus websocket proto
 
 
 The *"janus"* module is a C driver for the
-	Janus websocket protocol. It can interact with one or more
-	Janus servers either by issuing commands to them, or by receiving
-	events from them.
+Janus websocket protocol. It can interact with one or more
+Janus servers either by issuing commands to them, or by receiving
+events from them.
 
 
 This driver can be seen as a centralized Janus connection manager.
-	It will connect to each Janus server, establish the connection hanler ID and the clients can be transparent from the connection handler ID point of view, simply passing the desired Janus commands that they want to run.
+It will connect to each Janus server, establish the connection hanler ID and the clients can be transparent from the connection handler ID point of view, simply passing the desired Janus commands that they want to run.
 
 
 ### External Libraries or Applications
@@ -32,7 +32,7 @@ The following modules must be loaded together with this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*
@@ -77,7 +77,7 @@ modparam("janus", "janus_max_msg_chunks", 8)
 
 
 The maximally allowed duration for the execution of an Janus command.
-		This interval does not include the connect duration.
+This interval does not include the connect duration.
 
 
 *Default value is "5000" (milliseconds).*
@@ -94,9 +94,9 @@ modparam("janus", "janus_cmd_timeout", 3000)
 
 
 The sleep interval used when polling for an Janus command response. Since the
-		value of this parameter imposes a minimal duration for any Janus command,
-		you should run OpenSIPS in debug mode in order to first determine an expected
-		response time for an arbitrary Janus command, then tune this parameter accordingly.
+value of this parameter imposes a minimal duration for any Janus command,
+you should run OpenSIPS in debug mode in order to first determine an expected
+response time for an arbitrary Janus command, then tune this parameter accordingly.
 
 
 *Default value is "1000" (microseconds).*
@@ -164,12 +164,12 @@ modparam("janus", "janus_db_table", "my_janus_table")
 
 
 Run an arbitrary command on an arbitrary Janus socket. The
-		janus_id must be defined in the database
+janus_id must be defined in the database
 
 
 The current OpenSIPS worker will block until an answer from Janus
-		arrives. The timeout for this operation can be controlled via the
-		**janus_cmd_timeout** param.
+arrives. The timeout for this operation can be controlled via the
+**janus_cmd_timeout** param.
 
 
 Meaning of the parameters is as follows:
@@ -178,18 +178,18 @@ Meaning of the parameters is as follows:
 - *janus_id* (string) - the ID of the janus connection as defined in the databsae.
 - *janus_command* (string) - the JANUS command to run.
 - *response_var (var, optional)* - a
-			variable which will hold the text result of the Janus command.
+variable which will hold the text result of the Janus command.
 
 
 **Return value**
 
 
 - 1 (success) - the Janus command executed successfully and any
-				output variables were successfully written to. Note that this
-				does not say anything about the nature of the Janus answer (it
-				may well be a "-ERR" type of response)
+output variables were successfully written to. Note that this
+does not say anything about the nature of the Janus answer (it
+may well be a "-ERR" type of response)
 - -1 (failure) - internal error or the Janus command failed to
-				execute
+execute
 
 
 This function can be used from any route.

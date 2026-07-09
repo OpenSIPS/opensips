@@ -10,9 +10,9 @@ description: "This module is an implementation of a cachedb system designed to w
 
 
 This module is an implementation of a cachedb system designed to work with 
-		Amazon DynamoDB. It uses the AWS SDK library for C++ to connect to a DynamoDB instance.
-		It leverages the Key-Value interface exported from the core. 
-		[https://aws.amazon.com/pm/dynamodb/](https://aws.amazon.com/pm/dynamodb/)
+Amazon DynamoDB. It uses the AWS SDK library for C++ to connect to a DynamoDB instance.
+It leverages the Key-Value interface exported from the core. 
+[https://aws.amazon.com/pm/dynamodb/](https://aws.amazon.com/pm/dynamodb/)
 
 
 #### Functionalities
@@ -21,13 +21,13 @@ This module is an implementation of a cachedb system designed to work with
 - *set*  - sets a key in DynamoDB using the  *cachedb_store* function
 - *get*  - queries a key from DynamoDB using the  *cachedb_fetch* function
 - *remove*  - removes a key from DynamoDB using the 
-				*cachedb_remove* function
+*cachedb_remove* function
 - *get_counter*  - queries a key with a numerical value
-				 from DynamoDB using the  *cachedb_counter_fetch* function
+from DynamoDB using the  *cachedb_counter_fetch* function
 - *add*  - increments the value of a specific item with a given value
-				 using the *cachedb_add* function
+using the *cachedb_add* function
 - *sub*  - decrements the value of a specific item with a given value
-				using the  *cachedb_sub* function
+using the  *cachedb_sub* function
 
 
 The following are internally used by OpenSIPS:
@@ -42,7 +42,7 @@ The following are internally used by OpenSIPS:
 
 
 The tables used with DynamoDB must adhere to a specific format. 
-			Below is an example of creating a table:
+Below is an example of creating a table:
 
 
 ```c
@@ -60,16 +60,16 @@ aws dynamodb create-table \
 
 
 If you create the table using the above command, then you have to specify the key in the 
-			cachedb_url: *modparam("cachedb_dynamodb", "cachedb_url", 
-			"dynamodb://localhost:8000/TableName?key=KeyName;val=ValName")"*
+cachedb_url: *modparam("cachedb_dynamodb", "cachedb_url", 
+"dynamodb://localhost:8000/TableName?key=KeyName;val=ValName")"*
 
 
 For additional examples of how cachedb_url should be formatted, refer to the 
-		[cachedb_url (string)](#param_cachedb_url) section.
+[cachedb_url (string)](#param_cachedb_url) section.
 
 
 To enable TTL (Time to Live) for the table, which can be used with operations like set,
-			add, and subtract, you can update the table with the TTL option:
+add, and subtract, you can update the table with the TTL option:
 
 
 ```c
@@ -93,12 +93,12 @@ For additional information about the table format and TTL options, follow these 
 
 - *scalable and fully managed NoSQL database service provided by AWS*
 - *integrated with other AWS services, providing robust security 
-				and scalability features*
+and scalability features*
 - *high availability and durability due to data replication across 
-				multiple AWS Availability Zones*
+multiple AWS Availability Zones*
 - *serverless architecture, reducing operational overhead*
 - *offers single-digit response times, with DynamoDB Accelerator (DAX) 
-				for even lower latencies*
+for even lower latencies*
 
 
 ### Limitations
@@ -122,28 +122,28 @@ There is no need to load any module before this module.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *AWS SDK for C++:*
 By following these steps, you'll have the AWS SDK for C++ installed and 
-				configured on your Linux system, allowing you to integrate with DynamoDB:
-				[AWS SDK for C++ Installation Guide](https://docs.aws.amazon.com/sdk-for-cpp/v1/developer-guide/setup-linux.html)
+configured on your Linux system, allowing you to integrate with DynamoDB:
+[AWS SDK for C++ Installation Guide](https://docs.aws.amazon.com/sdk-for-cpp/v1/developer-guide/setup-linux.html)
 Additional instructions for installation can be found at:
-				[AWS SDK for C++ GitHub Repository](https://github.com/aws/aws-sdk-cpp)
+[AWS SDK for C++ GitHub Repository](https://github.com/aws/aws-sdk-cpp)
 
 
 #### Deploying DynamoDB locally on your computer
 
 
 For testing purposes, you can run a DynamoDB locally. To achieve this, you should follow
-		[these](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html) steps in order to deploy dynamodb locally.
+[these](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html) steps in order to deploy dynamodb locally.
 
 
 Don't forget to always run the server using this command:
-		
-		`java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb`
-			in the directory where you extracted *DynamoDBLocal.jar*.
+
+`java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb`
+in the directory where you extracted *DynamoDBLocal.jar*.
 
 
 ### Exported Parameters
@@ -153,9 +153,9 @@ Don't forget to always run the server using this command:
 
 
 The URLs of the server groups that OpenSIPS will connect to in order
-			to use, from script, the cache_store(), cache_fetch(), etc. operations.
-			It may be set more than once.  The prefix part of the URL will be
-			the identifier that will be used from the script.
+to use, from script, the cache_store(), cache_fetch(), etc. operations.
+It may be set more than once.  The prefix part of the URL will be
+the identifier that will be used from the script.
 
 
 There are some default parameters that can appear in the URL:
@@ -164,7 +164,7 @@ There are some default parameters that can appear in the URL:
 - *region* - specifies the AWS region where the DynamoDB table is located
 - *key* - specifies the table's Key column; default value is *"opensipskey"*
 - *val* - specifies the table's Value column on which cache operations such as cache_store, cache_fetch, etc., will be performed;
-				default value is *"opensipsval"*
+default value is *"opensipsval"*
 
 
 Syntax for *cachedb_url*
@@ -219,7 +219,7 @@ cache_remove("dynamodb", "counter1");
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 <!-- CONTRIBUTORS -->
 
 ### License

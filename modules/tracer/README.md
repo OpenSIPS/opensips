@@ -10,20 +10,20 @@ description: "Offer a possibility to store incoming/outgoing SIP messages in dat
 
 
 Offer a possibility to store incoming/outgoing SIP messages in database.
-		Since version 2.2, proto_hep module needs to be loaded in order to duplicate
-		with hep. All hep parameters moved inside proto_hep.
+Since version 2.2, proto_hep module needs to be loaded in order to duplicate
+with hep. All hep parameters moved inside proto_hep.
 
 
 The 2.2 version of OpenSIPS came with a major improvement in tracer module.
-		Now all you have to do is call *trace()* function
-		with the proper parameters and it will do the job for you. Now you can trace
-		messages, transactions and dialogs with the same function. Also, you can trace
-		to multiple databases, multiple hep destinations and sip destinations using
-		only one parameter. All you need now is defining *trace_id*
-		parameters in modparam section and switch between them in
-		tracer function. Also you cand turn tracing  on
-		and off using *trace_on* either globally(for all trace_ids)
-		or for a certain trace_id.
+Now all you have to do is call *trace()* function
+with the proper parameters and it will do the job for you. Now you can trace
+messages, transactions and dialogs with the same function. Also, you can trace
+to multiple databases, multiple hep destinations and sip destinations using
+only one parameter. All you need now is defining *trace_id*
+parameters in modparam section and switch between them in
+tracer function. Also you cand turn tracing  on
+and off using *trace_on* either globally(for all trace_ids)
+or for a certain trace_id.
 
 
 IMPORTANT: In 2.2 version support for stateless trace has been removed.
@@ -33,15 +33,15 @@ The tracing tracing can be turned on/off using fifo command.
 
 
 opensips-cli -x mi trace on
-	opensips-cli -x mi trace [some_trace_id] on
+opensips-cli -x mi trace [some_trace_id] on
 
 
 opensips-cli -x mi trace off
-	opensips-cli -x mi trace [some_trace_id] off
+opensips-cli -x mi trace [some_trace_id] off
 
 
 Starting with OpenSIPS 3.0 you can use the *trace_start* to
-		create dynamic dynamic tracing destinations based on some custom filters.
+create dynamic dynamic tracing destinations based on some custom filters.
 
 
 ### Dependencies
@@ -54,23 +54,23 @@ The following modules must be loaded before this module:
 
 
 - *database module* - mysql, postrgress,
-				dbtext, unixodbc... only if you are using a database type
-				trace id
+dbtext, unixodbc... only if you are using a database type
+trace id
 - *b2b_logic* - only if you want to trace
-				B2B sessions.
+B2B sessions.
 - *dialog* - only if you want to trace
-				SIP dialogs (INVITE based).
+SIP dialogs (INVITE based).
 - *tm* - only if you want to trace 
-				SIP transactions.
+SIP transactions.
 - *proto_hep* - only if you want to 
-				trace / replicate messages over HEP protocol.
+trace / replicate messages over HEP protocol.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -99,10 +99,10 @@ modparam("tracer", "trace_on", 1)
 
 
 The address to be used in the fields that specify the source address
-		(protocol, ip and port) for locally generated messages. If not set,
-		the module sets it to the address of the socket that will be used to send
-		the message. Protocol and/or port are optional and if omitted will take
-		the default values: udp and 5060.
+(protocol, ip and port) for locally generated messages. If not set,
+the module sets it to the address of the socket that will be used to send
+the message. Protocol and/or port are optional and if omitted will take
+the default values: udp and 5060.
 
 
 *Default value is "NULL".*
@@ -135,43 +135,43 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 
 
 Specify a destination for the trace. This can be a hep id defined
-			in proto_hep, a sip uri, a file, a syslog facility or a database
-			url and a table. All parameters inside
-			*trace_id* must be separated by
-			*;*, excepting the last one. The parameters
-			are given in key-value format, the possible keys being
-			*uri* for HEP and SIP IDs and
-			*uri* and *table*
-			for databases. The format is
-			*[id_name]key1=value1;key2=value2;*. HEP
-			id's **MUST** be defined in proto_hep in order
-			to be able to use them here.
+in proto_hep, a sip uri, a file, a syslog facility or a database
+url and a table. All parameters inside
+*trace_id* must be separated by
+*;*, excepting the last one. The parameters
+are given in key-value format, the possible keys being
+*uri* for HEP and SIP IDs and
+*uri* and *table*
+for databases. The format is
+*[id_name]key1=value1;key2=value2;*. HEP
+id's **MUST** be defined in proto_hep in order
+to be able to use them here.
 
 
 When the uri is a *file*, the path to the file has
-			to be specified after the colon. The output is always appended if the file
-			exists, or created if it doesn't, using [file mode](#param_file_mode)
-			permissions.
+to be specified after the colon. The output is always appended if the file
+exists, or created if it doesn't, using [file mode](#param_file_mode)
+permissions.
 
 
 When the uri is *syslog*, it has to follow the following
-			format: *syslog[:FACILITY[:LEVEL]]*. The default
-			facility and levels are the ones used by OpenSIPS
-			(*syslog_facility* and *log_level*).
-			These can be tuned using
-			[syslog default facility](#param_syslog_default_facility) and
-			[syslog default level](#param_syslog_default_level) parameters.
+format: *syslog[:FACILITY[:LEVEL]]*. The default
+facility and levels are the ones used by OpenSIPS
+(*syslog_facility* and *log_level*).
+These can be tuned using
+[syslog default facility](#param_syslog_default_facility) and
+[syslog default level](#param_syslog_default_level) parameters.
 
 
 One can declare multiple types of tracing under the same trace
-			id, being identified by their name. So if you define two
-			database url, one hep uri and one sip uri with the same name,
-			when calling trace() with this name tracing shall be done
-			to all the destinations.
+id, being identified by their name. So if you define two
+database url, one hep uri and one sip uri with the same name,
+when calling trace() with this name tracing shall be done
+to all the destinations.
 
 
 All the old parameter such as db_url, table and duplicate_uri
-			will form the trace id with the name "default".
+will form the trace id with the name "default".
 
 
 *No default value. If not set the module will be useless.*
@@ -208,7 +208,7 @@ modparam("tracer", "trace_id",
 
 
 When *syslog* tracing is used, this parameter specifies
-			the log facility to write traces to.
+the log facility to write traces to.
 
 
 *Default value is the value of *syslog_facility*.*
@@ -225,7 +225,7 @@ modparam("tracer", "syslog_default_facility", "LOG_DAEMON")
 
 
 When *syslog* tracing is used, this parameter specifies
-			the level to write traces to.
+the level to write traces to.
 
 
 *Default value is the value of *log_level*.*
@@ -242,8 +242,8 @@ modparam("tracer", "syslog_default_level", 2) # NOTICE
 
 
 When *file* tracing is used, this parameter
-			specifies the permissions to be used to create the trace files.
-			It follows the UNIX conventions.
+specifies the permissions to be used to create the trace files.
+It follows the UNIX conventions.
 
 
 *Default value is *0600 (rw-------)*.*
@@ -266,9 +266,9 @@ This function has replaced the *sip_trace()* in OpenSIPS 3.0.
 
 
 Store or replicate current processed SIP message, transaction / dialog or B2B session.
-			It is stored in the form prior applying chages made to it. The traced_user_avp
-			parameter is now an argument to trace() function. Since version 2.2, this function
-			also catches internally generated replies in stateless mode(sl_send_reply(...)).
+It is stored in the form prior applying chages made to it. The traced_user_avp
+parameter is now an argument to trace() function. Since version 2.2, this function
+also catches internally generated replies in stateless mode(sl_send_reply(...)).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
@@ -278,52 +278,52 @@ Meaning of the parameters is as follows:
 
 
 - *trace_id (string)*
-			the name of the *trace_id* specifying where to do
-			the tracing.
+the name of the *trace_id* specifying where to do
+the tracing.
 - *scope (string, optional)* what do you 
-		want to trace: dialog, transaction, B2B session or only the message. 
-		If not specified, will try the topmost trace that can be done: 
-		if dialog module loaded will trace dialogs, else if tm module loaded
-		will trace transaction and if none of these loaded will trace messages.
+want to trace: dialog, transaction, B2B session or only the message. 
+If not specified, will try the topmost trace that can be done: 
+if dialog module loaded will trace dialogs, else if tm module loaded
+will trace transaction and if none of these loaded will trace messages.
 Types can be the following:
 
   - *'m'/'M'* trace messages. Is the only
-				one you should use in stateless mode.
+one you should use in stateless mode.
   - *'t'/'T'* trace transactions. If tm
-					module not loaded, it will be in stateless transaction aware
-					mode meaning that will catch selected requests both in and out
-				and internally generated replies.
+module not loaded, it will be in stateless transaction aware
+mode meaning that will catch selected requests both in and out
+and internally generated replies.
   - *'d'/'D'* trace dialog
   - *'b'/'B'* trace all the traffic
-				related to the B2B session to be later created
+related to the B2B session to be later created
 - *type (string, optional)* list of types of messages to
-			be traced by this function; if not set only sip messages shall be traced;
-			if the parameter is set, but *sip* is not specified,
-			*sip* shall not be traced;
-			all the parameters from the list shall be separated by '|'
+be traced by this function; if not set only sip messages shall be traced;
+if the parameter is set, but *sip* is not specified,
+*sip* shall not be traced;
+all the parameters from the list shall be separated by '|'
 Current possible types to be traced are the following:
 
   - *sip* - enable sip messages 
-					tracing;
+tracing;
   - *xlog* - enable xlog messages 
-					tracing in current scope(dialog, transaction, B2B session
-					or message);
+tracing in current scope(dialog, transaction, B2B session
+or message);
   - *rest* - enable rest messages 
-					tracing;
+tracing;
 - *trace_attrs (string, optional)* this parameter
-			replaces the traced_user_avp from the old version. To avoid duplicating
-			an entry only for this parameter, whatever you put here(string/pvar)
-			shall be stored in the trace_attrs column in the sip_trace table.
+replaces the traced_user_avp from the old version. To avoid duplicating
+an entry only for this parameter, whatever you put here(string/pvar)
+shall be stored in the trace_attrs column in the sip_trace table.
 - *flags (string,pvar)* are some control
-			flags over the tracing process (how and what to be traced).
+flags over the tracing process (how and what to be traced).
 
   - *C* - trace only the SIP caller side;
   - *c* - trace onlt the SIP callee side;
 If both *C* and *c* flags are missing, tracing of both sides/legs is assumed.
 NOTE these flags are supported only by transactional and dialog tracing
 - *correlation_id (string,pvar)* a custom
-			SIP correlation ID to be forced (normally the SIP Call-ID is used)
-			to correlate this traffic (transaction, dialog) with other traffic.
+SIP correlation ID to be forced (normally the SIP Call-ID is used)
+to correlate this traffic (transaction, dialog) with other traffic.
 
 
 ```opensips title="trace() usage"
@@ -380,8 +380,8 @@ NOTE these flags are supported only by transactional and dialog tracing
 
 
 Enable/disable tracing(globally or for a specific trace id) or dump
-			info about trace ids. This command requires named parameters
-			(each parameter is ginven in the format param_name=param_value).
+info about trace ids. This command requires named parameters
+(each parameter is ginven in the format param_name=param_value).
 
 
 Name: *trace*
@@ -391,23 +391,23 @@ Parameters:
 
 
 - *id* (optional) - the name of the tracing instance.
-				If this parameter is missing the command will
-				either dump info for all tace ids(and return the global tracing state)
-				or set the global tracing state.
+If this parameter is missing the command will
+either dump info for all tace ids(and return the global tracing state)
+or set the global tracing state.
 - *mode* (optional) - 
-				possible values are:
+possible values are:
 
   - "on" - enable tracing
   - "off" - disable tracing
 If the first parameter is missing, the command wil set the global
-				tracing state, otherwise it will set the state for a specific trace id.
-				If you turn global trace on but some of the trace ids had tracing set to
-				off, then they shall not do tracing. If you want to turn the tracing on
-				for all trace ids you will have to set it separately for each of them.
+tracing state, otherwise it will set the state for a specific trace id.
+If you turn global trace on but some of the trace ids had tracing set to
+off, then they shall not do tracing. If you want to turn the tracing on
+for all trace ids you will have to set it separately for each of them.
 If this parameter is missing but the first is set, the command will
-				only dump info about that specific trace id. If both parameters are
-				missing, the command will return the global tracing state and dump
-				info for each id.
+only dump info about that specific trace id. If both parameters are
+missing, the command will return the global tracing state and dump
+info for each id.
 
 
 MI FIFO Command Format:
@@ -431,8 +431,8 @@ Replaces obsolete MI command: *trace_start*.
 
 
 Creates a dynamic tracing destination based using custom filters.
-			This function can be used to debug calls for certain destinations
-			real-time.
+This function can be used to debug calls for certain destinations
+real-time.
 
 
 Dynamic destinations are not restart persistent!
@@ -447,25 +447,25 @@ Parameters:
 - *id* - the name of the tracing instance.
 - *uri* - the destination uri for this instance.
 - *filter* (optional) - used to filter the traffic
-				received by the sender. This parameter should be an array that can
-				contain multiple filters in the *condition=value*
-				format.
-				Possible values for the *condition* argument are:
+received by the sender. This parameter should be an array that can
+contain multiple filters in the *condition=value*
+format.
+Possible values for the *condition* argument are:
 
   - caller
   - callee
   - ip
 The *condition* parameter can consist of multiple different filters.
-				In order to satisfy the overall condition and send traffic to the desired destination,
-				all conditions have to be satisfied.
+In order to satisfy the overall condition and send traffic to the desired destination,
+all conditions have to be satisfied.
 If this parameter is missing all traffic is forwarded to the destination.
 The filter is applied for any incoming request
 - *scope* - the scope to engage the tracing for.
-				The format received by this parameter is similar to the one
-				received by the *trace()* function.
+The format received by this parameter is similar to the one
+received by the *trace()* function.
 - *type* - the type of messages you want to receive.
-				The format received by this parameter is similar to the one
-				received by the *trace()* function.
+The format received by this parameter is similar to the one
+received by the *trace()* function.
 
 
 MI FIFO Command to start tracing calls from IP 127.0.0.1 to HEP destination 10.0.0.1:9060:
@@ -493,7 +493,7 @@ Replaces obsolete MI command: *trace_stop*.
 
 
 Stops OpenSIPS from sending traffic to a dynamic trace id created
-			using the *trace_start* command.
+using the *trace_start* command.
 
 
 Name: *tracer:stop*
@@ -518,23 +518,23 @@ MI FIFO Command to stop tracing calls from user Alice to user Bob:
 
 
 Before running OpenSIPS with tracer, you have to setup the database
-			tables where the module will store the data. For that, if the
-			table were not created by the installation script or you choose
-			to install everything by yourself you can use the tracer-create.sql
-			SQL script in the database directories in the
-			opensips/scripts folder as template.
-			You can also find the complete database documentation on the
-			project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+tables where the module will store the data. For that, if the
+table were not created by the installation script or you choose
+to install everything by yourself you can use the tracer-create.sql
+SQL script in the database directories in the
+opensips/scripts folder as template.
+You can also find the complete database documentation on the
+project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
 
 
 ### Known Issues
 
 
 ACKs related to a transaction that are leaving OpenSIPS are not
-			traced since they are handled statelessly using forward_request function.
-			Fixing it would mean to register a fwdcb callback that would be called
-			for all the messages but would be used only by ACKs, which would be
-			highly ineffective.
+traced since they are handled statelessly using forward_request function.
+Fixing it would mean to register a fwdcb callback that would be called
+for all the messages but would be used only by ACKs, which would be
+highly ineffective.
 <!-- CONTRIBUTORS -->
 
 ### License

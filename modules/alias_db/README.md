@@ -10,15 +10,15 @@ description: "ALIAS_DB module can be used as an alternative for user aliases via
 
 
 ALIAS_DB module can be used as an alternative for user aliases
-	via usrloc. The main feature is that it does not store all adjacent
-	data as for user location and always uses database for search (no
-	memory caching).
+via usrloc. The main feature is that it does not store all adjacent
+data as for user location and always uses database for search (no
+memory caching).
 
 
 Having no memory caching, search speed might decrease but 
-	provisioning is easier. With very fast databases like MySQL, speed
-	penalty can be lowered. Also, search can be performed on different
-	tables in the same script.
+provisioning is easier. With very fast databases like MySQL, speed
+penalty can be lowered. Also, search can be performed on different
+tables in the same script.
 
 
 ### Dependencies
@@ -37,7 +37,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -130,7 +130,7 @@ modparam("alias_db", "alias_domain_column", "adomain")
 
 
 Specifies the prefix to be stripped from the domain in R-URI before
-		doing the search.
+doing the search.
 
 
 *Default value is "NULL".*
@@ -147,11 +147,11 @@ modparam("alias_db", "domain_prefix", "sip.")
 
 
 If the alias resolves to many SIP IDs, the first is replacing
-			the R-URI, the rest are added as branches.
+the R-URI, the rest are added as branches.
 
 
 *Default value is "0" (0 - don't add branches;
-			1 - add branches).*
+1 - add branches).*
 
 
 ```opensips title="Set append_branches parameter"
@@ -168,29 +168,29 @@ modparam("alias_db", "append_branches", 1)
 
 
 The function takes the R-URI and search to see whether it is an alias
-		or not. If it is an alias for a local user, the R-URI is replaced with
-		user's SIP uri.
+or not. If it is an alias for a local user, the R-URI is replaced with
+user's SIP uri.
 
 
 The function returns TRUE if R-URI is alias and it was replaced by
-		user's SIP uri.
+user's SIP uri.
 
 
 Meaning of the parameters is as follows:
 
 
 - *table_name (string)* - the name of the
-				table to search for the alias
+table to search for the alias
 - *flags (string, optional)* - set of
-			character flags to control the alias lookup process:
+character flags to control the alias lookup process:
 
   - **d** - do not use domain URI part in
-				the alias lookup query (use only a username-based lookup). By
-				default, both username and domain are used.
+the alias lookup query (use only a username-based lookup). By
+default, both username and domain are used.
   - **r** - do reverse alias lookup - lookup
-				for the alias mapped to the current URI (URI 2 alias 
-				translation); normally, the function looks up for the URI 
-				mapped to the alias (alias 2 URI translation).
+for the alias mapped to the current URI (URI 2 alias 
+translation); normally, the function looks up for the URI 
+mapped to the alias (alias 2 URI translation).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -208,15 +208,15 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 
 
 The function is very similar to `alias_db_lookup()`,
-		but instead of using fixed input (RURI) and output (RURI) is able to
-		get the input SIP URI from a pseudo-variable and place the result back
-		also in a pseudo-variable.
+but instead of using fixed input (RURI) and output (RURI) is able to
+get the input SIP URI from a pseudo-variable and place the result back
+also in a pseudo-variable.
 
 
 The function is useful as the alias lookup does not affect the request
-		itself (no RURI changes), can be used in a reply context (as it does 
-		not work with RURI only) and can be used for others URI than the RURI
-		(To URI, From URI, custom URI).
+itself (no RURI changes), can be used in a reply context (as it does 
+not work with RURI only) and can be used for others URI than the RURI
+(To URI, From URI, custom URI).
 
 
 The function returns TRUE if any alias mapping was found and returned.
@@ -226,24 +226,24 @@ Meaning of the parameters is as follows:
 
 
 - *table_name (string)* - the name of the table to
-				search for the alias
+search for the alias
 - *input_uri (string)* - a SIP URI to look up
 - *output_var (var)* - a variable to hold
-				the SIP URI result
+the SIP URI result
 - *flags (string, optional)* (optional) - set of flags 
-			(char based flags) to control the alias lookup process:
+(char based flags) to control the alias lookup process:
 
   - *d* - do not use domain URI part in
-				the alias lookup query (use only a username-based lookup). By
-				default, both username and domain are used.
+the alias lookup query (use only a username-based lookup). By
+default, both username and domain are used.
   - *r* - do revers alias lookup - lookup
-				for the alias mapped to the current URI (URI 2 alias 
-				translation); normally, the function looks up for the URI 
-				mapped to the alias (alias 2 URI translation).
+for the alias mapped to the current URI (URI 2 alias 
+translation); normally, the function looks up for the URI 
+mapped to the alias (alias 2 URI translation).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			LOCAL_ROUTE, STARTUP_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
+LOCAL_ROUTE, STARTUP_ROUTE, FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="alias_db_find() usage"
@@ -261,16 +261,16 @@ alias_db_find("dbaliases", $fu, $avp(from_alias), "r");
 
 
 The global parameter (affecting the entire module) was replaced 
-			with a per lookup parameter (affecting only current lookup).
-			See the "d" (do not used domain part) flag in the db_alias_lookup()
-			and db_alias_find() functions.
+with a per lookup parameter (affecting only current lookup).
+See the "d" (do not used domain part) flag in the db_alias_lookup()
+and db_alias_find() functions.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

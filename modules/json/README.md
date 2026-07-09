@@ -10,22 +10,22 @@ description: "This module introduces a new type of variable that provides both s
 
 
 This module introduces a new type of variable that provides both
-	serialization and de-serialization from JSON format.
+serialization and de-serialization from JSON format.
 
 
 The variable provides ways to access objects and arrays to add,replace
-	or delete values from the script.
+or delete values from the script.
 
 
 The correct approach is to consider a json object as a hashtable
-	( you can put (key;value) pairs, and you can delete and get
-	 values by key) and a json array as an array ( you can append,
-	 delete and replace values).
+( you can put (key;value) pairs, and you can delete and get
+values by key) and a json array as an array ( you can append,
+delete and replace values).
 
 
 Since the JSON format can have objects inside other objects
-	you can have multiple nested hashtables or arrays and you can
-	access these using paths.
+you can have multiple nested hashtables or arrays and you can
+access these using paths.
 
 
 ### Dependencies
@@ -41,8 +41,8 @@ This module does not depend on other modules.
 
 
 - *libjson*
-				The libjson C library can be downloaded from:
-				http://oss.metaparadigm.com/json-c/
+The libjson C library can be downloaded from:
+http://oss.metaparadigm.com/json-c/
 
 
 ### Exported Parameters
@@ -52,10 +52,10 @@ This module does not depend on other modules.
 
 
 Enable this parameter if your input JSONs contain signed integers which
-		do not fit into 4 bytes (e.g. larger than 2147483647, etc.).  If the
-		parameter is enabled, 4-byte integers will continue to be returned as
-		integers, while larger values will be returned as strings, in order to
-		avoid the integer overflow.
+do not fit into 4 bytes (e.g. larger than 2147483647, etc.).  If the
+parameter is enabled, 4-byte integers will continue to be returned as
+integers, while larger values will be returned as strings, in order to
+avoid the integer overflow.
 
 
 *Default value is *false*.*
@@ -78,18 +78,18 @@ $var(gateway_id) = "" + $json(body/gateway_id);
 
 
 The `json` variable provides
-			methods to access fields in json objects and
-			indexes in json arrays.
+methods to access fields in json objects and
+indexes in json arrays.
 
 
 ##### Variable lifetime
 
 
 The json variables will be available to the
-			process that created them from the moment they were
-			initialized. They will not reset per message or per
-			transaction. If you want to use the on a per message
-			basis you should initialize them each time.
+process that created them from the moment they were
+initialized. They will not reset per message or per
+transaction. If you want to use the on a per message
+basis you should initialize them each time.
 
 
 ##### Accessing the $json(id) variable
@@ -111,36 +111,36 @@ index = [integer] | [$var] | []
 
 
 The "[]" index represents appending to the array.
-			It should only be used when trying to set a value and
-			not when trying to get one.
+It should only be used when trying to set a value and
+not when trying to get one.
 
 
 Negative indexes can be used to access an array starting
-			from the end. So "[-1]" signifies the last element.
+from the end. So "[-1]" signifies the last element.
 
 
 IMPORTANT: The id strictly complies to this grammar.
-			You should be careful when using spaces because they will
-			NOT be ignored. This was done to allow keys that contain
-			spaces.
+You should be careful when using spaces because they will
+NOT be ignored. This was done to allow keys that contain
+spaces.
 
 
 Variables can be used as indexes or keys. Variables
-			that will be used as indexes must contain integer values.
-			Variables that will be used as keys should contain
-			string values.
+that will be used as indexes must contain integer values.
+Variables that will be used as keys should contain
+string values.
 
 
 Trying to get a value from a non-existing path
-			(key or value) will return the NULL value and notice
-			messages will be placed in the log describing the value
-			of the json and the path used.
+(key or value) will return the NULL value and notice
+messages will be placed in the log describing the value
+of the json and the path used.
 
 
 Trying to replace or insert a value in a
-			non-existing path will cause an error in setting the value
-			and notice messages will be printed in the log
-			describing the value of the json and the path used
+non-existing path will cause an error in setting the value
+and notice messages will be printed in the log
+describing the value of the json and the path used
 
 
 ```opensips title="Accessing the $json variable"
@@ -188,15 +188,15 @@ while( $json(ar1[$var(i)]) )
 
 
 Dynamic traversal of a JSON object or array is possible by using a
-			for each statement, similarly to the indexed pseudo variables iteration.
-			However, note that indexing the $json variable is not supported in
-			any other statements (this refers to indexing the entire variable
-			and not to the indexes accepted in the grammar of the *id*).
+for each statement, similarly to the indexed pseudo variables iteration.
+However, note that indexing the $json variable is not supported in
+any other statements (this refers to indexing the entire variable
+and not to the indexes accepted in the grammar of the *id*).
 
 
 In order to explicitly iterate over a JSON object keys or values, you can use the
-			*.keys* or *.values* suffix for the path
-			specified in the *id*.
+*.keys* or *.values* suffix for the path
+specified in the *id*.
 
 
 ```opensips title="iteration over $json object keys"
@@ -239,20 +239,20 @@ for ($var(v) in $(json(foo)[*]))
 
 
 If the value specified by the id is an integer
-			it will be returned as an integer value.
+it will be returned as an integer value.
 
 
 If the value specified by the id is a string it will
-			be returned as a string.
+be returned as a string.
 
 
 If the value specified by the id is any other
-			type of json ( null, boolean, object, array )
-			the serialized version of the object will be returned
-			as a string value. Using this and the ":="
-			operator you can duplicate json objects and put them
-			in other json objects ( for string or integer you may
-			use the "=" operator).
+type of json ( null, boolean, object, array )
+the serialized version of the object will be returned
+as a string value. Using this and the ":="
+operator you can duplicate json objects and put them
+in other json objects ( for string or integer you may
+use the "=" operator).
 
 
 If the id does not exist a NULL value will be returned.
@@ -268,12 +268,12 @@ There are 2 operators available for this variable.
 
 
 This will cause the value to be taken
-				as is and be added to the json object
-				( e.g. string value or integer	value ).
+as is and be added to the json object
+( e.g. string value or integer	value ).
 
 
 Setting a value to NULL will cause it to be
-				deleted.
+deleted.
 
 
 ```opensips title="Appending integers to arrays"
@@ -304,9 +304,9 @@ $json(object1/some_key) = "some_value";
 
 
 This will cause the value to be taken
-				and interpreted as a json object
-				( e.g. this operator should be used to parse
-				 json inputs ).
+and interpreted as a json object
+( e.g. this operator should be used to parse
+json inputs ).
 
 
 ```opensips title="Initializing an array"
@@ -342,34 +342,34 @@ $json(object/array) := $json(array) ;
 
 
 The `json_pretty` variable has the
-			same purpose as the [json](#pv_json) variable,
-			but prints the JSON object in a pretty format, adding
-			spaces and tabs to make the output more readable.
+same purpose as the [json](#pv_json) variable,
+but prints the JSON object in a pretty format, adding
+spaces and tabs to make the output more readable.
 
 
 #### $json_compact(id)
 
 
 The `json_compact` variable has the
-			same purpose as the [json](#pv_json) variable,
-			but prints the JSON object in a more compact form,
-			without formatting spaces.
+same purpose as the [json](#pv_json) variable,
+but prints the JSON object in a more compact form,
+without formatting spaces.
 
 
 #### $json_compact_noescape(id)
 
 
 The `json_compact_noescape` variable has the
-			same purpose as the [json compact](#pv_json_compact) variable,
-			printing the JSON object in the compact form, but without
-			escaping the slashes.
+same purpose as the [json compact](#pv_json_compact) variable,
+printing the JSON object in the compact form, but without
+escaping the slashes.
 
 
 *NOTICE:* due to the libjson-c library
-			limitations, this variable only skips the slashes escaping
-			starting with version *0.13* - older versions
-			of the library make the variable behave just like the
-			[json compact](#pv_json_compact) variable.
+limitations, this variable only skips the slashes escaping
+starting with version *0.13* - older versions
+of the library make the variable behave just like the
+[json compact](#pv_json_compact) variable.
 
 
 ```opensips title="Difference between json_compact and json_compact_noescape"
@@ -395,34 +395,34 @@ xlog("The json no escape is: $json_compact_noescape(obj)\n");
 
 
 This function can be used to link json objects together.
-			This will work simillar to setting a value to an object,
-			the only difference is that the second object is not
-			copied, only a reference is created.
+This will work simillar to setting a value to an object,
+the only difference is that the second object is not
+copied, only a reference is created.
 
 
 Changes to any of the objects will be visible in both of
-			them.
+them.
 
 
 You can use this method either to create references
-			so each time you access the field you don't
-			have to go through the full path
-			(for speed efficiency and shorter code), or
-			if you have an object that must be added to many
-			other objects and you don't want to copy it each
-			time (space and speed efficiency).
+so each time you access the field you don't
+have to go through the full path
+(for speed efficiency and shorter code), or
+if you have an object that must be added to many
+other objects and you don't want to copy it each
+time (space and speed efficiency).
 
 
 You can think of this object exactly as a reference
-			in an object-oriented language. Modifying fields
-			referenced by the variable will cause modifications
-			in all the objects, BUT modifying the variable itsef
-			will not cause any changes to other objects.
+in an object-oriented language. Modifying fields
+referenced by the variable will cause modifications
+in all the objects, BUT modifying the variable itsef
+will not cause any changes to other objects.
 
 
 WARNING: You should be careful when using references.
-			If you accidentally create a circular reference and try
-			to get the value from the object you will crash OPENSIPS.
+If you accidentally create a circular reference and try
+to get the value from the object you will crash OPENSIPS.
 
 
 ```opensips title="Creating a reference"
