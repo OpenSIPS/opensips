@@ -12,14 +12,14 @@ title: "db_virtual Module"
 
 
 A virtual DB will expose the same front DB api however, it will
-				backed by many real DB. This means that a virtual DB URL 
-				translates to many real DB URLs. This virtual layer also 
-				enables us to use the real dbs in multiple ways such as: 
-				parallel, failover(hotswap) and round-robin.
+backed by many real DB. This means that a virtual DB URL 
+translates to many real DB URLs. This virtual layer also 
+enables us to use the real dbs in multiple ways such as: 
+parallel, failover(hotswap) and round-robin.
 
-				Therefore:
-					each virtual DB URL with associated real dbs and
-					a way to use(mode) it's real dbs must be specified.
+Therefore:
+each virtual DB URL with associated real dbs and
+a way to use(mode) it's real dbs must be specified.
 
 
 #### Modes
@@ -30,36 +30,36 @@ The implemented modes are:
 
 - FAILOVER
 Use the first URL; if it fails, take the next
-								URL and redo the operation.
+URL and redo the operation.
 - PARALLEL
 Use all the URLs in the virtual DB URL set.
-								Fails if all the URLs fail.
+Fails if all the URLs fail.
 - ROUND (round-robin)
 Use the next URL each time; if it fails, 
-								use the next one, redo operation.
+use the next one, redo operation.
 
 
 When choosing the db virtual mode, be sure that there is a full
-			compatibility between the DB operations you want to do (inserts, 
-			updates, deletes,...) and the relation (if any) between the real
-			DB URLs you have in the set - can be completely independent, can be
-			nodes of the same cluster, or any other combination.
+compatibility between the DB operations you want to do (inserts, 
+updates, deletes,...) and the relation (if any) between the real
+DB URLs you have in the set - can be completely independent, can be
+nodes of the same cluster, or any other combination.
 
 
 #### Capabilities
 
 
 For each set (or new virtual DB URL), the capabilities are
-			automatically calculated based on the capabilities provided by the
-			real DB URLs from the set. A logical AND is done for each
-			cabability over all the URLs in the set. Shortly, in order for the
-			virtual URL to provide a certain capability, ALL its real URLs 
-			must provide that capability.
+automatically calculated based on the capabilities provided by the
+real DB URLs from the set. A logical AND is done for each
+cabability over all the URLs in the set. Shortly, in order for the
+virtual URL to provide a certain capability, ALL its real URLs 
+must provide that capability.
 
 
 Note that starting with version 2.2 db_virtual supports 
-			async_raw_query and async_raw_resume functions currently
-			implemented only by the mysql database engine.
+async_raw_query and async_raw_resume functions currently
+implemented only by the mysql database engine.
 
 
 #### Failures
@@ -91,14 +91,14 @@ Note that starting with version 2.2 db_virtual supports
 
 
 Note *: there could be inconsistencies between the probe and each process so a retry limit is in order.
-				It is reset and ignored by an MI command.
+It is reset and ignored by an MI command.
 
 
 #### The timer process
 
 
 The timer process(probe) is a process that tries to reconnect to failed dbs from time to time.
-				It is a separate process so that when it blocks (for a timeout on the connection) it doesn't matter.
+It is a separate process so that when it blocks (for a timeout on the connection) it doesn't matter.
 
 
 ### Dependencies
@@ -117,7 +117,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -153,8 +153,8 @@ modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
 
 
 Time interval after which a registered timer process attempts to check
-		failed(as reported by other processes) connections to real dbs. The probe will connect and
-		disconnect to the failed real DB and announce others.
+failed(as reported by other processes) connections to real dbs. The probe will connect and
+disconnect to the failed real DB and announce others.
 
 
 *Default value is 10 (10 sec).*
@@ -172,10 +172,10 @@ modparam("db_virtual", "db_probe_time", 20)
 
 
 After the timer process has reported that it can connect to the real db,
-		other processes will try to reconnect to it. There are cases where although
-		the probe could connect some might fail. This parameter represents the number
-		of consecutive failed retries that a process will do before it gives up.
-		This value is reset and suppressed by a MI function(db_set).
+other processes will try to reconnect to it. There are cases where although
+the probe could connect some might fail. This parameter represents the number
+of consecutive failed retries that a process will do before it gives up.
+This value is reset and suppressed by a MI function(db_set).
 
 
 *Default value is 10 (10 consecutive times).*
@@ -200,7 +200,7 @@ Return information about global state of the real dbs.
 
 
 Name:
-				*db_get*
+*db_get*
 
 
 Parameters:
@@ -229,7 +229,7 @@ Sets the reconnect reset flag.
 
 
 Name:
-				*db_set*
+*db_set*
 
 
 Parameters:

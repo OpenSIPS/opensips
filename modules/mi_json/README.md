@@ -10,7 +10,7 @@ description: "This module implements a JSON server that handles GET requests and
 
 
 This module implements a JSON server that handles GET
-		requests and generates JSON responses.
+requests and generates JSON responses.
 
 
 ### Dependencies
@@ -38,7 +38,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root path for JSON requests:
-		http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
+http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
 
 
 *The default value is "json".*
@@ -55,13 +55,13 @@ modparam("mi_json", "mi_json_root", "opensips_mi_json")
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		This is where traced mi messages will go.
+the only tracing module is **proto_hep**.
+This is where traced mi messages will go.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+loaded in order for this parameter to work. (for example
+**proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -80,24 +80,24 @@ modparam("mi_json", "trace_destination", "hep_dest")
 
 
 Filter traced mi commands based on a blacklist or a whitelist.
-		**trace_destination** must be defined for
-		this parameter to have any purpose. Whitelists can be defined using
-		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
-		actual blacklist by ':'. The mi commands in the list must be separated
-		by ','.
+**trace_destination** must be defined for
+this parameter to have any purpose. Whitelists can be defined using
+'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+actual blacklist by ':'. The mi commands in the list must be separated
+by ','.
 
 
 Defining a blacklists means all the commands that are not blacklisted
-			will be traced. Defining a whitelist means all the commands that are
-			not whitelisted will not be traced.
-			**WARNING:** One can't define both
-			a whitelist and a blacklist. Only one of them is allowed. Defining
-			the parameter a second time will just overwrite the first one.
+will be traced. Defining a whitelist means all the commands that are
+not whitelisted will not be traced.
+**WARNING:** One can't define both
+a whitelist and a blacklist. Only one of them is allowed. Defining
+the parameter a second time will just overwrite the first one.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep)**.
+loaded in order for this parameter to work. (for example
+**proto_hep)**.
 
 
 *Default value is none(not defined).*
@@ -126,20 +126,20 @@ No function exported to be used from configuration file.
 
 
 Commands with large responses (like ul_dump) will fail if the
-		configured size of the httpd buffer is to small (or if there
-		isn't enough pkg memory configured).
+configured size of the httpd buffer is to small (or if there
+isn't enough pkg memory configured).
 
 
 Future realeases of the httpd and mi_json modules
-		will address this issue.
+will address this issue.
 
 
 ### Examples
 
 
 This is an example showing the JSON format for the
-		"get_statistics net: uri:" MI command.
-		Notice how the parameters are comma-separated then URI-encoded.
+"get_statistics net: uri:" MI command.
+Notice how the parameters are comma-separated then URI-encoded.
 
 
 ```c title="JSON request"
@@ -157,7 +157,7 @@ Date: Fri, 01 Nov 2013 12:00:00 GMT
 
 
 Here is another example showing the JSON format for the
-		"ps" MI command.
+"ps" MI command.
 
 
 ```c title="JSON request"

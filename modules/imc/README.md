@@ -10,20 +10,20 @@ description: "This module offers support for instant message conference. It foll
 
 
 This module offers support for instant message conference. It
-		follows the architecture of IRC channels, you can send commands
-		embedded in MESSAGE body, because there are no SIP UA clients
-		which have GUI for IM conferencing.
+follows the architecture of IRC channels, you can send commands
+embedded in MESSAGE body, because there are no SIP UA clients
+which have GUI for IM conferencing.
 
 
 You have to define an URI corresponding to im conferencing manager, where
-	user can send commands to create a new conference room. Once the conference
-	room is created, users can send commands directly to conferece's URI.
+user can send commands to create a new conference room. Once the conference
+room is created, users can send commands directly to conferece's URI.
 
 
 To ease the integration in the configuration file, the interpreter of
-	the IMC commands are embeded in the module, from configuration poin of
-	view, there is only one function which has to be executed for both
-	messages and commands.
+the IMC commands are embeded in the module, from configuration poin of
+view, there is only one function which has to be executed for both
+messages and commands.
 
 
 ### Dependencies
@@ -43,7 +43,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -104,7 +104,7 @@ modparam("imc", "rooms_table", "members")
 
 
 The power of 2 to get the size of the hash table used for storing
-		members and rooms.
+members and rooms.
 
 
 *The default value is 4 (resultimg in hash size 16).*
@@ -137,10 +137,10 @@ modparam("imc", "imc_cmd_start_char", "#")
 
 
 The SIP address used as next hop when sending the message. Very
-   useful when using OpenSIPS with a domain name not in DNS, or
-   when using a separate OpenSIPS instance for imc processing. If
-   not set, the message will be sent to the address in destination
-   URI.
+useful when using OpenSIPS with a domain name not in DNS, or
+when using a separate OpenSIPS instance for imc processing. If
+not set, the message will be sent to the address in destination
+URI.
 
 
 *Default value is NULL.*
@@ -160,8 +160,8 @@ modparam("imc", "outbound_proxy", "sip:opensips.org;transport=tcp")
 
 
 Handles Message method.It detects if the body of the message is a
-		conference command.If so it executes it, otherwise it sends the
-		message to all the members in the room.
+conference command.If so it executes it, otherwise it sends the
+message to all the members in the room.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -242,8 +242,8 @@ Number of active IM Conferencing rooms.
 
 
 A command is identified by the starting character. A command must be
-		written in one line. By default, the starting character is '#'. You
-		can change it via "imc_cmd_start_char" parameter.
+written in one line. By default, the starting character is '#'. You
+can change it via "imc_cmd_start_char" parameter.
 
 
 Next picture presents the list of commands and their parameters.
@@ -324,13 +324,13 @@ Next picture presents the list of commands and their parameters.
 
 
 Before running OpenSIPS with IMC, you have to setup the database 
-		tables where the module will store the data. For that, if the 
-		tables were not created by the installation script or you choose
-		to install everything by yourself you can use the imc-create.sql
-		SQL script in the database directories in the 
-		opensips/scripts folder as template. 
-		You can also find the complete database documentation on the
-		project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+tables where the module will store the data. For that, if the 
+tables were not created by the installation script or you choose
+to install everything by yourself you can use the imc-create.sql
+SQL script in the database directories in the 
+opensips/scripts folder as template. 
+You can also find the complete database documentation on the
+project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
 
 
 *doc copyrights:*

@@ -10,17 +10,17 @@ description: "The *rest_client* module provides a means of interacting with an H
 
 
 The *rest_client* module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET, POST and PUT.
+with an HTTP server by doing RESTful queries, such as GET, POST and PUT.
 
 
 ### TCP Connection Reusage
 
 
 Unless specified otherwise by the server through a "Connection: close"
-	indication, the module will keep and reuse the TCP connections it creates
-	as much as possible, regardless if the script writer performs blocking or
-	asynchronous HTTP requests.  These connections are not shared among OpenSIPS
-	workers — each worker maintains its own set of connections.
+indication, the module will keep and reuse the TCP connections it creates
+as much as possible, regardless if the script writer performs blocking or
+asynchronous HTTP requests.  These connections are not shared among OpenSIPS
+workers — each worker maintains its own set of connections.
 
 
 ### Dependencies
@@ -39,7 +39,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libcurl*.
@@ -52,9 +52,9 @@ The following libraries or applications must be installed before
 
 
 The maximum allowed time for any HTTP(S) transfer to complete.  This
-		interval is inclusive of the initial connect time window, hence the value
-		of this parameter must be greater than or equal to
-		[connection timeout](#param_connection_timeout).
+interval is inclusive of the initial connect time window, hence the value
+of this parameter must be greater than or equal to
+[connection timeout](#param_connection_timeout).
 
 
 *Default value is "20" seconds.*
@@ -87,10 +87,10 @@ modparam("rest_client", "connection_timeout", 4)
 
 
 Only relevant with async requests.  Allows complete control over how
-		quickly we want to detect libcurl's completed blocking TCP/TLS handshakes,
-		so the async transfers can be put in the background.  A lower
-		[connect poll interval](#param_connect_poll_interval) may speed up all async
-		HTTP transfers, but will also increase CPU usage.
+quickly we want to detect libcurl's completed blocking TCP/TLS handshakes,
+so the async transfers can be put in the background.  A lower
+[connect poll interval](#param_connect_poll_interval) may speed up all async
+HTTP transfers, but will also increase CPU usage.
 
 
 *Default value is "20" milliseconds.*
@@ -107,9 +107,9 @@ modparam("rest_client", "connect_poll_interval", 2)
 
 
 Maximum number of asynchronous HTTP transfers *a single*
-		OpenSIPS worker is allowed to run simultaneously. As long as this threshold
-		is reached for a worker, all new async transfers it attempts to perform
-		will be done in a blocking manner, with appropriate logging warnings.
+OpenSIPS worker is allowed to run simultaneously. As long as this threshold
+is reached for a worker, all new async transfers it attempts to perform
+will be done in a blocking manner, with appropriate logging warnings.
 
 
 *Default value is "100".*
@@ -126,8 +126,8 @@ modparam("rest_client", "max_async_transfers", 300)
 
 
 Set this to 0 in order to disable the verification of the remote peer's
-		certificate. Verification is done using a default bundle of CA certificates
-		which come with libcurl.
+certificate. Verification is done using a default bundle of CA certificates
+which come with libcurl.
 
 
 *Default value is "1" (enabled).*
@@ -144,7 +144,7 @@ modparam("rest_client", "ssl_verifypeer", 0)
 
 
 Set this to 0 in order to disable the verification that the remote peer
-		actually corresponds to the server listed in the certificate.
+actually corresponds to the server listed in the certificate.
 
 
 *Default value is "1" (enabled).*
@@ -174,9 +174,9 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 
 
 Include a "Expect: 100-continue" HTTP header field whenever the body
-		size of a POST or PUT request exceeds 1024 bytes.  Once enabled, the
-		timeout for waiting for a "100 Continue" reply from the server is 1
-		second, after which the body upload will begin.
+size of a POST or PUT request exceeds 1024 bytes.  Once enabled, the
+timeout for waiting for a "100 Continue" reply from the server is 1
+second, after which the body upload will begin.
 
 
 *Default value is "false" (disabled).*
@@ -196,29 +196,29 @@ modparam("rest_client", "enable_expect_100", true)
 
 
 Perform a blocking HTTP GET on the given *url* and
-		return a representation of the resource.
+return a representation of the resource.
 
 
 The *body_pv* pseudo-var will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *ctype_pv* pseudo-var will contain the value
-		of the "Content-Type:" header of the response.
+of the "Content-Type:" header of the response.
 
 
 The optional *retcode_pv* pseudo-var will retain the
-		status code of the HTTP response.  A **0**
-		status code value means no HTTP reply arrived at all.
+status code of the HTTP response.  A **0**
+status code value means no HTTP reply arrived at all.
 
 
 **Parameter Types**
 
 
 - *url* - string, pseudo-variable or
-				pseudo-variable format string
+pseudo-variable format string
 - *body_pv, ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 **Return Codes**
@@ -227,17 +227,17 @@ The optional *retcode_pv* pseudo-var will retain the
 - **1** - Success
 - **-1** - Connection Refused.
 - **-2** - Connection Timeout
-	(the [connection timeout](#param_connection_timeout) was exceeded
-	before a TCP connection could be established)
+(the [connection timeout](#param_connection_timeout) was exceeded
+before a TCP connection could be established)
 - **-3** - Transfer Timeout
-	(the [curl timeout](#param_curl_timeout) was exceeded before the
-	last byte was received). The *retcode_pv* may
-	be set to 200 or 0, depending whether a 200 OK was received or not.
-	If it was, the *body_pv* will contain partially
-	downloaded data, use at your own risk! (we recommend you only use
-	this data for logging / debugging purposes)
+(the [curl timeout](#param_curl_timeout) was exceeded before the
+last byte was received). The *retcode_pv* may
+be set to 200 or 0, depending whether a 200 OK was received or not.
+If it was, the *body_pv* will contain partially
+downloaded data, use at your own risk! (we recommend you only use
+this data for logging / debugging purposes)
 - **-10** - Internal Error (out of
-		memory, unexpected libcurl error, etc.)
+memory, unexpected libcurl error, etc.)
 
 
 This function can be used from any route.
@@ -269,36 +269,36 @@ if ($var(rcode) != 200) {
 
 
 Perform a blocking HTTP POST on the given *url*.  The request body will
-		be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
-		header for the request will be taken from *send_ctype_pv* (the default is
-		*"application/x-www-form-urlencoded"*)
+be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
+header for the request will be taken from *send_ctype_pv* (the default is
+*"application/x-www-form-urlencoded"*)
 
 
 Note that the *send_body_pv* parameter can also accept a format-string
-		but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
-		pseudo-variable and pass it to the function.
+but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
+pseudo-variable and pass it to the function.
 
 
 The mandatory *recv_body_pv* pseudo-var will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *recv_ctype_pv* parameter will contain
-		the value of the "Content-Type" header of the response.
+the value of the "Content-Type" header of the response.
 
 
 The optional *retcode_pv* pseudo-var will retain the
-		status code of the HTTP response.  A **0**
-		status code value means no HTTP reply arrived at all.
+status code of the HTTP response.  A **0**
+status code value means no HTTP reply arrived at all.
 
 
 **Parameter Types**
 
 
 - *url, send_body_pv, send_type_pv* -
-				string, pseudo-variable or pseudo-variable format string
+string, pseudo-variable or pseudo-variable format string
 - *body_pv, ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 **Return Codes**
@@ -307,17 +307,17 @@ The optional *retcode_pv* pseudo-var will retain the
 - **1** - Success
 - **-1** - Connection Refused.
 - **-2** - Connection Timeout
-	(the [connection timeout](#param_connection_timeout) was exceeded
-	before a TCP connection could be established)
+(the [connection timeout](#param_connection_timeout) was exceeded
+before a TCP connection could be established)
 - **-3** - Transfer Timeout
-	(the [curl timeout](#param_curl_timeout) was exceeded before the
-	last byte was received). The *retcode_pv* may
-	be set to 200 or 0, depending whether a 200 OK was received or not.
-	If it was, the *body_pv* will contain partially
-	downloaded data, use at your own risk! (we recommend you only use
-	this data for logging / debugging purposes)
+(the [curl timeout](#param_curl_timeout) was exceeded before the
+last byte was received). The *retcode_pv* may
+be set to 200 or 0, depending whether a 200 OK was received or not.
+If it was, the *body_pv* will contain partially
+downloaded data, use at your own risk! (we recommend you only use
+this data for logging / debugging purposes)
 - **-10** - Internal Error (out of
-		memory, unexpected libcurl error, etc.)
+memory, unexpected libcurl error, etc.)
 
 
 This function can be used from any route.
@@ -347,36 +347,36 @@ if ($var(rcode) != 200) {
 
 
 Perform a blocking HTTP PUT on the given *url*.  The request body will
-		be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
-		header for the request will be taken from *send_ctype_pv* (the default is
-		*"application/x-www-form-urlencoded"*)
+be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
+header for the request will be taken from *send_ctype_pv* (the default is
+*"application/x-www-form-urlencoded"*)
 
 
 Similar to [rest post](#func_rest_post), the *send_body_pv*
-		parameter can also accept a format-string but it cannot be larger than 1024 bytes. For
-		larger messages, you must build them in a pseudo-variable and pass it to the function.
+parameter can also accept a format-string but it cannot be larger than 1024 bytes. For
+larger messages, you must build them in a pseudo-variable and pass it to the function.
 
 
 The mandatory *recv_body_pv* pseudo-var will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *recv_ctype_pv* parameter will contain
-		the value of the "Content-Type" header of the response message.
+the value of the "Content-Type" header of the response message.
 
 
 The optional *retcode_pv* pseudo-var will retain the
-		status code of the HTTP response.  A **0**
-		status code value means no HTTP reply arrived at all.
+status code of the HTTP response.  A **0**
+status code value means no HTTP reply arrived at all.
 
 
 **Parameter Types**
 
 
 - *url, send_body_pv, send_type_pv* -
-				string, pseudo-variable or pseudo-variable format string
+string, pseudo-variable or pseudo-variable format string
 - *body_pv, ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 **Return Codes**
@@ -385,17 +385,17 @@ The optional *retcode_pv* pseudo-var will retain the
 - **1** - Success
 - **-1** - Connection Refused.
 - **-2** - Connection Timeout
-	(the [connection timeout](#param_connection_timeout) was exceeded
-	before a TCP connection could be established)
+(the [connection timeout](#param_connection_timeout) was exceeded
+before a TCP connection could be established)
 - **-3** - Transfer Timeout
-	(the [curl timeout](#param_curl_timeout) was exceeded before the
-	last byte was received). The *retcode_pv* may
-	be set to 200 or 0, depending whether a 200 OK was received or not.
-	If it was, the *body_pv* will contain partially
-	downloaded data, use at your own risk! (we recommend you only use
-	this data for logging / debugging purposes)
+(the [curl timeout](#param_curl_timeout) was exceeded before the
+last byte was received). The *retcode_pv* may
+be set to 200 or 0, depending whether a 200 OK was received or not.
+If it was, the *body_pv* will contain partially
+downloaded data, use at your own risk! (we recommend you only use
+this data for logging / debugging purposes)
 - **-10** - Internal Error (out of
-		memory, unexpected libcurl error, etc.)
+memory, unexpected libcurl error, etc.)
 
 
 This function can be used from any route.
@@ -425,12 +425,12 @@ if ($var(rcode) != 200) {
 
 
 Append *txt* to the HTTP headers of the subsequent request.
-		Multiple headers can be appended by making multiple calls
-		before executing a request.
+Multiple headers can be appended by making multiple calls
+before executing a request.
 
 
 The contents of *txt* should adhere to the
-		specification for HTTP headers (ex. Field: Value)
+specification for HTTP headers (ex. Field: Value)
 
 
 Parameter types
@@ -457,26 +457,26 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 
 
 Force a specific TLS certificate and private key pair to be eventually
-		used during the next request. Refer to the tls_mgm module for
-		additional info regarding TLS client domains.
+used during the next request. Refer to the tls_mgm module for
+additional info regarding TLS client domains.
 
 
 If using this function, you must also ensure that tls_mgm is loaded
-		and properly configured.
+and properly configured.
 
 
 Note that if you want to use this feature, the certificate must be
-		provisioned in the configuration file, NOT in the database. In case you
-		are loading TLS certificates from the database, you must at least
-		define the default domain in the configuration script, where is
-		currently the only place you can define it.
+provisioned in the configuration file, NOT in the database. In case you
+are loading TLS certificates from the database, you must at least
+define the default domain in the configuration script, where is
+currently the only place you can define it.
 
 
 Parameter types
 
 
 - *tls_client_domain* - string,
-			pseudo-variable, or a string which includes pseudo-variables.
+pseudo-variable, or a string which includes pseudo-variables.
 
 
 This function can be used from any route.
@@ -499,10 +499,10 @@ if (!rest_get("https://example.com"))
 
 
 Perform an asynchronous HTTP GET.  This function behaves exactly the same as
-		**[rest get](#func_rest_get)**
-		(in terms of input, output and processing),
-		but in a non-blocking manner.  Script execution is suspended until the
-		entire content of the HTTP response is available.
+**[rest get](#func_rest_get)**
+(in terms of input, output and processing),
+but in a non-blocking manner.  Script execution is suspended until the
+entire content of the HTTP response is available.
 
 
 ```opensips title="async rest_get usage"
@@ -535,10 +535,10 @@ route [resume] {
 
 
 Perform an asynchronous HTTP POST.  This function behaves exactly the same as
-		**[rest post](#func_rest_post)** (in
-		terms of input, output and processing), but in a non-blocking manner.
-		Script execution is suspended until the entire content of the HTTP
-		response is available.
+**[rest post](#func_rest_post)** (in
+terms of input, output and processing), but in a non-blocking manner.
+Script execution is suspended until the entire content of the HTTP
+response is available.
 
 
 ```opensips title="async rest_post usage"
@@ -570,10 +570,10 @@ route [resume] {
 
 
 Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
-		**[rest put](#func_rest_put)** (in
-		terms of input, output and processing), but in a non-blocking manner.
-		Script execution is suspended until the entire content of the HTTP
-		response is available.
+**[rest put](#func_rest_put)** (in
+terms of input, output and processing), but in a non-blocking manner.
+Script execution is suspended until the entire content of the HTTP
+response is available.
 
 
 ```opensips title="async rest_put usage"
