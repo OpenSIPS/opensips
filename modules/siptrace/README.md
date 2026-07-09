@@ -16,11 +16,11 @@ There are two ways of storing information.
 
 
 - by calling explicitely the sip_trace() method in OpenSIPS configuration
-		file. In this case the original message is processed.
+file. In this case the original message is processed.
 - by setting the flag equal with the value of 'trace_flag' (e.g.,
-		setflag(TRACE_FLAG)) parameter of the module. In this case, the\
-		message sent forward is processed. The logging mechanism is based on
-		TM/SL callbacks, so only messages processed with TM/SL are logged.
+setflag(TRACE_FLAG)) parameter of the module. In this case, the\
+message sent forward is processed. The logging mechanism is based on
+TM/SL callbacks, so only messages processed with TM/SL are logged.
 
 
 The tracing can be turned on/off using fifo commad.
@@ -42,16 +42,16 @@ The following modules must be loaded before this module:
 
 
 - *database module* - mysql, postrgress,
-				dbtext, unixodbc...
+dbtext, unixodbc...
 - *tm and sl modules* - optional, only if
-				you want to trace messages forwarded by these modules.
+you want to trace messages forwarded by these modules.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -83,7 +83,7 @@ Which flag is used to mark messages to trace
 
 
 *WARNING:*Setting INT flags is deprecated!
-		Use quoted strings instead!
+Use quoted strings instead!
 
 
 *Default value is "NULL" (not set).*
@@ -116,7 +116,7 @@ modparam("siptrace", "trace_on", 1)
 
 
 Parameter to enable/disable tracing of statelessly received ACKs
-		(on(1)/off(0))
+(on(1)/off(0))
 
 
 *Default value is "0".*
@@ -133,10 +133,10 @@ modparam("siptrace", "enable_ack_trace", 1)
 
 
 The name of the AVP storing the SIP URI of the traced user. If
-		the AVP is set, messages are stored in database table and
-		'traced_user' column is filled with AVP's value. You can store
-		the message many times for many users by having multiple values
-		for this AVP.
+the AVP is set, messages are stored in database table and
+'traced_user' column is filled with AVP's value. You can store
+the message many times for many users by having multiple values
+for this AVP.
 
 
 *Default value is "NULL" (feature disabled).*
@@ -154,11 +154,11 @@ modparam("siptrace", "traced_user_avp", "$avp(user)")
 
 
 The name of the AVP storing the name of the table where to
-		store the SIP messages. If it is not set, the value of
-		'table' parameter is used. In this way one can select
-		dynamically where to store the traced messages. The table
-		must exists, and must have the same structure as 'sip_trace'
-		table.
+store the SIP messages. If it is not set, the value of
+'table' parameter is used. In this way one can select
+dynamically where to store the traced messages. The table
+must exists, and must have the same structure as 'sip_trace'
+table.
 
 
 *Default value is "NULL" (feature disabled).*
@@ -176,7 +176,7 @@ modparam("siptrace", "trace_table_avp", "$avp(siptrace_table)")
 
 
 The address in form of SIP uri where to send a duplicate
-		of traced message. It uses UDP all the time.
+of traced message. It uses UDP all the time.
 
 
 *Default value is "NULL".*
@@ -193,8 +193,8 @@ modparam("siptrace", "duplicate_uri", "sip:10.1.1.1:5888")
 
 
 The address to be used in fromip field for local generated
-		messages. If not set, the module sets it to the address
-		of the socket that will be used to send the message.
+messages. If not set, the module sets it to the address
+of the socket that will be used to send the message.
 
 
 *Default value is "NULL".*
@@ -230,7 +230,7 @@ modparam("siptrace", "table", "strace")
 
 
 Store current processed SIP message in database. It is stored in the
-		form prior applying chages made to it.
+form prior applying chages made to it.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
@@ -247,13 +247,13 @@ sip_trace();
 
 
 The function triggers the tracing of all messages belonging to a
-		dialog. The function must be called for the initial request (that 
-		starts the dialog) and it will automatically take care of tracing
-		evertyhing related to that dialog.
+dialog. The function must be called for the initial request (that 
+starts the dialog) and it will automatically take care of tracing
+evertyhing related to that dialog.
 
 
 When using this function, you do not have to explicity set any tracing
-		flag or to explicitly call anothe trace function.
+flag or to explicitly call anothe trace function.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -271,12 +271,12 @@ if(is_method("INVITE") && !has_totag())
 
 
 Parameter to enable/disable inserts to the Database from this
-                OpenSIPS.
+OpenSIPS.
 
 
 In case we only want to send the SIP-Messages to the
-                duplicate_uri and not store the information to the local
-                database we can set this to "0".
+duplicate_uri and not store the information to the local
+database we can set this to "0".
 
 
 *Default value is "1".*
@@ -293,7 +293,7 @@ modparam("siptrace", "trace_to_database", 0)
 
 
 Parameter to enable/disable homer encapsulate mode
-                (on(1)/off(0))
+(on(1)/off(0))
 
 
 *Default value is "0".*
@@ -310,8 +310,8 @@ modparam("siptrace", "duplicate_with_hep", 1)
 
 
 The parameter indicate the version of HEP protocol. 
-                Can be 1 or 2. In HEPv2 the timestamp and capture agent ID will
-                be included to HEP header.
+Can be 1 or 2. In HEPv2 the timestamp and capture agent ID will
+be included to HEP header.
 
 
 *Default value is "1".*
@@ -328,7 +328,7 @@ modparam("siptrace", "hep_version", 2)
 
 
 The parameter indicate the capture agent ID for HEPv2 protocol. 
-                Limitation: 16-bit integer.
+Limitation: 16-bit integer.
 
 
 *Default value is "1".*
@@ -354,14 +354,14 @@ Parameters:
 
 
 - trace_mode : turns on/off SIP message tracing.
-			Possible values are:
+Possible values are:
 
   - on
   - off
 The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string 
-			"on" or "off" ) without changing
-			anything.
+return the status of the SIP message tracing (as string 
+"on" or "off" ) without changing
+anything.
 
 
 MI FIFO Command Format:
@@ -385,15 +385,15 @@ Parameters:
 
 
 - trace_to_db_mode : turns on/off SIP message tracing into DB.
-			Possible values are:
+Possible values are:
 
   - on
   - off
 The parameter is optional - if missing, the command will
-			return the status of the SIP message tracing (as string 
-			"on" or "off" ) without changing
-			anything. The parameter can be switched from off to on, 
-			if db connection was before inizialized
+return the status of the SIP message tracing (as string 
+"on" or "off" ) without changing
+anything. The parameter can be switched from off to on, 
+if db connection was before inizialized
 
 
 MI FIFO Command Format:
@@ -411,20 +411,20 @@ MI FIFO Command Format:
 
 
 Before running OpenSIPS with siptrace, you have to setup the database 
-			tables where the module will store the data. For that, if the 
-			table were not created by the installation script or you choose
-			to install everything by yourself you can use the siptrace-create.sql
-			SQL script in the database directories in the 
-			opensips/scripts folder as template. 
-			You can also find the complete database documentation on the
-			project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+tables where the module will store the data. For that, if the 
+table were not created by the installation script or you choose
+to install everything by yourself you can use the siptrace-create.sql
+SQL script in the database directories in the 
+opensips/scripts folder as template. 
+You can also find the complete database documentation on the
+project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ### Known Issues
 
 
 Stateless forwarded messages (forward()) are not logged if you set the
-	flag, use sip_trace().
+flag, use sip_trace().
 <!-- CONTRIBUTORS -->
 
 ### License

@@ -10,9 +10,9 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a 
-		Couchbase server. It uses the libcouchbase client library to connect to the
-		server instance,
-		It uses the Key-Value interface exported from the core.
+Couchbase server. It uses the libcouchbase client library to connect to the
+server instance,
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -20,15 +20,15 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The CouchBase DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The CouchBase DB is also
+persistent so it can also be restarted without loss of information.*
 - *CouchBase is an open-source project so
-				it can be used to exchange data
-				 with various other applicationsr*
+it can be used to exchange data
+with various other applicationsr*
 - *By creating a CouchBase Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 
 
 ### Limitations
@@ -50,7 +50,7 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libcouchbase >= 2.0:*
@@ -64,12 +64,12 @@ libcoucbase can be downloaded from http://www.couchbase.com/develop/c/current
 
 
 The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
-			The format of the URL is
-			couchbase[:identifier]://[username:password@]IP:Port/bucket_name
+to use the from script cache_store,cache_fetch, etc operations.
+It can be set more than one time.
+The prefix part of the URL will be the identifier that will be used
+from the script.
+The format of the URL is
+couchbase[:identifier]://[username:password@]IP:Port/bucket_name
 
 
 Multiple hosts provisioning is not supported in this version.
@@ -88,7 +88,7 @@ modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:888
 
 
 The max duration in microseconds that a couchbase op is expected to last.
-			Default is 3000000 ( 3 seconds )
+Default is 3000000 ( 3 seconds )
 
 
 ```opensips title="Set timeout parameter"
@@ -113,7 +113,7 @@ cache_remove("couchbase:cluster1","key");
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 <!-- CONTRIBUTORS -->
 
 ### License

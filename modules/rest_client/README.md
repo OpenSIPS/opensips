@@ -10,7 +10,7 @@ description: "The *rest_client* module provides a means of interacting with an H
 
 
 The *rest_client* module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET and POST.
+with an HTTP server by doing RESTful queries, such as GET and POST.
 
 
 ### Dependencies
@@ -29,7 +29,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libcurl*.
@@ -77,33 +77,33 @@ modparam("rest_client", "curl_timeout", 300)
 
 
 Issues an HTTP GET request to the given 'url', and returns a representation
-		of the resource.
+of the resource.
 
 
 The *body_pv* avp will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *ctype_pv* avp will contain the value
-		of the "Content-Type:" header.
+of the "Content-Type:" header.
 
 
 The optional *retcode_pv* avp is used to retain the
-		HTTP status code of the response message.
+HTTP status code of the response message.
 
 
 Possible parameter types
 
 
 - *url* - String, pseudo-variable, or a String
-				which includes pseudo-variables. (useful for specifying additional
-				attribute-value fields in the URL)
+which includes pseudo-variables. (useful for specifying additional
+attribute-value fields in the URL)
 - *body_pv, ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 This function can be used from the *startup, branch, failure,
-				request* and *timer* routes.
+request* and *timer* routes.
 
 
 ```opensips title="rest_get usage"
@@ -123,33 +123,33 @@ if (!rest_get("http://getcredit.org/?ruri=$fU", "$avp(credit)", "$avp(ct)", "$av
 
 
 Issues an HTTP POST request to the specified 'url'. The request body will
-		be copied from the 'send_body_pv' pseudo-variable. Its MIME content type
-		will be taken from 'send_ctype_pv'.
+be copied from the 'send_body_pv' pseudo-variable. Its MIME content type
+will be taken from 'send_ctype_pv'.
 
 
 The *recv_body_pv* avp will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *recv_ctype_pv* parameter will contain
-		the value of the "Content-Type:" header of the response message.
+the value of the "Content-Type:" header of the response message.
 
 
 The optional *retcode_pv* avp parameter can be given
-		in order to save the HTTP status code of the response message.
+in order to save the HTTP status code of the response message.
 
 
 Possible parameter types
 
 
 - *url, send_body_pv, send_type_pv* -
-			String, pseudo-variable, or a String which includes pseudo-variables.
+String, pseudo-variable, or a String which includes pseudo-variables.
 - *recv_body_pv, recv_ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 This function can be used from the *startup, branch, failure,
-				request* and *timer* routes.
+request* and *timer* routes.
 
 
 ```opensips title="rest_post usage"

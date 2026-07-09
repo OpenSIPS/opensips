@@ -10,24 +10,24 @@ description: "The module implements text based operations over the SIP message p
 
 
 The module implements text based operations over the SIP message
-		processed by OpenSIPS. SIP is a text based protocol and the module
-		provides a large set of very useful functions to manipulate the
-		message at text level, e.g., regular expression search and replace,
-		Perl-like substitutions, etc.
+processed by OpenSIPS. SIP is a text based protocol and the module
+provides a large set of very useful functions to manipulate the
+message at text level, e.g., regular expression search and replace,
+Perl-like substitutions, etc.
 
 
 Note: all SIP-aware functions like *insert_hf*,
-		*append_hf* or *codec*
-		operations have been moved to the *sipmsgops*
-		module.
+*append_hf* or *codec*
+operations have been moved to the *sipmsgops*
+module.
 
 
 #### Known Limitations
 
 
 search ignores folded lines. For example, 
-		search("(From|f):.*@foo.bar")
-		doesn't match the following From header field:
+search("(From|f):.*@foo.bar")
+doesn't match the following From header field:
 
 
 ```c
@@ -52,7 +52,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -74,7 +74,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search usage"
@@ -97,7 +97,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search_body usage"
@@ -121,7 +121,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search_append usage"
@@ -135,7 +135,7 @@ search_append("[Oo]pen[Ss]er", " SIP Proxy");
 
 
 Searches for the first match of re in the body of the message
-		and appends txt after it.
+and appends txt after it.
 
 
 Meaning of the parameters is as follows:
@@ -146,7 +146,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search_append_body usage"
@@ -170,7 +170,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace usage"
@@ -184,7 +184,7 @@ replace("opensips", "Open SIP Server");
 
 
 Replaces the first occurrence of re in the body of the message
-		with txt.
+with txt.
 
 
 Meaning of the parameters is as follows:
@@ -195,7 +195,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_body usage"
@@ -219,7 +219,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_all usage"
@@ -233,7 +233,7 @@ replace_all("opensips", "Open SIP Server");
 
 
 Replaces all occurrence of re in the body of the message
-		with txt. Matching is done on a per-line basis.
+with txt. Matching is done on a per-line basis.
 
 
 Meaning of the parameters is as follows:
@@ -244,7 +244,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_body_all usage"
@@ -258,7 +258,7 @@ replace_body_all("opensips", "Open SIP Server");
 
 
 Replaces all occurrence of re in the body of the message
-		with txt. Matching is done over the whole body.
+with txt. Matching is done over the whole body.
 
 
 Meaning of the parameters is as follows:
@@ -269,7 +269,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_body_atonce usage"
@@ -291,15 +291,15 @@ Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular 
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-variables
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst usage"
@@ -318,22 +318,22 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\2/ig') )
 
 
 Runs the re substitution on the message uri (like subst but works
-		 only on the uri)
+only on the uri)
 
 
 Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular 
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-variables
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst_uri usage"
@@ -354,22 +354,22 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\0/i')){$
 
 
 Runs the re substitution on the message uri (like subst_uri but works
-		 only on the user portion of the uri)
+only on the user portion of the uri)
 
 
 Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-variables
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst usage"
@@ -395,15 +395,15 @@ Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular 
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-variables
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst_body usage"
