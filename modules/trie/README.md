@@ -55,15 +55,15 @@ modparam("trie", "trie_table", "my_prefix_table")
 
 
 If enabled, the module will not allow do run multiple trie_reload
-			MI commands in parallel (with overlapping)  Any new reload will
-			be rejected (and discarded) while an existing reload is in
-			progress.
+MI commands in parallel (with overlapping)  Any new reload will
+be rejected (and discarded) while an existing reload is in
+progress.
 
 
 If you have a large routing set (millions of rules/prefixes), you
-			should consider disabling concurrent reload as they will exhaust
-			the shared memory (by reloading into memory, in the same time,
-			multiple instances of routing data).
+should consider disabling concurrent reload as they will exhaust
+the shared memory (by reloading into memory, in the same time,
+multiple instances of routing data).
 
 
 *Default value is "0 (disabled)".*
@@ -81,9 +81,9 @@ modparam("trie", "no_concurrent_reload", 1)
 
 
 Flag to configure whether to use partitions for tries. If this
-		flag is set then the `db_partitions_url` and
-		`db_partitions_table`
-		variables become mandatory.
+flag is set then the `db_partitions_url` and
+`db_partitions_table`
+variables become mandatory.
 
 
 *Default value is "0".*
@@ -100,8 +100,8 @@ modparam("trie", "use_partitions", 1)
 
 
 The url to the database containing partition-specific
-		information.The `use_partitions` parameter
-	    must be set to 1.
+information.The `use_partitions` parameter
+must be set to 1.
 
 
 *Default value is ""NULL"".*
@@ -118,7 +118,7 @@ modparam("trie", "db_partitions_url", "mysql://user:password@localhost/opensips_
 
 
 The name of the table containing partition definitions. To be
-		used with `use_partitions` and `db_partitions_url`.
+used with `use_partitions` and `db_partitions_url`.
 
 
 *Default value is "trie_partitions".*
@@ -135,8 +135,8 @@ modparam("trie", "db_partitions_table", "trie_partition_defs")
 
 
 List of ASCII (0-127) characters to be additionally accepted in
-			the prefixes. By default only '0' - '9' chars (digits) are
-			accepted.
+the prefixes. By default only '0' - '9' chars (digits) are
+accepted.
 
 
 *Default value is "NULL".*
@@ -162,30 +162,30 @@ This function can be used from all routes.
 
 
 If you set `use_partitions` to 1 the 
-		**partition** last parameter becomes 
-		mandatory.
+**partition** last parameter becomes 
+mandatory.
 
 
 All parameters are optional. Any of them may be ignored, provided
-		the necessary separation marks "," are properly placed.
+the necessary separation marks "," are properly placed.
 
 
 - **number** (str) - number to be searched in the trie
 - **flags** (string, optional) - a list
-			of letter-like flags for controlling the routing behavior.
-			Possible flags are:
+of letter-like flags for controlling the routing behavior.
+Possible flags are:
 
   - **L** - Do strict length matching
-				over the prefix - actually the trie engine will do full number 
-				matching and not prefix matching anymore.
+over the prefix - actually the trie engine will do full number 
+matching and not prefix matching anymore.
 - **trie_attrs_pvar** (var, optional) - a
-			writable variable which will be  populated with the attributes of the
-			matched trie rule.
+writable variable which will be  populated with the attributes of the
+matched trie rule.
 - **match_prefix_pvar** (var, optional) - a
-			writable variable which will be the actual prefix matched in the trie.
+writable variable which will be the actual prefix matched in the trie.
 - **partition** (string, optional) - the name
-			of the trie partition to be used. This parameter is to be defined
-			ONLY if the "use_partition" module parameter is turned on.
+of the trie partition to be used. This parameter is to be defined
+ONLY if the "use_partition" module parameter is turned on.
 
 
 ```opensips title="trie_search usage"
@@ -208,7 +208,7 @@ Command to reload trie rules from database.
 
 - if `use_partition` is set to 0 - all routing rules will be reloaded.
 - if `use_partition` is set to 1, the parameters are:
-					
+
 						*partition_name* (optional) - if not provided
 							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
 
@@ -229,10 +229,10 @@ Gets the time of the last reload for any partition.
 
 
 - if `use_partition` is set to 0 - the function
-					doesn't receive any parameter. It will list the date of the
-					last reload for the default (and only) partition.
+doesn't receive any parameter. It will list the date of the
+last reload for the default (and only) partition.
 - if `use_partition` is set to 1, the parameters are:
-					
+
 						*partition_name* (optional) - if not provided
 							the function will list the time of the last update for every
 							partition. Otherwise, the function will list the time of the last
@@ -252,15 +252,15 @@ Tries to match a number in the existing tries loaded from the database.
 
 
 - if `use_partition` is set to 1 the function
-					will have 2 parameters:
-					
-						
+will have 2 parameters:
+
+
 							*partition_name*
-						
-						
+
+
 							*number* - the number to test against
 - if `use_partition` is set to 0 the function will have 1 parameter:
-					
+
 						*number* - the number to test against
 
 
@@ -280,12 +280,12 @@ Deletes individual entries in the trie, without reloading all of the data
 
 
 - if `use_partition` is set to 1 the function
-					will have 2 parameters:
-					
-						
+will have 2 parameters:
+
+
 							*partition_name*
-						
-						
+
+
 							*number* - the array of numbers to delete
 
 
@@ -305,15 +305,15 @@ Upserts ( insert if not found, update is found ) an array of numbers in the trie
 
 
 - if `use_partition` is set to 1 the function
-					will have 3 parameters:
-					
-						
+will have 3 parameters:
+
+
 							*partition_name*
-						
-						
+
+
 							*number* - the array of numbers to update
-						
-						
+
+
 							*attrs* - the array of new attributes for the numbers
 
 
@@ -330,7 +330,7 @@ MI FIFO Command Format:
 
 
 The module requires some tables in the OpenSIPS database.
-	You can also find the complete database documentation on the project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+You can also find the complete database documentation on the project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
 <!-- CONTRIBUTORS -->
 
 ### License

@@ -10,19 +10,19 @@ description: "This module offers matching operations against regular expressions
 
 
 This module offers matching operations against regular expressions using the
-			powerful [PCRE](http://www.pcre.org/) library.
+powerful [PCRE](http://www.pcre.org/) library.
 
 
 A text file containing regular expressions categorized in groups is compiled
-			when the module is loaded, storing the compiled PCRE objects in an array. A
-			function to match a string or pseudo-variable against any of these groups is
-			provided. The text file can be modified and reloaded at any time via a MI command.
-			The module also offers a function to perform a PCRE matching operation against a
-			regular expression provided as function parameter.
+when the module is loaded, storing the compiled PCRE objects in an array. A
+function to match a string or pseudo-variable against any of these groups is
+provided. The text file can be modified and reloaded at any time via a MI command.
+The module also offers a function to perform a PCRE matching operation against a
+regular expression provided as function parameter.
 
 
 For a detailed list of PCRE features read the
-			[man page](http://www.pcre.org/pcre.txt) of the library.
+[man page](http://www.pcre.org/pcre.txt) of the library.
 
 
 ### Dependencies
@@ -41,7 +41,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-				OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libpcre-dev - the development libraries of [PCRE](http://www.pcre.org/)*.
@@ -54,7 +54,7 @@ The following libraries or applications must be installed before running
 
 
 Text file containing the regular expression groups. It must be set in order
-				to enable the group matching function.
+to enable the group matching function.
 
 
 *Default value is "NULL".*
@@ -103,8 +103,8 @@ modparam("regex", "group_max_size", 16384)
 
 
 If this options is set, matching is done caseless. It is equivalent to
-				Perl's /i option, and it can be changed within a pattern by a (?i) or
-				(?-i) option setting.
+Perl's /i option, and it can be changed within a pattern by a (?i) or
+(?-i) option setting.
 
 
 *Default value is "0".*
@@ -121,18 +121,18 @@ modparam("regex", "pcre_caseless", 1)
 
 
 By default, PCRE treats the subject string as consisting of a single line
-				of characters (even if it actually contains newlines). The "start of line"
-				metacharacter (^) matches only at the start of the string, while the "end
-				of line" metacharacter ($) matches only at the end of the string, or before
-				a terminating newline.
+of characters (even if it actually contains newlines). The "start of line"
+metacharacter (^) matches only at the start of the string, while the "end
+of line" metacharacter ($) matches only at the end of the string, or before
+a terminating newline.
 
 
 When this option is set, the "start of line" and "end of line" constructs
-				match immediately following or immediately before internal newlines in the
-				subject string, respectively, as well as at the very start and end. This is
-				equivalent to Perl's /m option, and it can be changed within a pattern by a
-				(?m) or (?-m) option setting. If there are no newlines in a subject string,
-				or no occurrences of ^ or $ in a pattern, setting this option has no effect.
+match immediately following or immediately before internal newlines in the
+subject string, respectively, as well as at the very start and end. This is
+equivalent to Perl's /m option, and it can be changed within a pattern by a
+(?m) or (?-m) option setting. If there are no newlines in a subject string,
+or no occurrences of ^ or $ in a pattern, setting this option has no effect.
 
 
 *Default value is "0".*
@@ -149,9 +149,9 @@ modparam("regex", "pcre_multiline", 1)
 
 
 If this option is set, a dot metacharater in the pattern matches all characters,
-				including those that indicate newline. Without it, a dot does not match when
-				the current position is at a newline. This option is equivalent to Perl's /s
-				option, and it can be changed within a pattern by a (?s) or (?-s) option setting.
+including those that indicate newline. Without it, a dot does not match when
+the current position is at a newline. This option is equivalent to Perl's /s
+option, and it can be changed within a pattern by a (?s) or (?-s) option setting.
 
 
 *Default value is "0".*
@@ -168,11 +168,11 @@ modparam("regex", "pcre_dotall", 1)
 
 
 If this option is set, whitespace data characters in the pattern are totally
-				ignored except when escaped or inside a character class. Whitespace does not
-				include the VT character (code 11). In addition, characters between an
-				unescaped # outside a character class and the next newline, inclusive, are
-				also ignored. This is equivalent to Perl's /x option, and it can be changed
-				within a pattern by a (?x) or (?-x) option setting.
+ignored except when escaped or inside a character class. Whitespace does not
+include the VT character (code 11). In addition, characters between an
+unescaped # outside a character class and the next newline, inclusive, are
+also ignored. This is equivalent to Perl's /x option, and it can be changed
+within a pattern by a (?x) or (?-x) option setting.
 
 
 *Default value is "0".*
@@ -192,8 +192,8 @@ modparam("regex", "pcre_extended", 1)
 
 
 Matches the given string parameter against the regular expression pcre_regex,
-				which is compiled into a PCRE object. Returns TRUE if it matches, FALSE
-				otherwise.
+which is compiled into a PCRE object. Returns TRUE if it matches, FALSE
+otherwise.
 
 
 Meaning of the parameters is as follows:
@@ -201,14 +201,14 @@ Meaning of the parameters is as follows:
 
 - *string* - String to compare.
 - *pcre_regex* (string) - Regular expression to be compiled
-						in a PCRE object.
+in a PCRE object.
 
 
 NOTE: To use the "end of line" symbol '$' in the pcre_regex parameter use '$$'.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
-				BRANCH_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="pcre_match usage (forcing case insensitive)"
@@ -233,9 +233,9 @@ if (pcre_match($rU, "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 
 
 It uses the groups readed from the text file
-				(see [file format id](#file_format)) to match the given string
-				parameter against the compiled regular expression in group number group.
-				Returns TRUE if it matches, FALSE otherwise.
+(see [file format id](#file_format)) to match the given string
+parameter against the compiled regular expression in group number group.
+Returns TRUE if it matches, FALSE otherwise.
 
 
 Meaning of the parameters is as follows:
@@ -243,11 +243,11 @@ Meaning of the parameters is as follows:
 
 - *string* - String to compare.
 - *group* (int) - group to use in the operation.
-						If not specified then 0 (the first group) is used.
+If not specified then 0 (the first group) is used.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
-				BRANCH_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="pcre_match_group usage"
@@ -266,8 +266,8 @@ if (pcre_match_group($rU, 2)) {
 
 
 Causes regex module to re-read the content of the text file
-				and re-compile the regular expressions. The number of groups
-				in the file can be modified safely.
+and re-compile the regular expressions. The number of groups
+in the file can be modified safely.
 
 
 Name: *regex_reload*
@@ -290,7 +290,7 @@ opensips-cli -x mi regex_reload
 
 
 Matches the given string parameter against the regular expression pcre_regex.
-				Returns "Match" if it matches, "Not Match" otherwise.
+Returns "Match" if it matches, "Not Match" otherwise.
 
 
 Name: *regex_match*
@@ -320,7 +320,7 @@ opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
 
 
 It uses the groups readed from the text file to match the given string parameter against the compiled
-				regular expression in group number group. Returns "Match" if it matches, "Not Match" otherwise.
+regular expression in group number group. Returns "Match" if it matches, "Not Match" otherwise.
 
 
 Name: *regex_match_group*
@@ -353,10 +353,10 @@ opensips-cli -x mi regex_match_group string="1234" group="1"
 
 
 The file contains regular expressions categorized in groups. Each
-				group starts with "[number]" line. Lines starting by space, tab,
-				CR, LF or # (comments) are ignored. Each regular expression must
-				take up just one line, this means that a regular expression can't
-				be splitted in various lines.
+group starts with "[number]" line. Lines starting by space, tab,
+CR, LF or # (comments) are ignored. Each regular expression must
+take up just one line, this means that a regular expression can't
+be splitted in various lines.
 
 
 An example of the file format would be the following:
@@ -399,7 +399,7 @@ An example of the file format would be the following:
 
 
 The module compiles the text above to the following regular
-				expressions:
+expressions:
 
 
 ```c
@@ -411,7 +411,7 @@ group 2: ((^1\d{3}$)|(^((\+|00)34)?900\d{6}$))
 
 
 The first group can be used to avoid auto-generated PUBLISH (pua_usrloc
-				module) for UA's already supporting presence:
+module) for UA's already supporting presence:
 
 
 ```opensips title="Using with pua_usrloc"
@@ -427,9 +427,9 @@ route[REGISTER] {
 
 
 NOTE: It's important to understand that the numbers in each group
-				header ([number]) must start by 0. If not, the real group number
-				will not match the number appearing in the file. For example, the
-				following text file:
+header ([number]) must start by 0. If not, the real group number
+will not match the number appearing in the file. For example, the
+following text file:
 
 
 ```c title="Incorrect groups file"
@@ -453,15 +453,15 @@ group 1: ((^ccc)|(^ddd))
 
 
 Note that the real index doesn't match the group number in the file. This
-				is, compiled group 0 always points to the first group in the file, regardless
-				of its number in the file. In fact, the group number appearing in the file is
-				used for nothing but for delimiting different groups.
+is, compiled group 0 always points to the first group in the file, regardless
+of its number in the file. In fact, the group number appearing in the file is
+used for nothing but for delimiting different groups.
 
 
 NOTE: A line containing a regular expression cannot start by '[' since it
-				would be treated as a new group. The same for lines starting by space, tab,
-				or '#' (they would be ignored by the parser). As a workaround, using brackets
-				would work:
+would be treated as a new group. The same for lines starting by space, tab,
+or '#' (they would be ignored by the parser). As a workaround, using brackets
+would work:
 
 
 ```c

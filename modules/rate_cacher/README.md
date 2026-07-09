@@ -10,8 +10,8 @@ description: "The *rate_cacher* module provides a means of caching and real-time
 
 
 The *rate_cacher* module provides a means of caching
-	and real-time querying of the ratesheets assigned to your clients and / or vendors.
-	It also allows for real-time cost-based routing and cost-based filtering.
+and real-time querying of the ratesheets assigned to your clients and / or vendors.
+It also allows for real-time cost-based routing and cost-based filtering.
 
 
 ### Dependencies
@@ -30,7 +30,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -75,8 +75,8 @@ modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
 
 
 The size of the hash table internally used to keep the vendors. A
-		larger table is much faster but consumes more memory. The hash size
-		must be a power of 2 number.
+larger table is much faster but consumes more memory. The hash size
+must be a power of 2 number.
 
 
 *Default value is "256".*
@@ -125,8 +125,8 @@ modparam("rate_cacher", "clients_db_table", "my_clients_view")
 
 
 The size of the hash table internally used to keep the clients. A
-		larger table is much faster but consumes more memory. The hash size
-		must be a power of 2 number.
+larger table is much faster but consumes more memory. The hash size
+must be a power of 2 number.
 
 
 *Default value is "256".*

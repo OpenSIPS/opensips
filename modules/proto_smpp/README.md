@@ -10,71 +10,71 @@ description: "This module offers interoperability between SIP and SMPP (Short Me
 
 
 This module offers interoperability between SIP and SMPP
-			(Short Message Peer-to-Peer) protocols. It provides the
-			means to build a messaging gateway/bridge between the two
-			protocols, being able to convert messages from both directions.
+(Short Message Peer-to-Peer) protocols. It provides the
+means to build a messaging gateway/bridge between the two
+protocols, being able to convert messages from both directions.
 
 
 - SIP to SMPP - messages coming from SIP can be converted to a
-			SMPP PDU (Protocol Data Unit) message and sent further to a
-			SMSC (Short Message Service Center).
+SMPP PDU (Protocol Data Unit) message and sent further to a
+SMSC (Short Message Service Center).
 - SMPP to SIP - the module can act as an ESME (External Short
-			Messaging Entity), receiving messages from a SMSC and converting
-			them to a SIP Message that is sent further to a SIP proxy.
+Messaging Entity), receiving messages from a SMSC and converting
+them to a SIP Message that is sent further to a SIP proxy.
 
 
 The module is compatible with the
-			[SMPP v3.4](http://opensmpp.org/specs/SMPP_v3_4_Issue1_2.pdf) specifications.
+[SMPP v3.4](http://opensmpp.org/specs/SMPP_v3_4_Issue1_2.pdf) specifications.
 
 
 ### SIP to SMPP bridging
 
 
 In order to convert a SIP message to a SMPP all you need to do
-			is to call the [send smpp message](#func_send_smpp_message) function,
-			indicating the SMSc you want to send the message to. The module
-			will build the PDU according to the parameters provisioned
-			in the database.
+is to call the [send smpp message](#func_send_smpp_message) function,
+indicating the SMSc you want to send the message to. The module
+will build the PDU according to the parameters provisioned
+in the database.
 
 
 ### SMPP to SIP bridging
 
 
 When bridging a message received over the SMPP interface,
-			OpenSIPS builds a SIP Message and sends it to the outbound
-			proxy identified by the [smpp outbound uri](#param_outbound_uri)
-			module's parameter.
+OpenSIPS builds a SIP Message and sends it to the outbound
+proxy identified by the [smpp outbound uri](#param_outbound_uri)
+module's parameter.
 
 
 ### SMSC binding
 
 
 In order to be able to deliver messages to SMSc, an ESME needs to
-			first bind to the SMSc. This is done at OpenSIPS startup by sending
-			a SMPP *bind_transciever* command to connect
-			to the SMSc, or an *outbind* command to inform
-			an SMSc it can now bind to our gateway.
+first bind to the SMSc. This is done at OpenSIPS startup by sending
+a SMPP *bind_transciever* command to connect
+to the SMSc, or an *outbind* command to inform
+an SMSc it can now bind to our gateway.
 
 
 The description of all SMSc servers is provisioned in the database.
-			For each server, one can cofigure the following information:
+For each server, one can cofigure the following information:
 
 
 - *Name* - an unique name given to
-			the SMSc that is used to reference this SMSc in the OpenSIPS script.
+the SMSc that is used to reference this SMSc in the OpenSIPS script.
 - *IP* - The IP the SMSc is listening
-			on for new bindings/connections.
+on for new bindings/connections.
 - *Port* - The TCP port that the SMSc
-			is listening on for new bindings/connections.
+is listening on for new bindings/connections.
 - *System ID* - Also known as the
-			User name that is used to authenticate to the SMSc.
+User name that is used to authenticate to the SMSc.
 - *Password* - A password used to
-			authenticate to the SMSc.
+authenticate to the SMSc.
 - *System Type* - Usually
-			"SMPP", this field is required by some SMPP providers.
+"SMPP", this field is required by some SMPP providers.
 - *Source Type of Number (TON)* - Specifies
-			the format of the number used to send messages from. Some comon values are:
-			
+the format of the number used to send messages from. Some comon values are:
+
 				*0* - Unknown
 				*1* - International
 				*2* - National
@@ -82,11 +82,11 @@ The description of all SMSc servers is provisioned in the database.
 				*4* - Subscriber Number
 				*5* - Alphanumeric
 				*6* - Abbreviated
-			
+
 			Default value is *0 - Unknown*.
 - *Source Number Plan Indicator (NPI)* - Specifies
-			the numbering scheme of the number used to send messages from. Some comon values are:
-			
+the numbering scheme of the number used to send messages from. Some comon values are:
+
 				*0* - Unknown
 				*1* - ISDN/telephone numbering plan (E163/E164)
 				*3* - Data numbering plan (X.121)
@@ -97,36 +97,36 @@ The description of all SMSc servers is provisioned in the database.
 				*10* - ERMES numbering plan (ETSI DE/PS 3 01-3)
 				*13* - Internet (IP)
 				*18* - WAP Client Id (to be defined by WAP Forum)
-			
+
 			Default value is *0 - Unknown*.
 - *Destination Type of Number (TON)* - Specifies
-			the format of the number used to send messages to. Can have the same values as
-			*Source Type of Number (TON)* and default value is *0 -
-			Unknown*.
+the format of the number used to send messages to. Can have the same values as
+*Source Type of Number (TON)* and default value is *0 -
+Unknown*.
 - *Destination Number Plan Indicator (NPI)* -
-			Specifies the numbering scheme of the number used to send messages to. Can have
-			the same values as *Source Number Plan Indicator (NPI)*
-			and default value is *0 - Unknown*.
+Specifies the numbering scheme of the number used to send messages to. Can have
+the same values as *Source Number Plan Indicator (NPI)*
+and default value is *0 - Unknown*.
 - *Session Type* - Specifies what type of session
-			should be used to connecto th the SMSc. Possible values are:
-			
+should be used to connecto th the SMSc. Possible values are:
+
 				*1* - Transciever
 				*2* - Transmitter
 				*3* - Receiver
 				*4* - Outbind
-			
+
 			Default value is *1 - Transciever*.
 
 
 When OpenSIPS starts up, it reads all SMSc specifications from the
-			database and triggers a binding with them. *Note:*
-			reloading the SMSc database is not yet supported, but it is a work in
-			progress.
+database and triggers a binding with them. *Note:*
+reloading the SMSc database is not yet supported, but it is a work in
+progress.
 
 
 Each SMPP connection is periodically pinged (currently every 5 seconds)
-			using *enquire_link* SMPP commands to keep the
-			connection active.
+using *enquire_link* SMPP commands to keep the
+connection active.
 
 
 ### Dependencies
@@ -151,14 +151,14 @@ The following modules must be loaded before this module:
 
 
 All these parameters can be used from the opensips.cfg file,
-		to configure the behavior of OpenSIPS-SMPP gateway.
+to configure the behavior of OpenSIPS-SMPP gateway.
 
 
 #### db_url (string)
 
 
 The database handler where the SMPP connection will be
-			stored. This parameter is mandatory.
+stored. This parameter is mandatory.
 
 
 *Default value is *unset*.*
@@ -175,7 +175,7 @@ modparam("proto_smpp", "db_url", "dbdriver://username:password@dbhost/dbname")
 
 
 Used to change the default value of the SMPP port used to
-			listen for new connections.
+listen for new connections.
 
 
 *Default value is 2775.*
@@ -193,11 +193,11 @@ modparam("proto_smpp", "smpp_port", 27775)
 
 
 The maximum number of chunks in which a SMPP message is expected to
-			arrive via TCP. If a received packet is more fragmented than this,
-			the connection is dropped (either the connection is very
-			overloaded and this leads to high fragmentation - or we are the
-			victim of an ongoing attack where the attacker is sending very
-			fragmented traffic in order to decrease server performance).
+arrive via TCP. If a received packet is more fragmented than this,
+the connection is dropped (either the connection is very
+overloaded and this leads to high fragmentation - or we are the
+victim of an ongoing attack where the attacker is sending very
+fragmented traffic in order to decrease server performance).
 
 
 *Default value is 8.*
@@ -214,8 +214,8 @@ modparam("proto_smpp", "smpp_max_msg_chunks", 32)
 
 
 Time in milliseconds after a TCP connection will be closed if it is
-		not available for blocking writing in this interval (and OpenSIPS wants
-		to send something on it).
+not available for blocking writing in this interval (and OpenSIPS wants
+to send something on it).
 
 
 *Default value is 100 ms.*
@@ -232,7 +232,7 @@ modparam("proto_smpp", "smpp_send_timeout", 200)
 
 
 This parameter represents the URI of the outbound proxy used to send
-		a message converted from SMPP to SIP.
+a message converted from SMPP to SIP.
 
 
 *Default value is *None*.*
@@ -249,7 +249,7 @@ modparam("proto_smpp", "outbound_uri", "sip:127.0.0.1:5060")
 
 
 The name of the database table containing definitions
-			of the SMSc servers used to connect to.
+of the SMSc servers used to connect to.
 
 
 *Default value is "smpp".*
@@ -266,7 +266,7 @@ modparam("proto_smpp", "smpp_table", "smsc")
 
 
 The name of the column that holds the SMSc identifier used by
-			the *send_smpp_message()* function.
+the *send_smpp_message()* function.
 
 
 *Default value is "name".*
@@ -446,40 +446,40 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 
 
 This function is used to convert a SIP message received in the
-			OpenSIPS script to a SMPP PDU and send it to the
-			*smsc_name (string)* received as parameter.
-			The SMPP parameters used to construct the PDU are provisione
-			in the database, and the command sent is either
-			*submit_sm* or *deliver_sm*,
-			depending on the type of the SMSc.
+OpenSIPS script to a SMPP PDU and send it to the
+*smsc_name (string)* received as parameter.
+The SMPP parameters used to construct the PDU are provisione
+in the database, and the command sent is either
+*submit_sm* or *deliver_sm*,
+depending on the type of the SMSc.
 
 
 The function returns *-2* if the SMSc
-			the message should be sent does not exist in the database,
-			*-1* if there was an internal error,
-			or positive value in case of success.
+the message should be sent does not exist in the database,
+*-1* if there was an internal error,
+or positive value in case of success.
 
 
 Meaning of the parameters is as follows:
 
 
 - *sms_name (string)* - name of the SMS
-					to be used for sending the SMPP traffic.
+to be used for sending the SMPP traffic.
 - *from (string, optional)* - the source number.
-				If missing, the SIP message from username is used.
+If missing, the SIP message from username is used.
 - *to (string, optional)* - the destination number.
-				If missing, the SIP request URI username is used.
+If missing, the SIP request URI username is used.
 - *body (string, optional)* - the body of the SMS.
-				If missing, the SIP message body is used.
+If missing, the SIP message body is used.
 - *UTF-16 (int, optional)* - set to
-				*1* if the body of the message is in UTF-16.
-				format. If missing or *0*, UTF-8 is used.
+*1* if the body of the message is in UTF-16.
+format. If missing or *0*, UTF-8 is used.
 - *delivery_receipt (int, optional)* - Whether
-				the SMSC should confirm delivery for this SMS or not
+the SMSC should confirm delivery for this SMS or not
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
-			or BRANCH_ROUTE.
+or BRANCH_ROUTE.
 
 
 ```opensips title="send_smpp_message() usage"
