@@ -13,48 +13,48 @@ Useful extensions for the server configuration.
 
 
 The cfgutils module can be used to introduce randomness to
-	the behaviour of the server. It provides setup functions
-	and the "rand_event" function. This function return either
-	true or false, depending on a random value and a specified probability.
-	E.g. if you set via fifo or script a probability value of 5%, then 5% of
-	all calls to rand_event will return false.
-	The pseudovariable "$RANDOM" could be used to introduce 
-	random values e.g. into a SIP reply.
+the behaviour of the server. It provides setup functions
+and the "rand_event" function. This function return either
+true or false, depending on a random value and a specified probability.
+E.g. if you set via fifo or script a probability value of 5%, then 5% of
+all calls to rand_event will return false.
+The pseudovariable "$RANDOM" could be used to introduce 
+random values e.g. into a SIP reply.
 
 
 The benefit of this module is the probability of the decision
-	can be manipulated by external applications such as web interface
-	or command line tools. The probability must be specified as 
-	percent value, ranging from 0 to 100.
+can be manipulated by external applications such as web interface
+or command line tools. The probability must be specified as 
+percent value, ranging from 0 to 100.
 
 
 The module exports commands to FIFO server that can be used to change
-	the global settings via FIFO interface. The FIFO commands are:
-	"set_prob", "reset_prob" and
-	"get_prob".
+the global settings via FIFO interface. The FIFO commands are:
+"set_prob", "reset_prob" and
+"get_prob".
 
 
 This module can be used for simple load-shedding, e.g. reply 5% of
-	the Invites with a 503 error and a adequate random Retry-After value.
+the Invites with a 503 error and a adequate random Retry-After value.
 
 
 The module provides as well functions to delay the execution of the
-	server. The functions "sleep" and "usleep" could
-	be used to let the server wait a specific time interval.
+server. The functions "sleep" and "usleep" could
+be used to let the server wait a specific time interval.
 
 
 It can also hash the config file used from the server with a (weak)
-	cryptographic hash function on startup. This value is saved and can be
-	later compared to the actual hash, to detect modifications of this file
-	after the server start. This functions are available as the FIFO commands
-	"check_config_hash" and "get_config_hash".
+cryptographic hash function on startup. This value is saved and can be
+later compared to the actual hash, to detect modifications of this file
+after the server start. This functions are available as the FIFO commands
+"check_config_hash" and "get_config_hash".
 
 
 ### Dependencies
 
 
 The module depends on the following modules (in the other words the
-		listed modules must be loaded before this module):
+listed modules must be loaded before this module):
 
 
 - *none*
@@ -70,7 +70,7 @@ The initial value of the probability.
 
 
 Default value is 
-			"10".
+"10".
 
 
 ```opensips title="initial_probability parameter usage"
@@ -87,7 +87,7 @@ The config file name for that a hash value should be calculated on startup.
 
 
 There is no default value, is no parameter is given the hash functionality
-		is disabled.
+is disabled.
 
 
 ```opensips title="hash_file parameter usage"
@@ -101,11 +101,11 @@ modparam("cfgutils", "hash_file", "/etc/opensips/opensips.cfg")
 
 
 Set the value of a shared variable ($shv(name)). The parameter
-		can be set many times.
+can be set many times.
 
 
 The value of the parameter has the format:
-		_name_ '=' _type_ ':' _value_
+_name_ '=' _type_ ':' _value_
 
 
 - _name_: shared variable name
@@ -131,11 +131,11 @@ modparam("cfgutils", "shvset", "pstngw=s:sip:10.10.10.10")
 
 
 Set the value of a script variable ($var(name)). The parameter
-		can be set many times.
+can be set many times.
 
 
 The value of the parameter has the format:
-		_name_ '=' _type_ ':' _value_
+_name_ '=' _type_ ':' _value_
 
 
 - _name_: shared variable name
@@ -164,8 +164,8 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 
 
 Return true or false, depending on a random value and a
-			probability value. If probability parameter is given, it will
-			override the global parameter set by rand_set_prob() function.
+probability value. If probability parameter is given, it will
+override the global parameter set by rand_set_prob() function.
 
 
 ```opensips title="rand_event() usage"
@@ -232,12 +232,12 @@ Meaning of the parameters is as follows:
 
 
 - *time* - Time to wait in seconds.
-				String may be a pseudovariable. In case that variable does 
-				not contain a numerical value, it is evaluated to zero seconds.
+String may be a pseudovariable. In case that variable does 
+not contain a numerical value, it is evaluated to zero seconds.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="sleep usage"
@@ -261,12 +261,12 @@ Meaning of the parameters is as follows:
 
 
 - *time* - Time to wait in micro-seconds.
-				The string may contain a pseudovariable. In case that pseudovar
-				does not contain a numerical value, it is evaluated to zero seconds.
+The string may contain a pseudovariable. In case that pseudovar
+does not contain a numerical value, it is evaluated to zero seconds.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="usleep usage"
@@ -281,11 +281,11 @@ usleep("500000"); # sleep half of sec
 
 
 Debugging function that aborts the server. Depending on the
-			configuration of the server a core dump will be created.
+configuration of the server a core dump will be created.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="abort usage"
@@ -300,13 +300,13 @@ abort();
 
 
 Debugging function that dumps the status for the private (PKG) memory.
-			This information is logged to the default log facility, depending on
-			the general log level and the memlog setting. You need to compile
-			the server with activated memory debugging to get detailed informations.
+This information is logged to the default log facility, depending on
+the general log level and the memlog setting. You need to compile
+the server with activated memory debugging to get detailed informations.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="pkg_status usage"
@@ -321,13 +321,13 @@ pkg_status();
 
 
 Debugging function that dumps the status for the shared (SHM) memory.
-			This information is logged to the default log facility, depending on
-			the general log level and the memlog setting. You need to compile
-			the server with activated memory debugging to get detailed informations.
+This information is logged to the default log facility, depending on
+the general log level and the memlog setting. You need to compile
+the server with activated memory debugging to get detailed informations.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="shm_status usage"
@@ -342,15 +342,15 @@ shm_status();
 
 
 Function that counts the values of a pseudovariable. It makes sense to 
-			call this function only for pseudovariables that can take more values
-			(avp, headers).
+call this function only for pseudovariables that can take more values
+(avp, headers).
 
 
 The result is returned in the second parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="set_count usage"
@@ -365,14 +365,14 @@ set_count("$avp(10)", "$avp(result)");
 
 
 This function selects an element from a set formed by the values of the
-			pseudovariable name given as parameter. It applies the genetic algorithm
+pseudovariable name given as parameter. It applies the genetic algorithm
 			- roulette-wheel selection to choose an element from a set. The probability
-			of selecting a certain element is proportionate with its weight. It will
-			return the index of that selected element.
+of selecting a certain element is proportionate with its weight. It will
+return the index of that selected element.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="set_select_weight usage"
@@ -387,12 +387,12 @@ $avp(21) = set_select_weight("$avp(10)");
 
 
 This function returns the difference between two timestamps, specified
-			in seconds and microseconds. The result is returned in the last
-			parameter, expressed in microseconds.
+in seconds and microseconds. The result is returned in the last
+parameter, expressed in microseconds.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="ts_usec_delta usage"
@@ -410,7 +410,7 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
 
 
 Set the probability value to the given parameter.
-				The parameter should be a percent value.
+The parameter should be a percent value.
 
 
 The parameter value must be a number from 0 to 99.
@@ -463,8 +463,8 @@ Check if the actual config file hash is identical to the stored one.
 
 
 The function returns 200 OK if the hash values are identical, 400 if
-				there are not identical, 404 if no file for hashing has been configured
-				and 500 on errors. Additional a short text message is printed.
+there are not identical, 404 if no file for hashing has been configured
+and 500 on errors. Additional a short text message is printed.
 
 
 ```bash title="check_config_hash usage"
@@ -482,7 +482,7 @@ Return the stored config file hash.
 
 
 The function returns 200 OK and the hash value on success or 404 if no
-				file for hashing has been configured.
+file for hashing has been configured.
 
 
 ```bash title="get_config_hash usage"
@@ -540,7 +540,7 @@ Parameters:
 
 
 - _name_: shared variable name. If this parameter
-			is missing, all shared variables are returned.
+is missing, all shared variables are returned.
 
 
 MI FIFO Command Format:
@@ -634,11 +634,11 @@ if ($time(year) == 2008) {
 
 
 It is a class of pseudo-variables stored in shared memory. The
-				value of $shv(name) is visible across all opensips processes.
-				Each "shv" has single value and it is initialized
-				to integer 0. You can use "shvset" parameter to
-				initialize the shared variable. The module exports a set of MI
-				functions to get/set the value of shared variables.
+value of $shv(name) is visible across all opensips processes.
+Each "shv" has single value and it is initialized
+to integer 0. You can use "shvset" parameter to
+initialize the shared variable. The module exports a set of MI
+functions to get/set the value of shared variables.
 
 
 ```opensips title="shv(name) pseudo-variable usage"

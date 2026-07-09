@@ -10,27 +10,27 @@ description: "The module implements a simplified database engine based on text f
 
 
 The module implements a simplified database engine based on text
-		files. It can be used by OpenSIPS DB interface instead of other
-		database module (like MySQL).
+files. It can be used by OpenSIPS DB interface instead of other
+database module (like MySQL).
 
 
 The module is meant for use in demos or small devices that do not
-		support other DB modules. It keeps everything in memory and if you deal
-		with large amount of data you may run quickly out of memory. Also, it
-		has not implemented all standard database facilities (like order by),
-		it includes minimal functionality to work properly (who knows ?!?)
-		with OpenSIPS.
+support other DB modules. It keeps everything in memory and if you deal
+with large amount of data you may run quickly out of memory. Also, it
+has not implemented all standard database facilities (like order by),
+it includes minimal functionality to work properly (who knows ?!?)
+with OpenSIPS.
 
 
 NOTE: the timestamp is printed in an integer value from time_t
-		structure. If you use it in a system that cannot do this conversion,
-		it will fail (support for such situation is in to-do list).
+structure. If you use it in a system that cannot do this conversion,
+it will fail (support for such situation is in to-do list).
 
 
 NOTE: even when is in non-caching mode, the module does not write
-		back to hard drive after changes. In this mode, the module checks if
-		the corresponding file on disk has changed, and reloads it. The write
-		on disk happens at OpenSIPS shut down.
+back to hard drive after changes. In this mode, the module checks if
+the corresponding file on disk has changed, and reloads it. The write
+on disk happens at OpenSIPS shut down.
 
 
 #### Design of dbtext engine
@@ -40,17 +40,17 @@ The dbtext database system architecture:
 
 
 - a database is represented by a directory in the local file
-				system.
-				NOTE: when you use *dbtext* in OpenSIPS,
-				the	database URL for modules must be the path to the directory
-				where the table-files are located, prefixed by 
-				"dbtext://", e.g., 
-				"dbtext:///var/dbtext/ser". If there is no
-				"/" after "dbtext://" then
-				"CFG_DIR/" is inserted at the beginning of the
-				database path. So, either you provide an absolute path to
-				database directory or a relative one to "CFG_DIR"
-				directory.
+system.
+NOTE: when you use *dbtext* in OpenSIPS,
+the	database URL for modules must be the path to the directory
+where the table-files are located, prefixed by 
+"dbtext://", e.g., 
+"dbtext:///var/dbtext/ser". If there is no
+"/" after "dbtext://" then
+"CFG_DIR/" is inserted at the beginning of the
+database path. So, either you provide an absolute path to
+database directory or a relative one to "CFG_DIR"
+directory.
 - a table is represented by a text file inside database directory.
 
 
@@ -58,46 +58,46 @@ The dbtext database system architecture:
 
 
 First line is the definition of the columns. Each column must be
-		declared as follows:
+declared as follows:
 
 
 - the name of column must not include white spaces.
 - the format of a column definition is: 
-				*name(type,attr)*.
+*name(type,attr)*.
 - between two column definitions must be a white space, e.g., 
-				"first_name(str) last_name(str)".
+"first_name(str) last_name(str)".
 - the type of a column can be: 
-					
-					
+
+
 					*int* - integer numbers.
-					
-					
+
+
 					*double* - real numbers with two
 					decimals.
-					
-					
+
+
 					*str* - strings with maximum size of 4KB.
 - a column can have one of the attributes: 
-					
-					
+
+
 					*auto* - only for 'int' columns,
 					the maximum value in that column is incremented and stored
 					in this field if it is not provided in queries.
-					
-					
+
+
 					*null* - accept null values in column
 					fields.
-					
-					
+
+
 					if no attribute is set, the fields of the column cannot have
 					null value.
 - each other line is a row with data. The line ends with
-				"\n".
+"\n".
 - the fields are separated by ":".
 - no value between two ':' (or between ':' and start/end of a row)
-				means "null" value.
+means "null" value.
 - next characters must be escaped in strings: "\n",
-				"\r", "\t", ":".
+"\r", "\t", ":".
 - *0* -- the zero value must be escaped too.
 
 
@@ -130,9 +130,9 @@ suser:supasswd:xxx:alpha.org:xxx
 
 
 This database interface don't support the data insertion with
-				default values. All such values specified in the database template
-				are ignored. So its advisable to specify all data for a column at
-				insertion operations.
+default values. All such values specified in the database template
+are ignored. So its advisable to specify all data for a column at
+insertion operations.
 
 
 ### Dependencies
@@ -151,7 +151,7 @@ The next modules must be loaded before this module:
 
 
 The next libraries or applications must be installed before running
-			OpenSIPS with this module:
+OpenSIPS with this module:
 
 
 - *none*.
@@ -167,9 +167,9 @@ The next libraries or applications must be installed before running
 
 
 Set caching mode (0) or non-caching mode (1). In caching mode, data
-		is loaded at startup. In non-caching mode, the module check every time
-		a table is requested whether the corresponding file on disk has
-		changed, and if yes, will re-load table from file.
+is loaded at startup. In non-caching mode, the module check every time
+a table is requested whether the corresponding file on disk has
+changed, and if yes, will re-load table from file.
 
 
 *Default value is "0".*
@@ -195,14 +195,14 @@ Compile the module and load it instead of mysql or other DB modules.
 
 
 REMINDER: when you use *dbtext* in OpenSIPS,
-		the	database URL for modules must be the path to the directory
-		where the table-files are located, prefixed by
-		"dbtext://", e.g., 
-		"dbtext:///var/dbtext/ser". If there is no "/"
-		after "dbtext://" then "CFG_DIR/" is inserted
-		at the beginning of the database path. So, either you provide an
-		absolute path to database directory or a relative one to 
-		"CFG_DIR" directory.
+the	database URL for modules must be the path to the directory
+where the table-files are located, prefixed by
+"dbtext://", e.g., 
+"dbtext:///var/dbtext/ser". If there is no "/"
+after "dbtext://" then "CFG_DIR/" is inserted
+at the beginning of the database path. So, either you provide an
+absolute path to database directory or a relative one to 
+"CFG_DIR" directory.
 
 
 ```opensips title="Load the dbtext module"
@@ -218,14 +218,14 @@ modparam("module_name", "database_URL", "text:///path/to/dbtext/database")
 
 
 Here are the definitions for most important table as well as a basic 
-		configuration file to use dbtext with OpenSIPS. The table structures
-		may change in time and you will have to adjust next examples. These are 
-		know to work with upcoming OpenSIPS v0.9.x
+configuration file to use dbtext with OpenSIPS. The table structures
+may change in time and you will have to adjust next examples. These are 
+know to work with upcoming OpenSIPS v0.9.x
 
 
 You have to populate the table 'subscriber' by hand with user profiles 
-		in order to have authentication. To use with the given configuration
-		file, the table files must be placed in the '/tmp/serdb' directory.
+in order to have authentication. To use with the given configuration
+file, the table files must be placed in the '/tmp/serdb' directory.
 
 
 ```c title="Definition of 'subscriber' table (one line)"
@@ -259,7 +259,7 @@ aliases:6
 
 
 Once you have the module loaded, you can use the API specified by OpenSIPS DB
-	interface.
+interface.
 <!-- CONTRIBUTORS -->
 
 ### License

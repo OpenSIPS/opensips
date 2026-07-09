@@ -14,14 +14,14 @@ The B2BUA implementation in OpenSIPS is separated in two layers:
 
 - a lower one(coded in b2b_entities module)- which implements the basic functions of a UAS and UAC
 - an upper one - which represents the logic engine of B2BUA, responsible of actually
-			implementing the B2BUA services using the functions offered by the low level.
+implementing the B2BUA services using the functions offered by the low level.
 
 
 This module is a B2BUA upper level implementation that can be used with b2b_entities
-	module to have B2BUA that can be configured to provide some PBX services.
-	The B2B services are coded in an XML scenario document. The b2b_logic module
-	examines this document and uses the functions provided by the b2b_entities
-	module to achieve the actions specified in the document and enable the service.
+module to have B2BUA that can be configured to provide some PBX services.
+The B2B services are coded in an XML scenario document. The b2b_logic module
+examines this document and uses the functions provided by the b2b_entities
+module to achieve the actions specified in the document and enable the service.
 
 
 A scenario can be instantiated in two ways:
@@ -29,7 +29,7 @@ A scenario can be instantiated in two ways:
 
 - from the script - at the receipt of a initial message
 - with a extern command (MI) command - the server will connect two 
-				end points in a session(Third Party Call Control).
+end points in a session(Third Party Call Control).
 
 
 ### Dependencies
@@ -45,7 +45,7 @@ A scenario can be instantiated in two ways:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml2-dev*
@@ -61,7 +61,7 @@ The size of the hash table that stores the scenario instatiation entities.
 
 
 *Default value is "9"*
-		 (512 records).
+(512 records).
 
 
 ```opensips title="Set server_hsize parameter"
@@ -76,8 +76,8 @@ modparam("b2b_logic", "hash_size", 10)
 
 
 This parameter should be set with the path of a document
-			that contains a scenario that can be instantiated from the
-			script at the receipt of an initial message.
+that contains a scenario that can be instantiated from the
+script at the receipt of an initial message.
 
 
 This parameter can be set more than once.
@@ -95,7 +95,7 @@ modparam("b2b_logic", "script_scenario", "/usr/local/opensips/scripts/b2b_prepai
 
 
 This parameter should be set with the path of a document
-			that contains a scenario that can be instantiated with an MI command.
+that contains a scenario that can be instantiated with an MI command.
 
 
 This parameter can be set more than once.
@@ -113,10 +113,10 @@ modparam("b2b_logic", "extern_scenario", "/usr/local/opensips/scripts/b2b_market
 
 
 The time interval at which to search for an hanged b2b context.
-			A scenario is considered expired if the duration of a session exceeds the
-			lifetime specified in the scenario.
-			At that moment, BYE is sent in all the dialogs from that context and the
-			context is deleted.
+A scenario is considered expired if the duration of a session exceeds the
+lifetime specified in the scenario.
+At that moment, BYE is sent in all the dialogs from that context and the
+context is deleted.
 
 
 *Default value is "100".*
@@ -134,8 +134,8 @@ modparam("b2b_logic", "cleanup_period", 60)
 
 
 A list of SIP header names delimited by ';' that should be passed
-		from the dialog of one side to the other side. There are a number
-		of headers that are passed by default. They are:
+from the dialog of one side to the other side. There are a number
+of headers that are passed by default. They are:
 
 
 - Max-Forwards (it is decreased by 1)
@@ -150,7 +150,7 @@ A list of SIP header names delimited by ';' that should be passed
 
 
 If you wish some other headers to be passed also you should define them
-		by setting this parameter.
+by setting this parameter.
 
 
 *Default value is "NULL".*
@@ -168,14 +168,14 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 
 
 This parameter modifies the behaviour of the B2BUA when bridging
-		and a provisional media uri is set. For playing media while the callee
-		answers (that is connecting the caller to a media server), the bridging
-		with the callee must start by sending an Invite to it. The correct way
-		is to send an Invite without a body in this case, but it has been observed
-		that not many gateways support this. So, the solution is to use the sdp
-		received in the first Invite from the caller and put it as the body for this
-		invite. By setting this parameter, this behavior is enabled.
-		You can also set use_init_sdp per scenario and overwrite this global value.
+and a provisional media uri is set. For playing media while the callee
+answers (that is connecting the caller to a media server), the bridging
+with the callee must start by sending an Invite to it. The correct way
+is to send an Invite without a body in this case, but it has been observed
+that not many gateways support this. So, the solution is to use the sdp
+received in the first Invite from the caller and put it as the body for this
+invite. By setting this parameter, this behavior is enabled.
+You can also set use_init_sdp per scenario and overwrite this global value.
 
 
 *Default value is "0".*
@@ -244,9 +244,9 @@ modparam("b2b_logic", "max_duration", 7200)
 
 
 The name of the Attribute-Value-Pair (AVP) used to store the
-			b2b_logic entity key.  The avp will be set after calling
-			"b2b_init_request".  The avp will be visible
-			in b2b_entities request/reply routes
+b2b_logic entity key.  The avp will be set after calling
+"b2b_init_request".  The avp will be visible
+in b2b_entities request/reply routes
 
 
 > [!NOTE]
@@ -268,8 +268,8 @@ modparam("b2b_logic", "b2bl_key_avp", "$avp(99)")
 
 
 The name of the pseudo variable for storing the new
-			"From" header.
-			The PV must be set before calling "b2b_init_request".
+"From" header.
+The PV must be set before calling "b2b_init_request".
 
 
 *Default value is "NULL" (disabled).*
@@ -295,11 +295,11 @@ route{
 
 
 The IP address of the machine that will be used as Contact in
-			the generated messages. This is compulsory only when using external
-			scenarios. For the script scenarios, if it is not set, it is constructed
-			dynamically from the socket where the initiating request was received.
-			This socket will be used to send all the requests, replies for that
-			scenario instantiation.
+the generated messages. This is compulsory only when using external
+scenarios. For the script scenarios, if it is not set, it is constructed
+dynamically from the socket where the initiating request was received.
+This socket will be used to send all the requests, replies for that
+scenario instantiation.
 
 
 ```opensips title="Set server_address parameter"
@@ -314,8 +314,8 @@ modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 
 
 The module offers the possibility to insert the original callid in a header
-			in the generated Invites. If you want this, set this parameter to the name
-			of the header in which to insert the original callid.
+in the generated Invites. If you want this, set this parameter to the name
+of the header in which to insert the original callid.
 
 
 ```opensips title="Set init_callid_hdr parameter"
@@ -355,24 +355,24 @@ modparam("b2b_logic", "db_mode", 1)
 
 
 This is the function that must be called by the script writer
-			on an initial INVITE for which a B2B scenario must be instantiated.
-			It is up to the script writer to decide which are the criteria to decide
-			for which messages certain scenarios must be instantiated.
+on an initial INVITE for which a B2B scenario must be instantiated.
+It is up to the script writer to decide which are the criteria to decide
+for which messages certain scenarios must be instantiated.
 
 
 The first parameter is the identifier for the scenario. This is defined
-			in the XML document as an attribute of the root node.
+in the XML document as an attribute of the root node.
 
 
 Then it can take at most 4 other parameters that represent the parameters for
-			the xml scenario. The expected number of parameters is also specified as an attribute
-			in the root node of the XML scenario.
+the xml scenario. The expected number of parameters is also specified as an attribute
+in the root node of the XML scenario.
 
 
 > [!NOTE]
 > Do not call t_newtran() from the script on this request. It will be called internally
-		by the function. Calling t_newtran() from the script will result in the transaction remaining
-		in memory for ever.
+by the function. Calling t_newtran() from the script will result in the transaction remaining
+in memory for ever.
 
 
 ```opensips title="b2b_init_request usage"
@@ -389,16 +389,16 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
 
 
 This function will bridge an initial INVITE with one of the
-			particapnts from an existing b2b dialog.
+particapnts from an existing b2b dialog.
 
 
 Parameters:
 
 
 - *b2bl_key* - a pseudo-variable that
-				contains the b2b_logic key
+contains the b2b_logic key
 - *entity_no* - a pseudo-variable that
-				holds the entity of the particapnt to bridge.
+holds the entity of the particapnt to bridge.
 
 
 ```opensips title="b2b_bridge_request usage"
@@ -468,9 +468,9 @@ MI FIFO Command Format:
 
 
 This command can be used by an external application to tell B2BUA to bridge a
-			call party from an on going dialog to another destination. By default the caller
-			is bridged to the new uri and BYE is set to the callee. You can instead bridge
-			the callee if you send 1 as the third parameter.
+call party from an on going dialog to another destination. By default the caller
+is bridged to the new uri and BYE is set to the callee. You can instead bridge
+the callee if you send 1 as the third parameter.
 
 
 Name: *b2b_bridge*
@@ -480,11 +480,11 @@ Parameters:
 
 
 - dialog-id : the id of the dialog. If you set the module parameter dialog-id
-				the server will include the dialogid in the generated Invites as the content of a
-				header with name 'Dialog-ID'.
+the server will include the dialogid in the generated Invites as the content of a
+header with name 'Dialog-ID'.
 - new uri - the uri of the new destination
 - flag to specify that the callee must be bridged to the new destination.
-					It is optional. If not present the caller will be bridged.
+It is optional. If not present the caller will be bridged.
 
 
 MI FIFO Command Format:
@@ -543,21 +543,21 @@ opensipsctl Command Format:
 
 
 The module provides an API that can be used from other OpenSIPS
-   modules. The API offers the functions for instantiating b2b
-   scenarios from other modules (this comes as an addition to the
-   other two means of instantiating b2b scenarios - from script
-   and with an MI command). Also the instantiations can be
-   dynamically controlled, by commanding the bridging of an entity
-   involved in a call to another entity or the termination of the
-   call or even bridging two existing calls.
+modules. The API offers the functions for instantiating b2b
+scenarios from other modules (this comes as an addition to the
+other two means of instantiating b2b scenarios - from script
+and with an MI command). Also the instantiations can be
+dynamically controlled, by commanding the bridging of an entity
+involved in a call to another entity or the termination of the
+call or even bridging two existing calls.
 
 
 ### b2b_logic_bind(b2bl_api_t* api)
 
 
 This function binds the b2b_entities modules and fills the
-   structure the exported functions that will be described in
-   detail.
+structure the exported functions that will be described in
+detail.
 
 
 ```c title="b2bl_api_t structure"
@@ -591,9 +591,9 @@ typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5],
 
 
 Initializing a b2b scenario. The last two parameters are the
-   callback function and the parameter to be called in 3
-   situations that will be listed below. The callback function has
-   the following definition:
+callback function and the parameter to be called in 3
+situations that will be listed below. The callback function has
+the following definition:
 
 
 ```c
@@ -607,36 +607,36 @@ The first argument is the callback given in the init function.
 
 
 The second argument is a structure with some statistics about
-   the call -start time, setup time, call time.
+the call -start time, setup time, call time.
 
 
 The third argument is the current state of the scenario
-   instantiation.
+instantiation.
 
 
 The last argument is the event that triggered the callback.
-   There are 3 events when the callback is called:
+There are 3 events when the callback is called:
 
 
 - *when a BYE is received from either side- event parameter
-	will also show from which side the BYE is received, so it
-	can be B2B_BYE_E1 or B2B_BYE_E2*
+will also show from which side the BYE is received, so it
+can be B2B_BYE_E1 or B2B_BYE_E2*
 - *If while bridging, a negative reply is received from the
-     second entity - the event is B2B_REJECT_E2.*
+second entity - the event is B2B_REJECT_E2.*
 - *When the b2b logic entity is deleted- the evnet is
-     B2B_DESTROY*
+B2B_DESTROY*
 
 
 The return code controls what will happen with the
-   request/reply that caused the event (except for the last event,
-   when the return code does not matter)
+request/reply that caused the event (except for the last event,
+when the return code does not matter)
 
 
 - *-1 - error*
 - *0 - drop the BYE or reply*
 - *1 - send the BYE or reply on the other side*
 - *2 - do what the scenario tells, if no rule defined send the
-       BYE or reply on the other side*
+BYE or reply on the other side*
 
 
 ### bridge
@@ -653,7 +653,7 @@ typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int ent
 
 
 This function allows bridging an entity that is in a call
-   handled by b2b_logic to another entity.
+handled by b2b_logic to another entity.
 
 
 ### bridge_extern
@@ -671,7 +671,7 @@ typedef str* (*b2bl_bridge_extern_f)(str* scenario_name, str* args[5],
 
 
 This function allows initiating an extern scenario, when the
-   B2BUA starts a call from the middle.
+B2BUA starts a call from the middle.
 
 
 ### bridge_2calls
@@ -688,8 +688,8 @@ typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
 
 
 With this function it is possible to bridge two existing calls.
-   The first entity from the two calls will be connected and BYE
-   will be sent to their peers.
+The first entity from the two calls will be connected and BYE
+will be sent to their peers.
 
 
 ### terminate_call
@@ -738,7 +738,7 @@ typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);
 
 
 This function allows bridging an incoming call to an entity from an
-   existing call.
+existing call.
 
 
 The first argument is the INVITE message of the current incoming call.
