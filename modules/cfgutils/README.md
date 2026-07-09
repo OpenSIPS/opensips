@@ -13,48 +13,48 @@ Useful extensions for the server configuration.
 
 
 The cfgutils module can be used to introduce randomness to
-	the behaviour of the server. It provides setup functions
-	and the "rand_event" function. This function return either
-	true or false, depending on a random value and a specified probability.
-	E.g. if you set via fifo or script a probability value of 5%, then 5% of
-	all calls to rand_event will return false.
-	The pseudovariable "$RANDOM" could be used to introduce 
-	random values e.g. into a SIP reply.
+the behaviour of the server. It provides setup functions
+and the "rand_event" function. This function return either
+true or false, depending on a random value and a specified probability.
+E.g. if you set via fifo or script a probability value of 5%, then 5% of
+all calls to rand_event will return false.
+The pseudovariable "$RANDOM" could be used to introduce 
+random values e.g. into a SIP reply.
 
 
 The benefit of this module is the probability of the decision
-	can be manipulated by external applications such as web interface
-	or command line tools. The probability must be specified as 
-	percent value, ranging from 0 to 100.
+can be manipulated by external applications such as web interface
+or command line tools. The probability must be specified as 
+percent value, ranging from 0 to 100.
 
 
 The module exports commands to FIFO server that can be used to change
-	the global settings via FIFO interface. The FIFO commands are:
-	"set_prob", "reset_prob" and
-	"get_prob".
+the global settings via FIFO interface. The FIFO commands are:
+"set_prob", "reset_prob" and
+"get_prob".
 
 
 This module can be used for simple load-shedding, e.g. reply 5% of
-	the Invites with a 503 error and a adequate random Retry-After value.
+the Invites with a 503 error and a adequate random Retry-After value.
 
 
 The module provides as well functions to delay the execution of the
-	server. The functions "sleep" and "usleep" could
-	be used to let the server wait a specific time interval.
+server. The functions "sleep" and "usleep" could
+be used to let the server wait a specific time interval.
 
 
 It can also hash the config file used from the server with a (weak)
-	cryptographic hash function on startup. This value is saved and can be
-	later compared to the actual hash, to detect modifications of this file
-	after the server start. This functions are available as the FIFO commands
-	"check_config_hash" and "get_config_hash".
+cryptographic hash function on startup. This value is saved and can be
+later compared to the actual hash, to detect modifications of this file
+after the server start. This functions are available as the FIFO commands
+"check_config_hash" and "get_config_hash".
 
 
 ### Dependencies
 
 
 The module depends on the following modules (in the other words the
-		listed modules must be loaded before this module):
+listed modules must be loaded before this module):
 
 
 - *none*
@@ -70,7 +70,7 @@ The initial value of the probability.
 
 
 Default value is 
-			"10".
+"10".
 
 
 ```opensips title="initial_probability parameter usage"
@@ -87,7 +87,7 @@ The config file name for that a hash value should be calculated on startup.
 
 
 There is no default value, is no parameter is given the hash functionality
-		is disabled.
+is disabled.
 
 
 ```opensips title="hash_file parameter usage"
@@ -115,11 +115,11 @@ modparam("cfgutils", "shv_hash_size", 1024)
 
 
 Set the value of a shared variable ($shv(name)). The parameter
-		can be set many times.
+can be set many times.
 
 
 The value of the parameter has the format:
-		_name_ '=' _type_ ':' _value_
+_name_ '=' _type_ ':' _value_
 
 
 - _name_: shared variable name
@@ -145,11 +145,11 @@ modparam("cfgutils", "shvset", "pstngw=s:sip:10.10.10.10")
 
 
 Set the value of a script variable ($var(name)). The parameter
-		can be set many times.
+can be set many times.
 
 
 The value of the parameter has the format:
-		_name_ '=' _type_ ':' _value_
+_name_ '=' _type_ ':' _value_
 
 
 - _name_: shared variable name
@@ -175,13 +175,13 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 
 
 The number of dynamic script locks to be allocated at OpenSIPS startup. This
-		number must be a power of 2. (i.e. 1, 2, 4, 8, 16, 32, 64 ...)
+number must be a power of 2. (i.e. 1, 2, 4, 8, 16, 32, 64 ...)
 
 
 Note that the *lock_pool_size* parameter only affects
-		the number of dynamic locks created at startup. The pool of static locks
-		only depends on the number of unique static strings supplied throughout
-		the script to the set of static lock functions.
+the number of dynamic locks created at startup. The pool of static locks
+only depends on the number of unique static strings supplied throughout
+the script to the set of static lock functions.
 
 
 Default value is "32".
@@ -199,9 +199,9 @@ modparam("cfgutils", "lock_pool_size", 64)
 
 
 Generates a random floating point value between 0 - 100 and returns
-			true if the value is less or equal to the currently set probability.
-			If "probability" parameter is given, it will
-			override the global parameter set by [rand set prob](#func_rand_set_prob).
+true if the value is less or equal to the currently set probability.
+If "probability" parameter is given, it will
+override the global parameter set by [rand set prob](#func_rand_set_prob).
 
 
 Parameters:
@@ -245,7 +245,7 @@ rand_set_prob(4);
 
 
 Reset the probability back to the
-			[initial probability](#param_initial_probability) value.
+[initial probability](#param_initial_probability) value.
 
 
 ```opensips title="rand_reset_prob() usage"
@@ -281,7 +281,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="sleep usage"
@@ -308,7 +308,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="usleep usage"
@@ -323,11 +323,11 @@ usleep(500000); # sleep half a sec
 
 
 Debugging function that aborts the server. Depending on the
-			configuration of the server a core dump will be created.
+configuration of the server a core dump will be created.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="abort usage"
@@ -342,13 +342,13 @@ abort();
 
 
 Debugging function that dumps the status for the private (PKG) memory.
-			This information is logged to the default log facility, depending on
-			the general log level and the memlog setting. You need to compile
-			the server with activated memory debugging to get detailed informations.
+This information is logged to the default log facility, depending on
+the general log level and the memlog setting. You need to compile
+the server with activated memory debugging to get detailed informations.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="pkg_status usage"
@@ -363,13 +363,13 @@ pkg_status();
 
 
 Debugging function that dumps the status for the shared (SHM) memory.
-			This information is logged to the default log facility, depending on
-			the general log level and the memlog setting. You need to compile
-			the server with activated memory debugging to get detailed informations.
+This information is logged to the default log facility, depending on
+the general log level and the memlog setting. You need to compile
+the server with activated memory debugging to get detailed informations.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="shm_status usage"
@@ -384,15 +384,15 @@ shm_status();
 
 
 Counts the number of values of a given variable.
-			It makes sense to call this function only for variables that can
-			take more values (AVPs, headers).
+It makes sense to call this function only for variables that can
+take more values (AVPs, headers).
 
 
 The result is returned in the second parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="set_count usage"
@@ -407,14 +407,14 @@ set_count($avp(dids), $var(num_dids));
 
 
 This function selects an element from a set formed by the integer
-			values of the given "int_list_var" variable. It applies the genetic
-			algorithm - roulette-wheel selection to choose an element from a set.
-			The probability of selecting a certain element is proportionate with
-			its weight. It will return the index of that selected element.
+values of the given "int_list_var" variable. It applies the genetic
+algorithm - roulette-wheel selection to choose an element from a set.
+The probability of selecting a certain element is proportionate with
+its weight. It will return the index of that selected element.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="set_select_weight usage"
@@ -429,18 +429,18 @@ $var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 
 
 This function returns the absolute difference between the two given
-			timestamps. The result is expressed as *microseconds*
-			and can be returned as either string or integer.
+timestamps. The result is expressed as *microseconds*
+and can be returned as either string or integer.
 
 
 **WARNING:** when using
-			*delta_int*, the function will return error code
-			**-1** in case the difference overflows
-			the signed integer holder! (i.e. a diff of ~35 minutes or more)
+*delta_int*, the function will return error code
+**-1** in case the difference overflows
+the signed integer holder! (i.e. a diff of ~35 minutes or more)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="ts_usec_delta usage"
@@ -455,62 +455,62 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2us), $var(diff_str));
 
 
 The function returns a positive value if the specified time recurrence string
-		matches the current time, or a negative value otherwise.
+matches the current time, or a negative value otherwise.
 
 
 For checking some other Unix timestamp than the current one, the second
-		parameter will contain the intended timestamp to check.
+parameter will contain the intended timestamp to check.
 
 
 The syntax of each field is identical to the corresponding field from
-		RFC 2445.
+RFC 2445.
 
 
 This function may be used from any route.  It returns 1 on success
-			and -1, -2 or -3 on failure, parsing or internal errors, respectively.
+and -1, -2 or -3 on failure, parsing or internal errors, respectively.
 
 
 Meaning of the parameters is as follows:
 
 
 - *time_string (string)* - Time recurrence string which
-			will be matched against the current time. Its fields are separated by "|" and
-			the order in which they are given is: "timezone | dtstart | dtend | duration | freq
-			| until | interval | byday | bymday | byyday | byweekno | bymonth".
+will be matched against the current time. Its fields are separated by "|" and
+the order in which they are given is: "timezone | dtstart | dtend | duration | freq
+| until | interval | byday | bymday | byyday | byweekno | bymonth".
 None of the fields following "freq" is used unless
-			"freq" is defined.  If the string ends in multiple null fields,
-			they can all be ommited.
+"freq" is defined.  If the string ends in multiple null fields,
+they can all be ommited.
 The "timezone" field is optional.  It represents the timezone in
-			which to interpret the time recurrence elements (e.g. dtstart,
-			dtend, until).  By default, the system time zone is used.
+which to interpret the time recurrence elements (e.g. dtstart,
+dtend, until).  By default, the system time zone is used.
 - *timestamp (string, optional)* - A
-			specific Unix time to check.  The function simply expects the
-			actual Unix time here, there is no need to perform any timezone
-			adjustments.
+specific Unix time to check.  The function simply expects the
+actual Unix time here, there is no need to perform any timezone
+adjustments.
 
 
 Additionally, more complex time recurrence strings may be built by
-		connecting multiple time recurrence strings (described above) using
-		the logical AND ("&"), OR ("/") and NEG ("!") operators.
-		Furthermore, the expressions may be paranthesized.  Some examples:
+connecting multiple time recurrence strings (described above) using
+the logical AND ("&"), OR ("/") and NEG ("!") operators.
+Furthermore, the expressions may be paranthesized.  Some examples:
 
 
 - 20210104T080000|20211231T180000||WEEKLY|||MO,TU,WE,TH,FR
-					&
-				!20210104T120000|20211231T140000||WEEKLY|||MO,TU,WE,TH,FR
+&
+!20210104T120000|20211231T140000||WEEKLY|||MO,TU,WE,TH,FR
 This example multi-recurrence expresses the working days schedule for
-				company X during 2021:  workdays from 8-18, except the 12-14 interval,
-				when everyone is out for lunch break and the business is closed.
-				Since the timezone is omitted from each schedule, the operating
-				system timezone will be used instead.
+company X during 2021:  workdays from 8-18, except the 12-14 interval,
+when everyone is out for lunch break and the business is closed.
+Since the timezone is omitted from each schedule, the operating
+system timezone will be used instead.
 - America/New_York|20210104T090000|20210104T170000||WEEKLY|||MO,TU,WE,TH,FR
-					&
-				!(Europe/Amsterdam|20210427T000000|20210428T000000 / Europe/London|20211227T000000|20211228T000000)
+&
+!(Europe/Amsterdam|20210427T000000|20210428T000000 / Europe/London|20211227T000000|20211228T000000)
 This example multi-recurrence expresses the working days schedule for
-				US-based company Y during 2021:  workdays from 9-17 (NY timezone),
-				except european holidays such as King's Day (April 27th, NL) or
-				the Spring Bank Holiday (May 31st, UK), when most of its
-				workforce will have flown back to Europe.
+US-based company Y during 2021:  workdays from 9-17 (NY timezone),
+except european holidays such as King's Day (April 27th, NL) or
+the Spring Bank Holiday (May 31st, UK), when most of its
+workforce will have flown back to Europe.
 
 
 ```opensips title="check_time_rec usage"
@@ -531,27 +531,27 @@ if (check_time_rec("20121101T000000||p30d"))
 
 
 Acquire the static lock which corresponds to "key".  In case the
-		lock is taken by another process, script execution will halt until the
-		lock is released.  Attempting to acquire the lock a second time by the
-		same process, without releasing it first, will result in a deadlock.
+lock is taken by another process, script execution will halt until the
+lock is released.  Attempting to acquire the lock a second time by the
+same process, without releasing it first, will result in a deadlock.
 
 
 The static lock functions guarantee that two different strings will never
-		point to the same lock, thus avoiding introducing unnecessary
-		(and transparent!) synchronization between processes. Their disadvantage is
-		the nature of their parameters (static strings), making them inappropriate in
-		certain scenarios.
+point to the same lock, thus avoiding introducing unnecessary
+(and transparent!) synchronization between processes. Their disadvantage is
+the nature of their parameters (static strings), making them inappropriate in
+certain scenarios.
 
 
 Meaning of the parameters is as follows:
 
 
 - *key (static string)* - key to be hashed in
-				order to obtain the index of a static lock
+order to obtain the index of a static lock
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
 
 
 ```opensips title="get_static_lock usage"
@@ -568,18 +568,18 @@ release_static_lock("Zone_1");
 
 
 Release the static lock corresponding to "key". Nothing will happen if
-		the lock is not acquired.
+the lock is not acquired.
 
 
 Meaning of the parameters is as follows:
 
 
 - *key (static string)* - key to be hashed in
-				order to obtain the index of a static lock.
+order to obtain the index of a static lock.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
 ```opensips title="release_static_lock usage"
@@ -596,31 +596,31 @@ release_static_lock("Zone_1");
 
 
 Acquire the dynamic lock corresponding to "key".  In case the lock is
-		taken by another process, script execution will halt until the lock is
-		released.  Attempting to acquire the lock a second time by
-		the same process, without releasing it first, will result in a deadlock.
+taken by another process, script execution will halt until the lock is
+released.  Attempting to acquire the lock a second time by
+the same process, without releasing it first, will result in a deadlock.
 
 
 The dynamic lock functions have the advantage of allowing string
-		variables to be given as parameters, but the drawback to this is that
-		two strings may have the same hashed value, thus pointing to the same lock.
-		As a consequence, either two totally separate regions of the script will be
-		synchronized (they will not execute in parallel), or a process could end up
-		in a deadlock by acquiring two locks in a row on two different (but equally
-		hashed) strings. To address the latter issue, use the
-		[strings share lock](#func_strings_share_lock) function to test if two
-		strings hash into the same dynamic lock.
+variables to be given as parameters, but the drawback to this is that
+two strings may have the same hashed value, thus pointing to the same lock.
+As a consequence, either two totally separate regions of the script will be
+synchronized (they will not execute in parallel), or a process could end up
+in a deadlock by acquiring two locks in a row on two different (but equally
+hashed) strings. To address the latter issue, use the
+[strings share lock](#func_strings_share_lock) function to test if two
+strings hash into the same dynamic lock.
 
 
 Meaning of the parameters is as follows:
 
 
 - *key (var)* - key to be hashed in order to
-			obtain the index of a dynamic lock from the pool
+obtain the index of a dynamic lock from the pool
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
 ```opensips title="get_dynamic_lock usage"
@@ -641,18 +641,18 @@ if (!release_dynamic_lock($ci) {
 
 
 Release the dynamic lock corresponding to "key".  Nothing will happen
-		if the lock is not acquired.
+if the lock is not acquired.
 
 
 Meaning of the parameters is as follows:
 
 
 - *key (var)* - key to be hashed in order to
-			obtain the index of a dynamic lock from the pool
+obtain the index of a dynamic lock from the pool
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
 ```opensips title="release_dynamic_lock usage"
@@ -673,28 +673,28 @@ if (!release_dynamic_lock($ci) {
 
 
 A function used to test if two strings will generate the same hash value.
-		Its purpose is to prevent deadlocks resulted when a process successively
-		acquires two dynamic locks on two strings which happen to point to the same
-		lock.
+Its purpose is to prevent deadlocks resulted when a process successively
+acquires two dynamic locks on two strings which happen to point to the same
+lock.
 
 
 Theoretically, the chance of two strings generating the same hash value 
-		decreases proportionally to the increase of the
-		[lock pool size](#param_lock_pool_size) parameter. In
-		other words, the more dynamic locks you configure the module with, the higher
-		the chance that all individual protected regions of your script will run in
-		parallel, without waiting for each other.
+decreases proportionally to the increase of the
+[lock pool size](#param_lock_pool_size) parameter. In
+other words, the more dynamic locks you configure the module with, the higher
+the chance that all individual protected regions of your script will run in
+parallel, without waiting for each other.
 
 
 Meaning of the parameters is as follows:
 
 
 - *key1, key2 (string)* - strings which will have
-			their hash values compared
+their hash values compared
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, 
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE|EVENT_ROUTE.
 
 
 ```opensips title="strings_share_lock usage"
@@ -727,7 +727,7 @@ if (!release_dynamic_lock($avp(foo)) {
 
 
 Fetch the current Unix time epoch with microsecond precision.
-		Optionally, print this value as a floating point number (3rd parameter).
+Optionally, print this value as a floating point number (3rd parameter).
 
 
 Meaning of the parameters is as follows:
@@ -736,11 +736,11 @@ Meaning of the parameters is as follows:
 - *sec (int)* - the current Unix timestamp (integer part)
 - *usec (int)* - the current Unix timestamp (decimal part)
 - *str_sec_usec (string, optional)* - the current Unix
-					timestamp as a floating point number (6-digit precision)
+timestamp as a floating point number (6-digit precision)
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
-		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
 
 
 ```opensips title="get_accurate_time usage"
@@ -764,7 +764,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="shuffle_avps usage"
@@ -787,15 +787,15 @@ if(shuffle_avps( $avp(foo) ))
 
 
 Waits a number of seconds. This function does exactly the same as
-		[sleep](#func_sleep),
-		but in an asynchronous way. The script execution is suspended until
-		the waiting is done; then OpenSIPS resumes the script execution via 
-		the resume route.
+[sleep](#func_sleep),
+but in an asynchronous way. The script execution is suspended until
+the waiting is done; then OpenSIPS resumes the script execution via 
+the resume route.
 
 
 To read and understand more on the asynchronous functions, how to 
-		use them and what are their advantages, please refer to the OpenSIPS
-		online Manual.
+use them and what are their advantages, please refer to the OpenSIPS
+online Manual.
 
 
 ```opensips title="async sleep usage"
@@ -814,15 +814,15 @@ route[after_sleep] {
 
 
 Waits a number of micro-seconds. This function does exactly the same as
-		[usleep](#func_usleep),
-		but in an asynchronous way. The script execution is suspended until
-		the waiting is done; then OpenSIPS resumes the script execution via 
-		the resume route.
+[usleep](#func_usleep),
+but in an asynchronous way. The script execution is suspended until
+the waiting is done; then OpenSIPS resumes the script execution via 
+the resume route.
 
 
 To read and understand more on the asynchronous functions, how to 
-		use them and what are their advantages, please refer to the OpenSIPS
-		online Manual.
+use them and what are their advantages, please refer to the OpenSIPS
+online Manual.
 
 
 ```opensips title="async usleep usage"
@@ -850,7 +850,7 @@ Parameters:
 
 
 - *prob_proc* - the parameter should be
-					a percent value (number from 0 to 99).
+a percent value (number from 0 to 99).
 
 
 ```bash title="rand_set_prob usage"
@@ -900,8 +900,8 @@ Check if the actual config file hash is identical to the stored one.
 
 
 The function returns 200 OK if the hash values are identical, 400 if
-				there are not identical, 404 if no file for hashing has been configured
-				and 500 on errors. Additional a short text message is printed.
+there are not identical, 404 if no file for hashing has been configured
+and 500 on errors. Additional a short text message is printed.
 
 
 ```bash title="check_config_hash usage"
@@ -919,7 +919,7 @@ Return the stored config file hash.
 
 
 The function returns 200 OK and the hash value on success or 404 if no
-				file for hashing has been configured.
+file for hashing has been configured.
 
 
 ```bash title="get_config_hash usage"
@@ -964,7 +964,7 @@ Parameters:
 
 
 - *name* : shared variable name. If this parameter
-			is missing, all shared variables are returned.
+is missing, all shared variables are returned.
 
 
 ```bash title="shv_get usage"
@@ -1047,11 +1047,11 @@ if ($ctime(year) == 2008) {
 
 
 It is a class of pseudo-variables stored in shared memory. The
-				value of $shv(name) is visible across all opensips processes.
-				Each "shv" has single value and it is initialized
-				to integer 0. You can use "shvset" parameter to
-				initialize the shared variable. The module exports a set of MI
-				functions to get/set the value of shared variables.
+value of $shv(name) is visible across all opensips processes.
+Each "shv" has single value and it is initialized
+to integer 0. You can use "shvset" parameter to
+initialize the shared variable. The module exports a set of MI
+functions to get/set the value of shared variables.
 
 
 ```opensips title="shv(name) pseudo-variable usage"

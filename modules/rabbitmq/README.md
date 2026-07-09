@@ -10,15 +10,15 @@ description: "*RabbitMQ* ([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) 
 
 
 *RabbitMQ*
-		([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) 
-		is an open source messaging server. It's purpose is to
-		manage received messages in queues, taking advantage of
-		the flexible AMQP protocol.
+([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) 
+is an open source messaging server. It's purpose is to
+manage received messages in queues, taking advantage of
+the flexible AMQP protocol.
 
 
 Using this module you can send AMQP messages to a RabbitMQ server.
-		Messages can be easily customized according to the AMQP specifications,
-		as well the RabbitMQ extensions.
+Messages can be easily customized according to the AMQP specifications,
+as well the RabbitMQ extensions.
 
 
 ### Dependencies
@@ -37,7 +37,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *librabbitmq-dev*
@@ -50,52 +50,52 @@ The following libraries or applications must be installed before running
 
 
 Specify configuration for a RabbitMQ server. It contains a set
-			of parameters used to customize the connection to the server,
-			as well as to the messages sent. The format of the parameter is
-			*[id_name] param1=value1; param2=value2;*.
-			The *uri* parameter is mandatory.
+of parameters used to customize the connection to the server,
+as well as to the messages sent. The format of the parameter is
+*[id_name] param1=value1; param2=value2;*.
+The *uri* parameter is mandatory.
 
 
 This parameter can be set multiple times, for each RabbitMQ
-			server.
+server.
 
 
 The following parameters can be used:
 
 
 - *uri* - Mandatory parameter - a full
-				*amqp* URI as described
-				[here](https://www.rabbitmq.com/uri-spec.html).
-				Missing fields in the URI will receive default values,
-				such as: *user: guest*,
-				*password: guest*,
-				*host: localhost*,
-				*vhost: /*,
-				*port: 5672*. TLS connections are specified
-				using an *amqps* URI.
+*amqp* URI as described
+[here](https://www.rabbitmq.com/uri-spec.html).
+Missing fields in the URI will receive default values,
+such as: *user: guest*,
+*password: guest*,
+*host: localhost*,
+*vhost: /*,
+*port: 5672*. TLS connections are specified
+using an *amqps* URI.
 - *frames* - the maximum size of an AMQP
-				frame. Optional parameter, default size is 131072.
+frame. Optional parameter, default size is 131072.
 - *retries* - the number of retries in case
-				a connection is down. Optional parameter, default is disabled
-				(do not retry).
+a connection is down. Optional parameter, default is disabled
+(do not retry).
 - *exchange* - exchange used to send AMQP
-				messages to. Optional parameter, default is *""*.
+messages to. Optional parameter, default is *""*.
 - *heartbeat* - interval in seconds used
-				to send heartbeat messages. Optional parameter, default is
-				disabled.
+to send heartbeat messages. Optional parameter, default is
+disabled.
 - *immediate* - indicate to the broker that
-				the message MUST be delivered to a consumer immediately.
-				Optional parameter, default is not immediate.
+the message MUST be delivered to a consumer immediately.
+Optional parameter, default is not immediate.
 - *mandatory* - indicate to the broker that
-				the message MUST be routed to a queue. Optional parameter,
-				default is not mandatory.
+the message MUST be routed to a queue. Optional parameter,
+default is not mandatory.
 - *non-persistent* - indicates that the
-				message should not be persistent in case the RabbitMQ
-				server restarts. Optional parameter, default is persistent.
+message should not be persistent in case the RabbitMQ
+server restarts. Optional parameter, default is persistent.
 - *tls_domain* - indicates which TLS domain (as
-				defined using the *tls_mgm* module) to use for
-				this connection. This must be an *amqps* URI and the
-				[use tls](#param_use_tls) module parameter must be enabled.
+defined using the *tls_mgm* module) to use for
+this connection. This must be an *amqps* URI and the
+[use tls](#param_use_tls) module parameter must be enabled.
 
 
 ```opensips title="Set server_id parameter"
@@ -118,14 +118,14 @@ modparam("rabbitmq", "server_id","[ID3] uri = amqps://127.0.0.1; tls_domain=rmq"
 
 
 Setting this parameter will allow you to use TLS for broker connections.
-		In order to enable TLS for a specific connection, you can use the
-		"tls_domain=*dom_name*" parameter in the configuration
-		specified through the [server id](#param_server_id) module parameter.
+In order to enable TLS for a specific connection, you can use the
+"tls_domain=*dom_name*" parameter in the configuration
+specified through the [server id](#param_server_id) module parameter.
 
 
 When using this parameter, you must also ensure that
-		*tls_mgm* is loaded and properly configured. Refer to
-		the the module for additional info regarding TLS client domains.
+*tls_mgm* is loaded and properly configured. Refer to
+the the module for additional info regarding TLS client domains.
 
 
 *Default value is **0** (not enabled)*
@@ -147,7 +147,7 @@ modparam("rabbitmq", "use_tls", 1)
 
 
 The maximally allowed duration (in milliseconds) for the establishment
-		of a TCP connection with a RabbitMQ server.
+of a TCP connection with a RabbitMQ server.
 
 
 *Default value is "500" (milliseconds).*
@@ -162,13 +162,13 @@ aram("rabbitmq", "connect_timeout", 1000)
 
 
 Indicates the timeout (in milliseconds) of any command (i.e. publish)
-		sent to the RabbitMQ server.
+sent to the RabbitMQ server.
 
 
 *NOTE* that this parameter is available only starting with
-		RabbitMQ library version *0.9.0*; setting it when using an
-		earlier version will have no effect, and the publish command will run in
-		blocking mode.
+RabbitMQ library version *0.9.0*; setting it when using an
+earlier version will have no effect, and the publish command will run in
+blocking mode.
 
 
 *Default value is **0** (no timeout - blocking mode)*
@@ -191,12 +191,12 @@ Sends a publish message to a RabbitMQ server.
 
 
 This function also allows you to attach AMQP headers and values
-				in the AMQP message. This is done by specifying a set of headers
-				names (in the *headers* parameter) and the
-				corresponding values (in the *headers_vals*
-				parameter). The number of AVP values in the
-				*headers* must be the same as the one in the
-				*headers_vals*.
+in the AMQP message. This is done by specifying a set of headers
+names (in the *headers* parameter) and the
+corresponding values (in the *headers_vals*
+parameter). The number of AVP values in the
+*headers* must be the same as the one in the
+*headers_vals*.
 
 
 This function can be used from any route.
@@ -206,19 +206,19 @@ The function has the following parameters:
 
 
 - *server_id* (string) - the id of the RabbitMQ server.
-						Must be one of the parameters defined in the
-						*server_id* modparam.
+Must be one of the parameters defined in the
+*server_id* modparam.
 - *routing_key* (string) - routing key used to
-						deliver the AMQP message.
+deliver the AMQP message.
 - *message* (string) - the body of the message.
 - *content_type* (string, optional) - content type
-						of the message sent. By default it is *none*.
+of the message sent. By default it is *none*.
 - *headers* (string, optional) - an AVP containing
-						the names of the headers within the AMQP message. If set,
-						*headers_vals* parameter must also be specified.
+the names of the headers within the AMQP message. If set,
+*headers_vals* parameter must also be specified.
 - *headers_vals* (string, optional) - an AVP containing
-						the corresponding values of the AMQP headers. If set,
-						*headers* parameter must also be specified.
+the corresponding values of the AMQP headers. If set,
+*headers* parameter must also be specified.
 
 
 ```opensips title="rabbitmq_publish() function usage"

@@ -10,8 +10,8 @@ description: "The module implements all the operations regarding MaX-Forward hea
 
 
 The module implements all the operations regarding MaX-Forward header 
-		field, like adding it (if not present) or decrementing and checking 
-		the value of the existent one.
+field, like adding it (if not present) or decrementing and checking 
+the value of the existent one.
 
 
 ### Dependencies
@@ -30,7 +30,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -43,17 +43,17 @@ The following libraries or applications must be installed before
 
 
 Set an upper limit for the max-forward value in the outgoing requests.
-		If the header is present, the decremented value is not allowed to 
-		exceed this max_limits - if it does, the header value will by 
-		decreased to "max_limit".
+If the header is present, the decremented value is not allowed to 
+exceed this max_limits - if it does, the header value will by 
+decreased to "max_limit".
 
 
 Note: This check is done when calling the 
-		mf_process_maxfwd_header() header.
+mf_process_maxfwd_header() header.
 
 
 The range of values stretches from 1 to 256, which is the maximum 
-		MAX-FORWARDS value allowed by RFC 3261.
+MAX-FORWARDS value allowed by RFC 3261.
 
 
 *Default value is "256".*
@@ -73,32 +73,32 @@ modparam("maxfwd", "max_limit", 32)
 
 
 If no Max-Forward header is present in the received request, a header 
-		will be added having the original value equal with 
-		"max_value". If a Max-Forward header is already present,
-		its value will be decremented (if not 0).
+will be added having the original value equal with 
+"max_value". If a Max-Forward header is already present,
+its value will be decremented (if not 0).
 
 
 Retuning codes:
 
 
 - *2 (true)* - header was not found and
-			a new header was successfully added.
+a new header was successfully added.
 - *1 (true)* - header was found and its 
-			value was successfully decremented (had a non-0 value).
+value was successfully decremented (had a non-0 value).
 - *-1 (false)* - the header was found and
-			its value is 0 (cannot be decremented).
+its value is 0 (cannot be decremented).
 - *-2 (false)* - error during processing.
 
 
 The return code may be extensivly tested via script variable 
-		"retcode" (or "$?").
+"retcode" (or "$?").
 
 
 Meaning of the parameters is as follows:
 
 
 - *max_value* (int) - Value to be added if 
-			there is no Max-Forwards header field in the message.
+there is no Max-Forwards header field in the message.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -120,31 +120,31 @@ if (!mf_process_maxfwd_header(10) && $retcode==-1) {
 
 
 Checks if the Max-Forward header value is less then the 
-		"max_value" parameter value. It considers also the value
-		of the new inserted header (if locally added).
+"max_value" parameter value. It considers also the value
+of the new inserted header (if locally added).
 
 
 Retuning codes:
 
 
 - *1 (true)* - header was found or set and 
-			its value is strictly less than "max_value".
+its value is strictly less than "max_value".
 - *-1 (false)* - the header was found or 
-			set and its value is greater or equal to "max_value".
+set and its value is greater or equal to "max_value".
 - *-2 (false)* - header was not found or
-			not set.
+not set.
 - *-3 (false)* - error during processing.
 
 
 The return code may be extensivly tested via script variable 
-		"retcode" (or "$?").
+"retcode" (or "$?").
 
 
 Meaning of the parameters is as follows:
 
 
 - *max_value* (int) - value to check the 
-			Max-Forward.value against (as less than).
+Max-Forward.value against (as less than).
 
 
 ```opensips title="is_maxfwd_lt usage"

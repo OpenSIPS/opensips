@@ -10,27 +10,27 @@ description: "This is a module which provides a UNIX/UDP SOCKET transport layer 
 
 
 This is a module which provides a UNIX/UDP SOCKET transport layer 
-		implementation for the Event Interface.
+implementation for the Event Interface.
 
 
 ### DATAGRAM events syntax
 
 
 The event payload is formated as a JSON-RPC notification, with the event
-		name as the *method* field and the event parameters as
-		the *params* field.
+name as the *method* field and the event parameters as
+the *params* field.
 
 
 ### DATAGRAM socket syntax
 
 
 There are two types of sockets used by this module, based on the
-		sockets type. An UNIX socket should follow this syntax:
-		*['unix:'] unix_socket_path*
+sockets type. An UNIX socket should follow this syntax:
+*['unix:'] unix_socket_path*
 
 
 An UDP socket should follow this syntax:
-		*'udp:' address ':' port*
+*'udp:' address ':' port*
 
 
 ### Dependencies
@@ -49,7 +49,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -71,7 +71,7 @@ No function exported to be used from configuration file.
 
 
 This is an example of an event raised by the pike module
-			when it decides an ip should be blocked:
+when it decides an ip should be blocked:
 
 
 ```c title="E_PIKE_BLOCKED event"
@@ -99,7 +99,7 @@ udp:127.0.0.1:8081
 
 
 **Q: Both UNIX and UDP type of socket can be
-				used to notify the events?**
+used to notify the events?**
 
 
 Yes, you can use the both types.
@@ -121,21 +121,21 @@ Take a look at [https://opensips.org/](https://opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License
