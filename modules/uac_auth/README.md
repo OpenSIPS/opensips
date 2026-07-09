@@ -10,11 +10,11 @@ description: "UAC AUTH (User Agent Client Authentication) module provides a comm
 
 
 UAC AUTH (User Agent Client Authentication) module provides a
-		common API for building authentication headers.
+common API for building authentication headers.
 
 
 It also provides a common set of authentication credetials to
-		be used by other modules.
+be used by other modules.
 
 
 Known limitations in this version:
@@ -36,7 +36,7 @@ Known limitations in this version:
 
 
 The following libraries or applications must be installed 
-				before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *None*
@@ -49,12 +49,12 @@ The following libraries or applications must be installed
 
 
 Contains a multiple definition of credentials used to perform
-			authentication.
+authentication.
 
 
 NOTE that the password can be provided as a plain text password or
-			as a precalculated HA1 as a hexa (lower case) string
-			(of 32 chars) prefixed with "0x" (so a total of 34 chars).
+as a precalculated HA1 as a hexa (lower case) string
+(of 32 chars) prefixed with "0x" (so a total of 34 chars).
 
 
 *This parameter is required if UAC authentication is used.*

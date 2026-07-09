@@ -10,7 +10,7 @@ description: "This is a module which provides MySQL connectivity for OpenSIPS. I
 
 
 This is a module which provides MySQL connectivity for OpenSIPS.
-		It implements the DB API defined in OpenSIPS.
+It implements the DB API defined in OpenSIPS.
 
 
 ### Dependencies
@@ -29,7 +29,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libmysqlclient-dev* - the development libraries of mysql-client.
@@ -42,7 +42,7 @@ The following libraries or applications must be installed before running
 
 
 If queries take longer than 'exec_query_threshold' microseconds, warning
-		messages will be written to logging facility.
+messages will be written to logging facility.
 
 
 *Default value is 0 - disabled.*
@@ -59,14 +59,14 @@ modparam("db_mysql", "exec_query_threshold", 60000)
 
 
 Time interval after that an connection attempt, read or write request
-		is aborted. The value counts three times, as several retries are done
-		from the driver before it gives up.
+is aborted. The value counts three times, as several retries are done
+from the driver before it gives up.
 
 
 The read timeout parameter is ignored on driver versions prior to
-		"5.1.12", "5.0.25" and "4.1.22".
-		The write timeout parameter is ignored on version prior to "5.1.12"
-		and "5.0.25", the "4.1" release don't support it at all.
+"5.1.12", "5.0.25" and "4.1.22".
+The write timeout parameter is ignored on version prior to "5.1.12"
+and "5.0.25", the "4.1" release don't support it at all.
 
 
 *Default value is 2 (6 sec).*
@@ -89,14 +89,14 @@ No function exported to be used from configuration file.
 
 
 Because it dependes on an external library, the mysql module is not
-		compiled and installed by default. You can use one of the next options.
+compiled and installed by default. You can use one of the next options.
 
 
 - - edit the "Makefile" and remove "db_mysql" from "excluded_modules"
-			list. Then follow the standard procedure to install OpenSIPS:
-			"make all; make install".
+list. Then follow the standard procedure to install OpenSIPS:
+"make all; make install".
 - - from command line use: 'make all include_modules="db_mysql";
-			make install include_modules="db_mysql"'.
+make install include_modules="db_mysql"'.
 
 
 ### Exported Events
@@ -113,7 +113,7 @@ Parameters:
 
 - *url* - the URL of the connection as specified by the *db_url* parameter.
 - *status* - *connected* if the connection recovered, or 
-				*disconnected* if the connection was lost.
+*disconnected* if the connection was lost.
 <!-- CONTRIBUTORS -->
 
 ### License
