@@ -10,14 +10,14 @@ description: "This is a module which provides a FIFO transport layer implementat
 
 
 This is a module which provides a FIFO transport layer 
-		implementation for Management Interface.
+implementation for Management Interface.
 
 
 ### FIFO command syntax
 
 
 The external commands issued via FIFO interface must follow the
-		following syntax:
+following syntax:
 
 
 - *request = first_line argument**
@@ -44,7 +44,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -57,7 +57,7 @@ The following libraries or applications must be installed before
 
 
 The name of the FIFO file to be created for listening and 
-		reading external commands.
+reading external commands.
 
 
 *Default value is NONE.*
@@ -74,7 +74,7 @@ modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 
 
 Permission to be used for creating the listening FIFO file. It 
-		follows the UNIX conventions.
+follows the UNIX conventions.
 
 
 *Default value is 0660 (rw-rw----).*
@@ -141,7 +141,7 @@ modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
 
 
 Strings to be used for line indentation. As the MI data structure 
-		is tree oriendeted, the depth level will printed as indentation.
+is tree oriendeted, the depth level will printed as indentation.
 
 
 *Default value is ""\t" (TAB)".*
@@ -164,8 +164,8 @@ No function exported to be used from configuration file.
 
 
 This is an example showing the FIFO format for the 
-		"get_statistics dialog: tm:" MI commad:
-		response.
+"get_statistics dialog: tm:" MI commad:
+response.
 
 
 ```c title="FIFO request"

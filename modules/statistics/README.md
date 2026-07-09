@@ -10,13 +10,13 @@ description: "The Statistics module is a wrapper over the internal statistics ma
 
 
 The Statistics module is a wrapper over the internal
-		statistics manager, allowing the script writer to dynamically define and
-		use of statistic variables.
+statistics manager, allowing the script writer to dynamically define and
+use of statistic variables.
 
 
 By bringing the statistics support into the script, it takes advantage
-		of the script flexibility in defining logics, making possible 
-		implementation of any kind of statistic scenario.
+of the script flexibility in defining logics, making possible 
+implementation of any kind of statistic scenario.
 
 
 ### Dependencies
@@ -35,7 +35,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -48,7 +48,7 @@ The following libraries or applications must be installed before running
 
 
 Name of a new statistic variable. The name may be followed by additional
-		flag which describe the variable behavior:
+flag which describe the variable behavior:
 
 
 - *no_reset* : variable cannot be reset.
@@ -73,13 +73,13 @@ Meaning of the parameters is as follows:
 
 
 - *variable* - variable to be updated
-			(it can be a string or a pseudovariable);
+(it can be a string or a pseudovariable);
 - *value* - value to update with; it may be
-			also negative.
+also negative.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
-		FAILURE_ROUTE and ONREPLY_ROUTE.
+FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="update_stat usage"
@@ -102,11 +102,11 @@ Meaning of the parameters is as follows:
 
 
 - *variable* - variable to be reset-ed
-			(it can be a string or a pseudovariable).
+(it can be a string or a pseudovariable).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
-		FAILURE_ROUTE and ONREPLY_ROUTE.
+FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="reset_stat usage"

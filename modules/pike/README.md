@@ -10,13 +10,13 @@ description: "The module keeps trace of all (or selected ones) incoming request'
 
 
 The module keeps trace of all (or selected ones) incoming request's IP
-		source and blocks the ones that exceeded some limit. 
-		Works simultaneous for IPv4 and IPv6 addresses.
+source and blocks the ones that exceeded some limit. 
+Works simultaneous for IPv4 and IPv6 addresses.
 
 
 The module does not implement any actions on blocking - it just simply
-		reports that there is a high traffic from an IP; what to do, is
-		the administator decision (via scripting).
+reports that there is a high traffic from an IP; what to do, is
+the administator decision (via scripting).
 
 
 ### Dependencies
@@ -35,7 +35,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -48,14 +48,14 @@ The following libraries or applications must be installed before
 
 
 Time period used for sampling (or the sampling accuracy ;-) ). The 
-		smaller the better, but slower. If you want to detect peeks, use a 
-		small one. To limit the access (like total number of requests on a 
-		long period of time) to a proxy resource (a gateway for ex), use 
-		a bigger value of this parameter.
+smaller the better, but slower. If you want to detect peeks, use a 
+small one. To limit the access (like total number of requests on a 
+long period of time) to a proxy resource (a gateway for ex), use 
+a bigger value of this parameter.
 
 
 IMPORTANT: a too small value may lead to performance penalties due 
-		timer process overloading.
+timer process overloading.
 
 
 *Default value is 2.*
@@ -72,9 +72,9 @@ modparam("pike", "sampling_time_unit", 10)
 
 
 How many requests should be allowed per sampling_time_unit before 
-		blocking all the incoming request from that IP. Practically, the 
-		blocking limit is between ( let's have x=reqs_density_per_unit) x 
-		and 3*x for IPv4 addresses and between x and 8*x for ipv6 addresses.
+blocking all the incoming request from that IP. Practically, the 
+blocking limit is between ( let's have x=reqs_density_per_unit) x 
+and 3*x for IPv4 addresses and between x and 8*x for ipv6 addresses.
 
 
 *Default value is 30.*
@@ -91,7 +91,7 @@ modparam("pike", "reqs_density_per_unit", 30)
 
 
 For how long the IP address will be kept in memory after the last 
-		request from that IP address. It's a sort of timeout value.
+request from that IP address. It's a sort of timeout value.
 
 
 *Default value is 120.*
@@ -108,7 +108,7 @@ modparam("pike", "remove_latency", 130)
 
 
 Log level to be used by module to auto report the blocking (only first
-		time) and unblocking of IPs detected as source of floods.
+time) and unblocking of IPs detected as source of floods.
 
 
 *Default value is 1 (L_WARN).*
@@ -128,20 +128,20 @@ modparam("pike", "pike_log_level", -1)
 
 
 Process the source IP of the current request and returns false if 
-		the IP was exceeding the blocking limit.
+the IP was exceeding the blocking limit.
 
 
 Return codes:
 
 
 - *1 (true)* - IP is not to be blocked or 
-				internal error occured.
+internal error occured.
 
   > **Warning:** 
 - *-1 (false)* - IP is source of
-				flooding, being previously detected
+flooding, being previously detected
 - *-2 (false)* - IP is detected as a new 
-				source of flooding - first time detection
+source of flooding - first time detection
 
 
 This function can be used from REQUEST_ROUTE.
@@ -183,7 +183,7 @@ MI FIFO Command Format:
 
 
 One single tree (for both IPv4 and IPv6) is used. Each node contains a byte, the IP
-	addresses stretching from root to the leafs.
+addresses stretching from root to the leafs.
 
 
 ```bash title="Tree of IP addresses"
@@ -195,9 +195,9 @@ tree root /                  \ 142
 
 
 To detect the whole address, step by step, from the root to the leafs, the nodes corresponding
-	to each byte of the ip address are expanded. In order to be expended a node has to be hit
-	for a given number of times (possible by different addresses; in the previous example, the
-	node "37" was expended by the 195.37.78.163 and 195.37.79.134 hits).
+to each byte of the ip address are expanded. In order to be expended a node has to be hit
+for a given number of times (possible by different addresses; in the previous example, the
+node "37" was expended by the 195.37.78.163 and 195.37.79.134 hits).
 
 
 For 193.175.132.164 with x= reqs_density_per_unit:
@@ -205,31 +205,31 @@ For 193.175.132.164 with x= reqs_density_per_unit:
 
 - After first req hits -> the "193" node is built.
 - After x more hits, the "175" node is build; the hits of
-		"193" node are split between itself and its child--both of them gone
-		have x/2.
+"193" node are split between itself and its child--both of them gone
+have x/2.
 - And so on for node "132" and "164".
 - Once "164" build the entire address can be found in the
-		tree. "164" becomes a leaf. After it will be hit as a leaf for x
-		times, it will become "RED" (further request from this address will
-		be blocked).
+tree. "164" becomes a leaf. After it will be hit as a leaf for x
+times, it will become "RED" (further request from this address will
+be blocked).
 
 
 So, to build and block this address were needed 3*x hits. Now, if reqs start coming from
-	193.175.132.142, the first 3 bytes are already in the tree (they are shared with the previous
-	address), so I will need only x hits (to build node "142" and to make it
-	"RED") to make this address also to be blocked.  This is the reason for the
-	variable number of hits necessary to block an IP.
+193.175.132.142, the first 3 bytes are already in the tree (they are shared with the previous
+address), so I will need only x hits (to build node "142" and to make it
+"RED") to make this address also to be blocked.  This is the reason for the
+variable number of hits necessary to block an IP.
 
 
 The maximum number of hits to turn an address red are (n is the address's number of bytes):
 
 
 1 (first byte) + x (second byte) + (x / 2) * (n - 2) (for the rest of the bytes) + (n - 1)
-	(to turn the node to red).
+(to turn the node to red).
 
 
 So, for IPv4 (n = 4) will be 3x and for IPv6 (n = 16) will be 9x. The minimum number of hits
-	to turn an address red is x.
+to turn an address red is x.
 <!-- CONTRIBUTORS -->
 
 ### License

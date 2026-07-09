@@ -10,27 +10,27 @@ description: "This module implements a xmlrpc server that handles xmlrpc request
 
 
 This module implements a xmlrpc server that handles xmlrpc requests and
-		generates xmlrpc responses. When a xmlrpc message is received a default 
-		method is executed.
+generates xmlrpc responses. When a xmlrpc message is received a default 
+method is executed.
 
 
 At first, it looks up the MI command. If found it parses the called 
-		procedure's parameters into a MI tree and the command is executed. A 
-		MI reply tree is returned that is formatted back in xmlrpc. The 
-		response is built in two ways - like a string that contains the MI 
-		tree nodes information (name, values and attributes) or like an array 
-		whose elements are consisted of each MI tree node stored information.
+procedure's parameters into a MI tree and the command is executed. A 
+MI reply tree is returned that is formatted back in xmlrpc. The 
+response is built in two ways - like a string that contains the MI 
+tree nodes information (name, values and attributes) or like an array 
+whose elements are consisted of each MI tree node stored information.
 
 
 Implementation of mi_xmlrpc module's xmlrpc server is based on Abyss
-		XML-RPC server.  Current version of Abyss server
-		"normalizes" CRLF sequence in received XML-RPC strings
-		to LF character, which makes it impossible to pass CRLF
-		sequence from xmlrpc client application to OpenSIPS modules,
-		such as mi_fifo and pua_mi, that accept requests via MI
-		transport.  To overcome this limitation mi_xmlrpc module
-		implements a hack that coverts each LFLF sequence in
-	        received XML-RPC strings to CRLF sequence.
+XML-RPC server.  Current version of Abyss server
+"normalizes" CRLF sequence in received XML-RPC strings
+to LF character, which makes it impossible to pass CRLF
+sequence from xmlrpc client application to OpenSIPS modules,
+such as mi_fifo and pua_mi, that accept requests via MI
+transport.  To overcome this limitation mi_xmlrpc module
+implements a hack that coverts each LFLF sequence in
+received XML-RPC strings to CRLF sequence.
 
 
 ### To-do
@@ -59,7 +59,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libxml*.
@@ -68,11 +68,11 @@ The following libraries or applications must be installed before
 
 
 If libxmlrpc-c3[-dev] package is not available on your system, you may
-		check if packages for your OS are not available on the 
-		"xmlrpc-c"project 
-		([http://xmlrpc-c.sourceforge.net/](http://xmlrpc-c.sourceforge.net/)). Otherwise you need
-		to install the library and devel headers from the sources. In both
-		cases, keep in mind to use the 0.9.10 version!!.
+check if packages for your OS are not available on the 
+"xmlrpc-c"project 
+([http://xmlrpc-c.sourceforge.net/](http://xmlrpc-c.sourceforge.net/)). Otherwise you need
+to install the library and devel headers from the sources. In both
+cases, keep in mind to use the 0.9.10 version!!.
 
 
 ### Exported Parameters
@@ -82,11 +82,11 @@ If libxmlrpc-c3[-dev] package is not available on your system, you may
 
 
 The port number used by the XMLRPX server to listen for incoming 
-		requests.
+requests.
 
 
 *The default value is 8080.*
-		Ports lower than 1024 are not accepted.
+Ports lower than 1024 are not accepted.
 
 
 ```opensips title="Set port parameter"
@@ -100,7 +100,7 @@ modparam("mi_xmlrpc", "port", 8000)
 
 
 A log file to be used by the internal Abyss html server used by the 
-		XMLRPX library.
+XMLRPX library.
 
 
 *The default values NONE (no logging).*
@@ -117,14 +117,14 @@ modparam("mi_xmlrpc", "log_file", "/var/log/abyss.log")
 
 
 Given the xmlrpc response specifications that a methodResponse can 
-		contain a single params section with a single param section, there is 
-		the possibility to choose between a string built response or an 
-		array built one.
+contain a single params section with a single param section, there is 
+the possibility to choose between a string built response or an 
+array built one.
 
 
 For a 0 value, a single string parameter will be replied (merging the 
-		whole response). For non-0 value, each line from the response will be 
-		encoded as an element into an array of strings.
+whole response). For non-0 value, each line from the response will be 
+encoded as an element into an array of strings.
 
 
 *The default option is a string built response (0).*
@@ -141,7 +141,7 @@ modparam("mi_xmlrpc", "reply_option", 0)
 
 
 It specifies the maximum length of the buffer used to write in the MI 
-		tree node information in order to build the xmlrpc response.
+tree node information in order to build the xmlrpc response.
 
 
 *The default value is 8192.*
@@ -164,8 +164,8 @@ No function exported to be used from configuration file.
 
 
 This is an example showing the xmlrpc format for the 
-		"get_statistics dialog: tm:" MI commad:
-		response.
+"get_statistics dialog: tm:" MI commad:
+response.
 
 
 ```c title="XMLRPC request"

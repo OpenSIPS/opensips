@@ -10,13 +10,13 @@ description: "This module helps developers to benchmark their module functions. 
 
 
 This module helps developers to benchmark their module functions. By adding
-		this module's functions via the configuration file or through its API, OpenSIPS
-		can log profiling information for every function.
+this module's functions via the configuration file or through its API, OpenSIPS
+can log profiling information for every function.
 
 
 The duration between calls to start_timer and log_timer is stored and logged
-		via OpenSIPS's logging facility. Please note that all durations are given as
-		microseconds (don't confuse with milliseconds!).
+via OpenSIPS's logging facility. Please note that all durations are given as
+microseconds (don't confuse with milliseconds!).
 
 
 ### Dependencies
@@ -35,7 +35,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -48,13 +48,13 @@ The following libraries or applications must be installed before running
 
 
 Even when the module is loaded, benchmarking is not enabled
-			per default. This variable may have three different values:
+per default. This variable may have three different values:
 
 
 - -1 - Globally disable benchmarking
 - 0 - Enable per-timer enabling. Single timers are inactive by default
-				and can be activated through the MI interface as soon as that feature is
-				implemented.
+and can be activated through the MI interface as soon as that feature is
+implemented.
 - 1 - Globally enable benchmarking
 
 
@@ -72,8 +72,8 @@ modparam("benchmark", "enable", 1)
 
 
 Logging normally is not done for every reference to the log_timer()
-			function, but only every n'th call. n is defined through this variable.
-			A sensible granularity seems to be 100.
+function, but only every n'th call. n is defined through this variable.
+A sensible granularity seems to be 100.
 
 
 *Default value is "100".*
@@ -121,7 +121,7 @@ This will set the logging level to L_DBG.
 
 
 Start timer "name". A later call to
-		"bm_log_timer()" logs this timer..
+"bm_log_timer()" logs this timer..
 
 
 ```opensips title="bm_start_timer usage"
@@ -135,7 +135,7 @@ bm_start_timer("test");
 
 
 This function logs the timer with the given ID. The following data are
-			logged:
+logged:
 
 
 - *Last msgs* is the number of calls in the last logging interval. This equals the granularity variable.
@@ -151,7 +151,7 @@ This function logs the timer with the given ID. The following data are
 
 
 - *Last average* is the average duration between
-					bm_start_timer() and bm_log_timer() since the last logging.
+bm_start_timer() and bm_log_timer() since the last logging.
 
 
 - *Global msgs* number of calls to log_timer.
@@ -186,9 +186,9 @@ Exported pseudo-variables are listed in the next sections.
 
 
 *$BM_time_diff* - the time difference
-			elapsed between calls of bm_start_timer(name) and
-			bm_log_timer(name). The value is 0 if no bm_log_timer()
-			was called.
+elapsed between calls of bm_start_timer(name) and
+bm_log_timer(name). The value is 0 if no bm_log_timer()
+was called.
 
 
 ### Exported MI Functions
@@ -198,14 +198,14 @@ Exported pseudo-variables are listed in the next sections.
 
 
 Enables/disables the module. Parameter may be -1, 0 or 1. See
-				discription of "enable" parameter.
+discription of "enable" parameter.
 
 
 #### bm_enable_timer
 
 
 Enable or disable a single timer. The following example enables
-				timer "test" (the second parameter must be 0 to disable):
+timer "test" (the second parameter must be 0 to disable):
 
 
 ```bash title="Enabling a timer"
@@ -246,12 +246,12 @@ bm_log_timer("usrloc-lookup");
 
 
 The benchmark module provides an internal API to be used by 
-	other OpenSIPS modules. The available functions are identical to the user exported
-	functions.
+other OpenSIPS modules. The available functions are identical to the user exported
+functions.
 
 
 Please note that this module is intended mainly for developers. It should
-	be used with caution in production environments.
+be used with caution in production environments.
 
 
 ### Available Functions
@@ -261,22 +261,22 @@ Please note that this module is intended mainly for developers. It should
 
 
 This function register a new timer and/or returns the internal ID
-		associated with the timer. mode controls the creation of new timer
-		if not found. id is to be used by start and log timer functions.
+associated with the timer. mode controls the creation of new timer
+if not found. id is to be used by start and log timer functions.
 
 
 #### bm_start(id)
 
 
 This function equals the user-exported function bm_start_timer. The
-		id is passed as an integer, though.
+id is passed as an integer, though.
 
 
 #### bm_log(id)
 
 
 This function equals the user-exported function bm_log_timer. The id
-		is passed as an integer, though.
+is passed as an integer, though.
 
 
 ### Benchmark API Example
