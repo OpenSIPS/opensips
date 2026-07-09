@@ -12,10 +12,10 @@ title: "Dynamic Routing Module"
 
 
 Dynamic Routing is a module for selecting (based on multiple
-	criteria) the best gateway/destination to be used for delivering a
-	certain call. Least Cost Routing (LCR) is a special case of dynamic
-	routing - when the rules are ordered based on costs. Dynamic Routing 
-	comes with many features regarding routing rule selection:
+criteria) the best gateway/destination to be used for delivering a
+certain call. Least Cost Routing (LCR) is a special case of dynamic
+routing - when the rules are ordered based on costs. Dynamic Routing 
+comes with many features regarding routing rule selection:
 
 
 - prefix based
@@ -46,36 +46,36 @@ and failure handling:
 
 
 The dynamic routing implementation for OpenSIPS is designed with the
-	following properties:
+following properties:
 
 
 - routing info (destinations, carriers, rules, groups) are stored in a 
-	database and loaded into memory at start up time; reload at runtime via
-	an Management Interface command.
+database and loaded into memory at start up time; reload at runtime via
+an Management Interface command.
 - weigth-based or random selection of the destinations (from a rule or
-	 from a carrier), failure detection of gateways (with switching to next
-	 available gateway).
+from a carrier), failure detection of gateways (with switching to next
+available gateway).
 - able to handle large volume of routing info (10M of rules) with minimal
-	speed/time and memory consumption penalties
+speed/time and memory consumption penalties
 - script integration - Pseudo variables support in functions; scripting
-	route triggering when rules are matched
+route triggering when rules are matched
 - bidirectional behavior - inbound and outbound processing (strip and 
-	prefixing when sending and receiving from a destination/GW)
+prefixing when sending and receiving from a destination/GW)
 - blacklisting - the module allows definition of backlists based on the
-	destination IPs. This blacklists are to be used to prevent malicious 
-	forwarding to GWs (based on DNS lookups) when the script logic does
-	none-GE forwarding (like foreign domains).
+destination IPs. This blacklists are to be used to prevent malicious 
+forwarding to GWs (based on DNS lookups) when the script logic does
+none-GE forwarding (like foreign domains).
 
 
 #### Performance
 
 
 There were several tests performed regarding the performance of the module
-	when dealing with a large number of routing rules.
+when dealing with a large number of routing rules.
 
 
 The tests were performed with a set of 383000 rules and to values were
-	measured:
+measured:
 
 
 - time to load from DB
@@ -83,32 +83,32 @@ The tests were performed with a set of 383000 rules and to values were
 
 
 The time to load was varying between 4 seconds and 8 seconds, depending of
-	the caching of the DB client - the first load was the slowest (as the DB 
-	query hits the disk drive); the following are faster as data is already 
-	cached in the DB client. So technically speaking, the time to load (without
-	the time to query which is DB type dependent) is ~4 seconds
+the caching of the DB client - the first load was the slowest (as the DB 
+query hits the disk drive); the following are faster as data is already 
+cached in the DB client. So technically speaking, the time to load (without
+the time to query which is DB type dependent) is ~4 seconds
 
 
 After loading the data into shared memory ~ 96M of memory were used 
-	exclusively for the DR data.
+exclusively for the DR data.
 
 
 #### Dynamic Routing Concepts
 
 
 DR engine uses several concepts in order to define how the routing
-	should be done (describing all the dependecies between destinations
-	and routing rules).
+should be done (describing all the dependecies between destinations
+and routing rules).
 
 
 ##### Destination/Gateways
 
 
 These are the end SIP entities where actually the traffic needs to be sent
-	after routing. They are stored in a table called "dr_gateways".
-	Gateway addresses are stored in a separate table because of need to access them
-	independent of Dynamic Routing processing (e.g., adding/ removing gateway PRI
-	prefix before/after performing other operation -- receiving/relaying to gateway).
+after routing. They are stored in a table called "dr_gateways".
+Gateway addresses are stored in a separate table because of need to access them
+independent of Dynamic Routing processing (e.g., adding/ removing gateway PRI
+prefix before/after performing other operation -- receiving/relaying to gateway).
 
 
 In DR, a gateway is defined by:
@@ -117,32 +117,32 @@ In DR, a gateway is defined by:
 - id (string)
 - SIP address (SIP URI)
 - type (number to allow to group GW based on purpose,
-	like inbound, outbound, etc)
+like inbound, outbound, etc)
 - strip value (number of digits) from dialled
-	number
+number
 - prefix (string) to be added to dialled
-	number
+number
 - attributes (not used by DR engine, but only pushed
-	to script level when routing to this GW)
+to script level when routing to this GW)
 - probing mode (how the GW should be probed at SIP level
 	- see the probing chapter)
 
 
 The Gateways are to be used from the routing rule or from the carrier
-	definition. They are all the time referred by their ID.
+definition. They are all the time referred by their ID.
 
 
 ##### Carriers
 
 
 The carrier concept is used if you need to group gateways in order to
-	have a better control on how the GWs will be used by DR rules; like 
-	in what order the GWs will be used.
+have a better control on how the GWs will be used by DR rules; like 
+in what order the GWs will be used.
 
 
 Basically, a carrier is a set of gateways which have its own sorting
-	algorithm and its own attribute string. They are by default defined
-	in the "dr_carriers" table.
+algorithm and its own attribute string. They are by default defined
+in the "dr_carriers" table.
 
 
 In DR, a carrier is defined by:
@@ -150,130 +150,130 @@ In DR, a carrier is defined by:
 
 - id (string)
 - list of gateways with/without weights (string)
-	(Ex:"gw1=10,gw4=10" or "gw1,gw2"
+(Ex:"gw1=10,gw4=10" or "gw1,gw2"
 - flags : 0x1 - use weight for sorting the list and
-	not definition order; 0x2 - use only the first gateway from the carrier
-	(depending on the sorting); 0x4 - disable the usage of this 
-	carrier
+not definition order; 0x2 - use only the first gateway from the carrier
+(depending on the sorting); 0x4 - disable the usage of this 
+carrier
 - attributes (not used by DR engine, but only pushed
-	to script level when routing to this carrier)
+to script level when routing to this carrier)
 
 
 The Carriers are to be used only from the routing rule definition.
-	They are all the time referred by their ID.
+They are all the time referred by their ID.
 
 
 ##### Routing Rules
 
 
 These are the actual rule which control the routing - like based on
-	different criterias (prefix, time, priority, etc) they will decide
-	to which gateways the call will be sent.
+different criterias (prefix, time, priority, etc) they will decide
+to which gateways the call will be sent.
 
 
 Default name for the table storing rule definitions is 
-	"dr_rules".
+"dr_rules".
 
 
 In DR, a carrier is defined by:
 
 
 - group (list of numbers) - rules can be grouped (a rule may
-	belong to multiple groups in the same time ) and you can
-	use only a certian group at a point; like having a "premium" or
-	"standard" or "interstate" or 
-	"intrastate" groups of rules to be used in different 
-	cases
+belong to multiple groups in the same time ) and you can
+use only a certian group at a point; like having a "premium" or
+"standard" or "interstate" or 
+"intrastate" groups of rules to be used in different 
+cases
 - prefix (string with digits only) - prefix to be used for
-	matching this rule (longest prefix matching)
+matching this rule (longest prefix matching)
 - time validity (time recurrence string) - when this rule is
-	valid from time point of view (see RFC 2445)
+valid from time point of view (see RFC 2445)
 - priority (number) - prority off the rule - higher value, 
-	higher priority (see rule section alg)
+higher priority (see rule section alg)
 - script route ID (string) - if defined, then execute the 
-	route with the specified ID when this rule is matched. That's it, a route
-	which can be used to perform custom operations on message. NOTE that no 
-	modification is performed at signaling level and you must NOT do
-	any signalling operations in that script route
+route with the specified ID when this rule is matched. That's it, a route
+which can be used to perform custom operations on message. NOTE that no 
+modification is performed at signaling level and you must NOT do
+any signalling operations in that script route
 - list of GWs/carriers (string) - a comma separated list
-	of gateways or carriers (defined by IDs) to be used for this rule; the 
-	carrier IDs are prefixed with "#" sign. For each ID (GW or
-	carrier) you may specify a weight. For how this list will be interpreted 
-	(as order) see the rule selection section. Example of list: 
-	"gw1,gw4,#cr3" or "gw1=10,gw4=10,#cr3=80"
+of gateways or carriers (defined by IDs) to be used for this rule; the 
+carrier IDs are prefixed with "#" sign. For each ID (GW or
+carrier) you may specify a weight. For how this list will be interpreted 
+(as order) see the rule selection section. Example of list: 
+"gw1,gw4,#cr3" or "gw1=10,gw4=10,#cr3=80"
 - attributes (not used by DR engine, but only pushed
-	to script level when this rule matched and been used)
+to script level when this rule matched and been used)
 
 
 More on time recurrence:
 
 
 - A date-time expression that defines the time recurrence to match for
-	current rule. Time recurrences are based closely on the specification
-	of recurring intervals of time in the Internet Calendaring and Scheduling
-	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is subset of time recurrence attributes.
+current rule. Time recurrences are based closely on the specification
+of recurring intervals of time in the Internet Calendaring and Scheduling
+Core Object Specification (calendar COS), RFC 2445. The set of attributes
+used in routing rule specification is subset of time recurrence attributes.
 - The value stored in database has the format of:
-	
+
 	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
 - When an attribute is not specified, the corresponding place must be left
-	empty, whenever another attribute that follows in the list has to be
-	specified.
+empty, whenever another attribute that follows in the list has to be
+specified.
 
 
 #### Routing Rule Processing
 
 
 The module can be used to find out which is the best gateway to use for new
-	calls terminated to PSTN. The algorithm to select the rule is as follows:
+calls terminated to PSTN. The algorithm to select the rule is as follows:
 
 
 - the module discovers the routing group of the originating user. This 
-	step is skipped if a routing group is passed from the script as parameter.
+step is skipped if a routing group is passed from the script as parameter.
 - once the group is known, in the subset of the rules for this group the 
-	module looks for the one that matches the destination based on "prefix"
-	column. The set of rules with the longest prefix is chosen. If no digit 
-	from the prefix matches, the default rules are used (rules with no prefix)
+module looks for the one that matches the destination based on "prefix"
+column. The set of rules with the longest prefix is chosen. If no digit 
+from the prefix matches, the default rules are used (rules with no prefix)
 - within the set of rules is applied the time criteria, and the rule which
-	has the highest priority and matches the time criteria is selected to drive
-	the routing.
+has the highest priority and matches the time criteria is selected to drive
+the routing.
 - Once found the rule, it may contain a route ID to execute. If a certain 
-	flag is set, then the processing is stopped after executing the route
-	block.
+flag is set, then the processing is stopped after executing the route
+block.
 - The rule must contain a chain of gateways and carriers. The module will 
-	execute serial forking for each address in chain (in which order the 
-	destinations will be tried, depends on the defintion order or depends on
-	the weights (weights selection must be enabled). The next address in chain
-	is used only if the previously has failed.
+execute serial forking for each address in chain (in which order the 
+destinations will be tried, depends on the defintion order or depends on
+the weights (weights selection must be enabled). The next address in chain
+is used only if the previously has failed.
 - With the right gateway address found, the prefix (PRI) of the gateway is
-	added to the request URI and then the request is forwarded.
+added to the request URI and then the request is forwarded.
 
 
 If no rule is found to match the selection criteria an default action must
-	be taken (e.g., error response sent back). If the gateway in the chain has 
-	no prefix the request is forwarded without adding any prefix to the request
-	URI.
+be taken (e.g., error response sent back). If the gateway in the chain has 
+no prefix the request is forwarded without adding any prefix to the request
+URI.
 
 
 #### Probing and Disabling destinations
 
 
 The module has the capability to monitor the status of the destinations by
-	doing SIP probing (sending SIP requests like OPTIONS).
+doing SIP probing (sending SIP requests like OPTIONS).
 
 
 For each destination, you can configure what kind of probing should be
-	done (probe_mode column):
+done (probe_mode column):
 
 
 - *(0)* - no probing at all;
 - *(1)* - probing only when the destination is
-		in disabled mode (disabling via MI command will competely stop the
-		probing also). The destination will be automatically re-enabled
-		when the probing will succeed next time;
+in disabled mode (disabling via MI command will competely stop the
+probing also). The destination will be automatically re-enabled
+when the probing will succeed next time;
 - *(2)* - probing all the time. If disabled,
-		the destination will be automatically re-enabled when the probing
-		will succeed next time;
+the destination will be automatically re-enabled when the probing
+will succeed next time;
 
 
 A destination can become disabled in two ways:
@@ -376,7 +376,7 @@ modparam("drouting", "drg_table", "groups")
 
 
 The name of the db table storing definitions of the carriers that will 
-		be used directly by the routing rules.
+be used directly by the routing rules.
 
 
 *Default value is "dr_carriers".*
@@ -393,7 +393,7 @@ modparam("drouting", "drc_table", "my_dr_carriers")
 
 
 The name of the avp for storing Request URIs to be later used 
-		(alternative destiantions for the current one).
+(alternative destiantions for the current one).
 
 
 *Default value is "$avp(0xad346b2f)".*
@@ -412,9 +412,9 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 
 
 The name of the avp for storing the id of the current selected
-		gateway/destination - once a new destination is selected (via the 
-		use_next_gw() function), the AVP will be updated with the ID of the
-		new selected gateway/destination.
+gateway/destination - once a new destination is selected (via the 
+use_next_gw() function), the AVP will be updated with the ID of the
+new selected gateway/destination.
 
 
 *Default value is "$avp(0xad346b30)".*
@@ -433,9 +433,9 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 
 
 The name of the avp for storing the attributes of the current selected
-		destination/gateway - once a new destination is selected (via the 
-		use_next_gw() function), the AVP will be updated with the attrs of the
-		new used destination.
+destination/gateway - once a new destination is selected (via the 
+use_next_gw() function), the AVP will be updated with the attrs of the
+new used destination.
 
 
 *Default value is "NULL".*
@@ -454,7 +454,7 @@ modparam("drouting", "gw_attrs_avp", '$avp(67)')
 
 
 The name of the avp for storing the id of the current matched
-		routing rule (see dr_rules table).
+routing rule (see dr_rules table).
 
 
 *Default value is "NULL".*
@@ -473,7 +473,7 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
 
 
 The name of the avp for storing the attributes of the current matched
-		routing rule (see dr_rules table).
+routing rule (see dr_rules table).
 
 
 *Default value is "NULL".*
@@ -492,7 +492,7 @@ modparam("drouting", "rule_attrs_avp", '$avp(66)')
 
 
 The actual prefix that matched the routing rule (the part from RURI 
-		username that matched the routing rule).
+username that matched the routing rule).
 
 
 *Default value is "NULL".*
@@ -510,7 +510,7 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 
 
 AVP to be populate with the ID string for the carrier the 
-		current GW belongs to.
+current GW belongs to.
 
 
 *Default value is "NULL".*
@@ -528,7 +528,7 @@ modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 
 
 AVP to be populate with the attributes string for the carrier the 
-		current GW belongs to.
+current GW belongs to.
 
 
 *Default value is "NULL".*
@@ -546,7 +546,7 @@ modparam("drouting", "carrier_attrs_avp", '$avp(carrier_attrs)')
 
 
 Defines a backlist based on a list of GW types - the list will contain
-		the IPs (no port, all protocols) of the GWs with the specified types.
+the IPs (no port, all protocols) of the GWs with the specified types.
 
 
 Multiple instances of this param are allowed.
@@ -568,7 +568,7 @@ modparam("drouting", "define_blacklist", 'list= 4,2')
 
 
 Group to be used if the caller (FROM user) is not found in the GROUP
-		table.
+table.
 
 
 *Default value is "NONE".*
@@ -585,8 +585,8 @@ modparam("drouting", "default_group", 4)
 
 
 Force DNS resolving of GW/destination names (if not IPs) during 
-		startup. If not enabled, the GW name will be blindly used during 
-		routing.
+startup. If not enabled, the GW name will be blindly used during 
+routing.
 
 
 *Default value is "1 (enabled)".*
@@ -604,8 +604,8 @@ modparam("drouting", "force_dns", 0)
 
 
 How often (in seconds) the probing of a destination should be done. If
-		set to 0, the probing will be disabled as functionality (for all
-		destinations)
+set to 0, the probing will be disabled as functionality (for all
+destinations)
 
 
 *Default value is "30".*
@@ -654,8 +654,8 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
 
 A comma separted list of SIP reply codes. The codes defined here
-		will be considered as valid reply codes for probing messages,
-		apart for 200.
+will be considered as valid reply codes for probing messages,
+apart for 200.
 
 
 *Default value is "NULL".*
@@ -672,7 +672,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 
 
 Flag to configure whether to use domain match when querying
-			database for user's routing group.
+database for user's routing group.
 
 
 *Default value is "1".*
@@ -721,7 +721,7 @@ modparam("drouting", "drg_domain_col", "host")
 
 
 The name of the column in group db table where the
-			group id is stored.
+group id is stored.
 
 
 *Default value is "groupid".*
@@ -741,7 +741,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
 
 Function to trigger routing of the message according to the 
-		rules in the database table and the configured parameters.
+rules in the database table and the configured parameters.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -784,15 +784,15 @@ do_routing("2","F");
 
 
 Function to trigger the direct routing to a given carrier. In this case
-		the routing is not done prefix based, but carrier based (call will be
-		sent to the GWs of that carrier, based on carrier policy)
+the routing is not done prefix based, but carrier based (call will be
+sent to the GWs of that carrier, based on carrier policy)
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Function takes a single mandatory parameter, the ID of the carrier
-		to be used (variables are accepted).
+to be used (variables are accepted).
 
 
 ```opensips title="route_to_carrier usage"
@@ -810,14 +810,14 @@ if ( route_to_carrier("my_top_carrier") ) {
 
 
 Function to trigger the direct routing to a given gateway. Attributes 
-		and per-gw preocessing will be available.
+and per-gw preocessing will be available.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Function takes a single mandatory parameter, the ID of the gateway
-		to be used (variables are accepted).
+to be used (variables are accepted).
 
 
 ```opensips title="route_to_gw usage"
@@ -834,20 +834,20 @@ if ( route_to_gw("gw_europe") ) {
 
 
 The function takes the next available destination (set by do_routing, 
-		as alternative destinations) and push it into RURI. Note that the 
-		function just sets the RURI (nothing more).
+as alternative destinations) and push it into RURI. Note that the 
+function just sets the RURI (nothing more).
 
 
 If a new RURI is set, the used destination is removed from the 
-		pending set of alternative destinations.
+pending set of alternative destinations.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 The function returns true only if a new RURI was set. False
-		is returned is no other alternative destinations are found or in case
-		of internal processing error.
+is returned is no other alternative destinations are found or in case
+of internal processing error.
 
 
 ```opensips title="use_next_gw usage"
@@ -864,8 +864,8 @@ if (use_next_gw()) {
 
 
 Function returns true if the destination of the current request 
-		(destination URI or Request URI) points (as IP) to one of the gateways.
-		There no DNS lookups done if the domain part of the URI is not an IP.
+(destination URI or Request URI) points (as IP) to one of the gateways.
+There no DNS lookups done if the domain part of the URI is not an IP.
 
 
 This function does not change anything in the message.
@@ -899,7 +899,7 @@ if (goes_to_gw("1")) {
 
 
 The function checks if the sender of the message is a gateway
-		from a certain group.
+from a certain group.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -928,9 +928,9 @@ if (is_from_gw("3","1") {
 
 
 Marks as disabled the last destination that was used for the current
-		call. The disabling done via this function will prevent the
-		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the begining)
+call. The disabling done via this function will prevent the
+destination to be used for usage from now on. The probing mechanism
+can re-enable this peer (see the probing section in the begining)
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -973,12 +973,12 @@ MI FIFO Command Format:
 
 
 Gets or sets the status (enabled or disabled) of a gateway. The
-		function may take from 0 to 2 parameters. If none, it will list all
-		gateways along with their status. If one parameter is provided, that 
-		must be the id of a gateway and the function will return the status
-		of that gateway. If 2 parameters are provided, first must be the ID of
-		the ID of a GW and the second must be the new status to be forced for
-		that GW (0 - disable, 1 - enable).
+function may take from 0 to 2 parameters. If none, it will list all
+gateways along with their status. If one parameter is provided, that 
+must be the id of a gateway and the function will return the status
+of that gateway. If 2 parameters are provided, first must be the ID of
+the ID of a GW and the second must be the new status to be forced for
+that GW (0 - disable, 1 - enable).
 
 
 MI FIFO Command Format:
@@ -1006,12 +1006,12 @@ Enabled:: yes
 
 
 Gets or sets the status (enabled or disabled) of a carrier. The
-		function may take from 0 to 2 parameters. If none, it will list all
-		carriers along with their status. If one parameter is provided, that 
-		must be the id of a carrier and the function will return the status
-		of that carrier. If 2 parameters are provided, first must be the ID of
-		the ID of a carrier and the second must be the new status to be 
-		forced for that carrier (0 - disable, 1 - enable).
+function may take from 0 to 2 parameters. If none, it will list all
+carriers along with their status. If one parameter is provided, that 
+must be the id of a carrier and the function will return the status
+of that carrier. If 2 parameters are provided, first must be the ID of
+the ID of a carrier and the second must be the new status to be 
+forced for that carrier (0 - disable, 1 - enable).
 
 
 MI FIFO Command Format:
@@ -1039,17 +1039,17 @@ Enabled:: yes
 
 
 The module requires 4 table in OpenSIPS database: dr_groups,
-	dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
-	found in drouting-create.sql script in the database directories
-	in the opensips/scripts folder. You can also find the complete
-	database documentation on the project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
+found in drouting-create.sql script in the database directories
+in the opensips/scripts folder. You can also find the complete
+database documentation on the project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide
 
 
 The module provides no function to be used
-		by other OpenSIPS modules.
+by other OpenSIPS modules.
 <!-- CONTRIBUTORS -->
 
 ### License

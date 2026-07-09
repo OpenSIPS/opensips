@@ -81,7 +81,7 @@ objectClass                   top
 
 
 The module depends on the following modules (the listed modules
-        must be loaded before this module):
+must be loaded before this module):
 
 
 - LDAP
@@ -91,11 +91,11 @@ The module depends on the following modules (the listed modules
 
 
 The following libraries or applications must be installed before
-        running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - OpenLDAP library (libldap), libldap header files
-            (libldap-dev) are needed for compilation
+(libldap-dev) are needed for compilation
 
 
 ### Exported Parameters
