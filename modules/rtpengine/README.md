@@ -10,59 +10,59 @@ description: "This is a module that enables media streams to be proxied via an R
 
 
 This is a module that enables media streams to be proxied
-		via an RTP proxy. The only RTP proxy currently known to work
-		with this module is the Sipwise rtpengine
-		[https://github.com/sipwise/rtpengine](https://github.com/sipwise/rtpengine).
-		The rtpengine module is a modified version of the original
-		rtpproxy module using a new control protocol. The module is
-		designed to be a drop-in replacement for the old module from
-		a configuration file point of view, however due to the
-		incompatible control protocol, it only works with RTP proxies
-		which specifically support it.
+via an RTP proxy. The only RTP proxy currently known to work
+with this module is the Sipwise rtpengine
+[https://github.com/sipwise/rtpengine](https://github.com/sipwise/rtpengine).
+The rtpengine module is a modified version of the original
+rtpproxy module using a new control protocol. The module is
+designed to be a drop-in replacement for the old module from
+a configuration file point of view, however due to the
+incompatible control protocol, it only works with RTP proxies
+which specifically support it.
 
 
 ### Multiple RTP proxy usage
 
 
 The rtpengine module can support multiple RTP proxies for
-		balancing/distribution and control/selection purposes.
+balancing/distribution and control/selection purposes.
 
 
 The module allows definition of several sets of rtpengines.
-		Load-balancing will be performed over a set and the admin has the
-		ability to choose what set should be used. The set is selected via
-		its id - the id being defined with the set. Refer to the
-		"rtpengine_sock" module parameter definition for syntax
-		description.
+Load-balancing will be performed over a set and the admin has the
+ability to choose what set should be used. The set is selected via
+its id - the id being defined with the set. Refer to the
+"rtpengine_sock" module parameter definition for syntax
+description.
 
 
 The balancing inside a set is done automatically by the module based on
-		the weight of each RTP proxy from the set.
+the weight of each RTP proxy from the set.
 
 
 The selection of the set is done from script prior using
-		rtpengine_delete(), rtpengine_offer() or rtpengine_answer()
-		functions - see the rtpengine_use_set() function.
+rtpengine_delete(), rtpengine_offer() or rtpengine_answer()
+functions - see the rtpengine_use_set() function.
 
 
 Another way to select the set is to define setid_avp
-	        module parameter and assign setid to the defined avp
-	        before calling rtpengine_offer() or rtpengine_manage()
-	        function.  If forwarding of the requests fails and
-	        there is another branch to try, remember to unset the
-	        avp after calling rtpengine_delete() function.
+        module parameter and assign setid to the defined avp
+        before calling rtpengine_offer() or rtpengine_manage()
+        function.  If forwarding of the requests fails and
+        there is another branch to try, remember to unset the
+        avp after calling rtpengine_delete() function.
 
 
 For backward compatibility reasons, a set with no id take by default
-		the id 0. Also if no set is explicitly set before
-		rtpengine_delete(), rtpengine_offer() or rtpengine_answer()
-		the 0 id set will be used.
+the id 0. Also if no set is explicitly set before
+rtpengine_delete(), rtpengine_offer() or rtpengine_answer()
+the 0 id set will be used.
 
 
 IMPORTANT: if you use multiple sets, take care and use the same set for
-		both rtpengine_offer()/rtpengine_answer() and rtpengine_delete()!!
-		If the set was selected using setid_avp, the avp needs to be
-		set only once before rtpengine_offer() or rtpengine_manage() call.
+both rtpengine_offer()/rtpengine_answer() and rtpengine_delete()!!
+If the set was selected using setid_avp, the avp needs to be
+set only once before rtpengine_offer() or rtpengine_manage() call.
 
 
 ### Dependencies
@@ -75,14 +75,14 @@ The following modules must be loaded before this module:
 
 
 - *tm module* - (optional) if you want to
-				have rtpengine_manage() fully functional
+have rtpengine_manage() fully functional
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -95,7 +95,7 @@ The following libraries or applications must be installed before
 
 
 Definition of socket(s) used to connect to (a set) RTP proxy. It may
-		specify a UNIX socket or an IPv4/IPv6 UDP socket.
+specify a UNIX socket or an IPv4/IPv6 UDP socket.
 
 
 *Default value is "NONE" (disabled).*
@@ -121,8 +121,8 @@ modparam("rtpengine", "rtpengine_sock",
 
 
 Once an RTP proxy was found unreachable and marked as disabled, the rtpengine
-		module will not attempt to establish communication to that RTP proxy for
-		rtpengine_disable_tout seconds.
+module will not attempt to establish communication to that RTP proxy for
+rtpengine_disable_tout seconds.
 
 
 *Default value is "60".*
@@ -155,7 +155,7 @@ modparam("rtpengine", "rtpengine_tout", 2)
 
 
 How many times the module should retry to send and receive after
-		timeout was generated.
+timeout was generated.
 
 
 *Default value is "5".*
@@ -172,8 +172,8 @@ modparam("rtpengine", "rtpengine_retr", 2)
 
 
 The parameter sets the PV defination to use when the "b"
-			parameter is used on rtpengine_delete(), rtpengine_offer(),
-			rtpengine_answer() or rtpengine_manage() command.
+parameter is used on rtpengine_delete(), rtpengine_offer(),
+rtpengine_answer() or rtpengine_manage() command.
 
 
 Default is empty, the "b" parameter may not be used then.
@@ -190,10 +190,10 @@ modparam("rtpengine", "extra_id_pv", "$avp(extra_id)")
 
 
 The parameter defines an AVP that, if set,
-			determines which RTP proxy set
-			rtpengine_offer(), rtpengine_answer(),
-			rtpengine_delete(), and rtpengine_manage()
-			functions use.
+determines which RTP proxy set
+rtpengine_offer(), rtpengine_answer(),
+rtpengine_delete(), and rtpengine_manage()
+functions use.
 
 
 There is no default value.
@@ -213,13 +213,13 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 
 
 Sets the ID of the RTP proxy set to be used for the next
-		rtpengine_delete(), rtpengine_offer(), rtpengine_answer()
-		or rtpengine_manage() command. The parameter can be an integer or
-		a config variable holding an integer.
+rtpengine_delete(), rtpengine_offer(), rtpengine_answer()
+or rtpengine_manage() command. The parameter can be an integer or
+a config variable holding an integer.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		BRANCH_ROUTE.
+BRANCH_ROUTE.
 
 
 ```opensips title="rtpengine_use_set usage"
@@ -235,8 +235,8 @@ rtpengine_offer();
 
 Rewrites SDP body to ensure that media is passed through
                 an RTP proxy. To be invoked
-		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
-		when SDPs are in 200 OK and ACK.
+on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
+when SDPs are in 200 OK and ACK.
 
 
 Meaning of the parameters is as follows:
@@ -244,8 +244,8 @@ Meaning of the parameters is as follows:
 
 - *flags* - flags to turn on some features.
 The "flags" string is a list of space-separated items. Each item
-			is either an individual token, or a token in "key=value" format. The
-			possible tokens are described below.
+is either an individual token, or a token in "key=value" format. The
+possible tokens are described below.
 
   - *via-branch=...* - Include the "branch"
 				value of one of the "Via" headers in the request to the
@@ -301,86 +301,86 @@ The "flags" string is a list of space-separated items. Each item
 				you would use "address-family=IP6" to bridge between the two
 				address families.
 Sipwise rtpengine remembers the address family preference of each party after
-				it has seen an SDP body from them. This means that normally it is only
-				necessary to explicitly specify the address family in the "offer",
-				but not in the "answer".
+it has seen an SDP body from them. This means that normally it is only
+necessary to explicitly specify the address family in the "offer",
+but not in the "answer".
 Note: Please note, that this will only work properly with non-dual-stack user-agents or with
-				dual-stack clients according to RFC6157 (which suggest ICE for Dual-Stack implementations).
-				This short-cut will not work properly with RFC4091 (ANAT) compatible clients, which suggests
-				having different m-lines with different IP-protocols grouped together.
+dual-stack clients according to RFC6157 (which suggest ICE for Dual-Stack implementations).
+This short-cut will not work properly with RFC4091 (ANAT) compatible clients, which suggests
+having different m-lines with different IP-protocols grouped together.
   - *force* - instructs the RTP proxy to ignore marks
-				inserted by another RTP proxy in transit to indicate that the
-				session is already goes through another proxy. Allows creating
-				a chain of proxies. Not supported and ignored by Sipwise rtpengine.
+inserted by another RTP proxy in transit to indicate that the
+session is already goes through another proxy. Allows creating
+a chain of proxies. Not supported and ignored by Sipwise rtpengine.
   - *trust-address* - flags that IP address in SDP should
-				be trusted. Without this flag, the RTP proxy ignores address in
-				the SDP and uses source address of the SIP message as media
-				address which is passed to the RTP proxy.
+be trusted. Without this flag, the RTP proxy ignores address in
+the SDP and uses source address of the SIP message as media
+address which is passed to the RTP proxy.
   - *replace-origin* - flags that IP from the origin
-				description (o=) should be also changed.
+description (o=) should be also changed.
   - *replace-session-connection* - flags to change the session-level
-				SDP connection (c=) IP if media description also includes
-				connection information.
+SDP connection (c=) IP if media description also includes
+connection information.
   - *symmetric* - flags that for the UA from which
-				message is received, support symmetric RTP must be forced.
+message is received, support symmetric RTP must be forced.
   - *repacketize=NN* - requests the RTP proxy to perform
-				re-packetization of RTP traffic coming from the UA which
-				has sent the current message to increase or decrease payload
-				size per each RTP packet forwarded if possible.  The NN is the
-				target payload size in ms, for the most codecs its value should
-				be in 10ms increments, however for some codecs the increment
-				could differ (e.g. 30ms for GSM or 20ms for G.723).  The
-				RTP proxy would select the closest value supported by the codec.
-				This feature could be used for significantly reducing bandwith
-				overhead for low bitrate codecs, for example with G.729 going
-				from 10ms to 100ms saves two thirds of the network bandwith.
-				Not supported by Sipwise rtpengine.
+re-packetization of RTP traffic coming from the UA which
+has sent the current message to increase or decrease payload
+size per each RTP packet forwarded if possible.  The NN is the
+target payload size in ms, for the most codecs its value should
+be in 10ms increments, however for some codecs the increment
+could differ (e.g. 30ms for GSM or 20ms for G.723).  The
+RTP proxy would select the closest value supported by the codec.
+This feature could be used for significantly reducing bandwith
+overhead for low bitrate codecs, for example with G.729 going
+from 10ms to 100ms saves two thirds of the network bandwith.
+Not supported by Sipwise rtpengine.
   - *ICE=...* - controls the RTP proxy's behaviour
-				regarding ICE attributes within the SDP body. Possible values
-				are: "force" - 
-				discard any ICE attributes already present in the SDP body
-				and then generate and insert new ICE data, leaving itself
-				as the *only* ICE candidates;
-				"remove" instructs the RTP proxy to discard
-				any ICE attributes and not insert any new ones into the SDP.
-				The default (if no "ICE=..." is given at all),
-				new ICE data will only be generated
-				if no ICE was present in the SDP originally; otherwise
-				the RTP proxy will only insert itself as an
-				*additional* ICE candidate. Other
-				SDP substitutions (c=, m=, etc) are unaffected by this flag.
+regarding ICE attributes within the SDP body. Possible values
+are: "force" - 
+discard any ICE attributes already present in the SDP body
+and then generate and insert new ICE data, leaving itself
+as the *only* ICE candidates;
+"remove" instructs the RTP proxy to discard
+any ICE attributes and not insert any new ones into the SDP.
+The default (if no "ICE=..." is given at all),
+new ICE data will only be generated
+if no ICE was present in the SDP originally; otherwise
+the RTP proxy will only insert itself as an
+*additional* ICE candidate. Other
+SDP substitutions (c=, m=, etc) are unaffected by this flag.
   - *RTP, SRTP, AVP, AVPF* - These flags control the RTP
-				transport protocol that should be used towards the recipient of
-				the SDP. If none of them are specified, the protocol given in
-				the SDP is left untouched. Otherwise, the "SRTP" flag indicates that
-				SRTP should be used, while "RTP" indicates that SRTP should not be used.
-				"AVPF" indicates that the advanced RTCP profile with feedback messages
-				should be used, and "AVP" indicates that the regular RTCP profile
-				should be used. See also the next set of flags below.
+transport protocol that should be used towards the recipient of
+the SDP. If none of them are specified, the protocol given in
+the SDP is left untouched. Otherwise, the "SRTP" flag indicates that
+SRTP should be used, while "RTP" indicates that SRTP should not be used.
+"AVPF" indicates that the advanced RTCP profile with feedback messages
+should be used, and "AVP" indicates that the regular RTCP profile
+should be used. See also the next set of flags below.
   - *RTP/AVP, RTP/SAVP, RTP/AVPF, RTP/SAVPF* - these serve as
-				an alternative, more explicit way to select between the different RTP protocols
-				and profiles supported by the RTP proxy. For example, giving the flag
-				"RTP/SAVPF" has the same effect as giving the two flags
-				"SRTP AVPF".
+an alternative, more explicit way to select between the different RTP protocols
+and profiles supported by the RTP proxy. For example, giving the flag
+"RTP/SAVPF" has the same effect as giving the two flags
+"SRTP AVPF".
   - *to-tag* - force inclusion of the "To" tag.
-				Normally, the "To" tag is always included when present, except
-				for "delete" messages. Including the "To" tag in
-				a "delete" messages allows you to be more selective about which
-				dialogues within a call are being torn down.
+Normally, the "To" tag is always included when present, except
+for "delete" messages. Including the "To" tag in
+a "delete" messages allows you to be more selective about which
+dialogues within a call are being torn down.
   - *rtcp-mux-demux* - if rtcp-mux (RFC 5761) was
-				offered, make the RTP proxy accept the offer, but not offer it to the
-				recipient of this message.
+offered, make the RTP proxy accept the offer, but not offer it to the
+recipient of this message.
   - *rtcp-mux-reject* - if rtcp-mux was offered, make the
-				RTP proxy reject the offer, but still offer it to the recipient. Can be
-				combined with "rtcp-mux-offer" to always offer it.
+RTP proxy reject the offer, but still offer it to the recipient. Can be
+combined with "rtcp-mux-offer" to always offer it.
   - *rtcp-mux-offer* - make the RTP proxy offer rtcp-mux
-				to the recipient of this message, regardless of whether it was offered
-				originally or not.
+to the recipient of this message, regardless of whether it was offered
+originally or not.
   - *rtcp-mux-accept* - if rtcp-mux was offered, make the
-				RTP proxy accept the offer and also offer it to the recipient of this
-				message. Can be combined with "rtcp-mux-offer" to always offer it.
+RTP proxy accept the offer and also offer it to the recipient of this
+message. Can be combined with "rtcp-mux-offer" to always offer it.
   - *media-address=...* - force a particular media address to
-				be used in the SDP body. Address family is detected automatically.
+be used in the SDP body. Address family is detected automatically.
 
 
 This function can be used from ANY_ROUTE.
@@ -424,17 +424,17 @@ onreply_route[2]
 
 
 Rewrites SDP body to ensure that media is passed through
-		an RTP proxy. To be invoked
-		on 200 OK for the cases the SDPs are in INVITE and 200 OK and on ACK
-		when SDPs are in 200 OK and ACK.
+an RTP proxy. To be invoked
+on 200 OK for the cases the SDPs are in INVITE and 200 OK and on ACK
+when SDPs are in 200 OK and ACK.
 
 
 See rtpengine_offer() function description above for the meaning of the
-		parameters.
+parameters.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 See rtpengine_offer() function example above for example.
@@ -447,7 +447,7 @@ Tears down the RTPProxy session for the current call.
 
 
 See rtpengine_offer() function description above for the meaning of the
-		parameters. Note that not all flags make sense for a "delete".
+parameters. Note that not all flags make sense for a "delete".
 
 
 This function can be used from ANY_ROUTE.
@@ -464,13 +464,13 @@ rtpengine_delete();
 
 
 Manage the RTPProxy session - it combines the functionality of
-		rtpengine_offer(), rtpengine_answer() and rtpengine_delete(), detecting
-		internally based on message type and method which one to execute.
+rtpengine_offer(), rtpengine_answer() and rtpengine_delete(), detecting
+internally based on message type and method which one to execute.
 
 
 It can take the same parameters as `rtpengine_offer().`
-		The flags parameter to rtpengine_manage() can be a configuration variable
-		containing the flags as a string.
+The flags parameter to rtpengine_manage() can be a configuration variable
+containing the flags as a string.
 
 
 Functionality:
@@ -478,14 +478,14 @@ Functionality:
 
 - If INVITE with SDP, then do `rtpengine_offer()`
 - If INVITE with SDP, when the tm module is loaded, mark transaction with
-			internal flag FL_SDP_BODY to know that the 1xx and 2xx are for
-			`rtpengine_answer()`
+internal flag FL_SDP_BODY to know that the 1xx and 2xx are for
+`rtpengine_answer()`
 - If ACK with SDP, then do `rtpengine_answer()`
 - If BYE or CANCEL, or called within a FAILURE_ROUTE[], then do `rtpengine_delete()`
 - If reply to INVITE with code >= 300 do `rtpengine_delete()`
 - If reply with SDP to INVITE having code 1xx and 2xx, then
-			do `rtpengine_answer()` if the request had SDP or tm is not loaded,
-			otherwise do `rtpengine_offer()`
+do `rtpengine_answer()` if the request had SDP or tm is not loaded,
+otherwise do `rtpengine_offer()`
 
 
 This function can be used from ANY_ROUTE.
@@ -502,8 +502,8 @@ rtpengine_manage();
 
 
 This function will send a signal to the RTP proxy to record
-		the RTP stream on the RTP proxy.
-		*This function is not supported by Sipwise rtpengine at the moment!*
+the RTP stream on the RTP proxy.
+*This function is not supported by Sipwise rtpengine at the moment!*
 
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -524,8 +524,8 @@ rtpengine_start_recording();
 
 
 Returns the RTP statistics from the RTP proxy. The RTP statistics from the RTP proxy
-			are provided as a string and it does contain several packet counters. The statistics
-			must be retrieved before the session is deleted	(before `rtpengine_delete()`).
+are provided as a string and it does contain several packet counters. The statistics
+must be retrieved before the session is deleted	(before `rtpengine_delete()`).
 
 
 ```opensips title="$rtpstat Usage"
@@ -543,18 +543,18 @@ Returns the RTP statistics from the RTP proxy. The RTP statistics from the RTP p
 
 
 Enables a RTP proxy if parameter value is greater than 0.
-			Disables it if a zero value is given.
+Disables it if a zero value is given.
 
 
 The first parameter is the RTP proxy url (exactly as defined in
-			the config file).
+the config file).
 
 
 The second parameter value must be a number in decimal.
 
 
 NOTE: if a RTP proxy is defined multiple times (in the same or
-			diferente sete), all of its instances will be enables/disabled.
+diferente sete), all of its instances will be enables/disabled.
 
 
 ```bash title="rtpengine_enable usage"
@@ -569,7 +569,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 
 
 Displays all the RTP proxies and their information: set and
-			status (disabled or not, weight and recheck_ticks).
+status (disabled or not, weight and recheck_ticks).
 
 
 No parameter.
@@ -587,29 +587,29 @@ $ opensipsctl fifo rtpengine_show
 
 
 **Q: How do I migrate from "rtpproxy" or "rtpproxy-ng" to
-		    "rtpengine"?**
+    "rtpengine"?**
 
 
 For the most part, only the names of the functions have changed, with
-			"rtpproxy" in each name replaced with "rtpengine".
-			For example, "rtpproxy_manage()" has become
-			"rtpengine_manage()". A few name duplications have also been resolved,
-			for example there is now a single "rtpengine_delete()" instead of
-			"unforce_rtp_proxy()" and the identical "rtpproxy_destroy()".
+"rtpproxy" in each name replaced with "rtpengine".
+For example, "rtpproxy_manage()" has become
+"rtpengine_manage()". A few name duplications have also been resolved,
+for example there is now a single "rtpengine_delete()" instead of
+"unforce_rtp_proxy()" and the identical "rtpproxy_destroy()".
 
 The largest difference to the old module is how flags are passed to
-			"rtpengine_offer()", "rtpengine_answer()",
-			"rtpengine_manage()" and "rtpengine_delete()". Instead of
-			having a string of single-letter flags, they now take a string of space-separated
-			items, with each item being either a single token (word) or a "key=value"
-			pair.
+"rtpengine_offer()", "rtpengine_answer()",
+"rtpengine_manage()" and "rtpengine_delete()". Instead of
+having a string of single-letter flags, they now take a string of space-separated
+items, with each item being either a single token (word) or a "key=value"
+pair.
 
 For example, if you had a call "rtpproxy_offer("FRWOC+PS");", this would
-			then become:
+then become:
 
 Finally, if you were using the second paramater (explicit media address) to any of
-			these functions, this has been replaced by the "media-address=..."
-			option within the first string of flags.
+these functions, this has been replaced by the "media-address=..."
+option within the first string of flags.
 
 
 **Q: Where can I find more about OpenSIPS?**
@@ -622,21 +622,21 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

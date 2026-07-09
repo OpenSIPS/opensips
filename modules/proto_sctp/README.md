@@ -10,8 +10,8 @@ description: "The **proto_sctp** module is an optional transport module (shared 
 
 
 The **proto_sctp** module is an optional transport module (shared library) which
-	exports the required logic in order to handle SCTP-based communication. (socket initialization
-	and send/recv primitives to be used by higher-level network layers)
+exports the required logic in order to handle SCTP-based communication. (socket initialization
+and send/recv primitives to be used by higher-level network layers)
 
 
 Once loaded, you will be able to define *"sctp:"* listeners in your script.
@@ -33,7 +33,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -62,12 +62,12 @@ modparam("proto_sctp", "sctp_port", 5070)
 
 
 **Q: After switching to OpenSIPS 2.1, I'm getting this error:
-				"listeners found for protocol sctp, but no module can handle it"**
+"listeners found for protocol sctp, but no module can handle it"**
 
 
 You need to load the "proto_sctp" module. In your script, make sure
-			you do a **loadmodule "proto_sctp.so"**
-			after setting the **[mpath](https://docs.opensips.org/manual/2-1/script-coreparameters#mpath)**.
+you do a **loadmodule "proto_sctp.so"**
+after setting the **[mpath](https://docs.opensips.org/manual/2-1/script-coreparameters#mpath)**.
 <!-- CONTRIBUTORS -->
 
 ### License

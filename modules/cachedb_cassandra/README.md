@@ -10,8 +10,8 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with
-		Cassandra servers.
-		It uses the Key-Value interface exported from the core.
+Cassandra servers.
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -19,15 +19,15 @@ This module is an implementation of a cache system designed to work with
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The Cassandra DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The Cassandra DB is also
+persistent so it can also be restarted without loss of information.*
 - *Cassandra is an open-source project so
-				it can be used to exchange data
-				 with various other applications*
+it can be used to exchange data
+ with various other applications*
 - *By creating a Cassandra Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 
 
 ### Limitations
@@ -49,12 +49,12 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *thrift 0.6.1*
 Thrift 0.6.1 can be downloaded from http://archive.apache.org/dist/thrift/
-				Download the archive, extract sources, run ./configure,make,sudo make install.
+Download the archive, extract sources, run ./configure,make,sudo make install.
 
 
 ### Exported Parameters
@@ -64,10 +64,10 @@ Thrift 0.6.1 can be downloaded from http://archive.apache.org/dist/thrift/
 
 
 The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
+to use the from script cache_store,cache_fetch, etc operations.
+It can be set more than one time.
+The prefix part of the URL will be the identifier that will be used
+from the script.
 
 			The database part of the URL needs to be in the format Keyspace_ColumnFamily_CounterFamily
 
@@ -137,7 +137,7 @@ modparam("cachedb_cassandra", "receive_timeout",1000);
 
 
 The consistency level desired for write operations.
-			Options are :
+Options are :
 
 
 - *1* - Ensure that the write has been written to at least 1 replica's commit log and memory table before responding to the client.
@@ -165,7 +165,7 @@ modparam("cachedb_cassandra", "wr_consistency_level",7);
 
 
 The consistency level desired for read operations.
-			Options are the same as for write consistency level.
+Options are the same as for write consistency level.
 
 
 ```opensips title="Set rd_consistency_level parameter"
@@ -180,7 +180,7 @@ modparam("cachedb_cassandra", "rd_consistency_level",7);
 
 
 The maximum number of microseconds that a cassandra cache query can last.
-			Anything above the threshold will trigger a warning message to the log
+Anything above the threshold will trigger a warning message to the log
 
 
 *Default value is "0 ( unlimited - no warnings )".*
@@ -198,7 +198,7 @@ modparam("cachedb_cassandra", "exec_threshold", 100000)
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ### Known Issues

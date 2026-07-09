@@ -10,7 +10,7 @@ description: "This module provides a way to prevent some basic fraud attacks. Al
 
 
 This module provides a way to prevent some basic fraud attacks.
-		Alerts are provided through return codes and events.
+Alerts are provided through return codes and events.
 
 
 #### Monitorized Stats
@@ -27,24 +27,24 @@ Basically, this module watches the following parameters:
 
 
 Each of the above parameters is monitored for every user and
-			every called prefix separately. The stats are altered whenever
-			the *check_fraud* function is called. The
-			function assumes a new call is made, and checks the called
-			number against all the rules from the supplied profile. The
-			rule's prefix is considered to be the called prefix which along with
-			the provided user will be used to monitor values for the 5
-			parameters.
+every called prefix separately. The stats are altered whenever
+the *check_fraud* function is called. The
+function assumes a new call is made, and checks the called
+number against all the rules from the supplied profile. The
+rule's prefix is considered to be the called prefix which along with
+the provided user will be used to monitor values for the 5
+parameters.
 
 
 #### Fraud rules
 
 
 A rule is a set of two thresholds (warning and critical thresholds) for each of the
-			five parameters (as described above) and is only available for a specified prefix.
-			Further more, a rule will only match between the indicated hours in the indicated days
-			of the week (similarly to a dr rule). A fraud profile is simply a group of fraud rules
-			and is used to only to limit the list of rules to match when calling the check_fraud
-			function.
+five parameters (as described above) and is only available for a specified prefix.
+Further more, a rule will only match between the indicated hours in the indicated days
+of the week (similarly to a dr rule). A fraud profile is simply a group of fraud rules
+and is used to only to limit the list of rules to match when calling the check_fraud
+function.
 
 
 ### Dependencies
@@ -64,7 +64,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module:
+running OpenSIPS with this module:
 
 
 - *none*.
@@ -80,7 +80,7 @@ Database where to load the rules from.
 
 
 *Default value is "NULL". At least one db_url should
-			be defined for the fraud_detection module to work.*
+be defined for the fraud_detection module to work.*
 
 
 ```opensips title="Set the 'db_url' parameter"
@@ -94,7 +94,7 @@ modparam("fraud_detection", "db_url", "mysql://user:passwb@localhost/database")
 
 
 If you want to load the rules from the database you must set
-		this parameter as the database name.
+this parameter as the database name.
 
 
 *The default value is "fraud_detection".*
@@ -111,7 +111,7 @@ modparam("fraud_detection", "table_name", "my_fraud")
 
 
 The column's name in the database storing the
-			fraud rule's id.
+fraud rule's id.
 
 
 *Default value is "ruleid".*
@@ -128,11 +128,11 @@ modparam("fraud_detection", "rid_col", "theruleid"")
 
 
 The column's name in the database storing the
-			fraud profile's id.
+fraud profile's id.
 
 
 Please keep in mind that a profile is merely
-			a set of rules.
+a set of rules.
 
 
 *Default value is "profileid".*
@@ -149,7 +149,7 @@ modparam("fraud_detection", "pid_col", "profile"")
 
 
 The column's name in the database storing the
-			prefix for which the fraud rule will match.
+prefix for which the fraud rule will match.
 
 
 *Default value is "prefix".*
@@ -166,12 +166,12 @@ modparam("fraud_detection", "prefix_col", "myprefix")
 
 
 The column's name in the database storing the
-			the start time of the interval in which the
-			rule will match.
+the start time of the interval in which the
+rule will match.
 
 
 The time needs to be specified as string using
-			the format: "HH:MM"
+the format: "HH:MM"
 
 
 *Default value is "start_hour".*
@@ -188,12 +188,12 @@ modparam("fraud_detection", "start_h", "the_start_time")
 
 
 The column's name in the database storing the
-			the end time of the interval in which the
-			rule will match.
+the end time of the interval in which the
+rule will match.
 
 
 The time needs to be specified as string using
-			the format: "HH:MM"
+the format: "HH:MM"
 
 
 *Default value is "end_hour".*
@@ -210,15 +210,15 @@ modparam("fraud_detection", "end_h", "the_end_time")
 
 
 The column's name in the database storing the
-			week days in which the fraud rule's interval
-			is available.
+week days in which the fraud rule's interval
+is available.
 
 
 The daysoftheweek needs to be specified as a
-			string containing a list of days or intervals.
-			Each day must be specified using the first
-			three letters of its name. A valid string
-			would be: "Fri-Mon, Wed, Thu"
+string containing a list of days or intervals.
+Each day must be specified using the first
+three letters of its name. A valid string
+would be: "Fri-Mon, Wed, Thu"
 
 
 *Default value is "daysoftheweek".*
@@ -235,7 +235,7 @@ modparam("fraud_detection", "days_col", "days")
 
 
 The column's name in the database storing the
-			warning threshold value for calls per minute.
+warning threshold value for calls per minute.
 
 
 *Default value is "cpm_warning".*
@@ -252,7 +252,7 @@ modparam("fraud_detection", "cpm_thresh_warn_col", "cpm_warn_thresh")
 
 
 The column's name in the database storing the
-			critical threshold value for calls per minute.
+critical threshold value for calls per minute.
 
 
 *Default value is "cpm_critical".*
@@ -269,7 +269,7 @@ modparam("fraud_detection", "cpm_thresh_crit_col", "cpm_crit_thresh")
 
 
 The column's name in the database storing the
-			warning threshold value for call duration.
+warning threshold value for call duration.
 
 
 *Default value is "call_duration_warning".*
@@ -286,7 +286,7 @@ modparam("fraud_detection", "calldur_thresh_warn_col", "calldur_warn_thresh")
 
 
 The column's name in the database storing the
-			critical threshold value for call duration.
+critical threshold value for call duration.
 
 
 *Default value is "call_duration_critical".*
@@ -303,7 +303,7 @@ modparam("fraud_detection", "calldur_thresh_crit_col", "calldur_crit_thresh")
 
 
 The column's name in the database storing the
-			warning threshold value for the number of total calls.
+warning threshold value for the number of total calls.
 
 
 *Default value is "total_calls_warning".*
@@ -320,7 +320,7 @@ modparam("fraud_detection", "totalc_thresh_warn_col", "totalc_warn_thresh")
 
 
 The column's name in the database storing the
-			critical threshold value for the number of total calls.
+critical threshold value for the number of total calls.
 
 
 *Default value is "total_calls_critical".*
@@ -337,8 +337,8 @@ modparam("fraud_detection", "totalc_thresh_crit_col", "totalc_crit_thresh")
 
 
 The column's name in the database storing the
-			warning threshold value for the number of
-			concurrent calls.
+warning threshold value for the number of
+concurrent calls.
 
 
 *Default value is "concurrent_calls_warning".*
@@ -355,8 +355,8 @@ modparam("fraud_detection", "concalls_thresh_warn_col", "concalls_warn_thresh")
 
 
 The column's name in the database storing the
-			critical threshold value for the number of
-			concurrent calls.
+critical threshold value for the number of
+concurrent calls.
 
 
 *Default value is "concurrent_calls_critical".*
@@ -373,8 +373,8 @@ modparam("fraud_detection", "concalls_thresh_crit_col", "concalls_crit_thresh")
 
 
 The column's name in the database storing the
-			warning threshold value for the number of
-			sequential calls.
+warning threshold value for the number of
+sequential calls.
 
 
 *Default value is "sequential_calls_warning".*
@@ -391,8 +391,8 @@ modparam("fraud_detection", "seqcalls_thresh_warn_col", "seqcalls_warn_thresh")
 
 
 The column's name in the database storing the
-			critical threshold value for the number of
-			sequential calls.
+critical threshold value for the number of
+sequential calls.
 
 
 *Default value is "sequential_calls_critical".*
@@ -412,22 +412,22 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 
 
 This method should be called each time a given *user*
-			calls a given *number*. It will try to match a fraud rule
-			within de given fraud profile and update the stats (see above). Furthermore,
-			the stats will be checked against the rule's thresholds. If any of the stats
-			is above it's threhsold value the appropriate event will also be raised
-			(see further details below).
+calls a given *number*. It will try to match a fraud rule
+within de given fraud profile and update the stats (see above). Furthermore,
+the stats will be checked against the rule's thresholds. If any of the stats
+is above it's threhsold value the appropriate event will also be raised
+(see further details below).
 
 
 Meaning of the parameters is as follows:
 
 
 - *user* - the user who is making the call. Please keep in mind that
-				the user doesn't have to be registered. This string is only used do keep different stats
-				for different registered users.
+the user doesn't have to be registered. This string is only used do keep different stats
+for different registered users.
 - *number* - the number the user is calling to.
 - *profile_id* - the fraud profile id (i.e. the subset of fraud
-				rules) in which to try and find a matching fraud rule.
+rules) in which to try and find a matching fraud rule.
 
 
 The meaning of the return code is as follows:
@@ -435,11 +435,11 @@ The meaning of the return code is as follows:
 
 - *2* - no matching fraud rule was found
 - *1* - a matching rule was found, but there is no
-					parameter above the rule's threshlod, i.e - everything is ok
+parameter above the rule's threshlod, i.e - everything is ok
 - *-1* - there is a parameter above the warning threhsold value.
-					Check the raised event for more info
+Check the raised event for more info
 - *-2* - there is a parameter above the critical threhsold value.
-					Check the raised event for more info
+Check the raised event for more info
 - *-3* - something went wrong (internal mechanism failed)
 
 
@@ -485,7 +485,7 @@ Parameters: *none*
 
 
 This event is raised whenever one of the 5 monitored parameters
-			is above the warning threhsold value
+is above the warning threhsold value
 
 
 Parameters:
@@ -497,14 +497,14 @@ Parameters:
 - *user* - the user who initiated the call.
 - *called_number* - the number that was called.
 - *rule_id* - the id of the fraud rule that matched
-					when the call was initiated
+when the call was initiated
 
 
 #### E_FRD_CRITICAL
 
 
 This event is raised whenever one of the 5 monitored parameters
-			is above the warning threhsold value
+is above the warning threhsold value
 
 
 Parameters:
@@ -516,7 +516,7 @@ Parameters:
 - *user* - the user who initiated the call.
 - *called_number* - the number that was called.
 - *rule_id* - the id of the fraud rule that matched
-					when the call was initiated
+when the call was initiated
 <!-- CONTRIBUTORS -->
 
 ### License

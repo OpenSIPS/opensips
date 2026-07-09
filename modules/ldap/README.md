@@ -97,7 +97,7 @@ Scope for LDAP search, valid values are
 
 
 LDAP search filter definition following rules of RFC 4515
-				  [RFC4515](#RFC4515)
+  [RFC4515](#RFC4515)
 
 
 > [!NOTE]
@@ -108,10 +108,10 @@ LDAP search filter definition following rules of RFC 4515
 > [!NOTE]
 > Non-URL characters in an LDAP URL have to be escaped using
           percent-encoding (refer to section 2.1 of RFC 4516). In particular
-	  this means that any "?" character in an LDAP URL component must be
-	  written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#func_ldap_filter_url_encode))
-	  implements RFC 4515/4516 LDAP search filter and URL escaping
-	  rules.
+  this means that any "?" character in an LDAP URL component must be
+  written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#func_ldap_filter_url_encode))
+  implements RFC 4515/4516 LDAP search filter and URL escaping
+  rules.
 
 
 ### Dependencies
@@ -349,7 +349,7 @@ ldap_key_file = "/usr/local/mykey.pem"
 
 
 LDAP peer certificate checking strategy, one of "NEVER", "HARD", "DEMAND", "ALLOW", "TRY".
-						Lower case letters are also accepted.
+Lower case letters are also accepted.
 
 
 Default value "NEVER".
@@ -440,7 +440,7 @@ Performs an LDAP search operation using given LDAP URL and stores result
 
 
 An LDAP URL defining the LDAP search operation (refer to
-			  [ldap urls](#ldap_urls) for a description of the LDAP URL
+  [ldap urls](#ldap_urls) for a description of the LDAP URL
               format). The hostport part must be one of the LDAP session names
               declared in the LDAP configuration script.
 
@@ -804,7 +804,7 @@ The string stored in AVP `avp_spec` can be safely used in an LDAP
 
 
 String to apply RFC 4515 and URL escpaing rules to.
-	      AVPs and pseudo variables do get expanded. Example:
+      AVPs and pseudo variables do get expanded. Example:
               `"cn=$avp(name)"`
 
 
@@ -812,8 +812,8 @@ String to apply RFC 4515 and URL escpaing rules to.
 
 
 Specification of AVP to store resulting RFC 4515
-	      and URL encoded string, e.g. `$avp(ldap_search)`
-	      or `$avp(10)`
+      and URL encoded string, e.g. `$avp(ldap_search)`
+      or `$avp(10)`
 
 
 **`1` (TRUE)**

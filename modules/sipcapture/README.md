@@ -39,14 +39,14 @@ The following modules must be loaded before this module:
 
 
 - *database module* - mysql, postrgress,
-				dbtext, unixodbc...
+dbtext, unixodbc...
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -139,8 +139,8 @@ modparam("sipcapture", "raw_ipip_capture_on", 1)
 
 
 Parameter to enable/disable monitoring/mirroring port capturing (on(1)/off(0))
-		Only one mode on raw socket can be enabled! Monitoring port capturing currently 
-		supported only on Linux.
+Only one mode on raw socket can be enabled! Monitoring port capturing currently 
+supported only on Linux.
 
 
 *Default value is "0".*
@@ -160,11 +160,11 @@ modparam("sipcapture", "raw_moni_capture_on", 1)
 Parameter indicate an listen IP address of RAW socket for IPIP capturing. 
                 You can also define a port/portrange for IPIP/Mirroring mode, to capture 
                 SIP messages in specific ports:
-		"10.0.0.1:5060" - the source/destination port of the SIP message must be equal 5060
-		"10.0.0.1:5060-5090" - the source/destination port of the SIP message must be 
-		equal or be between 5060 and 5090.
-		The port/portrange must be defined if you are planning to
-		use mirroring capture! In this case, the part with IP address will be
+"10.0.0.1:5060" - the source/destination port of the SIP message must be equal 5060
+"10.0.0.1:5060-5090" - the source/destination port of the SIP message must be 
+equal or be between 5060 and 5090.
+The port/portrange must be defined if you are planning to
+use mirroring capture! In this case, the part with IP address will be
                 ignored, but to make parser happy, use i.e. 10.0.0.0
 
 
@@ -216,7 +216,7 @@ modparam("sipcapture", "raw_sock_children", 6)
 
 
 Parameter to enable/disable promiscuous mode on the raw socket.
-		Linux only.
+Linux only.
 
 
 *Default value is "0".*
@@ -276,14 +276,14 @@ Parameters:
 
 
 - capture_mode : turns on/off SIP message capturing.
-			Possible values are:
+Possible values are:
 
   - on
   - off
 The parameter is optional - if missing, the command will
-			return the status of the SIP message capturing (as string 
-			"on" or "off" ) without changing
-			anything.
+return the status of the SIP message capturing (as string 
+"on" or "off" ) without changing
+anything.
 
 
 MI FIFO Command Format:
@@ -301,23 +301,23 @@ MI FIFO Command Format:
 
 
 Before running OpenSIPS with sipcapture, you have to setup the database 
-		tables where the module will store the data. For that, if the
-		table were not created by the installation script or you choose
-		to install everything by yourself you can use the sipcapture-create.sql or 
-		the sipcapture-st-create.sql SQL script in the database 
-		directories in the opensips/scripts folder as template.
-		You can also find the complete database documentation on the
-		project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+tables where the module will store the data. For that, if the
+table were not created by the installation script or you choose
+to install everything by yourself you can use the sipcapture-create.sql or 
+the sipcapture-st-create.sql SQL script in the database 
+directories in the opensips/scripts folder as template.
+You can also find the complete database documentation on the
+project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ### Limitation
 
 
 1. Only one capturing mode on RAW socket is supported: IPIP or monitoring/mirroring port. 
-		   Don't activate both at the same time.
-		2. By default MySQL doesn't support INSERT DELAYED for partitioning table. You can patch MySQL 
-		  (http://bugs.mysql.com/bug.php?id=50393) or use separate tables (pseudo partitioning)
-		3. Mirroring port capturing works only on Linux.
+   Don't activate both at the same time.
+2. By default MySQL doesn't support INSERT DELAYED for partitioning table. You can patch MySQL 
+  (http://bugs.mysql.com/bug.php?id=50393) or use separate tables (pseudo partitioning)
+3. Mirroring port capturing works only on Linux.
 <!-- CONTRIBUTORS -->
 
 ### License
