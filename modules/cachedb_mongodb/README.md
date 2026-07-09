@@ -10,8 +10,8 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with
-		MongoDB servers.
-		It uses the Key-Value interface exported from the core.
+MongoDB servers.
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -19,18 +19,18 @@ This module is an implementation of a cache system designed to work with
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The MongoDB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The MongoDB is also
+persistent so it can also be restarted without loss of information.*
 - *MongoDB is an open-source project so
-				it can be used to exchange data
-				 with various other applicationsr*
+it can be used to exchange data
+with various other applicationsr*
 - *By creating a MongoDB Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 - *This module also implements the CacheDB Raw query
-				capability, thus you can run whatever query that the MongoDB
-				back-end supports, taking full advatange of it.*
+capability, thus you can run whatever query that the MongoDB
+back-end supports, taking full advatange of it.*
 
 
 ### Limitations
@@ -52,15 +52,15 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libjson*
 The libjson library can be downloaded from: http://oss.metaparadigm.com/json-c/
 - *mongo-c-driver*
 The mongo C driver can be downloaded from MongoDB's GitHub
-				repository. Make sure to get the 0.6 version:
-				*"git clone https://github.com/mongodb/mongo-c-driver.git -b v0.6"*
+repository. Make sure to get the 0.6 version:
+*"git clone https://github.com/mongodb/mongo-c-driver.git -b v0.6"*
 
 
 ### Exported Parameters
@@ -70,13 +70,13 @@ The mongo C driver can be downloaded from MongoDB's GitHub
 
 
 The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
+to use the from script cache_store,cache_fetch, etc operations.
+It can be set more than one time.
+The prefix part of the URL will be the identifier that will be used
+from the script.
 
-			If multiple addr:port pairs are passed, the connection is treated 
-			as going to a replica set.
+If multiple addr:port pairs are passed, the connection is treated 
+as going to a replica set.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -102,7 +102,7 @@ cache_remove("mongodb:cluster1","key");
 
 
 The timeout in ms that will be triggered in case a MongoDB op takes too long.
-			Default value is 3000 ( 3 seconds )
+Default value is 3000 ( 3 seconds )
 
 
 ```opensips title="Set op_timeout parameter"
@@ -117,7 +117,7 @@ modparam("cachedb_mongodb", "op_timeout",5000)
 
 
 If set to 1, read operations are allowed to go to secondary MongoDB servers
-			Default value is 0 ( read and write requests will go to primary nodes = full consistency )
+Default value is 0 ( read and write requests will go to primary nodes = full consistency )
 
 
 ```opensips title="Set slave_ok parameter"
@@ -132,7 +132,7 @@ modparam("cachedb_mongodb", "slave_ok",1);
 
 
 The JSON containing the Mongo write concern that should affect all write
-			operations. More info can be found at http://docs.mongodb.org/manual/core/write-operations/
+operations. More info can be found at http://docs.mongodb.org/manual/core/write-operations/
 
 
 ```opensips title="Set write_concern parameter"
@@ -147,7 +147,7 @@ modparam("cachedb_mongodb","write_concern","{ \"getLastError\": 1, "j" : "true" 
 
 
 The maximum number of microseconds that a mongodb query can last.
-			Anything above the threshold will trigger a warning message to the log
+Anything above the threshold will trigger a warning message to the log
 
 
 *Default value is "0 ( unlimited - no warnings )".*
@@ -165,7 +165,7 @@ modparam("cachedb_mongodb", "exec_threshold", 100000)
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ### Raw Query Syntax
@@ -173,7 +173,7 @@ The module does not export functions to be used
 
 The cachedb_mongodb module allows to run RAW queries, thus taking full advantage of the capabilities of the back-end.
 
-			The query syntax is a JSON-based one, very similar to the one that one runs commands in the mongo cli. The query results are also returned as JSON documents, that one can further process in the OpenSIPS script by using the JSON module.
+The query syntax is a JSON-based one, very similar to the one that one runs commands in the mongo cli. The query results are also returned as JSON documents, that one can further process in the OpenSIPS script by using the JSON module.
 
 
 The syntax looks like the following :
@@ -191,7 +191,7 @@ The \"op\" JSON entry specifies the actual operation ( find,update,remove, etc )
 
 
 The \"query\" entry is the JSON document that specifies the raw query that you want to run.
-			The last parameter is an optional AVP parameter, where the JSON documents will be returned ( a find query can return multiple JSON documents, which are correctly populated in the output AVP ). If the query does not return a result, you can ommit the last parameter.
+The last parameter is an optional AVP parameter, where the JSON documents will be returned ( a find query can return multiple JSON documents, which are correctly populated in the output AVP ). If the query does not return a result, you can ommit the last parameter.
 
 
 The currently suported operations that you can pass in the \"op\" JSON entry are
