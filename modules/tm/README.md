@@ -10,231 +10,231 @@ description: "TM module enables stateful processing of SIP transactions. The mai
 
 
 TM module enables stateful processing of SIP 
-		transactions. The main use of stateful logic, which is costly in 
-		terms of memory and CPU, is some services 
-		inherently need state. For example, transaction-based accounting 
-		(module acc) needs to process transaction state as opposed to 
-		individual messages, and any kinds of forking must be implemented 
-		statefully. Other use of stateful processing is it trading
-		CPU caused by retransmission processing for memory.
-		That makes however only sense if CPU consumption 
-		per request is huge. For example, if you want to avoid costly 
-		DNS resolution for every retransmission of a 
-		request to an unresolvable destination, use stateful mode. Then,
-		only the initial message burdens server by DNS 
-		queries, subsequent retransmissions will be dropped and will not 
-		result in more processes blocked by DNS resolution.
-		The price is more memory consumption and higher processing latency.
+transactions. The main use of stateful logic, which is costly in 
+terms of memory and CPU, is some services 
+inherently need state. For example, transaction-based accounting 
+(module acc) needs to process transaction state as opposed to 
+individual messages, and any kinds of forking must be implemented 
+statefully. Other use of stateful processing is it trading
+CPU caused by retransmission processing for memory.
+That makes however only sense if CPU consumption 
+per request is huge. For example, if you want to avoid costly 
+DNS resolution for every retransmission of a 
+request to an unresolvable destination, use stateful mode. Then,
+only the initial message burdens server by DNS 
+queries, subsequent retransmissions will be dropped and will not 
+result in more processes blocked by DNS resolution.
+The price is more memory consumption and higher processing latency.
 
 
 From user's perspective, the major function is t_relay(). It setup 
-		transaction state, absorb retransmissions from upstream, generate 
-		downstream retransmissions and correlate replies to requests.
+transaction state, absorb retransmissions from upstream, generate 
+downstream retransmissions and correlate replies to requests.
 
 
 In general, if TM is used, it copies clones of 
-		received SIP messages in shared memory. That costs the memory and 
-		also CPU time (memcpys, lookups, shmem locks, etc.)
-		Note that non-TM functions operate over the 
-		received message in private memory, that means that any core 
-		operations will have no effect on statefully processed messages after 
-		creating the transactional state. For example, calling record_route 
-		*after* t_relay is pretty useless, as the 
-		RR is added to privately held message whereas its
-		TM clone is being forwarded.
+received SIP messages in shared memory. That costs the memory and 
+also CPU time (memcpys, lookups, shmem locks, etc.)
+Note that non-TM functions operate over the 
+received message in private memory, that means that any core 
+operations will have no effect on statefully processed messages after 
+creating the transactional state. For example, calling record_route 
+*after* t_relay is pretty useless, as the 
+RR is added to privately held message whereas its
+TM clone is being forwarded.
 
 
 TM is quite big and uneasy to program--lot of 
-		mutexes, shared memory access, malloc and free, timers--you really 
-		need to be careful when you do anything. To simplify 
-		TM programming, there is the instrument of 
-		callbacks. The callback mechanisms allow programmers to register 
-		their functions to specific event. See t_hooks.h for a list of 
-		possible events.
+mutexes, shared memory access, malloc and free, timers--you really 
+need to be careful when you do anything. To simplify 
+TM programming, there is the instrument of 
+callbacks. The callback mechanisms allow programmers to register 
+their functions to specific event. See t_hooks.h for a list of 
+possible events.
 
 
 Other things programmers may want to know is UAC--it is a very 
-		simplistic code which allows you to generate your own transactions. 
-		Particularly useful for things like NOTIFYs or IM 
-		gateways. The UAC takes care of all the transaction machinery: 
-		retransmissions , FR timeouts, forking, etc.  See t_uac prototype 
-		in uac.h for more details. Who wants to see the transaction result 
-		may register for a callback.
+simplistic code which allows you to generate your own transactions. 
+Particularly useful for things like NOTIFYs or IM 
+gateways. The UAC takes care of all the transaction machinery: 
+retransmissions , FR timeouts, forking, etc.  See t_uac prototype 
+in uac.h for more details. Who wants to see the transaction result 
+may register for a callback.
 
 
 #### Per-Branch flags
 
 
 First what is the idea with the branch concept: branch route is a 
-		route to be execute separately for each branch before being sent 
-		out - changes in that route should reflect only on that branch.
+route to be execute separately for each branch before being sent 
+out - changes in that route should reflect only on that branch.
 
 
 There are several types of flags in OpenSIPS :
 
 
 - *message/transaction* flags - they are 
-				visible everywhere in the transaction (in all routes and in 
-				all sequential replies/request).
+visible everywhere in the transaction (in all routes and in 
+all sequential replies/request).
 - *branch* flags - flags that are visible only
-				from a specific branch - in all replies and routes connected 
-				to this branch.
+from a specific branch - in all replies and routes connected 
+to this branch.
 - *script* flags - flags that exist only
-				during script execution. They are not store anywhere and are
-				lost once the top level route was left.
+during script execution. They are not store anywhere and are
+lost once the top level route was left.
 
 
 For example: I have a call parallel forking to GW and to a user. And I 
-		would like to know from which branch I will get the final negative 
-		reply (if so). I will set a branch route before relaying the calls 
-		(with the 2 branches). The branch route will be separately executed 
-		for each branch; in the branch going to GW (I can identified it by 
-		looking to RURI), I will set a branch flag. This flag will appear 
-		only in the onreply route run for replied from GW. It will be also be 
-		visible in failure route if the final elected reply belongs to the 
-		GW branch. This flags will not be visible in the other branch 
-		(in routes executing replies from the other branch).
+would like to know from which branch I will get the final negative 
+reply (if so). I will set a branch route before relaying the calls 
+(with the 2 branches). The branch route will be separately executed 
+for each branch; in the branch going to GW (I can identified it by 
+looking to RURI), I will set a branch flag. This flag will appear 
+only in the onreply route run for replied from GW. It will be also be 
+visible in failure route if the final elected reply belongs to the 
+GW branch. This flags will not be visible in the other branch 
+(in routes executing replies from the other branch).
 
 
 For how to define branch flags and use via script, see 
-		[t on branch](#func_t_on_branch) and the setbflag(), resetbflag() and
-		isbflagset() script functions.
+[t on branch](#func_t_on_branch) and the setbflag(), resetbflag() and
+isbflagset() script functions.
 
 
 Also, modules may set branch flags before transaction creation 
-		(for the moment this feature is not available in script). The 
-		REGISTRAR module was the first to use this type of flags. The NAT flag 
-		is pushed in branch flags instead in message flags
+(for the moment this feature is not available in script). The 
+REGISTRAR module was the first to use this type of flags. The NAT flag 
+is pushed in branch flags instead in message flags
 
 
 #### Timeout-Based Failover
 
 
 Timeouts can be used to trigger failover behavior. E.g. if we send a call
-		to a gateway and the gateway does not send a provisional response within 3
-		seconds, we want to cancel this call and send the call to another 
-		gateway. Another example is to ring a SIP client only for 30 seconds 
-		and then redirect the call to the voicemail.
+to a gateway and the gateway does not send a provisional response within 3
+seconds, we want to cancel this call and send the call to another 
+gateway. Another example is to ring a SIP client only for 30 seconds 
+and then redirect the call to the voicemail.
 
 
 The transaction module exports two types of timeouts:
 
 
 - **[fr timeout](#param_fr_timeout)** - used when no response was
-				received yet. If there is no response after
-				*[fr timeout](#param_fr_timeout)* seconds, the timer triggers
-				(and failure route will be executed if t_on_failure() was
-				called). For INVITE transactions, if a provisional response was
-				received, the timeout is reset to *[fr inv timeout](#param_fr_inv_timeout)*
-				seconds and RT_T2 for all other transactions. Once a final response
-				is received, the transaction has finished.
+received yet. If there is no response after
+*[fr timeout](#param_fr_timeout)* seconds, the timer triggers
+(and failure route will be executed if t_on_failure() was
+called). For INVITE transactions, if a provisional response was
+received, the timeout is reset to *[fr inv timeout](#param_fr_inv_timeout)*
+seconds and RT_T2 for all other transactions. Once a final response
+is received, the transaction has finished.
 - **fr_inv_timeout** - this timeout
-				starts counting down once a provisional response was received
-				for an INVITE transaction.
+starts counting down once a provisional response was received
+for an INVITE transaction.
 
 
 For example: You want to have failover if there is no provisional 
-		response after 3 seconds, but you want to ring for 60 seconds. 
-		Thus, set the *[fr timeout](#param_fr_timeout)* to 3 and 
-		*fr_inv_timeout* to 60.
+response after 3 seconds, but you want to ring for 60 seconds. 
+Thus, set the *[fr timeout](#param_fr_timeout)* to 3 and 
+*fr_inv_timeout* to 60.
 
 
 #### DNS Failover
 
 
 DNS based failover can be use when relaying stateful requests. 
-		According to RFC 3263, DNS failover should be done on transport level
-		or transaction level. TM module supports them both.
+According to RFC 3263, DNS failover should be done on transport level
+or transaction level. TM module supports them both.
 
 
 Failover at transport level may be triggered by a failure of sending
-		out the request message. A failure occurs if the corresponding 
-		interface was found for sending the request, if the TCP connection
-		was refused or if a generic internal error happened during send. There
-		is no ICMP error report support.
+out the request message. A failure occurs if the corresponding 
+interface was found for sending the request, if the TCP connection
+was refused or if a generic internal error happened during send. There
+is no ICMP error report support.
 
 
 Failover at transaction level may be triggered when the transaction
-		completed either with a 503 reply, either with a timeout without
-		any received reply. In such a case, automatically, a new branch will
-		be forked if any other destination IPs can be used to deliver the 
-		requests. The new branch will be a clone of the winning branch.
+completed either with a 503 reply, either with a timeout without
+any received reply. In such a case, automatically, a new branch will
+be forked if any other destination IPs can be used to deliver the 
+requests. The new branch will be a clone of the winning branch.
 
 
 The set of destinations IPs is step-by-step build (on demand) based on
-		the NAPTR, SRV and A records available for the destination domain.
+the NAPTR, SRV and A records available for the destination domain.
 
 
 DNS-based failover is by default applied excepting when this failover
-		is globally disabled (see the core parameter disable_dns_failover) or
-		when the relay flag (per transaction) is set (see the t_relay()
-		function).
+is globally disabled (see the core parameter disable_dns_failover) or
+when the relay flag (per transaction) is set (see the t_relay()
+function).
 
 
 #### Anycast Scenario
 
 
 Doing a load balancing scenario using
-		[Anycast IPs](https://en.wikipedia.org/wiki/Anycast),
-		one might run into an issue where a transaction request comes on
-		one instance, and the reply (or replies) comes on different ones.
-		This would normaly break the transaction state, because the local
-		transaction will start re-transmissios and would eventually timeout.
-		Moreover, from UA's perspective, the reply whould have been sent,
-		but since it reaches a proxy that is not aware of that transaction,
-		it will not be forwarded (nor ACKed in case of INVITES). And from
-		this point things can escalade quickly.
+[Anycast IPs](https://en.wikipedia.org/wiki/Anycast),
+one might run into an issue where a transaction request comes on
+one instance, and the reply (or replies) comes on different ones.
+This would normaly break the transaction state, because the local
+transaction will start re-transmissios and would eventually timeout.
+Moreover, from UA's perspective, the reply whould have been sent,
+but since it reaches a proxy that is not aware of that transaction,
+it will not be forwarded (nor ACKed in case of INVITES). And from
+this point things can escalade quickly.
 
 
 To sort out these problems, the module uses a distributed mechanism
-		to figure out where the transaction for a specific reply was created.
-		When an instance receives a reply that does not have an associated
-		transaction, it replicates it to be handled by the instance that
-		"owns" it. This is achieved using the
-		*clusterer* module support.
+to figure out where the transaction for a specific reply was created.
+When an instance receives a reply that does not have an associated
+transaction, it replicates it to be handled by the instance that
+"owns" it. This is achieved using the
+*clusterer* module support.
 
 
 Setting up an anycast scenario is very simple: all the instances
-		that are part of an anycast secnario must be set up in a cluster
-		(more info at the [tm replication cluster](#param_tm_replication_cluster) param).
-		When a transaction is created, a special identifier is appended to
-		the branch parameter, namely the instance that created the
-		transaction. When a reply comes in, the transaction module checks who
-		"owns" the transaction. If the identifier is the
-		instance's own id, then the reply is processed locally. Otherwise
-		it is replicated to the node indicated by the id. Replication is
-		done in a very efficient manner, using the
-		*proto_bin* transport.
+that are part of an anycast secnario must be set up in a cluster
+(more info at the [tm replication cluster](#param_tm_replication_cluster) param).
+When a transaction is created, a special identifier is appended to
+the branch parameter, namely the instance that created the
+transaction. When a reply comes in, the transaction module checks who
+"owns" the transaction. If the identifier is the
+instance's own id, then the reply is processed locally. Otherwise
+it is replicated to the node indicated by the id. Replication is
+done in a very efficient manner, using the
+*proto_bin* transport.
 
 
 Special handling is applied to *CANCEL* and
-		*ACK* methods. Due to the fact that these
-		methods do not contain the special identifier in the branch
-		parameter (since they are generated by the UAC and not by us),
-		there is no way to determine who "owns" the transaction.
-		Therefore, if we do not find a local transaction for these
-		requests, we broadcast them to all the other instances using
-		the [t anycast replicate](#func_t_anycast_replicate) function. Again,
-		this is done in a very efficient manner using the
-		*proto_bin* transport.
+*ACK* methods. Due to the fact that these
+methods do not contain the special identifier in the branch
+parameter (since they are generated by the UAC and not by us),
+there is no way to determine who "owns" the transaction.
+Therefore, if we do not find a local transaction for these
+requests, we broadcast them to all the other instances using
+the [t anycast replicate](#func_t_anycast_replicate) function. Again,
+this is done in a very efficient manner using the
+*proto_bin* transport.
 
 
 #### Usage Scope
 
 
 Transaction functions and variables are only designed to be
-		called on SIP request messages where a transaction can be created, or
-		in routes that are transaction aware, such as
-		*branch_route[name]*,
-		*failure_route[name]* or
-		*onreply_route[name]*. Using TM functtions or
-		variables in a route that is not transaction aware, such as
-		the generic *onreply_route*,
-		*error_route* or
-		*timer_route[name, timer]* may lead to undefined
-		behavior, and most of the time in bogus or malformed signalling.
-		Therefore it is strongly recommended to avoid using them in non-tm
-		context aware routes.
+called on SIP request messages where a transaction can be created, or
+in routes that are transaction aware, such as
+*branch_route[name]*,
+*failure_route[name]* or
+*onreply_route[name]*. Using TM functtions or
+variables in a route that is not transaction aware, such as
+the generic *onreply_route*,
+*error_route* or
+*timer_route[name, timer]* may lead to undefined
+behavior, and most of the time in bogus or malformed signalling.
+Therefore it is strongly recommended to avoid using them in non-tm
+context aware routes.
 
 
 ### Dependencies
@@ -247,15 +247,15 @@ The following modules must be loaded before this module:
 
 
 - *clusterer* module, if the anycast
-				scenario is enabled (see [tm replication cluster](#param_tm_replication_cluster)
-				param for more information).
+scenario is enabled (see [tm replication cluster](#param_tm_replication_cluster)
+param for more information).
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -268,7 +268,7 @@ The following libraries or applications must be installed before
 
 
 Timeout which is triggered if no final reply for a request or ACK for a 
-		negative INVITE reply arrives (in seconds).
+negative INVITE reply arrives (in seconds).
 
 
 *Default value is 30 seconds.*
@@ -285,11 +285,11 @@ modparam("tm", "fr_timeout", 10)
 
 
 Timeout which is triggered if no final reply for an INVITE arrives after a 
-		provisional message was received (in seconds). This timeout starts
-		counting down once the first provisional response is received. Thus,
-		fast failover (no 100 trying from gateway) can be achieved by setting
-		*[fr timeout](#param_fr_timeout)* to low values.
-		See example below.
+provisional message was received (in seconds). This timeout starts
+counting down once the first provisional response is received. Thus,
+fast failover (no 100 trying from gateway) can be achieved by setting
+*[fr timeout](#param_fr_timeout)* to low values.
+See example below.
 
 
 *Default value is 120 seconds.*
@@ -306,16 +306,16 @@ modparam("tm", "fr_inv_timeout", 200)
 
 
 Time for which a transaction stays in memory to absorb delayed 
-		messages after it completed; also, when this timer hits, 
-		retransmission of local cancels is stopped (a puristic but complex 
-		behavior would be not to enter wait state until local branches
-		are finished by a final reply or FR timer--we simplified).
+messages after it completed; also, when this timer hits, 
+retransmission of local cancels is stopped (a puristic but complex 
+behavior would be not to enter wait state until local branches
+are finished by a final reply or FR timer--we simplified).
 
 
 For non-INVITE transaction this timer relates to timer J of RFC 3261 
-		section 17.2.2. According to the RFC this timer should be 64*T1 
-		(= 32 seconds). But this would increase memory usage as the transactions
-		are kept in memory very long.
+section 17.2.2. According to the RFC this timer should be 64*T1 
+(= 32 seconds). But this would increase memory usage as the transactions
+are kept in memory very long.
 
 
 *Default value is 5 seconds.*
@@ -332,7 +332,7 @@ modparam("tm", "wt_timer", 10)
 
 
 Time after which a to-be-deleted transaction currently ref-ed by a
-		process will be tried to be deleted again.
+process will be tried to be deleted again.
 
 
 *Default value is 2 seconds.*
@@ -381,9 +381,9 @@ modparam("tm", "T2_timer", 8000)
 
 
 Should be request-uri matching used as a part of pre-3261 transaction
-		matching as the standard wants us to do so? Turn only off for better 
-		interaction with devices that are broken and send different r-uri in
-		CANCEL/ACK than in original INVITE.
+matching as the standard wants us to do so? Turn only off for better 
+interaction with devices that are broken and send different r-uri in
+CANCEL/ACK than in original INVITE.
 
 
 *Default value is 1 (true).*
@@ -400,9 +400,9 @@ modparam("tm", "ruri_matching", 0)
 
 
 Should be top most VIA matching used as a part of pre-3261 transaction
-		matching as the standard wants us to do so? Turn only off for better 
-		interaction with devices that are broken and send different top most
-		VIA in CANCEL/ACK than in original INVITE.
+matching as the standard wants us to do so? Turn only off for better 
+interaction with devices that are broken and send different top most
+VIA in CANCEL/ACK than in original INVITE.
 
 
 *Default value is 1 (true).*
@@ -419,7 +419,7 @@ modparam("tm", "via1_matching", 0)
 
 
 Send timeout to be used by function which use UNIX sockets 
-		(as t_write_unix).
+(as t_write_unix).
 
 
 *Default value is 2 seconds.*
@@ -436,9 +436,9 @@ modparam("tm", "unix_tx_timeout", 5)
 
 
 If true (non null value), the final response timer will be re-triggered
-		for each received provisional reply. In this case, final response
-		timeout may occur after a time longer than *[fr inv timeout](#param_fr_inv_timeout)*
-		(if UAS keeps sending provisional replies)
+for each received provisional reply. In this case, final response
+timeout may occur after a time longer than *[fr inv timeout](#param_fr_inv_timeout)*
+(if UAS keeps sending provisional replies)
 
 
 *Default value is 1 (true).*
@@ -455,7 +455,7 @@ modparam("tm", "restart_fr_on_each_reply", 0)
 
 
 List of additional information to be appended by t_write_req and
-		t_write_unix functions.
+t_write_unix functions.
 
 
 *Default value is null string.*
@@ -469,11 +469,11 @@ Syntax of the parameter is:
 
 
 Each element will be appended per line in 
-		"name: value" format. Element 
-		"$rb (message body)"
-		is the only one which does not accept name; the body it will be
-		printed all the time at the end, disregarding its position in the
-		definition string.
+"name: value" format. Element 
+"$rb (message body)"
+is the only one which does not accept name; the body it will be
+printed all the time at the end, disregarding its position in the
+definition string.
 
 
 ```opensips title="Set tw_append parameter"
@@ -504,7 +504,7 @@ modparam("tm", "pass_provisional_replies", 1)
 
 
 Enable/disable the usage of stateful synonym branch IDs in the 
-		generated Via headers. They are faster but not reboot-safe.
+generated Via headers. They are faster but not reboot-safe.
 
 
 *Default value is 1 (use synonym branches).*
@@ -524,18 +524,18 @@ Describes how the AVPs should be handled in reply route:
 
 
 - *0* - the AVPs will be per message only; they 
-			will not interfere with the AVPS stored in transaction; initially
-			there will be an empty list and at the end of the route, all AVPs
-			that were created will be discarded.
+will not interfere with the AVPS stored in transaction; initially
+there will be an empty list and at the end of the route, all AVPs
+that were created will be discarded.
 - *1* - the AVPs will be the transaction AVPs;
-			initially the transaction AVPs will be visible; at the end of the
-			route, the list will attached back to transaction (with all the 
-			changes)
+initially the transaction AVPs will be visible; at the end of the
+route, the list will attached back to transaction (with all the 
+changes)
 
 
 In mode 1, you can see the AVPs you set in request route, branch route
-		or failure route. The side effect is performance as more locking is 
-		required in order to keep the AVP's list integrity.
+or failure route. The side effect is performance as more locking is 
+required in order to keep the AVP's list integrity.
 
 
 *Default value is 0.*
@@ -555,12 +555,12 @@ Tells how the 6xx replies should be internally handled:
 
 
 - *0* - the 6xx replies will block any further
-			serial forking (adding new branches). This is the RFC3261
-			behaviour.
+serial forking (adding new branches). This is the RFC3261
+behaviour.
 - *1* - the 6xx replies will be handled as any
-			other negative reply - serial forking will be allowed.
-			Logically, you need to break RFC3261 if you want to do redirects
-			to announcement and voicemail services.
+other negative reply - serial forking will be allowed.
+Logically, you need to break RFC3261 if you want to do redirects
+to announcement and voicemail services.
 
 
 *Default value is 0.*
@@ -577,8 +577,8 @@ modparam("tm", "disable_6xx_block", 1)
 
 
 Enables statistics support in TM module - If enabled, the TM module
-		will internally keep several statistics and export them via the 
-		MI - Management Interface.
+will internally keep several statistics and export them via the 
+MI - Management Interface.
 
 
 *Default value is 1 (enabled).*
@@ -595,19 +595,19 @@ modparam("tm", "enable_stats", 0)
 
 
 A branch flag index to be used in script to mark the minor branches 
-		( before t_relay() ).
+( before t_relay() ).
 
 
 A minor branch is a branch OpenSIPS will not wait to complete during
-		parallel forking. So, if the rest of the branches are negativly replied
-		OpenSIPS will not wait for a final answer from the minor branch, but
-		it will simply cancel it.
+parallel forking. So, if the rest of the branches are negativly replied
+OpenSIPS will not wait for a final answer from the minor branch, but
+it will simply cancel it.
 
 
 Main applicability of minor branch is to fork a branch to a media 
-		server for injecting (via 183 Early Media) some pre-call media - of
-		course, this branch will be transparanent for the rest of the call
-		branches (from branch selection point of view).
+server for injecting (via 183 Early Media) some pre-call media - of
+course, this branch will be transparanent for the rest of the call
+branches (from branch selection point of view).
 
 
 *Default value is none (disabled).*
@@ -624,9 +624,9 @@ modparam("tm", "minor_branch_flag", "MINOR_BFLAG")
 
 
 The number of partitions for the internal TM timers (retransmissions,
-		delete, wait, etc). Partitioning the timers increase the throughput
-		under heavly load by handling timer events in parallel, rather than
-		all serial.
+delete, wait, etc). Partitioning the timers increase the throughput
+under heavly load by handling timer events in parallel, rather than
+all serial.
 
 
 Recomanded range for timer partitions is max 16 (soft limit).
@@ -647,12 +647,12 @@ modparam("tm", "timer_partitions", 2)
 
 
 This parameter controls if the TM module should automatically 
-		generate an 100 Trying stateful reply when an INVITE transaction
-		is created.
+generate an 100 Trying stateful reply when an INVITE transaction
+is created.
 
 
 You may want to disable this behavior if you want to control from
-		script level when the 100 Trying is to be sent out.
+script level when the 100 Trying is to be sent out.
 
 
 *Default value is 1 (enabled).*
@@ -670,7 +670,7 @@ modparam("tm", "auto_100trying", 0)
 
 
 This parameter should be used in an anycast setup, and specifies
-		the cluster id of all the nodes that use an anycast IP.
+the cluster id of all the nodes that use an anycast IP.
 
 
 Check out the [tm anycast](#anycast_scenario) section for more details.
@@ -691,8 +691,8 @@ modparam("tm", "tm_replication_cluster", 1)
 
 
 This parameter should be used in an anycast setup, and specifies
-		the name of the parameter used in the VIA branch param to specifiy
-		the instance id that created the transaction.
+the name of the parameter used in the VIA branch param to specifiy
+the instance id that created the transaction.
 
 
 Check out the [tm anycast](#anycast_scenario) section for more details.
@@ -712,12 +712,12 @@ modparam("tm", "cluster_param", "tid")
 
 
 This parameter should be used in an anycast setup, and specifies
-		whether a *CANCEL* message received on a
-		listener that is marked as anycast should be automatically handled,
-		or should get in the OpenSIPS script. If this parameter is enabled
-		(default), *CANCEL* messages received on an
-		anycast listener will never enter the script, thus making the
-		script cleaner.
+whether a *CANCEL* message received on a
+listener that is marked as anycast should be automatically handled,
+or should get in the OpenSIPS script. If this parameter is enabled
+(default), *CANCEL* messages received on an
+anycast listener will never enter the script, thus making the
+script cleaner.
 
 
 Check out the [tm anycast](#anycast_scenario) section for more details.
@@ -741,59 +741,59 @@ modparam("tm", "cluster_auto_cancel", no)
 
 
 Relay a message statefully to destination indicated in current URI. 
-		(If the original URI was rewritten by UsrLoc, RR, strip/prefix, etc., 
-		the new URI will be taken). Returns a negative value on failure--you 
-		may still want to send a negative reply upstream statelessly not to 
-		leave upstream UAC in lurch.
+(If the original URI was rewritten by UsrLoc, RR, strip/prefix, etc., 
+the new URI will be taken). Returns a negative value on failure--you 
+may still want to send a negative reply upstream statelessly not to 
+leave upstream UAC in lurch.
 
 
 The coresponding transaction may or may not be already created. If not
-		yet created, the function will automatically create it.
+yet created, the function will automatically create it.
 
 
 The function may take two optional parameters.
 
 
 The first parameter is a number representing a set of flags for 
-		controlling the internal behaviour. The flags may be given in decimal 
-		or hexa format; supported flags are:
+controlling the internal behaviour. The flags may be given in decimal 
+or hexa format; supported flags are:
 
 
 - *0x01* - deprecated, not used any more
 - *0x02* - do not internally generate
-				and send a "477 Send failed (477/TM)" SIP reply in case of a
-				global forwarding failure (i.e. forwarding for each branch has
-				failed due to internal errors, bad R-URI, bad message, lack of
-				network reachability, etc.).
-				
+and send a "477 Send failed (477/TM)" SIP reply in case of a
+global forwarding failure (i.e. forwarding for each branch has
+failed due to internal errors, bad R-URI, bad message, lack of
+network reachability, etc.).
+
 				This flag only applies if the transaction was
 				not previously created by [t newtran](#func_t_newtran).
 				When a global forwarding failure occurs, no SIP request is
 				relayed and therefore no negative SIP reply or timeout will
 				show up on the failure_route, if one is set.
 Useful if you want to implement a failover logic for when none
-				of the currently created branches can be forwarded to.
+of the currently created branches can be forwarded to.
 - *0x04* - disable the DNS failover
-				for the transaction. Only first IP will be used. It disables
-				the failover both at transport and transaction level.
+for the transaction. Only first IP will be used. It disables
+the failover both at transport and transaction level.
 - *0x08* - If the request is a CANCEL,
-				trust and pass further the Reason header from the received
-				CANCEL - shortly, will propagate the Reason header.
+trust and pass further the Reason header from the received
+CANCEL - shortly, will propagate the Reason header.
 - *0x10* - Allows OpenSIPS to inspect
-				and follow the Content-Disposition "no-cancel" indication (if
-				present). As per RFC3841, section 9.1, the TM module may be 
-				instructed not to cancel all ongoing branches when a 2xx reply
-				is received. It will keep the pending branches ongoing until
-				(1) all branches will receive a final reply or (2) the 
-				transactionhits the timeout.
+and follow the Content-Disposition "no-cancel" indication (if
+present). As per RFC3841, section 9.1, the TM module may be 
+instructed not to cancel all ongoing branches when a 2xx reply
+is received. It will keep the pending branches ongoing until
+(1) all branches will receive a final reply or (2) the 
+transactionhits the timeout.
 
 
 The second parameter is a string representing an outbound proxy
-		(a fixed destination) where the message should be sent. The
-		destination is specified as "[proto:]host[:port]". If a 
-		destination URI "$du" for this message was set before the
-		function is called then this value will be used as the destination 
-		instead of the function parameter.
+(a fixed destination) where the message should be sent. The
+destination is specified as "[proto:]host[:port]". If a 
+destination URI "$du" for this message was set before the
+function is called then this value will be used as the destination 
+instead of the function parameter.
 
 
 In case of error, the function returns the following codes:
@@ -802,11 +802,11 @@ In case of error, the function returns the following codes:
 - *-1* - generic internal error
 - *-2* - bad message (parsing errors)
 - *-3* - no destination available 
-				(no branches were added or request already cancelled)
+(no branches were added or request already cancelled)
 - *-4* - bad destination 
-				(unresolvable address)
+(unresolvable address)
 - *-5* - destination filtered 
-				(black listed)
+(black listed)
 - *-6* - generic send failed
 
 
@@ -831,9 +831,9 @@ t_relay(0x1, "mydomain.com:5070");
 
 
 Sends a stateful SIP reply to the currently processed requests. Note 
-		that if the transaction was not created yet, it will automatically
-		created by internally using the
-		`t_newtran` function.
+that if the transaction was not created yet, it will automatically
+created by internally using the
+`t_newtran` function.
 
 
 Meaning of the parameters is as follows:
@@ -857,9 +857,9 @@ t_reply(404, "Use $rU not found");
 
 
 Sends a stateful SIP reply with a body to the currently processed 
-		requests. Note that if the transaction was not created yet, it will 
-		automatically created by internally using the
-		`t_newtran` function.
+requests. Note that if the transaction was not created yet, it will 
+automatically created by internally using the
+`t_newtran` function.
 
 
 Meaning of the parameters is as follows:
@@ -890,12 +890,12 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Creates the SIP transaction for the currently processed SIP request,
-		thus switching to stateful processing.  For INVITE requests, a 100
-		Trying reply will be immediately sent, unless
-		[auto 100trying](#param_auto_100trying) is disabled.  Once a SIP
-		transaction is created, calling [t newtran](#func_t_newtran) for
-		retransmitted requests will end the OpenSIPS script execution, with the
-		lastly sent reply being retransmitted upstream.
+thus switching to stateful processing.  For INVITE requests, a 100
+Trying reply will be immediately sent, unless
+[auto 100trying](#param_auto_100trying) is disabled.  Once a SIP
+transaction is created, calling [t newtran](#func_t_newtran) for
+retransmitted requests will end the OpenSIPS script execution, with the
+lastly sent reply being retransmitted upstream.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -915,30 +915,30 @@ t_relay(); # send the call further
 
 
 Returns true if the current request is associated to a transaction. 
-		The relationship between the request and transaction is defined as
-		follows:
+The relationship between the request and transaction is defined as
+follows:
 
 
 - *non-CANCEL/non-ACK requests* - if the
-			request belongs to a transaction (it's a retransmision), the
-			function will do a standard processing of the retransmission and
-			will break/stop the script. The function returns false if the
-			request is not a retransmission.
+request belongs to a transaction (it's a retransmision), the
+function will do a standard processing of the retransmission and
+will break/stop the script. The function returns false if the
+request is not a retransmission.
 - *CANCEL request* - true if the cancelled
-			INVITE transaction exists.
+INVITE transaction exists.
 - *ACK request* - true if the ACK is a
-			hop-by-hop ACK (to a negative reply) corresponding to an previous
-			INVITE transaction. IMPORTANT: this function returns false (return
-			code *-2*) for end-to-end ACKs (to 2xx replies
-			from a different transaction).
+hop-by-hop ACK (to a negative reply) corresponding to an previous
+INVITE transaction. IMPORTANT: this function returns false (return
+code *-2*) for end-to-end ACKs (to 2xx replies
+from a different transaction).
 
 
 Note: To detect retransmissions using this function you have to make 
-		sure that the initial request has already created a transaction, e.g. 
-		by using t_relay(). If the processing of requests may take long time 
-		(e.g. DB lookups) and the retransmission arrives before t_relay() is 
-		called, you can use the t_newtran() function to manually create a 
-		transaction.
+sure that the initial request has already created a transaction, e.g. 
+by using t_relay(). If the processing of requests may take long time 
+(e.g. DB lookups) and the retransmission arrives before t_relay() is 
+called, you can use the t_newtran() function to manually create a 
+transaction.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
@@ -959,19 +959,19 @@ if ( is_method("CANCEL") ) {
 
 
 Returns true if the regualr expression "re" match the 
-		reply code of the response message as follows:
+reply code of the response message as follows:
 
 
 - *in routing block* - the code of the
-			last sent reply.
+last sent reply.
 - *in on_reply block* - the code of the
-			current received reply.
+current received reply.
 - *in on_failure block* - the code of the
-			selected negative final reply.
+selected negative final reply.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE and BRANCH_ROUTE .
+FAILURE_ROUTE and BRANCH_ROUTE .
 
 
 ```opensips title="t_check_status usage"
@@ -987,14 +987,14 @@ if (t_check_status("(487)|(408)")) {
 
 
 Returns true if all or last (depending of the parameter) reply(es) were
-		local generated (and not received).
+local generated (and not received).
 
 
 Parameter may be "all" or "last".
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-		FAILURE_ROUTE and ONREPLY_ROUTE.
+FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="t_local_replied usage"
@@ -1010,7 +1010,7 @@ if (t_local_replied("all")) {
 
 
 Retuns true if called for an INVITE transaction that was explicitly
-		cancelled by UAC side via a CANCEL request.
+cancelled by UAC side via a CANCEL request.
 
 
 This function can be used from ONREPLY_ROUTE, FAILURE_ROUTE.
@@ -1029,21 +1029,21 @@ if (t_was_cancelled()) {
 
 
 This function is to be call when a reply is received for cancelling a
-		set of branches (see flags) of the current call.
+set of branches (see flags) of the current call.
 
 
 Meaning of the parameters is as follows:
 
 
 - *flags (string, optional)* - set of flags 
-			(char based flags) to control what branches to be cancelled:
+(char based flags) to control what branches to be cancelled:
 
   - *a* - all - cancel all pending 
-				branches
+branches
   - *o* - others - cancel all the other
-				pending branches except the current one
+pending branches except the current one
   - *empty* - current - cancel only the
-				current branch
+current branch
 
 
 This function can be used from ONREPLY_ROUTE.
@@ -1065,7 +1065,7 @@ onreply_route[3] {
 
 
 This function generates and sends out a new SIP request (in a stateful way).
-		The new request is completly unrelated to the currently processed SIP message.
+The new request is completly unrelated to the currently processed SIP message.
 
 
 Meaning of the parameters is as follows (all do accept variables):
@@ -1073,16 +1073,16 @@ Meaning of the parameters is as follows (all do accept variables):
 
 - *method (string)* - the SIP method
 - *RURI (string)* - the SIP Request URI (the request 
-			will be sent out to this destination)
+will be sent out to this destination)
 - *from (string)* - the SIP From hdr information as
-			"[display ]URI"
+"[display ]URI"
 - *to (string)* - the SIP To hdr information as
-			"[display ]URI"
+"[display ]URI"
 - *body (string, optional)* - the SIP body content
-			starting with the content type string: "conten_type body"
+starting with the content type string: "conten_type body"
 - *ctx (string, optional)* - a context string that will
-			be added to the new transaction as an AVP with name "uac_ctx" (it may be visible
-			in local route)
+be added to the new transaction as an AVP with name "uac_ctx" (it may be visible
+in local route)
 
 
 ```opensips title="t_new_request usage"
@@ -1097,37 +1097,37 @@ Meaning of the parameters is as follows (all do accept variables):
 
 
 Sets reply routing block, to which control is passed after a 
-		transaction completed with a negative result but before sending a 
-		final reply. In the referred block, you can either start a new branch 
-		(good for services such as forward_on_no_reply) or send a final reply 
-		on your own (good for example for message silo, which received a 
-		negative reply from upstream and wants to tell upstream "202 I 
-		will take care of it").
+transaction completed with a negative result but before sending a 
+final reply. In the referred block, you can either start a new branch 
+(good for services such as forward_on_no_reply) or send a final reply 
+on your own (good for example for message silo, which received a 
+negative reply from upstream and wants to tell upstream "202 I 
+will take care of it").
 
 
 As not all functions are available from failure route, please check 
-		the documentation for each function to see the permissions.
-		Any other commands may result in unpredictable behavior and 
-		possible server failure.
+the documentation for each function to see the permissions.
+Any other commands may result in unpredictable behavior and 
+possible server failure.
 
 
 Only one failure_route can be armed for a request. If you use many
-		times t_on_failure(), only the last one has effect.
+times t_on_failure(), only the last one has effect.
 
 
 Note that whenever failure_route is entered, RURI is set to value 
-		of the winning branch.
+of the winning branch.
 
 
 Meaning of the parameters is as follows:
 
 
 - *failure_route (string)* - Reply route block to be 
-			called.
+called.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
-		ONREPLY_ROUTE and FAILURE_ROUTE.
+ONREPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="t_on_failure usage"
@@ -1149,44 +1149,44 @@ failure_route[1] {
 
 
 Sets reply routing block, to which control is passed each time a reply
-		(provisional or final) for the transaction is received. 
-		The route is not called for local generated replies! In the referred 
-		block, you can inspect the reply and perform text operations on it.
+(provisional or final) for the transaction is received. 
+The route is not called for local generated replies! In the referred 
+block, you can inspect the reply and perform text operations on it.
 
 
 As not all functions are available from this type of route, please 
-		check  the documentation for each function to see the permissions.
-		Any other commands may result in unpredictable behavior and 
-		possible server failure.
+check  the documentation for each function to see the permissions.
+Any other commands may result in unpredictable behavior and 
+possible server failure.
 
 
 If called from branch route, the reply route will be set only for the
-		current branch - that's it, it will be called only for relies belonging
-		to that particular branch. Of course, from branch route, you can set
-		different reply routes for each branch.
+current branch - that's it, it will be called only for relies belonging
+to that particular branch. Of course, from branch route, you can set
+different reply routes for each branch.
 
 
 When called from a non-branc route, the reply route will be globally 
-		set for tha current transaction - it will be called for all replies 
-		belonging to that transaction. NOTE that only 
-		*one>* onreply_route can be armed for a transaction.
-		If you use many times t_on_reply(), only the last one has effect.
+set for tha current transaction - it will be called for all replies 
+belonging to that transaction. NOTE that only 
+*one>* onreply_route can be armed for a transaction.
+If you use many times t_on_reply(), only the last one has effect.
 
 
 If the processed reply is provisionla reply (1xx code), by calling
-		the drop() function (exported by core), the execution of the route
-		will end and the reply will not be forwarded further.
+the drop() function (exported by core), the execution of the route
+will end and the reply will not be forwarded further.
 
 
 Meaning of the parameters is as follows:
 
 
 - *reply_route (string)* - Reply route block to be 
-			called.
+called.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
-		ONREPLY_ROUTE and FAILURE_ROUTE.
+ONREPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="t_on_reply usage"
@@ -1228,33 +1228,33 @@ onreply_route[global] {
 
 
 Sets a branch route to be execute separately for each branch of the
-		transaction before being sent out - changes in that route should 
-		reflect only on that branch.
+transaction before being sent out - changes in that route should 
+reflect only on that branch.
 
 
 As not all functions are available from this type of route, please 
-		check  the documentation for each function to see the permissions.
-		Any other commands may result in unpredictable behavior and 
-		possible server failure.
+check  the documentation for each function to see the permissions.
+Any other commands may result in unpredictable behavior and 
+possible server failure.
 
 
 Only one branch_route can be armed for a request. If you use many
-		time t_on_branch(), only the last one has effect.
+time t_on_branch(), only the last one has effect.
 
 
 By calling the drop() function (exported by core), the execution of 
-		the branch route will end and the branch will not be forwarded further.
+the branch route will end and the branch will not be forwarded further.
 
 
 Meaning of the parameters is as follows:
 
 
 - *branch_route (string)* - Branch route block to be 
-			called.
+called.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, 
-		ONREPLY_ROUTE and FAILURE_ROUTE.
+ONREPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="t_on_branch usage"
@@ -1281,49 +1281,49 @@ branch_route[1] {
 
 
 The function adds new SIP branches (destinations) to an existing 
-		transaction and fires them (sends them out). The transaction may 
-		already have ongoing branches (like in ringing state), which will not
-		be affected by the injection of the new branches. Also it is possible 
-		for the transaction not to have any ongoing branches at the moment of
-		the injection (still, the transaction must wait for new branches, even
-		if all existing ones are completed - see 
-		the [t wait for new branches](#func_t_wait_for_new_branches) function for this).
+transaction and fires them (sends them out). The transaction may 
+already have ongoing branches (like in ringing state), which will not
+be affected by the injection of the new branches. Also it is possible 
+for the transaction not to have any ongoing branches at the moment of
+the injection (still, the transaction must wait for new branches, even
+if all existing ones are completed - see 
+the [t wait for new branches](#func_t_wait_for_new_branches) function for this).
 
 
 The main usage scenario for this function (and also what makes it
-		different from [t relay](#func_t_relay) is the ability to add new
-		branches to an ongoing transaction from script routes not related to 
-		the transaction ( like timer route, event route, notification route,
-		and other). In such routes, other functions/module used before the
-		injection will point to the transaction to be affected by this
-		injection - see the *event_routing* module.
+different from [t relay](#func_t_relay) is the ability to add new
+branches to an ongoing transaction from script routes not related to 
+the transaction ( like timer route, event route, notification route,
+and other). In such routes, other functions/module used before the
+injection will point to the transaction to be affected by this
+injection - see the *event_routing* module.
 
 
 Parameters:
 
 
 - *source (string)* - where to take the description
-				for the new branches to be injected. It can be
-				
-					
+for the new branches to be injected. It can be
+
+
 					*event* - the branch will be taken from
 					the event attributes exposed in an event notification route
 					(see *event_routing* module).
-					
-					
+
+
 					*msg* - the branches will be taken from
 					the RURI of the SIP message and from the additional
 					branches (created by append_branch() function or similar).
 - *flags (string, optional)* - some additional flags 
-				related to the injection process:
-				
-					
+related to the injection process:
+
+
 					*cancel* or *c* 
 					- cancel all the ongoing 
-					existing branches from the transaction before injecting
-					the new branches.
-					
-					
+existing branches from the transaction before injecting
+the new branches.
+
+
 					*l* (last) - this is the last injected
 					branch on this transaction, do not wait for any other
 					branches to be injected.
@@ -1342,30 +1342,30 @@ route[event_notification] {
 
 
 This function instructs the existing SIP transaction to wait for new
-		branches to be injected even after the completion of the existing 
-		branches. This waiting will be done until the Final Response INVITE 
-		timer (fr_inv_timeout) will hit for the transaction OR until the 
-		maximum number of branches were injected (see parameter); of course,
-		the waiting will be terminated if the transaction gets a 2xx final
-		reply from one of the branches.
+branches to be injected even after the completion of the existing 
+branches. This waiting will be done until the Final Response INVITE 
+timer (fr_inv_timeout) will hit for the transaction OR until the 
+maximum number of branches were injected (see parameter); of course,
+the waiting will be terminated if the transaction gets a 2xx final
+reply from one of the branches.
 
 
 Normally if you have a transaction with two branches and 
-		they get, let's say, a 404 and 486 replies, the branches will be
-		completed and transaction terminated by sending the 404 reply to the 
-		caller. Still, if you do *t_wait_for_new_branches*
-		before relaying the transaction, the transaction will not terminate
-		upon the completion of the branches and not send the 404 to the caller
+they get, let's say, a 404 and 486 replies, the branches will be
+completed and transaction terminated by sending the 404 reply to the 
+caller. Still, if you do *t_wait_for_new_branches*
+before relaying the transaction, the transaction will not terminate
+upon the completion of the branches and not send the 404 to the caller
 		- it will wait for new branches to be injected (see 
-		[t inject branches](#func_t_inject_branches) function) until the fr_inv timer
-		hits.
+[t inject branches](#func_t_inject_branches) function) until the fr_inv timer
+hits.
 
 
 Parameters:
 
 
 - *branches (integer, options)* - what is the
-				maximum number of branches to be waited for.
+maximum number of branches to be waited for.
 
 
 ```opensips title="t_wait_for_new_branches usage"
@@ -1381,17 +1381,17 @@ t_relay();
 
 
 This function instructs the existing SIP transaction to stop wait
-		for new any new branches to be injected. This functions should be 
-		used for a transaction that is waiting for dynamic branches, via the
-		[t wait for new branches](#func_t_wait_for_new_branches) function.
+for new any new branches to be injected. This functions should be 
+used for a transaction that is waiting for dynamic branches, via the
+[t wait for new branches](#func_t_wait_for_new_branches) function.
 
 
 Usage scenario: your transaction is waiting for dynamic new branches
-		(as a reusult of Push Notification). To a point, on an ongoing
-		branch you receive a final reply - and the fact that the branch fails
-		translates into stop waiting for any more branche (this is an example
-		of a logic on deciding how long to wait for more branches, depending 
-		on the answers you get from various devices, fix or mobile).
+(as a reusult of Push Notification). To a point, on an ongoing
+branch you receive a final reply - and the fact that the branch fails
+translates into stop waiting for any more branche (this is an example
+of a logic on deciding how long to wait for more branches, depending 
+on the answers you get from various devices, fix or mobile).
 
 
 ```opensips title="t_wait_no_more_branches usage"
@@ -1405,8 +1405,8 @@ t_wait_no_more_branches();
 
 
 Attach a set of headers to the existing transaction - these headers
-		will be appended to all requests related to the transaction (outgoing
-		branches, local ACKS, CANCELs).
+will be appended to all requests related to the transaction (outgoing
+branches, local ACKS, CANCELs).
 
 
 Parameters:
@@ -1426,12 +1426,12 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 
 
 This function is used to enforce from the script level a custom
-		"Reason" header into a CANCEL request. Normally, the Reason header is
-		inherited form the received CANCEL (note that CANCEL propagates in a
-		hop-by-hop manner - it is re-generated at each hop), but this function
-		can overwrite it. It must be called before relaying the CANCEL request
-		and its input must be a fully formated Reason header with name, body 
-		and CRLF.
+"Reason" header into a CANCEL request. Normally, the Reason header is
+inherited form the received CANCEL (note that CANCEL propagates in a
+hop-by-hop manner - it is re-generated at each hop), but this function
+can overwrite it. It must be called before relaying the CANCEL request
+and its input must be a fully formated Reason header with name, body 
+and CRLF.
 
 
 Parameters:
@@ -1452,12 +1452,12 @@ t_relay();
 
 
 Replicates a request to another destination. No information due the
-		replicated request (like reply code) will be forwarded to the 
-		original SIP UAC.
+replicated request (like reply code) will be forwarded to the 
+original SIP UAC.
 
 
 The destination is specified by a SIP URI. If multiple destinations are
-		to be used, the additional SIP URIs have to be set as branches.
+to be used, the additional SIP URIs have to be set as branches.
 
 
 Parameters:
@@ -1465,9 +1465,9 @@ Parameters:
 
 - *uri (string)*
 - *flags (int, optional)* - a set of flags for 
-				controlling the internal behaviour - for description see the above 
-				"t_relay([flags])" function. Note that only 0x4 is 
-				applicable here.
+controlling the internal behaviour - for description see the above 
+"t_relay([flags])" function. Note that only 0x4 is 
+applicable here.
 
 
 This functions can be used from REQUEST_ROUTE.
@@ -1486,8 +1486,8 @@ t_replicate("sip:1.2.3.4",0x4);
 
 
 Write via FIFO file or UNIX socket a lot of information regarding the
-		request. Which information should be written may be control via the
-		"tw_append" parameter.
+request. Which information should be written may be control via the
+"tw_append" parameter.
 
 
 Parameters:
@@ -1498,7 +1498,7 @@ Parameters:
 
 
 This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
-		BRANCH_ROUTE.
+BRANCH_ROUTE.
 
 
 ```opensips title="t_write_req/unix usage"
@@ -1517,8 +1517,8 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
 
 Flush the flags from current request into the already created 
-		transaction. It make sense only in routing block if the transaction was
-		created via t_newtran() and the flags have been altered since.
+transaction. It make sense only in routing block if the transaction was
+created via t_newtran() and the flags have been altered since.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
@@ -1535,11 +1535,11 @@ t_flush_flags();
 
 
 This function is used in an anycast setup to replicate a
-		*CANCEL* or *ACK* method
-		for whom there are no local transactions found. The function
-		broadcasts the message to all the other nodes in the cluster,
-		but only the "owner" of the transaction will be
-		able to handle it.
+*CANCEL* or *ACK* method
+for whom there are no local transactions found. The function
+broadcasts the message to all the other nodes in the cluster,
+but only the "owner" of the transaction will be
+able to handle it.
 
 
 ```opensips title="t_anycast_replicate usage"
@@ -1562,81 +1562,81 @@ Exported variables are listed in the next sections.
 
 
 *$T_branch_idx* - the index (starting with 0
-			for the first branch) of the currently proccessed branch. This
-			index makes sense only in BRANCH and REPLY routes (where the
-			processing is per branch) and in FAILURE route (where it points
-			to the branch with the last final reply on the transaction). In all
-			the other types of routes, the value of this index will be NULL.
+for the first branch) of the currently proccessed branch. This
+index makes sense only in BRANCH and REPLY routes (where the
+processing is per branch) and in FAILURE route (where it points
+to the branch with the last final reply on the transaction). In all
+the other types of routes, the value of this index will be NULL.
 
 
 #### $T_reply_code
 
 
 *$T_reply_code* - the code of the reply, as 
-			follows: in request_route will be the last stateful sent reply;
-			in reply_route will be the current processed reply; in 
-			failure_route will be the negative winning reply. In case of 
-			no-reply or error, '0' value is returned.
+follows: in request_route will be the last stateful sent reply;
+in reply_route will be the current processed reply; in 
+failure_route will be the negative winning reply. In case of 
+no-reply or error, '0' value is returned.
 
 
 #### $T_fr_timeout
 
 
 *$T_fr_timeout (R/W)* - the timeout
-			for the final reply to the current transaction
+for the final reply to the current transaction
 
 
 With each different
-			request received, *$T_fr_timeout* will initially
-			be equal to the
-			**[fr timeout](#param_fr_timeout)** parameter.
+request received, *$T_fr_timeout* will initially
+be equal to the
+**[fr timeout](#param_fr_timeout)** parameter.
 
 
 *"$T_fr_timeout = NULL;"* will reset it to
-			**[fr timeout](#param_fr_timeout)**.
+**[fr timeout](#param_fr_timeout)**.
 
 
 #### $T_fr_inv_timeout
 
 
 *$T_fr_inv_timeout (R/W)* - the timeout
-			for the final reply to an INVITE request, after a 1XX reply
-			was received
+for the final reply to an INVITE request, after a 1XX reply
+was received
 
 
 With each different request received,
-			*$T_fr_inv_timeout* will initially be equal to the
-			**[fr inv timeout](#param_fr_inv_timeout)** parameter.
+*$T_fr_inv_timeout* will initially be equal to the
+**[fr inv timeout](#param_fr_inv_timeout)** parameter.
 
 
 *"$T_fr_inv_timeout = NULL;"* will reset it to
-			**[fr inv timeout](#param_fr_inv_timeout)**.
+**[fr inv timeout](#param_fr_inv_timeout)**.
 
 
 #### $T_ruri
 
 
 *$T_ruri* - the ruri of the current branch; this
-			information is taken from the transaction structure, so you can
-			access this information for any sip message (request/reply) that
-			has a transaction.
+information is taken from the transaction structure, so you can
+access this information for any sip message (request/reply) that
+has a transaction.
 
 
 #### $bavp(name)
 
 
 *$bavp(name)* - a particular type of avp that
-			can have different values for each branch. They can only be used in
-			BRANCH, REPLY and FAILURE routes. Otherwise NULL value is returned.
+can have different values for each branch. They can only be used in
+BRANCH, REPLY and FAILURE routes. Otherwise NULL value is returned.
 
 
 #### $T_id
 
 
 *$T_id* - returns the ID of the current 
-			transaction. The ID is an opaque hexa string, unique for each
-			transaction. If there is no current transaction,  NULL value is
-			returned.
+transaction. The ID is an opaque hexa string, unique for each
+transaction. If there is no current transaction,  NULL value is
+returned.
 
 
 ### Exported MI Functions
@@ -1654,15 +1654,15 @@ Parameters:
 - *method* - request method
 - *ruri* - request SIP URI
 - *headers* - set of additional headers to
-				be added to the request; at least 
-				"From" and "To" headers must be
-				specified)
+be added to the request; at least 
+"From" and "To" headers must be
+specified)
 - *next_hop* (optional) - next hop SIP URI (OBP).
 - *socket* (optional) - local socket to be used for
-				sending the request.
+sending the request.
 - *body* (optional) - request body (if present, requires the 
-				"Content-Type" and "Content-length"
-				headers)
+"Content-Type" and "Content-length"
+headers)
 
 
 MI FIFO Command Format:
@@ -1684,9 +1684,9 @@ Parameters:
 
 
 - *callid* - callid of the INVITE request
-				to be cancelled.
+to be cancelled.
 - *cseq* - cseq of the INVITE request to be
-				cancelled.
+cancelled.
 
 
 MI FIFO Command Format:
@@ -1731,13 +1731,13 @@ Parameters:
 - *code* - reply code
 - *reason* - reason phrase.
 - *trans_id* - transaction identifier
-				(has the hash_entry:label format)
+(has the hash_entry:label format)
 - *to_tag* - To tag to be added to TO header
 - *new_headers* (optional) - extra headers to be
-				appended to the reply.
+appended to the reply.
 - *body* - (optional) reply body (if present, requires the
-				"Content-Type" and "Content-length"
-				headers)
+"Content-Type" and "Content-length"
+headers)
 
 
 MI FIFO Command Format:
@@ -1753,7 +1753,7 @@ MI FIFO Command Format:
 
 
 Exported statistics are listed in the next sections. All statistics
-		except "inuse_transactions" can be reset.
+except "inuse_transactions" can be reset.
 
 
 #### received_replies
@@ -1832,15 +1832,15 @@ Number of transactions existing in memory at current time.
 
 
 For programmatic use only--import the  TM API.
-			See the cpl_c, acc or jabber modules to see how it works.
+See the cpl_c, acc or jabber modules to see how it works.
 
 
 Meaning of the parameters is as follows:
 
 
 - *import_structure* - Pointer to 
-				the import structure - see "struct tm_binds" in 
-				modules/tm/tm_load.h
+the import structure - see "struct tm_binds" in 
+modules/tm/tm_load.h
 
 
 ## Frequently Asked Questions
@@ -1850,14 +1850,14 @@ Meaning of the parameters is as follows:
 
 
 The function was replace (as functionality) by cancel_branch("a") -
-			cancel all braches.
+cancel all braches.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

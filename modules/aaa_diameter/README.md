@@ -32,13 +32,13 @@ None.
 
 
 All Diameter message building and parsing, as well as the peer state
-		machine and Diameter-related network communication are all powered by
-		[the freeDiameter project](http://www.freediameter.net/trac/)
-		and C libraries, dynamically linking with the "aaa_diameter" module.
+machine and Diameter-related network communication are all powered by
+[the freeDiameter project](http://www.freediameter.net/trac/)
+and C libraries, dynamically linking with the "aaa_diameter" module.
 
 
 The following libraries must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libfdcore* v1.2.1 or higher
@@ -52,7 +52,7 @@ The following libraries must be installed before running
 
 
 This parameter measures the *quietness* of the logging
-		done by the freeDiameter library. Possible values:
+done by the freeDiameter library. Possible values:
 
 
 - 0 (ANNOYING)
@@ -63,8 +63,8 @@ This parameter measures the *quietness* of the logging
 
 
 NOTE: since freeDiameter logs to standard output, you must also enable
-		the new core parameter, **log_stdout**,
-		before getting any logs from the library.
+the new core parameter, **log_stdout**,
+before getting any logs from the library.
 
 
 ```opensips title="Setting the fd_log_level parameter"
@@ -90,11 +90,11 @@ modparam("aaa_diameter", "realm", "opensips.org")
 
 
 The identity (realm subdomain) of the Diameter server peer, to which
-		the OpenSIPS Diameter client peer will connect.
+the OpenSIPS Diameter client peer will connect.
 
 
 Default value is *"server"*
-				(i.e. "server.diameter.test").
+(i.e. "server.diameter.test").
 
 
 ```opensips title="Setting the peer_identity parameter"

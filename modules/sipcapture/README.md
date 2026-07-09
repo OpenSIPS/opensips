@@ -18,11 +18,11 @@ OpenSIPs can capture SIP messages in three mode
 - IPIP encapsulation. (ETHHDR+IPHDR+IPHDR+UDPHDR).
 - Monitoring/mirroring port.
 - Homer encapsulation protocl mode (HEP v1/2/3). With version 2.2
-			comes the new HEPv3 support using the proto _hep module. Also
-			header manipulation support for HEPv3 has been added. See
-			[hep set](#func_hep_set) for more details. If you want more
-			information about hep protocol check this
-			[link](https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf).
+comes the new HEPv3 support using the proto _hep module. Also
+header manipulation support for HEPv3 has been added. See
+[hep set](#func_hep_set) for more details. If you want more
+information about hep protocol check this
+[link](https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf).
 
 
 The capturing can be turned on/off using fifo commad.
@@ -44,7 +44,7 @@ The following modules must be loaded before this module:
 
 
 - *database module* - mysql, postrgress,
-				dbtext, unixodbc...
+dbtext, unixodbc...
 - *proto_hep module* - if hep capturing used
 
 
@@ -52,7 +52,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -81,8 +81,8 @@ modparam("sipcapture", "db_url", "mysql://user:passwd@host/dbname")
 
 
 Name of the table's name where to store the SIP messages. Since
-		version 2.2 it allows strftime-like suffix for having time formatted
-		table names.
+version 2.2 it allows strftime-like suffix for having time formatted
+table names.
 
 
 *Default value is "sip_capture".*
@@ -103,9 +103,9 @@ modparam("sipcapture", "table_name", "homer_%m_%d")
 
 
 Name of the table's name where to store packets captured
-		with report_capture function. Since version 2.2 it allows
-		strftime-like suffix for having time formatted
-		table names.
+with report_capture function. Since version 2.2 it allows
+strftime-like suffix for having time formatted
+table names.
 
 
 *Default value is "rtcp_capture".*
@@ -158,11 +158,11 @@ modparam("sipcapture", "hep_capture_on", 1)
 
 
 Parameter to set the maximum number of 'INSERT' queries of captured
-				packets to be done in the same time, only if the DB supports async
-				operations. If OpenSIPS is shut down, the remaining queries shall be
-				executed. The query buffer is limited 65535 chars, so probably no more
-				than 30-40 queries can be done in the same time, depending mostly on the size
-				of the inserted sip message, since it's the biggest part of the query.
+packets to be done in the same time, only if the DB supports async
+operations. If OpenSIPS is shut down, the remaining queries shall be
+executed. The query buffer is limited 65535 chars, so probably no more
+than 30-40 queries can be done in the same time, depending mostly on the size
+of the inserted sip message, since it's the biggest part of the query.
 
 
 *Default value is "5".*
@@ -195,8 +195,8 @@ modparam("sipcapture", "raw_ipip_capture_on", 1)
 
 
 Parameter to enable/disable monitoring/mirroring port capturing (on(1)/off(0))
-		Only one mode on raw socket can be enabled! Monitoring port capturing currently
-		supported only on Linux.
+Only one mode on raw socket can be enabled! Monitoring port capturing currently
+supported only on Linux.
 
 
 *Default value is "0".*
@@ -214,14 +214,14 @@ modparam("sipcapture", "raw_moni_capture_on", 1)
 
 
 Parameter indicate an listen IP address of RAW socket for IPIP capturing.
-                You can also define a port/portrange for IPIP/Mirroring mode, to capture
-                SIP messages in specific ports:
-		"10.0.0.1:5060" - the source/destination port of the SIP message must be equal 5060
-		"10.0.0.1:5060-5090" - the source/destination port of the SIP message must be
-		equal or be between 5060 and 5090.
-		The port/portrange must be defined if you are planning to
-		use mirroring capture! In this case, the part with IP address will be
-                ignored, but to make parser happy, use i.e. 10.0.0.0
+You can also define a port/portrange for IPIP/Mirroring mode, to capture
+SIP messages in specific ports:
+"10.0.0.1:5060" - the source/destination port of the SIP message must be equal 5060
+"10.0.0.1:5060-5090" - the source/destination port of the SIP message must be
+equal or be between 5060 and 5090.
+The port/portrange must be defined if you are planning to
+use mirroring capture! In this case, the part with IP address will be
+ignored, but to make parser happy, use i.e. 10.0.0.0
 
 
 *Default value is "".*
@@ -272,7 +272,7 @@ modparam("sipcapture", "raw_sock_children", 6)
 
 
 Parameter to enable/disable promiscuous mode on the raw socket.
-		Linux only.
+Linux only.
 
 
 *Default value is "0".*
@@ -289,8 +289,8 @@ modparam("sipcapture", "promiscuous_on", 1)
 
 
 Activate Linux Socket Filter (LSF based on BPF) on the mirroring interface.
-                The structure is defined in linux/filter.h. The default LSF accept a port/portrange
-                from the raw_socket_listen param. Currently LSF supported only on Linux.
+The structure is defined in linux/filter.h. The default LSF accept a port/portrange
+from the raw_socket_listen param. Currently LSF supported only on Linux.
 
 
 *Default value is "0".*
@@ -323,18 +323,18 @@ modparam("sipcapture", "capture_node", "homer03")
 
 
 Specifies what path your hep messages should take. Possible
-		values are the following:
+values are the following:
 
 
 - *none* - don't go through the script;
-					do directly sip_capture();
+do directly sip_capture();
 - *sip(default)* - go through the main
-					request route; here the message is parsed and you can do anything you
-					want with it;
+request route; here the message is parsed and you can do anything you
+want with it;
 - *any other string value* - define a route name
-					through which your hep messages should go; the message is not parsed because
-					of efficiency reasons; from here you can modify the hep chunks(if hep version
-					3 is used) and relay the hep messages to other hep capture nodes;
+through which your hep messages should go; the message is not parsed because
+of efficiency reasons; from here you can modify the hep chunks(if hep version
+3 is used) and relay the hep messages to other hep capture nodes;
 
 
 *Default value is sip(going thorugh the main request route).*
@@ -366,14 +366,14 @@ Meaning of the parameters is as follows:
 
 
 - *table_name (string, optional)* - the name of the table to store
-				the packet; it can have a strftime-like formatted suffix in order to change it's name
-				based on time; if not set, modparam defined table will be used;
+the packet; it can have a strftime-like formatted suffix in order to change it's name
+based on time; if not set, modparam defined table will be used;
 *custom_field1 (string, optional)* - custom data to store inside the
-				"custom_field1" column
+"custom_field1" column
 *custom_field2 (string, optional)* - custom data to store inside the
-				"custom_field2" column
+"custom_field2" column
 *custom_field3 (string, optional)* - custom data to store inside the
-				"custom_field3" column
+"custom_field3" column
 
 
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
@@ -396,7 +396,7 @@ if (is_method("REGISTER"))
 
 
 Save the message into the database. If you want set the protocol type you have to define
-		the table name, even if you pass over it(report_capture($var(cor_id),,$var(proto_type))).
+the table name, even if you pass over it(report_capture($var(cor_id),,$var(proto_type))).
 
 
 Meaning of the parameters is as follows:
@@ -404,19 +404,19 @@ Meaning of the parameters is as follows:
 
 - *correlation_id (string)*
 - *table_name (string, optional)* - the name of the table to store
-				the packet; it can have a strftime-like formatted suffix in order to change it's name
-				based on time;
+the packet; it can have a strftime-like formatted suffix in order to change it's name
+based on time;
 - *proto_type (int, optional)* - protocol type number as defined in hep protocol
-				specification.
+specification.
 
 
 **VERY IMPORTANT:** Since version 2.3 report_capture function
-			behaviour will change depending on
-			[homer5_on](../proto_hep#idp154080)
-			parameter from
-			[proto_hep](../proto_hep). Check
-			[sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
-			folder from the module to check the fields of the tables for each version.
+behaviour will change depending on
+[homer5_on](../proto_hep#idp154080)
+parameter from
+[proto_hep](../proto_hep). Check
+[sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
+folder from the module to check the fields of the tables for each version.
 
 
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
@@ -455,128 +455,128 @@ Meaning of the parameters is as follows:
 
 - *chunk_id(string value with hex/int or string identifier of chunk)*
 				- id of the chunk to be added; most of the generic
-			chunks are in the internal hep structure. For these you can skip the data_type
-			and vendor_id since they are already known. Generic chunks that don't have built
-			in support are the followinig: 0x000d(keep alive timer), 0x000e(authenticate key),
-			0x0011(internal correltion id), 0x0012(vlan ID). You can set these chunks, but
-			only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0009)
-			and timestamp_us(0x000A) chunks can't be set. For chunks
-			that have built-in support you can also use strings instead of chunk ids as
-			follows:
-			
-			
+chunks are in the internal hep structure. For these you can skip the data_type
+and vendor_id since they are already known. Generic chunks that don't have built
+in support are the followinig: 0x000d(keep alive timer), 0x000e(authenticate key),
+0x0011(internal correltion id), 0x0012(vlan ID). You can set these chunks, but
+only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0009)
+and timestamp_us(0x000A) chunks can't be set. For chunks
+that have built-in support you can also use strings instead of chunk ids as
+follows:
+
+
 				0x0001 - proto_family(CAN'T BE SET; it shall be automatically updated
 					if you change the type of the source/destination address from IPv4 to IPv6
 					or else)
-			
-			
+
+
 				0x0002 - proto_id; since it's quite hard to know the int values for the protocol
 				one can change this value using the following string values:
-				
-				
+
+
 				UDP
-				
-				
+
+
 				TCP
-				
-				
+
+
 				TLS
-				
-				
+
+
 				SCTP
-				
-				
+
+
 				WS
-				
-				
+
+
 				WSS
-				
-				
+
+
 				BIN
-				
-				
+
+
 				HEP
-				
-				
-			
-			
+
+
+
+
 			0x0003 - src_ip
-			
-			
+
+
 			0x0004 - dst_ip
-			
-			
+
+
 			0x0005 - src_ip
-			
-			
+
+
 			0x0006 - dst_ip
-			
-			
+
+
 			0x0007 - src_port
-			
-			
+
+
 			0x0008 - dst_port
-			
-			
+
+
 			0x0009 - timestamp(CAN'T BE SET)
-			
-			
+
+
 			0x000A - timestamp_us(CAN'T BE SET)
-			
-			
+
+
 				0x000B - proto_type; for this variable there are predefined
 				strings which can be set:
-				
-				
+
+
 				SIP
-				
-				
+
+
 				XMPP
-				
-				
+
+
 				SDP
-				
-				
+
+
 				RTP
-				
-				
+
+
 				RTCP
-				
-				
+
+
 				MGCP
-				
-				
+
+
 				MEGACO
-				
-				
+
+
 				M2UA
-				
-				
+
+
 				M3UA
-				
-				
+
+
 				IAX
-				
-				
+
+
 				H322
-				
-				
+
+
 				H321
-				
-				
-			
-			
+
+
+
+
 			0x000C - captagent_id
-			
-			
+
+
 			0x000f - payload
-			
-			
+
+
 			0x0010 - payload
 - *chunk_data(string)* - data that the chunk shall contain;
-			internally it shall be converted to the requested data type
+internally it shall be converted to the requested data type
 - *data_type (string, optional, default: "utf8-string")* - data type of the data in the chunk. It can have
-			the following values:
+the following values:
 
   - uint8  - byte unsigned integer
   - uint16 - word unsigned integer
@@ -586,9 +586,9 @@ Meaning of the parameters is as follows:
   - utf8-string - UTF8 encoded character sequence
   - octet-string - byte array
 - *vendor id(string value with hex or int, optional, default: "3")* - there are
-				some vendor ids already defined; check
-				[hep proto docs](http://hep.sipcapture.org/hepfiles/HEP3_rev11.pdf)
-				for more details.
+some vendor ids already defined; check
+[hep proto docs](http://hep.sipcapture.org/hepfiles/HEP3_rev11.pdf)
+for more details.
 
 
 ```opensips title="hep_set usage"
@@ -619,11 +619,11 @@ Meaning of the parameters is as follows:
 
 
 - *chunk_id (string)* - same meaning as in
-			[hep set](#func_hep_set)
+[hep set](#func_hep_set)
 - *data_type (string)* - same meaning as in
-			[hep set](#func_hep_set); can miss if it's a generic chunk
+[hep set](#func_hep_set); can miss if it's a generic chunk
 - *chunk_data_pv (writable var, optional)* - will hold the data inside the
-			chunk; some of the generic chunk data come in specific format, as following:
+chunk; some of the generic chunk data come in specific format, as following:
 
   - 0x0001 - proto_family(string) - AF_INET/AF_INET6
   - 0x0002  proto_id(string) - see [hep set](#func_hep_set) for possible values
@@ -631,7 +631,7 @@ Meaning of the parameters is as follows:
   - 0x0009  timestamp(string) - time and date in human readable format
   - 0x000B  proto_type(string) - see [hep set](#func_hep_set) for possible values
 - *vendor_id_pv (writable var, optional)* - will hold the vendor id(int value)
-			of the chunk
+of the chunk
 
 
 ```opensips title="hep_set usage"
@@ -659,7 +659,7 @@ Meaning of the parameters is as follows:
 
 
 - *chunk_id (string)* - same meaning as the *chunk_id* in
-				[hep set](#func_hep_set).
+[hep set](#func_hep_set).
 
 
 ```opensips title="hep_set usage"
@@ -675,10 +675,10 @@ hep_del("25"); /* removes chunk with chunk id 25 */
 
 
 Relay a message statefully to destination indicated in current URI.
-		(If the original URI was rewritten by UsrLoc, RR, strip/prefix, etc.,
-		the new URI will be taken). The message has to have been a HEP message,
-		version 1, 2 or 3. For version 1 and 2 you can relay only using UDP,
-		for version 3 TCP and UDP can be used.
+(If the original URI was rewritten by UsrLoc, RR, strip/prefix, etc.,
+the new URI will be taken). The message has to have been a HEP message,
+version 1, 2 or 3. For version 1 and 2 you can relay only using UDP,
+for version 3 TCP and UDP can be used.
 
 
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
@@ -730,9 +730,9 @@ route[my_hep_route] {
 
 
 Save the message inside the database. The query is being done
-	asnychronously only if the database supports async operations.
-	The query might not be executed exactly at this moment, it depends
-	on the *max_async_queries* parameter.
+asnychronously only if the database supports async operations.
+The query might not be executed exactly at this moment, it depends
+on the *max_async_queries* parameter.
 
 
 ```opensips title="sip_capture usage"
@@ -757,8 +757,8 @@ route[capture_resume] {
 
 
 Holds layer 3 and 4 information(IP addresses and ports) about
-		the node from where the hep message was received. The variable is
-		read-only and can be used only if it's referenced by it's name.
+the node from where the hep message was received. The variable is
+read-only and can be used only if it's referenced by it's name.
 
 
 Possible values for it's name are the following:
@@ -766,15 +766,15 @@ Possible values for it's name are the following:
 
 - *proto_family* - can be AF_INET/AF_INET6
 - *proto_id* - it's PROTO_HEP since you receive
-			the message as hep.
+the message as hep.
 - *src_ip* - IPv4/IPv6 address, depending on the
-		proto_family, of the sending node.
+proto_family, of the sending node.
 - *dst_ip* - IPv4/IPv6 address, depending on the
-			proto_family, of the receiving node(OpenSIPS hep interface ip on which
-			the message was received).
+proto_family, of the receiving node(OpenSIPS hep interface ip on which
+the message was received).
 - *src_port* - Sending node port.
 - *dst_port* - Receiving port(OpenSIPS hep interace
-			port on which the message was received).
+port on which the message was received).
 
 
 ```opensips title="hep_net usage"
@@ -830,14 +830,14 @@ Parameters:
 
 
 - *capture_mode* (optional) - 
-			turns on/off SIP message capturing. Possible values are:
+turns on/off SIP message capturing. Possible values are:
 
   - on
   - off
 if the parameter is missing, the command will
-			return the status of the SIP message capturing (as string
-			"on" or "off" ) without changing
-			anything.
+return the status of the SIP message capturing (as string
+"on" or "off" ) without changing
+anything.
 
 
 MI FIFO Command Format:
@@ -853,23 +853,23 @@ MI FIFO Command Format:
 
 
 Before running OpenSIPS with sipcapture, you have to setup the database
-		tables where the module will store the data. For that, if the
-		table were not created by the installation script or you choose
-		to install everything by yourself you can use the sipcapture-create.sql and
-		reportcapture-create.sql or
-		the sipcapture-st-create.sql SQL script in the database
-		directories in the opensips/scripts folder as template.
-		You can also find the complete database documentation on the
-		project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+tables where the module will store the data. For that, if the
+table were not created by the installation script or you choose
+to install everything by yourself you can use the sipcapture-create.sql and
+reportcapture-create.sql or
+the sipcapture-st-create.sql SQL script in the database
+directories in the opensips/scripts folder as template.
+You can also find the complete database documentation on the
+project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
 
 
 ### Limitation
 
 
 1. Only one capturing mode on RAW socket is supported: IPIP or monitoring/mirroring port.
-		   Don't activate both at the same time.
+Don't activate both at the same time.
 		2. By default MySQL doesn't support INSERT DELAYED for partitioning table. You can patch MySQL
-		  (http://bugs.mysql.com/bug.php?id=50393) or use separate tables (pseudo partitioning)
+(http://bugs.mysql.com/bug.php?id=50393) or use separate tables (pseudo partitioning)
 		3. Mirroring port capturing works only on Linux.
 <!-- CONTRIBUTORS -->
 

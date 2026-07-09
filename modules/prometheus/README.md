@@ -10,26 +10,26 @@ description: "This module provides a HTTP interface for the [Prometheus](https:/
 
 
 This module provides a HTTP interface for the
-		[Prometheus](https://prometheus.io/)
-		monitoring system, allowing it to fetch different
-		statistics from OpenSIPS.
+[Prometheus](https://prometheus.io/)
+monitoring system, allowing it to fetch different
+statistics from OpenSIPS.
 
 
 In order to use it, you have to explicitely define the
-		statistics you want to provide by listing them in the
-		[statistics](#param_statistics) parameter.
+statistics you want to provide by listing them in the
+[statistics](#param_statistics) parameter.
 
 
 Currently only *counter* and *gauge*
-		metrics types are supported by the module, and whether to choose
-		one or the other for a specific statistic is dictated by the way that
-		statistic was defined either internally, or explicitely through the
-		*variable* parameter of the *statistics*
-		module.
+metrics types are supported by the module, and whether to choose
+one or the other for a specific statistic is dictated by the way that
+statistic was defined either internally, or explicitely through the
+*variable* parameter of the *statistics*
+module.
 
 
 Each exported statistic comes with a *group* label that
-		indicates the group it belongs to.
+indicates the group it belongs to.
 
 
 ### Dependencies
@@ -57,7 +57,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root metrics path Promethus uses to query the stats:
-		http://[opensips_IP]:[opensips_httpd_port]/[root]
+http://[opensips_IP]:[opensips_httpd_port]/[root]
 
 
 *The default value is "metrics".*
@@ -106,7 +106,7 @@ modparam("prometheus", "group_prefix", "opensips")
 
 
 Specifies the delimiter to be used to separate *prefix*
-		and *group_prefix*.
+and *group_prefix*.
 
 
 *The default value is "_".*
@@ -139,7 +139,7 @@ modparam("prometheus", "group_label", "grp")
 
 
 Specifies how the group of the statistic should be provisioned to
-		Prometheus. Available modes are:
+Prometheus. Available modes are:
 
 
 - *0* - do not send the statistics groups.
@@ -166,13 +166,13 @@ modparam("prometheus", "group_mode", 1)
 
 
 The statistics that are being exported by OpenSIPS, separated by space.
-			The list can also contain statistics groups's names - to do that, you shall
-			add a colon (*:*) at the end of the groups's name.
+The list can also contain statistics groups's names - to do that, you shall
+add a colon (*:*) at the end of the groups's name.
 
 
 If the *all* value is used, then the module will expose
-			all available statistics - therefore any other settings of this parameter
-			is useless;
+all available statistics - therefore any other settings of this parameter
+is useless;
 
 
 This parameter can be defined multiple times.
@@ -199,10 +199,10 @@ No function exported to be used from configuration file.
 
 
 In order to have Prometheus query OpenSIPS for statistics, you need to
-			tell him where to get statistics from. To do that, you should define
-			a scarpe job in Prometheus's *scrape_configs* config,
-			indicating the IP and port you've configured the *httpd*
-			module to listen on (default: *0.0.0.0:8888*).
+tell him where to get statistics from. To do that, you should define
+a scarpe job in Prometheus's *scrape_configs* config,
+indicating the IP and port you've configured the *httpd*
+module to listen on (default: *0.0.0.0:8888*).
 
 
 ```c title="Prometheus Scrape Config"
