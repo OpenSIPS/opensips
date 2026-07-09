@@ -1530,24 +1530,13 @@ Gets the matched prefix along with the  list of the gateways / carriers to which
 			would be routed when using the do_routing function
 
 
-- if `use_partition` is set to 1 the function
-					will have 3 parameters:
-					
-						
-							partition name
-						
-						
-							group id - the group id of the rules to check against
-						
-						
-							number - the number to test against
+- if `use_partition` is set to 1 the function will have 3 parameters:
+	* partition name
+	* group id - the group id of the rules to check against
+	* number - the number to test against
 - if `use_partition` is set to 0 the function will have 2 parameters:
-					
-						
-							group id - the group id of the rules to check against
-						
-						
-							number - the number to test against
+	* group id - the group id of the rules to check against
+	* number - the number to test against
 
 
 Note: The group id may be omitted - just as with the do_routing function.
