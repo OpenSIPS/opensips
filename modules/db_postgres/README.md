@@ -28,12 +28,12 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *PostgreSQL library* - e.g., libpq5.
 - *PostgreSQL devel library* - to compile
-				the module (e.g., libpq-dev).
+the module (e.g., libpq-dev).
 
 
 ### Exported Parameters
@@ -43,7 +43,7 @@ The following libraries or applications must be installed before running
 
 
 If queries take longer than 'exec_query_threshold' microseconds, warning
-		messages will be written to logging facility.
+messages will be written to logging facility.
 
 
 *Default value is 0 - disabled.*
@@ -60,7 +60,7 @@ modparam("db_postgres", "exec_query_threshold", 60000)
 
 
 The maximum number of database queries to be executed. 
-                If this parameter is set improperly, it is set to default value.
+If this parameter is set improperly, it is set to default value.
 
 
 *Default value is 2.*
@@ -77,15 +77,15 @@ modparam("db_postgres", "max_db_queries", 2)
 
 
 The number of seconds the PostgreSQL library waits to connect and query
-			the server. If the connection does not succeed within the given timeout,
-			the connection fails.
+the server. If the connection does not succeed within the given timeout,
+the connection fails.
 
 
 *Note:*If the timeout is a negative value and
-			connection does not succeed, OpenSIPS will block until the connection
-			becomes back available and gets successfully established. This is the
-			default behavior of the library and is the behavior prior to the
-			adition of this parameter.
+connection does not succeed, OpenSIPS will block until the connection
+becomes back available and gets successfully established. This is the
+default behavior of the library and is the behavior prior to the
+adition of this parameter.
 
 
 *Default value is 5.*

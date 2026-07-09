@@ -10,63 +10,63 @@ description: "This module is a management module for TLS certificates and parame
 
 
 This module is a management module for TLS certificates and
-			parameters. It provides an interface for all the modules that
-			use the TLS protocol. It also exports pseudo variables with
-			certificate and TLS parameters.
+parameters. It provides an interface for all the modules that
+use the TLS protocol. It also exports pseudo variables with
+certificate and TLS parameters.
 
 
 ### Usage
 
 
 This module is used to provision TLS certificates and parameters
-			for all the modules that use TLS transport (like
-			*proto_tls* or *proto_wss*).
-			The module supports multiple
-			virtual domains that can be assigned to different listeners
-			(servers) or new connections (clients). Each TLS module that uses
-			this management module should assign itself to one or more domains.
+for all the modules that use TLS transport (like
+*proto_tls* or *proto_wss*).
+The module supports multiple
+virtual domains that can be assigned to different listeners
+(servers) or new connections (clients). Each TLS module that uses
+this management module should assign itself to one or more domains.
 
 
 The module allows the definition of the TLS domains both via 
-			module parameters (script level) and via an SQL table.
+module parameters (script level) and via an SQL table.
 
 
 A script example which details this module's usage can be found in
-		[tls example](#opensips_with_tls_script_example).
+[tls example](#opensips_with_tls_script_example).
 
 
 ### TLS domains
 
 
 The wording 'TLS domain' means that this TLS connection will have different
-		parameters than another TLS connection (from another TLS domain). Thus, TLS
-		domains are not directly related to different SIP domains, although they
-		are often used in conjunction. Depending on the direction of the TLS handshake, a
-		TLS domain is called 'client domain' (=outgoing TLS connection) or 'server domain'
-		(= incoming TLS connection).
+parameters than another TLS connection (from another TLS domain). Thus, TLS
+domains are not directly related to different SIP domains, although they
+are often used in conjunction. Depending on the direction of the TLS handshake, a
+TLS domain is called 'client domain' (=outgoing TLS connection) or 'server domain'
+(= incoming TLS connection).
 
 
 If you run several SIP domains you can specify some parameters for each of them
-		separately (regardless if you have only one or multiple listen=tls:ip:port entries
-		in the config file).
+separately (regardless if you have only one or multiple listen=tls:ip:port entries
+in the config file).
 
 
 For example, TLS domains can be used in virtual hosting scenarios with TLS.
-		OpenSIPS offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
-		both domains will be hosted on a single SIP proxy, the SIP proxy needs 2 certificates: One
-		for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
-		has to present the respective certificate during the TLS handshake. As the SIP proxy
-		does not have a received SIP message yet (this is done after the TLS handshake), the SIP
-		proxy can not retrieve the target domain from SIP (which would have been usually retrieved 
-		from the domain in the request URI). Thus, distinction for these domains must be done by using multiple listening sockets or by having clients that send the Servername TLS extension(SNI) in the
-		handshake process.
+OpenSIPS offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
+both domains will be hosted on a single SIP proxy, the SIP proxy needs 2 certificates: One
+for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
+has to present the respective certificate during the TLS handshake. As the SIP proxy
+does not have a received SIP message yet (this is done after the TLS handshake), the SIP
+proxy can not retrieve the target domain from SIP (which would have been usually retrieved 
+from the domain in the request URI). Thus, distinction for these domains must be done by using multiple listening sockets or by having clients that send the Servername TLS extension(SNI) in the
+handshake process.
 
 
 For outgoing TLS connections, the TLS domain is chosen based on the destination socket of the underlying outgoing TCP connection and/or by taking a decision at script level via an AVP. For example, you can inspect headers like RURI or From and match the domain in the SIP header with filters that you have set up for the TLS domains.
 
 
 NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set
-		per TLS domain.
+per TLS domain.
 
 
 ### Defining TLS domains
@@ -109,18 +109,18 @@ OpenSIPS TLS v1.0 support requires the following packages:
 
 
 - *openssl* or
-					*libssl* >= 0.9.6
+*libssl* >= 0.9.6
 - *openssl-dev* or
-					*libssl-dev*
+*libssl-dev*
 
 
 OpenSIPS TLS v1.1/1.2 support requires the following packages:
 
 
 - *openssl* or
-					*libssl* >= 1.0.1e
+*libssl* >= 1.0.1e
 - *openssl-dev* or
-					*libssl-dev*
+*libssl-dev*
 
 
 ### Exported Functions
@@ -130,7 +130,7 @@ OpenSIPS TLS v1.1/1.2 support requires the following packages:
 
 
 Returns 1 if the message is received via TLS and the peer was verified
-		during TLS connection handshake, otherwise it returns -1
+during TLS connection handshake, otherwise it returns -1
 
 
 This function can be used from REQUEST_ROUTE.
@@ -160,23 +160,23 @@ List all domains information.
 
 
 Reloads the TLS domains information from the database.
-                The previous DB defined domains are discarded but the
-                script defined domains are preserved.
+The previous DB defined domains are discarded but the
+script defined domains are preserved.
 
 
 ### Exported Parameters
 
 
 All these parameters can be used from the opensips.cfg file,
-		to configure the behavior of OpenSIPS-TLS.
+to configure the behavior of OpenSIPS-TLS.
 
 
 #### listen=interface
 
 
 Not specific to TLS. Allows to specify the protocol
-			(udp, tcp, tls), the IP address and the port where the
-			listening server will be.
+(udp, tcp, tls), the IP address and the port where the
+listening server will be.
 
 
 ```opensips title="Set listen variable"
@@ -191,20 +191,20 @@ listen = tls:1.2.3.4:5061
 
 
 Sets the TLS protocol. The domain part represents the name of
-				the TLS domain. The supported TLS methods are:
+the TLS domain. The supported TLS methods are:
 
 
 - *TLSv1_2* - means OpenSIPS will
-				accept only TLSv1.2 connections (rfc3261 conformant).
+accept only TLSv1.2 connections (rfc3261 conformant).
 - *TLSv1* - means OpenSIPS will
-				accept only TLSv1 connections (rfc3261 conformant).
+accept only TLSv1 connections (rfc3261 conformant).
 - *SSLv23* - means OpenSIPS will
-				accept any of the above methods, but the initial SSL
-				hello must be v2 (in the initial hello all the supported
-				protocols are advertised enabling switching to a higher
-				and more secure version). The initial v2 hello means it
-				will not accept connections from SSLv3 or TLSv1 only
-				clients.
+accept any of the above methods, but the initial SSL
+hello must be v2 (in the initial hello all the supported
+protocols are advertised enabling switching to a higher
+and more secure version). The initial v2 hello means it
+will not accept connections from SSLv3 or TLSv1 only
+clients.
 
 
 *Default value is SSLv23.*
@@ -215,10 +215,10 @@ Sets the TLS protocol. The domain part represents the name of
 
 
 If you want RFC3261 conformance and all your clients support
-			TLSv1 (or you are planning to use encrypted "tunnels" only
-			between different OpenSIPS proxies) use TLSv1. If you want to
-			support older clients use SSLv23 (in fact most of the
-			applications with SSL support use the SSLv23 method).
+TLSv1 (or you are planning to use encrypted "tunnels" only
+between different OpenSIPS proxies) use TLSv1. If you want to
+support older clients use SSLv23 (in fact most of the
+applications with SSL support use the SSLv23 method).
 
 
 ```opensips title="Set tls_method variable"
@@ -233,9 +233,9 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 
 
 Public certificate file for OpenSIPS. It will be used as
-			server-side certificate for incoming TLS connections, and as
-			a client-side certificate for outgoing TLS connections. The domain
-			part represents the name of the TLS domain.
+server-side certificate for incoming TLS connections, and as
+a client-side certificate for outgoing TLS connections. The domain
+part represents the name of the TLS domain.
 
 
 *Default value is "CFG_DIR/tls/cert.pem".*
@@ -253,8 +253,8 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 
 
 Private key of the above certificate. I must be kept in a
-			safe place with tight permissions! The domain part
-			represents the name of the TLS omain.
+safe place with tight permissions! The domain part
+represents the name of the TLS omain.
 
 
 *Default value is "CFG_DIR/tls/ckey.pem".*
@@ -272,9 +272,9 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 
 
 List of trusted CAs. The file contains the certificates
-			accepted, one after the other. It MUST be a file, not
-			a folder. The domain part represents the name
-			of the TLS domain.
+accepted, one after the other. It MUST be a file, not
+a folder. The domain part represents the name
+of the TLS domain.
 
 
 *Default value is "".*
@@ -292,10 +292,10 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 
 
 Directory storing trusted CAs. The certificates in the directory
-			must be in hashed form, as described in the
-			[openssl documentation](https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html) for the
-			*Hashed Directory Method*. The domain part
-			represents the name of the TLS domain.
+must be in hashed form, as described in the
+[openssl documentation](https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html) for the
+*Hashed Directory Method*. The domain part
+represents the name of the TLS domain.
 
 
 *Default value is "/etc/pki/CA/".*
@@ -313,7 +313,7 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 
 
 Directory storing certificate revocation lists (CRLs). The domain
-			part represents the name of the TLS domain.
+part represents the name of the TLS domain.
 
 
 *If this parameter is not set, no CRLs will be used.*
@@ -331,11 +331,11 @@ modparam("tls_mgm", "crl_dir", "[dom]/mycerts/crls")
 
 
 Setting this parameter with a non-zero integer value enables CRL
-			checking for the entire certificate chain.
+checking for the entire certificate chain.
 
 
 *By default, only the leaf certificate in the certificate chain
-				is checked.*
+is checked.*
 
 
 ```opensips title="Set crl_check_all variable"
@@ -350,9 +350,9 @@ modparam("tls_mgm", "crl_check_all", "[dom]1")
 
 
 You can specify the list of algorithms for authentication
-			and encryption that you allow. The domain part
-			represents the name of the TLS domain. To obtain a list of ciphers
-			and then choose, use the openssl application:
+and encryption that you allow. The domain part
+represents the name of the TLS domain. To obtain a list of ciphers
+and then choose, use the openssl application:
 
 
 - openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'
@@ -377,9 +377,9 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 
 
 You can specify a file which contains Diffie-Hellman
-			parameters as a PEM-file. This is needed if you would like
-			to specify ciphers including Diffie-Hellman mode. The 
-			domain part represents the name of the TLS domain.
+parameters as a PEM-file. This is needed if you would like
+to specify ciphers including Diffie-Hellman mode. The 
+domain part represents the name of the TLS domain.
 
 
 *It defaults to not set a dh param file.*
@@ -397,12 +397,12 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 
 
 You can specify an elliptic curve which should be used for
-			ciphers which demand an elliptic curve. The domain part
-			represents the name of the TLS domain.
+ciphers which demand an elliptic curve. The domain part
+represents the name of the TLS domain.
 
 
 It's usable only if TLS v1.1/1.2 support was compiled.
-			A list of curves which can be used you can get by
+A list of curves which can be used you can get by
 
 
 ```bash
@@ -418,7 +418,7 @@ It's usable only if TLS v1.1/1.2 support was compiled.
 
 
 Activates SSL_VERIFY_PEER in the ssl_context. For a detailed
-			explanation, check the *openssl* documentation.
+explanation, check the *openssl* documentation.
 
 
 The domain part represents the name of the TLS domain.
@@ -439,9 +439,9 @@ modparam("tls_mgm", "verify_cert", "[dom]0")
 
 
 Activates SSL_VERIFY_FAIL_IF_NO_PEER_CERT in the ssl_context. For a
-			detailed explanation, check the *openssl*
-			documentation. This parameter only makes sense for server domains
-			and if the [verify cert](#param_verify_cert) parameter is also set.
+detailed explanation, check the *openssl*
+documentation. This parameter only makes sense for server domains
+and if the [verify cert](#param_verify_cert) parameter is also set.
 
 
 The domain part represents the name of the TLS domain.
@@ -462,12 +462,12 @@ modparam("tls_mgm", "require_cert", "[dom]0")
 
 
 Sets the timeout (in milliseconds) for the handshake sequence to complete.
-				It may be necessary to increase this value when using a CPU intensive cipher
-				for the connection to allow time for keys to be generated and processed.
+It may be necessary to increase this value when using a CPU intensive cipher
+for the connection to allow time for keys to be generated and processed.
 
 
 The timeout is invoked during acceptance of a new connection (inbound) and
-				during the wait period when a new session is being initiated (outbound).
+during the wait period when a new session is being initiated (outbound).
 
 
 *Default value is 100.*
@@ -488,7 +488,7 @@ Sets the timeout (in milliseconds) for the send operations to complete
 
 
 The send timeout is invoked for all TLS write operations, excluding
-				the handshake process (see: tls_handshake_timeout)
+the handshake process (see: tls_handshake_timeout)
 
 
 *Default value is 100.*
@@ -506,13 +506,13 @@ modparam("tls_mgm", "tls_send_timeout", 200) # number of milliseconds
 
 
 Name of the AVP used for enforcing the selection of a specific TLS
-			client domain. Setting this AVP to the name of a TLS client domain will
-			result in using that specific domain regardless of the standard matching
-			mechanism.
+client domain. Setting this AVP to the name of a TLS client domain will
+result in using that specific domain regardless of the standard matching
+mechanism.
 
 
 Note: If there is already an existing TLS connection to the remote target,
-			it will be reused and setting this AVP has no effect.
+it will be reused and setting this AVP has no effect.
 
 
 *No default value.*
@@ -530,11 +530,11 @@ modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
 
 
 Name of the AVP that sets the SIP domain used in the TLS client
-			domain matching process.
+domain matching process.
 
 
 Note: If there is already an existing TLS connection to the remote target,
-			it will be reused and setting this AVP has no effect.
+it will be reused and setting this AVP has no effect.
 
 
 For the AVP usage example, refer to  [domains param](#param_server_domain_client_domain).
@@ -558,7 +558,7 @@ The database url. It cannot be NULL.
 
 
 You cannot use the "tls_domain=*dom_name*" URL parameter
-			for a TLS connection to the database for the tls_mgm module itself.
+for a TLS connection to the database for the tls_mgm module itself.
 
 
 ```opensips title="Usage of db_url block"
@@ -811,14 +811,14 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 
 
 The IP addresses and ports used to match a TLS connection with a
-			virtual TLS domain. For TLS server domains, these values will be
-			mathced against the socket on which the connection is received. For
-			TLS client domains, the values will be compared with the destination
-			socket of the connection.
+virtual TLS domain. For TLS server domains, these values will be
+mathced against the socket on which the connection is received. For
+TLS client domains, the values will be compared with the destination
+socket of the connection.
 
 
 The parameter accepts a list of values, and the special value "*"
-				means: match any address.
+means: match any address.
 
 
 *Default value is "*" (match any address).*
@@ -836,27 +836,27 @@ modparam("tls_mgm", "match_ip_address", "[dom1]10.0.0.10:5061, 10.0.0.11:5061")
 
 
 The SIP domains used to match a TLS connection with a
-			virtual TLS domain. For TLS server domains, these values will be
-			matched against the hostname provided in the TLS Servername extension(SNI).
-			For TLS client domains, the values will be compared with the value of
-			the [client sip domain avp](#param_client_sip_domain_avp) AVP.
+virtual TLS domain. For TLS server domains, these values will be
+matched against the hostname provided in the TLS Servername extension(SNI).
+For TLS client domains, the values will be compared with the value of
+the [client sip domain avp](#param_client_sip_domain_avp) AVP.
 
 
 The parameter accepts a list of FQDNs or the special values:
 
 
 - *** - match any sip domain(
-					including no SNI provided, in case of TLS server domains);
+including no SNI provided, in case of TLS server domains);
 - *none* - match the TLS domain
-					when there is no SNI provided (make sense only for TLS server
-					domains). Note that if a SNI is provided, but does not match any
-					other SIP domain filter, the connection will be rejected.
+when there is no SNI provided (make sense only for TLS server
+domains). Note that if a SNI is provided, but does not match any
+other SIP domain filter, the connection will be rejected.
 
 
 The FQDNs can be specified as with Unix shell-style wildcards. If
-				there are multiple potential matches, the most specific domain will
-				be selected(eg. a request for "foo.bar.com" is matched with the domain
-				specified with "foo.bar.com" versus the one with "*.bar.com").
+there are multiple potential matches, the most specific domain will
+be selected(eg. a request for "foo.bar.com" is matched with the domain
+specified with "foo.bar.com" versus the one with "*.bar.com").
 
 
 *Default value is "*" (match any sip domain).*
@@ -878,7 +878,7 @@ You can define virtual TLS domains through these parameters.
 
 
 The value of these parameters represents the virtual tls domain's
-				name which is only used for identification.
+name which is only used for identification.
 
 
 ```opensips title="Usage of tls_client_domain and tls_server_domain block"
@@ -984,62 +984,62 @@ This module exports the follong variables:
 
 
 Some variables are available for both, the peer'S certificate and
-	the local certificate. Further, some parameters can be read from the
-	"Subject" field or the "Issuer" field.
+the local certificate. Further, some parameters can be read from the
+"Subject" field or the "Issuer" field.
 
 
 #### $tls_version
 
 
 *$tls_version* - the TLS/SSL version which is
-			used on the TLS connection from which the message was received.
-			String type.
+used on the TLS connection from which the message was received.
+String type.
 
 
 #### $tls_description
 
 
 *$tls_description* - the TLS/SSL description
-			of the TLS connection from which the message was received. String
-			type.
+of the TLS connection from which the message was received. String
+type.
 
 
 #### $tls_cipher_info
 
 
 *$tls_cipher_info* - the TLS/SSL cipher which
-			is used on the TLS connection from which the message was received.
-			String type.
+is used on the TLS connection from which the message was received.
+String type.
 
 
 #### $tls_cipher_bits
 
 
 *$tls_cipher_bits* - the number of cipher bits
-			which are used on the TLS connection from which the message was
-			received. String and Integer type.
+which are used on the TLS connection from which the message was
+received. String and Integer type.
 
 
 #### $tls_[peer|my]_version
 
 
 *$tls_[peer|my]_version* - the version of the
-			certificate. String type.
+certificate. String type.
 
 
 #### $tls_[peer|my]_serial
 
 
 *$tls_[peer|my]_serial* - the serial number
-			of the certificate. String and Integer type.
+of the certificate. String and Integer type.
 
 
 #### $tls_[peer|my]_[subject|issuer]
 
 
 *$tls_[peer|my]_[subject|issuer]* - ASCII dump
-			of the fields in the issuer/subject section of the certificate.
-			String type.
+of the fields in the issuer/subject section of the certificate.
+String type.
 
 
 ```c title="Example of $tls_[peer|my]_[subject|issuer]"
@@ -1051,140 +1051,140 @@ Some variables are available for both, the peer'S certificate and
 
 
 *$tls_[peer|my]_[subject|issuer]_cn* -
-			commonName in the issuer/subject section of the certificate.
-			String type.
+commonName in the issuer/subject section of the certificate.
+String type.
 
 
 #### $tls_[peer|my]_[subject|issuer]_locality
 
 
 *$tls_[peer|my]_[subject|issuer]_locality* -
-			localityName in the issuer/subject section of the certificate.
-			String type.
+localityName in the issuer/subject section of the certificate.
+String type.
 
 
 #### $tls_[peer|my]_[subject|issuer]_country
 
 
 *$tls_[peer|my]_[subject|issuer]_country* -
-			countryName in the issuer/subject section of the certificate.
-			String type.
+countryName in the issuer/subject section of the certificate.
+String type.
 
 
 #### $tls_[peer|my]_[subject|issuer]_state
 
 
 *$tls_[peer|my]_[subject|issuer]_state* -
-			stateOrProvinceName in the issuer/subject section of the
-			certificate. String type.
+stateOrProvinceName in the issuer/subject section of the
+certificate. String type.
 
 
 #### $tls_[peer|my]_[subject|issuer]_organization
 
 
 *$tls_[peer|my]_[subject|issuer]_organization* -
-			organizationName in the issuer/subject section of the certificate.
-			String type.
+organizationName in the issuer/subject section of the certificate.
+String type.
 
 
 #### $tls_[peer|my]_[subject|issuer]_unit
 
 
 *$tls_[peer|my]_[subject|issuer]_unit* -
-			organizationalUnitName in the issuer/subject section of the
-			certificate. String type.
+organizationalUnitName in the issuer/subject section of the
+certificate. String type.
 
 
 #### $tls_[peer|my]_san_email
 
 
 *$tls_[peer|my]_san_email* - email address in
-			the "subject alternative name" extension. String type.
+the "subject alternative name" extension. String type.
 
 
 #### $tls_[peer|my]_san_hostname
 
 
 *$tls_[peer|my]_san_hostname* - hostname (DNS)
-			in the "subject alternative name" extension. String
-			type.
+in the "subject alternative name" extension. String
+type.
 
 
 #### $tls_[peer|my]_san_uri
 
 
 *$tls_[peer|my]_san_uri* - URI in the
-			"subject alternative name" extension.
-			String type.
+"subject alternative name" extension.
+String type.
 
 
 #### $tls_[peer|my]_san_ip
 
 
 *$tls_[peer|my]_san_ip* - ip address in the
-			"subject alternative name" extension.
-			String type.
+"subject alternative name" extension.
+String type.
 
 
 #### $tls_peer_verified
 
 
 *$tls_peer_verified* - Returns 1 if the peer's
-			certificate was successful verified. Otherwise it returns 0.
-			String and Integer type.
+certificate was successful verified. Otherwise it returns 0.
+String and Integer type.
 
 
 #### $tls_peer_revoked
 
 
 *$tls_peer_revoked* - Returns 1 if the peer's
-			certificate was revoked. Otherwise it returns 0.
-			String and Integer type.
+certificate was revoked. Otherwise it returns 0.
+String and Integer type.
 
 
 #### $tls_peer_expired
 
 
 *$tls_peer_expired* - Returns 1 if the peer's
-			certificate is expired. Otherwise it returns 0.
-			String and Integer type.
+certificate is expired. Otherwise it returns 0.
+String and Integer type.
 
 
 #### $tls_peer_selfsigned
 
 
 *$tls_peer_selfsigned* - Returns 1 if the
-			peer's certificate is selfsigned. Otherwise it returns 0.
-			String and Integer type.
+peer's certificate is selfsigned. Otherwise it returns 0.
+String and Integer type.
 
 
 #### $tls_peer_notBefore
 
 
 *$tls_peer_notBefore* - Returns the notBefore
-			validity date of the peer's certificate.
-			String type.
+validity date of the peer's certificate.
+String type.
 
 
 #### $tls_peer_notAfter
 
 
 *$tls_peer_notAfter* - Returns the notAfter
-			validity date of the peer's certificate.
-			String type.
+validity date of the peer's certificate.
+String type.
 
 
 ### OpenSIPS with TLS - script example
 
 
 IMPORTANT: The TLS support is based on TCP, and for allowing OpenSIPS
-		to use TCP, it must be started in multi-process mode. So, there is
-		a must to have the "fork" parameter set to "yes":
+to use TCP, it must be started in multi-process mode. So, there is
+a must to have the "fork" parameter set to "yes":
 
 
 NOTE: Since the TLS engine is quite memory consuming, increase the
-		used memory by the run time parameter "-m" (see OpenSIPS -h for more
-		details).
+used memory by the run time parameter "-m" (see OpenSIPS -h for more
+details).
 
 
 - fork = yes
@@ -1368,8 +1368,8 @@ NOTE: Since the TLS engine is quite memory consuming, increase the
 
 
 If you want to debug TLS connections, put the following log
-	statements into your OpenSIPS.cfg.
-	This will dump all available TLS pseudo variables.
+statements into your OpenSIPS.cfg.
+This will dump all available TLS pseudo variables.
 
 
 ```opensips title="Example of TLS logging"
@@ -1438,18 +1438,18 @@ xlog("L_INFO","================= end TLS pseudo variables ===============\n");
 
 
 struct tls_domain *find_server_domain(struct ip_addr *ip,
-                    unsigned short port);
+unsigned short port);
 
 
 Find a TLS server domain with given ip and port
-                    (local listening socket).
+(local listening socket).
 
 
 #### find_client_domain
 
 
 struct tls_domain *find_client_domain(struct ip_addr *ip,
-                     unsigned short port);
+unsigned short port);
 
 
 Find TLS client domain.
@@ -1477,7 +1477,7 @@ Returns the send timeout.
 
 
 It contains configuration variables for OpenSIPS's TLS (timeouts,
-		file paths, etc).
+file paths, etc).
 
 
 ### TLS_INIT
@@ -1493,7 +1493,7 @@ extern SSL_CTX *default_client_ctx;
 
 
 The ssl context is a member of the TLS domain strcuture. Thus, every
-			TLS domain, default and virtual - servers and clients, have its own SSL context.
+TLS domain, default and virtual - servers and clients, have its own SSL context.
 
 
 #### pre_init_tls
@@ -1503,7 +1503,7 @@ int init_tls(void);
 
 
 Called once to pre_initialize the tls subsystem, from the main().
-			Called before parsing the configuration file.
+Called before parsing the configuration file.
 
 
 #### init_tls
@@ -1513,7 +1513,7 @@ int init_tls(void);
 
 
 Called once to initialize the tls subsystem, from the main().
-			Called after parsing the configuration file.
+Called after parsing the configuration file.
 
 
 #### destroy_tls
@@ -1538,10 +1538,10 @@ Called once for each tls socket created, from main.c
 
 
 Wrapper functions around the shm_* functions. OpenSSL uses
-			non-shared memory to create its objects, thus it would not
-			work in OpenSIPS. By creating these wrappers and configuring
-			OpenSSL to use them instead of its default memory functions,
-			we have all OpenSSL objects in shared memory, ready to use.
+non-shared memory to create its objects, thus it would not
+work in OpenSIPS. By creating these wrappers and configuring
+OpenSSL to use them instead of its default memory functions,
+we have all OpenSSL objects in shared memory, ready to use.
 
 
 ### TLS_DOMAIN
@@ -1578,18 +1578,18 @@ List with defined client domains.
 
 
 struct tls_domain *tls_find_server_domain(struct ip_addr *ip,
-			unsigned short port);
+unsigned short port);
 
 
 Find a TLS server domain with given ip and port
-			(local listening socket).
+(local listening socket).
 
 
 #### tls_find_client_domain
 
 
 struct tls_domain *tls_find_client_domain(struct ip_addr *ip,
-			unsigned short port);
+unsigned short port);
 
 
 Find TLS client domain.
@@ -1599,11 +1599,11 @@ Find TLS client domain.
 
 
 struct tls_domain *tls_find_client_domain_addr(struct ip_addr *ip,
-			unsigned short port);
+unsigned short port);
 
 
 Find TLS client domain with given ip and port
-			(socket of the remote destination).
+(socket of the remote destination).
 
 
 #### tls_find_client_domain_name
