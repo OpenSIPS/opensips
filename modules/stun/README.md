@@ -12,9 +12,9 @@ title: "Stun Module"
 
 
 A stun server working with the same port as SIP (5060) in order to
-				gain accurate information.
-				The benefit would be an exact external address in the case of NATs translating differently
-				when given different destination ports.
+gain accurate information.
+The benefit would be an exact external address in the case of NATs translating differently
+when given different destination ports.
 
 
 #### Basic Operation
@@ -37,10 +37,10 @@ socket1 will allways be the the SIP socket.
 
 
 The server will create a separate process.
-				This process will listen for data on created sockets.
+This process will listen for data on created sockets.
 
-				The server will register a callback function to SIP.
-				This function is called when a specific (stun)header is found.
+The server will register a callback function to SIP.
+This function is called when a specific (stun)header is found.
 
 
 #### Supported STUN Attributes
@@ -85,7 +85,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.

@@ -28,12 +28,12 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *PostgreSQL library* - e.g., libpq5.
 - *PostgreSQL devel library* - to compile
-				the module (e.g., libpq-dev).
+the module (e.g., libpq-dev).
 
 
 ### Exported Parameters
