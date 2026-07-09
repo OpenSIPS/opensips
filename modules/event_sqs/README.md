@@ -10,9 +10,9 @@ description: "The event_sqs module is an implementation of an Amazon SQS produce
 
 
 The event_sqs module is an implementation of an Amazon SQS producer.
-		It serves as a transport backend for the Event Interface and also provides a stand-alone
-		connector to be used from the OpenSIPS script in order to publish messages to SQS queues.
-		[https://aws.amazon.com/sqs/](https://aws.amazon.com/sqs/)
+It serves as a transport backend for the Event Interface and also provides a stand-alone
+connector to be used from the OpenSIPS script in order to publish messages to SQS queues.
+[https://aws.amazon.com/sqs/](https://aws.amazon.com/sqs/)
 
 
 ### Dependencies
@@ -28,15 +28,15 @@ There is no need to load any module before this module.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *AWS SDK for C++:*
 By following these steps, you'll have the AWS SDK for C++ installed and 
-				configured on your Linux system, allowing you to integrate with SQS:
-				[AWS SDK for C++ Installation Guide](https://docs.aws.amazon.com/sdk-for-cpp/v1/developer-guide/setup-linux.html)
+configured on your Linux system, allowing you to integrate with SQS:
+[AWS SDK for C++ Installation Guide](https://docs.aws.amazon.com/sdk-for-cpp/v1/developer-guide/setup-linux.html)
 Additional instructions for installation can be found at:
-				[AWS SDK for C++ GitHub Repository](https://github.com/aws/aws-sdk-cpp)
+[AWS SDK for C++ GitHub Repository](https://github.com/aws/aws-sdk-cpp)
 
 
 #### Deploying Amazon SQS locally on your computer
@@ -64,7 +64,7 @@ export AWS_DEFAULT_REGION=us-east-1
 
 
 Here you can find some cli commands such as create-queue, send/receive-message, etc.:
-		[https://docs.aws.amazon.com/cli/latest/reference/sqs/](https://docs.aws.amazon.com/cli/latest/reference/sqs/)
+[https://docs.aws.amazon.com/cli/latest/reference/sqs/](https://docs.aws.amazon.com/cli/latest/reference/sqs/)
 
 
 ### Exported Parameters
@@ -74,12 +74,12 @@ Here you can find some cli commands such as create-queue, send/receive-message, 
 
 
 This parameter specifies the configuration for an SQS queue that can be used
-			to publish messages directly from the script, using the sqs_publish_message() function
-			or to send messages using raise_event function.
+to publish messages directly from the script, using the sqs_publish_message() function
+or to send messages using raise_event function.
 
 
 The format of the parameter is: [ID]sqs_url, where ID is an identifier
-		for this SQS queue instance and sqs_url is the full url of the queue.
+for this SQS queue instance and sqs_url is the full url of the queue.
 
 
 The queue_url contains:
@@ -113,8 +113,8 @@ modparam("event_sqs", "queue_url",
 
 
 Publishes a message to an SQS queue. As the actual 
-		send operation is done asynchronously, this function does not block and returns 
-		immediately after queuing the message for sending.
+send operation is done asynchronously, this function does not block and returns 
+immediately after queuing the message for sending.
 
 
 This function can be used from any route.

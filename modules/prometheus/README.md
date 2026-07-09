@@ -10,26 +10,26 @@ description: "This module provides a HTTP interface for the [Prometheus](https:/
 
 
 This module provides a HTTP interface for the
-		[Prometheus](https://prometheus.io/)
-		monitoring system, allowing it to fetch different
-		statistics from OpenSIPS.
+[Prometheus](https://prometheus.io/)
+monitoring system, allowing it to fetch different
+statistics from OpenSIPS.
 
 
 In order to use it, you have to explicitely define the
-		statistics you want to provide by listing them in the
-		[statistics](#param_statistics) parameter.
+statistics you want to provide by listing them in the
+[statistics](#param_statistics) parameter.
 
 
 Currently only *counter* and *gauge*
-		metrics types are supported by the module, and whether to choose
-		one or the other for a specific statistic is dictated by the way that
-		statistic was defined either internally, or explicitely through the
-		*variable* parameter of the *statistics*
-		module.
+metrics types are supported by the module, and whether to choose
+one or the other for a specific statistic is dictated by the way that
+statistic was defined either internally, or explicitely through the
+*variable* parameter of the *statistics*
+module.
 
 
 Each exported statistic comes with a *group* label that
-		indicates the group it belongs to.
+indicates the group it belongs to.
 
 
 ### Dependencies
@@ -57,7 +57,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root metrics path Promethus uses to query the stats:
-		http://[opensips_IP]:[opensips_httpd_port]/[root]
+http://[opensips_IP]:[opensips_httpd_port]/[root]
 
 
 *The default value is "metrics".*
@@ -106,7 +106,7 @@ modparam("prometheus", "group_prefix", "opensips")
 
 
 Specifies the delimiter to be used to separate *prefix*
-		and *group_prefix*.
+and *group_prefix*.
 
 
 *The default value is "_".*
@@ -139,7 +139,7 @@ modparam("prometheus", "group_label", "grp")
 
 
 Specifies how the group of the statistic should be provisioned to
-		Prometheus. Available modes are:
+Prometheus. Available modes are:
 
 
 - *0* - do not send the statistics groups.
@@ -166,13 +166,13 @@ modparam("prometheus", "group_mode", 1)
 
 
 The statistics that are being exported by OpenSIPS, separated by space.
-			The list can also contain statistics groups's names - to do that, you shall
-			add a colon (*:*) at the end of the groups's name.
+The list can also contain statistics groups's names - to do that, you shall
+add a colon (*:*) at the end of the groups's name.
 
 
 If the *all* value is used, then the module will expose
-			all available statistics - therefore any other settings of this parameter
-			is useless;
+all available statistics - therefore any other settings of this parameter
+is useless;
 
 
 This parameter can be defined multiple times.
@@ -193,43 +193,43 @@ modparam("prometheus", "statistics", "active_dialogs load:")
 
 
 Rules that define how to convert the name of a statistic
-			within a group to obtain the name and set of labels to be
-			pushed in Prometheus.
+within a group to obtain the name and set of labels to be
+pushed in Prometheus.
 
 
 The format is *group: regex*, where
-			*group* represents the group of statistics
-			for whom the regular expression should be applied for, and
-			*regexp* is a regular expression used to
-			match the statistic's name and convert it to the desired name
-			and labels.
+*group* represents the group of statistics
+for whom the regular expression should be applied for, and
+*regexp* is a regular expression used to
+match the statistic's name and convert it to the desired name
+and labels.
 
 
 The *regex* format is
-			*/matching_expression/substitution_expression/flags*.
-			The *substitution_expression* resulted after
-			the substituion should result in a string with the following
-			format: *name:labels*, where
-			*name* represents the name of the statistic
-			as it will be pushed towards Prometheus, and *labels*
-			the labels, expressed as *key=value* pairs
-			separated by comma, as they are received by Prometheus.
-			*Note* that the *labels*
-			string resulted is concatenated to the other labeles as
-			plain string - no other transformations are performed.
+*/matching_expression/substitution_expression/flags*.
+The *substitution_expression* resulted after
+the substituion should result in a string with the following
+format: *name:labels*, where
+*name* represents the name of the statistic
+as it will be pushed towards Prometheus, and *labels*
+the labels, expressed as *key=value* pairs
+separated by comma, as they are received by Prometheus.
+*Note* that the *labels*
+string resulted is concatenated to the other labeles as
+plain string - no other transformations are performed.
 
 
 If a statistic's name within the declared group does not match the
-			regular, or the resulted format does not comply with the
-			*name:labels* format, the statistics transformations
-			are ignored and it shall be printed as a regular statistic, as if
-			the rule was not even used.
+regular, or the resulted format does not comply with the
+*name:labels* format, the statistics transformations
+are ignored and it shall be printed as a regular statistic, as if
+the rule was not even used.
 
 
 This parameter can be defined multiple times, even for a single group.
-			However, if the statistic matches multiple regular expressions, only
-			the first regular expression that matches is considered. The order
-			they are checked is the order declared in the script.
+However, if the statistic matches multiple regular expressions, only
+the first regular expression that matches is considered. The order
+they are checked is the order declared in the script.
 
 
 *The default value is empty: statistic name is provided.*
@@ -291,11 +291,11 @@ route[my_custom_prometheus_route] {
 
 
 *NOTE:* this function can only be used in the
-			route declared in the [script route](#param_script_route) parameter.
+route declared in the [script route](#param_script_route) parameter.
 
 
 Declares a custom statistic exported to Prometheus server. It specifies
-			its type and optionally a help string.
+its type and optionally a help string.
 
 
 Parameters
@@ -303,14 +303,14 @@ Parameters
 
 - *name* (string) - the name of the statistic
 *type* (string, optional) - the type of the
-			statistic (i.e. *counter* or *gauge*).
-			If missing the statistic is declared as *gauge*.
+statistic (i.e. *counter* or *gauge*).
+If missing the statistic is declared as *gauge*.
 *help* (string, optional) - an optional value
-			used to describe the statistic meaning. If missing, it is not used.
+used to describe the statistic meaning. If missing, it is not used.
 
 
 This function can only be used in the request
-			route declared in the [script route](#param_script_route) parameter.
+route declared in the [script route](#param_script_route) parameter.
 
 
 ```opensips title="prometheus_declare_stat usage"
@@ -330,16 +330,16 @@ route[my_custom_prometheus_route] {
 
 
 *NOTE:* this function can only be used in the
-			route declared in the [script route](#param_script_route) parameter.
+route declared in the [script route](#param_script_route) parameter.
 
 
 Pushes a custom statistic value and optionally a set of labels
-			to the Prometheus server.
+to the Prometheus server.
 
 
 *NOTE:* a statistic's value should only be pushed
-			after it had been declared using the
-			[prometheus declare stat](#func_prometheus_declare_stat) function.
+after it had been declared using the
+[prometheus declare stat](#func_prometheus_declare_stat) function.
 
 
 Parameters
@@ -347,18 +347,18 @@ Parameters
 
 - *value* (integer) - the value of the statistic
 *label_name* (string, optional) - used to define
-			labels for the pushed statistic. If the *label_value*
-			parameter is missing, this parameter is appended to the name of the
-			statisic - this means that it should contain the whole set of labels
-				for the value (including curly brackets). If the
-			*label_value* is provided as well, then the parameter
-			should only contain one label's name.
+labels for the pushed statistic. If the *label_value*
+parameter is missing, this parameter is appended to the name of the
+statisic - this means that it should contain the whole set of labels
+for the value (including curly brackets). If the
+*label_value* is provided as well, then the parameter
+should only contain one label's name.
 *label_value* (string, optional) - the value that
-			should be used for the *label_name* parameter label.
+should be used for the *label_name* parameter label.
 
 
 This function can only be used in the request
-			route declared in the [script route](#param_script_route) parameter.
+route declared in the [script route](#param_script_route) parameter.
 
 
 ```opensips title="prometheus_push_stat usage"
@@ -382,10 +382,10 @@ route[my_custom_prometheus_route] {
 
 
 In order to have Prometheus query OpenSIPS for statistics, you need to
-			tell him where to get statistics from. To do that, you should define
-			a scarpe job in Prometheus's *scrape_configs* config,
-			indicating the IP and port you've configured the *httpd*
-			module to listen on (default: *0.0.0.0:8888*).
+tell him where to get statistics from. To do that, you should define
+a scarpe job in Prometheus's *scrape_configs* config,
+indicating the IP and port you've configured the *httpd*
+module to listen on (default: *0.0.0.0:8888*).
 
 
 ```c title="Prometheus Scrape Config"

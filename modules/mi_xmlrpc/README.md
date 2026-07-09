@@ -10,18 +10,18 @@ description: "This module implements a xmlrpc server that handles xmlrpc request
 
 
 This module implements a xmlrpc server that handles xmlrpc
-		requests and generates xmlrpc responses.
-		When a xmlrpc message is received a default method is executed.
+requests and generates xmlrpc responses.
+When a xmlrpc message is received a default method is executed.
 
 
 At first, it looks up the MI command.
-		If found it parses the called procedure's parameters
-		into a MI tree and the command is executed.
-		A MI reply tree is returned that is formatted back in xmlrpc.
-		The response is built in two ways - like a string that
-		contains the MI tree nodes information (name, values and
-		attributes) or like an array whose elements are consisted
-		of each MI tree node stored information.
+If found it parses the called procedure's parameters
+into a MI tree and the command is executed.
+A MI reply tree is returned that is formatted back in xmlrpc.
+The response is built in two ways - like a string that
+contains the MI tree nodes information (name, values and
+attributes) or like an array whose elements are consisted
+of each MI tree node stored information.
 
 
 ### Dependencies
@@ -31,7 +31,7 @@ At first, it looks up the MI command.
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libxml2*
@@ -53,7 +53,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root path for xmlrpc requests:
-		http://[opensips_IP]:[opensips_httpd_port]/[http_root]
+http://[opensips_IP]:[opensips_httpd_port]/[http_root]
 
 
 *The default value is "RPC2".*
@@ -70,13 +70,13 @@ modparam("mi_xmlrpc", "http_root", "opensips_mi_xmlrpc")
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		This is where traced mi messages will go.
+the only tracing module is **proto_hep**.
+This is where traced mi messages will go.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+loaded in order for this parameter to work. (for example
+**proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -95,24 +95,24 @@ modparam("mi_xmlrpc", "trace_destination", "hep_dest")
 
 
 Filter traced mi commands based on a blacklist or a whitelist.
-		**trace_destination** must be defined for
-		this parameter to have any purpose. Whitelists can be defined using
-		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
-		actual blacklist by ':'. The mi commands in the list must be separated
-		by ','.
+**trace_destination** must be defined for
+this parameter to have any purpose. Whitelists can be defined using
+'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+actual blacklist by ':'. The mi commands in the list must be separated
+by ','.
 
 
 Defining a blacklists means all the commands that are not blacklisted
-			will be traced. Defining a whitelist means all the commands that are
-			not whitelisted will not be traced.
-			**WARNING:** One can't define both
-			a whitelist and a blacklist. Only one of them is allowed. Defining
-			the parameter a second time will just overwrite the first one.
+will be traced. Defining a whitelist means all the commands that are
+not whitelisted will not be traced.
+**WARNING:** One can't define both
+a whitelist and a blacklist. Only one of them is allowed. Defining
+the parameter a second time will just overwrite the first one.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep)**.
+loaded in order for this parameter to work. (for example
+**proto_hep)**.
 
 
 *Default value is none(not defined).*
@@ -141,20 +141,20 @@ No function exported to be used from configuration file.
 
 
 Commands with large responses (like ul_dump) will fail if the
-		configured size of the httpd buffer is to small (or if there
-		isn't enough pkg memory configured).
+configured size of the httpd buffer is to small (or if there
+isn't enough pkg memory configured).
 
 
 Future realeases of the httpd and mi_xmlrpc modules
-		will address this issue.
+will address this issue.
 
 
 ### Example
 
 
 This is an example showing the xmlrpc format for the
-		"get_statistics net: shmem:" MI commad:
-		response.
+"get_statistics net: shmem:" MI commad:
+response.
 
 
 ```c title="XMLRPC request"

@@ -10,8 +10,8 @@ description: "This module serves as an example of how to write a module in OpenS
 
 
 This module serves as an example of how to write a module in OpenSIPS.
-		Its primary goal is to simplify the development of new modules for
-		newcomers, providing a clear and accessible starting point.
+Its primary goal is to simplify the development of new modules for
+newcomers, providing a clear and accessible starting point.
 
 
 ### Dependencies
@@ -30,7 +30,7 @@ The following  modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -43,7 +43,7 @@ The following libraries or applications must be installed before running
 
 
 The default parameter used when the [example str](#func_example_str)
-			function is called without any parameter.
+function is called without any parameter.
 
 
 *Default value is "" (empty sring).*
@@ -60,7 +60,7 @@ modparam("example", "default_str", "TEST")
 
 
 The default parameter used when the [example int](#func_example_int)
-			function is called without any parameter.
+function is called without any parameter.
 
 
 *Default value is "0".*
@@ -96,8 +96,8 @@ example();
 
 
 Function that simply prints a message to log, saying that it has been called.
-			If a parameter is passed, it is printed in the log, otherwise the value of
-			[default str](#param_default_str) parameter is used.
+If a parameter is passed, it is printed in the log, otherwise the value of
+[default str](#param_default_str) parameter is used.
 
 
 Meaning of the parameters is as follows:
@@ -120,8 +120,8 @@ example_str("test");
 
 
 Function that simply prints a message to log, saying that it has been called.
-			If a parameter is passed, it is printed in the log, otherwise the value of
-			[default int](#param_default_int) parameter is used.
+If a parameter is passed, it is printed in the log, otherwise the value of
+[default int](#param_default_int) parameter is used.
 
 
 Meaning of the parameters is as follows:

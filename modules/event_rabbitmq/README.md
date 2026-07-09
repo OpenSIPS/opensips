@@ -10,31 +10,31 @@ description: "*RabbitMQ* ([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) 
 
 
 *RabbitMQ*
-		([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) 
-		is an open source messaging server. It's purpose is to
-		manage received messages in queues, taking advantage of
-		the flexible AMQP protocol.
+([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) 
+is an open source messaging server. It's purpose is to
+manage received messages in queues, taking advantage of
+the flexible AMQP protocol.
 
 
 This module provides the implementation of a RabbitMQ client 
-		that supports two primary functionalities:
+that supports two primary functionalities:
 
 
 - *Event-Driven Messaging:*
-		It is used to send AMQP messages to a RabbitMQ server
-		each time the Event Interface triggers an event subscribed for.
+It is used to send AMQP messages to a RabbitMQ server
+each time the Event Interface triggers an event subscribed for.
 - *General Message Publishing:*
-		This module also enables sending AMQP messages directly to a RabbitMQ
-		server. Messages can be easily customized according to the AMQP specifications,
-		as well the RabbitMQ extensions.
+This module also enables sending AMQP messages directly to a RabbitMQ
+server. Messages can be easily customized according to the AMQP specifications,
+as well the RabbitMQ extensions.
 
 
 ### RabbitMQ events syntax
 
 
 The event payload is formated as a JSON-RPC notification, with the event
-		name as the *method* field and the event parameters as
-		the *params* field.
+name as the *method* field and the event parameters as
+the *params* field.
 
 
 ### RabbitMQ socket syntax
@@ -47,18 +47,18 @@ Meanings:
 
 
 - *'rabbitmq:'* - informs the Event Interface that the
-					events sent to this subscriber should be handled by the
-					*event_rabbitmq* module.
+events sent to this subscriber should be handled by the
+*event_rabbitmq* module.
 - *user* - username used for RabbitMQ server
-					authentication. The default value is 'guest'.
+authentication. The default value is 'guest'.
 - *password* - password used for RabbitMQ server
-					authentication. The default value is 'guest'.
+authentication. The default value is 'guest'.
 - *host* - host name of the RabbitMQ server.
 - *port* - port of the RabbitMQ server. The
-					default value is '5672'.
+default value is '5672'.
 - *params* - extra parameters specified as
-					*key[=value]*, separated by ';':
-					
+*key[=value]*, separated by ';':
+
 						*exchange* - exchange of the RabbitMQ server.
 						The default value is ''.
 						*tls_domain* - indicates which TLS domain (as
@@ -69,10 +69,10 @@ Meanings:
 						published as persistent *delivery_mode=2*. This
 						parameter does not have a value.
 - *routing_key* - this is the routing key
-					used by the AMQP protocol and it is used to identify the queue
-					where the event should be sent.
-					NOTE: if the queue does not exist, this module will not 
-						try to create it.
+used by the AMQP protocol and it is used to identify the queue
+where the event should be sent.
+NOTE: if the queue does not exist, this module will not 
+try to create it.
 
 
 ### Dependencies
@@ -91,7 +91,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *librabbitmq-dev*
@@ -104,11 +104,11 @@ The following libraries or applications must be installed before
 
 
 Enables heartbeat support for the AMQP communication. If the
-			client does not receive a heartbeat from server within the
-			specified interval, the socket is automatically closed by the
-			rabbitmq-client. This prevents OpenSIPS from blocking while
-			waiting for a response from a dead rabbitmq-server. The value
-			represents the heartbit interval in seconds.
+client does not receive a heartbeat from server within the
+specified interval, the socket is automatically closed by the
+rabbitmq-client. This prevents OpenSIPS from blocking while
+waiting for a response from a dead rabbitmq-server. The value
+represents the heartbit interval in seconds.
 
 
 *Default value is "0 (disabled)".*
@@ -125,7 +125,7 @@ modparam("event_rabbitmq", "heartbeat", 3)
 
 
 The maximally allowed duration (in milliseconds) for the establishment
-			of a TCP connection with a RabbitMQ server.
+of a TCP connection with a RabbitMQ server.
 
 
 *Default value is "500" (milliseconds).*
@@ -143,14 +143,14 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
 
 
 Setting this parameter will allow you to use TLS for broker connections.
-		In order to enable TLS for a specific connection, you can use the
-		"tls_domain=*dom_name*" parameter in the configuration
-		specified through the [socket syntax](#rabbitmq_socket_syntax).
+In order to enable TLS for a specific connection, you can use the
+"tls_domain=*dom_name*" parameter in the configuration
+specified through the [socket syntax](#rabbitmq_socket_syntax).
 
 
 When using this parameter, you must also ensure that
-		*tls_mgm* is loaded and properly configured. Refer to
-		the the module for additional info regarding TLS client domains.
+*tls_mgm* is loaded and properly configured. Refer to
+the the module for additional info regarding TLS client domains.
 
 
 *Default value is **0** (not enabled)*
@@ -172,13 +172,13 @@ modparam("event_rabbitmq", "use_tls", 1)
 
 
 Indicates the timeout (in milliseconds) of any command (i.e. publish)
-		sent to the RabbitMQ server.
+sent to the RabbitMQ server.
 
 
 *NOTE* that this parameter is available only starting with
-		RabbitMQ library version *0.9.0*; setting it when using an
-		earlier version will have no effect, and the publish command will run in
-		blocking mode.
+RabbitMQ library version *0.9.0*; setting it when using an
+earlier version will have no effect, and the publish command will run in
+blocking mode.
 
 
 *Default value is **0** (no timeout - blocking mode)*
@@ -195,52 +195,52 @@ modparam("event_rabbitmq", "timeout", 1000) # timeout after 1s
 
 
 Specify configuration for a RabbitMQ server. It contains a set
-			of parameters used to customize the connection to the server,
-			as well as to the messages sent. The format of the parameter is
-			*[id_name] param1=value1; param2=value2;*.
-			The *uri* parameter is mandatory.
+of parameters used to customize the connection to the server,
+as well as to the messages sent. The format of the parameter is
+*[id_name] param1=value1; param2=value2;*.
+The *uri* parameter is mandatory.
 
 
 This parameter can be set multiple times, for each RabbitMQ
-			server.
+server.
 
 
 The following parameters can be used:
 
 
 - *uri* - Mandatory parameter - a full
-				*amqp* URI as described
-				[here](https://www.rabbitmq.com/uri-spec.html).
-				Missing fields in the URI will receive default values,
-				such as: *user: guest*,
-				*password: guest*,
-				*host: localhost*,
-				*vhost: /*,
-				*port: 5672*. TLS connections are specified
-				using an *amqps* URI.
+*amqp* URI as described
+[here](https://www.rabbitmq.com/uri-spec.html).
+Missing fields in the URI will receive default values,
+such as: *user: guest*,
+*password: guest*,
+*host: localhost*,
+*vhost: /*,
+*port: 5672*. TLS connections are specified
+using an *amqps* URI.
 - *frames* - the maximum size of an AMQP
-				frame. Optional parameter, default size is 131072.
+frame. Optional parameter, default size is 131072.
 - *retries* - the number of retries in case
-				a connection is down. Optional parameter, default is disabled
-				(do not retry).
+a connection is down. Optional parameter, default is disabled
+(do not retry).
 - *exchange* - exchange used to send AMQP
-				messages to. Optional parameter, default is *""*.
+messages to. Optional parameter, default is *""*.
 - *heartbeat* - interval in seconds used
-				to send heartbeat messages. Optional parameter, default is
-				disabled.
+to send heartbeat messages. Optional parameter, default is
+disabled.
 - *immediate* - indicate to the broker that
-				the message MUST be delivered to a consumer immediately.
-				Optional parameter, default is not immediate.
+the message MUST be delivered to a consumer immediately.
+Optional parameter, default is not immediate.
 - *mandatory* - indicate to the broker that
-				the message MUST be routed to a queue. Optional parameter,
-				default is not mandatory.
+the message MUST be routed to a queue. Optional parameter,
+default is not mandatory.
 - *non-persistent* - indicates that the
-				message should not be persistent in case the RabbitMQ
-				server restarts. Optional parameter, default is persistent.
+message should not be persistent in case the RabbitMQ
+server restarts. Optional parameter, default is persistent.
 - *tls_domain* - indicates which TLS domain (as
-				defined using the *tls_mgm* module) to use for
-				this connection. This must be an *amqps* URI and the
-				[use tls](#param_use_tls) module parameter must be enabled.
+defined using the *tls_mgm* module) to use for
+this connection. This must be an *amqps* URI and the
+[use tls](#param_use_tls) module parameter must be enabled.
 
 
 ```opensips title="Set server_id parameter"
@@ -269,12 +269,12 @@ Sends a publish message to a RabbitMQ server.
 
 
 This function also allows you to attach AMQP headers and values
-				in the AMQP message. This is done by specifying a set of headers
-				names (in the *headers* parameter) and the
-				corresponding values (in the *headers_vals*
-				parameter). The number of AVP values in the
-				*headers* must be the same as the one in the
-				*headers_vals*.
+in the AMQP message. This is done by specifying a set of headers
+names (in the *headers* parameter) and the
+corresponding values (in the *headers_vals*
+parameter). The number of AVP values in the
+*headers* must be the same as the one in the
+*headers_vals*.
 
 
 This function can be used from any route.
@@ -284,19 +284,19 @@ The function has the following parameters:
 
 
 - *server_id* (string) - the id of the RabbitMQ server.
-						Must be one of the parameters defined in the
-						*server_id* modparam.
+Must be one of the parameters defined in the
+*server_id* modparam.
 - *routing_key* (string) - routing key used to
-						deliver the AMQP message.
+deliver the AMQP message.
 - *message* (string) - the body of the message.
 - *content_type* (string, optional) - content type
-						of the message sent. By default it is *none*.
+of the message sent. By default it is *none*.
 - *headers* (string, optional) - an AVP containing
-						the names of the headers within the AMQP message. If set,
-						*headers_vals* parameter must also be specified.
+the names of the headers within the AMQP message. If set,
+*headers_vals* parameter must also be specified.
 - *headers_vals* (string, optional) - an AVP containing
-						the corresponding values of the AMQP headers. If set,
-						*headers* parameter must also be specified.
+the corresponding values of the AMQP headers. If set,
+*headers* parameter must also be specified.
 
 
 ```opensips title="rabbitmq_publish() function usage"
@@ -320,7 +320,7 @@ The function has the following parameters:
 
 
 This is an example of an event raised by the pike module
-			when it decides an ip should be blocked:
+when it decides an ip should be blocked:
 
 
 ```c title="E_PIKE_BLOCKED event"
@@ -352,10 +352,10 @@ This is an example of an event raised by the pike module
 
 
 This configuration file presents the usage of the event_rabbitmq
-			module. In this scenario, a message is sent to a RabbitMQ server
-			everytime OpenSIPS receives a MESSAGE request. The parameters 
-			passed to the server are the R-URI username and the message
-			body.
+module. In this scenario, a message is sent to a RabbitMQ server
+everytime OpenSIPS receives a MESSAGE request. The parameters 
+passed to the server are the R-URI username and the message
+body.
 
 
 [OpenSIPS config script - sample event_rabbitmq usage](./samples.md "include")
@@ -392,48 +392,48 @@ This version doesn't support a different vhost.
 
 
 This module acts as a transport module for the OpenSIPS
-				Event Interface. Therefore, this module should follow the
-				Event Interface behavior:
+Event Interface. Therefore, this module should follow the
+Event Interface behavior:
 
 The first step is to subscribe the RabbitMQ server to
-				the OpenSIPS Event Interface. This can be done using the
-				*subscribe_event* core function:
+the OpenSIPS Event Interface. This can be done using the
+*subscribe_event* core function:
 
 The next step is to raise the event from the script,
-				using the *raise_event* core function:
+using the *raise_event* core function:
 
 NOTE that the event used above is only to exemplify the
-				usage from the script. Any event published through the
-				OpenSIPS Event Interface can be raised using this module.
+usage from the script. Any event published through the
+OpenSIPS Event Interface can be raised using this module.
 
 
 **Q: Where can I find more information about RabbitMQ?**
 
 
 You can find more information about RabbitMQ  on
-			their official website
-			([http://www.rabbitmq.com/](http://www.rabbitmq.com/)).
+their official website
+([http://www.rabbitmq.com/](http://www.rabbitmq.com/)).
 
 
 **Q: Where can I post a question about this module?**
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

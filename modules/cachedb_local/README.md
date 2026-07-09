@@ -10,23 +10,23 @@ description: "This module is an implementation of a local cache system designed 
 
 
 This module is an implementation of a local cache system designed as
-		a hash table. It uses the Key-Value interface exported by OpenSIPS core.
-		Starting with version 2.3, the module can have multiple hash tables,
-		called collections. Each url for cachedb_local module points to one
-		collection. One collection can be shared between multiple urls.
+a hash table. It uses the Key-Value interface exported by OpenSIPS core.
+Starting with version 2.3, the module can have multiple hash tables,
+called collections. Each url for cachedb_local module points to one
+collection. One collection can be shared between multiple urls.
 
 
 ### Clustering
 
 
 Cachedb_local clustering is a mechanism used to mirror local cache changes
-			taking place in one OpenSIPS instance to one or multiple other instances without
-			the need of third party dependencies.
-			The process is simplified by using the clusterer module which facilitates the
-			management of a cluster of OpenSIPS noeds and the sending of replication-related
-			BIN packets (binary-encoded, using proto_bin). This might be usefull for implementing
-			a hot stand-by system, where the stand-by instance can take over without the need
-			of filling the cache by its own.
+taking place in one OpenSIPS instance to one or multiple other instances without
+the need of third party dependencies.
+The process is simplified by using the clusterer module which facilitates the
+management of a cluster of OpenSIPS noeds and the sending of replication-related
+BIN packets (binary-encoded, using proto_bin). This might be usefull for implementing
+a hot stand-by system, where the stand-by instance can take over without the need
+of filling the cache by its own.
 
 
 The following cache operations will be distributet within the cluster:
@@ -39,19 +39,19 @@ The following cache operations will be distributet within the cluster:
 
 
 In addition to the event-driven replication, an OpenSIPS instance will first
-			try to learn all the local cache information from antoher node in the cluster at startup.
-			The data synchronization mechanism requires defining one of the nodes in the cluster
-			as a "**seed**" node.
-			See the [clusterer](../clusterer#capabilities)
-			module for details on how to do this and why is it needed.
+try to learn all the local cache information from antoher node in the cluster at startup.
+The data synchronization mechanism requires defining one of the nodes in the cluster
+as a "**seed**" node.
+See the [clusterer](../clusterer#capabilities)
+module for details on how to do this and why is it needed.
 
 
 *Note:* You have to explicitly specify which collections
-			you want to replicate when you set [cache collections](#param_cache_collections).
+you want to replicate when you set [cache collections](#param_cache_collections).
 
 
 **Limitations:** The clustering operations are not atomic
-			and constistency over the cluster nodes is not guaranteed.
+and constistency over the cluster nodes is not guaranteed.
 
 
 ### Dependencies
@@ -64,14 +64,14 @@ The following modules must be loaded before this module:
 
 
 - *clusterer, if [cluster id](#param_cluster_id)
-					is set.*
+is set.*
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *none*
@@ -84,19 +84,19 @@ The following libraries or applications must be installed before running
 
 
 URLs of local cache groups to be used used for the script and MI cacheDB
-		operations. The parameter can be set multiple times.
+operations. The parameter can be set multiple times.
 
 
 One collection can belong to multiple URLs, but one URL can have only one collection.
-		Redefining an URL with the same schema and group name will result in overwriting
-		that URL. Each collection used in URL definition must be defined using
-		*cachedb_collection* parameter. The collection shall be defined
-		as a normal database, at the end of the URL as in the examples. In the script the
-		collection shall be identified using the schema and, if exists, the group name.
+Redefining an URL with the same schema and group name will result in overwriting
+that URL. Each collection used in URL definition must be defined using
+*cachedb_collection* parameter. The collection shall be defined
+as a normal database, at the end of the URL as in the examples. In the script the
+collection shall be identified using the schema and, if exists, the group name.
 
 
 *"If no URL defined, the url with no group name and collection "default"
-					will be used.".*
+will be used.".*
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -125,17 +125,17 @@ cache_store("local:group2", ...)
 
 
 Using this parameter, collections(hash tables) and their sizes can be defined. Each
-			collection definition must be separated one from another using ';'. Default size
-			for a hash is 512. The size must be separated from the name of the collection using
-			'='.
+collection definition must be separated one from another using ';'. Default size
+for a hash is 512. The size must be separated from the name of the collection using
+'='.
 
 
 If clustering is enabled you have to specify which collections you want to replicate
-			with the */r* suffix to the collection name.
+with the */r* suffix to the collection name.
 
 
 The *"default"* collection always gets created, even when
-				not included in this list of collections.
+not included in this list of collections.
 
 
 ```opensips title="Set cache_collections parameter"
@@ -155,7 +155,7 @@ modparam("cachedb_local", "cache_collections", "collection1/r; collection2/r = 5
 
 
 The time interval in seconds at which to go through all the
-			records and delete the expired ones.
+records and delete the expired ones.
 
 
 *Default value is "600 (10 minutes)".*
@@ -173,7 +173,7 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 
 
 Specifies the cluster ID which this instance will send to and receive
-		cache data.
+cache data.
 
 
 This OpenSIPS cluster exposes the **"cachedb-local-repl"**
@@ -206,18 +206,18 @@ This parameter may take the following values:
 
 
 - *"none"* - no explicit data
-				synchronization following a restart. The node starts empty.
+synchronization following a restart. The node starts empty.
 - *"sync-from-cluster"* - enable
-				cluster-based restart persistency. Following a restart,
-				an OpenSIPS cluster node will search for a healthy "donor" node
-				from which to mirror the entire user location dataset via
-				direct cluster sync (TCP-based, binary-encoded data transfer).
-				This will require the configuration of one or multiple "seed"
-				nodes in the cluster.
+cluster-based restart persistency. Following a restart,
+an OpenSIPS cluster node will search for a healthy "donor" node
+from which to mirror the entire user location dataset via
+direct cluster sync (TCP-based, binary-encoded data transfer).
+This will require the configuration of one or multiple "seed"
+nodes in the cluster.
 
 
 *Default value is
-				*"sync-from-cluster"*.*
+*"sync-from-cluster"*.*
 
 
 ```opensips title="Set cluster_persistency parameter"
@@ -232,15 +232,15 @@ modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 
 
 Enable restart persistency using the persistent memory mechanism. Data is
-			stored in a cache file that is mapped against OpenSIPS memory.
+stored in a cache file that is mapped against OpenSIPS memory.
 
 
 Note that you have to keep the same collection definitions from a previous
-			run in order to use the cached data for the respective collections.
+run in order to use the cached data for the respective collections.
 
 
 If cluster persistency is enabled as well, keys loaded from the persistent
-			cache will be discarded if they are not received in the cluster sync data.
+cache will be discarded if they are not received in the cluster sync data.
 
 
 *Default value is "0 (disabled)".*
@@ -260,9 +260,9 @@ modparam("cachedb_local", "enable_restart_persistency", yes)
 
 
 Remove all keys from local cache that match the *glob* pattern
-			corresponding to a certain *collection* or the 'default' collection
-			if none defined. Keep in mind that collection name is different than group name,
-			which identifies the engine in cachedb operations.
+corresponding to a certain *collection* or the 'default' collection
+if none defined. Keep in mind that collection name is different than group name,
+which identifies the engine in cachedb operations.
 
 
 Parameters:
@@ -301,7 +301,7 @@ Parameters :
 
 - *glob* - keys that match glob will be removed
 - *collection(optional)* - collection from which the keys shall
-					be removed; if no collection set, the default collection will be used;
+be removed; if no collection set, the default collection will be used;
 
 
 MI FIFO Command Format:
@@ -327,7 +327,7 @@ Parameters :
 
 - *glob* - keys that match glob will be returned
 - *collection(optional)* - collection from which the keys shall
-					be retrieved; if no collection set, the default collection will be used;
+be retrieved; if no collection set, the default collection will be used;
 
 
 MI FIFO Command Format:
@@ -358,10 +358,10 @@ opensips-cli -x mi cachedb_local:fetch_chunk "keyprefix*" collection
 
 
 The parameter was removed because it was redundant. Since the
-			addition of collections, the old hash now belongs to the
-			default collection. This collection is created every time and
-			it has a default size of 512. The size can be changed by
-			setting the default collection size using cache_collections paramter.
+addition of collections, the old hash now belongs to the
+default collection. This collection is created every time and
+it has a default size of 512. The size can be changed by
+setting the default collection size using cache_collections paramter.
 <!-- CONTRIBUTORS -->
 
 ### License
