@@ -10,10 +10,10 @@ description: "This module provides a way to generate universally unique identifi
 
 
 This module provides a way to generate universally unique identifiers
-		(UUID) as specified in RFC 4122. The UUID is provided as a string
-		representation by reading the [uuid](#pv_uuid)
-		pseudo-variable or calling the [uuid](#func_uuid)
-		script function.
+(UUID) as specified in RFC 4122. The UUID is provided as a string
+representation by reading the [uuid](#pv_uuid)
+pseudo-variable or calling the [uuid](#func_uuid)
+script function.
 
 
 ### Dependencies
@@ -29,8 +29,8 @@ This module does not depend on other modules.
 
 
 - *libuuid* - part of the util-linux
-					package, can be downloaded from:
-					ftp://ftp.kernel.org/pub/linux/utils/util-linux/
+package, can be downloaded from:
+ftp://ftp.kernel.org/pub/linux/utils/util-linux/
 
 
 ### Exported Parameters
@@ -46,9 +46,9 @@ The module does not export any parameters.
 
 
 The *$uuid* variable returns a newly generated
-			version 4 UUID based on high-quality randomness from /dev/urandom,
-			if available. Otherwise, a version 1 UUID (based on
-			current time and the local ethernet MAC address) will be generated.
+version 4 UUID based on high-quality randomness from /dev/urandom,
+if available. Otherwise, a version 1 UUID (based on
+current time and the local ethernet MAC address) will be generated.
 
 
 ```opensips title="$uuid usage"
@@ -67,23 +67,23 @@ Generates a new UUID.
 
 
 - *out_var* - an output variable
-						to return the generated UUID.
+to return the generated UUID.
 - *version* (optional) - UUID version
-						number. The supported values are:
-						
-							
+number. The supported values are:
+
+
 							*0* - a RFC version 4 or
 							version 1 UUID will be generated, depending on the
 							availability of high-quality randomness from
 							/dev/urandom. This is the default behavior, if the
 							*version* parameter is missing.
-							
-							
+
+
 							*1* - version 1 UUID
 							based on current time and the local ethernet MAC
 							address
-							
-							
+
+
 							*4* - version 4 UUID
 							based on a high-quality random number generator. If
 							not available, a pseudo-random generator will be
@@ -91,12 +91,12 @@ Generates a new UUID.
 
 
 If UUID version 1 is used, the function will return the value
-				*2* if the UUID was generated in an unsafe
-				manner. This refers to the posibility of two concurrently
-				running processes generating the same UUID, in cases where
-				synchronization mechanisms are not available (more details
-				can be found in the *uuid_generate* man pages
-				of *libuuid*).
+*2* if the UUID was generated in an unsafe
+manner. This refers to the posibility of two concurrently
+running processes generating the same UUID, in cases where
+synchronization mechanisms are not available (more details
+can be found in the *uuid_generate* man pages
+of *libuuid*).
 
 
 This function can be used from any route.

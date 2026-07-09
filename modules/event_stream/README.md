@@ -10,20 +10,20 @@ description: "This module provides a TCP transport layer implementation for the 
 
 
 This module provides a TCP transport layer implementation for the Event
-		Interface. The module can either send a JSON-RPC notification or a
-		standard request and wait for the response (when used in
-		*sync_mode*).
+Interface. The module can either send a JSON-RPC notification or a
+standard request and wait for the response (when used in
+*sync_mode*).
 
 
 As the JSON-RPC is sent directly over TCP, avoiding any application
-		transport layer (such as HTTP), this module offers a very lightweight
-		and reliable way of delivering events to an application server.
+transport layer (such as HTTP), this module offers a very lightweight
+and reliable way of delivering events to an application server.
 
 
 In order to be notified, a JSON-RPC server has to subscribe for a
-		certain event provided by OpenSIPS. This can be done using the generic
-		MI Interface (*event_subscribe* function) or from
-		OpenSIPS script (*subscribe_event* core function).
+certain event provided by OpenSIPS. This can be done using the generic
+MI Interface (*event_subscribe* function) or from
+OpenSIPS script (*subscribe_event* core function).
 
 
 ### Stream socket syntax
@@ -36,36 +36,36 @@ Meaning:
 
 
 - *'tcp:'* - specifies the
-					transport protocol used by the Event Interface
-					to send the command. the *tcp*
-					token indicates that the subscriber's events should be
-					notified using the
-					*event_strea,* module.
+transport protocol used by the Event Interface
+to send the command. the *tcp*
+token indicates that the subscriber's events should be
+notified using the
+*event_strea,* module.
 - *host* - host name of the JSON-RPC server.
 - *port* - port of the JSON-RPC server.
 - *method* - method called remotely by the
-					JSON-RPC client.
-					NOTE: this parameter is optional - if it is missing,
-						the method used is the actual event subscribed
-						to (i.e. if *localhost:8080*
-						subscribes to the *E_PIKE_BLOCKED*
-						event, the RPC call will use the
-						*E_PIKE_BLOCKED* method.
+JSON-RPC client.
+NOTE: this parameter is optional - if it is missing,
+the method used is the actual event subscribed
+to (i.e. if *localhost:8080*
+subscribes to the *E_PIKE_BLOCKED*
+event, the RPC call will use the
+*E_PIKE_BLOCKED* method.
 
 
 The JSON-RPC command is built as it follows:
 
 
 - *id* - uniquly generated if
-				*sync_mode* is used, otherwise (for
-				notifications) *null*.
+*sync_mode* is used, otherwise (for
+notifications) *null*.
 - *method* - if no method is specified in the
-				socket, the name of the event is set as method, otherwise
-				the token specified is used.
+socket, the name of the event is set as method, otherwise
+the token specified is used.
 - *params* - if the event sent contains
-				named parameters, then this parameter contains a JSON object
-				with an object for each parameter. If the event sent only
-				contains values, the parameters will be sent as an array.
+named parameters, then this parameter contains a JSON object
+with an object for each parameter. If the event sent only
+contains values, the parameters will be sent as an array.
 
 
 ### Dependencies
@@ -84,7 +84,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -97,21 +97,21 @@ The following libraries or applications must be installed before
 
 
 This parameter controls the way the
-			*event_stream* module communicates
-			with the JSON-RPC server. If enabled, (set to
-			*yes*), each event is translated to
-			a JSON-RPC request. If disabled, each event will be sent
-			as a JSON-RPC notification - there will be no reply
-			expected by our client.
+*event_stream* module communicates
+with the JSON-RPC server. If enabled, (set to
+*yes*), each event is translated to
+a JSON-RPC request. If disabled, each event will be sent
+as a JSON-RPC notification - there will be no reply
+expected by our client.
 
 
 Note that if you need a reliable communication with
-			the JSON-RPC server, where each event sent needs to be
-			confirmed, you must set this parameter to
-			*1/yes*. Also, if you are using this
-			module in a failover setup (using the
-			*event_virtual* module), you should
-			also set this parameter to *1/yes*.
+the JSON-RPC server, where each event sent needs to be
+confirmed, you must set this parameter to
+*1/yes*. Also, if you are using this
+module in a failover setup (using the
+*event_virtual* module), you should
+also set this parameter to *1/yes*.
 
 
 *Default value is "0 (disabled)".*
@@ -128,16 +128,16 @@ modparam("event_stream", "sync_mode", yes)
 
 
 Specified the amount of milliseconds the module
-			waits for a command to complete. In
-			*sync_mode*, it specifies the time
-			module waits the request to be sent and a reply received.
-			In non-*sync_mode*, it represents
-			only the time opensips takes to send the JSON-RPC
-			notification.
+waits for a command to complete. In
+*sync_mode*, it specifies the time
+module waits the request to be sent and a reply received.
+In non-*sync_mode*, it represents
+only the time opensips takes to send the JSON-RPC
+notification.
 
 
 NOTE that if the event is not using names for its parameters,
-			the event will be the first parameter in the JSON-RPC command.
+the event will be the first parameter in the JSON-RPC command.
 
 
 *Default value is "1000 milliseconds = 1 second".*
@@ -155,10 +155,10 @@ modparam("event_stream", "timeout", 200)
 
 
 By default, the name of the event subscribed to is not
-			send in the JSON-RPC command. If one needs to send the
-			name of the event as well, you can use this parameter to
-			specify the name of JSON object within the params that
-			will contain the name of the event.
+send in the JSON-RPC command. If one needs to send the
+name of the event as well, you can use this parameter to
+specify the name of JSON object within the params that
+will contain the name of the event.
 
 
 *Default value is "disabled" - event is not added.*
@@ -194,8 +194,8 @@ No function exported to be used from configuration file.
 
 
 This is an example of an event raised when
-			*sync_mode* is disabled
-			by the pike module when it decides an ip should be blocked:
+*sync_mode* is disabled
+by the pike module when it decides an ip should be blocked:
 
 
 ```c title="E_PIKE_BLOCKED JSON-RPC notification"
@@ -213,8 +213,8 @@ This is an example of an event raised when
 
 
 This is an example of an event raised in
-			*sync_mode* by the pike module
-			when it decides an ip should be blocked:
+*sync_mode* by the pike module
+when it decides an ip should be blocked:
 
 
 ```c title="E_PIKE_BLOCKED JSON-RPC request (sync_mode)"
@@ -241,8 +241,8 @@ This is an example of an event raised in
 
 
 when having the *event_param* set to
-			*opensips_event*, the event raised by
-			the pike module will look like the following:
+*opensips_event*, the event raised by
+the pike module will look like the following:
 
 
 ```c title="E_PIKE_BLOCKED notification with event name"
@@ -267,13 +267,13 @@ modparam("event_stream", "event_param", "opensips_event")
 
 
 This example contains a snippet to send a custom
-			event from the script using the
-			*event_stream* module.
+event from the script using the
+*event_stream* module.
 
 
 Note that we are only populating values for the
-			event, we are not assinging names to those values.
-			Therefore, the parameters will be sent as an array.
+event, we are not assinging names to those values.
+Therefore, the parameters will be sent as an array.
 
 
 ```c title="E_PIKE_BLOCKED event"

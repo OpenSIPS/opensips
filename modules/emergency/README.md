@@ -23,21 +23,21 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 
 
 1.2. Scenario I: The VSP that originating the call is the same as handle the call and sends the routing information request to the VPC. 
-	
-		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, the OpenSIPS will get caller location information from specific headers and body in the INVITE. With this information along configuration parameters defined for this module, the opensips implements the v2 interface that queries the VPC for routing information (i.e., ESQK, LRO, and either the ERT or ESGWRI), selects the proper ESGW based on the ESGWRI. When the call ends the OpenSIPS receives BYE request, it warns the VPC for clean your data that is based on the call.	
-		The OpenSIPS through failure() command  will try to route the calls via the PSTN using a national contingency number(LRO) if normal routing fails.
+
+The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, the OpenSIPS will get caller location information from specific headers and body in the INVITE. With this information along configuration parameters defined for this module, the opensips implements the v2 interface that queries the VPC for routing information (i.e., ESQK, LRO, and either the ERT or ESGWRI), selects the proper ESGW based on the ESGWRI. When the call ends the OpenSIPS receives BYE request, it warns the VPC for clean your data that is based on the call.	
+The OpenSIPS through failure() command  will try to route the calls via the PSTN using a national contingency number(LRO) if normal routing fails.
 
 
 1.3.Scenario II: The VSP transfers the call to a Routing Server provider
 
-		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it will forward the call to a Routing Proxy that will interface with the VPC and route the call.		
-		The OpenSIPS will leave the call, and all the request of this dialog received by the opensips will be forwarded to the Routing Server.
+The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it will forward the call to a Routing Proxy that will interface with the VPC and route the call.		
+The OpenSIPS will leave the call, and all the request of this dialog received by the opensips will be forwarded to the Routing Server.
 
 
 1.4.Scenario III: The VSP requests routing information for the Redirect Server
 
-		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it requests routing information to Redirect Server. The Redirect has interface with the VPC and return to VSP's Call Server response whith routing informations on Contact header.		
-		The Call Server uses this information to treat the call. When the emergency call ends, it must notify the Redirect Server that inform to VPC to release the resources.
+The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it requests routing information to Redirect Server. The Redirect has interface with the VPC and return to VSP's Call Server response whith routing informations on Contact header.		
+The Call Server uses this information to treat the call. When the emergency call ends, it must notify the Redirect Server that inform to VPC to release the resources.
 
 
 ### Dependencies
@@ -58,7 +58,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libcurl*.
@@ -139,27 +139,27 @@ modparam("emergency", "db_table_provider", "emergency_service_provider")
 
 
 This parameter define what role the opensips will take to treat emergency   
-   		call:
-			0 – The opensips is the Call Server in scenario I. In this role the 
-		        opensips implements the V2 interface, directly queries the VPC for 
-		        ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
-		        Via the PSTN using the LRO if routing fails.
-			1 – The opensips is the Call Server in scenario II that sends the INVITE on 
-		        emergency call to a Routing Proxy provider. The Routing Proxy provider 
-		        implements the V2 interface.
-			2 - The opensips is the Routing Proxy in scenario II. In this role the 
-		        opensips implements the V2 interface, directly queries the VPC for 
-		        ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
-		        Via the PSTN using the LRO if routing fails.
-			3 - The opensips is the Redirect Proxy in scenario III that receives the 
-		        INVITE on emergency call from Call Server. The Redirect Server obtains 
-		        the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
-		        Call Server.	        
-			4 - The opensips is the Call Server in scenario III that sends the INVITE on 
-		 		emergency call to a Redirect Server. The Redirect Server obtains the 
-		 		ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
-		 		ESGWRI/ESQK in the header contact in the SIP response. The opensips  
-		 		selects the proper ESGW based on the ESGWRI.
+call:
+0 – The opensips is the Call Server in scenario I. In this role the 
+opensips implements the V2 interface, directly queries the VPC for 
+ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
+Via the PSTN using the LRO if routing fails.
+1 – The opensips is the Call Server in scenario II that sends the INVITE on 
+emergency call to a Routing Proxy provider. The Routing Proxy provider 
+implements the V2 interface.
+2 - The opensips is the Routing Proxy in scenario II. In this role the 
+opensips implements the V2 interface, directly queries the VPC for 
+ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
+Via the PSTN using the LRO if routing fails.
+3 - The opensips is the Redirect Proxy in scenario III that receives the 
+INVITE on emergency call from Call Server. The Redirect Server obtains 
+the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
+Call Server.	        
+4 - The opensips is the Call Server in scenario III that sends the INVITE on 
+emergency call to a Redirect Server. The Redirect Server obtains the 
+ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
+ESGWRI/ESQK in the header contact in the SIP response. The opensips  
+selects the proper ESGW based on the ESGWRI.
 
 
 *Default value is "0".*
@@ -177,7 +177,7 @@ modparam("emergency", "proxy_role", 0))
 
 
 The VPC url that opensips request the routing information to emergency 
-   		call. This VPC url has IP:Port format
+call. This VPC url has IP:Port format
 
 
 *Default value is "empty string".*
@@ -195,10 +195,10 @@ modparam("emergency", "url_vpc", “192.168.0.103:5060”)
 
 
 Local emergency number. Opensips uses this number to recognize a emergency 
-   		call beyond the username default defined by RFC-5031 (urn:service.sos.).
-   		Along with the number should be given a brief description about this code.        
-   		The format is code_number-description. It can register multiple emergency 
-   		numbers.
+call beyond the username default defined by RFC-5031 (urn:service.sos.).
+Along with the number should be given a brief description about this code.        
+The format is code_number-description. It can register multiple emergency 
+numbers.
 
 
 *Default value is "NULLg".*
@@ -216,7 +216,7 @@ modparam("emergency", "emergency_codes", “911-us emegency code”)
 
 
 Sets the time interval polling to make the copy in memory of the 
-   		db_table_routing.
+db_table_routing.
 
 
 *Default value is "10".*
@@ -234,7 +234,7 @@ modparam("emergency","timer_interval",20)
 
 
 The contingency_hostname is the url of the server que will route the call 
-   		to the PSTN using the number of contingency.
+to the PSTN using the number of contingency.
 
 
 *Default value is "NULL".*
@@ -252,9 +252,9 @@ modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 
 
 The emergency_call_server is the url of the Routing Proxy/Redirect Server
-		that will handle  the emergency call in cenario II. Its is mandatory if Opensips 
-		act as Call Server in scenario II (proxy_role = 1 and flag_third_enterprise = 0) 
-		or Call Server in scenario III (proxy_role = 2).
+that will handle  the emergency call in cenario II. Its is mandatory if Opensips 
+act as Call Server in scenario II (proxy_role = 1 and flag_third_enterprise = 0) 
+or Call Server in scenario III (proxy_role = 2).
 
 
 *Default value is "NULL".*
@@ -275,9 +275,9 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 
 
 Checks whether the incoming call is an emergency call, case it is treats, and  
-   		routes the call to the destination determined by VPC.
+routes the call to the destination determined by VPC.
 
-   		The function returns true if is a emergency call and the treat was Ok.
+The function returns true if is a emergency call and the treat was Ok.
 
 
 This function can be used from the *REQUEST* routes.
@@ -304,10 +304,10 @@ This function can be used from the *REQUEST* routes.
 
 
 This function is used when trying to route the emergency call to the 
-   		destination specified by the VPC and doesn't work, then uses this function to 
-   		make one last attempt for a contingency number.
+destination specified by the VPC and doesn't work, then uses this function to 
+make one last attempt for a contingency number.
 
-   		The function returns true if the contingency treat was OK.
+The function returns true if the contingency treat was OK.
 
 
 This function can be used from the *FAILURE* routes.

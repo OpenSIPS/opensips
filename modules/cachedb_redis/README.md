@@ -10,9 +10,9 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a
-		Redis server. It uses hiredis client library to connect to either a single Redis
-		server instance, or to a Redis Server inside a Redis Cluster.
-		It uses the Key-Value interface exported from the core.
+Redis server. It uses hiredis client library to connect to either a single Redis
+server instance, or to a Redis Server inside a Redis Cluster.
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -20,15 +20,15 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The Redis DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The Redis DB is also
+persistent so it can also be restarted without loss of information.*
 - *redis is an open-source project so
-				it can be used to exchange data
-				 with various other applications*
+it can be used to exchange data
+with various other applications*
 - *By creating a Redis Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 
 
 ### Limitations
@@ -50,16 +50,16 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *hiredis:*
 On the latest Debian based distributions, hiredis can be installed
-				by running 'apt-get install libhiredis-dev'
+by running 'apt-get install libhiredis-dev'
 
-				Alternatively, if hiredis is not available on your OS repos,
-				hiredis can be downloaded from: https://github.com/antirez/hiredis .
-				Download the archive, extract sources, run make,sudo make install.
+Alternatively, if hiredis is not available on your OS repos,
+hiredis can be downloaded from: https://github.com/antirez/hiredis .
+Download the archive, extract sources, run make,sudo make install.
 
 
 ### Exported Parameters
@@ -69,10 +69,10 @@ On the latest Debian based distributions, hiredis can be installed
 
 
 The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
+to use the from script cache_store,cache_fetch, etc operations.
+It can be set more than one time.
+The prefix part of the URL will be the identifier that will be used
+from the script.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -98,7 +98,7 @@ cache_remove("redis:cluster1","key");
 
 
 This parameter specifies how many milliseconds OpenSIPS should wait
-			for connecting to a Redis node.
+for connecting to a Redis node.
 
 
 *Default value is "5000 ms".*
@@ -117,7 +117,7 @@ modparam("cachedb_redis", "connect_timeout",1000)
 
 
 This parameter specifies how many milliseconds OpenSIPS should wait
-			for a query response from a Redis node.
+for a query response from a Redis node.
 
 
 *Default value is "5000 ms".*
@@ -136,8 +136,8 @@ modparam("cachedb_redis", "query_timeout",1000)
 
 
 By setting this parameter to 1, OpenSIPS will abort startup if
-		the initial connection to Redis is not possible. Runtime reconnect
-		behavior is unaffected by this parameter, and is always enabled.
+the initial connection to Redis is not possible. Runtime reconnect
+behavior is unaffected by this parameter, and is always enabled.
 
 
 *Default value is "0" (disabled).*
@@ -156,9 +156,9 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
 
 Set this parameter to 1 in order to allow raw query arguments to be
-		optionally enclosed by single or double-quotes, which allows the
-		enclosed string to contain a wider array of characters, including
-		whitespace.
+optionally enclosed by single or double-quotes, which allows the
+enclosed string to contain a wider array of characters, including
+whitespace.
 
 
 *Default value is *0* (disabled).*
@@ -177,7 +177,7 @@ modparam("cachedb_redis", "enable_raw_query_quoting", 1)
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ### Raw Query Syntax
@@ -185,7 +185,7 @@ The module does not export functions to be used
 
 The cachedb_redis module allows to run RAW queries, thus taking full advantage of the capabilities of the back-end.
 
-			The query syntax is the typical REDIS one.
+The query syntax is the typical REDIS one.
 
 
 Here are a couple examples of running some Redis queries :
