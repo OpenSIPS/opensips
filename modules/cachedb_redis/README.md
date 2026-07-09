@@ -10,9 +10,9 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a
-		Redis server. It uses hiredis client library to connect to either a single Redis
-		server instance, or to a Redis Server inside a Redis Cluster.
-		It uses the Key-Value interface exported from the core.
+Redis server. It uses hiredis client library to connect to either a single Redis
+server instance, or to a Redis Server inside a Redis Cluster.
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -20,15 +20,15 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The Redis DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The Redis DB is also
+persistent so it can also be restarted without loss of information.*
 - *redis is an open-source project so
-				it can be used to exchange data
-				 with various other applications*
+it can be used to exchange data
+with various other applications*
 - *By creating a Redis Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 
 
 ### Limitations
@@ -53,18 +53,18 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *hiredis:*
 On the latest Debian based distributions, hiredis can be installed
-				by running 'apt-get install libhiredis-dev'
+by running 'apt-get install libhiredis-dev'
 
-				Alternatively, if hiredis is not available on your OS repos,
-				hiredis can be downloaded from: https://github.com/antirez/hiredis .
-				Download the archive, extract sources, run make,sudo make install.
+Alternatively, if hiredis is not available on your OS repos,
+hiredis can be downloaded from: https://github.com/antirez/hiredis .
+Download the archive, extract sources, run make,sudo make install.
 If TLS connections are enabled via the [use tls](#param_use_tls) modparam,
-				*hiredis* needs to be compiled with TLS support.
+*hiredis* needs to be compiled with TLS support.
 
 
 ### Exported Parameters
@@ -74,9 +74,9 @@ If TLS connections are enabled via the [use tls](#param_use_tls) modparam,
 
 
 The URLs of the server groups that OpenSIPS will connect to in order
-			to use, from script, the cache_store(), cache_fetch(), etc. operations.
-			It may be set more than once.  The prefix part of the URL will be
-			the identifier that will be used from the script.
+to use, from script, the cache_store(), cache_fetch(), etc. operations.
+It may be set more than once.  The prefix part of the URL will be
+the identifier that will be used from the script.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -103,7 +103,7 @@ cache_remove("redis:cluster1", "key");
 
 
 This parameter specifies how many milliseconds OpenSIPS should wait
-			for connecting to a Redis node.
+for connecting to a Redis node.
 
 
 *Default value is "5000 ms".*
@@ -122,7 +122,7 @@ modparam("cachedb_redis", "connect_timeout",1000)
 
 
 This parameter specifies how many milliseconds OpenSIPS should wait
-			for a query response from a Redis node.
+for a query response from a Redis node.
 
 
 *Default value is "5000 ms".*
@@ -141,8 +141,8 @@ modparam("cachedb_redis", "query_timeout",1000)
 
 
 By setting this parameter to 1, OpenSIPS will abort startup if
-		the initial connection to Redis is not possible. Runtime reconnect
-		behavior is unaffected by this parameter, and is always enabled.
+the initial connection to Redis is not possible. Runtime reconnect
+behavior is unaffected by this parameter, and is always enabled.
 
 
 *Default value is "0" (disabled).*
@@ -161,20 +161,20 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
 
 Setting this parameter will allow you to use TLS for Redis connections.
-		In order to enable TLS for a specific connection, you can use the
-		"tls_domain=*dom_name*" URL parameter in the cachedb_url
-		of this module (or other modules that use the CacheDB interface). This should
-		be placed at the end of the URL after the '?' character.
+In order to enable TLS for a specific connection, you can use the
+"tls_domain=*dom_name*" URL parameter in the cachedb_url
+of this module (or other modules that use the CacheDB interface). This should
+be placed at the end of the URL after the '?' character.
 
 
 When using this parameter, you must also ensure that
-		*tls_mgm* is loaded and properly configured. Refer to
-		the the module for additional info regarding TLS client domains.
+*tls_mgm* is loaded and properly configured. Refer to
+the the module for additional info regarding TLS client domains.
 
 
 Note that TLS is supported by Redis starting with version 6.0. Also, it is
-		an optional feature enabled at compile time and might not be included in the
-		standard Redis packages available for your OS.
+an optional feature enabled at compile time and might not be included in the
+standard Redis packages available for your OS.
 
 
 *Default value is **0** (not enabled)*
@@ -197,7 +197,7 @@ modparam("cachedb_redis", "cachedb_url","redis://localhost:6379/?tls_domain=redi
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ### Raw Query Syntax
@@ -205,7 +205,7 @@ The module does not export functions to be used
 
 The cachedb_redis module allows to run RAW queries, thus taking full advantage of the capabilities of the back-end.
 
-			The query syntax is the typical REDIS one.
+The query syntax is the typical REDIS one.
 
 
 Here are a couple examples of running some Redis queries :
@@ -246,9 +246,9 @@ Here are a couple examples of running some Redis queries :
 
 
 Make sure you've upgraded the Redis "libhiredis" client library to at
-		least version 0.14.1.  There was at least one significant vulnerability
-		reported in library versions prior to that one ([CVE-2020-7105](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2020-7105)),
-		so upgrading to latest stable may very well fix the crash!
+least version 0.14.1.  There was at least one significant vulnerability
+reported in library versions prior to that one ([CVE-2020-7105](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2020-7105)),
+so upgrading to latest stable may very well fix the crash!
 <!-- CONTRIBUTORS -->
 
 ### License

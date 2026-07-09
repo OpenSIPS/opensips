@@ -10,26 +10,26 @@ description: "This module provides multiple hooks to run Management Interface co
 
 
 This module provides multiple hooks to run Management Interface
-		commands directly from OpenSIPS script. It supports running
-		both synchronous and asynchronous commands. Depending on the
-		nature of the command (asynchronous or not), and on the way
-		the *mi* command is run from script,
-		the returned result is different.
+commands directly from OpenSIPS script. It supports running
+both synchronous and asynchronous commands. Depending on the
+nature of the command (asynchronous or not), and on the way
+the *mi* command is run from script,
+the returned result is different.
 
 
 ### Values Returned
 
 
 In case of success, the MI command returns with success.
-		If a return variable is provided as parameter,
-		a JSON is also stored in the variable provided.
+If a return variable is provided as parameter,
+a JSON is also stored in the variable provided.
 
 
 In case of failure of the MI command, JSON-RPC reply error code
-		is stored in the *$rc* variable, as a negative
-		number. Lower values, such as *-1,-2,-3* can also
-		be returned to indicate an internal error. If a return variable is
-		provided, it is stored to the error description.
+is stored in the *$rc* variable, as a negative
+number. Lower values, such as *-1,-2,-3* can also
+be returned to indicate an internal error. If a return variable is
+provided, it is stored to the error description.
 
 
 ### Dependencies
@@ -42,14 +42,14 @@ The following modules must be loaded before this module:
 
 
 - *proto_hep module*, in case MI
-				tracing is used.
+tracing is used.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -62,7 +62,7 @@ The following libraries or applications must be installed before
 
 
 Indicates whether the JSON responses stored in the return
-			variable should be pretty-printed or not.
+variable should be pretty-printed or not.
 
 
 *Default value is "0 - no pretty-printing".*
@@ -79,13 +79,13 @@ modparam("mi_script", "pretty_printing", 1)
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		This is where traced mi messages will go.
+the only tracing module is **proto_hep**.
+This is where traced mi messages will go.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+loaded in order for this parameter to work. (for example
+**proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -104,24 +104,24 @@ modparam("mi_stream", "trace_destination", "hep_dest")
 
 
 Filter traced mi commands based on a blacklist or a whitelist.
-		**trace_destination** must be defined for
-		this parameter to have any purpose. Whitelists can be defined using
-		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
-		actual blacklist by ':'. The mi commands in the list must be separated
-		by ','.
+**trace_destination** must be defined for
+this parameter to have any purpose. Whitelists can be defined using
+'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+actual blacklist by ':'. The mi commands in the list must be separated
+by ','.
 
 
 Defining a blacklists means all the commands that are not blacklisted
-			will be traced. Defining a whitelist means all the commands that are
-			not whitelisted will not be traced.
-			**WARNING:** One can't define both
-			a whitelist and a blacklist. Only one of them is allowed. Defining
-			the parameter a second time will just overwrite the first one.
+will be traced. Defining a whitelist means all the commands that are
+not whitelisted will not be traced.
+**WARNING:** One can't define both
+a whitelist and a blacklist. Only one of them is allowed. Defining
+the parameter a second time will just overwrite the first one.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep)**.
+loaded in order for this parameter to work. (for example
+**proto_hep)**.
 
 
 *Default value is none(not defined).*
@@ -147,17 +147,17 @@ modparam("mi_stream", "trace_bwlist", "w: sip_trace")
 
 
 Runs an MI command in synchronous mode, blocking
-			until a response is available.
+until a response is available.
 
 
 *IMPORTANT:* it is highly recommended
-			to prevent using this function for tasks that take long
-			time, such as reloads, as the function would block until
-			the command ends. Moreover, if the running MI
-			*command* is configured to run in
-			asynchronous mode (such as *t_uac_dlg*
-			the command blocks in a busy waiting manner until
-			the response is received.
+to prevent using this function for tasks that take long
+time, such as reloads, as the function would block until
+the command ends. Moreover, if the running MI
+*command* is configured to run in
+asynchronous mode (such as *t_uac_dlg*
+the command blocks in a busy waiting manner until
+the response is received.
 
 
 This function can be used in any route.
@@ -167,48 +167,48 @@ The function can receive the following parameters:
 
 
 - *command(string)* - the MI command
-					to be run. This can be a single token, representing
-					the MI command to run (without parameters), or
-					can be followed by several space separated
-					parameters (no escaping is handled). Each space
-					separated parameter will be passed to the MI
-					command as an indexed parameter.
-					*NOTE:* named parameters can
-					not be specified using this parameter, and you
-					will have to use the *params_avp*
-					and/or the *vals_avp* parameters
-					to specify named commands, in which case this
-					parameter will only consist of the MI command.
+to be run. This can be a single token, representing
+the MI command to run (without parameters), or
+can be followed by several space separated
+parameters (no escaping is handled). Each space
+separated parameter will be passed to the MI
+command as an indexed parameter.
+*NOTE:* named parameters can
+not be specified using this parameter, and you
+will have to use the *params_avp*
+and/or the *vals_avp* parameters
+to specify named commands, in which case this
+parameter will only consist of the MI command.
 - *ret_var(var, optional)* - a
-					variable used to store the return of the
-					MI command execution. In case of success,
-					a JSON is stored, otherwise an erorr message.
+variable used to store the return of the
+MI command execution. In case of success,
+a JSON is stored, otherwise an erorr message.
 - *params_avp(avp, optional)* - an
-					AVP consisting of all the parameters names that
-					will be sent to the MI command. If this parameter
-					is used without the *vals_avp*,
-					all the values inside the AVP will be passed to the
-					MI command as indexed parameters, otherwise as
-					named parameters.
-					*NOTE:* if this parameter
-					is used, the parameters specified in the
-					*command* parameter are ignored.
-					*NOTE:* the order the
-					parameters are passed to the command is the
-					same as the one you populate the AVPs (thus
-					somehow reversed compared to the way AVPs are
-					stored in memory - the first AVP added is the
-					first parameter)
+AVP consisting of all the parameters names that
+will be sent to the MI command. If this parameter
+is used without the *vals_avp*,
+all the values inside the AVP will be passed to the
+MI command as indexed parameters, otherwise as
+named parameters.
+*NOTE:* if this parameter
+is used, the parameters specified in the
+*command* parameter are ignored.
+*NOTE:* the order the
+parameters are passed to the command is the
+same as the one you populate the AVPs (thus
+somehow reversed compared to the way AVPs are
+stored in memory - the first AVP added is the
+first parameter)
 - *vals_avp(avp, optional)* - an
-					AVP consisting of all the parameters values that
-					will be sent to the MI command. This parameter
-					only makes sense if the *params_avp*
-					is set, and has to contain the same number
-					of values as there are parameters.
+AVP consisting of all the parameters values that
+will be sent to the MI command. This parameter
+only makes sense if the *params_avp*
+is set, and has to contain the same number
+of values as there are parameters.
 To specify *array values*, enclose your
-					space-separated array elements in the *__array()*
-					pseudo-function call.  For example:
-					*"__array(HEARTBEAT BACKGROUND_JOB)"*
+space-separated array elements in the *__array()*
+pseudo-function call.  For example:
+*"__array(HEARTBEAT BACKGROUND_JOB)"*
 
 
 ```opensips title="mi without params"
@@ -274,15 +274,15 @@ mi("fs_subscribe", , $avp(params), $avp(vals));
 
 
 The function works is more or less the same as its
-			synchronous corespondent, except that the MI command
-			is run in an asynchronous manner - the process does
-			not block to wait for the response, but it continues
-			its execution and the MI command is run in an
-			asynchronous context.
+synchronous corespondent, except that the MI command
+is run in an asynchronous manner - the process does
+not block to wait for the response, but it continues
+its execution and the MI command is run in an
+asynchronous context.
 
 
 *NOTE:* currently MI commands run
-			asynchronously cannot be traced through hep.
+asynchronously cannot be traced through hep.
 
 
 ```opensips title="async mi call usage"
