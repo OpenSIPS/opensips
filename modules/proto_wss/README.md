@@ -10,17 +10,17 @@ description: "The WSS (Secure WebSocket) module provides the ability to communic
 
 
 The WSS (Secure WebSocket) module provides the ability to communicate with
-	a WebSocket ([RFC
-		6455](http://tools.ietf.org/html/rfc6455)) client or server over a secure (TLS encrypted) channel.
-	As part of the [WebRTC](https://webrtc.org/)
-	specifications, this protocol can be used to provide secure VoIP calls to
-	HTTPS enabled browsers.
+a WebSocket ([RFC
+6455](http://tools.ietf.org/html/rfc6455)) client or server over a secure (TLS encrypted) channel.
+As part of the [WebRTC](https://webrtc.org/)
+specifications, this protocol can be used to provide secure VoIP calls to
+HTTPS enabled browsers.
 
 
 This module behaves as any other transport protocol module: in order to
-	use it, you must define one or more listeners that will handle the secure
-	WebSocket traffic, *after* the `mpath`
-	parameter:
+use it, you must define one or more listeners that will handle the secure
+WebSocket traffic, *after* the `mpath`
+parameter:
 	```c
 
 ...
@@ -30,7 +30,7 @@ listen=wss:10.0.0.1			# change with the listening IP
 listen=wss:10.0.0.1:5060	# change with the listening IP and port
 ...
 ```
-	Besides that, you need to define the TLS parameters for securing the connection. This is done through the *tls_mgm* module interface, similar to the *proto_tls* module:
+Besides that, you need to define the TLS parameters for securing the connection. This is done through the *tls_mgm* module interface, similar to the *proto_tls* module:
 	```c
 
 modparam("tls_mgm", "certificate", "/certs/biloxy.com/cert.pem")
@@ -40,7 +40,7 @@ modparam("tls_mgm", "tls_method", "tlsv1")
 modparam("tls_mgm", "verify_cert", "1")
 modparam("tls_mgm", "require_cert", "1")
 ```
-	Check the *tls_mgm* module documentation for more info.
+Check the *tls_mgm* module documentation for more info.
 
 
 ### Dependencies
@@ -62,32 +62,32 @@ OpenSIPS TLS v1.0 support requires the following packages:
 
 
 - *openssl* or
-					*libssl* >= 0.9.6
+*libssl* >= 0.9.6
 - *openssl-dev* or
-					*libssl-dev*
+*libssl-dev*
 
 
 OpenSIPS TLS v1.1/1.2 support requires the following packages:
 
 
 - *openssl* or
-					*libssl* >= 1.0.1e
+*libssl* >= 1.0.1e
 - *openssl-dev* or
-					*libssl-dev*
+*libssl-dev*
 
 
 ### Exported Parameters
 
 
 All these parameters can be used from the opensips.cfg file,
-		to configure the behavior of OpenSIPS-WSS.
+to configure the behavior of OpenSIPS-WSS.
 
 
 #### listen=interface
 
 
 This is a global parameter that specifies what interface/IP and
-			port should handle WSS traffic.
+port should handle WSS traffic.
 
 
 ```opensips title="Set listen variable"
@@ -102,13 +102,13 @@ listen = wss:1.2.3.4:44344
 
 
 The default port to be used for all WSS related operation. Be 
-			careful as the default port impacts both the SIP listening part 
-			(if no port is defined in the WSS listeners) and the SIP sending 
-			part (if the destination WSS URI has no explicit port).
+careful as the default port impacts both the SIP listening part 
+(if no port is defined in the WSS listeners) and the SIP sending 
+part (if the destination WSS URI has no explicit port).
 
 
 If you want to change only the listening port for WSS, use the port
-			option in the SIP listener defintion.
+option in the SIP listener defintion.
 
 
 *Default value is 443.*
@@ -126,11 +126,11 @@ modparam("proto_wss", "wss_port", 44344)
 
 
 The maximum number of chunks in which a SIP message is expected to
-			arrive via WSS. If a received packet is more fragmented than this,
-			the connection is dropped (either the connection is very
-			overloaded and this leads to high fragmentation - or we are the
-			victim of an ongoing attack where the attacker is sending very
-			fragmented traffic in order to decrease server performance).
+arrive via WSS. If a received packet is more fragmented than this,
+the connection is dropped (either the connection is very
+overloaded and this leads to high fragmentation - or we are the
+victim of an ongoing attack where the attacker is sending very
+fragmented traffic in order to decrease server performance).
 
 
 *Default value is 4.*
@@ -163,7 +163,7 @@ modparam("proto_wss", "wss_resource", "/wss")
 
 
 This parameter specifies the time in milliseconds the proto_wss module
-			waits for a WebSocket handshake reply from a WebSocket server.
+waits for a WebSocket handshake reply from a WebSocket server.
 
 
 *Default value is 100.*
@@ -180,18 +180,18 @@ modparam("proto_wss", "wss_handshake_timeout", 300)
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		Network events such as connect, accept and connection closed events
-		shall be traced along with errors that could appear in the process.
-		For each connection that is created an event containing information
-		about the client and server certificate, master key, http request and
-		reply belonging to  web socket protocol handshake and network layer
-		information shall be sent.
+the only tracing module is **proto_hep**.
+Network events such as connect, accept and connection closed events
+shall be traced along with errors that could appear in the process.
+For each connection that is created an event containing information
+about the client and server certificate, master key, http request and
+reply belonging to  web socket protocol handshake and network layer
+information shall be sent.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+loaded in order for this parameter to work. (for example
+**proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -210,8 +210,8 @@ modparam("proto_wss", "trace_destination", "hep_dest")
 
 
 This controls whether tracing for wss is on or not. You still need to define
-			[trace destination](#param_trace_destination)in order to work, but this value will be
-			controlled using mi function [wss trace](#mi_wss_trace).
+[trace destination](#param_trace_destination)in order to work, but this value will be
+controlled using mi function [wss trace](#mi_wss_trace).
 
 
 ```opensips title="Set trace_on parameter"
@@ -225,28 +225,28 @@ modparam("proto_wss", "trace_on", 1)
 
 
 Define the name of a route in which you can filter which connections will
-			be trace and which connections won't be. In this route you will have
-			information regarding source and destination ips and ports for the current
-			connection. To disable tracing for a specific connection the last call in
-			this route must be **drop**, any other exit
-			mode resulting in tracing the current connection ( of course you still
-			have to define a [trace destination](#param_trace_destination) and trace must be
-			on at the time this connection is opened.
+be trace and which connections won't be. In this route you will have
+information regarding source and destination ips and ports for the current
+connection. To disable tracing for a specific connection the last call in
+this route must be **drop**, any other exit
+mode resulting in tracing the current connection ( of course you still
+have to define a [trace destination](#param_trace_destination) and trace must be
+on at the time this connection is opened.
 
 
 **IMPORTANT**
-			Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
-			either the entity that is connecting to OpenSIPS or the entity to which
-			OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
-			it is simply the socket other than the OpenSIPS socket. In order to match
-			OpenSIPS interface (either the one that accepted the connection or the one
-			that initiated a connection) **$Ri** (ip) and
-			**$Rp** (port) can be used.
+Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
+either the entity that is connecting to OpenSIPS or the entity to which
+OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
+it is simply the socket other than the OpenSIPS socket. In order to match
+OpenSIPS interface (either the one that accepted the connection or the one
+that initiated a connection) **$Ri** (ip) and
+**$Rp** (port) can be used.
 
 
 **WARNING:** IF [trace on](#param_trace_on) is
-			set to 0 or tracing is deactived via the mi command [wss trace](#mi_wss_trace)
-			this route won't be called.
+set to 0 or tracing is deactived via the mi command [wss trace](#mi_wss_trace)
+this route won't be called.
 
 
 ```opensips title="Set trace_filter_route parameter"
@@ -283,10 +283,10 @@ Parameters:
 
 
 - trace_mode(optional): set wss tracing on and off. This parameter
-						can be missing and the command will show the current tracing
-						status for this module( on or off );
-						Possible values:
-						
+can be missing and the command will show the current tracing
+status for this module( on or off );
+Possible values:
+
 							on
 							off
 

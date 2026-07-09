@@ -34,7 +34,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -79,11 +79,11 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 
 
 Country Code that the first part of the number from
-			P-Asserted-Identity is tested against when trying to map the
-			Calling Party Number ISUP parameter from SIP by default. If there
-			is a match, the value assigned to the Nature of Address Indicator
-			subfield is *3*(national), otherwise it is
-			*4*(international).
+P-Asserted-Identity is tested against when trying to map the
+Calling Party Number ISUP parameter from SIP by default. If there
+is a match, the value assigned to the Nature of Address Indicator
+subfield is *3*(national), otherwise it is
+*4*(international).
 
 
 *Default value is "+1".*

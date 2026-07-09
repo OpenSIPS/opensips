@@ -10,7 +10,7 @@ description: "The pua_bla module enables Bridged Line Appearances support accord
 
 
 The pua_bla module enables Bridged Line Appearances support according to 
-		 the specifications in draft-anil-sipping-bla-03.txt.
+the specifications in draft-anil-sipping-bla-03.txt.
 
 
 ### Dependencies
@@ -31,7 +31,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml*.
@@ -44,7 +44,7 @@ The following libraries or applications must be installed before running
 
 
 The default domain for the registered users to be used when
-		constructing the uri for the registrar callback.
+constructing the uri for the registrar callback.
 
 
 *Default value is "NULL".*
@@ -61,9 +61,9 @@ modparam("pua_bla", "default_domain", "opensips.org")
 
 
 The name of the header to be added to Publish requests.
-		It will contain the uri of the user agent that sent the
-		Notify that is transformed into Publish. It stops sending 
-		a Notification with the same information to the sender.
+It will contain the uri of the user agent that sent the
+Notify that is transformed into Publish. It stops sending 
+a Notification with the same information to the sender.
 
 
 *Default value is "NULL".*
@@ -109,8 +109,8 @@ modparam("pua_bla", "server_address", "sip:bla@160.34.23.12")
 
 
 The address of the presence server - will be used as
-			an outbound proxy when sending PUBLISH requests. 
-			It is optional.
+an outbound proxy when sending PUBLISH requests. 
+It is optional.
 
 
 *Default value is "NULL".*
@@ -130,8 +130,8 @@ modparam("pua_bla", "presence_server", "sip:pa@opensips.org")
 
 
 The function is used to mark REGISTER requests made to a BLA AOR.
-				The modules subscribes to the registered contacts for dialog;sla 
-				event.
+The modules subscribes to the registered contacts for dialog;sla 
+event.
 
 
 ```opensips title="bla_set_flag usage"
@@ -146,9 +146,9 @@ if(is_method("REGISTER") && to_uri=~"bla_aor@opensips.org")
 
 
 The function handles Notify requests sent from phones on the
-				same BLA to the server. The message is transformed in Publish 
-				request and passed to presence module for further handling.
-				in case of a successful processing a 2xx reply should be sent.
+same BLA to the server. The message is transformed in Publish 
+request and passed to presence module for further handling.
+in case of a successful processing a 2xx reply should be sent.
 
 
 ```opensips title="bla_handle_notify usage"

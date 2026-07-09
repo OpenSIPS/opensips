@@ -46,10 +46,10 @@ This module exports the *$xml(path)* variable.
 
 
 The xml variables will be available to the
-			process that created them from the moment they were
-			initialized. They will not reset per message or per
-			transaction. If you want to use them on a per message
-			basis you should initialize them each time.
+process that created them from the moment they were
+initialized. They will not reset per message or per
+transaction. If you want to use them on a per message
+basis you should initialize them each time.
 
 
 #### Accessing the $xml(path) variable

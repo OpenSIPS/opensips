@@ -28,7 +28,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *openssl (libssl)*.
@@ -80,7 +80,7 @@ modparam("identity", "certUri", "http://www.myserver.com/cert.pem")
 
 
 Path containing certificates for the verifier. Certificates must be in PEM format. The URI in the Identity-Info header field is used to find the corresponding certificate for the request. For this purpose the verifier replaces every character which is not alphanumeric, no "_" and no "." with a "-". A "." at the beginning of the URI is forbidden. If the URI is "http://www.test.com/cert.pem" the verifier will look for the file "http---www.test.com-cert.pem", for example.
-		It is also possible to store a whole certificate chain in a file. In this case certificates must be in right order, end certificate first.
+It is also possible to store a whole certificate chain in a file. In this case certificates must be in right order, end certificate first.
 
 
 ```opensips title="Set verCert parameter"
@@ -139,7 +139,7 @@ modparam("identity", "useCrls", 1)
 
 
 This function performs the steps of an authentication service. Before you call this function, you have to ensure
-		that
+that
 
 
 - the server is responsible for this request (from URI matches local SIP domain)
@@ -300,7 +300,7 @@ exit;
 
 - Certificates are not downloaded. They have to be stored locally.
 - Call-IDs of valid requests containing an Identity header are not recorded. 
-				Hence the verifier does not provide full replay protection.
+Hence the verifier does not provide full replay protection.
 - Authentication service and verifier use the original request. Changes resulting from message processing in OpenSER script are ignored.
 
 

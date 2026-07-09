@@ -12,11 +12,11 @@ title: "db_cachedb Module"
 
 
 The db_cachedb module will expose the same front db api, however it will run on top
-				of a NoSQL back-end, emulating the SQL calls to the back-end specific queries.
+of a NoSQL back-end, emulating the SQL calls to the back-end specific queries.
 
-				Thus, any OpenSIPS module that would regularily need a regular SQL-based database,
-				will now be able to run over a NoSQL back-end, allowing for a much easier distribution
-				and integration of the currently existing OpenSIPS modules in a distributed environment.
+Thus, any OpenSIPS module that would regularily need a regular SQL-based database,
+will now be able to run over a NoSQL back-end, allowing for a much easier distribution
+and integration of the currently existing OpenSIPS modules in a distributed environment.
 
 
 #### OpenSIPS Modules
@@ -32,7 +32,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -92,7 +92,7 @@ The same mechanism/setup can be used to run other modules ( like usrloc, dialog,
 
 Currently the only cachedb_* module that implements this functionality is the cachedb_mongodb module, so currently you can only emulate SQL queries to a MongoDB instance/cluster.
 
-				There are plans to also extend this functionality to other cachedb_* backends, like Cassandra and CouchBase.
+There are plans to also extend this functionality to other cachedb_* backends, like Cassandra and CouchBase.
 
 
 #### Extensive Testing Needed
@@ -100,18 +100,18 @@ Currently the only cachedb_* module that implements this functionality is the ca
 
 Since there are many OpenSIPS modules that currently use the DB interface, it wasn't feasible to test all scenarios with all modules, and there still might be some incompatibilities.  
 
-				The module was tested with some regularily used modules ( like usrloc, dialog, permissions, drouting ), but more testing is very much welcome, and feedback is appreciated.
+The module was tested with some regularily used modules ( like usrloc, dialog, permissions, drouting ), but more testing is very much welcome, and feedback is appreciated.
 
 
 #### CacheDB Specific 'schema' and other incompatibilities
 
 
 Since the NoSQL backends do not usually have a strict schema involved,
-				we do not provide scripts for creating such schemas, since the insertion ops will trigger the dynamically creation of the schema and info.
+we do not provide scripts for creating such schemas, since the insertion ops will trigger the dynamically creation of the schema and info.
 
-				Still, a specific data collection needs to be present, and that is the equivalent of the 'version' table from the SQL. Since most modules check the version table at the module setup, it's the user's responsability to setup such a 'version' collection in the respective NoSQL back-end.
+Still, a specific data collection needs to be present, and that is the equivalent of the 'version' table from the SQL. Since most modules check the version table at the module setup, it's the user's responsability to setup such a 'version' collection in the respective NoSQL back-end.
 
-				For example, for the MongoDB cluster, 'version' is a reserved keyword, so one would have to change the default version table that OpenSIPS uses ( via the 'db_version_table' global parameter ) and then manually insert the version number with something like db.my_version_table.insert({table_version : NumberInt(5), table_name : "address"})
+For example, for the MongoDB cluster, 'version' is a reserved keyword, so one would have to change the default version table that OpenSIPS uses ( via the 'db_version_table' global parameter ) and then manually insert the version number with something like db.my_version_table.insert({table_version : NumberInt(5), table_name : "address"})
 
 
 *doc copyrights:*
