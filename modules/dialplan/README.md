@@ -10,74 +10,74 @@ description: "This module implements generic string translations based on matchi
 
 
 This module implements generic string translations based on matching and
-	replacement rules. It can be used to manipulate R-URI or a PV and to
-	translated to a new format/value.
+replacement rules. It can be used to manipulate R-URI or a PV and to
+translated to a new format/value.
 
 
 ### How it works
 
 
 At startup, the module will load all transformation rules from one or more
-	dialplan-compatible tables. The data of each table will be stored in a
-	partition which is defined by the "db_url" and "table_name" parameters.
-	Every table row will be stored in memory as a translation rule. Each rule
-	will describe how the matching should be made, how the input value should
-	be modified and which attributes should be set for the matching transformation.
+dialplan-compatible tables. The data of each table will be stored in a
+partition which is defined by the "db_url" and "table_name" parameters.
+Every table row will be stored in memory as a translation rule. Each rule
+will describe how the matching should be made, how the input value should
+be modified and which attributes should be set for the matching transformation.
 
 
 A dialplan rule can be of two types:
 
 
 - *"String matching" rule* - performs a
-		string equality test against the input string. The case of the
-		characters can be ignored by enabling bit 1 of the rule's "match_flags"
-		bitmask column
-		(i.e. set the column value to 1 or 0, for insensitive or sensitive)
+string equality test against the input string. The case of the
+characters can be ignored by enabling bit 1 of the rule's "match_flags"
+bitmask column
+(i.e. set the column value to 1 or 0, for insensitive or sensitive)
 - *"Regex matching" rule* - uses Perl
-		Compatible Regular Expressions, and will attempt to match the rule's
-		expression against an input string. The regex
-		maching can be done in a caseless manner by enabling bit 1 of the
-		rule's "match_flags" bitmask column
-		(i.e. set the column value to 1 or 0, for insensitive or sensitive)
+Compatible Regular Expressions, and will attempt to match the rule's
+expression against an input string. The regex
+maching can be done in a caseless manner by enabling bit 1 of the
+rule's "match_flags" bitmask column
+(i.e. set the column value to 1 or 0, for insensitive or sensitive)
 
 
 The module provides the *dp_translate()* script function,
-	which expects an input **string** value that
-	will be matched, at worst, against all rules of a partition.
+which expects an input **string** value that
+will be matched, at worst, against all rules of a partition.
 
 
 Internally, the module groups a partition's rules into two sets, "string" and "regex".
-	The matching logic will attempt to find the first match within each of
-	these two sets of rules. Each set will be iterated in
-	**ascending** order of priority. If an input
-	string happens to match a rule in each of the two sets, the rule with the
-	smallest priority will be chosen. Furthermore, should these two matching
-	rules also have equal priorities, the one with the smallest "id" field
-	(the unique key) will be chosen.
+The matching logic will attempt to find the first match within each of
+these two sets of rules. Each set will be iterated in
+**ascending** order of priority. If an input
+string happens to match a rule in each of the two sets, the rule with the
+smallest priority will be chosen. Furthermore, should these two matching
+rules also have equal priorities, the one with the smallest "id" field
+(the unique key) will be chosen.
 
 
 Once a single rule is decided upon, the defined transformation (if any) is
-	applied and the result is returned as output value. Also, if any string
-	attribute is associated to the rule, this will be returned to the script
-	along with the output value.
+applied and the result is returned as output value. Also, if any string
+attribute is associated to the rule, this will be returned to the script
+along with the output value.
 
 
 ### Usage cases
 
 
 The module can be used to implement dialplans - to do auto completion of
-	the dialed numbers (e.g. national to international), to convert generic
-	numbers to specific numbers (e.g. for emergency numbers).
+the dialed numbers (e.g. national to international), to convert generic
+numbers to specific numbers (e.g. for emergency numbers).
 
 
 Also the module can be used for detecting ranges or sets of numbers mapped
-	on a service/case - the "attributes" string column can be used here to
-	store extra information about the service/case.
+on a service/case - the "attributes" string column can be used here to
+store extra information about the service/case.
 
 
 Non-SIP string translation can also be implemented - like converting country
-	names from all possible formats to a canonical format:
-	(UK, England, United Kingdom) -> GB.
+names from all possible formats to a canonical format:
+(UK, England, United Kingdom) -> GB.
 
 
 Any other string-based translation or detection for whatever other purposes.
@@ -87,11 +87,11 @@ Any other string-based translation or detection for whatever other purposes.
 
 
 Depending what kind of operation (translation, matching, etc) you want
-		to do with the module, you need to populate the appropriate DB records.
+to do with the module, you need to populate the appropriate DB records.
 
 
 The definition of the tables used by the dialplan module can be found
-		at [[http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html)#AEN1501](http://www.opensips.org/html/db-schema.html#AEN1501)
+at [[http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html)#AEN1501](http://www.opensips.org/html/db-schema.html#AEN1501)
 
 
 #### What to place in table
@@ -101,64 +101,64 @@ The definition of the tables used by the dialplan module can be found
 
 
 Recognize a number block in all forms (international, national)
-			and convert it to a canonical format (E.164)
+and convert it to a canonical format (E.164)
 
 
 - *match_op* = 1 (regexp)
 - *match_exp* = "^(0040|\+40|0|40)21[0-9]+" ;
-				regular expression that will be used to match with this rule (if
-				the rule should be applied for the input string)
+regular expression that will be used to match with this rule (if
+the rule should be applied for the input string)
 - *match_flags* = 0 (0 - case sensitive,
-				1 - case insensitive matching)
+1 - case insensitive matching)
 - *subst_exp* = "^(0040|\+40|0|40)(.+)" ;
-				regular expression used to do the transformation (first part
-				of the subst operation)
+regular expression used to do the transformation (first part
+of the subst operation)
 - *repl_exp* = "40\2" ; second part of the
-				subst (output) - linked to the subst_exp field; when both
-				defined, they work as a subst()
+subst (output) - linked to the subst_exp field; when both
+defined, they work as a subst()
 
 
 ##### String translation (regexp detection, replacement)
 
 
 Recognize the name of a country (multiple languages) and convert
-			it to a single, fixed value
+it to a single, fixed value
 
 
 - *match_op* = 1 (regexp)
 - *match_exp* = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
-				regular expression that will be used to match with this rule (if
-				the rule should be applied for the input string)
+regular expression that will be used to match with this rule (if
+the rule should be applied for the input string)
 - *match_flags* = 0 (0 - case sensitive,
-				1 - case insensitive matching)
+1 - case insensitive matching)
 - *subst_exp* = NULL ;
-				when translation is actually a replacement, this field must
-				be NULL.
+when translation is actually a replacement, this field must
+be NULL.
 - *repl_exp* = "DE" ; static string to
-				replace the input - whenever this rule will match, it will
-				return this string as output.
+replace the input - whenever this rule will match, it will
+return this string as output.
 
 
 ##### Number detection (regexp detection, no replacement)
 
 
 Recognize a block of numbers as belong to a single service and
-			signalize this via an attribute.
+signalize this via an attribute.
 
 
 - *match_op* = 1 (regexp)
 - *match_exp* = "^021456[0-9]{5}" ;
-				regular expression that will be used to match with this rule (if
-				the rule should be applied for the input string)
+regular expression that will be used to match with this rule (if
+the rule should be applied for the input string)
 - *match_flags* = 0 (0 - case sensitive,
-				1 - case insensitive matching)
+1 - case insensitive matching)
 - *subst_exp* = NULL ;
-				no translation
+no translation
 - *repl_exp* = NULL ;
-				no translation
+no translation
 - *attrs* = "serviceX" ;
-				whatever string you will get into OpenSIPS script and it will
-				provide you more information (totally custom)
+whatever string you will get into OpenSIPS script and it will
+provide you more information (totally custom)
 
 
 ##### String conversion (equal detection, replacement)
@@ -169,13 +169,13 @@ Recognize a fixed string/number and replace it with something fixed.
 
 - *match_op* = 0 (equal)
 - *match_exp* = "SIP server" ;
-				string to be matched
+string to be matched
 - *match_flags* = 0 (0 - case sensitive,
-				1 - case insensitive matching)
+1 - case insensitive matching)
 - *subst_exp* = NULL ;
-				no subst translation
+no subst translation
 - *repl_exp* = "OpenSIPS" ;
-				output string
+output string
 
 
 ### Dependencies
@@ -194,7 +194,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libpcre-dev - the development libraries of [PCRE](http://www.pcre.org/)*.
@@ -207,12 +207,12 @@ The following libraries or applications must be installed before
 
 
 This can be used to define new db_url and table_name parameters from which
-		to load the translation rules. These parameters will be held in partitions.
-		The db_url parameter is mandatory. The order of the parameters does not matter.
-		Multiple partitions can be defined and you can also define the default partition
-		here. The name of this partition is "default". In order to be able to use a table
-		from a partition, its name must be found in the "version" table belonging to the
-		database defined in the partition's db_url.
+to load the translation rules. These parameters will be held in partitions.
+The db_url parameter is mandatory. The order of the parameters does not matter.
+Multiple partitions can be defined and you can also define the default partition
+here. The name of this partition is "default". In order to be able to use a table
+from a partition, its name must be found in the "version" table belonging to the
+database defined in the partition's db_url.
 
 
 ```opensips title="Set partition parameter"
@@ -237,12 +237,12 @@ modparam("dialplan", "partition",
 
 
 The translation rules will be loaded using this database url.This
-		will be the db_url parameter value for the default partition.
+will be the db_url parameter value for the default partition.
 
 
 NOTE: if you intend to use the default partition you have to explicity 
-		set this default db_url, otherwise OpenSIPS will not start (he value 
-		of global default db_url is not inherited here! ).
+set this default db_url, otherwise OpenSIPS will not start (he value 
+of global default db_url is not inherited here! ).
 
 
 ```opensips title="Set db_url parameter"
@@ -257,9 +257,9 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 
 
 The table's name from which to load the translation rules.This
-		will be the table_name parameter value for the default partition.
-		The db_url must be defined for the default partition in order to
-		be able to define it's table name.
+will be the table_name parameter value for the default partition.
+The db_url must be defined for the default partition in order to
+be able to define it's table name.
 
 
 *Default value is "dialplan".*
@@ -294,7 +294,7 @@ modparam("dialplan", "dpid_col", "column_name")
 
 
 The column name to store the priority of the corresponding rule from
-		the table row. Smaller priority values have higher precedence.
+the table row. Smaller priority values have higher precedence.
 
 
 *Default value is "pr".*
@@ -346,7 +346,7 @@ modparam("dialplan", "match_exp_col", "column_name")
 
 
 The column name to store various matching flags. Currently
-		0 - case sensitive matching, 1 - case insensitive matching.
+0 - case sensitive matching, 1 - case insensitive matching.
 
 
 *Default value is "match_flags".*
@@ -398,7 +398,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
 
 
 The column name that indicates an additional time recurrence check within the rule.
-		(column values are RFC 2445-compatible strings)
+(column values are RFC 2445-compatible strings)
 
 
 *Default value is "timerec".*
@@ -453,37 +453,37 @@ modparam("dialplan", "attrs_col", "column_name")
 
 
 Will try to translate the src string into dest string according to
-	the translation rules with dialplan ID equal to id.
+the translation rules with dialplan ID equal to id.
 
 
 Meaning of the parameters is as follows:
 
 
 - *id* - the dialplan id of possible matching rules.
-		The *id* parameter can have the following types:
+The *id* parameter can have the following types:
 
   - *integer* - the dialplan id is statically
-			assigned
+assigned
   - *pvar* - the dialplan id is the value of an
-			existing pseudo-variable (as integer value)
+existing pseudo-variable (as integer value)
 - *partition* - Specifies the partition where the search will
-		take place. This parameter can be ommited. If the paramater is omitted the default
-		partition will be used if exists.
-		The *partition* parameter can have the following types:
+take place. This parameter can be ommited. If the paramater is omitted the default
+partition will be used if exists.
+The *partition* parameter can have the following types:
 
   - *string* - the table name is statically
-			assigned
+assigned
   - *pvar* - the partition name is the value of an
-			existing pseudo-variable (as string value)
+existing pseudo-variable (as string value)
 - *src/dest* - input and output of the function.
-		If this parameter is missing the default parameter
-		"ruri.user/ruri.user" will be used, thus translating
-		the request uri.
+If this parameter is missing the default parameter
+"ruri.user/ruri.user" will be used, thus translating
+the request uri.
 The "src" variable can be any type of pseudo-variable.
 The "dest" variable  can be also any type of
-		pseudo-variable, but it must be a writable one.
+pseudo-variable, but it must be a writable one.
 - *attrs_pvar (output, optional)* - a pseudo-variable
-		which will hold the attributes of the matched translation rule.
+which will hold the attributes of the matched translation rule.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
@@ -545,8 +545,8 @@ Parameters: *1*
 
 
 - *table_name* - Partition to be reloaded.
-				If no table is specified, the table specified in the "partition"
-				parameter (default "default") will be reloaded.
+If no table is specified, the table specified in the "partition"
+parameter (default "default") will be reloaded.
 
 
 MI DATAGRAM Command Format:
@@ -563,7 +563,7 @@ MI DATAGRAM Command Format:
 
 
 It will apply a translation rule identified by a dialplan
-                id and an input string.
+id and an input string.
 
 
 Name: *dp_translate*
@@ -601,7 +601,7 @@ Parameters: *2*
 
 
 - *Partition Name* - The partition name.
-                If no partition is specified, all known partitions will be listed.
+If no partition is specified, all known partitions will be listed.
 
 
 MI DATAGRAM Command Format:
@@ -619,10 +619,10 @@ MI DATAGRAM Command Format:
 
 
 The modules requires one table in OpenSIPS database: dialplan.The SQL
-		syntax to create them can be found in dialplan-create.sql
-		script in the database directories in the opensips/scripts folder.
-		You can also find the complete database documentation on the
-		project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+syntax to create them can be found in dialplan-create.sql
+script in the database directories in the opensips/scripts folder.
+You can also find the complete database documentation on the
+project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide

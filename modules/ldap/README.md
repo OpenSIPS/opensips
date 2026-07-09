@@ -65,7 +65,7 @@ RFC 4516 [RFC4516](#RFC4516) describes the format of an LDAP Uniform Resource Lo
 
 
 An LDAP session name as defined in the LDAP
-              configuration file.
+configuration file.
 
 
 (RFC 4516 defines this as LDAP hostport parameter)
@@ -75,43 +75,43 @@ An LDAP session name as defined in the LDAP
 
 
 Base Distinguished Name (DN) of LDAP search or target of
-              non-search operation, as defined in RFC 4514 [RFC4514](#RFC4514)
+non-search operation, as defined in RFC 4514 [RFC4514](#RFC4514)
 
 
 **`attrs`**
 
 
 Comma separated list of LDAP attributes to be
-              returned
+returned
 
 
 **`scope`**
 
 
 Scope for LDAP search, valid values are
-              "base", "one", or
-              "sub"
+"base", "one", or
+"sub"
 
 
 **`filter`**
 
 
 LDAP search filter definition following rules of RFC 4515
-				  [RFC4515](#RFC4515)
+[RFC4515](#RFC4515)
 
 
 > [!NOTE]
 > The following table lists characters that have to be
-                  escaped in LDAP search filters:
+escaped in LDAP search filters:
 
 
 > [!NOTE]
 > Non-URL characters in an LDAP URL have to be escaped using
-          percent-encoding (refer to section 2.1 of RFC 4516). In particular
-	  this means that any "?" character in an LDAP URL component must be
-	  written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#func_ldap_filter_url_encode))
-	  implements RFC 4515/4516 LDAP search filter and URL escaping
-	  rules.
+percent-encoding (refer to section 2.1 of RFC 4516). In particular
+this means that any "?" character in an LDAP URL component must be
+written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#func_ldap_filter_url_encode))
+implements RFC 4515/4516 LDAP search filter and URL escaping
+rules.
 
 
 ### Dependencies
@@ -121,7 +121,7 @@ LDAP search filter definition following rules of RFC 4515
 
 
 The module depends on the following modules (the listed modules
-        must be loaded before this module):
+must be loaded before this module):
 
 
 - *No dependencies on other OpenSIPS modules.*
@@ -131,25 +131,25 @@ The module depends on the following modules (the listed modules
 
 
 The following libraries or applications must be installed before
-        running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - OpenLDAP library (libldap) v2.1 or greater, libldap header files
-            (libldap-dev) are needed for compilation
+(libldap-dev) are needed for compilation
 
 
 ### LDAP Configuration File
 
 
 The module reads an external confiuration file at module
-      initialization time that includes LDAP session definitions.
+initialization time that includes LDAP session definitions.
 
 
 #### Configuration File Syntax
 
 
 The configuration file follows the Windows INI file syntax,
-        section names are enclosed in square brackets:
+section names are enclosed in square brackets:
 
 
 ```c
@@ -158,8 +158,8 @@ The configuration file follows the Windows INI file syntax,
 
 
 Any
-        section can contain zero or more configuration key assignments of the
-        form
+section can contain zero or more configuration key assignments of the
+form
 
 
 ```c
@@ -168,17 +168,17 @@ key = value ; comment
 
 
 Values can
-        be given enclosed with quotes. If no quotes are present, the value is
-        understood as containing all characters between the first and the last
-        non-blank characters. Lines starting with a hash sign and blank lines
-        are treated as comments.
+be given enclosed with quotes. If no quotes are present, the value is
+understood as containing all characters between the first and the last
+non-blank characters. Lines starting with a hash sign and blank lines
+are treated as comments.
 
 
 Each section describes one LDAP session that can be referred to
-        in the OpenSIPS configuration script. Using the section name as the
-        host part of an LDAP URL tells the module to use the LDAP session
-        specified in the respective section. An example LDAP session
-        specification looks like:
+in the OpenSIPS configuration script. Using the section name as the
+host part of an LDAP URL tells the module to use the LDAP session
+specified in the respective section. An example LDAP session
+specification looks like:
 
 
 ```c
@@ -196,9 +196,9 @@ ldap_require_certificate   = "ALLOW"
 
 
 The configuration keys are
-        explained in the following section. This LDAP session can be referred
-        to in the routing script by using an LDAP URL like
-        e.g.
+explained in the following section. This LDAP session can be referred
+to in the routing script by using an LDAP URL like
+e.g.
 
 
 ```c
@@ -245,12 +245,12 @@ ldap_version = 2
 
 
 Authentication user DN used to bind to LDAP server (module
-              currently only supports SIMPLE_AUTH). Empty string enables
-              anonymous LDAP bind.
+currently only supports SIMPLE_AUTH). Empty string enables
+anonymous LDAP bind.
 
 
 Default value: "" (empty string -->
-              anonymous bind)
+anonymous bind)
 
 
 ```c title="ldap_bind_dn example"
@@ -262,11 +262,11 @@ ldap_bind_dn = "cn=root,dc=example,dc=com";
 
 
 Authentication password used to bind to LDAP server
-              (SIMPLE_AUTH). Empty string enables anonymous bind.
+(SIMPLE_AUTH). Empty string enables anonymous bind.
 
 
 Default value: "" (empty string -->
-              anonymous bind)
+anonymous bind)
 
 
 ```c title="ldap_bind_password example"
@@ -278,7 +278,7 @@ ldap_bind_password = "secret";
 
 
 LDAP TCP connect timeout in milliseconds. Setting this
-              parameter to a low value enables fast failover if `ldap_server_url` contains more than one LDAP server addresses.
+parameter to a low value enables fast failover if `ldap_server_url` contains more than one LDAP server addresses.
 
 
 Default value: 1000 (one second)
@@ -349,7 +349,7 @@ ldap_key_file = "/usr/local/mykey.pem"
 
 
 LDAP peer certificate checking strategy, one of "NEVER", "HARD", "DEMAND", "ALLOW", "TRY".
-						Lower case letters are also accepted.
+Lower case letters are also accepted.
 
 
 Default value "NEVER".
@@ -364,8 +364,8 @@ ldap_require_certificate = "NEVER"
 
 
 The following configuration file example includes two LDAP
-        session definitions that could be used e.g. for accessing H.350 data
-        and do phone number to name mappings.
+session definitions that could be used e.g. for accessing H.350 data
+and do phone number to name mappings.
 
 
 ```c title="Example LDAP Configuration File"
@@ -411,7 +411,7 @@ Full path to LDAP configuration file.
 
 
 Default value:
-        `/usr/local/etc/opensips/ldap.cfg`
+`/usr/local/etc/opensips/ldap.cfg`
 
 
 ```opensips title="config_file parameter usage"
@@ -424,10 +424,10 @@ modparam("ldap", "config_file", "/etc/opensips/ldap.ini")
 
 
 Number of maximum asynchronous connections that will be started
-			  with the ldap server for executing asynchronous ldap_search calls.
-			  The number of connections is per process, so if there are 8
-			  worker processes with 20 max_async_connections, there will be a
-			  maximum of 160 connections to the ldap server.
+with the ldap server for executing asynchronous ldap_search calls.
+The number of connections is per process, so if there are 8
+worker processes with 20 max_async_connections, there will be a
+maximum of 160 connections to the ldap server.
 
 
 Default value: `20`
@@ -446,35 +446,35 @@ modparam("ldap", "max_async_connections", 50)
 
 
 Performs an LDAP search operation using given LDAP URL and stores result
-        internally for later retrieval by `ldap_result*` functions. If one ore
-        more LDAP entries are found the function returns the number of found
-        entries which evaluates to TRUE in the OpenSIPS configuration script.
-        It returns `-1` (`FALSE`) in case no
-        LDAP entry was found, and `-2`
-        (`FALSE`) if an internal error like e.g. an LDAP
-        error occurred.
+internally for later retrieval by `ldap_result*` functions. If one ore
+more LDAP entries are found the function returns the number of found
+entries which evaluates to TRUE in the OpenSIPS configuration script.
+It returns `-1` (`FALSE`) in case no
+LDAP entry was found, and `-2`
+(`FALSE`) if an internal error like e.g. an LDAP
+error occurred.
 
 
 **`ldap_url`**
 
 
 An LDAP URL defining the LDAP search operation (refer to
-			  [ldap urls](#ldap_urls) for a description of the LDAP URL
-              format). The hostport part must be one of the LDAP session names
-              declared in the LDAP configuration script.
+[ldap urls](#ldap_urls) for a description of the LDAP URL
+format). The hostport part must be one of the LDAP session names
+declared in the LDAP configuration script.
 
 
 OpenSIPS pseudo variables and AVPs included in
-              `ldap_url` do get substituted with their
-              value.
+`ldap_url` do get substituted with their
+value.
 
 
 Search with LDAP session named
-                `sipaccounts`, base
-                `ou=sip,dc=example,dc=com`,
-                `one` level deep using search filter
-                `(cn=schlatter)` and returning all
-                attributes:
+`sipaccounts`, base
+`ou=sip,dc=example,dc=com`,
+`one` level deep using search filter
+`(cn=schlatter)` and returning all
+attributes:
 
 
 ```c title="Example Usage of ldap_url"
@@ -483,11 +483,11 @@ ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=schlatter)
 
 
 Subtree search with LDAP session named
-                `ldap1`, base
-                `dc=example,dc=com` using search filter
-                `(cn=$(avp(name)))` and returning
-                `SIPIdentityUserName` and
-                `SIPIdentityServiceLevel` attributes
+`ldap1`, base
+`dc=example,dc=com` using search filter
+`(cn=$(avp(name)))` and returning
+`SIPIdentityUserName` and
+`SIPIdentityServiceLevel` attributes
 
 
 ```opensips title="Example Usage of ldap_url"
@@ -501,7 +501,7 @@ ldap://ldap_1/dc=example,dc=com?
 
 
 - Found `n` matching LDAP
-                  entries
+entries
 
 
 **`-1` (FALSE):**
@@ -552,13 +552,13 @@ ldap_result("telephoneNumber/$avp(tel_number)");
 
 
 This function converts LDAP attribute values into AVPs for later
-        use in the message routing script. It accesses the LDAP result set
-        fetched by the last `ldap_search` call.
-        `ldap_attr_name` specifies the LDAP attribute name
-        who's value should be stored in AVP `avp_spec`. Multi
-        valued LDAP attributes generate an indexed AVP. The optional
-        `regex_subst` parameter allows to further define what
-        part of an attribute value should be stored as AVP.
+use in the message routing script. It accesses the LDAP result set
+fetched by the last `ldap_search` call.
+`ldap_attr_name` specifies the LDAP attribute name
+who's value should be stored in AVP `avp_spec`. Multi
+valued LDAP attributes generate an indexed AVP. The optional
+`regex_subst` parameter allows to further define what
+part of an attribute value should be stored as AVP.
 
 
 An AVP can either be of type string or integer. As default, `ldap_result` stores LDAP attribute values as AVP of type string. The optional `avp_type` parameter can be used to explicitly specify the type of the AVP. It can be either `str` for string, or `int` for integer. If `avp_type` is specified as `int` then `ldap_result` tries to convert the LDAP attribute values to integer. In this case, the values are only stored as AVP if the conversion to integer is succesfull.
@@ -568,16 +568,16 @@ An AVP can either be of type string or integer. As default, `ldap_result` stores
 
 
 The name of the LDAP attribute who's value should be
-              stored, e.g. `SIPIdentityServiceLevel` or
-              `telephonenumber`
+stored, e.g. `SIPIdentityServiceLevel` or
+`telephonenumber`
 
 
 **avp_spec**
 
 
 Specification of destination AVP, e.g.
-              `$avp(service_level)` or
-              `$avp(12)`
+`$avp(service_level)` or
+`$avp(12)`
 
 
 **avp_type**
@@ -590,9 +590,9 @@ Opional specification of destination AVP type, either `str` or `int`. If this pa
 
 
 Regex substitution that gets applied to LDAP attribute
-              value before storing it as AVP, e.g.
-              `"/^sip:(.+)$/\1/"` to strip off "sip:" from
-              the beginning of an LDAP attribute value.
+value before storing it as AVP, e.g.
+`"/^sip:(.+)$/\1/"` to strip off "sip:" from
+the beginning of an LDAP attribute value.
 
 
 **`n` > 0 (TRUE)**
@@ -605,7 +605,7 @@ LDAP attribute `ldap_attr_name` found in LDAP result set and `n` LDAP attribute 
 
 
 No LDAP attribute `ldap_attr_name` found
-              in LDAP result set
+in LDAP result set
 
 
 **-2 (FALSE)**
@@ -652,53 +652,53 @@ ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
 
 
 This function compares `ldap_attr_name`'s value
-        with `string_to_match` for equality. It accesses the LDAP result set
-        fetched by the last `ldap_search` call. The
-        optional `regex_subst` parameter allows to further
-        define what part of the attribute value should be used for the
-        equality match. If `ldap_attr_name` is multi valued,
-        each value is checked against `string_to_match`. If
-        one or more of the values do match the function returns `1`
-        (TRUE).
+with `string_to_match` for equality. It accesses the LDAP result set
+fetched by the last `ldap_search` call. The
+optional `regex_subst` parameter allows to further
+define what part of the attribute value should be used for the
+equality match. If `ldap_attr_name` is multi valued,
+each value is checked against `string_to_match`. If
+one or more of the values do match the function returns `1`
+(TRUE).
 
 
 **ldap_attr_name**
 
 
 The name of the LDAP attribute who's value should be
-              matched, e.g. `SIPIdentitySIPURI`
+matched, e.g. `SIPIdentitySIPURI`
 
 
 **string_to_match**
 
 
 String to be matched. Included AVPs and pseudo variabels
-              do get expanded.
+do get expanded.
 
 
 **regex_subst**
 
 
 Regex substitution that gets applied to LDAP attribute
-              value before comparing it with string_to_match, e.g.
-              `"/^[^@]@+(.+)$/\1/"` to extract the domain part
-              of a SIP URI
+value before comparing it with string_to_match, e.g.
+`"/^[^@]@+(.+)$/\1/"` to extract the domain part
+of a SIP URI
 
 
 **1 (TRUE)**
 
 
 One or more `ldap_attr_name` attribute values match
-              `string_to_match` (after
-              `regex_subst` is applied)
+`string_to_match` (after
+`regex_subst` is applied)
 
 
 **-1 (FALSE)**
 
 
 `ldap_attr_name` attribute not found or
-              attribute value doesn't match `string_to_match`
-              (after `regex_subst` is applied)
+attribute value doesn't match `string_to_match`
+(after `regex_subst` is applied)
 
 
 **-2 (FALSE)**
@@ -742,18 +742,18 @@ if (!ldap_result_check("sn/$ru", "/^sip:([^@]).*$/\1/"))
 
 
 An LDAP search operation can return multiple LDAP entries. This
-        function can be used to cycle through all returned LDAP entries. It
-        returns 1 (TRUE) if there is another LDAP entry present in the LDAP
-        result set and causes `ldap_result*` functions to work on the next LDAP
-        entry. The function returns -1 (FALSE) if there are no more LDAP
-        entries in the LDAP result set.
+function can be used to cycle through all returned LDAP entries. It
+returns 1 (TRUE) if there is another LDAP entry present in the LDAP
+result set and causes `ldap_result*` functions to work on the next LDAP
+entry. The function returns -1 (FALSE) if there are no more LDAP
+entries in the LDAP result set.
 
 
 **1 (TRUE)**
 
 
 Another LDAP entry is present in the LDAP result set and
-              result pointer is incremented by one
+result pointer is incremented by one
 
 
 **-1 (FALSE)**
@@ -798,15 +798,15 @@ if (ldap_result_next())
 
 
 This function applies the following escaping rules to
-        `string` and stores the result in AVP
-        `avp_spec`:
+`string` and stores the result in AVP
+`avp_spec`:
 
 
 **ldap_filter_url_encode() escaping rules**
 
 
 | character in
-                `string` | gets replaced with | defined in |
+`string` | gets replaced with | defined in |
 | --- | --- | --- |
 | * | \2a | RFC 4515 |
 | ( | \28 | RFC 4515 |
@@ -816,31 +816,31 @@ This function applies the following escaping rules to
 
 
 The string stored in AVP `avp_spec` can be safely used in an LDAP
-        URL filter string.
+URL filter string.
 
 
 **`string`**
 
 
 String to apply RFC 4515 and URL escpaing rules to.
-	      AVPs and pseudo variables do get expanded. Example:
-              `"cn=$avp(name)"`
+AVPs and pseudo variables do get expanded. Example:
+`"cn=$avp(name)"`
 
 
 **`avp_spec`**
 
 
 Specification of AVP to store resulting RFC 4515
-	      and URL encoded string, e.g. `$avp(ldap_search)`
-	      or `$avp(10)`
+and URL encoded string, e.g. `$avp(ldap_search)`
+or `$avp(10)`
 
 
 **`1` (TRUE)**
 
 
 RFC 4515 and URL encoded
-              `filter_component` stored as AVP
-              `avp_name`
+`filter_component` stored as AVP
+`avp_name`
 
 
 **`-1` (FALSE)**
@@ -877,35 +877,35 @@ if (ldap_search(
 
 
 Performs an LDAP search operation using given LDAP URL and stores result
-        internally for later retrieval by `ldap_result*` functions. If one ore
-        more LDAP entries are found the function returns the number of found
-        entries which evaluates to TRUE in the OpenSIPS configuration script.
-        It returns `-1` (`FALSE`) in case no
-        LDAP entry was found, and `-2`
-        (`FALSE`) if an internal error like e.g. an LDAP
-        error occurred.
+internally for later retrieval by `ldap_result*` functions. If one ore
+more LDAP entries are found the function returns the number of found
+entries which evaluates to TRUE in the OpenSIPS configuration script.
+It returns `-1` (`FALSE`) in case no
+LDAP entry was found, and `-2`
+(`FALSE`) if an internal error like e.g. an LDAP
+error occurred.
 
 
 **`ldap_url`**
 
 
 An LDAP URL defining the LDAP search operation (refer to
-			  [ldap urls](#ldap_urls) for a description of the LDAP URL
-              format). The hostport part must be one of the LDAP session names
-              declared in the LDAP configuration script.
+[ldap urls](#ldap_urls) for a description of the LDAP URL
+format). The hostport part must be one of the LDAP session names
+declared in the LDAP configuration script.
 
 
 OpenSIPS pseudo variables and AVPs included in
-              `ldap_url` do get substituted with their
-              value.
+`ldap_url` do get substituted with their
+value.
 
 
 Search with LDAP session named
-                `sipaccounts`, base
-                `ou=sip,dc=example,dc=com`,
-                `one` level deep using search filter
-                `(cn=schlatter)` and returning all
-                attributes:
+`sipaccounts`, base
+`ou=sip,dc=example,dc=com`,
+`one` level deep using search filter
+`(cn=schlatter)` and returning all
+attributes:
 
 
 ```c title="Example Usage of ldap_url"
@@ -914,11 +914,11 @@ ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=schlatter)
 
 
 Subtree search with LDAP session named
-                `ldap1`, base
-                `dc=example,dc=com` using search filter
-                `(cn=$(avp(name)))` and returning
-                `SIPIdentityUserName` and
-                `SIPIdentityServiceLevel` attributes
+`ldap1`, base
+`dc=example,dc=com` using search filter
+`(cn=$(avp(name)))` and returning
+`SIPIdentityUserName` and
+`SIPIdentityServiceLevel` attributes
 
 
 ```opensips title="Example Usage of ldap_url"
@@ -932,7 +932,7 @@ ldap://ldap_1/dc=example,dc=com?
 
 
 - Found `n` matching LDAP
-                  entries
+entries
 
 
 **`-1` (FALSE):**

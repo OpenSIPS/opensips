@@ -10,27 +10,27 @@ description: "This module offer the functionality of a presence user agent clien
 
 
 This module offer the functionality of a presence user agent client,
-		sending Subscribe and Publish messages.
+sending Subscribe and Publish messages.
 
 
 Now it can be used with the following modules: pua_mi and pua_usrloc,
-		 pua_bla and pua_xmpp.
-		 The pua_mi offer the possibility to publish any kind of information
-		 or subscribing to a resource through fifo. The pua_usrloc module calls
-		 a function exported by pua modules to publish elementary presence
-		 information, such as basic status "open" or "closed", for clients that
-		 do not implement client-to-server presence.
-		 Through pua_bla , BRIDGED LINE APPEARANCE features are added to OpenSIPs.
-		 The pua_xmpp module represents a gateway between SIP and XMPP, so that 
-		 jabber and SIP clients can exchange presence information.
+pua_bla and pua_xmpp.
+The pua_mi offer the possibility to publish any kind of information
+or subscribing to a resource through fifo. The pua_usrloc module calls
+a function exported by pua modules to publish elementary presence
+information, such as basic status "open" or "closed", for clients that
+do not implement client-to-server presence.
+Through pua_bla , BRIDGED LINE APPEARANCE features are added to OpenSIPs.
+The pua_xmpp module represents a gateway between SIP and XMPP, so that 
+jabber and SIP clients can exchange presence information.
 
 
 The module use cache to store presentity list and writes to database
-		on timer to be able to recover upon restart.
+on timer to be able to recover upon restart.
 
 
 Notice: This module must not be used in no fork mode (the locking mechanism
-		used may cause deadlock in no fork mode).
+used may cause deadlock in no fork mode).
 
 
 ### Dependencies
@@ -50,7 +50,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml*.
@@ -63,8 +63,8 @@ The following libraries or applications must be installed before running
 
 
 The size of the hash table used for storing Subscribe and 
-		Publish information. 
-        This parameter will be used as the power of 2 when computing table size.
+Publish information. 
+This parameter will be used as the power of 2 when computing table size.
 
 
 *Default value is "9".*
@@ -145,8 +145,8 @@ modparam("pua", "default_expires", 3600)
 
 
 The interval at which the information in database and hash table
-		should be updated. In the case of the hash table updating is 
-		deleting expired messages.
+should be updated. In the case of the hash table updating is 
+deleting expired messages.
 
 
 *Default value is "30".*
@@ -166,11 +166,11 @@ modparam("pua", "update_period", 100)
 
 
 The remote target can be updated by the Contact of a subsequent in
-		dialog request. In the PUA watcher case (sending a SUBSCRIBE messages),
-		this means that the remote target for the following Subscribe messages
-		can be updated at any time by the contact of a Notify message. 
-		If this function is called on request route on receiving a Notify
-		message, it will try to update the stored remote target.
+dialog request. In the PUA watcher case (sending a SUBSCRIBE messages),
+this means that the remote target for the following Subscribe messages
+can be updated at any time by the contact of a Notify message. 
+If this function is called on request route on receiving a Notify
+message, it will try to update the stored remote target.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -195,24 +195,24 @@ if(method=="NOTIFY")
 
 
 The module requires 1 table in OpenSIPS database: pua. The SQL 
-	syntax to create it can be found in presence_xml-create.sql     
-	script in the database directories in the opensips/scripts folder.
-	You can also find the complete database documentation on the
-	project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+syntax to create it can be found in presence_xml-create.sql     
+script in the database directories in the opensips/scripts folder.
+You can also find the complete database documentation on the
+project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide
 
 
 The module provides the following functions that can be used
-		in other OpenSIPS modules.
+in other OpenSIPS modules.
 
 
 ### bind_pua(pua_api_t* api)
 
 
 This function binds the pua modules and fills the structure 
-				with the two exported function.
+with the two exported function.
 
 
 ```c title="pua_api structure"
@@ -243,7 +243,7 @@ typedef int (*send_publish_t)(publ_info_t* publ);
 
 
 This function receives as a parameter a structure with Publish 
-			required information and sends a Publish message.
+required information and sends a Publish message.
 
 
 The structure received as a parameter:
@@ -314,7 +314,7 @@ typedef int (*send_subscribe_t)(subs_info_t* subs);
 
 
 This function receives as a parameter a structure with Subscribe 
-			required information and sends a Subscribe message.
+required information and sends a Subscribe message.
 
 
 The structure received as a parameter:
@@ -366,7 +366,7 @@ typedef int  (*query_dialog_t)(ua_pres_t* presentity);
 
 
 This function checks is the parameter corresponds to a stored
-			Subscribe initiated dialog.
+Subscribe initiated dialog.
 
 
 ```opensips title="pua_is_dialog usage example"
@@ -395,12 +395,12 @@ typedef int (*register_puacb_t)(int types, pua_cb f, void* param );
 
 
 This function registers a callback to be called on receiving the reply message
-			for a sent Subscribe request.
-			The type parameter should be set the same as the source_flag for that request.
-			The function registered as callback for pua should be of type pua_cb , which is:
-			typedef void (pua_cb)(ua_pres_t* hentity, struct msg_start * fl);
-			The parameters are the dialog structure for that request and the first line of the
-			reply message.
+for a sent Subscribe request.
+The type parameter should be set the same as the source_flag for that request.
+The function registered as callback for pua should be of type pua_cb , which is:
+typedef void (pua_cb)(ua_pres_t* hentity, struct msg_start * fl);
+The parameters are the dialog structure for that request and the first line of the
+reply message.
 
 
 ```c title="register_puacb usage example"
@@ -439,9 +439,9 @@ typedef int (*add_pua_event_t)(int ev_flag, char* name,
 
 
 This function allows registering new events to the pua module.
-			Now there are 4 events supported by the pua module: presence, 
-			presence;winfo, message-summary, dialog;sla. These events are registered
-			from within the pua module.
+Now there are 4 events supported by the pua module: presence, 
+presence;winfo, message-summary, dialog;sla. These events are registered
+from within the pua module.
 
 
 Filed type for process_body:

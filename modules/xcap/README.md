@@ -10,7 +10,7 @@ description: "The module contains several parameters and functions common to all
 
 
 The module contains several parameters and functions common to all
-        modules using XCAP capabilities.
+modules using XCAP capabilities.
 
 
 The module is currently used by the following modules: presence_xml, rls and xcap_client.
@@ -32,7 +32,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml-dev*.
@@ -79,11 +79,11 @@ modparam("xcap", "xcap_table", "xcap")
 
 
 This parameter is a flag for the type of XCAP server or servers 
-		used. If integrated ones, like OpenXCAP from AG Projects, 
-		with direct access to database table, the parameter should be
-		set to a positive value. Apart from updating in xcap table,
-		the integrated server must send an MI command refershWatchers 
-		[pres_uri] [event] when a user modifies a rules document.
+used. If integrated ones, like OpenXCAP from AG Projects, 
+with direct access to database table, the parameter should be
+set to a positive value. Apart from updating in xcap table,
+the integrated server must send an MI command refershWatchers 
+[pres_uri] [event] when a user modifies a rules document.
 
 
 *Default value is "0".*
@@ -107,7 +107,7 @@ None to be used in configuration file.
 
 
 The module exports a number of parameters and functions that are used
-            in several other modules.
+in several other modules.
 
 
 ### bind_xcap_api(xcap_api_t* api)
@@ -135,15 +135,15 @@ typedef struct xcap_api {
 
 
 This function normalizes a SIP URI found in a XCAP document. It un-escapes it and
-                    adds the SIP scheme in case it was missing. Returns a statically allocated string
-                    buffer containing the normalized form.
+adds the SIP scheme in case it was missing. Returns a statically allocated string
+buffer containing the normalized form.
 
 
 Parameters:
 
 
 - *uri*-
-				the URI that needs to be normalized
+the URI that needs to be normalized
 
 
 ### parse_xcap_uri
@@ -156,9 +156,9 @@ Parameters:
 
 
 - *uri*-
-				the URI that needs to be parsed in string format
+the URI that needs to be parsed in string format
 - *xcap_uri*-
-				xcap_uri_t structure that will be filled with the parsed information
+xcap_uri_t structure that will be filled with the parsed information
 
   ```
   Parameter type:
@@ -182,27 +182,27 @@ Parameters:
 
 
 This function queries the local DB for the required XCAP document. It will return the document and its
-                    corresponding etag.
+corresponding etag.
 
 
 Parameters:
 
 
 - *user*-
-				user part od the URI of the document owner
+user part od the URI of the document owner
 - *domain*-
-				domain part od the URI of the document owner
+domain part od the URI of the document owner
 - *type*-
-                                type of the requested document, represents the AUID, can be one of PRES_RULES, RESOURCE_LISTS,
-                                RLS_SERVICES, PIDF_MANIPULATION, OMA_PRES_RULES
+type of the requested document, represents the AUID, can be one of PRES_RULES, RESOURCE_LISTS,
+RLS_SERVICES, PIDF_MANIPULATION, OMA_PRES_RULES
 - *filename*-
-				if specified it will be used to match the document filename, it defaults to 'index'
+if specified it will be used to match the document filename, it defaults to 'index'
 - *match_etag*-
-				if specified the document is only returned its etag matches this one
+if specified the document is only returned its etag matches this one
 - *doc*-
-				reference to the storage for the returned document
+reference to the storage for the returned document
 - *etag*-
-				reference to the storage for the returned document's etag
+reference to the storage for the returned document's etag
 
 
 ### db_url
@@ -221,7 +221,7 @@ Name of the table used to store XCAP documents. Defaults to 'xcap'.
 
 
 Boolean flag indicating if the XCAP server has access to the local database or
-                xcap_client will be used to fetch documents.
+xcap_client will be used to fetch documents.
 
 
 *doc copyrights:*
