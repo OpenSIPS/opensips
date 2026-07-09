@@ -10,47 +10,47 @@ description: "Least cost routing (LCR) module implements two vaguely related cap
 
 
 Least cost routing (LCR) module implements two vaguely
-	related capabilities:
+related capabilities:
 
 
 - sequential forwarding of a request to one or more gateways
-				(functions load_gws and next_gw)
+(functions load_gws and next_gw)
 - sequential forwarding to contacts
-	according to their q value (functions load_contacts and
-	next_contacts).
+according to their q value (functions load_contacts and
+next_contacts).
 
 
 For the purpose of facilitating least cost routing of requests,
-	each gateway belongs to a gateway group and each gateway group
-	is associated with one or more <prefix, from pattern, priority>
-	tuples.  A gateway matches a request if	user part of Request URI
-	matches a prefix and caller's URI matches a from pattern in a
-	tuple that belongs to the group of the gateway.
+each gateway belongs to a gateway group and each gateway group
+is associated with one or more <prefix, from pattern, priority>
+tuples.  A gateway matches a request if	user part of Request URI
+matches a prefix and caller's URI matches a from pattern in a
+tuple that belongs to the group of the gateway.
 
 
 Matching gateways are then ordered for forwarding
-	purpose (1) according to longest user part match, (2) according to 
-	tuple's priority, and (3) randomly (prefix_mode = 0) or (1)
-	according to gateway's priority and (2) randomly (prefix_mode =
-	1).  In prefix_mode 0, prefix is a string of characters and in
-	prefix_mode 1, prefix is a regular expression.  From pattern
-	is always a regular expression or empty.  Empty from pattern
-	matches anything. Smaller priority value means higher priority
-	(highest priority value being 0).
+purpose (1) according to longest user part match, (2) according to 
+tuple's priority, and (3) randomly (prefix_mode = 0) or (1)
+according to gateway's priority and (2) randomly (prefix_mode =
+1).  In prefix_mode 0, prefix is a string of characters and in
+prefix_mode 1, prefix is a regular expression.  From pattern
+is always a regular expression or empty.  Empty from pattern
+matches anything. Smaller priority value means higher priority
+(highest priority value being 0).
 
 
 When a gateway is selected, Request URI user part is stripped by 
-	the number of characters as specified by the gateways strip
-	count. Subsequently, Request URI is rewritten based on gateway's
-	URI scheme, tag, IP address, port, and transport protocol.  Valid
-	URI scheme values are NULL = sip, 1 = sip and 2 = sips.  Tag is
-	inserted in front of Request URI user part. Currently valid transport
-	protocol values are NULL = none, 1 = udp, 2 = tcp, and 3 = tls.
+the number of characters as specified by the gateways strip
+count. Subsequently, Request URI is rewritten based on gateway's
+URI scheme, tag, IP address, port, and transport protocol.  Valid
+URI scheme values are NULL = sip, 1 = sip and 2 = sips.  Tag is
+inserted in front of Request URI user part. Currently valid transport
+protocol values are NULL = none, 1 = udp, 2 = tcp, and 3 = tls.
 
 
 As a side effect of gateway selection, gateway's flags (that may
-	contain information about capabilities of the gateway)
-	are stored into an AVP.
+contain information about capabilities of the gateway)
+are stored into an AVP.
 
 
 ### Dependencies
@@ -64,14 +64,14 @@ The following modules must be loaded before this module:
 
 - *TM module*
 - *A database module like mysql, postgres or 
-			dbtext*.
+dbtext*.
 
 
 #### External libraries or applications
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module:
+running OpenSIPS with this module:
 
 
 - *none*.
@@ -87,7 +87,7 @@ URL of the database table to be used.
 
 
 *Default value is 
-			"mysql://opensipsro:opensipsro@localhost/opensips".*
+"mysql://opensipsro:opensipsro@localhost/opensips".*
 
 
 ```opensips title="Setting db_url module parameter"
@@ -133,7 +133,7 @@ modparam("lcr","gw_name_column","gw_name")
 
 
 Name of the column holding the group ID of gateway both
-		in gw and lcr tables.
+in gw and lcr tables.
 
 
 *Default value is "grp_id".*
@@ -198,7 +198,7 @@ modparam("lcr","uri_scheme_column","scheme")
 
 
 Name of the column holding the transport type to be used for 
-		the gateway.
+the gateway.
 
 
 *Default value is "transport".*
@@ -215,8 +215,8 @@ modparam("lcr","transport_column","transport")
 
 
 Name of the column holding the number of characters
-		to be stripped from the front of Request URI user part
-		before inserting tag.
+to be stripped from the front of Request URI user part
+before inserting tag.
 
 
 *Default value is "strip".*
@@ -281,7 +281,7 @@ modparam("lcr","lcr_table","lcr")
 
 
 Name of the column holding prefix of Request URI user
-		part.
+part.
 
 
 *Default value is "prefix".*
@@ -330,11 +330,11 @@ modparam("lcr","priority_column","priority")
 
 
 Internal AVP that load_contacts function uses to store
-		contacts of the destination set.
+contacts of the destination set.
 
 
 *There is NO default value, thus this variable must
-			be defined in opensips.cfg.*
+be defined in opensips.cfg.*
 
 
 ```opensips title="Setting contact_avp module parameter"
@@ -348,12 +348,12 @@ modparam("lcr", "contact_avp", "$avp(i:711)")
 
 
 An AVP that contains a final response timeout
-		for INVITEs.  Its value must be the same as that of the
-		corresponding tm module parameter.
+for INVITEs.  Its value must be the same as that of the
+corresponding tm module parameter.
 
 
 *There is NO default value, thus this variable must
-			be defined in opensips.cfg.*
+be defined in opensips.cfg.*
 
 
 ```opensips title="Setting fr_inv_timer_avp module parameter"
@@ -367,11 +367,11 @@ modparam("lcr|tm", "fr_inv_timer_avp", "$avp(i:704)")
 
 
 Internal AVP that load_gws function uses to store information of
-   matching gateways.
+matching gateways.
 
 
 *There is NO default value, thus this variable must
-			be defined in opensips.cfg.*
+be defined in opensips.cfg.*
 
 
 ```opensips title="Setting gw_uri_avp module parameter"
@@ -388,7 +388,7 @@ An AVP that contains caller's RPID (if any).
 
 
 *There is NO default value, thus this variable must
-			be defined in opensips.cfg.*
+be defined in opensips.cfg.*
 
 
 ```opensips title="Setting rpid_avp module parameter"
@@ -402,11 +402,11 @@ modparam("^auth$|lcr", "rpid_avp", "$avp(i:302)")
 
 
 Internal AVP that next_gw function uses to store Request-URI user for
-   subsequent next_gw calls.
+subsequent next_gw calls.
 
 
 *There is NO default value, thus this variable must
-			be defined in opensips.cfg.*
+be defined in opensips.cfg.*
 
 
 ```opensips title="Setting ruri_user_avp module parameter"
@@ -420,7 +420,7 @@ modparam("lcr", "ruri_user_avp", "$avp(i:500)")
 
 
 Sets the value of the fist INVITE's Final Response timeout to be used 
-		during sequential forwarding:
+during sequential forwarding:
 
 
 *Default value is 90.*
@@ -437,13 +437,13 @@ modparam("lcr","fr_inv_timer",90)
 
 
 Sets the value of the next INVITE's Final Response timeouts to be used 
-		during sequential forwarding:
+during sequential forwarding:
 
 
 Function next_contacts() sets tm fr_inv_timer to fr_inv_timer_next
-		value if, after next contacts, there are still lower qvalue
-		contacts available, and to fr_inv_timer value if next contacts are
-		the last ones left.
+value if, after next contacts, there are still lower qvalue
+contacts available, and to fr_inv_timer value if next contacts are
+the last ones left.
 
 
 *Default value is 30.*
@@ -460,11 +460,11 @@ modparam("lcr","fr_inv_timer_next",30)
 
 
 An AVP where successful next_gw and from_gw functions
-		store gateway's flags.
+store gateway's flags.
 
 
 *There is NO default value, thus this variable must
-			be defined in opensips.cfg.*
+be defined in opensips.cfg.*
 
 
 ```opensips title="Setting flags_avp module parameter"
@@ -478,11 +478,11 @@ modparam("lcr", "flags_avp", "$avp(i:712)")
 
 
 Defines the prefix mode: string or regular expression.
-		When set to 0, the prefix mode is set to string and
-		matching is implemented as a simple string comparison. 
-		When set to 1, the prefix mode is
-		set to regex and matching is implemented as regular
-		expression match.
+When set to 0, the prefix mode is set to string and
+matching is implemented as a simple string comparison. 
+When set to 1, the prefix mode is
+set to regex and matching is implemented as regular
+expression match.
 
 
 *Default value is 0.*
@@ -503,12 +503,12 @@ modparam("lcr", "prefix_mode", 1)
 
 
 Loads URI schemes, addresses, ports, and transports of
-		matching gateways to gw_uri_avp AVPs
-		(see Overview section). If optional pseudo variable
-		argument is included, caller's URI is taken from it.
-		If pseudo variable argument is not included, caller's
-		URI is taken from rpid_avp AVP or, if rpid_avp value is
-		empty, from From URI. Returns 1 or -1 depending on success.
+matching gateways to gw_uri_avp AVPs
+(see Overview section). If optional pseudo variable
+argument is included, caller's URI is taken from it.
+If pseudo variable argument is not included, caller's
+URI is taken from rpid_avp AVP or, if rpid_avp value is
+empty, from From URI. Returns 1 or -1 depending on success.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -528,14 +528,14 @@ if (!load_gws("$var(caller_uri)")) {
 
 
 Loads URI schemes, addresses, ports, and transports of
-		matching gateways to gw_uri_avp AVPs
-		(see Overview section), but only gateways belonging to the
-		group given in group-id argument are loaded.  group-id
-		argument is
-		a string and may contain pseudo-variables that are
-		replaced at runtime.  Caller's
-		URI is taken from rpid_avp AVP or, if rpid_avp value is
-		empty, from From URI. Returns 1 or -1 depending on success.
+matching gateways to gw_uri_avp AVPs
+(see Overview section), but only gateways belonging to the
+group given in group-id argument are loaded.  group-id
+argument is
+a string and may contain pseudo-variables that are
+replaced at runtime.  Caller's
+URI is taken from rpid_avp AVP or, if rpid_avp value is
+empty, from From URI. Returns 1 or -1 depending on success.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -561,23 +561,23 @@ if (!load_gws_from_grp("$avp(s:gateway_group)")) {
 
 
 If called from a route block, replaces URI scheme, host, port, and
-		transport of Request-URI by the values stored in first gw_uri_avp AVP
-		and destroys that AVP.  Saves user part of Request-URI into
-		ruri_user_avp AVP for use in subsequent next_gw() calls.
+transport of Request-URI by the values stored in first gw_uri_avp AVP
+and destroys that AVP.  Saves user part of Request-URI into
+ruri_user_avp AVP for use in subsequent next_gw() calls.
 
 
 If called from a failure route block, appends a new branch to
-		request, where  URI scheme, host, port, and transport of Request-URI
-		is replaced by the values stored in the first gw_uri_avp AVP and
-		destroys that AVP.  Request-URI user is taken from ruri_user_avp
-		AVP.
+request, where  URI scheme, host, port, and transport of Request-URI
+is replaced by the values stored in the first gw_uri_avp AVP and
+destroys that AVP.  Request-URI user is taken from ruri_user_avp
+AVP.
 
 
 As a side effect, stores gateway's flags to flags_avp.
 
 
 Returns 1 on success and -1 if there were no gateways left or if an
-		error occurred (see syslog).
+error occurred (see syslog).
 
 
 Must be preceded by successful load_gws() call.
@@ -610,15 +610,15 @@ if (!next_gw()) {
 
 
 Checks if request came from IP address of a
-			gateway.  IP address to be checked is either
-			taken from source IP address of the request or
-			(if present) from pseudo variable argument.
-			As a side effect, stores gateway's flags to
-			flags_avp.
+gateway.  IP address to be checked is either
+taken from source IP address of the request or
+(if present) from pseudo variable argument.
+As a side effect, stores gateway's flags to
+flags_avp.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE.
+ONREPLY_ROUTE.
 
 
 ```opensips title="from_gw usage"
@@ -643,13 +643,13 @@ if (from_gw("$si")) {
 
 
 Checks if request came from IP address of a
-			gateway that belongs to the given group.  Sets
-			or resets a message flag depending on whether
-			the gateway supports directed media.
+gateway that belongs to the given group.  Sets
+or resets a message flag depending on whether
+the gateway supports directed media.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE.
+ONREPLY_ROUTE.
 
 
 ```opensips title="from_gw_grp usage"
@@ -665,8 +665,8 @@ if (from_gw_grp("1")) {
 
 
 Checks if in-dialog request goes to a gateway. If an optional
-			group-id is given, only gateways belonging to this group
-			are checked.
+group-id is given, only gateways belonging to this group
+are checked.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -696,11 +696,11 @@ if (to_gw("1")) {
 
 
 Loads contacts in destination set in increasing qvalue order as
-		values of lcr_contact AVP.  If all contacts in the destination set
-		have the same qvalue, load_contacts() does not do anything thus
-		minimizing performance impact of sequential forking capability when
-		it is not needed.  Returns 1 if loading of contacts succeeded or
-		there was nothing to do.  Returns -1 on error (see syslog).
+values of lcr_contact AVP.  If all contacts in the destination set
+have the same qvalue, load_contacts() does not do anything thus
+minimizing performance impact of sequential forking capability when
+it is not needed.  Returns 1 if loading of contacts succeeded or
+there was nothing to do.  Returns -1 on error (see syslog).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -720,17 +720,17 @@ if (!load_contacts()) {
 
 
 If called from a route block, replaces Request-URI with the first
-		lcr_contact AVP value, adds the remaining lcr_contact AVP values 
-		with the same qvalue as branches, and destroys those AVPs. It does
-		nothing if there are no lcr_contact AVPs.  Returns 1 if there were 
-		no errors and -1 if an error occurred (see syslog).
+lcr_contact AVP value, adds the remaining lcr_contact AVP values 
+with the same qvalue as branches, and destroys those AVPs. It does
+nothing if there are no lcr_contact AVPs.  Returns 1 if there were 
+no errors and -1 if an error occurred (see syslog).
 
 
 If called from a failure route block, adds the first lcr_contact 
-		AVP value and all following lcr_contact AVP values with the same 
-		qvalue as new branches to request and destroys those AVPs. 
-		Returns 1 if new branches were successfully added and -1 on error 
-		(see syslog) or if there were no more lcr_contact AVPs.
+AVP value and all following lcr_contact AVP values with the same 
+qvalue as new branches to request and destroys those AVPs. 
+Returns 1 if new branches were successfully added and -1 on error 
+(see syslog) or if there were no more lcr_contact AVPs.
 
 
 Must be preceded by successful load_contacts() call.
@@ -765,7 +765,7 @@ if (next_contacts()) {
 
 
 Causes lcr module to re-read the contents of gateway table
-			into memory.
+into memory.
 
 
 Name: *lcr_reload*
@@ -788,7 +788,7 @@ MI FIFO Command Format:
 
 
 Causes lcr module to dump the contents of its in-memory gateway
-			table.
+table.
 
 
 Name: *lcr_dump*
@@ -811,9 +811,9 @@ MI FIFO Command Format:
 
 
 There is an unlikely race condition on lcr reload. If a process uses
-		in memory gw table, which is reloaded at the same time twice through
-		FIFO, the second reload will delete the original table still in use
-		by the process.
+in memory gw table, which is reloaded at the same time twice through
+FIFO, the second reload will delete the original table still in use
+by the process.
 <!-- CONTRIBUTORS -->
 
 ### License

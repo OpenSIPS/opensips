@@ -10,34 +10,34 @@ description: "Exec module allows to start an external command from a OpenSIPS sc
 
 
 Exec module allows to start an external command from a OpenSIPS script. 
-		The commands may be any valid shell commands--the command string is 
-		passed to shell using "popen" command. OpenSIPS passes 
-		additionally lot of information about request in environment
-		variables:
+The commands may be any valid shell commands--the command string is 
+passed to shell using "popen" command. OpenSIPS passes 
+additionally lot of information about request in environment
+variables:
 
 
 - SIP_HF_<hf_name> contains value of each header field in 
-			request. If a header field occurred multiple times, values are 
-			concatenated and comma-separated. <hf_name> is in capital 
-			letters. Ff a header-field name occurred in compact form, 
-			<hf_name> is canonical.
+request. If a header field occurred multiple times, values are 
+concatenated and comma-separated. <hf_name> is in capital 
+letters. Ff a header-field name occurred in compact form, 
+<hf_name> is canonical.
 - SIP_TID is transaction identifier. All request retransmissions or 
-			CANCELs/ACKs associated with a previous INVITE result in the same 
-			value.
+CANCELs/ACKs associated with a previous INVITE result in the same 
+value.
 - SIP_DID is dialog identifier, which is the same as to-tag. 
-			Initially, it is empty.
+Initially, it is empty.
 - SIP_SRCIP is source IP address from which request came.
 - SIP_ORURI is original request URI.
 - SIP_RURI is *current* request URI (if 
-			unchanged, equal to original).
+unchanged, equal to original).
 - SIP_USER is userpart of *current* request URI.
 - SIP_OUSER is userpart of original request URI.
 
 
 NOTE: The envirnment variables must be specified with double $
-		(e.g., $$SIP_OUSER) in the parameters given to exec functions.
-		Otherwise they will be evaluated as OpenSIPS pseudo-variables,
-		throwing errors.
+(e.g., $$SIP_OUSER) in the parameters given to exec functions.
+Otherwise they will be evaluated as OpenSIPS pseudo-variables,
+throwing errors.
 
 
 ### Dependencies
@@ -56,7 +56,7 @@ The following  modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -85,7 +85,7 @@ modparam("exec", "setvars", 1)
 
 
 Specifies the longest time a program is allowed to execute. If the 
-		time is exceeded, the program is killed.
+time is exceeded, the program is killed.
 
 
 *Default value is 0.*
@@ -105,20 +105,20 @@ modparam("exec", "time_to_kill", 20)
 
 
 Executes an external command. Current URI is passed to the command 
-		as parameter. Output of the command is considered URI set 
-		(separated by lines).
+as parameter. Output of the command is considered URI set 
+(separated by lines).
 
 
 Meaning of the parameters is as follows:
 
 
 - *command* - Command to be executed. It can
-			include pseudo- variabes;
+include pseudo- variabes;
 
 
 WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_dset("print-contact.sh '$ct'");
+character in it, the var needs to be placed inside quotes, for ex:
+exec_dset("print-contact.sh '$ct'");
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -136,24 +136,24 @@ exec_dset("echo TEST > /tmp/$rU.txt");
 
 
 Executes an external command. The whole message is passed to it in 
-		input, no command-line parameters are added, output of the command is 
-		not processed.
+input, no command-line parameters are added, output of the command is 
+not processed.
 
 
 See sip-server/modules/exec/etc/exec.cfg in the source tarball for 
-		information on usage.
+information on usage.
 
 
 Meaning of the parameters is as follows:
 
 
 - *command* - Command to be executed. It
-			can include pseudo-variables.
+can include pseudo-variables.
 
 
 WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_msg("print-contact.sh '$ct'");
+character in it, the var needs to be placed inside quotes, for ex:
+exec_msg("print-contact.sh '$ct'");
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -171,22 +171,22 @@ exec_msg("echo TEST > /tmp/$rU.txt");
 
 
 Executes an external command. Each line from output of the command
-		is saved in an AVP from 'avplist'. If 'avplist' is missing, the
-		AVP are named 1, 2, 3, ...
+is saved in an AVP from 'avplist'. If 'avplist' is missing, the
+AVP are named 1, 2, 3, ...
 
 
 Meaning of the parameters is as follows:
 
 
 - *command* - Command to be executed. It can
-			include pseudo- variabes;
+include pseudo- variabes;
 - *avplist* - comma separated list with AVP 
-			names to store the result in;
+names to store the result in;
 
 
 WARNING: if the var you are passing out has a bash special
-		character in it, the var needs to be placed inside quotes, for ex:
-		exec_avp("print-contact.sh '$ct'");
+character in it, the var needs to be placed inside quotes, for ex:
+exec_avp("print-contact.sh '$ct'");
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -204,8 +204,8 @@ exec_avp("echo TEST", "$avp(s:test)");
 
 
 There is currently no guarantee that scripts ever return and stop 
-		blocking SIP server. (There is kill.c but it is not used along with 
-		the current mechanisms based on popen. Besides that kill.c is ugly).
+blocking SIP server. (There is kill.c but it is not used along with 
+the current mechanisms based on popen. Besides that kill.c is ugly).
 <!-- CONTRIBUTORS -->
 
 ### License

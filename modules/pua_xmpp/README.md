@@ -13,7 +13,7 @@ This module is a gateway for presence between SIP and XMPP.
 
 
 It translates one format into another and uses xmpp, pua and presence
-		modules to manage the transmition of presence state information.
+modules to manage the transmition of presence state information.
 
 
 ### Dependencies
@@ -34,7 +34,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml*.
@@ -66,9 +66,9 @@ Functions exported to be used in configuration file.
 
 
 Function that handles Notify messages addressed to a user from
-		an xmpp domain. It requires filtering after method and domain in
-		configuration file. If the function is successful, a 2xx reply must
-		be sent.
+an xmpp domain. It requires filtering after method and domain in
+configuration file. If the function is successful, a 2xx reply must
+be sent.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -90,15 +90,15 @@ This function can be used from REQUEST_ROUTE.
 
 
 Function called when a Subscribe addressed to a user from a
-		xmpp domain is received. It calls sending a Subscribe for 
-		winfo for the user, and the following Notify with dialog-info
-		is translated into a subscription in xmpp. 
-		It also requires filtering in configuration file, after method, 
-		domain and event(only for presence).
+xmpp domain is received. It calls sending a Subscribe for 
+winfo for the user, and the following Notify with dialog-info
+is translated into a subscription in xmpp. 
+It also requires filtering in configuration file, after method, 
+domain and event(only for presence).
 
 
 It takes 2 parameters: request_uri and the value of Expires header field 
-		in received Subscribe.
+in received Subscribe.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -125,7 +125,7 @@ This function can be used from REQUEST_ROUTE.
 
 
 Instead of "sip-xmpp.siphub.ro"  in the example you should use the value
-	set for the xmpp module parameter named 'gateway_domain'.
+set for the xmpp module parameter named 'gateway_domain'.
 
 
 ## Developer Guide

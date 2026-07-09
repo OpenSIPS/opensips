@@ -10,29 +10,29 @@ description: "The modules is an XCAP client for OpenSIPS that can be used by oth
 
 
 The modules is an XCAP client for OpenSIPS that can be used by other modules.
-	It fetches XCAP elements, either documents or part of them, by sending 
-	HTTP GET requests. It also offers support for conditional queries.
-	It uses libcurl library as a client-side HTTP transfer library.
+It fetches XCAP elements, either documents or part of them, by sending 
+HTTP GET requests. It also offers support for conditional queries.
+It uses libcurl library as a client-side HTTP transfer library.
 
 
 The module offers an xcap client interface with general functions that
-	allow requesting for an specific element from an xcap server.
-	In addition to that it also offers the service of storing and update
-	in database the documents it receives. In this case only an initial
-	request to the module is required - xcapGetNewDoc-which is like a 
-	request to the module to handle from that point on the referenced
-	document so as to promise that the newest version will always be
-	present in database.
+allow requesting for an specific element from an xcap server.
+In addition to that it also offers the service of storing and update
+in database the documents it receives. In this case only an initial
+request to the module is required - xcapGetNewDoc-which is like a 
+request to the module to handle from that point on the referenced
+document so as to promise that the newest version will always be
+present in database.
 
 
 The update method is also configurable, 
-	either through periodical queries, applicable to any kind of xcap
-	server or with an MI command that should be sent by the server
-	upon an update.
+either through periodical queries, applicable to any kind of xcap
+server or with an MI command that should be sent by the server
+upon an update.
 
 
 The module is currently used by the presence_xml module, if the 
-	'integrated_xcap_server' parameter is not set.
+'integrated_xcap_server' parameter is not set.
 
 
 ### Dependencies
@@ -48,7 +48,7 @@ The modules is not dependent of any OpenSIPS module.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml-dev*.
@@ -94,10 +94,10 @@ modparam("xcap_client", "xcap_table", "xcaps")
 
 
 A flag to disable periodical query as an update method for
-		the documents the module is responsible for. It could be
-		disabled when the xcap server is capable to send the exported
-		MI command when a change occurs or when another module in OpenSIPS
-		handles updates.
+the documents the module is responsible for. It could be
+disabled when the xcap server is capable to send the exported
+MI command when a change occurs or when another module in OpenSIPS
+handles updates.
 
 
 To disable it set this parameter to 0.
@@ -117,8 +117,8 @@ modparam("xcap_client", "periodical_query", 0)
 
 
 Should be set if periodical query is not disabled. 
-		Represents the time interval the xcap servers should be 
-		queried for an update
+Represents the time interval the xcap servers should be 
+queried for an update
 
 
 To disable it set this parameter to 0.
@@ -147,7 +147,7 @@ None to be used in configuration file.
 
 
 MI command that should be sent by an xcap server when a
-		stored document changes.
+stored document changes.
 
 
 Name: *refreshXcapDoc*
@@ -178,9 +178,9 @@ _empty_line_
 
 
 The module exports a number of functions that allow selecting 
-		and retrieving an element from an xcap server and also registering
-		a callback to be called when a MI command refreshXcapDoc is received
-		and the document in question is retrieved.
+and retrieving an element from an xcap server and also registering
+a callback to be called when a MI command refreshXcapDoc is received
+and the document in question is retrieved.
 
 
 ### bind_xcap_api(xcap_api_t* api)
@@ -227,16 +227,16 @@ xcap_doc_sel_t* doc_sel, xcap_node_sel_t* node_sel);
 
 
 This function sends a HTTP request and gets the specified information
-			from the xcap server.
+from the xcap server.
 
 
 The parameters signification:
 
 
 - *xcap_root*-
-				the XCAP server address;
+the XCAP server address;
 - *doc_sel*-
-				structure with document selection info;
+structure with document selection info;
 
   ```
   Parameter type:
@@ -286,15 +286,15 @@ structure with node selection info;
   ...
   ```
 The node selector is represented like a list of steps that will
-		be represented in the path string separated by '/' signs. 
-		The namespaces for the nodes are stored also in a list, as an
-		association of name and value, where the value is to be included
-		in the respective string val field of the step.
+be represented in the path string separated by '/' signs. 
+The namespaces for the nodes are stored also in a list, as an
+association of name and value, where the value is to be included
+in the respective string val field of the step.
 To construct the node structure the following functions in the xcap_api
-		structure should be used: 'int_node_sel', 'add_step' and if needed, 
-		'add_terminal'.
+structure should be used: 'int_node_sel', 'add_step' and if needed, 
+'add_terminal'.
 If the intention is to retrieve the whole document this argument must
-		be NULL.
+be NULL.
 
 
 ### register_xcb
@@ -312,7 +312,7 @@ typedef int (*register_xcapcb_t)(int types, xcap_cb f);
 
 
 - 'types' parameter can have a combined value of PRES_RULES, RESOURCE_LIST,
-	RLS_SERVICES and PIDF_MANIPULATION.
+RLS_SERVICES and PIDF_MANIPULATION.
 
 
 -the callback function has type :

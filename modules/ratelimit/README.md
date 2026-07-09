@@ -10,24 +10,24 @@ description: "This module implements rate limiting for SIP requests. In contrast
 
 
 This module implements rate limiting for SIP requests. In contrast to
-		the PIKE module this limits the flow based on a per SIP request type
-		basis and not per source IP. The MI interface can be used to
-		change tunables while running OpenSIPS.
+the PIKE module this limits the flow based on a per SIP request type
+basis and not per source IP. The MI interface can be used to
+change tunables while running OpenSIPS.
 
 
 The module implements the pipe/queue policy from BSD's ipfw manual,
-		with some simplifications.  In principle, each specified method is
-		associated with its own queue and a number of queues are connected
-		to a certain pipe (see the queue and pipe params).
+with some simplifications.  In principle, each specified method is
+associated with its own queue and a number of queues are connected
+to a certain pipe (see the queue and pipe params).
 
 
 ### Use Cases
 
 
 Limiting the rate messages are processed on a system directly
-		influences the load. The ratelimit module can be used to protect a
-		single host or to protect an OpenSIPS cluster when run on the dispatching
-		box in front.
+influences the load. The ratelimit module can be used to protect a
+single host or to protect an OpenSIPS cluster when run on the dispatching
+box in front.
 
 
 A sample configuration snippet might look like this:
@@ -47,91 +47,91 @@ A sample configuration snippet might look like this:
 
 
 Upon every incoming request listed above rl_check is invoked. It
-		returns an OK code if the current per request load is below the
-		configured threshold. If the load is exceeded the function returns an
-		error and an administrator can discard requests with a stateless
-		response.
+returns an OK code if the current per request load is below the
+configured threshold. If the load is exceeded the function returns an
+error and an administrator can discard requests with a stateless
+response.
 
 
 ### Static Rate Limiting Algorithms
 
 
 The ratelimit module supports two different statc algorithms
-		to be used by rl_check to determine whether a message should be
-		blocked or not.
+to be used by rl_check to determine whether a message should be
+blocked or not.
 
 
 #### Tail Drop Algorithm (TAILDROP)
 
 
 This is a trivial algorithm that imposes some risks when used in
-		conjunction with long timer intervals. At the start of each interval
-		an internal counter is reset and incremented for each incoming
-		message. Once the counter hits the configured limit rl_check returns
-		an error.
+conjunction with long timer intervals. At the start of each interval
+an internal counter is reset and incremented for each incoming
+message. Once the counter hits the configured limit rl_check returns
+an error.
 
 
 The downside of this algorithm is that it can lead to SIP client
-		synchronization. During a relatively long interval only the first
-		requests (i.e. REGISTERs) would make it through. Following messages
-		(i.e. RE-REGISTERs) will all hit the SIP proxy at the same time when a
-		common Expire timer expired. Other requests will be retransmissed
-		after given time, the same on all devices with the same firmware/by
-		the same vendor.
+synchronization. During a relatively long interval only the first
+requests (i.e. REGISTERs) would make it through. Following messages
+(i.e. RE-REGISTERs) will all hit the SIP proxy at the same time when a
+common Expire timer expired. Other requests will be retransmissed
+after given time, the same on all devices with the same firmware/by
+the same vendor.
 
 
 #### Random Early Detection Algorithm (RED)
 
 
 Random Early Detection tries to circumvent the synchronization problem
-		imposed by the tail drop algorithm by measuring the average load and
-		adapting the drop rate dynamically. When running with the RED
-		algorithm (enabled by default) OpenSIPS will return errors to the OpenSIPS
-		routing engine every n'th packet trying to evenly spread the measured
-		load of the last timer interval onto the current interval. As a
-		negative side effect OpenSIPS might drop messages although the limit might
-		not be reached within the interval. Decrease the timer interval if you
-		encounter this.
+imposed by the tail drop algorithm by measuring the average load and
+adapting the drop rate dynamically. When running with the RED
+algorithm (enabled by default) OpenSIPS will return errors to the OpenSIPS
+routing engine every n'th packet trying to evenly spread the measured
+load of the last timer interval onto the current interval. As a
+negative side effect OpenSIPS might drop messages although the limit might
+not be reached within the interval. Decrease the timer interval if you
+encounter this.
 
 
 ### Dynamic Rate Limiting Algorithms
 
 
 When running OpenSIPS on different machines, one has to adjust the drop
-		rates for the static algorithms to maintain a sub 100% load average or
-		packets start getting dropped in the network stack.  While this is not
-		in itself difficult, it isn't neither accurate nor trivial: another
-		server taking a notable fraction of the cpu time will require re-tuning
-		the parameters.
+rates for the static algorithms to maintain a sub 100% load average or
+packets start getting dropped in the network stack.  While this is not
+in itself difficult, it isn't neither accurate nor trivial: another
+server taking a notable fraction of the cpu time will require re-tuning
+the parameters.
 
 
 While tuning the drop rates from the outside based on a certain factor
-		is possible, having the algorithm run inside ratelimit permits tuning
-		the rates based on internal server parameters and is somewhat more
-		flexible (or it will be when support for external load factors - as
-		opposed to cpu load - is added).
+is possible, having the algorithm run inside ratelimit permits tuning
+the rates based on internal server parameters and is somewhat more
+flexible (or it will be when support for external load factors - as
+opposed to cpu load - is added).
 
 
 #### Feedback Algorithm (FEEDBACK)
 
 
 Using the PID Controller model
-		(see [Wikipedia page](http://en.wikipedia.org/wiki/PID_controller)),
-		the drop rate is adjusted dynamically based on the load factor so that
-		the load factor always drifts towards the specified limit (or setpoint,
-		in PID terms).
+(see [Wikipedia page](http://en.wikipedia.org/wiki/PID_controller)),
+the drop rate is adjusted dynamically based on the load factor so that
+the load factor always drifts towards the specified limit (or setpoint,
+in PID terms).
 
 
 As reading the cpu load average is relatively expensive (opening /proc/stat,
-		parsing it, etc), this only happens once every timer_interval seconds and
-		consequently the FEEDBACK value is only at these intervals recomputed. This
-		in turn makes it difficult for the drop rate to adjust quickly.  Worst case
-		scenarios are request rates going up/down instantly by thousands - it takes
-		up to 20 seconds for the controller to adapt to the new request rate.
+parsing it, etc), this only happens once every timer_interval seconds and
+consequently the FEEDBACK value is only at these intervals recomputed. This
+in turn makes it difficult for the drop rate to adjust quickly.  Worst case
+scenarios are request rates going up/down instantly by thousands - it takes
+up to 20 seconds for the controller to adapt to the new request rate.
 
 
 Generally though, as real life request rates drift by less, adapting should
-		happen much faster.
+happen much faster.
 
 
 ### Dependencies
@@ -150,7 +150,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -163,12 +163,12 @@ The following libraries or applications must be installed before
 
 
 The initial length of a timer interval in seconds. All amounts of
-		messages have to be divided by this timer to get a messages per second
-		value.
+messages have to be divided by this timer to get a messages per second
+value.
 
 
 IMPORTANT: A too small value may lead to performance penalties due to
-		timer process overloading.
+timer process overloading.
 
 
 *Default value is 10.*
@@ -185,13 +185,13 @@ modparam("ratelimit", "timer_interval", 5)
 
 
 The format of the queue parameter is "pipe_no:method".  For each defined
-		method, the algorithm defined by pipe number "pipe_no" will be used.
+method, the algorithm defined by pipe number "pipe_no" will be used.
 
 
 To specify a queue that accepts all methods, use * instead of METHOD.
-		As queues are matched against request methods, you will usually want to have
-		this as the last queue added or other queues with specific methods will never
-		match.  At this time, glob or regexp patterns are not supported.
+As queues are matched against request methods, you will usually want to have
+this as the last queue added or other queues with specific methods will never
+match.  At this time, glob or regexp patterns are not supported.
 
 
 ```opensips title="Set queue parameter"
@@ -210,13 +210,13 @@ modparam("ratelimit", "queue", "2:*")
 
 
 The format of the pipe param is "pipe_no:algorithm:limit".  For each defined
-		pipe, the given algorithm with the given limit will be used.
+pipe, the given algorithm with the given limit will be used.
 
 
 A pipe is characterised by its algorithm and limit (bandwidth, in ipfw terms).
-		When specifying a limit, the unit depends on the algorithm used and doesn't
-		need to be spedified also (eg, for TAILDROP or RED, limit means packets/sec,
-		whereas with the FEEDBACK algorithm, it means [CPU] load factor).
+When specifying a limit, the unit depends on the algorithm used and doesn't
+need to be spedified also (eg, for TAILDROP or RED, limit means packets/sec,
+whereas with the FEEDBACK algorithm, it means [CPU] load factor).
 
 
 ```opensips title="Set pipe parameter"
@@ -272,23 +272,23 @@ modparam("ratelimit", "reply_reason", "Limiting")
 
 
 Check the current request against the matched ratelimit algorithm.  If no
-		parameter is provided, the queue will be matched based on method type, and
-		then the pipe will be identified based on the matched queue.  If a pipe number
-		is provided as a parameter, then the given pipe number will be used for
-		identifying the ratelimit algorithm.
-		The pipe number must be provided via a pseudo variabile.  It is recommended to
-		provide the pipe number via an integer pseudovariabile.
+parameter is provided, the queue will be matched based on method type, and
+then the pipe will be identified based on the matched queue.  If a pipe number
+is provided as a parameter, then the given pipe number will be used for
+identifying the ratelimit algorithm.
+The pipe number must be provided via a pseudo variabile.  It is recommended to
+provide the pipe number via an integer pseudovariabile.
 
 
 The method will return an error code if the limit for the matched
-		algorithm is reached.
+algorithm is reached.
 
 
 Meaning of the parameters is as follows:
 
 
 - *pvar* - the pseudovariable holding the pipe id to
-						    be used by ratelimit.
+be used by ratelimit.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -325,14 +325,14 @@ This function can be used from REQUEST_ROUTE.
 
 
 Check the current request against the matched ratelimit algorithm.  If no
-		parameter is provided, the queue will be matched based on method type, and
-		then the pipe will be identified based on the matched queue.  If a pipe number
-		is provided as a parameter, then the given pipe number will be used for
-		identifying the ratelimit algorithm.
+parameter is provided, the queue will be matched based on method type, and
+then the pipe will be identified based on the matched queue.  If a pipe number
+is provided as a parameter, then the given pipe number will be used for
+identifying the ratelimit algorithm.
 
 
 The method will return an error code if the limit for the matched
-		algorithm is reached.
+algorithm is reached.
 
 
 Meaning of the parameters is as follows:
@@ -365,13 +365,13 @@ This function can be used from REQUEST_ROUTE.
 
 
 For the current request, a "503 - Server Unavailable" reply is sent back.
-		The reply may or may not have a "Retry-After" header.  If no parameter is given,
-		there will be no "Retry-After" header.  If only the
-		*max* parameter is given, the
-		reply will contain a "Retry-After: *max*" header.  If both
-		*min* and *max* params are given, the
-		reply will contain a "Retry-After: *random*" header with
-		*random* being a random value between the given min and max.
+The reply may or may not have a "Retry-After" header.  If no parameter is given,
+there will be no "Retry-After" header.  If only the
+*max* parameter is given, the
+reply will contain a "Retry-After: *max*" header.  If both
+*min* and *max* params are given, the
+reply will contain a "Retry-After: *random*" header with
+*random* being a random value between the given min and max.
 
 
 Meaning of the parameters is as follows:
@@ -435,9 +435,9 @@ Parameters:
 
 - *pipe_id* - pipe id.
 - *pipe_algorithm* - the
-			algorithm assigned to the given pipe id.
+algorithm assigned to the given pipe id.
 - *pipe_limit* - the limit
-			assigned to the given pipe id.
+assigned to the given pipe id.
 
 
 MI FIFO Command Format:
@@ -489,9 +489,9 @@ Parameters:
 
 - *queue_id* - queue id.
 - *queue_method* - the method
-			assigned to the given queue id.
+assigned to the given queue id.
 - *pipe_id* - the pipe id
-			assigned to the given queue id.
+assigned to the given queue id.
 
 
 MI FIFO Command Format:
@@ -585,7 +585,7 @@ MI FIFO Command Format:
 
 
 Force the value of the load parameter.  This methos is usefull
-		for testing the Feedback algorithm.
+for testing the Feedback algorithm.
 
 
 Name: *rl_push_load*
@@ -595,7 +595,7 @@ Parameters:
 
 
 - *load* - the forced value of load
-			(it must be greater then 0.0 and smaller then 1.0).
+(it must be greater then 0.0 and smaller then 1.0).
 
 
 MI FIFO Command Format:
@@ -613,7 +613,7 @@ MI FIFO Command Format:
 
 
 This MI function will enable/disable a WARNING debug log exposing the
-		internal counters for each pipe (useful in monitoring the ratelimit internals).
+internal counters for each pipe (useful in monitoring the ratelimit internals).
 
 
 Name: *rl_set_dbg*
@@ -623,7 +623,7 @@ Parameters:
 
 
 - *dbg* - the debug value (0 means disable and
-			1 means enable).
+1 means enable).
 
 
 MI FIFO Command Format:
@@ -641,7 +641,7 @@ MI FIFO Command Format:
 
 
 The pipes and queues are stored as static vectors, so no more than
-	MAX_PIPES/MAX_QUEUES can be added without recompilation.
+MAX_PIPES/MAX_QUEUES can be added without recompilation.
 
 
 - *MAX_PIPES* - 16
