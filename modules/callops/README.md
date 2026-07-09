@@ -10,44 +10,44 @@ description: "This module provides a set of functions that allow the user to con
 
 
 This module provides a set of functions that allow the user to control
-		ongoing calls. It can be used to trigger a call (either blind or attended)
-		transfer, or put a call on hold from the proxy side, rather than the
-		end-device side.
-		The module binds on top of the [OpenSIPS Dialog
-		module](../dialog) to get information about the ongoing calls, as well as
-		storing information about new calls that will be started.
+ongoing calls. It can be used to trigger a call (either blind or attended)
+transfer, or put a call on hold from the proxy side, rather than the
+end-device side.
+The module binds on top of the [OpenSIPS Dialog
+module](../dialog) to get information about the ongoing calls, as well as
+storing information about new calls that will be started.
 
 
 The module also triggers a set of events over Event Interface, providing
-		to external applications details about how calls are being transferred, and
-		how they link between them. These events can be used to track down all the
-		legs involved in a call transfer.
+to external applications details about how calls are being transferred, and
+how they link between them. These events can be used to track down all the
+legs involved in a call transfer.
 
 
 One of the biggest challenge when doing Call Transfer scenarios is linking
-		new calls to the old calls being transferred, especially in blind call
-		transfer scenarios. In order to solve this challenge, the module can be
-		configured to refer old legs in two different modes, changeable using the
-		[mode](#param_mode) parameter:
+new calls to the old calls being transferred, especially in blind call
+transfer scenarios. In order to solve this challenge, the module can be
+configured to refer old legs in two different modes, changeable using the
+[mode](#param_mode) parameter:
 
 
 - Automatically (default mode), by adding a special parameter to the
-				destination URI that is being sent in the REFER. When the new call
-				comes back, the parameter will be present in the Request URI of the
-				new call. The module will find it, link the new call to the old call,
-				and remove the parameter from the URI.
+destination URI that is being sent in the REFER. When the new call
+comes back, the parameter will be present in the Request URI of the
+new call. The module will find it, link the new call to the old call,
+and remove the parameter from the URI.
 - Manually, by using custom/external logic (such as a database, or
-				local storage), to match the old call. In this mode, the user has to
-				explicitly call the [call blind replace](#func_call_blind_replace)
-				function to link the two calls together.
+local storage), to match the old call. In this mode, the user has to
+explicitly call the [call blind replace](#func_call_blind_replace)
+function to link the two calls together.
 
 
 The module can also be used to catch *Notify refer* events
-		and reply to them from the OpenSIPS level. However, note that in *auto* mode even if the NOTIFY is handled when the dialog is matched,
-		the request will still continue its execution of the script, unlike when
-		*manual* mode is used with the
-		[call transfer notify](#func_call_transfer_notify) function. In order to avoid sending
-		the NOTIFY to the end-point, you have to drop it, like below:
+and reply to them from the OpenSIPS level. However, note that in *auto* mode even if the NOTIFY is handled when the dialog is matched,
+the request will still continue its execution of the script, unlike when
+*manual* mode is used with the
+[call transfer notify](#func_call_transfer_notify) function. In order to avoid sending
+the NOTIFY to the end-point, you have to drop it, like below:
 
 
 ```opensips title="Drop automatically handled NOTIFY refer events"
@@ -76,7 +76,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -89,26 +89,26 @@ The following libraries or applications must be installed before
 
 
 This parameter can be used to change the mode that the module
-		uses to match a transferred leg. Supported values are:
+uses to match a transferred leg. Supported values are:
 
 
 - *param* / *0* - when
-					doing a blind transfer, the destination sent in the
-					refer message will contain a parameter used to identify
-					the dialog that is being replaced. this parameter will be
-					automatically removed when the new call is received.
+doing a blind transfer, the destination sent in the
+refer message will contain a parameter used to identify
+the dialog that is being replaced. this parameter will be
+automatically removed when the new call is received.
 - *manual* / *1* - the user
-					will create its own logic to match the new calls, and will
-					call the [call blind replace](#func_call_blind_replace) function
-					to make OpenSIPS aware of the pair. Note that this mode does
-					not handle automatically the *Notify refer*
-					either, so you also have to use the
-					[call transfer notify](#func_call_transfer_notify) function to handle
-					them.
+will create its own logic to match the new calls, and will
+call the [call blind replace](#func_call_blind_replace) function
+to make OpenSIPS aware of the pair. Note that this mode does
+not handle automatically the *Notify refer*
+either, so you also have to use the
+[call transfer notify](#func_call_transfer_notify) function to handle
+them.
 - *callid* / *2* - similar
-					to the *param* value, except that instead
-					of storing in the Request URI the dialog id of the call to
-					be transfered, the actual callid is used as identifier.
+to the *param* value, except that instead
+of storing in the Request URI the dialog id of the call to
+be transfered, the actual callid is used as identifier.
 
 
 *Default value is "0 (auto mode using parameters)".*
@@ -125,9 +125,9 @@ modparam("callops", "mode", "manual") # use your own logic
 
 
 The parameter used to match the different calls together. This is
-		mainly using in the *param* mode, but it is also
-		used internally to store different values inside the transferred
-		dialog - make sure it does not overlap with existing dialog values.
+mainly using in the *param* mode, but it is also
+used internally to store different values inside the transferred
+dialog - make sure it does not overlap with existing dialog values.
 
 
 *Default value is "osid".*
@@ -147,20 +147,20 @@ modparam("callops", "match_param", "call")
 
 
 When *manual mode* is used, this function is
-				called to create a mapping between the transferring call and the
-				transferred call. It should be called when OpenSIPS receives a
-				new call that is transferring an existing call.
+called to create a mapping between the transferring call and the
+transferred call. It should be called when OpenSIPS receives a
+new call that is transferring an existing call.
 
 
 Parameters:
 
 
 - *callid* (string) - the existing call that
-						is being transferred.
+is being transferred.
 - *leg* (string, optional) - the leg that is
-						being transferred. If not specified, and OpenSIPS cannot
-						determine the leg based on its destination, the
-						*unknown* tag should be used.
+being transferred. If not specified, and OpenSIPS cannot
+determine the leg based on its destination, the
+*unknown* tag should be used.
 
 
 This function can be used only from a request route.
@@ -182,12 +182,12 @@ if (!has_totag() && is_method("INVITE")) {
 
 
 When *manual mode* is used, this function should
-				be called on in-dialog NOTIFY requests for an *Event: refer*
-				header, to handle them accordingly.
+be called on in-dialog NOTIFY requests for an *Event: refer*
+header, to handle them accordingly.
 
 
 Note that if the function successfully handles the NOTIFY request,
-				the script no longer continues its execution.
+the script no longer continues its execution.
 
 
 This function can be used from a request route, failure route and local route.
@@ -207,18 +207,18 @@ if (has_totag() && is_method("NOTIFY") && loose_route()) {
 
 
 This function triggers a blind call transfer by sending a REFER
-				message during an ongoing call. The function needs to be run inside
-				the context of the dialog you are transferring.
+message during an ongoing call. The function needs to be run inside
+the context of the dialog you are transferring.
 
 
 Parameters:
 
 
 - *leg* (string) - the leg that is
-						being transferred. Must be one of the *caller*
-						or *callee* values.
+being transferred. Must be one of the *caller*
+or *callee* values.
 - *destination* (string) - SIP URI of the destination
-						where the leg is being transferred.
+where the leg is being transferred.
 
 
 This function can be used from any route that has a dialog context.
@@ -238,25 +238,25 @@ if (has_totag() && && loose_route()) {
 
 
 This function triggers an attended call transfer by sending a REFER
-				message during an ongoing call. The function needs to be run inside
-				the context of the dialog you are transferring.
+message during an ongoing call. The function needs to be run inside
+the context of the dialog you are transferring.
 
 
 Parameters:
 
 
 - *leg* (string) - the leg that is
-						being transferred. Must be one of the *caller*
-						or *callee* values.
+being transferred. Must be one of the *caller*
+or *callee* values.
 - *transfer_callid* (string) - the callid of the
-						second dialog that is being transferred.
+second dialog that is being transferred.
 - *transfer_leg* (string) - the leg within the
-						second call that will be transferred to *leg*.
-						Must be one of the *caller* or
-						*callee* values.
+second call that will be transferred to *leg*.
+Must be one of the *caller* or
+*callee* values.
 - *destination* (string, optional) - SIP URI of the
-						destination where the leg is being transferred. If missing, the
-						From/To URI of the initial call are used.
+destination where the leg is being transferred. If missing, the
+From/To URI of the initial call are used.
 
 
 This function can be used from any route that has a dialog context.
@@ -282,9 +282,9 @@ MI command to transfer an ongoing call to a new destination.
 
 
 Depending on the parameters used, this command can do both
-		blind and attended transfers scenarios. When the
-		*transfer_callid* is used, then an attended
-		transfer is performed, other wise a blind transfer is issued.
+blind and attended transfers scenarios. When the
+*transfer_callid* is used, then an attended
+transfer is performed, other wise a blind transfer is issued.
 
 
 Name: *call_transfer*
@@ -294,36 +294,36 @@ Parameters
 
 
 - *callid* (string) - the callid of the
-					dialog that is being transferred.
+dialog that is being transferred.
 - *leg* (string) - indicates the
-					leg of the *callid* call that is being
-					transferred/kept in the new transferring call.
-					Possible values are "caller",
-					"callee" or "both".
+leg of the *callid* call that is being
+transferred/kept in the new transferring call.
+Possible values are "caller",
+"callee" or "both".
 - *destination* (string, optional) - the URI
-					where the call is being transferred. This parameter is
-					mandatory for blind transfers, and optional for attended
-					transfers. In the case of an attended transfer, if it is
-					missing, the destination of the call is taken from the
-					URIs in the transfer dialog.
+where the call is being transferred. This parameter is
+mandatory for blind transfers, and optional for attended
+transfers. In the case of an attended transfer, if it is
+missing, the destination of the call is taken from the
+URIs in the transfer dialog.
 - *transfer_callid* (string, optional) -
-					mandatory in case of an attended transfer, to specify the
-					call of the Bleg in the new call.
+mandatory in case of an attended transfer, to specify the
+call of the Bleg in the new call.
 - *transfer_leg* (string, optional) -
-					in case of an attended transfer, it specifies the participant
-					of the *transfer_callid* call that will be
-					bridged with the *leg* of the
-					*callid*. If missing,
-					*transfer_fromtag* and
-					*transfer_totag* must be used to identify
-					the tag.
+in case of an attended transfer, it specifies the participant
+of the *transfer_callid* call that will be
+bridged with the *leg* of the
+*callid*. If missing,
+*transfer_fromtag* and
+*transfer_totag* must be used to identify
+the tag.
 - *transfer_fromtag* and
-					*transfer_totag* (string, optional) -
-					these parameters should always be specified together, and are
-					used in call attended transfer scenarios where the dialog of the
-					Bleg that is being transferred is not managed by OpenSIPS.
-					Note that for these scenarios only the A-leg dialog will
-					receive events about the call transfer.
+*transfer_totag* (string, optional) -
+these parameters should always be specified together, and are
+used in call attended transfer scenarios where the dialog of the
+Bleg that is being transferred is not managed by OpenSIPS.
+Note that for these scenarios only the A-leg dialog will
+receive events about the call transfer.
 
 
 MI FIFO Command Format:
@@ -357,8 +357,8 @@ MI command to put an ongoing call on hold.
 
 
 Command returns *OK* if any of the legs
-			of the call have been put on hold. If the call is already
-			on hold, an error is returned.
+of the call have been put on hold. If the call is already
+on hold, an error is returned.
 
 
 Name: *call_hold*
@@ -368,7 +368,7 @@ Parameters
 
 
 - *callid* (string) - the callid of the
-					dialog that is being put on hold.
+dialog that is being put on hold.
 
 
 MI FIFO Command Format:
@@ -386,12 +386,12 @@ opensips-cli -x mi call_hold \
 
 
 MI command to resume a call from an onhold state put by the
-			[mi call hold](#mi_call_hold) call.
+[mi call hold](#mi_call_hold) call.
 
 
 Command returns *OK* if any of the legs
-			are resumed, or an error if no leg had been previously put
-			on hold.
+are resumed, or an error if no leg had been previously put
+on hold.
 
 
 Name: *call_unhold*
@@ -401,7 +401,7 @@ Parameters
 
 
 - *callid* (string) - the callid of the
-					dialog that is being resumed.
+dialog that is being resumed.
 
 
 MI FIFO Command Format:
@@ -424,30 +424,30 @@ This event is triggered during a call transfer scenario.
 
 
 For a specific call transfer, multiple events are triggered,
-			starting when the transfer is initiated, until the transfer
-			is completed. The *state* parameter indicates
-			the state of the call transfer.
+starting when the transfer is initiated, until the transfer
+is completed. The *state* parameter indicates
+the state of the call transfer.
 
 
 For a blind transfer scenario, only one set of events are
-			triggered, whereas for attended transfer, you will get a set
-			of events for both dialogs involved in the transfer, as long
-			as both are proxied through OpenSIPS
+triggered, whereas for attended transfer, you will get a set
+of events for both dialogs involved in the transfer, as long
+as both are proxied through OpenSIPS
 
 
 Parameters:
 
 
 - *callid* - the callid of the call
-					that is being transferred.
+that is being transferred.
 - *leg* - the leg (*caller* or *callee*) of the call
-					that is being transferred.
+that is being transferred.
 - *transfer_callid* - the callid of the
-					new call that is transferring the old *callid* call.
+new call that is transferring the old *callid* call.
 - *destination* - the URI destination
-					where the *leg* is being transferred.
+where the *leg* is being transferred.
 - *state* - the state of the transfer:
-				
+
 				*start* - triggered when the
 					REFER message is being sent out to the transferred participant.
 				*notify* - triggered when
@@ -463,33 +463,33 @@ Parameters:
 					the *status* parameter is empty,
 					otherwise it contains information about the failure.
 - *status* - contains extra information about
-					the success or failure of the call.
+the success or failure of the call.
 
 
 #### E_CALL_HOLD
 
 
 Triggered during the process of putting a call on hold, or resuming
-			a call from an on hold state.
+a call from an on hold state.
 
 
 This event is triggered twice per each leg of the call - first when
-			the leg starts to be put on hold, and then when the leg accepts or
-			rejects the state.
+the leg starts to be put on hold, and then when the leg accepts or
+rejects the state.
 
 
 Parameters:
 
 
 - *callid* - the callid of the call
-					that is being put on hold, or resumed.
+that is being put on hold, or resumed.
 - *leg* - the leg (*caller* or *callee*) affected
-					by the call on hold, or resumed.
+by the call on hold, or resumed.
 - *action* - *hold* or
-					*unhold* action that is being performed.
+*unhold* action that is being performed.
 - *state* - the state of the action that
-					is being performed.
-				
+is being performed.
+
 				*start* - triggered when the
 					re-INVITE is being sent out to the participant being put on hold.
 				*ok* - triggered when
