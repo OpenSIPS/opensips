@@ -1,6 +1,6 @@
 ---
 title: "SIPREC Module"
-description: "This module provides the means to do calls recording using an external recorder - the entity that records the call is not in the media path between the caller and callee, but it is completely separate, thus it can not affect by any means the quality of the conversation. This is done in a ..."
+description: "This module provides the means to do calls recording using an external recorder - the entity that records the call is not in the media path between the caller and callee, but it is completely separate, thus it can not affect by any means the quality of the conversation."
 ---
 
 ## Admin Guide
@@ -189,9 +189,10 @@ might decide that the recording is disabled for those
 participants.
 
 
-*Note* that the call recording is not
-started right away, but only when the call is actually
-answered - 200 OK is sent by the callee.
+> [!NOTE]
+> The call recording is not
+> started right away, but only when the call is actually
+> answered - 200 OK is sent by the callee.
 
 
 Parameters:
@@ -219,7 +220,6 @@ This function can be used from REQUEST_ROUTE.
 		siprec_start_recording($var(srs));
 	}
 	...
-	
 ```
 
 
@@ -231,7 +231,6 @@ This function can be used from REQUEST_ROUTE.
 		siprec_start_recording($var(srs), "inbound");
 	}
 	...
-	
 ```
 
 
@@ -243,7 +242,6 @@ This function can be used from REQUEST_ROUTE.
 	$siprec(caller) = $xml(caller_xml/nameID);
 	siprec_start_recording($var(srs));
 	...
-	
 ```
 
 
@@ -252,7 +250,6 @@ This function can be used from REQUEST_ROUTE.
 	$siprec(headers) = "X-MY-CUSTOM_HDR: 1\r\n";
 	siprec_start_recording($var(srs));
 	...
-	
 ```
 
 
@@ -273,7 +270,6 @@ This function can be used from any route.
 			siprec_pause_recording();
 	}
 	...
-	
 ```
 
 
@@ -294,7 +290,6 @@ This function can be used from any route.
 			siprec_resume_recording();
 	}
 	...
-	
 ```
 
 
@@ -332,12 +327,13 @@ is used to build the value.
 - *media* - the IP that
 RTPProxy will be streaming media from. If absent
 *127.0.0.1* will be used.
-*NOTE:* deprecated
-*media_ip* is an alias for this param.
+	> [!NOTE]
+	> *media_ip* is an alias for this param.
 - *headers* - extra headers
 that are to be added in the initial request towards the SRS.
-*NOTE:* headers must be separated by
-*\r\n* and must end with *\r\n*.
+	> [!NOTE]
+	> Headers must be separated by
+	> *\r\n* and must end with *\r\n*.
 - *socket* - listening socket that the outgoing
 request towards SRS should be used.
 <!-- CONTRIBUTORS -->

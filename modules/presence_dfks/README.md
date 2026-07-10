@@ -1,6 +1,6 @@
 ---
 title: "presence_dfks Module"
-description: "The module enables the handling of the \"as-feature-event\" event package (as defined by Broadsoft's [Device Feature Key Synchronization](https://h30434.www3.hp.com/psg/attachments/psg/Desk_IP_Conference_Phones/1740/1/DeviceFeatureKeySynchronizationFD.pdf) protocol) by the presence m..."
+description: "The module enables the handling of the \"as-feature-event\" event package (as defined by Broadsoft's [Device Feature Key Synchronization](https://h30434.www3.hp.com/psg/attachments/psg/Desk_IP_Conference_Phones/1740/1/DeviceFeatureKeySynchronizationFD.pdf) protocol) by the presence module."
 ---
 
 ## Admin Guide
@@ -30,8 +30,9 @@ updated status of a specific feature is available. This route might also be run
 if the feature update was triggered from OpenSIPS via MI.
 
 
-Note that the module does not automatically cache or persist any feature information
-as this is left for the script writer to implement in the routes triggered by the module.
+> [!NOTE]
+> The module does not automatically cache or persist any feature information
+> as this is left for the script writer to implement in the routes triggered by the module.
 
 
 ### Dependencies
@@ -105,10 +106,11 @@ Triggers the sending of NOTIFY messages containing a feature status update
 to all watchers.
 
 
-*Note:* calling this MI function also triggers the
-*set_route* run. One can determine if the route is
-triggered by an MI function by checking the existence of the
-*$dfks(param)* variable.
+> [!NOTE]
+> Calling this MI function also triggers the
+> *set_route* run. One can determine if the route is
+> triggered by an MI function by checking the existence of the
+> *$dfks(param)* variable.
 
 
 Name: *dfks_set_feature*
@@ -121,7 +123,6 @@ Parameters:
 should be updated
 - *feature*: The name of the feature to update. Takes one
 of the following values:
-
   - *DoNotDisturb*
   - *CallForwardingAlways*
   - *CallForwardingBusy*
@@ -134,17 +135,11 @@ passed to the *$dfks(param)* variable in
 - *values*: an array of extra values that can be updated
 for a feature. The format of an array element is:
 *field*/*value*. Supported fields are:
-
-
-					*forwardTo* - for all forwarding types
-
-
-					*ringCount* - for *CallForwardingNoAnswer*
+    - *forwardTo* - for all forwarding types
+    - *ringCount* - for *CallForwardingNoAnswer*
 
 
 MI FIFO Command Format:
-
-
 ```bash
 opensips-cli -x mi dfks_set_feature sip:alice@10.0.0.11 CallForwardingNoAnswer 1 1 \
 ringCount/4 forwardTo/sip:bob@10.0.0.11
@@ -183,12 +178,8 @@ Possible values are:
 SIP signalling.
 - *value/field* - read or write extra feature values.
 *field* can be one of:
-
-
-			*forwardTo* - for all forwarding types
-
-
-			*ringCount* - for *CallForwardingNoAnswer*
+    - *forwardTo* - for all forwarding types
+    - *ringCount* - for *CallForwardingNoAnswer*
 
 
 ```opensips title="dfks usage"

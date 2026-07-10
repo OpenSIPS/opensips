@@ -239,9 +239,10 @@ Both "max_total" and "max_branch"
 default to 0 (unlimited).
 
 
-NOTE that during the selection process, each set of contacts 
-from a specific branch are ordered based on "q" 
-value.
+> [!NOTE]
+> During the selection process, each set of contacts 
+> from a specific branch are ordered based on "q" 
+> value.
 
 
 This function can be used from FAILURE_ROUTE.

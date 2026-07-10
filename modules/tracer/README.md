@@ -1,6 +1,6 @@
 ---
 title: "Tracer Module"
-description: "Offer a possibility to store incoming/outgoing SIP messages in database. Since version 2.2, proto_hep module needs to be loaded in order to duplicate with hep. All hep parameters moved inside proto_hep."
+description: "Offer a possibility to store incoming/outgoing SIP messages in database."
 ---
 
 ## Admin Guide
@@ -26,19 +26,20 @@ and off using *trace_on* either globally(for all trace_ids)
 or for a certain trace_id.
 
 
-IMPORTANT: In 2.2 version support for stateless trace has been removed.
+> [!IMPORTANT]
+> In 2.2 version support for stateless trace has been removed.
 
 
 The tracing tracing can be turned on/off using fifo command.
 
-
+```bash
 opensips-cli -x mi trace on
 opensips-cli -x mi trace [some_trace_id] on
 
 
 opensips-cli -x mi trace off
 opensips-cli -x mi trace [some_trace_id] off
-
+```
 
 Starting with OpenSIPS 3.0 you can use the *trace_start* to
 create dynamic dynamic tracing destinations based on some custom filters.
@@ -469,8 +470,7 @@ MI FIFO Command to start tracing calls from IP 127.0.0.1 to HEP destination 10.0
 
 
 ```bash
-		opensips-cli -x mi trace_start id=ip_filter uri=hep:10.0.0.1:9060 filter=ip=127.0.0.1
-		
+opensips-cli -x mi trace_start id=ip_filter uri=hep:10.0.0.1:9060 filter=ip=127.0.0.1
 ```
 
 
@@ -478,8 +478,7 @@ MI FIFO Command to start tracing calls from user Alice to user Bob:
 
 
 ```bash
-		opensips-cli -x mi trace_start id=alice_bob uri=hep:10.0.0.1:9060 filter=caller=Alice filter=caller=Bob
-		
+opensips-cli -x mi trace_start id=alice_bob uri=hep:10.0.0.1:9060 filter=caller=Alice filter=caller=Bob
 ```
 
 
@@ -503,8 +502,7 @@ MI FIFO Command to stop tracing calls from user Alice to user Bob:
 
 
 ```bash
-		opensips-cli -x mi trace_stop alice_bob
-		
+opensips-cli -x mi trace_stop alice_bob
 ```
 
 

@@ -1,6 +1,6 @@
 ---
 title: "MSRP Relay Module"
-description: "This modules implements a Relay for the MSRP protocol, according to the specifications of RFC 4976. Once loaded, the module will automatically forward messages and manage MSRP sessions for the MSRP listeners defined in the script."
+description: "This modules implements a Relay for the MSRP protocol, according to the specifications of RFC 4976."
 ---
 
 ## Admin Guide

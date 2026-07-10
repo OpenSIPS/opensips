@@ -72,7 +72,6 @@ be automatically updated based on stored original URI.
 ...
 modparam("uac","restore_mode","auto")
 ...
-				
 ```
 
 
@@ -91,7 +90,6 @@ will be used.
 ...
 modparam("uac","restore_passwd","my_secret_passwd")
 ...
-				
 ```
 
 
@@ -110,7 +108,6 @@ Name of Record-Route header parameter that will be used to store
 ...
 modparam("uac","rr_from_store_param","my_Fparam")
 ...
-				
 ```
 
 
@@ -129,7 +126,6 @@ Name of Record-Route header parameter that will be used to store
 ...
 modparam("uac","rr_to_store_param","my_Tparam")
 ...
-				
 ```
 
 
@@ -146,7 +142,6 @@ Default value is no.
 ...
 modparam("uac", "force_dialog", yes)
 ...
-				
 ```
 
 
@@ -164,12 +159,13 @@ Both parameters are string. The *display* is optional.
 If missing, only the URI will be changed in the message.
 
 
-IMPORTANT: calling the function more than once per branch will lead
-to inconsistent changes over the request.Be sure you do the change
-only ONCE per branch. Note that calling the function from REQUEST
-ROUTE affects all the branches!, so no other change will be 
-possible in the future. For per branch changes use BRANCH and 
-FAILURE route.
+> [!IMPORTANT]
+> Calling the function more than once per branch will lead
+> to inconsistent changes over the request.Be sure you do the change
+> only ONCE per branch. Note that calling the function from REQUEST
+> ROUTE affects all the branches!, so no other change will be 
+> possible in the future. For per branch changes use BRANCH and 
+> FAILURE route.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
@@ -201,9 +197,10 @@ use the information stored in header parameter to restore
 the original FROM/TO URI value.
 
 
-NOTE - this function should be used only if you configured MANUAL
-restoring of the headers (see restore_mode param). For AUTO 
-and NONE, there is no need to use this function.
+> [!NOTE]
+> This function should be used only if you configured MANUAL
+> restoring of the headers (see restore_mode param). For AUTO 
+> and NONE, there is no need to use this function.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -213,7 +210,6 @@ This function can be used from REQUEST_ROUTE.
 ...
 uac_restore_from();
 ...
-				
 ```
 
 
@@ -237,19 +233,21 @@ algorithms to be considered / supported during authentication:
 - SHA-512-256, SHA-512-256-sess (may be missing, depends on lib support)
 
 
-Note that the CSeq is automatically increased during authentication.
+> [!NOTE]
+> The CSeq is automatically increased during authentication.
 
 
 This function can be used from FAILURE_ROUTE.
 
 
-*NOTE:* when used without dialog support, the
-*uac_auth()* function cannot be used for authenticating
-in-dialog requests, as there is no mechanism to store the CSeq changes that
-are required for ensuring the correctness of the dialog. The only exception are
-*BYE* messages, which are the last messages within a call,
-hence no further adjustments are needed. The function can still be used for
-authenticating the initial INVITE though.
+> [!NOTE]
+> When used without dialog support, the
+> *uac_auth()* function cannot be used for authenticating
+> in-dialog requests, as there is no mechanism to store the CSeq changes that
+> are required for ensuring the correctness of the dialog. The only exception are
+> *BYE* messages, which are the last messages within a call,
+> hence no further adjustments are needed. The function can still be used for
+> authenticating the initial INVITE though.
 
 
 ```opensips title="uac_auth usage"
