@@ -1,6 +1,6 @@
 ---
 title: "DISPATCHER Module"
-description: "This modules implements a dispatcher for destination addresses. It computes hashes over parts of the request and selects an address from a destination set. The selected address is used then as outbound proxy."
+description: "This modules implements a dispatcher for destination addresses."
 ---
 
 ## Admin Guide
@@ -657,8 +657,6 @@ MI DATAGRAM Command Format:
 
 
 ### Installation and Running
-
-
 #### Destination List File
 
 
@@ -691,14 +689,9 @@ lines or lines starting with "#" are ignored.
 ...
 ```
 
+## Samples
 
-#### OpenSIPS config file
-
-
-Next picture displays a sample usage of dispatcher.
-
-
-[OpenSIPS config script - sample dispatcher usage](./samples.md "include")
+[samples](./samples/samples.md "include")
 
 
 ## Frequently Asked Questions

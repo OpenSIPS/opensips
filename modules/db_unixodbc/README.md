@@ -1,6 +1,6 @@
 ---
 title: "unixodbc Module"
-description: "This module allows to use the unixodbc package with OpenSIPS. It have been tested with mysql and the odbc connector, but it should work also with other database. The auth_db module works."
+description: "This module allows to use the unixodbc package with OpenSIPS."
 ---
 
 ## Admin Guide
@@ -162,11 +162,12 @@ modparam("usrloc|auth_db", "db_url",
 replacing my_dsn with the correct value.
 
 
-HINT: if unixodbc don't want to connect to mysql server, try restarting 
-mysql server with:
+> [!TIP]
+> If unixodbc don't want to connect to mysql server, try restarting
+> mysql server with:
 
 
-```c
+```bash
 shell>safe_mysqld --user=mysql --socket=/var/lib/mysql/mysql.sock
 ```
 

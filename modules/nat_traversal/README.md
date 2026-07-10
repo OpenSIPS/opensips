@@ -1,6 +1,6 @@
 ---
 title: "NAT Traversal Module"
-description: "The nat_traversal module provides support for handling far-end NAT traversal for SIP signaling. The module includes functionality to detect user agents behind NAT, to modify SIP headers to allow user agents to work transparently behind NAT and to send keepalive messages to..."
+description: "The nat_traversal module provides support for handling far-end NAT traversal for SIP signaling."
 ---
 
 ## Admin Guide

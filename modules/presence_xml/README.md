@@ -1,6 +1,6 @@
 ---
 title: "Presence_XML Module"
-description: "The module does specific handling for notify-subscribe events using xml bodies. It is used with the general event handling module, presence. It constructs and adds 3 events to it: presence, presence.winfo, dialog;sla."
+description: "The module does specific handling for notify-subscribe events using xml bodies."
 ---
 
 ## Admin Guide
@@ -95,8 +95,8 @@ a certain watcher, the subscriptions remains in pending state and the
 Notify sent will have no body.
 
 
-Note: When switching from one value to another, the watchers table must
-be emptied.
+> [!NOTE]
+> When switching from one value to another, the watchers table must be emptied.
 
 
 *Default value is "0".*

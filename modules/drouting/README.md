@@ -1,5 +1,6 @@
 ---
 title: "Dynamic Routing Module"
+description: "Dynamic Routing is a module for selecting (based on multiple criteria) the best gateway/destination to be used for delivering a certain call."
 ---
 
 ## Admin Guide

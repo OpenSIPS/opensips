@@ -571,8 +571,9 @@ The function returns true if an AOR is registered, false otherwise.
 The function does not modify the message being process.
 
 
-NOTE: if called for a reply (from onreply_route), you must pass an
-AOR (as parameter), otherwise the function will fail.
+> [!NOTE]
+> If called for a reply (from onreply_route), you must pass an
+> AOR (as parameter), otherwise the function will fail.
 
 
 Meaning of the parameters is as follows:

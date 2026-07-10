@@ -174,27 +174,17 @@ type, which is not a per qos type.
 - *int type* - types of callbacks; more
 types may be register for the same callback function; only 
 QOSCB_CREATED must be register alone. Possible types:
-
-
-				*QOSCB_CREATED* - called when a new 
-				qos context is created - it's a global type (not associated to 
-				any qos).
-
-
-				*QOSCB_ADD_SDP* - called when a new SDP
-				was added to the qos context - it's a per qos type.
-
-
-				*QOSCB_UPDATE_SDP* - called when an
-				existing SDP is updated - it's a per qos type.
-
-
-				*QOSCB_REMOVE_SDP* - called when an 
-				existing SDP is removed - it's a per qos type.
-
-
-				*QOSCB_TERMINATED* - called when the 
-				qos is terminated.
+	- *QOSCB_CREATED* - called when a new 
+	qos context is created - it's a global type (not associated to 
+	any qos).
+	- *QOSCB_ADD_SDP* - called when a new SDP
+	was added to the qos context - it's a per qos type.
+	- *QOSCB_UPDATE_SDP* - called when an
+	existing SDP is updated - it's a per qos type.
+	- *QOSCB_REMOVE_SDP* - called when an 
+	existing SDP is removed - it's a per qos type.
+	- *QOSCB_TERMINATED* - called when the 
+	qos is terminated.
 - *qos_cb cb* - callback function to be 
 called. Prototype is: "void (qos_cb) 
 (struct qos_ctx_st *qos, int type, struct qos_cb_params *params);

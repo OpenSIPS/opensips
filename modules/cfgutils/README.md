@@ -69,8 +69,7 @@ listed modules must be loaded before this module):
 The initial value of the probability.
 
 
-Default value is 
-"10".
+*Default value is "10".*
 
 
 ```opensips title="initial_probability parameter usage"
@@ -116,7 +115,7 @@ _name_ '=' _type_ ':' _value_
 - _value_: value to be set
 
 
-Default value is "NULL".
+*Default value is "NULL".*
 
 
 ```opensips title="shvset parameter usage"

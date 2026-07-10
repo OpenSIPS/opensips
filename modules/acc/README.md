@@ -176,20 +176,23 @@ of the accounting support which is used:
 will be just printed along with the data in *log_name=data* format;
 - *DB accounting* - log_name 
 will be the name of the DB column where the data will be 
-stored.*IMPORTANT*: add in db 
-*acc* table the columns corresponding to 
-each extra data;
+stored.
+    > [!IMPORTANT]
+    > Add in db 
+    > *acc* table the columns corresponding to 
+    > each extra data;
 - *RADIUS accounting* - 
 log_name will be the AVP name used for packing the data into 
 RADIUS message. The log_name will be translated to AVP number 
-via the dictionary. *IMPORTANT*: add in 
-RADIUS dictionary the *log_name* attribute.
+via the dictionary. 
+    > [!IMPORTANT]
+    > Add in RADIUS dictionary the *log_name* attribute.
 - *DIAMETER accounting* - 
 log_name will be the AVP code used for packing the data 
 into DIAMETER message. The AVP code is given directly as 
 integer, since DIAMETER has no dictionary support yet.
-*IMPORTANT*:	*log_name*
-must be a number.
+	> [!IMPORTANT]
+	> *log_name* must be a number.
 
 
 #### How it works
@@ -256,17 +259,17 @@ to one record string as AVP1=xxx, AVP2=xxxx ,... sets.
 separately logged (due DB data structure constraints); several
 records will be written, the difference between them being 
 only the fields corresponding to the call-leg info.
-
-  > **Note:** You will need to add in your DB (all acc related
-				tables) the colums for call-leg info (a column for each AVP
-				of the set).
+    > [!NOTE] 
+    > You will need to add in your DB (all acc related
+    > tables) the colums for call-leg info (a column for each AVP
+    > of the set).
 - *Radius* -- all sets will be added
 to the same Radius accounting message as RADIUS AVPs - for each
 call-leg a set of RADIUS AVPs will be added (corresponding
 to the per-leg AVP set)
-
-  > **Note:** You will need to add in your dictionary the
-				RADIUS AVPs used in call-leg AVP set definition.
+    > [!NOTE] 
+    > You will need to add in your dictionary the
+    > RADIUS AVPs used in call-leg AVP set definition.
 - *Diameter* same as for RADIUS.
 
 
@@ -281,10 +284,8 @@ the listed modules must be loaded before this module):
 
 
 - *tm* -- Transaction Manager
-- *a database module* -- If SQL 
-support is used.
-- *rr* -- Record Route, if 
-"detect_direction" module parameter is enabled.
+- *a database module* -- If SQL support is used.
+- *rr* -- Record Route, if "detect_direction" module parameter is enabled.
 
 
 #### External Libraries or Applications

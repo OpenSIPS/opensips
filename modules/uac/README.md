@@ -91,7 +91,6 @@ be automatically updated based on stored original URI.
 ...
 modparam("uac","from_restore_mode","auto")
 ...
-				
 ```
 
 
@@ -109,7 +108,6 @@ empty, no encryption will be used.
 ...
 modparam("uac","from_passwd","my_secret_passwd")
 ...
-				
 ```
 
 
@@ -193,7 +191,6 @@ to perform authentication.
 ...
 modparam("uac","auth_password_avp","$avp(i:12)")
 ...
-				
 ```
 
 
@@ -211,12 +208,13 @@ the *URI* part.
 parameters can include pseudo-variables.
 
 
-IMPORTANT: calling the function more than once per branch will lead
-to inconsistent changes over the request.Be sure you do the change
-only ONCE per branch. Note that calling the function from REQUEST
-ROUTE affects all the branches!, so no other change will be 
-possible in the future. For per branch changes use BRANCH and 
-FAILURE route.
+> [!IMPORTANT]
+> Calling the function more than once per branch will lead
+> to inconsistent changes over the request. Be sure you do the change
+> only ONCE per branch. Note that calling the function from REQUEST
+> ROUTE affects all the branches!, so no other change will be 
+> possible in the future. For per branch changes use BRANCH and 
+> FAILURE route.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
@@ -274,7 +272,6 @@ This function can be used from REQUEST_ROUTE.
 ...
 uac_restore_from();
 ...
-				
 ```
 
 

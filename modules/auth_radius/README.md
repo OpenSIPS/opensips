@@ -1,6 +1,6 @@
 ---
 title: "Auth_radius Module"
-description: "This module contains functions that are used to perform authentication using a Radius server. Basically the proxy will pass along the credentials to the radius server which will in turn send a reply containing result of the authentication. So basically the whole authentication is done ..."
+description: "This module contains functions that are used to perform authentication using an AAA server."
 ---
 
 ## Admin Guide
