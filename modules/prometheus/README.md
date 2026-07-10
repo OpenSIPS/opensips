@@ -57,7 +57,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root metrics path Promethus uses to query the stats:
-http://[opensips_IP]:[opensips_httpd_port]/[root]
+*http://[opensips_IP]:[opensips_httpd_port]/[root]*
 
 
 *The default value is "metrics".*
@@ -290,8 +290,9 @@ route[my_custom_prometheus_route] {
 #### prometheus_declare_stat(name, [type], [help])
 
 
-*NOTE:* this function can only be used in the
-route declared in the [script route](#param_script_route) parameter.
+> [!NOTE]
+> This function can only be used in the
+> route declared in the [script route](#param_script_route) parameter.
 
 
 Declares a custom statistic exported to Prometheus server. It specifies
@@ -329,17 +330,19 @@ route[my_custom_prometheus_route] {
 #### prometheus_push_stat(value, [label_name], [label_value])
 
 
-*NOTE:* this function can only be used in the
-route declared in the [script route](#param_script_route) parameter.
+> [!NOTE]
+> This function can only be used in the
+> route declared in the [script route](#param_script_route) parameter.
 
 
 Pushes a custom statistic value and optionally a set of labels
 to the Prometheus server.
 
 
-*NOTE:* a statistic's value should only be pushed
-after it had been declared using the
-[prometheus declare stat](#func_prometheus_declare_stat) function.
+> [!NOTE]
+> A statistic's value should only be pushed
+> after it had been declared using the
+> [prometheus declare stat](#func_prometheus_declare_stat) function.
 
 
 Parameters

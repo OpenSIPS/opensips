@@ -130,15 +130,16 @@ modparam("auth_aka", "default_qop", "auth,auth-int")
 
 The default algorithm to be advertise during challenge, if the
 functions do not provide them explicitly.
-*Note*
-that at least one of the algorithms provided should be an AKA
-one, otherwise it makes no sense to use this module.
+> [!NOTE]
+> That at least one of the algorithms provided should be an AKA
+> one, otherwise it makes no sense to use this module.
 
 
 Default value is *AKAv1-MD5*.
 
 
-*WARNING:* only AKAv1* algorithms are currently supported.
+> [!WARNING]
+> Only AKAv1-* algorithms are currently supported.
 
 
 ```opensips title="default_algorithm parameter usage"
@@ -196,9 +197,10 @@ wait for getting an authentication vector.
 Must be a positive value, greater than 0.
 
 
-*NOTE:* the current timeout mechanism only
-has seconds granularity, therefore you should configure this
-parameter as a multiple of 1000.
+> [!NOTE] 
+> The current timeout mechanism only
+> has seconds granularity, therefore you should configure this
+> parameter as a multiple of 1000.
 
 
 Default value is *1000* ms.

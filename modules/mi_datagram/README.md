@@ -252,7 +252,7 @@ This is an example showing the DATAGRAM format for the
 request.
 
 
-```c title="DATAGRAM request"
+```json title="DATAGRAM request"
 {"jsonrpc":"2.0","method":"get_statistics","id":"1065","params":[["dialog:","tm:"]]}
 ```
 

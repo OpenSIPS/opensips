@@ -1,6 +1,6 @@
 ---
 title: "presence_reginfo Module"
-description: "The module enables the handling of \"Event: reg\" (as defined in RFC 3680) inside of the presence module. This can be used distribute the registration-info status to the subscribed watchers."
+description: "The module enables the handling of \"Event: reg\" (as defined in RFC 3680) inside of the presence module."
 ---
 
 ## Admin Guide
@@ -63,10 +63,10 @@ message (in seconds).
 
 
 ```opensips title="Set default_expires parameter"
-        ...
-        modparam("presence_reginfo", "default_expires", 3600)
-        ...
-        
+...
+modparam("presence_reginfo", "default_expires", 3600)
+...
+
 ```
 
 
@@ -82,9 +82,9 @@ following initial SUBSCRIBE.
 
 
 ```opensips title="Set aggregate_presentities parameter"
-					...
-					modparam("presence_reginfo", "aggregate_presentities", 1)
-					...
+...
+modparam("presence_reginfo", "aggregate_presentities", 1)
+...
 					
 ```
 

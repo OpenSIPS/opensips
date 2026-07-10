@@ -1,6 +1,6 @@
 ---
 title: "tm Module"
-description: "TM module enables stateful processing of SIP transactions. The main use of stateful logic, which is costly in terms of memory and CPU, is some services inherently need state. For example, transaction-based accounting (module acc) needs to process transaction state as opposed to ind..."
+description: "TM module enables stateful processing of SIP transactions."
 ---
 
 ## Admin Guide
@@ -750,16 +750,19 @@ The route is executed with the generated message by TM, incorporating
 all modifications.
 
 
-IMPORTANT: this route is executed AFTER the local_route (if defined)
-and it expose all the changes from that route.
+> [!IMPORTANT]
+> This route is executed AFTER the local_route (if defined)
+> and it expose all the changes from that route.
 
 
-IMPORTANT: this route is to be used in a read-only manner, inspection
-only. Any changes you do here will discarded.
+> [!IMPORTANT]
+> This route is to be used in a read-only manner, inspection
+> only. Any changes you do here will discarded.
 
 
-IMPORTANT: this route does not offer any message, transactional or
-dialog context, so do not rely on any variables with scope (like AVPs).
+> [!IMPORTANT]
+> This route does not offer any message, transactional or
+> dialog context, so do not rely on any variables with scope (like AVPs).
 
 
 ```opensips title="Set the local_request_route parameter"
@@ -788,12 +791,14 @@ The purpose of this route is limited to exposing the content of the
 reply as SIP message
 
 
-IMPORTANT: this route is to be used in a read-only manner, inspection
-only. Any changes you do here will discarded.
+> [!IMPORTANT]
+> This route is to be used in a read-only manner, inspection
+> only. Any changes you do here will discarded.
 
 
-IMPORTANT: this route does not offer any message, transactional or
-dialog context, so do not rely on any variables with scope (like AVPs).
+> [!IMPORTANT]
+> This route does not offer any message, transactional or
+> dialog context, so do not rely on any variables with scope (like AVPs).
 
 
 ```opensips title="Set the local_reply_route parameter"
@@ -843,11 +848,11 @@ global forwarding failure (i.e. forwarding for each branch has
 failed due to internal errors, bad R-URI, bad message, lack of
 network reachability, etc.).
 
-				This flag only applies if the transaction was
-				not previously created by [t newtran](#func_t_newtran).
-				When a global forwarding failure occurs, no SIP request is
-				relayed and therefore no negative SIP reply or timeout will
-				show up on the failure_route, if one is set.
+	This flag only applies if the transaction was
+	not previously created by [t newtran](#func_t_newtran).
+	When a global forwarding failure occurs, no SIP request is
+	relayed and therefore no negative SIP reply or timeout will
+	show up on the failure_route, if one is set.
 Useful if you want to implement a failover logic for when none
 of the currently created branches can be forwarded to.
 - *no-dns-failover* - (old
@@ -1008,17 +1013,18 @@ request is not a retransmission.
 INVITE transaction exists.
 - *ACK request* - true if the ACK is a
 hop-by-hop ACK (to a negative reply) corresponding to an previous
-INVITE transaction. IMPORTANT: this function returns false (return
+INVITE transaction. [!IMPORTANT] this function returns false (return
 code *-2*) for end-to-end ACKs (to 2xx replies
 from a different transaction).
 
 
-Note: To detect retransmissions using this function you have to make 
-sure that the initial request has already created a transaction, e.g. 
-by using t_relay(). If the processing of requests may take long time 
-(e.g. DB lookups) and the retransmission arrives before t_relay() is 
-called, you can use the t_newtran() function to manually create a 
-transaction.
+> [!NOTE]
+> To detect retransmissions using this function you have to make 
+> sure that the initial request has already created a transaction, e.g. 
+> by using t_relay(). If the processing of requests may take long time 
+> (e.g. DB lookups) and the retransmission arrives before t_relay() is 
+> called, you can use the t_newtran() function to manually create a 
+> transaction.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
@@ -1383,30 +1389,17 @@ Parameters:
 
 
 - *source (string)* - where to take the description
-for the new branches to be injected. It can be
-
-
-					*event* - the branch will be taken from
-					the event attributes exposed in an event notification route
-					(see *event_routing* module).
-
-
-					*msg* - the branches will be taken from
-					the RURI of the SIP message and from the additional
-					branches (created by append_branch() function or similar).
+for the new branches to be injected. It can be:
+	- *event* - the branch will be taken from
+	the event attributes exposed in an event notification route
+	(see *event_routing* module).
+	- *msg* - the branches will be taken from
+	the RURI of the SIP message and from the additional
+	branches (created by append_branch() function or similar).
 - *flags (string, optional)* - some additional flags 
 related to the injection process:
-
-
-					*cancel* or *c* 
-					- cancel all the ongoing 
-existing branches from the transaction before injecting
-the new branches.
-
-
-					*l* (last) - this is the last injected
-					branch on this transaction, do not wait for any other
-					branches to be injected.
+	- *cancel* or *c* - cancel all the ongoing existing branches from the transaction before injecting the new branches.
+	- *l* (last) - this is the last injected branch on this transaction, do not wait for any other branches to be injected.
 
 
 ```opensips title="t_inject_branches usage"
@@ -1853,15 +1846,17 @@ current branch is the branch to be sent out; in failure route,
 the current branch is the winning branch.
 
 
-NOTES:
+> [!NOTE]
+> The index ALL ( "*" ) is not supported.
 
+> [!NOTE]
+> In branch route, only the "$tm.branch.attr" and 
+> "$tm.branch.flag" variables work for the current branch 
+> (the rest of the branch related variables will return NULL).
 
-- The index ALL ( "*" ) is not supported;
-- In branch route, only the "$tm.branch.attr" and 
-"$tm.branch.flag" variables work for the current branch 
-(the rest of the branch related variables will return NULL)
-- Negative values are accepted, meaning indexing from the 
-end ( -1 is the latest/higher branch)
+> [!NOTE]
+> Negative values are accepted, meaning indexing from the 
+> end ( -1 is the latest/higher branch).
 
 
 The variable can be used in BRANCH, ONREPLY and FAILURE routes.
@@ -1979,8 +1974,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi t_uac_dlg method=INVITE ruri="sip:alice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
-		
+opensips-cli -x mi t_uac_dlg method=INVITE ruri="sip:alice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
 ```
 
 
@@ -2003,8 +1997,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
-		
+opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
 ```
 
 
@@ -2024,8 +2017,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi t_hash
-		
+opensips-cli -x mi t_hash
 ```
 
 
@@ -2054,8 +2046,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi t_reply 403 Forbidden 46961:1279687637 abcde .
-		
+opensips-cli -x mi t_reply 403 Forbidden 46961:1279687637 abcde .
 ```
 
 

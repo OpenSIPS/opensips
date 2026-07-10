@@ -1,6 +1,6 @@
 ---
 title: "Auth_db Module"
-description: "This module contains all authentication related functions that need the access to the database. This module should be used together with auth module, it cannot be used independently because it depends on the module. Select this module if you want to use database to store authentication in..."
+description: "This module contains all authentication related functions that need the access to the database. This module should be used together with auth module, it cannot be used independently because it depends on the module."
 ---
 
 ## Admin Guide
@@ -559,8 +559,8 @@ set ha1 = md5(concat(username, ':', domain, ':', password)),
 ha1b = md5(concat(username, '@', domain, ':', domain, ':', password))
 ```
 
-> \[!NOTE]
-> the above is only true if you have `use_domain` enabled *and* you do not use a static challenge parameter for `www_authorize()`.
+> [!NOTE]
+> The above is only true if you have `use_domain` enabled *and* you do not use a static challenge parameter for `www_authorize()`.
 
 If you use a static challenge for `www_authorize()` (i.e. the first parameter of `www_authorize()` is not the empty string), then HA1 is MD5("username:challenge:password") and HA1B is MD5("username@challenge:challenge:password"). If the challenge parameter of `www_authorize()` is empty, OpenSIPS automatically selects the domain as the challenge value, which gives the solution presented above.
 

@@ -1,6 +1,6 @@
 ---
 title: "cachedb_dynamodb Module"
-description: "This module is an implementation of a cachedb system designed to work with Amazon DynamoDB. It uses the AWS SDK library for C++ to connect to a DynamoDB instance. It leverages the Key-Value interface exported from the core. [https://aws.amazon.com/pm/dynamodb/](https://aws.amazon.com/pm/d..."
+description: "This module is an implementation of a cachedb system designed to work with Amazon DynamoDB."
 ---
 
 ## Admin Guide
@@ -45,7 +45,7 @@ The tables used with DynamoDB must adhere to a specific format.
 Below is an example of creating a table:
 
 
-```c
+```bash
 aws dynamodb create-table \
 --table-name TableName \
 --attribute-definitions \

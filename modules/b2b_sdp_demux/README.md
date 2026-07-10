@@ -1,6 +1,6 @@
 ---
 title: "B2B SDP De-Multiplexer Module"
-description: "This module provides the logic to convert a multi-stream SDP call, to multiple calls, each containing a subset of streams from the initial call. The module only handles the SIP signalling part of the call, without interfering with the media of the call, which will flow end-to-end. The onl..."
+description: "This module provides the logic to convert a multi-stream SDP call, to multiple calls, each containing a subset of streams from the initial call."
 ---
 
 ## Admin Guide
@@ -92,22 +92,22 @@ upstream call.
 
 Possible values are:
 
-
-*disable* - when a client
+- *disable* - when a client
 terminates its call, the module will simply disable
 the media streams associated with its call, resulting
 in a re-INVITE upstream.
 
 
-*terminate* - when one client
+- *terminate* - when one client
 terminates its call, the module will terminate
 all other calls, including the upstream one.
 
 
-*disable-terminate* - same as
+- *disable-terminate* - same as
 disable, except that when the final stream is disabled,
 instead of a re-INVITE with all streams disabled,
 the module sends a BYE upstream.
+
 *Default value is "disable".*
 
 

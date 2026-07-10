@@ -1,6 +1,6 @@
 ---
 title: "B2B_LOGIC"
-description: "The B2BUA implementation in OpenSIPS is separated in two layers: a lower one (implemented in the b2b_entities module) - the basic functions of a UAS and UAC an upper one (implemented in b2b_logic module) - which represents the logic engine of B2BUA, responsible of actually implementing ..."
+description: "This module represents the logic engine of B2BUA, responsible of actually implementing the B2BUA services using the functions offered by the low level."
 ---
 
 ## Admin Guide
@@ -516,13 +516,9 @@ initializes an internal topology hiding scenario. This scenario will do
 a simple pass-through of messages from one side to another, and no additional
 scripting or dedicated routes are required.
 - *flags (string, optional)* - CSV list of the following flags:
-
-					*setup-timeout=[nn]* - Call setup timeout. 0 sets
-					timeout to max_duration value. Example: "setup-timeout=300".
-					*transparent-auth* - Transparent authentication.
-					In this mode b2b passes your 401 or 407 authentication request to
-					destination server.
-					*preserve-to* - Preserve To: header.
+   - *setup-timeout=[nn]* - Call setup timeout. 0 sets timeout to max_duration value. Example: "setup-timeout=300".
+   - *transparent-auth* - Transparent authentication. In this mode b2b passes your 401 or 407 authentication request to destination server.
+   - *preserve-to* - Preserve To: header.
 - *req_route (string, optional)* - name of the script route
 to be called when requests belonging to this B2B session are received. This
 parameter will override the global [script req route](#param_script_req_route)
@@ -659,23 +655,24 @@ can also be used to refer to existing entities.
 - *provmedia_uri (string, optional)* - URI of the provisional
 media server to be connected with the caller while the callee answers.
 - *flags (string, optional)* - CSV list of the following flags:
-
-					*max_duration=[nn]* - Maximum duration of the B2B
-					session. If the lifetime expires, the B2BUA will send BYE messages to both
-					ends and delete the record. Example: "max_duration=300".
-					*notify* - Enable rfc3515 NOTIFY to inform the agent
-					sending the REFER of the status of the reference.
-					*rollback-failed* - Rollback call to state before
-					bridging in case of transfer failed, don't hangup the call
-					(default behaviour).
-					*hold* - Put the old entity on hold before bridging
-					it to the new entity.
-					*no-late-sdp* - Do not attempt late SDP negotiation
-					with the new entity. Start the bridging by first contacting the new entity
-					using the initial SDP received from the old entity. After the new entity
-					answers, send a reINVITE without body to the old entity. Use the current
-					SDP received in this new answer from the old entity to trigger a
-					renegotiation with the new entity.
+   - *max_duration=[nn]* - Maximum duration of the B2B
+   session. If the lifetime expires, the B2BUA will send BYE messages to both
+   ends and delete the record. This per-bridge value takes precedence over the
+   global [max duration](#param_max_duration) module parameter.
+   Example: "max_duration=300".
+   - *notify* - Enable rfc3515 NOTIFY to inform the agent
+   sending the REFER of the status of the reference.
+   - *rollback-failed* - Rollback call to state before
+   bridging in case of transfer failed, don't hangup the call
+   (default behaviour).
+   - *hold* - Put the old entity on hold before bridging
+   it to the new entity.
+   - *no-late-sdp* - Do not attempt late SDP negotiation
+   with the new entity. Start the bridging by first contacting the new entity
+   using the initial SDP received from the old entity. After the new entity
+   answers, send a reINVITE without body to the old entity. Use the current
+   SDP received in this new answer from the old entity to trigger a
+   renegotiation with the new entity.
 
 
 This function can be used from the b2b_logic request routes.
@@ -774,10 +771,7 @@ Parameters:
 - *flags (string, optional)* - a list of comma
 separated flags that changes the behavior of the reply processing.
 Supported values are:
-
-					*pass-3xx-contact* - When a redirect reply
-					(3xx) message is received, pass the contact to the other peer
-					just as it is, without modifying it.
+	* *pass-3xx-contact* - When a redirect reply (3xx) message is received, pass the contact to the other peer just as it is, without modifying it.
 
 
 ```opensips title="b2b_handle_reply usage"
@@ -890,9 +884,8 @@ holds the entity of the entity/participant to bridge.
 advertise in generated messages.
 - *flags (string, optional)* - Flags that can modify the
 behavior of the function. Available flags are:
-
-				*late_bye* - instead of terminating the replaced entity
-					on the stop, leave it pending until the new enity fully establishes.
+   * *late_bye* - instead of terminating the replaced entity
+      on the stop, leave it pending until the new enity fully establishes.
 
 
 ```opensips title="b2b_bridge_request usage"

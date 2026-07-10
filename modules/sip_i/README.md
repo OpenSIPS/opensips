@@ -1,6 +1,6 @@
 ---
 title: "SIP-I Module"
-description: "This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP. The available operations are: reading and modifying parameters from an ISUP message, removing or adding new optional parameters, adding an ISUP part to a SIP message body. This is done explicitly v..."
+description: "This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP."
 ---
 
 ## Admin Guide

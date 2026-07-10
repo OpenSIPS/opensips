@@ -208,17 +208,15 @@ Command to reload trie rules from database.
 
 - if `use_partition` is set to 0 - all routing rules will be reloaded.
 - if `use_partition` is set to 1, the parameters are:
-
-						*partition_name* (optional) - if not provided
-							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
+	- *partition_name* (optional) - if not provided
+		all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi trie_reload part_1
-		
+opensips-cli -x mi trie_reload part_1
 ```
 
 
@@ -232,11 +230,10 @@ Gets the time of the last reload for any partition.
 doesn't receive any parameter. It will list the date of the
 last reload for the default (and only) partition.
 - if `use_partition` is set to 1, the parameters are:
-
-						*partition_name* (optional) - if not provided
-							the function will list the time of the last update for every
-							partition. Otherwise, the function will list the time of the last
-							reload for the given partition.
+	- *partition_name* (optional) - if not provided
+		the function will list the time of the last update for every
+		partition. Otherwise, the function will list the time of the last
+		reload for the given partition.
 
 
 ```bash title="trie_reload_status usage when use_partitions is 0"
@@ -253,23 +250,15 @@ Tries to match a number in the existing tries loaded from the database.
 
 - if `use_partition` is set to 1 the function
 will have 2 parameters:
-
-
-							*partition_name*
-
-
-							*number* - the number to test against
+	- *partition_name*
+	- *number* - the number to test against
 - if `use_partition` is set to 0 the function will have 1 parameter:
-
-						*number* - the number to test against
-
+	- *number* - the number to test against
 
 MI FIFO Command Format:
 
-
 ```bash
-		opensips-cli -x mi trie_search partition_name=part1 number=012340987
-		
+opensips-cli -x mi trie_search partition_name=part1 number=012340987
 ```
 
 
@@ -281,20 +270,14 @@ Deletes individual entries in the trie, without reloading all of the data
 
 - if `use_partition` is set to 1 the function
 will have 2 parameters:
-
-
-							*partition_name*
-
-
-							*number* - the array of numbers to delete
-
+	- *partition_name*
+	- *number* - the array of numbers to delete
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi trie_number_delete partition_name=part1 number=["012340987","4858345"]
-		
+opensips-cli -x mi trie_number_delete partition_name=part1 number=["012340987","4858345"]
 ```
 
 
@@ -306,23 +289,16 @@ Upserts ( insert if not found, update is found ) an array of numbers in the trie
 
 - if `use_partition` is set to 1 the function
 will have 3 parameters:
-
-
-							*partition_name*
-
-
-							*number* - the array of numbers to update
-
-
-							*attrs* - the array of new attributes for the numbers
+	- *partition_name*
+	- *number* - the array of numbers to update
+	- *attrs* - the array of new attributes for the numbers
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi trie_number_upsert partition_name=part1 number=["012340987"] attrs=["my_attrs"]
-		
+opensips-cli -x mi trie_number_upsert partition_name=part1 number=["012340987"] attrs=["my_attrs"]
 ```
 
 

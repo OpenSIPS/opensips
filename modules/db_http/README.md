@@ -435,7 +435,7 @@ If the query produced an error the server must reply with a
 HTTP 500 reply,	or with a corresponding error code (404, 401).
 
 
-```c title="Example Reply."
+``` title="Example Reply."
 ...
 int;string;blob
 6;something=something;1000
@@ -461,7 +461,7 @@ it must be placed under quotes. A quote delimiter inside a value
 must be preceeded by another quote delimiter.
 
 
-```c title="Quoting Example."
+``` title="Quoting Example."
 ...
 int;string;blob
 6;|ana;maria|;1000
@@ -492,7 +492,7 @@ if needed.
 
 The module will try to use the most secure type of
 authentication that is provided by the server from:
-Basic, Digest,GSSNEGOTIATE and NTLM.
+Basic, Digest, GSSNEGOTIATE and NTLM.
 <!-- CONTRIBUTORS -->
 
 ### License

@@ -1,6 +1,6 @@
 ---
 title: "RATE_CACHER Module"
-description: "The *rate_cacher* module provides a means of caching and real-time querying of the ratesheets assigned to your clients and / or vendors. It also allows for real-time cost-based routing and cost-based filtering."
+description: "The *rate_cacher* module provides a means of caching and real-time querying of the ratesheets assigned to your clients and / or vendors."
 ---
 
 ## Admin Guide
@@ -304,8 +304,6 @@ This function can be used from a REQUEST or FAILURE route.
 
 ```opensips title="cost_based_filtering usage"
 ...
-
-
 # If we get a call from testClient on it's wholesale quality,
 # going to number 40720018124, and we have to pick from the list 
 # of vendors 'testVendor,testVendor2' based on a a profit margin 
@@ -376,7 +374,6 @@ $avp(profit_margin)=0;
 
 if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
 	xlog("XXX - Out of the $avp(carrierlist) carriers, we should only use $avp(out_vendor_result) , in the provided order\n");
-
 ...
 ```
 
@@ -405,7 +402,6 @@ MI FIFO Command Format:
 ```bash
 ## Add a new Vendor
 $ opensips-cli -x mi rc_addVendor myNewVendor
-		
 ```
 
 
@@ -430,7 +426,6 @@ MI FIFO Command Format:
 ```bash
 ## Delete a Vendor
 $ opensipss-cli -x mi rc_deleteVendor myNewVendor
-		
 ```
 
 
@@ -456,7 +451,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads a Vendor Ratesheet
 $ opensips-cli -x mi rc_reloadVendorRate myVendor 3
-		
 ```
 
 
@@ -481,7 +475,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads a Vendor Ratesheet
 $ opensips-cli -x mi rc_deleteVendorRate myVendor
-		
 ```
 
 
@@ -515,7 +508,6 @@ MI FIFO Command Format:
     "increment": 1,
     "currency": "USD"
 }
-		
 ```
 
 
@@ -540,7 +532,6 @@ MI FIFO Command Format:
 ```bash
 ## Add a new Client
 $ opensips-cli -x mi fifo rc_addClient myNewClient
-		
 ```
 
 
@@ -565,7 +556,6 @@ MI FIFO Command Format:
 ```bash
 ## Delete a Client
 $ opensips-cli -x mi rc_deleteClient myClient
-		
 ```
 
 
@@ -592,7 +582,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
 $ opensips-cli -x mi rc_reloadClientRate myClient 1 3
-		
 ```
 
 
@@ -618,7 +607,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads a Vendor Ratesheet
 $ opensips-cli -x mi rc_deleteVendorRate myVendor
-		
 ```
 
 
@@ -653,8 +641,6 @@ MI FIFO Command Format:
     "increment": 1,
     "currency": "USD"
 }
-
-		
 ```
 <!-- CONTRIBUTORS -->
 

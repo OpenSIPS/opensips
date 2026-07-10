@@ -1,6 +1,6 @@
 ---
 title: "event_kafka Module"
-description: "This module is an implementation of an [Apache Kafka](https://kafka.apache.org/) producer. It serves as a transport backend for the Event Interface and also provides a stand-alone connector to be used from the OpenSIPS script in order to publish messages to Kafka brokers."
+description: "This module is an implementation of an [Apache Kafka](https://kafka.apache.org/) producer."
 ---
 
 ## Admin Guide
@@ -152,12 +152,10 @@ record to publish.
 name of a script route to be executed when the message delivery
 status is available. Information about the message publishing will
 be available in this route through the following AVP variables:
-
-					*$avp(kafka_id)* - broker ID
-					*$avp(kafka_status)* - delivery status,
-						0 if succesfull, -1 othewise
-					*$avp(kafka_key)* - message key
-					*$avp(kafka_msg)* - message payload
+	* *$avp(kafka_id)* - broker ID
+	* *$avp(kafka_status)* - delivery status, 0 if succesfull, -1 othewise
+	* *$avp(kafka_key)* - message key
+	* *$avp(kafka_msg)* - message payload
 
 
 ```opensips title="kafka_publish() function usage"

@@ -1,6 +1,6 @@
 ---
 title: "B2B_ENTITIES"
-description: "The B2BUA implementation in OpenSIPS is separated in two layers: a lower one(coded in this module)- which implements the basic functions of a UAS and UAC a upper one - which represents the logic engine of B2BUA, responsible of actually implementing the B2BUA services using ..."
+description: "This module implements the basic functions of a UAS and UAC needed by the B2BUA implementation of OpenSIPS."
 ---
 
 ## Admin Guide
@@ -353,28 +353,27 @@ Parameters:
 b2b entity key of the new UA session.
 - *flags (string, optional)* - configures options
 for this UA session via the following flags:
-
-					*t[nn]* - maximum duration of
-					this session in seconds. After this timeout a BYE
-					will be sent and the session will be deleted. If this
-					is not set, the default timeout, configured with
-					[ua default timeout](#param_ua_default_timeout) will be used.
-					Example: *t3600*
-					*a* - report the receving of ACK requests
-					via the [E UA SESSION](#event_e_ua_session) event.
-					*r* - report the receving of replies via
-					the [E UA SESSION](#event_e_ua_session) event.
-					*d* - disable the automatic sending of ACK
-					upon receving a 200 OK reply for INVITE (in case of UAC session)
-					or re-INVITE.
-					*h* - provide the headers of the SIP request/reply
-					in the [E UA SESSION](#event_e_ua_session) event.
-					*b* - provide the body of the SIP request/reply
-					in the [E UA SESSION](#event_e_ua_session) event.
-					*n* - do not trigger the
-					[E UA SESSION](#event_e_ua_session) event (with event_type
-					*NEW*)  for initial INVITES
-					handled with this function.
+  - *t[nn]* - maximum duration of
+this session in seconds. After this timeout a BYE
+will be sent and the session will be deleted. If this
+is not set, the default timeout, configured with
+[ua default timeout](#param_ua_default_timeout) will be used.
+Example: *t3600*
+  - *a* - report the receving of ACK requests
+via the [E UA SESSION](#event_e_ua_session) event.
+  - *r* - report the receving of replies via
+the [E UA SESSION](#event_e_ua_session) event.
+  - *d* - disable the automatic sending of ACK
+upon receving a 200 OK reply for INVITE (in case of UAC session)
+or re-INVITE.
+  - *h* - provide the headers of the SIP request/reply
+in the [E UA SESSION](#event_e_ua_session) event.
+  - *b* - provide the body of the SIP request/reply
+in the [E UA SESSION](#event_e_ua_session) event.
+  - *n* - do not trigger the
+[E UA SESSION](#event_e_ua_session) event (with event_type
+*NEW*)  for initial INVITES
+handled with this function.
 - *extra_params (string, optional)* - An arbitrary
 value to be passed to the *extra_params* parameter
 in the [E UA SESSION](#event_e_ua_session) event.
@@ -709,20 +708,12 @@ Parameters:
 - *entity_type* - indicates whether this is a
 *UAS* or *UAc* entity.
 - *event_type* - the type of event:
-
-					*NEW* - for initial INVITE requests,
-						handled with the [ua session server init](#func_ua_session_server_init)
-						function.
-					*EARLY* - for 1xx provisional
-						responses
-					*ANSWERED* - for 2xx successful
-						responses
-					*REJECTED* - for 3xx-6xx failure
-						responses
-					*UPDATED* - for any sequential requests,
-						including ACK but excluding BYE/CANCEL
-					*TERMINATED* - for BYE or CANCEL
-						requests
+	- *NEW* - for initial INVITE requests, handled with the [ua session server init](#func_ua_session_server_init) function.
+	- *EARLY* - for 1xx provisional responses
+	- *ANSWERED* - for 2xx successful responses
+	- *REJECTED* - for 3xx-6xx failure responses
+	- *UPDATED* - for any sequential requests, including ACK but excluding BYE/CANCEL
+	- *TERMINATED* - for BYE or CANCEL requests
 - *status* - the reply status code if the message is
 a SIP reply
 - *reason* - the reply reason if the message is
@@ -778,7 +769,7 @@ typedef struct b2b_api {
 Field type:
 
 
-```opensips
+```c
 ...
 typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
 		b2b_notify_t , str *mod_name, str* logic_key, struct b2b_tracer *tracer,

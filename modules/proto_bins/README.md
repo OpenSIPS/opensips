@@ -17,11 +17,11 @@ by the clusterer module.
 Once loaded, you will be able to define BINS listeners in your
 configuration file by adding their IP and, optionally, a
 listening port, similar to this example:
-	```c
 
+```opensips
 ...
-socket= bins:127.0.0.1 		# change the listening IP
-socket= bins:127.0.0.1:5557	# change the listening IP and port
+socket = bins:127.0.0.1 		# change the listening IP
+socket = bins:127.0.0.1:5557	# change the listening IP and port
 ...
 ```
 
@@ -87,9 +87,7 @@ being initiated (outbound).
 
 
 ```opensips title="Set bins_handshake_timeout variable"
-param("proto_tls", "bins_handshake_timeout", 200) # number of milliseconds
-
-			
+param("proto_tls", "bins_handshake_timeout", 200) # number of milliseconds			
 ```
 
 
@@ -227,9 +225,10 @@ about the client and server certificates, master key and network layer
 information shall be sent.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -238,7 +237,6 @@ loaded in order for this parameter to work. (for example
 ```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
-
 modparam("proto_bins", "trace_destination", "hep_dest")
 ...
 ```
@@ -275,17 +273,15 @@ Parameters:
 can be missing and the command will show the current tracing
 status for this module( on or off );
 Possible values:
-
-							on
-							off
+	- on
+	- off
 
 
 MI FIFO Command Format:
 
 
 ```bash
-			opensips-cli -x mi bins_trace on
-			
+opensips-cli -x mi bins_trace on
 ```
 <!-- CONTRIBUTORS -->
 

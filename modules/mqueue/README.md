@@ -1,6 +1,6 @@
 ---
 title: "mqueue Module"
-description: "The mqueue module offers a generic message queue system in shared memory for inter-process communication using the config file. One example of usage is to send time consuming operations to one or several timer processes that consumes items in the queue, without affecting SIP message handl..."
+description: "The mqueue module offers a generic message queue system in shared memory for inter-process communication using the config file."
 ---
 
 ## Admin Guide
@@ -99,21 +99,15 @@ If set to 2, it is written at shutdown but not read at startup.
 If set to 3, it is read at sartup but not written at shutdown.
 Default value is 0 (no db table interaction).
   - *addmode*: how to add new (key,value) pairs.
-
-
-						*0*:
-						Will push all new (key,value) pairs at the end of
-						the queue. (default)
-
-
-						*1*:
-						Will keep oldest (key,value) pair in the queue,
-						based on the key.
-
-
-						*2*:
-						Will keep newest (key,value) pair in the queue,
-						based on the key.
+	- *0*:
+	Will push all new (key,value) pairs at the end of
+	the queue. (default)
+	- *1*:
+	Will keep oldest (key,value) pair in the queue,
+	based on the key.
+	- *2*:
+	Will keep newest (key,value) pair in the queue,
+	based on the key.
 
 
 The parameter can be set many times, each holding the

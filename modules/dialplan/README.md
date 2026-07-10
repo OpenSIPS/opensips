@@ -1,6 +1,6 @@
 ---
 title: "dialplan Module"
-description: "This module implements generic string translations based on matching and replacement rules. It can be used to manipulate R-URI or a PV and to translated to a new format/value."
+description: "This module implements generic string translations based on matching and replacement rules."
 ---
 
 ## Admin Guide
@@ -215,9 +215,10 @@ be set multiple times.  Each partition may have a specific "db_url" and
 the default partition is 'default'.
 
 
-Note: OpenSIPS will validate each partition, so make sure to add any
-required entries in the "version" table of each database defined
-through the 'db_url' property.
+> [!NOTE]
+> OpenSIPS will validate each partition, so make sure to add any
+> required entries in the "version" table of each database defined
+> through the 'db_url' property.
 
 
 ```opensips title="Defining the 'pstn' partition"
@@ -552,8 +553,7 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-		opensips-cli -x mi dp_reload
-		
+opensips-cli -x mi dp_reload
 ```
 
 
@@ -581,8 +581,7 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-        opensips-cli -x mi dp_translate 10 +40123456789
-		
+opensips-cli -x mi dp_translate 10 +40123456789
 ```
 
 
@@ -607,8 +606,7 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-        opensips-cli -x mi dp_translate default
-		
+opensips-cli -x mi dp_translate default
 ```
 
 
@@ -642,41 +640,41 @@ In terms of reports/logs, the following events will be reported:
 
 
 ```json
-    {
-        "Name": "default",
-        "Reports": [
-            {
-                "Timestamp": 1652778355,
-                "Date": "Tue May 17 12:05:55 2022",
-                "Log": "starting DB data loading"
-            },
-            {
-                "Timestamp": 1652778355,
-                "Date": "Tue May 17 12:05:55 2022",
-                "Log": "DB data loading successfully completed"
-            },
-            {
-                "Timestamp": 1652778355,
-                "Date": "Tue May 17 12:05:55 2022",
-                "Log": "5 rules loaded (0 discarded)"
-            },
-            {
-                "Timestamp": 1652778405,
-                "Date": "Tue May 17 12:06:45 2022",
-                "Log": "starting DB data loading"
-            },
-            {
-                "Timestamp": 1652778405,
-                "Date": "Tue May 17 12:06:45 2022",
-                "Log": "DB data loading successfully completed"
-            },
-            {
-                "Timestamp": 1652778405,
-                "Date": "Tue May 17 12:06:45 2022",
-                "Log": "5 rules loaded (0 discarded)"
-            }
-        ]
-    }
+{
+    "Name": "default",
+    "Reports": [
+        {
+            "Timestamp": 1652778355,
+            "Date": "Tue May 17 12:05:55 2022",
+            "Log": "starting DB data loading"
+        },
+        {
+            "Timestamp": 1652778355,
+            "Date": "Tue May 17 12:05:55 2022",
+            "Log": "DB data loading successfully completed"
+        },
+        {
+            "Timestamp": 1652778355,
+            "Date": "Tue May 17 12:05:55 2022",
+            "Log": "5 rules loaded (0 discarded)"
+        },
+        {
+            "Timestamp": 1652778405,
+            "Date": "Tue May 17 12:06:45 2022",
+            "Log": "starting DB data loading"
+        },
+        {
+            "Timestamp": 1652778405,
+            "Date": "Tue May 17 12:06:45 2022",
+            "Log": "DB data loading successfully completed"
+        },
+        {
+            "Timestamp": 1652778405,
+            "Date": "Tue May 17 12:06:45 2022",
+            "Log": "5 rules loaded (0 discarded)"
+        }
+    ]
+}
 	
 ```
 
