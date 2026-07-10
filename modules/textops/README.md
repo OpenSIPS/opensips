@@ -1,6 +1,6 @@
 ---
 title: "textops Module"
-description: "The module implements text based operations over the SIP message processed by OpenSIPS. SIP is a text based protocol and the module provides a large set of very useful functions to manipulate the message at text level, e.g., regular expression search and replace, Perl-like substitutions, ..."
+description: "The module implements text based operations over the SIP message processed by OpenSIPS."
 ---
 
 ## Admin Guide
@@ -16,10 +16,11 @@ message at text level, e.g., regular expression search and replace,
 Perl-like substitutions, etc.
 
 
-Note: all SIP-aware functions like *insert_hf*,
-*append_hf* or *codec*
-operations have been moved to the *sipmsgops*
-module.
+> [!NOTE]
+> All SIP-aware functions like *insert_hf*,
+> *append_hf* or *codec*
+> operations have been moved to the *sipmsgops*
+> module.
 
 
 #### Known Limitations
@@ -380,7 +381,6 @@ if (subst_user('/3642$/36423463/')){$
 ...
 # adds avp 'user_prefix' as prefix to username in r-uri ending with 3642
 if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
-
 ...
 ```
 
@@ -410,7 +410,6 @@ FAILURE_ROUTE, BRANCH_ROUTE.
 ...
 if (subst_body("/^o=([^ ]*) /o=$fU /"))
 	xlog("successfully prepared an "o" line update!\n");
-
 ...
 ```
 <!-- CONTRIBUTORS -->

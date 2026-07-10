@@ -13,8 +13,6 @@ This module provides a Diameter implementation for the core AAA API interface.
 
 
 Any module that wishes to use it has to do the following:
-
-
 - *include aaa.h*
 - *make a bind call with a proper Diameter-specific URL, e.g. "diameter:freeDiameter-client.conf"*
 
@@ -179,7 +177,7 @@ before an Answer could be processed)
 This function can be used from any route.
 
 
-```json title="dictionary.opensips extended syntax"
+``` title="dictionary.opensips extended syntax"
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
 

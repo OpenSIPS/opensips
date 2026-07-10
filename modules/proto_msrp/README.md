@@ -18,8 +18,7 @@ signalling operations.
 Once loaded, you will be able to define MSRP listeners in your script,
 by adding its IP, and optionally the listening port,
 in your configuration file, similar to this example:
-	```c
-
+```opensips
 ...
 socket=msrp:127.0.0.1:65432
 socket=msrps:127.0.0.1:65431
@@ -65,7 +64,7 @@ to send something on it).
 *Default value is 100 ms.*
 
 
-```c title="Set send_timeout parameter"
+```opensips title="Set send_timeout parameter"
 ...
 modparam("proto_msrp", "send_timeout", 200)
 ...
@@ -112,9 +111,7 @@ initiated (outbound).
 
 
 ```opensips title="Set tls_handshake_timeout variable"
-param("proto_msrp", "tls_handshake_timeout", 200) # number of milliseconds
-
-			
+param("proto_msrp", "tls_handshake_timeout", 200) # number of milliseconds			
 ```
 
 
@@ -200,19 +197,20 @@ have to define a [trace destination](#param_trace_destination) and trace must be
 on at the time this connection is opened.
 
 
-**IMPORTANT**
-Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
-either the entity that is connecting to OpenSIPS or the entity to which
-OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
-it is simply the socket other than the OpenSIPS socket. In order to match
-OpenSIPS interface (either the one that accepted the connection or the one
-that initiated a connection) **$socket_in(ip)** (ip) and
-**$socket_in(port)** (port) can be used.
+> [!IMPORTANT]
+> Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
+> either the entity that is connecting to OpenSIPS or the entity to which
+> OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
+> it is simply the socket other than the OpenSIPS socket. In order to match
+> OpenSIPS interface (either the one that accepted the connection or the one
+> that initiated a connection) **$socket_in(ip)** (ip) and
+> **$socket_in(port)** (port) can be used.
 
 
-**WARNING:** IF [trace on](#param_trace_on) is
-set to 0 or tracing is deactived via the mi command [msrp trace](#mi_msrp_trace)
-this route won't be called.
+> [!WARNING]
+> If [trace on](#param_trace_on) is
+> set to 0 or tracing is deactived via the mi command [msrp trace](#msrp-trace)
+> this route won't be called.
 
 
 ```opensips title="Set trace_filter_route parameter"
@@ -252,19 +250,15 @@ Parameters:
 This parameter can be missing and the command will show the 
 current tracing status for this module( on or off );
 Possible values:
-
-				on
-				off
+	- on
+	- off
 
 
 MI FIFO Command Format:
-
-
 ```bash
-			:msrp_trace:_reply_fifo_file_
-			trace_mode
-			_empty_line_
-			
+:msrp_trace:_reply_fifo_file_
+trace_mode
+_empty_line_
 ```
 <!-- CONTRIBUTORS -->
 

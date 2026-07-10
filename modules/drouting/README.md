@@ -1,5 +1,6 @@
 ---
 title: "Dynamic Routing Module"
+description: "Dynamic Routing is a module for selecting (based on multiple criteria) the best gateway/destination to be used for delivering a certain call."
 ---
 
 ## Admin Guide
@@ -129,8 +130,7 @@ number
 number
 - attributes (not used by DR engine, but only pushed
 to script level when routing to this GW)
-- probing mode (how the GW should be probed at SIP level
-	- see the probing chapter)
+- probing mode (how the GW should be probed at SIP level - see the probing chapter)
 
 
 The Gateways are to be used from the routing rule or from the carrier
@@ -223,11 +223,13 @@ Specification (calendar COS), RFC 2445. The set of attributes used in
 a routing rule specification is a subset of time recurrence attributes.
 - The value stored in database has the basic format of:
 
+```
 	<timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+```
 
-	, identical to the input of the [check_time_rec()](../cfgutils#func_check_time_rec)
-	function of the *cfgutils* module, including the optional
-	use of logical operators linking multiple such strings into a larger expression.
+, identical to the input of the [check_time_rec()](../cfgutils#func_check_time_rec)
+function of the *cfgutils* module, including the optional
+use of logical operators linking multiple such strings into a larger expression.
 - When an attribute is not specified, the corresponding place must be left
 empty, whenever another attribute that follows in the list has to be
 specified.
@@ -1048,7 +1050,8 @@ Variable which will store the name of the name partition when
 use this parameter.
 
 
-NOTE: The variable must be WRITABLE!
+> [!NOTE]
+> The variable must be WRITABLE!
 
 
 *Default value is "null(not used)".*
@@ -1070,11 +1073,13 @@ from the database after restart, but uses the persistent storage file, and loads
 data from it "on demand", improving the startup performance.
 
 
-NOTE: If the restart persistent cache is not populated from a previous run,
-then the data will be loaded from database at startup!
+> [!NOTE]
+> If the restart persistent cache is not populated from a previous run,
+> then the data will be loaded from database at startup!
 
 
-NOTE: A reload will update the cached data.
+> [!NOTE]
+> A reload will update the cached data.
 
 
 *Default value is "0 (disabled)".*
@@ -1955,27 +1960,27 @@ In terms of data reloading, the following logs will be reported:
 
 
 ```json
-    {
-        "Name": "Default",
-        "Reports": [
-            {
-                "Timestamp": 1652353940,
-                "Date": "Thu May 12 14:12:20 2022",
-                "Log": "starting DB data loading"
-            },
-            {
-                "Timestamp": 1652353940,
-                "Date": "Thu May 12 14:12:20 2022",
-                "Log": "DB data loading successfully completed"
-            },
-            {
-                "Timestamp": 1652353940,
-                "Date": "Thu May 12 14:12:20 2022",
-                "Log": "2 gateways loaded (0 discarded), 2 carriers loaded (0 discarded), 1 rules loaded (0 discarded)"
-            }
-        ]
-    }
-	
+{
+	"Name": "Default",
+	"Reports": [
+		{
+			"Timestamp": 1652353940,
+			"Date": "Thu May 12 14:12:20 2022",
+			"Log": "starting DB data loading"
+		},
+		{
+			"Timestamp": 1652353940,
+			"Date": "Thu May 12 14:12:20 2022",
+			"Log": "DB data loading successfully completed"
+		},
+		{
+			"Timestamp": 1652353940,
+			"Date": "Thu May 12 14:12:20 2022",
+			"Log": "2 gateways loaded (0 discarded), 2 carriers loaded (0 discarded), 1 rules loaded (0 discarded)"
+		}
+	]
+}
+
 ```
 
 
@@ -2000,22 +2005,22 @@ discarding the old ones.
 
 
 ```json
-    {
-        "Name": "Default;events",
-        "Reports": [
-            {
-                "Timestamp": 1652353976,
-                "Date": "Thu May 12 14:12:56 2022",
-                "Log": "GW <gw1_1>/127.0.1.1 switched to [inactive] due probing reply\n"
-            },
-            {
-                "Timestamp": 1652353976,
-                "Date": "Thu May 12 14:12:56 2022",
-                "Log": "GW <gw2_1>/127.0.1.2 switched to [inactive] due probing reply\n"
-            }
-        ]
-    }
-	
+{
+	"Name": "Default;events",
+	"Reports": [
+		{
+			"Timestamp": 1652353976,
+			"Date": "Thu May 12 14:12:56 2022",
+			"Log": "GW <gw1_1>/127.0.1.1 switched to [inactive] due probing reply\n"
+		},
+		{
+			"Timestamp": 1652353976,
+			"Date": "Thu May 12 14:12:56 2022",
+			"Log": "GW <gw2_1>/127.0.1.2 switched to [inactive] due probing reply\n"
+		}
+	]
+}
+
 ```
 
 

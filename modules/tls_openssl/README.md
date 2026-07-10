@@ -1,6 +1,6 @@
 ---
 title: "tls_openssl Module"
-description: "This module implements TLS operations using the [openSSL](https://www.openssl.org/) libarary. It provides the primitives required by the *tls_mgm* module in order to expose a higher-level API used by TLS-based protocol modules like *proto_tls* or *proto_wss* etc."
+description: "This module implements TLS operations using the [openSSL](https://www.openssl.org/) libarary."
 ---
 
 ## Admin Guide

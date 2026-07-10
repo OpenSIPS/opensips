@@ -183,7 +183,6 @@ Meaning of the parameters is as follows:
 table to search for the alias
 - *flags (string, optional)* - set of
 character flags to control the alias lookup process:
-
   - **d** - do not use domain URI part in
 the alias lookup query (use only a username-based lookup). By
 default, both username and domain are used.

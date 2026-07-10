@@ -1,6 +1,6 @@
 ---
 title: "cachedb_mongodb Module"
-description: "This module is an implementation of a cache system designed to work with MongoDB servers. It implements the Key-Value interface exposed by the OpenSIPS core."
+description: "This module is an implementation of a cache system designed to work with MongoDB servers."
 ---
 
 ## Admin Guide
@@ -59,7 +59,7 @@ None.
 The following packages must be installed before running OpenSIPS with this module loaded:
 
 
-```c title="Runtime requirements for 'cachedb_mongodb'"
+```bash title="Runtime requirements for 'cachedb_mongodb'"
 # Debian / Ubuntu
 sudo apt-get install libjson-c2 libmongoc-1.0
 
@@ -72,7 +72,7 @@ sudo yum install json-c mongo-c-driver
 The following packages are required in order to compile this module:
 
 
-```c title="Compilation requirements for 'cachedb_mongodb'"
+```bash title="Compilation requirements for 'cachedb_mongodb'"
 # Debian / Ubuntu
 sudo apt-get install libjson-c-dev libmongoc-dev libbson-dev
 
@@ -100,9 +100,28 @@ connect string options. For more info,
 please refer to [the official MongoDB connect string documentation](https://docs.mongodb.com/manual/reference/connection-string/).
 
 
-```c title="Set cachedb_url parameter"
+```opensips title="Set cachedb_url parameter"
 ...
-# Connect to a single 
+# Connect to a single mongod instance
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb://localhost:27017/opensipsDB.dialog")
+
+# Connect to a mongod replica set
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replicaSet=my-set")
+
+# Connect to a mongos instance (routes to a sharded cluster)
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb://localhost/opensipsDB.dialog")
+
+# Example of multiple connections:
+#   * to a main mongos, with failover to a backup mongos
+#   * to a single mongod
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost,10.0.0.10:27017/opensipsDB.dialog")
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb://localhost:27017/opensipsDB.userlocation")
+...
 ```
 
 

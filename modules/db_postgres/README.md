@@ -81,11 +81,12 @@ the server. If the connection does not succeed within the given timeout,
 the connection fails.
 
 
-*Note:*If the timeout is a negative value and
-connection does not succeed, OpenSIPS will block until the connection
-becomes back available and gets successfully established. This is the
-default behavior of the library and is the behavior prior to the
-adition of this parameter.
+> [!NOTE]
+> If the timeout is a negative value and
+> connection does not succeed, OpenSIPS will block until the connection
+> becomes back available and gets successfully established. This is the
+> default behavior of the library and is the behavior prior to the
+> addition of this parameter.
 
 
 *Default value is 5.*
@@ -100,10 +101,10 @@ modparam("db_postgres", "timeout", 2)
 
 #### use_tls (integer)
 
-
-Warning: the *tls_openssl* module cannot be used
-when setting this parameter. Use the *tls_wolfssl*
-module instead if a TLS/SSL Library is required.
+> [!WARNING]
+> The *tls_openssl* module cannot be used
+> when setting this parameter. Use the *tls_wolfssl*
+> module instead if a TLS/SSL Library is required.
 
 
 Setting this parameter will allow you to use TLS for PostgreSQL connections.
@@ -118,11 +119,12 @@ When using this parameter, you must also ensure that
 the the module for additional info regarding TLS client domains.
 
 
-Note that if you want to use this feature, the TLS domain must be
-provisioned in the configuration file, *NOT* in
-the database. In case you are loading TLS certificates from the
-database, you must at least define one domain in the
-configuration script, to use for the initial connection to the DB.
+> [!NOTE]
+> If you want to use this feature, the TLS domain must be
+> provisioned in the configuration file, *NOT* in
+> the database. In case you are loading TLS certificates from the
+> database, you must at least define one domain in the
+> configuration script, to use for the initial connection to the DB.
 
 
 Also, you can *NOT* enable TLS for the connection

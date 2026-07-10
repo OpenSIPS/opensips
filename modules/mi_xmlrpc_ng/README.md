@@ -1,6 +1,6 @@
 ---
 title: "mi_xmlrpc_ng Module"
-description: "This module implements a xmlrpc server that handles xmlrpc requests and generates xmlrpc responses. When a xmlrpc message is received a default method is executed."
+description: "This module implements a xmlrpc server that handles xmlrpc requests and generates xmlrpc responses."
 ---
 
 ## Admin Guide
@@ -74,9 +74,10 @@ the only tracing module is **proto_hep**.
 This is where traced mi messages will go.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -105,14 +106,17 @@ by ','.
 Defining a blacklists means all the commands that are not blacklisted
 will be traced. Defining a whitelist means all the commands that are
 not whitelisted will not be traced.
-**WARNING:** One can't define both
-a whitelist and a blacklist. Only one of them is allowed. Defining
-the parameter a second time will just overwrite the first one.
+
+> [!WARNING]
+> One can't define both
+> a whitelist and a blacklist. Only one of them is allowed. Defining
+> the parameter a second time will just overwrite the first one.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep)**.
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
