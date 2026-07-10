@@ -55,11 +55,8 @@ The following libraries or applications must be installed before running
 OpenSIPS with this module loaded:
 
 
-- *libjson*
-The libjson library can be downloaded from: http://oss.metaparadigm.com/json-c/
-- *mongo-c-driver*
-The mongo C driver can be downloaded from https://github.com/mongodb/mongo-c-driver
-Note : Please use the 0.6 version of the driver
+- *libjson* - The libjson library can be downloaded from: http://oss.metaparadigm.com/json-c/
+- *mongo-c-driver* - The mongo C driver can be downloaded from MongoDB's GitHub repository. Make sure to get the 0.6 version: *"git clone https://github.com/mongodb/mongo-c-driver.git -b v0.6"*
 
 
 ### Exported Parameters
@@ -83,7 +80,6 @@ as going to a replica set.
 modparam("cachedb_mongodb", "cachedb_url","mongodb:instance1://localhost:27017/db.collection")
 modparam("cachedb_mongodb", "cachedb_url","mongodb:replicaset1://1.2.3.4:27017,2.3.4.5:27017,3.4.5.6:27017/replicaSetName.db.collection")
 ...
-	
 ```
 
 

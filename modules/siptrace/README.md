@@ -25,12 +25,11 @@ TM/SL callbacks, so only messages processed with TM/SL are logged.
 
 The tracing can be turned on/off using fifo commad.
 
-
+```bash
 opensipsctl fifo sip_trace on
 
 
 opensipsctl fifo sip_trace off
-
 
 ### Dependencies
 
@@ -368,10 +367,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:sip_trace:_reply_fifo_file_
-		trace_mode
-		_empty_line_
-		
+:sip_trace:_reply_fifo_file_
+trace_mode
+_empty_line_
 ```
 
 

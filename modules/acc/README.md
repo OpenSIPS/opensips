@@ -11,7 +11,7 @@ description: "ACC module is used to account transactions information to differen
 
 ACC module is used to account transactions information to different
 backends like syslog, SQL,
-AAA and DIAMETER 
+AAA and DIAMETER
 (beta version).
 
 
@@ -157,24 +157,30 @@ of the accounting support which is used:
 
 - *LOG accounting* - log_name
 will be just printed along with the data in *log_name=data* format;
-- *DB accounting* - log_name 
-will be the name of the DB column where the data will be 
-stored.*IMPORTANT*: add in db 
-*acc* table the columns corresponding to 
-each extra data;
-- *AAA accounting* - 
-log_name will be the AVP name used for packing the data into 
-AAA message. The log_name will be translated to AVP number 
-via the dictionary. *IMPORTANT*: add in 
-AAA dictionary the *log_name* attribute.
-- *DIAMETER accounting* - 
-log_name will be the AVP code used for packing the data 
-into DIAMETER message. The AVP code is given directly as 
+- *DB accounting* - log_name
+will be the name of the DB column where the data will be
+stored.
+
+	> [!IMPORTANT]
+	> Add in db *acc* table the columns corresponding to each extra data.
+
+- *AAA accounting* -
+log_name will be the AVP name used for packing the data into
+AAA message. The log_name will be translated to AVP number
+via the dictionary.
+
+	> [!IMPORTANT]
+	> Add in AAA dictionary the *log_name* attribute.
+
+- *DIAMETER accounting* -
+log_name will be the AVP code used for packing the data
+into DIAMETER message. The AVP code is given directly as
 integer, since DIAMETER has no dictionary support yet.
-*IMPORTANT*:	*log_name*
-must be a number.
-- *Events accounting* - 
-log_name will be the name of the parameter in the event raised.
+
+	> [!IMPORTANT]
+	> *log_name* must be a number.
+
+- *Events accounting* - log_name will be the name of the parameter in the event raised.
 
 
 #### How it works
@@ -252,16 +258,19 @@ separately logged (due DB data structure constraints); several
 records will be written, the difference between them being 
 only the fields corresponding to the call-leg info.
 
-  > **Note:** You will need to add in your DB (all acc related
-				tables) the colums for call-leg info (a column for each AVP
-				of the set).
+> [!NOTE]
+> You will need to add in your DB (all acc related tables) the colums
+> for call-leg info (a column for each AVP of the set).
+
 - *AAA* -- all sets will be added
 to the same AAA accounting message as AAA AVPs - for each
 call-leg a set of AAA AVPs will be added (corresponding
 to the per-leg AVP set)
 
-  > **Note:** You will need to add in your dictionary the
-				AAA AVPs used in call-leg AVP set definition.
+> [!NOTE] 
+> You will need to add in your dictionary the
+> AAA AVPs used in call-leg set definition.
+
 - *Diameter* same as for AAA.
 - *events* -- each pair will appear as a
 different parameter-value pair in the event. Similar to the
@@ -312,13 +321,10 @@ the listed modules must be loaded before this module):
 
 
 - *tm* -- Transaction Manager
-- *a database module* -- If SQL 
-support is used.
-- *rr* -- Record Route, if 
-"detect_direction" module parameter is enabled.
+- *a database module* -- If SQL support is used.
+- *rr* -- Record Route, if "detect_direction" module parameter is enabled.
 - *an aaa module*
-- *dialog* -- Dialog, if
-"cdr_flag" is set.
+- *dialog* -- Dialog, if "cdr_flag" is set.
 
 
 #### External Libraries or Applications
