@@ -1,6 +1,6 @@
 ---
 title: "cachedb_couchbase Module"
-description: "This module is an implementation of a cache system designed to work with a Couchbase server. It uses the libcouchbase client library to connect to the server instance, It uses the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a Couchbase server."
 ---
 
 ## Admin Guide
@@ -88,7 +88,8 @@ modparam("cachedb_couchbase", "cachedb_url","couchbase:cluster1://random_url:888
 
 
 The max duration in microseconds that a couchbase op is expected to last.
-Default is 3000000 ( 3 seconds )
+
+*Default value is 3000000 (3 seconds).*
 
 
 ```opensips title="Set timeout parameter"

@@ -1,6 +1,6 @@
 ---
 title: "exec Module"
-description: "Exec module allows to start an external command from a OpenSIPS script. The commands may be any valid shell commands--the command string is passed to shell using \"popen\" command. OpenSIPS passes additionally lot of information about request in environment variables:"
+description: "The Exec module enables the execution of external commands from the OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -36,10 +36,11 @@ unchanged, equal to original).
 - SIP_REPLY_REASON is the reason of the *current* reply.
 
 
-NOTE: The envirnment variables must be specified with double $
-(e.g., $$SIP_OUSER) in the parameters given to exec functions.
-Otherwise they will be evaluated as OpenSIPS pseudo-variables,
-throwing errors.
+> [!NOTE]
+> Any environment variables which are given to the exec module
+> functions must be specified using the '$$' delimiter (e.g., $$SIP_OUSER),
+> otherwise they will be evaluated as OpenSIPS pseudo-variables,
+> throwing scripting errors.
 
 
 ### Dependencies
@@ -74,8 +75,9 @@ Set to 1 to enable setting all above-mentioned environment variables
 for all executed commands.
 
 
-**WARNING: Before enabling this parameter, make sure
-your "/bin/sh" is safe from the Shellshock bash vulnerability!!!**
+> [!WARNING]
+> Before enabling this parameter, make sure
+> your "/bin/sh" is safe from the Shellshock bash vulnerability!
 
 
 *Default value is 0 (disabled).*

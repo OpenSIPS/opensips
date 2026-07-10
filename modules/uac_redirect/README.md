@@ -312,9 +312,10 @@ are positive integer. To specify unlimited values, use 0 value
 or "*" character.
 
 
-NOTE that during the selection process, each set of contacts 
-from a specific branch are ordered based on "q" 
-value.
+> [!NOTE]
+> During the selection process, each set of contacts 
+> from a specific branch are ordered based on "q" 
+> value.
 
 
 This function will produce no accounting records.

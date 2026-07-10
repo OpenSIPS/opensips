@@ -53,8 +53,7 @@ The database url.
 ```opensips title="Set db_url parameter"
 ...
 modparam("xcap", "db_url", "dbdriver://username:password@dbhost/dbname")
-...
-                
+...    
 ```
 
 
@@ -70,8 +69,7 @@ The name of the db table where XCAP documents are stored.
 ```opensips title="Set xcap_table parameter"
 ...
 modparam("xcap", "xcap_table", "xcap")
-...
-                
+...    
 ```
 
 
@@ -93,7 +91,6 @@ the integrated server must send an MI command refershWatchers
 ...
 modparam("xcap", "integrated_xcap_server", 1)
 ...
-                
 ```
 
 
@@ -127,7 +124,6 @@ typedef struct xcap_api {
         get_xcap_doc_t get_xcap_doc;
 } xcap_api_t;
 ...
-			
 ```
 
 
@@ -155,11 +151,8 @@ This function parses the given XCAP URI.
 Parameters:
 
 
-- *uri*-
-the URI that needs to be parsed in string format
-- *xcap_uri*-
-xcap_uri_t structure that will be filled with the parsed information
-
+- *uri* - the URI that needs to be parsed in string format
+- *xcap_uri* - xcap_uri_t structure that will be filled with the parsed information
   ```
   Parameter type:
   ...
@@ -174,7 +167,6 @@ xcap_uri_t structure that will be filled with the parsed information
       str selector;
   } xcap_uri_t;
   ...
-                          
   ```
 
 
