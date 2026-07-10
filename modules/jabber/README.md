@@ -1,6 +1,6 @@
 ---
 title: "jabber Module"
-description: "This is new version of Jabber module that integrates XODE XML parser for parsing Jabber messages. That introduces a new module dependency: expat library."
+description: "This is new version of Jabber module that integrates XODE XML parser for parsing Jabber messages."
 ---
 
 ## Admin Guide
@@ -41,8 +41,8 @@ or down.
 
 > [!NOTE]
 > A more complete guide about SIMPLE2Jabber gateway can be found 
-at [https://opensips.org/](https://opensips.org/). The part below will be removed soon, only the manual 
-from web will be updated.
+> at [https://opensips.org/](https://opensips.org/). The part below will be removed soon, only the manual 
+> from web will be updated.
 
 
 The Jabber server setup is not a subject of this guide. Check [http://www.jabber.org](http://www.jabber.org) for that.

@@ -415,18 +415,13 @@ $m->xlog("L_INFO", "foo");
 ```
 
 
-WARNING
-
-
-In OpenSIPS 1.2, only a limited subset of module functions is
-available. This restriction will be removed in a later version.
+> [!WARNING]
+> In OpenSIPS 1.2, only a limited subset of module functions is
+> available. This restriction will be removed in a later version.
 
 
 Here is a list of functions that are expected to be working (not
 claiming completeness):
-
-
-```opensips
 * alias_db_lookup
 * consume_credentials
 * is_rpid_user_e164
@@ -515,8 +510,6 @@ claiming completeness):
 * radius_does_uri_exist
 * ul_* (All functions exported by the usrloc module for user access)
 * xmpp_send_message
-```
-
 
 #### log(level,message) (deprecated type)
 
@@ -524,8 +517,6 @@ claiming completeness):
 Logs the message with OpenSIPS's logging facility. The logging level
 is one of the following:
 
-
-```c
 * L_ALERT
 * L_CRIT
 * L_ERR
@@ -533,8 +524,6 @@ is one of the following:
 * L_NOTICE
 * L_INFO
 * L_DBG
-```
-
 
 The logging function should be accessed via the OpenSIPS module
 variant. This one, located in OpenSIPS::Message, is deprecated.

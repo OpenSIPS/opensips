@@ -1,6 +1,6 @@
 ---
 title: "event_jsonrpc Module"
-description: "This module is an implementation of an JSON-RPC v2.0 client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specification). that can send a RPC to a JSON-RPC server (when used in *sync_mode*), or send a notification (when *sync_mode* is disabled) whenever whenever OpenSIPS..."
+description: "This module is an implementation of an JSON-RPC v2.0 client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specification)."
 ---
 
 ## Admin Guide

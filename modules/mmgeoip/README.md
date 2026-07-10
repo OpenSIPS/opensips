@@ -1,6 +1,6 @@
 ---
 title: "mmgeoip Module"
-description: "This module is a lightweight wrapper for the MaxMind GeoIP API. It adds IP address-to-location lookup capability to OpenSIPS scripts."
+description: "This module is a lightweight wrapper for the MaxMind GeoIP API."
 ---
 
 ## Admin Guide
@@ -58,10 +58,10 @@ before compiling the module, to one of the following values:
 - *GEOIP2  **** libmaxminddb library shall be used;
 
 
-IMPORTANT: If the selected library is not installed the module won't compile.
-NOTE: If GEOIP env is not set, the module will try to find which GeoIP library is installed,
-prioritizing libmaxminddb.
-
+> [!IMPORTANT]
+> If the selected library is not installed the module won't compile.
+> NOTE: If GEOIP env is not set, the module will try to find which GeoIP library is installed,
+> prioritizing libmaxminddb.
 
 ### Exported Parameters
 
@@ -105,8 +105,9 @@ the file will be reloaded after 60 seconds; it will be slower than
 Default value for this parameter is *MMAP_CACHE*.
 
 
-NOTE: If libmaxminddb is used, this parameter will be ignored as the library only
-supports loading the database into mmap allocated memory.
+> [!NOTE]
+> If libmaxminddb is used, this parameter will be ignored as the library only
+> supports loading the database into mmap allocated memory.
 
 
 ```opensips title="Set 'cache_type' parameter"
@@ -135,8 +136,6 @@ one of these separators: ':', '|', ',', '/' or ' '(space).
 
 
 The following tokens are supported in `fields`:
-
-
 - *lat* - Latitude
 - *lon* - Longitude
 - *cont* - Continent

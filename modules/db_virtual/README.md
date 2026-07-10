@@ -28,15 +28,9 @@ a way to use(mode) it's real dbs must be specified.
 The implemented modes are:
 
 
-- FAILOVER
-Use the first URL; if it fails, take the next
-URL and redo the operation.
-- PARALLEL
-Use all the URLs in the virtual DB URL set.
-Fails if all the URLs fail.
-- ROUND (round-robin)
-Use the next URL each time; if it fails, 
-use the next one, redo operation.
+- FAILOVER - Use the first URL; if it fails, take the next URL and redo the operation.
+- PARALLEL - Use all the URLs in the virtual DB URL set. Fails if all the URLs fail.
+- ROUND (round-robin) - Use the next URL each time; if it fails, use the next one, redo operation.
 
 
 When choosing the db virtual mode, be sure that there is a full
@@ -57,41 +51,42 @@ virtual URL to provide a certain capability, ALL its real URLs
 must provide that capability.
 
 
-Note that starting with version 2.2 db_virtual supports 
-async_raw_query and async_raw_resume functions currently
-implemented only by the mysql database engine.
+> [!NOTE]
+> Starting with version 2.2 db_virtual supports
+> async_raw_query and async_raw_resume functions currently
+> implemented only by the mysql database engine.
 
 
 #### Failures
 
 
 ```c
-	When an operation from a process on a real DB fails:
-		it is marked (global and local CAN flag down)
-		its connection closed
+When an operation from a process on a real DB fails:
+	it is marked (global and local CAN flag down)
+	its connection closed
 
-	Later a timer process (probe):
-	foreach virtual db_url
-		foreach real db_url
-			if global CAN down
-				try to connect
-			if ok
-				global CAN up
-				close connection
-
-	Later each process:
-		if local CAN down and global CAN up
-			if db_max_consec_retrys *
-				try to connect
+Later a timer process (probe):
+foreach virtual db_url
+	foreach real db_url
+		if global CAN down
+			try to connect
 		if ok
-			local CAN up
+			global CAN up
+			close connection
 
-				
+Later each process:
+	if local CAN down and global CAN up
+		if db_max_consec_retrys *
+			try to connect
+	if ok
+		local CAN up
+
 ```
 
 
-Note *: there could be inconsistencies between the probe and each process so a retry limit is in order.
-It is reset and ignored by an MI command.
+> [!NOTE]
+> There could be inconsistencies between the probe and each process so a retry limit is in order.
+> It is reset and ignored by an MI command.
 
 
 #### The timer process
@@ -145,7 +140,6 @@ modparam("db_virtual", "db_urls", "postgres://opensips:opensipsrw@localhost/open
 modparam("db_virtual", "db_urls", "define set2 FAILOVER")
 modparam("db_virtual", "db_urls", "mysql://opensips:opensipsrw@localhost/testa")
 ...
-				
 ```
 
 
@@ -164,7 +158,6 @@ disconnect to the failed real DB and announce others.
 ...
 modparam("db_virtual", "db_probe_time", 20)
 ...
-				
 ```
 
 
@@ -186,7 +179,6 @@ This value is reset and suppressed by a MI function(db_set).
 modparam("db_virtual", "db_max_consec_retrys", 20)
 ...
 
-				
 ```
 
 
@@ -213,9 +205,8 @@ MI FIFO Command Format:
 
 
 ```bash
-				db_get
-				_empty_line_
-			
+db_get
+_empty_line_
 ```
 
 
@@ -254,9 +245,8 @@ MI FIFO Command Format:
 
 
 ```bash
-				db_set 3 2 0 1
-				_empty_line_
-			
+db_set 3 2 0 1
+_empty_line_
 ```
 
 

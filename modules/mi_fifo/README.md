@@ -1,6 +1,6 @@
 ---
 title: "mi_fifo Module"
-description: "This is a module which provides a FIFO transport layer implementation for Management Interface. It receives the command over a FIFO file and returns the output through the reply_fifo specified."
+description: "This is a module which provides a FIFO transport layer implementation for Management Interface."
 ---
 
 ## Admin Guide
@@ -221,9 +221,10 @@ a whitelist and a blacklist. Only one of them is allowed. Defining
 the parameter a second time will just overwrite the first one.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep)**.
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*

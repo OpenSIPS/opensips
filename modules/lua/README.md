@@ -195,8 +195,7 @@ MI FIFO Command Format:
 
 
 ```bash
-  opensipsctl fifo lua_reload
-  
+opensipsctl fifo lua_reload
 ```
 
 

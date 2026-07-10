@@ -14,8 +14,9 @@ client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specificati
 that can send a call to a JSON-RPC server over a TCP connection.
 
 
-NOTE that the current version of this module does not support TCP
-connection reusage, nor asynchronous commands.
+> [!NOTE]
+> That the current version of this module does not support TCP
+> connection reusage, nor asynchronous commands.
 
 
 ### Dependencies

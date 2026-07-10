@@ -1,6 +1,6 @@
 ---
 title: "mangler Module"
-description: "This is a module to help with SDP mangling. Note: This module is obselete and will be removed for the 1.5.0 release."
+description: "This is a module to help with SDP mangling."
 ---
 
 ## Admin Guide

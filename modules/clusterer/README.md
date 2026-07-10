@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the *clust..."
+description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -592,6 +592,8 @@ to one of the nodes in the cluster.
 The *addr_type* parameter can be set
 in order to select the address of the node that the comparison
 is made against, with the possible values of:
+	- *bin* - node's BIN interface listener;
+	- *sip* - node's DB provisioned SIP address.
 
 
 - *bin* - node's BIN interface listener;
@@ -634,9 +636,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_reload
-		_empty_line_
-		
+:clusterer_reload
+_empty_line_
 ```
 
 
@@ -656,9 +657,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_list
-		_empty_line_
-		
+:clusterer_list
+_empty_line_
 ```
 
 
@@ -731,11 +731,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_set_status:
-		1
-		0
-		_empty_line_
-		
+:clusterer_set_status:
+1
+0
+_empty_line_
 ```
 
 
@@ -761,12 +760,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:cluster_mi:
-		1
-		3
-		lb_reload
-		_empty_line_
-		
+:cluster_mi:
+1
+3
+lb_reload
+_empty_line_
 ```
 
 
@@ -791,12 +789,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:cluster_mi:
-		1
-		dr_reload_status
-		partition_5
-		_empty_line_
-		
+:cluster_mi:
+1
+dr_reload_status
+partition_5
+_empty_line_
 ```
 
 

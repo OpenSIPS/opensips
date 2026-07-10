@@ -1,6 +1,6 @@
 ---
 title: "SpeedDial Module"
-description: "This module provides on-server speed dial facilities. An user can store records consisting of pairs short numbers (2 digits) and SIP addresses into a table of OpenSIPS. Then it can dial the two digits whenever it wants to call the SIP address associated with them."
+description: "This module provides on-server speed dial facilities."
 ---
 
 ## Admin Guide
@@ -207,19 +207,9 @@ if($ru=~"sip:[0-9]{2}@.*")
 ```
 
 
-### Installation and Running
+## Samples
 
-
-#### OpenSIPS config file
-
-
-Next picture displays a sample usage of speeddial.
-
-
-[OpenSIPS config script - sample speeddial usage](./samples.md "include")
-
-
-*doc copyrights:*
+[samples](./samples/samples.md "include")
 <!-- CONTRIBUTORS -->
 
 ### License

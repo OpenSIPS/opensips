@@ -1,6 +1,6 @@
 ---
 title: "usrloc Module"
-description: "A SIP user location implementation. Its main purpose is to store, manage and provide access to SIP registration bindings (contacts) for other modules (e.g. registrar, mid-registrar, nathelper, etc.). The module exports no functions that could be directly used from the OpenSIPS script."
+description: "A SIP user location implementation."
 ---
 
 ## Admin Guide

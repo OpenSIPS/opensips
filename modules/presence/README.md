@@ -1,6 +1,6 @@
 ---
 title: "Presence Module"
-description: "The modules handles PUBLISH and SUBSCRIBE messages and generates NOTIFY messages in a general, event independent way. It allows registering events to it from other OpenSIPS modules. Events that can currently be added to it are: presence, presence.winfo, dialog;sla from presence_xml module an..."
+description: "The modules handles PUBLISH and SUBSCRIBE messages and generates NOTIFY messages in a general, event independent way."
 ---
 
 ## Admin Guide
@@ -683,15 +683,11 @@ Parameters:
 and whose watchers should be informed
 - event : the event package
 - refresh type : it distinguishes between the two different types of events
-that can trigger a refresh: 
-
-
-									a change in watchers authentication: refresh type= 0 ;
-
-
-									a statical update in published state (either through direct 
-									update in db table or by modifying the pidf manipulation document,
-									if pidf_manipulation parameter is set): refresh type!= 0.
+that can trigger a refresh:
+	- a change in watchers authentication: refresh type= 0 ;
+	- a statical update in published state (either through direct 
+	update in db table or by modifying the pidf manipulation document,
+	if pidf_manipulation parameter is set): refresh type!= 0.
 
 
 MI FIFO Command Format:
@@ -703,7 +699,6 @@ sip:11@192.168.2.132
 presence
 1
 _empty_line_
-	
 ```
 
 
@@ -726,7 +721,6 @@ MI FIFO Command Format:
 ```bash
 :cleanup:fifo_reply
 _empty_line_
-	  
 ```
 
 
@@ -748,7 +742,6 @@ MI FIFO Command Format:
 ```bash
 :pres_phtable_list:fifo_reply
 _empty_line_
-	  
 ```
 
 
@@ -776,7 +769,6 @@ MI FIFO Command Format:
 sip:222@domain2.com
 sip:user_1@example.com
 _empty_line_
-	  
 ```
 
 
@@ -810,7 +802,6 @@ MI FIFO Command Format:
 ```bash
 :pres_expose:fifo_reply
 _empty_line_
-	  
 ```
 
 
@@ -836,8 +827,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo pres_set_sharing_tag_active vip1
-	  
+opensipsctl fifo pres_set_sharing_tag_active vip1
 ```
 
 
@@ -860,8 +850,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo pres_list_sharing_tags
-	  
+opensipsctl fifo pres_list_sharing_tags
 ```
 
 
@@ -876,8 +865,6 @@ a PUBLISH message.
 
 
 Parameters:
-
-
 - *user* - the AOR of the user
 - *domain* - the domain
 - *event* - the type of the
@@ -1208,7 +1195,7 @@ It is not compulsory. Should contain event specific handling for
 Subscription requests.
 
 
-Filed type:
+Field type:
 
 
 ```c

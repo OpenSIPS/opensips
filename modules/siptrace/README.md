@@ -1,6 +1,6 @@
 ---
 title: "SipTrace Module"
-description: "Offer a possibility to store incoming/outgoing SIP messages in database. Since version 2.2, proto_hep module needs to be loaded in order to duplicate with hep. All hep parameters moved inside proto_hep."
+description: "Offer a possibility to store incoming/outgoing SIP messages in database."
 ---
 
 ## Admin Guide
@@ -26,19 +26,20 @@ and off using *trace_on* either globally(for all trace_ids)
 or for a certain trace_id.
 
 
-IMPORTANT: In 2.2 version support for stateless trace has been removed.
+> [!IMPORTANT]
+> In 2.2 version support for stateless trace has been removed.
 
 
 The tracing tracing can be turned on/off using fifo command.
 
-
+```bash
 opensipsctl fifo sip_trace on
 opensipsctl fifo sip_trace [some_trace_id] on
 
 
 opensipsctl fifo sip_trace off
 opensipsctl fifo sip_trace [some_trace_id] off
-
+```
 
 ### Dependencies
 
@@ -312,11 +313,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		:sip_trace:_reply_fifo_file_
-		trace_id/trace_mode
-		trace_mode
-		_empty_line_
-		
+:sip_trace:_reply_fifo_file_
+trace_id/trace_mode
+trace_mode
+_empty_line_
 ```
 
 

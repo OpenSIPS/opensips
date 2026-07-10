@@ -1,6 +1,6 @@
 ---
 title: "cachedb_sql Module"
-description: "This module is an implementation of a cache system designed to work with a regular SQL-based server. It uses the internal DB interface to connect to the back-end, and also implements the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a regular SQL-based server."
 ---
 
 ## Admin Guide
@@ -28,7 +28,7 @@ via a regular SQL-based database*
 ### Limitations
 
 
-- *The module's counter operations ( ADD and SUB ) are currently only 
+- *The module's counter operations (ADD and SUB) are currently only 
 supported by MySQL*
 
 

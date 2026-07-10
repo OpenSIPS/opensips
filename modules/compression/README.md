@@ -1,6 +1,6 @@
 ---
 title: "compression Module"
-description: "This module implements message compression/decompression and base64 encoding for sip messages using deflate and gzip algorithm/headers. Another feature of this module is reducing headers to compact for as specified in SIP RFC's, sdp body codec unnecessary description removal (for codecs 0-97),..."
+description: "This module implements message compression/decompression and base64 encoding for sip messages using deflate and gzip algorithm/headers."
 ---
 
 ## Admin Guide

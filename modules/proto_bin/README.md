@@ -1,6 +1,6 @@
 ---
 title: "proto_bin Module"
-description: "The **proto_bin** module is a transport module which implements Binary Interface TCP-based communication. It does not handle TCP connections management, but only offers higher-level primitives to read and write BIN messages over TCP. It calls registered callback functions for every comple..."
+description: "The **proto_bin** module is a transport module which implements Binary Interface TCP-based communication."
 ---
 
 ## Admin Guide
@@ -19,8 +19,8 @@ callback functions for every complete message received.
 Once loaded, you will be able to define BIN listeners in your
 configuration file by adding their IP and, optionally, a listening port,
 similar to this example:
-	```c
 
+```opensips
 ...
 listen = bin:127.0.0.1 		# change the listening IP
 listen = bin:127.0.0.1:5080	# change the listening IP and port
