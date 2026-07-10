@@ -1,6 +1,6 @@
 ---
 title: "cachedb_redis Module"
-description: "This module is an implementation of a cache system designed to work with a Redis server. It uses hiredis client library to connect to either a single Redis server instance, or to a Redis Server inside a Redis Cluster. It uses the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a Redis server."
 ---
 
 ## Admin Guide
@@ -216,12 +216,13 @@ The module supports three authentication modes based on the URL format:
 | `redis:group://host:port/` | (none) | Non-authenticated Redis |
 
 
-**Important**: For classic password-only
-authentication, the URL must include a colon before the password
-(`:password@host`). Writing
-`password@host` without the colon will place the
-credential in the username field of the URL parser, and authentication
-will be skipped.
+> [!IMPORTANT]
+> For classic password-only
+> authentication, the URL must include a colon before the password
+> (`:password@host`). Writing
+> `password@host` without the colon will place the
+> credential in the username field of the URL parser, and authentication
+> will be skipped.
 
 
 When connecting to a Redis Cluster with authentication, all discovered

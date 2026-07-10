@@ -1,6 +1,6 @@
 ---
 title: "SQL Cacher Module"
-description: "The sql_cacher module introduces the possibility to cache data from a SQL-based database (using different OpenSIPS modules which implement the DB API) into a cache system implemented in OpenSIPS through the CacheDB Interface. This is done by specifying the databases URLs, SQL table to be used,..."
+description: "The sql_cacher module introduces the possibility to cache data from a SQL-based database (using different OpenSIPS modules which implement the DB API) into a cache system implemented in OpenSIPS through the CacheDB Interface."
 ---
 
 ## Admin Guide
@@ -75,21 +75,19 @@ The parameters are:
 - *table* : SQL database table name
 - *key* : SQL database column name of the "key" column
 - *key_type* : data type for the SQL "key" column:
+	- string
+	- int
 
-				string
-				int
-
-			If not present, default value is "string"
+	*If not present, default value is "string".*
 - *columns* : names of the columns to be cached from the
 SQL database, separated by a delimiter configured by
 [columns delimiter](#param_columns_delimiter).
 If not present, all the columns from the table will be cached
 - *on_demand* : specifies the type of caching:
+	- 0 : full caching
+	- 1 : on demand
 
-				0 : full caching
-				1 : on demand
-
-			If not present, default value is "0"
+	*If not present, default value is "0".*
 - *expire* : expire period for the values stored
 in the cache for the on demand caching type in seconds
 If not present, default value is "1 hour"

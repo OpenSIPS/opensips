@@ -1,6 +1,6 @@
 ---
 title: "pike Module"
-description: "The module provides a simple mechanism for DOS protection - DOS based on floods at network level. The module keeps trace of all (or selected ones) IPs of incoming SIP traffic (as source IP) and blocks the ones that exceeded some limit. Works simultaneous for IPv4 and IPv6 addresses."
+description: "The module provides a simple mechanism for DOS protection - DOS based on floods at network level."
 ---
 
 ## Admin Guide
@@ -81,8 +81,9 @@ long period of time) to a proxy resource (a gateway for ex), use
 a bigger value of this parameter.
 
 
-IMPORTANT: a too small value may lead to performance penalties due
-timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due
+> timer process overloading.
 
 
 *Default value is 2.*
@@ -121,12 +122,13 @@ For how long the IP address will be kept in memory after the last
 request from that IP address. It's a sort of timeout value.
 
 
-*Note:* If the *remove_latency*
-value is lower than *sampling_time_unit* value,
-nodes might expire before being unblocked, therefore losing some
-UNBLOCK events. In order to prevent this, if the
-*remove_latency* is lower, OpenSIPS internally
-forces its value to *sampling_time_unit + 1*.
+> [!NOTE]
+> If the *remove_latency*
+> value is lower than *sampling_time_unit* value,
+> nodes might expire before being unblocked, therefore losing some
+> UNBLOCK events. In order to prevent this, if the
+> *remove_latency* is lower, OpenSIPS internally
+> forces its value to *sampling_time_unit + 1*.
 
 
 *Default value is 120.*
@@ -200,8 +202,9 @@ Return codes:
 
 - *1 (true)* - IP is not to be blocked or
 internal error occurred.
+	> [!IMPORTANT]
+	> In case of internal error, the function returns true to avoid reporting the current processed IP as blocked.
 
-  > **Warning:** 
 - *-1 (false)* - IP is source of
 flooding, being previously detected
 - *-2 (false)* - IP is detected as a new
@@ -240,8 +243,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi pike:list
-		
+opensips-cli -x mi pike:list
 ```
 
 
@@ -267,8 +269,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi pike:rm 10.0.0.106
-		
+opensips-cli -x mi pike:rm 10.0.0.106
 ```
 
 

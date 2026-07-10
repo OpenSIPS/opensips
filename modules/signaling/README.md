@@ -121,9 +121,10 @@ stateful / stateless SIP mode as the following replying function.
 Otherwise you may get different values for the To-tag!!
 
 
-NOTE: the variable returns the To-Tag that will be used by OpenSIPS
-in the locally generated reply. This may be completly different from
-the To-tag in the replies received and forwarded by OpenSIPS.
+> [!NOTE]
+> The variable returns the To-Tag that will be used by OpenSIPS
+> in the locally generated reply. This may be completly different from
+> the To-tag in the replies received and forwarded by OpenSIPS.
 
 
 ```opensips title="Usage of $sig_local_totag variable"

@@ -1,6 +1,6 @@
 ---
 title: "Dynamic Sockets Management Module"
-description: "This module provides the means to provision and manage dynamic sockets for OpenSIPS at runtime. The definition of the sockets is stored in an SQL database and can be dynamically changed at runtime."
+description: "This module provides the means to provision and manage dynamic sockets for OpenSIPS at runtime."
 ---
 
 ## Admin Guide
@@ -276,10 +276,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		## reload sockets from the database
-		opensips-mi sockets_mgm:reload
-		opensips-cli -x mi sockets_mgm:reload
-		
+## reload sockets from the database
+opensips-mi sockets_mgm:reload
+opensips-cli -x mi sockets_mgm:reload
 ```
 
 
@@ -296,10 +295,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		## reload sockets from the database
-		opensips-mi sockets_mgm:list
-		opensips-cli -x mi sockets_mgm:list
-		
+## reload sockets from the database
+opensips-mi sockets_mgm:list
+opensips-cli -x mi sockets_mgm:list
 ```
 <!-- CONTRIBUTORS -->
 

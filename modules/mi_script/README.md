@@ -1,6 +1,6 @@
 ---
 title: "MI script Module"
-description: "This module provides multiple hooks to run Management Interface commands directly from OpenSIPS script. It supports running both synchronous and asynchronous commands. Depending on the nature of the command (asynchronous or not), and on the way the *mi* command is run from script, the r..."
+description: "This module provides multiple hooks to run Management Interface commands directly from OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -83,9 +83,10 @@ the only tracing module is **proto_hep**.
 This is where traced mi messages will go.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -114,14 +115,16 @@ by ','.
 Defining a blacklists means all the commands that are not blacklisted
 will be traced. Defining a whitelist means all the commands that are
 not whitelisted will not be traced.
-**WARNING:** One can't define both
-a whitelist and a blacklist. Only one of them is allowed. Defining
-the parameter a second time will just overwrite the first one.
+> [!WARNING]
+> One can't define both
+> a whitelist and a blacklist. Only one of them is allowed. Defining
+> the parameter a second time will just overwrite the first one.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep)**.
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep)**.
 
 
 *Default value is none(not defined).*
@@ -150,14 +153,15 @@ Runs an MI command in synchronous mode, blocking
 until a response is available.
 
 
-*IMPORTANT:* it is highly recommended
-to prevent using this function for tasks that take long
-time, such as reloads, as the function would block until
-the command ends. Moreover, if the running MI
-*command* is configured to run in
-asynchronous mode (such as *t_uac_dlg*
-the command blocks in a busy waiting manner until
-the response is received.
+> [!IMPORTANT]
+> It is highly recommended
+> to prevent using this function for tasks that take long
+> time, such as reloads, as the function would block until
+> the command ends. Moreover, if the running MI
+> *command* is configured to run in
+> asynchronous mode (such as *t_uac_dlg*
+> the command blocks in a busy waiting manner until
+> the response is received.
 
 
 This function can be used in any route.
@@ -281,8 +285,9 @@ its execution and the MI command is run in an
 asynchronous context.
 
 
-*NOTE:* currently MI commands run
-asynchronously cannot be traced through hep.
+> [!NOTE]
+> Currently MI commands run
+> asynchronously cannot be traced through hep.
 
 
 ```opensips title="async mi call usage"

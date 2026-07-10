@@ -1,6 +1,6 @@
 ---
 title: "Media Exchange Module"
-description: "This module provides the means to exchange media SDP between different SIP proxied calls, and calls started or received from a Media Server. The module itself does not have any media capabilities, it simply exposes primitives to exchange the SDP body between two or more different calls."
+description: "This module provides the means to exchange media SDP between different SIP proxied calls, and calls started or received from a Media Server."
 ---
 
 ## Admin Guide
@@ -167,11 +167,12 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-*NOTE:* the request of this call is completely
-handled by the B2B engine. Therefore, after running this function,
-please make sure you do not relay the message further, otherwise
-you will run into an unexpected behavior. Best thing to do is to
-exit the processing after running the function.
+> [!NOTE]
+> The request of this call is completely
+> handled by the B2B engine. Therefore, after running this function,
+> please make sure you do not relay the message further, otherwise
+> you will run into an unexpected behavior. Best thing to do is to
+> exit the processing after running the function.
 
 
 ```opensips title="Use media_fork_from_call() function to fork all media streams of a call"
@@ -333,11 +334,12 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
 FAILURE_ROUTE and ONREPLY_ROUTE.
 
 
-*NOTE:* the request of this call is completely
-handled by the B2B engine. Therefore, after running this function,
-please make sure you do not relay the message further, otherwise
-you will run into an unexpected behavior. Best thing to do is to
-exit the processing after running the function.
+> [!NOTE]
+> The request of this call is completely
+> handled by the B2B engine. Therefore, after running this function,
+> please make sure you do not relay the message further, otherwise
+> you will run into an unexpected behavior. Best thing to do is to
+> exit the processing after running the function.
 
 
 ```opensips title="Use media_exchange_to_call() function to make an announcement"
@@ -597,7 +599,7 @@ MI FIFO Command Format:
 
 ```bash
 # terminate a caller announcement
-opensips-cli -x mi media_exchange:terminate \
+$ opensips-cli -x mi media_exchange:terminate \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	leg=caller
 		

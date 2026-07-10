@@ -1,6 +1,6 @@
 ---
 title: "JANUS Module"
-description: "The *\"janus\"* module is a C driver for the Janus websocket protocol. It can interact with one or more Janus servers either by issuing commands to them, or by receiving events from them."
+description: "The *\"janus\"* module is a C driver for the Janus websocket protocol."
 ---
 
 ## Admin Guide

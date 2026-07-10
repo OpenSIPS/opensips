@@ -248,10 +248,9 @@ Maximum buffer size used when receiving and sending.
 
 
 ```opensips title="Set socket_buf_size parameter"
-		...
-		modparam("mi_datagram", "socket_buf_size", 131072)
-		...
-		
+...
+modparam("mi_datagram", "socket_buf_size", 131072)
+...
 ```
 
 
@@ -269,7 +268,7 @@ This is an example showing the DATAGRAM format for the
 request.
 
 
-```c title="DATAGRAM request"
+```json title="DATAGRAM request"
 {"jsonrpc":"2.0","method":"get_statistics","id":"1065","params":[["dialog:","tm:"]]}
 ```
 

@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the *clust..."
+description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -810,12 +810,8 @@ Parameters:
 - *addr_type* (string, optional) -
 select the address of the node that the comparison
 is made against, with the possible values of:
-
-
-								*"sip"* (default) - a node's DB provisioned SIP address
-
-
-								*"bin"* - a node's BIN interface listener
+    * *"sip"* (default) - a node's DB provisioned SIP address
+    * *"bin"* - a node's BIN interface listener
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
@@ -853,8 +849,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer:reload
-		
+$ opensips-cli -x mi clusterer:reload
 ```
 
 
@@ -964,11 +959,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		#disable the local instance
-		opensips-cli -x mi clusterer:set_status 1 0
-		#disable node ID 3
-		opensips-cli -x mi clusterer:set_status 1 3 0
-		
+#disable the local instance
+$ opensips-cli -x mi clusterer:set_status 1 0
+#disable node ID 3
+$ opensips-cli -x mi clusterer:set_status 1 3 0
+
 ```
 
 
@@ -1003,8 +998,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer:remove_node 1 3
-		
+$ opensips-cli -x mi clusterer:remove_node 1 3
+
 ```
 
 
@@ -1038,8 +1033,8 @@ MI FIFO Command Format:
 
 
 ```bash
-opensips-cli -x mi clusterer:send_mi 1 3 lb_reload
-		
+$ opensips-cli -x mi clusterer:send_mi 1 3 lb_reload
+
 ```
 
 
@@ -1072,8 +1067,8 @@ MI FIFO Command Format:
 
 
 ```bash
-opensips-cli -x mi clusterer:broadcast_mi 1 dr_reload partition_5
-		
+$ opensips-cli -x mi clusterer:broadcast_mi 1 dr_reload partition_5
+
 ```
 
 
@@ -1141,11 +1136,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		#disable dialog replication in cluster 1
-		opensips-cli -x mi clusterer:set_cap_status 1 dialog-dlg-repl 0
-		#enable dialog profile replication in cluster 2
-		opensips-cli -x mi clusterer:set_cap_status 2 dialog-prof-repl 1
-		
+#disable dialog replication in cluster 1
+$ opensips-cli -x mi clusterer:set_cap_status 1 dialog-dlg-repl 0
+#enable dialog profile replication in cluster 2
+$ opensips-cli -x mi clusterer:set_cap_status 2 dialog-prof-repl 1
+
 ```
 
 
@@ -1173,8 +1168,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer:shtag_set_active vip1/3
-		
+$ opensips-cli -x mi clusterer:shtag_set_active vip1/3
+
 ```
 
 
@@ -1197,8 +1192,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer:list_shtags
-		
+$ opensips-cli -x mi clusterer:list_shtags
+
 ```
 
 

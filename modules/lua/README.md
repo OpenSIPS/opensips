@@ -201,8 +201,7 @@ MI FIFO Command Format:
 
 
 ```bash
-  opensips-cli -x mi watch
-  
+$ opensips-cli -x mi watch
 ```
 
 

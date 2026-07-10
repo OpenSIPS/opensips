@@ -1,6 +1,6 @@
 ---
 title: "event_sqs Module"
-description: "The event_sqs module is an implementation of an Amazon SQS producer. It serves as a transport backend for the Event Interface and also provides a stand-alone connector to be used from the OpenSIPS script in order to publish messages to SQS queues. [https://aws.amazon.com/sqs/](https://aws.a..."
+description: "The event_sqs module is an implementation of an Amazon SQS producer."
 ---
 
 ## Admin Guide

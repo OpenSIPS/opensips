@@ -88,8 +88,7 @@ Example:
 ```bash
 # reload all TCP paths
 $ opensips-cli -x mi tcp_mgm:reload
-$ "OK"
-		
+"OK"
 ```
 <!-- CONTRIBUTORS -->
 

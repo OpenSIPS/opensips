@@ -1,6 +1,6 @@
 ---
 title: "launch_darkly Module"
-description: "This module implements support for the [Launch Darkly](https://launchdarkly.com/) feature management cloud. The module provide the conectivity to the cloud and the ability to query for feature flags."
+description: "This module implements support for the [Launch Darkly](https://launchdarkly.com/) feature management cloud."
 ---
 
 ## Admin Guide
@@ -48,12 +48,12 @@ from the official
 The instructions for a quick installations of the library (note that it has to be compiled as shared lib in order to be compatible with the OpenSIPS modules):
 
 
-```c
+```bash
 ...
-	$ git clone https://github.com/launchdarkly/c-server-sdk.git
-	$ cd c-server-sdk
-	$ cmake -DBUILD_SHARED_LIBS=On -DBUILD_TESTING=OFF .
-	$ sudo make install
+$ git clone https://github.com/launchdarkly/c-server-sdk.git
+$ cd c-server-sdk
+$ cmake -DBUILD_SHARED_LIBS=On -DBUILD_TESTING=OFF .
+$ sudo make install
 ...
 ```
 

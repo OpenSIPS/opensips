@@ -1,6 +1,6 @@
 ---
 title: "mid_registrar Module"
-description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component. It opens up new possibilities for leveraging existing infrastructure in order to continue to grow (as subscribers and as registration traffic) wh..."
+description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component."
 ---
 
 ## Admin Guide
@@ -912,7 +912,8 @@ usrloc [matching_mode](../usrloc#param_matching_mode).
 
 ```opensips title="Setting the pn_enable parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_enable", true)
+...
 ```
 
 
@@ -930,7 +931,8 @@ non-standard values may be specified as well.
 
 ```opensips title="Setting the pn_providers parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_providers", "apns, fcm, webpush")
+...
 ```
 
 
@@ -962,7 +964,8 @@ Request and Contact URI event parameter, respectively.
 
 ```opensips title="Setting the pn_ct_match_params parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_ct_match_params", "pn-provider, pn-prid")
+...
 ```
 
 
@@ -982,7 +985,8 @@ device should issue its binding refresh request.
 
 ```opensips title="Setting the pn_pnsreg_interval parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_pnsreg_interval", 140)
+...
 ```
 
 
@@ -1010,7 +1014,8 @@ order to cause the device to wake up and re-register.
 
 ```opensips title="Setting the pn_trigger_interval parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_trigger_interval", 130)
+...
 ```
 
 
@@ -1028,7 +1033,8 @@ assumed to be reachable, so any Push Notifications will be skipped.
 
 ```opensips title="Setting the pn_skip_pn_interval parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_skip_pn_interval", 10)
+...
 ```
 
 
@@ -1061,7 +1067,8 @@ target device is actually reachable
 
 ```opensips title="Setting the pn_refresh_timeout parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_refresh_timeout", 10)
+...
 ```
 
 
@@ -1092,7 +1099,8 @@ When enabling this parameter, make sure to also add logic for
 
 ```opensips title="Setting the pn_enable_purr parameter"
 ...
-modparam("
+modparam("mid_registrar", "pn_enable_purr", true)
+...
 ```
 
 
@@ -1185,19 +1193,13 @@ flag) How the matching should be performed between the uploaded
 contacts (by the currently handled REGISTER) and the
 already know contacts (in memory or DB). This options will
 be used only for the current operation and can be:
-
-
-		*'0'* - contact URI matching
-		only
-
-
-		*'1'* - contact URI and
-		SIP Call-ID matching
-
-
-		*'<param_name>'* - only
-		the value of the given URI param will be used for
-		matching (for example <rinstance>)
+	- *'0'* - contact URI matching
+	only
+	- *'1'* - contact URI and
+	SIP Call-ID matching
+	- *'<param_name>'* - only
+	the value of the given URI param will be used for
+	matching (for example <rinstance>)
   - *'path-off'* - (old *p0* flag)
 (Path support - 'off' mode) - The Path header is saved into usrloc,
 but is never included in the reply.
@@ -1386,12 +1388,8 @@ in order for one of the VoIP platform's locations (data
 centers) to advertise the presence of a locally registered AoR
 for the global platform. Specifically, this consists of two
 pieces of information:
-
-
-the AoR (e.g. "vladimir@federation-cluster")
-
-
-the home IP (e.g. "10.0.0.223")
+	- the AoR (e.g. "vladimir@federation-cluster")
+	- the home IP (e.g. "10.0.0.223")
   - *'max-ping-latency=[int]'* - (old *y*
 flag) maximally accepted contact pinging latency (microseconds). Contacts of an
 AoR with a higher latency will be discarded during *mid_registrar_lookup()*.

@@ -1,6 +1,6 @@
 ---
 title: "pua_reginfo Module"
-description: "This module publishes information about \"reg\"-events according to to RFC 3680. This can be used distribute the registration-info status to the subscribed watchers."
+description: "This module publishes information about \"reg\"-events according to to RFC 3680."
 ---
 
 ## Admin Guide
@@ -164,7 +164,6 @@ onreply_route[register_reply] {
 }
 
 ...
-		
 ```
 
 
@@ -202,7 +201,6 @@ if(is_method("NOTIFY"))
 	if (reginfo_handle_notify("location"))
 		send_reply("202", "Accepted");
 ...
-				
 ```
 
 
@@ -232,8 +230,7 @@ reply_route[1] {
 	if (t_check_status("200")) 
 		reginfo_subscribe("$ru");		
 }
-...
-				
+...		
 ```
 
 
@@ -270,7 +267,6 @@ onreply_route[register_reply] {
 }
 
 ...
-				
 ```
 <!-- CONTRIBUTORS -->
 

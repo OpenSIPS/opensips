@@ -1,6 +1,6 @@
 ---
 title: "tls_wolfssl Module"
-description: "This module implements TLS operations using the [wolfSSL](https://www.wolfssl.com/) libarary. It provides the primitives required by the *tls_mgm* module in order to expose a higher-level API used by TLS-based protocol modules like *proto_tls* or *proto_wss*."
+description: "This module implements TLS operations using the [wolfSSL](https://www.wolfssl.com/) libarary."
 ---
 
 ## Admin Guide
@@ -74,8 +74,7 @@ Default value is *0*.
 ```opensips title="Set try_use_ktls variable"
 ...
 modparam("tls_wolfssl", "try_use_ktls", 1)
-...
-				
+...		
 ```
 
 
@@ -94,8 +93,7 @@ pointing to the official *wolfSSL* repository.
 In order to fetch the *wolfSSL* library code you can run:
 
 ```bash
-
-		git submodule update --init
+git submodule update --init
 ```
 <!-- CONTRIBUTORS -->
 

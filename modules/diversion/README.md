@@ -1,6 +1,6 @@
 ---
 title: "Diversion Module"
-description: "The module implements the Diversion extensions as per draft-levy-sip-diversion-08. The diversion extensions are useful in various scenarios involving call forwarding. Typically one needs to communicate the original recipient of the call to the PSTN gateway and this is what the diversio..."
+description: "The module implements the Diversion extensions as per draft-levy-sip-diversion-08."
 ---
 
 ## Admin Guide
@@ -19,7 +19,7 @@ extensions can be used for.
 
 > [!WARNING]
 > The draft-levy-sip-diversion-08 is expired!! See
-[IETF I-D tracker](https://datatracker.ietf.org/public/idindex.cgi?command=id_detail&and;id=6002).
+> [IETF I-D tracker](https://datatracker.ietf.org/public/idindex.cgi?command=id_detail&and;id=6002).
 
 
 ### Dependencies
@@ -52,7 +52,7 @@ the parameter to specify additional parameters to be added to the
 header field, see the example.
 
 
-Default value is "" (empty string).
+*Default value is "" (empty string).*
 
 
 ```opensips title="suffix usage"
@@ -159,7 +159,7 @@ The following code snippet shows the code that invalidates the anchor, new ancho
 created when the `anchor` variable is set to 0.
 
 
-```opensips
+```c
 static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 {
     static struct lump* anchor = 0;

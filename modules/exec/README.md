@@ -1,6 +1,6 @@
 ---
 title: "exec Module"
-description: "The Exec module enables the execution of external commands from the OpenSIPS script. Any valid shell commands are accepted. The final input string is evaluated and executed using the \"/bin/sh\" symlink/binary. OpenSIPS may additionally pass a lot more information about the request using en..."
+description: "The Exec module enables the execution of external commands from the OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -34,10 +34,11 @@ unchanged, equal to original).
 - SIP_OUSER is userpart of original request URI.
 
 
-NOTE: Any environment variables which are given to the exec module
-functions must be specified using the '$$' delimiter (e.g., $$SIP_OUSER),
-otherwise they will be evaluated as OpenSIPS pseudo-variables,
-throwing scripting errors.
+> [!NOTE]
+> Any environment variables which are given to the exec module
+> functions must be specified using the '$$' delimiter (e.g., $$SIP_OUSER),
+> otherwise they will be evaluated as OpenSIPS pseudo-variables,
+> throwing scripting errors.
 
 
 ### Dependencies
@@ -72,8 +73,9 @@ Set to 1 to enable setting all above-mentioned environment variables
 for all executed commands.
 
 
-**WARNING: Before enabling this parameter, make sure
-your "/bin/sh" is safe from the Shellshock bash vulnerability!!!**
+> [!WARNING]
+> Before enabling this parameter, make sure
+> your "/bin/sh" is safe from the Shellshock bash vulnerability!
 
 
 *Default value is 0 (disabled).*
@@ -94,14 +96,15 @@ program is allowed to execute. Once this duration is exceeded, the
 program is terminated (SIGTERM).
 
 
-NOTE: due to internal limitations, a SIGTERM will actually be sent to
-**all** job pids once the "time_to_kill"
-expiration timeout hits. On a standard system, this should have no
-side-effects, as pids are monotonically increasing in a slow manner,
-and OpenSIPS should run under the "opensips" user, thus rendering it
-unable to terminate non-child processes. If this is not the case on
-your system, do not use the OpenSIPS "time_to_kill" feature -- rather
-implement it within your external app!
+> [!NOTE]
+> Due to internal limitations, a SIGTERM will actually be sent to
+> **all** job pids once the "time_to_kill"
+> expiration timeout hits. On a standard system, this should have no
+> side-effects, as pids are monotonically increasing in a slow manner,
+> and OpenSIPS should run under the "opensips" user, thus rendering it
+> unable to terminate non-child processes. If this is not the case on
+> your system, do not use the OpenSIPS "time_to_kill" feature -- rather
+> implement it within your external app!
 
 
 *Default value is 0 (disabled).*
@@ -150,19 +153,22 @@ push two values (e.g. "b" and "a") into an AVP variable, which acts like a stack
 OSIPS_EXEC_0 will hold "a", while OSIPS_EXEC_1 will hold "b".
 
 
-NOTE: If expecting a multi-line formatted output, you should use $avp
-variables for the "stdout" and "stderr" parameters, to avoid only
-receiving the last lines of each stream.
+> [!NOTE]
+> If expecting a multi-line formatted output, you should use $avp
+> variables for the "stdout" and "stderr" parameters, to avoid only
+> receiving the last lines of each stream.
 
 
-WARNING: any OpenSIPS pseudo-vars which may contain special bourne shell (sh/bash)
-characters should be placed inside quotes, e.g.
-exec("update-stats.sh '$(ct{re.subst,/'//g})'");
+> [!WARNING]
+> Any OpenSIPS pseudo-vars which may contain special bourne shell (sh/bash)
+> characters should be placed inside quotes, e.g.
+> exec("update-stats.sh '$(ct{re.subst,/'//g})'");
 
 
-WARNING: "stdin"/"stdout"/"stderr" parameters are not designed for large amounts of
-data, so one should be careful when using them. Because of the basic implementation,
-filled up pipes could cause a read deadlock.
+> [!WARNING]
+> "stdin"/"stdout"/"stderr" parameters are not designed for large amounts of
+> data, so one should be careful when using them. Because of the basic implementation,
+> filled up pipes could cause a read deadlock.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -198,9 +204,10 @@ terminate (so the script may still be running when OpenSIPS
 resumes the script execution on "seeing" EOF on the the output stream)
 
 
-NOTE: this function ignore the "stderr" parameter for now - the
-asynchronous waiting is done only on the output stream !! This may
-be fixed in the following versions.
+> [!NOTE]
+> This function ignore the "stderr" parameter for now - the
+> asynchronous waiting is done only on the output stream !! This may
+> be fixed in the following versions.
 
 
 To read and understand more on the asynchronous functions, how to use

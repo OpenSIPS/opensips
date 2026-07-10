@@ -258,22 +258,20 @@ Meaning of the parameters is as follows:
 
 - *uri (string)* - a SIP URI whose
 username and optionally domain to be used.  Possible values:
+	* "Request-URI" - Use Request-URI username and
+	(optionally) domain.
 
 
-				"Request-URI" - Use Request-URI username and
-				(optionally) domain.
+	* "To" - Use To username and (optionally) domain.
 
 
-				"To" - Use To username and (optionally) domain.
+	* "From" - Use From username and (optionally) domain.
 
 
-				"From" - Use From username and (optionally) domain.
+	* "Credentials" - Use digest credentials username.
 
 
-				"Credentials" - Use digest credentials username.
-
-
-				(default) - parse the given input as a SIP URI
+	* (default) - parse the given input as a SIP URI
 - *group (string)* - the group to check
 
 
@@ -314,22 +312,12 @@ Meaning of the parameters is as follows:
 
 - *uri (string)* - a SIP URI to be matched
 against the regular expressions:
-
-
-				"Request-URI" - Use Request-URI
-
-
-				"To" - Use To URI.
-
-
-				"From" - Use From URI
-
-
-				"Credentials" - Use digest credentials username
-				and realm.
-
-
-				(default) - parse the given input as a SIP URI
+	* "Request-URI" - Use Request-URI
+	* "To" - Use To URI.
+	* "From" - Use From URI
+	* "Credentials" - Use digest credentials username
+	and realm.
+	* (default) - parse the given input as a SIP URI
 - *output_avp (var)* - a list of matched
 group IDs
 
@@ -360,19 +348,11 @@ Meaning of the parameters is as follows:
 
 - *uri (string)* - a SIP URI whose
 username and optionally domain to be used, this can be one of:
-
-
-				"Request-URI" - Use Request-URI username and
-				(optionally) domain.
-
-
-				"To" - Use To username and (optionally) domain.
-
-
-				"From" - Use From username and (optionally) domain.
-
-
-				"Credentials" - Use digest credentials username.
+	* "Request-URI" - Use Request-URI username and
+	(optionally) domain.
+	* "To" - Use To username and (optionally) domain.
+	* "From" - Use From username and (optionally) domain.
+	* "Credentials" - Use digest credentials username.
 - *group (string)* - Name of the group to check.
 
 
