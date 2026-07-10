@@ -1,6 +1,6 @@
 ---
 title: "event_xmlrpc Module"
-description: "This module is an implementation of an XMLRPC client used to notify XMLRPC servers whenever certain notifications are raised by OpenSIPS. It acts as a transport layer for the Event Notification Interface."
+description: "This module is an implementation of an XMLRPC client used to notify XMLRPC servers whenever certain notifications are raised by OpenSIPS."
 ---
 
 ## Admin Guide
@@ -144,8 +144,8 @@ Content-length: 240.
 
 
 ```c title="XMLRPC socket"
-	# calls the 'block_ip' function
-	xmlrpc:127.0.0.1:8080:block_ip
+# calls the 'block_ip' function
+xmlrpc:127.0.0.1:8080:block_ip
 ```
 
 

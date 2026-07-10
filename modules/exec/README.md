@@ -1,6 +1,6 @@
 ---
 title: "exec Module"
-description: "The Exec module enables the execution of external commands from the OpenSIPS script. Any valid shell commands are accepted. The final input string is evaluated and executed using the \"/bin/sh\" symlink/binary. OpenSIPS may additionally pass a lot more information about the request using en..."
+description: "The Exec module enables the execution of external commands from the OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -34,10 +34,11 @@ unchanged, equal to original).
 - SIP_OUSER is userpart of original request URI.
 
 
-NOTE: Any environment variables which are given to the exec module
-functions must be specified using the '$$' delimiter (e.g., $$SIP_OUSER),
-otherwise they will be evaluated as OpenSIPS pseudo-variables,
-throwing scripting errors.
+> [!NOTE]
+> Any environment variables which are given to the exec module
+> functions must be specified using the '$$' delimiter (e.g., $$SIP_OUSER),
+> otherwise they will be evaluated as OpenSIPS pseudo-variables,
+> throwing scripting errors.
 
 
 ### Dependencies
@@ -72,8 +73,9 @@ Set to 1 to enable setting all above-mentioned environment variables
 for all executed commands.
 
 
-**WARNING: Before enabling this parameter, make sure
-your "/bin/sh" is safe from the Shellshock bash vulnerability!!!**
+> [!WARNING]
+> Before enabling this parameter, make sure
+> your "/bin/sh" is safe from the Shellshock bash vulnerability!
 
 
 *Default value is 0 (disabled).*
@@ -137,14 +139,16 @@ store 2 values into an avp ("a" and "b") OSIPS_EXEC_0 will contain the first val
 and OSIPS_EXEC_1 the second value.
 
 
-WARNING: any OpenSIPS pseudo-vars which may contain special bourne shell (sh/bash)
-characters should be placed inside quotes, e.g.
-exec("update-stats.sh '$(ct{re.subst,/'//g})'");
+> [!WARNING]
+> Any OpenSIPS pseudo-vars which may contain special bourne shell (sh/bash)
+> characters should be placed inside quotes, e.g.
+> exec("update-stats.sh '$(ct{re.subst,/'//g})'");
 
 
-WARNING: "stdin"/"stdout"/"stderr" parameters are not designed for large amounts of
-data, so one should be careful when using them. Because of the basic implementation,
-filled up pipes could cause a read deadlock.
+> [!WARNING]
+> "stdin"/"stdout"/"stderr" parameters are not designed for large amounts of
+> data, so one should be careful when using them. Because of the basic implementation,
+> filled up pipes could cause a read deadlock.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -333,8 +337,10 @@ stream, not necessarily to terminate (so the script may still be running when Op
 resumes the script execution on "seeing" EOF on the the output stream).
 
 
-NOTE: this function ignore the "error" parameters for now - the asynchronous waiting is
-done only on the output stream !! This may be fixed in the following versions.
+> [!NOTE]
+> This function ignore the "error" parameter for now - the
+> asynchronous waiting is done only on the output stream !! This may
+> be fixed in the following versions.
 
 
 To read and understand more on the asynchronous functions, how to use them and what are their

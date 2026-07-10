@@ -1,6 +1,6 @@
 ---
 title: "TLS_MGM module"
-description: "This module is a management module for TLS certificates and parameters. It provides an interfaces for all the modules that use the TLS protocol. It also implements TLS related functions to use in the routing script, and exports pseudo variables with certificate and TLS parameters."
+description: "This module is a management module for TLS certificates and parameters."
 ---
 
 ## Admin Guide
@@ -333,8 +333,7 @@ A list of curves which can be used you can get by
 
 
 ```bash
-				openssl ecparam -list_curves
-			
+openssl ecparam -list_curves
 ```
 
 
@@ -371,7 +370,6 @@ modparam("tls_mgm", "require_cert", "1:1")
 modparam("tls_mgm", "verify_cert", "0")
 modparam("tls_mgm", "verify_cert", "1:1")
 ...
-				
 ```
 
 
@@ -437,7 +435,6 @@ It's usable only if TLS support was compiled.
 ...
 modparam("tls_mgm", "client_domain_avp", "400")
 ...
-				
 ```
 
 
@@ -465,7 +462,6 @@ The database url. It cannot be NULL.
 
 ```opensips title="Usage of db_url block"
 modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
-                                
 ```
 
 
@@ -479,8 +475,7 @@ Default value is "tls_mgm".
 
 
 ```opensips title="Usage of db_table block"
-modparam("tls_mgm", "db_table", "tls_mgm")
-                                
+modparam("tls_mgm", "db_table", "tls_mgm")               
 ```
 
 
@@ -495,7 +490,6 @@ Default value is "id".
 
 ```opensips title="Usage of id_col block"
 modparam("tls_mgm", "id_col", "id")
-                                
 ```
 
 
@@ -510,7 +504,6 @@ Default value is "address".
 
 ```opensips title="Usage of address_col block"
 modparam("tls_mgm", "address_col", "addr")
-                                
 ```
 
 
@@ -524,8 +517,7 @@ Default value is "address".
 
 
 ```opensips title="Usage of address_col block"
-modparam("tls_mgm", "address_col", "addr")
-                                
+modparam("tls_mgm", "address_col", "addr")                         
 ```
 
 
@@ -540,7 +532,6 @@ Default value is "method".
 
 ```opensips title="Usage of tls_method_col block"
 modparam("tls_mgm", "tls_method_col", "method")
-                                
 ```
 
 
@@ -554,8 +545,7 @@ Default value is "verify_cert".
 
 
 ```opensips title="Usage of vertify_cert_col block"
-modparam("tls_mgm", "verify_cert_col", "verify_cert")
-                                
+modparam("tls_mgm", "verify_cert_col", "verify_cert") 
 ```
 
 
@@ -569,8 +559,7 @@ Default value is "require_cert".
 
 
 ```opensips title="Usage of require_cert_col block"
-modparam("tls_mgm", "require_cert_col", "req")
-                                
+modparam("tls_mgm", "require_cert_col", "req") 
 ```
 
 
@@ -584,8 +573,7 @@ Default value is "certificate".
 
 
 ```opensips title="Usage of certificate_col block"
-modparam("tls_mgm", "certificate_col", "certificate")
-                                
+modparam("tls_mgm", "certificate_col", "certificate") 
 ```
 
 
@@ -600,7 +588,6 @@ Default value is "private_key".
 
 ```opensips title="Usage of private_key_col block"
 modparam("tls_mgm", "private_key_col", "pk")
-                                
 ```
 
 
@@ -615,7 +602,6 @@ Default value is "crl_check_all".
 
 ```opensips title="Usage of crl_check_all block"
 modparam("tls_mgm", "crl_check_all_col", "crl_check")
-                                
 ```
 
 
@@ -630,7 +616,6 @@ Default value is "crl_dir".
 
 ```opensips title="Usage of crl_dir_col block"
 modparam("tls_mgm", "crl_dir_col", "crl_dir")
-                                
 ```
 
 
@@ -645,7 +630,6 @@ Default value is "ca_list".
 
 ```opensips title="Usage of ca_list_col block"
 modparam("tls_mgm", "ca_list_col", "ca_list")
-                                
 ```
 
 
@@ -660,7 +644,6 @@ Default value is "ca_dir".
 
 ```opensips title="Usage of ca_dir_col block"
 modparam("tls_mgm", "ca_dir_col", "ca_dir")
-                                
 ```
 
 
@@ -675,7 +658,6 @@ Default value is "cipher_list".
 
 ```opensips title="Usage of cipher_list_col block"
 modparam("tls_mgm", "cipher_list_col", "cipher_list")
-                                
 ```
 
 
@@ -690,7 +672,6 @@ Default value is "dh_params".
 
 ```opensips title="Usage of dh_params_col block"
 modparam("tls_mgm", "dh_params_col", "dh_parms")
-                                
 ```
 
 
@@ -705,7 +686,6 @@ Default value is "ec_curve".
 
 ```opensips title="Usage of ec_curve_col block"
 modparam("tls_mgm", "ec_curve_col", "ec_curve")
-                                
 ```
 
 
@@ -1059,14 +1039,16 @@ String type.
 ### OpenSIPS with TLS - script example
 
 
-IMPORTANT: The TLS support is based on TCP, and for allowing OpenSIPS
-to use TCP, it must be started in multi-process mode. So, there is
-a must to have the "fork" parameter set to "yes":
+> [!IMPORTANT]
+> The TLS support is based on TCP, and for allowing OpenSIPS
+> to use TCP, it must be started in multi-process mode. So, there is
+> a must to have the "fork" parameter set to "yes":
 
 
-NOTE: Since the TLS engine is quite memory consuming, increase the
-used memory by the run time parameter "-m" (see OpenSIPS -h for more
-details).
+> [!NOTE]
+> Since the TLS engine is quite memory consuming, increase the
+> used memory by the run time parameter "-m" (see OpenSIPS -h for more
+> details).
 
 
 - fork = yes

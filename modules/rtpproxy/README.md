@@ -693,10 +693,10 @@ when a rtpproxy is used in multiple sets).
 The last parameter must be a number in decimal representing the new
 enabled/disabled state.
 
-
-NOTE: if a rtpproxy is defined multiple times (in the same or
-diferente sete), all its instances will be enables/disabled IF
-no set ID provided (as second param).
+> [!NOTE]
+> If a rtpproxy is defined multiple times (in the same or
+> different set), all its instances will be enables/disabled IF
+> no set ID provided (as second param).
 
 
 ```bash title="rtpproxy_enable usage"
@@ -706,7 +706,6 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
-			
 ```
 
 
@@ -724,7 +723,6 @@ No parameter.
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
-			
 ```
 
 
@@ -744,7 +742,6 @@ No parameter.
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...
-			
 ```
 
 

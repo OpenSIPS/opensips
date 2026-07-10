@@ -1,6 +1,6 @@
 ---
 title: "cpl_c Module"
-description: "cpl_c modules implements a CPL (Call Processing Language) interpreter. Support for uploading/downloading/removing scripts via SIP REGISTER method is present."
+description: "cpl_c modules implements a CPL (Call Processing Language) interpreter."
 ---
 
 ## Admin Guide
@@ -492,10 +492,10 @@ MI FIFO Command format:
 
 
 ```bash
-                 :LOAD_CPL:_reply_fifo_file_
-                 username
-                 cpl_filename
-                 _empty_line_
+:LOAD_CPL:_reply_fifo_file_
+username
+cpl_filename
+_empty_line_
 ```
 
 
@@ -520,9 +520,9 @@ MI FIFO Command format:
 
 
 ```bash
-                 :REMOVE_CPL:_reply_fifo_file_
-                 username
-                 _empty_line_
+:REMOVE_CPL:_reply_fifo_file_
+username
+_empty_line_
 ```
 
 
@@ -545,9 +545,9 @@ MI FIFO Command format:
 
 
 ```bash
-                 :GET_CPL:_reply_fifo_file_
-                 username
-                 _empty_line_
+:GET_CPL:_reply_fifo_file_
+username
+_empty_line_
 ```
 
 

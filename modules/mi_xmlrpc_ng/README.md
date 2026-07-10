@@ -1,6 +1,6 @@
 ---
 title: "mi_xmlrpc_ng Module"
-description: "This module implements a xmlrpc server that handles xmlrpc requests and generates xmlrpc responses. When a xmlrpc message is received a default method is executed."
+description: "This module implements a xmlrpc server that handles xmlrpc requests and generates xmlrpc responses."
 ---
 
 ## Admin Guide

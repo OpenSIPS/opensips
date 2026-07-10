@@ -1,6 +1,6 @@
 ---
 title: "ratelimit Module"
-description: "This module implements rate limiting for SIP requests. In contrast to the PIKE module this limits the flow based on a per SIP request type basis and not per source IP. The latest sources allow you to dynamically group several messages into some entities and limit the traffic based on them..."
+description: "This module implements rate limiting for SIP requests."
 ---
 
 ## Admin Guide
@@ -45,8 +45,9 @@ queried by each instance before deciding if a SIP message
 should be blocked or not.
 
 
-NOTE: that this behavior only makes sense when the pipe algorithm
-used is TAILDROP or RED.
+> [!NOTE]
+> This behavior only makes sense when the pipe algorithm
+> used is TAILDROP or RED.
 
 
 A sample configuration snippet might look like this:
@@ -59,7 +60,6 @@ A sample configuration snippet might look like this:
 		exit;
 	};
 ...
-	
 ```
 
 
@@ -211,8 +211,9 @@ The timer interval in seconds when the Network and Feedback algorithms
 run their queries, and the other algorithms reset their counters.
 
 
-IMPORTANT: A too small value may lead to performance penalties due to
-timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due to
+> timer process overloading.
 
 
 *Default value is 10.*
@@ -482,15 +483,17 @@ created with the specified limit and algorithm, if specified. If the
 algorithm parameter doesn't exist, the default one is used.
 
 
-NOTE: A pipe's algorithm cannot be dynamically changed. Only the one
-specified when the pipe was created will be considered.
+> [!NOTE]
+> A pipe's algorithm cannot be dynamically changed. Only the one
+> specified when the pipe was created will be considered.
 
 
-NOTE: This function increments the pipe's counter every time it is
-called, even if the call should be declined. Therefore If you are using
-ratelimit to limit only successful traffic, you need to explicitely
-decrease the counter for the declined calls using the
-*rl_dec_count()* function.
+> [!NOTE]
+> This function increments the pipe's counter every time it is
+> called, even if the call should be declined. Therefore If you are using
+> ratelimit to limit only successful traffic, you need to explicitely
+> decrease the counter for the declined calls using the
+> *rl_dec_count()* function.
 
 
 The method will return an error code if the limit for the
@@ -625,17 +628,15 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_list:_reply_fifo_file_
-		gw_10.0.0.1
-		_empty_line_
-		
+:rl_list:_reply_fifo_file_
+gw_10.0.0.1
+_empty_line_
 ```
 
 
 ```bash
-		:rl_list:_reply_fifo_file_
-		_empty_line_
-		
+:rl_list:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -659,10 +660,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_reset_pipe:_reply_fifo_file_
-		gw_10.0.0.1
-		_empty_line_
-		
+:rl_reset_pipe:_reply_fifo_file_
+gw_10.0.0.1
+_empty_line_
 ```
 
 
@@ -687,12 +687,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_set_pid:_reply_fifo_file_
-		0.5
-		0.5
-		0.5
-		_empty_line_
-		
+:rl_set_pid:_reply_fifo_file_
+0.5
+0.5
+0.5
+_empty_line_
 ```
 
 
@@ -712,9 +711,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_get_pid:_reply_fifo_file_
-		_empty_line_
-		
+:rl_get_pid:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -735,9 +733,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_bin_status:_reply_fifo_file_
-		_empty_line_
-		
+:rl_bin_status:_reply_fifo_file_
+_empty_line_
 ```
 
 

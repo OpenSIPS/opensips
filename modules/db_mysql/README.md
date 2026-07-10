@@ -126,10 +126,10 @@ Because it dependes on an external library, the mysql module is not
 compiled and installed by default. You can use one of the next options.
 
 
-- - edit the "Makefile" and remove "db_mysql" from "excluded_modules"
+- edit the "Makefile" and remove "db_mysql" from "excluded_modules"
 list. Then follow the standard procedure to install OpenSIPS:
 "make all; make install".
-- - from command line use: 'make all include_modules="db_mysql";
+- from command line use: 'make all include_modules="db_mysql";
 make install include_modules="db_mysql"'.
 
 

@@ -1,6 +1,6 @@
 ---
 title: "proto_hep Module"
-description: "The **proto_hep** module is a transport module which implements hepV1 and hepV2 UDP-based communication and hepV3 TCP-based communication. It also offers an API with which you can register callbacks which are called after the HEP header is parsed and also can pack sip messages to HEP mess..."
+description: "The **proto_hep** module is a transport module which implements hepV1 and hepV2 UDP-based communication and hepV3 TCP-based communication."
 ---
 
 ## Admin Guide
@@ -20,9 +20,9 @@ part is done internally.
 Once loaded, you will be able to define HEP listeners in your
 configuration file by adding their IP and, optionally, a listening port.
 You can define both TCP and UDP listeners. On UDP you will be able to
-receive HEP v1, v2 and v3 packets, on TCP only HEPv3.
-	```c
+receive HEP v1, v2 and v3 packets, on TCP and TLS only HEPv3.
 
+```opensips
 ...
 #HEPv3 listener
 listen = hep_tcp:127.0.0.1:6061 		# change the listening IP

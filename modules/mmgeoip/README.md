@@ -1,6 +1,6 @@
 ---
 title: "mmgeoip Module"
-description: "This module is a lightweight wrapper for the MaxMind GeoIP API. It adds IP address-to-location lookup capability to OpenSIPS scripts."
+description: "This module is a lightweight wrapper for the MaxMind GeoIP API."
 ---
 
 ## Admin Guide
@@ -135,8 +135,6 @@ one of these separators: ':', '|', ',', '/' or ' '(space).
 
 
 The following tokens are supported in `fields`:
-
-
 - *lat* - Latitude
 - *lon* - Longitude
 - *cont* - Continent
@@ -145,8 +143,7 @@ The following tokens are supported in `fields`:
 - *city* - City
 - *pc* - Postal Code
 - *dma* - DMA Code
-- *ac* - Area Code, only available in the legacy GeoIP
-database
+- *ac* - Area Code, only available in the legacy GeoIP database
 - *tz* - Time Zone
 
 

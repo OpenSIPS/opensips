@@ -81,11 +81,12 @@ the server. If the connection does not succeed within the given timeout,
 the connection fails.
 
 
-*Note:*If the timeout is a negative value and
-connection does not succeed, OpenSIPS will block until the connection
-becomes back available and gets successfully established. This is the
-default behavior of the library and is the behavior prior to the
-adition of this parameter.
+> [!NOTE]
+> If the timeout is a negative value and
+> connection does not succeed, OpenSIPS will block until the connection
+> becomes back available and gets successfully established. This is the
+> default behavior of the library and is the behavior prior to the
+> addition of this parameter.
 
 
 *Default value is 5.*

@@ -1,6 +1,6 @@
 ---
 title: "proto_tls module"
-description: "TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used to secure the SIP signalling on a hop-by-hop basis (not end-to-end). TLS works on top of TCP. DTLS, or TLS over UDP is already defined by IETF and may become available in the future."
+description: "TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used to secure the SIP signalling on a hop-by-hop basis (not end-to-end)."
 ---
 
 ## Admin Guide
@@ -191,7 +191,6 @@ listening server will be.
 ...
 listen = tls:1.2.3.4:5061
 ...
-				
 ```
 
 
@@ -215,7 +214,6 @@ option in the SIP listener defintion.
 ...
 modparam("proto_tls", "tls_port", 5062)
 ...
-				
 ```
 
 

@@ -1,6 +1,6 @@
 ---
 title: "proto_wss Module"
-description: "The WSS (Secure WebSocket) module provides the ability to communicate with a WebSocket ([RFC 6455](http://tools.ietf.org/html/rfc6455)) client or server over a secure (TLS encrypted) channel. As part of the [WebRTC](https://webrtc.org/) specifications, this protocol can be used to provide se..."
+description: "The WSS (Secure WebSocket) module provides the ability to communicate with a WebSocket ([RFC 6455](http://tools.ietf.org/html/rfc6455)) client or server over a secure (TLS encrypted) channel."
 ---
 
 ## Admin Guide
@@ -21,8 +21,8 @@ This module behaves as any other transport protocol module: in order to
 use it, you must define one or more listeners that will handle the secure
 WebSocket traffic, *after* the `mpath`
 parameter:
-	```c
 
+```opensips
 ...
 mpath=/path/to/modules
 ...
@@ -30,9 +30,10 @@ listen=wss:10.0.0.1			# change with the listening IP
 listen=wss:10.0.0.1:5060	# change with the listening IP and port
 ...
 ```
-Besides that, you need to define the TLS parameters for securing the connection. This is done through the *tls_mgm* module interface, similar to the *proto_tls* module:
-	```c
 
+Besides that, you need to define the TLS parameters for securing the connection. This is done through the *tls_mgm* module interface, similar to the *proto_tls* module:
+
+```opensips
 modparam("tls_mgm", "certificate", "/certs/biloxy.com/cert.pem")
 modparam("tls_mgm", "private_key", "/certs/biloxy.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "/certs/wellknownCAs")
@@ -94,7 +95,6 @@ port should handle WSS traffic.
 ...
 listen = wss:1.2.3.4:44344
 ...
-				
 ```
 
 
@@ -117,8 +117,7 @@ option in the SIP listener defintion.
 ```opensips title="Set wss_port variable"
 ...
 modparam("proto_wss", "wss_port", 44344)
-...
-				
+...		
 ```
 
 

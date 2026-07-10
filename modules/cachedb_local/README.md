@@ -1,6 +1,6 @@
 ---
 title: "cachedb_local Module"
-description: "This module is an implementation of a local cache system designed as a hash table. It uses the Key-Value interface exported by OpenSIPS core."
+description: "This module is an implementation of a local cache system designed as a hash table."
 ---
 
 ## Admin Guide

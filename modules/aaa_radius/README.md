@@ -45,10 +45,8 @@ One of the following libraries must be installed before running
 OpenSIPS with this module loaded:
 
 
-- *radiusclient-ng* 0.5.0 or higher
-See [http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
-- *freeradius-client*
-See [http://freeradius.org/](http://freeradius.org/).
+- *radiusclient-ng* 0.5.0 or higher. See [http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
+- *freeradius-client*. See [http://freeradius.org/](http://freeradius.org/).
 
 
 By default, radiusclient-ng is used. To change at compile time
@@ -340,7 +338,7 @@ In this exaple we will consider this folder generically called
 extract the contents of the archive.
 
 
-```c title="downloading the library"
+```bash title="downloading the library"
 ........
 mkdir freeRADIUS-client; cd freeRADIUS-client
 wget ftp://ftp.freeradius.org/pub/freeradius/freeradius-client-1.1.7.tar.gz
@@ -361,7 +359,7 @@ you can install the radius library as usual using configure and make
 commands and free to use the library.
 
 
-```c title="How to apply the patch"
+```bash title="How to apply the patch"
 ........
 cd freeRADIUS-client/freeradius-client-1.1.7.tar.gz
 patch -p1 < /path/to/opensips/modules/aaa_radius/radius_async_support.patch

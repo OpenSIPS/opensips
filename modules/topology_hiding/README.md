@@ -1,6 +1,6 @@
 ---
 title: "topology_hiding Module"
-description: "This is a module which provides topology hiding capabilities. The module can work on top of the dialog module, or as a standalone module ( thus alowing topology hiding for all types of requests )"
+description: "This is a module which provides topology hiding capabilities."
 ---
 
 ## Admin Guide

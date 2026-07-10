@@ -1,6 +1,6 @@
 ---
 title: "proto_ws Module"
-description: "The WebSocket protocol ([RFC 6455](http://tools.ietf.org/html/rfc6455)) provides an end-to-end full-duplex communication channel between two web-based applications. This allows WebSocket enabled browsers to connect to a WebSocket server and exchange any type of data. [RFC 7118](http://tools...."
+description: "The WebSocket protocol ([RFC 6455](http://tools.ietf.org/html/rfc6455)) provides an end-to-end full-duplex communication channel between two web-based applications."
 ---
 
 ## Admin Guide
@@ -42,8 +42,8 @@ Once loaded, you will be able to define WebSocket listeners in your script. To
 add a listener, you have to add its IP, and optionally the listening port,
 *after* the `mpath` parameter, similar to this
 example:
-	```c
 
+```opensips
 ...
 mpath=/path/to/modules
 ...

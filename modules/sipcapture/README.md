@@ -458,116 +458,44 @@ only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0
 and timestamp_us(0x000A) chunks can't be set. For chunks
 that have built-in support you can also use strings instead of chunk ids as
 follows:
-
-
-				0x0001 - proto_family(CAN'T BE SET; it shall be automatically updated
-					if you change the type of the source/destination address from IPv4 to IPv6
-					or else)
-
-
-				0x0002 - proto_id; since it's quite hard to know the int values for the protocol
-				one can change this value using the following string values:
-
-
-				UDP
-
-
-				TCP
-
-
-				TLS
-
-
-				SCTP
-
-
-				WS
-
-
-				WSS
-
-
-				BIN
-
-
-				HEP
-
-
-
-
-			0x0003 - src_ip
-
-
-			0x0004 - dst_ip
-
-
-			0x0005 - src_ip
-
-
-			0x0006 - dst_ip
-
-
-			0x0007 - src_port
-
-
-			0x0008 - dst_port
-
-
-			0x0009 - timestamp(CAN'T BE SET)
-
-
-			0x000A - timestamp_us(CAN'T BE SET)
-
-
-				0x000B - proto_type; for this variable there are predefined
-				strings which can be set:
-
-
-				SIP
-
-
-				XMPP
-
-
-				SDP
-
-
-				RTP
-
-
-				RTCP
-
-
-				MGCP
-
-
-				MEGACO
-
-
-				M2UA
-
-
-				M3UA
-
-
-				IAX
-
-
-				H322
-
-
-				H321
-
-
-
-
-			0x000C - captagent_id
-
-
-			0x000f - payload
-
-
-			0x0010 - payload
+	- 0x0001 - proto_family(CAN'T BE SET; it shall be automatically updated
+		if you change the type of the source/destination address from IPv4 to IPv6
+		or else)
+	- 0x0002 - proto_id; since it's quite hard to know the int values for the protocol
+	one can change this value using the following string values:
+		- UDP
+		- TCP
+		- TLS
+		- SCTP
+		- WS
+		- WSS
+		- BIN
+		- HEP
+	- 0x0003 - src_ip
+	- 0x0004 - dst_ip
+	- 0x0005 - src_ip
+	- 0x0006 - dst_ip
+	- 0x0007 - src_port
+	- 0x0008 - dst_port
+	- 0x0009 - timestamp(CAN'T BE SET)
+	- 0x000A - timestamp_us(CAN'T BE SET)
+	- 0x000B - proto_type; for this variable there are predefined
+	strings which can be set:
+		- SIP
+		- XMPP
+		- SDP
+		- RTP
+		- RTCP
+		- MGCP
+		- MEGACO
+		- M2UA
+		- M3UA
+		- IAX
+		- H322
+		- H321
+	- 0x000C - captagent_id
+	- 0x000f - payload
+	- 0x0010 - payload
 - *vendor id(string value with hex or int)* - there are
 some vendor ids already defined; check
 [hep proto docs](https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf)
@@ -688,7 +616,8 @@ if (!hep_relay()) {
 Break hep route execution and resume into the main request route.
 
 
-WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING *hep_route* PARAMETER.
+> [!WARNING]
+> USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING *hep_route* PARAMETER.
 
 
 ```opensips title="hep_resume_sip usage"
@@ -816,7 +745,6 @@ Parameters:
 
 - capture_mode : turns on/off SIP message capturing.
 Possible values are:
-
   - on
   - off
 The parameter is optional - if missing, the command will
@@ -829,10 +757,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:sip_capture:_reply_fifo_file_
-		capture_mode
-		_empty_line_
-		
+:sip_capture:_reply_fifo_file_
+capture_mode
+_empty_line_
 ```
 
 

@@ -1,6 +1,6 @@
 ---
 title: "H350 Module"
-description: "The OpenSIPS H350 module enables an OpenSIPS SIP proxy server to access SIP account data stored in an LDAP [RFC4510](#RFC4510) directory containing H.350 [H350](#H350) *commObjects*. ITU-T Recommendation H.350 standardizes LDAP object classes to store Real-Time Communication (RTC) account data. I..."
+description: "The OpenSIPS H350 module enables an OpenSIPS SIP proxy server to access SIP account data stored in an LDAP [RFC4510](#RFC4510) directory containing H.350 [H350](#H350) *commObjects*."
 ---
 
 ## Admin Guide

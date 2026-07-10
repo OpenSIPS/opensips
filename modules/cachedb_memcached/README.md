@@ -1,6 +1,6 @@
 ---
 title: "cachedb_memcached Module"
-description: "This module is an implementation of a cache system designed to work with a memcached server. It uses libmemcached client library to connect to several memcached servers that store data. It uses the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a memcached server."
 ---
 
 ## Admin Guide
@@ -55,15 +55,18 @@ OpenSIPS with this module loaded:
 
 - *libmemcached:*
 libmemcached can be downloaded from: http://tangent.org/552/libmemcached.html.
-Download the archive, extract sources, run ./configure, make,sudo make install.
+Download the archive, extract sources, run ./configure, make, sudo make install.
+
+```bash
 ...
-wget http://download.tangent.org/libmemcached-0.31.tar.gz 
-tar -xzvf libmemcached-0.31.tar.gz
-cd libmemcached-0.31
-./configure
-make
-sudo make install
+$ wget http://download.tangent.org/libmemcached-0.31.tar.gz 
+$ tar -xzvf libmemcached-0.31.tar.gz
+$ cd libmemcached-0.31
+$ ./configure
+$ make
+$ sudo make install
 ...
+```
 
 
 ### Exported Parameters

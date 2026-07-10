@@ -1,6 +1,6 @@
 ---
 title: "tm Module"
-description: "TM module enables stateful processing of SIP transactions. The main use of stateful logic, which is costly in terms of memory and CPU, is some services inherently need state. For example, transaction-based accounting (module acc) needs to process transaction state as opposed to ind..."
+description: "TM module enables stateful processing of SIP transactions."
 ---
 
 ## Admin Guide
@@ -647,11 +647,11 @@ global forwarding failure (i.e. forwarding for each branch has
 failed due to internal errors, bad R-URI, bad message, lack of
 network reachability, etc.).
 
-				This flag only applies if the transaction was
-				not previously created by [t newtran](#func_t_newtran).
-				When a global forwarding failure occurs, no SIP request is
-				relayed and therefore no negative SIP reply or timeout will
-				show up on the failure_route, if one is set.
+	This flag only applies if the transaction was
+	not previously created by [t newtran](#func_t_newtran).
+	When a global forwarding failure occurs, no SIP request is
+	relayed and therefore no negative SIP reply or timeout will
+	show up on the failure_route, if one is set.
 Useful if you want to implement a failover logic for when none
 of the currently created branches can be forwarded to.
 - *0x04* - disable the DNS failover
@@ -823,17 +823,21 @@ request is not a retransmission.
 INVITE transaction exists.
 - *ACK request* - true if the ACK is a
 hop-by-hop ACK (to a negative reply) corresponding to an previous
-INVITE transaction. IMPORTANT: end-to-end ACKs (to 2xx replies) are
-not detected by this function as end-to-end ACKs form a different
-transaction.
+INVITE transaction.
+
+> [!IMPORTANT]
+> End-to-end ACKs (to 2xx replies) are
+> not detected by this function as end-to-end ACKs form a different
+> transaction.
 
 
-Note: To detect retransmissions using this function you have to make 
-sure that the initial request has already created a transaction, e.g. 
-by using t_relay(). If the processing of requests may take long time 
-(e.g. DB lookups) and the retransmission arrives before t_relay() is 
-called, you can use the t_newtran() function to manually create a 
-transaction.
+> [!NOTE]
+> To detect retransmissions using this function you have to make 
+> sure that the initial request has already created a transaction, e.g. 
+> by using t_relay(). If the processing of requests may take long time 
+> (e.g. DB lookups) and the retransmission arrives before t_relay() is 
+> called, you can use the t_newtran() function to manually create a 
+> transaction.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.

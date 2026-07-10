@@ -1,6 +1,6 @@
 ---
 title: "presence_dialoginfo Module"
-description: "The module enables the handling of \"Event: dialog\" (as defined in RFC 4235) inside of the presence module. This can be used distribute the dialog-info status to the subscribed watchers."
+description: "The module enables the handling of \"Event: dialog\" (as defined in RFC 4235) inside of the presence module."
 ---
 
 ## Admin Guide
@@ -22,13 +22,14 @@ OpenSIPS configuration file before calling handle_publish()
 and handle_subscribe() functions.
 
 
-Note: This module only activates the processing of the "dialog" 
-in the presence module. To send dialog-info to watchers you also 
-need a source which PUBLISH the dialog info to the presence module.
-For example you can use the pua_dialoginfo module or any external
-component. This approach allows to have the presence server and the
-dialog-info aware publisher (e.g. the main proxy) on different 
-OpenSIPS instances.
+> [!NOTE]
+> This module only activates the processing of the "dialog" 
+> in the presence module. To send dialog-info to watchers you also 
+> need a source which PUBLISH the dialog info to the presence module.
+> For example you can use the pua_dialoginfo module or any external
+> component. This approach allows to have the presence server and the
+> dialog-info aware publisher (e.g. the main proxy) on different 
+> OpenSIPS instances.
 
 
 This module by default does body aggregation. That means, if the presence 
@@ -171,10 +172,12 @@ currently most interesting dialog state will be put into the
 dialog-info document. Thus, the dialog-info element will contain
 only a single "dialog" element. The algorithm chooses the state
 based onf the following order of priority (least important first):
-terminated, trying, proceeding, confirmed, early. Note: I consider
-the "early" state more intersting than confirmed as often you might
-want to pickup a call if the originall callee is already busy in a 
-call.
+terminated, trying, proceeding, confirmed, early.
+
+> [!NOTE]
+> I consider the "early" state more intersting than confirmed as often you might
+> want to pickup a call if the originall callee is already busy in a 
+> call.
 
 
 *Default value is "0".*

@@ -80,7 +80,6 @@ be automatically updated based on stored original URI.
 ...
 modparam("uac","restore_mode","auto")
 ...
-				
 ```
 
 
@@ -99,7 +98,6 @@ will be used.
 ...
 modparam("uac","restore_passwd","my_secret_passwd")
 ...
-				
 ```
 
 
@@ -118,7 +116,6 @@ Name of Record-Route header parameter that will be used to store
 ...
 modparam("uac","rr_from_store_param","my_Fparam")
 ...
-				
 ```
 
 
@@ -137,7 +134,6 @@ Name of Record-Route header parameter that will be used to store
 ...
 modparam("uac","rr_to_store_param","my_Tparam")
 ...
-				
 ```
 
 
@@ -154,7 +150,6 @@ Default value is no.
 ...
 modparam("uac", "force_dialog", yes)
 ...
-				
 ```
 
 
@@ -172,12 +167,13 @@ the *URI* part.
 parameters can include pseudo-variables.
 
 
-IMPORTANT: calling the function more than once per branch will lead
-to inconsistent changes over the request.Be sure you do the change
-only ONCE per branch. Note that calling the function from REQUEST
-ROUTE affects all the branches!, so no other change will be 
-possible in the future. For per branch changes use BRANCH and 
-FAILURE route.
+> [!IMPORTANT]
+> Calling the function more than once per branch will lead
+> to inconsistent changes over the request.Be sure you do the change
+> only ONCE per branch. Note that calling the function from REQUEST
+> ROUTE affects all the branches!, so no other change will be 
+> possible in the future. For per branch changes use BRANCH and 
+> FAILURE route.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
@@ -228,9 +224,10 @@ use the information stored in header parameter to restore
 the original FROM/TO URI value.
 
 
-NOTE - this function should be used only if you configured MANUAL
-restoring of the headers (see restore_mode param). For AUTO 
-and NONE, there is no need to use this function.
+> [!NOTE]
+> This function should be used only if you configured MANUAL
+> restoring of the headers (see restore_mode param). For AUTO 
+> and NONE, there is no need to use this function.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -240,7 +237,6 @@ This function can be used from REQUEST_ROUTE.
 ...
 uac_restore_from();
 ...
-				
 ```
 
 

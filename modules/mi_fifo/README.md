@@ -1,6 +1,6 @@
 ---
 title: "mi_fifo Module"
-description: "This is a module which provides a FIFO transport layer implementation for Management Interface. It receives the command over a FIFO file and returns the output through the reply_fifo specified."
+description: "This is a module which provides a FIFO transport layer implementation for Management Interface."
 ---
 
 ## Admin Guide
