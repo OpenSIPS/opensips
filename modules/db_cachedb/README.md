@@ -54,7 +54,6 @@ The URL for the CacheDB back-end to be used. It can be set more than one time.
 ...
 modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017/db.col")
 ...
-                
 ```
 
 
@@ -77,7 +76,6 @@ loadmodule "cachedb_mongodb.so"
 modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017/my_db.col")
 modparam("auth_db","db_url","cachedb://mongodb:mycluster")
 ...
-                
 ```
 
 

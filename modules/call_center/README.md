@@ -1001,11 +1001,10 @@ Parameters:
 
 - *agent_id* - the id of the agent.
 - *state* - the status of the agent:
-
-					offline
-					free
-					incall
-					wrapup
+	* offline
+	* free
+	* incall
+	* wrapup
 - *wrapup_ends* - the timestamp when the 
 wrapup state will end; published only if the state is 
 "wrapup"

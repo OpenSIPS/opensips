@@ -234,15 +234,9 @@ Meaning of the parameters is as follows:
 
 - *attest (string)* - value of the 'attest' claim
 to be included in the PASSporT. The following values can be used:
-
-
-				*A* or *full*
-
-
-				*B* or *partial*
-
-
-				*C* or *gateway*
+				- *A* or *full*
+				- *B* or *partial*
+				- *C* or *gateway*
 - *origid (string)* - value of the 'origid' claim
 to be included in the PASSporT. Treated by the module as an opaque string.
 - *cert (string)* - the X.509 certificate used to

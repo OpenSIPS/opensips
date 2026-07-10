@@ -1,6 +1,6 @@
 ---
 title: "ratelimit Module"
-description: "This module implements rate limiting for SIP requests. In contrast to the PIKE module this limits the flow based on a per SIP request type basis and not per source IP. The latest sources allow you to dynamically group several messages into some entities and limit the traffic based on them..."
+description: "This module implements rate limiting for SIP requests."
 ---
 
 ## Admin Guide
@@ -44,8 +44,9 @@ Distributed limiting is useful when the rate limit should be
 performed not only on a specific node, but on the entire platform.
 
 
-NOTE: that this behavior only makes sense when the pipe algorithm
-used is TAILDROP or RED.
+> [!NOTE]
+> This behavior only makes sense when the pipe algorithm
+> used is TAILDROP or RED.
 
 
 A sample configuration snippet might look like this:
@@ -58,7 +59,6 @@ A sample configuration snippet might look like this:
 		exit;
 	};
 ...
-	
 ```
 
 
@@ -178,10 +178,11 @@ Generally though, as real life request rates drift by less, adapting should
 happen much faster.
 
 
-IMPORTANT NOTE: as this algorithm is diven by the load factor, the values
-for the limits must be between 0 and 100 (as percentages) and the limits
-for all the checks and pipes must be the same (only one value). Again, this
-limitation are specific to this algorithm and not to the implementation.
+> [!IMPORTANT]
+> As this algorithm is diven by the load factor, the values
+> for the limits must be between 0 and 100 (as percentages) and the limits
+> for all the checks and pipes must be the same (only one value). Again, this
+> limitation are specific to this algorithm and not to the implementation.
 
 
 ### Dependencies
@@ -216,8 +217,9 @@ The timer interval in seconds when the Network and Feedback algorithms
 run their queries, and the other algorithms reset their counters.
 
 
-IMPORTANT: A too small value may lead to performance penalties due to
-timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due to
+> timer process overloading.
 
 
 *Default value is 10.*
@@ -456,15 +458,17 @@ created with the specified limit and algorithm, if specified. If the
 algorithm parameter doesn't exist, the default one is used.
 
 
-NOTE: A pipe's algorithm cannot be dynamically changed. Only the one
-specified when the pipe was created will be considered.
+> [!NOTE]
+> A pipe's algorithm cannot be dynamically changed. Only the one
+> specified when the pipe was created will be considered.
 
 
-NOTE: This function increments the pipe's counter every time it is
-called, even if the call should be declined. Therefore If you are using
-ratelimit to limit only successful traffic, you need to explicitely
-decrease the counter for the declined calls using the
-*rl_dec_count()* function.
+> [!NOTE]
+> This function increments the pipe's counter every time it is
+> called, even if the call should be declined. Therefore If you are using
+> ratelimit to limit only successful traffic, you need to explicitely
+> decrease the counter for the declined calls using the
+> *rl_dec_count()* function.
 
 
 The method will return an error code if the limit for the
@@ -595,8 +599,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi rl_list gw_10.0.0.1
-		
+opensips-cli -x mi rl_list gw_10.0.0.1
 ```
 
 
@@ -620,8 +623,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi rl_dump_pipe gw_10.0.0.1
-		
+opensips-cli -x mi rl_dump_pipe gw_10.0.0.1
 ```
 
 
@@ -645,8 +647,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
-		
+opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
 ```
 
 
@@ -671,8 +672,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
-		
+opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
 ```
 
 
@@ -692,8 +692,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi rl_get_pid
-		
+opensips-cli -x mi rl_get_pid
 ```
 
 
@@ -714,8 +713,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi rl_bin_status
-		
+opensips-cli -x mi rl_bin_status
 ```
 
 

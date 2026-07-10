@@ -146,7 +146,7 @@ modparam("cachedb_cassandra", "query_timeout",1000);
 
 
 The consistency level desired for write operations.
-Options are :
+Options are:
 
 
 - *all* - A write must be written to the commit log and memtable on all replica nodes in the cluster for that partition.
@@ -175,7 +175,7 @@ modparam("cachedb_cassandra", "wr_consistency_level", "each_quorum");
 
 
 The consistency level desired for write operations.
-Options are :
+Options are:
 
 
 - *all* - Returns the record after all replicas have responded. The read operation will fail if a replica does not respond.

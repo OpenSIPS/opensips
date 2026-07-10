@@ -1,6 +1,6 @@
 ---
 title: "B2B_LOGIC"
-description: "The B2BUA implementation in OpenSIPS is separated in two layers: a lower one (implemented in the b2b_entities module) - the basic functions of a UAS and UAC an upper one (implemented in b2b_logic module) - which represents the logic engine of B2BUA, responsible of actually implementing ..."
+description: "This module represents the logic engine of B2BUA, responsible of actually implementing the B2BUA services using the functions offered by the low level."
 ---
 
 ## Admin Guide
@@ -458,14 +458,13 @@ initializes an internal topology hiding scenario. This scenario will do
 a simple pass-through of messages from one side to another, and no additional
 scripting or dedicated routes are required.
 - *flags (string, optional)* - meanings of the flags is as follows:
-
-					*t[nn]* - Call setup timeout. 0 sets timeout to max_duration value.
-					Example: t300.
-					*a* - Transparent authentication. In this mode b2b passes your 401
-					or 407 authentication request to destination server.
-					*p* - Preserve To: header.
-					*s* - Use init SDP (as described in the
-					[use init sdp](#param_use_init_sdp) modparam) for this session.
+   - *t[nn]* - Call setup timeout. 0 sets timeout to max_duration value.
+   Example: t300.
+   - *a* - Transparent authentication. In this mode b2b passes your 401
+   or 407 authentication request to destination server.
+   - *p* - Preserve To: header.
+   - *s* - Use init SDP (as described in the
+   [use init sdp](#param_use_init_sdp) modparam) for this session.
 - *req_route (string, optional)* - name of the script route
 to be called when requests belonging to this B2B session are received. This
 parameter will override the global [script req route](#param_script_req_route)
@@ -607,15 +606,14 @@ can also be used to refer to existing entities.
 - *provmedia_uri (string, optional)* - URI of the provisional
 media server to be connected with the caller while the callee answers.
 - *flags (string, optional)* - meanings of the flags is as follows:
-
-					*t[nn]* - Maximum duration of the B2B
-					session. If the lifetime expires, the B2BUA will send BYE messages to both
-					ends and delete the record.
-					Example: t300.
-					*n* - Enable rfc3515 NOTIFY to inform the agent sending the
-					REFER of the status of the reference.
-					*f* - Rollback call to state before bridging in case of transfer
-					failed, don't hangup the call (default behaviour).
+   - *t[nn]* - Maximum duration of the B2B
+   session. If the lifetime expires, the B2BUA will send BYE messages to both
+   ends and delete the record.
+   Example: t300.
+   - *n* - Enable rfc3515 NOTIFY to inform the agent sending the
+   REFER of the status of the reference.
+   - *f* - Rollback call to state before bridging in case of transfer
+   failed, don't hangup the call (default behaviour).
 
 
 This function can be used from the b2b_logic request routes.

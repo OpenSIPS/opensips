@@ -204,7 +204,8 @@ Meaning of the parameters is as follows:
 in a PCRE object.
 
 
-NOTE: To use the "end of line" symbol '$' in the pcre_regex parameter use '$$'.
+> [!NOTE]
+> To use the "end of line" symbol '$' in the pcre_regex parameter use '$$'.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
@@ -364,10 +365,11 @@ route[REGISTER] {
 ```
 
 
-NOTE: It's important to understand that the numbers in each group
-header ([number]) must start by 0. If not, the real group number
-will not match the number appearing in the file. For example, the
-following text file:
+> [!NOTE]
+> It's important to understand that the numbers in each group
+> header ([number]) must start by 0. If not, the real group number
+> will not match the number appearing in the file. For example, the
+> following text file:
 
 
 ```c title="Incorrect groups file"
@@ -390,24 +392,25 @@ group 1: ((^ccc)|(^ddd))
 ```
 
 
-Note that the real index doesn't match the group number in the file. This
-is, compiled group 0 always points to the first group in the file, regardless
-of its number in the file. In fact, the group number appearing in the file is
-used for nothing but for delimiting different groups.
+> [!NOTE]
+> The real index doesn't match the group number in the file. This
+> is, compiled group 0 always points to the first group in the file, regardless
+> of its number in the file. In fact, the group number appearing in the file is
+> used for nothing but for delimiting different groups.
 
 
-NOTE: A line containing a regular expression cannot start by '[' since it
-would be treated as a new group. The same for lines starting by space, tab,
-or '#' (they would be ignored by the parser). As a workaround, using brackets
-would work:
+> [!NOTE]
+> A line containing a regular expression cannot start by '[' since it
+> would be treated as a new group. The same for lines starting by space, tab,
+> or '#' (they would be ignored by the parser). As a workaround, using brackets
+> would work:
 
-
-```c
-[0]
-([0-9]{9})
-( #abcde)
-( qwerty)
-```
+    ```c
+    [0]
+    ([0-9]{9})
+    ( #abcde)
+    ( qwerty)
+    ```
 <!-- CONTRIBUTORS -->
 
 ### License

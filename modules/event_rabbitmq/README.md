@@ -1,6 +1,6 @@
 ---
 title: "event_rabbitmq Module"
-description: "*RabbitMQ* ([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) is an open source messaging server. It's purpose is to manage received messages in queues, taking advantage of the flexible AMQP protocol."
+description: "*RabbitMQ* ([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) is an open source messaging server."
 ---
 
 ## Admin Guide
@@ -54,21 +54,22 @@ authentication. The default value is 'guest'.
 default value is '5672'.
 - *params* - extra parameters specified as
 *key[=value]*, separated by ';':
-
-						*exchange* - exchange of the RabbitMQ server.
-						The default value is ''.
-						*tls_domain* - indicates which TLS domain (as
-						defined using the *tls_mgm* module) to use for
-						this connection. The [use tls](#param_use_tls) module parameter
-						must be enabled.
-						*persistent* - indicates that the message should be
-						published as persistent *delivery_mode=2*. This
-						parameter does not have a value.
+	* *exchange* - exchange of the RabbitMQ server.
+	The default value is ''.
+	* *tls_domain* - indicates which TLS domain (as
+	defined using the *tls_mgm* module) to use for
+	this connection. The [use tls](#param_use_tls) module parameter
+	must be enabled.
+	* *persistent* - indicates that the message should be
+	published as persistent *delivery_mode=2*. This
+	parameter does not have a value.
 - *routing_key* - this is the routing key
 used by the AMQP protocol and it is used to identify the queue
 where the event should be sent.
-NOTE: if the queue does not exist, this module will not 
-try to create it.
+
+> [!NOTE]
+> If the queue does not exist, this module will not 
+> try to create it.
 
 
 ### Dependencies
@@ -189,30 +190,19 @@ when it decides an ip should be blocked:
 
 
 ```c title="RabbitMQ socket"
-	rabbitmq:guest:guest@127.0.0.1:5672/pike
+rabbitmq:guest:guest@127.0.0.1:5672/pike
 
-	# same socket can be written as
-	rabbitmq:127.0.0.1/pike
+# same socket can be written as
+rabbitmq:127.0.0.1/pike
 
-	# TLS broker connection
-	rabbitmq:127.0.0.1/tls_domain=rmq?pike
+# TLS broker connection
+rabbitmq:127.0.0.1/tls_domain=rmq?pike
 ```
 
 
-### Installation and Running
+## Samples
 
-
-#### OpenSIPS config file
-
-
-This configuration file presents the usage of the event_rabbitmq
-module. In this scenario, a message is sent to a RabbitMQ server
-everytime OpenSIPS receives a MESSAGE request. The parameters 
-passed to the server are the R-URI username and the message
-body.
-
-
-[OpenSIPS config script - sample event_rabbitmq usage](./samples.md "include")
+[samples](./samples/samples.md "include")
 
 
 ## Frequently Asked Questions

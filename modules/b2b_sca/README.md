@@ -404,9 +404,8 @@ Meaning of the parameters:
 
 - *shared_line* (int) - an integer
 identifying the call leg as being an "appearnace" call or a "shared" call:
-
-			0: "shared" call
-			1: "appearance" call
+	* 0: "shared" call
+	* 1: "appearance" call
 
 
 ```opensips title="sca_init_request() usage"

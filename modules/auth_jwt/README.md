@@ -1,6 +1,6 @@
 ---
 title: "AUTH_JWT Module"
-description: "The module implements authentication over JSON Web Tokens. In some cases ( ie. WebRTC ) the user authenticates on another layer ( other than SIP ), so it makes no sense to double-authenticate it on the SIP layer. Thus, the SIP client will simply present the JWT auth token it received from the..."
+description: "The module implements authentication over JSON Web Tokens."
 ---
 
 ## Admin Guide

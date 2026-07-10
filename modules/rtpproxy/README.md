@@ -859,9 +859,10 @@ for better indentification of the rtpproxy instance to be enabled,
 for example when a rtpproxy is used in multiple sets).
 
 
-NOTE: if a rtpproxy is defined multiple times (in the same or
-different set), all its instances will be enables/disabled IF
-no set ID provided (as second param).
+> [!NOTE]
+> If a rtpproxy is defined multiple times (in the same or
+> different set), all its instances will be enables/disabled IF
+> no set ID provided (as second param).
 
 
 ```bash title="rtpproxy_enable usage"
@@ -871,7 +872,6 @@ $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
 ...
-			
 ```
 
 
@@ -889,7 +889,6 @@ No parameter.
 ...
 $ opensips-cli -x mi rtpproxy_show
 ...
-			
 ```
 
 
@@ -909,7 +908,6 @@ No parameter.
 ...
 $ opensips-cli -x mi rtpproxy_reload
 ...
-			
 ```
 
 

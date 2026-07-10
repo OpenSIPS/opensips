@@ -1,6 +1,6 @@
 ---
 title: "usrloc Module"
-description: "A SIP user location implementation. Its main purpose is to store, manage and provide access to SIP registration bindings (contacts) for other modules (e.g. registrar, mid-registrar, nathelper, etc.). The module exports no functions that could be directly used from the OpenSIPS script."
+description: "A SIP user location implementation."
 ---
 
 ## Admin Guide
@@ -1511,14 +1511,11 @@ which helps determine if the current node owns the contact
 (e.g. possibly using the **$cluster.sh_tag** pseudo-variable in order to perform the check).
 - *reason* - the reason why the binding refresh
 event was triggered.  Possible values:
-
-					"reg-refresh" - periodic refresh triggered by OpenSIPS
-
-					"ini-INVITE", "ini-SUBSCRIBE", etc. - a refresh
-						triggered by an incoming initial SIP request
-
-					"mid-INVITE", "mid-BYE", etc. - a refresh triggered
-						by an incoming mid-dialog SIP request
+	- "reg-refresh" - periodic refresh triggered by OpenSIPS
+	- "ini-INVITE", "ini-SUBSCRIBE", etc. - a refresh
+		triggered by an incoming initial SIP request
+	- "mid-INVITE", "mid-BYE", etc. - a refresh triggered
+		by an incoming mid-dialog SIP request
 - *req_callid* - the Call-ID of the SIP request
 which triggered this event, if any.  This gives the ability to
 logically link the pending request with the current event and

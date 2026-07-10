@@ -1,6 +1,6 @@
 ---
 title: "dialog Module"
-description: "The dialog module provides dialog awareness to the OpenSIPS proxy. Its functionality is to keep trace of the current dialogs, to offer information about them (like how many dialogs are active)."
+description: "The dialog module provides dialog awareness to the OpenSIPS proxy."
 ---
 
 ## Admin Guide
@@ -1148,27 +1148,27 @@ Parameters:
 
 - *flags (string, optional)*
 Possible values here are :
+	- B - Upon reaching dialog lifetime, BYEs will be triggered
+	both ways
+	- P - Ping caller side with OPTIONS messages, once every
+	options_ping_interval seconds
+	- p - Ping callee side with OPTIONS messages, once every
+	options_ping_interval seconds
+	- R - Ping caller side with RE-INVITE messages, once every
+	reinvite_ping_interval seconds
+	- r - Ping callee side with RE-INVITE messages, once every
+	reinvite_ping_interval seconds
+	- E - Upon detecting a SIP Race condition (see RFC 5407),
+	end the call after race_condition_timeout seconds
 
-				B - Upon reaching dialog lifetime, BYEs will be triggered
-				both ways
-				P - Ping caller side with OPTIONS messages, once every
-				options_ping_interval seconds
-				p - Ping callee side with OPTIONS messages, once every
-				options_ping_interval seconds
-				R - Ping caller side with RE-INVITE messages, once every
-				reinvite_ping_interval seconds
-				r - Ping callee side with RE-INVITE messages, once every
-				reinvite_ping_interval seconds
-				E - Upon detecting a SIP Race condition (see RFC 5407),
-				end the call after race_condition_timeout seconds
-
-				Multiple string flags can be used at the same time,
-				ie. passing "BPp" flags will enable all 3 flags.
+	Multiple string flags can be used at the same time,
+	ie. passing "BPp" flags will enable all 3 flags.
 
 
-NOTE: both RE-INVITE and OPTIONS pinging cannot be enabled at the same time
-for a single dialog leg. If both flags ("*PR*" or
-"*pr*") are provided only RE-INVITE pinging will be used.
+> [!NOTE]
+> Both RE-INVITE and OPTIONS pinging cannot be enabled at the same time
+> for a single dialog leg. If both flags ("*PR*" or
+> "*pr*") are provided only RE-INVITE pinging will be used.
 
 
 The function returns true if the dialog was successfully created or
@@ -1232,7 +1232,15 @@ This function can be used from REQUEST_ROUTE.
     if (has_totag()) {
         loose_route();
 
-        # example 1: match according to 
+        # example 1: match according to dlg_match_mode
+        if ($DLG_status == NULL && !match_dialog())
+            xlog("cannot match request to a dialog\n");
+
+        # example 2: override dlg_match_mode
+        if ($DLG_status == NULL && !match_dialog("DID_FALLBACK"))
+            xlog("cannot match request to a dialog\n");
+    }
+...
 ```
 
 
@@ -1313,9 +1321,10 @@ founds dialog in the "avp" pseudo-variable, otherwise nothing is written
 in "avp", and a negative error code is returned.
 
 
-NOTE: the function does not require to be called in the context of
-a dialog - you can use it whenever / whereever for searching for other
-dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
@@ -1371,9 +1380,10 @@ two parallel arrays of names and values (using the given variables
 be AVPs.
 
 
-NOTE: the function does not require to be called in the context of
-a dialog - you can use it whenever / whereever for searching for other
-dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
@@ -1410,9 +1420,10 @@ if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
 The function looks up through the whole dialog table for dialogs containing a $dlg_val with the provided name and value, and returns all the $DLG_ctx_json variables for the matched dialogs, storing them in the provided out_avp. The total number of matched dialogs is returned in the out_dlgs_no variable
 
 
-NOTE: the function does not require to be called in the context of
-a dialog - you can use it whenever / whereever for searching for other
-dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
@@ -1448,9 +1459,10 @@ if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 The function looks up through the whole dialog table for dialogs configured to be within the provided dialog profile name, and optionally with the provided profile value. The function returns all the $DLG_ctx_json variables for the matched dialogs, storing them in the provided out_avp. The total number of matched dialogs is returned in the out_dlgs_no variable
 
 
-NOTE: the function does not require to be called in the context of
-a dialog - you can use it whenever / whereever for searching for other
-dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
@@ -1490,8 +1502,9 @@ switching to the context of another dialog, you will see at the script
 level, by default, all the data from the new dialog.
 
 
-NOTE: you cannot perform a new load until doing an unload - no nested
-loadings are possible.
+> [!NOTE]
+> You cannot perform a new load until doing an unload - no nested
+> loadings are possible.
 
 
 Meaning of the parameters is as follows:
@@ -1529,8 +1542,9 @@ The function off-loads the loaded context of another dialog, exposing
 whatever dialog context was present before doing the load.
 
 
-NOTE: you MUST perform from script an explicit unload for each load
-you did, otherwise the loaded dialog will remain hanged for ever.
+> [!NOTE]
+> You MUST perform from script an explicit unload for each load
+> you did, otherwise the loaded dialog will remain hanged for ever.
 
 
 This function can be used from any type of route.
@@ -1547,8 +1561,9 @@ not support values, this will be silently discarded. A dialog may be
 inserted in the same profile multiple times.
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
@@ -1579,8 +1594,9 @@ set_dlg_profile("caller",$fu);
 Removes the current dialog from a profile.
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE] 
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
@@ -1616,8 +1632,9 @@ dialog to the profile is checked. Note that if the profile does not
 support values, this will be silently discarded.
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
@@ -1699,8 +1716,9 @@ Parameters:
 - *idx (int)* - The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1726,8 +1744,9 @@ opposite one. This operation is done under the dialog lock.
 - *value (int)* - The value should be 0 (false) or 1 (true).
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1755,8 +1774,9 @@ Parameters:
 - *idx (int)* - The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1784,8 +1804,9 @@ Parameters:
 - *idx (int)* - The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1817,8 +1838,9 @@ Parameters:
 - *val (string)*
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Same functionality may be obtain by assigning a value to pseudo
@@ -1855,8 +1877,9 @@ Parameters:
 - *val (var)*
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Same functionality may be obtain by reading the pseudo
@@ -1895,8 +1918,9 @@ Parameters:
 - *tag_name (string)*
 
 
-NOTE: the dialog must be created before using this function (use
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -2212,14 +2236,13 @@ MI FIFO Command Format:
 
 
 ```bash
-		## list all ongoing dialogs
-		opensips-cli -x mi dlg_list
-		## list the dialog by callid and From TAG
-		opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.168.1.1 from_tag=AAdfeEFF33
-		## list 10 dialogs, starting from the position 40
-		## (in the list of all ongoing dialogs)
-		opensips-cli -x mi dlg_list index=40 counter=10
-		
+## list all ongoing dialogs
+opensips-cli -x mi dlg_list
+## list the dialog by callid and From TAG
+opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.168.1.1 from_tag=AAdfeEFF33
+## list 10 dialogs, starting from the position 40
+## (in the list of all ongoing dialogs)
+opensips-cli -x mi dlg_list index=40 counter=10
 ```
 
 
@@ -2245,8 +2268,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi dlg_list_ctx
-		
+opensips-cli -x mi dlg_list_ctx
 ```
 
 
@@ -2283,11 +2305,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		# terminate the dialog via the internal Dialog-ID
-		opensips-cli -x mi dlg_end_dlg 6ae.4b38d013
-		# terminate the dialog via its SIP Call-ID
-		opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
-		
+# terminate the dialog via the internal Dialog-ID
+opensips-cli -x mi dlg_end_dlg 6ae.4b38d013
+# terminate the dialog via its SIP Call-ID
+opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 ```
 
 
@@ -2318,8 +2339,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi profile_get_size inboundCalls
-		
+opensips-cli -x mi profile_get_size inboundCalls
 ```
 
 
@@ -2352,8 +2372,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi profile_list_dlgs inboundCalls
-		
+opensips-cli -x mi profile_list_dlgs inboundCalls
 ```
 
 
@@ -2380,8 +2399,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi profile_get_values inboundCalls
-		
+opensips-cli -x mi profile_get_values inboundCalls
 ```
 
 
@@ -2407,8 +2425,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi profile_end_dlgs inboundCalls
-		
+opensips-cli -x mi profile_end_dlgs inboundCalls
 ```
 
 
@@ -2431,8 +2448,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi dlg_db_sync
-		
+opensips-cli -x mi dlg_db_sync
 ```
 
 
@@ -2463,8 +2479,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi dlg_cluster_sync vip1
-		
+opensips-cli -x mi dlg_cluster_sync vip1
 ```
 
 
@@ -2485,8 +2500,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi dlg_restore_db
-		
+opensips-cli -x mi dlg_restore_db
 ```
 
 
@@ -2507,8 +2521,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi list_all_profiles
-		
+opensips-cli -x mi list_all_profiles
 ```
 
 
@@ -2556,45 +2569,42 @@ the sequential message for.
 message. Default value is *INVITE*.
 - *mode* - (optional) can be used to tune the behavior of
 the sequential message. Possible values for the *mode* are:
-
-					*caller* - (default) sends the sequential message
-						to the caller. This mode can be useful in high availability scenarios
-						when you want to update the upstream's routing set, specifically the contact.
-					*callee* - same as caller, but sends the sequential
-							message to the callee.
-					*challenge* - sends a sequential INVITE (or UPDATE)
-						to the caller to challenge it for its advertised SDP body. When the
-						body is received, it is forwarded to the callee. This mode is useful
-						when trying to change both endpoints (upstream and downstream) routing
-						set. It can also be useful when trying to trigger a re-negotiation for
-						SDP body.
-					*challenge-caller* - same as *challenge*
-					*challenge-callee* - same as
-							*challenge-caller*, only that it first challenges
-							the callee, instead of the caller.
+	- *caller* - (default) sends the sequential message
+		to the caller. This mode can be useful in high availability scenarios
+		when you want to update the upstream's routing set, specifically the contact.
+	- *callee* - same as caller, but sends the sequential
+			message to the callee.
+	- *challenge* - sends a sequential INVITE (or UPDATE)
+		to the caller to challenge it for its advertised SDP body. When the
+		body is received, it is forwarded to the callee. This mode is useful
+		when trying to change both endpoints (upstream and downstream) routing
+		set. It can also be useful when trying to trigger a re-negotiation for
+		SDP body.
+	- *challenge-caller* - same as *challenge*
+	- *challenge-callee* - same as
+			*challenge-caller*, only that it first challenges
+			the callee, instead of the caller.
 - *body* - (optional) can be used to specify a body for
-the initial sequential message. Possible values for the *body*
-parameter are:
-
-					*none* - (default) no body added to the sequential message.
-					*inbound* - advertises in the body of the sequential
-							message generated the last body received from its pair. For example,
-							if the *mode=challenge-caller*, the message will
-							contain the body sent to OpenSIPS by the callee. This is useful when
-							you need to alter the body previously sent to the caller, because you
-							want to re-negotiate a different media proxy for the call. This can
-							be achieved by catching the generated request in
-							*local_route*, and re-engage the Media proxy.
-					*outbound* - advertises in the body of the sequential
-							message generated the last body sent to that UAC. For example,
-							if the *mode=challenge-caller*, the message will
-							contain the last body sent by OpenSIPS to the caller. This is useful
-							in a high availability scenario when trying to re-negotiate the
-							contact of the server, but there is no need to alter the body sent
-							earlier.
-					*custom:CONTENT_TYPE:BODY* - this can be used to
-								specify a specific Content-Type ehader and body for the
-								sequential message generated.
+the initial sequential message. Possible values for the *body* parameter are:
+	- *none* - (default) no body added to the sequential message.
+	- *inbound* - advertises in the body of the sequential
+			message generated the last body received from its pair. For example,
+			if the *mode=challenge-caller*, the message will
+			contain the body sent to OpenSIPS by the callee. This is useful when
+			you need to alter the body previously sent to the caller, because you
+			want to re-negotiate a different media proxy for the call. This can
+			be achieved by catching the generated request in
+			*local_route*, and re-engage the Media proxy.
+	- *outbound* - advertises in the body of the sequential
+			message generated the last body sent to that UAC. For example,
+			if the *mode=challenge-caller*, the message will
+			contain the last body sent by OpenSIPS to the caller. This is useful
+			in a high availability scenario when trying to re-negotiate the
+			contact of the server, but there is no need to alter the body sent
+			earlier.
+	- *custom:CONTENT_TYPE:BODY* - this can be used to
+				specify a specific Content-Type ehader and body for the
+				sequential message generated.
 
 
 This functions runs asynchronously and returns the status code and reason
@@ -2605,9 +2615,8 @@ MI Command Format:
 
 
 ```bash
-			opensips-cli -x mi dlg_send_sequential \
-				callid=5291231-testing@127.0.0.1
-		
+opensips-cli -x mi dlg_send_sequential \
+	callid=5291231-testing@127.0.0.1
 ```
 
 
@@ -2615,11 +2624,10 @@ MI Command used to trigger media re-negotiation:
 
 
 ```bash
-			opensips-cli -x mi dlg_send_sequential \
-				callid=5291231-testing@127.0.0.1 \
-				mode=challenge \
-				body=inbound
-		
+opensips-cli -x mi dlg_send_sequential \
+	callid=5291231-testing@127.0.0.1 \
+	mode=challenge \
+	body=inbound
 ```
 
 
@@ -2627,12 +2635,11 @@ MI Command used to UPDATE the callee's remote Contact after a server failover:
 
 
 ```bash
-			opensips-cli -x mi dlg_send_sequential \
-				callid=5291231-testing@127.0.0.1 \
-				mode=challenge-callee \
-				body=outbound \
-				method=UPDATE
-		
+opensips-cli -x mi dlg_send_sequential \
+	callid=5291231-testing@127.0.0.1 \
+	mode=challenge-callee \
+	body=outbound \
+	method=UPDATE
 ```
 
 
@@ -2828,64 +2835,36 @@ type, which is not a per dialog type.
 - *int type* - types of callbacks; more
 types may be register for the same callback function; only 
 DLG_CREATED must be register alone. Possible types:
-
-
-				*DLGCB_LOADED* - called when a dialog
-				is loaded from the database, or received by a node using the
-				cluster replication.
-
-
-				*DLGCB_SAVED*
-
-
-				*DLG_CREATED* - called when a new 
-				dialog is created - it's a global type (not associated to 
-				any dialog)
-
-
-				*DLG_FAILED* - called when the dialog
-				was negatively replied (non-2xx) - it's a per dialog type.
-
-
-				*DLG_CONFIRMED* - called when the 
-				dialog is confirmed (2xx replied) - it's a per dialog type.
-
-
-				*DLG_REQ_WITHIN* - called when the 
-				dialog matches a sequential request - it's a per dialog type.
-
-
-				*DLG_TERMINATED* - called when the 
-				dialog is terminated via BYE, or by the mi dlg_end_dlg command
-				- it's a per dialog type.
-
-
-				*DLG_EXPIRED* - called when the 
-				dialog expires without receiving a BYE - it's a per dialog 
-				type. Note that when using replication sharing tags, this
-				callback is only executed by the node that has the Active tag.
-
-
-				*DLGCB_EARLY* - called when the
-				dialog is created in an early state (18x replied) - it's
-				a per dialog type.
-
-
-				*DLGCB_RESPONSE_FWDED* - called when
-				the dialog matches a reply to the initial INVITE request - it's
-				a per dialog type.
-
-
-				*DLGCB_RESPONSE_WITHIN* - called when
-				the dialog matches a reply to a subsequent in dialog request
-				- it's a per dialog type.
-
-
-				*DLGCB_MI_CONTEXT* - called when the
-				mi dlg_list_ctx command is invoked - it's a per dialog type.
-
-
-				*DLGCB_DESTROY*
+	- *DLGCB_LOADED* - called when a dialog
+	is loaded from the database, or received by a node using the
+	cluster replication.
+	- *DLGCB_SAVED*
+	- *DLG_CREATED* - called when a new 
+	dialog is created - it's a global type (not associated to 
+	any dialog)
+	- *DLG_FAILED* - called when the dialog
+	was negatively replied (non-2xx) - it's a per dialog type.
+	- *DLG_CONFIRMED* - called when the 
+	dialog is confirmed (2xx replied) - it's a per dialog type.
+	- *DLG_REQ_WITHIN* - called when the 
+	dialog matches a sequential request - it's a per dialog type.
+	- *DLG_TERMINATED* - called when the 
+	dialog is terminated via BYE, or by the mi dlg_end_dlg command - it's a per dialog type.
+	- *DLG_EXPIRED* - called when the 
+	dialog expires without receiving a BYE - it's a per dialog 
+	type. Note that when using replication sharing tags, this
+	callback is only executed by the node that has the Active tag.
+	- *DLGCB_EARLY* - called when the
+	dialog is created in an early state (18x replied) - it's
+	a per dialog type.
+	- *DLGCB_RESPONSE_FWDED* - called when
+	the dialog matches a reply to the initial INVITE request - it's
+	a per dialog type.
+	- *DLGCB_RESPONSE_WITHIN* - called when
+	the dialog matches a reply to a subsequent in dialog request - it's a per dialog type.
+	- *DLGCB_MI_CONTEXT* - called when the
+	mi dlg_list_ctx command is invoked - it's a per dialog type.
+	- *DLGCB_DESTROY*
 - *dialog_cb cb* - callback function to be 
 called. Prototype is: "void (dialog_cb) 
 (struct dlg_cell* dlg, int type, struct dlg_cb_params * params);

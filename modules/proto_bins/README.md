@@ -17,11 +17,11 @@ by the clusterer module.
 Once loaded, you will be able to define BINS listeners in your
 configuration file by adding their IP and, optionally, a
 listening port, similar to this example:
-	```c
 
+```opensips
 ...
-socket= bins:127.0.0.1 		# change the listening IP
-socket= bins:127.0.0.1:5557	# change the listening IP and port
+socket = bins:127.0.0.1 		# change the listening IP
+socket = bins:127.0.0.1:5557	# change the listening IP and port
 ...
 ```
 
@@ -87,9 +87,7 @@ being initiated (outbound).
 
 
 ```opensips title="Set bins_handshake_timeout variable"
-param("proto_tls", "bins_handshake_timeout", 200) # number of milliseconds
-
-			
+param("proto_tls", "bins_handshake_timeout", 200) # number of milliseconds			
 ```
 
 

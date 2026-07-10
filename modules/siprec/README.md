@@ -1,6 +1,6 @@
 ---
 title: "SIPREC Module"
-description: "This module provides the means to do calls recording using an external recorder - the entity that records the call is not in the media path between the caller and callee, but it is completely separate, thus it can not affect by any means the quality of the conversation. This is done in a ..."
+description: "This module provides the means to do calls recording using an external recorder - the entity that records the call is not in the media path between the caller and callee, but it is completely separate, thus it can not affect by any means the quality of the conversation."
 ---
 
 ## Admin Guide
@@ -223,9 +223,10 @@ might decide that the recording is disabled for those
 participants.
 
 
-*Note* that the call recording is not
-started right away, but only when the call is actually
-answered - 200 OK is sent by the callee.
+> [!NOTE]
+> The call recording is not
+> started right away, but only when the call is actually
+> answered - 200 OK is sent by the callee.
 
 
 Parameters:
@@ -274,7 +275,6 @@ This function can be used from REQUEST_ROUTE.
 		siprec_start_recording($var(srs));
 	}
 	...
-	
 ```
 
 
@@ -286,7 +286,6 @@ This function can be used from REQUEST_ROUTE.
 		siprec_start_recording($var(srs), "inbound");
 	}
 	...
-	
 ```
 
 
@@ -297,7 +296,6 @@ This function can be used from REQUEST_ROUTE.
 	$xml(caller_xml/nameID) = "<name>test</name>";
 	siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
 	...
-	
 ```
 
 
@@ -305,7 +303,6 @@ This function can be used from REQUEST_ROUTE.
 	...
 	siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
 	...
-	
 ```
 <!-- CONTRIBUTORS -->
 

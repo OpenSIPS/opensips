@@ -13,8 +13,6 @@ This module provides a Diameter implementation for the core AAA API interface.
 
 
 Any module that wishes to use it has to do the following:
-
-
 - *include aaa.h*
 - *make a bind call with a proper Diameter-specific URL, e.g. "diameter:freeDiameter-client.conf"*
 
