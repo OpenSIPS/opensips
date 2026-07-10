@@ -1,6 +1,6 @@
 ---
 title: "pike Module"
-description: "The module provides a simple mechanism for DOS protection - DOS based on floods at network level. The module keeps trace of all (or selected ones) IPs of incoming SIP traffic (as source IP) and blocks the ones that exceeded some limit. Works simultaneous for IPv4 and IPv6 addresses."
+description: "The module provides a simple mechanism for DOS protection - DOS based on floods at network level."
 ---
 
 ## Admin Guide
@@ -81,8 +81,9 @@ long period of time) to a proxy resource (a gateway for ex), use
 a bigger value of this parameter.
 
 
-IMPORTANT: a too small value may lead to performance penalties due 
-timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due
+> timer process overloading.
 
 
 *Default value is 2.*
@@ -192,8 +193,6 @@ Return codes:
 
 - *1 (true)* - IP is not to be blocked or 
 internal error occurred.
-
-  > **Warning:** 
 - *-1 (false)* - IP is source of
 flooding, being previously detected
 - *-2 (false)* - IP is detected as a new 
@@ -229,9 +228,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:pike_list:_reply_fifo_file_
-		_empty_line_
-		
+:pike_list:_reply_fifo_file_
+_empty_line_
 ```
 
 

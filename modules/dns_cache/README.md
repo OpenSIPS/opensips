@@ -1,6 +1,6 @@
 ---
 title: "dns_cache Module"
-description: "This module is an implementation of a cache system designed for DNS records. For succesfull DNS queries of all types, the module will store in a cache/db backend the mappings, for TTL number of seconds received in the DNS answer. Failed DNS queries will also be stored in the back-end, with ..."
+description: "This module is an implementation of a cache system designed for DNS records."
 ---
 
 ## Admin Guide

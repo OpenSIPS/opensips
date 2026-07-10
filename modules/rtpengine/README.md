@@ -1,6 +1,6 @@
 ---
 title: "rtpengine Module"
-description: "This is a module that enables media streams to be proxied via an RTP proxy. The only RTP proxy currently known to work with this module is the Sipwise rtpengine [https://github.com/sipwise/rtpengine](https://github.com/sipwise/rtpengine). The rtpengine module is a modified version of the ..."
+description: "This is a module that enables media streams to be proxied via an RTP proxy."
 ---
 
 ## Admin Guide
@@ -59,10 +59,11 @@ rtpengine_delete(), rtpengine_offer() or rtpengine_answer()
 the 0 id set will be used.
 
 
-IMPORTANT: if you use multiple sets, take care and use the same set for
-both rtpengine_offer()/rtpengine_answer() and rtpengine_delete()!!
-If the set was selected using setid_avp, the avp needs to be
-set only once before rtpengine_offer() or rtpengine_manage() call.
+> [!IMPORTANT]
+> If you use multiple sets, take care and use the same set for
+> both rtpengine_offer()/rtpengine_answer() and rtpengine_delete()!!
+> If the set was selected using setid_avp, the avp needs to be
+> set only once before rtpengine_offer() or rtpengine_manage() call.
 
 
 ### Dependencies
@@ -512,8 +513,7 @@ This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 ```opensips title="rtpengine_start_recording usage"
 ...
 rtpengine_start_recording();
-...
-		
+...	
 ```
 
 
@@ -532,7 +532,6 @@ must be retrieved before the session is deleted	(before `rtpengine_delete()`).
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
-		
 ```
 
 
@@ -553,15 +552,15 @@ the config file).
 The second parameter value must be a number in decimal.
 
 
-NOTE: if a RTP proxy is defined multiple times (in the same or
-diferente sete), all of its instances will be enables/disabled.
+> [!NOTE]
+> If a RTP proxy is defined multiple times (in the same or
+> different set), all of its instances will be enabled/disabled.
 
 
 ```bash title="rtpengine_enable usage"
 ...
 $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 ...
-			
 ```
 
 
@@ -579,7 +578,6 @@ No parameter.
 ...
 $ opensipsctl fifo rtpengine_show
 ...
-			
 ```
 
 

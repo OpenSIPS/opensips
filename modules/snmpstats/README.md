@@ -1,6 +1,6 @@
 ---
 title: "SNMPStats Module (Simple Network Management Protocal Statistic Module)"
-description: "The SNMPStats module provides an SNMP management interface to OpenSIPS. Specifically, it provides general SNMP queryable scalar statistics, table representations of more complicated data such as user and contact information, and alarm monitoring capabilities."
+description: "The SNMPStats module provides an SNMP management interface to OpenSIPS."
 ---
 
 ## Admin Guide
@@ -223,9 +223,10 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
 ```
 
 
-Note that as the above example shows, you can define this parameter
-more than once.  This is of course because a given OpenSIPS instance
-can take on more than one role.
+> [!NOTE]
+> As the above example shows, you can define this parameter
+> more than once.  This is of course because a given OpenSIPS instance
+> can take on more than one role.
 
 
 #### MsgQueueMinorThreshold (Integer)
@@ -383,9 +384,10 @@ The SNMPStats modules makefile requires that the SNMP script
 "net-snmp-config" can run.
 
 
-IMPORTANT: By default, SNMP loads *mibs* from
-*/var/lib/mibs/ietf/*.Keep in mind that you have to copy OpenSIPS
-*mibs* wherevere your mibs folder is.
+> [!IMPORTANT]
+> By default, SNMP loads *mibs* from
+> */var/lib/mibs/ietf/*. Keep in mind that you have to copy OpenSIPS
+> *mibs* wherevere your mibs folder is.
 
 
 #### Configuring SNMP daemon to allow connections from the SNMPStats module.
@@ -402,9 +404,8 @@ the configuration file (snmpd.conf) may vary depending on your system.
 By default, via a package installation, it is located in:
 
 
-```c
-    /etc/snmp/snmpd.conf.
-	
+```bash
+/etc/snmp/snmpd.conf
 ```
 
 
@@ -412,8 +413,7 @@ At the very end of the file add the following line:
 
 
 ```c
-    master agentx
-	
+master agentx
 ```
 
 
@@ -428,8 +428,7 @@ via the configuration file (snmpd.conf) :
 
 
 ```c
-    agentXSocket    tcp:localhost:705
-	
+agentXSocket    tcp:localhost:705
 ```
 
 
@@ -448,9 +447,8 @@ SNMPStats module its own SNMP configuration file.  The file must be named
 that was configured above. By default this would be:
 
 
-```c
-    /etc/snmp/snmpstats.conf
-	
+```bash
+/etc/snmp/snmpstats.conf
 ```
 
 
@@ -459,8 +457,7 @@ and contains the following:
 
 
 ```c
-    agentXSocket tcp:localhost:705
-	
+agentXSocket tcp:localhost:705
 ```
 
 
@@ -481,9 +478,8 @@ is stopped (/etc/init.d/snmpd stop) and manually start snmpd with the
 following:
 
 
-```c
-    snmpd -f -Dagentx -x tcp:localhost:705 2>&1 | less
-	
+```bash
+snmpd -f -Dagentx -x tcp:localhost:705 2>&1 | less
 ```
 
 
@@ -498,7 +494,6 @@ You should see something similar to the following:
     agentx/master: initializing...
     agentx/master: initializing...   DONE
     NET-SNMP version 5.3.1
-	
 ```
 
 
@@ -512,7 +507,6 @@ see a bunch of:
     agentx/master: opened 0x814bbe0 = 6 with flags = a0
     agentx/master: send response, stat 0 (req=0x2c58ebd4,trans=0x0,sess=0x0)
     agentx_build: packet built okay
-	
 ```
 
 
@@ -605,8 +599,7 @@ as an alternative. Take the openserSIPEntityType scalar as an example. You can
 invoke snmptranslate as follows:
 
 
-```c
-
+```bash
     snmptranslate -TBd openserSIPEntityType
 ```
 
@@ -615,7 +608,6 @@ Which would result in something similar to the following:
 
 
 ```c
-
     -- FROM       OPENSER-SIP-COMMON-MIB
     -- TEXTUAL CONVENTION OpenSIPSSIPEntityRole
     SYNTAX        BITS {other(0), userAgent(1), proxyServer(2), redirectServer(3), registrarServer(4)}
@@ -650,8 +642,7 @@ default community strings. Grep your snmpd.conf file for the string
 NetSNMP's snmpget is used as follows:
 
 
-```c
-
+```bash
     snmpget -v 2c -c theCommunityString machineToSendTheMachineTo scalarElement.0
 ```
 
@@ -660,18 +651,14 @@ For example, consider an snmpget on the openserSIPEntityType scalar,
 run on the same machine running the OpenSIPS instance, with the default
 "public" community string.  The command would be:
 
-
-```c
-
+```bash
     snmpget -v2c -c public localhost openserSIPEntityType.0
 ```
 
 
 Which would result in something similar to:
 
-
 ```c
-
     OPENSER-SIP-COMMON-MIB::openserSIPEntityType.0 = BITS: F8 \
 		other(0) userAgent(1) proxyServer(2)          \
 		redirectServer(3) registrarServer(4)
@@ -684,8 +671,7 @@ Which would result in something similar to:
 NetSNMP's snmptable is used as follows:
 
 
-```c
-
+```bash
     snmptable -Ci -v 2c -c theCommunityString machineToSendTheMachineTo theTableName
 ```
 
@@ -694,9 +680,7 @@ For example, consider the openserSIPRegUserTable.  If we run the snmptable
 command on the same machine as the running OpenSIPS instance, configured with
 the default "public" community string.  The command would be:
 
-
-```c
-
+```bash
     snmptable -Ci -v 2c -c public localhost openserSIPRegUserTable
 ```
 
@@ -705,7 +689,6 @@ Which would result in something similar to:
 
 
 ```c
-
     index openserSIPUserUri openserSIPUserAuthenticationFailures
         1       DefaultUser                                    0
         2            bogdan                                    0

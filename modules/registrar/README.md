@@ -572,17 +572,11 @@ Meaning of the parameters is as follows:
 If database is used then this must be name of the table which 
 stores the contacts.
 - *AOR* - address-of-record to be searched (SIP URI)
-- *target (optional)* -
-may be specified in two ways:
-
-
-					**single delete -**
-						Specific contact to be deleted (SIP URI)
-
-
-					**multi delete -**
-						IP/hostname of the AOR's contacts which will be deleted
-
+- *target (optional)* - may be specified in two ways:
+	- **single delete -**
+		Specific contact to be deleted (SIP URI)
+	- **multi delete -**
+		IP/hostname of the AOR's contacts which will be deleted
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -690,8 +684,9 @@ The function returns true if an AOR is registered, false otherwise.
 The function does not modify the message being process.
 
 
-NOTE: if called for a reply (from onreply_route), you must pass an
-AOR (as parameter), otherwise the function will fail.
+> [!NOTE]
+> If called for a reply (from onreply_route), you must pass an
+> AOR (as parameter), otherwise the function will fail.
 
 
 Meaning of the parameters is as follows:

@@ -1,6 +1,6 @@
 ---
 title: "nathelper Module"
-description: "This is a module to help with NAT traversal. In particular, it helps symmetric UAs that don't advertise they are symmetric and are not able to determine their public address. fix_nated_contact rewrites Contact header field with request's source address:port pair. fix_nated_sdp adds the ac..."
+description: "This is a module to help with NAT traversal."
 ---
 
 ## Admin Guide

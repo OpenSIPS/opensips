@@ -137,7 +137,7 @@ modparam("cachedb_cassandra", "receive_timeout",1000);
 
 
 The consistency level desired for write operations.
-Options are :
+Options are:
 
 
 - *1* - Ensure that the write has been written to at least 1 replica's commit log and memory table before responding to the client.

@@ -55,15 +55,18 @@ OpenSIPS with this module loaded:
 
 - *libmemcached:*
 libmemcached can be downloaded from: http://tangent.org/552/libmemcached.html.
-Download the archive, extract sources, run ./configure, make,sudo make install.
+Download the archive, extract sources, run ./configure, make, sudo make install.
+
+```bash
 ...
-wget http://download.tangent.org/libmemcached-0.31.tar.gz 
-tar -xzvf libmemcached-0.31.tar.gz
-cd libmemcached-0.31
-./configure
-make
-sudo make install
+$ wget http://download.tangent.org/libmemcached-0.31.tar.gz 
+$ tar -xzvf libmemcached-0.31.tar.gz
+$ cd libmemcached-0.31
+$ ./configure
+$ make
+$ sudo make install
 ...
+```
 
 
 ### Exported Parameters

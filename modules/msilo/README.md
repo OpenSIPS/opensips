@@ -1,6 +1,6 @@
 ---
 title: "MSILO Module"
-description: "This modules provides offline message storage for the Open SIP Server. It stores received messages for an offline user and sends them when the user becomes online."
+description: "This modules provides offline message storage for the Open SIP Server."
 ---
 
 ## Admin Guide
@@ -624,16 +624,9 @@ The number of dumped reminder messages.
 The number of failed reminder messages.
 
 
-### Installation and Running
+## Samples
 
-
-#### OpenSIPS config file
-
-
-Next picture displays a sample usage of msilo.
-
-
-[OpenSIPS config script - sample msilo usage](./samples.md "include")
+[samples](./samples/samples.md "include")
 <!-- CONTRIBUTORS -->
 
 ### License

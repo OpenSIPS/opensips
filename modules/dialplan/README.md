@@ -1,6 +1,6 @@
 ---
 title: "dialplan Module"
-description: "This module implements generic string translations based on matching and replacement rules. It can be used to manipulate R-URI or a PV and to translated to a new format/value."
+description: "This module implements generic string translations based on matching and replacement rules."
 ---
 
 ## Admin Guide
@@ -546,9 +546,8 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-		:dp_reload:
-		_empty_line_
-		
+:dp_reload:
+_empty_line_
 ```
 
 
@@ -573,18 +572,17 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-        :dp_translate:
-        dpid
-        input
-        _empty_line_
-		
+:dp_translate:
+dpid
+input
+_empty_line_
 ```
 
 
 ### Installation
 
 
-The modules requires one table in OpenSIPS database: dialplan.The SQL 
+The modules requires one table in OpenSIPS database: dialplan. The SQL 
 syntax to create them can be found in dialplan-create.sql
 script in the database directories in the opensips/scripts folder.
 You can also find the complete database documentation on the

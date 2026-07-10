@@ -1,6 +1,6 @@
 ---
 title: "TLS module"
-description: "TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used to secure the SIP signalling on a hop-by-hop basis (not end-to-end). TLS works on top of TCP. DTLS, or TLS over UDP is already defined by IETF and may become available in the future. This module also imple..."
+description: "TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used to secure the SIP signalling on a hop-by-hop basis (not end-to-end)."
 ---
 
 ## Admin Guide
@@ -205,7 +205,6 @@ listening server will be.
 ...
 listen = tls:1.2.3.4:5061
 ...
-				
 ```
 
 
@@ -222,7 +221,6 @@ Sets the default TLS listening port.
 ...
 modparam("proto_tls", "tls_port", 5062)
 ...
-				
 ```
 
 
@@ -911,14 +909,16 @@ String type.
 ### OpenSIPS with TLS - script example
 
 
-IMPORTANT: The TLS support is based on TCP, and for allowing OpenSIPS
-to use TCP, it must be started in multi-process mode. So, there is
-a must to have the "fork" parameter set to "yes":
+> [!IMPORTANT]
+> The TLS support is based on TCP, and for allowing OpenSIPS
+> to use TCP, it must be started in multi-process mode. So, there is
+> a must to have the "fork" parameter set to "yes":
 
 
-NOTE: Since the TLS engine is quite memory consuming, increase the
-used memory by the run time parameter "-m" (see OpenSIPS -h for more
-details).
+> [!NOTE]
+> Since the TLS engine is quite memory consuming, increase the
+> used memory by the run time parameter "-m" (see OpenSIPS -h for more
+> details).
 
 
 - fork = yes

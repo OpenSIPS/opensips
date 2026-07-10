@@ -1,6 +1,6 @@
 ---
 title: "proto_sctp Module"
-description: "The **proto_sctp** module is an optional transport module (shared library) which exports the required logic in order to handle SCTP-based communication. (socket initialization and send/recv primitives to be used by higher-level network layers)"
+description: "The **proto_sctp** module is an optional transport module (shared library) which exports the required logic in order to handle SCTP-based communication."
 ---
 
 ## Admin Guide

@@ -1,6 +1,6 @@
 ---
 title: "tm Module"
-description: "TM module enables stateful processing of SIP transactions. The main use of stateful logic, which is costly in terms of memory and CPU, is some services inherently need state. For example, transaction-based accounting (module acc) needs to process transaction state as opposed to ind..."
+description: "TM module enables stateful processing of SIP transactions."
 ---
 
 ## Admin Guide
@@ -641,29 +641,30 @@ or hexa format; supported flags are:
 
 
 - *0x01* - do not generate an 100 trying
-provisional reply when building the transaction. By default 
-one is generated. Useful if you already pushed an 
-stateless 100 reply from script.
-Note: If the transaction was previously created 'by hand' with
-t_newtran() , t_relay will not attempt to send a 100 Trying
-provisional reply. The 100 Trying reply is generated as part of
-the transaction building, so if in your script you manually take
-care of creating the transaction, you must also take care of
-sending 100 provisional replies
+	provisional reply when building the transaction. By default 
+	one is generated. Useful if you already pushed an 
+	stateless 100 reply from script.
+	> [!NOTE]
+	> If the transaction was previously created 'by hand' with
+	> t_newtran() , t_relay will not attempt to send a 100 Trying
+	> provisional reply. The 100 Trying reply is generated as part of
+	> the transaction building, so if in your script you manually take
+	> care of creating the transaction, you must also take care of
+	> sending 100 provisional replies
 - *0x02* - do not internally send a 
-negative reply in case of forward failure (due internal error,
-bad RURI, bad message, etc).  When a forward failure occurs, no
-SIP request is relayed and therefore no negative reply or
-timeout will show up on the failure_route (if one is set).
-It applies only when the transaction is created.
-By default one negative reply is sent.
-Useful if you want to implement a serial forking in case of failure.
+	negative reply in case of forward failure (due internal error,
+	bad RURI, bad message, etc).  When a forward failure occurs, no
+	SIP request is relayed and therefore no negative reply or
+	timeout will show up on the failure_route (if one is set).
+	It applies only when the transaction is created.
+	By default one negative reply is sent.
+	Useful if you want to implement a serial forking in case of failure.
 - *0x04* - disable the DNS failover
-for the transaction. Only first IP will be used. It disable
-the failover both at transaport and transaction level.
+	for the transaction. Only first IP will be used. It disable
+	the failover both at transaport and transaction level.
 - *0x08* - If the request is a CANCEL,
-trust and pass further the Reason header from the received
-CANCEL - shortly, will propagate the Reason header.
+	trust and pass further the Reason header from the received
+	CANCEL - shortly, will propagate the Reason header.
 
 
 In case of error, the function returns the following codes:
@@ -826,12 +827,12 @@ INVITE transaction exists.
 local end-to-end ACK corresponding to an previous INVITE
 transaction.
 
-
-Note: To detect retransmissions using this function you have to make sure
-that the initial request has already created a transaction, e.g. by using
-t_relay(). If the processing of requests may take long time (e.g. DB lookups)
-and the retransmission arrives before t_relay() is called, you can use the
-t_newtran() function to manually create a transaction.
+	> [!NOTE]
+	> To detect retransmissions using this function you have to make sure
+	> that the initial request has already created a transaction, e.g. by using
+	> t_relay(). If the processing of requests may take long time (e.g. DB lookups)
+	> and the retransmission arrives before t_relay() is called, you can use the
+	> t_newtran() function to manually create a transaction.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
