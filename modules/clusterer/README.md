@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the *clust..."
+description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -622,16 +622,10 @@ Parameters:
 - *addr_type* (string, optional) -
 select the address of the node that the comparison
 is made against, with the possible values of:
+	- *bin* - node's BIN interface listener;
+	- *sip* - node's DB provisioned SIP address.
 
-
-								*bin* - node's BIN interface listener;
-
-
-								*sip* - node's DB provisioned SIP address.
-
-
-						The default behaviour is to compare against the SIP address.
-
+The default behaviour is to compare against the SIP address.
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
@@ -665,8 +659,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer_reload
-		
+opensips-cli -x mi clusterer_reload
 ```
 
 
@@ -766,8 +759,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer_set_status 1 0
-		
+opensips-cli -x mi clusterer_set_status 1 0
 ```
 
 
@@ -799,7 +791,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi cluster_send_mi 1 3 lb_reload
-		
 ```
 
 
@@ -830,7 +821,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
-		
 ```
 
 
@@ -889,8 +879,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer_shtag_set_active vip1/3
-		
+opensips-cli -x mi clusterer_shtag_set_active vip1/3
 ```
 
 
@@ -910,8 +899,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi clusterer_list_shtags
-		
+opensips-cli -x mi clusterer_list_shtags
 ```
 
 

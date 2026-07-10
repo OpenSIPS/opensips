@@ -1,6 +1,6 @@
 ---
 title: "pua dialoginfo"
-description: "The pua_dialoginfo retrieves dialog state information from the dialog module and PUBLISHes the dialog-information using the pua module. Thus, in combination with the presence_xml module this can be used to derive dialog-info from the dialog module and NOTIFY the subscribed watchers about..."
+description: "The pua_dialoginfo retrieves dialog state information from the dialog module and PUBLISHes the dialog-information using the pua module."
 ---
 
 ## Admin Guide
@@ -17,9 +17,10 @@ the subscribed watchers about dialog-info changes. This can be used
 for example with SNOM and Linksys phones.
 
 
-Note: This implements dialog-info according to RFC 4235 and is not 
-compatible with the BLA feature defined in draft-anil-sipping-bla-03.txt.
-(Actually the BLA draft is really crap as it changes SIP semantics)
+> [!NOTE]
+> This implements dialog-info according to RFC 4235 and is not 
+> compatible with the BLA feature defined in draft-anil-sipping-bla-03.txt.
+> (Actually the BLA draft is really crap as it changes SIP semantics)
 
 
 The module is based on code (copy/paste) from pua_usrloc and nat_traversal
@@ -31,7 +32,7 @@ from RFC 4235. This will help you to understand the meaning of the module
 parameters:
 
 
-```c
+```xml
 <?xml version="1.0"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
              version="1"
@@ -73,7 +74,7 @@ The dialog element can contain optional "local" and "remote" elements which
 describes the local and the remote party in more detail, for example:
 
 
-```c
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
              version="1" state="full">
@@ -111,7 +112,7 @@ following XML document shows a confirmed dialog and an early (probably
 a second incoming call) dialog.
 
 
-```c
+```xml
 <?xml version="1.0"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
              version="3"

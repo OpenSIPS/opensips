@@ -1,6 +1,6 @@
 ---
 title: "proto_smpp module"
-description: "This module offers interoperability between SIP and SMPP (Short Message Peer-to-Peer) protocols. It provides the means to build a messaging gateway/bridge between the two protocols, being able to convert messages from both directions."
+description: "This module offers interoperability between SIP and SMPP (Short Message Peer-to-Peer) protocols."
 ---
 
 ## Admin Guide
@@ -87,18 +87,18 @@ the format of the number used to send messages from. Some comon values are:
 - *Source Number Plan Indicator (NPI)* - Specifies
 the numbering scheme of the number used to send messages from. Some comon values are:
 
-				*0* - Unknown
-				*1* - ISDN/telephone numbering plan (E163/E164)
-				*3* - Data numbering plan (X.121)
-				*4* - Telex numbering plan (F.69)
-				*6* - Land Mobile (E.212)
-				*8* - National numbering plan
-				*9* - Private numbering plan
-				*10* - ERMES numbering plan (ETSI DE/PS 3 01-3)
-				*13* - Internet (IP)
-				*18* - WAP Client Id (to be defined by WAP Forum)
+	- *0* - Unknown
+	- *1* - ISDN/telephone numbering plan (E163/E164)
+	- *3* - Data numbering plan (X.121)
+	- *4* - Telex numbering plan (F.69)
+	- *6* - Land Mobile (E.212)
+	- *8* - National numbering plan
+	- *9* - Private numbering plan
+	- *10* - ERMES numbering plan (ETSI DE/PS 3 01-3)
+	- *13* - Internet (IP)
+	- *18* - WAP Client Id (to be defined by WAP Forum)
 
-			Default value is *0 - Unknown*.
+	*Default value is *0 - Unknown*.*
 - *Destination Type of Number (TON)* - Specifies
 the format of the number used to send messages to. Can have the same values as
 *Source Type of Number (TON)* and default value is *0 -
@@ -106,16 +106,15 @@ Unknown*.
 - *Destination Number Plan Indicator (NPI)* -
 Specifies the numbering scheme of the number used to send messages to. Can have
 the same values as *Source Number Plan Indicator (NPI)*
-and default value is *0 - Unknown*.
+and *default value is *0 - Unknown**.
 - *Session Type* - Specifies what type of session
 should be used to connecto th the SMSc. Possible values are:
+	- *1* - Transciever
+	- *2* - Transmitter
+	- *3* - Receiver
+	- *4* - Outbind
 
-				*1* - Transciever
-				*2* - Transmitter
-				*3* - Receiver
-				*4* - Outbind
-
-			Default value is *1 - Transciever*.
+	*Default value is *1 - Transciever**.
 
 
 When OpenSIPS starts up, it reads all SMSc specifications from the
@@ -466,8 +465,8 @@ or BRANCH_ROUTE.
 
 ```opensips title="send_smpp_message() usage"
 ...
-    if (is_method("MESSAGE"))
-			send_smpp_message("MY_SMSC");
+if (is_method("MESSAGE"))
+	send_smpp_message("MY_SMSC");
 ...
 ```
 <!-- CONTRIBUTORS -->

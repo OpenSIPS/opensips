@@ -362,9 +362,9 @@ suffix for the localpart of the SIP URI.
 
 
 ```opensips title="Set rewrite_suffix_column parameter"
-			    ...
+...
 modparam("carrierroute", "rewrite_suffix_column", "rewrite_suffix")
-			    ...
+...
 		    
 ```
 
@@ -1387,7 +1387,7 @@ as modul parameter) to choose the actual carrier for the users.
 Suggested changes:
 
 
-```c title="Necessary extensions for the user table"
+```sql title="Necessary extensions for the user table"
 ...
 ALTER TABLE subscriber ADD cr_preferred_carrier int(10) default NULL; 
 ...

@@ -1,6 +1,6 @@
 ---
 title: "TLS_MGM module"
-description: "This module is a management module for TLS certificates and parameters. It provides an interface for all the modules that use the TLS protocol. It also exports pseudo variables with certificate and TLS parameters."
+description: "This module is a management module for TLS certificates and parameters."
 ---
 
 ## Admin Guide
@@ -65,8 +65,8 @@ handshake process.
 For outgoing TLS connections, the TLS domain is chosen based on the destination socket of the underlying outgoing TCP connection and/or by taking a decision at script level via an AVP. For example, you can inspect headers like RURI or From and match the domain in the SIP header with filters that you have set up for the TLS domains.
 
 
-NOTE: Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set
-per TLS domain.
+> [!NOTE]
+> Except tls_handshake_timeout and tls_send_timeout all TLS parameters can be set per TLS domain.
 
 
 ### Defining TLS domains
@@ -388,8 +388,7 @@ domain part represents the name of the TLS domain.
 ```opensips title="Set dh_params variable"
 ...
 modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
-...
-				
+...		
 ```
 
 
@@ -406,8 +405,7 @@ A list of curves which can be used you can get by
 
 
 ```bash
-				openssl ecparam -list_curves
-			
+openssl ecparam -list_curves
 ```
 
 
@@ -431,7 +429,6 @@ Default value is *1*.
 ...
 modparam("tls_mgm", "verify_cert", "[dom]0")
 ...
-				
 ```
 
 
@@ -454,7 +451,6 @@ Default value is *1*.
 ...
 modparam("tls_mgm", "require_cert", "[dom]0")
 ...
-				
 ```
 
 
@@ -511,8 +507,9 @@ result in using that specific domain regardless of the standard matching
 mechanism.
 
 
-Note: If there is already an existing TLS connection to the remote target,
-it will be reused and setting this AVP has no effect.
+> [!NOTE]
+> If there is already an existing TLS connection to the remote target,
+> it will be reused and setting this AVP has no effect.
 
 
 *No default value.*
@@ -522,7 +519,6 @@ it will be reused and setting this AVP has no effect.
 ...
 modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
 ...
-				
 ```
 
 
@@ -533,8 +529,9 @@ Name of the AVP that sets the SIP domain used in the TLS client
 domain matching process.
 
 
-Note: If there is already an existing TLS connection to the remote target,
-it will be reused and setting this AVP has no effect.
+> [!NOTE]
+> If there is already an existing TLS connection to the remote target,
+> it will be reused and setting this AVP has no effect.
 
 
 For the AVP usage example, refer to  [domains param](#param_server_domain_client_domain).
@@ -547,7 +544,6 @@ For the AVP usage example, refer to  [domains param](#param_server_domain_client
 ...
 modparam("tls_mgm", "client_sip_domain_avp", "sip_match_dom")
 ...
-				
 ```
 
 
@@ -563,7 +559,6 @@ for a TLS connection to the database for the tls_mgm module itself.
 
 ```opensips title="Usage of db_url block"
 modparam("tls_mgm", "db_url", "mysql://root:admin@localhost/opensips")
-				
 ```
 
 
@@ -577,8 +572,7 @@ Default value is "tls_mgm".
 
 
 ```opensips title="Usage of db_table block"
-modparam("tls_mgm", "db_table", "tls_mgm")
-                                
+modparam("tls_mgm", "db_table", "tls_mgm")               
 ```
 
 
@@ -592,8 +586,7 @@ Default value is "domain".
 
 
 ```opensips title="Usage of domain_col block"
-modparam("tls_mgm", "domain_col", "tls_domain")
-                                
+modparam("tls_mgm", "domain_col", "tls_domain")             
 ```
 
 
@@ -607,8 +600,7 @@ Default value is "match_ip_address".
 
 
 ```opensips title="Usage of match_ip_address_col block"
-modparam("tls_mgm", "match_ip_address_col", "addr")
-                                
+modparam("tls_mgm", "match_ip_address_col", "addr")       
 ```
 
 
@@ -623,7 +615,6 @@ Default value is "match_sip_domain".
 
 ```opensips title="Usage of match_sip_domain_col block"
 modparam("tls_mgm", "match_sip_domain_col", "addr")
-                                
 ```
 
 
@@ -638,7 +629,6 @@ Default value is "method".
 
 ```opensips title="Usage of tls_method_col block"
 modparam("tls_mgm", "tls_method_col", "method")
-                                
 ```
 
 
@@ -652,8 +642,7 @@ Default value is "verify_cert".
 
 
 ```opensips title="Usage of vertify_cert_col block"
-modparam("tls_mgm", "verify_cert_col", "verify_cert")
-                                
+modparam("tls_mgm", "verify_cert_col", "verify_cert") 
 ```
 
 
@@ -667,8 +656,7 @@ Default value is "require_cert".
 
 
 ```opensips title="Usage of require_cert_col block"
-modparam("tls_mgm", "require_cert_col", "req")
-                                
+modparam("tls_mgm", "require_cert_col", "req") 
 ```
 
 
@@ -682,8 +670,7 @@ Default value is "certificate".
 
 
 ```opensips title="Usage of certificate_col block"
-modparam("tls_mgm", "certificate_col", "certificate")
-                                
+modparam("tls_mgm", "certificate_col", "certificate") 
 ```
 
 
@@ -698,7 +685,6 @@ Default value is "private_key".
 
 ```opensips title="Usage of private_key_col block"
 modparam("tls_mgm", "private_key_col", "pk")
-                                
 ```
 
 
@@ -713,7 +699,6 @@ Default value is "crl_check_all".
 
 ```opensips title="Usage of crl_check_all block"
 modparam("tls_mgm", "crl_check_all_col", "crl_check")
-                                
 ```
 
 
@@ -728,7 +713,6 @@ Default value is "crl_dir".
 
 ```opensips title="Usage of crl_dir_col block"
 modparam("tls_mgm", "crl_dir_col", "crl_dir")
-                                
 ```
 
 
@@ -743,7 +727,6 @@ Default value is "ca_list".
 
 ```opensips title="Usage of ca_list_col block"
 modparam("tls_mgm", "ca_list_col", "ca_list")
-                                
 ```
 
 
@@ -758,7 +741,6 @@ Default value is "ca_dir".
 
 ```opensips title="Usage of ca_dir_col block"
 modparam("tls_mgm", "ca_dir_col", "ca_dir")
-                                
 ```
 
 
@@ -773,7 +755,6 @@ Default value is "cipher_list".
 
 ```opensips title="Usage of cipher_list_col block"
 modparam("tls_mgm", "cipher_list_col", "cipher_list")
-                                
 ```
 
 
@@ -788,7 +769,6 @@ Default value is "dh_params".
 
 ```opensips title="Usage of dh_params_col block"
 modparam("tls_mgm", "dh_params_col", "dh_parms")
-                                
 ```
 
 
@@ -803,7 +783,6 @@ Default value is "ec_curve".
 
 ```opensips title="Usage of ec_curve_col block"
 modparam("tls_mgm", "ec_curve_col", "ec_curve")
-                                
 ```
 
 
@@ -828,7 +807,6 @@ means: match any address.
 ...
 modparam("tls_mgm", "match_ip_address", "[dom1]10.0.0.10:5061, 10.0.0.11:5061")
 ...
-				
 ```
 
 
@@ -845,7 +823,7 @@ the [client sip domain avp](#param_client_sip_domain_avp) AVP.
 The parameter accepts a list of FQDNs or the special values:
 
 
-- *** - match any sip domain(
+- \* - match any sip domain(
 including no SNI provided, in case of TLS server domains);
 - *none* - match the TLS domain
 when there is no SNI provided (make sense only for TLS server
@@ -859,7 +837,7 @@ be selected(eg. a request for "foo.bar.com" is matched with the domain
 specified with "foo.bar.com" versus the one with "*.bar.com").
 
 
-*Default value is "*" (match any sip domain).*
+*Default value is "\*" (match any sip domain).*
 
 
 ```opensips title="Set match_sip_domain variable"
@@ -1177,14 +1155,16 @@ String type.
 ### OpenSIPS with TLS - script example
 
 
-IMPORTANT: The TLS support is based on TCP, and for allowing OpenSIPS
-to use TCP, it must be started in multi-process mode. So, there is
-a must to have the "fork" parameter set to "yes":
+> [!IMPORTANT]
+> The TLS support is based on TCP, and for allowing OpenSIPS
+> to use TCP, it must be started in multi-process mode. So, there is
+> a must to have the "fork" parameter set to "yes":
 
 
-NOTE: Since the TLS engine is quite memory consuming, increase the
-used memory by the run time parameter "-m" (see OpenSIPS -h for more
-details).
+> [!NOTE]
+> Since the TLS engine is quite memory consuming, increase the
+> used memory by the run time parameter "-m" (see OpenSIPS -h for more
+> details).
 
 
 - fork = yes

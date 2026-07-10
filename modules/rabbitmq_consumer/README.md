@@ -1,6 +1,6 @@
 ---
 title: "RabbitMQ Consumer Module"
-description: "*RabbitMQ Consumer* ([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) is an open source messaging server. It's purpose is to manage received messages in queues, taking advantage of the flexible AMQP protocol."
+description: "*RabbitMQ Consumer* ([http://www.rabbitmq.com/](http://www.rabbitmq.com/)) is an open source messaging server."
 ---
 
 ## Admin Guide
@@ -40,8 +40,9 @@ OpenSIPS with this module loaded:
 - *librabbitmq-dev*
 
 
-NOte that the module is not compatible with versions 0.4 or below of
-the librabbitmq-dev library.
+> [!NOTE]
+> The module is not compatible with versions 0.4 or below of
+> the librabbitmq-dev library.
 
 
 ### Exported Parameters

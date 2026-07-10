@@ -1,5 +1,6 @@
 ---
 title: "Dynamic Routing Module"
+description: "Dynamic Routing is a module for selecting (based on multiple criteria) the best gateway/destination to be used for delivering a certain call."
 ---
 
 ## Admin Guide
@@ -129,8 +130,7 @@ number
 number
 - attributes (not used by DR engine, but only pushed
 to script level when routing to this GW)
-- probing mode (how the GW should be probed at SIP level
-	- see the probing chapter)
+- probing mode (how the GW should be probed at SIP level - see the probing chapter)
 
 
 The Gateways are to be used from the routing rule or from the carrier
@@ -219,8 +219,9 @@ intervals from the Internet Calendaring and Scheduling
 Core Object Specification (calendar COS), RFC 2445. The set of attributes
 used in routing rule specification is a subset of time recurrence attributes.
 - The value stored in database has the format of:
-
+```
 	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+```
 - When an attribute is not specified, the corresponding place must be left
 empty, whenever another attribute that follows in the list has to be
 specified.
@@ -960,7 +961,8 @@ Variable which will store the name of the name partition when
 use this parameter.
 
 
-NOTE: The variable must be WRITABLE!
+> [!NOTE]
+> The variable must be WRITABLE!
 
 
 *Default value is "null(not used)".*
@@ -982,11 +984,13 @@ from the database after restart, but uses the persistent storage file, and loads
 data from it "on demand", improving the startup performance.
 
 
-NOTE: If the restart persistent cache is not populated from a previous run,
-then the data will be loaded from database at startup!
+> [!NOTE]
+> If the restart persistent cache is not populated from a previous run,
+> then the data will be loaded from database at startup!
 
 
-NOTE: A reload will update the cached data.
+> [!NOTE]
+> A reload will update the cached data.
 
 
 *Default value is "0 (disabled)".*

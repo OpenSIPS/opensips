@@ -427,7 +427,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi reg_list
-		
 ```
 
 
@@ -448,7 +447,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi reg_reload
-		
 ```
 <!-- CONTRIBUTORS -->
 

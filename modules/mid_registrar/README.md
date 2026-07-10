@@ -1,6 +1,6 @@
 ---
 title: "mid_registrar Module"
-description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component. It opens up new possibilities for leveraging existing infrastructure in order to continue to grow (as subscribers and as registration traffic) wh..."
+description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component."
 ---
 
 ## Admin Guide
@@ -793,12 +793,8 @@ in order for one of the VoIP platform's locations (data
 centers) to advertise the presence of a locally registered AoR
 for the global platform. Specifically, this consists of two
 pieces of information:
-
-
-the AoR (e.g. "vladimir@federation-cluster")
-
-
-the home IP (e.g. "10.0.0.223")
+	- the AoR (e.g. "vladimir@federation-cluster")
+	- the home IP (e.g. "10.0.0.223")
 - *aor (string, optional)* - a custom Address-of-Record.
 If not given, the AOR will be taken from the *Request-URI*
 

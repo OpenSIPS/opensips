@@ -627,19 +627,18 @@ computed. Hostnames are resolved before matching.
 "+sip.instance" value to be used for filtering purposes.
 
 
-**IMPORTANT:**the IP address of each
-contact (for matching purposes) is computed as follows:
-
-
-- a. if a Path header is present, the hostname part of the
-Path URI will be resolved as the contact's IP address.
-- b. otherwise, if by using nathelper, the "Received" value
-(source IP of the next hop) is set for a contact, this
-becomes the chosen hostname to be resolved as the contact's
-IP address.
-- c. otherwise, the "hostname" part of the Contact header
-field URI is chosen to be resolved as the contact's IP
-address.
+> [!IMPORTANT]
+> The IP address of each
+> contact (for matching purposes) is computed as follows:
+> - a. if a Path header is present, the hostname part of the
+> Path URI will be resolved as the contact's IP address.
+> - b. otherwise, if by using nathelper, the "Received" value
+> (source IP of the next hop) is set for a contact, this
+> becomes the chosen hostname to be resolved as the contact's
+> IP address.
+> - c. otherwise, the "hostname" part of the Contact header
+> field URI is chosen to be resolved as the contact's IP
+> address.
 
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -804,8 +803,9 @@ The function returns true if an AOR is registered, false otherwise.
 The function does not modify the message being process.
 
 
-NOTE: if called for a reply (from onreply_route), you must pass an
-AOR (as parameter), otherwise the function will fail.
+> [!NOTE]
+> If called for a reply (from onreply_route), you must pass an
+> AOR (as parameter), otherwise the function will fail.
 
 
 Meaning of the parameters is as follows:

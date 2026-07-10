@@ -1,6 +1,6 @@
 ---
 title: "xmpp Module"
-description: "This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between SIP clients and XMPP(jabber) clients."
+description: "This modules is a gateway between OpenSIPS and a jabber server."
 ---
 
 ## Admin Guide
@@ -182,12 +182,12 @@ The password of the local jabber server.
 *Default value is "secret"; if changed here, it must also be changed in the c2s.xml, added by the jabber server. This is how the default configuration for the jabberd2 looks like:*
 
 
-```c
-			<router>
-	............... 
-	;
-    <pass>secret</pass>;           ;	
-			
+```
+						<router>
+		............... 
+		<!-- Username/password to authenticate as --&gt;
+    <user>jabberd</user>;          <!-- default: jabberd -->;
+    <pass>secret</pass>;           <!-- default: secret -->;	
 ```
 
 
@@ -234,17 +234,9 @@ xmpp_send_message();
 ```
 
 
-### Configuration
+## Samples
 
-
-Next is presented a sample configuration file one can use to implement a
-standalone SIP-to-XMPP gateway. You can run an instance of OpenSIPS on a
-separate machine or on different port with the following config, and have
-the main SIP server configured to forward all SIP requests for XMPP world
-to it.
-
-
-[samples](./samples.md "include")
+[samples](./samples/samples.md "include")
 <!-- CONTRIBUTORS -->
 
 ### License

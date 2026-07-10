@@ -296,9 +296,10 @@ if ($var(rcode) != 200) {
 Perform a blocking HTTP POST on the given *url*.
 
 
-Note that the *send_body* parameter can also accept a format-string
-but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
-pseudo-variable and pass it to the function.
+> [!NOTE]
+> The *send_body* parameter can also accept a format-string
+> but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
+> pseudo-variable and pass it to the function.
 
 
 Parameters:

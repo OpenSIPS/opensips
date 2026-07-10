@@ -1,6 +1,6 @@
 ---
 title: "gflags Module"
-description: "gflags module (global flags) keeps a bitmap of flags in shared memory and may be used to change behaviour of server based on value of the flags. Example: ```c if (is_gflag(\"1\")) { t_relay(\"udp:10.0.0.1:5060\"); } else { t_relay(\"udp:10.0.0.2:5060\"); } ```"
+description: "gflags module (global flags) keeps a bitmap of flags in shared memory and may be used to change behaviour of server based on value of the flags."
 ---
 
 ## Admin Guide
@@ -15,12 +15,11 @@ Example:
 
 
 ```opensips
-	if (is_gflag("1")) {
-		t_relay("udp:10.0.0.1:5060");
-	} else {
-		t_relay("udp:10.0.0.2:5060");
-	}
-	
+if (is_gflag("1")) {
+	t_relay("udp:10.0.0.1:5060");
+} else {
+	t_relay("udp:10.0.0.2:5060");
+}
 ```
 
 
@@ -59,7 +58,6 @@ Default value is "0".
 
 ```opensips title="initial parameter usage"
 modparam("gflags", "initial", 15)
-		
 ```
 
 

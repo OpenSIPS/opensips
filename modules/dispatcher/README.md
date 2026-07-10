@@ -1,6 +1,6 @@
 ---
 title: "dispatcher Module"
-description: "This modules implements a dispatcher for destination addresses. It computes hashes over various parts of the request and selects an address from a destination set. The selected address may then either overwrite the R-URI of a SIP request or be used as an outbound proxy."
+description: "This modules implements a dispatcher for destination addresses."
 ---
 
 ## Admin Guide
@@ -1172,14 +1172,7 @@ destination is detected unresponsive.
 
 ### Installation and Running
 
-
-#### OpenSIPS config file
-
-
-Next picture displays a sample usage of dispatcher.
-
-
-[OpenSIPS config script - sample dispatcher usage](./samples.md "include")
+[samples](./samples/samples.md "include")
 
 
 ## Frequently Asked Questions
