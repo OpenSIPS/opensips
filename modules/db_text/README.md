@@ -21,15 +21,17 @@ has not implemented all standard database facilities (like order by),
 it includes minimal functionality to work properly with OpenSIPS
 
 
-NOTE: the timestamp is printed in an integer value from time_t
-structure. If you use it in a system that cannot do this conversion,
-it will fail (support for such situation is in to-do list).
+> [!NOTE]
+> The timestamp is printed in an integer value from time_t
+> structure. If you use it in a system that cannot do this conversion,
+> it will fail (support for such situation is in to-do list).
 
 
-NOTE: even when is in non-caching mode, the module does not write
-back to hard drive after changes. In this mode, the module checks if
-the corresponding file on disk has changed, and reloads it. The write
-on disk happens at OpenSIPS shut down.
+> [!NOTE]
+> Even when is in non-caching mode, the module does not write
+> back to hard drive after changes. In this mode, the module checks if
+> the corresponding file on disk has changed, and reloads it. The write
+> on disk happens at OpenSIPS shut down.
 
 
 #### Design of db_text engine
@@ -40,16 +42,17 @@ The db_text database system architecture:
 
 - a database is represented by a directory in the local file
 system.
-NOTE: when you use *db_text* in OpenSIPS,
-the	database URL for modules must be the path to the directory
-where the table-files are located, prefixed by 
-"text://", e.g., 
-"text:///var/dbtext/opensips". If there is no
-"/" after "text://" then
-"CFG_DIR/" is inserted at the beginning of the
-database path. So, either you provide an absolute path to
-database directory or a relative one to "CFG_DIR"
-directory.
+> [!NOTE]
+> When you use *db_text* in OpenSIPS,
+> the database URL for modules must be the path to the directory
+> where the table-files are located, prefixed by 
+> "text://", e.g., 
+> "text:///var/dbtext/opensips". If there is no
+> "/" after "text://" then
+> "CFG_DIR/" is inserted at the beginning of the
+> database path. So, either you provide an absolute path to
+> database directory or a relative one to "CFG_DIR"
+> directory.
 - a table is represented by a text file inside database directory.
 
 
@@ -65,31 +68,20 @@ declared as follows:
 *name(type,attr)*.
 - between two column definitions must be a white space, e.g., 
 "first_name(str) last_name(str)".
-- the type of a column can be: 
+- the type of a column can be:
+   - *int* - integer numbers.
+   - *double* - real numbers with two
+   decimals.
+   - *str* - strings with maximum size of 4KB.
+- a column can have one of the attributes:
+   - *auto* - only for 'int' columns,
+   the maximum value in that column is incremented and stored
+   in this field if it is not provided in queries.
+   - *null* - accept null values in column
+   fields.
 
-
-					*int* - integer numbers.
-
-
-					*double* - real numbers with two
-					decimals.
-
-
-					*str* - strings with maximum size of 4KB.
-- a column can have one of the attributes: 
-
-
-					*auto* - only for 'int' columns,
-					the maximum value in that column is incremented and stored
-					in this field if it is not provided in queries.
-
-
-					*null* - accept null values in column
-					fields.
-
-
-					if no attribute is set, the fields of the column cannot have
-					null value.
+   if no attribute is set, the fields of the column cannot have
+   null value.
 - each other line is a row with data. The line ends with
 "\n".
 - the fields are separated by ":".
@@ -193,15 +185,16 @@ modparam("db_text", "db_mode", 1)
 Compile the module and load it instead of mysql or other DB modules.
 
 
-REMINDER: when you use *db_text* in OpenSIPS,
-the	database URL for modules must be the path to the directory
-where the table-files are located, prefixed by
-"text://", e.g., 
-"text:///var/dbtext/opensips". If there is no "/"
-after "text://" then "CFG_DIR/" is inserted
-at the beginning of the database path. So, either you provide an
-absolute path to database directory or a relative one to 
-"CFG_DIR" directory.
+> [!WARNING]
+> When you use *db_text* in OpenSIPS,
+> the database URL for modules must be the path to the directory
+> where the table-files are located, prefixed by
+> "text://", e.g., 
+> "text:///var/dbtext/opensips". If there is no "/"
+> after "text://" then "CFG_DIR/" is inserted
+> at the beginning of the database path. So, either you provide an
+> absolute path to database directory or a relative one to 
+> "CFG_DIR" directory.
 
 
 ```opensips title="Load the db_text module"
@@ -249,8 +242,9 @@ aliases:6
 ...
 ```
 
+## Samples
 
-[Configuration file](./samples.md "include")
+[samples](./samples/samples.md "include")
 
 
 ## Developer Guide

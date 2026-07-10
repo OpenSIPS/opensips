@@ -1,6 +1,6 @@
 ---
 title: "Auth_aaa Module"
-description: "This module contains functions that are used to perform authentication using an AAA server. Basically the proxy will pass along the credentials to the AAA server which will in turn send a reply containing result of the authentication. So basically the whole authentication is done in th..."
+description: "This module contains functions that are used to perform authentication using an AAA server."
 ---
 
 ## Admin Guide

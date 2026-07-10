@@ -1,5 +1,6 @@
 ---
 title: "Dynamic Routing Module"
+description: "Dynamic Routing is a module for selecting (based on multiple criteria) the best gateway/destination to be used for delivering a certain call."
 ---
 
 ## Admin Guide
@@ -124,8 +125,7 @@ number
 number
 - attributes (not used by DR engine, but only pushed
 to script level when routing to this GW)
-- probing mode (how the GW should be probed at SIP level
-	- see the probing chapter)
+- probing mode (how the GW should be probed at SIP level - see the probing chapter)
 
 
 The Gateways are to be used from the routing rule or from the carrier
@@ -214,8 +214,9 @@ of recurring intervals of time in the Internet Calendaring and Scheduling
 Core Object Specification (calendar COS), RFC 2445. The set of attributes
 used in routing rule specification is subset of time recurrence attributes.
 - The value stored in database has the format of:
-
+```
 	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+```
 - When an attribute is not specified, the corresponding place must be left
 empty, whenever another attribute that follows in the list has to be
 specified.

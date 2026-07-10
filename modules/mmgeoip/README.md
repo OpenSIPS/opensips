@@ -1,6 +1,6 @@
 ---
 title: "mmgeoip Module"
-description: "This module is a lightweight wrapper for the MaxMind GeoIP API. It adds IP address-to-location lookup capability to OpenSIPS scripts."
+description: "This module is a lightweight wrapper for the MaxMind GeoIP API."
 ---
 
 ## Admin Guide

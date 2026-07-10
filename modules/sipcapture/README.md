@@ -277,7 +277,6 @@ Parameters:
 
 - capture_mode : turns on/off SIP message capturing.
 Possible values are:
-
   - on
   - off
 The parameter is optional - if missing, the command will
@@ -290,10 +289,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:sip_capture:_reply_fifo_file_
-		capture_mode
-		_empty_line_
-		
+:sip_capture:_reply_fifo_file_
+capture_mode
+_empty_line_
 ```
 
 

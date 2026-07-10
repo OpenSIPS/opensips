@@ -1,6 +1,6 @@
 ---
 title: "userblacklist Module"
-description: "The userblacklist module allows OpenSIPS to handle blacklists on a per user basis. This information is stored in a database table, which is queried to decide if the number (more exactly, the request URI user) is blacklisted or not."
+description: "The userblacklist module allows OpenSIPS to handle blacklists on a per user basis."
 ---
 
 ## Admin Guide
