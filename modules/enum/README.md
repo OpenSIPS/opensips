@@ -1,6 +1,6 @@
 ---
 title: "Enum Module"
-description: "Enum module implements [i_]enum_query functions that make an enum query based on the user part of the current Request-URI. These functions assume that the user part consists of an international phone number of the form +decimal-digits, where the number of digits is at least 2 and at mos..."
+description: "Enum module implements [i_]enum_query functions that make an enum query based on the user part of the current Request-URI."
 ---
 
 ## Admin Guide
@@ -234,7 +234,7 @@ i.1.e164.arpa.     TYPE65300  \# 14 (
 ```
 
 
-Default value is "cc"
+*Default value is "cc"*
 
 
 ```opensips title="Setting the bl_algorithm module parameter"

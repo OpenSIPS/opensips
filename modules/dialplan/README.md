@@ -1,6 +1,6 @@
 ---
 title: "dialplan Module"
-description: "This module implements generic string translations based on matching and replacement rules. It can be used to manipulate R-URI or a PV and to translated to a new format/value."
+description: "This module implements generic string translations based on matching and replacement rules."
 ---
 
 ## Admin Guide
@@ -450,9 +450,8 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-		:dp_reload:
-		_empty_line_
-		
+:dp_reload:
+_empty_line_
 ```
 
 
@@ -477,11 +476,10 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-            :dp_translate:
-            dpid
-            input
-		_empty_line_
-		
+:dp_translate:
+dpid
+input
+_empty_line_
 ```
 
 

@@ -1,6 +1,6 @@
 ---
 title: "B2B_ENTITIES"
-description: "The B2BUA implementation in OpenSIPS is separated in two layers: a lower one(coded in this module)- which implements the basic functions of a UAS and UAC a upper one - which represents the logic engine of B2BUA, responsible of actually implementing the B2BUA services using ..."
+description: "This module implements the basic functions of a UAS and UAC needed by the B2BUA implementation of OpenSIPS."
 ---
 
 ## Admin Guide
@@ -222,7 +222,7 @@ typedef struct b2b_api {
 Field type:
 
 
-```opensips
+```c
 ...
 typedef str* (*b2b_server_new_t) (struct sip_msg* ,b2b_notify_t , void* param);
 ...

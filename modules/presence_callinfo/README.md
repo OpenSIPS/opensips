@@ -1,6 +1,6 @@
 ---
 title: "Presence_CallInfo Module"
-description: "The module enables the handling of \"call-info\" and \"line-seize\" events inside the presence module. It is used with the general event handling module: presence and it constructs and adds \"Call-Info\" headers to notification events. To send \"call-info\" notification to wat..."
+description: "The module enables the handling of call-info and line-seize events inside the presence module."
 ---
 
 ## Admin Guide

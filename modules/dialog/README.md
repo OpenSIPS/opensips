@@ -1,6 +1,6 @@
 ---
 title: "dialog Module"
-description: "The dialog module provides dialog awareness to the OpenSIPS proxy. Its functionality is to keep trace of the current dialogs, to offer information about them (like how many dialogs are active)."
+description: "The dialog module provides dialog awareness to the OpenSIPS proxy."
 ---
 
 ## Admin Guide
@@ -132,10 +132,11 @@ larger table is much faster but consumes more memory. The hash size
 must be a power of 2 number.
 
 
-IMPORTANT: If dialogs' information should be stored in a database, 
-a constant hash_size should be used, otherwise the restored process 
-will not take place. If you really want to modify the hash_size you 
-must delete all table's rows before restarting OpenSIPS.
+> [!IMPORTANT]
+> If dialogs' information should be stored in a database, 
+> a constant hash_size should be used, otherwise the restored process 
+> will not take place. If you really want to modify the hash_size you 
+> must delete all table's rows before restarting OpenSIPS.
 
 
 *Default value is "4096".*
@@ -816,9 +817,10 @@ in pvar "var" the value of the the dialog variable "attr" from the
 found dialog.
 
 
-NOTE: the function does not require to be called in the context of
-a dialog - you can use it whenever / whereever for searching for other
-dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
@@ -861,8 +863,9 @@ no check for inserting the same dialog in the same profile for multiple
 times.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
@@ -894,8 +897,9 @@ set_dlg_profile("caller","$fu");
 Removes the current dialog from a profile.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE] 
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
@@ -927,13 +931,14 @@ unset_dlg_profile("caller","$fu");
 Checks if the current dialog belongs to a profile. If the profile 
 supports values, the check can be reinforced to take into account a 
 specific value - if the dialog was inserted into the profile for a 
-specific value. If not value is passed, only simply belonging of the 
-dialog to the profile is checked. Note that the profile does not 
-supports values, this will be silently discarded.
+specific value. If no value is passed, only simply belonging of the 
+dialog to the profile is checked. Note that if the profile does not 
+support values, this will be silently discarded.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
@@ -1010,8 +1015,9 @@ for all requests belonging to the dialog.
 The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1039,8 +1045,9 @@ The flag index can be between 0 and 31.
 The value should be 0 (false) or 1 (true).
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1065,8 +1072,9 @@ The dialog flags are dialog persistent and they can be accessed
 The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1091,8 +1099,9 @@ The dialog flags are dialog persistent and they can be accessed
 The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1120,8 +1129,9 @@ requests belonging to the dialog.
 Parameter *val* may contain pseudo-variables.
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Same functionality may be obtain by assigning a value to pseudo
@@ -1155,8 +1165,9 @@ Parameter *pvar* may be a script var ($var) or
 and avp ($avp).
 
 
-NOTE: the dialog must be created before using this function (use 
-create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Same functionality may be obtain by reading the pseudo
@@ -1253,25 +1264,22 @@ MI FIFO Command Format:
 
 
 ```bash
-		:dlg_list:_reply_fifo_file_
-		_empty_line_
-		
+:dlg_list:_reply_fifo_file_
+_empty_line_
 ```
 
 
 ```bash
-		:dlg_list:_reply_fifo_file_
-		abcdrssfrs122444@192.168.1.1
-		AAdfeEFF33
-		
+:dlg_list:_reply_fifo_file_
+abcdrssfrs122444@192.168.1.1
+AAdfeEFF33
 ```
 
 
 ```bash
-		:dlg_list:_reply_fifo_file_
-		40
-		10
-		
+:dlg_list:_reply_fifo_file_
+40
+10
 ```
 
 
@@ -1294,9 +1302,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:dlg_list_ctx:_reply_fifo_file_
-		_empty_line_
-		
+:dlg_list_ctx:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -1328,11 +1335,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		:dlg_end_dlg:_reply_fifo_file_
-		342
-		56
-		_empty_line_
-		
+:dlg_end_dlg:_reply_fifo_file_
+342
+56
+_empty_line_
 ```
 
 
@@ -1363,10 +1369,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:profile_get_size:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
-		
+:profile_get_size:_reply_fifo_file_
+inbound_calls
+_empty_line_
 ```
 
 
@@ -1397,10 +1402,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:profile_list_dlgs:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
-		
+:profile_list_dlgs:_reply_fifo_file_
+inbound_calls
+_empty_line_
 ```
 
 
@@ -1426,10 +1430,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:profile_get_values:_reply_fifo_file_
-		inbound_calls
-		_empty_line_
-		
+:profile_get_values:_reply_fifo_file_
+inbound_calls
+_empty_line_
 ```
 
 
@@ -1536,60 +1539,33 @@ type, which is not a per dialog type.
 - *int type* - types of callbacks; more
 types may be register for the same callback function; only 
 DLG_CREATED must be register alone. Possible types:
-
-
-				*DLGCB_LOADED*
-
-
-				*DLGCB_SAVED*
-
-
-				*DLG_CREATED* - called when a new 
-				dialog is created - it's a global type (not associated to 
-				any dialog)
-
-
-				*DLG_FAILED* - called when the dialog
-				was negatively replied (non-2xx) - it's a per dialog type.
-
-
-				*DLG_CONFIRMED* - called when the 
-				dialog is confirmed (2xx replied) - it's a per dialog type.
-
-
-				*DLG_REQ_WITHIN* - called when the 
-				dialog matches a sequential request - it's a per dialog type.
-
-
-				*DLG_TERMINATED* - called when the 
-				dialog is terminated via BYE - it's a per dialog type.
-
-
-				*DLG_EXPIRED* - called when the 
-				dialog expires without receiving a BYE - it's a per dialog 
-				type.
-
-
-				*DLGCB_EARLY* - called when the
-				dialog is created in an early state (18x replied) - it's
-				a per dialog type.
-
-
-				*DLGCB_RESPONSE_FWDED* - called when
-				the dialog matches a reply to the initial INVITE request - it's
-				a per dialog type.
-
-
-				*DLGCB_RESPONSE_WITHIN* - called when
-				the dialog matches a reply to a subsequent in dialog request
-				- it's a per dialog type.
-
-
-				*DLGCB_MI_CONTEXT* - called when the
-				mi dlg_list_ctx command is invoked - it's a per dialog type.
-
-
-				*DLGCB_DESTROY*
+	- *DLGCB_LOADED*
+	- *DLGCB_SAVED*
+	- *DLG_CREATED* - called when a new 
+	dialog is created - it's a global type (not associated to 
+	any dialog)
+	- *DLG_FAILED* - called when the dialog
+	was negatively replied (non-2xx) - it's a per dialog type.
+	- *DLG_CONFIRMED* - called when the 
+	dialog is confirmed (2xx replied) - it's a per dialog type.
+	- *DLG_REQ_WITHIN* - called when the 
+	dialog matches a sequential request - it's a per dialog type.
+	- *DLG_TERMINATED* - called when the 
+	dialog is terminated via BYE - it's a per dialog type.
+	- *DLG_EXPIRED* - called when the 
+	dialog expires without receiving a BYE - it's a per dialog 
+	type.
+	- *DLGCB_EARLY* - called when the
+	dialog is created in an early state (18x replied) - it's
+	a per dialog type.
+	- *DLGCB_RESPONSE_FWDED* - called when
+	the dialog matches a reply to the initial INVITE request - it's
+	a per dialog type.
+	- *DLGCB_RESPONSE_WITHIN* - called when
+	the dialog matches a reply to a subsequent in dialog request - it's a per dialog type.
+	- *DLGCB_MI_CONTEXT* - called when the
+	mi dlg_list_ctx command is invoked - it's a per dialog type.
+	- *DLGCB_DESTROY*
 - *dialog_cb cb* - callback function to be 
 called. Prototype is: "void (dialog_cb) 
 (struct dlg_cell* dlg, int type, struct dlg_cb_params * params);

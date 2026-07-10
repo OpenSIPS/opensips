@@ -1,6 +1,6 @@
 ---
 title: "Load-Balancer Module"
-description: "The Load-Balancer module comes to provide traffic routing based on load. Shortly, when OpenSIPS routes calls to a set of destinations, it is able to keep the load status (as number of ongoing calls) of each destination and to choose to route to the less loaded destination (at that moment). ..."
+description: "The Load-Balancer module comes to provide traffic routing based on load."
 ---
 
 ## Admin Guide
@@ -291,9 +291,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:lb_reload:_reply_fifo_file_
-		_empty_line_
-		
+:lb_reload:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -309,12 +308,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:lb_resize:_reply_fifo_file_
-		11   /*dstination id*/
-		voicemail  /*resource name*/
-		56   /* new resource capacity*/
-		_empty_line_
-		
+:lb_resize:_reply_fifo_file_
+11   /*dstination id*/
+voicemail  /*resource name*/
+56   /* new resource capacity*/
+_empty_line_
 ```
 
 

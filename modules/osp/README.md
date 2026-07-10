@@ -1,6 +1,6 @@
 ---
 title: "OSP Module for Secure, Multi-Lateral Peering"
-description: "The OSP module enables OpenSIPS to support secure, multi-lateral peering using the OSP standard defined by ETSI (TS 101 321 V4.1.1). This module will enable your OpenSIPS to:"
+description: "The OSP module enables OpenSIPS to support secure, multi-lateral peering using the OSP standard defined by ETSI (TS 101 321 V4.1.1)."
 ---
 
 ## Admin Guide

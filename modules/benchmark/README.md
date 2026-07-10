@@ -95,13 +95,13 @@ modparam("benchmark", "granularity", 500)
 Set the log level for the benchmark logs. These levels should be used:
 
 
-- -3 - L_ALERT
-- -2 - L_CRIT
-- -1 - L_ERR
-- 1 - L_WARN
-- 2 - L_NOTICE
-- 3 - L_INFO
-- 4 - L_DBG
+- -3 - *L_ALERT*
+- -2 - *L_CRIT*
+- -1 - *L_ERR*
+- 1 - *L_WARN*
+- 2 - *L_NOTICE*
+- 3 - *L_INFO*
+- 4 - *L_DBG*
 
 
 *Default value is "3" (L_INFO).*

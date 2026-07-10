@@ -1,6 +1,6 @@
 ---
 title: "Presence_MWI Module"
-description: "The module does specific handling for notify-subscribe message-summary (message waiting indication) events as specified in RFC 3842. It is used with the general event handling module, presence. It constructs and adds message-summary event to it."
+description: "The module does specific handling for notify-subscribe message-summary (message waiting indication) events as specified in RFC 3842."
 ---
 
 ## Admin Guide

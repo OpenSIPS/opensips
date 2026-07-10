@@ -1,6 +1,6 @@
 ---
 title: "SST Module (SIP Session Timer)"
-description: "The sst module provides a way to update the dialog expire timer based on the SIP INVITE/200 OK Session-Expires header value. You can use the sst module in an OpenSIPS proxy to allow freeing of local resources of dead (expired) calls."
+description: "The sst module provides a way to update the dialog expire timer based on the SIP INVITE/200 OK Session-Expires header value."
 ---
 
 ## Admin Guide
