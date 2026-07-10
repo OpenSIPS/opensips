@@ -28,7 +28,7 @@ Modules can be configured to use the perlvdb module as
 database backend using the db_url_parameter:
 
 
-```c
+```opensips
 modparam("acc", "db_url", "perlvdb:OpenSIPS::VDB::Adapter::AccountingSIPtrace")
 ```
 
@@ -134,7 +134,7 @@ DB_INT, DB_DOUBLE, DB_STRING, DB_STR, DB_DATETIME, DB_BLOB, DB_BITMAP.
 A new variable may be created with
 
 
-```c
+```perl
 my $val = new OpenSIPS::VDB::Value(DB_STRING, "foobar");
 ```
 
@@ -151,7 +151,7 @@ column name (key).
 A new variable may be created with
 
 
-```c
+```perl
 my $pair = new OpenSIPS::VDB::Pair("foo", DB_STRING, "bar");
 ```
 
@@ -169,7 +169,7 @@ class. It contains an addtional operator attribute.
 A new variable may be created with
 
 
-```c
+```perl
 my $cond = new OpenSIPS::VDB::ReqCond("foo", ">", DB_INT, 5);
 ```
 
@@ -188,7 +188,7 @@ to have the same length.
 A new variable may be created with
 
 
-```c
+```perl
 my @types = { DB_INT, DB_STRING };
 my @names = { "id", "vals" };
 my $cols = new OpenSIPS::VDB::Column(\@types, \@names);
@@ -231,26 +231,26 @@ The implemented functions need to deal with the correct data types. The
 parameter and return types are listed in this section.
 
 
-*insert()* is passed an array of OpenSIPS::VDB::Pair objects.
+- *insert()* is passed an array of OpenSIPS::VDB::Pair objects.
 It should return an integer value.
 
 
-*replace()* is passed an array of OpenSIPS::VDB::Pair objects.
+- *replace()* is passed an array of OpenSIPS::VDB::Pair objects.
 This function is currently not used by any publicly available modules.
 It should return an integer value.
 
 
-*delete()* is passed an array of OpenSIPS::VDB::ReqCond objects.
+- *delete()* is passed an array of OpenSIPS::VDB::ReqCond objects.
 It should return an integer value.
 
 
-*update()* is passed an array of OpenSIPS::VDB::ReqCond objects
+- *update()* is passed an array of OpenSIPS::VDB::ReqCond objects
 (which rows to update) and an array of OpenSIPS::VDB::Pair objects
 (new data).
 It should return an integer value.
 
 
-*query()* is passed an array of OpenSIPS::VDB::ReqCond objects
+- *query()* is passed an array of OpenSIPS::VDB::ReqCond objects
 (which rows to select), an array of strings (which column names to return)
 and a single string by which column to sort.
 It should return an object of type OpenSIPS::VDB::Result.

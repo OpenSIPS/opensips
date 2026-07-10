@@ -1,6 +1,6 @@
 ---
 title: "ratelimit Module"
-description: "This module implements rate limiting for SIP requests. In contrast to the PIKE module this limits the flow based on a per SIP request type basis and not per source IP. The MI interface can be used to change tunables while running OpenSIPS."
+description: "This module implements rate limiting for SIP requests."
 ---
 
 ## Admin Guide
@@ -42,7 +42,6 @@ A sample configuration snippet might look like this:
 		};
 	};
 ...
-	
 ```
 
 
@@ -177,8 +176,9 @@ messages have to be divided by this timer to get a messages per second
 value.
 
 
-IMPORTANT: A too small value may lead to performance penalties due to
-timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due to
+> timer process overloading.
 
 
 *Default value is 10.*
@@ -428,9 +428,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_stats:_reply_fifo_file_
-		_empty_line_
-		
+:rl_stats:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -457,12 +456,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_set_pipe:_reply_fifo_file_
-		2
-		RED
-		10
-		_empty_line_
-		
+:rl_set_pipe:_reply_fifo_file_
+2
+RED
+10
+_empty_line_
 ```
 
 
@@ -482,9 +480,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_get_pipes:_reply_fifo_file_
-		_empty_line_
-		
+:rl_get_pipes:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -511,12 +508,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_set_queue:_reply_fifo_file_
-		3
-		INVITE
-		2
-		_empty_line_
-		
+:rl_set_queue:_reply_fifo_file_
+3
+INVITE
+2
+_empty_line_
 ```
 
 
@@ -536,9 +532,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_get_queues:_reply_fifo_file_
-		_empty_line_
-		
+:rl_get_queues:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -563,12 +558,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_set_pid:_reply_fifo_file_
-		0.5
-		0.5
-		0.5
-		_empty_line_
-		
+:rl_set_pid:_reply_fifo_file_
+0.5
+0.5
+0.5
+_empty_line_
 ```
 
 
@@ -588,9 +582,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_get_pid:_reply_fifo_file_
-		_empty_line_
-		
+:rl_get_pid:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -615,10 +608,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_push_load:_reply_fifo_file_
-		0.85
-		_empty_line_
-		
+:rl_push_load:_reply_fifo_file_
+0.85
+_empty_line_
 ```
 
 
@@ -643,10 +635,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_set_dbg:_reply_fifo_file_
-		1
-		_empty_line_
-		
+:rl_set_dbg:_reply_fifo_file_
+1
+_empty_line_
 ```
 
 

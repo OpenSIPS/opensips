@@ -186,7 +186,6 @@ MI FIFO Command Format:
 ```bash
 :reg_list:_reply_fifo_file_
 _empty_line_
-		
 ```
 <!-- CONTRIBUTORS -->
 

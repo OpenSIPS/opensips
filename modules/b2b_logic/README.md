@@ -1,6 +1,6 @@
 ---
 title: "B2B_LOGIC"
-description: "The B2BUA implementation in OpenSIPS is separated in two layers: a lower one(coded in b2b_entities module)- which implements the basic functions of a UAS and UAC an upper one - which represents the logic engine of B2BUA, responsible of actually implementing the B2BUA servic..."
+description: "This module represents the logic engine of B2BUA, responsible of actually implementing the B2BUA services using the functions offered by the low level."
 ---
 
 ## Admin Guide
@@ -371,8 +371,8 @@ in the root node of the XML scenario.
 
 > [!NOTE]
 > Do not call t_newtran() from the script on this request. It will be called internally
-by the function. Calling t_newtran() from the script will result in the transaction remaining
-in memory for ever.
+> by the function. Calling t_newtran() from the script will result in the transaction remaining
+> in memory for ever.
 
 
 ```opensips title="b2b_init_request usage"
