@@ -1202,10 +1202,11 @@ the queue listing MI command [mi list queue](#mi_list_queue)
 the agents listing MI command [mi list agents](#mi_list_agents)
 
 
-IMPORTANT: in order to be used, you need to be sure that the internal
-call dispatching is DISABLED via the
-[internal call dispatching](#param_internal_call_dispatching) module parameter
-or the [mi internal call dispatching](#mi_internal_call_dispatching) MI command.
+> [!IMPORTANT]
+> In order to be used, you need to be sure that the internal
+> call dispatching is DISABLED via the
+> [internal call dispatching](#param_internal_call_dispatching) module parameter
+> or the [mi internal call dispatching](#mi_internal_call_dispatching) MI command.
 
 
 MI FIFO Command usage:
@@ -1273,11 +1274,10 @@ Parameters:
 
 - *agent_id* - the id of the agent.
 - *state* - the status of the agent:
-
-					offline
-					free
-					incall
-					wrapup
+	* offline
+	* free
+	* incall
+	* wrapup
 - *wrapup_ends* - the timestamp when the 
 wrapup state will end; published only if the state is 
 "wrapup"
@@ -1297,31 +1297,6 @@ Possible values returned are:
 *queue* - the call is in queue.
 *preagent* - the agent is being called.
 *toagent* - the agent is in call.
-
-
-$rtpquery Usage
-
-```opensips
-
-...
-	$json(reply) := $rtpquery;
-	xlog("Total RTP Stats: $json(reply/totals)\n");
-...
-```
-
-
-
-NONE
-
-
-## Developer Guide
-
-
-### Available Functions
-
-
-NONE
-
 
 ## Frequently Asked Questions
 

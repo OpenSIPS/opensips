@@ -1,6 +1,6 @@
 ---
 title: "AKA Authentication Vector Diameter Module"
-description: "This module is an extension to the *AKA_AUTH* module providing a Diameter AKA AV Manager that implements the Multimedia-Auth-Request and Multimedia-Auth-Answer Diameter commands defined in the *Cx* interface of the *ETSI TS 129 229* specifications in order to fetch a set of authentication..."
+description: "This module is an extension to the AKA_AUTH module providing a Diameter AKA AV Manager that implements the Multimedia-Auth-Request and Multimedia-Auth-Answer Diameter commands."
 ---
 
 ## Admin Guide
@@ -47,9 +47,9 @@ module's source directory, as well as in the
 [example diameter commands](#diameter_commands_file) section.
 
 
-*Note:* the module internals uses the AVPs names
-found in the provided dictionary - changing the file may break the behavior
-of the module.
+> [!NOTE]
+> The module internals uses the AVPs names
+> found in the provided dictionary - changing the file may break the behavior of the module.
 
 
 ### Dependencies
@@ -82,10 +82,12 @@ This module does not depend on any external library.
 
 
 This is the url representing the connection to the AAA server.
-*Note:* Currently the module only supports 
-connections to a Diameter server. The path to the AVPs
-configuration file is also required, otherwise the module will
-not start, or not work properly.
+
+> [!NOTE]
+> Currently the module only supports 
+> connections to a Diameter server. The path to the AVPs
+> configuration file is also required, otherwise the module will
+> not start, or not work properly.
 
 
 ```opensips title="aaa_url parameter usage"
@@ -134,7 +136,7 @@ modparam("aka_av_diameter", "server_uri", "sip:scscf.ims.mnc001.mcc001.3gppnetwo
 File that should be provided to the *aaa_diameter* connection.
 
 
-```c title="Diameter Commands File Example"
+``` title="Diameter Commands File Example"
 VENDOR 10415 TGPP
 
 ATTRIBUTE Public-Identity                     601 string     10415

@@ -1,6 +1,6 @@
 ---
 title: "dispatcher Module"
-description: "This modules implements a dispatcher for destination addresses. It computes hashes over various parts of the request and selects an address from a destination set. The selected address may then either overwrite the R-URI of a SIP request or be used as an outbound proxy."
+description: "This modules implements a dispatcher for destination addresses."
 ---
 
 ## Admin Guide
@@ -1469,28 +1469,26 @@ In terms of date reloading, the following events will be reported:
 
 
 ```json
+{
+    "Name": "default",
+    "Reports": [
         {
-            "Name": "default",
-            "Reports": [
-                {
-                    "Timestamp": 1652373212,
-                    "Date": "Thu May 12 19:33:32 2022",
-                    "Log": "starting DB data loading"
-                },
-                {
-                    "Timestamp": 1652373212,
-                    "Date": "Thu May 12 19:33:32 2022",
-                    "Log": "DB data loading successfully completed"
-                },
-                {
-                    "Timestamp": 1652373212,
-                    "Date": "Thu May 12 19:33:32 2022",
-                    "Log": "2 destinations loaded (0 discarded)"
-                }
-            ]
+            "Timestamp": 1652373212,
+            "Date": "Thu May 12 19:33:32 2022",
+            "Log": "starting DB data loading"
+        },
+        {
+            "Timestamp": 1652373212,
+            "Date": "Thu May 12 19:33:32 2022",
+            "Log": "DB data loading successfully completed"
+        },
+        {
+            "Timestamp": 1652373212,
+            "Date": "Thu May 12 19:33:32 2022",
+            "Log": "2 destinations loaded (0 discarded)"
         }
-
-	
+    ]
+}
 ```
 
 
@@ -1515,23 +1513,21 @@ discarding the old ones.
 
 
 ```json
+{
+    "Name": "default;events",
+    "Reports": [
         {
-            "Name": "default;events",
-            "Reports": [
-                {
-                    "Timestamp": 1652373308,
-                    "Date": "Thu May 12 19:35:08 2022",
-                    "Log": "DESTINATION <sip:127.0.1.1>, set 1 switched to [inactive] due to negative probing reply\n"
-                },
-                {
-                    "Timestamp": 1652373308,
-                    "Date": "Thu May 12 19:35:08 2022",
-                    "Log": "DESTINATION <sip:127.0.1.2>, set 1 switched to [inactive] due to negative probing reply\n"
-                }
-            ]
+            "Timestamp": 1652373308,
+            "Date": "Thu May 12 19:35:08 2022",
+            "Log": "DESTINATION <sip:127.0.1.1>, set 1 switched to [inactive] due to negative probing reply\n"
         },
-
-	
+        {
+            "Timestamp": 1652373308,
+            "Date": "Thu May 12 19:35:08 2022",
+            "Log": "DESTINATION <sip:127.0.1.2>, set 1 switched to [inactive] due to negative probing reply\n"
+        }
+    ]
+},
 ```
 
 
@@ -1539,16 +1535,9 @@ For how to access and use the Status/Report information, please see
 [https://www.opensips.org/Documentation/Interface-StatusReport-3-3](>https://www.opensips.org/Documentation/Interface-StatusReport-3-3).
 
 
-### Installation and Running
+## Samples
 
-
-#### OpenSIPS config file
-
-
-Next picture displays a sample usage of dispatcher.
-
-
-[OpenSIPS config script - sample dispatcher usage](./samples.md "include")
+[samples](./samples/samples.md "include")
 
 
 ## Frequently Asked Questions

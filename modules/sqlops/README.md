@@ -1,6 +1,6 @@
 ---
 title: "SQLops Module"
-description: "SQLops (SQL-operations) modules implements a set of script functions for generic SQL standard queries (raw or structure queries). It also provides a dedicated set of functions for DB manipulation (loading/storing/removing) of user AVPs (preferences)."
+description: "SQLops (SQL-operations) modules implements a set of script functions for generic SQL standard queries (raw or structure queries)."
 ---
 
 ## Admin Guide
@@ -95,13 +95,12 @@ Definition of a DB scheme. Scheme syntax is:
 
 - *db_scheme = name':'element[';'element]**
 - *element* =
-
-						'uuid_col='string
-						'username_col='string
-						'domain_col='string
-						'value_col='string
-						'value_type='('integer'|'string')
-						'table='string
+	- 'uuid_col='string
+	- 'username_col='string
+	- 'domain_col='string
+	- 'value_col='string
+	- 'value_type='('integer'|'string')
+	- 'table='string
 
 
 *Default value is "NULL".*
@@ -112,7 +111,6 @@ Definition of a DB scheme. Scheme syntax is:
 modparam("sqlops","db_scheme",
 "scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
 ...
-				
 ```
 
 
@@ -130,7 +128,6 @@ identifying an AVP in DB operations.
 ...
 modparam("sqlops", "use_domain", true)
 ...
-				
 ```
 
 
@@ -154,7 +151,6 @@ support will be completly disabled.
 ...
 modparam("sqlops","ps_id_max_buf_len", 2048)
 ...
-				
 ```
 
 
@@ -176,7 +172,6 @@ the bigint value will be returned as string.
 # Return bigint as string
 modparam("sqlops","bigint_to_str",1)
 ...
-				
 ```
 
 
@@ -193,7 +188,6 @@ Name of column containing the uuid (unique user id).
 ...
 modparam("sqlops","uuid_column","uuid")
 ...
-				
 ```
 
 
@@ -210,7 +204,6 @@ Name of column containing the username.
 ...
 modparam("sqlops","username_column","username")
 ...
-				
 ```
 
 
@@ -227,7 +220,6 @@ Name of column containing the domain name.
 ...
 modparam("sqlops","domain_column","domain")
 ...
-				
 ```
 
 
@@ -244,7 +236,6 @@ Name of column containing the attribute name (AVP name).
 ...
 modparam("sqlops","attribute_column","attribute")
 ...
-				
 ```
 
 
@@ -261,7 +252,6 @@ Name of column containing the AVP value.
 ...
 modparam("sqlops","value_column","value")
 ...
-				
 ```
 
 
@@ -278,7 +268,6 @@ Name of column containing the AVP type.
 ...
 modparam("sqlops","type_column","type")
 ...
-				
 ```
 
 
@@ -337,7 +326,6 @@ sql_query("DELETE FROM subscriber", , 2);
 $avp(id) = 2;
 sql_query("DELETE FROM subscriber", , $avp(id));
 ...
-				
 ```
 
 
@@ -379,7 +367,6 @@ sql_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and 
 # the above query will return only one row, even if there are multiple `cfna`
 # attributes for the user
 ...
-				
 ```
 
 
@@ -395,14 +382,14 @@ into a set of AVPs (one to one matching the selected columns).
 
 > [!WARNING]
 > If using varibales in constructing the query, you must 
-manually escape their values in order to prevent SQL injection 
-attacks. You can use the existing transformations
-*escape.common* and
-*unescape.common*
-to escape and unescape the content of any pseudo-variable.
-Failing to escape the variables used in the query makes you
-vulnerable to SQL injection, e.g. make it possible for an
-outside attacker to alter your database content.
+> manually escape their values in order to prevent SQL injection 
+> attacks. You can use the existing transformations
+> *escape.common* and
+> *unescape.common*
+> to escape and unescape the content of any pseudo-variable.
+> Failing to escape the variables used in the query makes you
+> vulnerable to SQL injection, e.g. make it possible for an
+> outside attacker to alter your database content.
 
 
 The function returns true if the query was successful, -2 in
@@ -653,17 +640,15 @@ Meaning of the parameters is as follows:
 
 - *source (string, no expand)* - what info is used for
 identifying the AVPs. Parameter syntax:
-
-					*source = (pvar|str_value)
-					['/'('username'|'domain'|'uri'|'uuid')])*
-					*pvar = any pseudo variable defined in OpenSIPS. If
-					the pvar is $ru (request uri), $fu (from uri), $tu (to uri)
-					or $ou (original uri), then the implicit flag is 'uri'.
-					Otherwise, the implicit flag is 'uuid'.*
+	- *source = (pvar|str_value)
+	['/'('username'|'domain'|'uri'|'uuid')])*
+	- *pvar = any pseudo variable defined in OpenSIPS. If
+	the pvar is $ru (request uri), $fu (from uri), $tu (to uri)
+	or $ou (original uri), then the implicit flag is 'uri'.
+	Otherwise, the implicit flag is 'uuid'.*
 - *name (string, no expand)* - which AVPs will be loaded
 from DB into memory. Parameter syntax is:
-
-					*name = avp_spec['/'(table_name|'$'db_scheme)]*
+	- *name = avp_spec['/'(table_name|'$'db_scheme)]*
 - *db_id (int, optional)* - reference to a defined
 DB URL (a numerical id) - see the "db_url"
 module parameter.
@@ -688,9 +673,7 @@ sql_avp_load("$ru", "$avp(1)", 3);
 # precede all loaded AVPs by the "caller_" prefix
 sql_avp_load("$ru", "$avp(100)", , "caller_");
 xlog("Loaded: $avp(caller_100)\n");
-
-...
-				
+...	
 ```
 
 
@@ -716,8 +699,7 @@ sql_avp_store("$tu", "$avp(678)");
 sql_avp_store("$ru/username", "$avp(email)");
 # use DB URL id 3
 sql_avp_store("$ru", "$avp(1)", 3);
-...
-				
+...	
 ```
 
 
@@ -745,7 +727,6 @@ sql_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
 # use DB URL id 3
 sql_avp_delete("$ru", "$avp(1)", 3);
 ...
-				
 ```
 
 
@@ -787,7 +768,6 @@ route [my_resume_route]
 -------------------\n$(avp(retcode)[*])\n");
 }
 ...
-				
 ```
 
 
@@ -823,7 +803,6 @@ route [my_resume_route]
 	xlog("Result: $var(tb_name) | $var(tb_ver) | $(var(retcode)\n");
 }
 ...
-				
 ```
 <!-- CONTRIBUTORS -->
 

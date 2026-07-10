@@ -1,6 +1,6 @@
 ---
 title: "domain Module"
-description: "Domain module implements checks that based on domain table determine if a host part of an URI is \"local\" or not. A \"local\" domain is one that the proxy is responsible for."
+description: "Domain module implements checks that based on domain table determine if a host part of an URI is local or not."
 ---
 
 ## Admin Guide
@@ -276,8 +276,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi domain:reload
-		
+opensips-cli -x mi domain:reload
 ```
 
 
@@ -301,8 +300,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi domain:dump
-		
+opensips-cli -x mi domain:dump
 ```
 
 

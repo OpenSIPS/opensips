@@ -411,13 +411,14 @@ based on time;
 specification.
 
 
-**VERY IMPORTANT:** Since version 2.3 report_capture function
-behaviour will change depending on
-[homer5_on](../proto_hep#idp154080)
-parameter from
-[proto_hep](../proto_hep). Check
-[sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
-folder from the module to check the fields of the tables for each version.
+> [!IMPORTANT]
+> Since version 2.3 report_capture function
+> behaviour will change depending on
+> [homer5_on](../proto_hep#idp154080)
+> parameter from
+> [proto_hep](../proto_hep). Check
+> [sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
+> folder from the module to check the fields of the tables for each version.
 
 
 This function can be used from REQUEST_ROUTE,FAILURE_ROUTE,ONREPLY_ROUTE,BRANCH_ROUTE,LOCAL_ROUTE.
@@ -464,116 +465,40 @@ only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0
 and timestamp_us(0x000A) chunks can't be set. For chunks
 that have built-in support you can also use strings instead of chunk ids as
 follows:
-
-
-				0x0001 - proto_family(CAN'T BE SET; it shall be automatically updated
-					if you change the type of the source/destination address from IPv4 to IPv6
-					or else)
-
-
-				0x0002 - proto_id; since it's quite hard to know the int values for the protocol
-				one can change this value using the following string values:
-
-
-				UDP
-
-
-				TCP
-
-
-				TLS
-
-
-				SCTP
-
-
-				WS
-
-
-				WSS
-
-
-				BIN
-
-
-				HEP
-
-
-
-
-			0x0003 - src_ip
-
-
-			0x0004 - dst_ip
-
-
-			0x0005 - src_ip
-
-
-			0x0006 - dst_ip
-
-
-			0x0007 - src_port
-
-
-			0x0008 - dst_port
-
-
-			0x0009 - timestamp(CAN'T BE SET)
-
-
-			0x000A - timestamp_us(CAN'T BE SET)
-
-
-				0x000B - proto_type; for this variable there are predefined
-				strings which can be set:
-
-
-				SIP
-
-
-				XMPP
-
-
-				SDP
-
-
-				RTP
-
-
-				RTCP
-
-
-				MGCP
-
-
-				MEGACO
-
-
-				M2UA
-
-
-				M3UA
-
-
-				IAX
-
-
-				H322
-
-
-				H321
-
-
-
-
-			0x000C - captagent_id
-
-
-			0x000f - payload
-
-
-			0x0010 - payload
+	- 0x0001 - proto_family (CAN'T BE SET; it shall be automatically updated if you change the type of the source/destination address from IPv4 to IPv6 or else)
+	- 0x0002 - proto_id; since it's quite hard to know the int values for the protocol one can change this value using the following string values:
+		- UDP
+		- TCP
+		- TLS
+		- SCTP
+		- WS
+		- WSS
+		- BIN
+		- HEP
+	- 0x0003 - src_ip
+	- 0x0004 - dst_ip
+	- 0x0005 - src_ip
+	- 0x0006 - dst_ip
+	- 0x0007 - src_port
+	- 0x0008 - dst_port
+	- 0x0009 - timestamp(CAN'T BE SET)
+	- 0x000A - timestamp_us(CAN'T BE SET)
+	- 0x000B - proto_type; for this variable there are predefined strings which can be set:
+		- SIP
+		- XMPP
+		- SDP
+		- RTP
+		- RTCP
+		- MGCP
+		- MEGACO
+		- M2UA
+		- M3UA
+		- IAX
+		- H322
+		- H321
+	- 0x000C - captagent_id
+	- 0x000f - payload
+	- 0x0010 - payload
 - *chunk_data(string)* - data that the chunk shall contain;
 internally it shall be converted to the requested data type
 - *data_type (string, optional, default: "utf8-string")* - data type of the data in the chunk. It can have
@@ -704,7 +629,8 @@ if (!hep_relay()) {
 Break hep route execution and resume into the main request route.
 
 
-WARNING: USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING *hep_route* PARAMETER.
+> [!WARNING]
+> USE THIS FUNCTION ONLY FROM A ROUTE DEFINED USING *hep_route* PARAMETER.
 
 
 ```opensips title="hep_resume_sip usage"
@@ -835,10 +761,10 @@ Parameters:
 
 - *capture_mode* (optional) - 
 turns on/off SIP message capturing. Possible values are:
-
   - on
   - off
-if the parameter is missing, the command will
+
+If the parameter is missing, the command will
 return the status of the SIP message capturing (as string
 "on" or "off" ) without changing
 anything.
@@ -848,8 +774,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensips-cli -x mi sipcapture:capture off
-		
+opensips-cli -x mi sipcapture:capture off
 ```
 
 

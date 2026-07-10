@@ -1,6 +1,6 @@
 ---
 title: "Example Module"
-description: "This module serves as an example of how to write a module in OpenSIPS. Its primary goal is to simplify the development of new modules for newcomers, providing a clear and accessible starting point."
+description: "This module serves as an example of how to write a module in OpenSIPS."
 ---
 
 ## Admin Guide

@@ -576,21 +576,24 @@ then sends re-INVITEs to call's participants to with
 the updated SDP.
 
 
-*Note:*Running the command without a filter
-(such as *engine* or *set*)
-will cause all RTP relay sessions to be
-re-engaged.
+> [!NOTE]
+> Running the command without a filter
+> (such as *engine* or *set*)
+> will cause all RTP relay sessions to be
+> re-engaged.
 
 
-*Note:*When enforcing a new node,
-it is not guaranteed to be used - if the node is not
-avaialble, but a different one is, the active one will
-be chosen.
+> [!NOTE]
+> When enforcing a new node,
+> it is not guaranteed to be used - if the node is not
+> avaialble, but a different one is, the active one will
+> be chosen.
 
 
-*Note:*If the node is being changed,
-the module tries to unforce the previous RTP relay
-session, even though it might not work.
+> [!NOTE]
+> If the node is being changed,
+> the module tries to unforce the previous RTP relay
+> session, even though it might not work.
 
 
 Parameters:
@@ -619,7 +622,6 @@ same set will be used.
 ## update all sessions that are using rtpproxy
 $ opensips-cli -x mi rtp_relay:update rtpproxy
 ...
-			
 ```
 
 
@@ -673,7 +675,6 @@ $ opensips-cli -x mi rtp_relay:update_callid callid=1-3758963@127.0.0.1 \
 	flags='{ "caller":{"type":"SRTP", "flags":"replace-origin"},
 		"callee":{"type":"RTP", "flags"="replace-origin"}}'
 ...
-			
 ```
 
 

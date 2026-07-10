@@ -1,6 +1,6 @@
 ---
 title: "AAA_DIAMETER MODULE"
-description: "This module provides an RFC 6733 Diameter peer implementation, being able to act as either **Diameter client** or **server**, or **both**."
+description: "This module provides an RFC 6733 Diameter peer implementation, being able to act as either Diameter client or server, or both."
 ---
 
 ## Admin Guide
@@ -14,8 +14,6 @@ able to act as either **Diameter client** or **server**, or **both**.
 
 
 Any module that wishes to use it has to do the following:
-
-
 - *include aaa.h*
 - *make a bind call with a proper Diameter-specific URL, e.g. "diameter:freeDiameter-client.conf"*
 
@@ -237,7 +235,7 @@ before an Answer could be processed)
 This function can be used from any route.
 
 
-```json title="dictionary.opensips extended syntax"
+``` title="dictionary.opensips extended syntax"
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
 
@@ -348,11 +346,8 @@ Session-Id is not present)
 *Parameters*
 
 
-- *avps_json* (string) - A JSON Array containing
-the AVPs to include in the answer message (example below).
-- *is_error* (boolean, default: *false*)
-				- Set to *true*
-in order to set the 'E' (error) bit in the answer message.
+- *avps_json* (string) - A JSON Array containing the AVPs to include in the answer message (example below).
+- *is_error* (boolean, default: *false*) - Set to *true* in order to set the 'E' (error) bit in the answer message.
 
 
 *Return Codes*
@@ -452,14 +447,8 @@ Parameters:
 
 - *app_id (integer)* - the Diameter Application Identifier
 - *cmd_code (integer)* - the Diameter Command Code
-- *sess_id (string)* - the value of either the
-*Session-Id* AVP, *Transaction-Id* AVP
-or a *NULL* value if neither of these
-transaction-identifying AVPs is present in the Diameter request.
-- *avps_json (string)* - a JSON Array containing the
-AVPs of the request.  Use the [json](../json) module's
-**$json** variable
-to easily parse and work with it.
+- *sess_id (string)* - the value of either the *Session-Id* AVP, *Transaction-Id* AVP or a *NULL* value if neither of these transaction-identifying AVPs is present in the Diameter request.
+- *avps_json (string)* - a JSON Array containing the AVPs of the request.  Use the [json](../json) module's **$json** variable to easily parse and work with it.
 
 
 Note that this event is currently designed to be mainly consumed by an *event_route*,

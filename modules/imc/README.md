@@ -1,6 +1,6 @@
 ---
 title: "imc Module"
-description: "This module offers support for instant message conference. It follows the architecture of IRC channels, you can send commands embedded in MESSAGE body, because there are no SIP UA clients which have GUI for IM conferencing."
+description: "This module offers support for instant message conference."
 ---
 
 ## Admin Guide

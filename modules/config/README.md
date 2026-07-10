@@ -211,11 +211,11 @@ Can also be used for temporarily changing the value.
 
 
 ```opensips title="Usage of $config(...)"
-			...
-			xlog("Config value: $config(debug_mode)\n"); # reading the value
-			$config(debug_mode) = 1; # temporarily changing the value
-			...
-			
+...
+xlog("Config value: $config(debug_mode)\n"); # reading the value
+$config(debug_mode) = 1; # temporarily changing the value
+...
+
 ```
 
 
@@ -229,10 +229,10 @@ This variable is read-only.
 
 
 ```opensips title="Usage of $config.description(name)"
-			...
-			xlog("Description: $config.description(debug_mode)\n");
-			...
-			
+...
+xlog("Description: $config.description(debug_mode)\n");
+...
+
 ```
 
 
@@ -252,10 +252,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		## reload configuration cache from the database
-		opensips-mi config:reload
-		opensips-cli -x mi config:reload
-		
+## reload configuration cache from the database
+opensips-mi config:reload
+opensips-cli -x mi config:reload
+
 ```
 
 
@@ -277,10 +277,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		## list all configuration cache
-		opensips-mi config:list
-		opensips-cli -x mi config:list 1
-		
+## list all configuration cache
+opensips-mi config:list
+opensips-cli -x mi config:list 1
+
 ```
 
 
@@ -307,10 +307,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		## push temporarily debug_mode configuration value
-		opensips-mi config:push debug_mode 1 "Enable Debug mode"
-		opensips-cli -x mi config:list 1
-		
+## push temporarily debug_mode configuration value
+opensips-mi config:push debug_mode 1 "Enable Debug mode"
+opensips-cli -x mi config:list 1
+
 ```
 
 
@@ -330,27 +330,21 @@ Expected parameters are:
 array containing a set of variables to be pushed. Each
 variable should be described as a JSON object with the following
 keys:
-
-
-					*name* – (string) the
-					name of the variable to be changed.
-
-
-					*value* – (string or null) the
-					new value of the variable.
-
-
-					*description* – (string, optional)
-					the description of the variable.
+	* *name* – (string) the
+	name of the variable to be changed.
+	* *value* – (string or null) the
+	new value of the variable.
+	* *description* – (string, optional)
+	the description of the variable.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		## push bulk temporarily values to the config cache
-		opensips-mi config:push_bulk -j '[[{"name":"debug_mode","value":"1"},{"name":"debug_level","value":"5"}]]'
-		
+## push bulk temporarily values to the config cache
+opensips-mi config:push_bulk -j '[[{"name":"debug_mode","value":"1"},{"name":"debug_level","value":"5"}]]'
+
 ```
 
 
@@ -378,10 +372,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		## Flush config variables to the database
-		opensips-mi config:flush
-		opensips-cli -x mi config:flush debug_mode
-		
+## Flush config variables to the database
+opensips-mi config:flush
+opensips-cli -x mi config:flush debug_mode
+
 ```
 
 

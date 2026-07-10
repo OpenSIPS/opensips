@@ -1,6 +1,6 @@
 ---
 title: "XCAP_Client Module"
-description: "The modules is an XCAP client for OpenSIPS that can be used by other modules. It fetches XCAP elements, either documents or part of them, by sending HTTP GET requests. It also offers support for conditional queries. It uses libcurl library as a client-side HTTP transfer library."
+description: "The modules is an XCAP client for OpenSIPS that can be used by other modules."
 ---
 
 ## Admin Guide
@@ -138,7 +138,6 @@ MI FIFO Command Format:
 ...
 opensips-cli -x mi refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml 8000
 ...
-		
 ```
 
 
@@ -175,7 +174,6 @@ typedef struct xcap_client_api {
 	register_xcapcb_t register_xcb;
 }xcap_client_api_t;
 ...
-			
 ```
 
 
@@ -190,7 +188,6 @@ Field type:
 typedef char* (*xcap_get_elem_t)(char* xcap_root,
 xcap_doc_sel_t* doc_sel, xcap_node_sel_t* node_sel);
 ...
-				
 ```
 
 
@@ -205,54 +202,52 @@ The parameters signification:
 the XCAP server address;
 - *doc_sel*-
 structure with document selection info;
-
-  ```
-  Parameter type:
-  ...
-  typedef struct xcap_doc_sel
-  {
-  	str auid; /* application defined Unique ID*/
-  	int type; /* the type of the path segment
-  				after the AUID  which must either
-  				be GLOBAL_TYPE (for "global") or
-  				USERS_TYPE (for "users") */ 
-  	str xid; /* the XCAP User Identifier 
-  				if type is USERS_TYPE */
-  	str filename; 
-  }xcap_doc_sel_t;
-  ...
-  ```
+	```
+	Parameter type:
+	...
+	typedef struct xcap_doc_sel
+	{
+	str auid; /* application defined Unique ID*/
+	int type; /* the type of the path segment
+				after the AUID  which must either
+				be GLOBAL_TYPE (for "global") or
+				USERS_TYPE (for "users") */ 
+	str xid; /* the XCAP User Identifier 
+				if type is USERS_TYPE */
+	str filename; 
+	}xcap_doc_sel_t;
+	...
+	```
 - *node_sel*-
 structure with node selection info;
+	```
+	Parameter type:
+	...
+	typedef struct xcap_node_sel
+	{
+	step_t* steps;
+	step_t* last_step;
+	int size;
+	ns_list_t* ns_list;
+	ns_list_t* last_ns;
+	int ns_no;
 
-  ```
-  Parameter type:
-  ...
-  typedef struct xcap_node_sel
-  {
-  	step_t* steps;
-  	step_t* last_step;
-  	int size;
-  	ns_list_t* ns_list;
-  	ns_list_t* last_ns;
-  	int ns_no;
-  
-  }xcap_node_sel_t;
-  
-  typedef struct step
-  {
-  	str val;
-  	struct step* next;
-  }step_t;
-  
-  typedef struct ns_list
-  {
-  	int name;
-  	str value;
-  	struct ns_list* next;
-  }ns_list_t;
-  ...
-  ```
+	}xcap_node_sel_t;
+
+	typedef struct step
+	{
+	str val;
+	struct step* next;
+	}step_t;
+
+	typedef struct ns_list
+	{
+	int name;
+	str value;
+	struct ns_list* next;
+	}ns_list_t;
+	...
+	```
 The node selector is represented like a list of steps that will
 be represented in the path string separated by '/' signs. 
 The namespaces for the nodes are stored also in a list, as an
@@ -275,7 +270,6 @@ Field type:
 ...
 typedef int (*register_xcapcb_t)(int types, xcap_cb f);
 ...
-	
 ```
 
 
@@ -283,14 +277,13 @@ typedef int (*register_xcapcb_t)(int types, xcap_cb f);
 RLS_SERVICES, OMA_PRES_RULES and PIDF_MANIPULATION.
 
 
--the callback function has type :
+- the callback function has type:
 
 
 ```c
 ...
 typedef int (xcap_cb)(int doc_type, str xid, char* doc);
 ...
-	
 ```
 <!-- CONTRIBUTORS -->
 

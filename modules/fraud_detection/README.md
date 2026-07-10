@@ -1,6 +1,6 @@
 ---
 title: "Fraud Detection Module"
-description: "This module provides a way to prevent some basic fraud attacks. Alerts are provided through return codes and events."
+description: "This module provides a way to prevent some basic fraud attacks."
 ---
 
 ## Admin Guide
@@ -481,11 +481,12 @@ Show the current statistics for all dials of a
 *user* to a *prefix*.
 
 
-NOTE: Since the fraud statistics are refreshed on-the-fly, as
-check_fraud() is called, **this function will
-return stale data** if check_fraud() has not been called at
-least once for the (user, prefix) pair within a newly matching time
-interval!
+> [!NOTE]
+> Since the fraud statistics are refreshed on-the-fly, as
+> check_fraud() is called, **this function will
+> return stale data** if check_fraud() has not been called at
+> least once for the (user, prefix) pair within a newly matching time
+> interval!
 
 
 Name: *fraud_detection:show_stats*

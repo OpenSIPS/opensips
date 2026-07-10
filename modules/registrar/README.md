@@ -1,6 +1,6 @@
 ---
 title: "registrar Module"
-description: "The module contains SIP REGISTER request processing logic, per RFC 3261. On top of this support, several extensions are available:"
+description: "The module contains SIP REGISTER request processing logic, per RFC 3261."
 ---
 
 ## Admin Guide
@@ -668,7 +668,8 @@ usrloc [matching_mode](../usrloc#param_matching_mode).
 
 ```opensips title="Setting the pn_enable parameter"
 ...
-modparam("
+modparam("registrar", "pn_enable", true)
+...
 ```
 
 
@@ -686,7 +687,8 @@ non-standard values may be specified as well.
 
 ```opensips title="Setting the pn_providers parameter"
 ...
-modparam("
+modparam("registrar", "pn_providers", "apns, fcm, webpush")
+...
 ```
 
 
@@ -701,10 +703,11 @@ parameter is missing from a Contact header field URI, the module
 will fall back to performing regular contact matching.
 
 
-Note that if all above PN Contact URI parameters match an existing
-binding, the match is considered to be successful regardless if
-other parts of the SIP URI do not match (e.g. hostname, port,
-other URI parameters, etc.).
+> [!NOTE]
+> If all above PN Contact URI parameters match an existing
+> binding, the match is considered to be successful regardless if
+> other parts of the SIP URI do not match (e.g. hostname, port,
+> other URI parameters, etc.).
 
 
 After calling *lookup()* or
@@ -718,7 +721,8 @@ Request and Contact URI event parameter, respectively.
 
 ```opensips title="Setting the pn_ct_match_params parameter"
 ...
-modparam("
+modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
+...
 ```
 
 
@@ -738,7 +742,9 @@ device should issue its binding refresh request.
 
 ```opensips title="Setting the pn_pnsreg_interval parameter"
 ...
-modparam("
+modparam("registrar", "pn_pnsreg_interval", 140)
+...
+
 ```
 
 
@@ -766,7 +772,9 @@ order to cause the device to wake up and re-register.
 
 ```opensips title="Setting the pn_trigger_interval parameter"
 ...
-modparam("
+modparam("registrar", "pn_trigger_interval", 130)
+...
+
 ```
 
 
@@ -784,7 +792,8 @@ assumed to be reachable, so any Push Notifications will be skipped.
 
 ```opensips title="Setting the pn_skip_pn_interval parameter"
 ...
-modparam("
+modparam("registrar", "pn_skip_pn_interval", 10)
+...
 ```
 
 
@@ -817,7 +826,8 @@ target device is actually reachable
 
 ```opensips title="Setting the pn_refresh_timeout parameter"
 ...
-modparam("
+modparam("registrar", "pn_refresh_timeout", 10)
+...
 ```
 
 
@@ -848,7 +858,8 @@ When enabling this parameter, make sure to also add logic for
 
 ```opensips title="Setting the pn_enable_purr parameter"
 ...
-modparam("
+modparam("registrar", "pn_enable_purr", true)
+...
 ```
 
 
@@ -894,19 +905,13 @@ flag) How the matching should be performed between the uploaded
 contacts (by the currently handled REGISTER) and the
 already know contacts (in memory or DB). This options will
 be used only for the current operation and can be:
-
-
-		*'0'* - contact URI matching
-		only
-
-
-		*'1'* - contact URI and
-		SIP Call-ID matching
-
-
-		*'<param_name>'* - only
-		the value of the given URI param will be used for
-		matching (for example <rinstance>)
+	- *'0'* - contact URI matching
+	only
+	- *'1'* - contact URI and
+	SIP Call-ID matching
+	- *'<param_name>'* - only
+	the value of the given URI param will be used for
+	matching (for example <rinstance>)
   - *'path-off'* - (old *p0* flag)
 (Path support - 'off' mode) - The Path header is saved into usrloc,
 but is never included in the reply.
@@ -1023,19 +1028,18 @@ computed. Hostnames are resolved before matching.
 Branch Flag to be used for filtering purposes.
 
 
-**IMPORTANT:**the IP address of each
-contact (for matching purposes) is computed as follows:
-
-
-- a. if a Path header is present, the hostname part of the
-Path URI will be resolved as the contact's IP address.
-- b. otherwise, if by using nathelper, the "Received" value
-(source IP of the next hop) is set for a contact, this
-becomes the chosen hostname to be resolved as the contact's
-IP address.
-- c. otherwise, the "hostname" part of the Contact header
-field URI is chosen to be resolved as the contact's IP
-address.
+> [!IMPORTANT]
+> The IP address of each
+> contact (for matching purposes) is computed as follows:
+> - a. if a Path header is present, the hostname part of the
+> Path URI will be resolved as the contact's IP address.
+> - b. otherwise, if by using nathelper, the "Received" value
+> (source IP of the next hop) is set for a contact, this
+> becomes the chosen hostname to be resolved as the contact's
+> IP address.
+> - c. otherwise, the "hostname" part of the Contact header
+> field URI is chosen to be resolved as the contact's IP
+> address.
 
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -1239,8 +1243,9 @@ The function returns true if an AOR is registered, false otherwise.
 The function does not modify the message being process.
 
 
-NOTE: if called for a reply (from onreply_route), you must pass an
-AOR (as parameter), otherwise the function will fail.
+> [!NOTE]
+> If called for a reply (from onreply_route), you must pass an
+> AOR (as parameter), otherwise the function will fail.
 
 
 Meaning of the parameters is as follows:

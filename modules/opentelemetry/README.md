@@ -1,6 +1,6 @@
 ---
 title: "opentelemetry Module"
-description: "The *opentelemetry* module provides OpenTelemetry tracing for OpenSIPS route execution. It creates a root span per processed SIP message and a child span for each route entry."
+description: "The *opentelemetry* module provides OpenTelemetry tracing for OpenSIPS route execution."
 ---
 
 ## Admin Guide
@@ -193,11 +193,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		## enable tracing
-		opensips-cli -x mi opentelemetry:enable enable=1
-		## disable tracing
-		opensips-cli -x mi opentelemetry:enable enable=0
-		
+## enable tracing
+opensips-cli -x mi opentelemetry:enable enable=1
+## disable tracing
+opensips-cli -x mi opentelemetry:enable enable=0
+
 ```
 <!-- CONTRIBUTORS -->
 

@@ -1,6 +1,6 @@
 ---
 title: "Script Helper Module"
-description: "The purpose of the **Script Helper module** is to simplify the scripting process in OpenSIPS when doing basic scenarios. At the same time, it is useful to script writers as it contains basic SIP routing logic, and thus it allows them to focus more on the particular aspects of their OpenSIPS r..."
+description: "The purpose of the **Script Helper module** is to simplify the scripting process in OpenSIPS when doing basic scenarios."
 ---
 
 ## Admin Guide

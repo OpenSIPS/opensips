@@ -1,6 +1,6 @@
 ---
 title: "event_flatstore Module"
-description: "The *event_flatstore* module provides a logging facility for different events, triggered through the OpenSIPS Event Interface, directly from the OpenSIPS script. The module logs the events along with their parameters in plain text files."
+description: "The *event_flatstore* module provides a logging facility for different events, triggered through the OpenSIPS Event Interface, directly from the OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -267,7 +267,7 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi event_flatstore:rotate _path_to_log_file_
-		
+
 ```
 
 
