@@ -36,12 +36,11 @@ exists for that SIP requests)
 
 The tracing can be turned on/off using fifo command.
 
-
+```bash
 opensipsctl fifo sip_trace on
 
 
 opensipsctl fifo sip_trace off
-
 
 ### Dependencies
 
@@ -384,10 +383,9 @@ MI FIFO Command Format:
 
 
 ```bash
-		:sip_trace:_reply_fifo_file_
-		trace_mode
-		_empty_line_
-		
+:sip_trace:_reply_fifo_file_
+trace_mode
+_empty_line_
 ```
 
 

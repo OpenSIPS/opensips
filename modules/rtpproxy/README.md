@@ -683,15 +683,15 @@ the config file).
 The second parameter value must be a number in decimal.
 
 
-NOTE: if a rtpproxy is defined multiple times (in the same or
-diferente sete), all its instances will be enables/disabled.
+> [!NOTE]
+> If a rtpproxy is defined multiple times (in the same or
+> diferente sete), all its instances will be enabled/disabled.
 
 
 ```bash title="rtpproxy_enable usage"
 ...
 $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
 ...
-			
 ```
 
 
@@ -709,7 +709,6 @@ No parameter.
 ...
 $ opensipsctl fifo rtpproxy_show
 ...
-			
 ```
 
 
@@ -729,7 +728,6 @@ No parameter.
 ...
 $ opensipsctl fifo rtpproxy_reload
 ...
-			
 ```
 
 

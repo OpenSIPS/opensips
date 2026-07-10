@@ -1,6 +1,6 @@
 ---
 title: "sngtc Module"
-description: "The **Sangoma transcoding module** offers the possibility of performing voice transcoding with the D-series transcoding cards manufactured by Sangoma. The module makes use of the Sangoma Transcoding API in order to manage transcoding sessions on the dedicated equipment. For the cards in the ..."
+description: "The **Sangoma transcoding module** offers the possibility of performing voice transcoding with the D-series transcoding cards manufactured by Sangoma."
 ---
 
 ## Admin Guide

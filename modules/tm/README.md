@@ -1,6 +1,6 @@
 ---
 title: "tm Module"
-description: "TM module enables stateful processing of SIP transactions. The main use of stateful logic, which is costly in terms of memory and CPU, is some services inherently need state. For example, transaction-based accounting (module acc) needs to process transaction state as opposed to ind..."
+description: "TM module enables stateful processing of SIP transactions."
 ---
 
 ## Admin Guide
@@ -646,12 +646,13 @@ or hexa format; supported flags are:
 provisional reply when building the transaction. By default 
 one is generated. Useful if you already pushed an 
 stateless 100 reply from script.
-Note: If the transaction was previously created 'by hand' with
-t_newtran() , t_relay will not attempt to send a 100 Trying
-provisional reply. The 100 Trying reply is generated as part of
-the transaction building, so if in your script you manually take
-care of creating the transaction, you must also take care of
-sending 100 provisional replies
+	> [!NOTE]
+	> If the transaction was previously created 'by hand' with
+	> t_newtran() , t_relay will not attempt to send a 100 Trying
+	> provisional reply. The 100 Trying reply is generated as part of
+	> the transaction building, so if in your script you manually take
+	> care of creating the transaction, you must also take care of
+	> sending 100 provisional replies
 - *0x02* - do not internally send a 
 negative reply in case of forward failure (due internal error,
 bad RURI, bad message, etc).  When a forward failure occurs, no
@@ -830,13 +831,13 @@ INVITE transaction. IMPORTANT: end-to-end ACKs (to 2xx replies) are
 not detected by this function as end-to-end ACKs form a different
 transaction.
 
-
-Note: To detect retransmissions using this function you have to make 
-sure that the initial request has already created a transaction, e.g. 
-by using t_relay(). If the processing of requests may take long time 
-(e.g. DB lookups) and the retransmission arrives before t_relay() is 
-called, you can use the t_newtran() function to manually create a 
-transaction.
+	> [!NOTE]
+	> To detect retransmissions using this function you have to make 
+	> sure that the initial request has already created a transaction, e.g. 
+	> by using t_relay(). If the processing of requests may take long time 
+	> (e.g. DB lookups) and the retransmission arrives before t_relay() is 
+	> called, you can use the t_newtran() function to manually create a 
+	> transaction.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
