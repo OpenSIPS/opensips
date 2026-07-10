@@ -200,6 +200,7 @@ static const dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "tm_replication_cluster",	get_deps_clusterer	},
+		{ "tm_replication_cluster",	get_deps_clusterer_ctrl	},
 		{ NULL, NULL },
 	},
 };

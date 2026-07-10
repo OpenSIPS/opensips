@@ -371,6 +371,7 @@ static const dep_export_t deps = {
 		{ "ds_ping_interval", get_deps_ds_ping_interval },
 		{ "fetch_freeswitch_stats", get_deps_fetch_fs_load },
 		{ "cluster_id", get_deps_clusterer},
+		{ "cluster_id", get_deps_clusterer_ctrl},
 		{ NULL, NULL },
 	},
 };

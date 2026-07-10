@@ -328,5 +328,15 @@ static inline module_dependency_t *get_deps_clusterer(const param_export_t *para
 }
 
 
+
+/* Soft dependency on clusterer_controller — enforces init order
+ * when use_controller=1 is set; harmless in DB mode.          */
+static inline module_dependency_t *get_deps_clusterer_ctrl(const param_export_t *param)
+{
+	int cluster_id = *(int *)param->param_pointer;
+	if (cluster_id <= 0)
+		return NULL;
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer_controller", DEP_WARN);
+}
 #endif  /* CLUSTERER_API_H */
 

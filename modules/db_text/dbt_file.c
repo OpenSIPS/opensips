@@ -89,7 +89,7 @@ int dbt_check_mtime(const str *tbn, const str *dbn, time_t *mt)
 dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 {
 	FILE *fin=NULL;
-	char path[512], buf[4096];
+	char path[512], buf[8192];
 	int c, crow, ccol, bp, sign, max_auto;
 	dbt_val_t dtval;
 	dbt_table_p dtp = NULL;
@@ -167,9 +167,9 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 				{
 					if(c==EOF)
 						goto clean;
-					if (bp==4096) {
+					if (bp==8192) {
 						LM_ERR("Buffer overflow for file [%s] row=[%d] col=[%d] c=[%c]."
-							" Required buffer size greater then 4096!\n",
+							" Required buffer size greater then 8192!\n",
 							path, crow+1, ccol+1, c);
 						goto clean;
 					}
@@ -469,9 +469,9 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 											goto clean;
 									}
 								}
-								if (bp==4096) {
+								if (bp==8192) {
 									LM_ERR("Buffer overflow for file [%s] row=[%d] col=[%d] c=[%c]."
-										" Required buffer size greater then 4096!\n",
+										" Required buffer size greater then 8192!\n",
 										path, crow+1, ccol+1, c);
 									goto clean;
 								}

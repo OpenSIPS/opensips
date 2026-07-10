@@ -70,7 +70,7 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 		if (get_next_hop(node) == 0)
 			continue;
 
-		if (!match_node(cluster->current_node, node, match_cond))
+		if (!cluster->current_node || !match_node(cluster->current_node, node, match_cond))
 			continue;
 
 		lock_get(node->lock);
@@ -100,7 +100,7 @@ int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 	else
 		lcap->flags &= ~CAP_SYNC_STARTUP;
 
-	if (cluster->current_node->flags & NODE_IS_SEED)
+	if (cluster->current_node && (cluster->current_node->flags & NODE_IS_SEED))
 		gettimeofday(&lcap->sync_req_time, NULL);
 
 	lock_release(cluster->lock);

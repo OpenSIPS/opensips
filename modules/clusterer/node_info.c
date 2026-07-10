@@ -131,7 +131,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	else
 		(*new_info)->flags &= ~NODE_STATE_ENABLED;
 
-	if (int_vals[INT_VALS_NODE_ID_COL] != current_id)
+	if (int_vals[INT_VALS_NODE_ID_COL] != GET_CURRENT_ID)
 		(*new_info)->link_state = LS_RESTART_PINGING;
 	else
 		(*new_info)->link_state = LS_UP;
@@ -204,7 +204,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 
 	(*new_info)->proto = proto;
 
-	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
+	if (int_vals[INT_VALS_NODE_ID_COL] != GET_CURRENT_ID) {
 		he = sip_resolvehost(&st, (unsigned short *) &port,
 			(unsigned short *)&proto, 0, 0);
 		if (!he) {
@@ -250,7 +250,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	}
 	(*new_info)->sp_info->node = *new_info;
 
-	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
+	if (int_vals[INT_VALS_NODE_ID_COL] != GET_CURRENT_ID) {
 		(*new_info)->next = cluster->node_list;
 		cluster->node_list = *new_info;
 		cluster->no_nodes++;
@@ -374,7 +374,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	LM_DBG("DB query - retrieve the list of clusters"
 		" in which the local node runs\n");
 
-	VAL_INT(&clusterer_node_id_value) = current_id;
+	VAL_INT(&clusterer_node_id_value) = GET_CURRENT_ID;
 
 	/* first we see in which clusters the local node runs*/
 	if (dr_dbf->query(db_hdl, &clusterer_node_id_key, &op_eq,
@@ -496,7 +496,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			if (rc < 0) {
 				/* serious error happened, better give up */
 				goto error;
-			} else if (int_vals[INT_VALS_NODE_ID_COL] == current_id) {
+			} else if (int_vals[INT_VALS_NODE_ID_COL] == GET_CURRENT_ID) {
 				LM_ERR("Invalid info for local node\n");
 				/* the node info is bogus, but cannot be skipped
 				 * as it is the current node) */
@@ -604,13 +604,13 @@ int provision_current(modparam_t type, void *val)
 		return -1;
 	}
 
-	if (int_vals[INT_VALS_NODE_ID_COL] == -1 && current_id == -1) {
+	if (int_vals[INT_VALS_NODE_ID_COL] == -1 && GET_CURRENT_ID == -1) {
 		LM_ERR("Node ID not defined. Set either the value of the 'node_id' proprety"
 			" of 'my_node_info' or set 'my_node_id' parameter before 'my_node_info'!\n");
 		return -1;
 	}
-	if (current_id != -1 && int_vals[INT_VALS_NODE_ID_COL] != -1 &&
-		int_vals[INT_VALS_NODE_ID_COL] != current_id) {
+	if (GET_CURRENT_ID != -1 && int_vals[INT_VALS_NODE_ID_COL] != -1 &&
+		int_vals[INT_VALS_NODE_ID_COL] != GET_CURRENT_ID) {
 		LM_ERR("Bad value in 'my_node_info' parameter, node_id: %d different"
 			" than 'my_node_id' parameter\n", int_vals[INT_VALS_NODE_ID_COL]);
 		return -1;
@@ -618,7 +618,7 @@ int provision_current(modparam_t type, void *val)
 	if (int_vals[INT_VALS_NODE_ID_COL] != -1)
 		current_id = int_vals[INT_VALS_NODE_ID_COL];
 	else
-		int_vals[INT_VALS_NODE_ID_COL] = current_id;
+		int_vals[INT_VALS_NODE_ID_COL] = GET_CURRENT_ID;
 
 	int_vals[INT_VALS_STATE_COL] = 1;
 	if (int_vals[INT_VALS_NO_PING_RETRIES_COL] == -1)
@@ -665,10 +665,10 @@ int update_db_state(int cluster_id, int node_id, int state) {
 	VAL_NULL(&update_val) = 0;
 	VAL_INT(&update_val) = state;
 
-	if (node_id == current_id) {
+	if (node_id == GET_CURRENT_ID) {
 		VAL_TYPE(&node_id_val) = DB_INT;
 		VAL_NULL(&node_id_val) = 0;
-		VAL_INT(&node_id_val) = current_id;
+		VAL_INT(&node_id_val) = GET_CURRENT_ID;
 
 		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
 			&update_val, 1, 1) < 0)
@@ -921,7 +921,7 @@ void api_free_next_hop(clusterer_node_t *next_hop)
 
 int cl_get_my_id(void)
 {
-	return current_id;
+	return GET_CURRENT_ID;
 }
 
 int cl_get_my_sip_addr(int cluster_id, str *out_addr)
@@ -949,7 +949,7 @@ int cl_get_my_sip_addr(int cluster_id, str *out_addr)
 		memset(out_addr, 0, sizeof *out_addr);
 		rc = 0;
 	} else {
-		if (pkg_str_dup(out_addr, &cl->current_node->sip_addr) != 0) {
+		if (cl->current_node && pkg_str_dup(out_addr, &cl->current_node->sip_addr) != 0) {
 			LM_ERR("oom\n");
 			memset(out_addr, 0, sizeof *out_addr);
 			rc = -1;
@@ -1003,7 +1003,7 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 		sorted[j+1] = tmp;
 	}
 
-	for (i = 0; i < *nr_nodes && sorted[i] < current_id; i++) ;
+	for (i = 0; i < *nr_nodes && sorted[i] < GET_CURRENT_ID; i++) ;
 
 	(*nr_nodes)++;
 	return i;
