@@ -67,7 +67,6 @@ used as outbound proxy when sending PUBLISH requests.
 ...
 modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
 ...
-	
 ```
 
 
@@ -134,9 +133,7 @@ This function can be used from REQUEST_ROUTE.
 		}
 		t_release();
 	}
-
 ...
-		
 ```
 
 

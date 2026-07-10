@@ -1,6 +1,6 @@
 ---
 title: "cachedb_redis Module"
-description: "This module is an implementation of a cache system designed to work with a Redis server. It uses hiredis client library to connect to either a single Redis server instance, or to a Redis Server inside a Redis Cluster. It uses the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a Redis server."
 ---
 
 ## Admin Guide

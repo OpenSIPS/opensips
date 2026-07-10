@@ -1,6 +1,6 @@
 ---
 title: "Auth_aaa Module"
-description: "This module contains functions that are used to perform digest authentication and some URI checks against an AAA server. In order to perform the authentication, the proxy will pass along the credentials to the AAA server which will in turn send a reply containing result of the authenti..."
+description: "This module contains functions that are used to perform digest authentication and some URI checks against an AAA server."
 ---
 
 ## Admin Guide

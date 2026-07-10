@@ -1,6 +1,6 @@
 ---
 title: "proto_ipsec Module"
-description: "The **proto_ipsec** module provides IPSec sockets for establishing secure communication channels. It relies on RFC 3329 (Security Mechanism Agreement for the Session Initiation Protocol (SIP)) to establish the IPSec parameters necessary for creating dynamic Security Associations (SAs) for..."
+description: "The **proto_ipsec** module provides IPSec sockets for establishing secure communication channels."
 ---
 
 ## Admin Guide
@@ -26,28 +26,29 @@ IP:port pair, defined as sockets. Essentially, when defining a socket
 using the *proto_ipsec* protocol, two new
 internal/hidden sockets are created on the specified port.
 For example, defining the following socket:
-	```c
-
+```opensips
 ...
 socket=ipsec:127.0.0.1:5100
 ...
 ```
-Internally, two different sockets are created:
-	```c
 
+Internally, two different sockets are created:
+```opensips
 ...
 socket=udp:127.0.0.1:5100
 socket=tcp:127.0.0.1:5100
 ...
 ```
+
 Communication through these sockets should be done over IPSec,
 thus appropriate security associations (SAs) should be made prior
 to using these listeners, as defined in RFC 3329.
 
 
-*NOTE* that this means that you can no longer
-define these sockets in your config, otherwise they will overlap
-with the internally defined ones.
+> [!NOTE]
+> That this means that you can no longer
+> define these sockets in your config, otherwise they will overlap
+> with the internally defined ones.
 
 
 IPSec communication requires each participant to define at least two
@@ -235,17 +236,15 @@ Currently supported algorithms are:
 
 
 - Authentication algorithms:
-
-					hmac-md5-96 - deprecated by TS 33.203 V13
-					hmac-sha-1-96 - not recommended by TS 33.203 V17
-					aes-gmac
-					null - must only be used with aes-gcm encryption
+	- hmac-md5-96 - deprecated by TS 33.203 V13
+	- hmac-sha-1-96 - not recommended by TS 33.203 V17
+	- aes-gmac
+	- null - must only be used with aes-gcm encryption
 - Encryption algorithms:
-
-					des-ede3-cbc - not recommended
-					aes-cbc - not recommended by TS 33.203 V17
-					aes-gcm
-					null - no encryption
+	- des-ede3-cbc - not recommended
+	- aes-cbc - not recommended by TS 33.203 V17
+	- aes-gcm
+	- null - no encryption
 
 
 *Default value is none - this means that all algorithms can be used.*

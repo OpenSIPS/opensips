@@ -108,10 +108,11 @@ Auto-close TCP connections which are idle for more than the designated
 timeout, in seconds.  Set to zero to never close any connections.
 
 
-Note: the connection auto-close routine only seems to be executed
-in an "on-demand" fashion, during an HTTPD network event (e.g. on a new
-connection), which although not ideal, it should be good enough in
-practical terms.
+> [!NOTE]
+> The connection auto-close routine only seems to be executed
+> in an "on-demand" fashion, during an HTTPD network event (e.g. on a new
+> connection), which although not ideal, it should be good enough in
+> practical terms.
 
 
 *The default timeout is 30 seconds.*

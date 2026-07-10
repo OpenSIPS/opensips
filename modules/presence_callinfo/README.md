@@ -1,6 +1,6 @@
 ---
 title: "Presence_CallInfo Module"
-description: "This module provides OpenSIPS support for shared call appearances (SCA) as defined by BroadWorks SIP Access Side Extensions Interface specifications. The SCA mechanism is a fundamental building block for a variety of enhanced telephony services. Features like attendant console, line extens..."
+description: "This module provides OpenSIPS support for shared call appearances (SCA) as defined by BroadWorks SIP Access Side Extensions Interface specifications."
 ---
 
 ## Admin Guide

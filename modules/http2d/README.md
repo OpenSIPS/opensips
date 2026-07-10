@@ -1,6 +1,6 @@
 ---
 title: "HTTP2D MODULE"
-description: "This module provides an RFC 7540/9113 HTTP/2 server implementation with \"h2\" ALPN support, based on the **nghttp2** library ([https://nghttp2.org/](https://nghttp2.org/))."
+description: "This module provides an RFC 7540/9113 HTTP/2 server implementation with h2 ALPN support, based on the nghttp2 library ([https://nghttp2.org/](https://nghttp2.org/))."
 ---
 
 ## Admin Guide

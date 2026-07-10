@@ -89,9 +89,10 @@ the only tracing module is **proto_hep**.
 This is where traced mi messages will go.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*

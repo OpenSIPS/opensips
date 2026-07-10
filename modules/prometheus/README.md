@@ -57,7 +57,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root metrics path Promethus uses to query the stats:
-http://[opensips_IP]:[opensips_httpd_port]/[root]
+*http://[opensips_IP]:[opensips_httpd_port]/[root]*
 
 
 *The default value is "metrics".*

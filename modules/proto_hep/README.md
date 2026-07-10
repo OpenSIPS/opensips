@@ -1,6 +1,6 @@
 ---
 title: "proto_hep Module"
-description: "The **proto_hep** module is a transport module which implements hepV1 and hepV2 UDP-based communication and hepV3 TCP-based communication. It also offers an API with which you can register callbacks which are called after the HEP header is parsed and also can pack sip messages to HEP mess..."
+description: "The **proto_hep** module is a transport module which implements hepV1 and hepV2 UDP-based communication and hepV3 TCP-based communication."
 ---
 
 ## Admin Guide
@@ -21,13 +21,13 @@ Once loaded, you will be able to define HEP listeners in your
 configuration file by adding their IP and, optionally, a listening port.
 You can define both TCP, UDP, and TLS listeners. On UDP you will be able to
 receive HEP v1, v2 and v3 packets, on TCP and TLS only HEPv3.
-	```c
 
+```opensips
 ...
 #HEPv3 listener
-socket= hep_tcp:127.0.0.1:6061 		# change the listening IP
+socket = hep_tcp:127.0.0.1:6061 		# change the listening IP
 #HEPv1, v2, v3 listener
-socket= hep_udp:127.0.0.1:6061 		# change the listening IP
+socket = hep_udp:127.0.0.1:6061 		# change the listening IP
 ...
 ```
 
@@ -87,7 +87,7 @@ NO default value. If **hep_id** the module
 can't be used for HEP tracing.
 
 
-```c title="Set hep_id parameter"
+```opensips title="Set hep_id parameter"
 ...
 /* define a destination to localhost on port 8001 using hepV3 on tcp */
 modparam("proto_hep", "hep_id",
@@ -96,6 +96,7 @@ modparam("proto_hep", "hep_id",
 modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000; version=2")
 /* define only the destination uri; version will be 3(default) and transport TCP(default) */
 modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
+...
 ```
 
 
@@ -320,7 +321,7 @@ the second extra correlation id that will be put in the extra correlation chunk.
 ...
 /* see declaration of hep_dst in trace_id section */
 /* we suppose we have two correlations in two varibles: cor1 and cor2 */
-	correlate("hep_dst", "correlation-no-1",$var(cor1),"correlation-no-2", $var(cor2));
+correlate("hep_dst", "correlation-no-1", $var(cor1), "correlation-no-2", $var(cor2));
 ...
 ```
 

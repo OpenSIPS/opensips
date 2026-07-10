@@ -38,8 +38,9 @@ The module use cache to store presentity list and writes to database
 on timer to be able to recover upon restart.
 
 
-Notice: This module must not be used in no fork mode (the locking 
-mechanism used may cause deadlock in no fork mode).
+> [!NOTE]
+> This module must not be used in no fork mode (the locking 
+> mechanism used may cause deadlock in no fork mode).
 
 
 ### PUA clustering
@@ -64,12 +65,13 @@ loaded into memory (from DB) if the node needs to perform an operation
 with that presentity.
 
 
-IMPORTANT: because the actual presentity data is shared between the nodes
-via DB (the clustering layer is used for notifications only), it is
-important to set a very low update interval for the DB (for data being
-flushed from memoryc cache into DB), to get the DB content updated as 
-realtime as possible. See the the [update period](#param_update_period),
-module parameter, with recomanded values like 2-5 seconds.
+> [!IMPORTANT]
+> Because the actual presentity data is shared between the nodes
+> via DB (the clustering layer is used for notifications only), it is
+> important to set a very low update interval for the DB (for data being
+> flushed from memoryc cache into DB), to get the DB content updated as 
+> realtime as possible. See the the [update period](#param_update_period),
+> module parameter, with recomanded values like 2-5 seconds.
 
 
 On the OpenSIPS clustering layer, the PUA module use the sharing-tags
@@ -199,8 +201,9 @@ deleting expired messages.
 *Default value is "30".*
 
 
-IMPORTANT - if you use clustering support for this module, set a low
-value here, like 2-5, see the clustering chapter above.
+> [!IMPORTANT]
+> If you use clustering support for this module, set a low
+> value here, like 2-5, see the clustering chapter above.
 
 
 ```opensips title="Set update_period parameter"
