@@ -91,7 +91,6 @@ be automatically updated based on stored original URI.
 ...
 modparam("uac","from_restore_mode","auto")
 ...
-				
 ```
 
 
@@ -109,7 +108,6 @@ empty, no encryption will be used.
 ...
 modparam("uac","from_passwd","my_secret_passwd")
 ...
-				
 ```
 
 
@@ -193,7 +191,6 @@ to perform authentication.
 ...
 modparam("uac","auth_password_avp","$avp(i:12)")
 ...
-				
 ```
 
 
@@ -265,7 +262,6 @@ This function can be used from REQUEST_ROUTE.
 ...
 uac_restore_from();
 ...
-				
 ```
 
 

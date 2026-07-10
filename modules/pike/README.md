@@ -54,8 +54,9 @@ long period of time) to a proxy resource (a gateway for ex), use
 a bigger value of this parameter.
 
 
-IMPORTANT: a too small value may lead to performance penalties due 
-timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due
+> timer process overloading.
 
 
 *Default value is 2.*
@@ -135,9 +136,7 @@ Return codes:
 
 
 - *1 (true)* - IP is not to be blocked or 
-internal error occured.
-
-  > **Warning:** 
+internal error occurred.
 - *-1 (false)* - IP is source of
 flooding, being previously detected
 - *-2 (false)* - IP is detected as a new 
@@ -173,9 +172,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:pike_list:_reply_fifo_file_
-		_empty_line_
-		
+:pike_list:_reply_fifo_file_
+_empty_line_
 ```
 
 

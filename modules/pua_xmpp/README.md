@@ -115,9 +115,7 @@ This function can be used from REQUEST_ROUTE.
 		}
 		t_release();
 	}
-
 ...
-		
 ```
 
 

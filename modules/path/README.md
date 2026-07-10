@@ -1,6 +1,6 @@
 ---
 title: "path Module"
-description: "This module is designed to be used at intermediate sip proxies like loadbalancers in front of registrars and proxies. It provides functions for inserting a Path header including a parameter for passing forward the received-URI of a registration to the next hop. It also provides a mechanism ..."
+description: "This module is designed to be used at intermediate sip proxies like loadbalancers in front of registrars and proxies."
 ---
 
 ## Admin Guide

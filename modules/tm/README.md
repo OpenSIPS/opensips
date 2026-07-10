@@ -1,6 +1,6 @@
 ---
 title: "tm Module"
-description: "TM module enables stateful processing of SIP transactions. The main use of stateful logic, which is costly in terms of memory and CPU, is some services inherently need state. For example, transaction-based accounting (module acc) needs to process transaction state as opposed to ind..."
+description: "TM module enables stateful processing of SIP transactions."
 ---
 
 ## Admin Guide

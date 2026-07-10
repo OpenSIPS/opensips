@@ -248,23 +248,13 @@ Meaning of the parameters is as follows:
 
 - *URI* - URI whose username and 
 optionally domain to be used, this can be one of:
-
-
-				Request-URI - Use Request-URI username and 
-				(optionally) domain.
-
-
-				To - Use To username and (optionally) domain.
-
-
-				From - Use From username and (optionally) domain.
-
-
-				Credentials - Use digest credentials username.
-
-
-				$avp(name) - Use the URI from the AVP
-				specified by this pseudo-variable.
+	- Request-URI - Use Request-URI username and 
+	(optionally) domain.
+	- To - Use To username and (optionally) domain.
+	- From - Use From username and (optionally) domain.
+	- Credentials - Use digest credentials username.
+	- $avp(name) - Use the URI from the AVP
+	specified by this pseudo-variable.
 - *group* - Name of the group to check.
 
 
@@ -293,23 +283,13 @@ Meaning of the parameters is as follows:
 
 - *URI* - URI to be matched against
 the regular expressions:
-
-
-				Request-URI - Use Request-URI
-
-
-				To - Use To URI.
-
-
-				From - Use From URI
-
-
-				Credentials - Use digest credentials username 
-				and realm.
-
-
-				$avp(name) - Use the URI from the AVP
-				specified by this pseudo-variable.
+	- Request-URI - Use Request-URI
+	- To - Use To URI.
+	- From - Use From URI
+	- Credentials - Use digest credentials username 
+	and realm.
+	- $avp(name) - Use the URI from the AVP
+	specified by this pseudo-variable.
 - *AVP* - $avp(name) - the matched group
 IDs are returned in this AVP.
 

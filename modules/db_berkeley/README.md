@@ -194,11 +194,10 @@ Note: If you plan to use bdb_recover, you must change the LOGFLAGS.
 
 
 ```c
-		METADATA_READONLY
-		0
-		METADATA_LOGFLAGS
-		0
-		
+METADATA_READONLY
+0
+METADATA_LOGFLAGS
+0
 ```
 
 
@@ -207,10 +206,9 @@ on your situation.
 
 
 ```c
-		opensipsdbctl create   		(required)
-		opensipsdbctl presence 		(optional)
-		opensipsdbctl extra    		(optional)
-		
+opensipsdbctl create   		(required)
+opensipsdbctl presence 		(optional)
+opensipsdbctl extra    		(optional)
 ```
 
 
@@ -267,8 +265,7 @@ Berkeley DB implementation and must not be present in any DB field.
 METADATA_COLUMNS
 table_name(str) table_version(int)
 METADATA_KEY
-0
-	
+0	
 ```
 
 
@@ -290,10 +287,10 @@ It shows contents of table 'version' in plain text.
 
 ```c title="contents of version table"
 VERSION=3
-format=print
-type=hash
-h_nelem=21
-db_pagesize=4096
+	format=print
+	type=hash
+	h_nelem=21
+	db_pagesize=4096
 HEADER=END
  METADATA_READONLY
  1
@@ -338,7 +335,7 @@ HEADER=END
  usr_preferences|
  usr_preferences|2
 DATA=END
-	
+
 ```
 
 
@@ -346,13 +343,12 @@ DATA=END
 
 
 The METADATA_COLUMNS row contains the column names and types. 
-Each is space delimited. Here is an example of the data taken from table subscriber :
+Each is space delimited. Here is an example of the data taken from table subscriber:
 
 
 ```c title="METADATA_COLUMNS"
 METADATA_COLUMNS
 username(str) domain(str) password(str) ha1(str) ha1b(str) first_name(str) last_name(str) email_address(str) datetime_created(datetime) timezone(str) rpid(str)
- 	
 ```
 
 
@@ -376,9 +372,8 @@ Here is an example taken from table subscriber that brings up a good point:
 
 
 ```c title="METADATA_KEYS"
- METADATA_KEY
- 0 1
- 	
+METADATA_KEY
+0 1
 ```
 
 
@@ -413,7 +408,7 @@ is taken as 0. Here are the masks so far (taken from bdb_lib.h):
 #define JLOG_UPDATE 4
 #define JLOG_STDOUT 8
 #define JLOG_SYSLOG 16
-	
+
 ```
 
 
@@ -470,7 +465,7 @@ There are fundamentally only two operations- create and recover.
 The following illustrates the four operations available to the administrator.
 
 
-```c title="bdb_recover usage"
+```bash title="bdb_recover usage"
 usage: ./bdb_recover -s schemadir [-h home] [-c tablename]
 	This will create a brand new DB file with metadata.
 
@@ -491,8 +486,8 @@ usage: ./bdb_recover -s schemadir [-h home] [-R lastN]
 	
 ```
 
-
-Important note- A corrupted DB file must be moved out of the way before bdb_recover is executed.
+> [!NOTE]
+> A corrupted DB file must be moved out of the way before bdb_recover is executed.
 
 
 ### Known Limitations

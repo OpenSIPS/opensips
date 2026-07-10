@@ -1,6 +1,6 @@
 ---
 title: "PUA Usrloc"
-description: "The pua_usrloc is the connector between usrloc and pua modules. It creates the environment to send PUBLISH requests for user location records, on specific events (e.g., when new record is added in usrloc, a PUBLISH with status open (online) is issued; when expires, it sends closed (of..."
+description: "The pua_usrloc is the connector between usrloc and pua modules."
 ---
 
 ## Admin Guide
