@@ -1,6 +1,6 @@
 ---
 title: "Options Module"
-description: "This module provides a function to answer OPTIONS requests which are directed to the server itself. This means an OPTIONS request which has the address of the server in the request URI, and no username in the URI. The request will be answered with a 200 OK which the capabilities of th..."
+description: "This module provides a function to answer OPTIONS requests which are directed to the server itself."
 ---
 
 ## Admin Guide

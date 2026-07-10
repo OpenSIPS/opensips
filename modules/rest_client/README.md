@@ -220,9 +220,10 @@ header for the request will be taken from *send_ctype_pv* (default is
 *"application/x-www-form-urlencoded"*)
 
 
-Note that the *send_body_pv* parameter can also accept a format-string
-but it cannot be larger than 1024 bytes. For bigger messages, you must build them in a
-pseudo-variable and pass it to the function.
+> [!NOTE]
+> The *send_body_pv* parameter can also accept a format-string
+> but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
+> pseudo-variable and pass it to the function.
 
 
 The mandatory *recv_body_pv* pseudo-var will hold the body of the HTTP

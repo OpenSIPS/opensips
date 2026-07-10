@@ -121,18 +121,11 @@ application/pidf+xml
 
 
 Command parameters:
+- *presentity_uri* - e.g. sip:presentity@opensips.org
+- *watcher_uri* - e.g. sip:watcher@opensips.org
+- *event_package*
+- *expires* - Relative time in seconds for the desired validity of the subscription.
 
-
-- *presentity_uri*
-					- e.g. sip:presentity@opensips.org
-- *watcher_uri*
-					- e.g. sip:watcher@opensips.org
-- *event package*
-- *expires*
-					- Relative time in seconds for the desired validity of the subscription.
-
-
-*doc copyrights:*
 <!-- CONTRIBUTORS -->
 
 ### License

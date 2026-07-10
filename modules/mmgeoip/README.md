@@ -1,6 +1,6 @@
 ---
 title: "mmgeoip Module"
-description: "This module is a lightweight wrapper for the MaxMind GeoIP API. It adds IP address-to-location lookup capability to OpenSIPS scripts."
+description: "This module is a lightweight wrapper for the MaxMind GeoIP API."
 ---
 
 ## Admin Guide
@@ -111,8 +111,6 @@ the `dst` AVP.
 and `dst` *must* be an AVP.
 `fields` defaults to "lon:lat," and is a
 colon-delimited list of these elements:
-
-
 - `lat` Latitude
 - `lon` Longitude
 - `cont` Continent

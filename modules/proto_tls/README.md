@@ -1,6 +1,6 @@
 ---
 title: "proto_tls module"
-description: "TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used to secure the SIP signalling on a hop-by-hop basis (not end-to-end). TLS works on top of TCP. DTLS, or TLS over UDP is already defined by IETF and may become available in the future."
+description: "TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used to secure the SIP signalling on a hop-by-hop basis (not end-to-end)."
 ---
 
 ## Admin Guide
@@ -191,7 +191,6 @@ listening server will be.
 ...
 listen = tls:1.2.3.4:5061
 ...
-				
 ```
 
 
@@ -215,7 +214,6 @@ option in the SIP listener defintion.
 ...
 modparam("proto_tls", "tls_port", 5062)
 ...
-				
 ```
 
 
@@ -288,9 +286,10 @@ about the client and server certificates, master key and network layer
 information shall be sent.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -333,19 +332,18 @@ have to define a [trace destination](#param_trace_destination) and trace must be
 on at the time this connection is opened.
 
 
-**IMPORTANT**
-Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
-either the entity that is connecting to OpenSIPS or the entity to which
-OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
-it is simply the socket other than the OpenSIPS socket. In order to match
-OpenSIPS interface (either the one that accepted the connection or the one
-that initiated a connection) **$Ri** (ip) and
-**$Rp** (port) can be used.
+> [!IMPORTANT]
+> Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
+> either the entity that is connecting to OpenSIPS or the entity to which
+> OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
+> it is simply the socket other than the OpenSIPS socket. In order to match
+> OpenSIPS interface (either the one that accepted the connection or the one
+> that initiated a connection) **$Ri** (ip) and
+> **$Rp** (port) can be used.
 
 
-**WARNING:** IF [trace on](#param_trace_on) is
-set to 0 or tracing is deactived via the mi command [tls trace](#mi_tls_trace)
-this route won't be called.
+> [!WARNING]
+> If [trace on](#param_trace_on) is set to 0 or tracing is deactived via the mi command [mi trace](#mi_tls_trace) this route won't be called.
 
 
 ```opensips title="Set trace_filter_route parameter"
@@ -385,19 +383,17 @@ Parameters:
 can be missing and the command will show the current tracing
 status for this module( on or off );
 Possible values:
-
-							on
-							off
+	- on
+	- off
 
 
 MI FIFO Command Format:
 
 
 ```bash
-			:tls_trace:_reply_fifo_file_
-			trace_mode
-			_empty_line_
-			
+:tls_trace:_reply_fifo_file_
+trace_mode
+_empty_line_
 ```
 
 

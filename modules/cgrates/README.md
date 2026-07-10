@@ -1,6 +1,6 @@
 ---
 title: "CGRateS Module"
-description: "[*CGRateS*](http://www.cgrates.org/) is an open-source rating engine used for carrier-grade, multi-tenant, real-time billing. It is able to do both postpaid and prepaid rating for multiple concurrent sessions with different balance units (eg: Monetary, SMS, Internet Traffic). CGRateS can ..."
+description: "[CGRateS](http://www.cgrates.org/) is an open-source rating engine used for carrier-grade, multi-tenant, real-time billing. This module can be used to communicate with the CGRates engine in order to do call authorization and accounting for billing purposes."
 ---
 
 ## Admin Guide
@@ -51,12 +51,11 @@ Usage example:
 
 
 ```opensips
-		...
-		if (cgrates_auth("$fU", "$rU"))
-			xlog("Call is allowed to run $cgrret seconds\n");
-		}
-		...
-		
+...
+if (cgrates_auth("$fU", "$rU"))
+	xlog("Call is allowed to run $cgrret seconds\n");
+}
+...
 ```
 
 
@@ -89,16 +88,15 @@ Usage example:
 
 
 ```opensips
-		...
-		if (!cgrates_auth("$fU", "$rU")) {
-			sl_send_reply("403", "Forbidden");
-			exit;
-		}
-		xlog("Call is allowed to run $cgrret seconds\n");
-		# do accounting for this call
-		cgrates_acc("cdr", "$fU", "$rU");
-		...
-		
+...
+if (!cgrates_auth("$fU", "$rU")) {
+	sl_send_reply("403", "Forbidden");
+	exit;
+}
+xlog("Call is allowed to run $cgrret seconds\n");
+# do accounting for this call
+cgrates_acc("cdr", "$fU", "$rU");
+...
 ```
 
 
@@ -119,17 +117,16 @@ The following example simulates the *cgrates_auth()* CGRateS call:
 
 
 ```opensips
-		...
-		$cgr(Tenant) = $fd;
-		$cgr(Account) = $fU;
-		$cgr(OriginID) = $ci;
-		$cgr(SetupTime) = "" + $Ts;
-		$cgr(RequestType) = "*prepaid";
-		$cgr(Destination) = $rU;
-		cgrates_cmd("SMGenericV1.GetMaxUsage");
-		xlog("Call is allowed to run $cgrret seconds\n");
-		...
-		
+...
+$cgr(Tenant) = $fd;
+$cgr(Account) = $fU;
+$cgr(OriginID) = $ci;
+$cgr(SetupTime) = "" + $Ts;
+$cgr(RequestType) = "*prepaid";
+$cgr(Destination) = $rU;
+cgrates_cmd("SMGenericV1.GetMaxUsage");
+xlog("Call is allowed to run $cgrret seconds\n");
+...
 ```
 
 
@@ -327,15 +324,15 @@ BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="cgrates_acc() usage"
-		...
-		if (!has_totag()) {
-			...
-			if (cgrates_auth("$fU", "$rU"))
-				cgrates_acc("cdr|missed", "$fU", "$rU");
-			...
-		}
-		...
-		
+...
+if (!has_totag()) {
+	...
+	if (cgrates_auth("$fU", "$rU"))
+		cgrates_acc("cdr|missed", "$fU", "$rU");
+	...
+}
+...
+
 ```
 
 
@@ -380,17 +377,17 @@ BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="cgrates_auth() usage"
-		...
-		if (!has_totag()) {
-			...
-			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
-				exit;
-			}
-			...
-		}
-		...
-		
+...
+if (!has_totag()) {
+	...
+	if (!cgrates_auth("$fU", "$rU")) {
+		sl_send_reply("403", "Forbidden");
+		exit;
+	}
+	...
+}
+...
+
 ```
 
 
@@ -428,18 +425,17 @@ This function can be used from any route.
 
 
 ```opensips title="cgrates_cmd() usage"
-		...
-		# cgrates_auth("$fU", "$rU"); simulation
-		$cgr(Tenant) = $fd;
-		$cgr(Account) = $fU;
-		$cgr(OriginID) = $ci;
-		$cgr(SetupTime) = "" + $Ts;
-		$cgr(RequestType) = "*prepaid";
-		$cgr(Destination) = $rU;
-		cgrates_cmd("SMGenericV1.GetMaxUsage");
-		xlog("Call is allowed to run $cgrret seconds\n");
-		...
-		
+...
+# cgrates_auth("$fU", "$rU"); simulation
+$cgr(Tenant) = $fd;
+$cgr(Account) = $fU;
+$cgr(OriginID) = $ci;
+$cgr(SetupTime) = "" + $Ts;
+$cgr(RequestType) = "*prepaid";
+$cgr(Destination) = $rU;
+cgrates_cmd("SMGenericV1.GetMaxUsage");
+xlog("Call is allowed to run $cgrret seconds\n");
+...
 ```
 
 
@@ -475,47 +471,43 @@ are completely indepdendent from one another. if the
 
 
 ```opensips title="$cgr(name) simple usage"
-		...
-		if (!has_totag()) {
-			...
-			$cgr(Tenant) = $fd; # set the From domain as a tenant
-			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
-			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
-				exit;
-			}
-		}
-		...
-		
+...
+if (!has_totag()) {
+	...
+	$cgr(Tenant) = $fd; # set the From domain as a tenant
+	$cgr(RequestType) = "*prepaid"; # do prepaid accounting
+	if (!cgrates_auth("$fU", "$rU")) {
+		sl_send_reply("403", "Forbidden");
+		exit;
+	}
+}
+...
 ```
 
 
 ```opensips title="$cgr(name) multiple sessions usage"
-		...
-		if (!has_totag()) {
-			...
-			# first session - authorize the user
-			$cgr(Tenant) = $fd; # set the From domain as a tenant
-			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
-			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
-				exit;
-			}
-
-			# second session - authorize the carrier
-			$(cgr(Tenant)[carrier]) = $td;
-			$(cgr(RequestType)[carrier]) = "*postpaid";
-			if (!cgrates_auth("$tU", "$fU", "carrier")) {
-				# use a different carrier
-				return;
-			}
-
-			# if everything is successfull, start accounting on both
-			cgrates_acc("cdr", "$fU", "rU");
-			cgrates_acc("cdr", "$tU", "$fU", "carrier");
-		}
-		...
-		
+...
+if (!has_totag()) {
+	...
+	# first session - authorize the user
+	$cgr(Tenant) = $fd; # set the From domain as a tenant
+	$cgr(RequestType) = "*prepaid"; # do prepaid accounting
+	if (!cgrates_auth("$fU", "$rU")) {
+		sl_send_reply("403", "Forbidden");
+		exit;
+	}
+	# second session - authorize the carrier
+	$(cgr(Tenant)[carrier]) = $td;
+	$(cgr(RequestType)[carrier]) = "*postpaid";
+	if (!cgrates_auth("$tU", "$fU", "carrier")) {
+		# use a different carrier
+		return;
+	}
+	# if everything is successfull, start accounting on both
+	cgrates_acc("cdr", "$fU", "rU");
+	cgrates_acc("cdr", "$tU", "$fU", "carrier");
+}
+...
 ```
 
 
@@ -526,11 +518,10 @@ Returns the reply message of a CGRateS command in script.
 
 
 ```opensips title="$cgrret usage"
-		...
-		cgrates_auth("$fU", "$rU");
-		xlog("Call is allowed to run $cgrret seconds\n");
-		...
-		
+...
+cgrates_auth("$fU", "$rU");
+xlog("Call is allowed to run $cgrret seconds\n");
+...
 ```
 
 

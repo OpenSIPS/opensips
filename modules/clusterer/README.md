@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed by different modules that use the *clusterer* i..."
+description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -364,9 +364,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_reload
-		_empty_line_
-		
+:clusterer_reload
+_empty_line_
 ```
 
 
@@ -386,9 +385,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_list
-		_empty_line_
-		
+:clusterer_list
+_empty_line_
 ```
 
 
@@ -461,11 +459,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_set_status:
-		1
-		0
-		_empty_line_
-		
+:clusterer_set_status:
+1
+0
+_empty_line_
 ```
 
 

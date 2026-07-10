@@ -1,6 +1,6 @@
 ---
 title: "Fraud Detection Module"
-description: "This module provides a way to prevent some basic fraud attacks. Alerts are provided through return codes and events."
+description: "This module provides a way to prevent some basic fraud attacks."
 ---
 
 ## Admin Guide

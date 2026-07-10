@@ -1,6 +1,6 @@
 ---
 title: "freeswitch Module"
-description: "The *\"freeswitch\"* module is a C driver for the FreeSWITCH Event Socket Layer interface. It can interact with one or more FreeSWITCH servers either by issuing commands to them, or by receiving events from them."
+description: "The freeswitch module is a C driver for the FreeSWITCH Event Socket Layer interface."
 ---
 
 ## Admin Guide

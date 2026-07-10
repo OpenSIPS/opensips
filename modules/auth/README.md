@@ -1,6 +1,6 @@
 ---
 title: "Auth Module"
-description: "This is a module that provides common functions that are needed by other authentication related modules. Also, it can perform authentication taking username and password from pseudo-variables."
+description: "This is a module that provides common functions that are needed by other authentication related modules."
 ---
 
 ## Admin Guide

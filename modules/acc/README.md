@@ -10,8 +10,7 @@ description: "The ACC module is used to account transaction information to diffe
 
 
 The ACC module is used to account transaction information to different
-backends such as syslog, SQL,
-AAA.
+backends such as syslog, SQL, AAA.
 
 
 To account a transaction and to choose which set of backends to be
@@ -142,20 +141,15 @@ Via *log_name* you define how/where the
 of the accounting support which is used:
 
 
-- *LOG accounting* - log_name
-will be just printed along with the data in *log_name=data* format;
-- *DB accounting* - log_name
-will be the name of the DB column where the data will be
-stored.*IMPORTANT*: add in db
-*acc* table the columns corresponding to
-each extra data;
-- *AAA accounting* -
-log_name will be the AVP name used for packing the data into
-AAA message. The log_name will be translated to AVP number
-via the dictionary. *IMPORTANT*: add in
-AAA dictionary the *log_name* attribute.
-- *Events accounting* -
-log_name will be the name of the parameter in the event raised.
+- *LOG accounting* - log_name will be just printed along with the data in *log_name=data* format;
+- *DB accounting* - log_name will be the name of the DB column where the data will be stored.
+> [!IMPORTANT] 
+> Add in db *acc* table the columns corresponding to each extra data.
+- *AAA accounting* - log_name will be the AVP name used for packing the data into AAA message.
+The log_name will be translated to AVP number via the dictionary.
+> [!IMPORTANT] 
+> Add in AAA dictionary the *log_name* attribute.
+- *Events accounting* - log_name will be the name of the parameter in the event raised.
 
 
 #### How it works
@@ -239,28 +233,31 @@ separately logged (due DB data structure constraints); several
 records will be written, the difference between them being
 only the fields corresponding to the call-leg info.
 
-  > **Note:** You will need to add in your DB (all acc related
-				tables) the colums for call-leg info (a column for each leg value
-				of the set).
+> [!NOTE]
+> You will need to add in your DB (all acc related tables) the colums
+> for call-leg info (a column for each leg value of the set).
+
 - *AAA* -- all sets will be added
 to the same AAA accounting message as AAA AVPs - for each
 call-leg a set of AAA AVPs will be added (corresponding
 to the per-leg set)
 
-  > **Note:** You will need to add in your dictionary the
-				AAA AVPs used in call-leg set definition.
+> [!NOTE] 
+> You will need to add in your dictionary the
+> AAA AVPs used in call-leg set definition.
+
 - *events* -- each pair will appear as a
 different parameter-value pair in the event. Similar to the
 database behavior, multiple events will be raised, and the only
 difference between them is the leg information.
 
 
-*Important!!!* In order to use *RADIUS*,
-one must include the AVPs which are located in
-$(opensips_install_dir)/etc/dictionary.opensips, both in opensips radius config
-script dictionary and radius server dictionary. Most important are the last three
-AVPs (IDs : 227, 228, 229) which you won't find in any SIP dictionary
-(at least at this moment) because they are only used in openSips.
+> [!IMPORTANT]
+> In order to use *RADIUS*, one must include the AVPs which are located in
+> *$(opensips_install_dir)/etc/dictionary.opensips*, both in opensips radius config
+> script dictionary and radius server dictionary. Most important are the last three
+> AVPs (IDs : 227, 228, 229) which you won't find in any SIP dictionary
+> (at least at this moment) because they are only used in openSips.
 
 
 ### CDRs accounting
@@ -306,13 +303,10 @@ the listed modules must be loaded before this module):
 
 
 - *tm* -- Transaction Manager
-- *a database module* -- If SQL
-support is used.
-- *rr* -- Record Route, if
-"detect_direction" module parameter is enabled.
+- *a database module* -- If SQL support is used.
+- *rr* -- Record Route, if "detect_direction" module parameter is enabled.
 - *an aaa module*
-- *dialog* -- Dialog, if
-"cdr" option is used
+- *dialog* -- Dialog, if "cdr" option is used
 
 
 #### External Libraries or Applications
@@ -714,7 +708,6 @@ Meaning of the parameters is as follows:
 - *type* - the type of accounting you want to do.
 All types have to be separated by '|'. The following parameters can
 be used:
-
   - *log* - syslog accounting;
   - *db* - database accounting;
   - *aaa* - aaa specific accounting;
@@ -722,7 +715,6 @@ be used:
 - *flags* - flags for the accounting type you have
 selected. All the types have to be separated by '|'. The following
 parameters can be used:
-
   - *cdr* - enables dialog-level accounting.
 OpenSIPS will internally detect dialog termination (generation/receipt
 of a BYE request), and store the CDR as soon as the BYE request
@@ -780,7 +772,6 @@ Meaning of the parameters is as follows:
 - *type* - the type of accounting you want to stop.
 All the types have to be separated by '|'. The following parameters can
 be used:
-
   - *log* - stop syslog accounting;
   - *db* - stop database accounting;
   - *aaa* - stop aaa specific accounting;
@@ -788,7 +779,6 @@ be used:
 - *flags* - flags to be reset for the accouting type you have
 selected. All the types have to be separated by '|'. The following
 parameters can be used:
-
   - *cdr* - stop CDR accounting;
   - *missed* - stop logging missed calls;
   - *failed* -  stop failed transaction accounting;

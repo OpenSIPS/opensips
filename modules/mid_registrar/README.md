@@ -1,6 +1,6 @@
 ---
 title: "mid_registrar Module"
-description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component. It opens up new possibilities for leveraging existing infrastructure in order to continue to grow (as subscribers and as registration traffic) whil..."
+description: "The *mid_registrar* is a mid-component of a SIP platform, designed to work between end users and the platform's main registration component."
 ---
 
 ## Admin Guide

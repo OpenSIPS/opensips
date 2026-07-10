@@ -256,7 +256,7 @@ This is an example showing the DATAGRAM format for the
 response.
 
 
-```c title="DATAGRAM request"
+```bash title="DATAGRAM request"
 :get_statistics:\n
 dialog:\n
 tm:\n

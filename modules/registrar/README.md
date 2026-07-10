@@ -588,16 +588,18 @@ had one, the ip from where the registration request came from if the request cam
 from behind nat(if nathelper module used) or the actual ip of the contact;
 
 
-**IMPORTANT:**Contact parameter can be used without
-defining the ip parameter, that is the function can have 3 arguments. On the other
-side, if only the ip parameter is desired to be used, without the contact, the third
-parameter has to be set to NULL( see more in the examples).
+> [!IMPORTANT]
+> Contact parameter can be used without
+> defining the ip parameter, that is the function can have 3 arguments. On the other
+> side, if only the ip parameter is desired to be used, without the contact, the third
+> parameter has to be set to NULL( see more in the examples).
 
 
-**IMPORTANT#2:** If both contact and ip are defined,
-only the contact that will match both the contact and the IP will be removed,
-that is a logical AND between the two. If none defined, all the contacts from
-the specfied AOR shall be removed.
+> [!IMPORTANT]
+> If both contact and ip are defined,
+> only the contact that will match both the contact and the IP will be removed,
+> that is a logical AND between the two. If none defined, all the contacts from
+> the specfied AOR shall be removed.
 
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -727,8 +729,9 @@ The function returns true if an AOR is registered, false otherwise.
 The function does not modify the message being process.
 
 
-NOTE: if called for a reply (from onreply_route), you must pass an
-AOR (as parameter), otherwise the function will fail.
+> [!NOTE]
+> If called for a reply (from onreply_route), you must pass an
+> AOR (as parameter), otherwise the function will fail.
 
 
 Meaning of the parameters is as follows:
