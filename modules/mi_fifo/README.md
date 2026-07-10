@@ -1,6 +1,6 @@
 ---
 title: "mi_fifo Module"
-description: "This is a module which provides a FIFO transport layer implementation for Management Interface. It receives the command over a FIFO file and returns the output through the reply_fifo specified."
+description: "This is a module which provides a FIFO transport layer implementation for Management Interface."
 ---
 
 ## Admin Guide
@@ -86,19 +86,20 @@ The name of the FIFO file to be created for listening and
 reading external commands.
 
 
-*NOTE:*Starting with Linux kernel 4.19,
-processes can no longer read from FIFO files that are saved
-in directories with sticky bits (such as */tmp*)
-and are not owned by the same user the process runs with. This
-prevents external tools (such as *opensips-cli*)
-from running MI commands using a different user (a
-*Permissions denied* error is triggered). If
-you are getting this error while trying to use
-*opensips-cli*, you can fix it by either store
-the fifo file in a non-sticky bit directory (such as
-*/var/run/opensips*), or disable the fifo
-protection using *sysctl fs.protected_fifos = 0*
-(NOT RECOMMENDED).
+> [!NOTE]
+> Starting with Linux kernel 4.19,
+> processes can no longer read from FIFO files that are saved
+> in directories with sticky bits (such as */tmp*)
+> and are not owned by the same user the process runs with. This
+> prevents external tools (such as *opensips-cli*)
+> from running MI commands using a different user (a
+> *Permissions denied* error is triggered). If
+> you are getting this error while trying to use
+> *opensips-cli*, you can fix it by either store
+> the fifo file in a non-sticky bit directory (such as
+> */var/run/opensips*), or disable the fifo
+> protection using *sysctl fs.protected_fifos = 0*
+> (NOT RECOMMENDED).
 
 
 *Default value is "/tmp/opensips_fifo".*
@@ -239,9 +240,10 @@ a whitelist and a blacklist. Only one of them is allowed. Defining
 the parameter a second time will just overwrite the first one.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep)**.
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*

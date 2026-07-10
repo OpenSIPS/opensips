@@ -1,6 +1,6 @@
 ---
 title: "Call Control Module"
-description: "This module allows one to limit the duration of calls and automatically end them when they exceed the imposed limit. Its main use case is to implement a prepaid system, but it can also be used to impose a global limit on all calls processed by the proxy."
+description: "This module allows one to limit the duration of calls and automatically end them when they exceed the imposed limit."
 ---
 
 ## Admin Guide

@@ -78,16 +78,16 @@ basis you should initialize them each time.
 The grammar that describes the id is:
 
 
-id = name(identifier)*
+- id = name(identifier)*
 
 
-identifier = key | index
+- identifier = key | index
 
 
-key = /string | /$var
+- key = /string | /$var
 
 
-index = [integer] | [$var] | []
+- index = [integer] | [$var] | []
 
 
 The "[]" index represents appending to the array.
@@ -99,10 +99,11 @@ Negative indexes can be used to access an array starting
 from the end. So "[-1]" signifies the last element.
 
 
-IMPORTANT: The id strictly complies to this grammar.
-You should be careful when using spaces because they will
-NOT be ignored. This was done to allow keys that contain
-spaces.
+> [!IMPORTANT]
+> The id strictly complies to this grammar.
+> You should be careful when using spaces because they will
+> NOT be ignored. This was done to allow keys that contain
+> spaces.
 
 
 Variables can be used as indexes or keys. Variables
@@ -368,9 +369,10 @@ in all the objects, BUT modifying the variable itsef
 will not cause any changes to other objects.
 
 
-WARNING: You should be careful when using references.
-If you accidentally create a circular reference and try
-to get the value from the object you will crash OPENSIPS.
+> [!WARNING]
+> You should be careful when using references.
+> If you accidentally create a circular reference and try
+> to get the value from the object you will crash OPENSIPS.
 
 
 ```opensips title="Creating a reference"

@@ -51,9 +51,10 @@ Contains a multiple definition of credentials used to perform
 authentication.
 
 
-NOTE that the password can be provided as a plain text password or
-as a precalculated HA1 as a hexa (lower case) string
-(of 32 chars) prefixed with "0x" (so a total of 34 chars).
+> [!NOTE]
+> The password can be provided as a plain text password or
+> as a precalculated HA1 as a hexa (lower case) string
+> (of 32 chars) prefixed with "0x" (so a total of 34 chars).
 
 
 *This parameter is required if UAC authentication is used.*

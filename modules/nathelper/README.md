@@ -1,6 +1,6 @@
 ---
 title: "nathelper Module"
-description: "This is a module to help with NAT traversal. In particular, it helps symmetric UAs that don't advertise they are symmetric and are not able to determine their public address. fix_nated_contact rewrites Contact header field with request's source address:port pair. fix_nated_sdp adds the ac..."
+description: "This is a module to help with NAT traversal."
 ---
 
 ## Admin Guide
@@ -485,9 +485,10 @@ source address:port. If a list of URI parameter is provided, it will
 be added to the modified contact;
 
 
-*IMPORTANT NOTE:* Changes made by this function shall
-not be seen in the async resume route. So make sure you call it in all the
-resume routes where you need the contact fixed.
+> [!IMPORTANT]
+> Changes made by this function shall
+> not be seen in the async resume route. So make sure you call it in all the
+> resume routes where you need the contact fixed.
 
 
 Parameters:

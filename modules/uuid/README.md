@@ -1,6 +1,6 @@
 ---
 title: "UUID Module"
-description: "This module provides a way to generate universally unique identifiers (UUID) as specified in RFC 4122. The UUID is provided as a string representation by reading the [uuid](#pv_uuid) pseudo-variable or calling the [uuid](#func_uuid) script function."
+description: "This module provides a way to generate universally unique identifiers (UUID) as specified in RFC 4122."
 ---
 
 ## Admin Guide
@@ -53,7 +53,6 @@ current time and the local ethernet MAC address) will be generated.
 
 ```opensips title="$uuid usage"
 xlog("generated uuid: $uuid\n");
-				
 ```
 
 
@@ -70,24 +69,18 @@ Generates a new UUID.
 to return the generated UUID.
 - *version* (optional) - UUID version
 number. The supported values are:
-
-
-							*0* - a RFC version 4 or
-							version 1 UUID will be generated, depending on the
-							availability of high-quality randomness from
-							/dev/urandom. This is the default behavior, if the
-							*version* parameter is missing.
-
-
-							*1* - version 1 UUID
-							based on current time and the local ethernet MAC
-							address
-
-
-							*4* - version 4 UUID
-							based on a high-quality random number generator. If
-							not available, a pseudo-random generator will be
-							substituted.
+    - *0* - a RFC version 4 or
+    version 1 UUID will be generated, depending on the
+    availability of high-quality randomness from
+    /dev/urandom. This is the default behavior, if the
+    *version* parameter is missing.
+    - *1* - version 1 UUID
+    based on current time and the local ethernet MAC
+    address
+    - *4* - version 4 UUID
+    based on a high-quality random number generator. If
+    not available, a pseudo-random generator will be
+    substituted.
 
 
 If UUID version 1 is used, the function will return the value

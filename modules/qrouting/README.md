@@ -1,6 +1,6 @@
 ---
 title: "qrouting (Quality-based Routing) Module"
-description: "*qrouting* is a module which sits on top of [drouting](../drouting/doc/drouting.html), [dialog](../dialog/doc/dialog.html) and [tm](../tm/doc/tm.html) and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)..."
+description: "*qrouting* is a module which sits on top of [drouting](../drouting/doc/drouting.html), [dialog](../dialog/doc/dialog.html) and [tm](../tm/doc/tm.html) and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)."
 ---
 
 ## Admin Guide
@@ -84,7 +84,6 @@ An SQL database URL.
 
 ```opensips title="Setting the db_url parameter"
 modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
-	
 ```
 
 
@@ -99,7 +98,6 @@ The name of the quality-based routing profiles table.
 
 ```opensips title="Setting the table_name parameter"
 modparam("qrouting", "table_name", "qr_profiles_bak")
-	
 ```
 
 
@@ -140,7 +138,6 @@ placed towards the start of the list)
 
 ```opensips title="Setting the algorithm parameter"
 modparam("qrouting", "algorithm", "best-dest-first")
-	
 ```
 
 
@@ -156,7 +153,6 @@ will be kept for.
 
 ```opensips title="Setting the connection_timeout parameter"
 modparam("qrouting", "history_span", 15)
-	
 ```
 
 
@@ -180,7 +176,6 @@ due to locking.
 
 ```opensips title="Setting the connect_poll_interval parameter"
 modparam("qrouting", "sampling_interval", 5)
-	
 ```
 
 
@@ -226,7 +221,6 @@ templates:
 
 ```opensips title="Setting the extra_stats parameter"
 modparam("qrouting", "extra_stats", "+mos/60; +r_factor; -503_replies/100")
-	
 ```
 
 
@@ -244,7 +238,6 @@ of the pair is assumed to be healthy.
 
 ```opensips title="Setting the min_samples_asr parameter"
 modparam("qrouting", "min_samples_asr", 50)
-	
 ```
 
 
@@ -262,7 +255,6 @@ of the pair is assumed to be healthy.
 
 ```opensips title="Setting the min_samples_ccr parameter"
 modparam("qrouting", "min_samples_ccr", 50)
-	
 ```
 
 
@@ -280,7 +272,6 @@ of the pair is assumed to be healthy.
 
 ```opensips title="Setting the min_samples_pdd parameter"
 modparam("qrouting", "min_samples_pdd", 15)
-	
 ```
 
 
@@ -298,7 +289,6 @@ of the pair is assumed to be healthy.
 
 ```opensips title="Setting the min_samples_ast parameter"
 modparam("qrouting", "min_samples_ast", 15)
-	
 ```
 
 
@@ -316,7 +306,6 @@ of the pair is assumed to be healthy.
 
 ```opensips title="Setting the min_samples_acd parameter"
 modparam("qrouting", "min_samples_acd", 30)
-	
 ```
 
 
@@ -335,7 +324,6 @@ will be triggered.
 
 ```opensips title="Setting the event_bad_dst_threshold parameter"
 modparam("qrouting", "event_bad_dst_threshold", "0.5")
-	
 ```
 
 
@@ -350,7 +338,6 @@ The amount of decimal digits to use in logging or MI output.
 
 ```opensips title="Setting the decimal_digits parameter"
 modparam("qrouting", "decimal_digits", 4)
-	
 ```
 
 
@@ -453,7 +440,6 @@ This function can be used from any route.
 ```opensips title="qr_enable_dst() usage"
 # the ban has expired, let's re-enable this gateway and see how it behaves
 qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
-	
 ```
 
 
@@ -471,7 +457,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi qr_reload
-		
 ```
 
 
@@ -502,7 +487,6 @@ opensips-cli -x mi qr_status
 opensips-cli -x mi qr_status pstn
 opensips-cli -x mi qr_status pstn 11 MY-GW-3
 opensips-cli -x mi qr_status pstn 17 MY-CARR-7
-		
 ```
 
 
@@ -528,7 +512,6 @@ MI FIFO Command Format:
 ```bash
 opensips-cli -x mi qr_disable_dst 14 MY-CARR-7
 opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
-		
 ```
 
 
@@ -553,7 +536,6 @@ MI FIFO Command Format:
 ```bash
 opensips-cli -x mi qr_enable_dst 14 MY-CARR-7
 opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
-		
 ```
 
 

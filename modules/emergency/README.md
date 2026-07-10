@@ -1,6 +1,6 @@
 ---
 title: "Emergency Call Module"
-description: "The emergency module provides emergency call treatment for OpenSIPS, following the architecture i2 specification of the American entity NENA. (National Emergency Number Association). The NENA solution routes the emergency call to a closer gateway (ESGW) and this forward the call to a PSAP(call ce..."
+description: "The emergency module provides emergency call treatment for OpenSIPS, following the architecture i2 specification of the American entity NENA."
 ---
 
 ## Admin Guide
@@ -140,22 +140,22 @@ modparam("emergency", "db_table_provider", "emergency_service_provider")
 
 This parameter define what role the opensips will take to treat emergency   
 call:
-0 – The opensips is the Call Server in scenario I. In this role the 
+- 0 – The opensips is the Call Server in scenario I. In this role the 
 opensips implements the V2 interface, directly queries the VPC for 
 ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
 Via the PSTN using the LRO if routing fails.
-1 – The opensips is the Call Server in scenario II that sends the INVITE on 
+- 1 – The opensips is the Call Server in scenario II that sends the INVITE on 
 emergency call to a Routing Proxy provider. The Routing Proxy provider 
 implements the V2 interface.
-2 - The opensips is the Routing Proxy in scenario II. In this role the 
+- 2 - The opensips is the Routing Proxy in scenario II. In this role the 
 opensips implements the V2 interface, directly queries the VPC for 
 ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
 Via the PSTN using the LRO if routing fails.
-3 - The opensips is the Redirect Proxy in scenario III that receives the 
+- 3 - The opensips is the Redirect Proxy in scenario III that receives the 
 INVITE on emergency call from Call Server. The Redirect Server obtains 
 the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
 Call Server.	        
-4 - The opensips is the Call Server in scenario III that sends the INVITE on 
+- 4 - The opensips is the Call Server in scenario III that sends the INVITE on 
 emergency call to a Redirect Server. The Redirect Server obtains the 
 ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
 ESGWRI/ESQK in the header contact in the SIP response. The opensips  
@@ -286,15 +286,12 @@ This function can be used from the *REQUEST* routes.
 ```opensips title="emergency_call() usage"
 ...
 # Example of treat of emergency call
-
-    if (emergency_call()){
-
-        xlog("emergency call\n");
-        t_on_failure("emergency_call");
-        t_relay();
-        exit;
-
-  	}
+if (emergency_call()){
+    xlog("emergency call\n");
+    t_on_failure("emergency_call");
+    t_relay();
+    exit;
+}
 ...
 		
 ```
@@ -316,15 +313,13 @@ This function can be used from the *FAILURE* routes.
 ```opensips title="failure() usage"
 ...
 # Example od treat of contingency in emergency call
-
-    if (failure()) {
-        if (!t_relay()) {
-           send_reply("500","Internal Error");
-        };
-        exit;
-    }
+if (failure()) {
+       if (!t_relay()) {
+          send_reply("500","Internal Error");
+       };
+       exit;
+}
 ...
-		
 ```
 <!-- CONTRIBUTORS -->
 

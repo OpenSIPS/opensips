@@ -1,6 +1,6 @@
 ---
 title: "event_stream Module"
-description: "This module provides a TCP transport layer implementation for the Event Interface. The module can either send a JSON-RPC notification or a standard request and wait for the response (when used in *sync_mode*)."
+description: "This module provides a TCP transport layer implementation for the Event Interface."
 ---
 
 ## Admin Guide

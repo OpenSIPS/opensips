@@ -277,8 +277,9 @@ first header field; it may contain pseudo-variables.
 second header field.
 
 
-Note: If 'string2' is present, then the 'string' param is pointing to the
-outbound interface and the 'string2' param is pointing to the inbound interface.
+> [!NOTE]
+> If 'string2' is present, then the 'string' param is pointing to the
+> outbound interface and the 'string2' param is pointing to the inbound interface.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and 

@@ -1,6 +1,6 @@
 ---
 title: "Calling Operations Module"
-description: "This module provides a set of functions that allow the user to control ongoing calls. It can be used to trigger a call (either blind or attended) transfer, or put a call on hold from the proxy side, rather than the end-device side. The module binds on top of the [OpenSIPS Dialog module]..."
+description: "This module provides a set of functions that allow the user to control ongoing calls."
 ---
 
 ## Admin Guide
@@ -447,21 +447,20 @@ new call that is transferring the old *callid* call.
 - *destination* - the URI destination
 where the *leg* is being transferred.
 - *state* - the state of the transfer:
-
-				*start* - triggered when the
-					REFER message is being sent out to the transferred participant.
-				*notify* - triggered when
-					a NOTIFY refer event is received from the transferred participant.
-					The *status* parameter contains extra
-					information about the status of the transferring call.
-				*ok* - triggered when
-					the transfer is completed - the call is answered by
-					the transferred participant.
-				*fail* - triggered when
-					a transfer has failed due to various reasons. If we were
-					unable to start the call transfer (i.e. send the REFER),
-					the *status* parameter is empty,
-					otherwise it contains information about the failure.
+	* *start* - triggered when the
+		REFER message is being sent out to the transferred participant.
+	* *notify* - triggered when
+		a NOTIFY refer event is received from the transferred participant.
+		The *status* parameter contains extra
+		information about the status of the transferring call.
+	* *ok* - triggered when
+		the transfer is completed - the call is answered by
+		the transferred participant.
+	* *fail* - triggered when
+		a transfer has failed due to various reasons. If we were
+		unable to start the call transfer (i.e. send the REFER),
+		the *status* parameter is empty,
+		otherwise it contains information about the failure.
 - *status* - contains extra information about
 the success or failure of the call.
 
@@ -489,13 +488,9 @@ by the call on hold, or resumed.
 *unhold* action that is being performed.
 - *state* - the state of the action that
 is being performed.
-
-				*start* - triggered when the
-					re-INVITE is being sent out to the participant being put on hold.
-				*ok* - triggered when
-					the on hold/resume action is successfully completed.
-				*fail* - triggered when
-					the action failed.
+  * *start* - triggered when the re-INVITE is being sent out to the participant being put on hold.
+  * *ok* - triggered when the on hold/resume action is successfully completed.
+  * *fail* - triggered when the action failed.
 <!-- CONTRIBUTORS -->
 
 ### License

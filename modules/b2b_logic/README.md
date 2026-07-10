@@ -1,6 +1,6 @@
 ---
 title: "B2B_LOGIC"
-description: "The B2BUA implementation in OpenSIPS is separated in two layers: a lower one(coded in b2b_entities module)- which implements the basic functions of a UAS and UAC an upper one - which represents the logic engine of B2BUA, responsible of actually implementing the B2BUA servic..."
+description: "This module represents the logic engine of B2BUA, responsible of actually implementing the B2BUA services using the functions offered by the low level."
 ---
 
 ## Admin Guide
@@ -432,12 +432,11 @@ Parameters:
 
 
 - *flags (string)* - meaning of the flags is as follows:
-
-					*t[nn]* -  Call setup timeout for topology hiding scenario.
-					Example: t300.
-					*a* -  Transparent authentication. In this mode b2b passes your 401
-					or 407 authentication request to destination server.
-					*p* -  Preserve To: header.
+	- *t[nn]* -  Call setup timeout for topology hiding scenario.
+	Example: t300.
+	- *a* -  Transparent authentication. In this mode b2b passes your 401
+	or 407 authentication request to destination server.
+	- *p* -  Preserve To: header.
 - *scenario_param1 (string, optional)*
 - *scenario_param2 (string, optional)*
 - *scenario_param3 (string, optional)*

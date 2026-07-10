@@ -1,6 +1,6 @@
 ---
 title: "cpl_c Module"
-description: "cpl_c modules implements a CPL (Call Processing Language) interpreter. Support for uploading/downloading/removing scripts via SIP REGISTER method is present."
+description: "cpl_c modules implements a CPL (Call Processing Language) interpreter."
 ---
 
 ## Admin Guide
@@ -492,7 +492,7 @@ MI FIFO Command format:
 
 
 ```bash
-                 opensips-cli -x mi LOAD_CPL sip:bob@domain.com cpl_script.xml
+opensips-cli -x mi LOAD_CPL sip:bob@domain.com cpl_script.xml
 ```
 
 
@@ -517,7 +517,7 @@ MI FIFO Command format:
 
 
 ```bash
-                 opensips-cli -x mi REMOVE_CPL sip:bob@domain.com
+opensips-cli -x mi REMOVE_CPL sip:bob@domain.com
 ```
 
 
@@ -540,7 +540,7 @@ MI FIFO Command format:
 
 
 ```bash
-                 opensips-cli -x mi GET_CPL sip:bob@domain.com
+opensips-cli -x mi GET_CPL sip:bob@domain.com
 ```
 
 

@@ -1,6 +1,6 @@
 ---
 title: "sipmsgops Module"
-description: "The module implements SIP based operations over the messages processed by OpenSIPS. SIP is a text based protocol and the module provides a large set of very useful functions to manipulate the message at SIP level, e.g., inserting new headers or deleting them, check for method type, etc."
+description: "The module implements SIP based operations over the messages processed by OpenSIPS."
 ---
 
 ## Admin Guide
@@ -82,11 +82,11 @@ Meaning of the parameters is as follows:
 - *hdr_anchor (string, optional)* - Header name
 after which the 'txt' is appended.
 
-
-Note: Headers which are added in main route cannot be removed in further routes
-(e.g. failure routes). So, the idea is not to add there any headers that you
-might want to remove later. To add headers temporarily, use the branch route
-because the changes you do there are per-branch.
+> [!NOTE]
+> Headers which are added in main route cannot be removed in further routes
+> (e.g. failure routes). So, the idea is not to add there any headers that you
+> might want to remove later. To add headers temporarily, use the branch route
+> because the changes you do there are per-branch.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

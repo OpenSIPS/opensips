@@ -1,6 +1,6 @@
 ---
 title: "proto_wss Module"
-description: "The WSS (Secure WebSocket) module provides the ability to communicate with a WebSocket ([RFC 6455](http://tools.ietf.org/html/rfc6455)) client or server over a secure (TLS encrypted) channel. As part of the [WebRTC](https://webrtc.org/) specifications, this protocol can be used to provide se..."
+description: "The WSS (Secure WebSocket) module provides the ability to communicate with a WebSocket ([RFC 6455](http://tools.ietf.org/html/rfc6455)) client or server over a secure (TLS encrypted) channel."
 ---
 
 ## Admin Guide
@@ -21,8 +21,8 @@ This module behaves as any other transport protocol module: in order to
 use it, you must define one or more listeners that will handle the secure
 WebSocket traffic, *after* the `mpath`
 parameter:
-	```c
 
+```opensips
 ...
 mpath=/path/to/modules
 ...
@@ -30,9 +30,10 @@ socket=wss:10.0.0.1			# change with the listening IP
 socket=wss:10.0.0.1:5060	# change with the listening IP and port
 ...
 ```
-Besides that, you need to define the TLS parameters for securing the connection. This is done through the *tls_mgm* module interface, similar to the *proto_tls* module:
-	```c
 
+Besides that, you need to define the TLS parameters for securing the connection. This is done through the *tls_mgm* module interface, similar to the *proto_tls* module:
+
+```opensips
 modparam("tls_mgm", "certificate", "/certs/biloxy.com/cert.pem")
 modparam("tls_mgm", "private_key", "/certs/biloxy.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "/certs/wellknownCAs")
@@ -93,8 +94,7 @@ port should handle WSS traffic.
 ```opensips title="Set listen variable"
 ...
 socket= wss:1.2.3.4:44344
-...
-				
+...			
 ```
 
 
@@ -117,8 +117,7 @@ option in the SIP listener defintion.
 ```opensips title="Set wss_port variable"
 ...
 modparam("proto_wss", "wss_port", 44344)
-...
-				
+...		
 ```
 
 
@@ -216,9 +215,10 @@ reply belonging to  web socket protocol handshake and network layer
 information shall be sent.
 
 
-**WARNING:**A tracing module must be
-loaded in order for this parameter to work. (for example
-**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -227,7 +227,6 @@ loaded in order for this parameter to work. (for example
 ```opensips title="Set trace_destination parameter"
 ...
 modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
-
 modparam("proto_wss", "trace_destination", "hep_dest")
 ...
 ```
@@ -261,19 +260,20 @@ have to define a [trace destination](#param_trace_destination) and trace must be
 on at the time this connection is opened.
 
 
-**IMPORTANT**
-Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
-either the entity that is connecting to OpenSIPS or the entity to which
-OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
-it is simply the socket other than the OpenSIPS socket. In order to match
-OpenSIPS interface (either the one that accepted the connection or the one
-that initiated a connection) **$socket_in(ip)** (ip) and
-**$socket_in(port)** (port) can be used.
+> [!IMPORTANT]
+> Filtering on ip addresses and ports can be made using **$si** and **$sp** for matching
+> either the entity that is connecting to OpenSIPS or the entity to which
+> OpenSIPS is connecting. The name might be misleading (**$si** meaning the source ip if you read the docs) but in reality
+> it is simply the socket other than the OpenSIPS socket. In order to match
+> OpenSIPS interface (either the one that accepted the connection or the one
+> that initiated a connection) **$socket_in(ip)** (ip) and
+> **$socket_in(port)** (port) can be used.
 
 
-**WARNING:** IF [trace on](#param_trace_on) is
-set to 0 or tracing is deactived via the mi command [mi wss trace](#mi_wss_trace)
-this route won't be called.
+> [!WARNING]
+> If [trace on](#param_trace_on) is
+> set to 0 or tracing is deactived via the mi command [mi trace](#mi_trace)
+> this route won't be called.
 
 
 ```opensips title="Set trace_filter_route parameter"
@@ -314,8 +314,6 @@ during the wait period when a new session is being initiated (outbound).
 
 ```opensips title="Set wss_tls_handshake_timeout variable"
 param("proto_wss", "wss_tls_handshake_timeout", 200) # number of milliseconds
-
-			
 ```
 
 
@@ -332,10 +330,8 @@ the handshake process (see: wss_tls_handshake_timeout)
 *Default value is 100.*
 
 
-```c title="Set wss_send_timeout variable"
-aram("proto_wss", "wss_send_timeout", 200) # number of milliseconds
-
-			
+```opensips title="Set wss_send_timeout variable"
+modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds			
 ```
 
 
@@ -355,17 +351,15 @@ Parameters:
 can be missing and the command will show the current tracing
 status for this module( on or off );
 Possible values:
-
-							on
-							off
+	- on
+	- off
 
 
 MI FIFO Command Format:
 
 
 ```bash
-			opensips-cli -x mi wss_trace on
-			
+opensips-cli -x mi wss_trace on
 ```
 
 
