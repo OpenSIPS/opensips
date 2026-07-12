@@ -1055,7 +1055,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 229 115 4310 4613
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 239 116 5387 4613
    2. Jan Janak (@janakj) 148 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 141 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 103 68 2706 678
@@ -1096,8 +1096,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Feb 2026
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2026
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
    5.  Maksym Sobolyev (@sobomax)          Dec 2003 - Nov 2023
