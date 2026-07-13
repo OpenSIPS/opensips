@@ -1,6 +1,6 @@
 ---
 title: "HTTP2D MODULE"
-description: "This module provides an RFC 7540/9113 HTTP/2 server implementation with \"h2\" ALPN support, based on the **nghttp2** library ([https://nghttp2.org/](https://nghttp2.org/))."
+description: "This module provides an RFC 7540/9113 HTTP/2 server implementation with h2 ALPN support, based on the nghttp2 library ([https://nghttp2.org/](https://nghttp2.org/))."
 ---
 
 ## Admin Guide
@@ -10,19 +10,19 @@ description: "This module provides an RFC 7540/9113 HTTP/2 server implementation
 
 
 This module provides an RFC 7540/9113 HTTP/2 server implementation with "h2" ALPN support,
-		based on the **nghttp2** library ([https://nghttp2.org/](https://nghttp2.org/)).
+based on the **nghttp2** library ([https://nghttp2.org/](https://nghttp2.org/)).
 
 
 HTTP/2, introduced in 2015, is a binary protocol with added transactional layers (SESSION, FRAME),
-		which allow identifying and managing multiple, concurrent transfers over the same TCP/TLS connection.
-		Thus, the revised protocol primarily aims to reduce resource usage for both clients and servers, by
-		reducing the amount of TCP and/or TLS handshakes performed when loading a given web page.
+which allow identifying and managing multiple, concurrent transfers over the same TCP/TLS connection.
+Thus, the revised protocol primarily aims to reduce resource usage for both clients and servers, by
+reducing the amount of TCP and/or TLS handshakes performed when loading a given web page.
 
 
 The OpenSIPS **http2d** server includes support for both "h2" (TLS secured)
-		and "h2c" (cleartext) HTTP/2 connections.  The requests arrive at
-		*opensips.cfg* level using the [http2 request](#event_e_http2_request) event,
-		where script writers may process the data and respond accordingly.
+and "h2c" (cleartext) HTTP/2 connections.  The requests arrive at
+*opensips.cfg* level using the [http2 request](#event_e_http2_request) event,
+where script writers may process the data and respond accordingly.
 
 
 ### Dependencies
@@ -38,11 +38,11 @@ None.
 
 
 The HTTP/2 server is provided by the **nghttp2** library,
-		which runs on top of the **libevent** server framework.
+which runs on top of the **libevent** server framework.
 
 
 Overall, the following libraries must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libnghttp2*
@@ -113,9 +113,9 @@ modparam("http2d", "tls_cert_key", "/etc/pki/http2/private/key.pem")
 
 
 The maximum amount of bytes allowed for all header field names and values
-		combined in a single HTTP/2 request processed by the server.  Once this
-		threshold is reached, extra headers will no longer be provided at script
-		level and will be reported as errors instead.
+combined in a single HTTP/2 request processed by the server.  Once this
+threshold is reached, extra headers will no longer be provided at script
+level and will be reported as errors instead.
 
 
 Default value is *8192* bytes.
@@ -130,11 +130,11 @@ modparam("http2d", "max_headers_size", 16384)
 
 
 The maximum amount of time, in milliseconds, that the library will
-		allow the opensips.cfg processing to take for a given HTTP/2 request.
+allow the opensips.cfg processing to take for a given HTTP/2 request.
 
 
 Once this timeout is reached, the module will auto-generate a
-		408 (request timeout) reply.
+408 (request timeout) reply.
 
 
 Default value is *2000* ms.
@@ -152,8 +152,8 @@ modparam("http2d", "response_timeout", 5000)
 
 
 Sends a response for the HTTP/2 request being processed.  The *":status"*
-		header field will be automatically included by the module as 1st header, so it must not be
-		included in the *headers_json* array.
+header field will be automatically included by the module as 1st header, so it must not be
+included in the *headers_json* array.
 
 
 *Parameters*
@@ -162,7 +162,7 @@ Sends a response for the HTTP/2 request being processed.  The *":status"*
 - *code* (integer) - The HTTP/2 reply code
 - *headers_json* (string, default: *NULL*)
 				- Optional JSON Array containing {"header": "value"} elements, denoting HTTP/2
-				headers and their values to be included in the response message.
+headers and their values to be included in the response message.
 - *data* (string, default: *NULL*)
 				- Optional DATA payload to include in the response message.
 
@@ -209,8 +209,8 @@ event_route [E_HTTP2_REQUEST] {
 
 
 This event is raised whenever the *http2d*
-		module is loaded and OpenSIPS receives an HTTP/2 request on the configured
-		listening interface(s).
+module is loaded and OpenSIPS receives an HTTP/2 request on the configured
+listening interface(s).
 
 
 Parameters:
@@ -219,16 +219,16 @@ Parameters:
 - *method (string)* - value of the ":method" HTTP/2 header
 - *path (string)* - value of the ":path" HTTP/2 header
 - *headers (string)* - JSON Array with all headers of the request,
-						including pseudo-headers
+including pseudo-headers
 - *data (string, default: NULL)* - If the request included a payload,
-						this parameter will hold its contents
+this parameter will hold its contents
 
 
 Note that this event is currently designed to be mainly consumed by an *event_route*,
-		since that is the only way to gain access to the [http2 send response](#func_http2_send_response)
-		function in order to build custom response messages.  On the other hand,
-		if the application does not mind the answer being always a 200 with no payload,
-		this event can be successfully consumed through any other EVI-compatible delivery channel ☺️
+since that is the only way to gain access to the [http2 send response](#func_http2_send_response)
+function in order to build custom response messages.  On the other hand,
+if the application does not mind the answer being always a 200 with no payload,
+this event can be successfully consumed through any other EVI-compatible delivery channel ☺️
 <!-- CONTRIBUTORS -->
 
 ### License
