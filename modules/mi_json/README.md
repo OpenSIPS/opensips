@@ -10,7 +10,7 @@ description: "This module implements a JSON server that handles GET requests and
 
 
 This module implements a JSON server that handles GET
-		requests and generates JSON responses.
+requests and generates JSON responses.
 
 
 ### Dependencies
@@ -38,7 +38,7 @@ The following modules must be loaded before this module:
 
 
 Specifies the root path for JSON requests:
-		http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
+http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
 
 
 *The default value is "json".*
@@ -61,20 +61,20 @@ No function exported to be used from configuration file.
 
 
 Commands with large responses (like ul_dump) will fail if the
-		configured size of the httpd buffer is to small (or if there
-		isn't enough pkg memory configured).
+configured size of the httpd buffer is to small (or if there
+isn't enough pkg memory configured).
 
 
 Future realeases of the httpd and mi_json modules
-		will address this issue.
+will address this issue.
 
 
 ### Examples
 
 
 This is an example showing the JSON format for the
-		"get_statistics net: uri:" MI command.
-		Notice how the paramaters are comma-separated then URI-encoded.
+"get_statistics net: uri:" MI command.
+Notice how the paramaters are comma-separated then URI-encoded.
 
 
 ```c title="JSON request"
@@ -92,7 +92,7 @@ Date: Fri, 01 Nov 2013 12:00:00 GMT
 
 
 Here is another example showing the JSON format for the
-		"ps" MI command.
+"ps" MI command.
 
 
 ```c title="JSON request"

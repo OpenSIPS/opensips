@@ -1,6 +1,6 @@
 ---
 title: "SQL Cacher Module"
-description: "The sql_cacher module introduces the possibility to cache data from a SQL-based database (using different OpenSIPS modules which implement the DB API) into a cache system implemented in OpenSIPS through the CacheDB Interface. This is done by specifying the databases URLs, SQL table to be used,..."
+description: "The sql_cacher module introduces the possibility to cache data from a SQL-based database (using different OpenSIPS modules which implement the DB API) into a cache system implemented in OpenSIPS through the CacheDB Interface."
 ---
 
 ## Admin Guide
@@ -10,34 +10,34 @@ description: "The sql_cacher module introduces the possibility to cache data fro
 
 
 The sql_cacher module introduces the possibility to cache data from a
-	SQL-based database (using different OpenSIPS modules which implement the DB API)
-	into a cache system implemented in OpenSIPS through the CacheDB Interface.
-	This is done by specifying the databases URLs, SQL table to be used, desired
-	columns to be cached and other details in the OpenSIPS configuration script.
+SQL-based database (using different OpenSIPS modules which implement the DB API)
+into a cache system implemented in OpenSIPS through the CacheDB Interface.
+This is done by specifying the databases URLs, SQL table to be used, desired
+columns to be cached and other details in the OpenSIPS configuration script.
 
 
 The cached data is available in the script through the read-only pseudovariable
-	"$sql_cached_value" similar to a Key-Value system. A specified
-	column from the SQL table has the role of "key" therefore the value
-	of this column along with the name of a required column are provided as
-	"parameters" to the pseudovariable returning the appropriate value of the column.
+"$sql_cached_value" similar to a Key-Value system. A specified
+column from the SQL table has the role of "key" therefore the value
+of this column along with the name of a required column are provided as
+"parameters" to the pseudovariable returning the appropriate value of the column.
 
 
 There are two types of caching available:
 
 
 - *full caching* - the entire SQL table (all the rows) is loaded
-		into the cache at OpenSIPS startup;
+into the cache at OpenSIPS startup;
 - *on demand* - the rows of the SQL table are loaded at runtime
-		when appropriate keys are requested.
+when appropriate keys are requested.
 
 
 For on demand caching, the stored values have a configurable expire period after
-	which they are permanently removed unless an MI reload function is called for a
-	specific key. In the case of full caching the data is automatically reloaded at
-	a configurable interval. Consequently if the data in the SQL database changes
-	and a MI reload function is  called, the old data remains in cache only
-	until it expires.
+which they are permanently removed unless an MI reload function is called for a
+specific key. In the case of full caching the data is automatically reloaded at
+a configurable interval. Consequently if the data in the SQL database changes
+and a MI reload function is  called, the old data remains in cache only
+until it expires.
 
 
 ### Dependencies
@@ -47,7 +47,7 @@ The following modules must be loaded before this module:
 
 
 - *The OpenSIPS modules that offer actual database back-end
-		    	connection*
+connection*
 
 
 ### Exported Parameters
@@ -57,16 +57,16 @@ The following modules must be loaded before this module:
 
 
 This parameter can be set multiple times in order to cache multiple SQL
-		tables or even the same table but with a different configuration. The module
-		distinguishes those different entries by an "id" string.
+tables or even the same table but with a different configuration. The module
+distinguishes those different entries by an "id" string.
 
 
 The caching entry is specified via this parameter that has it's own
-		subparameters. Each of those parameters are separated by a
-		delimiter configured by [spec delimiter](#param_spec_delimiter)
-		and have the following format:
-		*param_name=param_value*
-		The parameters are:
+subparameters. Each of those parameters are separated by a
+delimiter configured by [spec delimiter](#param_spec_delimiter)
+and have the following format:
+*param_name=param_value*
+The parameters are:
 
 
 - *id* : cache entry id
@@ -75,25 +75,24 @@ The caching entry is specified via this parameter that has it's own
 - *table* : SQL database table name
 - *key* : SQL database column name of the "key" column
 - *columns* : names of the columns to be cached from the
-			SQL database, separated by a delimiter configured by
-			[columns delimiter](#param_columns_delimiter).
-			If not present, all the columns from the table will be cached
+SQL database, separated by a delimiter configured by
+[columns delimiter](#param_columns_delimiter).
+If not present, all the columns from the table will be cached
 - *on_demand* : specifies the type of caching:
-			
-				0 : full caching
-				1 : on demand
-			
-			If not present, default value is "0"
+	- 0 : full caching
+	- 1 : on demand
+
+	*If not present, default value is "0".*
 - *expire* : expire period for the values stored
-			in the cache for the on demand caching type in seconds
-			If not present, default value is "1 hour"
+in the cache for the on demand caching type in seconds
+If not present, default value is "1 hour"
 
 
 The parameters must be given in the exact order specified above.
 
 
 Overall, the parameter does not have a default value, it must be set
-		at least once in order to cache any table.
+at least once in order to cache any table.
 
 
 ```opensips title="cache_table parameter usage"
@@ -114,8 +113,8 @@ on_demand=0")
 
 
 The delimiter to be used in the caching entry specification provided in the
-		*cache_table* parameter to separate the subparameters. It
-		must be a single character.
+*cache_table* parameter to separate the subparameters. It
+must be a single character.
 
 
 The default value is newline.
@@ -132,8 +131,8 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 
 
 The delimiter to be used in the "$sql_cached_value"
-		pseudovariable to separate the caching id, the desired column name
-		and the value of the key. It must be a single character.
+pseudovariable to separate the caching id, the desired column name
+and the value of the key. It must be a single character.
 
 
 The default value is ":".
@@ -150,8 +149,8 @@ modparam("sql_cacher", "pvar_delimiter", " ")
 
 
 The delimiter to be used in the *columns* subparameter of
-		the caching entry specification provided in the *cache_table*
-		parameter to separate the desired columns names. It must be a single character.
+the caching entry specification provided in the *cache_table*
+parameter to separate the desired columns names. It must be a single character.
 
 
 The default value is " "(space).
@@ -168,8 +167,8 @@ modparam("sql_cacher", "columns_delimiter", ",")
 
 
 The number of rows to be fetched into OpenSIPS private memory in one chunk from
-		the SQL database driver. When querying large tables, adjust this parameter
-		accordingly to avoid the filling of OpenSIPS private memory.
+the SQL database driver. When querying large tables, adjust this parameter
+accordingly to avoid the filling of OpenSIPS private memory.
 
 
 The default value is "100".
@@ -186,8 +185,8 @@ modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
 
 
 Expire period for the values stored in cache for the full caching type
-		in seconds. This is the longest time that deleted or modified data remains
-		in cache.
+in seconds. This is the longest time that deleted or modified data remains
+in cache.
 
 
 The default value is "24 hours".
@@ -204,7 +203,7 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 
 
 This parameter represents how many seconds before the data expires (for full caching) the
-		automatic reloading is triggered.
+automatic reloading is triggered.
 
 
 The default value is "60 s".
@@ -230,14 +229,14 @@ No function exported to be used from configuration file.
 
 
 Reloads the entire SQL table in cache for full caching or the specified
-			key for on demand caching.
+key for on demand caching.
 
 
 The first parameter is the caching id.
 
 
 The second parameter must be a value of the key column from the SQL table.
-			For full caching this parameter is not needed.
+For full caching this parameter is not needed.
 
 
 ```bash title="sql_cacher_reload usage"
@@ -256,11 +255,11 @@ $ opensipsctl fifo sql_cacher_reload caching_name key
 
 
 The cached data is available through this read-only PV.The format
-				is the following:
+is the following:
 
 
 - *sep* : separator configured by
-					[pvar delimiter](#param_pvar_delimiter)
+[pvar delimiter](#param_pvar_delimiter)
 - *id*  : cache entry id
 - *col* : name of the required column
 - *key* : value of the "key" column
@@ -281,8 +280,8 @@ This section provides an usage example for the caching of an SQL table.
 
 
 Suppose one in interested in caching the columns: "host_name", 
-	"reply_code", "flags" and "next_domain"
-	 from the "carrierfailureroute" table of the OpenSIPS database.
+"reply_code", "flags" and "next_domain"
+from the "carrierfailureroute" table of the OpenSIPS database.
 
 
 ```c title="Example database content - carrierfailureroute table"
@@ -301,7 +300,7 @@ Suppose one in interested in caching the columns: "host_name",
 
 
 In the first place, the details of the caching must be provided by setting 
-		the module parameter "cache_table" in the OpenSIPS configuration script.
+the module parameter "cache_table" in the OpenSIPS configuration script.
 
 
 ```opensips title="Setting the cache_table parameter"

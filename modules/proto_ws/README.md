@@ -1,6 +1,6 @@
 ---
 title: "proto_ws Module"
-description: "The WebSocket protocol ([RFC 6455](http://tools.ietf.org/html/rfc6455)) provides an end-to-end full-duplex communication channel between two web-based applications. This allows WebSocket enabled browsers to connect to a WebSocket server and exchange any type of data. [RFC 7118](http://tools...."
+description: "The WebSocket protocol ([RFC 6455](http://tools.ietf.org/html/rfc6455)) provides an end-to-end full-duplex communication channel between two web-based applications."
 ---
 
 ## Admin Guide
@@ -10,23 +10,23 @@ description: "The WebSocket protocol ([RFC 6455](http://tools.ietf.org/html/rfc6
 
 
 The WebSocket protocol ([RFC 6455](http://tools.ietf.org/html/rfc6455))
-	 provides an end-to-end full-duplex communication channel between two web-based applications.
-	This allows WebSocket enabled browsers to connect to a WebSocket server
-	and exchange any type of data.
-	[RFC 7118](http://tools.ietf.org/html/rfc7118)
-	provides the specifications for transporting SIP messages over the WebSocket protocol.
+provides an end-to-end full-duplex communication channel between two web-based applications.
+This allows WebSocket enabled browsers to connect to a WebSocket server
+and exchange any type of data.
+[RFC 7118](http://tools.ietf.org/html/rfc7118)
+provides the specifications for transporting SIP messages over the WebSocket protocol.
 
 
 The **proto_ws** module is transport module that provides
-	communication over the WebSocket protocol. This module is fully compliant with the
-	[RFC 7118](http://tools.ietf.org/html/rfc7118), thus allowing browsers
-	to act as SIP clients for the OpenSIPS proxy.
+communication over the WebSocket protocol. This module is fully compliant with the
+[RFC 7118](http://tools.ietf.org/html/rfc7118), thus allowing browsers
+to act as SIP clients for the OpenSIPS proxy.
 
 
 The current implementation acts both as WebSocket server and client, thus it can 
-	accept connections from WebSocket clients and can also initiate connections to another
-	WebSocket server. After the connection is established, messages can flow  in
-	both directions.
+accept connections from WebSocket clients and can also initiate connections to another
+WebSocket server. After the connection is established, messages can flow  in
+both directions.
 
 
 OpenSIPS supports the following WebSocket operations:
@@ -39,11 +39,11 @@ OpenSIPS supports the following WebSocket operations:
 
 
 Once loaded, you will be able to define WebSocket listeners in your script. To
-		add a listener, you have to add its IP, and optionally the listening port,
-		*after* the `mpath` parameter, similar to this
-		example:
-	```c
+add a listener, you have to add its IP, and optionally the listening port,
+*after* the `mpath` parameter, similar to this
+example:
 
+```opensips
 ...
 mpath=/path/to/modules
 ...
@@ -69,7 +69,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -82,13 +82,13 @@ The following libraries or applications must be installed before
 
 
 The default port to be used for all WS related operation. Be careful
-		as the default port impacts both the SIP listening part (if no port is
-		defined in the WS listeners) and the SIP sending part (if the 
-		destination WS URI has no explicit port).
+as the default port impacts both the SIP listening part (if no port is
+defined in the WS listeners) and the SIP sending part (if the 
+destination WS URI has no explicit port).
 
 
 If you want to change only the listening port for WS, use the port
-		option in the SIP listener defintion.
+option in the SIP listener defintion.
 
 
 *Default value is 80.*
@@ -105,8 +105,8 @@ modparam("proto_ws", "ws_port", 8080)
 
 
 Time in milliseconds after a WebSocket connection will be closed if it is
-		not available for blocking writing in this interval (and OpenSIPS wants
-		to send something on it).
+not available for blocking writing in this interval (and OpenSIPS wants
+to send something on it).
 
 
 *Default value is 100 ms.*
@@ -123,11 +123,11 @@ modparam("proto_ws", "ws_send_timeout", 200)
 
 
 The maximum number of chunks in which a SIP message is expected to
-			arrive via WebSocket. If a received packet is more fragmented than this,
-			the connection is dropped (either the connection is very
-			overloaded and this leads to high fragmentation - or we are the
-			victim of an ongoing attack where the attacker is sending very
-			fragmented traffic in order to decrease server performance).
+arrive via WebSocket. If a received packet is more fragmented than this,
+the connection is dropped (either the connection is very
+overloaded and this leads to high fragmentation - or we are the
+victim of an ongoing attack where the attacker is sending very
+fragmented traffic in order to decrease server performance).
 
 
 *Default value is 4.*

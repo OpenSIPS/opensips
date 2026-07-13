@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups that can communicate with each other in order to replicate, share information or perform distributed tasks. The module itself only stores information about the nodes in a group/cluster and provides an inter..."
+description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups that can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -10,46 +10,46 @@ description: "The *clusterer* module is used to organize multiple OpenSIPS insta
 
 
 The *clusterer* module is used to organize
-		multiple OpenSIPS instances into groups that can communicate with each
-		other in order to replicate, share information or perform
-		distributed tasks. The module itself only stores information about the
-		nodes in a group/cluster and provides an interface to check or tune
-		their state and parameters. The distributed logic is performed by
-		different modules that use this interface (i.e. the
-		*dialog* module can replicate profiles, the
-		*ratelimit* module can share pipes across multiple
-		instances, etc). Provisioning the nodes within a cluster is done over
-		the database but, for efficiency, the node-related information is cached
-		into OpenSIPS memory. This information can be checked or updated by
-		sending commands over the MI interface.
+multiple OpenSIPS instances into groups that can communicate with each
+other in order to replicate, share information or perform
+distributed tasks. The module itself only stores information about the
+nodes in a group/cluster and provides an interface to check or tune
+their state and parameters. The distributed logic is performed by
+different modules that use this interface (i.e. the
+*dialog* module can replicate profiles, the
+*ratelimit* module can share pipes across multiple
+instances, etc). Provisioning the nodes within a cluster is done over
+the database but, for efficiency, the node-related information is cached
+into OpenSIPS memory. This information can be checked or updated by
+sending commands over the MI interface.
 
 
 The *clusterer* module can also detect node
-		availability, by using certain parameters provisioned in the database.
-		When a destination is not reachable, it is put in a
-		*probing* state - it is periodically pinged until
-		a maximum number of failed attempts is reached, when it is marked as
-		temporarily disabled. It stays in this state for a period (equal to the
-		*duration* parameter), and then the number of
-		retries reset to 0 and the node is considered up again.
+availability, by using certain parameters provisioned in the database.
+When a destination is not reachable, it is put in a
+*probing* state - it is periodically pinged until
+a maximum number of failed attempts is reached, when it is marked as
+temporarily disabled. It stays in this state for a period (equal to the
+*duration* parameter), and then the number of
+retries reset to 0 and the node is considered up again.
 
 
 Modules (like *dialog* or
-		*ratelimit* can use nodes within the cluster to
-		replicate information. They also register a specific timeout to
-		invalidate data from specific nodes, in case no updates have been
-		within an interval. The *clusterer* notifies
-		the module if the timeout is reached and puts the node in a
-		temporary disabled state.
-		If a packet has arrived for a temporary disabled server, the packet
-		is dropped and a temporary disabled notification is sent to the
-		registered module. After the disabled period (2 * timeout) has passed,
-		the server is up again.
+*ratelimit* can use nodes within the cluster to
+replicate information. They also register a specific timeout to
+invalidate data from specific nodes, in case no updates have been
+within an interval. The *clusterer* notifies
+the module if the timeout is reached and puts the node in a
+temporary disabled state.
+If a packet has arrived for a temporary disabled server, the packet
+is dropped and a temporary disabled notification is sent to the
+registered module. After the disabled period (2 * timeout) has passed,
+the server is up again.
 
 
 By default, the state information of the nodes is not persistent. To
-		make them persistent via a database, one must set the
-		*persistent_mode* parameter.
+make them persistent via a database, one must set the
+*persistent_mode* parameter.
 
 
 ### Dependencies
@@ -68,7 +68,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -114,8 +114,8 @@ modparam("clusterer", "db_table", "clusterer")
 
 
 It specifies the *server_id* the current
-				instance has. this field should correspond with one of the
-				*machine_id* fields in the database.
+instance has. this field should correspond with one of the
+*machine_id* fields in the database.
 
 
 *Default value is 0.*
@@ -132,8 +132,8 @@ modparam("clusterer", "server_id", 2)
 
 
 If persistent mode is enabled, a timer synchronizes the
-				information used by the clusterer module and the information
-				stored in the database.
+information used by the clusterer module and the information
+stored in the database.
 
 
 *Default value is 0 (disabled).*
@@ -246,7 +246,7 @@ modparam("clusterer", "description_col", "description")
 
 
 The name of the column in the db_table where the maximum allowed number
-                of failed attempts is stored.
+of failed attempts is stored.
 
 
 *Default value is "failed_attempts".*
@@ -263,7 +263,7 @@ modparam("clusterer", "failed_attempts_col", "failed_attempts")
 
 
 The name of the column in the db_table where the UNIX time of last
-                last failed attempt is stored.
+last failed attempt is stored.
 
 
 *Default value is "last_attempt".*
@@ -280,8 +280,8 @@ modparam("clusterer", "last_attempt_col", "last_attempt")
 
 
 The name of the column in the db_table where the duration of a
-                machine belonging to a certain cluster temporary disabled state
-                is stored.
+machine belonging to a certain cluster temporary disabled state
+is stored.
 
 
 *Default value is "duration".*
@@ -298,7 +298,7 @@ modparam("clusterer", "duration_col", "duration")
 
 
 The name of the column in the db_table where the number of failed
-                connecting tries is stored.
+connecting tries is stored.
 
 
 *Default value is "no_tries".*
@@ -324,8 +324,8 @@ none
 
 
 Reloads data from the clusterer database. If the persistent
-                    mode is disabled the changes made to the locally stored
-                    data are lost.
+mode is disabled the changes made to the locally stored
+data are lost.
 
 
 Name: *clusterer_reload*
@@ -338,9 +338,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_reload
-		_empty_line_
-		
+:clusterer_reload
+_empty_line_
 ```
 
 
@@ -360,9 +359,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_list
-		_empty_line_
-		
+:clusterer_list
+_empty_line_
 ```
 
 
@@ -388,13 +386,12 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_set_status:
-		1
-		2
-		0
-		bin
-		_empty_line_
-		
+:clusterer_set_status:
+1
+2
+0
+bin
+_empty_line_
 ```
 
 
@@ -402,20 +399,20 @@ MI FIFO Command Format:
 
 
 This section provides an usage example for replicating ratelimit
-		pipes between two OpenSIPS instances. It uses the clusterer module to
-		manage the replicating nodes, and the proto_bin modules to send the
-		replicated information.
+pipes between two OpenSIPS instances. It uses the clusterer module to
+manage the replicating nodes, and the proto_bin modules to send the
+replicated information.
 
 
 The setup topology is simple: we have two OpenSIPS nodes running on
-		two separate machines (although they could run on the same machine as
-		well): *Node A* has IP 192.168.0.5 and
-		*Node B* has IP 192.168.0.6. Both have, besides the
-		traffic listeners (UDP, TCP, etc.), bin listeners bound on port
-		*5566*. These listeners will be used by the
-		*ratelimit* module to replicate the pipes.
-		Therefore, we have to provision them in the
-		*clusterer* table.
+two separate machines (although they could run on the same machine as
+well): *Node A* has IP 192.168.0.5 and
+*Node B* has IP 192.168.0.6. Both have, besides the
+traffic listeners (UDP, TCP, etc.), bin listeners bound on port
+*5566*. These listeners will be used by the
+*ratelimit* module to replicate the pipes.
+Therefore, we have to provision them in the
+*clusterer* table.
 
 
 ```c title="Example database content - clusterer table"
@@ -430,40 +427,40 @@ The setup topology is simple: we have two OpenSIPS nodes running on
 
 
 - "cluster_id" - this column represents the
-					identifier of the cluster. All nodes within a
-					group/cluster should have the same id (in our example,
-					both nodes have ID *1*)
+identifier of the cluster. All nodes within a
+group/cluster should have the same id (in our example,
+both nodes have ID *1*)
 - "machine_id" - this represents the
-					identifier of the machine/node, and each instance within a
-					cluster should have a different ID. In our example,
-					*Node A* will have ID 1, and
-					*Node B* ID 2
+identifier of the machine/node, and each instance within a
+cluster should have a different ID. In our example,
+*Node A* will have ID 1, and
+*Node B* ID 2
 - "url" - this indicates the URL where the
-					instance will receive the replication information. In our
-					example, each node will receive the date over the bin
-					protocol
+instance will receive the replication information. In our
+example, each node will receive the date over the bin
+protocol
 - "state" - this is the state of the machine:
-					1 means on, 0 means off, and 2 means it is in probing.
-					Note that if you want the node to be active right away,
-					you have to set it in *state 1*
+1 means on, 0 means off, and 2 means it is in probing.
+Note that if you want the node to be active right away,
+you have to set it in *state 1*
 - "last_attempt",
-					"failed_attempts" and "no_tries"
+"failed_attempts" and "no_tries"
 					- are fields used for the probing mechanisms, and should
-					be set to *0* by default. They are
-					automatically updated by the clusterer module if the
-					*persistent_mode* parameter is set to
-					*1*
+be set to *0* by default. They are
+automatically updated by the clusterer module if the
+*persistent_mode* parameter is set to
+*1*
 - "duration" - is used to specify the period
-					a node stays in the temporary disabled state. In our
-					example, if the node does not respond, it is disabled for
-					30 seconds before retrying to send data again
+a node stays in the temporary disabled state. In our
+example, if the node does not respond, it is disabled for
+30 seconds before retrying to send data again
 - "description" - is an opaque value used to
-					identify the node
+identify the node
 
 
 After provisioning the two nodes in the database, we have to configure
-		the two instances of OpenSIPS. First, we configure *Node
-			A*:
+the two instances of OpenSIPS. First, we configure *Node
+A*:
 
 
 ```opensips title="*Node A* configuration"
@@ -517,10 +514,10 @@ modparam("ratelimit", "accept_pipes_timeout", 5)
 
 
 *Note* that the *server_id*
-	parameter for *Node B* is *2*.
-	Starting the two OpenSIPS instances with the above configurations provides
-	your platform the ability to used shared ratelimit pipes in a very
-	efficient and scalable way.
+parameter for *Node B* is *2*.
+Starting the two OpenSIPS instances with the above configurations provides
+your platform the ability to used shared ratelimit pipes in a very
+efficient and scalable way.
 
 
 ## Developer Guide
@@ -533,9 +530,9 @@ modparam("ratelimit", "accept_pipes_timeout", 5)
 
 
 The function will return all a copy of all the needed information
-                from the nodes (machine_id, state, description, sock address)
-                stored in shm, whos state is up(1) and have a certain cluster_id and
-                protocol.
+from the nodes (machine_id, state, description, sock address)
+stored in shm, whos state is up(1) and have a certain cluster_id and
+protocol.
 
 
 This function is usually used for replication purposes.
@@ -568,7 +565,7 @@ Meaning of the parameters is as follows:
 
 
 - *clusterer_node_t *nodes* - the data
-                        returned by the get_nodes function
+returned by the get_nodes function
 
 
 ```opensips title="free_nodes usage"
@@ -582,7 +579,7 @@ free_nodes(nodes);
 
 
 The function sets the state of a machine belonging to a certain cluster,
-                which have the specified protocol.
+which have the specified protocol.
 
 
 This function is usually used for replication purposes.
@@ -608,7 +605,7 @@ set_state(1,1,2,PROTO_BIN);
 
 
 This function is used to check if the source of a receiving packet
-                is known.
+is known.
 
 
 It returns 1 if the source is known, else it returns 0.
@@ -619,9 +616,9 @@ Meaning of the parameters is as follows:
 
 - *int cluster_id* - cluster id
 - *union sockaddr_union* sockaddr* - incoming connexion
-                        socket address
+socket address
 - *int server_id* - incoming connexion
-                        server_id
+server_id
 - *int proto* - protocol
 
 
@@ -649,7 +646,7 @@ get_my_id()
 
 
 This function will replicate information to the nodes belonging to 
-                a cluster_id that have a specific protocol.
+a cluster_id that have a specific protocol.
 
 
 Meaning of the parameters is as follows:
@@ -670,13 +667,13 @@ send_to(cluster_id, protocol)
 
 
 This function registers a module to a certain protocol. It acts like an
-                intermediary: when a valid packet has arrived, if the auth_check parameter is specified
-                then it is checked for authenticity. After that, the timestamps are updated and the callback
-                function from the registered module is called.
-                The clusterer module checks for every registered module if the duration between
-                the last receiving packet and the current time is greater than the module specified timeout.
-                If it is, the servers are temporary disabled for a period of timestamp * 2. If any packets
-                are received for the temporary disabled servers the registered module is notified.
+intermediary: when a valid packet has arrived, if the auth_check parameter is specified
+then it is checked for authenticity. After that, the timestamps are updated and the callback
+function from the registered module is called.
+The clusterer module checks for every registered module if the duration between
+the last receiving packet and the current time is greater than the module specified timeout.
+If it is, the servers are temporary disabled for a period of timestamp * 2. If any packets
+are received for the temporary disabled servers the registered module is notified.
 
 
 Meaning of the parameters is as follows:
@@ -688,7 +685,7 @@ Meaning of the parameters is as follows:
                         - the registered module callback function
 - *int timeout* - timeput
 - *int auth_check* - 0 if the authentication
-                        check is disabled, 1 if the authentication check is enabled
+check is disabled, 1 if the authentication check is enabled
 - *int cluster_id* - cluster_id
 
 

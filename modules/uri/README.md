@@ -32,7 +32,7 @@ At least one of the following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -58,7 +58,7 @@ modparam("uri", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 
 
 AAA service type used in
-	`aaa_does_uri_exist` and `aaa_does_uri_user_exist` checks.
+`aaa_does_uri_exist` and `aaa_does_uri_user_exist` checks.
 
 
 *Default value is 10 (Call-Check).*
@@ -75,10 +75,10 @@ modparam("uri", "service_type", 11)
 
 
 If zero, `aaa_does_uri_exist`
-	sends to AAA server Request URI user@host in UserName
-	attribute.  If non-zero, `aaa_does_uri_exist`
-	sends to AAA server Request URI user in UserName attribute
-	and host in SIP-URI-Host attribute.
+sends to AAA server Request URI user@host in UserName
+attribute.  If non-zero, `aaa_does_uri_exist`
+sends to AAA server Request URI user in UserName attribute
+and host in SIP-URI-Host attribute.
 
 
 *Default value is 0.*
@@ -98,7 +98,7 @@ URL of the database to be used.
 
 
 If the db_url string is not set, you will not be able to use
-		the DB related functions.
+the DB related functions.
 
 
 *Default value is ">NULL".*
@@ -115,9 +115,9 @@ modparam("uri", "db_url", "mysql://username:password@localhost/opensips")
 
 
 The DB table that should be used. Its possible to use the
-		"subscriber" and "uri" table. If the
-		"uri" table should be used, an additional parameter
-		([use uri table](#param_use_uri_table)) must be set.
+"subscriber" and "uri" table. If the
+"uri" table should be used, an additional parameter
+([use uri table](#param_use_uri_table)) must be set.
 
 
 *Default value is "subscriber".*
@@ -182,7 +182,7 @@ modparam("uri", "uriuser_column", "uri_user")
 
 
 Specify if the "uri" table should be used for checkings
-		instead of "subscriber" table. A non-zero value means true.
+instead of "subscriber" table. A non-zero value means true.
 
 
 *Default value is "0 (false)".*
@@ -199,13 +199,13 @@ modparam("uri", "use_uri_table", 1)
 
 
 Specify if the domain part of the URI should be used to identify the
-		users (along with username). This is useful in multi domain setups, a
-		non-zero value means true.
+users (along with username). This is useful in multi domain setups, a
+non-zero value means true.
 
 
 This parameter is only evaluated for calls to "does_uri_exist",
-		all other functions checks the digest username and realm against the
-		given username, if the "uri" table is used.
+all other functions checks the digest username and realm against the
+given username, if the "uri" table is used.
 
 
 *Default value is "0 (false)".*
@@ -225,7 +225,7 @@ modparam("uri", "use_domain", 1)
 
 
 Check To username against URI table (if use_uri_table is set) or
-		digest credentials (no DB backend required).
+digest credentials (no DB backend required).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -244,7 +244,7 @@ if (db_check_to()) {
 
 
 Check From username against URI table (if use_uri_table is set) or
-		digest credentials (no DB backend required).
+digest credentials (no DB backend required).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -266,8 +266,8 @@ Check if username in the request URI belongs to an existing user.
 
 
 Matching is done against the URI table (if
-			**use_uri_table** is set)
-			or the *subscriber* table.
+**use_uri_table** is set)
+or the *subscriber* table.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -286,9 +286,9 @@ if (db_does_uri_exist()) {
 
 
 Checks given uri-string username against URI table (if use_uri_table is set) or
-		subscriber table (database backend required).
-		Returns true if the user exists in the database, and sets the given variables to
-		the authentication id and realm corresponding to the given uri.
+subscriber table (database backend required).
+Returns true if the user exists in the database, and sets the given variables to
+the authentication id and realm corresponding to the given uri.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -307,11 +307,11 @@ if (db_get_auth_id("$ru", "$avp(auth_id)", "$avp(auth_realm)")) {
 
 
 Checks from Radius if user@host in Request-URI or in
-		URI stored in pseudo variable argument belongs
-		to a local user. Can be used to decide if 404 or 480 should
-		be returned after lookup has failed.   If yes, loads AVP
-		based on SIP-AVP reply items returned from Radius.  Each
-		SIP-AVP reply item must have a string value of form:
+URI stored in pseudo variable argument belongs
+to a local user. Can be used to decide if 404 or 480 should
+be returned after lookup has failed.   If yes, loads AVP
+based on SIP-AVP reply items returned from Radius.  Each
+SIP-AVP reply item must have a string value of form:
 
 
 - *value = SIP_AVP_NAME SIP_AVP_VALUE*
@@ -320,8 +320,8 @@ Checks from Radius if user@host in Request-URI or in
 
 
 Returns 1 if Radius returns Access-Accept, -1 if Radius
-		returns Access-Reject, and -2 in case of internal
-		error.
+returns Access-Reject, and -2 in case of internal
+error.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -340,9 +340,9 @@ if (aaa_does_uri_exist()) {
 
 
 Similar to aaa_does_uri_exist, but check is done
-		based only on Request-URI user part or user stored in
-		pseudo variable argument.  User should thus
-		be unique among all users, such as an E.164 number.
+based only on Request-URI user part or user stored in
+pseudo variable argument.  User should thus
+be unique among all users, such as an E.164 number.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -458,7 +458,7 @@ Meaning of the parameters is as follows:
 
 
 - *param* - parameter to be appended in
-			"name=value" format.
+"name=value" format.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -497,8 +497,8 @@ del_uri_param("name");
 
 
 Converts RURI, if it is tel URI, to SIP URI.  Returns true, only if
-		conversion succeeded or if no conversion was needed (like RURI
-		was not tel URI.
+conversion succeeded or if no conversion was needed (like RURI
+was not tel URI.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -515,7 +515,7 @@ tel2sip();
 
 
 Checks if userpart of URI stored in pseudo variable is
-		E164 number.
+E164 number.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.

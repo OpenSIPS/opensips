@@ -1,6 +1,6 @@
 ---
 title: "cachedb_local Module"
-description: "This module is an implementation of a local cache system designed as a hash table. It uses the Key-Value interface exported by OpenSIPS core."
+description: "This module is an implementation of a local cache system designed as a hash table."
 ---
 
 ## Admin Guide
@@ -10,7 +10,7 @@ description: "This module is an implementation of a local cache system designed 
 
 
 This module is an implementation of a local cache system designed as
-		a hash table. It uses the Key-Value interface exported by OpenSIPS core.
+a hash table. It uses the Key-Value interface exported by OpenSIPS core.
 
 
 ### Dependencies
@@ -26,7 +26,7 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *none*
@@ -39,7 +39,7 @@ The following libraries or applications must be installed before running
 
 
 The size of the hash table. 
-			This parameter will be used as the power of 2 when computing table size.
+This parameter will be used as the power of 2 when computing table size.
 
 
 *Default value is "9 (512)".*
@@ -57,7 +57,7 @@ modparam("cachedb_local", "cache_table_size", 10)
 
 
 The maximum number of microseconds that a local cache query can last.
-			Anything above the threshold will trigger a warning message to the log
+Anything above the threshold will trigger a warning message to the log
 
 
 *Default value is "0 ( unlimited - no warnings )".*
@@ -75,7 +75,7 @@ modparam("cachedb_local", "exec_threshold", 100000)
 
 
 The time interval in seconds at which to go through all the
-			records and delete the expired ones.
+records and delete the expired ones.
 
 
 *Default value is "600 (10 minutes)".*

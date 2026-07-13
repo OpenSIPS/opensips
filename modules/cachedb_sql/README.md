@@ -1,6 +1,6 @@
 ---
 title: "cachedb_sql Module"
-description: "This module is an implementation of a cache system designed to work with a regular SQL-based server. It uses the internal DB interface to connect to the back-end, and also implements the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a regular SQL-based server."
 ---
 
 ## Admin Guide
@@ -10,8 +10,8 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a 
-		regular SQL-based server. It uses the internal DB interface to connect
-		to the back-end, and also implements the Key-Value interface exported from the core.
+regular SQL-based server. It uses the internal DB interface to connect
+to the back-end, and also implements the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -19,17 +19,17 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The DB is also
+persistent so it can also be restarted without loss of information.*
 - *Multiple OpenSIPS instances can easily share key-value information
-				via a regular SQL-based database*
+via a regular SQL-based database*
 
 
 ### Limitations
 
 
-- *The module's counter operations ( ADD and SUB ) are currently only 
-				supported by MySQL*
+- *The module's counter operations (ADD and SUB) are currently only 
+supported by MySQL*
 
 
 ### Dependencies
@@ -45,7 +45,7 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *none:*
@@ -58,7 +58,7 @@ The following libraries or applications must be installed before running
 
 
 The url of the Database  that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
+to use the from script cache_store,cache_fetch, etc operations.
 
 
 The format to follow is : sql:[conn_id]-dburl
@@ -92,7 +92,7 @@ cache_store("sql:2nd-postgres","counter","10");
 
 
 The table of the Database  that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
+to use the from script cache_store,cache_fetch, etc operations.
 
 
 ```opensips title="Set db_url parameter"
@@ -163,7 +163,7 @@ modparam("cachedb_sql", "expires_column","some_name");
 
 
 The interval in seconds at which the expired keys will be removed from
-			the database. Default value is 60 ( seconds )
+the database. Default value is 60 ( seconds )
 
 
 ```opensips title="Set cache_clean_period parameter"
@@ -178,7 +178,7 @@ modparam("cachedb_sql", "cache_clean_period",10);
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ## Frequently Asked Questions
@@ -188,7 +188,7 @@ The module does not export functions to be used
 
 
 It was replaced with the "cachedb_url" parameter.
-			See the documentation for the usage of the "cachedb_url" parameter.
+See the documentation for the usage of the "cachedb_url" parameter.
 
 
 *doc copyrights:*

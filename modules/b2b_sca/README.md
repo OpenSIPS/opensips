@@ -10,20 +10,20 @@ description: "This module provides core SCA (Shared Call Appearance) functionali
 
 
 This module provides core SCA (Shared Call Appearance) functionality
-		for OpenSIPS.
-		It is designed to work in tandem with the presence_callinfo module.
+for OpenSIPS.
+It is designed to work in tandem with the presence_callinfo module.
 
 
 The module handles the basic SIP signalling for call controll while
-		publishing callinfo events to a presence server.
-		It is built on top of the b2b_logic module and it is using the
-		'top hiding' scenario to control SIP signalling.
+publishing callinfo events to a presence server.
+It is built on top of the b2b_logic module and it is using the
+'top hiding' scenario to control SIP signalling.
 
 
 A typical usage example is provided below, where Alice makes a
-		call to Bob.  The call leg between Alice and the b2b_sca server
-		is an "appearance" call of the "shared" call between the b2b_sca server
-		and Bob.
+call to Bob.  The call leg between Alice and the b2b_sca server
+is an "appearance" call of the "shared" call between the b2b_sca server
+and Bob.
 
 
 ```c
@@ -65,9 +65,9 @@ alice1@example alice2@example  server   bob@example watcher@example
 - Alice calls Bob from her desk IP phone (alice1).
 - Bob answers the call.
 - Alice decide to carry the conversation from a meeting room
-	and she put's BOB on hold.
+and she put's BOB on hold.
 - Alice arrives to the meeting room and retrieves the call on the
-	conference room IP phone (alice2).
+conference room IP phone (alice2).
 
 
 ### To-do
@@ -89,8 +89,8 @@ The following modules must be loaded before this module:
 
 
 - *tm* module.
-				*pua* module.
-				*b2b_logic* module.
+*pua* module.
+*b2b_logic* module.
 
 
 ### Exported Parameters
@@ -100,8 +100,8 @@ The following modules must be loaded before this module:
 
 
 The size of the hash table internally used to keep the shared calls.
-		A larger table means faster acces at the expense of memory.
-		The hash size is a power of number two.
+A larger table means faster acces at the expense of memory.
+The hash size is a power of number two.
 
 
 *The default value is "10".*
@@ -118,9 +118,9 @@ modparam("b2b_sca", "hash_size", "5")
 
 
 The address of the presence server, where the PUBLISH
-		messages should be sent (not compulsory).
-		If not set, the PUBLISH requests will be routed based
-		on watcher's URI.
+messages should be sent (not compulsory).
+If not set, the PUBLISH requests will be routed based
+on watcher's URI.
 
 
 *The default value is "NULL".*
@@ -137,8 +137,8 @@ modparam("b2b_sca", "presence_server", "sip:opensips.org")
 
 
 AVP that will hold one or more watcher URI(s).
-		If not set, no PUBLISH requests will be sent out.
-		The watchers_avp_spec MUST be set before calling sca_init_request();
+If not set, no PUBLISH requests will be sent out.
+The watchers_avp_spec MUST be set before calling sca_init_request();
 
 
 *The default value is "NULL".*
@@ -161,8 +161,8 @@ route {
 
 
 Mandatory parameter.
-		Opaque string identifing the shared line/call.
-		The shared_line_spec_param MUST be set before calling sca_init_request();
+Opaque string identifing the shared line/call.
+The shared_line_spec_param MUST be set before calling sca_init_request();
 
 
 *The default value is "NULL".*
@@ -179,10 +179,10 @@ modparam("b2b_sca", "shared_line_spec_param", "$var(shared_line)")
 
 
 Mandatory parameter.
-		It must be a valid SIP URI.
-		It will populate the *appearance-uri* SIP parameter
-		inside the *Call-Info* SIP header.
-		The appearance_name_addr_spec_param MUST be set before calling sca_init_request();
+It must be a valid SIP URI.
+It will populate the *appearance-uri* SIP parameter
+inside the *Call-Info* SIP header.
+The appearance_name_addr_spec_param MUST be set before calling sca_init_request();
 
 
 *The default value is "NULL".*
@@ -215,9 +215,9 @@ modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[dbhost]/[db
 
 
 The b2b_sca module can utilize database for persistent call appearance storage.
-		Using a database ensure that active call appearances will survive
-		machine restarts or SW crashes.
-		The following databse accessing modes are available for b2b_sca module:
+Using a database ensure that active call appearances will survive
+machine restarts or SW crashes.
+The following databse accessing modes are available for b2b_sca module:
 
 
 - NO DB STORAGE - set this parameter to 0
@@ -254,7 +254,7 @@ modparam("b2b_sca", "table_name", "sla")
 
 
 The column's name in the database storing the shared call/line id.
-		See "shared_line_spec_param" parameter.
+See "shared_line_spec_param" parameter.
 
 
 *The default value is "shared_line".*
@@ -271,7 +271,7 @@ modparam("b2b_sca", "shared_line_column", "")
 
 
 The column's name in the database storing the list of watchers.
-		See "watchers_avp_spec" parameter.
+See "watchers_avp_spec" parameter.
 
 
 *The default value is "watchers".*
@@ -288,12 +288,12 @@ modparam("b2b_sca", "watchers_column", "")
 
 
 The column's name in the database storing the shared entity of a
-		particular appearance.
-		See "sca_init_request" for more info.
+particular appearance.
+See "sca_init_request" for more info.
 
 
 *The default value is "app[index]_shared_entity".*
-		Index is an integer between 1 and 10.
+Index is an integer between 1 and 10.
 
 
 ```opensips title="Set app[index]_shared_entity_column parameter"
@@ -308,7 +308,7 @@ modparam("b2b_sca", "app2_shared_entity_column", "second_shared_entity")
 
 
 The column's name in the database storing the call state of a
-		particular appearance.  The following states are stored:
+particular appearance.  The following states are stored:
 
 
 - 1 - alerting,
@@ -318,7 +318,7 @@ The column's name in the database storing the call state of a
 
 
 *The default value is "app[index]_call_state".*
-		Index is an integer between 1 and 10.
+Index is an integer between 1 and 10.
 
 
 ```opensips title="Set app[index]_call_state_column parameter"
@@ -333,11 +333,11 @@ modparam("b2b_sca", "app2_call_state_column", "second_call_state")
 
 
 The column's name in the database storing the call info URI of a
-		particular appearance.
+particular appearance.
 
 
 *The default value is "app[index]_call_info_uri".*
-		Index is an integer between 1 and 10.
+Index is an integer between 1 and 10.
 
 
 ```opensips title="Set app[index]_call_info_uri_column parameter"
@@ -352,13 +352,13 @@ modparam("b2b_sca", "app2_call_info_uri_column", "second_call_info_uri")
 
 
 The column's name in the database storing the call info appearance URI
-		of a particular appearance.
-		For each appearance, the value is extracted from the
-		"appearance_name_addr_spec_param" parameter.
+of a particular appearance.
+For each appearance, the value is extracted from the
+"appearance_name_addr_spec_param" parameter.
 
 
 *The default value is "app[index]_call_info_appearance_uri".*
-		Index is an integer between 1 and 10.
+Index is an integer between 1 and 10.
 
 
 ```opensips title="Set app[index]_call_info_appearance_uri_column parameter"
@@ -373,11 +373,11 @@ modparam("b2b_sca", "app2_call_info_appearance_uri_column", "second_call_info_ap
 
 
 The column's name in the database storing the b2b_logic key of a
-		particular appearance.
+particular appearance.
 
 
 *The default value is "app[index]_b2bl_key".*
-		Index is an integer between 1 and 10.
+Index is an integer between 1 and 10.
 
 
 ```opensips title="Set app[index]_b2bl_key_column parameter"
@@ -395,18 +395,17 @@ modparam("b2b_sca", "app2_b2bl_key_column", "second_b2bl_key")
 
 
 This is the function that must be called by the script writer
-		on an initial INVITE for which an SCA call must be instantiated
-		(see the call from alice1 in the above diagram).
+on an initial INVITE for which an SCA call must be instantiated
+(see the call from alice1 in the above diagram).
 
 
 Meaning of the parameters:
 
 
 - *shared_line* - a PV (pseudo-variable)
-		identifying the call leg as being an "appearnace" call or a "shared" call:
-			
-			0: "shared" call
-			1: "appearance" call
+identifying the call leg as being an "appearnace" call or a "shared" call:
+	* 0: "shared" call
+	* 1: "appearance" call
 
 
 ```opensips title="sca_init_request() usage"
@@ -454,16 +453,16 @@ modparam("b2b_sca",
 
 
 This is the function that must be called by the script writer on an initial
-		"appearance" INVITE for an existing shared call.  It will bridge the current
-		"appearance" call with the existing "shared" call and the old "appearance"
-		call will be disconnected (see the call from alice2 in the above diagram).
+"appearance" INVITE for an existing shared call.  It will bridge the current
+"appearance" call with the existing "shared" call and the old "appearance"
+call will be disconnected (see the call from alice2 in the above diagram).
 
 
 Meaning of the parameters:
 
 
 - *shared_line_to_bridge* - a PV identifying
-		the shared line/call that was previously set by sca_init_request().
+the shared line/call that was previously set by sca_init_request().
 
 
 ```opensips

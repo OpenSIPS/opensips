@@ -1,6 +1,6 @@
 ---
 title: "xmpp Module"
-description: "This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between SIP clients and XMPP(jabber) clients."
+description: "This modules is a gateway between OpenSIPS and a jabber server."
 ---
 
 ## Admin Guide
@@ -10,14 +10,14 @@ description: "This modules is a gateway between OpenSIPS and a jabber server. It
 
 
 This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between
-		SIP clients and XMPP(jabber) clients.
+SIP clients and XMPP(jabber) clients.
 
 
 The gateway has two modes to run:
 
 
 - **the component-mode** - the gateway requires a standalone XMPP server amd the 'xmpp' module acts as
-			a XMPP component
+a XMPP component
 - **the server-mode** - the module acts itself as a XMPP server, no requirement for another XMPP server in the system. NOTE: this is limited implementation of a XMPP server, it does not support SRV or TLS so far. This mode is in beta stage for the moment.
 
 
@@ -30,7 +30,7 @@ After you have a running XMPP server, what you need to do is set the following p
 - xmpp_domain and xmpp_host, which are explained in the Exported Parameters section;
 - listen = your ip;
 - alias=opensips domain and 
-	alias=gateway domain;
+alias=gateway domain;
 - you can also change the jabber server password, which must be the same as the xmpp_password parameter.
 
 
@@ -71,7 +71,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libexpat1-devel* - used for parsing/building XML.
@@ -132,16 +132,16 @@ The ip address or the name of the local jabber server, if the backend is set to 
 
 
 This parameter must be set only if the xmpp module is used in component mode and the domain
-		that is the host for the jabber server is the same as the domain of the sip server(when using
-		the same domain name for the SIP service and for the XMPP service). In this case,
-		if we were to add buddies in xmpp accounts with that domain, then all the messages that will
-		reach the jabber server will be considered to be for local xmpp users. It is necessary therefore
-		to make a translate the sip domain name into another domain when sending messages in xmpp.
-		This parameter is exactly the name that should be used as the SIP domain name in XMPP.
-		Usage example: If the sip and xmpp domain is opensips.org and this parameter is set to sip.opensips.org,
-		than in all the requests sent in xmpp the sip users will have the domain translated to sip.opensips.org.
-		Also, in XMPP account the SIP buddies must have this domain: sip.opensips.org, and it will be
-		translated to the real one opensips.org when traversing the gateway.
+that is the host for the jabber server is the same as the domain of the sip server(when using
+the same domain name for the SIP service and for the XMPP service). In this case,
+if we were to add buddies in xmpp accounts with that domain, then all the messages that will
+reach the jabber server will be considered to be for local xmpp users. It is necessary therefore
+to make a translate the sip domain name into another domain when sending messages in xmpp.
+This parameter is exactly the name that should be used as the SIP domain name in XMPP.
+Usage example: If the sip and xmpp domain is opensips.org and this parameter is set to sip.opensips.org,
+than in all the requests sent in xmpp the sip users will have the domain translated to sip.opensips.org.
+Also, in XMPP account the SIP buddies must have this domain: sip.opensips.org, and it will be
+translated to the real one opensips.org when traversing the gateway.
 
 
 *Default value is NULL.*
@@ -179,12 +179,12 @@ The password of the local jabber server.
 *Default value is "secret"; if changed here, it must also be changed in the c2s.xml, added by the jabber server. This is how the default configuration for the jabberd2 looks like:*
 
 
-```c
-			<router>
-	............... 
-	;
-    <pass>secret</pass>;           ;	
-			
+```
+						<router>
+		............... 
+		<!-- Username/password to authenticate as --&gt;
+    <user>jabberd</user>;          <!-- default: jabberd -->;
+    <pass>secret</pass>;           <!-- default: secret -->;	
 ```
 
 
@@ -199,10 +199,10 @@ The password of the local jabber server.
 
 
 The SIP address used as next hop when sending the message. Very
-		useful when using OpenSIPS with a domain name not in DNS, or
-		when using a separate OpenSIPS instance for xmpp processing. If
-		not set, the message will be sent to the address in destination
-		URI.
+useful when using OpenSIPS with a domain name not in DNS, or
+when using a separate OpenSIPS instance for xmpp processing. If
+not set, the message will be sent to the address in destination
+URI.
 
 
 *Default value is NULL.*
@@ -231,20 +231,9 @@ xmpp_send_message();
 ```
 
 
-### Configuration
+## Samples
 
-
-Next is presented a sample configuration file one can use to implement a
-		standalone SIP-to-XMPP gateway. You can run an instance of OpenSIPS on a
-		separate machine or on different port with the following config, and have
-		the main SIP server configured to forward all SIP requests for XMPP world
-		to it.
-
-
-[samples](./samples.md "include")
-
-
-*doc copyrights:*
+[samples](./samples/samples.md "include")
 <!-- CONTRIBUTORS -->
 
 ### License
