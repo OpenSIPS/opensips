@@ -10,12 +10,12 @@ description: "UAC (User Agent Client) module provides some basic UAC functionali
 
 
 UAC (User Agent Client) module provides some basic UAC
-		functionalities like FROM / TO header manipulation (anonymization)
-		or client authentication.
+functionalities like FROM / TO header manipulation (anonymization)
+or client authentication.
 
 
 If the dialog module is loaded and a dialog can be created, 
-		then the auto mode can be done more efficiently.
+then the auto mode can be done more efficiently.
 
 
 ### Dependencies
@@ -29,18 +29,18 @@ The following modules must be loaded before this module:
 
 - *TM - Transaction Module*.
 - *RR - Record-Route Module*, but only if
-				restore mode for FROM URI is set to "auto".
+restore mode for FROM URI is set to "auto".
 - *UAC_AUTH - UAC Authentication Module*.
 - *Dialog Module*, if "force_dialog"
-				module parameter is enabled, or a dialog is created from the
-				configuration script.
+module parameter is enabled, or a dialog is created from the
+configuration script.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed 
-				before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *None*
@@ -56,23 +56,22 @@ There are 3 mode of restoring the original headers (FROM/TO) URI:
 
 
 - "none" - no information about original URI is 
-				stored; restoration is not possible.
+stored; restoration is not possible.
 - "manual" - all following replies will be restored,
-				except for the sequential requests - these must be manually 
-				updated based on original URI.
+except for the sequential requests - these must be manually 
+updated based on original URI.
 - "auto" - all sequential requests and replies will 
-				be automatically updated based on stored original URI.
+be automatically updated based on stored original URI.
 
 
 *This parameter is optional, it's default value being 
-					"auto".*
+"auto".*
 
 
 ```opensips title="Set restore_mode parameter"
 ...
 modparam("uac","restore_mode","auto")
 ...
-				
 ```
 
 
@@ -80,8 +79,8 @@ modparam("uac","restore_mode","auto")
 
 
 String password to be used to encrypt the RR storing parameter
-			(when replacing the TO/FROM headers). If empty, no encryption 
-			will be used.
+(when replacing the TO/FROM headers). If empty, no encryption 
+will be used.
 
 
 *Default value of this parameter is empty.*
@@ -91,7 +90,6 @@ String password to be used to encrypt the RR storing parameter
 ...
 modparam("uac","restore_passwd","my_secret_passwd")
 ...
-				
 ```
 
 
@@ -99,18 +97,17 @@ modparam("uac","restore_passwd","my_secret_passwd")
 
 
 Name of Record-Route header parameter that will be used to store 
-			(encoded) the original FROM URI.
+(encoded) the original FROM URI.
 
 
 *This parameter is optional, it's default value being 
-					"vsf".*
+"vsf".*
 
 
 ```opensips title="Set rr_from_store_param parameter"
 ...
 modparam("uac","rr_from_store_param","my_Fparam")
 ...
-				
 ```
 
 
@@ -118,18 +115,17 @@ modparam("uac","rr_from_store_param","my_Fparam")
 
 
 Name of Record-Route header parameter that will be used to store 
-			(encoded) the original TO URI.
+(encoded) the original TO URI.
 
 
 *This parameter is optional, it's default value being 
-					"vst".*
+"vst".*
 
 
 ```opensips title="Set rr_to_store_param parameter"
 ...
 modparam("uac","rr_to_store_param","my_Tparam")
 ...
-				
 ```
 
 
@@ -146,7 +142,6 @@ Default value is no.
 ...
 modparam("uac", "force_dialog", yes)
 ...
-				
 ```
 
 
@@ -157,23 +152,24 @@ modparam("uac", "force_dialog", yes)
 
 
 Replace in FROM/TO header the *display* name or/and
-			the *URI* part.
+the *URI* part.
 
 
 Both parameters are string. The *display* is optional.
-			If missing, only the URI will be changed in the message.
+If missing, only the URI will be changed in the message.
 
 
-IMPORTANT: calling the function more than once per branch will lead
-			to inconsistent changes over the request.Be sure you do the change
-			only ONCE per branch. Note that calling the function from REQUEST
-			ROUTE affects all the branches!, so no other change will be 
-			possible in the future. For per branch changes use BRANCH and 
-			FAILURE route.
+> [!IMPORTANT]
+> Calling the function more than once per branch will lead
+> to inconsistent changes over the request.Be sure you do the change
+> only ONCE per branch. Note that calling the function from REQUEST
+> ROUTE affects all the branches!, so no other change will be 
+> possible in the future. For per branch changes use BRANCH and 
+> FAILURE route.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
-			FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="uac_replace_from/uac_replace_to usage"
@@ -197,13 +193,14 @@ uac_replace_from( , "sip:batman@gotham.org");
 
 
 This function will check if the FROM/TO URI was modified and will
-			use the information stored in header parameter to restore
-			the original FROM/TO URI value.
+use the information stored in header parameter to restore
+the original FROM/TO URI value.
 
 
-NOTE - this function should be used only if you configured MANUAL
-			restoring of the headers (see restore_mode param). For AUTO 
-			and NONE, there is no need to use this function.
+> [!NOTE]
+> This function should be used only if you configured MANUAL
+> restoring of the headers (see restore_mode param). For AUTO 
+> and NONE, there is no need to use this function.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -213,7 +210,6 @@ This function can be used from REQUEST_ROUTE.
 ...
 uac_restore_from();
 ...
-				
 ```
 
 
@@ -221,15 +217,15 @@ uac_restore_from();
 
 
 This function can be called only from failure route and will 
-			build the authentication response header and insert it into the
-			request without sending anything.
-			Credentials for buiding the authentication response will be taken
-			from the list of credentials provided by the uac_auth module (static
-			or via AVPs).
+build the authentication response header and insert it into the
+request without sending anything.
+Credentials for buiding the authentication response will be taken
+from the list of credentials provided by the uac_auth module (static
+or via AVPs).
 
 
 As optional parameter, the function may receive a list of auth
-			algorithms to be considered / supported during authentication:
+algorithms to be considered / supported during authentication:
 
 
 - MD5, MD5-sess
@@ -237,19 +233,21 @@ As optional parameter, the function may receive a list of auth
 - SHA-512-256, SHA-512-256-sess (may be missing, depends on lib support)
 
 
-Note that the CSeq is automatically increased during authentication.
+> [!NOTE]
+> The CSeq is automatically increased during authentication.
 
 
 This function can be used from FAILURE_ROUTE.
 
 
-*NOTE:* when used without dialog support, the
-				*uac_auth()* function cannot be used for authenticating
-				in-dialog requests, as there is no mechanism to store the CSeq changes that
-				are required for ensuring the correctness of the dialog. The only exception are
-				*BYE* messages, which are the last messages within a call,
-				hence no further adjustments are needed. The function can still be used for
-				authenticating the initial INVITE though.
+> [!NOTE]
+> When used without dialog support, the
+> *uac_auth()* function cannot be used for authenticating
+> in-dialog requests, as there is no mechanism to store the CSeq changes that
+> are required for ensuring the correctness of the dialog. The only exception are
+> *BYE* messages, which are the last messages within a call,
+> hence no further adjustments are needed. The function can still be used for
+> authenticating the initial INVITE though.
 
 
 ```opensips title="uac_auth usage"
@@ -281,7 +279,7 @@ This function can be called to increase the CSeq of an ongoing request.
 
 
 It receives as the *cseq* parameter the value that
-			the CSeq should be incremented with.
+the CSeq should be incremented with.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and  FAILURE_ROUTE.
@@ -291,7 +289,6 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and  FAILURE_ROUTE.
 ...
 uac_inc_cseq(1);
 ...
-				
 ```
 
 
@@ -302,8 +299,8 @@ uac_inc_cseq(1);
 
 
 Due some restructuring of the UAC auth modules, these parameters were moved into the "uac_auth" module.
-		This module is now responsible for handling all the credentials (static defined or dynamically defined 
-		via AVPs). The UAC module will still see the credentials defined via the AVPs.
+This module is now responsible for handling all the credentials (static defined or dynamically defined 
+via AVPs). The UAC module will still see the credentials defined via the AVPs.
 
 
 **Q: Where can I find more about OpenSIPS?**
@@ -316,21 +313,21 @@ Take a look at [https://opensips.org/](https://opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

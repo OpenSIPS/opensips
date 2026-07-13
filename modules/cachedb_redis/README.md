@@ -1,6 +1,6 @@
 ---
 title: "cachedb_redis Module"
-description: "This module is an implementation of a cache system designed to work with a Redis server. It uses hiredis client library to connect to either a single Redis server instance, or to a Redis Server inside a Redis Cluster. It uses the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a Redis server."
 ---
 
 ## Admin Guide
@@ -10,9 +10,9 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a
-		Redis server. It uses hiredis client library to connect to either a single Redis
-		server instance, or to a Redis Server inside a Redis Cluster.
-		It uses the Key-Value interface exported from the core.
+Redis server. It uses hiredis client library to connect to either a single Redis
+server instance, or to a Redis Server inside a Redis Cluster.
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -20,116 +20,116 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The Redis DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The Redis DB is also
+persistent so it can also be restarted without loss of information.*
 - *redis is an open-source project so
-				it can be used to exchange data
-				 with various other applications*
+it can be used to exchange data
+with various other applications*
 - *By creating a Redis Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 
 
 ### Redis Stack Support
 
 
 Starting with OpenSIPS **3.6**, the *cachedb_redis*
-		module implements the column-oriented cacheDB API functions.  This makes it a suitable
-		cacheDB storage in scenarios such as user location *federation*
-		and *full-sharing*, which require this API to be available.
+module implements the column-oriented cacheDB API functions.  This makes it a suitable
+cacheDB storage in scenarios such as user location *federation*
+and *full-sharing*, which require this API to be available.
 
 
 The implementation makes use of *RedisJSON* and *RediSearch* --
-		these relatively new features are available in Redis Stack Server, instead of the usual Redis Server
-		(Redis OSS project).  More documentation is available on the Redis website.
+these relatively new features are available in Redis Stack Server, instead of the usual Redis Server
+(Redis OSS project).  More documentation is available on the Redis website.
 
 
 OpenSIPS will auto-detect availability of the RedisJSON support when necessary and log
-		the appropriate messages.
+the appropriate messages.
 
 
 ### Redis Cluster Support (Topology)
 
 
 When connecting to a Redis Cluster, the module automatically detects
-		cluster mode and manages the full slot-to-node topology at runtime.
-		No extra configuration is needed beyond the standard
-		[cachedb url](#param_cachedb_url) parameter.
+cluster mode and manages the full slot-to-node topology at runtime.
+No extra configuration is needed beyond the standard
+[cachedb url](#param_cachedb_url) parameter.
 
 
 #### Topology Discovery
 
 
 At startup, the module probes the Redis server using the
-		*CLUSTER SHARDS* command (available in Redis 7.0+).
-		If the server does not support this command, it falls back to
-		*CLUSTER SLOTS* (available in Redis 3.0+).
-		If neither command succeeds, the connection is treated as a
-		single-instance (non-cluster) connection.
+*CLUSTER SHARDS* command (available in Redis 7.0+).
+If the server does not support this command, it falls back to
+*CLUSTER SLOTS* (available in Redis 3.0+).
+If neither command succeeds, the connection is treated as a
+single-instance (non-cluster) connection.
 
 
 The discovered topology is stored internally in an O(1) slot lookup
-		table (16384 slots), mapping each slot directly to its owning master
-		node.
+table (16384 slots), mapping each slot directly to its owning master
+node.
 
 
 #### Automatic Topology Refresh
 
 
 The module automatically refreshes the cluster topology at runtime
-		when any of the following events occur:
+when any of the following events occur:
 
 
 - A *MOVED* redirection is received from a
-				cluster node (indicating a permanent slot migration).
+cluster node (indicating a permanent slot migration).
 - A *connection failure* (NULL reply) occurs
-				and the node cannot be reconnected.
+and the node cannot be reconnected.
 - A *query targets a slot with no known owner*,
-				suggesting the topology is stale.
+suggesting the topology is stale.
 - An operator triggers a manual refresh via the
-				[mi redis cluster refresh](#mi_redis_cluster_refresh) MI command.
+[mi redis cluster refresh](#mi_redis_cluster_refresh) MI command.
 
 
 Automatic refreshes are rate-limited to at most once per second to
-		avoid excessive load on the cluster.  The MI-triggered refresh
-		bypasses this rate limit.
+avoid excessive load on the cluster.  The MI-triggered refresh
+bypasses this rate limit.
 
 
 #### MOVED Redirection
 
 
 The module transparently handles Redis Cluster MOVED
-		redirections:
+redirections:
 
 
 - *MOVED* — indicates a permanent slot
-				migration. The module updates its slot map, redirects the
-				query to the new node, and triggers a topology refresh so
-				all future queries go directly to the correct node.
+migration. The module updates its slot map, redirects the
+query to the new node, and triggers a topology refresh so
+all future queries go directly to the correct node.
 
 
 If a redirection points to a node that is not yet known, the module
-		dynamically creates a new node entry, establishes a connection, and
-		retries the query.
+dynamically creates a new node entry, establishes a connection, and
+retries the query.
 
 
 #### Hash Tags
 
 
 The module supports Redis Cluster
-		*hash tags*, which allow related keys to be
-		co-located on the same cluster node.  If a key contains a
-		*{...}* substring, only the content between the
-		first *{* and the next *}* is
-		used for hash slot calculation.  For example, the keys
-		*{user1000}.profile* and
-		*{user1000}.settings* will always land on the
-		same node, enabling multi-key operations.
+*hash tags*, which allow related keys to be
+co-located on the same cluster node.  If a key contains a
+*{...}* substring, only the content between the
+first *{* and the next *}* is
+used for hash slot calculation.  For example, the keys
+*{user1000}.profile* and
+*{user1000}.settings* will always land on the
+same node, enabling multi-key operations.
 
 
 If the braces are empty (*{}*) or there is no
-		closing brace, the entire key is hashed as usual.
+closing brace, the entire key is hashed as usual.
 
 
 ### Limitations
@@ -154,18 +154,18 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *hiredis:*
 On the latest Debian based distributions, hiredis can be installed
-				by running 'apt-get install libhiredis-dev'
+by running 'apt-get install libhiredis-dev'
 
-				Alternatively, if hiredis is not available on your OS repos,
-				hiredis can be downloaded from: https://github.com/antirez/hiredis .
-				Download the archive, extract sources, run make,sudo make install.
+Alternatively, if hiredis is not available on your OS repos,
+hiredis can be downloaded from: https://github.com/antirez/hiredis .
+Download the archive, extract sources, run make,sudo make install.
 If TLS connections are enabled via the [use tls](#param_use_tls) modparam,
-				*hiredis* needs to be compiled with TLS support.
+*hiredis* needs to be compiled with TLS support.
 
 
 ### Exported Parameters
@@ -175,9 +175,9 @@ If TLS connections are enabled via the [use tls](#param_use_tls) modparam,
 
 
 The URLs of the server groups that OpenSIPS will connect to in order
-			to use, from script, the cache_store(), cache_fetch(), etc. operations.
-			It may be set more than once.  The prefix part of the URL will be
-			the identifier that will be used from the script.
+to use, from script, the cache_store(), cache_fetch(), etc. operations.
+It may be set more than once.  The prefix part of the URL will be
+the identifier that will be used from the script.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -216,29 +216,30 @@ The module supports three authentication modes based on the URL format:
 | `redis:group://host:port/` | (none) | Non-authenticated Redis |
 
 
-**Important**: For classic password-only
-			authentication, the URL must include a colon before the password
-			(`:password@host`). Writing
-			`password@host` without the colon will place the
-			credential in the username field of the URL parser, and authentication
-			will be skipped.
+> [!IMPORTANT]
+> For classic password-only
+> authentication, the URL must include a colon before the password
+> (`:password@host`). Writing
+> `password@host` without the colon will place the
+> credential in the username field of the URL parser, and authentication
+> will be skipped.
 
 
 When connecting to a Redis Cluster with authentication, all discovered
-			cluster nodes use the same credentials from the URL.
+cluster nodes use the same credentials from the URL.
 
 
 ##### Unix Socket
 
 
 Starting with this version, the module supports connecting to a
-			local Redis instance via a Unix domain socket instead of TCP.
-			This can provide lower latency and avoid network overhead for
-			co-located Redis instances.
+local Redis instance via a Unix domain socket instead of TCP.
+This can provide lower latency and avoid network overhead for
+co-located Redis instances.
 
 
 To use a Unix socket, add a `socket=` parameter
-			to the URL query string:
+to the URL query string:
 
 
 ```opensips
@@ -261,27 +262,27 @@ modparam("cachedb_redis", "cachedb_url",
 
 
 - Unix socket connections are always treated as
-				*single-instance* mode (no Redis Cluster
-				support over Unix sockets).
+*single-instance* mode (no Redis Cluster
+support over Unix sockets).
 - Unix socket cannot be combined with multiple hosts (failover).
-				Specifying both will cause a startup error.
+Specifying both will cause a startup error.
 - TLS is not applicable to Unix socket connections and will be
-				ignored with a warning if `use_tls` is enabled.
+ignored with a warning if `use_tls` is enabled.
 - TCP keepalive is not applicable to Unix sockets and is
-				automatically skipped.
+automatically skipped.
 
 
 The [mi redis cluster info](#mi_redis_cluster_info) MI command will display
-			Unix socket connections with `transport=unix` and
-			the socket path. The [mi redis ping nodes](#mi_redis_ping_nodes) command
-			works normally with Unix socket connections.
+Unix socket connections with `transport=unix` and
+the socket path. The [mi redis ping nodes](#mi_redis_ping_nodes) command
+works normally with Unix socket connections.
 
 
 #### connect_timeout (integer)
 
 
 This parameter specifies how many milliseconds OpenSIPS should wait
-			for connecting to a Redis node.
+for connecting to a Redis node.
 
 
 *Default value is "5000 ms".*
@@ -300,7 +301,7 @@ modparam("cachedb_redis", "connect_timeout",1000)
 
 
 This parameter specifies how many milliseconds OpenSIPS should wait
-			for a query response from a Redis node.
+for a query response from a Redis node.
 
 
 *Default value is "5000 ms".*
@@ -319,8 +320,8 @@ modparam("cachedb_redis", "query_timeout",1000)
 
 
 By setting this parameter to 1, OpenSIPS will abort startup if
-		the initial connection to Redis is not possible. Runtime reconnect
-		behavior is unaffected by this parameter, and is always enabled.
+the initial connection to Redis is not possible. Runtime reconnect
+behavior is unaffected by this parameter, and is always enabled.
 
 
 *Default value is "0" (disabled).*
@@ -339,20 +340,20 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
 
 By setting this parameter to 1, OpenSIPS will defer establishing
-		Redis connections until the first cache operation is actually
-		performed by each worker process. This prevents idle worker
-		processes (those that never use Redis) from holding open sockets,
-		which avoids sockets getting stuck in CLOSE_WAIT state when Redis
-		is restarted.
+Redis connections until the first cache operation is actually
+performed by each worker process. This prevents idle worker
+processes (those that never use Redis) from holding open sockets,
+which avoids sockets getting stuck in CLOSE_WAIT state when Redis
+is restarted.
 
 
 When this parameter is enabled, the
-		[shutdown on error](#param_shutdown_on_error) parameter has no effect,
-		since no connection is attempted at startup time.
+[shutdown on error](#param_shutdown_on_error) parameter has no effect,
+since no connection is attempted at startup time.
 
 
 *Default value is "0" (disabled — connect at
-		startup, preserving existing behavior).*
+startup, preserving existing behavior).*
 
 
 ```opensips title="Set the lazy_connect parameter"
@@ -368,20 +369,20 @@ modparam("cachedb_redis", "lazy_connect", 1)
 
 
 Setting this parameter will allow you to use TLS for Redis connections.
-		In order to enable TLS for a specific connection, you can use the
-		"tls_domain=*dom_name*" URL parameter in the cachedb_url
-		of this module (or other modules that use the CacheDB interface). This should
-		be placed at the end of the URL after the '?' character.
+In order to enable TLS for a specific connection, you can use the
+"tls_domain=*dom_name*" URL parameter in the cachedb_url
+of this module (or other modules that use the CacheDB interface). This should
+be placed at the end of the URL after the '?' character.
 
 
 When using this parameter, you must also ensure that
-		*tls_mgm* is loaded and properly configured. Refer to
-		the tls_mgm module for additional info regarding TLS client domains.
+*tls_mgm* is loaded and properly configured. Refer to
+the tls_mgm module for additional info regarding TLS client domains.
 
 
 Note that TLS is supported by Redis starting with version 6.0. Also, it is
-		an optional feature enabled at compile time and might not be included in the
-		standard Redis packages available for your OS.
+an optional feature enabled at compile time and might not be included in the
+standard Redis packages available for your OS.
 
 
 *Default value is **0** (not enabled)*
@@ -404,11 +405,11 @@ modparam("cachedb_redis", "cachedb_url","redis:tls_group://localhost:6379/?tls_d
 
 
 Only relevant with *RedisJSON* and
-			*RediSearch* server-side support.
+*RediSearch* server-side support.
 
 
 A global index name to be used for all internal JSON full-text search operations.
-		Future extensions may add, e.g., a connection-level index name setting.
+Future extensions may add, e.g., a connection-level index name setting.
 
 
 Default value is **"idx:usrloc"**.
@@ -423,11 +424,11 @@ modparam("cachedb_redis", "ftsearch_index_name", "ix::usrloc")
 
 
 Only relevant with *RedisJSON* and
-			*RediSearch* server-side support.
+*RediSearch* server-side support.
 
 
 A key naming prefix for all internally-created Redis JSON objects (e.g.
-		created with JSON.SET or JSON.MSET).
+created with JSON.SET or JSON.MSET).
 
 
 Default value is **"usrloc:"**.
@@ -442,11 +443,11 @@ modparam("cachedb_redis", "ftsearch_json_prefix", "userlocation:")
 
 
 Only relevant with *RedisJSON* and
-			*RediSearch* server-side support.
+*RediSearch* server-side support.
 
 
 The maximum number of results returned by each internally-triggered
-		FT.SEARCH JSON lookup query.
+FT.SEARCH JSON lookup query.
 
 
 Default value is **10000** max results.
@@ -461,15 +462,15 @@ modparam("cachedb_redis", "ftsearch_max_results", 100)
 
 
 TCP keepalive interval in seconds for Redis connections. When set
-			to a positive value, the kernel sends TCP probes on idle connections
-			to detect dead peers (e.g. due to NAT/firewall idle timeout or
-			network partition). This allows the next query to fail immediately
-			instead of waiting for the full query timeout, enabling faster
-			recovery via the existing retry loop.
+to a positive value, the kernel sends TCP probes on idle connections
+to detect dead peers (e.g. due to NAT/firewall idle timeout or
+network partition). This allows the next query to fail immediately
+instead of waiting for the full query timeout, enabling faster
+recovery via the existing retry loop.
 
 
 Set to 0 to disable TCP keepalive. Recommended to keep enabled
-			for production deployments to prevent silent connection death.
+for production deployments to prevent silent connection death.
 
 
 *Default value is "10" (seconds).*
@@ -491,12 +492,12 @@ modparam("cachedb_redis", "redis_keepalive", 0)
 
 
 Only relevant with *RedisJSON* and
-			*RediSearch* server-side support.
+*RediSearch* server-side support.
 
 
 A Redis EXPIRE timer to set/refresh on the JSON key after each JSON.MSET operation
-		(create the JSON or add/remove subkeys), in seconds.  A value of **0**
-		disables the EXPIRE queries completely.
+(create the JSON or add/remove subkeys), in seconds.  A value of **0**
+disables the EXPIRE queries completely.
 
 
 Default value is **3600** seconds.
@@ -511,7 +512,7 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ### Exported MI Functions
@@ -521,49 +522,49 @@ The module does not export functions to be used
 
 
 Displays detailed information about all Redis connections managed
-			by the module, including cluster topology, per-node connection status,
-			slot assignments, and per-node query counters.
+by the module, including cluster topology, per-node connection status,
+slot assignments, and per-node query counters.
 
 
 Parameters:
 
 
 - *group* (optional) - if specified, only
-					connections belonging to this group will be listed (e.g.
-					*"local"* from a
-					*"redis:local://..."* URL). If omitted,
-					all Redis connections are listed.
+connections belonging to this group will be listed (e.g.
+*"local"* from a
+*"redis:local://..."* URL). If omitted,
+all Redis connections are listed.
 
 
 The response is a JSON array of connection objects. Each connection
-			object includes:
+object includes:
 
 
 - *group* - the connection group name
 - *url* - the original cachedb_url
 - *mode* - *"cluster"*
-					or *"single"*
+or *"single"*
 - *cluster_command* (cluster mode only) -
-					*"SHARDS"* or
-					*"SLOTS"*, depending on which Redis
-					command is used for topology discovery
+*"SHARDS"* or
+*"SLOTS"*, depending on which Redis
+command is used for topology discovery
 - *topology_refreshes* - number of topology
-					refreshes performed on this connection
+refreshes performed on this connection
 - *last_topology_refresh* - UNIX timestamp
-					of the last topology refresh
+of the last topology refresh
 - *nodes* - array of cluster node objects,
-					each containing:
-					*ip*, *port*,
-					*status*
-					(*"connected"*/*"disconnected"*),
-					*slots_assigned* (cluster mode only),
-					*queries*, *errors*,
-					*moved*,
-					*last_activity* (seconds since last
-					successful query, -1 if never queried)
+each containing:
+*ip*, *port*,
+*status*
+(*"connected"*/*"disconnected"*),
+*slots_assigned* (cluster mode only),
+*queries*, *errors*,
+*moved*,
+*last_activity* (seconds since last
+successful query, -1 if never queried)
 - *total_slots_mapped* (cluster mode only) -
-					total number of slots with an assigned node (should be 16384
-					for a healthy cluster)
+total number of slots with an assigned node (should be 16384
+for a healthy cluster)
 
 
 MI FIFO Command Format:
@@ -583,27 +584,27 @@ opensips-cli -x mi redis_cluster_info group=local
 
 
 Forces an immediate topology refresh on Redis Cluster connections.
-			This bypasses the normal once-per-second rate limit and queries the
-			cluster for its current slot-to-node mapping. Useful after manual
-			cluster rebalancing or node additions/removals.
+This bypasses the normal once-per-second rate limit and queries the
+cluster for its current slot-to-node mapping. Useful after manual
+cluster rebalancing or node additions/removals.
 
 
 For non-cluster (single instance) connections, the command returns
-			a *"skipped (not cluster mode)"* status.
+a *"skipped (not cluster mode)"* status.
 
 
 Parameters:
 
 
 - *group* (optional) - if specified, only
-					the connection belonging to this group will be refreshed.
-					If omitted, all cluster connections are refreshed.
+the connection belonging to this group will be refreshed.
+If omitted, all cluster connections are refreshed.
 
 
 The response is a JSON array of objects, one per connection, each
-			containing *group* and *status*
-			(*"ok"*, *"error"*, or
-			*"skipped (not cluster mode)"*).
+containing *group* and *status*
+(*"ok"*, *"error"*, or
+*"skipped (not cluster mode)"*).
 
 
 MI FIFO Command Format:
@@ -623,32 +624,32 @@ opensips-cli -x mi redis_cluster_refresh group=local
 
 
 Sends a PING command to each Redis node and reports per-node
-			reachability status with round-trip latency. Useful for on-demand
-			health checks without waiting for the next query.
+reachability status with round-trip latency. Useful for on-demand
+health checks without waiting for the next query.
 
 
 Parameters:
 
 
 - *group* (optional) - if specified, only
-					nodes belonging to this group will be pinged. If omitted,
-					all Redis connections are pinged.
+nodes belonging to this group will be pinged. If omitted,
+all Redis connections are pinged.
 
 
 The response is a JSON array of connection objects. Each connection
-			object includes:
+object includes:
 
 
 - *group* - the connection group name
 - *nodes* - array of node objects, each
-					containing:
-					*ip*, *port*,
-					*status*
-					(*"reachable"*,
-					*"unreachable"*, or
-					*"disconnected"*),
-					*latency_us* (round-trip time in
-					microseconds, -1 if not reachable)
+containing:
+*ip*, *port*,
+*status*
+(*"reachable"*,
+*"unreachable"*, or
+*"disconnected"*),
+*latency_us* (round-trip time in
+microseconds, -1 if not reachable)
 
 
 MI FIFO Command Format:
@@ -671,33 +672,33 @@ opensips-cli -x mi redis_ping_nodes group=local
 
 
 Total number of successful Redis queries executed across all
-			connections and processes.
+connections and processes.
 
 
 #### redis_queries_failed
 
 
 Total number of failed Redis queries (NULL replies from hiredis
-			or Redis error responses other than MOVED).
+or Redis error responses other than MOVED).
 
 
 #### redis_moved
 
 
 Total number of MOVED redirections received from Redis Cluster
-			nodes. A MOVED response indicates a permanent slot migration -
-			the module updates its slot map and retries the query on the
-			correct node.
+nodes. A MOVED response indicates a permanent slot migration -
+the module updates its slot map and retries the query on the
+correct node.
 
 
 #### redis_topology_refreshes
 
 
 Total number of cluster topology refreshes performed (via
-			CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
-			for automatic refreshes (triggered by MOVED responses or
-			unreachable nodes) and manual refreshes (triggered via the
-			[mi redis cluster refresh](#mi_redis_cluster_refresh) MI command).
+CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
+for automatic refreshes (triggered by MOVED responses or
+unreachable nodes) and manual refreshes (triggered via the
+[mi redis cluster refresh](#mi_redis_cluster_refresh) MI command).
 
 
 ### Raw Query Syntax
@@ -705,7 +706,7 @@ Total number of cluster topology refreshes performed (via
 
 The cachedb_redis module allows to run RAW queries, thus taking full advantage of the capabilities of the back-end.
 
-			The query syntax is the typical REDIS one.
+The query syntax is the typical REDIS one.
 
 
 Here are a couple examples of running some Redis queries :
@@ -746,9 +747,9 @@ Here are a couple examples of running some Redis queries :
 
 
 Make sure you've upgraded the Redis "libhiredis" client library to at
-		least version 0.14.1.  There was at least one significant vulnerability
-		reported in library versions prior to that one ([CVE-2020-7105](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2020-7105)),
-		so upgrading to latest stable may very well fix the crash!
+least version 0.14.1.  There was at least one significant vulnerability
+reported in library versions prior to that one ([CVE-2020-7105](https://bugzilla.redhat.com/show_bug.cgi?id=CVE-2020-7105)),
+so upgrading to latest stable may very well fix the crash!
 <!-- CONTRIBUTORS -->
 
 ### License
