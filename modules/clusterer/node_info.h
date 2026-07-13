@@ -117,6 +117,11 @@ struct cluster_info {
 	int top_version;        		/* topology version */
 	struct local_cap *capabilities;	/* capabilities registered for this cluster */
 
+	/* Set by clusterer_controller when manage_shtags=1 for this cluster.
+	 * Blocks MI and script-variable shtag activation to prevent conflicts
+	 * with controller-managed failover. */
+	int shtag_managed;
+
 	struct cluster_info *next;
 };
 
@@ -124,7 +129,11 @@ typedef struct node_info node_info_t;
 typedef struct cluster_info cluster_info_t;
 
 extern int current_id;
+extern int *_current_id_shm;
+/* Read current_id from shm if available (cross-process after fork) */
+#define GET_CURRENT_ID (_current_id_shm ? *_current_id_shm : current_id)
 extern int db_mode;
+extern int use_controller;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
@@ -153,6 +162,7 @@ static inline cluster_info_t *get_cluster_by_id(int cluster_id)
 {
 	cluster_info_t *cl;
 
+	if (!cluster_list || !*cluster_list) return NULL;
 	for (cl = *cluster_list; cl; cl = cl->next)
 		if (cl->cluster_id == cluster_id)
 			return cl;

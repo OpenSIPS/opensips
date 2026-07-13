@@ -70,7 +70,7 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 		if (get_next_hop(node) == 0)
 			continue;
 
-		if (!match_node(cluster->current_node, node, match_cond))
+		if (!cluster->current_node || !match_node(cluster->current_node, node, match_cond))
 			continue;
 
 		lock_get(node->lock);
@@ -94,14 +94,40 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 {
 	lock_get(cluster->lock);
+
+	/* If we are a seed node with no peers yet, skip the pending queue and
+	 * self-mark as synced immediately.  There is nobody to sync from, and
+	 * the seed-fallback timer would just fire after seed_fb_interval and
+	 * log a spurious ERROR.  When peers join later the normal event-driven
+	 * sync path (CLUSTER_NODE_UP callback) will re-trigger if needed. */
+	if (cluster->current_node &&
+	    (cluster->current_node->flags & NODE_IS_SEED) &&
+	    cluster->node_list == NULL) {
+		lcap->flags |= CAP_STATE_OK;
+		lcap->flags &= ~(CAP_SYNC_PENDING | CAP_SYNC_STARTUP);
+		lock_release(cluster->lock);
+		LM_DBG("No peers in cluster %d — capability '%.*s' self-marked as "
+		       "synced (first/lone seed node)\n",
+		       cluster->cluster_id, lcap->reg.name.len, lcap->reg.name.s);
+		sr_set_status(cl_srg, STR2CI(lcap->reg.sr_id), CAP_SR_SYNCED,
+			STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
+		sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0,
+			"No peers present — self-synced as first node in cluster");
+		send_single_cap_update(cluster, lcap, 1);
+		return 0;
+	}
+
 	lcap->flags |= CAP_SYNC_PENDING;
 	if (sr_get_core_status() == STATE_INITIALIZING)
 		lcap->flags |= CAP_SYNC_STARTUP;
 	else
 		lcap->flags &= ~CAP_SYNC_STARTUP;
 
-	if (cluster->current_node->flags & NODE_IS_SEED)
-		gettimeofday(&lcap->sync_req_time, NULL);
+	/* Always record when we started waiting — if current_node is not yet set
+	 * (controller mode, identity assigned post-fork), sync_req_time would
+	 * stay at zero (epoch) and TIME_DIFF would be huge, causing the seed
+	 * fallback timer to fire immediately once identity is assigned. */
+	gettimeofday(&lcap->sync_req_time, NULL);
 
 	lock_release(cluster->lock);
 

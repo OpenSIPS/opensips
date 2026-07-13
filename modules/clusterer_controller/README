@@ -1,0 +1,1389 @@
+CLUSTERER_CONTROLLER Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Discovery Protocol
+        1.3. Master Election
+        1.4. Security Architecture
+        1.5. Dependencies
+
+              1.5.1. OpenSIPS Modules
+              1.5.2. External Libraries or Applications
+
+        1.6. Exported Parameters
+
+              1.6.1. cluster (string)
+              1.6.2. my_ip (string)
+              1.6.3. interface (string)
+              1.6.4. query_time (integer)
+              1.6.5. password (string)
+              1.6.6. manage_shtags (integer)
+              1.6.7. master_stickiness (integer)
+              1.6.8. on_config_mismatch (string)
+
+        1.7. Exported MI Functions
+
+              1.7.1. cc_list_members
+              1.7.2. cc_node_info
+              1.7.3. cc_list_config
+              1.7.4. cc_shtag_force
+              1.7.5. cc_shtag_auto
+
+        1.8. Multiple Clusters
+        1.9. Configuration Example
+        1.10. Limitations
+        1.11. Planned Features
+
+   A. HA Behaviour Tests
+
+        A.1. Baseline
+        A.2. Test 1 — Stop the active node
+        A.3. Test 2 — Stop a backup node
+        A.4. Test 3 — Stop both backup nodes
+        A.5. Test 4 — Stop active node and one backup
+        A.6. Test 5 — Full cluster restart
+        A.7. Summary
+
+   2. Contributors
+
+        2.1. Contributors
+        2.2. Documentation Contributors
+
+   List of Examples
+
+   1.1. Set cluster parameter — single cluster
+   1.2. Set cluster parameter — multiple clusters
+   1.3. Set my_ip parameter
+   1.4. Set interface parameter
+   1.5. Set query_time parameter
+   1.6. Set password parameter
+   1.7. Global manage_shtags — applies to all clusters
+   1.8. Per-cluster override — opt one cluster out of automatic
+          failover
+
+   1.9. Global opt-out with one cluster opting in
+   1.10. Typical full configuration with manage_shtags=1 (default)
+   1.11. Set master_stickiness parameter
+   1.12. Set on_config_mismatch parameter
+   1.13. cc_list_members usage
+   1.14. cc_node_info usage
+   1.15. cc_list_config usage
+   1.16. cc_shtag_force usage
+   1.17. cc_shtag_auto usage
+   1.18. Multiple clusters — dialog on cluster 1, usrloc on
+          cluster 2
+
+   1.19. Multiple clusters — same multicast IP, different ports
+   1.20. Minimal HA cluster configuration
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   The clusterer_controller module provides automatic peer
+   discovery and topology management for the clusterer module via
+   authenticated, encrypted UDP multicast. It eliminates the need
+   for static node configuration or a database — nodes discover
+   each other automatically at startup and the cluster topology is
+   maintained dynamically at runtime.
+
+   When use_controller=1 is set in the clusterer module, the
+   clusterer_controller module takes over all topology management:
+   it allocates unique node IDs, discovers peer BIN socket
+   addresses, and calls the clusterer internal API to add or
+   remove nodes as they join or leave the cluster.
+
+   By default (manage_shtags=1), the module also provides fully
+   automatic sharing tag failover. The controller master node is
+   the single decision point for which node holds the active tag —
+   no event routes, MI commands, or seed_fallback_interval
+   configuration is needed. Sharing tags are forced to backup at
+   startup regardless of the =active config value, and the active
+   tag is claimed by the controller master automatically when the
+   cluster forms or when the active node departs. An operator can
+   override this automatic allocation and pin the active tag to a
+   chosen node with the cc_shtag_force MI command, reverting to
+   automatic allocation with cc_shtag_auto.
+
+   The minimal configuration per node is a single multicast group
+   address. No IP addresses, node IDs, BIN URLs, or sharing tag
+   management scripts need to be hardcoded or maintained. Any
+   number of nodes can join or leave without any configuration
+   change on the remaining nodes.
+
+1.2. Discovery Protocol
+
+   All traffic uses UDP multicast to the configured multicast
+   address and port. Clusters are kept apart in two independent
+   ways: by the multicast endpoint (two clusters may use different
+   IP addresses, or the same address with different UDP ports),
+   and by the id (cluster_id) carried in the cleartext of every
+   packet. A node silently ignores any packet whose cluster_id
+   differs from its own, so several clusters can safely share one
+   multicast group and port. Two clusters merge only if they share
+   all of the multicast address, the UDP port, the cluster_id and
+   the password — i.e. they are configured identically, which is
+   the operator's responsibility to avoid.
+
+   Every packet is encrypted and authenticated with an AEAD —
+   AES-256-GCM by default, or XChaCha20-Poly1305 when the module
+   is built against libsodium (see the Security Architecture
+   section). Two distinct encryption keys are used depending on
+   the communication phase:
+     * Bootstrap key — derived from the configured password with a
+       memory-hard KDF (scrypt N=2^16, r=8, p=1, or Argon2id in
+       the libsodium build, with a per-cluster salt), so a
+       password captured from a bootstrap packet cannot be
+       brute-forced cheaply offline. Derived once at startup. Used
+       for the admission handshake (JOIN_REQ, KEY_GRANT,
+       JOIN_REJECT) and the split-brain MASTER_BEACON — traffic
+       that must be readable before a session key exists, or by
+       masters holding different session keys.
+     * Session key — derived via HKDF-SHA256 from the password and
+       a 32-byte master salt generated once when the cluster first
+       bootstraps. All normal cluster traffic uses this key. It is
+       preserved across master changes (a new master reuses the
+       key every member already holds), so failover needs no
+       re-keying.
+
+   Each packet wire format begins with a 2-byte magic value
+   identifying the key type and a 2-byte cluster_id, both in
+   cleartext (the magic and cluster_id must be readable before
+   decryption to select the key and to filter foreign clusters),
+   followed by a random AEAD nonce (12 bytes for AES-256-GCM, 24
+   for XChaCha20-Poly1305) and the ciphertext. The magic and
+   cluster_id are additionally bound into the authentication tag
+   as AAD, so they cannot be altered undetected. Only the payload
+   is encrypted; the authenticated plaintext begins with a 1-byte
+   packet type and a 4-byte monotonic sequence number used for
+   replay protection. A 16-byte authentication tag follows the
+   ciphertext. Packets for a different cluster_id are dropped
+   before decryption; packets encrypted with a different password
+   fail authentication and are silently discarded.
+
+   The following packet types are defined:
+     * ALIVE — periodic heartbeat sent by every active node every
+       query_time seconds. Carries the sender IP, its X25519
+       public key (so peers can prepare for key agreement) and a
+       small descriptor of the sender's consistency-critical
+       settings (manage_shtags, master_stickiness, query_time)
+       used for configuration-drift detection (see Security
+       Architecture). Encrypted with the session key.
+     * JOIN_REQ — sent at startup by a new node, carrying its IP,
+       BIN socket list, X25519 ephemeral public key, and a 16-byte
+       random join nonce. Encrypted with the bootstrap key so it
+       can be sent before a session key exists.
+     * MEMBER_LIST — sent by the master in response to a JOIN_REQ,
+       carrying the member count, the operator-forced sharing-tag
+       holder node_id (0 = automatic), and the full peer IP list
+       so the joining node can participate in elections. Only
+       accepted from the current master (except during initial
+       join when no master is yet known).
+     * NODE_ASSIGN — sent by the master to multicast, allocating a
+       node_id and BIN socket record for a joining node. All
+       cluster members receive and apply it.
+     * GOODBYE — sent on graceful shutdown so peers can remove the
+       node immediately without waiting for timeout. Uses the
+       sender's monotonic sequence counter to prevent forgery.
+     * MASTER_ALIVE — keepalive sent by the master every 1 second
+       (independent of query_time). Used by all peers to detect
+       master failure quickly (3-second timeout). Encrypted with
+       the session key.
+     * KEY_GRANT — unicast response to a JOIN_REQ, sent by the
+       master directly to the joining node. Contains the master's
+       X25519 public key, the original join nonce, and the master
+       salt wrapped with a per-exchange key derived from
+       ECDH(master_priv, joiner_pub) + password + join_nonce via
+       HKDF-SHA256. Encrypted with the bootstrap key.
+     * KEY_HANDOFF — unicast packet sent by the outgoing master on
+       graceful shutdown to the next-highest-IP peer, delivering
+       the master salt so that peer can become the new master
+       without a full re-join cycle. Encrypted with the session
+       key.
+     * JOIN_REJECT — sent by the master to a joining node whose
+       JOIN_REQ repeatedly fails authentication (wrong password).
+       After CC_JOIN_FAIL_LIMIT (3) consecutive bootstrap-key
+       decryption failures from the same source IP the master
+       sends a JOIN_REJECT to that IP. Encrypted with the
+       bootstrap key so it cannot be forged by a node that does
+       not know the cluster password. The joining node logs a
+       critical error and shuts down OpenSIPS on receipt.
+     * MASTER_BEACON — a master-only announcement multicast every
+       few MASTER_ALIVE ticks, carrying this partition's member
+       count. Unlike MASTER_ALIVE it is encrypted with the
+       bootstrap key, so it is readable even by a master that
+       holds a different session key. This is how a split brain
+       between two independently bootstrapped partitions is
+       detected and merged (see Master Election).
+
+1.3. Master Election
+
+   Each cluster has three roles: master (the active coordinator),
+   backup (the standby promoted when the master fails, always the
+   highest-IP non-master) and member. The election uses a
+   quantized time window so that all nodes evaluate the same
+   eligible peer set and reach the same result deterministically.
+   No NTP synchronisation between nodes is required for correct
+   election results.
+
+   The master_stickiness parameter (default 1) controls whether a
+   live master is kept when a higher-IP node joins. With
+   stickiness enabled, the master stays put and the higher-IP
+   joiner becomes the backup, minimising handovers; with
+   stickiness disabled the highest-IP node always becomes master.
+   In either mode two live masters are reconciled
+   deterministically (see Split-brain handling below). See the
+   master_stickiness parameter for details.
+
+   Only the master handles JOIN_REQ packets, allocates node_ids,
+   and sends NODE_ASSIGN and MEMBER_LIST packets. Non-master nodes
+   are passive during join events. A joining node receives the
+   current session key from the master (via KEY_GRANT) and joins
+   as a member or backup; it never seizes mastership during the
+   join handshake.
+
+   Preserved session key: the session key is generated once, when
+   the first node bootstraps the cluster, and is then preserved
+   across every master change. A new master does not re-key;
+   because every member already holds the key (obtained when it
+   joined), master transitions require no re-keying and no re-JOIN
+   cycle.
+
+   Fast master failure detection: the master sends MASTER_ALIVE
+   packets every 1 second. All non-master peers maintain a
+   3-second watchdog timer that fires if no MASTER_ALIVE is
+   received. On expiry the silent master is aged out of the
+   election window and each peer immediately re-elects, promoting
+   the backup (highest-IP survivor) — which already holds the
+   session key, so it starts serving within one keepalive
+   interval.
+
+   Graceful master handoff: when the current master shuts down
+   cleanly, it sends a KEY_HANDOFF packet directly to the
+   next-highest-IP peer before sending GOODBYE to multicast. This
+   confirms the master salt to the incoming master so it can
+   assume control immediately.
+
+   Split-brain handling. A split brain (more than one node
+   believing it is master) is prevented and, if it still occurs,
+   healed by three cooperating mechanisms:
+     * Prevention at join time. When several nodes start
+       simultaneously they all exchange (bootstrap-decryptable)
+       JOIN_REQs and thus learn about each other. At the join
+       deadline, a node that has seen a higher-IP node also still
+       joining defers its own self-promotion (for a few bounded
+       rounds) and joins that node instead, so only the highest-IP
+       starter becomes master and no independent-key lone masters
+       are created.
+     * Same-key yield. Two masters that share a session key (for
+       example after a network partition heals) can read each
+       other's MASTER_ALIVE; the lower-IP master immediately
+       yields to the higher-IP one.
+     * Divergent-key merge. Two masters that were bootstrapped
+       independently hold different session keys and so cannot
+       read each other's MASTER_ALIVE. Each therefore emits a
+       MASTER_BEACON encrypted with the shared bootstrap key. On
+       hearing a beacon from a superior partition — larger member
+       count, ties broken by higher IP — a node abandons its
+       partition, re-joins the superior master and adopts its
+       session key, converging the whole cluster onto a single
+       master and key.
+
+1.4. Security Architecture
+
+   The module uses a two-phase key agreement to provide forward
+   secrecy and replay protection for all cluster traffic.
+
+   Payload encryption and header binding: every packet's payload
+   is sealed with an AEAD. The 2-byte magic (a key selector that
+   must be readable before decryption) and the 2-byte cluster_id
+   that precede the nonce are cleartext framing, but they are
+   bound into the AEAD tag as additional authenticated data (AAD):
+   a captured packet cannot be re-stamped with a different
+   cluster_id and still authenticate, which matters when two
+   clusters share one multicast group and password. A node also
+   drops any packet whose cluster_id does not match its own before
+   attempting decryption, so foreign-cluster traffic on the group
+   never counts as an authentication failure.
+
+   Crypto suite (selected at build time): by default the module
+   uses AES-256-GCM (12-byte nonce) for the payload AEAD and
+   scrypt (N=2^16, r=8, p=1) for the bootstrap-key derivation,
+   through WolfSSL. If libsodium is detected on the build host,
+   the module is compiled instead with XChaCha20-Poly1305 (24-byte
+   nonce, whose 192-bit nonce space removes any random-nonce
+   collision concern) and Argon2id. The two wire formats are not
+   interoperable, so every node in a cluster must be built with
+   the same suite; the active suite is reported in the startup log
+   (crypto=...).
+
+   Phase 1 — bootstrap (JOIN_REQ / KEY_GRANT): each worker process
+   generates an ephemeral X25519 keypair on startup. When joining,
+   the node sends its public key and a 16-byte random join nonce
+   in the JOIN_REQ, encrypted with the bootstrap key (a
+   memory-hard KDF of the password — scrypt, or Argon2id in the
+   libsodium build). The master responds with a KEY_GRANT
+   encrypted with the same bootstrap key, containing its own
+   public key, the echoed join nonce, and the master salt wrapped
+   with a per-exchange key derived via HKDF-SHA256 from:
+IKM = ECDH(master_priv, joiner_pub) || password || join_nonce
+
+   This ensures that even if the password is compromised,
+   previously recorded exchanges cannot be decrypted without both
+   the ephemeral private key and the per-exchange join nonce.
+
+   Phase 2 — session (all other packets): once the master salt is
+   known, all nodes derive the session key as:
+session_key = HKDF-SHA256(IKM=password, salt=master_salt, info="cc-sessi
+on-key")
+
+   The session key is generated once, when the first node
+   bootstraps the cluster, and preserved across every master
+   change: a new master reuses the key that every member already
+   holds, so master transitions require no re-keying. All normal
+   cluster traffic (ALIVE, MEMBER_LIST, NODE_ASSIGN, GOODBYE,
+   MASTER_ALIVE, KEY_HANDOFF) is encrypted with this key.
+
+   Replay protection: each sender maintains a monotonically
+   increasing 32-bit sequence number embedded in the authenticated
+   plaintext of every session-key packet. Each receiver tracks the
+   last accepted sequence number per source IP and rejects any
+   packet whose sequence is not strictly greater than the last
+   accepted value. Sequence counters are reset to zero whenever
+   the session key is (re)derived — at cluster bootstrap and when
+   a joiner adopts the key via KEY_GRANT/KEY_HANDOFF — and on peer
+   restart detection (JOIN_REQ received from a known IP resets
+   that peer's counter; MEMBER_LIST upsert resets all listed
+   peers). This protection does not depend on clock
+   synchronisation.
+
+   Rate limiting: a per-source rate limiter (256 slots, 20
+   packets/second limit) is applied before any decryption attempt.
+   This prevents CPU exhaustion from packet floods directed at the
+   multicast group.
+
+   Join authentication and rejection: the master tracks
+   consecutive bootstrap-key decryption failures per source IP in
+   a small worker-local table (CC_JOIN_FAIL_TABLE_SZ = 8 slots).
+   When any source IP accumulates CC_JOIN_FAIL_LIMIT (3)
+   consecutive failures — indicating a node attempting to join
+   with the wrong password — the master sends an encrypted
+   JOIN_REJECT packet and stops responding to further JOIN_REQs
+   from that IP.
+
+   On the joining side, a received JOIN_REJECT is only acted on
+   while the node is still in the initial join phase (CC_NODE_NEW
+   state) and is addressed to this node; an already-active cluster
+   member ignores any JOIN_REJECT unconditionally, so a node with
+   the correct password can never be evicted by a peer.
+
+   A node joining with the wrong password cannot decrypt the
+   JOIN_REJECT (it is encrypted with the master's bootstrap key),
+   so it relies on a self-contained signal instead: while joining
+   it counts packets received from other peers that it cannot
+   decrypt. If, at the join deadline, the node is still unjoined
+   and has seen CC_JOIN_FAIL_LIMIT or more such undecryptable
+   packets, it concludes that a cluster it cannot authenticate to
+   exists on the group and shuts down OpenSIPS with a critical log
+   message — rather than promoting itself into a lone, split-brain
+   master (which, with managed sharing tags, would create a
+   duplicate active tag). This counter is reset the moment a
+   KEY_GRANT is successfully processed, so a legitimate joiner
+   that briefly saw an undecryptable packet before receiving its
+   key is never affected.
+
+   Rogue traffic isolation: a node requests a re-key in response
+   to an undecryptable session-key packet only when that packet
+   came from its current master (a legitimate key rotation).
+   Undecryptable session packets from any other source — for
+   example a wrong-password or malicious node broadcasting on the
+   multicast group — are ignored, so such traffic cannot drive the
+   cluster into a re-JOIN churn.
+
+   Peer table exhaustion defence: the peer table is bounded at
+   CC_MAX_PEERS (256) entries. When the table is full, the master
+   rejects JOIN_REQ packets from unknown IPs with a JOIN_REJECT
+   response. Known peers that are reconnecting after a restart
+   continue to be admitted regardless of the table count, since
+   they already own a slot. This prevents an attacker with the
+   cluster password from exhausting the peer table by flooding
+   JOIN_REQs from spoofed source addresses.
+
+   Configuration-consistency enforcement: all nodes of a cluster
+   must use identical consistency-critical settings
+   (manage_shtags, master_stickiness and query_time); a per-node
+   mismatch would otherwise cause silent, inconsistent failover
+   and sharing-tag behaviour (for example, a master with
+   manage_shtags=0 would leave no node holding the active tag).
+   Each node advertises these effective settings in its ALIVE
+   heartbeat and in its JOIN_REQ, so mismatches are detected. What
+   happens then is controlled by the on_config_mismatch modparam:
+     * reject (default) - when a node tries to join an established
+       cluster (a master is alive) with different settings, the
+       master logs the attempt and returns a JOIN_REJECT; the
+       joining node logs the offending settings and shuts down, so
+       a misconfigured node never joins.
+     * warn - the node is allowed to join, but any peer that
+       observes a different value logs a single loud CONFIG
+       MISMATCH warning (repeated only if the peer's advertised
+       configuration changes, cleared once it matches).
+     * adopt - the joining node adopts the running cluster's
+       (master's) settings at runtime and continues; the adopted
+       values are what cc_list_config reports.
+
+   This turns an easy-to-miss misconfiguration into an obvious log
+   line, a refused join, or a self-correction rather than a
+   hard-to-diagnose HA failure.
+
+1.5. Dependencies
+
+1.5.1. OpenSIPS Modules
+
+   The following modules are required by this module:
+     * proto_bin — required so that BIN listeners are registered
+       and available for discovery when clusterer_controller
+       initialises and scans the proto_bin listener list.
+     * clusterer — required with use_controller=1 set, so that the
+       clusterer internal API (load_clusterer_ctrl_binds) is
+       exported and available at initialisation time.
+
+   Both dependencies are declared in the module's dep_export_t.
+   OpenSIPS will refuse to start if either dependency is not
+   satisfied. This does not imply that the modules must appear in
+   a particular order in the configuration file — OpenSIPS
+   resolves the dependency at runtime and will initialize the
+   required modules first regardless of loadmodule order.
+
+   All other modules that use the clusterer interface (tm, dialog,
+   dispatcher, usrloc etc.) may be loaded in any order relative to
+   clusterer_controller. The clusterer module automatically
+   creates a cluster stub when use_controller=1 is set and a
+   module attempts to register a capability for an unknown
+   cluster.
+
+1.5.2. External Libraries or Applications
+
+   The following libraries must be installed:
+     * tls_wolfssl — the clusterer_controller module links
+       statically against the WolfSSL library built by the
+       tls_wolfssl module
+       (modules/tls_wolfssl/lib/lib/libwolfssl.a). WolfSSL
+       provides AES-256-GCM authenticated encryption, X25519 ECDH
+       key agreement, HKDF-SHA256 key derivation, the scrypt
+       password KDF, and SHA-256. The tls_wolfssl module must be
+       present in the source tree; its static library is built
+       automatically as a dependency if not already present.
+     * libsodium (optional) — if the build host has libsodium
+       development files (detected via pkg-config), the module is
+       compiled with the stronger crypto suite: XChaCha20-Poly1305
+       for the payload AEAD and Argon2id for the bootstrap-key
+       derivation, in place of AES-256-GCM and scrypt. X25519 ECDH
+       and HKDF continue to use WolfSSL. libsodium is linked
+       dynamically, so each target host then also needs the
+       libsodium runtime package (for example libsodium23).
+       Because the two suites produce incompatible wire formats,
+       every node in a cluster must be built the same way; the
+       active suite is printed in the startup log.
+
+1.6. Exported Parameters
+
+1.6.1. cluster (string)
+
+   Define a cluster to participate in. The value is a
+   comma-separated key=value string with the following fields:
+     * id (required) — positive integer cluster identifier, must
+       match the cluster_id used by clusterer consumers (dialog,
+       usrloc, dispatcher, etc.).
+     * multicast (required) — IPv4 multicast address and UDP port
+       in the form A.B.C.D:PORT. The address must be in the
+       224.0.0.0/4 range.
+     * password (optional) — AES-256 encryption key material. All
+       nodes in the same cluster must use the same password. Falls
+       back to the global password modparam if not set.
+     * bin_socket (optional) — BIN socket to advertise for this
+       cluster, in the form bin:IP:PORT. Required when multiple
+       clusters are defined. When only one cluster is defined and
+       only one BIN socket exists, the socket is auto-detected
+       from the proto_bin listeners.
+     * manage_shtags (optional) — per-cluster override for the
+       global manage_shtags modparam. Set to 1 to enable automatic
+       sharing tag failover for this cluster, or 0 to disable it.
+       When omitted, the global manage_shtags value applies,
+       regardless of the order in which cluster and manage_shtags
+       modparams appear in the config file.
+
+   This parameter may be set multiple times to participate in
+   multiple clusters simultaneously. Each cluster runs its own
+   independent worker process.
+
+   No default value. At least one cluster must be defined.
+
+   Example 1.1. Set cluster parameter — single cluster
+...
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+...
+
+   Example 1.2. Set cluster parameter — multiple clusters
+...
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.1.10:5566")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,bin_socket=bin:10.0.2.10:5566")
+...
+
+1.6.2. my_ip (string)
+
+   Explicitly set the local IPv4 address used by the controller
+   for its own node identity and master election. This is the IP
+   that the controller advertises to peers in JOIN_REQ and
+   NODE_ASSIGN packets and uses for the highest-IP master election
+   algorithm.
+
+   Note: this parameter controls the controller's identity only.
+   The BIN socket address advertised to clusterer peers is
+   discovered separately from the proto_bin listener list and is
+   independent of this setting. Do not confuse my_ip with the BIN
+   socket IP defined by the socket=bin:IP:PORT core parameter.
+
+   When set, the module walks the interface list to find which
+   local interface owns this address and uses that interface for
+   multicast traffic. Startup fails if no local interface owns the
+   given address.
+
+   The module supports three identity resolution modes depending
+   on which modparams are provided:
+
+   Mode 1 — my_ip set: The given IP is used directly. The owning
+   interface is resolved automatically from the system interface
+   list. Use this mode on multi-homed hosts where you want to pin
+   the controller identity to a specific IP.
+
+   Mode 2 — interface set, my_ip not set: The first IPv4 address
+   on the named interface is used as the controller identity IP. A
+   warning is logged if the interface has multiple IPv4 addresses.
+
+   Mode 3 — neither set (default): A throw-away UDP socket is
+   connected to the multicast group and getsockname() is called to
+   determine which source IP the kernel would select. The
+   interface name is resolved from the returned IP. Suitable for
+   single-homed hosts.
+
+   Default: auto-detected (Mode 3).
+
+   Example 1.3. Set my_ip parameter
+...
+modparam("clusterer_controller", "my_ip", "10.22.23.191")
+...
+
+1.6.3. interface (string)
+
+   Explicitly set the network interface name to use for multicast
+   traffic (e.g. eth0, enp6s18). The module takes the first IPv4
+   address assigned to this interface as the controller's identity
+   IP. This corresponds to Mode 2 described in the my_ip parameter
+   documentation above.
+
+   Like my_ip, this parameter affects the controller's own
+   identity only and has no effect on the BIN socket addresses
+   advertised to clusterer peers.
+
+   If the interface has more than one IPv4 address, a warning is
+   logged and the first address (in the order returned by the
+   kernel) is used. Set my_ip explicitly to avoid ambiguity on
+   multi-address interfaces.
+
+   Ignored if my_ip is also set — my_ip takes precedence.
+
+   Default: auto-detected (Mode 3 — see my_ip).
+
+   Example 1.4. Set interface parameter
+...
+modparam("clusterer_controller", "interface", "eth0")
+...
+
+1.6.4. query_time (integer)
+
+   How often (in seconds) each active node sends an ALIVE
+   heartbeat to the multicast group. This value also controls the
+   election window (3 × query_time) and the peer purge window (6 ×
+   query_time).
+
+   Smaller values mean faster failure detection but higher
+   multicast traffic. Valid range: 1–60.
+
+   Default value is “5”.
+
+   Example 1.5. Set query_time parameter
+...
+modparam("clusterer_controller", "query_time", 5)
+...
+
+1.6.5. password (string)
+
+   Global default encryption password for all clusters. All nodes
+   in a cluster must use the same password. The password serves
+   two purposes:
+     * Bootstrap key — the password is stretched with scrypt
+       (memory-hard, per-cluster salt) to encrypt JOIN_REQ and
+       KEY_GRANT packets during the initial key exchange phase
+       before a session key is established.
+     * Session key material — the password is fed into HKDF-SHA256
+       together with the master salt to derive the session key
+       used for all normal cluster traffic.
+
+   Can be overridden per cluster using the password= key in the
+   cluster parameter.
+
+   Default value is “3eCrEt*5629”. Change this in production. Use
+   a long, high-entropy secret rather than a memorable phrase —
+   scrypt raises the cost of an offline guess, but only a strong
+   secret removes the risk. A generated key is ideal, e.g. openssl
+   rand -base64 32. The module logs a startup warning if the
+   configured password is the default or has an estimated entropy
+   below 80 bits.
+
+   Example 1.6. Set password parameter
+...
+modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
+...
+
+1.6.6. manage_shtags (integer)
+
+   When set to 1 (the default), the controller master node
+   automatically manages sharing tag failover for all clusters.
+   The controller becomes the single decision point for which node
+   holds the active tag, eliminating races between nodes and
+   requiring no script-level event routes or MI commands to handle
+   failover. While active, the clusterer_set_tag_active MI command
+   and the $shtag() script variable setter are blocked for
+   controller-managed clusters, returning an error to the caller.
+
+   Behaviour when manage_shtags=1:
+
+   Startup: all local sharing tags are forced to backup state
+   during module initialisation, regardless of the =active value
+   in the clusterer sharing_tag modparam. The deferred BIN
+   broadcast flag is also cleared so no SHTAG_ACTIVE packet is
+   ever sent at startup. This ensures that no node can steal the
+   active tag from an existing cluster member simply by
+   restarting.
+
+   Bootstrap: when the first node starts alone and no existing
+   master responds within query_time seconds (join deadline), it
+   elects itself master and activates all local backup tags
+   exactly once. Nodes that join an existing cluster are never
+   eligible for this bootstrap path and never self-activate.
+
+   Failover: when any node departs (graceful shutdown via GOODBYE
+   packet, or timeout-based removal), the controller master
+   activates its own backup tags for that cluster. This covers all
+   departure scenarios: last node standing, master still present,
+   and post re-election.
+
+   Rejoin: a node rejoining an existing cluster always starts in
+   backup state and never reclaims the active tag from the current
+   holder, even if =active appears in its config.
+
+   When set to 0, the controller does not touch sharing tag state
+   at all. The =active config value, seed_fallback_interval, and
+   external MI/event-route scripts behave exactly as in stock
+   clusterer without the controller. Use this when you have
+   existing tag management scripts and want to opt out of
+   automatic failover.
+
+   Default value is “1”.
+
+   Global vs per-cluster scope: This modparam sets a global
+   default that applies to every cluster defined via the cluster
+   modparam. Individual clusters can override it by including
+   manage_shtags=0 or manage_shtags=1 directly in the cluster
+   string. The global default is resolved at startup after all
+   modparams are processed, so the order of manage_shtags and
+   cluster lines in the config file does not matter.
+
+   Example 1.7. Global manage_shtags — applies to all clusters
+...
+# Enable automatic failover for every cluster (this is also the default)
+modparam("clusterer_controller", "manage_shtags", 1)
+modparam("clusterer_controller", "cluster", "id=1,multicast=239.0.90.1:3
+333")
+modparam("clusterer_controller", "cluster", "id=2,multicast=239.0.90.2:3
+333")
+...
+
+   Example 1.8. Per-cluster override — opt one cluster out of
+   automatic failover
+...
+# manage_shtags=1 globally, but cluster 2 uses its own MI/event-route sc
+ripts
+modparam("clusterer_controller", "manage_shtags", 1)
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,manage_shtags=0")
+...
+
+   Example 1.9. Global opt-out with one cluster opting in
+...
+# Disable automatic failover globally; enable it only for cluster 1
+modparam("clusterer_controller", "manage_shtags", 0)
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,manage_shtags=1")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333")
+...
+
+   Example 1.10. Typical full configuration with manage_shtags=1
+   (default)
+# All nodes use identical config — only the BIN socket IP differs per no
+de.
+# The =active tag value in sharing_tag is ignored by the controller;
+# it is kept in the config only for compatibility with manage_shtags=0.
+
+socket=bin:10.22.23.191:3857
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "sharing_tag",   "vip1/1=active")
+modparam("clusterer", "ping_interval", 4)
+modparam("clusterer", "ping_timeout",  1500)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",  "id=1,multicast=239.0.90.1:
+3333")
+modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
+# manage_shtags defaults to 1 — no need to set it explicitly
+
+1.6.7. master_stickiness (integer)
+
+   Controls whether a live master keeps its role when a higher-IP
+   node joins. Default 1 (sticky).
+
+   The module recognises three roles per cluster: master (the
+   active coordinator), backup (the standby that takes over when
+   the master fails), and member (all other nodes). The backup is
+   always the highest-IP node that is not the master.
+     * master_stickiness=1 (default): the master is sticky — a
+       live master keeps the role and is not displaced when a
+       higher-IP node joins. The newly joined node becomes the
+       backup (replacing the previous backup if it has a higher
+       IP); the master only changes when the current master
+       actually fails, at which point the backup is promoted. This
+       minimises the number of master handovers.
+     * master_stickiness=0: pure highest-IP election — a higher-IP
+       node takes over as master as soon as it appears. This
+       produces more handovers but always keeps the highest-IP
+       node as master.
+
+   In both modes a split-brain (two nodes each believing they are
+   master, e.g. after a network partition heals) is resolved
+   deterministically: the lower-IP master yields to the higher-IP
+   one.
+
+   Global vs per-cluster scope: like manage_shtags, this sets a
+   global default that individual clusters can override with
+   master_stickiness=0 or master_stickiness=1 in the cluster
+   string. Resolution happens at startup regardless of modparam
+   order.
+
+   Example 1.11. Set master_stickiness parameter
+...
+# Global default (sticky) — omit entirely for the same effect
+modparam("clusterer_controller", "master_stickiness", 1)
+
+# Per-cluster override: cluster 2 always promotes the highest-IP node
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,master_stickiness=0")
+...
+
+1.6.8. on_config_mismatch (string)
+
+   Policy applied when a node's consistency-critical settings
+   (manage_shtags, master_stickiness, query_time) differ from
+   those of the running cluster. All nodes of a cluster are
+   expected to use identical values; this parameter decides what
+   happens when they do not. One of:
+     * reject (default) - the master refuses the join with a
+       JOIN_REJECT and the joining node shuts down after logging
+       which settings differ.
+     * warn - the node is allowed to join; a single CONFIG
+       MISMATCH warning is logged per mismatching peer.
+     * adopt - the joining node adopts the running cluster's
+       settings at runtime and continues.
+
+   Global only (not per-cluster). Default: reject.
+
+   Example 1.12. Set on_config_mismatch parameter
+...
+modparam("clusterer_controller", "on_config_mismatch", "reject")
+...
+
+1.7. Exported MI Functions
+
+1.7.1. cc_list_members
+
+   List all current cluster members with their node_id, status and
+   BIN socket addresses. Status is one of master, backup (the
+   standby that will be promoted if the master fails) or member.
+   Only peers within the current election window are shown.
+
+   Parameters: none
+
+   Example 1.13. cc_list_members usage
+opensips-cli -x mi cc_list_members
+[
+    {
+        "cluster_id": 1,
+        "members": [
+            {
+                "ip": "10.22.23.191",
+                "node_id": 1,
+                "status": "master",
+                "bin_sockets": [ "bin:10.22.23.191:3857" ]
+            },
+            {
+                "ip": "10.22.23.193",
+                "node_id": 2,
+                "status": "backup",
+                "bin_sockets": [ "bin:10.22.23.193:3857" ]
+            },
+            {
+                "ip": "10.22.23.192",
+                "node_id": 3,
+                "status": "member",
+                "bin_sockets": [ "bin:10.22.23.192:3857" ]
+            }
+        ]
+    }
+]
+
+1.7.2. cc_node_info
+
+   Return full information for a specific node identified by its
+   allocated node_id.
+
+   Parameters:
+     * node_id — the integer node_id to look up.
+
+   Example 1.14. cc_node_info usage
+opensips-cli -x mi cc_node_info node_id=2
+{
+    "node_id": 2,
+    "ip": "10.22.23.192",
+    "cluster_id": 1,
+    "status": "backup",
+    "bin_sockets": [ "bin:10.22.23.192:3857" ]
+}
+
+1.7.3. cc_list_config
+
+   List all configured clusters and their resolved settings — the
+   effective values actually in use after global defaults and
+   per-cluster overrides have been applied. Useful for confirming
+   that a per-cluster master_stickiness or manage_shtags override
+   took effect. The cluster password is never exposed.
+
+   The shtag_mode field reports the current sharing-tag allocation
+   policy: auto when the active tag follows the master
+   automatically, or override:<node_id> when an operator has
+   pinned a fixed holder with cc_shtag_force.
+
+   Parameters: none
+
+   Example 1.15. cc_list_config usage
+opensips-cli -x mi cc_list_config
+[
+    {
+        "cluster_id": 1,
+        "multicast": "239.0.90.1:3333",
+        "my_ip": "10.22.23.191",
+        "bin_socket": "bin:10.22.23.191:3857",
+        "query_time": 5,
+        "master_stickiness": 1,
+        "manage_shtags": 1,
+        "shtag_mode": "auto",
+        "member_count": 3
+    }
+]
+
+1.7.4. cc_shtag_force
+
+   Force a specific node to hold the active sharing tag,
+   overriding the normal master-driven allocation. This is useful
+   for planned maintenance or manual traffic steering: the chosen
+   node becomes the sole active shtag holder cluster-wide while
+   every other node — including the master — is put into backup
+   for that tag.
+
+   The command must be issued on the current master (it returns an
+   error otherwise). The override is propagated to all members in
+   the MEMBER_LIST and survives master fail-over: a newly elected
+   master keeps honouring it rather than reclaiming the tag.
+   Automatic allocation stays suspended until cc_shtag_auto is
+   called. If the forced node leaves the cluster or times out, the
+   override is cleared automatically and automatic allocation
+   resumes.
+
+   Parameters:
+     * cluster_id — the target cluster.
+     * node_id — the node that must hold the active tag; it must
+       be a current member of the cluster.
+
+   Example 1.16. cc_shtag_force usage
+opensips-cli -x mi cc_shtag_force cluster_id=1 node_id=3
+
+1.7.5. cc_shtag_auto
+
+   Clear any override set by cc_shtag_force and resume automatic,
+   master-driven sharing-tag allocation — the active tag follows
+   the master again. Must be issued on the current master.
+
+   Parameters:
+     * cluster_id — the target cluster.
+
+   Example 1.17. cc_shtag_auto usage
+opensips-cli -x mi cc_shtag_auto cluster_id=1
+
+1.8. Multiple Clusters
+
+   A single OpenSIPS instance can participate in multiple clusters
+   simultaneously by repeating the cluster modparam. Each cluster
+   runs an independent worker process with its own multicast
+   socket, peer table, master election, and node_id space.
+
+   Clusters are distinguished by the combination of their
+   multicast IP address and UDP port. Two useful topologies are
+   possible:
+     * Different ports, same multicast IP — convenient when all
+       clusters share the same L2 segment. The port number alone
+       separates traffic for each cluster. Each cluster's password
+       should also differ to provide an additional encryption
+       barrier.
+     * Different multicast IPs — useful when clusters span
+       different network segments or when multicast routing is
+       scoped differently per cluster.
+
+   When multiple clusters are defined and the node has more than
+   one BIN socket, the bin_socket= key must be specified in each
+   cluster string to indicate which BIN socket to advertise for
+   that cluster. If only one BIN socket exists, it is used for all
+   clusters automatically.
+
+   Each cluster has its own independent clusterer cluster_id,
+   allowing different OpenSIPS subsystems to replicate on
+   different clusters:
+
+   Example 1.18. Multiple clusters — dialog on cluster 1, usrloc
+   on cluster 2
+# Two BIN sockets, one per cluster
+socket=bin:10.0.1.10:5566
+socket=bin:10.0.2.10:5566
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+
+loadmodule "clusterer_controller.so"
+# Cluster 1 — dialog replication group, LAN segment 10.0.1.0/24
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.1.10:5566")
+# Cluster 2 — usrloc replication group, LAN segment 10.0.2.0/24
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.1:3334,bin_socket=bin:10.0.2.10:5566")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+
+loadmodule "usrloc.so"
+modparam("usrloc", "cluster_id", 2)
+
+   Example 1.19. Multiple clusters — same multicast IP, different
+   ports
+socket=bin:10.22.23.191:3857
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,password=ClusterOneSecret")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.1:3334,password=ClusterTwoSecret")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+
+loadmodule "dispatcher.so"
+modparam("dispatcher", "cluster_id", 2)
+
+1.9. Configuration Example
+
+   The following example shows a minimal two-module configuration
+   for zero-config HA clustering with dialog replication. The
+   loadmodule order does not matter — the dependency system
+   enforces correct initialization order automatically.
+
+   Example 1.20. Minimal HA cluster configuration
+# Each node needs an explicit BIN socket (no wildcard)
+socket=bin:10.22.23.191:3857
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "sharing_tag",   "vip1/1=active")
+modparam("clusterer", "ping_interval", 4)
+modparam("clusterer", "ping_timeout",  1500)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
+
+loadmodule "tm.so"
+modparam("tm", "tm_replication_cluster", 1)
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+modparam("dialog", "cluster_auto_sync", 1)
+
+loadmodule "dispatcher.so"
+modparam("dispatcher", "cluster_id",           1)
+modparam("dispatcher", "cluster_probing_mode", "distributed")
+
+   The same configuration file (with the node-specific
+   socket=bin:IP:PORT line changed per node) is used on every
+   node. No other per-node customization is required.
+
+1.10. Limitations
+
+     * IPv4 only. IPv6 multicast is not currently supported.
+     * The module pre-allocates approximately 152 KB of shared
+       memory (-m) per cluster and 6 KB of private memory (-M) per
+       worker process at startup. If either allocation fails,
+       OpenSIPS will refuse to start with an error in the log.
+     * Wildcard BIN sockets (bin:*:PORT) are rejected at startup.
+       An explicit IP address must be used in the socket= line.
+     * Node IDs are not persistent across a full cluster restart
+       (all nodes down simultaneously). IDs are reallocated
+       starting from 1 when the cluster reforms. This has no
+       operational impact as long as at least one node remains up
+       during rolling restarts.
+     * The multicast network must support IP multicast routing
+       between all cluster nodes. Nodes on different L3 segments
+       require PIM or similar multicast routing.
+     * PIM-DM networks: PIM Dense Mode periodically re-floods
+       multicast traffic (prune state typically expires every 3
+       minutes). On slow or congested networks this brief
+       re-flood/prune cycle could cause a gap in MASTER_ALIVE
+       delivery and trigger a spurious master re-election. If this
+       occurs, increase the effective timeout by raising
+       CC_MASTER_KA_MISSED in the source from 3 to 5 or higher.
+       PIM Sparse Mode (PIM-SM) or networks with IGMP snooping do
+       not have this issue.
+     * L2 overlay tunnels (Geneve, VXLAN, GRE): if the overlay
+       presents a flat L2 segment with multicast support, the
+       controller works transparently. However, some VXLAN
+       deployments disable multicast entirely (no underlay
+       multicast group, no BUM replication) — in that case the
+       controller will not function, as it has no unicast
+       fallback. Encapsulation overhead also adds latency and
+       jitter; on high-latency overlays consider raising
+       CC_MASTER_KA_MISSED to avoid spurious re-elections.
+     * IPsec-protected links: native IPsec multicast requires
+       GDOI/GET VPN (RFC 6407), which is rarely deployed. The
+       recommended approach is to run multicast inside an inner
+       tunnel (GRE-over-IPsec, Geneve-over-IPsec) that presents a
+       multicast-capable interface. Running the controller over
+       such a setup results in double encryption
+       (application-layer AES-256-GCM plus IPsec ESP), which is
+       harmless but adds minor CPU overhead. IPsec ESP tunnel mode
+       also reduces the effective MTU by approximately 50 bytes,
+       which compounds the MEMBER_LIST fragmentation issue
+       described below.
+     * MEMBER_LIST fragmentation: the MEMBER_LIST packet grows
+       with cluster size and reaches approximately 4395 bytes at
+       the maximum of 256 nodes. This exceeds the 1472-byte UDP
+       payload budget of a standard 1500-byte MTU Ethernet link
+       and requires IP fragmentation:
+          + Standard Ethernet (1500 MTU): 3 fragments
+          + IPsec ESP tunnel (~1400 MTU): 4 fragments
+          + GRE-over-IPsec (~1350 MTU): 4–5 fragments
+       All other packet types (ALIVE, JOIN_REQ, KEY_GRANT,
+       GOODBYE, etc.) fit comfortably within a single datagram on
+       any of these links. The DF bit is not set, so IP
+       fragmentation occurs transparently where the network allows
+       it. However, firewalls or stateless middleboxes that
+       silently drop fragmented UDP will prevent new nodes from
+       joining, since MEMBER_LIST is required to complete the join
+       sequence. Verify that fragmented UDP is permitted on all
+       paths between cluster nodes, particularly over VPN tunnels
+       and across datacenter firewalls.
+
+1.11. Planned Features
+
+   The following features are planned for future releases:
+     * Node maintenance mode — an MI command (plus a matching
+       command to leave it) to place any cluster member into
+       maintenance mode. Maintenance mode blocks all cluster
+       operations of that member: it becomes fully inert while
+       remaining visible as a member. It must not act as master or
+       win elections (if it is currently master it demotes and
+       hands over first); it takes no backup or other operational
+       role; it holds no sharing tags (any active tag it holds is
+       released and re-allocated to another eligible node); and
+       all of its normal cluster activity (elections, shtag
+       activation, sync-driven actions) is suspended until
+       maintenance is cleared. The member is reported with an
+       explicit maintenance state in
+       cc_list_members/cc_list_config. This allows safe rolling
+       maintenance without the node participating in or disrupting
+       the cluster.
+       Whether a maintenance node is also removed from the
+       underlying clusterer replication topology is controlled by
+       a new evict_on_maintenance modparam (default 1; global
+       default with per-cluster override, like manage_shtags).
+       With evict_on_maintenance=1 the node is evicted from
+       clusterer so peers stop syncing to and pinging it (a clean
+       drain; re-joining and re-syncing on exit). With
+       evict_on_maintenance=0 the node stays in the clusterer
+       topology and keeps replicating usrloc, dialog and other
+       state with the rest of the cluster while in maintenance —
+       it only loses its master/backup/shtag roles at the
+       controller level, so it stays warm and needs no re-sync
+       when maintenance is cleared.
+       When maintenance mode lands, cc_shtag_force will
+       additionally reject forcing a tag onto a node that is in
+       maintenance, and entering maintenance while a node holds a
+       forced tag will clear the override and re-allocate the tag.
+       Maintenance state will also be exposed to the routing
+       script and to the event system, so it can be reacted to
+       from configuration:
+          + cc_in_maintenance() — script function returning true
+            when the local node is in maintenance (for use in an
+            if test, e.g. to reply 503 and drain), with a
+            cc_node_in_maintenance(cluster_id, node_id) variant
+            for a specific peer.
+          + cc_is_evicted() — script function returning whether
+            the local node is currently evicted from the clusterer
+            replication topology (true when in maintenance with
+            evict_on_maintenance=1; false when it stays in the
+            topology and keeps replicating), with a
+            cc_node_is_evicted(cluster_id, node_id) variant for a
+            specific peer. This lets a script distinguish a node
+            that is drained out of clusterer from one that is in
+            maintenance but still warm and syncing.
+          + E_MAINTENANCE_MODE_CHANGE — an event (usable from an
+            event_route or any event subscriber transport) raised
+            on each maintenance transition, carrying the
+            cluster_id, node_id, IP, new state, whether it is the
+            local node, and whether it was evicted. The transition
+            is distributed to the other cluster members over the
+            clusterer BIN protocol (the same channel clusterer
+            uses for replication), and each receiving member
+            raises the event locally so its event_route can react
+            (for example the master re-allocating sharing tags, or
+            a node adjusting dispatcher weights to drain
+            signalling). Consistent with how clusterer works, a
+            node that is evicted from the clusterer topology
+            (evict_on_maintenance=1) is outside the BIN mesh and
+            therefore does not receive maintenance events for
+            other nodes while it is evicted — that is expected (an
+            evicted node is inert and has nothing to react to).
+            The queryable per-node state is separate from the
+            event: each node's maintenance and evicted flags are
+            propagated over the controller's own multicast control
+            plane (which a maintenance node stays on even when
+            evicted from clusterer), so the cc_in_maintenance() /
+            cc_node_in_maintenance() and cc_is_evicted() /
+            cc_node_is_evicted() accessors keep working on any
+            node — including one evicted from clusterer — both for
+            the local node and for other peers. In short: the
+            actionable event is limited to non-evicted BIN
+            members, but the status lookups are available
+            everywhere on the controller multicast group.
+     * Observability and script integration — surface cluster
+       state through OpenSIPS's standard interfaces rather than
+       logs alone:
+          + Statistics - module statistics (current role, member
+            count, master changes, nodes joined/left,
+            JOIN_REJECTs, decrypt failures, config mismatches,
+            split-brain merges) exposed via get_statistics and
+            monitoring exporters.
+          + Events - events raised on state transitions (became
+            master, demoted, node joined/left, split-brain merged,
+            config mismatch, authentication reject), consumable
+            from an event_route or any event subscriber transport.
+          + Pseudo-variables - read-only script variables such as
+            $cc_role, $cc_is_master, $cc_master_ip,
+            $cc_member_count (with an optional cluster_id index)
+            so the routing script can branch on cluster role.
+          + Script functions - e.g. cc_is_master(), alongside the
+            maintenance accessors above.
+
+Appendix A. HA Behaviour Tests
+
+   The following tests were performed on a three-node cluster
+   (nodes A=10.22.23.191, B=10.22.23.192, C=10.22.23.193) to
+   verify correct failover, tag stability, and no-steal-on-join
+   behaviour. The sharing tag under test is vip1 in cluster 1. All
+   nodes run with manage_shtags=1.
+
+   Tag state was queried after each operation via:
+opensips-cli -x mi clusterer_list_shtags
+
+A.1. Baseline
+
+   All three nodes running. B holds the active tag; A and C are
+   backup.
+A (10.22.23.191)  svc=active  tag=backup
+B (10.22.23.192)  svc=active  tag=active
+C (10.22.23.193)  svc=active  tag=backup
+
+A.2. Test 1 — Stop the active node
+
+   B (active) is stopped. The remaining nodes must elect a new
+   active holder. B must rejoin as backup and must not steal the
+   tag from whichever node became active.
+# Stop B
+A  svc=active  tag=backup
+B  svc=inactive tag=(down)
+C  svc=active  tag=active   <-- C promoted
+
+# Start B
+A  svc=active  tag=backup
+B  svc=active  tag=backup   <-- rejoined as backup
+C  svc=active  tag=active   <-- C retains active
+
+   Result: PASS. Failover within the dead-node detection window;
+   rejoining node did not steal the active tag.
+
+A.3. Test 2 — Stop a backup node
+
+   A (backup) is stopped. The active tag must remain on C without
+   any transition. A must rejoin as backup.
+# Stop A
+A  svc=inactive tag=(down)
+B  svc=active  tag=backup
+C  svc=active  tag=active   <-- unchanged
+
+# Start A
+A  svc=active  tag=backup   <-- rejoined as backup
+B  svc=active  tag=backup
+C  svc=active  tag=active   <-- still active
+
+   Result: PASS. Removing a backup node causes no tag movement;
+   rejoining node started in backup state.
+
+A.4. Test 3 — Stop both backup nodes
+
+   A and B (both backup) are stopped simultaneously. The lone
+   remaining node C must retain the active tag. A and B must
+   rejoin as backup.
+# Stop A and B
+A  svc=inactive tag=(down)
+B  svc=inactive tag=(down)
+C  svc=active  tag=active   <-- unchanged, lone node
+
+# Start A, then B
+A  svc=active  tag=backup   <-- rejoined as backup
+B  svc=active  tag=backup   <-- rejoined as backup
+C  svc=active  tag=active   <-- still active
+
+   Result: PASS. Active node remained stable while running alone;
+   both rejoining nodes came up in backup state.
+
+A.5. Test 4 — Stop active node and one backup
+
+   B (active) and C (backup) are stopped. The sole remaining node
+   A must become active. B and C must rejoin as backup.
+# Stop B and C
+A  svc=active  tag=active   <-- A promoted, now lone node
+B  svc=inactive tag=(down)
+C  svc=inactive tag=(down)
+
+# Start B
+A  svc=active  tag=active   <-- retains active
+B  svc=active  tag=backup   <-- rejoined as backup
+C  svc=inactive tag=(down)
+
+# Start C
+A  svc=active  tag=active   <-- retains active
+B  svc=active  tag=backup
+C  svc=active  tag=backup   <-- rejoined as backup
+
+   Result: PASS. The surviving node correctly claimed the active
+   tag; each rejoining node started in backup state without
+   challenging the active holder.
+
+A.6. Test 5 — Full cluster restart
+
+   All three nodes are stopped (full outage). Nodes are then
+   started one at a time. The first node up must self-elect as
+   active (no peers available to sync from). Subsequent nodes must
+   join as backup and must not steal the active tag.
+# All stopped
+A  svc=inactive tag=(down)
+B  svc=inactive tag=(down)
+C  svc=inactive tag=(down)
+
+# Start A first
+A  svc=active  tag=active   <-- first/lone seed, self-synced
+B  svc=inactive tag=(down)
+C  svc=inactive tag=(down)
+
+# Start B
+A  svc=active  tag=active   <-- retains active
+B  svc=active  tag=backup   <-- joined as backup, did not steal
+C  svc=inactive tag=(down)
+
+# Start C
+A  svc=active  tag=active   <-- retains active
+B  svc=active  tag=backup
+C  svc=active  tag=backup   <-- joined as backup, did not steal
+
+   Result: PASS. The first node to start elected itself active and
+   no spurious sync errors were logged. Each subsequent node
+   joined as backup without challenging the active holder.
+
+A.7. Summary
+
+   Test                 Scenario                 Result
+   1    Stop active node; rejoin                 PASS
+   2    Stop backup node; rejoin                 PASS
+   3    Stop both backups simultaneously; rejoin PASS
+   4    Stop active + one backup; rejoin         PASS
+   5    Full cluster restart; sequential startup PASS
+
+   In all five tests: exactly one node held the active sharing tag
+   at all times (including during the failure window), and no
+   rejoining node stole the active tag from the current holder.
+
+Chapter 2. Contributors
+
+2.1. Contributors
+
+   Definition, design and implementation of this module was made
+   by:
+     * Yury Kirsanov — VoIPLine Telecom
+
+2.2. Documentation Contributors
+
+   Documentation was written by:
+     * Yury Kirsanov — VoIPLine Telecom
+
+   Documentation Copyrights:
+
+   Copyright © 2026 VoIPLine Telecom

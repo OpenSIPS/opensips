@@ -50,7 +50,7 @@ static int send_ping(node_info_t *node, int req_node_list)
 		return -1;
 	}
 	bin_push_int(&packet, node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_push_int(&packet, req_node_list);	/* request list of known nodes ? */
 	bin_get_buffer(&packet, &send_buffer);
 
@@ -195,6 +195,8 @@ void heartbeats_timer(void)
 	lock_start_read(cl_list_lock);
 
 	for (clusters_it = *cluster_list; clusters_it; clusters_it = clusters_it->next) {
+		if (!clusters_it->current_node)
+			continue; /* identity not yet set by controller */
 		lock_get(clusters_it->current_node->lock);
 		if (!(clusters_it->current_node->flags & NODE_STATE_ENABLED)) {
 			lock_release(clusters_it->current_node->lock);
@@ -500,7 +502,7 @@ int flood_message(bin_packet_t *packet, cluster_info_t *cluster,
 			bin_push_int(packet, path_len + 1);
 			/* go to end of the buffer and include current node in path */
 			bin_skip_int_packet_end(packet, path_len);
-			bin_push_int(packet, current_id);
+			bin_push_int(packet, GET_CURRENT_ID);
 			bin_get_buffer(packet, &bin_buffer);
 			msg_altered = 1;
 		}
@@ -562,7 +564,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 		return -1;
 	}
 	bin_push_int(&packet, dest_node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_push_int(&packet, ++dest_node->cluster->current_node->top_seq_no);
 	bin_push_int(&packet, timestamp);
 
@@ -574,7 +576,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
     bin_push_int(&packet, dest_node->cluster->no_nodes);
 
 	/* the first adjacency list in the message is for the current node */
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_push_int(&packet, 0);	/* no description for current node */
 	bin_push_int(&packet, dest_node->cluster->current_node->ls_seq_no);
 	bin_push_int(&packet, dest_node->cluster->current_node->ls_timestamp);
@@ -622,7 +624,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 	}
 
 	bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_get_buffer(&packet, &bin_buffer);
 
 	if (msg_send(dest_node->cluster->send_sock, dest_node->proto, &dest_node->addr,
@@ -669,7 +671,7 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 		return -1;
 	}
 	bin_push_int(&packet, node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_push_int(&packet, ++node->cluster->current_node->ls_seq_no);
 	bin_push_int(&packet, timestamp);
 
@@ -680,7 +682,7 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 
 	/* path length is 1, only current node at this point */
 	bin_push_int(&packet, 1);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	lock_release(node->cluster->current_node->lock);
 
@@ -1044,7 +1046,7 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 	for (i = 0; i < no_nodes; i++) {
 		skip = 0;
 
-		if (top_node_id[i] == current_id)
+		if (top_node_id[i] == GET_CURRENT_ID)
 			skip = 1;
 
 		top_node = get_node_by_id(source->cluster, top_node_id[i]);
@@ -1092,7 +1094,7 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		no_present_nodes = 0;
 		for (j = 0; j < top_node_info[i][3]; j++) {
 			top_neigh = get_node_by_id(source->cluster, top_node_info[i][j+4]);
-			if (!top_neigh && top_node_info[i][j+4] != current_id) {
+			if (!top_neigh && top_node_info[i][j+4] != GET_CURRENT_ID) {
 				if (db_mode)
 					continue;
 				for (n_idx = 0;
@@ -1117,7 +1119,7 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 				}
 			}
 
-			if (top_node_info[i][j+4] == current_id) {
+			if (top_node_info[i][j+4] == GET_CURRENT_ID) {
 				lock_get(top_node->lock);
 				if (top_node->link_state == LS_DOWN &&
 					top_node->flags & NODE_STATE_ENABLED) {
@@ -1180,7 +1182,7 @@ void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
 			return;
 		}
 		bin_push_int(&packet, cl->cluster_id);
-		bin_push_int(&packet, current_id);
+		bin_push_int(&packet, GET_CURRENT_ID);
 		bin_get_buffer(&packet, &bin_buffer);
 
 		if (msg_send(cl->send_sock, proto, src_su, 0, bin_buffer.s,
@@ -1234,7 +1236,7 @@ void handle_ls_update(bin_packet_t *received, node_info_t *src_node,
 	bin_pop_int(received, &neigh_id);
 	bin_pop_int(received, &new_ls);
 	ls_neigh = get_node_by_id(src_node->cluster, neigh_id);
-	if (!ls_neigh && neigh_id != current_id) {
+	if (!ls_neigh && neigh_id != GET_CURRENT_ID) {
 		if (!db_mode)
 			LM_WARN("Received link state update about unknown node id [%d]\n", neigh_id);
 		lock_release(src_node->lock);
@@ -1244,7 +1246,7 @@ void handle_ls_update(bin_packet_t *received, node_info_t *src_node,
 	LM_DBG("Received link state update with source [%d] about node [%d], new state=%s\n",
 		src_node->node_id, neigh_id, new_ls ? "DOWN" : "UP");
 
-	if (neigh_id == current_id) {
+	if (neigh_id == GET_CURRENT_ID) {
 		if ((new_ls == LS_UP && src_node->link_state == LS_DOWN) ||
 			(new_ls == LS_DOWN && src_node->link_state == LS_UP)) {
 			lock_release(src_node->lock);
@@ -1276,14 +1278,14 @@ void handle_unknown_id(node_info_t *src_node)
 		return;
 	}
 	bin_push_int(&packet, src_node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	/* include info about current node */
 	bin_push_node_info(&packet, src_node->cluster->current_node);
 
 	/* path length is 1, only current node at this point */
 	bin_push_int(&packet, 1);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	bin_get_buffer(&packet, &bin_buffer);
 	if (msg_send(src_node->cluster->send_sock, src_node->proto, &src_node->addr,
@@ -1316,7 +1318,7 @@ void handle_ping(bin_packet_t *received, node_info_t *src_node,
 		return;
 	}
 	bin_push_int(&packet, src_node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	if (req_list) {
 		/* include a list of known nodes */

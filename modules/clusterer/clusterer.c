@@ -87,6 +87,7 @@ void sync_check_timer(utime_t ticks, void *param)
 	lock_start_read(cl_list_lock);
 
 	for (cl = *cluster_list; cl; cl = cl->next) {
+		if (!cl->current_node) continue;
 		lock_get(cl->current_node->lock);
 		if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
 			lock_release(cl->current_node->lock);
@@ -109,11 +110,21 @@ void sync_check_timer(utime_t ticks, void *param)
 						cap->flags &= ~(CAP_SYNC_PENDING|CAP_SYNC_STARTUP);
 						sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
 							STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
-						sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
-							"ERROR: Sync request aborted! (no donor found in due time)"
-							" => fallback to synced state");
-						LM_ERR("Sync request aborted! (no donor found in due time)"
-						    ", falling back to synced state\n");
+						if (cl->node_list == NULL) {
+							/* no peers — first/lone node, self-sync is expected */
+							sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+								"No peers present — self-synced as first node in cluster");
+							LM_DBG("No peers in cluster %d, capability '%.*s' "
+							    "self-marked as synced (first/lone node)\n",
+							    cl->cluster_id,
+							    cap->reg.name.len, cap->reg.name.s);
+						} else {
+							sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+								"ERROR: Sync request aborted! (no donor found in due time)"
+								" => fallback to synced state");
+							LM_ERR("Sync request aborted! (no donor found in due time)"
+							    ", falling back to synced state\n");
+						}
 						/* send update about the state of this capability */
 						send_single_cap_update(cl, cap, 1);
 
@@ -196,6 +207,9 @@ int cl_set_state(int cluster_id, int node_id, enum cl_node_state state)
 
 		return 0;
 	}
+
+	if (!cluster->current_node)
+		return -1;
 
 	lock_get(cluster->current_node->lock);
 
@@ -555,7 +569,7 @@ int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id)
 {
 	if (bin_push_int(packet, cluster_id) < 0)
 		return -1;
-	if (bin_push_int(packet, current_id) < 0)
+	if (bin_push_int(packet, GET_CURRENT_ID) < 0)
 		return -1;
 	if (bin_push_int(packet, dst_id) < 0)
 		return -1;
@@ -839,7 +853,7 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 	for (i = 0; i < nr_nodes; i++) {
 		bin_pop_int(packet, &node_id);
 
-		if (node_id == current_id) {
+		if (node_id == GET_CURRENT_ID) {
 			bin_pop_int(packet, &nr_cap);
 			for (j = 0; j < nr_cap; j++) {
 				bin_pop_str(packet, &cap);
@@ -1025,7 +1039,10 @@ static void handle_remove_node(bin_packet_t *packet, cluster_info_t *cl)
 		return;
 	}
 
-	if (target_node == current_id) {
+	if (target_node == GET_CURRENT_ID) {
+		if (!cl->current_node)
+			return;
+
 		lock_get(cl->current_node->lock);
 
 		if (cl->current_node->flags & NODE_STATE_ENABLED) {
@@ -1072,7 +1089,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	LM_DBG("received clusterer message from: %s:%hu with source id: %d and"
 			" cluster id: %d\n", ip, port, source_id, cluster_id);
 
-	if (source_id == current_id) {
+	if (source_id == GET_CURRENT_ID) {
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
@@ -1128,7 +1145,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	} else
 		lock_release(node->lock);
 
-	if (dest_id != current_id) {
+	if (dest_id != GET_CURRENT_ID) {
 		if (clusterer_enable_rerouting == 0) {
 			LM_WARN("Received message for destination id [%d] but rerouting disabled\n", dest_id);
 			goto exit;
@@ -1210,7 +1227,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	LM_DBG("received clusterer message from: %s:%hu with source id: %d and "
 		"cluster id: %d\n", ip, port, source_id, cl_id);
 
-	if (source_id == current_id) {
+	if (source_id == GET_CURRENT_ID) {
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
@@ -1224,6 +1241,17 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	cl = get_cluster_by_id(cl_id);
 	if (!cl) {
 		LM_WARN("Received message from unknown cluster id [%d]\n", cl_id);
+		goto exit;
+	}
+
+	/* current_node is legitimately NULL while this node's identity is being
+	 * (re)established for a dynamically constructed cluster (clusterer_ctrl
+	 * update_identity: the cluster can already exist and receive BIN packets
+	 * before current_node is assigned).  Drop the packet instead of
+	 * dereferencing NULL. */
+	if (!cl->current_node) {
+		LM_INFO("Received message for cluster [%d] before local identity is "
+			"established, ignoring\n", cl_id);
 		goto exit;
 	}
 
@@ -1355,7 +1383,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	LM_DBG("received bin packet from: %s:%hu with source id: %d and cluster id: %d\n",
 			ip, port, source_id, cluster_id);
 
-	if (source_id == current_id) {
+	if (source_id == GET_CURRENT_ID) {
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		return;
 	}
@@ -1423,7 +1451,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	} else
 		lock_release(node->lock);
 
-	if (dest_id != current_id) {
+	if (dest_id != GET_CURRENT_ID) {
 		/* route the message */
 		bin_push_int(packet, cluster_id);
 		bin_push_int(packet, source_id);
@@ -1498,6 +1526,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 
 	timestamp = (int)(unsigned long)time(NULL);
 
+	if (!cluster->current_node) return -1;
 	lock_get(cluster->current_node->lock);
 
 	for (neigh = cluster->current_node->neighbour_list; neigh;
@@ -1516,7 +1545,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 		return -1;
 	}
 	bin_push_int(&packet, cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	bin_push_int(&packet, ++cluster->current_node->cap_seq_no);
 	bin_push_int(&packet, timestamp);
@@ -1525,7 +1554,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 
 	/* only the current node */
 	bin_push_int(&packet, 1);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	/* only a single capability */
 	bin_push_int(&packet, 1);
@@ -1535,7 +1564,7 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 	bin_push_int(&packet, 0);  /* don't require reply */
 
 	bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_get_buffer(&packet, &bin_buffer);
 
 	for (i = 0; i < no_dests; i++)
@@ -1583,7 +1612,7 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 		return -1;
 	}
 	bin_push_int(&packet, dest_node->cluster->cluster_id);
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 
 	lock_get(dest_node->cluster->current_node->lock);
 
@@ -1598,7 +1627,7 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	for (cl_cap = dest_node->cluster->capabilities, nr_cap = 0; cl_cap;
 		cl_cap = cl_cap->next, nr_cap++) ;
 	if (nr_cap) {
-		bin_push_int(&packet, current_id);
+		bin_push_int(&packet, GET_CURRENT_ID);
 		bin_push_int(&packet, nr_cap);
 		for (cl_cap=dest_node->cluster->capabilities;cl_cap;cl_cap=cl_cap->next) {
 			bin_push_str(&packet, &cl_cap->reg.name);
@@ -1629,7 +1658,7 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	bin_push_int(&packet, require_reply);
 
 	bin_push_int(&packet, 1);	/* path length is 1, only current node at this point */
-	bin_push_int(&packet, current_id);
+	bin_push_int(&packet, GET_CURRENT_ID);
 	bin_get_buffer(&packet, &bin_buffer);
 
 	if (msg_send(dest_node->cluster->send_sock, dest_node->proto, &dest_node->addr,
@@ -1782,9 +1811,24 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
-		LM_ERR("cluster id %d is not defined in the %s\n", cluster_id,
-		       db_mode ? "DB" : "script");
-		return -1;
+		if (use_controller) {
+			cluster = shm_malloc(sizeof *cluster);
+			if (!cluster) { LM_ERR("no shm\n"); return -1; }
+			memset(cluster, 0, sizeof *cluster);
+			cluster->cluster_id = cluster_id;
+			if ((cluster->lock = lock_alloc()) == NULL || !lock_init(cluster->lock)) {
+				shm_free(cluster); return -1;
+			}
+			if (cl_list_lock) lock_start_write(cl_list_lock);
+			cluster->next = *cluster_list;
+			*cluster_list = cluster;
+			if (cl_list_lock) lock_stop_write(cl_list_lock);
+			LM_INFO("clusterer: auto-created stub for cluster %d\n", cluster_id);
+		} else {
+			LM_ERR("cluster id %d is not defined in the %s\n", cluster_id,
+			       db_mode ? "DB" : "script");
+			return -1;
+		}
 	}
 
 	new_cl_cap = shm_malloc(sizeof *new_cl_cap + cap->len + CAP_SR_ID_PREFIX_LEN);
