@@ -10,15 +10,15 @@ description: "This module translates a numerical prefix into a domain and update
 
 
 This module translates a numerical prefix into a domain and updates
-		accordingly the request URI.
+accordingly the request URI.
 
 
 The module looks up at the R-URI part of a message and if the user
-		part begins with an established prefix it will update the URI.
-		Updating the uri consists of: remove the prefix from the user part of
-		the uri and keep the rest as the user part of the new uri. The host
-		and port are changed with the domain matched for the leading prefix and
-		the domain in From URI.
+part begins with an established prefix it will update the URI.
+Updating the uri consists of: remove the prefix from the user part of
+the uri and keep the rest as the user part of the new uri. The host
+and port are changed with the domain matched for the leading prefix and
+the domain in From URI.
 
 
 <prefix><userid><:password>@<mydomain.com> ...
@@ -45,20 +45,20 @@ sip:12391001@mydomain.com  => sip:91001@alpha.org
 
 
 The prefix could be prefixed by other digits. These digits
-	    will not be used to look up the domain (the classic example, 00 used
-		for international calls, then follows the country prefix). For more
-		information on this, see 'prefix' parameter.
+will not be used to look up the domain (the classic example, 00 used
+for international calls, then follows the country prefix). For more
+information on this, see 'prefix' parameter.
 
 
 - A sample config file is located in './doc/'.
 - MySQL script to create the database needed by
-			PDT is located in '../../scripts/mysql/pdt-create.sql'
+PDT is located in '../../scripts/mysql/pdt-create.sql'
 The database is loaded by OpenSIPS only at start up time and 
-			only cache is used to lookup domains. Check the MI Functions for
-			adding/deleting prefix-domain pairs or reloading from database
-			at runtime.
+only cache is used to lookup domains. Check the MI Functions for
+adding/deleting prefix-domain pairs or reloading from database
+at runtime.
 - Sample shell scripts to manage prefix-domain pairs are also located
-			in './doc/' (pdt_fifo_add.sh, pdt_fifo_delete.sh, pdt_fifo_list.sh).
+in './doc/' (pdt_fifo_add.sh, pdt_fifo_delete.sh, pdt_fifo_list.sh).
 
 
 ### Dependencies
@@ -71,14 +71,14 @@ The following modules must be loaded before this module:
 
 
 - *A OpenSIPS database module (e.g., mysql,
-				dbtext)*.
+dbtext)*.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -172,9 +172,9 @@ modparam("pdt", "domain_column", "hostname")
 
 Default leading prefix who denotes what URI needs to be translated
 		- if it is NULL the module will not check the R-URI against it and
-		the PDT prefix is considered starting from the first digit. Otherwise,
-		the module will check first if the R-URI starts with it and will
-		skip it to look up the domain.
+the PDT prefix is considered starting from the first digit. Otherwise,
+the module will check first if the R-URI starts with it and will
+skip it to look up the domain.
 
 
 *Default value is NULL.*
@@ -207,7 +207,7 @@ modparam("pdt", "char_list", "0123456789*+")
 
 
 Module will check if destination domain is duplicated for same
-		source domain (1 - check; 0 - don't check).
+source domain (1 - check; 0 - don't check).
 
 
 *Default value is 1.*
@@ -227,26 +227,26 @@ modparam("pdt", "check_domain", 0)
 
 
 Build a new URI if it is necessary. Returns 1 when the translation
-		was made or there was nothing to translate (user part of the URI is
-		empty, it does not match the prefix parameter or there is no domain
-		associated with a possible prefix from user part).
-		Returns -1 in error cases.
+was made or there was nothing to translate (user part of the URI is
+empty, it does not match the prefix parameter or there is no domain
+associated with a possible prefix from user part).
+Returns -1 in error cases.
 
 
 The translation is done based on lookup up for a entry in the database
-		where the sdomain equals the domain in FROM uri, and the prefix matches
-		the beginning of the user part of the RURI. If such an entry is found,
-		then the domain in RURI is updated with the domain of this entry
-		(sdomain, prefix, domain).
+where the sdomain equals the domain in FROM uri, and the prefix matches
+the beginning of the user part of the RURI. If such an entry is found,
+then the domain in RURI is updated with the domain of this entry
+(sdomain, prefix, domain).
 
 
 There is also the possibility to have the translation of URI regardless of
-		source domain. This can be achieved inserting in the database entries where
-		sdomain has the value "*".
+source domain. This can be achieved inserting in the database entries where
+sdomain has the value "*".
 
 
 The "rewrite_mode" parameter specifies whether to strip or not
-		the prefix from user part. The possible values are:
+the prefix from user part. The possible values are:
 
 
 - 0: the prefix is removed along with the leading prefix.
@@ -256,15 +256,15 @@ The "rewrite_mode" parameter specifies whether to strip or not
 
 
 The "multidomain_mode" parameter specifies the kind of multidomain
-		support to use. The possible values are:
+support to use. The possible values are:
 
 
 - 0 : Translation of URI regardless of source domain.
 - 1 :  Translation of URI using as source domain the domain
-					in From-URI.
+in From-URI.
 - 2 :  Translation of URI using as source domain the domain
-				in From-URI. In case there is no entry for the required sdomain,
-				it tries the translation using "*" as sdomain.
+in From-URI. In case there is no entry for the required sdomain,
+it tries the translation using "*" as sdomain.
 - $PV : any PV holding one of the above values.
 
 
@@ -285,8 +285,8 @@ prefix2domain("$var(a)", "2");
 
 
 The same as prefix2domain(rewrite_mode, "0"), that is without 
-		multidomain support, translation of  URI being done regardless of 
-		the source domain.
+multidomain support, translation of  URI being done regardless of 
+the source domain.
 
 
 ```opensips
@@ -313,10 +313,10 @@ prefix2domain();
 
 
 The database is loaded by OpenSIPS at start up time.
-		The module uses only the cache to look up domains. If you want to
-		add or delete a new prefix-domain pair at runtime you have to use
-		MI FIFO commands. All changes made via these commands are applied to
-		database and the cache is updated correspondingly.
+The module uses only the cache to look up domains. If you want to
+add or delete a new prefix-domain pair at runtime you have to use
+MI FIFO commands. All changes made via these commands are applied to
+database and the cache is updated correspondingly.
 
 
 #### pdt_add
@@ -398,7 +398,7 @@ Parameters:
 
 
 The comparison operation is 'START WITH' -- if domain is 'a' then all domains 
-		starting with 'a' are listed.
+starting with 'a' are listed.
 
 
 MI FIFO Command Format:
@@ -418,11 +418,11 @@ Examples:
 
 
 - "pdt_list siph 2 ."  : Lists the entries where sdomain is 
-			starting with 'siph', prefix is starting with '2' and domain is anything
+starting with 'siph', prefix is starting with '2' and domain is anything
 - "pdt_list siph 2"  : Lists the entries where sdomain is 
-			starting with 'siph', prefix is starting with '2' and domain is anything
+starting with 'siph', prefix is starting with '2' and domain is anything
 - "pdt_list . 2 open"  : Lists the entries where sdomain 
-			 is anything, prefix starts with '2' and domain starts with 'open'.
+is anything, prefix starts with '2' and domain starts with 'open'.
 
 
 #### pdt_reload
@@ -454,7 +454,7 @@ MI FIFO Command Format:
 
 
 Example shell scripts for MI FIFO commands are placed in './doc/'
-	(pdt_fifo_add.sh, pdt_fifo_delete.sh, pdt_fifo_list.sh).
+(pdt_fifo_add.sh, pdt_fifo_delete.sh, pdt_fifo_list.sh).
 <!-- CONTRIBUTORS -->
 
 ### License

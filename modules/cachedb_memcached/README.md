@@ -10,8 +10,8 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a 
-		memcached server. It uses libmemcached client library to connect to several memcached
-		servers that store data. It uses the Key-Value interface exported from the core.
+memcached server. It uses libmemcached client library to connect to several memcached
+servers that store data. It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -19,16 +19,16 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *many servers may be used so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is persistent so a restart
-				of the server will not affect the cache*
+of the server will not affect the cache*
 - *memcached is an open-source project so
-				it can be used to exchange data
-				 with various other applicationsr*
+it can be used to exchange data
+with various other applicationsr*
 - *servers may be grouped together
-				(e.g. for security purposes : some can be
-				 inside a private network, some can be in
-				 a public one)*
+(e.g. for security purposes : some can be
+inside a private network, some can be in
+a public one)*
 
 
 ### Limitations
@@ -50,20 +50,23 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libmemcached:*
 libmemcached can be downloaded from: http://tangent.org/552/libmemcached.html.
-				Download the archive, extract sources, run ./configure, make,sudo make install.
+Download the archive, extract sources, run ./configure, make, sudo make install.
+
+```bash
 ...
-				wget http://download.tangent.org/libmemcached-0.31.tar.gz 
-				tar -xzvf libmemcached-0.31.tar.gz
-				cd libmemcached-0.31
-				./configure
-				make
-				sudo make install
-				...
+$ wget http://download.tangent.org/libmemcached-0.31.tar.gz 
+$ tar -xzvf libmemcached-0.31.tar.gz
+$ cd libmemcached-0.31
+$ ./configure
+$ make
+$ sudo make install
+...
+```
 
 
 ### Exported Parameters
@@ -73,10 +76,10 @@ libmemcached can be downloaded from: http://tangent.org/552/libmemcached.html.
 
 
 The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
+to use the from script cache_store,cache_fetch, etc operations.
+It can be set more than one time.
+The prefix part of the URL will be the identifier that will be used
+from the script.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -102,7 +105,7 @@ cache_remove("memcached:group1","key");
 
 
 The maximum number of microseconds that a local cache query can last.
-			Anything above the threshold will trigger a warning message to the log
+Anything above the threshold will trigger a warning message to the log
 
 
 *Default value is "0 ( unlimited - no warnings )".*
@@ -120,7 +123,7 @@ modparam("cachedb_memcached", "exec_threshold", 100000)
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 <!-- CONTRIBUTORS -->
 
 ### License

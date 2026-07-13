@@ -10,7 +10,7 @@ description: "This module provides an HTTP transport layer implementation for Op
 
 
 This module provides an HTTP transport layer implementation
-		for OpenSIPS's Management Interface.
+for OpenSIPS's Management Interface.
 
 
 ### To-do
@@ -41,9 +41,9 @@ The following modules must be loaded before this module:
 
 
 Specifies the root path for mi http requests.
-		The link to the mi web interface must be constructed
-		using the following patern:
-		http://[opensips_IP]:[opensips_mi_port]/[mi_http_root]
+The link to the mi web interface must be constructed
+using the following patern:
+http://[opensips_IP]:[opensips_mi_port]/[mi_http_root]
 
 
 *The default value is "mi".*
@@ -86,8 +86,8 @@ No function exported to be used from configuration file.
 
 
 Commands with large responses (like ul_dump) will fail if the
-		configured size of the httpd buffer is to small (or if there isn't
-		enough pkg memory configured).
+configured size of the httpd buffer is to small (or if there isn't
+enough pkg memory configured).
 
 
 Future realeases of the httpd and mi_httpd modules will address this issue.

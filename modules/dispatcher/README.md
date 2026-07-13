@@ -1,6 +1,6 @@
 ---
 title: "DISPATCHER Module"
-description: "This modules implements a dispatcher for destination addresses. It computes hashes over various parts of the request and selects an address from a destination set. The selected address is then used as outbound proxy."
+description: "This modules implements a dispatcher for destination addresses."
 ---
 
 ## Admin Guide
@@ -10,18 +10,18 @@ description: "This modules implements a dispatcher for destination addresses. It
 
 
 This modules implements a dispatcher for destination addresses. It 
-		computes hashes over various parts of the request and selects an
-		address from a destination set. The selected address is then used as outbound
-		proxy.
+computes hashes over various parts of the request and selects an
+address from a destination set. The selected address is then used as outbound
+proxy.
 
 
 The module can be used as a stateless load balancer, having no
-		guarantee of fair distribution.
+guarantee of fair distribution.
 
 
 For the distribution algotrithm, the module allows the definition of
-		weights for the destination. This is useful in order to get a different
-		ratio of traffic between destinations.
+weights for the destination. This is useful in order to get a different
+ratio of traffic between destinations.
 
 
 ### Dependencies
@@ -40,7 +40,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module:
+running OpenSIPS with this module:
 
 
 - *none*.
@@ -69,18 +69,18 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
 
 
 Various flags that affect dispatcher's behaviour. The flags are defined
-		as a bitmask on an integer value.
-		If flag 1 is set only the username
-		part of the uri will be used when computing an uri based hash.
-		If no flags are set the username, hostname and port will be used
-		The port is used only if different from 5060 (normal sip uri) or 5061
-		(in the sips case).
+as a bitmask on an integer value.
+If flag 1 is set only the username
+part of the uri will be used when computing an uri based hash.
+If no flags are set the username, hostname and port will be used
+The port is used only if different from 5060 (normal sip uri) or 5061
+(in the sips case).
 
 
 If flag 2 is set, then the failover support is enabled. The functions
-		exported by the module will store the rest of addresses from the
-		destination set in AVP, and use these AVPs to contact next address when
-		the current-tried fails.
+exported by the module will store the rest of addresses from the
+destination set in AVP, and use these AVPs to contact next address when
+the current-tried fails.
 
 
 *Default value is "0".*
@@ -97,7 +97,7 @@ modparam("dispatcher", "flags", 3)
 
 
 If set to 1, force overwriting of destination address when that is
-		already set.
+already set.
 
 
 *Default value is "0".*
@@ -114,9 +114,9 @@ modparam("dispatcher", "force_dst", 1)
 
 
 If the parameter is set to 1, the last address in destination set
-		is used as last option to send the message. For example, it is good
-		when wanting to send the call to an anouncement server saying:
-		"the gateways are full, try later".
+is used as last option to send the message. For example, it is good
+when wanting to send the call to an anouncement server saying:
+"the gateways are full, try later".
 
 
 *Default value is "0".*
@@ -133,10 +133,10 @@ modparam("dispatcher", "use_default", 1)
 
 
 The name of the avp to contain the attributes string of the current
-		destination. When a destination is selected, automatically, this AVP
-		will provide the attributes string - this is an opaque string (from 
-		OpenSIPS point of view) : it is loaded from destination definition (
-		via DB) and blindly provided in the script.
+destination. When a destination is selected, automatically, this AVP
+will provide the attributes string - this is an opaque string (from 
+OpenSIPS point of view) : it is loaded from destination definition (
+via DB) and blindly provided in the script.
 
 
 *Default value is "null" - don't provide ATTRIBUTEs.*
@@ -157,7 +157,7 @@ String with PVs used for the hashing algorithm 7.
 
 > [!NOTE]
 > You must set this parameter if you want do hashing over custom message
-		parts.
+parts.
 
 
 *Default value is "null" - disabled.*
@@ -181,7 +181,7 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 
 
 The name of the PV where to store the set ID (group ID) when calling
-		ds_is_in_list() without group parameter (third parameter).
+ds_is_in_list() without group parameter (third parameter).
 
 
 *Default value is "null" - don't set PV.*
@@ -198,8 +198,8 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
 
 
 With this Method you can define, with which method you want to probe 
-		the failed gateways. This method is only available, if compiled with 
-		the probing of failed gateways enabled.
+the failed gateways. This method is only available, if compiled with 
+the probing of failed gateways enabled.
 
 
 *Default value is "OPTIONS".*
@@ -216,8 +216,8 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 
 
 With this Method you can define the "From:"-Line for the request, 
-		sent to the failed gateways. This method is only available, if 
-		compiled with the probing of failed gateways enabled.
+sent to the failed gateways. This method is only available, if 
+compiled with the probing of failed gateways enabled.
 
 
 *Default value is "sip:dispatcher@localhost".*
@@ -234,9 +234,9 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 
 
 With this Method you can define the interval for sending a request to 
-		a failed gateway. This parameter is only used, when the TM-Module is 
-		loaded. If set to "0", the pinging of failed requests 
-		is disabled.
+a failed gateway. This parameter is only used, when the TM-Module is 
+loaded. If set to "0", the pinging of failed requests 
+is disabled.
 
 
 *Default value is "0" (disabled).*
@@ -253,8 +253,8 @@ modparam("dispatcher", "ds_ping_interval", 30)
 
 
 A socket description [proto:]host[:port] of the local socket (which
-		is used by OpenSIPS for SIP traffic) to be used (if multiple) for 
-		sending the probing messages from.
+is used by OpenSIPS for SIP traffic) to be used (if multiple) for 
+sending the probing messages from.
 
 
 *Default value is "NULL(none)".*
@@ -271,8 +271,8 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 
 
 If you want to set a gateway into probing mode, you will need a 
-		specific number of requests until it will change from "active" to 
-		probing. The number of attempts can be set with this parameter.
+specific number of requests until it will change from "active" to 
+probing. The number of attempts can be set with this parameter.
 
 
 *Default value is "3".*
@@ -289,9 +289,9 @@ modparam("dispatcher", "ds_probing_threshhold", 10)
 
 
 Controls what gateways are tested to see if they are reachable. If set
-		to 0, only the gateways with state PROBING are tested, if set to 1, all
-		gateways are tested. If set to 1 and the response is 408 (timeout),
-		an active gateway is set to PROBING state.
+to 0, only the gateways with state PROBING are tested, if set to 1, all
+gateways are tested. If set to 1 and the response is 408 (timeout),
+an active gateway is set to PROBING state.
 
 
 *Default value is "0".*
@@ -308,8 +308,8 @@ modparam("dispatcher", "ds_probing_mode", 1)
 
 
 Defines a blacklist based on a dispatching setid.
-		This list will contain the IPs (no port, all protocols) of the
-		destinations matching the given setid.
+This list will contain the IPs (no port, all protocols) of the
+destinations matching the given setid.
 
 
 Multiple instances of this param are allowed.
@@ -330,8 +330,8 @@ modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
 
 
 This parameter must contain a list of SIP reply codes separated by 
-		comma. The codes defined here will be considered as valid reply codes 
-		for OPTIONS messages used for pinging, apart for 200.
+comma. The codes defined here will be considered as valid reply codes 
+for OPTIONS messages used for pinging, apart for 200.
 
 
 *Default value is "NULL".*
@@ -348,12 +348,12 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
 
 
 This is mainly for internal usage and represents the name of the avp 
-		which will hold the list with addresses, in the order
-		they have been selected by the chosen algorithm. If use_default is 1,
-		the value of last dst_avp_id is the last address in destination set. The
-		first dst_avp_id is the selected destinations. All the other addresses
-		from the destination set will be added in the avp list to be able to
-		implement serial forking.
+which will hold the list with addresses, in the order
+they have been selected by the chosen algorithm. If use_default is 1,
+the value of last dst_avp_id is the last address in destination set. The
+first dst_avp_id is the selected destinations. All the other addresses
+from the destination set will be added in the avp list to be able to
+implement serial forking.
 
 
 *Default value is "$avp(ds_dst_failover)"*
@@ -370,8 +370,8 @@ modparam("dispatcher", "dst_avp", "$avp(271)")
 
 
 This is mainly for internal usage and represents the name of the avp 
-		storing the group id of the destination set. Good
-		to have it for later usage or checks.
+storing the group id of the destination set. Good
+to have it for later usage or checks.
 
 
 *Default value is "$avp(ds_grp_failover)".*
@@ -388,7 +388,7 @@ modparam("dispatcher", "grp_avp", "$avp(273)")
 
 
 This is mainly for internal usage and represents the name of the avp 
-		storing the number of destination addresses kept in dst_avp avps.
+storing the number of destination addresses kept in dst_avp avps.
 
 
 *Default value is "$avp(ds_cnt_failover)".*
@@ -405,8 +405,8 @@ modparam("dispatcher", "cnt_avp", "$avp(274)")
 
 
 This is mainly for internal usage and represents the name of the avp 
-		storing the sockets to be used for the destination addresses kept in
-		dst_avp avps.
+storing the sockets to be used for the destination addresses kept in
+dst_avp avps.
 
 
 *Default value is "$avp(ds_sock_failover)".*
@@ -423,10 +423,10 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 
 
 This parameter is used by the PVAR(9) algorithm to specify the
-		pseudovariable pattern used to detect the load of each destination. The
-		name of the pseudovariable should contain the string "%u",
-		which will be internally replaced by the module with the uri of the
-		destination.
+pseudovariable pattern used to detect the load of each destination. The
+name of the pseudovariable should contain the string "%u",
+which will be internally replaced by the module with the uri of the
+destination.
 
 
 *Default value is "none".*
@@ -443,7 +443,7 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 
 
 If you want to load the sets of gateways from the database you must set
-		this parameter as the database name.
+this parameter as the database name.
 
 
 *Default value is "dispatcher".*
@@ -476,7 +476,7 @@ modparam("dispatcher", "setid_col", "groupid")
 
 
 The column's name in the database storing the destination's
-			sip uri.
+sip uri.
 
 
 *Default value is "destination".*
@@ -493,7 +493,7 @@ modparam("dispatcher", "destination_col", "uri")
 
 
 The column's name in the database storing the state of the
-			destination uri.
+destination uri.
 
 
 *Default value is "state".*
@@ -510,7 +510,7 @@ modparam("dispatcher", "state_col", "dststate")
 
 
 The column's name in the database storing the weight for
-			destination uri.
+destination uri.
 
 
 *Default value is "weight".*
@@ -527,7 +527,7 @@ modparam("dispatcher", "weight_col", "dstweight")
 
 
 The column's name in the database storing the attributes (opaque
-			string) for destination uri.
+string) for destination uri.
 
 
 *Default value is "attrs".*
@@ -544,7 +544,7 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 
 
 The column's name in the database storing the socket (as 
-			string) for destination uri.
+string) for destination uri.
 
 
 *Default value is "socket".*
@@ -564,16 +564,16 @@ modparam("dispatcher", "socket_col", "my_sock")
 
 
 The method selects a destination from the given set of addresses. It will
-		overwrite the "destination URI" of a SIP request (*$du*).
+overwrite the "destination URI" of a SIP request (*$du*).
 
 
 Meaning of the parameters is as follows:
 
 
 - *set* - the id of the set or a list of sets
-			from where to pick up destination address (variables are accepted).
+from where to pick up destination address (variables are accepted).
 - *alg* - the algorithm(s) used to select the
-			destination address (variables are accepted).
+destination address (variables are accepted).
 
   - "0" - hash over callid
   - "1" - hash over from uri.
@@ -581,30 +581,30 @@ Meaning of the parameters is as follows:
   - "3" - hash over request-uri.
   - "4" - round-robin (next destination).
   - "5" - hash over authorization-username
-				(Proxy-Authorization or "normal" authorization).
-				If no username is found, round robin is used.
+(Proxy-Authorization or "normal" authorization).
+If no username is found, round robin is used.
   - "6" - random (using rand()).
   - "7" - hash over the content of PVs string.
-				Note: This works only when the parameter hash_pvar is set.
+Note: This works only when the parameter hash_pvar is set.
   - "8" - the first entry in set is chosen.
   - "9" - The *pvar_algo_pattern*
-				parameter is used to determine the load on each server. If the 
-				parameter is not specified, then the first entry in the set is
-				chosen.
+parameter is used to determine the load on each server. If the 
+parameter is not specified, then the first entry in the set is
+chosen.
   - "X" - if the algorithm is not implemented, the
-				first entry in set is chosen.
+first entry in set is chosen.
 - *max_results* - If specified, only that many results
-			will be put into the specified avp for failover. This allows having many
-			destinations but limit the useless traffic in case of a number that is
-			bound to fail everywhere. It can accept variables.
+will be put into the specified avp for failover. This allows having many
+destinations but limit the useless traffic in case of a number that is
+bound to fail everywhere. It can accept variables.
 
 
 If the bit 2 in 'flags' is set, the rest of the addresses from the
-		destination set is stored in AVP list. You can use 'ds_next_dst()' to
-		use next address to achieve serial forking to all possible
-		destinations.  If multiple dispatching groups are used, the AVP list
-		is constructed based on the position of each dispatching id in the list:
-		first one has the higher priority, followed by the second one and so on.
+destination set is stored in AVP list. You can use 'ds_next_dst()' to
+use next address to achieve serial forking to all possible
+destinations.  If multiple dispatching groups are used, the AVP list
+is constructed based on the position of each dispatching id in the list:
+first one has the higher priority, followed by the second one and so on.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -629,14 +629,14 @@ ds_select_dst("$var(setid)", "$var(alg)", "$var(max)");
 
 
 The method selects a destination from addresses set  and rewrites the
-		host and port from R-URI. The parameters have same meaning as for
-		ds_select_dst().
+host and port from R-URI. The parameters have same meaning as for
+ds_select_dst().
 
 
 If the bit 2 in 'flags' is set, the rest of the addresses from the
-		destination set is stored in AVP list. You can use 'ds_next_domain()'
-		to use next address to achieve serial forking to all possible
-		destinations.
+destination set is stored in AVP list. You can use 'ds_next_domain()'
+to use next address to achieve serial forking to all possible
+destinations.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -646,7 +646,7 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Takes the next destination address from the AVPs with id 'dst_avp_id'
-		and sets the dst_uri (outbound proxy address).
+and sets the dst_uri (outbound proxy address).
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -656,7 +656,7 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Takes the next destination address from the AVPs with id 'dst_avp_id'
-		and sets the domain part of the request uri.
+and sets the domain part of the request uri.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -666,9 +666,9 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Mark the last used address from destination set as inactive, in order
-		to be ingnored in the future. In this way it can be implemented an
-		automatic detection of failed gateways. When an address is marked as
-		inactive, it will be ignored by 'ds_select_dst' and 'ds_select_domain'.
+to be ingnored in the future. In this way it can be implemented an
+automatic detection of failed gateways. When an address is marked as
+inactive, it will be ignored by 'ds_select_dst' and 'ds_select_domain'.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -678,8 +678,8 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Mark the last used address from destination set as inactive ("i"/"I"/"0"), active ("a"/"A"/"1") or probing ("p"/"P"/"2").
-		With this function, an automatic detection of failed gateways can be implemented. When an address is marked as
-		inactive or probing, it will be ignored by 'ds_select_dst' and 'ds_select_domain'.
+With this function, an automatic detection of failed gateways can be implemented. When an address is marked as
+inactive or probing, it will be ignored by 'ds_select_dst' and 'ds_select_domain'.
 
 
 possible parameters:
@@ -697,34 +697,34 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 Returns the number of active, inactive or probing destinations in a set,
-		or combinations between these properties.
+or combinations between these properties.
 
 
 Meaning of the parameters:
 
 
 - *set* - a set of dispatching destinations.
-			The *set* parameter can have the following types:
+The *set* parameter can have the following types:
 
   - *integer* - the dispatching set is passed
-				in a static manner
+in a static manner
   - *pvar* - the dispatching set is the value
-				of an existing pseudo-variable (as integer value)
+of an existing pseudo-variable (as integer value)
 - *filter* - which destinations should be
-			counted. Either active destinations("a", "A" or "1"), inactive
-			destinations("i", "I" or "0") or probing ones("p", "P" or "2") or
-			different combinations between these flags, such as
-			"pI", "1i", "ipA"... The *filter* parameter can have
-			the following types:
+counted. Either active destinations("a", "A" or "1"), inactive
+destinations("i", "I" or "0") or probing ones("p", "P" or "2") or
+different combinations between these flags, such as
+"pI", "1i", "ipA"... The *filter* parameter can have
+the following types:
 
   - *string* - the filtering flags are
-				statically assigned
+statically assigned
 - *result* - A pseudovariable for storing
-			the result.
+the result.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
-		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
 
 ```opensips title="ds_count usage"
@@ -744,30 +744,30 @@ if (ds_count("$avp(set)", "ip", "$avp(result)")) {
 
 
 This function returns true, if the parameters ip and port point to a 
-		host from the dispatcher-list; otherwise false.
+host from the dispatcher-list; otherwise false.
 
 
 Meaning of the parameters:
 
 
 - *ip* - a PV (pseudo-variable) containing 
-			(as string) the IP to test against the dispatcher list. This cannot
-			be empty.
+(as string) the IP to test against the dispatcher list. This cannot
+be empty.
 - *port* - a PV (pseudo-variable) containing
-			 (as integer) the PORT to test against the dispatcher list. This 
-			 can be empty - in this case the port will excluded from the 
-			 matching of IP against the dispatcher list.
+(as integer) the PORT to test against the dispatcher list. This 
+can be empty - in this case the port will excluded from the 
+matching of IP against the dispatcher list.
 - *set* (optional) - the set ID of a 
-			dispatcher list to test agaist - if missing, all the dispatching
-			sets will the checked. "-1" can be used as a wildcard
-			to check in all sets.
+dispatcher list to test agaist - if missing, all the dispatching
+sets will the checked. "-1" can be used as a wildcard
+to check in all sets.
 - *active_only* (optional) - search only 
-			through the active destinations (ignore the ones in probing 
-			and inactive mode).
+through the active destinations (ignore the ones in probing 
+and inactive mode).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, 
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="ds_is_in_list usage"
@@ -790,7 +790,7 @@ if (ds_is_in_list("$rd", "$rp", "2")) {
 
 
 Sets the status for a destination address (can be use to mark the destination 
-		as active or inactive).
+as active or inactive).
 
 
 Name: *ds_set_state*
@@ -868,7 +868,7 @@ MI DATAGRAM Command Format:
 
 
 This event is raised when the dispatcher module marks a destination as 
-			activated or deactivated.
+activated or deactivated.
 
 
 Parameters:
@@ -877,20 +877,13 @@ Parameters:
 - *group* - the group of the destination.
 - *address* - the address of the destination.
 - *status* - *active* if
-				the destination gets activated or *inactive* if the
-				destination is detected unresponsive.
+the destination gets activated or *inactive* if the
+destination is detected unresponsive.
 
 
 ### Installation and Running
 
-
-#### OpenSIPS config file
-
-
-Next picture displays a sample usage of dispatcher.
-
-
-[OpenSIPS config script - sample dispatcher usage](./samples.md "include")
+[samples](./samples/samples.md "include")
 
 
 ## Frequently Asked Questions
@@ -900,37 +893,37 @@ Next picture displays a sample usage of dispatcher.
 
 
 There is no guarantee of that. You should do some measurements
-			to decide what distribution algorithm fits better in your
-			environment.
+to decide what distribution algorithm fits better in your
+environment.
 
 
 **Q: Is *dispatcher* dialog stateful?**
 
 
 No. Dispatcher is stateless, although some distribution algorithms
-			are designed to select same destination for subsequent requests of
-			the same dialog (e.g., hashing the call-id).
+are designed to select same destination for subsequent requests of
+the same dialog (e.g., hashing the call-id).
 
 
 **Q: What happend with the *ds_is_from_list()* 
-			function?**
+function?**
 
 
 The function was replaced by the more generic 
-			*ds_is_in_list()* function that takes as 
-			parameters the IP and PORT to test against the dispatcher list.
+*ds_is_in_list()* function that takes as 
+parameters the IP and PORT to test against the dispatcher list.
 
 ds_is_from_list() == ds_is_in_list("$si","$sp")
 
 
 **Q: What happend with the *list_file* 
-			module parameter ?**
+module parameter ?**
 
 
 The support for text file (for provisioning destinations) was dropped.
-			Only the DB support (provisioning via a DB table) is now available - if
-			you still want to use a text file for provisioning, use db_text DB driver
-			(DB emulated via text files)
+Only the DB support (provisioning via a DB table) is now available - if
+you still want to use a text file for provisioning, use db_text DB driver
+(DB emulated via text files)
 
 
 **Q: Where can I find more about OpenSIPS?**
@@ -943,11 +936,11 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable version should be sent to 
-			users@lists.opensips.org and e-mail regarding development versions or SVN 
-			snapshots should be send to devel@lists.opensips.org.
+users@lists.opensips.org and e-mail regarding development versions or SVN 
+snapshots should be send to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to users@lists.opensips.org.
 
