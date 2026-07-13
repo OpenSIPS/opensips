@@ -1,6 +1,6 @@
 ---
 title: "SNMPStats Module (Simple Network Management Protocal Statistic Module)"
-description: "The SNMPStats module provides an SNMP management interface to OpenSIPS. Specifically, it provides general SNMP queryable scalar statistics, table representations of more complicated data such as user and contact information, and alarm monitoring capabilities."
+description: "The SNMPStats module provides an SNMP management interface to OpenSIPS."
 ---
 
 ## Admin Guide
@@ -10,92 +10,92 @@ description: "The SNMPStats module provides an SNMP management interface to Open
 
 
 The SNMPStats module provides an SNMP management interface
-		to OpenSIPS.  Specifically, it provides general SNMP queryable
-		scalar statistics, table representations of more complicated data
-		such as user and contact information, and alarm monitoring
-		capabilities.
+to OpenSIPS.  Specifically, it provides general SNMP queryable
+scalar statistics, table representations of more complicated data
+such as user and contact information, and alarm monitoring
+capabilities.
 
 
 #### General Scalar Statistics
 
 
 The SNMPStats module provides a number of general scalar
-			statistics.
-			Details are available in OPENSER-MIB, OPENSER-REG-MIB,
-			OPENSER-SIP-COMMON-MIB, and OPENSER-SIP-SERVER-MIB.  But briefly,
-			these scalars are:
+statistics.
+Details are available in OPENSER-MIB, OPENSER-REG-MIB,
+OPENSER-SIP-COMMON-MIB, and OPENSER-SIP-SERVER-MIB.  But briefly,
+these scalars are:
 
 
 openserSIPProtocolVersion, openserSIPServiceStartTime,
-			openserSIPEntityType,
-			openserSIPSummaryInRequests, openserSIPSummaryOutRequest,
-			openserSIPSummaryInResponses, openserSIPSummaryOutResponses,
-			openserSIPSummaryTotalTransactions, openserSIPCurrentTransactions,
-			openserSIPNumUnsupportedUris, openserSIPNumUnsupportedMethods,
-			openserSIPOtherwiseDiscardedMsgs, openserSIPProxyStatefulness
-			openserSIPProxyRecordRoute, openserSIPProxyAuthMethod,
-			openserSIPNumProxyRequireFailures,
-			openserSIPRegMaxContactExpiryDuration,
-			openserSIPRegMaxUsers, openserSIPRegCurrentUsers,
-			openserSIPRegDfltRegActiveInterval,
-			openserSIPRegAcceptedRegistrations,
-			openserSIPRegRejectedRegistrations, openserMsgQueueDepth.
-			openserCurNumDialogs, openserCurNumDialogsInProgress,
-			openserCurNumDialogsInSetup, openserTotalNumFailedDialogSetups
+openserSIPEntityType,
+openserSIPSummaryInRequests, openserSIPSummaryOutRequest,
+openserSIPSummaryInResponses, openserSIPSummaryOutResponses,
+openserSIPSummaryTotalTransactions, openserSIPCurrentTransactions,
+openserSIPNumUnsupportedUris, openserSIPNumUnsupportedMethods,
+openserSIPOtherwiseDiscardedMsgs, openserSIPProxyStatefulness
+openserSIPProxyRecordRoute, openserSIPProxyAuthMethod,
+openserSIPNumProxyRequireFailures,
+openserSIPRegMaxContactExpiryDuration,
+openserSIPRegMaxUsers, openserSIPRegCurrentUsers,
+openserSIPRegDfltRegActiveInterval,
+openserSIPRegAcceptedRegistrations,
+openserSIPRegRejectedRegistrations, openserMsgQueueDepth.
+openserCurNumDialogs, openserCurNumDialogsInProgress,
+openserCurNumDialogsInSetup, openserTotalNumFailedDialogSetups
 
 
 There are also scalars associated with alarms. They are as follows:
 
 
 openserMsgQueueMinorThreshold, openserMsgQueueMajorThreshold,
-			openserMsgQueueDepthAlarmStatus, openserMsgQueueDepthMinorAlarm,
-			openserMsgQueueDepthMajorAlarm, openserDialogLimitMinorThreshold,
-			openserDialogLimitMajorThreshold, openserDialogUsageState,
-			openserDialogLimitAlarmStatus, openserDialogLimitMinorAlarm,
-			openserDialogLimitMajorAlarm
+openserMsgQueueDepthAlarmStatus, openserMsgQueueDepthMinorAlarm,
+openserMsgQueueDepthMajorAlarm, openserDialogLimitMinorThreshold,
+openserDialogLimitMajorThreshold, openserDialogUsageState,
+openserDialogLimitAlarmStatus, openserDialogLimitMinorAlarm,
+openserDialogLimitMajorAlarm
 
 
 #### SNMP Tables
 
 
 The SNMPStats module provides several tables, containing more
-			complicated data.  The current available tables are:
+complicated data.  The current available tables are:
 
 
 openserSIPPortTable, openserSIPMethodSupportedTable,
-			openserSIPStatusCodesTable, openserSIPRegUserTable,
-			openserSIPContactTable, openserSIPRegUserLookupTable
+openserSIPStatusCodesTable, openserSIPRegUserTable,
+openserSIPContactTable, openserSIPRegUserLookupTable
 
 
 #### Alarm Monitoring
 
 
 If enabled, the SNMPStats module will monitor for alarm conditions.
-			Currently, there are two alarm types defined.
+Currently, there are two alarm types defined.
 
 
 1. The number of active dialogs has passed a minor or major
-				threshold. The idea is that a network operation centre can
-				be made aware that their SIP servers may be overloaded,
-				without having to explicitly check for this condition.
+threshold. The idea is that a network operation centre can
+be made aware that their SIP servers may be overloaded,
+without having to explicitly check for this condition.
 If a minor or major condition has occurred, then a
-				openserDialogLimitMinorEvent trap or a
-				openserDialogLimitMajorEvent trap will be generated,
-				respectively. The minor and major thresholds are
-				described in the parameters section below.
+openserDialogLimitMinorEvent trap or a
+openserDialogLimitMajorEvent trap will be generated,
+respectively. The minor and major thresholds are
+described in the parameters section below.
 2. The number of bytes waiting to be consumed across all of
-				OpenSIPS's listening ports has passed a minor or major
-				threshold.  The idea is that a network operation centre can
-				be made aware that a machine hosting a SIP server may be
-				entering a degraded state, and to investigate why this is so.
+OpenSIPS's listening ports has passed a minor or major
+threshold.  The idea is that a network operation centre can
+be made aware that a machine hosting a SIP server may be
+entering a degraded state, and to investigate why this is so.
 If the number of bytes to be consumed passes a minor or major
-				threshold, then a openserMsgQueueDepthMinorEvent or
-				openserMsgQueueDepthMajorEvent trap will be sent out,
-				respectively.
+threshold, then a openserMsgQueueDepthMinorEvent or
+openserMsgQueueDepthMajorEvent trap will be sent out,
+respectively.
 
 
 Full details of these traps can be found in the distributions
-			OPENSER-MIB file.
+OPENSER-MIB file.
 
 
 ### How it works
@@ -105,51 +105,51 @@ Full details of these traps can be found in the distributions
 
 
 The SNMPStats module uses OpenSIPSs internal statistic framework to
-	collect most of its data. However, there are two exceptions.
+collect most of its data. However, there are two exceptions.
 
 
 1. The openserSIPRegUserTable and openserSIPContactTable rely on the
-			usrloc modules callback system.  Specifically, the SNMPStats
-			module will receive callbacks whenever a user/contact is added to
-			the system.
+usrloc modules callback system.  Specifically, the SNMPStats
+module will receive callbacks whenever a user/contact is added to
+the system.
 2. The SNMPStats modules openserSIPMsgQueueDepthMinorEvent and
-			openserSIPMsgQueueDepthMajorEvent alarms rely on the OpenSIPS
-			core to find out what interfaces, ports, and transports OpenSIPS
-			is listening on.  However,the module will actually query the proc
-			file system to find out the number of bytes waiting to be consumed.
-			(Currently, this will only work on systems providing the proc file
-			system).
+openserSIPMsgQueueDepthMajorEvent alarms rely on the OpenSIPS
+core to find out what interfaces, ports, and transports OpenSIPS
+is listening on.  However,the module will actually query the proc
+file system to find out the number of bytes waiting to be consumed.
+(Currently, this will only work on systems providing the proc file
+system).
 
 
 #### How data is moved from the SNMPStats module to a NOC
 
 
 We have now explained how the SNMPStats module gathers its data. We still
-	have not explained how it exports this data to a NOC (Network Operations
-	Centre) or administrator.
+have not explained how it exports this data to a NOC (Network Operations
+Centre) or administrator.
 
 
 The SNMPStats module expects to connect to a
-	*Master Agent*.  This would be a SNMP daemon running
-	either on the same system as the OpenSIPS instance, or on another system.
-	(Communication can take place over TCP, so there is no restriction
-	that this daemon need be on the same system as OpenSIPS).
+*Master Agent*.  This would be a SNMP daemon running
+either on the same system as the OpenSIPS instance, or on another system.
+(Communication can take place over TCP, so there is no restriction
+that this daemon need be on the same system as OpenSIPS).
 
 
 If the master agent is unavailable when OpenSIPS first starts up, the
-	SNMPStats module will continue to run.  However, you will not be able to
-	query it.  Thankfully, the SNMPStats module continually looks for its
-	master agent.  So even if the master agent is started late,
-	or if the link to the SNMPStats module is severed due to a temporary
-	hardware failure or crashed and restarted master agent, the link will
-	eventually be re-established.  No data should be lost, and querying can
-	begin again.
+SNMPStats module will continue to run.  However, you will not be able to
+query it.  Thankfully, the SNMPStats module continually looks for its
+master agent.  So even if the master agent is started late,
+or if the link to the SNMPStats module is severed due to a temporary
+hardware failure or crashed and restarted master agent, the link will
+eventually be re-established.  No data should be lost, and querying can
+begin again.
 
 
 To request for this data, you will need to query the master agent. The
-	master agent will then redirect the request to the SNMPStats module, which
-	will respond to the master agent, which will in turn respond to
-	your request.
+master agent will then redirect the request to the SNMPStats module, which
+will respond to the master agent, which will in turn respond to
+your request.
 
 
 ### Dependencies
@@ -159,45 +159,45 @@ To request for this data, you will need to query the master agent. The
 
 
 The SNMPStats module provides a plethora of statistics, some of which
-		are collected by other modules.  If the dependent modules are not
-		loaded then those specific statistics will still be returned, but with
-		zeroed values.  All other statistics will continue to function
-		normally.  This means that the SNMPStats module has no
-		*hard/mandatory* dependencies on other modules.
-		There are however, *soft* dependencies, as follows:
+are collected by other modules.  If the dependent modules are not
+loaded then those specific statistics will still be returned, but with
+zeroed values.  All other statistics will continue to function
+normally.  This means that the SNMPStats module has no
+*hard/mandatory* dependencies on other modules.
+There are however, *soft* dependencies, as follows:
 
 
 - *usrloc* - all scalars and tables relating to users
-		and contacts are dependent on the usrloc module.  If the module is
-		not loaded, the respective tables will be empty.
+and contacts are dependent on the usrloc module.  If the module is
+not loaded, the respective tables will be empty.
 - *dialog* - all scalars relating to the number of
-		dialogs are dependent on the presence of the dialog module.
-		Furthermore, if the module is not loaded, then the
-		openserDialogLimitMinorEvent, and openserDialogLimitMajorEvent
-		alarm will be disabled.
+dialogs are dependent on the presence of the dialog module.
+Furthermore, if the module is not loaded, then the
+openserDialogLimitMinorEvent, and openserDialogLimitMajorEvent
+alarm will be disabled.
 
 
 The contents of the openserSIPMethodSupportedTable change depending
-		on which modules are loaded.
+on which modules are loaded.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed before running
-	OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *Net SNMP DEV (libsnmp-dev on debian)* - SNMP
-			library (development files) must
-			be installed at the time of compilation.  Furthermore, there are
-			several shared objects that must be loadable at the time SNMPStats
-			is loaded.  This means that SNMP lib must be installed (but not
-			necessarily running) on the system that has loaded the SNMPStats
-			module.  (Details can be found in the compilation section below).
+library (development files) must
+be installed at the time of compilation.  Furthermore, there are
+several shared objects that must be loadable at the time SNMPStats
+is loaded.  This means that SNMP lib must be installed (but not
+necessarily running) on the system that has loaded the SNMPStats
+module.  (Details can be found in the compilation section below).
 - *SNMP tools(snmp on debian)* - SNMP
-			tools package to provide the snmpget command (internally used by
-			the SNMPStats module.
+tools package to provide the snmpget command (internally used by
+the SNMPStats module.
 
 
 ### Exported Parameters
@@ -207,8 +207,8 @@ The following libraries or applications must be installed before running
 
 
 This parameter describes the entity type for this OpenSIPS instance,
-		and will be used in determining what is returned for the
-		openserSIPEntityType scalar. Valid parameters are:
+and will be used in determining what is returned for the
+openserSIPEntityType scalar. Valid parameters are:
 
 
 *registrarServer, redirectServer, proxyServer, userAgent, other*
@@ -223,20 +223,21 @@ modparam("snmpstats", "sipEntityType", "proxyServer")
 ```
 
 
-Note that as the above example shows, you can define this parameter
-		more than once.  This is of course because a given OpenSIPS instance
-		can take on more than one role.
+> [!NOTE]
+> As the above example shows, you can define this parameter
+> more than once.  This is of course because a given OpenSIPS instance
+> can take on more than one role.
 
 
 #### MsgQueueMinorThreshold (Integer)
 
 
 The SNMPStats module monitors the number of bytes waiting to be
-		consumed by OpenSIPS.  If the number of bytes waiting to be consumed
-		exceeds a minor threshold, the SNMPStats module will send out an
-		openserMsgQueueDepthMinorEvent trap to signal that an alarm condition
-		has occurred.  The minor threshold is set with the
-		MsgQueueMinorThreshold parameter.
+consumed by OpenSIPS.  If the number of bytes waiting to be consumed
+exceeds a minor threshold, the SNMPStats module will send out an
+openserMsgQueueDepthMinorEvent trap to signal that an alarm condition
+has occurred.  The minor threshold is set with the
+MsgQueueMinorThreshold parameter.
 
 
 ```opensips title="Setting the MsgQueueMinorThreshold parameter"
@@ -248,18 +249,18 @@ modparam("snmpstats", "MsgQueueMinorThreshold", 2000)
 
 
 If this parameter is not set, then there will be no minor alarm
-		monitoring.
+monitoring.
 
 
 #### MsgQueueMajorThreshold (Integer)
 
 
 The SNMPStats module monitors the number of bytes waiting to be
-		consumed by OpenSIPS.  If the number of bytes waiting to be consumed
-		exceeds a major threshold, the SNMPStats module will send out an
-		openserMsgQueueDepthMajorEvent trap to signal that an alarm condition
-		has occurred.  The major threshold is set with the
-		MsgQueueMajorThreshold parameter.
+consumed by OpenSIPS.  If the number of bytes waiting to be consumed
+exceeds a major threshold, the SNMPStats module will send out an
+openserMsgQueueDepthMajorEvent trap to signal that an alarm condition
+has occurred.  The major threshold is set with the
+MsgQueueMajorThreshold parameter.
 
 
 ```opensips title="Setting the MsgQueueMajorThreshold parameter"
@@ -271,17 +272,17 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
 
 
 If this parameter is not set, then there will be no major alarm
-		monitoring.
+monitoring.
 
 
 #### dlg_minor_threshold (Integer)
 
 
 The SNMPStats module monitors the number of active dialogs.  If the
-		number of active dialogs exceeds a minor threshold, the SNMPStats
-		module will send out an openserDialogLimitMinorEvent trap to signal
-		that an alarm condition has occurred.  The minor threshold is set with
-		the dlg_minor_threshold parameter.
+number of active dialogs exceeds a minor threshold, the SNMPStats
+module will send out an openserDialogLimitMinorEvent trap to signal
+that an alarm condition has occurred.  The minor threshold is set with
+the dlg_minor_threshold parameter.
 
 
 ```opensips title="Setting the dlg_minor_threshold parameter"
@@ -293,17 +294,17 @@ The SNMPStats module monitors the number of active dialogs.  If the
 
 
 If this parameter is not set, then there will be no minor alarm
-		monitoring.
+monitoring.
 
 
 #### dlg_major_threshold (Integer)
 
 
 The SNMPStats module monitors the number of active dialogs.  If
-		the number of active dialogs exceeds a major threshold, the SNMPStats
-		module will send out an openserDialogLimitMajorEvent trap to signal
-		that an alarm condition has occurred.  The major threshold is set
-		with the dlg_major_threshold parameter.
+the number of active dialogs exceeds a major threshold, the SNMPStats
+module will send out an openserDialogLimitMajorEvent trap to signal
+that an alarm condition has occurred.  The major threshold is set
+with the dlg_major_threshold parameter.
 
 
 ```opensips title="Setting the dlg_major_threshold parameter"
@@ -315,16 +316,16 @@ The SNMPStats module monitors the number of active dialogs.  If
 
 
 If this parameter is not set, then there will be no major alarm
-		monitoring.
+monitoring.
 
 
 #### snmpgetPath (String)
 
 
 The SNMPStats module provides the openserSIPServiceStartTime scalar.
-		This scalar requires the SNMPStats module to perform a snmpget query
-		to the master agent.  You can use this parameter to set the path to
-		your instance of SNMP's snmpget program.
+This scalar requires the SNMPStats module to perform a snmpget query
+to the master agent.  You can use this parameter to set the path to
+your instance of SNMP's snmpget program.
 
 
 *Default value is "/usr/local/bin/".*
@@ -342,9 +343,9 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
 
 
 The SNMPStats module provides the openserSIPServiceStartTime scalar.
-		This scalar requires the SNMPStats module to perform a snmpget query
-		to the master agent.  If you have defined a custom community string
-		for the snmp daemon, you need to specify it with this parameter.
+This scalar requires the SNMPStats module to perform a snmpget query
+to the master agent.  If you have defined a custom community string
+for the snmp daemon, you need to specify it with this parameter.
 
 
 *Default value is "public".*
@@ -368,43 +369,43 @@ Currently, there are no exported functions.
 
 
 There are several things that need to be done to get the SNMPStats module
-	compiled and up and running.
+compiled and up and running.
 
 
 #### Compiling the SNMPStats Module
 
 
 In order for the SNMPStats module to compile, you will need to have
-	installed the packages providing SNMP (Simple Network Management
-	Protocol) libray and development files.
+installed the packages providing SNMP (Simple Network Management
+Protocol) libray and development files.
 
 
 The SNMPStats modules makefile requires that the SNMP script
-	"net-snmp-config" can run.
+"net-snmp-config" can run.
 
 
-IMPORTANT: By default, SNMP loads *mibs* from
-	*/var/lib/mibs/ietf/*.Keep in mind that you have to copy OpenSIPS
-	*mibs* wherevere your mibs folder is.
+> [!IMPORTANT]
+> By default, SNMP loads *mibs* from
+> */var/lib/mibs/ietf/*.Keep in mind that you have to copy OpenSIPS
+> *mibs* wherevere your mibs folder is.
 
 
 #### Configuring SNMP daemon to allow connections from the SNMPStats module.
 
 
 The SNMPStats module will communicate with the SNMP Master Agent.  This
-	communication happens over a protocol known as AgentX. This means you
-	need to have an SMP daemon (acting as Master Agent) running - it can
-	be on the same machine or on a different one.
+communication happens over a protocol known as AgentX. This means you
+need to have an SMP daemon (acting as Master Agent) running - it can
+be on the same machine or on a different one.
 
 
 First you need to turn on AgentX support.  The exact location of
-	the configuration file (snmpd.conf) may vary depending on your system.
-	By default, via a package installation, it is located in:
+the configuration file (snmpd.conf) may vary depending on your system.
+By default, via a package installation, it is located in:
 
 
-```c
-    /etc/snmp/snmpd.conf.
-	
+```bash
+/etc/snmp/snmpd.conf
 ```
 
 
@@ -412,78 +413,73 @@ At the very end of the file add the following line:
 
 
 ```c
-    master agentx
-	
+master agentx
 ```
 
 
 The line tells SNMP daemon to act as an AgentX master agent, so that it
-	can accept connections from sub-agents such as the SNMPStats module.
+can accept connections from sub-agents such as the SNMPStats module.
 
 
 There is still one last step.  Even though we have configured
-	SNMP to have AgentX support, we still need to tell the daemon which
-	interface and port to listen to for AgentX connections. This is done also
-	via the configuration file (snmpd.conf) :
+SNMP to have AgentX support, we still need to tell the daemon which
+interface and port to listen to for AgentX connections. This is done also
+via the configuration file (snmpd.conf) :
 
 
 ```c
-    agentXSocket    tcp:localhost:705
-	
+agentXSocket    tcp:localhost:705
 ```
 
 
 This tells SNMP daemon to act as a master agent, listening on the
-	localhost UDP interface at port 705.
+localhost UDP interface at port 705.
 
 
 #### Configuring the SNMPStats module for communication with a Master Agent
 
 
 The previous section explained how to set up a SNMP master agent to accept
-	AgentX connections.  We now need to tell the SNMPStats module how to
-	communicate with this master agent.  This is done by giving the
-	SNMPStats module its own SNMP configuration file.  The file must be named
-	"snmpstats.conf", and must be in the same folder as the "snmpd.conf" file
-	that was configured above. By default this would be:
+AgentX connections.  We now need to tell the SNMPStats module how to
+communicate with this master agent.  This is done by giving the
+SNMPStats module its own SNMP configuration file.  The file must be named
+"snmpstats.conf", and must be in the same folder as the "snmpd.conf" file
+that was configured above. By default this would be:
 
 
-```c
-    /etc/snmp/snmpstats.conf
-	
+```bash
+/etc/snmp/snmpstats.conf
 ```
 
 
 The default configuration file included with the distribution can be used,
-	and contains the following:
+and contains the following:
 
 
 ```c
-    agentXSocket tcp:localhost:705
-	
+agentXSocket tcp:localhost:705
 ```
 
 
 The above line tells the SNMPStats module to register with the master
-	agent on the localhost, port 705.  The parameters should match up with
-	the snmpd process.
-	Note that the master agent (snmpd) does not need to be present on the same
-	machine as OpenSIPS. The localhost could be replaced with any other
-	machine.
+agent on the localhost, port 705.  The parameters should match up with
+the snmpd process.
+Note that the master agent (snmpd) does not need to be present on the same
+machine as OpenSIPS. The localhost could be replaced with any other
+machine.
 
 
 #### Testing for a proper Configuration
 
 
 As a quick test to make sure that the SNMPStats module sub-agent can
-	successfully connect to the SNMP Master agent, be sure the snmpd service
-	is stopped (/etc/init.d/snmpd stop) and manually start snmpd with the
-	following:
+successfully connect to the SNMP Master agent, be sure the snmpd service
+is stopped (/etc/init.d/snmpd stop) and manually start snmpd with the
+following:
 
 
-```c
-    snmpd -f -Dagentx -x tcp:localhost:705 2>&1 | less
-	
+```bash
+snmpd -f -Dagentx -x tcp:localhost:705 2>&1 | less
 ```
 
 
@@ -498,12 +494,11 @@ You should see something similar to the following:
     agentx/master: initializing...
     agentx/master: initializing...   DONE
     NET-SNMP version 5.3.1
-	
 ```
 
 
 Now, start up OpenSIPS in another window.  In the snmpd window, you should
-	see a bunch of:
+see a bunch of:
 
 
 ```c
@@ -512,16 +507,15 @@ Now, start up OpenSIPS in another window.  In the snmpd window, you should
     agentx/master: opened 0x814bbe0 = 6 with flags = a0
     agentx/master: send response, stat 0 (req=0x2c58ebd4,trans=0x0,sess=0x0)
     agentx_build: packet built okay
-	
 ```
 
 
 The messages beginning with "agentx" are debug messages stating that
-	something is happening with an AgentX sub-agent, appearing because of
-	the -Dagentx snmpd switch.  The large number of debug messages appear at
-	startup as the SNMPStats module registers all of its scalars
-	and tables with the Master Agent.  If you receive these messages, then
-	SNMPStats module and SNMP daemon have both been configured correctly.
+something is happening with an AgentX sub-agent, appearing because of
+the -Dagentx snmpd switch.  The large number of debug messages appear at
+startup as the SNMPStats module registers all of its scalars
+and tables with the Master Agent.  If you receive these messages, then
+SNMPStats module and SNMP daemon have both been configured correctly.
 
 
 ## Frequently Asked Questions
@@ -531,28 +525,28 @@ The messages beginning with "agentx" are debug messages stating that
 
 
 There are many websites that explain SNMP at all levels of detail.
-			A great general introduction can be found at http://en.wikipedia.org/wiki/SNMP
+A great general introduction can be found at http://en.wikipedia.org/wiki/SNMP
 
-			If you are interested in the nitty gritty details of the protocol,
-			then please look at RFC 3410.  RFC 3410 maps out the many other RFCs
-			that define SNMP, and can be found at http://www.rfc-archive.org/getrfc.php?rfc=3410
+If you are interested in the nitty gritty details of the protocol,
+then please look at RFC 3410.  RFC 3410 maps out the many other RFCs
+that define SNMP, and can be found at http://www.rfc-archive.org/getrfc.php?rfc=3410
 
-			INFO: Also if you want a nice tutorial for setting up snmpstats with OpenSIPS try
-			[this one](http://saevolgo.blogspot.ro/2012/09/opensips-monitoring-using-snmp-part-i.html).
+INFO: Also if you want a nice tutorial for setting up snmpstats with OpenSIPS try
+[this one](http://saevolgo.blogspot.ro/2012/09/opensips-monitoring-using-snmp-part-i.html).
 
 
 **Q: Where can I find more about NetSNMP?**
 
 
 NetSNMP source code, documentation, FAQs, and tutorials can all be found at
-			http://net-snmp.sourceforge.net/.
+http://net-snmp.sourceforge.net/.
 
 
 **Q: Where can I find out more about AgentX?**
 
 
 The full details of the AgentX protocol are explained in RFC 2741,
-			available at: http://www.rfc-archive.org/getrfc.php?rfc=2741
+available at: http://www.rfc-archive.org/getrfc.php?rfc=2741
 
 
 **Q: Why am I not receiving any SNMP Traps?**
@@ -561,28 +555,28 @@ The full details of the AgentX protocol are explained in RFC 2741,
 Assuming you've configured the trap thresholds in opensips.cfg with something similar to:
 
 Then either OpenSIPS is not reaching these thresholds (which is a good thing),
-		or you haven't set up the trap monitor correctly.  To prove this to yourself,
-		you can start NetSNMP with:
+or you haven't set up the trap monitor correctly.  To prove this to yourself,
+you can start NetSNMP with:
 
 The -f tells the NetSNMP process to not daemonize, and the -Dtrap enables trap
-		debug logs.  You should see something similar to the following:
+debug logs.  You should see something similar to the following:
 
 If the two lines above did not appear, then you probably have not included
-		the following in your snmpd.conf file.
+the following in your snmpd.conf file.
 
 When a trap has been received by snmpd, the following will appear in the
-		above output:
+above output:
 
 You'll also need a program to collect the traps and do something with them
-		(such as sending them to syslog).  NetSNMP provides snmptrapd for this.  Other
-		solutions exist as well.  Google is your friend.
+(such as sending them to syslog).  NetSNMP provides snmptrapd for this.  Other
+solutions exist as well.  Google is your friend.
 
 
 **Q: OpenSIPS refuses to load the SNMPStats module.  Why is it displaying "load_module: could not open module snmpstats.so"?**
 
 
 On some systems, you may receive the following error at stdout or the log files
-		depending on the configuration.
+depending on the configuration.
 
 This means one of two things:
 
@@ -597,25 +591,23 @@ For example, on my system I ran:
 
 
 All scalars and tables are named in the SNMPStats module overview.  The files
-		OPENSER-MIB, OPENSER-REG-MIB, OPENSER-SIP-COMMON-MIB and OPENSER-SIP-SERVER-MIB
-		contain the full definitions and descriptions.  Note however, that the MIBs
-		may actually contain scalars and tables which are currently not provided by the
-		SNMPStats module.  Therefore, it is better to use NetSNMP's snmptranslate
-		as an alternative. Take the openserSIPEntityType scalar as an example. You can
-		invoke snmptranslate as follows:
+OPENSER-MIB, OPENSER-REG-MIB, OPENSER-SIP-COMMON-MIB and OPENSER-SIP-SERVER-MIB
+contain the full definitions and descriptions.  Note however, that the MIBs
+may actually contain scalars and tables which are currently not provided by the
+SNMPStats module.  Therefore, it is better to use NetSNMP's snmptranslate
+as an alternative. Take the openserSIPEntityType scalar as an example. You can
+invoke snmptranslate as follows:
 
-		
-```c
 
+```bash
     snmptranslate -TBd openserSIPEntityType
 ```
 
 
-		Which would result in something similar to the following:
+Which would result in something similar to the following:
 
-		
+
 ```c
-
     -- FROM       OPENSER-SIP-COMMON-MIB
     -- TEXTUAL CONVENTION OpenSIPSSIPEntityRole
     SYNTAX        BITS {other(0), userAgent(1), proxyServer(2), redirectServer(3), registrarServer(4)}
@@ -638,10 +630,10 @@ All scalars and tables are named in the SNMPStats module overview.  The files
 
 
 If your snmp operations are always returning with: "Timeout: No Response
-		from localhost", then chances are that you are making the query with the wrong
-		community string.  Default installs will most likely use "public" as their
-		default community strings. Grep your snmpd.conf file for the string
-		"rocommunity", and use the result as your community string in your queries.
+from localhost", then chances are that you are making the query with the wrong
+community string.  Default installs will most likely use "public" as their
+default community strings. Grep your snmpd.conf file for the string
+"rocommunity", and use the result as your community string in your queries.
 
 
 **Q: How do I use snmpget?**
@@ -649,29 +641,26 @@ If your snmp operations are always returning with: "Timeout: No Response
 
 NetSNMP's snmpget is used as follows:
 
-		
-```c
 
+```bash
     snmpget -v 2c -c theCommunityString machineToSendTheMachineTo scalarElement.0
 ```
 
 
-		For example, consider an snmpget on the openserSIPEntityType scalar,
-		run on the same machine running the OpenSIPS instance, with the default
-		"public" community string.  The command would be:
+For example, consider an snmpget on the openserSIPEntityType scalar,
+run on the same machine running the OpenSIPS instance, with the default
+"public" community string.  The command would be:
 
-		
-```c
 
+```bash
     snmpget -v2c -c public localhost openserSIPEntityType.0
 ```
 
 
-		Which would result in something similar to:
+Which would result in something similar to:
 
-		
+
 ```c
-
     OPENSER-SIP-COMMON-MIB::openserSIPEntityType.0 = BITS: F8 \
 		other(0) userAgent(1) proxyServer(2)          \
 		redirectServer(3) registrarServer(4)
@@ -683,29 +672,26 @@ NetSNMP's snmpget is used as follows:
 
 NetSNMP's snmptable is used as follows:
 
-		
-```c
 
+```bash
     snmptable -Ci -v 2c -c theCommunityString machineToSendTheMachineTo theTableName
 ```
 
 
-		For example, consider the openserSIPRegUserTable.  If we run the snmptable
-		command on the same machine as the running OpenSIPS instance, configured with
-		the default "public" community string.  The command would be:
+For example, consider the openserSIPRegUserTable.  If we run the snmptable
+command on the same machine as the running OpenSIPS instance, configured with
+the default "public" community string.  The command would be:
 
-		
-```c
 
+```bash
     snmptable -Ci -v 2c -c public localhost openserSIPRegUserTable
 ```
 
 
-		Which would result in something similar to:
+Which would result in something similar to:
 
-		
+
 ```c
-
     index openserSIPUserUri openserSIPUserAuthenticationFailures
         1       DefaultUser                                    0
         2            bogdan                                    0
@@ -723,21 +709,21 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 
 
 *doc copyrights:*

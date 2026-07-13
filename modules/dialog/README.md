@@ -1,6 +1,6 @@
 ---
 title: "dialog Module"
-description: "The dialog module provides dialog awareness to the OpenSIPS proxy. Its functionality is to keep trace of the current dialogs, to offer information about them (like how many dialogs are active)."
+description: "The dialog module provides dialog awareness to the OpenSIPS proxy."
 ---
 
 ## Admin Guide
@@ -10,104 +10,104 @@ description: "The dialog module provides dialog awareness to the OpenSIPS proxy.
 
 
 The dialog module provides dialog awareness to the OpenSIPS proxy. Its
-	functionality is to keep trace of the current dialogs, to offer information
-	about them (like how many dialogs are active).
+functionality is to keep trace of the current dialogs, to offer information
+about them (like how many dialogs are active).
 
 
 Aside tracking, the dialog module offers functionalities like flags and
-	attributes per dialog (persistent data across dialog), dialog profiling
-	and dialog termination (on timeout base or external triggered).
+attributes per dialog (persistent data across dialog), dialog profiling
+and dialog termination (on timeout base or external triggered).
 
 
 The module, via an internal API, also provide the foundation to build on
-	top of it more complex dialog-based functionalities via other OpenSIPS
-	modules.
+top of it more complex dialog-based functionalities via other OpenSIPS
+modules.
 
 
 ### How it works
 
 
 To create the dialog associated to an initial request, you must call
-	the create_dialog() function, with or without parameter..
+the create_dialog() function, with or without parameter..
 
 
 The dialog is automatically destroyed when a "BYE" is
-	received. In case of no "BYE", the dialog lifetime is
-	controlled via the default timeout (see "default_timeout"
+received. In case of no "BYE", the dialog lifetime is
+controlled via the default timeout (see "default_timeout"
 	- [default timeout id](#param_default_timeout)) and custom timeout (see
-	"$DLG_timeout" - [timeout pvar id](#pv_DLG_timeout)).
+"$DLG_timeout" - [timeout pvar id](#pv_DLG_timeout)).
 
 
 ### Dialog profiling
 
 
 Dialog profiling is a mechanism that helps in classifying, sorting and
-	keeping trace of certain types of dialogs, using whatever properties of
-	the dialog (like caller, destination, type of calls, etc).
-	Dialogs can be dynamically added in different (and several) profile
-	tables - logically, each profile table can have a special meaning (like
-	dialogs outside the domain, dialogs terminated to PSTN, etc).
+keeping trace of certain types of dialogs, using whatever properties of
+the dialog (like caller, destination, type of calls, etc).
+Dialogs can be dynamically added in different (and several) profile
+tables - logically, each profile table can have a special meaning (like
+dialogs outside the domain, dialogs terminated to PSTN, etc).
 
 
 There are two types of profiles:
 
 
 - *with no value* - a dialog simply belongs
-			to a profile. (like outbound calls profile). There is no other
-			additional information to describe the dialog's belonging to the
-			profile;
+to a profile. (like outbound calls profile). There is no other
+additional information to describe the dialog's belonging to the
+profile;
 - *with value* - a dialog belongs to a profile
-			having a certain value (like in caller profile, where the value
-			is the caller ID). The belonging of the dialog to the profile is
-			strictly related to the value.
+having a certain value (like in caller profile, where the value
+is the caller ID). The belonging of the dialog to the profile is
+strictly related to the value.
 
 
 A dialog can be added to multiple profiles in the same time.
 
 
 Profiles are visible (at the moment) in the request route (for initial
-	and sequential requests) and in the branch, failure and reply routes of
-	the original request.
+and sequential requests) and in the branch, failure and reply routes of
+the original request.
 
 
 Dialog profiles can also be used in distributed systems, using the OpenSIPS
-	CacheDB Interface. This feature allows you to share dialog profile
-	information with multiple OpenSIPS instaces that use the same CacheDB
-	backend. In order to do that, the *cachedb_url* parameter
-	must be defined. Also, the profile must be marked as shared, by adding the
-	*'/s'* suffix to the name of the profile in the
-	*profiles_with_value* or
-	*profiles_no_value* parameters.
+CacheDB Interface. This feature allows you to share dialog profile
+information with multiple OpenSIPS instaces that use the same CacheDB
+backend. In order to do that, the *cachedb_url* parameter
+must be defined. Also, the profile must be marked as shared, by adding the
+*'/s'* suffix to the name of the profile in the
+*profiles_with_value* or
+*profiles_no_value* parameters.
 
 
 ### Dialog replication
 
 
 **Dialog replication** is a mechanism used to
-	mirror all dialog changes taking place in one OpenSIPS instance to one or
-	more other different instances. The logic is simplified by using the core
-	*Binary Internal Interface* to build and send the
-	replication-related UDP packets.
+mirror all dialog changes taking place in one OpenSIPS instance to one or
+more other different instances. The logic is simplified by using the core
+*Binary Internal Interface* to build and send the
+replication-related UDP packets.
 
 
 The feature is especially useful when dealing with very large systems,
-	where failover through a database backend is no longer feasible, due to the
-	high amount of time required for the backup instance to load the dialog
-	information stored in a typical *dialog* table by the
-	crashed instance.
+where failover through a database backend is no longer feasible, due to the
+high amount of time required for the backup instance to load the dialog
+information stored in a typical *dialog* table by the
+crashed instance.
 
 
 Configuring both receival and sending of dialog replication packets is
-	trivial and can be done by using the
-	**accept_replicated_dialogs** and
-	**replicate_dialogs_to** parameters of the
-	module. In addition to this, the module also exports several statistics
-	regarding the number of replication packets sent/received.
+trivial and can be done by using the
+**accept_replicated_dialogs** and
+**replicate_dialogs_to** parameters of the
+module. In addition to this, the module also exports several statistics
+regarding the number of replication packets sent/received.
 
 
 Profiles replication can also be achieved using the
-	**accept_replicated_profiles** and
-	**replicate_profiles_to** parameters.
+**accept_replicated_profiles** and
+**replicate_profiles_to** parameters.
 
 
 ### Dependencies
@@ -127,7 +127,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -140,8 +140,8 @@ The following libraries or applications must be installed before
 
 
 If the statistics support should be enabled or not. Via statistic
-		variables, the module provide information about the dialog processing.
-		Set it to zero to disable or to non-zero to enable it.
+variables, the module provide information about the dialog processing.
+Set it to zero to disable or to non-zero to enable it.
 
 
 *Default value is "1 (enabled)".*
@@ -158,14 +158,14 @@ modparam("dialog", "enable_stats", 0)
 
 
 The size of the hash table internally used to keep the dialogs. A
-		larger table is much faster but consumes more memory. The hash size
-		must be a power of 2 number.
+larger table is much faster but consumes more memory. The hash size
+must be a power of 2 number.
 
 
 IMPORTANT: If dialogs' information should be stored in a database,
-		a constant hash_size should be used, otherwise the restored process
-		will not take place. If you really want to modify the hash_size you
-		must delete all table's rows before restarting OpenSIPS.
+a constant hash_size should be used, otherwise the restored process
+will not take place. If you really want to modify the hash_size you
+must delete all table's rows before restarting OpenSIPS.
 
 
 *Default value is "4096".*
@@ -182,10 +182,10 @@ modparam("dialog", "hash_size", 1024)
 
 
 The size of the hash table internally used to store  profile->dialog
-		associations. A larger table can provide more
-		parallel operations but consumes more memory. The hash size
-		is provided as the base 2 logarithm(e.g. log_profile_hash_size =4
-		means the table has 2^4 entries).
+associations. A larger table can provide more
+parallel operations but consumes more memory. The hash size
+is provided as the base 2 logarithm(e.g. log_profile_hash_size =4
+means the table has 2^4 entries).
 
 
 *Default value is "4".*
@@ -202,7 +202,7 @@ modparam("dialog", "log_profile_hash_size", 5) #set a table size of 32
 
 
 Name of the Record-Route parameter to be added with the dialog cookie.
-		It is used for fast dialog matching of the sequential requests.
+It is used for fast dialog matching of the sequential requests.
 
 
 *Default value is "did".*
@@ -235,7 +235,7 @@ modparam("dialog", "default_timeout", 21600)
 
 
 A string containing the extra headers (full format, with EOH)
-		to be added in the requests generated by the module (like BYEs).
+to be added in the requests generated by the module (like BYEs).
 
 
 *Default value is "NULL".*
@@ -252,22 +252,22 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 
 
 How the seqential requests should be matched against the known dialogs.
-		The modes are a combination between matching based on a cookie (DID)
-		stored as cookie in Record-Route header and the matching based on SIP
-		elements (as in RFC3261).
+The modes are a combination between matching based on a cookie (DID)
+stored as cookie in Record-Route header and the matching based on SIP
+elements (as in RFC3261).
 
 
 The supported modes are:
 
 
 - *0 - DID_ONLY* - the match is done
-				exclusively based on DID;
+exclusively based on DID;
 - *1 - DID_FALLBACK* - the match is first
-				tried based on DID and if not present, it will fallback to
-				SIP matching;
+tried based on DID and if not present, it will fallback to
+SIP matching;
 - *2 - DID_NONE* - the match is done
-				exclusively based on SIP elements; no DID information is added
-				in RR.
+exclusively based on SIP elements; no DID information is added
+in RR.
 
 
 *Default value is "0 (DID_ONLY)".*
@@ -284,7 +284,7 @@ modparam("dialog", "dlg_match_mode", 1)
 
 
 If you want to store the information about the dialogs in a database
-		a database url must be specified.
+a database url must be specified.
 
 
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
@@ -307,14 +307,14 @@ The supported modes are:
 
 
 - *0 - NO_DB* - the memory content is not
-				flushed into DB;
+flushed into DB;
 - *1 - REALTIME* - any dialog information
-				changes will be reflected into the database immediately.
+changes will be reflected into the database immediately.
 - *2 - DELAYED* - the dialog information
-				changes will be flushed into the DB periodically, based on a
-				timer routine.
+changes will be flushed into the DB periodically, based on a
+timer routine.
 - *3 - SHUTDOWN* - the dialog information
-				will be flushed into DB only at shutdown - no runtime updates.
+will be flushed into DB only at shutdown - no runtime updates.
 
 
 *Default value is "0".*
@@ -331,7 +331,7 @@ modparam("dialog", "db_mode", 1)
 
 
 The interval (seconds) at which to update dialogs' information if you chose to store the dialogs' info at a given interval.
-			A too short interval will generate intensive database operations, a too large one will not notice short dialogs.
+A too short interval will generate intensive database operations, a too large one will not notice short dialogs.
 
 
 *Default value is "60".*
@@ -348,7 +348,7 @@ modparam("dialog", "db_update_period", 120)
 
 
 The interval (seconds) at which OpenSIPS will generate in-dialog
-		OPTIONS pings for one or both of the involved parties.
+OPTIONS pings for one or both of the involved parties.
 
 
 *Default value is "30".*
@@ -365,18 +365,18 @@ modparam("dialog", "options_ping_interval", 20)
 
 
 The interval (seconds) at which OpenSIPS will generate in-dialog
-		Re-INVITE pings for one or both of the involved parties.
+Re-INVITE pings for one or both of the involved parties.
 
 
 **Important:** the ping timeout detection
-		is performed every time this interval ticks, not when the re-INVITE
-		transaction times out! Consequently, please make sure that the
-		timeouts for re-INVITE transactions (e.g. the "fr_timeout"
-		modparam of the "tm" module or its $T_fr_timeout variable) are
-		always **lower** than the value of this
-		parameter! Failing to ensure this ordering of timeouts may possibly
-		lead to re-INVITE pings never ending a disconnected dialog due to pings
-		getting retried before getting a chance to properly time out.
+is performed every time this interval ticks, not when the re-INVITE
+transaction times out! Consequently, please make sure that the
+timeouts for re-INVITE transactions (e.g. the "fr_timeout"
+modparam of the "tm" module or its $T_fr_timeout variable) are
+always **lower** than the value of this
+parameter! Failing to ensure this ordering of timeouts may possibly
+lead to re-INVITE pings never ending a disconnected dialog due to pings
+getting retried before getting a chance to properly time out.
 
 
 *Default value is "300".*
@@ -393,7 +393,7 @@ modparam("dialog", "reinvite_ping_interval", 600)
 
 
 If you want to store the information about the dialogs in a
-		database a table name must be specified.
+database a table name must be specified.
 
 
 *Default value is "dialog".*
@@ -426,7 +426,7 @@ modparam("dialog", "call_id_column", "callid_c_name")
 
 
 The column's name in the database to store the caller's
-			sip address.
+sip address.
 
 
 *Default value is "from_uri".*
@@ -443,7 +443,7 @@ modparam("dialog", "from_uri_column", "from_uri_c_name")
 
 
 The column's name in the database to store the From tag from
-			the Invite request.
+the Invite request.
 
 
 *Default value is "from_tag".*
@@ -476,7 +476,7 @@ modparam("dialog", "to_uri_column", "to_uri_c_name")
 
 
 The column's name in the database to store the To tag from
-			the 200 OK response to the Invite request, if present.
+the 200 OK response to the Invite request, if present.
 
 
 *Default value is "to_tag".*
@@ -493,7 +493,7 @@ modparam("dialog", "to_tag_column", "to_tag_c_name")
 
 
 The column's name in the database to store the cseq from caller
-			side.
+side.
 
 
 *Default value is "caller_cseq".*
@@ -510,7 +510,7 @@ modparam("dialog", "from_cseq_column", "from_cseq_c_name")
 
 
 The column's name in the database to store the cseq from callee
-			side.
+side.
 
 
 *Default value is "callee_cseq".*
@@ -527,7 +527,7 @@ modparam("dialog", "to_cseq_column", "to_cseq_c_name")
 
 
 The column's name in the database to store the route records from
-			caller side (proxy to caller).
+caller side (proxy to caller).
 
 
 *Default value is "caller_route_set".*
@@ -544,7 +544,7 @@ modparam("dialog", "from_route_column", "from_route_c_name")
 
 
 The column's name in the database to store the route records from
-			callee side (proxy to callee).
+callee side (proxy to callee).
 
 
 *Default value is "callee_route_set".*
@@ -561,7 +561,7 @@ modparam("dialog", "to_route_column", "to_route_c_name")
 
 
 The column's name in the database to store the caller's contact
-			uri.
+uri.
 
 
 *Default value is "caller_contact".*
@@ -578,7 +578,7 @@ modparam("dialog", "from_contact_column", "from_contact_c_name")
 
 
 The column's name in the database to store the callee's contact
-			uri.
+uri.
 
 
 *Default value is "callee_contact".*
@@ -595,7 +595,7 @@ modparam("dialog", "to_contact_column", "to_contact_c_name")
 
 
 The column's name in the database to store the information about
-			the local interface receiving the traffic from caller.
+the local interface receiving the traffic from caller.
 
 
 *Default value is "caller_sock".*
@@ -612,7 +612,7 @@ modparam("dialog", "from_sock_column", "from_sock_c_name")
 
 
 The column's name in the database to store information about the
-			local interface receiving the traffic from callee.
+local interface receiving the traffic from callee.
 
 
 *Default value is "callee_sock".*
@@ -629,7 +629,7 @@ modparam("dialog", "to_sock_column", "to_sock_c_name")
 
 
 The column's name in the database to store the dialogs'
-			id information.
+id information.
 
 
 *Default value is "hash_id".*
@@ -646,7 +646,7 @@ modparam("dialog", "dlg_id_column", "dlg_id_c_name")
 
 
 The column's name in the database to store the
-			dialogs' state information.
+dialogs' state information.
 
 
 *Default value is "state".*
@@ -663,7 +663,7 @@ modparam("dialog", "state_column", "state_c_name")
 
 
 The column's name in the database to store the
-			dialogs' start time information.
+dialogs' start time information.
 
 
 *Default value is "start_time".*
@@ -776,8 +776,8 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 
 List of names for profiles with values. Flag
-			*/b* allows replicating dialogs over the bin
-			interface. Before, all of them were replicated.
+*/b* allows replicating dialogs over the bin
+interface. Before, all of them were replicated.
 
 
 *Default value is "empty".*
@@ -794,8 +794,8 @@ modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;
 
 
 List of names for profiles without values. Flag
-			*/b* allows replicating dialogs over the bin
-			interface. Before, all of them were replicated.
+*/b* allows replicating dialogs over the bin
+interface. Before, all of them were replicated.
 
 
 *Default value is "empty".*
@@ -812,7 +812,7 @@ modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s; repl/b;"
 
 
 Pushes dialog values, profiles and flags into the database
-			along with other dialog state information (see db_mode 1 and 2).
+along with other dialog state information (see db_mode 1 and 2).
 
 
 *Default value is "empty".*
@@ -829,8 +829,8 @@ modparam("dialog", "db_flush_vals_profiles", 1)
 
 
 The number of dialogs that should be attempted to be
-			deleted at the same time ( a single query ) from the
-			DB back-end.
+deleted at the same time ( a single query ) from the
+DB back-end.
 
 
 *Default value is "1".*
@@ -847,7 +847,7 @@ modparam("dialog", "timer_bulk_del_no", 10)
 
 
 Enables distributed dialog profiles and specifies the
-			backend that should be used by the CacheDB interface.
+backend that should be used by the CacheDB interface.
 
 
 *Default value is "empty".*
@@ -864,8 +864,8 @@ modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
 
 
 Specifies what prefix should be added to the profiles with
-			value when they are inserted into CacheDB backed. This is
-			only used when distributed profiles are enabled.
+value when they are inserted into CacheDB backed. This is
+only used when distributed profiles are enabled.
 
 
 *Default value is "dlg_val_".*
@@ -882,8 +882,8 @@ modparam("dialog", "profile_value_prefix", "dlgv_")
 
 
 Specifies what prefix should be added to the profiles without
-			value when they are inserted into CacheDB backed. This is
-			only used when distributed profiles are enabled.
+value when they are inserted into CacheDB backed. This is
+only used when distributed profiles are enabled.
 
 
 *Default value is "dlg_noval_".*
@@ -900,8 +900,8 @@ modparam("dialog", "profile_no_value_prefix", "dlgnv_")
 
 
 Specifies what prefix should be added to the entity that holds
-			the profiles with value size in CacheDB backed. This is
-			only used when distributed profiles are enabled.
+the profiles with value size in CacheDB backed. This is
+only used when distributed profiles are enabled.
 
 
 *Default value is "dlg_size_".*
@@ -918,8 +918,8 @@ modparam("dialog", "profile_size_prefix", "dlgs_")
 
 
 Specifies how long a dialog profile should be kept in the CacheDB
-			until it expires. This is only used when distributed profiles are
-			enabled.
+until it expires. This is only used when distributed profiles are
+enabled.
 
 
 *Default value is "86400".*
@@ -936,8 +936,8 @@ modparam("dialog", "profile_timeout", "43200")
 
 
 Registers the *dialog* module to the OpenSIPS Binary
-		Internal Interface. It specifies the instances, that belong
-                to a certain cluster, from which we should expect incoming packets.
+Internal Interface. It specifies the instances, that belong
+to a certain cluster, from which we should expect incoming packets.
 
 
 *Default value is 0 (not registered).*
@@ -954,8 +954,8 @@ modparam("dialog", "accept_replicated_dialogs", 1)
 
 
 Adds dialog replication destinations,that belong to the
-		specified cluster id. The destination will receive all dialog-related events
-		(creation, updating and deletion) over TCP, using the Binary Internal Interface.
+specified cluster id. The destination will receive all dialog-related events
+(creation, updating and deletion) over TCP, using the Binary Internal Interface.
 
 
 *Default value is "0" (no replication destinations).*
@@ -972,9 +972,9 @@ modparam("dialog", "replicate_dialogs_to", 1)
 
 
 Registers the *dialog* module to the OpenSIPS Binary
-		Internal Interface for profiles replication. It specifies the
-                instances, that belong to a certain cluster, from which we should expect
-                incoming packets.
+Internal Interface for profiles replication. It specifies the
+instances, that belong to a certain cluster, from which we should expect
+incoming packets.
 
 
 *Default value is 0 (not registered).*
@@ -991,8 +991,8 @@ modparam("dialog", "accept_replicated_profiles", 1)
 
 
 Adds profiles replication destinations, that belong  to the
-		specified cluster id. The destination will receive all dialog-related events
-		(creation, updating and deletion) over TCP, using the Binary Internal Interface.
+specified cluster id. The destination will receive all dialog-related events
+(creation, updating and deletion) over TCP, using the Binary Internal Interface.
 
 
 *Default value is "0" (no replication destinations).*
@@ -1041,10 +1041,10 @@ modparam("dialog", "auth_check", 1)
 
 
 Used to specify the length of the buffer used by the binary
-		replication, in bytes. Usually this should be big enough to hold
-		as much data as possible, but small enough to avoid UDP
-		fragmentation. The recommended value is the smallest MTU between
-		all the replication instances.
+replication, in bytes. Usually this should be big enough to hold
+as much data as possible, but small enough to avoid UDP
+fragmentation. The recommended value is the smallest MTU between
+all the replication instances.
 
 
 *Default value is 1400 bytes.*
@@ -1061,8 +1061,8 @@ modparam("dialog", "replicate_profiles_buffer", 500)
 
 
 Timer in seconds, used to specify how often the module should check
-		whether old, replicated profiles values are obsolete and should be removed.
-		should replicate its profiles to the other instances.
+whether old, replicated profiles values are obsolete and should be removed.
+should replicate its profiles to the other instances.
 
 
 *Default value is 10 s.*
@@ -1079,7 +1079,7 @@ modparam("dialog", "replicate_profiles_check", 100)
 
 
 Timer in milliseconds, used to specify how often the module
-		should replicate its profiles to the other instances.
+should replicate its profiles to the other instances.
 
 
 *Default value is 10 ms.*
@@ -1096,9 +1096,9 @@ modparam("dialog", "replicate_profiles_timer", 100)
 
 
 Timer in seconds, used to specify when the profiles counters received
-		from a different instance should no longer be taken into account.
-		This is used to prevent obsolete values, in case an instance stops
-		replicating its counters.
+from a different instance should no longer be taken into account.
+This is used to prevent obsolete values, in case an instance stops
+replicating its counters.
 
 
 *Default value is 10 s.*
@@ -1118,27 +1118,27 @@ modparam("dialog", "replicate_profiles_expire", 10)
 
 
 The function creats the dialog for the currently processed request. The
-		request must be an initial request.
+request must be an initial request.
 
-		Optionally,the function also receives a string parameter, which specifies
-		whether the dialog end-points should be pinged via SIP options
-		messages. The parameter can be "P" to specify to only ping the
-		caller, "p" to only ping the callee or "Pp" to ping both dialog
-		sides. If the extra string parameter is provided and one
-		end-point fails to respond to a options ping, OpenSIPS will
-		terminate the dialog from the middle.
-		Also, the end-points can be pinged via in-dialog Re-INVITE SIP messages. This
-		behaviour is controlled via the "R" flags for pinging the caller side, and
-		the "r" flag for re-invite pinging the callee side. If one end-points fails
-		to re-negociate the session via the Re-INVITE pings, OpenSIPS will terminate
-		the dialog from the middle
+Optionally,the function also receives a string parameter, which specifies
+whether the dialog end-points should be pinged via SIP options
+messages. The parameter can be "P" to specify to only ping the
+caller, "p" to only ping the callee or "Pp" to ping both dialog
+sides. If the extra string parameter is provided and one
+end-point fails to respond to a options ping, OpenSIPS will
+terminate the dialog from the middle.
+Also, the end-points can be pinged via in-dialog Re-INVITE SIP messages. This
+behaviour is controlled via the "R" flags for pinging the caller side, and
+the "r" flag for re-invite pinging the callee side. If one end-points fails
+to re-negociate the session via the Re-INVITE pings, OpenSIPS will terminate
+the dialog from the middle
 
-		The string parameter can also contain "B" to activate the bye on
-		timeout behavior.
+The string parameter can also contain "B" to activate the bye on
+timeout behavior.
 
 
 The function returns true if the dialog was successfully created or
-		if the dialog was previously created.
+if the dialog was previously created.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -1164,21 +1164,21 @@ create_dialog("B");
 
 
 This function is to be used to match a sequential (in-dialog) request
-		to an ongoing dialog.
+to an ongoing dialog.
 
 
 By default, the function tries to use (for dialog matching) the DID
-		(Dialog ID) from Route header and also falls back to SIP-wise matching. 
-		This behavior may be changed by providing it with a given matching mode
-		string (see [dlg match mode](#param_dlg_match_mode) for possible values of
-		the parameter).
+(Dialog ID) from Route header and also falls back to SIP-wise matching. 
+This behavior may be changed by providing it with a given matching mode
+string (see [dlg match mode](#param_dlg_match_mode) for possible values of
+the parameter).
 
 
 As sequential requests are automatically matched to the dialog when
-		doing "loose_route()" from script, this function is intended to:
-		(A) control the place in your script where the dialog matching is done
-		and (B) to cope with bogus sequential requests that do not have Route
-		headers, so they are not handled by loose_route().
+doing "loose_route()" from script, this function is intended to:
+(A) control the place in your script where the dialog matching is done
+and (B) to cope with bogus sequential requests that do not have Route
+headers, so they are not handled by loose_route().
 
 
 The function returns true if a dialog exists for the request.
@@ -1208,18 +1208,18 @@ This function can be used from REQUEST_ROUTE.
 
 
 The function checks the current received requests against the dialog
-		(internal data) it belongs to.
-		Performing several tests, the function will help to detect the bogus
-		injected in-dialog requests (like malicious BYEs).
+(internal data) it belongs to.
+Performing several tests, the function will help to detect the bogus
+injected in-dialog requests (like malicious BYEs).
 
 
 The performed tests are related to CSEQ sequence checking and routing
-		information checking (contact and route set).
+information checking (contact and route set).
 
 
 The function returns true if a dialog exists for the request and if
-		the request is valid (according to dialog data). If the request is invalid,
-		the following return codes are returned :
+the request is valid (according to dialog data). If the request is invalid,
+the following return codes are returned :
 
 
 - *-1* - invalid cseq
@@ -1249,9 +1249,9 @@ This function can be used from REQUEST_ROUTE.
 
 
 The function forces an in dialog SIP message to contain the ruri, route headers and
-			dst_uri, as specified by the internal data of the dialog it belongs to.
-			The function will prevent the existence of bogus injected in-dialog
-			requests ( like malicious BYEs )
+dst_uri, as specified by the internal data of the dialog it belongs to.
+The function will prevent the existence of bogus injected in-dialog
+requests ( like malicious BYEs )
 
 
 This function can be used from REQUEST_ROUTE.
@@ -1273,34 +1273,35 @@ This function can be used from REQUEST_ROUTE.
 
 
 The function extracts a dialog value from another dialog. It first searches
-		through all existing (ongoing) dialogs for a dialog that has a dialog
-		variable named "key" with the value "key_val"
-		(so a dialog where $dlg_val(key)=="key_val"). If found, it returns
-		the value of the dialog variable "attr" from the
-		found dialog in the "var" pseudo-variable, otherwise nothing is written
-		in "var", and a negative error code is returned.
+through all existing (ongoing) dialogs for a dialog that has a dialog
+variable named "key" with the value "key_val"
+(so a dialog where $dlg_val(key)=="key_val"). If found, it returns
+the value of the dialog variable "attr" from the
+found dialog in the "var" pseudo-variable, otherwise nothing is written
+in "var", and a negative error code is returned.
 
 
-NOTE: the function does not require to be called in the context of
-		a dialog - you can use it whenever / whereever for searching for other
-		dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
 
 
 - *attr* - the name of the dialog variable
-			(from the found dialog) to be returned;
+(from the found dialog) to be returned;
 - *var* - a pvar where to store the value of
-			the "attr" dialog variable
+the "attr" dialog variable
 - *key* - name of a dialog variable to be
-			used a search key (when looking after the target dialog)
+used a search key (when looking after the target dialog)
 - *key_val* - the value of the dialog
-			variable that is used as key in searching the target dialog.
+variable that is used as key in searching the target dialog.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
+REPLY_ROUTE, FAILURE_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="get_dialog_info usage"
@@ -1321,27 +1322,28 @@ $dlg_val(callee) = $ru;
 
 
 The function fetches all the dialog variables of another dialog.
-		It first searches through all existing (ongoing) dialogs based on the 
-		given SIP CallID. If found, it returns all the dialog variables as 
-		two parallel arrays of names and values (using the given variables
-		"names" and "vals"). As these variables have to hold arrays, they must
-		be AVPs.
+It first searches through all existing (ongoing) dialogs based on the 
+given SIP CallID. If found, it returns all the dialog variables as 
+two parallel arrays of names and values (using the given variables
+"names" and "vals"). As these variables have to hold arrays, they must
+be AVPs.
 
 
-NOTE: the function does not require to be called in the context of
-		a dialog - you can use it whenever / whereever for searching for other
-		dialogs.
+> [!NOTE]
+> The function does not require to be called in the context of
+> a dialog - you can use it whenever / whereever for searching for other
+> dialogs.
 
 
 Meaning of the parameters is as follows:
 
 
 - *names* - the name of an AVP variable to
-			hold all the names of the variables from the found dialog.
+hold all the names of the variables from the found dialog.
 - *vals* - the name of an AVP variable to
-			hold all the values of the variables from the found dialog.
+hold all the values of the variables from the found dialog.
 - *callid* - the callid of a dialog to be 
-			searched (and have the variables fetched).
+searched (and have the variables fetched).
 
 
 This function can be used from any type of route.
@@ -1365,27 +1367,28 @@ if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
 
 
 Inserts the current dialog into a profile. Note that if the profile does
-		not support values, this will be silently discarded. A dialog may be
-		inserted in the same profile multiple times.
+not support values, this will be silently discarded. A dialog may be
+inserted in the same profile multiple times.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
 
 
 - *profile* - name of the profile to be
-			added to;
+added to;
 - *value* (optional) - string value to
-			define the belonging of the dialog to the profile - note that the
-			profile must support values.
-			Pseudo-variables are supported.
+define the belonging of the dialog to the profile - note that the
+profile must support values.
+Pseudo-variables are supported.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="set_dlg_profile usage"
@@ -1402,23 +1405,24 @@ set_dlg_profile("caller","$fu");
 Removes the current dialog from a profile.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE] 
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
 
 
 - *profile* - name of the profile to be
-			removed from;
+removed from;
 - *value* (optional) - string value to
-			define the belonging of the dialog to the profile - note that the
-			profile must support values.
-			Pseudo-variables are supported.
+define the belonging of the dialog to the profile - note that the
+profile must support values.
+Pseudo-variables are supported.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="unset_dlg_profile usage"
@@ -1433,28 +1437,29 @@ unset_dlg_profile("caller","$fu");
 
 
 Checks if the current dialog belongs to a profile. If the profile
-		supports values, the check can be reinforced to take into account a
-		specific value - if the dialog was inserted into the profile for a
-		specific value. If no value is passed, only simply belonging of the
-		dialog to the profile is checked. Note that if the profile does not
-		support values, this will be silently discarded.
+supports values, the check can be reinforced to take into account a
+specific value - if the dialog was inserted into the profile for a
+specific value. If no value is passed, only simply belonging of the
+dialog to the profile is checked. Note that if the profile does not
+support values, this will be silently discarded.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Meaning of the parameters is as follows:
 
 
 - *profile* - name of the profile to be
-			checked against;
+checked against;
 - *value* (optional) - string value to
-			toughen  the check. Pseudo-variables are supported.
+toughen  the check. Pseudo-variables are supported.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="is_in_profile usage"
@@ -1474,26 +1479,26 @@ if (is_in_profile("caller","XX")) {
 
 
 Returns the number of dialogs belonging to a profile. If the profile
-		supports values, the check can be reinforced to take into account a
-		specific value - how many dialogs were inserted into the profile with
-		a specific value. If not value is passed, only simply belonging of the
-		dialog to the profile is checked. Note that the profile does not
-		supports values, this will be silently discarded.
+supports values, the check can be reinforced to take into account a
+specific value - how many dialogs were inserted into the profile with
+a specific value. If not value is passed, only simply belonging of the
+dialog to the profile is checked. Note that the profile does not
+supports values, this will be silently discarded.
 
 
 Meaning of the parameters is as follows:
 
 
 - *profile* - name of the profile to get
-			the size for;
+the size for;
 - *value* (optional) - string value to
-			toughen  the check. Pseudo-variables are supported;
+toughen  the check. Pseudo-variables are supported;
 - *size* - an AVP or script variable to
-			return the profile size in.
+return the profile size in.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="get_profile_size usage"
@@ -1513,19 +1518,20 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 
 
 Sets the dialog flag index *idx* to true. The dialog
-		flags are dialog persistent and they can be accessed (set and test)
-		for all requests belonging to the dialog.
+flags are dialog persistent and they can be accessed (set and test)
+for all requests belonging to the dialog.
 
 
 The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="set_dlg_flag usage"
@@ -1539,8 +1545,8 @@ set_dlg_flag("3");
 
 
 Atomically checks if the dialog flag index *idx* is
-		equal to *value*. If true, changes the value with the
-		opposite one. This operation is done under the dialog lock.
+equal to *value*. If true, changes the value with the
+opposite one. This operation is done under the dialog lock.
 
 
 The flag index can be between 0 and 31.
@@ -1549,12 +1555,13 @@ The flag index can be between 0 and 31.
 The value should be 0 (false) or 1 (true).
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="test_and_set_dlg_flag usage"
@@ -1568,19 +1575,20 @@ test_and_set_dlg_flag("3", "0");
 
 
 Resets the dialog flag index *idx* to false.
-		The dialog flags are dialog persistent and they can be accessed
-		(set and test) for all requests belonging to the dialog.
+The dialog flags are dialog persistent and they can be accessed
+(set and test) for all requests belonging to the dialog.
 
 
 The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="reset_dlg_flag usage"
@@ -1594,19 +1602,20 @@ reset_dlg_flag("16");
 
 
 Returns true if the dialog flag index *idx* is set.
-		The dialog flags are dialog persistent and they can be accessed
-		(set and test) for all requests belonging to the dialog.
+The dialog flags are dialog persistent and they can be accessed
+(set and test) for all requests belonging to the dialog.
 
 
 The flag index can be between 0 and 31.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="is_dlg_flag_set usage"
@@ -1622,24 +1631,25 @@ if (is_dlg_flag_set("16")) {
 
 
 Attaches to the dialog the value *val* under the
-		name *name*. The values attached to dialogs are
-		dialog persistent and they can be accessed (read and write) for all
-		requests belonging to the dialog.
+name *name*. The values attached to dialogs are
+dialog persistent and they can be accessed (read and write) for all
+requests belonging to the dialog.
 
 
 Parameter *val* may contain pseudo-variables.
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Same functionality may be obtain by assigning a value to pseudo
-		variable *$dlg_val(name)*.
+variable *$dlg_val(name)*.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="store_dlg_value usage"
@@ -1656,25 +1666,26 @@ $dlg_val(account_type) = "prepaid";
 
 
 Fetches from the dialog the value of attribute named
-		*name*. The values attached to dialogs are
-		dialog persistent and they can be accessed (read and write) for all
-		requests belonging to the dialog.
+*name*. The values attached to dialogs are
+dialog persistent and they can be accessed (read and write) for all
+requests belonging to the dialog.
 
 
 Parameter *pvar* may be a script var ($var) or
-		and avp ($avp).
+and avp ($avp).
 
 
-NOTE: the dialog must be created before using this function (use
-		create_dialog() function before).
+> [!NOTE]
+> The dialog must be created before using this function (use
+> create_dialog() function before).
 
 
 Same functionality may be obtain by reading the pseudo
-		variable *$dlg_val(name)*.
+variable *$dlg_val(name)*.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-			REPLY_ROUTE and FAILURE_ROUTE.
+REPLY_ROUTE and FAILURE_ROUTE.
 
 
 ```opensips title="fetch_dlg_value usage"
@@ -1694,7 +1705,7 @@ $var(account) = $dlg_val(account_type);
 
 
 Returns the number of current active dialogs (may be confirmed or
-			not).
+not).
 
 
 #### early_dialogs
@@ -1707,7 +1718,7 @@ Returns the number of early dialogs.
 
 
 Returns the total number of processed dialogs (terminated,
-			expired or active) from the startup.
+expired or active) from the startup.
 
 
 #### expired_dialogs
@@ -1720,56 +1731,56 @@ Returns the total number of expired dialogs from the startup.
 
 
 Returns the number of failed dialogs ( dialogs were
-			never established due to whatever reasons - internal error,
-			negative reply, cancelled, etc )
+never established due to whatever reasons - internal error,
+negative reply, cancelled, etc )
 
 
 #### create_sent
 
 
 Returns the number of replicated dialog
-			**create** requests send to other OpenSIPS
-			instances.
+**create** requests send to other OpenSIPS
+instances.
 
 
 #### update_sent
 
 
 Returns the number of replicated dialog
-			**update** requests send to other OpenSIPS
-			instances.
+**update** requests send to other OpenSIPS
+instances.
 
 
 #### delete_sent
 
 
 Returns the number of replicated dialog
-			**delete** requests send to other OpenSIPS
-			instances.
+**delete** requests send to other OpenSIPS
+instances.
 
 
 #### create_recv
 
 
 Returns the number of dialog
-			**create** events received from other
-			OpenSIPS instances.
+**create** events received from other
+OpenSIPS instances.
 
 
 #### update_recv
 
 
 Returns the number of dialog
-			**update** events received from other
-			OpenSIPS instances.
+**update** events received from other
+OpenSIPS instances.
 
 
 #### delete_recv
 
 
 Returns the number of dialog
-			**delete** events received from other
-			OpenSIPS instances.
+**delete** events received from other
+OpenSIPS instances.
 
 
 ### Exported MI Functions
@@ -1779,11 +1790,11 @@ Returns the number of dialog
 
 
 Lists the description of the dialogs (calls). If no parameter is given,
-		all dialogs will be listed. If a dialog identifier is passed
-		as parameter (callid and fromtag), only that dialog will be listed. If
-		a index and conter parameter is passed, it will list only a number of
-		"counter" dialogs starting with index (as offset) - this is used to
-		get only section of dialogs.
+all dialogs will be listed. If a dialog identifier is passed
+as parameter (callid and fromtag), only that dialog will be listed. If
+a index and conter parameter is passed, it will list only a number of
+"counter" dialogs starting with index (as offset) - this is used to
+get only section of dialogs.
 
 
 Name: *dlg_list*
@@ -1793,34 +1804,33 @@ Parameters (with dialog idetification):
 
 
 - *callid* (optional) - callid if a single
-				dialog to be listed.
+dialog to be listed.
 - *from_tag* (optional, but cannot be present
-				without the callid parameter) - fromtag (as per initial request)
-				of the dialog to be listed.
-				entry
+without the callid parameter) - fromtag (as per initial request)
+of the dialog to be listed.
+entry
 
 
 Parameters (with dialog counting):
 
 
 - *index* - offset where the dialog listing
-				should start.
+should start.
 - *counter* - how many dialogs should be
-				listed (starting from the offset)
+listed (starting from the offset)
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		## list all ongoing dialogs
-		opensipsctl fifo dlg_list
-		## list the dialog by callid and From TAG
-		opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
-		## list 10 dialogs, starting from the position 40
-		## (in the list of all ongoing dialogs)
-		opensipsctl fifo dlg_list 40 10
-		
+## list all ongoing dialogs
+opensipsctl fifo dlg_list
+## list the dialog by callid and From TAG
+opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
+## list 10 dialogs, starting from the position 40
+## (in the list of all ongoing dialogs)
+opensipsctl fifo dlg_list 40 10
 ```
 
 
@@ -1828,12 +1838,12 @@ MI FIFO Command Format:
 
 
 The same as the "dlg_list" but including in the
-		dialog description
-		the associated context from modules sitting on top of
-		the dialog module.
-		This function also prints the dialog's values. In case of
-		binary values, the non-printable chars are represented in hex
-		(e.g. \x00)
+dialog description
+the associated context from modules sitting on top of
+the dialog module.
+This function also prints the dialog's values. In case of
+binary values, the non-printable chars are represented in hex
+(e.g. \x00)
 
 
 Name: *dlg_list_ctx*
@@ -1846,8 +1856,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo dlg_list_ctx
-		
+opensipsctl fifo dlg_list_ctx
 ```
 
 
@@ -1855,11 +1864,11 @@ MI FIFO Command Format:
 
 
 Terminates an ongoing dialog.
-				If dialog is established, BYEs are sent in both directions.
-				If dialog is in unconfirmed or early state, a CANCEL will be
-				sent to the callee side, that will trigger a 487 from the
-				callee, which, when relayed, will also end the dialog on 
-				the caller's side.
+If dialog is established, BYEs are sent in both directions.
+If dialog is in unconfirmed or early state, a CANCEL will be
+sent to the callee side, that will trigger a 487 from the
+callee, which, when relayed, will also end the dialog on 
+the caller's side.
 
 
 Name: *dlg_end_dlg*
@@ -1869,12 +1878,12 @@ Parameters are:
 
 
 - *dialog_id* - this is an identifier
-				of the dialog - it can be either (1) the numerical unique ID 
-				of the dialog (as provided by dlg_list), either (2) the 
-				SIP Call-ID of the dialog.
+of the dialog - it can be either (1) the numerical unique ID 
+of the dialog (as provided by dlg_list), either (2) the 
+SIP Call-ID of the dialog.
 - *extra_hdrs* - (optional) string containg
-				the extra headers (full format) to be added to the BYE
-				requests.
+the extra headers (full format) to be added to the BYE
+requests.
 
 
 The "dialog_id" value can be get via the "dlg_list" MI command.
@@ -1884,11 +1893,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		# terminate the dialog via the internal Dialog-ID
-		opensipsctl fifo dlg_end_dlg 1391569858236
-		# terminate the dialog via its SIP Call-ID
-		opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
-		
+# terminate the dialog via the internal Dialog-ID
+opensipsctl fifo dlg_end_dlg 1391569858236
+# terminate the dialog via its SIP Call-ID
+opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 ```
 
 
@@ -1896,11 +1904,11 @@ MI FIFO Command Format:
 
 
 Returns the number of dialogs belonging to a profile. If the profile
-		supports values, the check can be reinforced to take into account a
-		specific value - how many dialogs were inserted into the profile with
-		a specific value. If not value is passed, only simply belonging of the
-		dialog to the profile is checked. Note that the profile does not
-		supports values, this will be silently discarded.
+supports values, the check can be reinforced to take into account a
+specific value - how many dialogs were inserted into the profile with
+a specific value. If not value is passed, only simply belonging of the
+dialog to the profile is checked. Note that the profile does not
+supports values, this will be silently discarded.
 
 
 Name: *profile_get_size*
@@ -1910,17 +1918,16 @@ Parameters:
 
 
 - *profile* - name of the profile to get the
-				value for.
+value for.
 - *value* (optional)- string value to
-				toughen the check;
+toughen the check;
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo profile_get_size inbound_calls
-		
+opensipsctl fifo profile_get_size inbound_calls
 ```
 
 
@@ -1928,13 +1935,13 @@ MI FIFO Command Format:
 
 
 Lists all the dialogs belonging to a profile. If the profile
-		supports values, the check can be reinforced to take into account a
-		specific value - list only the dialogs that were inserted into the
-		profile with that specific value. If not value is passed, all dialogs
-		belonging to the profile will be listed. Note that the profile does
-		not supports values, this will be silently discarded. Also, when using
-		shared profiles using the CacheDB interface, this command will only
-		display the local dialogs.
+supports values, the check can be reinforced to take into account a
+specific value - list only the dialogs that were inserted into the
+profile with that specific value. If not value is passed, all dialogs
+belonging to the profile will be listed. Note that the profile does
+not supports values, this will be silently discarded. Also, when using
+shared profiles using the CacheDB interface, this command will only
+display the local dialogs.
 
 
 Name: *profile_list_dlgs*
@@ -1944,17 +1951,16 @@ Parameters:
 
 
 - *profile* - name of the profile to list the
-				dialog for.
+dialog for.
 - *value* (optional)- string value to
-				toughen the check;
+toughen the check;
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo profile_list_dlgs inbound_calls
-		
+opensipsctl fifo profile_list_dlgs inbound_calls
 ```
 
 
@@ -1962,9 +1968,9 @@ MI FIFO Command Format:
 
 
 Lists all the values belonging to a profile along with their
-		count. If the profile does not support values a total count
-		will be returned. Note that this function does not work for shared
-		profiles over the CacheDB interface.
+count. If the profile does not support values a total count
+will be returned. Note that this function does not work for shared
+profiles over the CacheDB interface.
 
 
 Name: *profile_get_values*
@@ -1974,15 +1980,14 @@ Parameters:
 
 
 - *profile* - name of the profile to list the
-				dialog for.
+dialog for.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo profile_get_values inbound_calls
-		
+opensipsctl fifo profile_get_values inbound_calls
 ```
 
 
@@ -1990,7 +1995,7 @@ MI FIFO Command Format:
 
 
 Terminate all ongoing dialogs from a specified profile, on a single dialog it
-		performs the same operations as the command **[dlg end dlg](#mi_dlg_end_dlg)**
+performs the same operations as the command **[dlg end dlg](#mi_dlg_end_dlg)**
 
 
 Name: *profile_end_dlgs*
@@ -2001,15 +2006,14 @@ Parameters:
 
 - *profile* - name of the profile that will have its dialogs termianted
 - *value* - (optional) if the profile supports values terminate only the dialogs
-				with the specified value
+with the specified value
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo profile_end_dlgs inbound_calls
-		
+opensipsctl fifo profile_end_dlgs inbound_calls
 ```
 
 
@@ -2017,8 +2021,8 @@ MI FIFO Command Format:
 
 
 Will synchronize the information about the dialogs from the database
-		with the OpenSIPS internal memory. To be used mainly for transferring
-		OpenSIPS dialog information from one server to another.
+with the OpenSIPS internal memory. To be used mainly for transferring
+OpenSIPS dialog information from one server to another.
 
 
 Name: *dlg_db_sync*
@@ -2031,8 +2035,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo dlg_db_sync
-		
+opensipsctl fifo dlg_db_sync
 ```
 
 
@@ -2040,7 +2043,7 @@ MI FIFO Command Format:
 
 
 Restores the dialog table after a potential desynchronization event.
-		The table is truncated, then populated with CONFIRMED dialogs from memory.
+The table is truncated, then populated with CONFIRMED dialogs from memory.
 
 
 Name: *dlg_restore_db*
@@ -2053,8 +2056,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo dlg_restore_db
-		
+opensipsctl fifo dlg_restore_db
 ```
 
 
@@ -2062,7 +2064,7 @@ MI FIFO Command Format:
 
 
 Lists all the dialog profiles, along with 1 or 0 if
-		the given profile has/does not have an associated value.
+the given profile has/does not have an associated value.
 
 
 Name: *list_all_profiles*
@@ -2075,8 +2077,7 @@ MI FIFO Command Format:
 
 
 ```bash
-		opensipsctl fifo list_all_profiles
-		
+opensipsctl fifo list_all_profiles
 ```
 
 
@@ -2087,15 +2088,15 @@ MI FIFO Command Format:
 
 
 Returns the number of current active dialogs (may be confirmed or
-			not).
+not).
 
 
 #### $DLG_status
 
 
 Returns the status of the dialog corresponding to the processed
-			sequential request. This PV will be available only for sequential
-			requests, after doing loose_route().
+sequential request. This PV will be available only for sequential
+requests, after doing loose_route().
 
 
 Value may be:
@@ -2103,14 +2104,14 @@ Value may be:
 
 - *NULL* - Dialog not found.
 - *1* - Dialog unconfirmed (created
-					but no reply received at all)
+but no reply received at all)
 - *2* - Dialog in early state (created
-					provisional reply received, but no final reply received
-					yet)
+provisional reply received, but no final reply received
+yet)
 - *3* - Confirmed by a final reply but
-					no ACK received yet.
+no ACK received yet.
 - *4* - Confirmed by a final reply and
-					ACK received.
+ACK received.
 - *5* - Dialog ended.
 
 
@@ -2118,9 +2119,9 @@ Value may be:
 
 
 Returns the duration (in seconds) of the dialog corresponding to
-			the processed sequential request. The duration is calculated from
-			the dialog confirmation and the current moment. This PV will be
-			available only for sequential requests, after doing loose_route().
+the processed sequential request. The duration is calculated from
+the dialog confirmation and the current moment. This PV will be
+available only for sequential requests, after doing loose_route().
 
 
 NULL will be returned if there is no dialog for the request.
@@ -2130,9 +2131,9 @@ NULL will be returned if there is no dialog for the request.
 
 
 Returns the dialog flags array (as a single integer value)
-			of the dialog corresponding to the processed sequential request.
-			This PV will be available only for sequential requests,
-			after doing loose_route().
+of the dialog corresponding to the processed sequential request.
+This PV will be available only for sequential requests,
+after doing loose_route().
 
 
 NULL will be returned if there is no dialog for the request.
@@ -2142,9 +2143,9 @@ NULL will be returned if there is no dialog for the request.
 
 
 Returns the direction of the request in dialog (as "UPSTREAM" or
-			"DOWNSTREAM" string) - to be used for sequential request.
-			This PV will be available only for sequential requests (on
-			replies), after doing loose_route().
+"DOWNSTREAM" string) - to be used for sequential request.
+This PV will be available only for sequential requests (on
+replies), after doing loose_route().
 
 
 NULL will be returned if there is no dialog for the request.
@@ -2154,9 +2155,9 @@ NULL will be returned if there is no dialog for the request.
 
 
 Returns the id of the dialog corresponding to
-			the processed sequential request. The output format is
-			entry ':' id (as returned by the dlg_list MI function). This PV will be
-			available only for sequential requests, after doing loose_route().
+the processed sequential request. The output format is
+entry ':' id (as returned by the dlg_list MI function). This PV will be
+available only for sequential requests, after doing loose_route().
 
 
 NULL will be returned if there is no dialog for the request.
@@ -2166,7 +2167,7 @@ NULL will be returned if there is no dialog for the request.
 
 
 Returns the reason for the dialog termination. It can be
-				one of the following :
+one of the following :
 
 
 - *Upstream BYE* - Callee has sent a BYE
@@ -2178,31 +2179,31 @@ Returns the reason for the dialog termination. It can be
 
 
 NULL will be returned if there is no dialog for the request,
-				or if the dialog is not ended in the current context.
+or if the dialog is not ended in the current context.
 
 
 #### $DLG_timeout
 
 
 Used to set the dialog lifetime (in seconds). When read, the variable
-				returns the number of seconds until the dialog expires and is destroyed.
-				Note that reading the variable is only possible after the dialog is created
-				(for initial requests) or after doing loose_route() (for sequential requests).
-				Important notice: using this variable with a REALTIME db_mode is very inefficient,
-				because every time the dialog value is changed, a database update is done.
+returns the number of seconds until the dialog expires and is destroyed.
+Note that reading the variable is only possible after the dialog is created
+(for initial requests) or after doing loose_route() (for sequential requests).
+Important notice: using this variable with a REALTIME db_mode is very inefficient,
+because every time the dialog value is changed, a database update is done.
 
 
 NULL will be returned if there is no dialog for the request, otherwise the
-				number of seconds until the dialog expiration.
+number of seconds until the dialog expiration.
 
 
 #### $dlg_val(name)
 
 
 This is a read/write variable that allows access to the dialog
-			attribute named *name*.
-			This PV will be available only for sequential requests,
-			after doing loose_route().
+attribute named *name*.
+This PV will be available only for sequential requests,
+after doing loose_route().
 
 
 NULL will be returned if there is no dialog for the request.
@@ -2221,11 +2222,11 @@ Parameters:
 
 
 - *hash_entry* - the entry in the dialog table.
-					This is used, along with the *hash_id*,
-					to uniquely identify the dialog.
+This is used, along with the *hash_id*,
+to uniquely identify the dialog.
 - *hash_id* - the id in the dialog table.
-					This is used, along with the *hash_entry*,
-					to uniquely identify the dialog.
+This is used, along with the *hash_entry*,
+to uniquely identify the dialog.
 - *old_state* - the old state of the dialog.
 - *new_state* - the new state of the dialog.
 
@@ -2246,111 +2247,84 @@ Meaning of the parameters is as follows:
 
 
 - *struct dlg_cell* dlg* - dialog to 
-			register callback to. If maybe NULL only for DLG_CREATED callback
-			type, which is not a per dialog type.
+register callback to. If maybe NULL only for DLG_CREATED callback
+type, which is not a per dialog type.
 - *int type* - types of callbacks; more
-			types may be register for the same callback function; only 
-			DLG_CREATED must be register alone. Possible types:
-			
-			
-				*DLGCB_LOADED*
-			
-			
-				*DLGCB_SAVED*
-			
-			
-				*DLG_CREATED* - called when a new 
-				dialog is created - it's a global type (not associated to 
-				any dialog)
-			
-			
-				*DLG_FAILED* - called when the dialog
-				was negatively replied (non-2xx) - it's a per dialog type.
-			
-			
-				*DLG_CONFIRMED* - called when the 
-				dialog is confirmed (2xx replied) - it's a per dialog type.
-			
-			
-				*DLG_REQ_WITHIN* - called when the 
-				dialog matches a sequential request - it's a per dialog type.
-			
-			
-				*DLG_TERMINATED* - called when the 
-				dialog is terminated via BYE - it's a per dialog type.
-			
-			
-				*DLG_EXPIRED* - called when the 
-				dialog expires without receiving a BYE - it's a per dialog 
-				type.
-			
-			
-				*DLGCB_EARLY* - called when the
-				dialog is created in an early state (18x replied) - it's
-				a per dialog type.
-			
-			
-				*DLGCB_RESPONSE_FWDED* - called when
-				the dialog matches a reply to the initial INVITE request - it's
-				a per dialog type.
-			
-			
-				*DLGCB_RESPONSE_WITHIN* - called when
-				the dialog matches a reply to a subsequent in dialog request
-				- it's a per dialog type.
-			
-			
-				*DLGCB_MI_CONTEXT* - called when the
-				mi dlg_list_ctx command is invoked - it's a per dialog type.
-			
-			
-				*DLGCB_DESTROY*
+types may be register for the same callback function; only 
+DLG_CREATED must be register alone. Possible types:
+	- *DLGCB_LOADED*
+	- *DLGCB_SAVED*
+	- *DLG_CREATED* - called when a new 
+	dialog is created - it's a global type (not associated to 
+	any dialog)
+	- *DLG_FAILED* - called when the dialog
+	was negatively replied (non-2xx) - it's a per dialog type.
+	- *DLG_CONFIRMED* - called when the 
+	dialog is confirmed (2xx replied) - it's a per dialog type.
+	- *DLG_REQ_WITHIN* - called when the 
+	dialog matches a sequential request - it's a per dialog type.
+	- *DLG_TERMINATED* - called when the 
+	dialog is terminated via BYE - it's a per dialog type.
+	- *DLG_EXPIRED* - called when the 
+	dialog expires without receiving a BYE - it's a per dialog 
+	type.
+	- *DLGCB_EARLY* - called when the
+	dialog is created in an early state (18x replied) - it's
+	a per dialog type.
+	- *DLGCB_RESPONSE_FWDED* - called when
+	the dialog matches a reply to the initial INVITE request - it's
+	a per dialog type.
+	- *DLGCB_RESPONSE_WITHIN* - called when
+	the dialog matches a reply to a subsequent in dialog request - it's a per dialog type.
+	- *DLGCB_MI_CONTEXT* - called when the
+	mi dlg_list_ctx command is invoked - it's a per dialog type.
+	- *DLGCB_DESTROY*
 - *dialog_cb cb* - callback function to be 
-			called. Prototype is: "void (dialog_cb) 
-			(struct dlg_cell* dlg, int type, struct dlg_cb_params * params);
-			"
+called. Prototype is: "void (dialog_cb) 
+(struct dlg_cell* dlg, int type, struct dlg_cb_params * params);
+"
 - *void *param* - parameter to be passed to
-			the callback function.
+the callback function.
 - *param_free callback_param_free* - 
-			callback function to be called to free the param.
-			Prototype is: "void (param_free_cb) (void *param);"
+callback function to be called to free the param.
+Prototype is: "void (param_free_cb) (void *param);"
 
 
 ## Frequently Asked Questions
 
 
 **Q: What happened with "topology_hiding()" 
-		function?**
+function?**
 
 
 The respective functionality was moved into the topology_hiding module.
-			Function prototype has remained the same.
+Function prototype has remained the same.
 
 
 **Q: What happened with "use_tight_match" 
-		parameter?**
+parameter?**
 
 
 The parameter was removed with version 1.3 as the option of tight
-			matching became mandatory and not configurable. Now, the tight
-			matching is done all the time (when using DID matching).
+matching became mandatory and not configurable. Now, the tight
+matching is done all the time (when using DID matching).
 
 
 **Q: What happened with "bye_on_timeout_flag" 
-		parameter?**
+parameter?**
 
 
 The parameter was removed in a dialog module parameter restructuring.
-			To keep the bye on timeout behavior, you need to provide a "B" 
-			string parameter to the create_dialog() function.
+To keep the bye on timeout behavior, you need to provide a "B" 
+string parameter to the create_dialog() function.
 
 
 **Q: What happened with "dlg_flag" 
-		parameter?**
+parameter?**
 
 
 The parameter is considered obsolete. The only way to
-			create a dialog is to call the create_dialog() function
+create a dialog is to call the create_dialog() function
 
 
 **Q: Where can I find more about OpenSIPS?**
@@ -2363,21 +2337,21 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 
 
 *doc copyrights:*

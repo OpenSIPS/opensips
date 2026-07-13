@@ -1,6 +1,6 @@
 ---
 title: "cachedb_local Module"
-description: "This module is an implementation of a local cache system designed as a hash table. It uses the Key-Value interface exported by OpenSIPS core. Starting with version 2.3, the module can have multiple hash tables, called collections. Each url for cachedb_local module points to one collection..."
+description: "This module is an implementation of a local cache system designed as a hash table."
 ---
 
 ## Admin Guide
@@ -10,10 +10,10 @@ description: "This module is an implementation of a local cache system designed 
 
 
 This module is an implementation of a local cache system designed as
-		a hash table. It uses the Key-Value interface exported by OpenSIPS core.
-		Starting with version 2.3, the module can have multiple hash tables,
-		called collections. Each url for cachedb_local module points to one
-		collection. One collection can be shared between multiple urls.
+a hash table. It uses the Key-Value interface exported by OpenSIPS core.
+Starting with version 2.3, the module can have multiple hash tables,
+called collections. Each url for cachedb_local module points to one
+collection. One collection can be shared between multiple urls.
 
 
 ### Dependencies
@@ -29,7 +29,7 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *none*
@@ -42,16 +42,16 @@ The following libraries or applications must be installed before running
 
 
 URL parameter used to define cachedb_local collections. One collection
-		can belong to multiple URLs, but one URL can have only one collection.
-		Redefining an URL with the same schema and group name will result in overwriting
-		that URL. Each collection used in URL definition must be defined using
-		*cachedb_collection* parameter. The collection shall be defined
-		as a normal database, at the end of the URL as in the examples. In the script the
-		collection shall be identified using the schema and, if exists, the group name.
+can belong to multiple URLs, but one URL can have only one collection.
+Redefining an URL with the same schema and group name will result in overwriting
+that URL. Each collection used in URL definition must be defined using
+*cachedb_collection* parameter. The collection shall be defined
+as a normal database, at the end of the URL as in the examples. In the script the
+collection shall be identified using the schema and, if exists, the group name.
 
 
 *"If no URL defined, the url with no group name and collection "default"
-					will be used.".*
+will be used.".*
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -80,14 +80,14 @@ cache_store("local:group2", ...)
 
 
 Using this parameter collections(hash tables) and their sizes can be defined. Each
-			collection definition must be separated one from another using ';'. Default size
-			for a hash is 512. The size must be separated from the name of the collection using
-			'='. Every collection that is defined in this parameter *SHOULD* be
-			used in at least one URL, else you'll receive a WARNING.
+collection definition must be separated one from another using ';'. Default size
+for a hash is 512. The size must be separated from the name of the collection using
+'='. Every collection that is defined in this parameter *SHOULD* be
+used in at least one URL, else you'll receive a WARNING.
 
 
 *"If no collection is defined, the collection with name "default" will be
-				created.".*
+created.".*
 
 
 ```opensips title="Set cache_collections parameter"
@@ -105,7 +105,7 @@ modparam("cachedb_local", "cache_collections", "collection1; collection2=5; defa
 
 
 The time interval in seconds at which to go through all the
-			records and delete the expired ones.
+records and delete the expired ones.
 
 
 *Default value is "600 (10 minutes)".*
@@ -126,9 +126,9 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 
 
 Remove all keys from local cache that match the *glob* pattern
-			corresponding to a certain *collection* or the 'default' collection
-			if none defined. Keep in mind that collection name is different than group name,
-			which identifies the engine in cachedb operations.
+corresponding to a certain *collection* or the 'default' collection
+if none defined. Keep in mind that collection name is different than group name,
+which identifies the engine in cachedb operations.
 
 
 This function can be used from all routes
@@ -156,7 +156,7 @@ Parameters :
 
 
 - *collection(optional)* - collection from which the keys shall
-					be removed; if no collection set, the default collection will be used;
+be removed; if no collection set, the default collection will be used;
 - *glob* - keys that match glob will be removed
 
 
@@ -179,10 +179,10 @@ MI FIFO Command Format:
 
 
 The parameter was removed because it was redundant. Since the
-			addition of collections, the old hash now belongs to the
-			default collection. This collection is created every time and
-			it has a default size of 512. The size can be changed by
-			setting the default collection size using cache_collections paramter.
+addition of collections, the old hash now belongs to the
+default collection. This collection is created every time and
+it has a default size of 512. The size can be changed by
+setting the default collection size using cache_collections paramter.
 
 
 *doc copyrights:*

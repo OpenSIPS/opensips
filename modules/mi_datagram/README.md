@@ -10,14 +10,14 @@ description: "This is a module which provides a UNIX/UDP SOCKET transport layer 
 
 
 This is a module which provides a UNIX/UDP SOCKET transport layer
-		implementation for the Management Interface.
+implementation for the Management Interface.
 
 
 ### DATAGRAM command syntax
 
 
 The external commands issued via DATAGRAM interface must follow the
-		following syntax:
+following syntax:
 
 
 - *request = first_line (argument '\n')**
@@ -44,7 +44,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -57,9 +57,9 @@ The following libraries or applications must be installed before
 
 
 The name of a UNIX SOCKET or an IP address.
-		The UNIX datagram or UDP socket will be created using this parameter
-		in order to read the external commands.
-		Both IPv4 and IPv6 are supported.
+The UNIX datagram or UDP socket will be created using this parameter
+in order to read the external commands.
+Both IPv4 and IPv6 are supported.
 
 
 *Default value is NONE.*
@@ -78,7 +78,7 @@ modparam("mi_datagram", "socket_name", "udp:192.168.2.133:8080")
 
 
 The number of child processes to be created. Each child process
-		will be a datagram server.
+will be a datagram server.
 
 
 *Default value is 1.*
@@ -95,8 +95,8 @@ modparam("mi_datagram", "children_count", 3)
 
 
 Permission to be used for creating the listening UNIX datagram socket.
-		Not necessary for a UDP socket.
-		It follows the UNIX conventions.
+Not necessary for a UDP socket.
+It follows the UNIX conventions.
 
 
 *Default value is 0660 (rw-rw----).*
@@ -147,7 +147,7 @@ modparam("mi_datagram", "unix_socket_user", "root")
 
 
 The reply will expire after trying to sent it for socket_timeout
-		milliseconds.
+milliseconds.
 
 
 *Default value is 2000.*
@@ -164,7 +164,7 @@ modparam("mi_datagram", "socket_timeout", 2000)
 
 
 Strings to be used for line indentation. As the MI data structure
-		is tree oriendeted, the depth level will printed as indentation.
+is tree oriendeted, the depth level will printed as indentation.
 
 
 *Default value is ""\t" (TAB)".*
@@ -181,13 +181,13 @@ modparam("mi_datagram", "reply_indent", "    ")
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		This is where traced mi messages will go.
+the only tracing module is **proto_hep**.
+This is where traced mi messages will go.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+loaded in order for this parameter to work. (for example
+**proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -206,24 +206,24 @@ modparam("mi_datagram", "trace_destination", "hep_dest")
 
 
 Filter traced mi commands based on a blacklist or a whitelist.
-		**trace_destination** must be defined for
-		this parameter to have any purpose. Whitelists can be defined using
-		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
-		actual blacklist by ':'. The mi commands in the list must be separated
-		by ','.
+**trace_destination** must be defined for
+this parameter to have any purpose. Whitelists can be defined using
+'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+actual blacklist by ':'. The mi commands in the list must be separated
+by ','.
 
 
 Defining a blacklists means all the commands that are not blacklisted
-			will be traced. Defining a whitelist means all the commands that are
-			not whitelisted will not be traced.
-			**WARNING:** One can't define both
-			a whitelist and a blacklist. Only one of them is allowed. Defining
-			the parameter a second time will just overwrite the first one.
+will be traced. Defining a whitelist means all the commands that are
+not whitelisted will not be traced.
+**WARNING:** One can't define both
+a whitelist and a blacklist. Only one of them is allowed. Defining
+the parameter a second time will just overwrite the first one.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep)**.
+loaded in order for this parameter to work. (for example
+**proto_hep)**.
 
 
 *Default value is none(not defined).*
@@ -252,11 +252,11 @@ No function exported to be used from configuration file.
 
 
 This is an example showing the DATAGRAM format for the
-		"get_statistics dialog: tm:" MI commad:
-		response.
+"get_statistics dialog: tm:" MI commad:
+response.
 
 
-```c title="DATAGRAM request"
+```bash title="DATAGRAM request"
 :get_statistics:\n
 dialog:\n
 tm:\n
@@ -267,12 +267,12 @@ tm:\n
 
 
 **Q: Both UNIX and UDP type of socket can be created 
-			simultaneusly?**
+simultaneusly?**
 
 
 This version supports only one kind of socket at a time.
-			If there are more than one value set for socket_name the last one
-			will take effect.
+If there are more than one value set for socket_name the last one
+will take effect.
 
 
 **Q: Is there a limit in the datagram request's size?**
@@ -291,21 +291,21 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 
 
 *doc copyrights:*

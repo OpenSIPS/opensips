@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed by different modules that use the *clusterer* i..."
+description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -10,7 +10,7 @@ description: "The *clusterer* module is used to organize multiple OpenSIPS insta
 
 
 The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed by different modules that use the *clusterer* interface (i.e. the *dialog* module can replicate dialogs/profiles, the *ratelimit* module can share pipes across multiple 
-		instances etc.). The *clusterer* module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It does this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
+instances etc.). The *clusterer* module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It does this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
 
 
 The topology established by the *clusterer* module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes which must receive a reply within a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
@@ -39,7 +39,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -274,7 +274,7 @@ modparam("clusterer", "description_col", "description")
 
 
 The id of the current instance. This parameter must be equal with one of the
-				*node_id* fields in the database.
+*node_id* fields in the database.
 
 
 *No default value. This parameter must be explicitly set to a value greater than zero.*
@@ -364,9 +364,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_reload
-		_empty_line_
-		
+:clusterer_reload
+_empty_line_
 ```
 
 
@@ -386,9 +385,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_list
-		_empty_line_
-		
+:clusterer_list
+_empty_line_
 ```
 
 
@@ -461,11 +459,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_set_status:
-		1
-		0
-		_empty_line_
-		
+:clusterer_set_status:
+1
+0
+_empty_line_
 ```
 
 
@@ -473,20 +470,20 @@ MI FIFO Command Format:
 
 
 This section provides an usage example for replicating ratelimit
-		pipes between two OpenSIPS instances. It uses the clusterer module to
-		manage the replicating nodes, and the proto_bin modules to send the
-		replicated information.
+pipes between two OpenSIPS instances. It uses the clusterer module to
+manage the replicating nodes, and the proto_bin modules to send the
+replicated information.
 
 
 The setup topology is simple: we have two OpenSIPS nodes running on
-		two separate machines (although they could run on the same machine as
-		well): *Node A* has IP 192.168.0.5 and
-		*Node B* has IP 192.168.0.6. Both have, besides the
-		traffic listeners (UDP, TCP, etc.), bin listeners bound on port
-		*5566*. These listeners will be used by the
-		*ratelimit* module to replicate the pipes.
-		Therefore, we have to provision them in the
-		*clusterer* table.
+two separate machines (although they could run on the same machine as
+well): *Node A* has IP 192.168.0.5 and
+*Node B* has IP 192.168.0.6. Both have, besides the
+traffic listeners (UDP, TCP, etc.), bin listeners bound on port
+*5566*. These listeners will be used by the
+*ratelimit* module to replicate the pipes.
+Therefore, we have to provision them in the
+*clusterer* table.
 
 
 ```c title="Example database content - clusterer table"
@@ -501,41 +498,41 @@ The setup topology is simple: we have two OpenSIPS nodes running on
 
 
 - "cluster_id" - this column represents the
-					identifier of the cluster. All nodes within a
-					group/cluster should have the same id (in our example,
-					both nodes have ID *1*). The values must be greater than 0.
+identifier of the cluster. All nodes within a
+group/cluster should have the same id (in our example,
+both nodes have ID *1*). The values must be greater than 0.
 - "node_id" - this represents the
-					identifier of the machine/node, and each instance within a
-					cluster should have a different ID. The values must be greater than 0. In our example,
-					*Node A* will have ID 1, and
-					*Node B* ID 2.
+identifier of the machine/node, and each instance within a
+cluster should have a different ID. The values must be greater than 0. In our example,
+*Node A* will have ID 1, and
+*Node B* ID 2.
 - "url" - this indicates the URL where the
-					instance will receive the replication information. In our
-					example, each node will receive the date over the bin
-					protocol
+instance will receive the replication information. In our
+example, each node will receive the date over the bin
+protocol
 - "state" - this is the state of the machine:
-					1 means Enabled, 0 means Disabled; if we had a third machine that
-					we didn't want to use for the moment, we would have set the state to 0
+1 means Enabled, 0 means Disabled; if we had a third machine that
+we didn't want to use for the moment, we would have set the state to 0
 - "ls_seq_no" and "top_seq_no"
-					are fields used for the probing and topology discovery mechanisms,
-					and should be set to *0* by default; they are
-					automatically updated by the clusterer module and you shouldn't change them
-					even if a node fails or you disable it
+are fields used for the probing and topology discovery mechanisms,
+and should be set to *0* by default; they are
+automatically updated by the clusterer module and you shouldn't change them
+even if a node fails or you disable it
 - "no_ping_retries" - is used to specify the maximum number of ping
-				retries before the link with a node is considered down
+retries before the link with a node is considered down
 - "priority" - is used to specify the node priority to be chosen
-				as next hop in case of same length(number of hops) paths when rerouting messages;
-				it is not relevant for this two-node topology example
+as next hop in case of same length(number of hops) paths when rerouting messages;
+it is not relevant for this two-node topology example
 - "sip_addr" - is a SIP address for the node with currently no
-				application in replication scenarios; reserved for further development of other modules
-				which might use the clusterer module for communication
+application in replication scenarios; reserved for further development of other modules
+which might use the clusterer module for communication
 - "description" - is an opaque value used to
-					identify the node
+identify the node
 
 
 After provisioning the two nodes in the database, we have to configure
-		the two instances of OpenSIPS. First, we configure *Node
-			A*:
+the two instances of OpenSIPS. First, we configure *Node
+A*:
 
 
 ```opensips title="*Node A* configuration"
@@ -583,10 +580,10 @@ modparam("ratelimit", "accept_pipes_from", 1)
 
 
 *Note* that the *node_id*
-	parameter for *Node B* is *2*.
-	Starting the two OpenSIPS instances with the above configurations provides
-	your platform the ability to used shared ratelimit pipes in a very
-	efficient and scalable way.
+parameter for *Node B* is *2*.
+Starting the two OpenSIPS instances with the above configurations provides
+your platform the ability to used shared ratelimit pipes in a very
+efficient and scalable way.
 
 
 ## Developer Guide
