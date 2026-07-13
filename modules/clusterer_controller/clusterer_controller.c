@@ -5285,10 +5285,20 @@ static int mod_init(void)
 		    break;
 		}
 	    }
-	    if (!found_bs)
-		LM_WARN("clusterer_controller: cluster %d bin_socket='%s' "
-		        "not found in discovered sockets - using anyway\n",
-		        cl->cluster_id, cl->bin_socket);
+	    if (!found_bs) {
+	    	char _disc[CC_MAX_BIN_SOCKETS * (CC_MAX_BIN_SOCK_LEN + 2)];
+	    	int  _o = 0, _b;
+	    	_disc[0] = '\0';
+	    	for (_b = 0; _b < my_bin_count; _b++)
+	    		_o += snprintf(_disc + _o, sizeof(_disc) - _o, "%s%s",
+	    		               _b ? ", " : "", my_bin_sockets[_b]);
+	    	LM_ERR("clusterer_controller: cluster %d bin_socket='%s' does not "
+	    	       "match any configured BIN listener (discovered: %s) - peers "
+	    	       "cannot connect and clusterer replication would silently "
+	    	       "fail; fix bin_socket= or the socket=bin: line\n",
+	    	       cl->cluster_id, cl->bin_socket, _disc);
+	    	return -1;
+	    }
 	} else if (my_bin_count == 1) {
 	    /* Only one socket - unambiguous */
 	    {
