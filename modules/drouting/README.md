@@ -1,5 +1,6 @@
 ---
 title: "Dynamic Routing Module"
+description: "Dynamic Routing is a module for selecting (based on multiple criteria) the best gateway/destination to be used for delivering a certain call."
 ---
 
 ## Admin Guide
@@ -12,10 +13,10 @@ title: "Dynamic Routing Module"
 
 
 Dynamic Routing is a module for selecting (based on multiple
-	criteria) the the best gateway/destination to be used for delivering a
-	certain call. Least Cost Routing (LCR) is a special case of dynamic
-	routing - when the rules are ordered based on costs. Dynamic Routing 
-	comes with many features regarding routing rule selection:
+criteria) the the best gateway/destination to be used for delivering a
+certain call. Least Cost Routing (LCR) is a special case of dynamic
+routing - when the rules are ordered based on costs. Dynamic Routing 
+comes with many features regarding routing rule selection:
 
 
 - prefix based
@@ -46,44 +47,44 @@ and failure handling:
 
 
 The dynamic routing implementation for OpenSIPS is designed with the
-	following properties:
+following properties:
 
 
 - routing info (destinations, rules, groups) are stored in a database and
-	loaded into memory at start up time; reload at runtime via MI command
+loaded into memory at start up time; reload at runtime via MI command
 - load balancing or random selection of the destinations (from a given set),
-	crash detection of gateways
+crash detection of gateways
 - able to handle large volume of routing info (300K of rules) with minimal
-	speed/time and memory consumption penalties
+speed/time and memory consumption penalties
 - script integration - Pseudo variables support in functions; scripting
-	route triggering when rules are matched
+route triggering when rules are matched
 - bidirectional behavior - inbound and outbound processing (strip and 
-	prefixing when sending and receiving from a destination/GW)
+prefixing when sending and receiving from a destination/GW)
 - blacklisting - the module allows definition of backlists based on the
-	destination IPs. This blacklists are to be used to prevent malicious 
-	forwarding to GWs (based on DNS lookups) when the script logic does
-	none-GE forwarding (like foreign domains).
+destination IPs. This blacklists are to be used to prevent malicious 
+forwarding to GWs (based on DNS lookups) when the script logic does
+none-GE forwarding (like foreign domains).
 
 
 #### Probing and Disabling destinations
 
 
 The module has the capability to monitor the status of the destinations by
-	doing SIP probing (sending SIP requests like OPTIONS).
+doing SIP probing (sending SIP requests like OPTIONS).
 
 
 For each destination, you can configure what kind of probing should be
-	done (probe_mode column):
+done (probe_mode column):
 
 
 - *(0)* - no probing at all;
 - *(1)* - probing only when the destination is
-		in disabled mode (disabling via MI command will competely stop the
-		probing also). The destination will be automatically re-enabled
-		when the probing will succeed next time;
+in disabled mode (disabling via MI command will competely stop the
+probing also). The destination will be automatically re-enabled
+when the probing will succeed next time;
 - *(2)* - probing all the time. If disabled,
-		the destination will be automatically re-enabled when the probing
-		will succeed next time;
+the destination will be automatically re-enabled when the probing
+will succeed next time;
 
 
 A destination can become disabled in two ways:
@@ -97,11 +98,11 @@ A destination can become disabled in two ways:
 
 
 There were several tests performed regarding the performance of the module
-	when dealing with a large number of routing rules.
+when dealing with a large number of routing rules.
 
 
 The tests were performed with a set of 383000 rules and to values were
-	measured:
+measured:
 
 
 - time to load from DB
@@ -109,14 +110,14 @@ The tests were performed with a set of 383000 rules and to values were
 
 
 The time to load was varying between 4 seconds and 8 seconds, depending of
-	the caching of the DB client - the first load was the slowest (as the DB 
-	query hits the disk drive); the following are faster as data is already 
-	cached in the DB client. So technically speaking, the time to load (without
-	the time to query which is DB type dependent) is ~4 seconds
+the caching of the DB client - the first load was the slowest (as the DB 
+query hits the disk drive); the following are faster as data is already 
+cached in the DB client. So technically speaking, the time to load (without
+the time to query which is DB type dependent) is ~4 seconds
 
 
 After loading the data into shared memory ~ 96M of memory were used 
-	exclusively for the DR data.
+exclusively for the DR data.
 
 
 #### Routing Rule Definition
@@ -129,18 +130,18 @@ Dynamic routing rules are stored in a database, in four tables:
 - one for storing the routing rule definitions
 - one for storing the users mappings over groups
 - one for storing a list of gateways, so you don't have to enter all
-	the elements every time you need it
+the elements every time you need it
 
 
 ##### Gateway Addresses
 
 
 Default name for the table storing gateway addresses is 
-	"dr_gateways".
-	Gateway addresses are stored in a separate table because of need to
-	access them independent of Dynamic Routing processing (e.g., adding/
-	removing gateway PRI prefix before/after performing other operation
-	-- receiving/relaying to gateway).
+"dr_gateways".
+Gateway addresses are stored in a separate table because of need to
+access them independent of Dynamic Routing processing (e.g., adding/
+removing gateway PRI prefix before/after performing other operation
+-- receiving/relaying to gateway).
 
 
 **Definition of table dr_gateways**
@@ -158,8 +159,8 @@ Default name for the table storing gateway addresses is
 
 
 Once a rule is matched, the STRIP number of digits are removed from the
-	username part of the RURI and then the PRI prefix has to be added to the 
-	request URI before forwarding the call to the gateway.
+username part of the RURI and then the PRI prefix has to be added to the 
+request URI before forwarding the call to the gateway.
 
 
 **Sample dr_gateways records**
@@ -176,24 +177,24 @@ Once a rule is matched, the STRIP number of digits are removed from the
 
 
 For each rule, you can set a list of destinations to be used. The list is
-	comma or pipe separated enumeration of the destinations. The module
-	will use (one by one) each destination from the list (in the given order).
+comma or pipe separated enumeration of the destinations. The module
+will use (one by one) each destination from the list (in the given order).
 
 
 Also the module allows the usage of groups in the destination lists. A
-	group of destinations is delimited by semi-colon char. inside the whole
-	destination list ( like: 2,4;5,78,23;4;7;2 ). The destinations from 
-	within a group may be act differently (like load-balancing, random 
-	selection, etc), depending of the "sort_order" 
-	parameter - more about this is available under the 
-	"do_routing()" function section.
+group of destinations is delimited by semi-colon char. inside the whole
+destination list ( like: 2,4;5,78,23;4;7;2 ). The destinations from 
+within a group may be act differently (like load-balancing, random 
+selection, etc), depending of the "sort_order" 
+parameter - more about this is available under the 
+"do_routing()" function section.
 
 
 ##### Routing Rules
 
 
 Default name for the table storing rule definitions is 
-	"dr_rules".
+"dr_rules".
 
 
 **Definition of dr_rules table**
@@ -213,290 +214,290 @@ Default name for the table storing rule definitions is
 
 1. *groupid column*
 Each user must be member of only one routing group. It must be 
-	specified in user's profile.
+specified in user's profile.
 2. *prefix column*
 Destination URI must start with prefix value to match the rule.
 3. *time rec column*
 A date-time expression that defines the time recurrence to match for
-	current rule. Time recurrences are based closely on the specification
-	of recurring intervals of time in the Internet Calendaring and Scheduling
-	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is subset of time recurrence attributes
-	used by Call Processing Language (CPL). These attributes are (extracted
-	from CPL draft 09):
+current rule. Time recurrences are based closely on the specification
+of recurring intervals of time in the Internet Calendaring and Scheduling
+Core Object Specification (calendar COS), RFC 2445. The set of attributes
+used in routing rule specification is subset of time recurrence attributes
+used by Call Processing Language (CPL). These attributes are (extracted
+from CPL draft 09):
 Time recurrence attributes
-	
-	
-	
-	Attribute
-	Description
-	
-	
-	
-	
-	dastard
-	Start of interval (RFC 2445 DATE-TIME)
-	
-	
-	duration
-	Length of interval (RFC 2445 DURATION)
-	
-	
-	freq
-	Frequency of recurrence (secondly,minutely,hourly, daily,weekly,
-	monthly, or yearly).
-	
-	
-	until
-	bound of recurrence (RFC 2445 DATE-TIME)
-	
-	
-	interval
-	How often the recurrence repeats
-	
-	
-	byday
-	List of days of the week
-	
-	
-	bymonthday
-	List of days of the month
-	
-	
-	byyearday
-	List of days of the year
-	
-	
-	byweekno
-	List of weeks of the year
-	
-	
-	bymonth
-	List of months of the year
-The value stored in database has the format of:
-	
-	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
-When an attribute is not specified, the corresponding place must be left
-	empty, whenever another attribute that follows in the list has to be
-	specified.
-Detailed description of time recurrence attributes:
-	
-	
-	*dtstart* - specifies the beginning of the first 
-		period.
-	
-	
-	*duration* - specifies the duration of the period.
-		For a recurring interval, the "duration" parameter MUST
-		be small enough such that subsequent intervals do not overlap. 
-		For non-recurring intervals, durations of any positive length are 
-		permitted, zero-length duration means "forever". 
-		Negative-length durations are not allowed.
-	
-	
-	*freq* - takes one of the following values: 
-		"daily",
-		to specify repeating periods based on an interval of a day or more;
-		"weekly", to specify repeating periods based on an 
-		interval of a week or more; "monthly", to specify 
-		repeating periods based on an interval of a month or more; and 
-		"yearly", to specify repeating periods based
-		on an interval of a year or more. These values are not case-sensitive.
-	
-	
-	*until* - defines an iCalendar COS DATE or DATE-TIME
-		value which bounds the recurrence rule in an inclusive manner. If the
-		value specified by "until" is synchronized with the 
-		specified 
-		recurrence, this date or date-time becomes the last instance of the 
-		recurrence. If not present, the recurrence is considered to repeat 
-		forever.
-	
-	
-	*interval* - contains a positive integer 
-		representing how often the recurrence rule repeats. The default value
-		is "1", meaning every day for a "daily" rule,
-		every week for a "weekly"
-		rule, every month for a "monthly" rule and every year for
-		a "yearly" rule.
-	
-	
-	*interval* - contains a positive integer 
-		representing how often the recurrence rule repeats. The default value 
-		is "1", meaning every day for a "daily" rule,
-		every week for a "weekly" rule, every
-		month for a "monthly" rule and every year for a 
-		"yearly" rule.
-	
-	
-	*byday* - specifies a comma-separated list of days 
-		of the week. "MO" indicates Monday; "TU" 
-		indicates Tuesday; "WE" indicates Wednesday; 
-		"TH" indicates Thursday; "FR" indicates 
-		Friday; "SA" indicates Saturday; "SU" 
-		indicates Sunday. These values are not case-sensitive.
-	Each "byday" value can also be preceded by a positive 
-		(+n) or negative (-n) integer. If present, this indicates the nth 
-		occurrence of the specific day within the "monthly" or 
-		"yearly" recurrence. For example, within a 
-		"monthly" rule, +1MO (or simply 1MO) represents the first 
-		Monday within the month, whereas -1MO represents the last Monday of
-		the month. If an integer modifier is not present, it means all days
-		of this type within the specified frequency. For example, within a 
-		"monthly" rule, MO represents all Mondays within the month.
-	
-	
-	*bymonthday* - parameter specifies a comma-separated
-		list of days of the month. Valid values are 1 to 31 or -31 to -1. For 
-		example, -10 represents the tenth to the last day of the month.
-	
 
-	
-	*byyearday* - specifies a comma-separated list of 
-		days of the year. Valid values are 1 to 366 or -366 to -1. For example,
-		-1 represents the last day of the year (December 31st) and -306 
-		represents the 306th to the last day of the year (March 1st).
-	
-	
-	*byweekno* - specifies a comma-separated list of 
-		ordinals specifying weeks of the year. Valid values are 1 to 53 or 
-		-53 to -1.
-	
-	
-	*bymonth* - parameter specifies a comma-separated
-		list of months of the year. Valid values are 1 to 12.
+
+
+Attribute
+Description
+
+
+
+
+dastard
+Start of interval (RFC 2445 DATE-TIME)
+
+
+duration
+Length of interval (RFC 2445 DURATION)
+
+
+freq
+Frequency of recurrence (secondly,minutely,hourly, daily,weekly,
+monthly, or yearly).
+
+
+until
+bound of recurrence (RFC 2445 DATE-TIME)
+
+
+interval
+How often the recurrence repeats
+
+
+byday
+List of days of the week
+
+
+bymonthday
+List of days of the month
+
+
+byyearday
+List of days of the year
+
+
+byweekno
+List of weeks of the year
+
+
+bymonth
+List of months of the year
+The value stored in database has the format of:
+
+<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+When an attribute is not specified, the corresponding place must be left
+empty, whenever another attribute that follows in the list has to be
+specified.
+Detailed description of time recurrence attributes:
+
+
+*dtstart* - specifies the beginning of the first 
+period.
+
+
+*duration* - specifies the duration of the period.
+For a recurring interval, the "duration" parameter MUST
+be small enough such that subsequent intervals do not overlap. 
+For non-recurring intervals, durations of any positive length are 
+permitted, zero-length duration means "forever". 
+Negative-length durations are not allowed.
+
+
+*freq* - takes one of the following values: 
+"daily",
+to specify repeating periods based on an interval of a day or more;
+"weekly", to specify repeating periods based on an 
+interval of a week or more; "monthly", to specify 
+repeating periods based on an interval of a month or more; and 
+"yearly", to specify repeating periods based
+on an interval of a year or more. These values are not case-sensitive.
+
+
+*until* - defines an iCalendar COS DATE or DATE-TIME
+value which bounds the recurrence rule in an inclusive manner. If the
+value specified by "until" is synchronized with the 
+specified 
+recurrence, this date or date-time becomes the last instance of the 
+recurrence. If not present, the recurrence is considered to repeat 
+forever.
+
+
+*interval* - contains a positive integer 
+representing how often the recurrence rule repeats. The default value
+is "1", meaning every day for a "daily" rule,
+every week for a "weekly"
+rule, every month for a "monthly" rule and every year for
+a "yearly" rule.
+
+
+*interval* - contains a positive integer 
+representing how often the recurrence rule repeats. The default value 
+is "1", meaning every day for a "daily" rule,
+every week for a "weekly" rule, every
+month for a "monthly" rule and every year for a 
+"yearly" rule.
+
+
+*byday* - specifies a comma-separated list of days 
+of the week. "MO" indicates Monday; "TU" 
+indicates Tuesday; "WE" indicates Wednesday; 
+"TH" indicates Thursday; "FR" indicates 
+Friday; "SA" indicates Saturday; "SU" 
+indicates Sunday. These values are not case-sensitive.
+Each "byday" value can also be preceded by a positive 
+(+n) or negative (-n) integer. If present, this indicates the nth 
+occurrence of the specific day within the "monthly" or 
+"yearly" recurrence. For example, within a 
+"monthly" rule, +1MO (or simply 1MO) represents the first 
+Monday within the month, whereas -1MO represents the last Monday of
+the month. If an integer modifier is not present, it means all days
+of this type within the specified frequency. For example, within a 
+"monthly" rule, MO represents all Mondays within the month.
+
+
+*bymonthday* - parameter specifies a comma-separated
+list of days of the month. Valid values are 1 to 31 or -31 to -1. For 
+example, -10 represents the tenth to the last day of the month.
+
+
+
+*byyearday* - specifies a comma-separated list of 
+days of the year. Valid values are 1 to 366 or -366 to -1. For example,
+-1 represents the last day of the year (December 31st) and -306 
+represents the 306th to the last day of the year (March 1st).
+
+
+*byweekno* - specifies a comma-separated list of 
+ordinals specifying weeks of the year. Valid values are 1 to 53 or 
+-53 to -1.
+
+
+*bymonth* - parameter specifies a comma-separated
+list of months of the year. Valid values are 1 to 12.
 A recurrence is specified by including the "freq" 
-		parameter, which indicates the type of recurrence rule. Parameters 
-		other than "dtstart"
-		and "duration" SHOULD NOT be specified unless 
-		"freq" is present.
+parameter, which indicates the type of recurrence rule. Parameters 
+other than "dtstart"
+and "duration" SHOULD NOT be specified unless 
+"freq" is present.
 If byxxx parameter values are found which are beyond the available 
-		scope (ie, bymonthday="30" in February), they are simply
-		ignored.
+scope (ie, bymonthday="30" in February), they are simply
+ignored.
 Byxxx parameters modify the recurrence in some manner. Byxxx rule 
-		parts for a period of time which is the same or greater than the 
-		frequency generally reduce or limit the number of occurrences of the 
-		recurrence generated. For example, freq="daily" 
-		bymonth="1" reduces the number of
-		recurrence instances from all days (if the "bymonth" 
-		parameter is not present) to all days in January. Byxxx parameters for 
-		a period of time less than the frequency generally increase or expand 
-		the number of occurrences of the recurrence. For example, 
-		freq="yearly" bymonth="1,2"
-		increases the number of days within the yearly recurrence set from 1 
-		(if "bymonth" parameter is not present) to 2.
+parts for a period of time which is the same or greater than the 
+frequency generally reduce or limit the number of occurrences of the 
+recurrence generated. For example, freq="daily" 
+bymonth="1" reduces the number of
+recurrence instances from all days (if the "bymonth" 
+parameter is not present) to all days in January. Byxxx parameters for 
+a period of time less than the frequency generally increase or expand 
+the number of occurrences of the recurrence. For example, 
+freq="yearly" bymonth="1,2"
+increases the number of days within the yearly recurrence set from 1 
+(if "bymonth" parameter is not present) to 2.
 If multiple Byxxx parameters are specified, then after evaluating the
-		specified "freq" and "interval" parameters,
-		the Byxxx parameters are 
-		applied to the current set of evaluated occurrences in the following
-		order: "bymonth", "byweekno", 
-		"byyearday", "bymonthday", 
-		"byday"; then "until" is  evaluated.
+specified "freq" and "interval" parameters,
+the Byxxx parameters are 
+applied to the current set of evaluated occurrences in the following
+order: "bymonth", "byweekno", 
+"byyearday", "bymonthday", 
+"byday"; then "until" is  evaluated.
 Here is an example of evaluating multiple Byxxx parameters.
 dtstart="19970105T083000" duration="10M"
-		freq="yearly" interval="2" 
-		bymonth="1" byday="SU"
+freq="yearly" interval="2" 
+bymonth="1" byday="SU"
 First, the interval="2" would be applied to 
-		freq="yearly" to arrive at "every other year"
-		. Then, bymonth="1" would be applied to arrive at 
-		"every January, every other year". Then,
-		byday="SU" would be applied to arrive at "every 
-		Sunday in January, 
-		every other year, from 8:30 to 8:40 ". The appropriate minutes 
-		and hours have been retrieved from the "dtstart" and 
-		"duration" parameters.
+freq="yearly" to arrive at "every other year"
+. Then, bymonth="1" would be applied to arrive at 
+"every January, every other year". Then,
+byday="SU" would be applied to arrive at "every 
+Sunday in January, 
+every other year, from 8:30 to 8:40 ". The appropriate minutes 
+and hours have been retrieved from the "dtstart" and 
+"duration" parameters.
 4. *priority column*
 If many rules are eligible, choose the one with highest priority.
 5. *routeid column*
 If different than 0, then execute the route with the specified ID.
-	That is, a route which can be used to perform custom
-	operations on message. At this route, no modification is performed
-	at signaling level.
+That is, a route which can be used to perform custom
+operations on message. At this route, no modification is performed
+at signaling level.
 6. *gwlist column*
 A comma separated list of gateway identifiers corresponding to a row in 
-	table "dr_gateways". The first gateway is tried first and if 
-	failure the second one, and so on. If no gateway is left a negative 
-	response is sent back to the user. You can use a predefined list from 
-	the table "dr_gw_lists" preceded by the character "#".
+table "dr_gateways". The first gateway is tried first and if 
+failure the second one, and so on. If no gateway is left a negative 
+response is sent back to the user. You can use a predefined list from 
+the table "dr_gw_lists" preceded by the character "#".
 7. *Routing Rules Examples*
 Sample dr_rules records
-	
-	
-	
-	ruleid
-	group
-	prefix
-	timerec
-	priority
-	routeid
-	gwlist
-	description
-	
-	
-	
-	
-	1
-	6
-	0049
-	20040101T083000|10H|weekly|||MO,TU,WE,TH,FR
-	5
-	23
-	1,2
-	Rule 1
-	
-	
-	2
-	8
-	0049
-	20040101T083000
-	0
-	0
-	1,2
-	Rule 2
-	
-	
-	3
-	7,8,9
-	0049
-	20040101T083000
-	0
-	0
-	3
-	Rule 3
+
+
+
+ruleid
+group
+prefix
+timerec
+priority
+routeid
+gwlist
+description
+
+
+
+
+1
+6
+0049
+20040101T083000|10H|weekly|||MO,TU,WE,TH,FR
+5
+23
+1,2
+Rule 1
+
+
+2
+8
+0049
+20040101T083000
+0
+0
+1,2
+Rule 2
+
+
+3
+7,8,9
+0049
+20040101T083000
+0
+0
+3
+Rule 3
 (The time recurrence for first rule is:
-	"20040101T083000|10H|weekly|||MO,TU,WE,TH,FR")
+"20040101T083000|10H|weekly|||MO,TU,WE,TH,FR")
 
 
 #### Routing Rule Processing
 
 
 The module can be used to find out which is the best gateway to use for new
-	calls terminated to PSTN. The algorithm to select the rule is as follows:
+calls terminated to PSTN. The algorithm to select the rule is as follows:
 
 
 - the module discovers the routing group of the originating user. This 
-	step is skipped if a routing group is passed from the script as parameter.
+step is skipped if a routing group is passed from the script as parameter.
 - once the group is known, in the subset of the rules for this group the 
-	module looks for the one that matches the destination based on "prefix"
-	column. The set of rules with the longest prefix is chosen. If no digit 
-	from the prefix matches, the default rules are used (rules with no prefix)
+module looks for the one that matches the destination based on "prefix"
+column. The set of rules with the longest prefix is chosen. If no digit 
+from the prefix matches, the default rules are used (rules with no prefix)
 - within the set of rules is applied the time criteria, and the rule which
-	has the highest priority and matches the time criteria is selected to drive
-	the routing.
+has the highest priority and matches the time criteria is selected to drive
+the routing.
 - Once found the rule, it may contain a route ID to execute. If a certain 
-	flag is set, then the processing is stopped after executing the route
-	block.
+flag is set, then the processing is stopped after executing the route
+block.
 - The rule must contain a gateway chain. The module will execute serial 
-	forking for each address in chain. The next address in chain is used only
-	if the previously has failed.
+forking for each address in chain. The next address in chain is used only
+if the previously has failed.
 - With the right gateway address found, the prefix (PRI) of the gateway is
-	added to the request URI and then the request is forwarded.
+added to the request URI and then the request is forwarded.
 
 
 If no rule is found to match the selection criteria an default action must
-	be taken (e.g., error response sent back). If the gateway in the chain has 
-	no prefix the request is forwarded without adding any prefix to the request
-	URI.
+be taken (e.g., error response sent back). If the gateway in the chain has 
+no prefix the request is forwarded without adding any prefix to the request
+URI.
 
 
 ### Dependencies
@@ -592,10 +593,10 @@ modparam("drouting", "drg_table", "groups")
 
 
 The name of the db table storing definitions of destination lists (to 
-		be used directly by the routing rules).
-		You will have a identifier to a group of gateways instead of having all the
-		members of the group as a individual elements.
-		Very useful to reuse a list of gateways in different places.
+be used directly by the routing rules).
+You will have a identifier to a group of gateways instead of having all the
+members of the group as a individual elements.
+Very useful to reuse a list of gateways in different places.
 
 
 *Default value is "dr_gw_lists".*
@@ -612,7 +613,7 @@ modparam("drouting", "drl_table", "my_gw_lists")
 
 
 The name of the avp for storing Request URIs to be later used 
-		(alternative destiantions for the current one).
+(alternative destiantions for the current one).
 
 
 *Default value is "NULL".*
@@ -631,9 +632,9 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 
 
 The name of the avp for storing the attributes of the current selected
-		destination/gateway - once a new destination is selected (via the 
-		use_next_gw() function), the AVP will be updated with the attrs of the
-		new used destination.
+destination/gateway - once a new destination is selected (via the 
+use_next_gw() function), the AVP will be updated with the attrs of the
+new used destination.
 
 
 *Default value is "NULL".*
@@ -652,7 +653,7 @@ modparam("drouting", "gw_attrs_avp", '$avp(67)')
 
 
 The name of the avp for storing the attributes of the current matched
-		routing rule (see dr_rules table).
+routing rule (see dr_rules table).
 
 
 *Default value is "NULL".*
@@ -671,9 +672,9 @@ modparam("drouting", "rule_attrs_avp", '$avp(66)')
 
 
 The name of the avp for storing the id of the current selected
-		gateway/destination - once a new destination is selected (via the 
-		use_next_gw() function), the AVP will be updated with the ID of the
-		new selected gateway/destination.
+gateway/destination - once a new destination is selected (via the 
+use_next_gw() function), the AVP will be updated with the ID of the
+new selected gateway/destination.
 
 
 *Default value is "NULL".*
@@ -692,7 +693,7 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 
 
 The name of the avp for storing the id of the current matched
-		routing rule (see dr_rules table).
+routing rule (see dr_rules table).
 
 
 *Default value is "NULL".*
@@ -711,7 +712,7 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
 
 
 Defines a backlist based on a list of GW types - the list will contain
-		the IPs (no port, all protocols) of the GWs with the specified types.
+the IPs (no port, all protocols) of the GWs with the specified types.
 
 
 Multiple instances of this param are allowed.
@@ -733,7 +734,7 @@ modparam("drouting", "define_blacklist", 'list= 4,2')
 
 
 Flag to configure whether to use domain match when querying
-			database for user's routing group.
+database for user's routing group.
 
 
 *Default value is "1".*
@@ -782,7 +783,7 @@ modparam("drouting", "drg_domain_col", "host")
 
 
 The name of the column in group db table where the
-			group id is stored.
+group id is stored.
 
 
 *Default value is "groupid".*
@@ -799,8 +800,8 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
 
 Force DNS resolving of GW/destination names (if not IPs) during 
-		startup. If not enabled, the GW name will be blindly used during 
-		routing.
+startup. If not enabled, the GW name will be blindly used during 
+routing.
 
 
 *Default value is "1 (enabled)".*
@@ -818,8 +819,8 @@ modparam("drouting", "force_dns", 0)
 
 
 How often (in seconds) the probing of a destination should be done. If
-		set to 0, the probing will be disabled as functionality (for all
-		destinations)
+set to 0, the probing will be disabled as functionality (for all
+destinations)
 
 
 *Default value is "30".*
@@ -868,8 +869,8 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
 
 A comma separted list of SIP reply codes. The codes defined here
-		will be considered as valid reply codes for probing messages,
-		apart for 200.
+will be considered as valid reply codes for probing messages,
+apart for 200.
 
 
 *Default value is "NULL".*
@@ -889,7 +890,7 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 
 
 Function to trigger routing of the message according to the 
-		rules in the database table and the configured parameters.
+rules in the database table and the configured parameters.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -930,20 +931,20 @@ do_routing("2","2");
 
 
 The function takes the next available destination (set by do_routing, 
-		as alternative destinations) and push it into RURI. Note that the 
-		function just sets the RURI (nothing more).
+as alternative destinations) and push it into RURI. Note that the 
+function just sets the RURI (nothing more).
 
 
 If a new RURI is set, the used destination is removed from the 
-		pending set of alternative destinations.
+pending set of alternative destinations.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
 
 The function returns true only if a new RURI was set. False
-		is returned is no other alternative destinations are found or in case
-		of internal processing error.
+is returned is no other alternative destinations are found or in case
+of internal processing error.
 
 
 ```opensips title="use_next_gw usage"
@@ -960,8 +961,8 @@ if (use_next_gw()) {
 
 
 Function returns true if the destination of the current request 
-		(destination URI or Request URI) points (as IP) to one of the gateways.
-		There no DNS lookups done if the domain part of the URI is not an IP.
+(destination URI or Request URI) points (as IP) to one of the gateways.
+There no DNS lookups done if the domain part of the URI is not an IP.
 
 
 This function does not change anything in the message.
@@ -995,7 +996,7 @@ if (goes_to_gw("1")) {
 
 
 The function checks if the sender of the message is a gateway
-		from a certain group.
+from a certain group.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -1024,9 +1025,9 @@ if (is_from_gw("3","1") {
 
 
 Marks as disabled the last destination that was used for the current
-		call. The disabling done via this function will prevent the
-		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the begining)
+call. The disabling done via this function will prevent the
+destination to be used for usage from now on. The probing mechanism
+can re-enable this peer (see the probing section in the begining)
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -1069,11 +1070,11 @@ MI FIFO Command Format:
 
 
 Gets or sets the status (enabled or disabled) of a destination. The
-		function takes 2 parameters, first mandatory, the id of the destiantion
-		and second, optional, the new status. If no new status is given, the
-		function will return the current status. If a new status is given
-		(0 - disable, 1 - enable), this status will be forced for the
-		destination.
+function takes 2 parameters, first mandatory, the id of the destiantion
+and second, optional, the new status. If no new status is given, the
+function will return the current status. If a new status is given
+(0 - disable, 1 - enable), this status will be forced for the
+destination.
 
 
 MI FIFO Command Format:
@@ -1101,17 +1102,17 @@ enable:: yes
 
 
 The module requires 3 table in OpenSIPS database: dr_groups,
-	dr_gateways, dr_rules. The SQL syntax to create them can be
-	found in drouting-create.sql script in the database directories
-	in the opensips/scripts folder. You can also find the complete
-	database documentation on the project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+dr_gateways, dr_rules. The SQL syntax to create them can be
+found in drouting-create.sql script in the database directories
+in the opensips/scripts folder. You can also find the complete
+database documentation on the project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide
 
 
 The module provides no function to be used
-		by other OpenSIPS modules.
+by other OpenSIPS modules.
 <!-- CONTRIBUTORS -->
 
 ### License
