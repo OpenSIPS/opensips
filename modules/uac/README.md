@@ -10,8 +10,8 @@ description: "UAC (User Agent Client) module provides some basic UAC functionali
 
 
 UAC (User Agent Client) module provides some basic UAC
-		functionalities like FROM header manipulation (anonymization)
-		or client authentication.
+functionalities like FROM header manipulation (anonymization)
+or client authentication.
 
 
 Known limitations in this version:
@@ -19,7 +19,7 @@ Known limitations in this version:
 
 - authentication does not support qop auth-int, just qop auth;
 - CSeq not increased during authentication - the response 
-				may be rejected.
+may be rejected.
 
 
 ### Dependencies
@@ -33,14 +33,14 @@ The following modules must be loaded before this module:
 
 - *TM - Transaction Module*
 - *RR - Record-Route Module*, but only if
-				restore mode for FROM URI is set to "auto".
+restore mode for FROM URI is set to "auto".
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed 
-				before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *None*
@@ -53,11 +53,11 @@ The following libraries or applications must be installed
 
 
 Name of Record-Route header parameter that will be used to store 
-			(encoded) the original FROM URI.
+(encoded) the original FROM URI.
 
 
 *This parameter is optional, it's default value being 
-					"vsf".*
+"vsf".*
 
 
 ```opensips title="Set rr_store_param parameter"
@@ -75,23 +75,22 @@ There are 3 mode of restoring the original FROM URI:
 
 
 - "none" - no information about original URI is 
-				stored; restoretion is not possible.
+stored; restoretion is not possible.
 - "manual" - all following replies will be restored,
-				but not also the sequential requests - this must be manually 
-				updated based on original URI.
+but not also the sequential requests - this must be manually 
+updated based on original URI.
 - "auto" - all sequential requests and replies will 
-				be automatically updated based on stored original URI.
+be automatically updated based on stored original URI.
 
 
 *This parameter is optional, it's default value being 
-					"auto".*
+"auto".*
 
 
 ```opensips title="Set from_restore_mode parameter"
 ...
 modparam("uac","from_restore_mode","auto")
 ...
-				
 ```
 
 
@@ -99,7 +98,7 @@ modparam("uac","from_restore_mode","auto")
 
 
 String password to be used to encrypt the RR storing paramter. If
-			empty, no encryption will be used.
+empty, no encryption will be used.
 
 
 *Default value of this parameter is empty.*
@@ -109,7 +108,6 @@ String password to be used to encrypt the RR storing paramter. If
 ...
 modparam("uac","from_passwd","my_secret_passwd")
 ...
-				
 ```
 
 
@@ -117,7 +115,7 @@ modparam("uac","from_passwd","my_secret_passwd")
 
 
 Contains a multiple definition of credentials used to perform
-			authentication.
+authentication.
 
 
 *This parameter is required if UAC authentication is used.*
@@ -135,14 +133,14 @@ modparam("uac","credential","username:domain:password")
 
 
 The definition of an AVP that might contain the realm to be used
-			to perform authentication.
+to perform authentication.
 
 
 *If you define it, you also need to define 
-				"auth_username_avp" 
-				([auth username avp id](#param_auth_username_avp)) and 
-				"auth_username_avp" 
-				([auth password avp id](#param_auth_password_avp)).*
+"auth_username_avp" 
+([auth username avp id](#param_auth_username_avp)) and 
+"auth_username_avp" 
+([auth password avp id](#param_auth_password_avp)).*
 
 
 ```opensips title="Set auth_realm_avp parameter"
@@ -157,14 +155,14 @@ modparam("uac","auth_realm_avp","$avp(i:10)")
 
 
 The definition of an AVP that might contain the username to be used
-			to perform authentication.
+to perform authentication.
 
 
 *If you define it, you also need to define 
-				"auth_realm_avp" 
-				([auth realm avp id](#param_auth_realm_avp)) and 
-				"auth_username_avp" 
-				([auth password avp id](#param_auth_password_avp)).*
+"auth_realm_avp" 
+([auth realm avp id](#param_auth_realm_avp)) and 
+"auth_username_avp" 
+([auth password avp id](#param_auth_password_avp)).*
 
 
 ```opensips title="Set auth_username_avp parameter"
@@ -179,21 +177,20 @@ modparam("uac","auth_username_avp","$avp(i:11)")
 
 
 The definition of an AVP that might contain the password to be used
-			to perform authentication.
+to perform authentication.
 
 
 *If you define it, you also need to define 
-				"auth_password_avp" 
-				([auth password avp id](#param_auth_password_avp)) and 
-				"auth_username_avp" 
-				([auth password avp id](#param_auth_password_avp)).*
+"auth_password_avp" 
+([auth password avp id](#param_auth_password_avp)) and 
+"auth_username_avp" 
+([auth password avp id](#param_auth_password_avp)).*
 
 
 ```opensips title="Set auth_password_avp parameter"
 ...
 modparam("uac","auth_password_avp","$avp(i:12)")
 ...
-				
 ```
 
 
@@ -204,23 +201,24 @@ modparam("uac","auth_password_avp","$avp(i:12)")
 
 
 Replace in FROM header the *display* name and
-			the *URI* part.
+the *URI* part.
 
 
 *display* and *URI* 
-			parameters can include pseudo-variables.
+parameters can include pseudo-variables.
 
 
-IMPORTANT: calling the function more than once per branch will lead
-			to inconsistent changes over the request.Be sure you do the change
-			only ONCE per branch. Note that calling the function from REQUEST
-			ROUTE affects all the branches!, so no other change will be 
-			possible in the future. For per branch changes use BRANCH and 
-			FAILURE route.
+> [!IMPORTANT]
+> Calling the function more than once per branch will lead
+> to inconsistent changes over the request. Be sure you do the change
+> only ONCE per branch. Note that calling the function from REQUEST
+> ROUTE affects all the branches!, so no other change will be 
+> possible in the future. For per branch changes use BRANCH and 
+> FAILURE route.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
-			FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="uac_replace_from usage"
@@ -242,7 +240,7 @@ uac_replace_from("","");
 
 
 Replace in FROM header the *URI* part
-				without altering the display name.
+without altering the display name.
 
 
 *URI* parameter can include pseudo-variables.
@@ -263,8 +261,8 @@ uac_replace_from("sip:batman@gotham.org");
 
 
 This function will check if the FROM URI was modified and will
-			use the information stored in header parameter to restore
-			the original FROM URI value.
+use the information stored in header parameter to restore
+the original FROM URI value.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -274,7 +272,6 @@ This function can be used from REQUEST_ROUTE.
 ...
 uac_restore_from();
 ...
-				
 ```
 
 
@@ -282,8 +279,8 @@ uac_restore_from();
 
 
 This function can be called only from failure route and will 
-			build the authentication response header and insert it into the
-			request without sending anything.
+build the authentication response header and insert it into the
+request without sending anything.
 
 
 This function can be used from FAILURE_ROUTE.

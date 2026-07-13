@@ -25,7 +25,7 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -141,7 +141,7 @@ Meaning of the parameters is as follows:
 
 
 - *param* - parameter to be appended in
-			"name=value" format.
+"name=value" format.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -158,8 +158,8 @@ add_uri_param("nat=yes");
 
 
 Converts RURI, if it is tel URI, to SIP URI.  Returns true, only if
-		conversion succeeded or if no conversion was needed (like RURI
-		was not tel URI.
+conversion succeeded or if no conversion was needed (like RURI
+was not tel URI.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -176,7 +176,7 @@ tel2sip();
 
 
 Checks if userpart of URI stored in pseudo variable is
-		E164 number.
+E164 number.
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.

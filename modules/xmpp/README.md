@@ -1,6 +1,6 @@
 ---
 title: "xmpp Module"
-description: "This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between SIP clients and XMPP(jabber) clients."
+description: "This modules is a gateway between OpenSIPS and a jabber server."
 ---
 
 ## Admin Guide
@@ -10,14 +10,14 @@ description: "This modules is a gateway between OpenSIPS and a jabber server. It
 
 
 This modules is a gateway between OpenSIPS and a jabber server. It enables the exchange of instant messages between
-		SIP clients and XMPP(jabber) clients.
+SIP clients and XMPP(jabber) clients.
 
 
 The gateway has two modes to run:
 
 
 - **the component-mode** - the gateway requires a standalone XMPP server amd the 'xmpp' module acts as
-			a XMPP component
+a XMPP component
 - **the server-mode** - the module acts itself as a XMPP server, no requirement for another XMPP server in the system. NOTE: this is limited implementation of a XMPP server, it does not support SRV or TLS so far. This mode is in beta stage for the moment.
 
 
@@ -31,7 +31,7 @@ After you have a running XMPP server, what you need to do is set the following p
 - gateway_domain, xmpp_domain (which can be the same as gateway_domain) and xmpp_host, which are explained in the Exported Parameters section;
 - listen = your ip;
 - alias=opensips domain and 
-	alias=gateway domain;
+alias=gateway domain;
 - in the following section of the configuration file, change to your gateway domain:
 
 
@@ -94,7 +94,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libexpat1-devel* - used for parsing/building XML.
@@ -123,10 +123,10 @@ The mode you are using the module; it can be either component or server.
 
 
 In the destination address we need an extra character as a domain separator, apart from @.
-			The address of the XMPP(jabber) client looks like this:
-				"sip:username<domain_separator>jabber_server@gateway_domain".
-			The address of a SIP client has the following pattern :
-			"sip_username<domain_separator>opensips_domain@xmpp_domain";
+The address of the XMPP(jabber) client looks like this:
+"sip:username<domain_separator>jabber_server@gateway_domain".
+The address of a SIP client has the following pattern :
+"sip_username<domain_separator>opensips_domain@xmpp_domain";
 
 
 *Default value is "*".*
@@ -143,8 +143,8 @@ In the destination address we need an extra character as a domain separator, apa
 
 
 The domain of the gateway, which must resolve. It must be the same with the gateway_domain from the destination address of the
-		 XMPP(jabber) client, as seen by the SIP client:
-			"sip:username<delim>jjabber_server@gateway_domain".
+XMPP(jabber) client, as seen by the SIP client:
+"sip:username<delim>jjabber_server@gateway_domain".
 
 
 *Default value is "sip-xmpp.example.org".*
@@ -214,12 +214,12 @@ The password of the local jabber server.
 *Default value is "secret"; if changed here, it must also be changed in the c2s.xml, added by the jabber server. This is how the default configuration for the jabberd2 looks like:*
 
 
-```c
-			<router>
-	............... 
-	;
-    <pass>secret</pass>;           ;	
-			
+```
+						<router>
+		............... 
+		<!-- Username/password to authenticate as --&gt;
+    <user>jabberd</user>;          <!-- default: jabberd -->;
+    <pass>secret</pass>;           <!-- default: secret -->;	
 ```
 
 
@@ -234,10 +234,10 @@ The password of the local jabber server.
 
 
 The SIP address used as next hop when sending the message. Very
-		useful when using OpenSIPS with a domain name not in DNS, or
-		when using a separate OpenSIPS instance for xmpp processing. If
-		not set, the message will be sent to the address in destination
-		URI.
+useful when using OpenSIPS with a domain name not in DNS, or
+when using a separate OpenSIPS instance for xmpp processing. If
+not set, the message will be sent to the address in destination
+URI.
 
 
 *Default value is NULL.*
@@ -266,17 +266,9 @@ xmpp_send_message();
 ```
 
 
-### Configuration
+## Samples
 
-
-Next is presented a sample configuration file one can use to implement a
-		standalone SIP-to-XMPP gateway. You can run an instance of OpenSIPS on a
-		separate machine or on different port with the following config, and have
-		the main SIP server configured to forward all SIP requests for XMPP world
-		to it.
-
-
-[samples](./samples.md "include")
+[samples](./samples/samples.md "include")
 <!-- CONTRIBUTORS -->
 
 ### License

@@ -1,6 +1,6 @@
 ---
 title: "Presence Module"
-description: "The modules handles PUBLISH and SUBSCRIBE messages and generates NOTIFY messages in a general, event independent way. It allows registering events to it from other OpenSIPS modules. Events that can currently be added to it are: presence, presence.winfo, dialog;sla from presence_xml module an..."
+description: "The modules handles PUBLISH and SUBSCRIBE messages and generates NOTIFY messages in a general, event independent way."
 ---
 
 ## Admin Guide
@@ -10,33 +10,33 @@ description: "The modules handles PUBLISH and SUBSCRIBE messages and generates N
 
 
 The modules handles PUBLISH and SUBSCRIBE messages and generates
-	NOTIFY messages in a general, event independent way. It allows registering 
-	events to it from other OpenSIPS modules. Events that can currently be added to
-	it are: presence, presence.winfo, dialog;sla from presence_xml
-	module and message-summary from presence_mwi module.
+NOTIFY messages in a general, event independent way. It allows registering 
+events to it from other OpenSIPS modules. Events that can currently be added to
+it are: presence, presence.winfo, dialog;sla from presence_xml
+module and message-summary from presence_mwi module.
 
 
 The modules uses database storage. 
-	It has later been improved with memory caching operations to improve
-	performance. The Subscribe dialog information are stored in memory and 
-	are periodically updated in database, while for Publish only the presence
-	or absence of stored info for a certain resource is maintained in memory
-	to avoid unnecessary, costly db operations. 
-	It is possible to configure a fallback to database mode(by setting module
-	parameter "fallback2db"). In this mode, in case a searched record is not 
-	found in cache, the search is continued	in database. This is useful for
-	an architecture in which processing and memory load might be divided on 
-	more machines using the same database.
+It has later been improved with memory caching operations to improve
+performance. The Subscribe dialog information are stored in memory and 
+are periodically updated in database, while for Publish only the presence
+or absence of stored info for a certain resource is maintained in memory
+to avoid unnecessary, costly db operations. 
+It is possible to configure a fallback to database mode(by setting module
+parameter "fallback2db"). In this mode, in case a searched record is not 
+found in cache, the search is continued	in database. This is useful for
+an architecture in which processing and memory load might be divided on 
+more machines using the same database.
 
 
 The module can also work only with the functionality of a library,
-	with no message processing and generation, but used only for the exported
-	functions.
-	This mode of operation is enabled if the db_url parameter is not set to any value.
+with no message processing and generation, but used only for the exported
+functions.
+This mode of operation is enabled if the db_url parameter is not set to any value.
 
 
 The server follows the specifications in: RFC3265, RFC3856, RFC3857, 
-	RFC3858.
+RFC3858.
 
 
 ### Dependencies
@@ -68,8 +68,8 @@ The database url.
 
 
 If set, the module is a fully operational
-		presence server. Otherwise, it is used as a 'library', for 
-		its exported functions.
+presence server. Otherwise, it is used as a 'library', for 
+its exported functions.
 
 
 *Default value is "NULL".*
@@ -103,7 +103,7 @@ modparam("presence", "presentity_table", "presentity")
 
 
 The name of the db table where active subscription information are 
-		stored.
+stored.
 
 
 *Default value is "active_watchers".*
@@ -136,7 +136,7 @@ modparam("presence", "watchers_table", "watchers")
 
 
 The period at which to verify if there are expired messages stored in
-		database.
+database.
 
 
 *Default value is "100". A zero or negative value disables this activity.*
@@ -153,7 +153,7 @@ modparam("presence", "clean_period", 100)
 
 
 The period at which to synchronize cached subscriber info with the
-		database.
+database.
 
 
 *Default value is "100". A zero or negative value disables synchronization.*
@@ -170,8 +170,8 @@ modparam("presence", "db_update_period", 100)
 
 
 The value that should be subtracted from the expires value when
-		sending a 200OK for a publish. It is used for forcing the client
-		cu send an update before the old publish expires.
+sending a 200OK for a publish. It is used for forcing the client
+cu send an update before the old publish expires.
 
 
 *Default value is "0".*
@@ -188,7 +188,7 @@ modparam("presence", "expires_offset", 10)
 
 
 The the maximum admissible expires value for PUBLISH/SUBSCRIBE
-               message.
+message.
 
 
 *Default value is "3600".*
@@ -205,7 +205,7 @@ modparam("presence", "max_expires", 3600)
 
 
 The presence server address which will become the value of Contact header filed 
-		for 200OK replies to Subscribe and Publish and in Notify messages.
+for 200OK replies to Subscribe and Publish and in Notify messages.
 
 
 ```opensips title="Set server_address parameter"
@@ -219,10 +219,10 @@ modparam("presence", "server_address", "sip:10.10.10.10:5060")
 
 
 Setting this parameter enables a fallback to db mode of operation.
-		In this mode, in case a searched record is not found in cache, 
-		the search is continued	in database. Useful for an architecture in
-		which processing and memory load might be divided on more machines
-		using the same database.
+In this mode, in case a searched record is not found in cache, 
+the search is continued	in database. Useful for an architecture in
+which processing and memory load might be divided on more machines
+using the same database.
 
 
 ```opensips title="Set fallback2db parameter"
@@ -236,7 +236,7 @@ modparam("presence", "fallback2db", 1)
 
 
 The size of the hash table to store subscription dialogs.
-        This parameter will be used as the power of 2 when computing table size.
+This parameter will be used as the power of 2 when computing table size.
 
 
 *Default value is "9 (512)".*
@@ -254,7 +254,7 @@ modparam("presence", "subs_htable_size", 11)
 
 
 The size of the hash table to store publish records.
-        This parameter will be used as the power of 2 when computing table size.
+This parameter will be used as the power of 2 when computing table size.
 
 
 *Default value is "9 (512)".*
@@ -272,11 +272,11 @@ modparam("presence", "pres_htable_size", 11)
 
 
 This parameter is a flag that should be set if permission rules include
-		sphere checking.
-		The sphere information is expected to be present in the RPID body
-		published by the presentity. The flag is introduced as this check requires
-		extra processing that should be avoided if this feature is not supported
-		by the clients.
+sphere checking.
+The sphere information is expected to be present in the RPID body
+published by the presentity. The flag is introduced as this check requires
+extra processing that should be avoided if this feature is not supported
+by the clients.
 
 
 *Default value is "0 ".*
@@ -297,16 +297,16 @@ modparam("presence", "enable_sphere_check", 1)
 
 
 The function handles PUBLISH requests. It stores and updates 
-		published information in database and calls functions to send 
-		NOTIFY messages when changes in the published information occur.
-		It takes one argument -> sender_uri. The parameter was added 
-		for enabling BLA implementation. If present, Notification of
-		a change in published state is not sent to the respective uri
-		even though a subscription exists.
-		It should be taken from the Sender header. It was left at the
-		decision of the administrator whether or not to transmit the 
-		content of this header as parameter for handle_publish, to 
-		prevent security problems.
+published information in database and calls functions to send 
+NOTIFY messages when changes in the published information occur.
+It takes one argument -> sender_uri. The parameter was added 
+for enabling BLA implementation. If present, Notification of
+a change in published state is not sent to the respective uri
+even though a subscription exists.
+It should be taken from the Sender header. It was left at the
+decision of the administrator whether or not to transmit the 
+content of this header as parameter for handle_publish, to 
+prevent security problems.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -320,7 +320,7 @@ This function can be used from REQUEST_ROUTE.
 
 
 The module sends an appropriate stateless reply
-			in all cases.
+in all cases.
 
 
 ```opensips title="handle_publish usage"
@@ -341,8 +341,8 @@ The module sends an appropriate stateless reply
 
 
 The function which handles SUBSCRIBE requests. It stores or 
-		updates information in database and calls functions to send Notify 
-		messages when a Subscribe which initiate a dialog is received
+updates information in database and calls functions to send Notify 
+messages when a Subscribe which initiate a dialog is received
 
 
 This function can be used from REQUEST_ROUTE.
@@ -356,7 +356,7 @@ This function can be used from REQUEST_ROUTE.
 
 
 The module sends an appropriate stateless reply
-			in all cases.
+in all cases.
 
 
 ```opensips title="handle_subscribe usage"
@@ -374,7 +374,7 @@ if(method=="SUBSCRIBE")
 
 
 Triggers sending Notify messages to watchers if a change in watchers
-		authorization or in published state occurred.
+authorization or in published state occurred.
 
 
 Name: *refreshWatchers*
@@ -384,30 +384,25 @@ Parameters:
 
 
 - presentity_uri : the uri of the user who made the change
-				and whose watchers should be informed
+and whose watchers should be informed
 - event : the event package
 - refresh type : it distinguishes between the two different types of events
-									that can trigger a refresh: 
-									
-									
-									a change in watchers authentication: refresh type= 0 ;
-									
-									
-									a statical update in published state (either through direct 
-									update in db table or by modifying the pidf manipulation document,
-									if pidf_manipulation parameter is set): refresh type!= 0.
+that can trigger a refresh:
+	- a change in watchers authentication: refresh type = 0 ;
+	- a statical update in published state (either through direct 
+	update in db table or by modifying the pidf manipulation document,
+	if pidf_manipulation parameter is set): refresh type != 0.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		:refreshWatchers:fifo_reply
-		sip:11@192.168.2.132
-		presence
-		1
-		_empty_line_
-		
+:refreshWatchers:fifo_reply
+sip:11@192.168.2.132
+presence
+1
+_empty_line_
 ```
 
 
@@ -415,7 +410,7 @@ MI FIFO Command Format:
 
 
 Manually triggers the cleanup functions for watchers and presentity tables. Useful if you
-		have set `clean_period` to zero or less.
+have set `clean_period` to zero or less.
 
 
 Name: *cleanup*
@@ -428,9 +423,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:cleanup:fifo_reply
-		_empty_line_
-	  
+:cleanup:fifo_reply
+_empty_line_
 ```
 
 
@@ -438,26 +432,26 @@ MI FIFO Command Format:
 
 
 The module requires 3 table in OpenSIPS database: presentity,
-	active_watchers and watchers tables. The SQL 
-	syntax to create them can be found in presence-create.sql     
-	script in the database directories in the opensips/scripts folder.
-	You can also find the complete database documentation on the
-	project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
+active_watchers and watchers tables. The SQL 
+syntax to create them can be found in presence-create.sql     
+script in the database directories in the opensips/scripts folder.
+You can also find the complete database documentation on the
+project webpage, [http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide
 
 
 The module provides the following functions that can be used
-		in other OpenSIPS modules.
+in other OpenSIPS modules.
 
 
 ### bind_presence(presence_api_t* api)
 
 
 This function binds the presence modules and fills the structure 
-				with one exported function -> add_event, which when called adds a 
-				new event to be handled by presence.
+with one exported function -> add_event, which when called adds a 
+new event to be handled by presence.
 
 
 ```c title="presence_api_t structure"
@@ -506,7 +500,7 @@ typedef int (*add_event_t)(pres_ev_t* event);
 
 
 This function receives as a parameter a structure with event specific
-			information and adds it to presence event list.
+information and adds it to presence event list.
 
 
 The structure received as a parameter:
@@ -580,20 +574,20 @@ typedef int (get_rules_doc_t)(str* user, str* domain, str** rules_doc);
 
 
 This function returns the authorization rules document that will be
-		used in obtaining the status of the subscription and processing the
-		notified body. A reference to the document should be put in the 
-		auth_rules_doc of the subs_t structure given as a parameter to the
-		functions described bellow.
+used in obtaining the status of the subscription and processing the
+notified body. A reference to the document should be put in the 
+auth_rules_doc of the subs_t structure given as a parameter to the
+functions described bellow.
 
 
 ### get_auth_status
 
 
 This filed is a function to be called for a subscription request
-			to return the state for that subscription according to
-			authorization rules. In the auth_rules_doc field of the subs_t
-			structure received as a parameter should contain the rules 
-			document of the presentity in case, if it exists.
+to return the state for that subscription according to
+authorization rules. In the auth_rules_doc field of the subs_t
+structure received as a parameter should contain the rules 
+document of the presentity in case, if it exists.
 
 
 It is called only if the req_auth field is not 0.
@@ -614,10 +608,10 @@ typedef int (is_allowed_t)(struct subscription* subs);
 
 
 This parameter should be a function to be called for an event 
-			that requires authorization, when constructing final body. 
-			The authorization document is taken from the auth_rules_doc
-			field of the subs_t structure given as a parameter.
-			It is called only if the req_auth field is not 0.
+that requires authorization, when constructing final body. 
+The authorization document is taken from the auth_rules_doc
+field of the subs_t structure given as a parameter.
+It is called only if the req_auth field is not 0.
 
 
 Filed type:
@@ -635,10 +629,10 @@ typedef int (apply_auth_t)(str* , struct subscription*, str** );
 
 
 If present, this field marks that the events requires aggregation
-			of states. This function receives a body array and should return
-			the final body.	If not present, it is considered that the event
-			does not require aggregation and the most recent published
-			information is used when constructing Notifies.
+of states. This function receives a body array and should return
+the final body.	If not present, it is considered that the event
+does not require aggregation and the most recent published
+information is used when constructing Notifies.
 
 
 Filed type:
@@ -657,10 +651,10 @@ str** body_array, int n, int off_index);
 
 
 This field must be field in if subsequent processing is performed
-			on the info from database before being inserted in Notify
-			message body(if agg_nbody or apply_auth_nbody fields are
-			filled in). It should match the allocation function used when
-			processing the body.
+on the info from database before being inserted in Notify
+message body(if agg_nbody or apply_auth_nbody fields are
+filled in). It should match the allocation function used when
+processing the body.
 
 
 Filed type:
@@ -678,10 +672,10 @@ typedef void(free_body_t)(char* body);
 
 
 This field must be set if the module needs to manipulate the NOTIFY body 
-			for each watcher. E.g. if the XML body includes a 'version' parameter which 
-			will be increased for each NOTIFY, on a "per watcher" basis.
-			The module can either allocate a new buffer for the new body an return it (aux_free_body
-			function must be set too) or it manipualtes the original body directly and returns NULL.
+for each watcher. E.g. if the XML body includes a 'version' parameter which 
+will be increased for each NOTIFY, on a "per watcher" basis.
+The module can either allocate a new buffer for the new body an return it (aux_free_body
+function must be set too) or it manipualtes the original body directly and returns NULL.
 
 
 Filed type:
@@ -699,11 +693,11 @@ typedef str* (aux_body_processing_t)(struct subscription *subs, str* body);
 
 
 This field must be set if the module registers the aux_body_processing function
-			and allocates memory for the new modified body. Then, this function will be used
-			to free the pointer returned by the aux_body_processing function.
-			If the module does use the aux_body_processing, but does not allocate new memory, but
-			manipulates directly the original body buffer, then the aux_body_processing
-			must return NULL and this field should not be set.
+and allocates memory for the new modified body. Then, this function will be used
+to free the pointer returned by the aux_body_processing function.
+If the module does use the aux_body_processing, but does not allocate new memory, but
+manipulates directly the original body buffer, then the aux_body_processing
+must return NULL and this field should not be set.
 
 
 Filed type:
@@ -721,7 +715,7 @@ typedef void(free_body_t)(char* body);
 
 
 This function is called when handling Publish requests. Most contain 
-		body correctness check.
+body correctness check.
 
 
 ```c
@@ -736,10 +730,10 @@ typedef int (publ_handling_t)(struct sip_msg*);
 
 
 It is not compulsory. Should contain event specific handling for
-		Subscription requests.
+Subscription requests.
 
 
-Filed type:
+Field type:
 
 
 ```c
@@ -764,9 +758,9 @@ event_t* parsed_event);
 
 
 The function parses the event name received as a parameter and searches
-	the result in the list. It returns the found event or NULL, if not found. 
-	If the second argument is an allocated event_t* structure it fills it
-	with the result of the parsing.
+the result in the list. It returns the found event or NULL, if not found. 
+If the second argument is an allocated event_t* structure it fills it
+with the result of the parsing.
 
 
 ### get_event_list
@@ -783,7 +777,7 @@ typedef int (*get_event_list_t) (str** ev_list);
 
 
 This function returns a string representation of the events registered
-	in presence module.( used for Allowed-Events header).
+in presence module.( used for Allowed-Events header).
 
 
 ### update_watchers_status
@@ -801,10 +795,10 @@ str* rules_doc);
 
 
 This function is an external command that can be used to announce a change
-	in authorization rules for a presentity. It updates the stored status and
-	sends a Notify to the watchers whose status has changes. (used by
-	presence_xml module when notified through an MI command of a change in
-	an xcap document).
+in authorization rules for a presentity. It updates the stored status and
+sends a Notify to the watchers whose status has changes. (used by
+presence_xml module when notified through an MI command of a change in
+an xcap document).
 
 
 ### get_sphere
@@ -821,8 +815,8 @@ typedef char* (*pres_get_sphere_t)(str* pres_uri);
 
 
 This function searches for a sphere definition in the published information
-	if this has type RPID. If not found returns NULL. (the return value is
-	allocated in private memory and should be freed)
+if this has type RPID. If not found returns NULL. (the return value is
+allocated in private memory and should be freed)
 <!-- CONTRIBUTORS -->
 
 ### License

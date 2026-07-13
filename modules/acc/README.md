@@ -10,27 +10,27 @@ description: "ACC module is used to account transactions information to differen
 
 
 ACC module is used to account transactions information to different
-		backends like syslog, SQL,
-		RADIUS and DIAMETER 
-		(beta version).
+backends like syslog, SQL,
+RADIUS and DIAMETER 
+(beta version).
 
 
 To account a transaction and to choose which set of backends to be 
-		used, the script writer just has to set some flags (see the module
-		parameters section for flag definitions [ACC param id](#exported_parameters)).
-		If the accounting flag for a specific backend is set, the acc module 
-		will then report on completed transaction. A typical usage of the 
-		module takes no acc-specific script command -- the functionality 
-		binds invisibly through transaction processing. Script writers just 
-		need to mark the transaction for accounting with proper setflag. 
-		Even so, the module allows the script writter to force accounting in 
-		special cases via some script functions.
+used, the script writer just has to set some flags (see the module
+parameters section for flag definitions [ACC param id](#exported_parameters)).
+If the accounting flag for a specific backend is set, the acc module 
+will then report on completed transaction. A typical usage of the 
+module takes no acc-specific script command -- the functionality 
+binds invisibly through transaction processing. Script writers just 
+need to mark the transaction for accounting with proper setflag. 
+Even so, the module allows the script writter to force accounting in 
+special cases via some script functions.
 
 
 The accounting module will log by default a fixed set of attributes 
-		for the transaction - if you customize your accounting by adding more
-		information to be logged, please see the next chapter about extra
-		accounting - [ACC extra id](#extra_accounting).
+for the transaction - if you customize your accounting by adding more
+information to be logged, please see the next chapter about extra
+accounting - [ACC extra id](#extra_accounting).
 
 
 The fixed minimal accounting information is:
@@ -46,56 +46,56 @@ The fixed minimal accounting information is:
 
 
 If a value is not present in request, the empty string is accounted 
-		instead.
+instead.
 
 
 Note that:
 
 
 - A single INVITE may produce multiple accounting reports -- that's
-			due to SIP forking feature.
+due to SIP forking feature.
 - All flags related to accounting need to be set in request processing
-			route - only the "missed-call" flag may be toggled from other
-			types of routes.
+route - only the "missed-call" flag may be toggled from other
+types of routes.
 - There is no session/dialog accounting (yet) -- OpenSIPS maintains
-			no sessions. If one needs to correlate INVITEs with BYEs for 
-			generating proper CDRs for example for purpose of billing, then 
-			it is better done in the entity which processes accounting 
-			information.
+no sessions. If one needs to correlate INVITEs with BYEs for 
+generating proper CDRs for example for purpose of billing, then 
+it is better done in the entity which processes accounting 
+information.
 - If a UA fails in middle of conversation, a proxy will never 
-			find out about it. In general, a better practice is to account from an 
-			end-device (such as PSTN gateway), which best knows about call 
-			status (including media status and PSTN status in case of the 
-			gateway).
+find out about it. In general, a better practice is to account from an 
+end-device (such as PSTN gateway), which best knows about call 
+status (including media status and PSTN status in case of the 
+gateway).
 
 
 The SQL backend support is compiled in the module. For RADIUS and
-		DIAMETER you need to enable it by recompiling the module with properly
-		set defines: uncomment the RAD_ACC or DDIAM_ACC lines in
-		modules/acc/Makefile. To compile RADIUS support, 
-		you need to have radiusclient-ng (only versions higher or equal 
-		to 0.5.0) installed on your system which is available from
-		[http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
-		The radius client needs to be configured properly. To do so, use the 
-		template at etc/radiusclient.conf and make sure
-		that module's radius_config parameter points to its location.
-		In particular, accounting secret must match that one configured in
-		server and proper dictionary is used (one is available at 
-		etc/sip_dictionary). Also note that Debian radiusclient-ng uses
-		/var/run/radius.seq as seqfile but OpenSIPS Debian init script expects
-		/var/run/opensips/opensips_radius.seq, so is needed to change it in
-		radiusclient-ng configuration or in OpenSIPS Debian init script (if not,
-		OpenSIPS can't create the seq file when not running as root). Uses along
-		with FreeRadius ([http://www.freeradius.org/](http://www.freeradius.org/)) and Radiator 
-		([http://www.open.com.au/radiator/](http://www.open.com.au/radiator/)) servers have been
-		reported to us.
+DIAMETER you need to enable it by recompiling the module with properly
+set defines: uncomment the RAD_ACC or DDIAM_ACC lines in
+modules/acc/Makefile. To compile RADIUS support, 
+you need to have radiusclient-ng (only versions higher or equal 
+to 0.5.0) installed on your system which is available from
+[http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
+The radius client needs to be configured properly. To do so, use the 
+template at etc/radiusclient.conf and make sure
+that module's radius_config parameter points to its location.
+In particular, accounting secret must match that one configured in
+server and proper dictionary is used (one is available at 
+etc/sip_dictionary). Also note that Debian radiusclient-ng uses
+/var/run/radius.seq as seqfile but OpenSIPS Debian init script expects
+/var/run/opensips/opensips_radius.seq, so is needed to change it in
+radiusclient-ng configuration or in OpenSIPS Debian init script (if not,
+OpenSIPS can't create the seq file when not running as root). Uses along
+with FreeRadius ([http://www.freeradius.org/](http://www.freeradius.org/)) and Radiator 
+([http://www.open.com.au/radiator/](http://www.open.com.au/radiator/)) servers have been
+reported to us.
 
 
 NOTE: diameter support was developed for DISC (DIameter Server Client 
-	project at http://developer.berlios.de/projects/disc/). This project 
-	seems to be no longer maintained and DIAMETER specifications were updated
-	in the meantime. Thus, the DIAMETER part in the module is obsolete and 
-	needs rework to be usable with opendiameter or other DIAMETER servers.
+project at http://developer.berlios.de/projects/disc/). This project 
+seems to be no longer maintained and DIAMETER specifications were updated
+in the meantime. Thus, the DIAMETER part in the module is obsolete and 
+needs rework to be usable with opendiameter or other DIAMETER servers.
 
 
 #### General Example
@@ -131,19 +131,19 @@ if (uri=~"sip:+40") /* calls to Romania */ {
 
 
 Along the static default information, ACC modules 
-			allows dynamical selection of extra information to be logged. 
-			This allows you to log any pseudo-variable (AVPs, parts of 
-			the request, parts of the reply, etc).
+allows dynamical selection of extra information to be logged. 
+This allows you to log any pseudo-variable (AVPs, parts of 
+the request, parts of the reply, etc).
 
 
 #### Definitions and syntax
 
 
 Selection of extra information is done via 
-			*xxx_extra* parameters by specifying the names
-			of additional information you want to log. This information is 
-			defined via pseudo-variables and may include headers, AVPs values
-			or other message or system values. The syntax of the parameter is:
+*xxx_extra* parameters by specifying the names
+of additional information you want to log. This information is 
+defined via pseudo-variables and may include headers, AVPs values
+or other message or system values. The syntax of the parameter is:
 
 
 - *xxx_extra = extra_definition (';'extra_definition)**
@@ -151,53 +151,56 @@ Selection of extra information is done via
 
 
 Each PV (pseudo variable) may be evaluated in the context of the 
-			request message (to access info from it) or in the context of 
-			the reply message (final reply for the request).
+request message (to access info from it) or in the context of 
+the reply message (final reply for the request).
 
 
 Using "/reply" marker, the PV will be evaluated in
-			the context of the reply; by default (without the marker), the 
-			evaluation is done in the contect of the request. This will allow
-			you to automatically account information (message or network
-			related) from both request and reply in the same time.
+the context of the reply; by default (without the marker), the 
+evaluation is done in the contect of the request. This will allow
+you to automatically account information (message or network
+related) from both request and reply in the same time.
 
 
 The full list of supported pseudo-variables in OpenSIPS is
-			availabe at: 
-			[http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar](http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar)
+availabe at: 
+[http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar](http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar)
 
 
 Via *log_name* you define how/where the 
-			*data* will be logged. Its meaning depends 
-			of the accounting support which is used:
+*data* will be logged. Its meaning depends 
+of the accounting support which is used:
 
 
 - *LOG accounting* - log_name
-				will be just printed along with the data in *log_name=data* format;
+will be just printed along with the data in *log_name=data* format;
 - *DB accounting* - log_name 
-				will be the name of the DB column where the data will be 
-				stored.*IMPORTANT*: add in db 
-				*acc* table the columns corresponding to 
-				each extra data;
+will be the name of the DB column where the data will be 
+stored.
+    > [!IMPORTANT]
+    > Add in db 
+    > *acc* table the columns corresponding to 
+    > each extra data;
 - *RADIUS accounting* - 
-				log_name will be the AVP name used for packing the data into 
-				RADIUS message. The log_name will be translated to AVP number 
-				via the dictionary. *IMPORTANT*: add in 
-				RADIUS dictionary the *log_name* attribute.
+log_name will be the AVP name used for packing the data into 
+RADIUS message. The log_name will be translated to AVP number 
+via the dictionary. 
+    > [!IMPORTANT]
+    > Add in RADIUS dictionary the *log_name* attribute.
 - *DIAMETER accounting* - 
-				log_name will be the AVP code used for packing the data 
-				into DIAMETER message. The AVP code is given directly as 
-				integer, since DIAMETER has no dictionary support yet.
-				*IMPORTANT*:	*log_name*
-				must be a number.
+log_name will be the AVP code used for packing the data 
+into DIAMETER message. The AVP code is given directly as 
+integer, since DIAMETER has no dictionary support yet.
+	> [!IMPORTANT]
+	> *log_name* must be a number.
 
 
 #### How it works
 
 
 Some pseudo variables may return more than one value (like 
-			headers or AVPs). In this case, the returned values are
-			embedded in a single string in a comma-separated format.
+headers or AVPs). In this case, the returned values are
+embedded in a single string in a comma-separated format.
 
 
 ### Multi Call-Legs accounting
@@ -207,66 +210,66 @@ Some pseudo variables may return more than one value (like
 
 
 A SIP call can have multiple legs due forwarding actions. For 
-			example user A calls user B which forwards the call to user C. 
-			There is only one SIP call but with 2 legs ( A to B and B to C). 
-			Accounting the legs of a call is required for proper billing of 
-			the calls (if C is a PSTN number and the call is billed, user B 
-			must pay for the call - as last party modifing the call 
-			destination-, and not A - as initiator of the call. Call 
-			forwarding on server is only one example which shows the 
-			necessity of the having an accounting engine with multiple legs 
-			support.
+example user A calls user B which forwards the call to user C. 
+There is only one SIP call but with 2 legs ( A to B and B to C). 
+Accounting the legs of a call is required for proper billing of 
+the calls (if C is a PSTN number and the call is billed, user B 
+must pay for the call - as last party modifing the call 
+destination-, and not A - as initiator of the call. Call 
+forwarding on server is only one example which shows the 
+necessity of the having an accounting engine with multiple legs 
+support.
 
 
 #### Configuration
 
 
 First how it works: The idea is to have a set of AVPs and for each
-			call leg to store a set of values in the AVPs. The meaning of
-			the AVP content is stricly decided by the script writer - it can
-			be the origin and source of the leg, its status or any other 
-			related information. If you have a set of 4 AVPS (AVP1, AVP2, AVP3,
-			AVP4), then for the "A call B and B forwards to C" example, 
-			you need to set a different set of values for the AVPs
-			for each leg ([A,B] and [B,C]) .
-			The script writer must take care and properly insert all 
-			these AVP from the script (in proper order and with the correct type).
+call leg to store a set of values in the AVPs. The meaning of
+the AVP content is stricly decided by the script writer - it can
+be the origin and source of the leg, its status or any other 
+related information. If you have a set of 4 AVPS (AVP1, AVP2, AVP3,
+AVP4), then for the "A call B and B forwards to C" example, 
+you need to set a different set of values for the AVPs
+for each leg ([A,B] and [B,C]) .
+The script writer must take care and properly insert all 
+these AVP from the script (in proper order and with the correct type).
 
 
 When the accounting information for the call will be written/sent, 
-			all the call-leg pairs will be added (based on the found AVP sets).
+all the call-leg pairs will be added (based on the found AVP sets).
 
 
 By default, the multiple call-leg support is disabled - it can be
-			enabled just be setting the per-leg set of AVPs via the 
-			`multi_leg_info` module parameter.
+enabled just be setting the per-leg set of AVPs via the 
+`multi_leg_info` module parameter.
 
 
 #### Logged data
 
 
 For each call, all the values of the AVP set (which defines a 
-			call-leg) will be logged. How the information will be actually
-			logged, depends of the data backend:
+call-leg) will be logged. How the information will be actually
+logged, depends of the data backend:
 
 
 - *syslog* -- all leg-sets will be added
-				to one record string as AVP1=xxx, AVP2=xxxx ,... sets.
+to one record string as AVP1=xxx, AVP2=xxxx ,... sets.
 - *database* -- each pair will be 
-				separately logged (due DB data structure constraints); several
-				records will be written, the difference between them being 
-				only the fields corresponding to the call-leg info.
-
-  > **Note:** You will need to add in your DB (all acc related
-				tables) the colums for call-leg info (a column for each AVP
-				of the set).
+separately logged (due DB data structure constraints); several
+records will be written, the difference between them being 
+only the fields corresponding to the call-leg info.
+    > [!NOTE] 
+    > You will need to add in your DB (all acc related
+    > tables) the colums for call-leg info (a column for each AVP
+    > of the set).
 - *Radius* -- all sets will be added
-				to the same Radius accounting message as RADIUS AVPs - for each
-				call-leg a set of RADIUS AVPs will be added (corresponding
-				to the per-leg AVP set)
-
-  > **Note:** You will need to add in your dictionary the
-				RADIUS AVPs used in call-leg AVP set definition.
+to the same Radius accounting message as RADIUS AVPs - for each
+call-leg a set of RADIUS AVPs will be added (corresponding
+to the per-leg AVP set)
+    > [!NOTE] 
+    > You will need to add in your dictionary the
+    > RADIUS AVPs used in call-leg AVP set definition.
 - *Diameter* same as for RADIUS.
 
 
@@ -277,25 +280,23 @@ For each call, all the values of the AVP set (which defines a
 
 
 The module depends on the following modules (in the other words 
-			the listed modules must be loaded before this module):
+the listed modules must be loaded before this module):
 
 
 - *tm* -- Transaction Manager
-- *a database module* -- If SQL 
-				support is used.
-- *rr* -- Record Route, if 
-				"detect_direction" module parameter is enabled.
+- *a database module* -- If SQL support is used.
+- *rr* -- Record Route, if "detect_direction" module parameter is enabled.
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed 
-			before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *radiusclient-ng* 0.5.0 or higher -- 
-				if compiled with RADIUS support. See [http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
+if compiled with RADIUS support. See [http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
 
 
 ### Exported Parameters
@@ -319,7 +320,7 @@ modparam("acc", "early_media", 1)
 
 
 Per transaction flag which says if the transaction should be 
-		accounted also in case of failure (status>=300).
+accounted also in case of failure (status>=300).
 
 
 Default value is not-set (no flag).
@@ -334,9 +335,9 @@ modparam("acc", "failed_transaction_flag", 4)
 
 
 Shall acc attempt to account e2e ACKs too ? Note that this is really 
-		only an attempt, as e2e ACKs may take a different path 
-		(unless RR enabled) and mismatch original INVITE (e2e ACKs are 
-		a separate transaction).
+only an attempt, as e2e ACKs may take a different path 
+(unless RR enabled) and mismatch original INVITE (e2e ACKs are 
+a separate transaction).
 
 
 Default value is 0 (no).
@@ -351,8 +352,8 @@ modparam("acc", "report_ack", 1)
 
 
 By default, CANCEL reporting is disabled -- most accounting
-		applications wants to see INVITE's cancellation status.
-		Turn on if you explicitly want to account CANCEL transactions.
+applications wants to see INVITE's cancellation status.
+Turn on if you explicitly want to account CANCEL transactions.
 
 
 Default value is 0 (no).
@@ -367,13 +368,13 @@ modparam("acc", "report_cancels", 1)
 
 
 Controls the direction detection for sequential requests. If 
-		enabled (non zero value), for sequential requests with upstream
-		direction (from callee to caller), the FROM and TO will be swapped
-		(the direction will be preserved as in the original request).
+enabled (non zero value), for sequential requests with upstream
+direction (from callee to caller), the FROM and TO will be swapped
+(the direction will be preserved as in the original request).
 
 
 It affects all values related to TO and FROM headers (body, URI, 
-		username, domain, TAG).
+username, domain, TAG).
 
 
 Default value is 0 (disabled).
@@ -388,8 +389,8 @@ modparam("acc", "detect_direction", 1)
 
 
 Defines the AVP set to be used in per-call-leg accounting.
-		See [multi call legs](#multi_call_legs_accounting) for a 
-		detailed description of the Multi Call-Legs accounting.
+See [multi call legs](#multi_call_legs_accounting) for a 
+detailed description of the Multi Call-Legs accounting.
 
 
 If empty, the multi-leg accounting support will be disabled.
@@ -460,8 +461,8 @@ modparam("acc", "log_level", 2)   # Set log_level to 2
 
 
 Log facility to which accounting messages are issued to syslog.
-		This allows to easily seperate the accounting specific logging
-		from the other log messages.
+This allows to easily seperate the accounting specific logging
+from the other log messages.
 
 
 Default value is LOG_DAEMON.
@@ -491,15 +492,15 @@ modparam("acc", "log_extra",
 
 
 *This parameter is radius specific.* Path to 
-		radius client configuration file, set the referred config file 
-		correctly and specify there address of server, shared secret 
-		(should equal that in /usr/local/etc/raddb/clients for
-		freeRadius servers) and dictionary, see etc for an example of 
-		config file and dictionary.
+radius client configuration file, set the referred config file 
+correctly and specify there address of server, shared secret 
+(should equal that in /usr/local/etc/raddb/clients for
+freeRadius servers) and dictionary, see etc for an example of 
+config file and dictionary.
 
 
 If the parameter is set to empty string, the RADIUS accounting support
-		will be disabled (even if compiled).
+will be disabled (even if compiled).
 
 
 Default value is "NULL".
@@ -514,7 +515,7 @@ modparam("acc", "radius_config", "/etc/radiusclient/radiusclient.conf")
 
 
 Request flag which needs to be set to account a 
-		transaction -- RADIUS specific.
+transaction -- RADIUS specific.
 
 
 Default value is not-set (no flag).
@@ -529,7 +530,7 @@ modparam("acc", "radius_flag", 2)
 
 
 Request flag which needs to be set to account missed 
-		calls -- RADIUS specific.
+calls -- RADIUS specific.
 
 
 Default value is not-set (no flag).
@@ -574,7 +575,7 @@ modparam("acc", "radius_extra",
 
 
 Request flag which needs to be set to account a 
-		transaction -- database specific.
+transaction -- database specific.
 
 
 Default value is not-set (no flag).
@@ -589,7 +590,7 @@ modparam("acc", "db_flag", 2)
 
 
 Request flag which needs to be set to account missed 
-		calls -- database specific.
+calls -- database specific.
 
 
 Default value is not-set (no flag).
@@ -632,7 +633,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
 
 
 SQL address -- database specific. If is set to NULL or empty string,
-		the SQL support is disabled.
+the SQL support is disabled.
 
 
 Default value is "NULL" (SQL disabled).
@@ -647,7 +648,7 @@ modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
 
 
 Column name in accounting table to store the request's method name as
-		string.
+string.
 
 
 Default value is "method".
@@ -704,7 +705,7 @@ modparam("acc", "acc_callid_column", "callid")
 
 
 Column name in accounting table to store the final reply's numeric code
-		value in string format.
+value in string format.
 
 
 Default value is "sip_code".
@@ -719,7 +720,7 @@ modparam("acc", "acc_sip_code_column", "sip_code")
 
 
 Column name in accounting table to store the final reply's reason
-		phrase value.
+phrase value.
 
 
 Default value is "sip_reason".
@@ -734,7 +735,7 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
 
 
 Column name in accounting table to store the time stamp of the 
-		transaction completion in date-time format.
+transaction completion in date-time format.
 
 
 Default value is "time".
@@ -763,7 +764,7 @@ modparam("acc", "db_extra", "ct=$hdr(Content-type); email=$avp(s:email)")
 
 
 Request flag which needs to be set to account a 
-		transaction -- DIAMETER specific.
+transaction -- DIAMETER specific.
 
 
 Default value is not-set (no flag).
@@ -778,7 +779,7 @@ modparam("acc", "diameter_flag", 2)
 
 
 Request flag which needs to be set to account missed 
-		calls -- DIAMETER specific.
+calls -- DIAMETER specific.
 
 
 Default value is not-set (no flag).
@@ -793,7 +794,7 @@ modparam("acc", "diameter_missed_flag", 3)
 
 
 Hostname of the machine where the DIAMETER Client is 
-		running -- DIAMETER specific.
+running -- DIAMETER specific.
 
 
 Default value is "localhost".
@@ -808,7 +809,7 @@ modparam("acc", "diameter_client_host", "3a_server.net")
 
 
 Port number where the Diameter Client is 
-		listening -- DIAMETER specific.
+listening -- DIAMETER specific.
 
 
 Default value is "3000".
@@ -840,10 +841,10 @@ modparam("acc", "diameter_extra", "7846=$hdr(Content-type);7847=$avp(s:email)")
 
 
 `acc_request` reports on a request, 
-		for example, it can be used to report on missed calls to off-line users 
-		who are replied 404 - Not Found. To avoid multiple reports on UDP 
-		request retransmission, you would need to embed the
-		action in stateful processing.
+for example, it can be used to report on missed calls to off-line users 
+who are replied 404 - Not Found. To avoid multiple reports on UDP 
+request retransmission, you would need to embed the
+action in stateful processing.
 
 
 Meaning of the parameters is as follows:
@@ -866,9 +867,9 @@ acc_log_request("Some comment");
 
 
 Like `acc_log_request`, 
-		`acc_db_request` reports on a 
-		request. The report is sent to database at "db_url", in 
-		the table referred to in the second action parameter.
+`acc_db_request` reports on a 
+request. The report is sent to database at "db_url", in 
+the table referred to in the second action parameter.
 
 
 Meaning of the parameters is as follows:
@@ -892,9 +893,9 @@ acc_log_request("Some comment", "Some table");
 
 
 Like `acc_log_request`, 
-		`acc_rad_request` reports on 
-		a request. It reports to radius server as configured in 
-		"radius_config".
+`acc_rad_request` reports on 
+a request. It reports to radius server as configured in 
+"radius_config".
 
 
 Meaning of the parameters is as follows:
@@ -917,8 +918,8 @@ acc_rad_request("Some comment");
 
 
 Like `acc_log_request`, 
-		`acc_diam_request` reports on 
-		a request. It reports to the configured Diameter server.
+`acc_diam_request` reports on 
+a request. It reports to the configured Diameter server.
 
 
 Meaning of the parameters is as follows:
@@ -944,26 +945,26 @@ acc_diam_request("Some comment");
 
 
 The parameter became obsolete with the restructure of the data
-			logged by ACC module (refer to the Overview chapter). For similar
-			behaviour you can use the extra accouting (see the corresponding
-			chapter).
+logged by ACC module (refer to the Overview chapter). For similar
+behaviour you can use the extra accouting (see the corresponding
+chapter).
 
 
 **Q: What happened with old multi_leg_enabled parameter**
 
 
 The parameter became obsolete by the addition of the new
-			multi_leg_info parameter. The multi-leg accouting is automatically
-			enabled when multi_leg_info is defined.
+multi_leg_info parameter. The multi-leg accouting is automatically
+enabled when multi_leg_info is defined.
 
 
 **Q: What happened with old src_leg_avp_id and dst_leg_avp_id
-				parameters**
+parameters**
 
 
 The parameter was replaced by the more generic new parameter
-			multi_leg_info. This allows logging (per-leg) of more information
-			than just dst and src.
+multi_leg_info. This allows logging (per-leg) of more information
+than just dst and src.
 
 
 **Q: Where can I find more about OpenSIPS?**
@@ -976,21 +977,21 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

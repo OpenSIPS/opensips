@@ -16,32 +16,32 @@ The module contains record routing logic
 
 
 OpenSIPS is basically *only* a transaction statefull 
-	proxy, without any dialog support build in. There are many features/services
-	which actually requires a dialog awareness, like storing the information in 
-	the dialog creation stage, information which will be used during the whole 
-	dialog existence.
+proxy, without any dialog support build in. There are many features/services
+which actually requires a dialog awareness, like storing the information in 
+the dialog creation stage, information which will be used during the whole 
+dialog existence.
 
 
 The most urging example is NAT traversal, in dealing with the within the 
-	dialog INVITEs (re-INVITEs). When processing the initial INVITE, the proxy 
-	detects if the caller or callee is behind some NAT and fixes the signalling 
-	and media parts - since not all the detection mechanism are available for 
-	within the dialog requests (like usrloc), to be able to fix correspondingly 
-	the sequential requests, the proxy must remember that the original request 
-	was NAT processed. There are many other cases where dialog awareness fixes 
-	or helps.
+dialog INVITEs (re-INVITEs). When processing the initial INVITE, the proxy 
+detects if the caller or callee is behind some NAT and fixes the signalling 
+and media parts - since not all the detection mechanism are available for 
+within the dialog requests (like usrloc), to be able to fix correspondingly 
+the sequential requests, the proxy must remember that the original request 
+was NAT processed. There are many other cases where dialog awareness fixes 
+or helps.
 
 
 The solution is to store additional dialog-related information in the 
-	routing set (Record-Route/Route headers), headers which show up in all 
-	sequential requests. So any information added to the Record-Route header
-	will be found (with no direction dependencies) in Route header 
-	(corresponding to the proxy address).
+routing set (Record-Route/Route headers), headers which show up in all 
+sequential requests. So any information added to the Record-Route header
+will be found (with no direction dependencies) in Route header 
+(corresponding to the proxy address).
 
 
 As storage container, the parameters of the Record-Route / Route header
-	will be used - Record-Route parameters mirroring are reinforced by 
-	RFC 3261 (see 12.1.1 UAS behavior).
+will be used - Record-Route parameters mirroring are reinforced by 
+RFC 3261 (see 12.1.1 UAS behavior).
 
 
 For this purpose, the modules offers the following functions:
@@ -49,7 +49,7 @@ For this purpose, the modules offers the following functions:
 
 - add_rr_param() - see [add rr param id](#func_add_rr_param)
 - check_route_param() - see 
-				[check route param id](#func_check_route_param)
+[check route param id](#func_check_route_param)
 
 
 ```c title="Dialog support in RR module"
@@ -87,7 +87,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -100,10 +100,10 @@ The following libraries or applications must be installed before running
 
 
 If set to 1 then ";lr=on" instead of just 
-		";lr" will be used. This is to overcome problems with 
-		broken UAs which strip ";lr" parameter when generating 
-		Route header fields from Record-Route (";lr=on" seems 
-		to help).
+";lr" will be used. This is to overcome problems with 
+broken UAs which strip ";lr" parameter when generating 
+Route header fields from Record-Route (";lr=on" seems 
+to help).
 
 
 *Default value is 0 (no).*
@@ -120,9 +120,9 @@ modparam("rr", "enable_full_lr", 1)
 
 
 If turned on, request's from-tag is appended to record-route; that's 
-		useful for understanding whether subsequent requests (such as BYE) come 
-		from caller (route's from-tag==BYE's from-tag) or callee 
-		(route's from-tag==BYE's to-tag)
+useful for understanding whether subsequent requests (such as BYE) come 
+from caller (route's from-tag==BYE's from-tag) or callee 
+(route's from-tag==BYE's to-tag)
 
 
 *Default value is 1 (yes).*
@@ -139,10 +139,10 @@ modparam("rr", "append_fromtag", 0)
 
 
 There are some situations when the server needs to insert two 
-		Record-Route header fields instead of one. For example when using 
-		two disconnected networks or doing cross-protocol forwarding from 
-		UDP->TCP. This parameter enables inserting of 2
-		Record-Routes. The server will later remove both of them.
+Record-Route header fields instead of one. For example when using 
+two disconnected networks or doing cross-protocol forwarding from 
+UDP->TCP. This parameter enables inserting of 2
+Record-Routes. The server will later remove both of them.
 
 
 *Default value is 1 (yes).*
@@ -159,7 +159,7 @@ modparam("rr", "enable_double_rr", 0)
 
 
 If set to a non 0 value (which means yes), the username part will
-		be also added in the Record-Route URI.
+be also added in the Record-Route URI.
 
 
 *Default value is 0 (no).*
@@ -179,34 +179,34 @@ modparam("rr", "add_username", 1)
 
 
 The function performs routing of SIP requests which contain a route 
-		set. The name is a little bit confusing, as this function also routes 
-		requests which are in the "strict router" format.
+set. The name is a little bit confusing, as this function also routes 
+requests which are in the "strict router" format.
 
 
 This function is usually used to route in-dialog requests (like ACK, 
-		BYE, reINVITE). Nevertheless also out-of-dialog requests can have a 
-		"pre-loaded route set" and my be routed with loose_route. 
-		It also takes care of translating between strict-routers and 
-		loose-router.
+BYE, reINVITE). Nevertheless also out-of-dialog requests can have a 
+"pre-loaded route set" and my be routed with loose_route. 
+It also takes care of translating between strict-routers and 
+loose-router.
 
 
 The loose_route function analyzes the Route: headers in the requests. 
-		If there is no Route: header, the function returns FALSE and routing 
-		should be done with normal lookup functions. If a Route: header is 
-		found, the function returns 1 and behaves as described in section 
-		16.12 of RFC 3261. There is only one exception: If the request is 
-		out-of-dialog (no to-tag) and there is only one Route: header 
-		indicating the local proxy, then the Route: header is removed and 
-		the function returns FALSE.
+If there is no Route: header, the function returns FALSE and routing 
+should be done with normal lookup functions. If a Route: header is 
+found, the function returns 1 and behaves as described in section 
+16.12 of RFC 3261. There is only one exception: If the request is 
+out-of-dialog (no to-tag) and there is only one Route: header 
+indicating the local proxy, then the Route: header is removed and 
+the function returns FALSE.
 
 
 Make sure your loose_routing function can't be used by attackers to 
-		bypass proxy authorization.
+bypass proxy authorization.
 
 
 The loose_routing topic is very complex. See the RFC3261 for more 
-		details (grep for "route set" is a good starting point in 
-		this comprehensive RFC).
+details (grep for "route set" is a good starting point in 
+this comprehensive RFC).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -223,17 +223,17 @@ loose_route();
 
 
 The function adds a new Record-Route header field. The header field 
-		will be inserted in the message before any other Record-Route header 
-		fields.
+will be inserted in the message before any other Record-Route header 
+fields.
 
 
 If any string is passed as parameter, it will be appended as URI
-		parameter to the Record-Route header. The string must follow the 
-		";name=value" scheme and it may contain pseudo-variables.
+parameter to the Record-Route header. The string must follow the 
+";name=value" scheme and it may contain pseudo-variables.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and 
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="record_route usage"
@@ -247,18 +247,18 @@ record_route();
 
 
 This function will put the string into Record-Route, don't use 
-		unless you know what you are doing.
+unless you know what you are doing.
 
 
 Meaning of the parameters is as follows:
 
 
 - *string* - String to be inserted into the 
-				header field; it may contain pseudo-variables.
+header field; it may contain pseudo-variables.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and 
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="record_route_preset usage"
@@ -272,21 +272,21 @@ record_route_preset("1.2.3.4:5090");
 
 
 Adds a parameter to the Record-Route URI (param must be in 
-		";name=value" format. The function may be called also 
-		before or after the record_route() call 
-		(see [record route id](#func_record_route)).
+";name=value" format. The function may be called also 
+before or after the record_route() call 
+(see [record route id](#func_record_route)).
 
 
 Meaning of the parameters is as follows:
 
 
 - *param* - String containing the URI parameter to
-			be added. It must follow the ";name=value" scheme; it 
-			may contain pseudo-variables.
+be added. It must follow the ";name=value" scheme; it 
+may contain pseudo-variables.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and 
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="add_rr_param usage"
@@ -300,16 +300,16 @@ add_rr_param(";nat=yes");
 
 
 The function checks if the URI parameters of the local Route 
-		header (corresponding to the local server) matches the given regular 
-		expression. It must be call after loose_route() 
-		(see [loose route id](#func_loose_route)).
+header (corresponding to the local server) matches the given regular 
+expression. It must be call after loose_route() 
+(see [loose route id](#func_loose_route)).
 
 
 Meaning of the parameters is as follows:
 
 
 - *re* - regular expression to check against the
-			Route URI parameters.
+Route URI parameters.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -328,26 +328,26 @@ if (check_route_param("nat=yes")) {
 
 
 The function checks the flow direction of the request.
-		As for checking it's used the "ftag" Route header 
-		parameter, the append_fromtag (see [append fromtag id](#param_append_fromtag) 
-		module parameter must be enabled. Also this must be called only after 
-		loose_route() (see [loose route id](#func_loose_route)).
+As for checking it's used the "ftag" Route header 
+parameter, the append_fromtag (see [append fromtag id](#param_append_fromtag) 
+module parameter must be enabled. Also this must be called only after 
+loose_route() (see [loose route id](#func_loose_route)).
 
 
 The function returns true if the "dir" is the same with
-		the request's flow direction.
+the request's flow direction.
 
 
 The "downstream" (UAC to UAS) direction is relative to the
-		initial request that created the dialog.
+initial request that created the dialog.
 
 
 Meaning of the parameters is as follows:
 
 
 - *dir* - string containing the direction to be 
-				checked. It may be "upstream" (from UAS to UAC) or 
-				"downstream" (UAC to UAS).
+checked. It may be "upstream" (from UAS to UAC) or 
+"downstream" (UAC to UAS).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -372,22 +372,22 @@ Exported pseudo-variables are listed in the next sections.
 
 
 *$rr_params* - the whole string of the Route
-			paramters - this is available only after calling loose_route()
+paramters - this is available only after calling loose_route()
 
 
 ## Developer Guide
 
 
 The RR module provides an internal API to be used by 
-	other OpenSIPS modules. The API offers support for
-	SIP dialog based functionalities - for more about the dialog support
-	offered by RR module, see [RR dialog id](#dialog_support).
+other OpenSIPS modules. The API offers support for
+SIP dialog based functionalities - for more about the dialog support
+offered by RR module, see [RR dialog id](#dialog_support).
 
 
 For internal(non-script) usage, the RR module offers to other module the
-	possibility to register callback functions to be executed each time a
-	local Route header is processed. The callback function will receive as
-	parameter the register parameter and the Route header parameter string.
+possibility to register callback functions to be executed each time a
+local Route header is processed. The callback function will receive as
+parameter the register parameter and the Route header parameter string.
 
 
 ### Available Functions
@@ -397,7 +397,7 @@ For internal(non-script) usage, the RR module offers to other module the
 
 
 Adds a parameter to the requests's Record-Route URI (param must be in 
-		";name=value" format).
+";name=value" format).
 
 
 The function returns 0 on success. Otherwise, -1 is returned.
@@ -407,20 +407,20 @@ Meaning of the parameters is as follows:
 
 
 - *struct sip_msg* msg* - request that
-				will has the parameter "param" added to its 
-				Record-Route header.
+will has the parameter "param" added to its 
+Record-Route header.
 - *str* param* - parameter to be added 
-				to the Record-Route header - it must be in 
-				";name=value" format.
+to the Record-Route header - it must be in 
+";name=value" format.
 
 
 #### check_route_param( msg, re)
 
 
 The function checks for the request "msg" if the URI 
-		parameters of the local Route header (corresponding to the local 
-		server) matches the given regular expression "re". 
-		It must be call after the loose_route was done.
+parameters of the local Route header (corresponding to the local 
+server) matches the given regular expression "re". 
+It must be call after the loose_route was done.
 
 
 The function returns 0 on success. Otherwise, -1 is returned.
@@ -430,67 +430,67 @@ Meaning of the parameters is as follows:
 
 
 - *struct sip_msg* msg* - request that
-				will has the Route header parameters checked.
+will has the Route header parameters checked.
 - *regex_t* param* - compiled regular
-				expression to be checked against the Route header parameters.
+expression to be checked against the Route header parameters.
 
 
 #### is_direction( msg, dir)
 
 
 The function checks the flow direction of the request 
-		"msg". As for checking it's used the "ftag" 
-		Route header parameter, the append_fromtag (see 
-		[append fromtag id](#param_append_fromtag) module parameter 
-		must be enables. Also this must be call only after the loose_route is 
-		done.
+"msg". As for checking it's used the "ftag" 
+Route header parameter, the append_fromtag (see 
+[append fromtag id](#param_append_fromtag) module parameter 
+must be enables. Also this must be call only after the loose_route is 
+done.
 
 
 The function returns 0 if the "dir" is the same with
-		the request's flow direction. Otherwise, -1 is returned.
+the request's flow direction. Otherwise, -1 is returned.
 
 
 Meaning of the parameters is as follows:
 
 
 - *struct sip_msg* msg* - request that
-				will have the direction checked.
+will have the direction checked.
 - *int dir* - direction to be checked
-				against. It may be "RR_FLOW_UPSTREAM" or 
-				"RR_FLOW_DOWNSTREAM".
+against. It may be "RR_FLOW_UPSTREAM" or 
+"RR_FLOW_DOWNSTREAM".
 
 
 #### get_route_param( msg, name, val)
 
 
 The function search in to the "msg"'s Route header 
-		parameters the parameter called "name" and returns its
-		value into "val". It must be call only after the 
-		loose_route is done.
+parameters the parameter called "name" and returns its
+value into "val". It must be call only after the 
+loose_route is done.
 
 
 The function returns 0 if parameter was found (even if it has no value).
-		Otherwise, -1 is returned.
+Otherwise, -1 is returned.
 
 
 Meaning of the parameters is as follows:
 
 
 - *struct sip_msg* msg* - request that
-				will have the Route header parameter searched.
+will have the Route header parameter searched.
 - *str *name* - contains the Route header
-				parameter to be serached.
+parameter to be serached.
 - *str *val* - returns the value of the 
-				searched Route header parameter if found. It might be empty 
-				string if the parameter had no value.
+searched Route header parameter if found. It might be empty 
+string if the parameter had no value.
 
 
 #### register_rrcb( callback, param)
 
 
 The function register a new callback (along with its parameter). The
-		callback will be called when a loose route will be performed for the
-		local address.
+callback will be called when a loose route will be performed for the
+local address.
 
 
 The function returns 0 on success. Otherwise, -1 is returned.
@@ -500,9 +500,9 @@ Meaning of the parameters is as follows:
 
 
 - *rr_cb_t callback* - callback
-				function to be registered.
+function to be registered.
 - *void *param* - parameter to be passed
-				to the callback function.
+to the callback function.
 
 
 ### Examples
