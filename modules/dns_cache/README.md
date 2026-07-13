@@ -1,6 +1,6 @@
 ---
 title: "dns_cache Module"
-description: "This module is an implementation of a cache system designed for DNS records. For successful DNS queries of all types, the module will store in a cache/db backend the mappings, for TTL number of seconds received in the DNS answer. Failed DNS queries will also be stored in the back-end, with ..."
+description: "This module is an implementation of a cache system designed for DNS records."
 ---
 
 ## Admin Guide
@@ -10,11 +10,11 @@ description: "This module is an implementation of a cache system designed for DN
 
 
 This module is an implementation of a cache system designed for DNS records.
-		For successful DNS queries of all types, the module will store in a cache/db
-		backend the mappings, for TTL number of seconds received in the DNS answer.
-		Failed DNS queries will also be stored in the back-end, with a TTL that can be
-		specified by the user.
-		The module uses the Key-Value interface exported from the core.
+For successful DNS queries of all types, the module will store in a cache/db
+backend the mappings, for TTL number of seconds received in the DNS answer.
+Failed DNS queries will also be stored in the back-end, with a TTL that can be
+specified by the user.
+The module uses the Key-Value interface exported from the core.
 
 
 ### Dependencies
@@ -24,7 +24,7 @@ This module is an implementation of a cache system designed for DNS records.
 
 
 A cachedb_* type module must be loaded before loading
-		the dns_cache module.
+the dns_cache module.
 
 
 ### Exported Parameters
@@ -34,7 +34,7 @@ A cachedb_* type module must be loaded before loading
 
 
 The url of the key-value back-end that will be used
-			for storing the DNS records.
+for storing the DNS records.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -52,7 +52,7 @@ modparam("dns_cache", "cachedb_url","memcached://192.168.2.130:8888/")
 
 
 The number of seconds that a failed DNS query will be kept in cache.
-			Default is 3600.
+Default is 3600.
 
 
 ```opensips title="Set blacklist_timeout parameter"
@@ -67,7 +67,7 @@ modparam("dns_cache", "blacklist_timeout",7200) # 2 hours
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 <!-- CONTRIBUTORS -->
 
 ### License
