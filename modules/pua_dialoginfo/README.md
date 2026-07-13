@@ -1,6 +1,6 @@
 ---
 title: "pua dialoginfo"
-description: "The pua_dialoginfo retrieves dialog state information from the dialog module and PUBLISHes the dialog-information using the pua module. Thus, in combination with the presence_xml module this can be used to derive dialog-info from the dialog module and NOTIFY the subscribed watchers about..."
+description: "The pua_dialoginfo retrieves dialog state information from the dialog module and PUBLISHes the dialog-information using the pua module."
 ---
 
 ## Admin Guide
@@ -10,28 +10,29 @@ description: "The pua_dialoginfo retrieves dialog state information from the dia
 
 
 The pua_dialoginfo retrieves dialog state information from the 
-		dialog module and PUBLISHes the dialog-information using the pua
-		module. Thus, in combination with the presence_xml module this can
-		be used to derive dialog-info from the dialog module and NOTIFY
-		the subscribed watchers about dialog-info changes. This can be used
-		for example with SNOM and Linksys phones.
+dialog module and PUBLISHes the dialog-information using the pua
+module. Thus, in combination with the presence_xml module this can
+be used to derive dialog-info from the dialog module and NOTIFY
+the subscribed watchers about dialog-info changes. This can be used
+for example with SNOM and Linksys phones.
 
 
-Note: This implements dialog-info according to RFC 4235 and is not 
-		compatible with the BLA feature defined in draft-anil-sipping-bla-03.txt.
-		(Actually the BLA draft is really crap as it changes SIP semantics)
+> [!NOTE]
+> This implements dialog-info according to RFC 4235 and is not 
+> compatible with the BLA feature defined in draft-anil-sipping-bla-03.txt.
+> (Actually the BLA draft is really crap as it changes SIP semantics)
 
 
 The module is based on code (copy/paste) from pua_usrloc and nat_traversal
-		module.
+module.
 
 
 Following you will show some examples of an dialog-info XML document taken
-		from RFC 4235. This will help you to understand the meaning of the module
-		parameters:
+from RFC 4235. This will help you to understand the meaning of the module
+parameters:
 
 
-```c
+```xml
 <?xml version="1.0"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
              version="1"
@@ -49,31 +50,31 @@ Following you will show some examples of an dialog-info XML document taken
 
 
 The root element is the "dialog-info". It contains the namespace, the 
-		version (which must be incremented for each new PUBLISH for this certain
-		dialog), the state (this module only supports state=full) and the entity
-		for which we publish the dialog-info.
+version (which must be incremented for each new PUBLISH for this certain
+dialog), the state (this module only supports state=full) and the entity
+for which we publish the dialog-info.
 
 
 The "dialog" element must contain an id parameter. The id parameter is
-		usually different to the optional call-id parameter (which is the call-id of the 
-		INVITE request) as an INVITE can create multiple dialogs (forked request). But
-		as the dialog module does not support multiple dialogs created by a single 
-		transaction, the pua_dialoginfo module sets the id parameter to the same 
-		value as the call-id parameter. The "local-tag" indicates the local tag of the
-		entity. The remote-tag indicates the tag of the remote party. The "direction"
-		indicates if the entity was the initator of the dialog or the recepient (aka
-		if the entity sent or received the first INVITE).
+usually different to the optional call-id parameter (which is the call-id of the 
+INVITE request) as an INVITE can create multiple dialogs (forked request). But
+as the dialog module does not support multiple dialogs created by a single 
+transaction, the pua_dialoginfo module sets the id parameter to the same 
+value as the call-id parameter. The "local-tag" indicates the local tag of the
+entity. The remote-tag indicates the tag of the remote party. The "direction"
+indicates if the entity was the initator of the dialog or the recepient (aka
+if the entity sent or received the first INVITE).
 
 
 The "state" element describes the state of the dialog state machine and must be
-		either: trying, proceeding, early, confirmed or terminated.
+either: trying, proceeding, early, confirmed or terminated.
 
 
 The dialog element can contain optional "local" and "remote" elements which
-	describes the local and the remote party in more detail, for example:
+describes the local and the remote party in more detail, for example:
 
 
-```c
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
              version="1" state="full">
@@ -97,21 +98,21 @@ The dialog element can contain optional "local" and "remote" elements which
 
 
 The local and remote elements are needed to implement call pickup. For example if 
-		the above XML document is received by somebody who SUBSCRIBEd the dialog-info of
-		Alice, then it can pick-up the call by sending an INVITE to Bob (actually I am not
-		sure if it should use the URI in the identity element or the URI in the target 
-		parameter) which contains a Replaces header which contains the call-id and the tags.
-		This was tested sucessfully with Linksys SPA962 phones and with SNOM 320 Firmware 7.3.7
-		(you have to set the function key to "Extension").
+the above XML document is received by somebody who SUBSCRIBEd the dialog-info of
+Alice, then it can pick-up the call by sending an INVITE to Bob (actually I am not
+sure if it should use the URI in the identity element or the URI in the target 
+parameter) which contains a Replaces header which contains the call-id and the tags.
+This was tested sucessfully with Linksys SPA962 phones and with SNOM 320 Firmware 7.3.7
+(you have to set the function key to "Extension").
 
 
 A dialog-info XML document may contain multiple "dialog" elements, for 
-		example if the entity has multiple ongoing dialogs. For example the
-		following XML document shows a confirmed dialog and an early (probably
-		a second incoming call) dialog.
+example if the entity has multiple ongoing dialogs. For example the
+following XML document shows a confirmed dialog and an early (probably
+a second incoming call) dialog.
 
 
-```c
+```xml
 <?xml version="1.0"?>
 <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
              version="3"
@@ -132,34 +133,34 @@ A dialog-info XML document may contain multiple "dialog" elements, for
 
 
 To enable dialoginfo notifications for a certain dialog, you must call
-		dialoginfo_set() function for that dialog.
-		This function can take one parameter which through which you can tell the
-		module to publish dialoginfo only for one side of the call. This is useful
-		because you want to store dialoginfo only for the local users, and you can
-		decide from the script if the call parties are local users and give the correct
-		parameter to this function to tell it to send generate dialoginfo only for the
-		local users. The possible values are : "A" - corresponding to generate dialoginfo
-		only for the caller and "B" - generate dialoginfo only for the callee. If no parameter
-		is given, the module will generate dialoginfo for both parties.
+dialoginfo_set() function for that dialog.
+This function can take one parameter which through which you can tell the
+module to publish dialoginfo only for one side of the call. This is useful
+because you want to store dialoginfo only for the local users, and you can
+decide from the script if the call parties are local users and give the correct
+parameter to this function to tell it to send generate dialoginfo only for the
+local users. The possible values are : "A" - corresponding to generate dialoginfo
+only for the caller and "B" - generate dialoginfo only for the callee. If no parameter
+is given, the module will generate dialoginfo for both parties.
 
-		It is possible to specify what URIs should be used for caller and callee by setting the
-		the pseudovariables with the names defined as module parameter "caller_spec_param" and
-		"callee_spec_param" before calling dialoginfo_set function.
-		Please read the description of this parameters in Exported Parameters section.
-		If this parameters are not set, the default sources will be used, From header for the caller
-		and display name in To header + RURI for the callee.
+It is possible to specify what URIs should be used for caller and callee by setting the
+the pseudovariables with the names defined as module parameter "caller_spec_param" and
+"callee_spec_param" before calling dialoginfo_set function.
+Please read the description of this parameters in Exported Parameters section.
+If this parameters are not set, the default sources will be used, From header for the caller
+and display name in To header + RURI for the callee.
 
 
 As the dialog module callbacks only address a certain dialog, the pua_dialoginfo
-		always PUBLISHes XML documents with a single "dialog" element. If an entity
-		has multiple concurrent dialogs, the pua_dialoginfo module will send PUBLISH for
-		each dialog. These multiple "presenties" can be aggregated by the presence_dialoginfo
-		module into a single XML document with multiple "dialog" elements. Please see the
-		description of the presence_dialoginfo module for details about the aggregation.
+always PUBLISHes XML documents with a single "dialog" element. If an entity
+has multiple concurrent dialogs, the pua_dialoginfo module will send PUBLISH for
+each dialog. These multiple "presenties" can be aggregated by the presence_dialoginfo
+module into a single XML document with multiple "dialog" elements. Please see the
+description of the presence_dialoginfo module for details about the aggregation.
 
 
 If there are problems with the callbacks from dialog module and you want to 
-		debug them you define PUA_DIALOGINFO_DEBUG in pua_dialoginfo.c and recompile.
+debug them you define PUA_DIALOGINFO_DEBUG in pua_dialoginfo.c and recompile.
 
 
 ### Dependencies
@@ -179,7 +180,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *libxml*.
@@ -192,7 +193,7 @@ The following libraries or applications must be installed before running
 
 
 If this parameter is set, the optional call-id will be put into the
-			dialog element. This is needed for call-pickup features.
+dialog element. This is needed for call-pickup features.
 
 
 *Default value is "1".*
@@ -209,7 +210,7 @@ modparam("pua_dialoginfo", "include_callid", 0)
 
 
 If this parameter is set, the local and remote tag will be put
-			into the dialog element. This is needed for call-pickup features.
+into the dialog element. This is needed for call-pickup features.
 
 
 *Default value is "1".*
@@ -226,8 +227,8 @@ modparam("pua_dialoginfo", "include_tags", 0)
 
 
 If this parameter is set, the optional local and remote elements
-			will be put into the dialog element. This is needed for call-pickup 
-			features.
+will be put into the dialog element. This is needed for call-pickup 
+features.
 
 
 *Default value is "1".*
@@ -244,14 +245,14 @@ modparam("pua_dialoginfo", "include_localremote", 0)
 
 
 Usually the dialog-info of the caller will be 
-			"trying -> early -> confirmed" and the dialog-info of the callee 
-			will be "early -> confirmed". On some phones the function LED
-			will start blinking if the state is early, regardless if is is the
-			caller or the callee (indicated with the "direction" parameter).
-			To avoid blinking LEDs for the caller, you can enable this parameter.
-			Then the state of the caller will be singaled as "confirmed" even
-			in "early" state. This is a workaround for the buggy Linksys SPA962
-			phones. SNOM phones work well with the default setting.
+"trying -> early -> confirmed" and the dialog-info of the callee 
+will be "early -> confirmed". On some phones the function LED
+will start blinking if the state is early, regardless if is is the
+caller or the callee (indicated with the "direction" parameter).
+To avoid blinking LEDs for the caller, you can enable this parameter.
+Then the state of the caller will be singaled as "confirmed" even
+in "early" state. This is a workaround for the buggy Linksys SPA962
+phones. SNOM phones work well with the default setting.
 
 
 *Default value is "0".*
@@ -268,12 +269,12 @@ modparam("pua_dialoginfo", "caller_confirmed", 1)
 
 
 Usually the dialog-info of the caller will be
-			"trying -> early -> confirmed". "trying" will be triggered as soon
-			as you call dialoginfo_set on the caller, while "early" is triggered
-			as soon as the callee is ringing.
-			Sometimes, it is advisable to be notified only when the callee reaches
-			the early state and not before. In other cases, it is advisable to
-			notify the early state. This setting allows controlling the behavior.
+"trying -> early -> confirmed". "trying" will be triggered as soon
+as you call dialoginfo_set on the caller, while "early" is triggered
+as soon as the callee is ringing.
+Sometimes, it is advisable to be notified only when the callee reaches
+the early state and not before. In other cases, it is advisable to
+notify the early state. This setting allows controlling the behavior.
 
 
 *Default value is "0".*
@@ -290,12 +291,12 @@ modparam("pua_dialoginfo", "publish_on_trying", 1)
 
 
 By default, reINVITEs will trigger a PUBLISH. They are actually
-			the only in-dialog request for which it makes sense.
-			In some cases, it does not make sense to republish a dialog state.
-			(e.g. when handling a B2BUA reINVITE).
-			This setting defines the flag that needs to be set in the request
-			route to prevent the generation of a PUBLISH request in case of a
-			specific reINVITE.
+the only in-dialog request for which it makes sense.
+In some cases, it does not make sense to republish a dialog state.
+(e.g. when handling a B2BUA reINVITE).
+This setting defines the flag that needs to be set in the request
+route to prevent the generation of a PUBLISH request in case of a
+specific reINVITE.
 
 
 ```opensips title="Set nopublish_flag parameter"
@@ -309,7 +310,7 @@ modparam("pua_dialoginfo", "nopublish_flag", 5)
 
 
 The address of the presence server, where the PUBLISH messages
-		should be sent (not compulsory).
+should be sent (not compulsory).
 
 
 ```opensips title="Set presence_server parameter"
@@ -323,11 +324,11 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 
 
 The name of the pseudovariable that will hold a custom caller URI.
-		If this variable is not set, the information in From header is used.
-		If you want to use another caller definition, you have to fill in this
-		pseudovariable before calling dialoginfo_set() function. The format of the string
-		resemples the format of To/From SIP headers:
-		"display_name<sip_uri>"  or "sip_uri".
+If this variable is not set, the information in From header is used.
+If you want to use another caller definition, you have to fill in this
+pseudovariable before calling dialoginfo_set() function. The format of the string
+resemples the format of To/From SIP headers:
+"display_name<sip_uri>"  or "sip_uri".
 
 
 ```opensips title="Set caller_spec_param parameter"
@@ -342,10 +343,10 @@ modparam("pua_dialoginfo", "caller_spec_param", "$avp(caller)")
 
 
 The name of the pseudovariable that will hold the callee URI.
-		If this variable will not be set, the callee information used
-		will be made of To display uri + RURI.
-		the. The format of the string to set this pseudovariable to is
-		the same as described in caller_spec_param section.
+If this variable will not be set, the callee information used
+will be made of To display uri + RURI.
+the. The format of the string to set this pseudovariable to is
+the same as described in caller_spec_param section.
 
 
 ```opensips title="Set caller_spec_param parameter"
@@ -360,11 +361,11 @@ modparam("pua_dialoginfo", "callee_spec_param", "$avp(callee)")
 
 
 It is advisable to specify if you use a different presence server
-			than OpenSIPS presence server, by setting this parameter to 0.
-			By default, a trick (version in the Publish body is set '0000000') is
-			used when working with Opensips Presence Server
-			to make the processing faster and this might not be accepted by other
-			presence servers.
+than OpenSIPS presence server, by setting this parameter to 0.
+By default, a trick (version in the Publish body is set '0000000') is
+used when working with Opensips Presence Server
+to make the processing faster and this might not be accepted by other
+presence servers.
 
 
 *Default value is "1".*
@@ -385,15 +386,15 @@ modparam("pua_dialoginfo", "osips_ps", 0)
 
 
 This function must be called for INVITE messages that initialize a
-		dialog for which dialoginfo information must be published.
+dialog for which dialoginfo information must be published.
 
 
 Meaning of the parameters:
 
 
 - *side* (optional) - can be "A" or "B"
-			for caller or callee PUBLISH only - if missing, both sides will
-			be published.
+for caller or callee PUBLISH only - if missing, both sides will
+be published.
 
 
 ```opensips title="dialoginfo_set usage"

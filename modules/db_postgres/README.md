@@ -28,12 +28,12 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *PostgreSQL library* - e.g., libpq5.
 - *PostgreSQL devel library* - to compile
-				the module (e.g., libpq-dev).
+the module (e.g., libpq-dev).
 
 
 ### Exported Parameters
@@ -43,7 +43,7 @@ The following libraries or applications must be installed before running
 
 
 If queries take longer than 'exec_query_threshold' microseconds, warning
-		messages will be written to logging facility.
+messages will be written to logging facility.
 
 
 *Default value is 0 - disabled.*

@@ -10,36 +10,36 @@ description: "The SIGNALING module comes as a wrapper over tm and sl modules and
 
 
 The SIGNALING module comes as a wrapper over 
-		tm and sl modules and offers one function to be called by the modules
-		that want to send a reply.
+tm and sl modules and offers one function to be called by the modules
+that want to send a reply.
 
 
 The logic behind th emodule is to first search if a transaction is
-		created and if so, send a state full reply, using tm module, otherwise
-		send a stateless reply with the function exported by sl.
-		In this way, the script writer still has the call on how the transaction 
-		should be handled, state full or stateless and the reply is send 
-		accordingly to his choice.
+created and if so, send a state full reply, using tm module, otherwise
+send a stateless reply with the function exported by sl.
+In this way, the script writer still has the call on how the transaction 
+should be handled, state full or stateless and the reply is send 
+accordingly to his choice.
 
 
 For example, if you do a t_newtran() in the script before doing save() 
-		(for registration), the function will automatically send the reply in 
-		stateful mode as a transaction is available. If no transaction is done, 
-		the reply will be sent in stateless way (as now).
+(for registration), the function will automatically send the reply in 
+stateful mode as a transaction is available. If no transaction is done, 
+the reply will be sent in stateless way (as now).
 
 
 By doing this, we have the possibility to have same module sending 
-		either stateful either stateless replies, by just controlling this from 
-		the script (if we create or not a transaction).
-		So, the signalling will be more coherent as the replies will be sent 
-		according to the transaction presence (or not).
+either stateful either stateless replies, by just controlling this from 
+the script (if we create or not a transaction).
+So, the signalling will be more coherent as the replies will be sent 
+according to the transaction presence (or not).
 
 
 Moreover, this module offers the possibility of loading only one 
-	of the module, sl or tm, and send reply using only the module that is 
-	loaded. This is useful as not in all cases a user desires to send 
-	stateful or stateless replies and he should not be forced to load the 
-	module only because the send reply interface requires it.
+of the module, sl or tm, and send reply using only the module that is 
+loaded. This is useful as not in all cases a user desires to send 
+stateful or stateless replies and he should not be forced to load the 
+module only because the send reply interface requires it.
 
 
 ### Dependencies
@@ -59,7 +59,7 @@ At least one of the following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -78,9 +78,9 @@ The following libraries or applications must be installed before running
 
 
 For the current request, a reply is sent back having the given code 
-		and text reason. The reply is sent stateless or statefull depending 
-		on which module is loaded and if a transaction was created, as 
-		explained above.
+and text reason. The reply is sent stateless or statefull depending 
+on which module is loaded and if a transaction was created, as 
+explained above.
 
 
 Meaning of the parameters is as follows:

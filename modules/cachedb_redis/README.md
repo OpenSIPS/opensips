@@ -1,6 +1,6 @@
 ---
 title: "cachedb_redis Module"
-description: "This module is an implementation of a cache system designed to work with a Redis server. It uses hiredis client library to connect to either a single Redis server instance, or to a Redis Server inside a Redis Cluster. It uses the Key-Value interface exported from the core."
+description: "This module is an implementation of a cache system designed to work with a Redis server."
 ---
 
 ## Admin Guide
@@ -10,9 +10,9 @@ description: "This module is an implementation of a cache system designed to wor
 
 
 This module is an implementation of a cache system designed to work with a 
-		Redis server. It uses hiredis client library to connect to either a single Redis
-		server instance, or to a Redis Server inside a Redis Cluster.
-		It uses the Key-Value interface exported from the core.
+Redis server. It uses hiredis client library to connect to either a single Redis
+server instance, or to a Redis Server inside a Redis Cluster.
+It uses the Key-Value interface exported from the core.
 
 
 ### Advantages
@@ -20,15 +20,15 @@ This module is an implementation of a cache system designed to work with a
 
 - *memory costs are no longer on the server*
 - *many servers can be used inside a cluster, so the memory
-				is virtually unlimited*
+is virtually unlimited*
 - *the cache is 100% persistent. A restart
-					of OpenSIPS server will not affect the DB. The Redis DB is also
-				persistent so it can also be restarted without loss of information.*
+of OpenSIPS server will not affect the DB. The Redis DB is also
+persistent so it can also be restarted without loss of information.*
 - *redis is an open-source project so
-				it can be used to exchange data
-				 with various other applicationsr*
+it can be used to exchange data
+with various other applicationsr*
 - *By creating a Redis Cluster, multiple OpenSIPS
-				instances can easily share key-value information*
+instances can easily share key-value information*
 
 
 ### Limitations
@@ -50,16 +50,16 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *hiredis:*
 On the latest Debian based distributions, hiredis can be installed
-				by running 'apt-get install libhiredis-dev'
+by running 'apt-get install libhiredis-dev'
 
-				Alternatively, if hiredis is not available on your OS repos,
-				hiredis can be downloaded from: https://github.com/antirez/hiredis .
-				Download the archive, extract sources, run make,sudo make install.
+Alternatively, if hiredis is not available on your OS repos,
+hiredis can be downloaded from: https://github.com/antirez/hiredis .
+Download the archive, extract sources, run make,sudo make install.
 
 
 ### Exported Parameters
@@ -69,10 +69,10 @@ On the latest Debian based distributions, hiredis can be installed
 
 
 The urls of the server groups that OpenSIPS will connect to in order
-			to use the from script cache_store,cache_fetch, etc operations.
-			It can be set more than one time.
-			The prefix part of the URL will be the identifier that will be used
-			from the script.
+to use the from script cache_store,cache_fetch, etc operations.
+It can be set more than one time.
+The prefix part of the URL will be the identifier that will be used
+from the script.
 
 
 ```opensips title="Set cachedb_url parameter"
@@ -98,7 +98,7 @@ cache_remove("redis:cluster1","key");
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 <!-- CONTRIBUTORS -->
 
 ### License
