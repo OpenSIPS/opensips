@@ -10,34 +10,34 @@ description: "The modules is a Resource List Server implementation following the
 
 
 The modules is a Resource List Server implementation following the
-	specification in RFC 4662 and RFC 4826.
+specification in RFC 4662 and RFC 4826.
 
 
 The server is independent from local presence servers, retrieving presence
-	information with Subscribe-Notify messages.
+information with Subscribe-Notify messages.
 
 
 The module uses the presence module as a library, as it requires a resembling
-	mechanism for handling Subscribe. Therefore, in case the local presence server
-	is not collocated on the same machine with the RL server, the presence module
-	should be loaded in a library mode only (see doc for presence module).
+mechanism for handling Subscribe. Therefore, in case the local presence server
+is not collocated on the same machine with the RL server, the presence module
+should be loaded in a library mode only (see doc for presence module).
 
 
 It handles subscription to lists in an event independent way.The default event
-	is presence, but if some other events are to be handled by the server, they
-	should be added using the module parameter "rls_events".
+is presence, but if some other events are to be handled by the server, they
+should be added using the module parameter "rls_events".
 
 
 It works with XCAP server for storage. There is also the possibility to
-	configure it to work in an integrated_xcap server mode, when it only
-	queries database for the resource lists documents. This is useful in a
-	small architecture when all the clients use an integrated server and there
-	are no references to exterior documents in their lists.
+configure it to work in an integrated_xcap server mode, when it only
+queries database for the resource lists documents. This is useful in a
+small architecture when all the clients use an integrated server and there
+are no references to exterior documents in their lists.
 
 
 The same as presence module, it has a caching mode with periodical update
-	in database for subscribe information. The information retrieved with Notify
-	messages is stored in database only.
+in database for subscribe information. The information retrieved with Notify
+messages is stored in database only.
 
 
 ### Dependencies
@@ -70,7 +70,7 @@ The following modules must be loaded before this module:
 
 
 The name of the db table where resource lists subscription 
-		information is stored.
+information is stored.
 
 
 *Default value is "rls_watchers".*
@@ -87,7 +87,7 @@ modparam("rls", "rlsubs_table", "rls_subscriptions")
 
 
 The name of the db table where notified event specific
-		information is stored.
+information is stored.
 
 
 *Default value is "rls_presentity".*
@@ -120,8 +120,8 @@ modparam("rls", "clean_period", 100)
 
 
 The timer period at which the server should attempt to send
-	 Notifies with the updated presence state of the subscribed list
-	 or watcher information.
+Notifies with the updated presence state of the subscribed list
+or watcher information.
 
 
 *Default value is "50".*
@@ -155,7 +155,7 @@ modparam("rls", "max_expires", 10800)
 
 
 The dimension of the hash table used to store subscription to a list.
-        This parameter will be used as the power of 2 when computing table size.
+This parameter will be used as the power of 2 when computing table size.
 
 
 *Default value is "9 (512)".*
@@ -190,10 +190,10 @@ modparam("rls", "xcap_root", "http://192.168.2.132/xcap-root:800")
 
 
 The code to be returned by rls_handle_subscribe function 
-		if the processed Subscribe is not a resource list Subscribe.
-		This code can be used in an architecture with presence and rls
-		servers collocated on the same machine, to call handle_subscribe
-		on the message causing this code.
+if the processed Subscribe is not a resource list Subscribe.
+This code can be used in an architecture with presence and rls
+servers collocated on the same machine, to call handle_subscribe
+on the message causing this code.
 
 
 *Default value is "0".*
@@ -211,8 +211,8 @@ modparam("rls", "to_presence_code", 10)
 
 
 The default event that RLS handles is presence. If some other
-		events should also be handled by RLS they should be added using
-		this parameter. It can be set more than once.
+events should also be handled by RLS they should be added using
+this parameter. It can be set more than once.
 
 
 *Default value is ""presence"".*
@@ -230,9 +230,9 @@ modparam("rls", "rls_event", "dialog;sla")
 
 
 The address of the presence server. It will be used as outbound proxy for
-		Subscribe requests sent by the RLS server to bouncing on and off the
-		proxy and having to include special processing for this messages
-		in the proxy's configuration file.
+Subscribe requests sent by the RLS server to bouncing on and off the
+proxy and having to include special processing for this messages
+in the proxy's configuration file.
 
 
 ```opensips title="Set presence_server parameter"
@@ -247,8 +247,8 @@ modparam("rls", "presence_server", "sip:pres@opensips.org:5060")
 
 
 The address of the server that will be used as a contact in sent
-		Subscribe requests and 200 OK replies for Subscribe messages for RLS.
-		It is compulsory.
+Subscribe requests and 200 OK replies for Subscribe messages for RLS.
+It is compulsory.
 
 
 ```opensips title="Set server_address parameter"
@@ -266,9 +266,9 @@ modparam("rls", "server_address", "sip:rls@opensips.org:5060")
 
 
 This function detects if a Subscribe message should be
-		handled by RLS. If not it replies with the configured 
-		to_presence_code. If it is, it extracts the dialog info and sends
-		aggregate Notify requests with information for the list.
+handled by RLS. If not it replies with the configured 
+to_presence_code. If it is, it extracts the dialog info and sends
+aggregate Notify requests with information for the list.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -304,7 +304,7 @@ For rls only:
 
 
 This function has to be called for Notify messages sent by presence
-			servers in reply to the Subscribe messages sent by RLS.
+servers in reply to the Subscribe messages sent by RLS.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -314,9 +314,9 @@ It can return 3 codes:
 
 
 - *1* - the Notify was inside a dialog that was
-				recognized by the RLS server and was processed successfully.
+recognized by the RLS server and was processed successfully.
 - *2* - the Notify did not belog to a dialog initiated
-				by the RLS server.
+by the RLS server.
 - *-1* - an error occurred during processing.
 
 
@@ -335,7 +335,7 @@ if($rm=="NOTIFY")
 
 
 Triggers updating backend subscriptions after a resources-list or rls-services document
-		has been updated.
+has been updated.
 
 
 Name: *rls_update_subscriptions*
@@ -345,7 +345,7 @@ Parameters:
 
 
 - presentity_uri : the uri of the user who made the change
-				and whose subscriptions should be updated
+and whose subscriptions should be updated
 
 
 MI FIFO Command Format:
@@ -363,11 +363,11 @@ _empty_line_
 
 
 The module requires 2 table in OpenSIPS database: rls_presentity
-	and rls_watchers.The SQL syntax to create them can be found in
-	rls-create.sql script in the database directories in
-	the opensips/scripts folder.
-	You can also find the complete database documentation on the
-	project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+and rls_watchers.The SQL syntax to create them can be found in
+rls-create.sql script in the database directories in
+the opensips/scripts folder.
+You can also find the complete database documentation on the
+project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide

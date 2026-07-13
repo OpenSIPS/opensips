@@ -1,6 +1,6 @@
 ---
 title: "SIP-I Module"
-description: "This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP. The available operations are: reading and modifying parameters from an ISUP message, removing or adding new optional parameters, adding an ISUP part to a SIP message body. This is done explicitly v..."
+description: "This module offers the possibility of processing ISDN User Part(ISUP) messages encapsulated in SIP."
 ---
 
 ## Admin Guide
@@ -34,7 +34,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -79,8 +79,8 @@ modparam("sip_i", "isup_mime_str", "application/ISUP;base=itu-t92+;version=itu-t
 
 
 The default set of headers (fully defined, including the header
-		termination) to be pushed into the ISUP part together 
-		with the *Content-Type* header.
+termination) to be pushed into the ISUP part together 
+with the *Content-Type* header.
 
 
 *Default value is "Content-Disposition:signal;handling=optional\r\n".*
@@ -97,11 +97,11 @@ modparam("sip_i", "default_part_headers", "Content-Disposition:signal;handling=r
 
 
 Country Code that the first part of the number from
-			P-Asserted-Identity is tested against when trying to map the
-			Calling Party Number ISUP parameter from SIP by default. If there
-			is a match, the value assigned to the Nature of Address Indicator
-			subfield is *3*(national), otherwise it is
-			*4*(international).
+P-Asserted-Identity is tested against when trying to map the
+Calling Party Number ISUP parameter from SIP by default. If there
+is a match, the value assigned to the Nature of Address Indicator
+subfield is *3*(national), otherwise it is
+*4*(international).
 
 
 *Default value is "+1".*

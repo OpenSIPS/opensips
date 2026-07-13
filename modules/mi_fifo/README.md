@@ -1,6 +1,6 @@
 ---
 title: "mi_fifo Module"
-description: "This is a module which provides a FIFO transport layer implementation for Management Interface. It receives the command over a FIFO file and returns the output through the reply_fifo specified."
+description: "This is a module which provides a FIFO transport layer implementation for Management Interface."
 ---
 
 ## Admin Guide
@@ -10,22 +10,22 @@ description: "This is a module which provides a FIFO transport layer implementat
 
 
 This is a module which provides a FIFO transport layer
-		implementation for Management Interface. It receives the
-		command over a FIFO file and returns the output through the
-		reply_fifo specified.
+implementation for Management Interface. It receives the
+command over a FIFO file and returns the output through the
+reply_fifo specified.
 
 
 The module checks every 30 seconds if the FIFO file exists,
-		and if it was deleted, it recreates it. If one wants to force
-		the fifo file recreation, it should send a SIGHUP signal to
-		the MI process PID.
+and if it was deleted, it recreates it. If one wants to force
+the fifo file recreation, it should send a SIGHUP signal to
+the MI process PID.
 
 
 ### FIFO command syntax
 
 
 The external commands issued via FIFO interface must follow the
-		following syntax:
+following syntax:
 
 
 - *request = first_line argument**
@@ -52,7 +52,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -65,22 +65,22 @@ The following libraries or applications must be installed before
 
 
 The name of the FIFO file to be created for listening and
-		reading external commands.
+reading external commands.
 
 
 *NOTE:*Starting with Linux kernel 4.19,
-			processes can no longer read from FIFO files that are saved
-			in directories with sticky bits (such as */tmp*)
-			and are not owned by the same user the process runs with. This
-			prevents external tools (such as *opensips-cli*)
-			from running MI commands using a different user (a
-			*Permissions denied* error is triggered). If
-			you are getting this error while trying to use
-			*opensips-cli*, you can fix it by either store
-			the fifo file in a non-sticky bit directory (such as
-			*/var/run/opensips*), or disable the fifo
-			protection using *sysctl fs.protected_fifos = 0*
-			(NOT RECOMMENDED).
+processes can no longer read from FIFO files that are saved
+in directories with sticky bits (such as */tmp*)
+and are not owned by the same user the process runs with. This
+prevents external tools (such as *opensips-cli*)
+from running MI commands using a different user (a
+*Permissions denied* error is triggered). If
+you are getting this error while trying to use
+*opensips-cli*, you can fix it by either store
+the fifo file in a non-sticky bit directory (such as
+*/var/run/opensips*), or disable the fifo
+protection using *sysctl fs.protected_fifos = 0*
+(NOT RECOMMENDED).
 
 
 *Default value is NONE.*
@@ -97,7 +97,7 @@ modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
 
 
 Permission to be used for creating the listening FIFO file. It
-		follows the UNIX conventions.
+follows the UNIX conventions.
 
 
 *Default value is 0660 (rw-rw----).*
@@ -164,7 +164,7 @@ modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
 
 
 Strings to be used for line indentation. As the MI data structure
-		is tree oriendeted, the depth level will printed as indentation.
+is tree oriendeted, the depth level will printed as indentation.
 
 
 *Default value is ""\t" (TAB)".*
@@ -181,13 +181,13 @@ modparam("mi_fifo", "reply_indent", "    ")
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		This is where traced mi messages will go.
+the only tracing module is **proto_hep**.
+This is where traced mi messages will go.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+loaded in order for this parameter to work. (for example
+**proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -206,24 +206,25 @@ modparam("mi_fifo", "trace_destination", "hep_dest")
 
 
 Filter traced mi commands based on a blacklist or a whitelist.
-		**trace_destination** must be defined for
-		this parameter to have any purpose. Whitelists can be defined using
-		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
-		actual blacklist by ':'. The mi commands in the list must be separated
-		by ','.
+**trace_destination** must be defined for
+this parameter to have any purpose. Whitelists can be defined using
+'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+actual blacklist by ':'. The mi commands in the list must be separated
+by ','.
 
 
 Defining a blacklists means all the commands that are not blacklisted
-			will be traced. Defining a whitelist means all the commands that are
-			not whitelisted will not be traced.
-			**WARNING:** One can't define both
-			a whitelist and a blacklist. Only one of them is allowed. Defining
-			the parameter a second time will just overwrite the first one.
+will be traced. Defining a whitelist means all the commands that are
+not whitelisted will not be traced.
+**WARNING:** One can't define both
+a whitelist and a blacklist. Only one of them is allowed. Defining
+the parameter a second time will just overwrite the first one.
 
 
-**WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep)**.
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -252,8 +253,8 @@ No function exported to be used from configuration file.
 
 
 This is an example showing the FIFO format for the
-		"get_statistics dialog: tm:" MI commad:
-		response.
+"get_statistics dialog: tm:" MI commad:
+response.
 
 
 ```c title="FIFO request"

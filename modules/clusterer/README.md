@@ -1,6 +1,6 @@
 ---
 title: "CLUSTERER Module"
-description: "The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the *clust..."
+description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
 ---
 
 ## Admin Guide
@@ -10,7 +10,7 @@ description: "The *clusterer* module is used to organize multiple OpenSIPS insta
 
 
 The *clusterer* module is used to organize multiple OpenSIPS instances into groups(clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks. The distributed logic is performed either by different modules that use the *clusterer* interface (i.e. the *dialog* module can replicate dialogs/profiles, the *ratelimit* module can share pipes across multiple 
-		instances etc.) or at the script level. The *clusterer* module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It achieves this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database or through the configuration script. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
+instances etc.) or at the script level. The *clusterer* module itself only provides an interface to send/receive BIN packets and get notifications about node availability. It achieves this by internally learning the cluster topology and state of the nodes. Provisioning the nodes within a cluster is done over the database or through the configuration script. The node-related information can be checked and triggered to be reloaded by sending commands over the MI interface.
 
 
 The topology established by the *clusterer* module is an overlay of nodes where the "links" represent communication availability at BIN interface level. For this purpose, a probing mechanism is used, consisting of regular pings to all nodes in a cluster for which replies must be received within a given interval. All nodes in the cluster exchange information about the state of their links with other nodes and compute a "routing table" which gives a next hop for each destination. The metric for the shortest path is the number of hops. When there is no direct link to a destination, the BIN packet sent by a module is transparently routed through the cluster.
@@ -29,17 +29,17 @@ The clusterer module also keeps track of the state of the nodes in terms of data
 
 
 Each node in the cluster starts with an empty dataset and tries to find
-		a suitable node to pull data from. In order to help "bootstrap" the
-		cluster, a "seed" node should be defined. This is done by setting the value
-		*seed* for the **flags**
-		column in the clusterer table(or the property with the same name in the
-		*my_node_info* parameter). The seed node will simply
-		fall back to a "synced" state after a configurable interval(
-		[seed fallback interval](#param_seed_fallback_interval) parameter). This interval
-		can also be set to *0*, in which case the seed node
-		will be considered already synced from startup. Note that configuring a
-		a seed node is required only for capabilities that synchronize data
-		at startup, so check the corresponding modules documentation.
+a suitable node to pull data from. In order to help "bootstrap" the
+cluster, a "seed" node should be defined. This is done by setting the value
+*seed* for the **flags**
+column in the clusterer table(or the property with the same name in the
+*my_node_info* parameter). The seed node will simply
+fall back to a "synced" state after a configurable interval(
+[seed fallback interval](#param_seed_fallback_interval) parameter). This interval
+can also be set to *0*, in which case the seed node
+will be considered already synced from startup. Note that configuring a
+a seed node is required only for capabilities that synchronize data
+at startup, so check the corresponding modules documentation.
 
 
 The clusterer module transparently exposes the *sip_addr* column from the clusterer table(or the property with the same name in the *current_info* parameter) to the modules on top so check the corresponding modules documentation for the use of this node related information.
@@ -55,7 +55,7 @@ The following modules must be loaded before this module:
 
 
 - *a database module* - if [db mode](#param_db_mode)
-				is *1*.
+is *1*.
 - *proto_bin module*.
 
 
@@ -63,7 +63,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -76,7 +76,7 @@ The following libraries or applications must be installed before
 
 
 The id of the current instance. This parameter must be equal to one of the
-				*node_id* fields in the database.
+*node_id* fields in the database.
 
 
 *No default value. This parameter must be explicitly set to a value greater than zero.*
@@ -94,11 +94,11 @@ modparam("clusterer", "current_id", 1)
 
 
 Specifies whether the node information for the current instance,
-				as well as other instances in the cluster, should be loaded from
-				the database or configured in the script(see [current info](#param_current_info)
-				and [neighbor info](#param_neighbor_info)). A value of "0"
-				means that DB is not used and the cluster topology in terms of node
-				information will be discovered dynamically at runtime.
+as well as other instances in the cluster, should be loaded from
+the database or configured in the script(see [current info](#param_current_info)
+and [neighbor info](#param_neighbor_info)). A value of "0"
+means that DB is not used and the cluster topology in terms of node
+information will be discovered dynamically at runtime.
 
 
 *Default value is "1"*
@@ -151,21 +151,21 @@ modparam("clusterer", "db_table", "clusterer")
 
 
 Node specification similar to the information provided by a row in
-				the clusterer DB table corresponding to the current instance. This
-				parameter can be set multiple times in order to include the current
-				node in multiple clusters.
+the clusterer DB table corresponding to the current instance. This
+parameter can be set multiple times in order to include the current
+node in multiple clusters.
 
 
 Parameter format: multiple "*prop=value*" property
-				definitions separated by '*,*' where the name of the
-				properties is the same as the DB column names. At least the
-				*cluster_id* and *url*
-				properties must be defined.
+definitions separated by '*,*' where the name of the
+properties is the same as the DB column names. At least the
+*cluster_id* and *url*
+properties must be defined.
 
 
 This parameter is required if [db mode](#param_db_mode) is set
-			to "0" in order to properly advertise information about
-			the current instance in the dynamic node learning process.
+to "0" in order to properly advertise information about
+the current instance in the dynamic node learning process.
 
 
 ```opensips title="Set current_info parameter"
@@ -180,24 +180,24 @@ modparam("clusterer", "current_info", "cluster_id=1, url=bin:192.168.0.5:5566")
 
 
 Node specification similar to the information provided by a row in
-				the clusterer DB table corresponding to another instance in the
-				cluster. This node will be the entry point in the cluster for the
-				current instance in the dynamic node learning process. This parameter
-				can be set multiple times to define multiple neigbors to connect to (or
-				the same neighbor but in different clusters).
+the clusterer DB table corresponding to another instance in the
+cluster. This node will be the entry point in the cluster for the
+current instance in the dynamic node learning process. This parameter
+can be set multiple times to define multiple neigbors to connect to (or
+the same neighbor but in different clusters).
 
 
 Parameter format: multiple "*prop=value*" property
-				definitions separated by '*,*' where the name of
-				the properties is the same as the DB column names. At least the
-				*cluster_id*, *node_id*
-				and *url* properties must be defined.
+definitions separated by '*,*' where the name of
+the properties is the same as the DB column names. At least the
+*cluster_id*, *node_id*
+and *url* properties must be defined.
 
 
 This parameter should be set at least once if
-			[db mode](#param_db_mode) is set to *0* in order
-			to properly learn the cluster topology. If not set, the only way to learn
-			the node topology is by other nodes connecting to the current instance.
+[db mode](#param_db_mode) is set to *0* in order
+to properly learn the cluster topology. If not set, the only way to learn
+the node topology is by other nodes connecting to the current instance.
 
 
 ```opensips title="Set neighbor_info parameter"
@@ -263,10 +263,10 @@ modparam("clusterer", "node_timeout", 10)
 
 
 Only relevant for "seed" nodes.  The time, in seconds, to wait
-                for a suitable donor node before falling back to a "synced"
-                state, following a node restart or an MI cluster sync command.
-                If set to *0*, the node is considered as
-                already synced from startup.
+for a suitable donor node before falling back to a "synced"
+state, following a node restart or an MI cluster sync command.
+If set to *0*, the node is considered as
+already synced from startup.
 
 
 *Default value is "0".*
@@ -586,12 +586,14 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 
 
 This function checks whether the given IP address belongs
-					to one of the nodes in the cluster.
+to one of the nodes in the cluster.
 
 
 The *addr_type* parameter can be set
-				in order to select the address of the node that the comparison
-				is made against, with the possible values of:
+in order to select the address of the node that the comparison
+is made against, with the possible values of:
+	- *bin* - node's BIN interface listener;
+	- *sip* - node's DB provisioned SIP address.
 
 
 - *bin* - node's BIN interface listener;
@@ -599,7 +601,7 @@ The *addr_type* parameter can be set
 
 
 The *addr_type* parameter is optional
-				and the default behaviour is to compare against the SIP address.
+and the default behaviour is to compare against the SIP address.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
@@ -634,9 +636,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_reload
-		_empty_line_
-		
+:clusterer_reload
+_empty_line_
 ```
 
 
@@ -656,9 +657,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_list
-		_empty_line_
-		
+:clusterer_list
+_empty_line_
 ```
 
 
@@ -731,11 +731,10 @@ MI FIFO Command Format:
 
 
 ```bash
-		:clusterer_set_status:
-		1
-		0
-		_empty_line_
-		
+:clusterer_set_status:
+1
+0
+_empty_line_
 ```
 
 
@@ -761,12 +760,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:cluster_mi:
-		1
-		3
-		lb_reload
-		_empty_line_
-		
+:cluster_mi:
+1
+3
+lb_reload
+_empty_line_
 ```
 
 
@@ -791,12 +789,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:cluster_mi:
-		1
-		dr_reload_status
-		partition_5
-		_empty_line_
-		
+:cluster_mi:
+1
+dr_reload_status
+partition_5
+_empty_line_
 ```
 
 
@@ -867,18 +864,18 @@ Parameters:
 
 
 This section provides an usage example for replicating ratelimit
-		pipes between two OpenSIPS instances. It uses the clusterer module to
-		manage the replicating nodes, and along with the
-		*proto_bin* module, to send the replicated information.
+pipes between two OpenSIPS instances. It uses the clusterer module to
+manage the replicating nodes, and along with the
+*proto_bin* module, to send the replicated information.
 
 
 The setup topology is simple: we have two OpenSIPS nodes running on
-		two separate machines (although they could run on the same machine as
-		well): *Node A* has IP 192.168.0.5 and
-		*Node B* has IP 192.168.0.6. Both have, besides the
-		traffic listeners (UDP, TCP, etc.), BIN listeners bound on port
-		*5566*. These listeners will be used for the binary
-		communication.
+two separate machines (although they could run on the same machine as
+well): *Node A* has IP 192.168.0.5 and
+*Node B* has IP 192.168.0.6. Both have, besides the
+traffic listeners (UDP, TCP, etc.), BIN listeners bound on port
+*5566*. These listeners will be used for the binary
+communication.
 
 
 We insert in the the *clusterer* table the following:
@@ -896,32 +893,32 @@ We insert in the the *clusterer* table the following:
 
 
 - "cluster_id" - identifier of the cluster. All nodes within a
-					group/cluster should have the same id (in our example,
-					both nodes have ID *1*). The values must be greater than 0.
+group/cluster should have the same id (in our example,
+both nodes have ID *1*). The values must be greater than 0.
 - "node_id" - identifier of the machine/node so each instance within a
-					cluster should have a different ID. The values must be greater than 0. In our example,
-					*Node A* will have ID 1, and
-					*Node B* ID 2.
+cluster should have a different ID. The values must be greater than 0. In our example,
+*Node A* will have ID 1, and
+*Node B* ID 2.
 - "url" - address where all the BIN packets for that instance will be
-				sent to.
+sent to.
 - "state" - state of the node: *1* means Enabled,
-				*0* means Disabled. A disabled node will not send any BIN packets
-				and will drop received ones.
+*0* means Disabled. A disabled node will not send any BIN packets
+and will drop received ones.
 - "no_ping_retries" - maximum number of ping retries before the link
-				with a node is considered down.
+with a node is considered down.
 - "priority" - the priority of a node to be chosen
-				as next hop in case of same length(number of hops) paths when rerouting messages;
-				it is not relevant for this two-node topology example.
+as next hop in case of same length(number of hops) paths when rerouting messages;
+it is not relevant for this two-node topology example.
 - "sip_addr" - SIP address for the node that is transparently
-				provided to modules; it has no use for the ratelimit module in our example.
+provided to modules; it has no use for the ratelimit module in our example.
 - "flags" - used to define a seed node; it has no use in our example.
 - "description" - an opaque value used to
-					describe the node
+describe the node
 
 
 After provisioning the two nodes in the database, we have to configure
-		the two instances of OpenSIPS. First, we configure *Node
-			A*:
+the two instances of OpenSIPS. First, we configure *Node
+A*:
 
 
 ```opensips title="*Node A* configuration"
@@ -963,8 +960,8 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
 
 Starting the two OpenSIPS instances with the above configurations provides
-	your platform the ability to used shared ratelimit pipes in a very
-	efficient and scalable way.
+your platform the ability to used shared ratelimit pipes in a very
+efficient and scalable way.
 
 
 ## Developer Guide

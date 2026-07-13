@@ -10,12 +10,13 @@ description: "This module is an implementation of an JSON-RPC v2.0 client [http:
 
 
 This module is an implementation of an JSON-RPC v2.0
-		client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specification).
-		that can send a call to a JSON-RPC server over a TCP connection.
+client [http://www.jsonrpc.org/specification](http://www.jsonrpc.org/specification).
+that can send a call to a JSON-RPC server over a TCP connection.
 
 
-NOTE that the current version of this module does not support TCP
-		connection reusage, nor asynchronous commands.
+> [!NOTE]
+> That the current version of this module does not support TCP
+> connection reusage, nor asynchronous commands.
 
 
 ### Dependencies
@@ -34,7 +35,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -47,7 +48,7 @@ The following libraries or applications must be installed before
 
 
 The amount of milliseconds OpenSIPS waits to connect to the the
-			JSON-RPC server, until it times out.
+JSON-RPC server, until it times out.
 
 
 *Default value is "500 milliseconds".*
@@ -64,7 +65,7 @@ modparam("jsonrpc", "connect_timeout", 200)
 
 
 The amount of milliseconds OpenSIPS waits to send a RPC command to
-			the JSON-RPC server, until it times out.
+the JSON-RPC server, until it times out.
 
 
 *Default value is "500 milliseconds".*
@@ -81,9 +82,9 @@ modparam("jsonrpc", "write_timeout", 300)
 
 
 The amount of milliseconds OpenSIPS waits for the JSON-RPC server
-			to respond to a JSON-RPC request, until it times out. Note that
-			these parameter only affects the *jsonrpc_request*
-			command.
+to respond to a JSON-RPC request, until it times out. Note that
+these parameter only affects the *jsonrpc_request*
+command.
 
 
 *Default value is "500 milliseconds".*
@@ -103,8 +104,8 @@ modparam("jsonrpc", "read_timeout", 300)
 
 
 Does a JSON-RPC request to the JSON-RPC server
-				indicated in the *destination*
-				parameter, and waits for a reply from it.
+indicated in the *destination*
+parameter, and waits for a reply from it.
 
 
 This function can be used from any route.
@@ -114,36 +115,36 @@ The function has the following parameters:
 
 
 - *destination* - address of the
-						JSON-RPC server. The format needs to be
-						*IP:port*.
+JSON-RPC server. The format needs to be
+*IP:port*.
 - *method* - the method used in
-						the RPC request.
+the RPC request.
 - *params* - these are the parameters
-						sent to the RPC method. This parameter needs to be
-						a properly formated JSON array, or JSON object,
-						according the the JSON-RPC specifications.
+sent to the RPC method. This parameter needs to be
+a properly formated JSON array, or JSON object,
+according the the JSON-RPC specifications.
 - *ret_pvar* a writeable variable
-						used to store the result of the JSON-RPC command. If
-						the command returns an error, the variable will be
-						populated with the error JSON, otherwise, with the
-						body of the JSON-RPC result.
+used to store the result of the JSON-RPC command. If
+the command returns an error, the variable will be
+populated with the error JSON, otherwise, with the
+body of the JSON-RPC result.
 
 
 The function has the following return codes:
 
 
 - *1* - JSON-RPC command executed
-						successfully, and the server returned success. You can
-						check the *ret_pvar* variable for
-						the result.
+successfully, and the server returned success. You can
+check the *ret_pvar* variable for
+the result.
 - *-1* - There was an internal error
-						during processing.
+during processing.
 - *-2* - There was a connection
-						(timeout or connect) error with the destination.
+(timeout or connect) error with the destination.
 - *-3* - The JSON-RPC was
-						successfully run, but the server returned an error.
-						Check the *ret_pvar* value to find
-						out more information.
+successfully run, but the server returned an error.
+Check the *ret_pvar* value to find
+out more information.
 
 
 ```opensips title="jsonrpc_request() function usage"
@@ -163,16 +164,16 @@ The function has the following return codes:
 
 
 Does a JSON-RPC notification to the JSON-RPC server
-				indicated in the *destination*
-				parameter, but unlike [jsonrpc request](#func_jsonrpc_request),
-				it does not wait for a reply from the JSON-RPC server.
+indicated in the *destination*
+parameter, but unlike [jsonrpc request](#func_jsonrpc_request),
+it does not wait for a reply from the JSON-RPC server.
 
 
 This function can be used from any route.
 
 
 The function receives the same parameters as 
-				[jsonrpc request](#func_jsonrpc_request), except for the *ret_pvar*. Also, the same values are returned.
+[jsonrpc request](#func_jsonrpc_request), except for the *ret_pvar*. Also, the same values are returned.
 
 
 ```opensips title="jsonrpc_notification() function usage"

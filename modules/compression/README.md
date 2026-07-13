@@ -1,6 +1,6 @@
 ---
 title: "compression Module"
-description: "This module implements message compression/decompression and base64 encoding for sip messages using deflate and gzip algorithm/headers. Another feature of this module is reducing headers to compact for as specified in SIP RFC's, sdp body codec unnecessary description removal (for codecs 0-97),..."
+description: "This module implements message compression/decompression and base64 encoding for sip messages using deflate and gzip algorithm/headers."
 ---
 
 ## Admin Guide
@@ -10,43 +10,43 @@ description: "This module implements message compression/decompression and base6
 
 
 This module implements message compression/decompression and base64 encoding
-	for sip messages using deflate and gzip algorithm/headers. Another feature of
-	this module is reducing headers to compact for as specified in SIP RFC's,
-	sdp body codec unnecessary description removal (for codecs 0-97), whitelist
-	for headers not be removed (excepting necessary headers).
+for sip messages using deflate and gzip algorithm/headers. Another feature of
+this module is reducing headers to compact for as specified in SIP RFC's,
+sdp body codec unnecessary description removal (for codecs 0-97), whitelist
+for headers not be removed (excepting necessary headers).
 
 
 ### How it works
 
 
 The module is using zlib library to implement compression and base64 encoding
-	for converting the message to human readable characters. It also uses
-	callbacks to do the compression/compaction of the message in order for this
-	operations to be done after all the other script functions have been applied
-	to the message.
+for converting the message to human readable characters. It also uses
+callbacks to do the compression/compaction of the message in order for this
+operations to be done after all the other script functions have been applied
+to the message.
 
 
 ### Usage cases
 
 
 As we know, udp fragmentation is a big problem these days, so this module
-	comes to try making the message smaller by any means. The module can be
-	used to compress the body or some headers found in the message or it can
-	decompress compressed messages. There are more possibilities to do this:
-	the body can be compressed along with the specified headers or the
-	headers can be compressed isolated from the body in a specific header.
+comes to try making the message smaller by any means. The module can be
+used to compress the body or some headers found in the message or it can
+decompress compressed messages. There are more possibilities to do this:
+the body can be compressed along with the specified headers or the
+headers can be compressed isolated from the body in a specific header.
 
 
 Also the module does message compaction: reduction of sip header names
-	to short form (for example "Via" becomes 'v' and so on), sdp body
-	codec attributes unnecesary description ("a=rtpmap:0 PCMU/8000" becomes
-	"a=rtpmap:0"), unwanted headers removal by specfing the ones you want
-	to keep in a whitelist.
+to short form (for example "Via" becomes 'v' and so on), sdp body
+codec attributes unnecesary description ("a=rtpmap:0 PCMU/8000" becomes
+"a=rtpmap:0"), unwanted headers removal by specfing the ones you want
+to keep in a whitelist.
 
 
 The module also does message decompresion and base64 decoding. It can
-	detect the algorithm used for compression from the Content-Encoding
-	header. At this moment only gzip and deflate algorithms are supported.
+detect the algorithm used for compression from the Content-Encoding
+header. At this moment only gzip and deflate algorithms are supported.
 
 
 ### Dependencies
@@ -65,7 +65,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *zlib-dev - the development libraries of [zlib](http://www.zlib.net/)*.
@@ -78,9 +78,9 @@ The following libraries or applications must be installed before
 
 
 This parameter ranges from 1 to 9 and it specifies the level of compression you want to do.
-		Default is 6. 9 is the best, but the longest time consuming algorithm and 1 is the worst.
-		If, by mistake, you set a lower or a higher level, the default, 6, will be used, but you will
-		receive a warning.
+Default is 6. 9 is the best, but the longest time consuming algorithm and 1 is the worst.
+If, by mistake, you set a lower or a higher level, the default, 6, will be used, but you will
+receive a warning.
 
 
 ```opensips title="Set mc_level parameter"
@@ -98,56 +98,56 @@ modparam("mc", "mc_level", "3")
 
 
 This function will compress the current message as specified in the parameters. Keep in mind
-		that the compression is done just before the message is sent, so that all your lumps can be
-		applied.
+that the compression is done just before the message is sent, so that all your lumps can be
+applied.
 
 
 Meaning of the parameters is as follows:
 
 
 - *algo* - The algorithm used for compression. Currently
-			implemented are deflate ('0') and gzip ('1').
-		The *algo* parameter can have the following types:
+implemented are deflate ('0') and gzip ('1').
+The *algo* parameter can have the following types:
 
   - *integer* - the compression algorithm is statically
-			assigned
+assigned
   - *pvar* - the compression algorithm is the value of an
-			existing pseudo-variable (as integer value)
+existing pseudo-variable (as integer value)
 - *flags* - Specifies on what to apply the compression and where
-			to put the result of the compression.
-		The *flags* parameter can have the following types:
+to put the result of the compression.
+The *flags* parameter can have the following types:
 
   - *string* - the flags parameter is statically assigned
   - *pvar* - the flags parameter is the value of an
-			existing pseudo-variable (as string value)
+existing pseudo-variable (as string value)
 The *flags* parameter can have the following values:
 
   - "b" - specifies that the body of the message shall be
-					compressed. Notice that if the message has no body, the flag will have
-					no effect.
+compressed. Notice that if the message has no body, the flag will have
+no effect.
   - "h" - specifies that all the headers, except the mandatory
-					ones (which will be specified in "whitelist" parameter section) and the
-					ones in the whitelist shall be compressed.
+ones (which will be specified in "whitelist" parameter section) and the
+ones in the whitelist shall be compressed.
   - "s" - the headers and the body shall be compressed Separately,
-					meaning that a new header named "Comp-Hdrs" will be created, and this
-					header will keep the content of the compressed headers. Also, "Headers-Encoding"
-					header will be created in order to keep the algorithm used to compress the
-					headers. If this flag is not specified, the headers and the body (if 'b' and 'h'
-					flags are specified) will be compressed alltogether in the new body of the
-					message.
+meaning that a new header named "Comp-Hdrs" will be created, and this
+header will keep the content of the compressed headers. Also, "Headers-Encoding"
+header will be created in order to keep the algorithm used to compress the
+headers. If this flag is not specified, the headers and the body (if 'b' and 'h'
+flags are specified) will be compressed alltogether in the new body of the
+message.
   - "e" - specify that you want base64 Encoding. If you do not specify
-					this flag, by default the module will send the raw compressed message in
-					deflate/gzip format.
+this flag, by default the module will send the raw compressed message in
+deflate/gzip format.
 - *whitelist* - header names list, separated by '|' which will specify
-			which headers shall not be compressed, along with the mandatory ones, which can never be
-			compressed. The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
-			CALLID. Also, CONTENT_TYPE is mandatory only if CONTENT-LENGTH > 0.
-			Also, in case you do not want to use body compression, the Content-Length header will
-			become a mandatory header, which can not be compressed. In case you do want body
-			compression, the old Content-Length Header will be compressed, and a new content length
-			will be calculated. When you will want to do decompression, the compressed length will
-			be removed, and the content length header will be the same as the one before the
-			compression.
+which headers shall not be compressed, along with the mandatory ones, which can never be
+compressed. The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
+CALLID. Also, CONTENT_TYPE is mandatory only if CONTENT-LENGTH > 0.
+Also, in case you do not want to use body compression, the Content-Length header will
+become a mandatory header, which can not be compressed. In case you do want body
+compression, the old Content-Length Header will be compressed, and a new content length
+will be calculated. When you will want to do decompression, the compressed length will
+be removed, and the content length header will be the same as the one before the
+compression.
 
 
 This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
@@ -178,13 +178,13 @@ xlog("compression registered\n");
 
 
 This function will realise four different things: headers which are not mandatory
-		and are not in the whitelist will be removed, headers of same type will be put
-		together, separated by ',', header names which have a short form
-		will be reduced to that short form and sdp rtpmap attribute headers which contain
-		a value lower than 96 will be removed, because it is no longer needed. No lumps
-		affected by this function, because it is applied after almost all the processing is
-		done.
-		The *mc_compact* supported short forms are:
+and are not in the whitelist will be removed, headers of same type will be put
+together, separated by ',', header names which have a short form
+will be reduced to that short form and sdp rtpmap attribute headers which contain
+a value lower than 96 will be removed, because it is no longer needed. No lumps
+affected by this function, because it is applied after almost all the processing is
+done.
+The *mc_compact* supported short forms are:
 
 
 - "c" - Content-Type (RFC 3261)
@@ -203,13 +203,13 @@ Meaning of the parameters is as follows:
 
 
 - *whitelist* - Whitelist of headers not to be
-			removed, except from the mandatory ones. The whitelist header names
-			must pe separated by '|'.
-		The *algo* parameter can have the following types:
+removed, except from the mandatory ones. The whitelist header names
+must pe separated by '|'.
+The *algo* parameter can have the following types:
 
   - *string* - the whitelist is statically assigned
   - *pvar* - the whitelist is the value of an
-			existing pseudo-variable (as integer value)
+existing pseudo-variable (as integer value)
 
 
 This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
@@ -228,19 +228,19 @@ if (!mc_compact("Max-Forwards|P-Asserted-Identity"))
 
 
 This function does the reverse of mc_compress, meaning that it does base64
-		decoding and gzip/deflate decompression. Keep in mind that gzip decompression
-		is a little bit more efficient because it is being known the size of the
-		compressed buffer as against deflate which does not hold the size of the buffer,
-		so the decompression will be made in a static buffer.
+decoding and gzip/deflate decompression. Keep in mind that gzip decompression
+is a little bit more efficient because it is being known the size of the
+compressed buffer as against deflate which does not hold the size of the buffer,
+so the decompression will be made in a static buffer.
 
 
 This function requests no parameters.
 
 
 WARNING: This function replaces the original buffer of the message with the
-		decompressed buffer, so any processing you do to the message will not be taken
-		into consideration. Try applying the decompression function, before you do
-		any other processing to the message.
+decompressed buffer, so any processing you do to the message will not be taken
+into consideration. Try applying the decompression function, before you do
+any other processing to the message.
 
 
 This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
@@ -259,12 +259,12 @@ if (!mc_decompress())
 
 
 The following results have been obtained using the compression function
-		included in the module. Using this results, you can improve the usage of
-		this module, in order to compress only when you think it is favorable
-		enough for you. The algorithm used is deflate for all cases because
-		gzip is always 16 bytes higher than deflate, which represents the
-		uncompressed size modulo 4GB. For the subtests in the same test, the
-		same SIP message have been used.
+included in the module. Using this results, you can improve the usage of
+this module, in order to compress only when you think it is favorable
+enough for you. The algorithm used is deflate for all cases because
+gzip is always 16 bytes higher than deflate, which represents the
+uncompressed size modulo 4GB. For the subtests in the same test, the
+same SIP message have been used.
 
 
 **mc_compress performance test results**

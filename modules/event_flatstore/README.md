@@ -1,6 +1,6 @@
 ---
 title: "event_flatstore Module"
-description: "The *event_flatstore* module provides a logging facility for different events, triggered through the OpenSIPS Event Interface, directly from the OpenSIPS script. The module logs the events along with their parameters in plain text files."
+description: "The *event_flatstore* module provides a logging facility for different events, triggered through the OpenSIPS Event Interface, directly from the OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -10,10 +10,10 @@ description: "The *event_flatstore* module provides a logging facility for diffe
 
 
 The *event_flatstore*
-		module provides a logging facility for different events,
-		triggered through the OpenSIPS Event Interface, directly from the OpenSIPS
-		script. The module logs the events along with their parameters in plain
-		text files.
+module provides a logging facility for different events,
+triggered through the OpenSIPS Event Interface, directly from the OpenSIPS
+script. The module logs the events along with their parameters in plain
+text files.
 
 
 ### Flatstore socket syntax
@@ -26,8 +26,8 @@ Meanings:
 
 
 - *flatstore:* - informs the Event Interface that the
-					events sent to this subscriber should be handled by the
-					*event_flatstore* module.
+events sent to this subscriber should be handled by the
+*event_flatstore* module.
 - *path_to_file* - path to the file where the logged events will be appended to. The file will be created if it does not exist. It must be a valid path and not a directory.
 
 
@@ -47,7 +47,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -60,9 +60,9 @@ The following libraries or applications must be installed before
 
 
 Defines the maximum number of simultaneously opened files by the
-			module. If the maximum limit is reached, an error message will be
-			thrown, and further subscriptions will only be possible after at
-			least one of the current subscriptions will expire.
+module. If the maximum limit is reached, an error message will be
+thrown, and further subscriptions will only be possible after at
+least one of the current subscriptions will expire.
 
 
 *Default value is "100".*
@@ -95,7 +95,7 @@ modparam("event_flatstore", "delimiter", ";")
 
 
 Sets the permissions for the newly created logs. It
-			expects a string representation of a octal value.
+expects a string representation of a octal value.
 
 
 *Default value is "644".*
@@ -133,9 +133,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:evi_flat_rotate:_path_to_log_file_ 
-		_empty_line_
-		
+:evi_flat_rotate:_path_to_log_file_ 
+_empty_line_
 ```
 
 
