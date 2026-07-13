@@ -10,15 +10,15 @@ description: "The Call Center module implements an inbound call center system wi
 
 
 The Call Center module implements an inbound call center system with call 
-	flows (for queuing the received calls) and agents (for answering the 
-	calls).
+flows (for queuing the received calls) and agents (for answering the 
+calls).
 
 
 The module implements the queuing system, the call distribution 
-	to agents, agents managements, CDRs for the calls, statistics on 
-	call distribution and agent's activity - basically everything 
-	except the media playback (for the queue). This part must be provided via 
-	a third party media server (FreeSwitch, Asterisk or others).
+to agents, agents managements, CDRs for the calls, statistics on 
+call distribution and agent's activity - basically everything 
+except the media playback (for the queue). This part must be provided via 
+a third party media server (FreeSwitch, Asterisk or others).
 
 
 ### How it works
@@ -31,52 +31,52 @@ The main entities in the modules are the flows (queues) and agents.
 
 
 Each entity has a corresponding table in the database, for 
-		provisioning purposes - the *cc_flows* and 
-		*cc_agents* tables, see
-		[DB schema](https://docs.opensips.org/manual/1-11/install-dbschema#AEN2361).
-		Data is loaded at startup and cached into memory ; runtime reload is 
-		possible via the MI commands (see the *cc_reload* 
-		command in [exported mi functions](#exported_mi_functions)).
+provisioning purposes - the *cc_flows* and 
+*cc_agents* tables, see
+[DB schema](https://docs.opensips.org/manual/1-11/install-dbschema#AEN2361).
+Data is loaded at startup and cached into memory ; runtime reload is 
+possible via the MI commands (see the *cc_reload* 
+command in [exported mi functions](#exported_mi_functions)).
 
 
 Additionally there is a table *cc_cdrs* for writing 
-		the CDRs - this operation is done in realtime, after the call in 
-		completed, covering all possible cases: call was dropped while in 
-		queue, call was rejected by agent, call was accepted by agent, call 
-		terminated with error - NOTE that a call may generate more than one 
-		CDR (like call rejected by agent A, and redistributed and accepted by 
-		agent B).
+the CDRs - this operation is done in realtime, after the call in 
+completed, covering all possible cases: call was dropped while in 
+queue, call was rejected by agent, call was accepted by agent, call 
+terminated with error - NOTE that a call may generate more than one 
+CDR (like call rejected by agent A, and redistributed and accepted by 
+agent B).
 
 
 The *cc_calls* table is used to store ongoing calls,
-		regardless it's state (in queue, to the agent, ended). It is populated
-		at runtime by the module and queried at startup. This table should not
-		be manually provisioned.
+regardless it's state (in queue, to the agent, ended). It is populated
+at runtime by the module and queried at startup. This table should not
+be manually provisioned.
 
 
 #### Call Flows
 
 
 A flow is defined by a unique alphanumerical ID - the main attribute 
-		of a flow is the *skill* - the skill is a 
-		capability required by the flow for an agent to be able to answer the 
-		call ; the concept of *skills* is the link between 
-		the flows and the agents - telling what agents are serving what flows 
+of a flow is the *skill* - the skill is a 
+capability required by the flow for an agent to be able to answer the 
+call ; the concept of *skills* is the link between 
+the flows and the agents - telling what agents are serving what flows 
 		- the flows require a skill, while the agents provide a set of skills. 
-		Agents matching the required skill of a flow will automatically 
-		receive calls from that flow.
+Agents matching the required skill of a flow will automatically 
+receive calls from that flow.
 
 
 Additional, the flow has a *priority* - as agents 
-		may server multiple flows in the same time (based on skills), you can
-		define priorities between the flows - if the flows has a higher 
-		priority, its calls will be pushed (in deliver to agents and queuing) in
-		front of the calls from flows with a lower priority.
+may server multiple flows in the same time (based on skills), you can
+define priorities between the flows - if the flows has a higher 
+priority, its calls will be pushed (in deliver to agents and queuing) in
+front of the calls from flows with a lower priority.
 
 
 Configurable per flow, the module may do per-flow call dissuading; this
-		means to redirect a call to another destination, if the queue/flow 
-		is overloaded:
+means to redirect a call to another destination, if the queue/flow 
+is overloaded:
 
 
 - if the number of calls already in the queue exceeds the diss_qsize_th threshold
@@ -85,50 +85,50 @@ Configurable per flow, the module may do per-flow call dissuading; this
 
 
 Optionally, the flow may define a *prependcid* - a
-		prefix to be added to the CLI (Caller ID) when the call is delivered to
-		the agents - as an agent may receive call from multiple flows, it is 
-		important for the user to see which was the queue a call was received.
+prefix to be added to the CLI (Caller ID) when the call is delivered to
+the agents - as an agent may receive call from multiple flows, it is 
+important for the user to see which was the queue a call was received.
 
 
 In terms of media announcements, the flow defines the 
-		*message_welcome* (optional, to be played in the 
-		call, before doing anything with the call) and 
-		*message_queue* (mandatory, the looping message
-		providing infinite on hold media IMPORTANT - this message must cycle 
-		and media server must never hung up on it. Both announcements are 
-		provided as SIP URIs (where the call has to be sent in order to get
-		the playback).
+*message_welcome* (optional, to be played in the 
+call, before doing anything with the call) and 
+*message_queue* (mandatory, the looping message
+providing infinite on hold media IMPORTANT - this message must cycle 
+and media server must never hung up on it. Both announcements are 
+provided as SIP URIs (where the call has to be sent in order to get
+the playback).
 
 
 The flow also has an optional *max_wrapup time*,
-		which acts as an upper limit for the per-agent/global value (the flow 
-		forces a ceiling of the wrapup value for all its calls).
+which acts as an upper limit for the per-agent/global value (the flow 
+forces a ceiling of the wrapup value for all its calls).
 
 
 #### Agents
 
 
 An agent is defined by a unique alphanumerical ID - the main attribute 
-		of an agent is its the set of *skills* and its SIP
-		*location*. The set of skills will tell what calls
-		to be received (from which flows, based on the skill matching); the 
-		location is a SIP URI where to call must be sent in order to be 
-		answered by the agent.
+of an agent is its the set of *skills* and its SIP
+*location*. The set of skills will tell what calls
+to be received (from which flows, based on the skill matching); the 
+location is a SIP URI where to call must be sent in order to be 
+answered by the agent.
 
 
 Additionally, the agent has a initial *logstate* - 
-		if he is logged in or not (being logged in is a must in order to
-		receive calls). The log state may be changed at runtime via a 
-		dedicated MI command *cc_agent_login*, see 
-		[exported mi functions](#exported_mi_functions).
+if he is logged in or not (being logged in is a must in order to
+receive calls). The log state may be changed at runtime via a 
+dedicated MI command *cc_agent_login*, see 
+[exported mi functions](#exported_mi_functions).
 
 
 There is an optional per-agent *wrapup_time*
-		defined, saying the time interval for an agent before getting a new 
-		call from the system (after he finished a call). If no value is defined
-		for the agent, the global *wrapup_time* will be 
-		used. Note that the resulting value may be upper limited by the
-		per-flow *max_wrapup_time* if defined.
+defined, saying the time interval for an agent before getting a new 
+call from the system (after he finished a call). If no value is defined
+for the agent, the global *wrapup_time* will be 
+used. Note that the resulting value may be upper limited by the
+per-flow *max_wrapup_time* if defined.
 
 
 ### Dependencies
@@ -148,7 +148,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -161,8 +161,8 @@ The following libraries or applications must be installed before
 
 
 SQL address to the DB server -- database specific. This must be
-		the Database holding the provisioning tables (cc_flows, cc_agents
-		and cc_calls tables).
+the Database holding the provisioning tables (cc_flows, cc_agents
+and cc_calls tables).
 
 
 ```opensips title="Set db_url parameter"
@@ -177,7 +177,7 @@ modparam("call_center", "db_url",
 
 
 SQL address to the DB server -- database specific. This must be
-		the Database where the CDRs table (cc_cdrs) is located.
+the Database where the CDRs table (cc_cdrs) is located.
 
 
 ```opensips title="Set acc_db_url parameter"
@@ -192,10 +192,10 @@ modparam("call_center", "acc_db_url",
 
 
 SQL address/URL of the DB server (database specific) where the
-		runtime tables (non provisioning tables) are located. The
-		runtime tables are the tables populated by OpenSIPS with data
-		learned during runtime. To be more specific, the only runtime
-		table we have so far is the "cc_calls" table.
+runtime tables (non provisioning tables) are located. The
+runtime tables are the tables populated by OpenSIPS with data
+learned during runtime. To be more specific, the only runtime
+table we have so far is the "cc_calls" table.
 
 
 ```opensips title="Set rt_db_url parameter"
@@ -210,15 +210,15 @@ modparam("call_center", "rt_db_url",
 
 
 The name of the B2B scenario that is used by the module for handling
-		the calls in the queue. This is an advanced options and you should
-		not change it unless you really understand what you are doing.
+the calls in the queue. This is an advanced options and you should
+not change it unless you really understand what you are doing.
 
 
 The module provides an B2B scenario file 
-		*scenario_callcenter.xml* located in the module
-		directory. The name of this scenario from this file (which must be
-		loaded via the b2b_logic module) must match the 
-		*b2b_scenario* parameter.
+*scenario_callcenter.xml* located in the module
+directory. The name of this scenario from this file (which must be
+loaded via the b2b_logic module) must match the 
+*b2b_scenario* parameter.
 
 
 *Default value is "call center".*
@@ -236,17 +236,17 @@ modparam("call_center", "b2b_scenario", "call center")
 
 
 The name of the B2B scenario that is used by the module for handling
-		the calls to agents, to announce the identity of the incoming call
-		(as flow), before getting the actually distributed call. This is an
-		advanced options and you should
-		not change it unless you really understand what you are doing.
+the calls to agents, to announce the identity of the incoming call
+(as flow), before getting the actually distributed call. This is an
+advanced options and you should
+not change it unless you really understand what you are doing.
 
 
 The module provides an B2B scenario file 
-		*scenario_agent.xml* located in the 
-		module directory. The name of this scenario from this file (which must
-		be loaded via the b2b_logic module) must match the 
-		*b2b_scenario_agent* parameter.
+*scenario_agent.xml* located in the 
+module directory. The name of this scenario from this file (which must
+be loaded via the b2b_logic module) must match the 
+*b2b_scenario_agent* parameter.
 
 
 *Default value is "call center agent".*
@@ -264,12 +264,12 @@ modparam("call_center", "b2b_scenario_agent", "cc agent")
 
 
 Time for an agent between finishing a call and receiving the next
-		call from the system. Even if there are queued calls, the module
-		will not deliver call to agent during this wrapup interval.
+call from the system. Even if there are queued calls, the module
+will not deliver call to agent during this wrapup interval.
 
 
 This value may be overwritten by the per-agent value (if defined)
-		and furher more, by the per-flow value (if defined).
+and furher more, by the per-flow value (if defined).
 
 
 *Default value is "30 seconds".*
@@ -286,9 +286,9 @@ modparam("call_center", "wrapup_time", 45)
 
 
 The name of an SIP URI parameter to be used to report the position
-		in the waiting queue when sending the call to media server for
-		onwait/queue playback. The position 0 means it is the next call
-		to be delivered to an agent.
+in the waiting queue when sending the call to media server for
+onwait/queue playback. The position 0 means it is the next call
+to be delivered to an agent.
 
 
 *Default value is "empty(none)".*
@@ -305,8 +305,8 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 
 
 A parameter to tell if an incoming call should be rejected or
-		quueued if there are no logged in agents. Basically this allows
-		call queueing on flows with no agents yet.
+quueued if there are no logged in agents. Basically this allows
+call queueing on flows with no agents yet.
 
 
 *Default value is "1 (true)".*
@@ -339,7 +339,7 @@ modparam("call_center", "cc_agents_table", "my_agents")
 
 
 Name to be used for the "agent id" (unique DB id) column in the
-		agents table.
+agents table.
 
 
 *Default value is "agentid".*
@@ -356,7 +356,7 @@ modparam("call_center", "cca_agentid_column", "cid")
 
 
 Name to be used for the "location" (SIP URI) column in the
-		agents table.
+agents table.
 
 
 *Default value is "agentid".*
@@ -373,7 +373,7 @@ modparam("call_center", "cca_location_column", "sip_uri")
 
 
 Name to be used for the "skills" (list of skills) column in the
-		agents table.
+agents table.
 
 
 *Default value is "skills".*
@@ -390,7 +390,7 @@ modparam("call_center", "cca_skills_column", "skills")
 
 
 Name to be used for the "logstate" (original login state) column in the
-		agents table.
+agents table.
 
 
 *Default value is "logstate".*
@@ -407,7 +407,7 @@ modparam("call_center", "cca_logstate_column", "log_state")
 
 
 Name to be used for the "wrapuptime" (per-agent wrapup time) column 
-		in the agents table.
+in the agents table.
 
 
 *Default value is "wrapup_time".*
@@ -424,7 +424,7 @@ modparam("call_center", "cca_wrapuptime_column", "wtime")
 
 
 Name to be used for the "wrapupend" (timestamp when the wrapup ends) 
-		column in the agents table.
+column in the agents table.
 
 
 *Default value is "wrapup_end_time".*
@@ -441,7 +441,7 @@ modparam("call_center", "cca_wrapupend_column", "wrapup_ends")
 
 
 Name to be used for the table holding the definition of the
-		flows/queues.
+flows/queues.
 
 
 *Default value is "cc_flows".*
@@ -458,7 +458,7 @@ modparam("call_center", "cc_flows_table", "queues")
 
 
 Name to be used for the "flow id" (unique DB id) column in the
-		flows table.
+flows table.
 
 
 *Default value is "flowid".*
@@ -475,7 +475,7 @@ modparam("call_center", "ccf_flowid_column", "queue_id")
 
 
 Name to be used for the "priority" column in the
-		flows table.
+flows table.
 
 
 *Default value is "priority".*
@@ -492,7 +492,7 @@ modparam("call_center", "ccf_priority_column", "queue_prio")
 
 
 Name to be used for the "skill" column in the
-		flows table.
+flows table.
 
 
 *Default value is "skill".*
@@ -509,7 +509,7 @@ modparam("call_center", "ccf_skill_column", "queue_skill")
 
 
 Name to be used for the "caller ID prefix" column in the
-		flows table.
+flows table.
 
 
 *Default value is "prependcid".*
@@ -526,7 +526,7 @@ modparam("call_center", "ccf_cid_column", "queue_cli_prefix")
 
 
 Name to be used for the "max limit for wrapup time" column in the
-		flows table.
+flows table.
 
 
 *Default value is "max_wrapup_time".*
@@ -543,7 +543,7 @@ modparam("call_center", "ccf_max_wrapup_column", "queue_wrapup")
 
 
 Name to be used for the "hangup after dissuading" column in the
-		flows table.
+flows table.
 
 
 *Default value is "dissuading_hangup".*
@@ -560,7 +560,7 @@ modparam("call_center", "ccf_dissuading_hangup_column", "hangup_on_dissuading")
 
 
 Name to be used for the "on-hold dissuading threshold" column in the
-		flows table.
+flows table.
 
 
 *Default value is "dissuading_onhold_th".*
@@ -577,7 +577,7 @@ modparam("call_center", "ccf_dissuading_onhold_th_column", "th_diss_onhold")
 
 
 Name to be used for the "EWT dissuading threshold" column in the
-		flows table.
+flows table.
 
 
 *Default value is "dissuading_ewt_th".*
@@ -594,7 +594,7 @@ modparam("call_center", "ccf_dissuading_ewt_th_column", "th_diss_ewt")
 
 
 Name to be used for the "queue size dissuading threshold" column in the
-		flows table.
+flows table.
 
 
 *Default value is "dissuading_qsize_th".*
@@ -611,7 +611,7 @@ modparam("call_center", "ccf_dissuading_qsize_th_column", "th_diss_qsize")
 
 
 Name to be used for the "audio message on welcome" column in the
-		flows table.
+flows table.
 
 
 *Default value is "message_welcome".*
@@ -628,7 +628,7 @@ modparam("call_center", "ccf_m_welcome_column", "audio_welcome")
 
 
 Name to be used for the "audio message on queueing" column in the
-		flows table.
+flows table.
 
 
 *Default value is "message_queue".*
@@ -645,7 +645,7 @@ modparam("call_center", "ccf_m_queue_column", "audio_queue")
 
 
 Name to be used for the "audio message on dissuading" column in the
-		flows table.
+flows table.
 
 
 *Default value is "message_dissuading".*
@@ -662,7 +662,7 @@ modparam("call_center", "ccf_m_dissuading_column", "audio_dissuading")
 
 
 Name to be used for the "audio message on identifying the flow" column
-		in the flows table.
+in the flows table.
 
 
 *Default value is "message_flow_id".*
@@ -682,8 +682,8 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 
 
 This must be used only for initial INVITE requests - the function
-		pushes the call to be handled by the call center module (via a certain
-		flow/queue).
+pushes the call to be handled by the call center module (via a certain
+flow/queue).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -693,27 +693,27 @@ Parameters:
 
 
 - *flowID (string)* - the ID of the flow to
-				handle this call (push the call to that flow).
+handle this call (push the call to that flow).
 - *param (string, optional)* - an opaque
-				string to be passed as parameter to the "callcenter" and 
-				"agent" B2B scenarios. It is
-				intended for custom integration of the call center module and 
-				it is 100% up to the script writer about the value and purpose
-				of this parameter, OpenSIPS will not touch or interpret it.
+string to be passed as parameter to the "callcenter" and 
+"agent" B2B scenarios. It is
+intended for custom integration of the call center module and 
+it is 100% up to the script writer about the value and purpose
+of this parameter, OpenSIPS will not touch or interpret it.
 
 
 The function returns TRUE back to the script if the call was 
-		successfully pushed and handled by the Call Center engine. IMPORTANT: 
-		you must not do any signaling on the call (reply, relay) after this
-		point.
+successfully pushed and handled by the Call Center engine. IMPORTANT: 
+you must not do any signaling on the call (reply, relay) after this
+point.
 
 
 In case of error, FALSE is returned to the script with the following 
-		return codes:
+return codes:
 
 
 - **-1** - unable to get the flow ID
-			from the parameter;
+from the parameter;
 - **-2** - unable to parse the FROM URI;
 - **-3** - flow with FlowID not found;
 - **-4** - no agents logged in the flow;
@@ -746,7 +746,7 @@ Parameters:
 
 - *agentID (string)* - the ID of the agent
 - *state (int)* - an integer value giving
-				the new state - 0 means logged off, anything else means logged in.
+the new state - 0 means logged off, anything else means logged in.
 
 
 ```opensips title="cc_agent_login usage"
@@ -797,7 +797,7 @@ Total number of calls answered by agents. (counter type)
 
 
 Total number of calls terminated by caller before being
-			answered by agents. (counter type)
+answered by agents. (counter type)
 
 
 ##### ccg_onhold_calls
@@ -837,14 +837,14 @@ Nnumber of calls from the flow answered by agents. (counter type)
 
 
 Number of calls (from the flow) terminated by caller before being
-			answered by agents. (counter type)
+answered by agents. (counter type)
 
 
 ##### ccf_onhold_incalls_flowID
 
 
 Number of calls (from the flow) which were put onhold.
-			 (counter type)
+(counter type)
 
 
 ##### ccf_queued_calls_flowID
@@ -875,7 +875,7 @@ Avg. Wating Time for this flow. (realtime type)
 
 
 The load on the flow (number of queued calls versus number of
-			logged agents). (realtime type)
+logged agents). (realtime type)
 
 
 #### Per-agent statistics (one set for each agent)
@@ -897,7 +897,7 @@ Nnumber of calls answered by the agent. (counter type)
 
 
 Number of calls (sent to this agent) terminated by caller before 
-			being answered by agents. (counter type)
+being answered by agents. (counter type)
 
 
 ##### cca_att_agentID
@@ -951,9 +951,9 @@ opensips-cli -x mi cc_agent_login agentX 0
 
 
 Command to list all the calls in queuing - for each call, the 
-		following attributes will be printed: the flow of the call, for how
-		long the call is in the queue, the ETW for the call, call priority 
-		and the call skill (inherited from the flow).
+following attributes will be printed: the flow of the call, for how
+long the call is in the queue, the ETW for the call, call priority 
+and the call skill (inherited from the flow).
 
 
 It takes no parameter.
@@ -971,9 +971,9 @@ opensips-cli -x mi cc_list_queue
 
 
 Command to list all the flows - for each flow, the 
-		following attributes will be printed: the flow ID, the avg. call 
-		duration, how many calls were processed, how many agents are logged, 
-		and how many onging calls are.
+following attributes will be printed: the flow ID, the avg. call 
+duration, how many calls were processed, how many agents are logged, 
+and how many onging calls are.
 
 
 It takes no parameter.
@@ -991,8 +991,8 @@ opensips-cli -x mi cc_list_flows
 
 
 Command to list all the agents - for each agent, the 
-		following attributes will be printed: agent ID, agent login state and
-		agent state (free, wrapup, incall).
+following attributes will be printed: agent ID, agent login state and
+agent state (free, wrapup, incall).
 
 
 It takes no parameter.
@@ -1010,9 +1010,9 @@ opensips-cli -x mi cc_list_agents
 
 
 Command to list all the ongoing calls - for each call, the 
-		following attributes will be printed: call ID, call state 
-		(welcome, queued, toagent, ended), call duration, flow it belongs to,
-		agent serving the call (if any).
+following attributes will be printed: call ID, call state 
+(welcome, queued, toagent, ended), call duration, flow it belongs to,
+agent serving the call (if any).
 
 
 It takes no parameter.
@@ -1057,16 +1057,15 @@ Parameters:
 
 - *agent_id* - the id of the agent.
 - *state* - the status of the agent:
-				
-					offline
-					free
-					incall
-					wrapup
+	* offline
+	* free
+	* incall
+	* wrapup
 - *wrapup_ends* - the timestamp when the 
-				wrapup state will end; published only if the state is 
-				"wrapup"
+wrapup state will end; published only if the state is 
+"wrapup"
 - *flow_id* - the flow ID that delivered the
-				call for this agent; published only if the state is "incall"
+call for this agent; published only if the state is "incall"
 
 
 ### Exported Pseudo-Variables
@@ -1097,21 +1096,21 @@ Take a look at [https://opensips.org/](https://opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License

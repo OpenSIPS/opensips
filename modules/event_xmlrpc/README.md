@@ -1,6 +1,6 @@
 ---
 title: "event_xmlrpc Module"
-description: "This module is an implementation of an XMLRPC client used to notify XMLRPC servers whenever certain notifications are raised by OpenSIPS. It acts as a transport layer for the Event Notification Interface."
+description: "This module is an implementation of an XMLRPC client used to notify XMLRPC servers whenever certain notifications are raised by OpenSIPS."
 ---
 
 ## Admin Guide
@@ -10,19 +10,19 @@ description: "This module is an implementation of an XMLRPC client used to notif
 
 
 This module is an implementation of an XMLRPC client used to notify
-		XMLRPC servers whenever certain notifications are raised by OpenSIPS. It
-		acts as a transport layer for the Event Notification Interface.
+XMLRPC servers whenever certain notifications are raised by OpenSIPS. It
+acts as a transport layer for the Event Notification Interface.
 
 
 Basicly, the module executes a remote procedure call when an event is
-		raised from OpenSIPS's script, core or modules using the Event
-		Interface.
+raised from OpenSIPS's script, core or modules using the Event
+Interface.
 
 
 In order to be notified, an XMLRPC server has to subscribe for a certain
-		event provided by OpenSIPS. This can be done using the generic MI
-		Interface (*event_subscribe* function) or from
-		OpenSIPS script (*subscribe_event* core function).
+event provided by OpenSIPS. This can be done using the generic MI
+Interface (*event_subscribe* function) or from
+OpenSIPS script (*subscribe_event* core function).
 
 
 ### XMLRPC socket syntax
@@ -35,14 +35,14 @@ Meanings:
 
 
 - *'xmlrpc:'* - informs the Event Interface
-					that the events sent to this subscriber should be handled
-					by the *event_xmlrpc* module.
+that the events sent to this subscriber should be handled
+by the *event_xmlrpc* module.
 - *host* - host name of the XMLRPC server.
 - *port* - port of the XMLRPC server.
 - *method* - method called remotely by the
-					XMLRPC client.
-					NOTE: the client does not wait for a response from the
-						XMLRPC server.
+XMLRPC client.
+NOTE: the client does not wait for a response from the
+XMLRPC server.
 
 
 ### Dependencies
@@ -61,7 +61,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -74,10 +74,10 @@ The following libraries or applications must be installed before
 
 
 When raising an event, pack the name and value of the
-			parameters in a XMLRPC structure. This provides an easier
-			way for some XMLRPC server implementations to interpret
-			the parameters.
-			Set it to zero to disable or to non-zero to enable it.
+parameters in a XMLRPC structure. This provides an easier
+way for some XMLRPC server implementations to interpret
+the parameters.
+Set it to zero to disable or to non-zero to enable it.
 
 
 *Default value is "0 (disabled)".*
@@ -116,7 +116,7 @@ No function exported to be used from configuration file.
 
 
 This is an example of an event raised by the pike module
-			when it decides an ip should be blocked:
+when it decides an ip should be blocked:
 
 
 ```c title="E_PIKE_BLOCKED event"
@@ -144,8 +144,8 @@ Content-length: 240.
 
 
 ```c title="XMLRPC socket"
-	# calls the 'block_ip' function
-	xmlrpc:127.0.0.1:8080:block_ip
+# calls the 'block_ip' function
+xmlrpc:127.0.0.1:8080:block_ip
 ```
 <!-- CONTRIBUTORS -->
 

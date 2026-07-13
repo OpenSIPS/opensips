@@ -10,7 +10,7 @@ description: "This module adds support for implementing STIR/SHAKEN (RFC 8224, R
 
 
 This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
-	Authentication and Verification services in OpenSIPS.
+Authentication and Verification services in OpenSIPS.
 
 
 ### Dependencies
@@ -29,7 +29,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *openssl (libssl)*.
@@ -42,11 +42,11 @@ The following libraries or applications must be installed before running
 
 
 The maximum number of seconds that the value in the Date header field
-		can be older than the current time.
+can be older than the current time.
 
 
 This parameter is only relevant
-		for the [stir shaken auth](#func_stir_shaken_auth) function.
+for the [stir shaken auth](#func_stir_shaken_auth) function.
 
 
 The default value is *60*.
@@ -63,19 +63,19 @@ modparam("stir_shaken", "auth_date_freshness", 300)
 
 
 The maximum number of seconds that the value in the Date header field can be
-		older than the current time. Also, if the *iat* value in
-		the PASSporT is different than the Date value, but remains within the
-		permitted interval, it will be used in the verification process (for the
-		reconstructed PASSporT) instead of the Date value.
+older than the current time. Also, if the *iat* value in
+the PASSporT is different than the Date value, but remains within the
+permitted interval, it will be used in the verification process (for the
+reconstructed PASSporT) instead of the Date value.
 
 
 If the [require date hdr](#param_require_date_hdr) parameter is set to not
-		required and the Date header is missing, the *iat* value
-		will be used for this check instead.
+required and the Date header is missing, the *iat* value
+will be used for this check instead.
 
 
 This parameter is only relevant for the
-		[stir shaken verify](#func_stir_shaken_verify) function.
+[stir shaken verify](#func_stir_shaken_verify) function.
 
 
 The default value is *60*.
@@ -92,7 +92,7 @@ modparam("stir_shaken", "verify_date_freshness", 300)
 
 
 Path to a file containing trusted CA certificates for the verifier.
-		The certificates must be in PEM format, one after another.
+The certificates must be in PEM format, one after another.
 
 
 ```opensips title="Set ca_list parameter"
@@ -106,9 +106,9 @@ modparam("stir_shaken", "ca_list", "/stir_certs/ca_list.pem")
 
 
 Path to a directory containing trusted CA certificates for the verifier.
-		The certificates in the directory must be in hashed form, as described
-		in the [openssl documentation](https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html) for the
-		*Hashed Directory Method*.
+The certificates in the directory must be in hashed form, as described
+in the [openssl documentation](https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html) for the
+*Hashed Directory Method*.
 
 
 ```opensips title="Set ca_dir parameter"
@@ -135,9 +135,9 @@ modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
 
 
 Path to a directory containing certificate revocation lists (CRLs) for
-		the verifier. The CRLs in the directory must be in hashed form, as described
-		in the [openssl documentation](https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html) for the
-		*Hashed Directory Method*.
+the verifier. The CRLs in the directory must be in hashed form, as described
+in the [openssl documentation](https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html) for the
+*Hashed Directory Method*.
 
 
 ```opensips title="Set crl_dir parameter"
@@ -151,10 +151,10 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 
 
 Strictly check if the originating/destination identity derived from the
-		SIP message is an E.164 telephone number. Also require the URI to either
-		be a *tel* URI or a *sip* /
-		*sips* URI with the *user=phone*
-		parameter.
+SIP message is an E.164 telephone number. Also require the URI to either
+be a *tel* URI or a *sip* /
+*sips* URI with the *user=phone*
+parameter.
 
 
 The default value is *0* (disabled).
@@ -171,18 +171,18 @@ modparam("stir_shaken", "e164_strict_mode", 1)
 
 
 Specifies whether the Date header is mandatory when doing verification
-	    with the [stir shaken verify](#func_stir_shaken_verify) function.
+with the [stir shaken verify](#func_stir_shaken_verify) function.
 
 
 A value of *1* means required and *0*
-	    not required.
+not required.
 
 
 If the parameter is set to "not required" but the Date header is present in the
-	    message, the header value will be used as normally to check the freshness (as
-	    configured in the [verify date freshness](#param_verify_date_freshness)
-	    parameter). If the Date header is indeed missing, the value of the
-	    *iat* claim in the PASSporT will be used instead.
+message, the header value will be used as normally to check the freshness (as
+configured in the [verify date freshness](#param_verify_date_freshness)
+parameter). If the Date header is indeed missing, the value of the
+*iat* claim in the PASSporT will be used instead.
 
 
 The default value is *1* (required).
@@ -202,7 +202,7 @@ modparam("stir_shaken", "require_date_hdr", 0)
 
 
 This function performs the steps of an authentication service. Before
-		calling this function though, you must ensure:
+calling this function though, you must ensure:
 
 
 - authority - the server is authoritative for the identity in question;
@@ -213,30 +213,24 @@ Meaning of the parameters is as follows:
 
 
 - *attest (string)* - value of the 'attest' claim
-			to be included in the PASSporT. The following values can be used:
-			
-				
-				*A* or *full*
-				
-				
-				*B* or *partial*
-				
-				
-				*C* or *gateway*
+to be included in the PASSporT. The following values can be used:
+				- *A* or *full*
+				- *B* or *partial*
+				- *C* or *gateway*
 - *origid (string)* - value of the 'origid' claim
-			to be included in the PASSporT. Treated by the module as an opaque string.
+to be included in the PASSporT. Treated by the module as an opaque string.
 - *cert (string)* - the X.509 certificate used to
-			compute the signature, in PEM format.
+compute the signature, in PEM format.
 - *pkey (string)* - the private key used to
-			compute the signature, in PEM format.
+compute the signature, in PEM format.
 - *x5u (string)* - value of the 'x5u' claim to be
-			included in the PASSporT. Treated by the module as an opaque string.
+included in the PASSporT. Treated by the module as an opaque string.
 - *orig (string, optional)* - telephone number to
-			be used as the originating identity in the PASSporT. If missing, this value
-			will be derived from the SIP message.
+be used as the originating identity in the PASSporT. If missing, this value
+will be derived from the SIP message.
 - *dest (string, optional)* - telephone number to
-			be used as the destination identity in the PASSporT. If missing, this value
-			will be derived from the SIP message.
+be used as the destination identity in the PASSporT. If missing, this value
+will be derived from the SIP message.
 
 
 The function returns the following values:
@@ -246,10 +240,10 @@ The function returns the following values:
 - -1: Internal error
 - -2: Identity header already exists
 - -3: Failed to derive identity from SIP message because the
-		    URI is not a telephone number
+URI is not a telephone number
 - -4: Date header value is older than local policy for freshness
 - -5: The current time or Date header value does not fall within
-		    the certificate validity
+the certificate validity
 
 
 This function can be used from REQUEST_ROUTE.
@@ -273,19 +267,19 @@ Meaning of the parameters is as follows:
 
 
 - *cert (string)* - the X.509 certificate used to
-			verify the signature, in PEM format.
+verify the signature, in PEM format.
 - *err_code (var)* - output variable that will
-			store the SIP response code associated with an eventual error of the
-			verification process.
+store the SIP response code associated with an eventual error of the
+verification process.
 - *err_reason (var)* - output variable that will
-			store the SIP response reason phrase associated with an eventual error of the
-			verification process.
+store the SIP response reason phrase associated with an eventual error of the
+verification process.
 - *orig (string, optional)* - telephone number to
-			be used as the originating identity in the verification prcess. If missing,
-			this value will be derived from the SIP message.
+be used as the originating identity in the verification prcess. If missing,
+this value will be derived from the SIP message.
 - *dest (string, optional)* - telephone number to
-			be used as the destination identity in the verification process. If missing,
-			this value will be derived from the SIP message.
+be used as the destination identity in the verification process. If missing,
+this value will be derived from the SIP message.
 
 
 The function returns the following values:
@@ -295,7 +289,7 @@ The function returns the following values:
 - -1: Internal error
 - -2: No Identity or Date header found
 - -3: Failed to derive identity from SIP message because the
-		    URI is not a telephone number
+URI is not a telephone number
 - -4: Invalid identity header
 - -5: Unsupported 'ppt' or 'alg' Identity header parameter
 - -6: Date header value is older than local policy for freshness
@@ -322,8 +316,8 @@ if ($var(rc) < -1) {
 
 
 This function checks the Identity header in order to validate the
-		STIR/SHAKEN information in terms of format. It detects issues such as:
-		missing or badly formated PASSporT claims, unsupported extensions etc.
+STIR/SHAKEN information in terms of format. It detects issues such as:
+missing or badly formated PASSporT claims, unsupported extensions etc.
 
 
 The function returns the following values:
@@ -353,7 +347,7 @@ if (stir_shaken_check()) {
 
 
 This function checks if the current time falls within the given
-		certificate's validity period.
+certificate's validity period.
 
 
 The function returns the following values:
@@ -386,8 +380,8 @@ if (!stir_shaken_check_cert($var(cert))) {
 
 
 This is a read-only pseudo-variable that provides access to the
-	parsed information from the Identity header, through the following
-	subnames:
+parsed information from the Identity header, through the following
+subnames:
 
 
 - *header* - the entire PASSporT header;
@@ -395,10 +389,10 @@ This is a read-only pseudo-variable that provides access to the
 - *payload* - the entire PASSporT payload;
 - *attest* - the value of the 'attest' PASSporT claim;
 - *dest* - the value of the 'tn' member of the 'dest'
-		PASSporT claim;
+PASSporT claim;
 - *iat* - the value of the 'iat' PASSporT claim;
 - *orig* - the value of the 'tn' member of the 'orig'
-		PASSporT claim;
+PASSporT claim;
 - *origid* - the value of the 'origid' PASSporT claim;
 
 

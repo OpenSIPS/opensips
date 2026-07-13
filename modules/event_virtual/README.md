@@ -1,6 +1,6 @@
 ---
 title: "event_virtual Module"
-description: "The *event_virtual* module provides the possibility to have multiple external applications, using different transport protocols, subscribed to the OpenSIPS Event Interface as a single virtual subscriber, for a specific event. When an event is triggered, the event_virtual module notifies the spe..."
+description: "The *event_virtual* module provides the possibility to have multiple external applications, using different transport protocols, subscribed to the OpenSIPS Event Interface as a single virtual subscriber, for a specific event."
 ---
 
 ## Admin Guide
@@ -10,20 +10,20 @@ description: "The *event_virtual* module provides the possibility to have multip
 
 
 The *event_virtual*
-		module provides the possibility to have multiple external applications, using different transport protocols, subscribed to the OpenSIPS Event Interface as a single virtual subscriber, for a specific event. When an event is triggered, the event_virtual module notifies the specified transport modules using one of the following policies:
+module provides the possibility to have multiple external applications, using different transport protocols, subscribed to the OpenSIPS Event Interface as a single virtual subscriber, for a specific event. When an event is triggered, the event_virtual module notifies the specified transport modules using one of the following policies:
 
 
 - *PARALLEL* - all subscribers (applications) are notified at once
 - *FAILOVER* - for every event raised, try to
-				notify the subscribers, in the order in which they are given,
-				until the first successful notification. A failed subscriber is
-				skipped for further notifications until the
-				[failover timeout](#param_failover_timeout) passes. For some transport modules
-				(*event_stream*, *event_xmlrpc*,
-				*event_rabbitmq*), in order to properly
-				detect a failure when raising an event, you have to configure
-				synchronous operation through the *sync_mode*
-				module parameter of the respective module.
+notify the subscribers, in the order in which they are given,
+until the first successful notification. A failed subscriber is
+skipped for further notifications until the
+[failover timeout](#param_failover_timeout) passes. For some transport modules
+(*event_stream*, *event_xmlrpc*,
+*event_rabbitmq*), in order to properly
+detect a failure when raising an event, you have to configure
+synchronous operation through the *sync_mode*
+module parameter of the respective module.
 - *ROUND-ROBIN* - for every event raised, notify the subscribers alternatively, in the order in which they are given (for each raised event notify a different subscriber)
 
 
@@ -40,11 +40,11 @@ Meanings:
 
 
 - *virtual:* - informs the Event Interface that the
-					events sent to this subscriber should be handled by the
-					*event_virtual* module
+events sent to this subscriber should be handled by the
+*event_virtual* module
 - *policy* - subscriber notification policy, can have one of the following values: 'PARALLEL', 'FAILOVER', 'ROUND-ROBIN' (with the behaviour described above)
-				
-				
+
+
 					*!! Important: Policies must always be specified as
 							uppercase strings!*
 - *subscriber_1* - use the socket syntax for this specific subscriber (eg. "rabbitmq:guest:guest@127.0.0.1:5672/pike")
@@ -57,14 +57,14 @@ Meanings:
 
 
 The following modules must be loaded before this module:
-			*The OpenSIPS event modules which implement the transport protocols used by the subscribers*.
+*The OpenSIPS event modules which implement the transport protocols used by the subscribers*.
 
 
 ### External Libraries or Applications
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -77,8 +77,8 @@ The following libraries or applications must be installed before
 
 
 The minimum duration in seconds that a failed subscriber is
-			skipped for further notifications. This parameter only affects
-			the *FAILOVER* policy.
+skipped for further notifications. This parameter only affects
+the *FAILOVER* policy.
 
 
 *Default value is "30".*

@@ -1,6 +1,6 @@
 ---
 title: "AUTH_JWT Module"
-description: "The module implements authentication over JSON Web Tokens. In some cases ( ie. WebRTC ) the user authenticates on another layer ( other than SIP ), so it makes no sense to double-authenticate it on the SIP layer. Thus, the SIP client will simply present the JWT auth token it received from the..."
+description: "The module implements authentication over JSON Web Tokens."
 ---
 
 ## Admin Guide
@@ -10,10 +10,10 @@ description: "The module implements authentication over JSON Web Tokens. In some
 
 
 The module implements authentication over JSON Web Tokens.
-		In some cases ( ie. WebRTC ) the user authenticates on another layer ( other than SIP ), so it makes no sense to double-authenticate it on the SIP layer.
-		Thus, the SIP client will simply present the JWT auth token it received from the server, and pass it on to OpenSIPS which will use that for authentication purposes.
+In some cases ( ie. WebRTC ) the user authenticates on another layer ( other than SIP ), so it makes no sense to double-authenticate it on the SIP layer.
+Thus, the SIP client will simply present the JWT auth token it received from the server, and pass it on to OpenSIPS which will use that for authentication purposes.
 
-		It relies on two DB tables, one containing JWT profiles ( a profile name and it's SIP username associated to it ) and one containing JWT secrets. Each secret has a corresponding profile, the KEY used for signing the JWT and two timestamps describing a validation interval. Multiple JWT secrets can point to the same JWT profile.
+It relies on two DB tables, one containing JWT profiles ( a profile name and it's SIP username associated to it ) and one containing JWT secrets. Each secret has a corresponding profile, the KEY used for signing the JWT and two timestamps describing a validation interval. Multiple JWT secrets can point to the same JWT profile.
 
 
 ### Dependencies
@@ -23,18 +23,18 @@ The module implements authentication over JSON Web Tokens.
 
 
 The module depends on the following modules (in the other words
-			the listed modules must be loaded before this module):
+the listed modules must be loaded before this module):
 
 
 - *database* -- Any database module
-				(currently mysql, postgres, dbtext)
+(currently mysql, postgres, dbtext)
 
 
 #### External Libraries or Applications
 
 
 The following libraries or applications must be installed
-			before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *libjwt-dev*
@@ -47,10 +47,10 @@ The following libraries or applications must be installed
 
 
 This is URL of the database to be used. Value of the parameter depends
-		on the database module used. For example for mysql and postgres modules
-		this is something like mysql://username:password@host:port/database.
-		For dbtext module (which stores data in plaintext files) it is
-		directory in which the database resides.
+on the database module used. For example for mysql and postgres modules
+this is something like mysql://username:password@host:port/database.
+For dbtext module (which stores data in plaintext files) it is
+directory in which the database resides.
 
 
 *Default value is "mysql://opensipsro:opensipsro@localhost/opensips".*
@@ -205,9 +205,9 @@ modparam("auth_jwt", "tag_claim", "my_tag_claim")
 
 
 This parameter specifies credentials to be fetched from the JWT profiles table when
-		the authentication is performed. The loaded credentials will be stored
-		in AVPs. If the AVP name is not specificaly given, it will be used a
-		NAME AVP with the same name as the column name.
+the authentication is performed. The loaded credentials will be stored
+in AVPs. If the AVP name is not specificaly given, it will be used a
+NAME AVP with the same name as the column name.
 
 
 Parameter syntax:
@@ -215,7 +215,7 @@ Parameter syntax:
 
 - *load_credentials = credential (';' credential)**
 - *credential = (avp_specification '=' column_name) |
-							(column_name)*
+(column_name)*
 - *avp_specification = '$avp(' + NAME + ')'*
 
 
