@@ -13,25 +13,25 @@ The module enable OpenSIPS to register itself on a remote SIP registrar.
 
 
 At startup, the registrant records are loaded into
-		a hash table in memory and a timer is started.
-		The hash index is computed over the AOR field.
+a hash table in memory and a timer is started.
+The hash index is computed over the AOR field.
 
 
 The timer interval for checking records in a hash bucket is computed
-		by dividing the timer_interval module param by the number of hash buckets.
-		When the timer fires for the first time, the first hash bucket will be checked and
-		REGISTERs will be sent out for each record that is found.
-		On the next timeout fire, the second hash bucket will be checked and so on.
-		If the configured timer_interval module param is lower then the number of buckets,
-		the module will fail to start.
+by dividing the timer_interval module param by the number of hash buckets.
+When the timer fires for the first time, the first hash bucket will be checked and
+REGISTERs will be sent out for each record that is found.
+On the next timeout fire, the second hash bucket will be checked and so on.
+If the configured timer_interval module param is lower then the number of buckets,
+the module will fail to start.
 
 
 Example: setting the timer_interval module to 8 with a hash_size of 2, will result
-	    in having 4 hash buckets (2^2=4) and buckets will be checked one by one every 2s (8/4=2).
+in having 4 hash buckets (2^2=4) and buckets will be checked one by one every 2s (8/4=2).
 
 
 Each registrant has it's own state.
-	    Registrant's status can be inspected via "reg_list" MI comand.
+Registrant's status can be inspected via "reg_list" MI comand.
 
 
 UAC registrant states:
@@ -39,34 +39,34 @@ UAC registrant states:
 
 - *0*
 				- NOT_REGISTERED_STATE -
-				the initial state (no REGISTER has been sent out yet);
+the initial state (no REGISTER has been sent out yet);
 - *1*
 				- REGISTERING_STATE - waiting for a reply from the registrar
-				after a REGISTER without authentication header was sent;
+after a REGISTER without authentication header was sent;
 - *2*
 				- AUTHENTICATING_STATE - waiting for a reply from the registrar
-			 	after a REGISTER with authentication header was sent;
+after a REGISTER with authentication header was sent;
 - *3*
 				- REGISTERED_STATE - the uac is successfully registered;
 - *4*
 				- REGISTER_TIMEOUT_STATE :
-				no reply received from the registrar;
+no reply received from the registrar;
 - *5*
 				- INTERNAL_ERROR_STATE -
-				some errors were found/encountered during the
-				processing of a reply;
+some errors were found/encountered during the
+processing of a reply;
 - *6*
 				- WRONG_CREDENTIALS_STATE -
-				credentials rejected by the registrar;
+credentials rejected by the registrar;
 - *7*
 				- REGISTRAR_ERROR_STATE -
-				error reply received from the registrar;
+error reply received from the registrar;
 - *8*
 				- UNREGISTERING_STATE - waiting for a reply from the registrar
-				after an unREGISTER without authentication header was sent;
+after an unREGISTER without authentication header was sent;
 - *9*
 				- AUTHENTICATING_UNREGISTER_STATE - waiting for a reply from the registrar
-				after an unREGISTER with authentication header was sent;
+after an unREGISTER with authentication header was sent;
 
 
 ### Dependencies
@@ -94,8 +94,8 @@ None.
 
 
 The size of the hash table internally used to keep the registrants.
-		A larger table distributes better the registration load in time but consumes more memory.
-		The hash size is a power of number two.
+A larger table distributes better the registration load in time but consumes more memory.
+The hash size is a power of number two.
 
 
 *Default value is 1.*
@@ -128,12 +128,12 @@ modparam("uac_registrant", "timer_interval", 120)
 
 
 This parameter enables the clustering support in the module. This is
-		used to share this registration between all the nodes in the cluster.
-		When using this option, you should define (for each registrant record)
-		a sharing tag - this sharing tag will control at the cluster level
-		which node is entitled to perform the registation (only the node having
-		that tag as active will do the registation, the onther nodes being
-		idle).
+used to share this registration between all the nodes in the cluster.
+When using this option, you should define (for each registrant record)
+a sharing tag - this sharing tag will control at the cluster level
+which node is entitled to perform the registation (only the node having
+that tag as active will do the registation, the onther nodes being
+idle).
 
 
 *Default value is 0 / off.*
@@ -182,8 +182,8 @@ modparam("uac_registrant", "table_name", "my_registrant")
 
 
 The column's name in the database storing the
-		URI pointing to the remote registrar (mandatory field).
-		OpenSIPS expects a valid URI.
+URI pointing to the remote registrar (mandatory field).
+OpenSIPS expects a valid URI.
 
 
 *Default value is "registrar".*
@@ -200,9 +200,9 @@ modparam("uac_registrant", "registrar_column", "registrant_uri")
 
 
 The column's name in the database storing the
-		URI pointing to the outbond proxy (not mandatory field).
-		An empty or NULL value means no outbound proxy,
-		otherwise OpenSIPS expects a valid URI.
+URI pointing to the outbond proxy (not mandatory field).
+An empty or NULL value means no outbound proxy,
+otherwise OpenSIPS expects a valid URI.
 
 
 *Default value is "proxy".*
@@ -219,9 +219,9 @@ modparam("uac_registrant", "proxy_column", "proxy_uri")
 
 
 The column's name in the database storing the
-		URI defining the address of record (mandatory field).
-		The URI stored here will be used in the To URI of the REGISTER.
-		OpenSIPS expects a valid URI.
+URI defining the address of record (mandatory field).
+The URI stored here will be used in the To URI of the REGISTER.
+OpenSIPS expects a valid URI.
 
 
 *Default value is "aor".*
@@ -238,11 +238,11 @@ modparam("uac_registrant", "aor_column", "to_uri")
 
 
 The column's name in the database storing the
-		URI defining the third party registrant (not mandatory field).
-		The URI stored here will be used in the From URI of the REGISTER.
-		An empty or NULL value means no third party registration
-		(the From URI will be identical to To URI),
-		otherwise OpenSIPS expects a valid URI.
+URI defining the third party registrant (not mandatory field).
+The URI stored here will be used in the From URI of the REGISTER.
+An empty or NULL value means no third party registration
+(the From URI will be identical to To URI),
+otherwise OpenSIPS expects a valid URI.
 
 
 *Default value is "third_party_registrant".*
@@ -259,7 +259,7 @@ modparam("uac_registrant", "third_party_registrant_column", "from_uri")
 
 
 The column's name in the database storing the
-		username for authentication (mandatory if the registrar requires authentication).
+username for authentication (mandatory if the registrar requires authentication).
 
 
 *Default value is "username".*
@@ -276,7 +276,7 @@ modparam("uac_registrant", "username_column", "auth_username")
 
 
 The column's name in the database storing the
-		password for authentication (mandatory if the registrar requires authntication).
+password for authentication (mandatory if the registrar requires authntication).
 
 
 *Default value is "password".*
@@ -293,9 +293,9 @@ modparam("uac_registrant", "password_column", "auth_passowrd")
 
 
 The column's name in the database storing the
-		binding URI in REGISTER (mandatory field).
-		The URI stored here will be used in the Contact URI of the REGISTER.
-		OpenSIPS expects a valid URI.
+binding URI in REGISTER (mandatory field).
+The URI stored here will be used in the Contact URI of the REGISTER.
+OpenSIPS expects a valid URI.
 
 
 *Default value is "binding_URI".*
@@ -312,14 +312,14 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 
 
 The column's name in the database storing the
-		binding params in REGISTER (not mandatory field).
-		If not NULL or not empty, the string stored here will be added
-		as params to the Contact URI in REGISTER (it MUST start with ";".
+binding params in REGISTER (not mandatory field).
+If not NULL or not empty, the string stored here will be added
+as params to the Contact URI in REGISTER (it MUST start with ";".
 
 
 If the following two params are present, then the binding will be enforced
-		to be unique (if two bindings are received in a 200ok, a complete binding
-		removal will be performed before re-registering):
+to be unique (if two bindings are received in a 200ok, a complete binding
+removal will be performed before re-registering):
 
 
 - *reg-id*
@@ -349,7 +349,7 @@ modparam("uac_registrant", "binding_params_column", "contact_params")
 
 
 The column's name in the database storing the
-		expiration time (not mandatory).
+expiration time (not mandatory).
 
 
 *Default value is "expiry".*
@@ -366,10 +366,10 @@ modparam("uac_registrant", "expiry_column", "registration_timeout")
 
 
 The column's name in the database storing the
-		socket for sending the REGISTER (not mandatory).
-		If a forced socket is provided, the socket MUST be
-		explicitely set as a global listening socket in the config
-		(see "listen" core parameter).
+socket for sending the REGISTER (not mandatory).
+If a forced socket is provided, the socket MUST be
+explicitely set as a global listening socket in the config
+(see "listen" core parameter).
 
 
 *Default value is "forced_socket".*
@@ -386,9 +386,9 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 
 
 The column's name in the database storing the
-		cluster sharing tag in [tag_name/cluster_id] format (not mandatory).
-		If a cluster sharing tag is provided, the REGISTER requests will
-		be fired out only when the tag is active.
+cluster sharing tag in [tag_name/cluster_id] format (not mandatory).
+If a cluster sharing tag is provided, the REGISTER requests will
+be fired out only when the tag is active.
 
 
 *Default value is "cluster_shtag".*
@@ -427,7 +427,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi reg_list
-		
 ```
 
 
@@ -448,7 +447,6 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi reg_reload
-		
 ```
 <!-- CONTRIBUTORS -->
 

@@ -10,7 +10,7 @@ description: "The mathops module provides a series of functions which enable var
 
 
 The mathops module provides a series of functions which enable various
-		floating point operations at OpenSIPS script level.
+floating point operations at OpenSIPS script level.
 
 
 ### Dependencies
@@ -29,7 +29,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -42,8 +42,8 @@ The following libraries or applications must be installed before
 
 
 The precision of the results returned by all the module functions.
-		The higher the "decimal_digits" value, the more decimal
-		digits the results will have.
+The higher the "decimal_digits" value, the more decimal
+digits the results will have.
 
 
 Default value is "6".
@@ -61,7 +61,7 @@ modparam("mathops", "decimal_digits", 10)
 
 
 The function evaluates a given expression and writes the result in the
-		output pseudo-variable. Evaluation uses tinyexpr (see https://github.com/codeplea/tinyexpr).
+output pseudo-variable. Evaluation uses tinyexpr (see https://github.com/codeplea/tinyexpr).
 
 
 Currently allowed syntax for specifying an expression:
@@ -77,7 +77,7 @@ Meaning of the parameters is as follows:
 
 - *expression* (string) - a mathematical expression.
 - *result_var* (var) - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 
 
 This function can be used from any route.
@@ -105,12 +105,12 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", $avp(result
 
 
 The function evaluates a given RPN expression and writes the result in the
-		output variable.
+output variable.
 
 
 The expression is specified in Reverse Polish Notation. Values are pushed
-    onto a stack, while operations are executed on that stack. The following operations
-    are supported:
+onto a stack, while operations are executed on that stack. The following operations
+are supported:
 
 
 - binary operators: + - / * mod pow
@@ -126,7 +126,7 @@ Meaning of the parameters is as follows:
 
 - *expression* (string) - a RPN expression.
 - *result_var* (var) - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 
 
 This function can be used from any route.
@@ -152,7 +152,7 @@ finally compute 1 divided by the result, giving 3 as the result. */
 
 
 Truncation of a number towards zero. This means that trunc(3.7) = 3.0 and
-		trunc(-2.9) = -2.0.
+trunc(-2.9) = -2.0.
 
 
 Meaning of the parameters is as follows:
@@ -160,7 +160,7 @@ Meaning of the parameters is as follows:
 
 - *number* (string) - Number to be truncated.
 - *result_var* (var) - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 
 
 This function can be used from any route.
@@ -185,7 +185,7 @@ if (math_trunc($avp(1), $avp(result))) {
 
 
 Truncates a number, always towards -infinity. This means that floor(3.7) = 3.0
-		and floor(-2.9) = -3.0
+and floor(-2.9) = -3.0
 
 
 Meaning of the parameters is as follows:
@@ -193,7 +193,7 @@ Meaning of the parameters is as follows:
 
 - *number* (string) - Number to be truncated.
 - *result_var* (var) - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 
 
 This function can be used from any route.
@@ -218,7 +218,7 @@ if (math_floor($avp(1), $avp(result))) {
 
 
 Truncates a number, always towards +infinity. This means that ceil(3.2) = 4.0
-		and ceil(-2.9) = -2.0
+and ceil(-2.9) = -2.0
 
 
 Meaning of the parameters is as follows:
@@ -226,7 +226,7 @@ Meaning of the parameters is as follows:
 
 - *number* (string) - Number to be truncated.
 - *result_var* (var) - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 
 
 This function can be used from any route.
@@ -251,13 +251,13 @@ if (math_ceil($avp(1), $avp(result))) {
 
 
 The round function returns the nearest integer, and tie-breaking is done away
-		from zero. Examples: round(1.2) = 1.0, round(0.5) = 1.0, round(-0.5) = -1.0
+from zero. Examples: round(1.2) = 1.0, round(0.5) = 1.0, round(-0.5) = -1.0
 
 
 By default, the function returns an integer. An additional parameter controls
-		the number of decimal digits of the initial number which will be kept. The
-		rounding will then be done using the remaining decimal digits, and the result
-		will be a float value, represented as a string.
+the number of decimal digits of the initial number which will be kept. The
+rounding will then be done using the remaining decimal digits, and the result
+will be a float value, represented as a string.
 
 
 Meaning of the parameters is as follows:
@@ -265,9 +265,9 @@ Meaning of the parameters is as follows:
 
 - *number* (string) - Number to be rounded.
 - *result_var* - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 - *decimals* (int, optional) -
-			further improves the precision of the rounding.
+further improves the precision of the rounding.
 
 
 This function can be used from any route.
@@ -304,9 +304,9 @@ if (math_round($avp(1), $avp(result), 4)) {
 
 
 To give a simple explanation, rounding to N significant figures is done by 
-		first obtaining the number resulted from keeping N significant figures
-		(0 padded if necessary), then adjusting it if the N+1'th digit is greater
-		or equal to 5.
+first obtaining the number resulted from keeping N significant figures
+(0 padded if necessary), then adjusting it if the N+1'th digit is greater
+or equal to 5.
 
 
 Some examples:
@@ -326,9 +326,9 @@ Meaning of the parameters is as follows:
 
 - *number* (string) - Number to be rounded.
 - *result_var* (var) - variable which will
-			hold the result of the evaluation.
+hold the result of the evaluation.
 - *figures* -
-			further improves the precision of the rounding.
+further improves the precision of the rounding.
 
 
 This function can be used from any route.

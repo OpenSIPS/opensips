@@ -1,6 +1,6 @@
 ---
 title: "gflags Module"
-description: "gflags module (global flags) keeps a bitmap of flags in shared memory and may be used to change behaviour of server based on value of the flags. Example: ```c if (is_gflag(\"1\")) { t_relay(\"udp:10.0.0.1:5060\"); } else { t_relay(\"udp:10.0.0.2:5060\"); } ```"
+description: "gflags module (global flags) keeps a bitmap of flags in shared memory and may be used to change behaviour of server based on value of the flags."
 ---
 
 ## Admin Guide
@@ -10,36 +10,35 @@ description: "gflags module (global flags) keeps a bitmap of flags in shared mem
 
 
 gflags module (global flags) keeps a bitmap of flags in shared memory
-	and may be used to change behaviour of server based on value of the flags.
-	Example:
+and may be used to change behaviour of server based on value of the flags.
+Example:
 
 
 ```opensips
-	if (is_gflag("1")) {
-		t_relay("udp:10.0.0.1:5060");
-	} else {
-		t_relay("udp:10.0.0.2:5060");
-	}
-	
+if (is_gflag("1")) {
+	t_relay("udp:10.0.0.1:5060");
+} else {
+	t_relay("udp:10.0.0.2:5060");
+}
 ```
 
 
 The benefit of this module is the value of the switch flags
-	can be manipulated by external applications such as web interface
-	or command line tools. The size of bitmap is 32.
+can be manipulated by external applications such as web interface
+or command line tools. The size of bitmap is 32.
 
 
 The module exports external commands that can be used to change
-	the global flags via Management Interface. The MI commands are:
-	"set_gflag", "reset_gflag" and
-	"is_gflag".
+the global flags via Management Interface. The MI commands are:
+"set_gflag", "reset_gflag" and
+"is_gflag".
 
 
 ### Dependencies
 
 
 The module depends on the following modules (in the other words the
-		listed modules must be loaded before this module):
+listed modules must be loaded before this module):
 
 
 - *none*
@@ -59,7 +58,6 @@ Default value is "0".
 
 ```opensips title="initial parameter usage"
 modparam("gflags", "initial", 15)
-		
 ```
 
 
@@ -76,7 +74,7 @@ The "flag" (int) parameter can have a value in the range of 0..31.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="set_gflag() usage"
@@ -96,7 +94,7 @@ The "flag" (int) parameter can have a value in the range of 0..31.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="reset_gflag() usage"
@@ -110,14 +108,14 @@ reset_gflag(4);
 
 
 Check if bit at the position "flag" in global flags is
-		set.
+set.
 
 
 The "flag" (int) parameter can have a value in the range of 0..31.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="is_gflag() usage"
@@ -136,10 +134,10 @@ if(is_gflag(4))
 
 
 Functions that check or change some flags accepts one parameter 
-			which is the flag bitmap/mask specifing the corresponding flags.
-			It is not possible to specify directly the flag position that 
-			should be changed as in the functions available in the routing 
-			script.
+which is the flag bitmap/mask specifing the corresponding flags.
+It is not possible to specify directly the flag position that 
+should be changed as in the functions available in the routing 
+script.
 
 
 #### set_gflag
@@ -149,7 +147,7 @@ Set the value of some flags (specified by bitmask) to 1.
 
 
 The parameter value must be a bitmask in decimal or hexa format.
-			The bitmaks has a 32 bit size.
+The bitmaks has a 32 bit size.
 
 
 ```bash title="set_gflag usage"
@@ -167,7 +165,7 @@ Reset the value of some flags to 0.
 
 
 The parameter value must be a bitmask in decimal or hexa format.
-			The bitmaks has a 32 bit size.
+The bitmaks has a 32 bit size.
 
 
 ```bash title="reset_gflag usage"
@@ -185,11 +183,11 @@ Returns true if the all the flags from the bitmask are set.
 
 
 The parameter value must be a bitmask in decimal or hexa format.
-			The bitmaks has a 32 bit size.
+The bitmaks has a 32 bit size.
 
 
 The function returns TRUE if all the flags from the set are set
-			and FALSE if at least one is not set.
+and FALSE if at least one is not set.
 
 
 ```bash title="is_gflag usage"
@@ -216,7 +214,7 @@ TRUE
 
 
 Return the bitmap with all flags. The function gets no 
-			parameters and returns the bitmap in hexa and decimal format.
+parameters and returns the bitmap in hexa and decimal format.
 
 
 ```bash title="get_gflags usage"

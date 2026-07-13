@@ -10,11 +10,11 @@ description: "UAC AUTH (User Agent Client Authentication) module provides a comm
 
 
 UAC AUTH (User Agent Client Authentication) module provides a
-		common API for building authentication headers.
+common API for building authentication headers.
 
 
 It also provides a common set of authentication credetials to
-		be used by other modules.
+be used by other modules.
 
 
 Known limitations in this version:
@@ -36,7 +36,7 @@ Known limitations in this version:
 
 
 The following libraries or applications must be installed 
-				before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *None*
@@ -49,12 +49,13 @@ The following libraries or applications must be installed
 
 
 Contains a multiple definition of credentials used to perform
-			authentication.
+authentication.
 
 
-NOTE that the password can be provided as a plain text password or
-			as a precalculated HA1 as a hexa (lower case) string
-			(of 32 chars) prefixed with "0x" (so a total of 34 chars).
+> [!NOTE]
+> The password can be provided as a plain text password or
+> as a precalculated HA1 as a hexa (lower case) string
+> (of 32 chars) prefixed with "0x" (so a total of 34 chars).
 
 
 *This parameter is required if UAC authentication is used.*
@@ -73,14 +74,14 @@ modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e15850420
 
 
 The definition of an AVP that might contain the realm to be used
-			to perform authentication.
+to perform authentication.
 
 
 *If you define it, you also need to define 
-				"auth_username_avp" 
-				([auth username avp](#param_auth_username_avp)) and 
-				"auth_password_avp" 
-				([auth password avp](#param_auth_password_avp)).*
+"auth_username_avp" 
+([auth username avp](#param_auth_username_avp)) and 
+"auth_password_avp" 
+([auth password avp](#param_auth_password_avp)).*
 
 
 ```opensips title="Set auth_realm_avp parameter"
@@ -95,14 +96,14 @@ modparam("uac_auth","auth_realm_avp","$avp(10)")
 
 
 The definition of an AVP that might contain the username to be used
-			to perform authentication.
+to perform authentication.
 
 
 *If you define it, you also need to define 
-				"auth_realm_avp" 
-				([auth realm avp](#param_auth_realm_avp)) and 
-				"auth_password_avp" 
-				([auth password avp](#param_auth_password_avp)).*
+"auth_realm_avp" 
+([auth realm avp](#param_auth_realm_avp)) and 
+"auth_password_avp" 
+([auth password avp](#param_auth_password_avp)).*
 
 
 ```opensips title="Set auth_username_avp parameter"
@@ -117,17 +118,17 @@ modparam("uac_auth","auth_username_avp","$avp(11)")
 
 
 The definition of an AVP that might contain the password to be used
-			to perform authentication. The password can be provided as a plain
-			text password or as a precalculated HA1 as a hexa (lower case) string
-			(of 32 chars) prefixed with "0x" (so a total of 34 chars) (for example 
-			"0xc17ba8157756f263d07e158504204629")
+to perform authentication. The password can be provided as a plain
+text password or as a precalculated HA1 as a hexa (lower case) string
+(of 32 chars) prefixed with "0x" (so a total of 34 chars) (for example 
+"0xc17ba8157756f263d07e158504204629")
 
 
 *If you define it, you also need to define 
-				"auth_realm_avp" 
-				([auth realm avp](#param_auth_realm_avp)) and 
-				"auth_username_avp" 
-				([auth username avp](#param_auth_username_avp)).*
+"auth_realm_avp" 
+([auth realm avp](#param_auth_realm_avp)) and 
+"auth_username_avp" 
+([auth username avp](#param_auth_username_avp)).*
 
 
 ```opensips title="Set auth_password_avp parameter"

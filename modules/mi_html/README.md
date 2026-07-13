@@ -10,7 +10,7 @@ description: "This module provides a minimal web user interface for the OpenSIPS
 
 
 This module provides a minimal web user interface for the OpenSIPS's
-		Management Interface.
+Management Interface.
 
 
 ### To-do
@@ -41,9 +41,9 @@ The following modules must be loaded before this module:
 
 
 Specifies the root path for the HTTP requests.
-		The link to the mi web interface must be constructed
-		using the following patern:
-		http://[opensips_IP]:[opensips_mi_port]/[root]
+The link to the mi web interface must be constructed
+using the following patern:
+http://[opensips_IP]:[opensips_mi_port]/[root]
 
 
 *The default value is "mi".*
@@ -80,13 +80,14 @@ modparam("mi_html", "http_method", 1)
 
 
 Trace destination as defined in the tracing module. Currently
-		the only tracing module is **proto_hep**.
-		This is where traced mi messages will go.
+the only tracing module is **proto_hep**.
+This is where traced mi messages will go.
 
 
-**WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep**).
+> [!WARNING]
+> A tracing module must be
+> loaded in order for this parameter to work. (for example
+> **proto_hep**).
 
 
 *Default value is none(not defined).*
@@ -105,24 +106,24 @@ modparam("mi_html", "trace_destination", "hep_dest")
 
 
 Filter traced mi commands based on a blacklist or a whitelist.
-		**trace_destination** must be defined for
-		this parameter to have any purpose. Whitelists can be defined using
-		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
-		actual blacklist by ':'. The mi commands in the list must be separated
-		by ','.
+**trace_destination** must be defined for
+this parameter to have any purpose. Whitelists can be defined using
+'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+actual blacklist by ':'. The mi commands in the list must be separated
+by ','.
 
 
 Defining a blacklists means all the commands that are not blacklisted
-			will be traced. Defining a whitelist means all the commands that are
-			not whitelisted will not be traced.
-			**WARNING:** One can't define both
-			a whitelist and a blacklist. Only one of them is allowed. Defining
-			the parameter a second time will just overwrite the first one.
+will be traced. Defining a whitelist means all the commands that are
+not whitelisted will not be traced.
+**WARNING:** One can't define both
+a whitelist and a blacklist. Only one of them is allowed. Defining
+the parameter a second time will just overwrite the first one.
 
 
 **WARNING:**A tracing module must be
-			loaded in order for this parameter to work. (for example
-			**proto_hep)**.
+loaded in order for this parameter to work. (for example
+**proto_hep)**.
 
 
 *Default value is none(not defined).*
@@ -151,8 +152,8 @@ No function exported to be used from configuration file.
 
 
 Commands with large responses (like ul_dump) will fail if the
-		configured size of the httpd buffer is to small (or if there isn't
-		enough pkg memory configured).
+configured size of the httpd buffer is to small (or if there isn't
+enough pkg memory configured).
 
 
 Future realeases of the httpd module will address this issue.

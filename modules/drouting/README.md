@@ -1,5 +1,6 @@
 ---
 title: "Dynamic Routing Module"
+description: "Dynamic Routing is a module for selecting (based on multiple criteria) the best gateway/destination to be used for delivering a certain call."
 ---
 
 ## Admin Guide
@@ -12,10 +13,10 @@ title: "Dynamic Routing Module"
 
 
 Dynamic Routing is a module for selecting (based on multiple
-	criteria) the best gateway/destination to be used for delivering a
-	certain call. Least Cost Routing (LCR) is a special case of dynamic
-	routing - when the rules are ordered based on costs. Dynamic Routing
-	comes with many features regarding routing rule selection:
+criteria) the best gateway/destination to be used for delivering a
+certain call. Least Cost Routing (LCR) is a special case of dynamic
+routing - when the rules are ordered based on costs. Dynamic Routing
+comes with many features regarding routing rule selection:
 
 
 - prefix based
@@ -46,38 +47,38 @@ and failure handling:
 
 
 The dynamic routing implementation for OpenSIPS is designed with the
-	following properties:
+following properties:
 
 
 - The routing info (destinations, carriers, rules, groups) is stored in a
-	database and loaded into memory at start up time; reload at runtime via
-	a Management Interface command.
+database and loaded into memory at start up time; reload at runtime via
+a Management Interface command.
 - weight-based or random selection of the destinations (from a rule or
-	 from a carrier), failure detection of gateways (with switching to next
-	 available gateway).
+from a carrier), failure detection of gateways (with switching to next
+available gateway).
 - able to handle large volume of routing info (10M of rules) with minimal
-	speed/time and memory consumption penalties
+speed/time and memory consumption penalties
 - script integration - Pseudo-variable support in functions; scripting
-	route triggering when rules are matched
+route triggering when rules are matched
 - bidirectional behavior - inbound and outbound processing (strip and
-	prefixing when sending and receiving from a destination/GW)
+prefixing when sending and receiving from a destination/GW)
 - blacklisting - the module allows definition of blacklists based on the
-	destination IPs. This blacklists are to be used to prevent malicious
-	forwarding to GWs (based on DNS lookups) when the script logic does
-	none-GE forwarding (like foreign domains).
+destination IPs. This blacklists are to be used to prevent malicious
+forwarding to GWs (based on DNS lookups) when the script logic does
+none-GE forwarding (like foreign domains).
 - loading routing information from multiple databases - the gateways, rules, groups and
-	carriers can be grouped by partitions, and each partition may be loaded
-	from different databases/tables. This makes the routing process partition
-	based. In order to be able to use a table from a partition, its name must
-	be found in the "version" table belonging to the database defined in the
-	partition's db_url.
+carriers can be grouped by partitions, and each partition may be loaded
+from different databases/tables. This makes the routing process partition
+based. In order to be able to use a table from a partition, its name must
+be found in the "version" table belonging to the database defined in the
+partition's db_url.
 
 
 #### Performance
 
 
 There were several tests performed regarding the performance of the module
-	when dealing with a large number of routing rules.
+when dealing with a large number of routing rules.
 
 
 The tests were performed with a set of 383000 rules and measured:
@@ -88,32 +89,32 @@ The tests were performed with a set of 383000 rules and measured:
 
 
 The time to load was varying between 4 seconds and 8 seconds, depending of
-	the caching of the DB client - the first load was the slowest (as the DB
-	query hits the disk drive); the following are faster as data is already
-	cached in the DB client. So technically speaking, the time to load (without
-	the time to query which is DB type dependent) is ~4 seconds
+the caching of the DB client - the first load was the slowest (as the DB
+query hits the disk drive); the following are faster as data is already
+cached in the DB client. So technically speaking, the time to load (without
+the time to query which is DB type dependent) is ~4 seconds
 
 
 After loading the data into shared memory ~ 96M of memory were used
-	exclusively for the DR data.
+exclusively for the DR data.
 
 
 #### Dynamic Routing Concepts
 
 
 DR engine uses several concepts in order to define how the routing
-	should be done (describing all the dependencies between destinations
-	and routing rules).
+should be done (describing all the dependencies between destinations
+and routing rules).
 
 
 ##### Destination/Gateways
 
 
 These are the end SIP entities where actually the traffic needs to be sent
-	after routing. They are stored in a table called "dr_gateways".
-	Gateway addresses are stored in a separate table because of the need to access them
-	independent of Dynamic Routing processing (e.g., adding/ removing gateway PRI
-	prefix before/after performing other operation -- receiving/relaying to gateway).
+after routing. They are stored in a table called "dr_gateways".
+Gateway addresses are stored in a separate table because of the need to access them
+independent of Dynamic Routing processing (e.g., adding/ removing gateway PRI
+prefix before/after performing other operation -- receiving/relaying to gateway).
 
 
 In DR, a gateway is defined by:
@@ -122,32 +123,31 @@ In DR, a gateway is defined by:
 - id (string)
 - SIP address (SIP URI)
 - type (integer which allows GWs to be grouped by purpose,
-	e.g. inbound, outbound, etc.)
+e.g. inbound, outbound, etc.)
 - strip value (number of digits) from dialled
-	number
+number
 - prefix (string) to be added to dialled
-	number
+number
 - attributes (not used by DR engine, but only pushed
-	to script level when routing to this GW)
-- probing mode (how the GW should be probed at SIP level
-	- see the probing chapter)
+to script level when routing to this GW)
+- probing mode (how the GW should be probed at SIP level - see the probing chapter)
 
 
 The Gateways are to be used from the routing rule or from the carrier
-	definition. They are all the time referred by their ID.
+definition. They are all the time referred by their ID.
 
 
 ##### Carriers
 
 
 The carrier concept is used if you need to group gateways in order to
-	have a better control on how the GWs will be used by DR rules; like
-	in what order the GWs will be used.
+have a better control on how the GWs will be used by DR rules; like
+in what order the GWs will be used.
 
 
 Basically, a carrier is a set of gateways which have its own sorting
-	algorithm and its own attribute string. They are by default defined
-	in the "dr_carriers" table.
+algorithm and its own attribute string. They are by default defined
+in the "dr_carriers" table.
 
 
 In DR, a carrier is defined by:
@@ -155,129 +155,130 @@ In DR, a carrier is defined by:
 
 - id (string)
 - list of gateways with/without weights (string)
-	(Ex:"gw1=10,gw4=10" or "gw1,gw2"
+(Ex:"gw1=10,gw4=10" or "gw1,gw2"
 - flags : 0x1 - use weight for sorting the list and
-	not definition order; 0x2 - use only the first gateway from the carrier
-	(depending on the sorting); 0x4 - disable the usage of this
-	carrier
+not definition order; 0x2 - use only the first gateway from the carrier
+(depending on the sorting); 0x4 - disable the usage of this
+carrier
 - attributes (not used by DR engine, but only pushed
-	to script level when routing to this carrier)
+to script level when routing to this carrier)
 
 
 The Carriers are to be used only from the routing rule definition.
-	They are all the time referred by their ID.
+They are all the time referred by their ID.
 
 
 ##### Routing Rules
 
 
 These are the actual rules which control the routing. Using
-	different criterias (prefix, time, priority, etc), they will decide
-	to which gateways the call will be sent.
+different criterias (prefix, time, priority, etc), they will decide
+to which gateways the call will be sent.
 
 
 Default name for the table storing rule definitions is
-	"dr_rules".
+"dr_rules".
 
 
 In DR, a routing rule is defined by:
 
 
 - group (list of numbers) - rules can be grouped (a rule may
-	belong to multiple groups in the same time ) and you can
-	use only a certain group at a point; like having a "premium" or
-	"standard" or "interstate" or
-	"intrastate" groups of rules to be used in different
-	cases
+belong to multiple groups in the same time ) and you can
+use only a certain group at a point; like having a "premium" or
+"standard" or "interstate" or
+"intrastate" groups of rules to be used in different
+cases
 - prefix (string with digits only) - prefix to be used for
-	matching this rule (longest prefix matching)
+matching this rule (longest prefix matching)
 - time validity (time recurrence string) - when this rule is
-	valid from time point of view (see RFC 2445)
+valid from time point of view (see RFC 2445)
 - priority (number) - priority of the rule - higher value,
-	higher priority (see rule section alg)
+higher priority (see rule section alg)
 - script route ID (string) - if defined, then execute the
-	route with the specified ID when this rule is matched. That's it, a route
-	which can be used to perform custom operations on message. NOTE that no
-	modification is performed at signaling level and you must NOT do
-	any signaling operations in that script route
+route with the specified ID when this rule is matched. That's it, a route
+which can be used to perform custom operations on message. NOTE that no
+modification is performed at signaling level and you must NOT do
+any signaling operations in that script route
 - list of GWs/carriers (string) - a comma separated list
-	of gateways or carriers (defined by IDs) to be used for this rule; the
-	carrier IDs are prefixed with "#" sign. For each ID (GW or
-	carrier) you may specify a weight. For how this list will be interpreted
-	(as order) see the rule selection section. Example of list:
-	"gw1,gw4,#cr3" or "gw1=10,gw4=10,#cr3=80"
+of gateways or carriers (defined by IDs) to be used for this rule; the
+carrier IDs are prefixed with "#" sign. For each ID (GW or
+carrier) you may specify a weight. For how this list will be interpreted
+(as order) see the rule selection section. Example of list:
+"gw1,gw4,#cr3" or "gw1=10,gw4=10,#cr3=80"
 - attributes (not used by DR engine, but only pushed
-	to script level when this rule matched and been used)
+to script level when this rule matched and been used)
 
 
 More on time recurrence:
 
 
 - A date-time expression that defines the time recurrence to be matched for
-	current rule. Time recurrences are based closely on the recurring time
-	intervals from the Internet Calendaring and Scheduling
-	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is a subset of time recurrence attributes.
+current rule. Time recurrences are based closely on the recurring time
+intervals from the Internet Calendaring and Scheduling
+Core Object Specification (calendar COS), RFC 2445. The set of attributes
+used in routing rule specification is a subset of time recurrence attributes.
 - The value stored in database has the format of:
-	
+```
 	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+```
 - When an attribute is not specified, the corresponding place must be left
-	empty, whenever another attribute that follows in the list has to be
-	specified.
+empty, whenever another attribute that follows in the list has to be
+specified.
 
 
 #### Routing Rule Processing
 
 
 The module can be used to find out which is the best gateway to use for new
-	calls terminated to PSTN. The algorithm to select the rule is as follows:
+calls terminated to PSTN. The algorithm to select the rule is as follows:
 
 
 - the module discovers the routing group of the originating user. This
-	step is skipped if a routing group is passed from the script as parameter.
+step is skipped if a routing group is passed from the script as parameter.
 - once the group is known, in the subset of the rules for this group the
-	module looks for the one that matches the destination based on "prefix"
-	column. The set of rules with the longest prefix is chosen. If no digit
-	from the prefix matches, the default rules are used (rules with no prefix)
+module looks for the one that matches the destination based on "prefix"
+column. The set of rules with the longest prefix is chosen. If no digit
+from the prefix matches, the default rules are used (rules with no prefix)
 - within the set of rules is applied the time criteria, and the rule which
-	has the highest priority and matches the time criteria is selected to drive
-	the routing.
+has the highest priority and matches the time criteria is selected to drive
+the routing.
 - Once found the rule, it may contain a route ID to execute. If a certain
-	flag is set, then the processing is stopped after executing the route
-	block.
+flag is set, then the processing is stopped after executing the route
+block.
 - The rule must contain a chain of gateways and carriers. The module will
-	execute serial forking for each address in the chain (ordering is either done
-	by simply using the definition order or it may weight-based - weight selection must be
-	enabled). The next address in chain is used only if the previously has failed.
+execute serial forking for each address in the chain (ordering is either done
+by simply using the definition order or it may weight-based - weight selection must be
+enabled). The next address in chain is used only if the previously has failed.
 - With the right gateway address found, the prefix (PRI) of the gateway is
-	added to the request URI and then the request is forwarded.
+added to the request URI and then the request is forwarded.
 
 
 If no rule is found to match the selection criteria an default action must
-	be taken (e.g., error response sent back). If the gateway in the chain has
-	no prefix the request is forwarded without adding any prefix to the request
-	URI.
+be taken (e.g., error response sent back). If the gateway in the chain has
+no prefix the request is forwarded without adding any prefix to the request
+URI.
 
 
 #### Probing and Disabling destinations
 
 
 The module has the capability to monitor the status of the destinations by
-	doing SIP probing (sending SIP requests like OPTIONS).
+doing SIP probing (sending SIP requests like OPTIONS).
 
 
 For each destination, you can configure what kind of probing should be
-	done (probe_mode column):
+done (probe_mode column):
 
 
 - *(0)* - no probing at all;
 - *(1)* - probing only when the destination is
-		in disabled mode (disabling via MI command will completely stop the
-		probing also). The destination will be automatically re-enabled
-		when the probing will succeed next time;
+in disabled mode (disabling via MI command will completely stop the
+probing also). The destination will be automatically re-enabled
+when the probing will succeed next time;
 - *(2)* - probing all the time. If disabled,
-		the destination will be automatically re-enabled when the probing
-		will succeed next time;
+the destination will be automatically re-enabled when the probing
+will succeed next time;
 
 
 A destination can become disabled in two ways:
@@ -301,7 +302,7 @@ The following modules must be loaded before this module:
 
 - *tm module*.
 - *clusterer* - only if "cluster_id"
-				option is enabled.
+option is enabled.
 
 
 #### External Libraries or Applications
@@ -382,7 +383,7 @@ modparam("drouting", "drg_table", "groups")
 
 
 The name of the db table storing definitions of the carriers that will
-		be used directly by the routing rules.
+be used directly by the routing rules.
 
 
 *Default value is "dr_carriers".*
@@ -399,12 +400,12 @@ modparam("drouting", "drc_table", "my_dr_carriers")
 
 
 The name of the avp for storing Request URIs to be later used
-		(alternative destiantions for the current one).
+(alternative destiantions for the current one).
 
 
 *Default value is "$avp(___dr_ruri__)" if `use_partitions` parameter is 0
-		or "$avp(___dr_ruri__partition_name)" where partition_name is the name of the partition
-		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
+or "$avp(___dr_ruri__partition_name)" where partition_name is the name of the partition
+containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
 ```opensips title="Set ruri_avp parameter"
@@ -420,14 +421,14 @@ modparam("drouting", "ruri_avp", '$avp(33)')
 
 
 The name of the avp for storing the id of the current selected
-		gateway/destination - once a new destination is selected (via the
-		use_next_gw() function), the AVP will be updated with the ID of the
-		new selected gateway/destination.
+gateway/destination - once a new destination is selected (via the
+use_next_gw() function), the AVP will be updated with the ID of the
+new selected gateway/destination.
 
 
 *Default value is "$avp(___dr_gw_id__)" if `use_partitions` parameter is 0
-		or "$avp(___dr_gw_id__partition_name)" where partition_name is the name of the partition
-		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
+or "$avp(___dr_gw_id__partition_name)" where partition_name is the name of the partition
+containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
 ```opensips title="Set gw_id_avp parameter"
@@ -443,9 +444,9 @@ modparam("drouting", "gw_id_avp", '$avp(334)')
 
 
 The name of the avp for storing the PRI prefix of the current selected
-		destination/gateway - once a new destination is selected (via the
-		use_next_gw() function), the AVP will be updated with the PRI prefix of the
-		new used destination.
+destination/gateway - once a new destination is selected (via the
+use_next_gw() function), the AVP will be updated with the PRI prefix of the
+new used destination.
 
 
 *Default value is "NULL".*
@@ -463,7 +464,7 @@ modparam("drouting", "gw_priprefix_avp", '$avp(gw_priprefix)')
 
 
 The name of the avp for storing the id of the current matched
-		routing rule (see dr_rules table).
+routing rule (see dr_rules table).
 
 
 *Default value is "NULL".*
@@ -482,7 +483,7 @@ modparam("drouting", "rule_id_avp", '$avp(335)')
 
 
 The actual prefix that matched the routing rule (the part from RURI
-		username that matched the routing rule).
+username that matched the routing rule).
 
 
 *Default value is "NULL".*
@@ -500,7 +501,7 @@ modparam("drouting", "rule_prefix_avp", '$avp(dr_prefix)')
 
 
 AVP to be populate with the ID string for the carrier the
-		current GW belongs to.
+current GW belongs to.
 
 
 *Default value is "NULL".*
@@ -518,12 +519,12 @@ modparam("drouting", "carrier_id_avp", '$avp(carrier_id)')
 
 
 The name of the avp for storing sockets for alternative destinations
-		defined by ruri_avp.
+defined by ruri_avp.
 
 
 *Default value is "$avp(___dr_sock__)" if `use_partitions` parameter is 0
-		or "$avp(___dr_sock__partition_name)" where partition_name is the name of the partition
-		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
+or "$avp(___dr_sock__partition_name)" where partition_name is the name of the partition
+containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
 ```opensips title="Set gw_sock_avp parameter"
@@ -539,12 +540,12 @@ modparam("drouting", "gw_sock_avp", '$avp(77)')
 
 
 The name of the avp for storing rule attrs in case they are requested at least
-		once in the script.
+once in the script.
 
 
 *Default value is "$avp(___dr_ru_att__)" if `use_partitions` parameter is 0
-		or "$avp(___dr_ru_att__partition_name)" where partition_name is the name of the partition
-		containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
+or "$avp(___dr_ru_att__partition_name)" where partition_name is the name of the partition
+containing the AVP (as fetched from the database) if `use_partitions` parameter is 1.*
 
 
 ```opensips title="Set rule_attrs_avp parameter"
@@ -560,12 +561,12 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 
 
 Defines a blacklist based on a list of GW types - the blacklist will 
-		be populated with the IPs (no port, all protocols) of the GWs having 
-		the specified types.
+be populated with the IPs (no port, all protocols) of the GWs having 
+the specified types.
 
 
 If partitions are used, prefix the blacklist definition string with 
-		the name of the partition followed by ":" separator.
+the name of the partition followed by ":" separator.
 
 
 Multiple instances of this param are allowed.
@@ -589,7 +590,7 @@ modparam("drouting", "define_blacklist", 'pstn:list3 = 7,8')
 
 
 Group to be used if the caller (FROM user) is not found in the GROUP
-		table.
+table.
 
 
 *Default value is "NONE".*
@@ -606,8 +607,8 @@ modparam("drouting", "default_group", 4)
 
 
 Force DNS resolving of GW/destination names (if not IPs) during
-		startup. If not enabled, the GW name will be blindly used during
-		routing.
+startup. If not enabled, the GW name will be blindly used during
+routing.
 
 
 *Default value is "1 (enabled)".*
@@ -625,7 +626,7 @@ modparam("drouting", "force_dns", 0)
 
 
 Specifies whether the *state* column
-		should be loaded at startup and flushed during runtime or not.
+should be loaded at startup and flushed during runtime or not.
 
 
 *Default value is "1" (enabled).*
@@ -643,15 +644,15 @@ modparam("drouting", "persistent_state", 0)
 
 
 If enabled, the module will not allow do run multiple dr_reload
-			MI commands in parallel (with overlapping)  Any new reload will
-			be rejected (and discarded) while an existing reload is in
-			progress.
+MI commands in parallel (with overlapping)  Any new reload will
+be rejected (and discarded) while an existing reload is in
+progress.
 
 
 If you have a large routing set (millions of rules/prefixes), you
-			should consider disabling concurrent reload as they will exhaust
-			the shared memory (by reloading into memory, in the same time,
-			multiple instances of routing data).
+should consider disabling concurrent reload as they will exhaust
+the shared memory (by reloading into memory, in the same time,
+multiple instances of routing data).
 
 
 *Default value is "0 (disabled)".*
@@ -669,8 +670,8 @@ modparam("drouting", "no_concurrent_reload", 1)
 
 
 How often (in seconds) the probing of a destination should be done. If
-		set to 0, the probing will be disabled as functionality (for all
-		destinations)
+set to 0, the probing will be disabled as functionality (for all
+destinations)
 
 
 *Default value is "30".*
@@ -719,8 +720,8 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
 
 A comma separted list of SIP reply codes. The codes defined here
-		will be considered as valid reply codes for probing messages,
-		apart for 200.
+will be considered as valid reply codes for probing messages,
+apart for 200.
 
 
 *Default value is "NULL".*
@@ -737,15 +738,15 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 
 
 A socket description [proto:]host[:port] of the local socket
-		(which is used by OpenSIPS for SIP traffic) to be used
-		(if multiple) for sending the probing messages from.
+(which is used by OpenSIPS for SIP traffic) to be used
+(if multiple) for sending the probing messages from.
 
 
 For probing gateway the highest priority has socket from gateway
-		configuration in dr_gateways table. Then socket from global
-		`probing_socket` parameter and the lowest
-		priority is default behaviour with auto selected socket wich
-		OpenSIPS listens on.
+configuration in dr_gateways table. Then socket from global
+`probing_socket` parameter and the lowest
+priority is default behaviour with auto selected socket wich
+OpenSIPS listens on.
 
 
 *Default value is "NULL".*
@@ -762,26 +763,26 @@ modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 
 
 The ID of the cluster the module is part of. The clustering support is 
-		used in drouting module for two purposes: for sharing the status of 
-		the gateways/carriers and for controlling the pinging to gateways.
+used in drouting module for two purposes: for sharing the status of 
+the gateways/carriers and for controlling the pinging to gateways.
 
 
 If clustering enbled, the module will automatically share changes
-		over the status of the gateways/destinations/carriers with the other 
-		OpenSIPS instances that are part of a cluster. Whenever such a status 
-		changes (following an MI command, a probing result, a script command),
-		the module will replicate this status change to all the nodes in this 
-		given cluster.
+over the status of the gateways/destinations/carriers with the other 
+OpenSIPS instances that are part of a cluster. Whenever such a status 
+changes (following an MI command, a probing result, a script command),
+the module will replicate this status change to all the nodes in this 
+given cluster.
 
 
 The clustering with sharing tag support may be used to control which 
-		node in the cluster will perform the pinging/probing to 
-		gateways. See the
-		[cluster sharing tag](#param_cluster_sharing_tag) option.
+node in the cluster will perform the pinging/probing to 
+gateways. See the
+[cluster sharing tag](#param_cluster_sharing_tag) option.
 
 
 For more info on how to define and populate a cluster (with OpenSIPS 
-		nodes) see the "clusterer" module.
+nodes) see the "clusterer" module.
 
 
 *Default value is "0 (none)".*
@@ -799,19 +800,19 @@ modparam("drouting", "cluster_id", 9)
 
 
 The name of the sharing tag (as defined per clusterer modules) to 
-		control which node is responsible for perform the self-triggered
-		actions in the module. Such actions may be the gateway probing or 
-		sharing the gateway/carrier status changes.
-		If defined, only the node with active status of this tag will 
-		perform the actions (pinging and sharing status).
+control which node is responsible for perform the self-triggered
+actions in the module. Such actions may be the gateway probing or 
+sharing the gateway/carrier status changes.
+If defined, only the node with active status of this tag will 
+perform the actions (pinging and sharing status).
 
 
 The [cluster id](#param_cluster_id) must be defined for this option
-		to work.
+to work.
 
 
 This is an optional parameter. If not set, all the nodes in the cluster
-		will individually do the probing and share the status changes.
+will individually do the probing and share the status changes.
 
 
 *Default value is "empty (none)".*
@@ -831,7 +832,7 @@ modparam("drouting", "cluster_sharing_tag", "vip")
 
 
 Flag to configure whether to use domain match when querying
-			database for user's routing group.
+database for user's routing group.
 
 
 *Default value is "1".*
@@ -880,7 +881,7 @@ modparam("drouting", "drg_domain_col", "host")
 
 
 The name of the column in group db table where the
-			group id is stored.
+group id is stored.
 
 
 *Default value is "groupid".*
@@ -897,9 +898,9 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
 
 Flag to configure whether to use partitions for routing. If this
-		flag is set then the `db_partitions_url` and
-		`db_partitions_table`
-		variables become mandatory.
+flag is set then the `db_partitions_url` and
+`db_partitions_table`
+variables become mandatory.
 
 
 *Default value is "0".*
@@ -916,12 +917,12 @@ modparam("drouting", "use_partitions", 1)
 
 
 The url to the database containing partition-specific
-		information. (partition-specific information includes
-		partition name, url to the database where information about
-		the partition is preserved, the names of the tables in which it
-		is preserved and the AVPs that can be accessed using the .cfg
-		script). The `use_partitions` parameter
-	    must be set to 1.
+information. (partition-specific information includes
+partition name, url to the database where information about
+the partition is preserved, the names of the tables in which it
+is preserved and the AVPs that can be accessed using the .cfg
+script). The `use_partitions` parameter
+must be set to 1.
 
 
 *Default value is ""NULL"".*
@@ -938,7 +939,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opens
 
 
 The name of the table containing partition definitions. To be
-		used with `use_partitions` and `db_partitions_url`.
+used with `use_partitions` and `db_partitions_url`.
 
 
 *Default value is "dr_partitions".*
@@ -955,12 +956,13 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 
 
 Variable which will store the name of the name partition when
-			*wildcard(*)* operatior is used.
-			*Use_partitions* must be set in order to
-			use this parameter.
+*wildcard(*)* operatior is used.
+*Use_partitions* must be set in order to
+use this parameter.
 
 
-NOTE: The variable must be WRITABLE!
+> [!NOTE]
+> The variable must be WRITABLE!
 
 
 *Default value is "null(not used)".*
@@ -977,16 +979,18 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 
 
 Parameter set to enable restart persistency for the Dynamic Routing module.
-			When this parameter is set, the drouting module no longer loads the data
-			from the database after restart, but uses the persistent storage file, and loads
-			data from it "on demand", improving the startup performance.
+When this parameter is set, the drouting module no longer loads the data
+from the database after restart, but uses the persistent storage file, and loads
+data from it "on demand", improving the startup performance.
 
 
-NOTE: If the restart persistent cache is not populated from a previous run,
-			then the data will be loaded from database at startup!
+> [!NOTE]
+> If the restart persistent cache is not populated from a previous run,
+> then the data will be loaded from database at startup!
 
 
-NOTE: A reload will update the cached data.
+> [!NOTE]
+> A reload will update the cached data.
 
 
 *Default value is "0 (disabled)".*
@@ -1006,63 +1010,63 @@ modparam("drouting", "enable_restart_persistency", yes)
 
 
 Function to trigger routing of the message according to the
-		rules in the database table and the configured parameters.
+rules in the database table and the configured parameters.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 If you set `use_partitions` to 1 the 
-		**partition** last parameter becomes 
-		mandatory.
+**partition** last parameter becomes 
+mandatory.
 
 
 All parameters are optional. Any of them may be ignored, provided
-		the necessary separation marks "," are properly placed.
+the necessary separation marks "," are properly placed.
 
 
 - **groupID** (int, optional) - number to 
-			specify the group of the caller for routing purposes.
-			If none specified the function will automatically try to query
-			the dr_group table to get this
+specify the group of the caller for routing purposes.
+If none specified the function will automatically try to query
+the dr_group table to get this
 - **flags** (string, optional) - a list
-			of letter-like flags for controlling the routing behavior.
-			Possible flags are:
+of letter-like flags for controlling the routing behavior.
+Possible flags are:
 
   - **W** - Instead of using the 
-				destination (from the rule definition) in the given order, 
-				sort them based on their weight.
+destination (from the rule definition) in the given order, 
+sort them based on their weight.
   - **F** - Enable rule fallback; 
-				normally the engine is using a single rule for routing a call;
-				by setting this flag, the engine will fallback and use
-				rules with less priority or shorter prefix when all the
-				destination from the current rules failed.
+normally the engine is using a single rule for routing a call;
+by setting this flag, the engine will fallback and use
+rules with less priority or shorter prefix when all the
+destination from the current rules failed.
   - **L** - Do strict length matching
-				over the prefix - actually DR engine will do full number 
-				matching and not prefix matching anymore.
+over the prefix - actually DR engine will do full number 
+matching and not prefix matching anymore.
   - **C** - Only check if the dialed
-				number matches any routing rule, without loading / applying any
-				routing info (no GW is set, the RURI is not altered)
+number matches any routing rule, without loading / applying any
+routing info (no GW is set, the RURI is not altered)
 - **gw_whitelist** (string, optional) - a
-			comma separated white list of gateways. This will force routing over,
-			at most, this list of carriers or gateways (in other words, 
-			the whitelist will be intersected with the results of the search 
-			through the rules).
+comma separated white list of gateways. This will force routing over,
+at most, this list of carriers or gateways (in other words, 
+the whitelist will be intersected with the results of the search 
+through the rules).
 - **rule_attrs_pvar** (var, optional) - a
-			writable variable which will be  populated with the attributes of the
-			matched dynamic routing rule.
+writable variable which will be  populated with the attributes of the
+matched dynamic routing rule.
 - **gw_attrs_pvar** (var, optional) - a
-			writable variable which will be 
-			populated with the attributes of the matched gateway.
+writable variable which will be 
+populated with the attributes of the matched gateway.
 - **carrier_attrs_pvar** (var, optional) - a
-			a writable variable which will be
-			populated with the attributes of the matched carrier.
+a writable variable which will be
+populated with the attributes of the matched carrier.
 - **partition** (string, optional) - the name
-			of the DR partition to be used. This parameter is to be defined
-			ONLY if the "use_partition" module parameter is turned on.
-			Besides specifing the name of one partition, you can use the "*" 
-			wildcard sign to force routing over all partitions.
+of the DR partition to be used. This parameter is to be defined
+ONLY if the "use_partition" module parameter is turned on.
+Besides specifing the name of one partition, you can use the "*" 
+wildcard sign to force routing over all partitions.
 
 
 ```c title="do_routing usage"
@@ -1075,34 +1079,34 @@ All parameters are optional. Any of them may be ignored, provided
 
 
 Function to trigger the direct routing to a given set carriers (one 
-		or more). So, the routing is not done prefix based, but carrier based 
-		(call will be sent to the GWs of that carrier, based on carrier 
-		policy).
+or more). So, the routing is not done prefix based, but carrier based 
+(call will be sent to the GWs of that carrier, based on carrier 
+policy).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter also (where the carrier are to be
-		found).
+supply the "partition" parameter also (where the carrier are to be
+found).
 
 
 - **carriers** (string) - comma separated
-					carrier IDs (names)
+carrier IDs (names)
 - **gw_attrs_pvar** (var, optional) -
-					an output writable variable which will be populated
-					with the attributes of the currently matched gateway of 
-					this carrier.
+an output writable variable which will be populated
+with the attributes of the currently matched gateway of 
+this carrier.
 - **carrier_attrs_pvar** (var, 
-					optional) - an output writable variable which will be populated 
-					with the attributes of this carrier.
+optional) - an output writable variable which will be populated 
+with the attributes of this carrier.
 - **partition** (string, optional) -
-					the name of the DR partition to be used. This parameter is
-					to be defined ONLY if the "use_partition" module parameter
-					is turned on. Wildcard sign is not accepted by the 
-					function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is not accepted by the 
+function.
 
 
 ```opensips title="route_to_carrier usage"
@@ -1138,28 +1142,28 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 
 
 Function to trigger the direct routing to a given gateway (or list of
-		gateways). Attributes and per-gw processing will be available.
+gateways). Attributes and per-gw processing will be available.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter to instruct on the partition where the
-		gateway has been defined.
+supply the "partition" parameter to instruct on the partition where the
+gateway has been defined.
 
 
 - **gw_id** (string) - comma
-					separated list of gateway IDs to be used.
+separated list of gateway IDs to be used.
 - **gw_attrs_pvar**  (var, optional)
 					- an output writable variable which will be populated
-					with the attributes of the currently matched gateway.
+with the attributes of the currently matched gateway.
 - **partition** (string, optional) -
-					the name of the DR partition to be used. This parameter is
-					to be defined ONLY if the "use_partition" module parameter
-					is turned on. Wildcard sign is not accepted by the 
-					function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is not accepted by the 
+function.
 
 
 ```opensips title="route_to_gw usage"
@@ -1197,43 +1201,43 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), "my_partition") ) {
 
 
 The function takes the next available destination (set by do_routing,
-		as alternative destinations) and pushes it into the RURI. Note that the
-		function just sets the RURI (nothing more).
+as alternative destinations) and pushes it into the RURI. Note that the
+function just sets the RURI (nothing more).
 
 
 If a new RURI is set, the used destination is removed from the
-		pending set of alternative destinations.
+pending set of alternative destinations.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter to instruct on the partition where the
-		gateway has been defined.
+supply the "partition" parameter to instruct on the partition where the
+gateway has been defined.
 
 
 The function returns true only if a new RURI was set. False
-		is returned is no other alternative destinations are found or in case
-		of an internal processing error. It may take the following optional 
-		parameters:
+is returned is no other alternative destinations are found or in case
+of an internal processing error. It may take the following optional 
+parameters:
 
 
 - **rule_attrs_pvar** (var, optional)
 					- an output writable variable which will be populated
-					with the attributes of the matched dynamic routing rule.
+with the attributes of the matched dynamic routing rule.
 - **gw_attrs_pvar** (var, optional) - an
-					output writable variable which will be populated
-					with the attributes of the matched gateway.
+output writable variable which will be populated
+with the attributes of the matched gateway.
 - **carrier_attrs_pvar** (var, optional) 
 					- an output writable variable which will be populated
-					with the attributes of the matched carrier.
+with the attributes of the matched carrier.
 - **partition** (optinal, string) -
-					the name of the DR partition to be used. This parameter is
-					to be defined ONLY if the "use_partition" module parameter
-					is turned on. Wildcard sign is not accepted by the 
-					function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is not accepted by the 
+function.
 
 
 ```opensips title="use_next_gw usage"
@@ -1271,51 +1275,51 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 
 
 Function returns true if the destination of the current request
-		(destination URI or Request URI) points (as IP) to one of the gateways.
-		There no DNS lookups done if the domain part of the URI is not an IP.
+(destination URI or Request URI) points (as IP) to one of the gateways.
+There no DNS lookups done if the domain part of the URI is not an IP.
 
 
 This function does not change anything in the message.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE and ONREPLY_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter to instruct on the partition where the
-		gateway has been defined.
+supply the "partition" parameter to instruct on the partition where the
+gateway has been defined.
 
 
 It may take the following optional parameters:
 
 
 - **type** (int, optional) - number for
-				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
-				be done against all types.
+the GW/destination type to be checked; when omitting this 
+parameter or specifying the special value "-1", matching will 
+be done against all types.
 - **flags** (string, optional) - 
-				letter like flags for controlling what operations should be 
-				performed when a GW matches:
+letter like flags for controlling what operations should be 
+performed when a GW matches:
 
   - **'s'** (Strip) - apply
-						to the username of RURI the strip defined by the GW
+to the username of RURI the strip defined by the GW
   - **'p'** (Prefix) - apply
-						to the username of RURI the prefix defined by the GW
+to the username of RURI the prefix defined by the GW
   - **'i'** (Gateway ID) - 
-						return the gateway id into gw_id_avp AVP
+return the gateway id into gw_id_avp AVP
   - **'n'** (Ignore port) -
-						ignores port number during matching
+ignores port number during matching
   - **'c'** (Carrier ID) - 
-						return the carrier id into carrier_id_avp AVP
+return the carrier id into carrier_id_avp AVP
 - **gw_attrs_pvar** (var, optional) -
-				an  output writable variable which will be populated with
-				the attributes of the matched gateway.
+an  output writable variable which will be populated with
+the attributes of the matched gateway.
 - **partition** (string, optional) - 
-				the name of the DR partition to be used. This parameter is
-				to be defined ONLY if the "use_partition" module parameter
-				is turned on. Wildcard sign is accepted by this 
-				function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is accepted by this 
+function.
 
 
 ```opensips title="goes_to_gw usage"
@@ -1339,50 +1343,50 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 
 
 The function checks if the sender of the message (source IP + source
-		port) is a gateway from a certain group.
+port) is a gateway from a certain group.
 
 
 This function does not change anything in the message.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE and ONREPLY_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter to instruct on the partition where the
-		gateway has been defined.
+supply the "partition" parameter to instruct on the partition where the
+gateway has been defined.
 
 
 It may take the following optional parameters:
 
 
 - **type** (int, optional) - number for
-				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
-				be done against all types.
+the GW/destination type to be checked; when omitting this 
+parameter or specifying the special value "-1", matching will 
+be done against all types.
 - **flags** (string, optional) - 
-				letter like flags for controlling what operations should be 
-				performed when a GW matches:
+letter like flags for controlling what operations should be 
+performed when a GW matches:
 
   - **'s'** (Strip) - apply
-						to the username of RURI the strip defined by the GW
+to the username of RURI the strip defined by the GW
   - **'p'** (Prefix) - apply
-						to the username of RURI the prefix defined by the GW
+to the username of RURI the prefix defined by the GW
   - **'i'** (Gateway ID) - 
-						return the gateway id into gw_id_avp AVP
+return the gateway id into gw_id_avp AVP
   - **'n'** (Ignore port) -
-						ignores port number during matching
+ignores port number during matching
   - **'c'** (Carrier ID) - 
-						return the carrier id into carrier_id_avp AVP
+return the carrier id into carrier_id_avp AVP
 - **gw_attrs_pvar** (var, optional) - an 
-				output writable variable which will be populated with
-				the attributes of the matched gateway.
+output writable variable which will be populated with
+the attributes of the matched gateway.
 - **partition** (string, optional) - 
-				the name of the DR partition to be used. This parameter is
-				to be defined ONLY if the "use_partition" module parameter
-				is turned on. Wildcard sign is accepted by this 
-				function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is accepted by this 
+function.
 
 
 ```opensips title="is_from_gw usage"
@@ -1405,53 +1409,53 @@ if (is_from_gw(, "c", , "outbound")) {
 
 
 The function checks if the SIP URI hostname part stored inside the
-		"src_pv" pseudo-variable is a gateway from a certain group.
+"src_pv" pseudo-variable is a gateway from a certain group.
 
 
 This function does not change anything in the message.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE and ONREPLY_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter to instruct on the partition where the
-		gateway has been defined.
+supply the "partition" parameter to instruct on the partition where the
+gateway has been defined.
 
 
 It may take the following optional parameters:
 
 
 - **sip_uri** (string) - SIP URI.
-				If the URI hostname part is a FQDN,
-				it will be resolved prior to matching.
+If the URI hostname part is a FQDN,
+it will be resolved prior to matching.
 - **type** (int, optional) - number for
-				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
-				be done against all types.
+the GW/destination type to be checked; when omitting this 
+parameter or specifying the special value "-1", matching will 
+be done against all types.
 - **flags** (string, optional) - 
-				letter like flags for controlling what operations should be 
-				performed when a GW matches:
+letter like flags for controlling what operations should be 
+performed when a GW matches:
 
   - **'s'** (Strip) - apply
-						to the username of RURI the strip defined by the GW
+to the username of RURI the strip defined by the GW
   - **'p'** (Prefix) - apply
-						to the username of RURI the prefix defined by the GW
+to the username of RURI the prefix defined by the GW
   - **'i'** (Gateway ID) - 
-						return the gateway id into gw_id_avp AVP
+return the gateway id into gw_id_avp AVP
   - **'n'** (Ignore port) -
-						ignores port number during matching
+ignores port number during matching
   - **'c'** (Carrier ID) - 
-						return the carrier id into carrier_id_avp AVP
+return the carrier id into carrier_id_avp AVP
 - **gw_attrs_pvar** (var, optional) - an  
-				output writable variable which will be populated with
-				the attributes of the matched gateway.
+output writable variable which will be populated with
+the attributes of the matched gateway.
 - **partition** (string, optional) - 
-				the name of the DR partition to be used. This parameter is
-				to be defined ONLY if the "use_partition" module parameter
-				is turned on. Wildcard sign is accepted by this 
-				function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is accepted by this 
+function.
 
 
 ```opensips title="dr_is_gw usage"
@@ -1473,28 +1477,28 @@ if (dr_is_gw( $avp(uac), , "n", , "partition")) {
 
 
 Marks as disabled the last destination that was used for the current
-		call. The disabling done via this function will prevent the
-		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the beginning)
+call. The disabling done via this function will prevent the
+destination to be used for usage from now on. The probing mechanism
+can re-enable this peer (see the probing section in the beginning)
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
+BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
 
 
 If you set `use_partitions` parameter to 1 you must 
-		supply the "partition" parameter to instruct on the partition where the
-		gateway has been defined.
+supply the "partition" parameter to instruct on the partition where the
+gateway has been defined.
 
 
 It may take the following parameters:
 
 
 - **partition** (string, optional) - 
-				the name of the DR partition to be used. This parameter is
-				to be defined ONLY if the "use_partition" module parameter
-				is turned on. Wildcard sign is accepted by this 
-				function.
+the name of the DR partition to be used. This parameter is
+to be defined ONLY if the "use_partition" module parameter
+is turned on. Wildcard sign is accepted by this 
+function.
 
 
 ```opensips title="dr_disable() usage"
@@ -1523,9 +1527,7 @@ Command to reload routing rules from database.
 
 - if `use_partition` is set to 0 - all routing rules will be reloaded.
 - if `use_partition` is set to 1, the parameters are:
-					
-						*partition_name* (optional) - if not provided
-							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
+	* *partition_name* (optional) - if not provided all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
 
 
 MI FIFO Command Format:
@@ -1541,28 +1543,16 @@ MI FIFO Command Format:
 
 
 Gets the status (enabled or disabled) of one or multiple gateways. The function
-		can also be used to set the status of a single gateway.
+can also be used to set the status of a single gateway.
 
 
-- if `use_partitions` is set to 0, the parameters are:
-				
-					*gw_id* (optional) - the id of
-					a gateway. If provided, the function will return/set (depnding if the second
-					parameter is given) the status of that gateway, otherwise it will list all
-					gateways along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a GW (0 - disable, 1 - enable). Only makes sense if
-					*gw_id* is provided.
+- if `use_partitions` is set to 0, the parameters are:		
+	* *gw_id* (optional) - the id of a gateway. If provided, the function will return/set (depending if the second parameter is given) the status of that gateway, otherwise it will list all gateways along with their statuses.
+	* *status* (optional) - the new status to be forced for a GW (0 - disable, 1 - enable). Only makes sense if *gw_id* is provided.
 - if `use_partitions` is set to 1, the parameters are:
-				
-					*partition_name*
-					*gw_id* (optional) - the id of
-					a gateway. If provided, the function will return/set (depnding if the third
-					parameter is given) the status of that gateway, otherwise it will list all
-					gateways in the given partition along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a GW (0 - disable, 1 - enable). Only makes sense if
-					*gw_id* is provided.
+	* *partition_name*
+	* *gw_id* (optional) - the id of a gateway. If provided, the function will return/set (depending if the third parameter is given) the status of that gateway, otherwise it will list all gateways in the given partition along with their statuses.
+	* *status* (optional) - the new status to be forced for a GW (0 - disable, 1 - enable). Only makes sense if *gw_id* is provided.
 
 
 ```bash title="dr_gw_status usage when use_partitions is set to 0"
@@ -1591,28 +1581,16 @@ enabled:: inactive
 
 
 Gets the status (enabled or disabled) of one or multiple carriers. The function
-		can also be used to set the status of a single carrier.
+can also be used to set the status of a single carrier.
 
 
 - if `use_partitions` is set to 0, the parameters are:
-				
-					*carrier_id* (optional) - the id of
-					a carrier. If provided, the function will return/set (depnding if the second
-					parameter is given) the status of that carrier, otherwise it will list all
-					carriers along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if
-					*carrier_id* is provided.
+	* *carrier_id* (optional) - the id of a carrier. If provided, the function will return/set (depending if the second parameter is given) the status of that carrier, otherwise it will list all carriers along with their statuses.
+	* *status* (optional) - the new status to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if *carrier_id* is provided.
 - if `use_partitions` is set to 1, the parameters are:
-				
-					*partition_name*
-					*carrier_id* (optional) - the id of
-					a carrier. If provided, the function will return/set (depnding if the third
-					parameter is given) the status of that carrier, otherwise it will list all
-					carriers contained in the given partition along with their statuses.
-					*status* (optional) - the new status
-					to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if
-					*carrier_id* is provided.
+	* *partition_name*
+	* *carrier_id* (optional) - the id of a carrier. If provided, the function will return/set (depending if the third parameter is given) the status of that carrier, otherwise it will list all carriers contained in the given partition along with their statuses.
+	* *status* (optional) - the new status to be forced for a carrier (0 - disable, 1 - enable). Only makes sense if *carrier_id* is provided.
 
 
 ```bash title="dr_carrier_status usage when use_partitions is 0"
@@ -1639,15 +1617,9 @@ Enabled:: yes
 Gets the time of the last reload for any partition.
 
 
-- if `use_partition` is set to 0 - the function
-					doesn't receive any parameter. It will list the date of the
-					last reload for the default (and only) partition.
+- if `use_partition` is set to 0 - the function doesn't receive any parameter. It will list the date of the last reload for the default (and only) partition.
 - if `use_partition` is set to 1, the parameters are:
-					
-						*partition_name* (optional) - if not provided
-							the function will list the time of the last update for every
-							partition. Otherwise, the function will list the time of the last
-							reload for the given partition.
+	* *partition_name* (optional) - if not provided the function will list the time of the last update for every partition. Otherwise, the function will list the time of the last reload for the given partition.
 
 
 ```bash title="dr_reload_status usage when use_partitions is 0"
@@ -1669,25 +1641,16 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
 
 Gets the matched prefix along with the list of the gateways / carriers to which a number
-			would be routed when using the do_routing function.
+would be routed when using the do_routing function.
 
 
-- if `use_partition` is set to 1 the function
-					will have 3 parameters:
-					
-						
-							*partition_name*
-						
-						
-							*group_id* (optional) - the group id of the rules to
-								check against
-						
-						
-							*number* - the number to test against
+- if `use_partition` is set to 1 the function will have 3 parameters:
+	* *partition_name*
+	* *group_id* (optional) - the group id of the rules to check against
+	* *number* - the number to test against
 - if `use_partition` is set to 0 the function will have 2 parameters:
-					
-						*group_id* (optional) - the group id of the rules to check against
-						*number* - the number to test against
+	* *group_id* (optional) - the group id of the rules to check against
+	* *number* - the number to test against
 
 
 MI FIFO Command Format:
@@ -1703,14 +1666,13 @@ MI FIFO Command Format:
 
 
 Enables/disables gateway probing or returns the current gateway
-		probing status.
+probing status.
 
 
 Parameters:
 
 
-- *status* (optional) - 1 - enable,
-				0 - disable gateway probing
+- *status* (optional) - 1 - enable, 0 - disable gateway probing
 
 
 ```bash title="dr_enable_probing usage"
@@ -1730,7 +1692,7 @@ Status:: 0
 
 
 This event is raised when the module changes the state of a gateway,
-			either through an MI command, probing or script function.
+either through an MI command, probing or script function.
 
 
 Parameters:
@@ -1740,27 +1702,27 @@ Parameters:
 - *gwid* - the gateway identifier.
 - *address* - the address of the gateway.
 - *status* - *disabled MI* if
-				the gateway was disabled using MI commands,
-				*probing* if the gateway is being pinged,
-				*inactive* if it was disabled from the script or
-				*active* if the gateway is enabled.
+the gateway was disabled using MI commands,
+*probing* if the gateway is being pinged,
+*inactive* if it was disabled from the script or
+*active* if the gateway is enabled.
 
 
 ### Installation
 
 
 The module requires 4 tables in the OpenSIPS database: dr_groups,
-	dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
-	found in the drouting-create.sql script, located in the database directories
-	of the opensips/scripts folder. You can also find the complete
-	database documentation on the project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
+dr_gateways, dr_carriers, dr_rules. The SQL syntax to create them can be
+found in the drouting-create.sql script, located in the database directories
+of the opensips/scripts folder. You can also find the complete
+database documentation on the project webpage, [https://opensips.org/docs/db/db-schema-devel.html](https://opensips.org/docs/db/db-schema-devel.html).
 
 
 ## Developer Guide
 
 
 The module provides no function to be used
-		by other OpenSIPS modules.
+by other OpenSIPS modules.
 <!-- CONTRIBUTORS -->
 
 ### License

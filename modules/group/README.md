@@ -10,15 +10,15 @@ description: "This module provides functionalities for different methods of grou
 
 
 This module provides functionalities for different methods of group
-		membership checking.
+membership checking.
 
 
 #### Strict membership checking
 
 
 There is a database table that contains list of users and groups
-			they belong to. The module provides the possibility to check if a
-			specific user belongs to a specific group.
+they belong to. The module provides the possibility to check if a
+specific user belongs to a specific group.
 
 
 There is no DB caching support, each check involving a DB query.
@@ -28,14 +28,14 @@ There is no DB caching support, each check involving a DB query.
 
 
 Another database table contains list of regular expressions and
-			group IDs. A matching occurs if the user URI match the regular
-			expression. This type of matching may be used to fetch the
-			group ID(s) the user belongs to (via RE matching) .
+group IDs. A matching occurs if the user URI match the regular
+expression. This type of matching may be used to fetch the
+group ID(s) the user belongs to (via RE matching) .
 
 
 Due performance reasons (regular expression evaluation), DB cache
-			support is available: the table content is loaded into memory at
-			startup and all regular expressions are compiled.
+support is available: the table content is loaded into memory at
+startup and all regular expressions are compiled.
 
 
 ### Dependencies
@@ -55,7 +55,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -81,7 +81,7 @@ modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 
 
 Name of the table holding strict definitions of groups and
-		their members.
+their members.
 
 
 *Default value is "grp".*
@@ -146,8 +146,8 @@ modparam("group", "group_column", "grp")
 
 
 If enabled (set to non zero value) then domain will be used also used
-		for strict group matching; otherwise only the username part will be
-		used.
+for strict group matching; otherwise only the username part will be
+used.
 
 
 *Default value is 0 (no).*
@@ -164,8 +164,8 @@ modparam("group", "use_domain", 1)
 
 
 Name of the table holding definitions for regular-expression
-		based groups. If no table is defined, the regular-expression
-		support is disabled.
+based groups. If no table is defined, the regular-expression
+support is disabled.
 
 
 *Default value is "NULL".*
@@ -182,7 +182,7 @@ modparam("group", "re_table", "re_grp")
 
 
 Name of the "re_table" column holding the regular
-		expression used for user matching.
+expression used for user matching.
 
 
 *Default value is "reg_exp".*
@@ -215,8 +215,8 @@ modparam("group", "re_gid_column", "grp_id")
 
 
 If enabled (non zero value) the regular-expression matching will
-		return all group IDs that match the user; otherwise only the first
-		will be returned.
+return all group IDs that match the user; otherwise only the first
+will be returned.
 
 
 *Default value is "1".*
@@ -249,31 +249,29 @@ modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 
 
 This function is to be used for script group membership. The function
-		returns true if username in the given URI is member of the given
-		group and false if not.
+returns true if username in the given URI is member of the given
+group and false if not.
 
 
 Meaning of the parameters is as follows:
 
 
 - *uri (string)* - a SIP URI whose
-				username and optionally domain to be used.  Possible values:
-			
-				
-				"Request-URI" - Use Request-URI username and
-				(optionally) domain.
-				
-				
-				"To" - Use To username and (optionally) domain.
-				
-				
-				"From" - Use From username and (optionally) domain.
-				
-				
-				"Credentials" - Use digest credentials username.
-				
-				
-				(default) - parse the given input as a SIP URI
+username and optionally domain to be used.  Possible values:
+	* "Request-URI" - Use Request-URI username and
+	(optionally) domain.
+
+
+	* "To" - Use To username and (optionally) domain.
+
+
+	* "From" - Use From username and (optionally) domain.
+
+
+	* "Credentials" - Use digest credentials username.
+
+
+	* (default) - parse the given input as a SIP URI
 - *group (string)* - the group to check
 
 
@@ -299,39 +297,29 @@ if (db_is_user_in("Credentials", $avp(grouptocheck))) {
 
 
 This function is to be used for regular expression based group
-		membership, using DB support.  The function returns true if the username in
-		the given "uri" belongs to at least one group.
+membership, using DB support.  The function returns true if the username in
+the given "uri" belongs to at least one group.
 
 
 All matching group IDs
-		shall be returned in "output_avp" if [multiple gid](#param_multiple_gid)
-		is enabled, otherwise only the first one to match (the records are
-		attempted in reversed order of the results returned by the RDBMS).
+shall be returned in "output_avp" if [multiple gid](#param_multiple_gid)
+is enabled, otherwise only the first one to match (the records are
+attempted in reversed order of the results returned by the RDBMS).
 
 
 Meaning of the parameters is as follows:
 
 
 - *uri (string)* - a SIP URI to be matched
-				against the regular expressions:
-			
-				
-				"Request-URI" - Use Request-URI
-				
-				
-				"To" - Use To URI.
-				
-				
-				"From" - Use From URI
-				
-				
-				"Credentials" - Use digest credentials username
-				and realm.
-				
-				
-				(default) - parse the given input as a SIP URI
+against the regular expressions:
+	* "Request-URI" - Use Request-URI
+	* "To" - Use To URI.
+	* "From" - Use From URI
+	* "Credentials" - Use digest credentials username
+	and realm.
+	* (default) - parse the given input as a SIP URI
 - *output_avp (var)* - a list of matched
-				group IDs
+group IDs
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -351,28 +339,20 @@ if (db_get_user_group("Request-URI", $avp(10))) {
 
 
 This function checks group membership, using AAA support.
-		The function returns true if username in the given "uri" is member of
-		the given group and false if not.
+The function returns true if username in the given "uri" is member of
+the given group and false if not.
 
 
 Meaning of the parameters is as follows:
 
 
 - *uri (string)* - a SIP URI whose
-				username and optionally domain to be used, this can be one of:
-			
-				
-				"Request-URI" - Use Request-URI username and
-				(optionally) domain.
-				
-				
-				"To" - Use To username and (optionally) domain.
-				
-				
-				"From" - Use From username and (optionally) domain.
-				
-				
-				"Credentials" - Use digest credentials username.
+username and optionally domain to be used, this can be one of:
+	* "Request-URI" - Use Request-URI username and
+	(optionally) domain.
+	* "To" - Use To username and (optionally) domain.
+	* "From" - Use From username and (optionally) domain.
+	* "Credentials" - Use digest credentials username.
 - *group (string)* - Name of the group to check.
 
 
