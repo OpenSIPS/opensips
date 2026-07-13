@@ -10,7 +10,7 @@ description: "The *rest_client* module provides a means of interacting with an H
 
 
 The *rest_client* module provides a means of interacting
-	with an HTTP server by doing RESTful queries, such as GET and POST.
+with an HTTP server by doing RESTful queries, such as GET and POST.
 
 
 ### Dependencies
@@ -29,7 +29,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libcurl*.
@@ -58,9 +58,9 @@ modparam("rest_client", "connection_timeout", 300)
 
 
 Maximum number of asynchronous HTTP transfers *a single*
-		OpenSIPS worker is allowed to run simultanously. As long as this threshold
-		is reached for a worker, all new async transfers it attempts to perform
-		will be done in a blocking manner, with appropriate logging warnings.
+OpenSIPS worker is allowed to run simultanously. As long as this threshold
+is reached for a worker, all new async transfers it attempts to perform
+will be done in a blocking manner, with appropriate logging warnings.
 
 
 *Default value is "100".*
@@ -93,8 +93,8 @@ modparam("rest_client", "curl_timeout", 300)
 
 
 Set this to 0 in order to disable the verification of the remote peer's
-		certificate. Verification is done using a default bundle of CA certificates
-		which come with libcurl.
+certificate. Verification is done using a default bundle of CA certificates
+which come with libcurl.
 
 
 *Default value is "1" (enabled).*
@@ -111,7 +111,7 @@ modparam("rest_client", "ssl_verifypeer", 0)
 
 
 Set this to 0 in order to disable the verification that the remote peer
-		actually corresponds to the server listed in the certificate.
+actually corresponds to the server listed in the certificate.
 
 
 *Default value is "1" (enabled).*
@@ -144,34 +144,34 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 
 
 Issues an HTTP GET request to the given 'url', and returns a representation
-		of the resource.
+of the resource.
 
 
 The *body_pv* pseudo-var will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *ctype_pv* pseudo-var will contain the value
-		of the "Content-Type:" header.
+of the "Content-Type:" header.
 
 
 The optional *retcode_pv* pseudo-var is used to retain the
-		HTTP status code of the response message. Since the module is based on libcurl,
-		a **0** value means no HTTP reply arrived at all.
+HTTP status code of the response message. Since the module is based on libcurl,
+a **0** value means no HTTP reply arrived at all.
 
 
 Possible parameter types
 
 
 - *url* - String, pseudo-variable, or a String
-				which includes pseudo-variables. (useful for specifying additional
-				attribute-value fields in the URL)
+which includes pseudo-variables. (useful for specifying additional
+attribute-value fields in the URL)
 - *body_pv, ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 This function can be used from the *startup, branch, failure,
-				request* and *timer* routes.
+request* and *timer* routes.
 
 
 ```opensips title="rest_get usage"
@@ -197,36 +197,36 @@ if ($var(rcode) >= 300) {
 
 
 Issues an HTTP POST request to the specified *url*. The request body will
-		be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
-		header for the request will be taken from *send_ctype_pv* (default is 
-		*"application/x-www-form-urlencoded"*)
+be copied from the *send_body_pv* pseudo-variable. The MIME Content-Type
+header for the request will be taken from *send_ctype_pv* (default is 
+*"application/x-www-form-urlencoded"*)
 
 
 The mandatory *recv_body_pv* pseudo-var will hold the body of the HTTP
-		response.
+response.
 
 
 The optional *recv_ctype_pv* parameter will contain
-		the value of the "Content-Type" header of the response message.
+the value of the "Content-Type" header of the response message.
 
 
 The optional *retcode_pv* pseudo-var parameter can be given
-		in order to retrieve the HTTP status code of the response message. Since
-		the module based on libcurl, a **0** value
-		means no HTTP reply arrived at all.
+in order to retrieve the HTTP status code of the response message. Since
+the module based on libcurl, a **0** value
+means no HTTP reply arrived at all.
 
 
 Possible parameter types
 
 
 - *url, send_body_pv, send_type_pv* -
-			String, pseudo-variable, or a String which includes pseudo-variables.
+String, pseudo-variable, or a String which includes pseudo-variables.
 - *recv_body_pv, recv_ctype_pv, retcode_pv* -
-			pseudo-variables
+pseudo-variables
 
 
 This function can be used from the *startup, branch, failure,
-				request* and *timer* routes.
+request* and *timer* routes.
 
 
 ```opensips title="rest_post usage"
@@ -255,10 +255,10 @@ if ($var(rcode) >= 300) {
 
 
 Sends a GET HTTP request. This function behaves exactly the same as
-		**[rest get](#func_rest_get)**
-		(in terms of input, output and processing),
-		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response is available.
+**[rest get](#func_rest_get)**
+(in terms of input, output and processing),
+but in an asynchronous way. Script execution is suspended until the
+entire content of the HTTP response is available.
 
 
 ```opensips title="async rest_get usage"
@@ -290,9 +290,9 @@ route [resume] {
 
 
 Sends a POST HTTP request. This function behaves exactly the same as
-		**[rest post](#func_rest_post)** (in terms of input, output and processing),
-		but in an asynchronous way. Script execution is suspended until the
-		entire content of the HTTP response is available.
+**[rest post](#func_rest_post)** (in terms of input, output and processing),
+but in an asynchronous way. Script execution is suspended until the
+entire content of the HTTP response is available.
 
 
 ```opensips title="async rest_post usage"

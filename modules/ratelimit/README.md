@@ -1,6 +1,6 @@
 ---
 title: "ratelimit Module"
-description: "This module implements rate limiting for SIP requests. In contrast to the PIKE module this limits the flow based on a per SIP request type basis and not per source IP. The latest sources allow you to dynamically group several messages into some entities and limit the traffic based on the..."
+description: "This module implements rate limiting for SIP requests."
 ---
 
 ## Admin Guide
@@ -10,37 +10,38 @@ description: "This module implements rate limiting for SIP requests. In contrast
 
 
 This module implements rate limiting for SIP requests. In contrast to
-		the PIKE module this limits the flow based on a per SIP request type
-		basis and not per source IP. The latest sources allow you to 
-		dynamically group several messages into some entities and limit the
-		traffic based on them. The MI interface can be used to change 
-		tunables while running OpenSIPS.
+the PIKE module this limits the flow based on a per SIP request type
+basis and not per source IP. The latest sources allow you to 
+dynamically group several messages into some entities and limit the
+traffic based on them. The MI interface can be used to change 
+tunables while running OpenSIPS.
 
 
 This module is also integrated with the OpenSIPS Key-Value Interface,
-		providing support for distributed rate limiting using Redis or Memcached
-		CacheDB backends.
+providing support for distributed rate limiting using Redis or Memcached
+CacheDB backends.
 
 
 ### Use Cases
 
 
 Limiting the rate messages are processed on a system directly
-		influences the load. The ratelimit module can be used to protect a
-		single host or to protect an OpenSIPS cluster when run on the
-		dispatching box in front.
+influences the load. The ratelimit module can be used to protect a
+single host or to protect an OpenSIPS cluster when run on the
+dispatching box in front.
 
 
 Distributed limiting is useful when the rate limit should be
-		performed not only on a specific node, but on the entire platform. 
-		The internal limiting data will no longer be kept on each OpenSIPS 
-		instance. It will be stored in a distributed Key-Value database and
-		queried by each instance before deciding if a SIP message 
-		should be blocked or not.
+performed not only on a specific node, but on the entire platform. 
+The internal limiting data will no longer be kept on each OpenSIPS 
+instance. It will be stored in a distributed Key-Value database and
+queried by each instance before deciding if a SIP message 
+should be blocked or not.
 
 
-NOTE: that this behavior only makes sense when the pipe algorithm
-		used is TAILDROP or RED.
+> [!NOTE]
+> This behavior only makes sense when the pipe algorithm
+> used is TAILDROP or RED.
 
 
 A sample configuration snippet might look like this:
@@ -53,107 +54,106 @@ A sample configuration snippet might look like this:
 		exit;
 	};
 ...
-	
 ```
 
 
 Upon every incoming request listed above rl_check is invoked and
-		the entity identified by the R-URI user is checked. It
-		returns an OK code if the current per request load is below the
-		configured threshold. If the load is exceeded the function returns an
-		error and an administrator can discard requests with a stateless
-		response.
+the entity identified by the R-URI user is checked. It
+returns an OK code if the current per request load is below the
+configured threshold. If the load is exceeded the function returns an
+error and an administrator can discard requests with a stateless
+response.
 
 
 ### Static Rate Limiting Algorithms
 
 
 The ratelimit module supports two different static algorithms
-		to be used by rl_check to determine whether a message should be
-		blocked or not.
+to be used by rl_check to determine whether a message should be
+blocked or not.
 
 
 #### Tail Drop Algorithm (TAILDROP)
 
 
 This is a trivial algorithm that imposes some risks when used in
-		conjunction with long timer intervals. At the start of each interval
-		an internal counter is reset and incremented for each incoming
-		message. Once the counter hits the configured limit rl_check returns
-		an error.
+conjunction with long timer intervals. At the start of each interval
+an internal counter is reset and incremented for each incoming
+message. Once the counter hits the configured limit rl_check returns
+an error.
 
 
 The downside of this algorithm is that it can lead to SIP client
-		synchronization. During a relatively long interval only the first
-		requests (i.e. REGISTERs) would make it through. Following messages
-		(i.e. RE-REGISTERs) will all hit the SIP proxy at the same time when a
-		common Expire timer expired. Other requests will be retransmissed
-		after given time, the same on all devices with the same firmware/by
-		the same vendor.
+synchronization. During a relatively long interval only the first
+requests (i.e. REGISTERs) would make it through. Following messages
+(i.e. RE-REGISTERs) will all hit the SIP proxy at the same time when a
+common Expire timer expired. Other requests will be retransmissed
+after given time, the same on all devices with the same firmware/by
+the same vendor.
 
 
 #### Random Early Detection Algorithm (RED)
 
 
 Random Early Detection tries to circumvent the synchronization problem
-		imposed by the tail drop algorithm by measuring the average load and
-		adapting the drop rate dynamically. When running with the RED
-		algorithm OpenSIPS will return errors to the OpenSIPS
-		routing engine every n'th packet trying to evenly spread the measured
-		load of the last timer interval onto the current interval. As a
-		negative side effect OpenSIPS might drop messages although the limit might
-		not be reached within the interval. Decrease the timer interval if you
-		encounter this.
+imposed by the tail drop algorithm by measuring the average load and
+adapting the drop rate dynamically. When running with the RED
+algorithm OpenSIPS will return errors to the OpenSIPS
+routing engine every n'th packet trying to evenly spread the measured
+load of the last timer interval onto the current interval. As a
+negative side effect OpenSIPS might drop messages although the limit might
+not be reached within the interval. Decrease the timer interval if you
+encounter this.
 
 
 #### Network Algorithm (NETWORK)
 
 
 This algorithm relies on information provided by network interfaces.
-		The total amount of bytes waiting to be consumed on all the network
-		interfaces is retrieved once every timer_interval seconds.
-		If the returned amount exceeds the limit specified in the modparam,
-		rl_check returns an error.
+The total amount of bytes waiting to be consumed on all the network
+interfaces is retrieved once every timer_interval seconds.
+If the returned amount exceeds the limit specified in the modparam,
+rl_check returns an error.
 
 
 ### Dynamic Rate Limiting Algorithms
 
 
 When running OpenSIPS on different machines, one has to adjust the drop
-		rates for the static algorithms to maintain a sub 100% load average or
-		packets start getting dropped in the network stack.  While this is not
-		in itself difficult, it isn't neither accurate nor trivial: another
-		server taking a notable fraction of the cpu time will require re-tuning
-		the parameters.
+rates for the static algorithms to maintain a sub 100% load average or
+packets start getting dropped in the network stack.  While this is not
+in itself difficult, it isn't neither accurate nor trivial: another
+server taking a notable fraction of the cpu time will require re-tuning
+the parameters.
 
 
 While tuning the drop rates from the outside based on a certain factor
-		is possible, having the algorithm run inside ratelimit permits tuning
-		the rates based on internal server parameters and is somewhat more
-		flexible (or it will be when support for external load factors - as
-		opposed to cpu load - is added).
+is possible, having the algorithm run inside ratelimit permits tuning
+the rates based on internal server parameters and is somewhat more
+flexible (or it will be when support for external load factors - as
+opposed to cpu load - is added).
 
 
 #### Feedback Algorithm (FEEDBACK)
 
 
 Using the PID Controller model
-		(see [Wikipedia page](http://en.wikipedia.org/wiki/PID_controller)),
-		the drop rate is adjusted dynamically based on the load factor so that
-		the load factor always drifts towards the specified limit (or setpoint,
-		in PID terms).
+(see [Wikipedia page](http://en.wikipedia.org/wiki/PID_controller)),
+the drop rate is adjusted dynamically based on the load factor so that
+the load factor always drifts towards the specified limit (or setpoint,
+in PID terms).
 
 
 As reading the cpu load average is relatively expensive (opening /proc/stat,
-		parsing it, etc), this only happens once every timer_interval seconds and
-		consequently the FEEDBACK value is only at these intervals recomputed. This
-		in turn makes it difficult for the drop rate to adjust quickly.  Worst case
-		scenarios are request rates going up/down instantly by thousands - it takes
-		up to 20 seconds for the controller to adapt to the new request rate.
+parsing it, etc), this only happens once every timer_interval seconds and
+consequently the FEEDBACK value is only at these intervals recomputed. This
+in turn makes it difficult for the drop rate to adjust quickly.  Worst case
+scenarios are request rates going up/down instantly by thousands - it takes
+up to 20 seconds for the controller to adapt to the new request rate.
 
 
 Generally though, as real life request rates drift by less, adapting should
-		happen much faster.
+happen much faster.
 
 
 ### Dependencies
@@ -172,7 +172,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -185,11 +185,12 @@ The following libraries or applications must be installed before
 
 
 The timer interval in seconds when the Network and Feedback algorithms
-			run their queries, and the other algorithms reset their counters.
+run their queries, and the other algorithms reset their counters.
 
 
-IMPORTANT: A too small value may lead to performance penalties due to
-		timer process overloading.
+> [!IMPORTANT]
+> A too small value may lead to performance penalties due to
+> timer process overloading.
 
 
 *Default value is 10.*
@@ -206,7 +207,7 @@ modparam("ratelimit", "timer_interval", 5)
 
 
 This parameter specifies how long a pipe should be kept in memory
-		until deleted.
+until deleted.
 
 
 *Default value is 3600.*
@@ -223,8 +224,8 @@ modparam("ratelimit", "expire_time", 1800)
 
 
 The size of the hash table internally used to keep the pipes.
-		A larger table is much faster but consumes more memory. The hash size
-		must be a power of 2 number.
+A larger table is much faster but consumes more memory. The hash size
+must be a power of 2 number.
 
 
 *Default value is 1024.*
@@ -241,7 +242,7 @@ modparam("ratelimit", "hash_size", 512)
 
 
 Specifies which algorithm should be assumed in case it isn't 
-		explicitly specified in the *rl_check* function.
+explicitly specified in the *rl_check* function.
 
 
 *Default value is "TAILDROP".*
@@ -258,7 +259,7 @@ modparam("ratelimit", "default_algorithm", "RED")
 
 
 Enables distributed rate limiting and specifies the backend
-		that should be used by the CacheDB interface.
+that should be used by the CacheDB interface.
 
 
 *Default value is "disabled".*
@@ -275,7 +276,7 @@ modparam("ratelimit", "cachedb_url", "redis://root:root@127.0.0.1/")
 
 
 Specifies what prefix should be added to the pipe name. This is
-		only used when distributed rate limiting is enabled.
+only used when distributed rate limiting is enabled.
 
 
 *Default value is "rl_pipe_".*
@@ -295,34 +296,35 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 
 
 Check the current request against the pipe identified by name and
-		changes/updates the limit. If no pipe is found, then a new one is
-		created with the specified limit and algorithm, if specified. If the 
-		algorithm parameter doesn't exist, the default one is used.
+changes/updates the limit. If no pipe is found, then a new one is
+created with the specified limit and algorithm, if specified. If the 
+algorithm parameter doesn't exist, the default one is used.
 
 
-NOTE: A pipe's algorithm cannot be dynamically changed. Only the one
-		specified when the pipe was created will be considered.
+> [!NOTE]
+> A pipe's algorithm cannot be dynamically changed. Only the one
+> specified when the pipe was created will be considered.
 
 
 The method will return an error code if the limit for the
-		matched pipe is reached.
+matched pipe is reached.
 
 
 Meaning of the parameters is as follows:
 
 
 - *name* - this is the name that identifies
-				the pipe which should be checked. This parameter accepts both
-				strings and pseudovariables.
+the pipe which should be checked. This parameter accepts both
+strings and pseudovariables.
 - *limit* - this specifies the threshold
-				limit of the pipe. It is strongly related to the algorithm
-				used. This parameter accepts an integer or a pseudovariable.
-				Note that the limit should be specified as per-second, not
-				per-timer_interval.
+limit of the pipe. It is strongly related to the algorithm
+used. This parameter accepts an integer or a pseudovariable.
+Note that the limit should be specified as per-second, not
+per-timer_interval.
 - *algorithm* - this is parameter is optional
-				and reffers to the algorithm used to check the pipe. If it is
-				not set, the default value is used. It accepts a string or a 
-				pseudovariable.
+and reffers to the algorithm used to check the pipe. If it is
+not set, the default value is used. It accepts a string or a 
+pseudovariable.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -352,7 +354,7 @@ This function can be used from REQUEST_ROUTE.
 
 
 This function decreases a counter that could have been previously
-		increased by *rl_check* function.
+increased by *rl_check* function.
 
 
 Meaning of the parameters is as follows:
@@ -379,7 +381,7 @@ This function can be used from REQUEST_ROUTE.
 
 
 This function resets a counter that could have been previously
-		increased by *rl_check* function.
+increased by *rl_check* function.
 
 
 Meaning of the parameters is as follows:
@@ -418,25 +420,23 @@ Parameters:
 
 
 - *pipe* - indicates the name of the pipe. This
-			parameter is optional. If it doesn't exist, all the active pipes
-			are listed. Otherwise only the one specified.
+parameter is optional. If it doesn't exist, all the active pipes
+are listed. Otherwise only the one specified.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		:rl_list:_reply_fifo_file_
-		gw_10.0.0.1
-		_empty_line_
-		
+:rl_list:_reply_fifo_file_
+gw_10.0.0.1
+_empty_line_
 ```
 
 
 ```bash
-		:rl_list:_reply_fifo_file_
-		_empty_line_
-		
+:rl_list:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -453,17 +453,16 @@ Parameters:
 
 
 - *pipe* - indicates the name of the pipe whose
-			couter should be reset.
+couter should be reset.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		:rl_reset_pipe:_reply_fifo_file_
-		gw_10.0.0.1
-		_empty_line_
-		
+:rl_reset_pipe:_reply_fifo_file_
+gw_10.0.0.1
+_empty_line_
 ```
 
 
@@ -488,12 +487,11 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_set_pid:_reply_fifo_file_
-		0.5
-		0.5
-		0.5
-		_empty_line_
-		
+:rl_set_pid:_reply_fifo_file_
+0.5
+0.5
+0.5
+_empty_line_
 ```
 
 
@@ -513,9 +511,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:rl_get_pid:_reply_fifo_file_
-		_empty_line_
-		
+:rl_get_pid:_reply_fifo_file_
+_empty_line_
 ```
 <!-- CONTRIBUTORS -->
 

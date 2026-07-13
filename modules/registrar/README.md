@@ -16,73 +16,73 @@ The module contains REGISTER processing logic.
 
 
 Register module includes Path support (according to RFC 3327) 
-		for usage in registrars and home-proxies.
+for usage in registrars and home-proxies.
 
 
 A call to save(...) stores, if path-support is enabled
-		in the registrar-module, the values of the Path
-		Header(s) along with the contact into usrloc. There are
-		three modes regarding the reply to a REGISTER including
-		one or more Path HFs:
+in the registrar-module, the values of the Path
+Header(s) along with the contact into usrloc. There are
+three modes regarding the reply to a REGISTER including
+one or more Path HFs:
 
 
 - *off* - stores the value of the 
-				Path headers into usrloc without passing it back to 
-				the UAC in the reply.
+Path headers into usrloc without passing it back to 
+the UAC in the reply.
 - *lazy* - stores the Path header and 
-				passes it back to the UAC if Path-support is indicated 
-				by the "path" param in the Supported HF.
+passes it back to the UAC if Path-support is indicated 
+by the "path" param in the Supported HF.
 - *strict* - rejects the registration 
-				with "420 Bad Extension" if there's a Path 
-				header but no support for it is indicated by the UAC. 
-				Otherwise it's stored and passed back to the UAC.
+with "420 Bad Extension" if there's a Path 
+header but no support for it is indicated by the UAC. 
+Otherwise it's stored and passed back to the UAC.
 
 
 A call to lookup(...) always uses the path header if
-		found, and inserts it as Route HF either in front of
-		the first Route HF, or after the last Via HF if no
-		Route is present. It also sets the destination uri to
-		the first Path uri, thus overwriting the received-uri,
-		because NAT has to be handled at the outbound-proxy of
-		the UAC (the first hop after client's NAT).
+found, and inserts it as Route HF either in front of
+the first Route HF, or after the last Via HF if no
+Route is present. It also sets the destination uri to
+the first Path uri, thus overwriting the received-uri,
+because NAT has to be handled at the outbound-proxy of
+the UAC (the first hop after client's NAT).
 
 
 The whole process is transparent to the user, so no
-		config changes are required beside setting the
-		registrar-parameters "use_path" and 
-		"path_mode".
+config changes are required beside setting the
+registrar-parameters "use_path" and 
+"path_mode".
 
 
 #### GRUU support
 
 
 Register module includes GRUU support (according to RFC 5627) 
-		for usage in registrars and home-proxies.
+for usage in registrars and home-proxies.
 
 
 A call to save(...) stores, if the phone supports GRUU,
-		the values of the SIP Instance along with the contact into usrloc. 
-		The registrar module will generate two types of GRUUs :
+the values of the SIP Instance along with the contact into usrloc. 
+The registrar module will generate two types of GRUUs :
 
 
 - *public* - exposes the underlying AOR,
-				constructed just by attaching the SIP Instance as the ;gr
-				parameter value. These are persistent, valid as long as the
-				contact registration is valid.
+constructed just by attaching the SIP Instance as the ;gr
+parameter value. These are persistent, valid as long as the
+contact registration is valid.
 - *temporary* - hides the underlying AOR
-				Each new Register request leads to the construction of a 
-				new temporary GRUU, while Register requests with a different
-				Call-Id lead to the invalidation of all the previous generated
-				temporary GRUUs.
+Each new Register request leads to the construction of a 
+new temporary GRUU, while Register requests with a different
+Call-Id lead to the invalidation of all the previous generated
+temporary GRUUs.
 
 
 A call to lookup(...) will try to detect if the R-URI contains a
-		GRUU. If it does, it will route the request just for the Contact
-		that the specific AOR belongs to, without appending any other branches.
+GRUU. If it does, it will route the request just for the Contact
+that the specific AOR belongs to, without appending any other branches.
 
 
 The whole process is transparent to the user, so no
-		config changes are required.
+config changes are required.
 
 
 ### Dependencies
@@ -102,7 +102,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -115,9 +115,9 @@ The following libraries or applications must be installed before
 
 
 If the processed message contains neither Expires 
-		HFs nor expires contact parameters, this value 
-		will be used for newly created usrloc records. The parameter contains 
-		number of second to expire (for example use 3600 for one hour).
+HFs nor expires contact parameters, this value 
+will be used for newly created usrloc records. The parameter contains 
+number of second to expire (for example use 3600 for one hour).
 
 
 *Default value is 3600.*
@@ -134,8 +134,8 @@ modparam("registrar", "default_expires", 1800)
 
 
 The minimum expires value of a Contact, values lower than this 
-		minimum will be automatically set to the minimum. Value 0 disables 
-		the checking.
+minimum will be automatically set to the minimum. Value 0 disables 
+the checking.
 
 
 *Default value is 60.*
@@ -152,8 +152,8 @@ modparam("registrar", "min_expires", 60)
 
 
 The maximum expires value of a Contact, values higher than this 
-		maximum will be automatically set to the maximum. Value 0 disables 
-		the checking.
+maximum will be automatically set to the maximum. Value 0 disables 
+the checking.
 
 
 *Default value is 0.*
@@ -170,9 +170,9 @@ modparam("registrar", "max_expires", 120)
 
 
 The parameter represents default q value for new contacts. Because 
-		OpenSIPS doesn't support float parameter types, the value in the parameter 
-		is divided by 1000 and stored as float. For example, if you want 
-		default_q to be 0.38, use value 380 here.
+OpenSIPS doesn't support float parameter types, the value in the parameter 
+is divided by 1000 and stored as float. For example, if you want 
+default_q to be 0.38, use value 380 here.
 
 
 *Default value is 0.*
@@ -189,11 +189,11 @@ modparam("registrar", "default_q", 1000)
 
 
 The parameter specifies the message flag to be used to control the 
-		module behaviour regarding TCP connections. If the flag is set for a 
-		REGISTER via TCP containing a TCP contact, the module, via the 
-		"save()" function, will set the lifetime of the TCP
-		connection to the contact expire value. By doing this, the TCP 
-		connection will stay on as long as the contact is valid.
+module behaviour regarding TCP connections. If the flag is set for a 
+REGISTER via TCP containing a TCP contact, the module, via the 
+"save()" function, will set the lifetime of the TCP
+connection to the contact expire value. By doing this, the TCP 
+connection will stay on as long as the contact is valid.
 
 
 *Default value is -1 (disabled).*
@@ -210,11 +210,11 @@ modparam("registrar", "tcp_persistent_flag", 7)
 
 
 Prefix to be automatically strip from realm. As an alternative to 
-		 SRV records (not all SIP clients support SRV lookup), a subdomain of 
-		 the master domain can be defined for SIP purposes (like 
-		 sip.mydomain.net pointing to same IP address as the SRV record for 
-		 mydomain.net). By ignoring the realm_prefix "sip.", at registration,
-		 sip.mydomain.net will be equivalent to mydomain.net .
+ SRV records (not all SIP clients support SRV lookup), a subdomain of 
+ the master domain can be defined for SIP purposes (like 
+ sip.mydomain.net pointing to same IP address as the SRV record for 
+ mydomain.net). By ignoring the realm_prefix "sip.", at registration,
+ sip.mydomain.net will be equivalent to mydomain.net .
 
 
 *Default value is NULL (none).*
@@ -231,8 +231,8 @@ modparam("registrar", "realm_prefix", "sip.")
 
 
 If set to 1 then AOR comparison will be case 
-		sensitive (as RFC3261 instructs), if set to 0 then 
-		AOR comparison will be case insensitive.
+sensitive (as RFC3261 instructs), if set to 0 then 
+AOR comparison will be case insensitive.
 
 
 *Default value is 1.*
@@ -249,15 +249,15 @@ modparam("registrar", "case_sensitive", 0)
 
 
 Registrar will store the value of the AVP configured by this 
-		parameter in the received column in the user location database. 
-		It will leave the column empty if the AVP is empty. The AVP should 
-		contain a SIP URI consisting of the source IP, port,
-		and protocol of the REGISTER message being processed.
+parameter in the received column in the user location database. 
+It will leave the column empty if the AVP is empty. The AVP should 
+contain a SIP URI consisting of the source IP, port,
+and protocol of the REGISTER message being processed.
 
 
 > [!NOTE]
 > The value of this parameter should be the same as the value of 
-			corresponding parameter of nathelper module.
+corresponding parameter of nathelper module.
 
 
 *Default value is "NULL" (disabled).*
@@ -274,7 +274,7 @@ modparam("registrar", "received_avp", "$avp(rcv)")
 
 
 The name of the parameter that will be appended to Contacts of 
-		200 OK when the received URI was set by nathelper module.
+200 OK when the received URI was set by nathelper module.
 
 
 *Default value is "received".*
@@ -291,11 +291,11 @@ modparam("registrar", "received_param", "rcv")
 
 
 The parameter can be used to limit the number of contacts per 
-		AOR (Address of Record) in the user location database. Value 0 
-		disables the check.
-		This is the default value and will be used only if no other value
-		(for max_contacts) is passed as parameter to the save() function.
-		That's it - the function parameter overwride this global parameter.
+AOR (Address of Record) in the user location database. Value 0 
+disables the check.
+This is the default value and will be used only if no other value
+(for max_contacts) is passed as parameter to the save() function.
+That's it - the function parameter overwride this global parameter.
 
 
 *Default value is 0.*
@@ -314,15 +314,15 @@ modparam("registrar", "max_contacts", 10)
 
 
 The registrar can generate 5xx reply to REGISTER in various 
-		situations. It can, for example, happen when the 
-		`max_contacts` parameter is set and the
-		processing of REGISTER request would exceed the limit. In this case 
-		the registrar would generate "503 Service Unavailable" response.
+situations. It can, for example, happen when the 
+`max_contacts` parameter is set and the
+processing of REGISTER request would exceed the limit. In this case 
+the registrar would generate "503 Service Unavailable" response.
 
 
 If you want to add the Retry-After header field in 5xx replies, set 
-		this parameter to a value grater than zero (0 means do not add the 
-		header field). See section 20.33 of RFC3261 for more details.
+this parameter to a value grater than zero (0 means do not add the 
+header field). See section 20.33 of RFC3261 for more details.
 
 
 *Default value is 0 (disabled).*
@@ -340,8 +340,8 @@ modparam("registrar", "retry_after", 30)
 
 
 Header which contains a socket description (proto:IP:port) to override
-		the received socket info. The header will be search and used only if 
-		the flag 's' (Socket header) is set at "save()" time.
+the received socket info. The header will be search and used only if 
+the flag 's' (Socket header) is set at "save()" time.
 
 
 This makes sense only in multiple replicated servers scenarios.
@@ -362,9 +362,9 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 
 
 AVP to store the modified binding that is set during cached
-		registrations scenario (when REGISTER is forwarded to another
-		registrar).  The AVP will be used to extract the imposed
-		expires from the 200ok reply.
+registrations scenario (when REGISTER is forwarded to another
+registrar).  The AVP will be used to extract the imposed
+expires from the 200ok reply.
 
 
 This makes sense only in cached registrations scenario.
@@ -385,15 +385,15 @@ modparam("registrar", "mcontact_avp", "$avp(register)")
 
 
 AVP to store specific additional information for each registration.
-		This information is read from the AVP and stored (in memory, db or both)
-		at every registrar 'save'. When a registrar 'lookup' or 'registered'
-		function is called, the *attr_avp* is populated with
-		the value saved at [re]registration.
+This information is read from the AVP and stored (in memory, db or both)
+at every registrar 'save'. When a registrar 'lookup' or 'registered'
+function is called, the *attr_avp* is populated with
+the value saved at [re]registration.
 
 
 When doing call forking, the avp will hold multiple values. The position of
-		the corresponding attribute information in *attr_avp* is
-		equal to the branch index. An example scenario is given below.
+the corresponding attribute information in *attr_avp* is
+equal to the branch index. An example scenario is given below.
 
 
 *Default value is NULL.*
@@ -426,7 +426,7 @@ branch_route[branch_route_1] {
 
 
 The string that will be used in XORing when generating
-		temporary GRUUs.
+temporary GRUUs.
 
 
 *If not set, 'OpenSIPS' is the default secret.*
@@ -464,20 +464,20 @@ modparam("registrar", "disable_gruu", 0)
 
 
 The function processes a REGISTER message. It can add, remove or 
-		modify usrloc records depending on Contact and Expires HFs in the 
-		REGISTER message. On success, 200 OK will be returned listing all 
-		contacts that are currently in usrloc. On an error, error message 
-		will be send with a short description in reason phrase.
+modify usrloc records depending on Contact and Expires HFs in the 
+REGISTER message. On success, 200 OK will be returned listing all 
+contacts that are currently in usrloc. On an error, error message 
+will be send with a short description in reason phrase.
 
 
 Meaning of the parameters is as follows:
 
 
 - *domain* - Logical domain within registrar. 
-			If database is used then this must be name of the table which 
-			stores the contacts.
+If database is used then this must be name of the table which 
+stores the contacts.
 - *flags* (optional)- string of 
-			the following flags:
+the following flags:
 
   - *'m' (Memory only)* - save the 
 					contacts only in memory cache without no DB operation;
@@ -534,8 +534,8 @@ Meaning of the parameters is as follows:
 					parameter in it's Path uri.
 This parameter is a string composed of a set of flags.
 - *aor* (optional) - Variable contain a custom
-			AOR; if missing, the AOR will be taken from the default place - 
-			the TO header URI.
+AOR; if missing, the AOR will be taken from the default place - 
+the TO header URI.
 
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
@@ -569,20 +569,14 @@ Meaning of the parameters is as follows:
 
 
 - *domain* - Logical domain within registrar. 
-			If database is used then this must be name of the table which 
-			stores the contacts.
+If database is used then this must be name of the table which 
+stores the contacts.
 - *AOR* - address-of-record to be searched (SIP URI)
-- *target (optional)* -
-				may be specified in two ways:
-				
-				
-					**single delete -**
-						Specific contact to be deleted (SIP URI)
-				
-				
-					**multi delete -**
-						IP/hostname of the AOR's contacts which will be deleted
-
+- *target (optional)* - may be specified in two ways:
+	- **single delete -**
+		Specific contact to be deleted (SIP URI)
+	- **multi delete -**
+		IP/hostname of the AOR's contacts which will be deleted
 
 This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -606,23 +600,23 @@ remove("location", "sip:bob@atlanta.com", "$var(next_hop)");
 
 
 The functions extracts username from Request-URI and tries to find 
-		all contacts for the username in usrloc. If there are no such 
-		contacts, -1 will be returned.  If there are such contacts, 
-		Request-URI will be overwritten with the contact that has
-		the highest q value and optionally the rest will be appended to 
-		the message (depending on append_branches parameter value).
+all contacts for the username in usrloc. If there are no such 
+contacts, -1 will be returned.  If there are such contacts, 
+Request-URI will be overwritten with the contact that has
+the highest q value and optionally the rest will be appended to 
+the message (depending on append_branches parameter value).
 
 
 If the method_filtering option is enabled, the lookup function
-		will return only the contacts that support the method of the
-		processed request.
+will return only the contacts that support the method of the
+processed request.
 
 
 Meaning of the parameters is as follows:
 
 
 - *domain* - Name of table that should be used 
-			for the lookup.
+for the lookup.
 - *flags*(optional)
 
   - *'b' (no Branches)* - this flag controls how
@@ -646,7 +640,7 @@ Meaning of the parameters is as follows:
   - *'e' (Use extended regexp)* - this flag 
 				enables using of extended regexp format for the 'u' flag.
 - *AOR* (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This must be a variable.
+missing, the RURI is used as AOR; This must be a variable.
 
 
 Return codes:
@@ -687,29 +681,30 @@ switch ($retcode) {
 
 
 The function returns true if an AOR is registered, false otherwise.
-		The function does not modify the message being process.
+The function does not modify the message being process.
 
 
-NOTE: if called for a reply (from onreply_route), you must pass an
-		AOR (as parameter), otherwise the function will fail.
+> [!NOTE]
+> If called for a reply (from onreply_route), you must pass an
+> AOR (as parameter), otherwise the function will fail.
 
 
 Meaning of the parameters is as follows:
 
 
 - *domain* - Name of table that should be 
-			used for the lookup.
+used for the lookup.
 - *AOR* (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This must be a variable.
+missing, the RURI is used as AOR; This must be a variable.
 - *callid* (optional)- callid to check if a 
-			contact if registered with this callid (this may help you to 
-			make distinction between newly registered contact (callid 
-			not registered so far) and re-registration (callid already 
-			registered).
+contact if registered with this callid (this may help you to 
+make distinction between newly registered contact (callid 
+not registered so far) and re-registration (callid already 
+registered).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
+BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
 
 ```opensips title="registered usage"
@@ -729,16 +724,16 @@ if (registered("location","$fu")) {
 
 
 This function returns true if there are any other contacts registered,
-		different from the ones from the IPs avp.
+different from the ones from the IPs avp.
 
 
 Meaning of the parameters is as follows:
 
 
 - *domain* - Name of table that should be 
-			used for contacts lookup.
+used for contacts lookup.
 - *IPs* - an AVP containing the IP's that
-				will be compared with the contacts from usrloc.
+will be compared with the contacts from usrloc.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -759,8 +754,8 @@ if (is_other_contact("location", "$avp(ips)")) {
 
 
 Adds to the current REGISTER request a new header with 
-		"hdr_name" which contains the description of the
-		received socket (proto:ip:port)
+"hdr_name" which contains the description of the
+received socket (proto:ip:port)
 
 
 This makes sense only in multiple replicated servers scenarios.
@@ -822,65 +817,65 @@ Number of rejected registrations.
 
 
 It was removed as global option, as the "lookup" 
-			function takes this option via the flag "b" (append Branches) 
-			See the documentation of the "lookup" function.
+function takes this option via the flag "b" (append Branches) 
+See the documentation of the "lookup" function.
 
 
 **Q: What happened with the old "method_filtering" module parameter?**
 
 
 It was removed as global option, as the "lookup" 
-			function takes this option via the flag "m" (Method filtering) 
-			See the documentation of the "lookup" function.
+function takes this option via the flag "m" (Method filtering) 
+See the documentation of the "lookup" function.
 
 
 **Q: What happened with the old "sock_flag" module parameter?**
 
 
 It was removed as global option, as the "save" 
-			function takes this option via the flag "s" (Socket header) 
-			See the documentation of the "save" function.
+function takes this option via the flag "s" (Socket header) 
+See the documentation of the "save" function.
 
 
 **Q: What happened with the old "use_path" and "path_mode" module parameters?**
 
 
 They were removed as global option, as the "save" 
-			function takes these options via the flag "px" (path support) 
-			See the documentation of the "save" function.
+function takes these options via the flag "px" (path support) 
+See the documentation of the "save" function.
 
 
 **Q: What happened with the old "path_use_received" module parameter?**
 
 
 It was removed as global option, as the "save" 
-			function takes this option via the flag "v" (path receiVed) 
-			See the documentation of the "save" function.
+function takes this option via the flag "v" (path receiVed) 
+See the documentation of the "save" function.
 
 
 **Q: What happened with the old "nat_flag" module parameter?**
 
 
 It was removed, as the module internally loads this value from the
-			"USRLOC" module (see the "nat_bflag"
-			USRLOC parameter).
+"USRLOC" module (see the "nat_bflag"
+USRLOC parameter).
 
 
 **Q: What happened with the old "use_domain" module parameter?**
 
 
 It was removed, as the module internally loads this option from the
-			"USRLOC" module. This was done in order to simplify the
-			configuration.
+"USRLOC" module. This was done in order to simplify the
+configuration.
 
 
 **Q: What happened with the old "save_noreply" and "save_memory" functions?**
 
 
 There functions were merged into the new 
-			"save(domain,flags)" functions. If a reply should be
-			sent or if the DB should be updated also is controlled via the
-			flags.
+"save(domain,flags)" functions. If a reply should be
+sent or if the DB should be updated also is controlled via the
+flags.
 
 
 **Q: Where can I find more about OpenSIPS?**
@@ -893,28 +888,28 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 
 
 **Q: What happened to the desc_time_order parameter?**
 
 
 It was removed, as its functionality was mmigrate into usrloc
-			module, were there is a parameter with the same name.
+module, were there is a parameter with the same name.
 <!-- CONTRIBUTORS -->
 
 ### License

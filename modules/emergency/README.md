@@ -1,6 +1,6 @@
 ---
 title: "Emergency Call Module"
-description: "The emergency module provides emergency call treatment for OpenSIPS, following the architecture i2 specification of the American entity NENA. (National Emergency Number Association). The NENA solution routes the emergency call to a closer gateway (ESGW) and this forward the call to a PSAP(call ce..."
+description: "The emergency module provides emergency call treatment for OpenSIPS, following the architecture i2 specification of the American entity NENA."
 ---
 
 ## Admin Guide
@@ -23,7 +23,7 @@ The emergency module allows the OpenSIPS play the role of a Call Server, a Proxy
 
 
 1.2. Scenario I: The VSP that originating the call is the same as handle the call and sends the routing information request to the VPC. 
-	
+
 		The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, the OpenSIPS will get caller location information from specific headers and body in the INVITE. With this information along configuration parameters defined for this module, the opensips implements the v2 interface that queries the VPC for routing information (i.e., ESQK, LRO, and either the ERT or ESGWRI), selects the proper ESGW based on the ESGWRI. When the call ends the OpenSIPS receives BYE request, it warns the VPC for clean your data that is based on the call.	
 		The opensips through failure() command  will try to route the calls via the PSTN using a national contingency number(LRO) if normal routing fails.
 
@@ -53,7 +53,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *libcurl*.
@@ -116,29 +116,27 @@ modparam("emergency", "db_table_report", "emergency_report")
 #### proxy_hole (integer)
 
 
-This parameter define what role the opensips will take to treat emergency   
-   		call:
+This parameter define what role the opensips will take to treat emergency call:
+- 0 – The opensips is the Call Server in scenario I or the Routing Proxy in 
+	scenario II depend on flag_third_enterprise parameter. In this hole the 
+	opensips implements the V2 interface, directly queries the VPC for 
+	ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
+	Via the PSTN using the LRO if routing fails.
 
-	    0 – The opensips is the Call Server in scenario I or the Routing Proxy in 
-	        scenario II depend on flag_third_enterprise parameter. In this hole the 
-	        opensips implements the V2 interface, directly queries the VPC for 
-	        ESGWRI/ESQK, selects the proper ESGW given the ESGWRI and routes calls 
-	        Via the PSTN using the LRO if routing fails.
+- 1 – The opensips is the Call Server in scenario II that sends the INVITE on 
+	emergency call to a Routing Proxy provider. The Routing Proxy provider 
+	implements the V2 interface.
 
-	    1 – The opensips is the Call Server in scenario II that sends the INVITE on 
-	        emergency call to a Routing Proxy provider. The Routing Proxy provider 
-	        implements the V2 interface.
+- 2 - The opensips is the Call Server in scenario III that sends the INVITE on 
+	emergency call to a Redirect Server. The Redirect Server obtains the 
+	ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
+	ESGWRI/ESQK in the header contact in the SIP response. The opensips  
+	selects the proper ESGW based on the ESGWRI.
 
-	    2 - The opensips is the Call Server in scenario III that sends the INVITE on 
-	 		emergency call to a Redirect Server. The Redirect Server obtains the 
-	 		ESGWRI/ESQK from the VPC. It returns the call to the opensips with the 
-	 		ESGWRI/ESQK in the header contact in the SIP response. The opensips  
-	 		selects the proper ESGW based on the ESGWRI.
-
-	    3 - The opensips is the Redirect Proxy in scenario III that receives the 
-	        INVITE on emergency call from Call Server. The Redirect Server obtains 
-	        the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
-	        Call Server.
+- 3 - The opensips is the Redirect Proxy in scenario III that receives the 
+	INVITE on emergency call from Call Server. The Redirect Server obtains 
+	the ESGWRI/ESQK from the VPC and sends in the SIP 3xx response to the 
+	Call Server.
 
 
 *Default value is "0".*
@@ -156,8 +154,8 @@ modparam("emergency", "proxy_hole", 0))
 
 
 Indicates whether OpenSIPS is the VSP Call Server in Scenario I    
-	    (flag_third_enterprise = 0) or is the Routing Proxy of a third company in 
-	    scenario II (flag_third_enterprise = 1).
+    (flag_third_enterprise = 0) or is the Routing Proxy of a third company in 
+    scenario II (flag_third_enterprise = 1).
 
 
 *Default value is "0".*
@@ -313,8 +311,8 @@ modparam("emergency", " vsp_cert_uri",“https://cs34.exam.com/certificate.crt�
 
 
 The vpc_organization_name is VPC company name’s. VPC is the routing  
-	    information provider to emengency call. This parameter is optional field in 
-	    the NENA v2 interface(call server - VPC).
+    information provider to emengency call. This parameter is optional field in 
+    the NENA v2 interface(call server - VPC).
 
 
 *Default value is "NULL".*
@@ -332,8 +330,8 @@ modparam("emergency", " vpc_organization_name", “Exemple VPC”)
 
 
 The vpc_hostname is VSP hostname’s. VPC is the routing information provider 
-	    to emengency call. This parameter is optional field in the NENA v2 interface 
-	    (call server - VPC).
+    to emengency call. This parameter is optional field in the NENA v2 interface 
+    (call server - VPC).
 
 
 *Default value is "NULL".*
@@ -351,8 +349,8 @@ modparam("emergency", "vpc_hostname", “exemple_vpc.com”)
 
 
 The vpc_nena-id is the NENA administered company identifier (NENA Company 
-	    ID) of the VPC. VPC is the routing information provider to emengency call. 
-	    This parameter is optional field in the NENA v2 interface(call server – VPC).
+    ID) of the VPC. VPC is the routing information provider to emengency call. 
+    This parameter is optional field in the NENA v2 interface(call server – VPC).
 
 
 *Default value is "NULL".*
@@ -370,9 +368,9 @@ modparam("emergency", "vpc_nena_id", “nena2”)
 
 
 The vpc_contact is a telephone number by which the directly VPC operator 
-	    can be reached 24 hours a day, 7 days a week. VPC is the routing information 
-	    provider to emengency call. This parameter is optional field in the NENA v2
-	    interface(call server - VPC).
+    can be reached 24 hours a day, 7 days a week. VPC is the routing information 
+    provider to emengency call. This parameter is optional field in the NENA v2
+    interface(call server - VPC).
 
 
 *Default value is "NULL".*
@@ -390,9 +388,9 @@ modparam("emergency", "vpc_contact", “tel:+398348975439823”)
 
 
 The vpc_cert_uri_vpc provides a means of directly obtaining the VESA(Valid 
-	    Emergency Services Authority) issued certificate for the VPC. VPC is the 
-	    Routing information provider to emengency call. This parameter is optional
-	    field in the NENA v2 interface(call server - VPC).
+    Emergency Services Authority) issued certificate for the VPC. VPC is the 
+    Routing information provider to emengency call. This parameter is optional
+    field in the NENA v2 interface(call server - VPC).
 
 
 *Default value is "NULL".*
@@ -429,8 +427,8 @@ modparam("emergency", "source_organization_name", “Exemple Routing Source”)
 
 
 The sorce_hostname is Source hostname’s. Source is node directly requesting 
-	    emergency call routing from the VPC. This parameter is  mandatory field in 
-	    the NENA v2 interface(call server - VPC).
+    emergency call routing from the VPC. This parameter is  mandatory field in 
+    the NENA v2 interface(call server - VPC).
 
 
 *Default value is "NULL".*
@@ -544,9 +542,9 @@ modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 
 
 The emergency_call_server is the url of the Routing Proxy/Redirect Server
-		that will handle  the emergency call in cenario II. Its is mandatory if Opensips 
-		act as Call Server in scenario II (proxy_hole = 1 and flag_third_enterprise = 0) 
-		or Call Server in scenario III (proxy_hole = 2).
+that will handle  the emergency call in cenario II. Its is mandatory if Opensips 
+act as Call Server in scenario II (proxy_hole = 1 and flag_third_enterprise = 0) 
+or Call Server in scenario III (proxy_hole = 2).
 
 
 *Default value is "NULL".*
@@ -578,15 +576,12 @@ This function can be used from the *REQUEST* routes.
 ```opensips title="emergency_call() usage"
 ...
 # Example of treat of emergency call
-
-    if (emergency_call()){
-
-        xlog("emergency call\n");
-        t_on_failure("emergency_call");
-        t_relay();
-        exit;
-
-  	}
+if (emergency_call()){
+    xlog("emergency call\n");
+    t_on_failure("emergency_call");
+    t_relay();
+    exit;
+}
 ...
 		
 ```
@@ -608,15 +603,13 @@ This function can be used from the *FAILURE* routes.
 ```opensips title="failure() usage"
 ...
 # Example od treat of contingency in emergency call
-
-    if (failure()) {
-        if (!t_relay()) {
-           send_reply("500","Internal Error");
-        };
-        exit;
-    }
+if (failure()) {
+       if (!t_relay()) {
+          send_reply("500","Internal Error");
+       };
+       exit;
+}
 ...
-		
 ```
 <!-- CONTRIBUTORS -->
 

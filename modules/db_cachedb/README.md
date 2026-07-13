@@ -12,7 +12,7 @@ title: "db_cachedb Module"
 
 
 The db_cachedb module will expose the same front db api, however it will run on top
-				of a NoSQL back-end, emulating the SQL calls to the back-end specific queries.
+of a NoSQL back-end, emulating the SQL calls to the back-end specific queries.
 
 				Thus, any OpenSIPS module that would regularily need a regular SQL-based database,
 				will now be able to run over a NoSQL back-end, allowing for a much easier distribution
@@ -32,7 +32,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -51,7 +51,6 @@ The URL for the CacheDB back-end to be used. It can be set more than one time.
 ...
 modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017/db.col")
 ...
-                
 ```
 
 
@@ -74,7 +73,6 @@ loadmodule "cachedb_mongodb.so"
 modparam("db_cachedb","cachedb_url","mongodb:mycluster://127.0.0.1:27017/my_db.col")
 modparam("auth_db","db_url","cachedb://mongodb:mycluster")
 ...
-                
 ```
 
 
@@ -107,7 +105,7 @@ Since there are many OpenSIPS modules that currently use the DB interface, it wa
 
 
 Since the NoSQL backends do not usually have a strict schema involved,
-				we do not provide scripts for creating such schemas, since the insertion ops will trigger the dynamically creation of the schema and info.
+we do not provide scripts for creating such schemas, since the insertion ops will trigger the dynamically creation of the schema and info.
 
 				Still, a specific data collection needs to be present, and that is the equivalent of the 'version' table from the SQL. Since most modules check the version table at the module setup, it's the user's responsability to setup such a 'version' collection in the respective NoSQL back-end.
 
