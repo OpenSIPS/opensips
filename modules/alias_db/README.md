@@ -10,15 +10,15 @@ description: "ALIAS_DB module can be used as an alternative for user aliases via
 
 
 ALIAS_DB module can be used as an alternative for user aliases
-	via usrloc. The main feature is that it does not store all adjacent
-	data as for user location and always uses database for search (no
-	memory caching).
+via usrloc. The main feature is that it does not store all adjacent
+data as for user location and always uses database for search (no
+memory caching).
 
 
 Having no memory caching, search speed might decrease but 
-	provisioning is easier. With very fast databases like MySQL, speed
-	penalty can be lowered. Also, the search can be performed on different
-	tables in the same script.
+provisioning is easier. With very fast databases like MySQL, speed
+penalty can be lowered. Also, the search can be performed on different
+tables in the same script.
 
 
 ### Dependencies
@@ -37,7 +37,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -130,8 +130,8 @@ modparam("alias_db", "alias_domain_column", "adomain")
 
 
 Specifies whether to use or not the domain from R-URI when searching
-		for alias. If set to 0, the domain from R-URI is not used, if set to
-		1 the domain from R-URI is used.
+for alias. If set to 0, the domain from R-URI is not used, if set to
+1 the domain from R-URI is used.
 
 
 *Default value is "0".*
@@ -148,7 +148,7 @@ modparam("alias_db", "use_domain", 1)
 
 
 Specifies the prefix to be stripped from the domain in R-URI before
-		doing the search.
+doing the search.
 
 
 *Default value is "NULL".*
@@ -165,11 +165,11 @@ modparam("alias_db", "domain_prefix", "sip.")
 
 
 If the alias resolves to many SIP IDs, the first is replacing
-			the R-URI, the rest are added as branches.
+the R-URI, the rest are added as branches.
 
 
 *Default value is "0" (0 - don't add branches;
-			1 - add branches).*
+1 - add branches).*
 
 
 ```opensips title="Set append_branches parameter"
@@ -186,19 +186,19 @@ modparam("alias_db", "append_branches", 1)
 
 
 The function takes the R-URI and search to see whether it is an alias
-		or not. If it is an alias for a local user, the R-URI is replaced with
-		user's SIP uri.
+or not. If it is an alias for a local user, the R-URI is replaced with
+user's SIP uri.
 
 
 The function returns TRUE if R-URI is alias and it was replaced by
-		user's SIP uri.
+user's SIP uri.
 
 
 Meaning of the parameters is as follows:
 
 
 - *table_name* - the name of the table
-				where to search for alias. It can include pseudo-variables.
+where to search for alias. It can include pseudo-variables.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.

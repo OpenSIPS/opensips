@@ -10,16 +10,16 @@ description: "The pua_mi offers the possibility to publish presence information 
 
 
 The pua_mi offers the possibility to publish presence
-	         information and subscribe to presence information via MI
- 	         transports.
+information and subscribe to presence information via MI
+transports.
 
 
 Using this module you can create independent applications/scripts to
-		publish not sip-related information (e.g., system resources like
-		CPU-usage, memory, number of active subscribers ...).
-	        Also, this module allows non-SIP speaking applications
-		to subscribe presence information kept in a SIP presence
-	        server.
+publish not sip-related information (e.g., system resources like
+CPU-usage, memory, number of active subscribers ...).
+Also, this module allows non-SIP speaking applications
+to subscribe presence information kept in a SIP presence
+server.
 
 
 ### Dependencies
@@ -38,7 +38,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *none*
@@ -54,7 +54,7 @@ The following libraries or applications must be installed before running
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 
 
 ### Exported MI Functions
@@ -70,25 +70,25 @@ Command parameters:
 					- e.g. sip:system@opensips.org
 - *expires*
 					- Relative expires time in
-					seconds (e.g. 3600).
+seconds (e.g. 3600).
 - *event package*
 					- Event package that is
-		target of published information (e.g. presence).
+target of published information (e.g. presence).
 - *content type*
 					- Content type of published
-		information (e.g. application/pidf+xml) or . if no
-		information is enclosed.
+information (e.g. application/pidf+xml) or . if no
+information is enclosed.
 - *ETag*
 					- ETag that publish should
-		match or . if no ETag is given.
+match or . if no ETag is given.
 - *extra_headers*
 					- Extra headers added to PUBLISH
-		request or . if no extra headers.
+request or . if no extra headers.
 - *body*
 					- The body of the publish
-		request containing published information or missing if
-		no published information.
-		It has to be a single line for FIFO transport.
+request containing published information or missing if
+no published information.
+It has to be a single line for FIFO transport.
 
 
 ```bash title="pua_publish FIFO example"
@@ -109,15 +109,14 @@ application/pidf+xml
 
 
 Command parameters:
-
-
-- *presentity_uri*
-					- e.g. sip:presentity@opensips.org
-- *watcher_uri*
-					- e.g. sip:watcher@opensips.org
+- *presentity_uri* - e.g. sip:presentity@opensips.org
+- *watcher_uri* - e.g. sip:watcher@opensips.org
+- *event_package*
+- *expires* - Relative time in seconds for the desired validity of the subscription.
+- *presentity_uri* - e.g. sip:presentity@opensips.org
+- *watcher_uri* - e.g. sip:watcher@opensips.org
 - *event package*
-- *expires*
-					- Relative time in seconds for the desired validity of the subscription.
+- *expires* - Relative time in seconds for the desired validity of the subscription.
 <!-- CONTRIBUTORS -->
 
 ### License

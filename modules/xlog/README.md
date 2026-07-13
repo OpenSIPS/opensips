@@ -10,19 +10,19 @@ description: "This module provides the possibility to print user formatted log o
 
 
 This module provides the possibility to print user formatted log or
-		debug messages from OpenSIPS scripts, similar to printf function. 
-		A C-style printf specifier is replaced with a part of the SIP request or other
-		variables from system.
-		[sec implemented specifiers](#implemented_specifiers) shows what can be printed
-		out.
+debug messages from OpenSIPS scripts, similar to printf function. 
+A C-style printf specifier is replaced with a part of the SIP request or other
+variables from system.
+[sec implemented specifiers](#implemented_specifiers) shows what can be printed
+out.
 
 
 ### Implemented Specifiers
 
 
 In the xlog function, you use pseudo-variables, that are a part
-	of OpenSIPS core and are used by other modules as well (e.g., avpops
-	in the function avp_printf())
+of OpenSIPS core and are used by other modules as well (e.g., avpops
+in the function avp_printf())
 
 
 The most important changes from earlier versions of OpenSIPS are:
@@ -30,14 +30,14 @@ The most important changes from earlier versions of OpenSIPS are:
 
 - - '%' has been replaced by '$'
 - - to print a header, use now $hdr(header_name[index]) instead of
-		%{header_name[index]}
+%{header_name[index]}
 - - to print an AVP, use now $avp([si]:avp_id[index]) instead of
-		%{[si]:avp_id[index]} or $avp([$avp_alias[index]) instead of
-		%{[$avp_alias[index]}
+%{[si]:avp_id[index]} or $avp([$avp_alias[index]) instead of
+%{[$avp_alias[index]}
 
 
 The full list of available pseudo-variables in OpenSIPS is availabe at:
-	[http://opensips.org/dokuwiki/](http://opensips.org/dokuwiki/)
+[http://opensips.org/dokuwiki/](http://opensips.org/dokuwiki/)
 
 
 ### Dependencies
@@ -56,7 +56,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -119,11 +119,11 @@ Meaning of the parameters are as follows:
   - L_INFO - log level 3
   - L_DBG - log level 4
   - $pv - any valid pseudo-variable, that has an integer value.
-				See above options for valid log levels.
+See above options for valid log levels.
 If it is not a pseudo-variable, then what really matters is the
-			third letter of the value. If the log level is higher than the
-			"debug" global parameter, the message is not printed
-			to syslog.
+third letter of the value. If the log level is higher than the
+"debug" global parameter, the message is not printed
+to syslog.
 If this parameter is missing, the implicit log level is 'L_ERR'.
 - *format* - The formatted string to be printed.
 

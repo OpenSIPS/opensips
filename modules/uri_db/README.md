@@ -28,7 +28,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -44,7 +44,7 @@ URL of the database to be used.
 
 
 If the db_url string is empty, the default database URL
-		will be used.
+will be used.
 
 
 *Default value is "mysql://opensipsro:opensipsro@localhost/opensips".*
@@ -61,9 +61,9 @@ modparam("uri_db", "db_url", "mysql://username:password@localhost/opensips")
 
 
 The DB table that should be used. Its possible to use the
-		"subscriber" and "uri" table. If the
-		"uri" table should be used, an additional parameter
-		([use uri table](#param_use_uri_table)) must be set.
+"subscriber" and "uri" table. If the
+"uri" table should be used, an additional parameter
+([use uri table](#param_use_uri_table)) must be set.
 
 
 *Default value is "subscriber".*
@@ -128,7 +128,7 @@ modparam("uri_db", "uriuser_column", "uri_user")
 
 
 Specify if the "uri" table should be used for checkings
-		instead of "subscriber" table. A non-zero value means true.
+instead of "subscriber" table. A non-zero value means true.
 
 
 *Default value is "0 (false)".*
@@ -145,13 +145,13 @@ modparam("uri_db", "use_uri_table", 1)
 
 
 Specify if the domain part of the URI should be used to identify the
-		users (along with username). This is useful in multi domain setups, a 
-		non-zero value means true.
+users (along with username). This is useful in multi domain setups, a 
+non-zero value means true.
 
 
 This parameter is only evaluated for calls to "does_uri_exist",
-		all other functions checks the digest username and realm against the 
-		given username, if the "uri" table is used.
+all other functions checks the digest username and realm against the 
+given username, if the "uri" table is used.
 
 
 *Default value is "0 (false)".*
@@ -171,7 +171,7 @@ modparam("uri_db", "use_domain", 1)
 
 
 Check To username against URI table (if use_uri_table is set) or
-		digest credentials (no DB backend required).
+digest credentials (no DB backend required).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -190,7 +190,7 @@ if (check_to()) {
 
 
 Check From username against URI table (if use_uri_table is set) or
-		digest credentials (no DB backend required).
+digest credentials (no DB backend required).
 
 
 This function can be used from REQUEST_ROUTE.
@@ -212,7 +212,7 @@ Check if username in the request URI belongs to an existing user.
 
 
 As the checking is done against URI table (if use_uri_table is set) 
-		or subscriber table.
+or subscriber table.
 
 
 This function can be used from REQUEST_ROUTE.

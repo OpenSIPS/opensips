@@ -1,6 +1,6 @@
 ---
 title: "dialplan Module"
-description: "This module implements generic string translations based on matching and replacement rules. It can be used to manipulate R-URI or a PV and to translated to a new format/value."
+description: "This module implements generic string translations based on matching and replacement rules."
 ---
 
 ## Admin Guide
@@ -10,26 +10,26 @@ description: "This module implements generic string translations based on matchi
 
 
 This module implements generic string translations based on matching and
-	replacement rules. It can be used to manipulate R-URI or a PV and to 
-	translated to a new format/value.
+replacement rules. It can be used to manipulate R-URI or a PV and to 
+translated to a new format/value.
 
 
 ### How it works
 
 
 At startup, the module will load a set of transformation rules from a 
-	database. Every database raw will be stored in memory as a translation 
-	rule. Each rule will describe how the matching should be made, how the 
-	input value should be modified and which attributes should be set for 
-	the matching transformation.
+database. Every database raw will be stored in memory as a translation 
+rule. Each rule will describe how the matching should be made, how the 
+input value should be modified and which attributes should be set for 
+the matching transformation.
 
 
 The module expects an input value which will be matched against a rules
-	via regexp or string matching. Overlapping matching expressions can be
-	controlled via priorities. Once a rule is matched, the defined 
-	transformation (if any) is applied and the result is returned as output 
-	value. Also, if any string attribute is associated to the rule, this will 
-	be returned to the script along with the output value.
+via regexp or string matching. Overlapping matching expressions can be
+controlled via priorities. Once a rule is matched, the defined 
+transformation (if any) is applied and the result is returned as output 
+value. Also, if any string attribute is associated to the rule, this will 
+be returned to the script along with the output value.
 
 
 *The first matching rule will be processed.*
@@ -39,18 +39,18 @@ The module expects an input value which will be matched against a rules
 
 
 The module can be used to implement dialplans - do to auto completion of 
-	the dial numbers (like national to international), to convert generic 
-	numbers to specific numbers (like for emergency numbers).
+the dial numbers (like national to international), to convert generic 
+numbers to specific numbers (like for emergency numbers).
 
 
 Also the module can be used for detecting range or sets of numbers mapped 
-	on a service/case - attributes string can be used here to store extra 
-	information about the service/case.
+on a service/case - attributes string can be used here to store extra 
+information about the service/case.
 
 
 Non-SIP string translation can be implemented - like converting country 
-	names from all possible formats to a canonical format:
-	(UK, England, United Kingdom) -> GB.
+names from all possible formats to a canonical format:
+(UK, England, United Kingdom) -> GB.
 
 
 Any other string-base translation or detection for whatever other purposes.
@@ -60,11 +60,11 @@ Any other string-base translation or detection for whatever other purposes.
 
 
 Depending what kind of operation (translation, matching, etc) you want
-		to do with the module, you need to appropriate populate the DB records.
+to do with the module, you need to appropriate populate the DB records.
 
 
 The definition of the tables used by the dialplan module can be found
-		at [[http://www.opensips.org/html/docs/db/db-schema-1.4.x.html](http://www.opensips.org/html/docs/db/db-schema-1.4.x.html)#AEN1501](http://www.opensips.org/html/db-schema.html#AEN1501)
+at [[http://www.opensips.org/html/docs/db/db-schema-1.4.x.html](http://www.opensips.org/html/docs/db/db-schema-1.4.x.html)#AEN1501](http://www.opensips.org/html/db-schema.html#AEN1501)
 
 
 #### What to place in table
@@ -74,61 +74,61 @@ The definition of the tables used by the dialplan module can be found
 
 
 Recognize a number block in all forms (international, national)
-			and convert it to a canonical format (e.164)
+and convert it to a canonical format (e.164)
 
 
 - *match-op* = 1 (regexp)
 - *match_exp* = "^(0040|\+40|0|40)21[0-9]+" ;
-				regular expresion that will be used to match with this rule (if
-				the rule should be applied for the input string)
+regular expresion that will be used to match with this rule (if
+the rule should be applied for the input string)
 - *match_len* = 0 (not used for regexp op)
 - *subst_exp* = "^(0040|\+40|0|40)(.+)" ;
-				regular expresion used to do the transformation (first part
-				of the subst operation)
+regular expresion used to do the transformation (first part
+of the subst operation)
 - *repl_exp* = "40\2" ; second part of the 
-				subst (output) - linked to the subst_exp field; when both
-				defined, they work as a subst()
+subst (output) - linked to the subst_exp field; when both
+defined, they work as a subst()
 
 
 ##### String translation (regexp detection, replacement)
 
 
 Recognize the name of a country (multiple languages) and convert
-			it to a single fix value
+it to a single fix value
 
 
 - *match-op* = 1 (regexp)
 - *match_exp* = "^((Germany)|(Germania)|(Deutschland)|(DE))" ;
-				regular expresion that will be used to match with this rule (if
-				the rule should be applied for the input string)
+regular expresion that will be used to match with this rule (if
+the rule should be applied for the input string)
 - *match_len* = 0 (not used for regexp op)
 - *subst_exp* = NULL ;
-				when translation is actually a replacement, this field must 
-				be NULL.
+when translation is actually a replacement, this field must 
+be NULL.
 - *repl_exp* = "DE" ; static string to 
-				replace the input - whenever this rule will match, it will
-				return this string as output.
+replace the input - whenever this rule will match, it will
+return this string as output.
 
 
 ##### Number detection (regexp detection, no replacement)
 
 
 Recognize a block of numbers as belong to a single service and 
-			signalize this via an attribute.
+signalize this via an attribute.
 
 
 - *match-op* = 1 (regexp)
 - *match_exp* = "^021456[0-9]{5}" ;
-				regular expresion that will be used to match with this rule (if
-				the rule should be applied for the input string)
+regular expresion that will be used to match with this rule (if
+the rule should be applied for the input string)
 - *match_len* = 0 (not used for regexp op)
 - *subst_exp* = NULL ;
-				no translation
+no translation
 - *repl_exp* = NULL ; 
-				no translation
+no translation
 - *attrs* = "serviceX" ; 
-				whatever string you will get into OpenSIPS script and it will 
-				provide you more information (totally custom)
+whatever string you will get into OpenSIPS script and it will 
+provide you more information (totally custom)
 
 
 ##### String conversion (equal detection, replacement)
@@ -139,12 +139,12 @@ Recognize a fix string/number and replace it with something fix.
 
 - *match-op* = 0 (equal)
 - *match_exp* = "SIP server" ;
-				string to be matched
+string to be matched
 - *match_len* = 10
 - *subst_exp* = NULL ;
-				no subst translation
+no subst translation
 - *repl_exp* = "OpenSIPS" ; 
-				output string
+output string
 
 
 ### Dependencies
@@ -163,7 +163,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -179,7 +179,7 @@ The translation rules will be loaded using this database url.
 
 
 *Default value is 
-				"mysql://opensips:opensipsrw@localhost/osips".*
+"mysql://opensips:opensipsrw@localhost/osips".*
 
 
 ```opensips title="Set db_url parameter"
@@ -279,7 +279,7 @@ modparam("dialplan", "match_exp_col", "column_name")
 
 
 The column name to store the length of a string matching the 
-		match expression.
+match expression.
 
 
 *Default value is "match_len".*
@@ -348,7 +348,7 @@ modparam("dialplan", "attrs_col", "column_name")
 
 
 The pvar to store the rule's attributes, after translation (dp_translate() succeeds).
-		This parameter can be an AVP or a SCRIPT VAR.
+This parameter can be an AVP or a SCRIPT VAR.
 
 
 *Default value is "NULL".*
@@ -386,37 +386,37 @@ modparam("dialplan", "fetch_rows", 4000)
 
 
 Will try to translate the src string into dest string according to 
-	the translation rules with dialplan ID equal to id.
+the translation rules with dialplan ID equal to id.
 
 
 Meaning of the parameters is as follows:
 
 
 - *id* -the dialplan id of the possible matching rules.
-		This parameter can have the following types:
+This parameter can have the following types:
 
   - *integer*- the dialplan id is statically 
-			assigned
+assigned
   - *avp var* 
-			-the dialplan id is the value of an existing avp variable
+-the dialplan id is the value of an existing avp variable
   - *script var* 
-			-the dialplan id is the value of an existing script variable.
+-the dialplan id is the value of an existing script variable.
 - *src/dest* - input and output of the function.
-		If this parameter is missing the default parameter 
-		"ruri.user/ruri.user" will be used, thus translating 
-		the request uri.
+If this parameter is missing the default parameter 
+"ruri.user/ruri.user" will be used, thus translating 
+the request uri.
 Both src and dest can have the following types:
 
   - *R-URI*
 - the string is the r-uri or r-uri username
   - *avp var*
 -At input the function will get the input string from an existing 
-			avp variable. At output the function will add an avp with the 
-			value of the output string.
+avp variable. At output the function will add an avp with the 
+value of the output string.
   - *script var*
 -At input the function will get the input string from an existing 
-			script variable. At output the function will set an script variable
-			with the value of the output string.
+script variable. At output the function will set an script variable
+with the value of the output string.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
@@ -460,9 +460,8 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-		:dp_reload:
-		_empty_line_
-		
+:dp_reload:
+_empty_line_
 ```
 
 
@@ -470,7 +469,7 @@ MI DATAGRAM Command Format:
 
 
 It will apply a translation rule identified by a dialplan
-                id and an input string.
+id and an input string.
 
 
 Name: *dp_translate*
@@ -487,11 +486,10 @@ MI DATAGRAM Command Format:
 
 
 ```bash
-            :dp_translate:
-            dpid
-            input
-		_empty_line_
-		
+:dp_translate:
+dpid
+input
+_empty_line_
 ```
 
 
@@ -499,10 +497,10 @@ MI DATAGRAM Command Format:
 
 
 The modules requires one table in OpenSIPS database: dialplan.The SQL 
-		syntax to create them can be found in dialplan-create.sql     
-		script in the database directories in the opensips/scripts folder.
-		You can also find the complete database documentation on the
-		project webpage, [http://www.opensips.org/html/docs/db/db-schema-1.4.x.html](http://www.opensips.org/html/docs/db/db-schema-1.4.x.html).
+syntax to create them can be found in dialplan-create.sql     
+script in the database directories in the opensips/scripts folder.
+You can also find the complete database documentation on the
+project webpage, [http://www.opensips.org/html/docs/db/db-schema-1.4.x.html](http://www.opensips.org/html/docs/db/db-schema-1.4.x.html).
 
 
 ## Developer Guide

@@ -12,170 +12,170 @@ title: "permissions Module"
 
 
 The module can be used to determine if a call has appropriate 
-		permission to be established. Permission rules are stored in 
-		plaintext configuration files similar to
-		`hosts.allow` and `hosts.deny` files used by tcpd.
+permission to be established. Permission rules are stored in 
+plaintext configuration files similar to
+`hosts.allow` and `hosts.deny` files used by tcpd.
 
 
 When `allow_routing` function is 
-		called it tries to find a rule that matches selected fields of the 
-		message.
+called it tries to find a rule that matches selected fields of the 
+message.
 
 
 OpenSIPS is a forking proxy and therefore a single message can be sent 
-		to different destinations simultaneously. When checking permissions 
-		all the destinations must be checked and if one of them fails, the 
-		forwarding will fail.
+to different destinations simultaneously. When checking permissions 
+all the destinations must be checked and if one of them fails, the 
+forwarding will fail.
 
 
 The matching algorithm is as follows, first match wins:
 
 
 - Create a set of pairs of form (From, R-URI of branch 1), 
-			(From, R-URI of branch 2), etc.
+(From, R-URI of branch 2), etc.
 - Routing will be allowed when all pairs match an entry in the 
-			allow file.
+allow file.
 - Otherwise routing will be denied when one of pairs matches an 
-			entry in the deny file.
+entry in the deny file.
 - Otherwise, routing will be allowed.
 
 
 A non-existing permission control file is treated as if it were an 
-		empty file. Thus, permission control can be turned off by providing 
-		no permission control files.
+empty file. Thus, permission control can be turned off by providing 
+no permission control files.
 
 
 From header field and Request-URIs are always compared with regular 
-		expressions! For the syntax see the sample file: 
-		`config/permissions.allow`.
+expressions! For the syntax see the sample file: 
+`config/permissions.allow`.
 
 
 #### Registration Permissions
 
 
 In addition to call routing it is also possible to check REGISTER 
-		messages and decide--based on the configuration files--whether the 
-		message should be allowed and the registration accepted or not.
+messages and decide--based on the configuration files--whether the 
+message should be allowed and the registration accepted or not.
 
 
 Main purpose of the function is to prevent registration of "prohibited" 
-		IP addresses. One example, when a malicious user registers a contact 
-		containing IP address of a PSTN gateway, he might be able to bypass 
-		authorization checks performed by the SIP proxy. That is undesirable 
-		and therefore attempts to register IP address of a PSTN gateway should 
-		be rejected. Files `config/register.allow` and `config/register.deny` contain an example 
-		configuration.
+IP addresses. One example, when a malicious user registers a contact 
+containing IP address of a PSTN gateway, he might be able to bypass 
+authorization checks performed by the SIP proxy. That is undesirable 
+and therefore attempts to register IP address of a PSTN gateway should 
+be rejected. Files `config/register.allow` and `config/register.deny` contain an example 
+configuration.
 
 
 Function for registration checking is called `allow_register` and the algorithm is very 
-		similar to the algorithm described in 
-		[sec call routing](#call_routing). The only difference is in the way 
-		how pairs are created.
+similar to the algorithm described in 
+[sec call routing](#call_routing). The only difference is in the way 
+how pairs are created.
 
 
 Instead of From header field the function uses To header field because 
-		To header field in REGISTER messages contains the URI of the person 
-		being registered. Instead of the Request-URI of branches the function 
-		uses Contact header field.
+To header field in REGISTER messages contains the URI of the person 
+being registered. Instead of the Request-URI of branches the function 
+uses Contact header field.
 
 
 Thus, pairs used in matching will look like this: (To, Contact 1), 
-		(To, Contact 2), (To, Contact 3), and so on..
+(To, Contact 2), (To, Contact 3), and so on..
 
 
 The algorithm of matching is same as described in 
-		[sec call routing](#call_routing).
+[sec call routing](#call_routing).
 
 
 #### URI Permissions
 
 
 The module can be used to determine if request is
-		allowed to the destination specified by an URI stored in
-		a pvar.  Permission rules are stored in
-		plaintext configuration files similar to
-		`hosts.allow` and
-		`hosts.deny` used by tcpd.
+allowed to the destination specified by an URI stored in
+a pvar.  Permission rules are stored in
+plaintext configuration files similar to
+`hosts.allow` and
+`hosts.deny` used by tcpd.
 
 
 When `allow_uri`
-		function is called, it tries to find a rule that matches
-		selected fields of the message.
-		The matching algorithm is as follows, first match wins:
+function is called, it tries to find a rule that matches
+selected fields of the message.
+The matching algorithm is as follows, first match wins:
 
 
 - Create a pair <From URI, URI stored in pvar>.
 - Request will be allowed when the pair matches
-			an entry in the allow file.
+an entry in the allow file.
 - Otherwise request will be denied when the pair
-			matches an entry in the	deny file.
+matches an entry in the	deny file.
 - Otherwise, request will be allowed.
 
 
 A non-existing permission control file is treated as if it were an 
-		empty file. Thus, permission control can be turned off by providing 
-		no permission control files.
+empty file. Thus, permission control can be turned off by providing 
+no permission control files.
 
 
 From URI and URI stored in pvar are always compared with regular 
-		expressions! For the syntax see the sample file: 
-		`config/permissions.allow`.
+expressions! For the syntax see the sample file: 
+`config/permissions.allow`.
 
 
 #### Address Permissions
 
 
 The module can be used to determine if an address (IP
-		address and port) matches any of the IP subnets
-		stored in cached OpenSIPS database table.
-		Port 0 in cached database table matches any port.  IP
-		address and port to be matched can be either taken from
-		the request (allow_source_address) or given as pvar
-		arguments (allow_address).
+address and port) matches any of the IP subnets
+stored in cached OpenSIPS database table.
+Port 0 in cached database table matches any port.  IP
+address and port to be matched can be either taken from
+the request (allow_source_address) or given as pvar
+arguments (allow_address).
 
 
 Addresses stored in cached database table can be grouped
-		together into one or more groups specified by a group
-		identifier (unsigned integer).  Group
-		identifier is given as argument to allow_address and
-		allow_source_address functions.
+together into one or more groups specified by a group
+identifier (unsigned integer).  Group
+identifier is given as argument to allow_address and
+allow_source_address functions.
 
 
 #### Trusted Requests
 
 
 The module can be used to determine if an incoming
-		request can be trusted without authentication.
+request can be trusted without authentication.
 
 
 When `allow_trusted`
-		function is called, it tries to find a rule that matches
-		the request.  Rules contain the following fields:
-		<source address, transport protocol, regular
-		expression>.
+function is called, it tries to find a rule that matches
+the request.  Rules contain the following fields:
+<source address, transport protocol, regular
+expression>.
 
 
 A requests is accepted if there exists a rule, where
 
 
 - source address is equal to source address of
-			request or source address given in pvar,
+request or source address given in pvar,
 - transport protocol is either "ANY" or equal to
-			transport protocol of request or transport
-			protocol given in pvar, and
+transport protocol of request or transport
+protocol given in pvar, and
 - regular expression is either empty (NULL in
-			database) or matches From URI of request.
+database) or matches From URI of request.
 
 
 Otherwise the request is rejected.
 
 
 Rules are stored in a database table specified by module
-		parameters.  There also exists a module parameter
-	        `dm_mode` that
-		determines if rules are cached into memory for faster
-		matching or if database is consulted for each invocation
-		of allow_trusted function call.
+parameters.  There also exists a module parameter
+`dm_mode` that
+determines if rules are cached into memory for faster
+matching or if database is consulted for each invocation
+of allow_trusted function call.
 
 
 ### Dependencies
@@ -194,7 +194,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -207,8 +207,8 @@ The following libraries or applications must be installed before running
 
 
 Default allow file used by functions without parameters. If you 
-		don't specify full pathname then the directory in which is the main 
-		config file is located will be used.
+don't specify full pathname then the directory in which is the main 
+config file is located will be used.
 
 
 *Default value is "permissions.allow".*
@@ -225,8 +225,8 @@ modparam("permissions", "default_allow_file", "/etc/permissions.allow")
 
 
 Default file containing deny rules. The file is used by functions
-		without parameters. If you don't specify full pathname then the 
-		directory in which the main config file is located will be used.
+without parameters. If you don't specify full pathname then the 
+directory in which the main config file is located will be used.
 
 
 *Default value is "permissions.deny".*
@@ -243,13 +243,13 @@ modparam("permissions", "default_deny_file", "/etc/permissions.deny")
 
 
 If set then allow_routing functions will check Request-URI of all 
-		branches (default). If disabled then only Request-URI of the first 
-		branch will be checked.
+branches (default). If disabled then only Request-URI of the first 
+branch will be checked.
 
 
 > [!WARNING]
 > Do not disable this parameter unless you really know what you 
-		are doing.
+are doing.
 
 
 *Default value is 1.*
@@ -266,9 +266,9 @@ modparam("permissions", "check_all_branches", 0)
 
 
 Suffix to be appended to basename to create filename of the allow 
-		file when version with one parameter of either 
-		`allow_routing` or
-		`allow_register` is used.
+file when version with one parameter of either 
+`allow_routing` or
+`allow_register` is used.
 
 
 > [!NOTE]
@@ -289,9 +289,9 @@ modparam("permissions", "allow_suffix", ".allow")
 
 
 Suffix to be appended to basename to create filename of the deny file 
-		when version with one parameter of either 
-		`allow_routing` or
-		`allow_register` is used.
+when version with one parameter of either 
+`allow_routing` or
+`allow_register` is used.
 
 
 > [!NOTE]
@@ -312,7 +312,7 @@ modparam("permissions", "deny_suffix", ".deny")
 
 
 This is URL of the database to be used to store rules used by 
-		`allow_trusted` function.
+`allow_trusted` function.
 
 
 *Default value is "NULL".*
@@ -329,9 +329,9 @@ modparam("permissions", "db_url", "dbdriver://username:password@dbhost/dbname")
 
 
 Name of database table containing IP subnet information used by
-		`allow_address` and
-                `allow_source_address`
-                functions.
+`allow_address` and
+`allow_source_address`
+functions.
 
 
 *Default value is "address".*
@@ -348,7 +348,7 @@ modparam("permissions", "address_table", "addr")
 
 
 Name of address table column containing group
-		identifier of the address.
+identifier of the address.
 
 
 *Default value is "grp".*
@@ -365,7 +365,7 @@ modparam("permissions", "grp_col", "group_id")
 
 
 Name of address table column containing IP address
-		part of the address.
+part of the address.
 
 
 *Default value is "ip_addr".*
@@ -382,7 +382,7 @@ modparam("permissions", "ip_addr_col", "ip_address")
 
 
 Name of address table column containing network mask of
-		the address.  Possible values are 0-32.
+the address.  Possible values are 0-32.
 
 
 *Default value is "mask".*
@@ -399,7 +399,7 @@ modparam("permissions", "mask_col", "subnet_length")
 
 
 Name of address table column containing port
-		part of the address.
+part of the address.
 
 
 *Default value is "port".*
@@ -416,7 +416,7 @@ modparam("permissions", "port_col", "prt")
 
 
 Database mode. 0 means non-caching, 1 means caching.
-		Valid only for allow_trusted function.
+Valid only for allow_trusted function.
 
 
 *Default value is 0 (non-caching).*
@@ -433,7 +433,7 @@ modparam("permissions", "db_mode", 1)
 
 
 Name of database table containing matching rules used by
-		`allow_register` function.
+`allow_register` function.
 
 
 *Default value is "trusted".*
@@ -450,8 +450,8 @@ modparam("permissions", "trusted_table", "pbx")
 
 
 Name of trusted table column containing source IP
-		address that is matched against source IP address of
-		received request.
+address that is matched against source IP address of
+received request.
 
 
 *Default value is "src_ip".*
@@ -468,13 +468,13 @@ modparam("permissions", "source_col", "source_ip_address")
 
 
 Name of trusted table column containing transport
-		protocol that is matched against transport protocol of
-		received request.  Possible values that can be stored in
-		proto_col are "any", "udp",
-		"tcp", "tls",
-		"sctp", and "none".  Value
-		"any" matches always and value
-		"none" never.
+protocol that is matched against transport protocol of
+received request.  Possible values that can be stored in
+proto_col are "any", "udp",
+"tcp", "tls",
+"sctp", and "none".  Value
+"any" matches always and value
+"none" never.
 
 
 *Default value is "proto".*
@@ -491,7 +491,7 @@ modparam("permissions", "proto_col", "transport")
 
 
 Name of trusted table column containing regular
-		expression that is matched against From URI.
+expression that is matched against From URI.
 
 
 *Default value is "from_pattern".*
@@ -508,8 +508,8 @@ modparam("permissions", "from_col", "regexp")
 
 
 Name of trusted table column containing a string
-		that is added as value to peer_tag AVP if peer_tag AVP
-                has been defined and if the peer matches.
+that is added as value to peer_tag AVP if peer_tag AVP
+has been defined and if the peer matches.
 
 
 *Default value is "tag".*
@@ -526,8 +526,8 @@ modparam("permissions", "tag_col", "peer_tag")
 
 
 If defined, the AVP will be
-                set as side effect of allow_trusted() call to not NULL
-                tag column value of the matching peer.
+set as side effect of allow_trusted() call to not NULL
+tag column value of the matching peer.
 
 
 *Default value is "undefined".*
@@ -547,9 +547,9 @@ modparam("permissions", "peer_tag_avp", "$avp(i:707)")
 
 
 Returns true if all pairs constructed as described in [sec call routing](#call_routing) have appropriate permissions according to 
-		the configuration files. This function uses default configuration 
-		files specified in `default_allow_file` and
-		`default_deny_file`.
+the configuration files. This function uses default configuration 
+files specified in `default_allow_file` and
+`default_deny_file`.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -568,19 +568,19 @@ if (allow_routing()) {
 
 
 Returns true if all pairs constructed as described in [sec call routing](#call_routing) have appropriate permissions according 
-		to the configuration files given as parameters.
+to the configuration files given as parameters.
 
 
 Meaning of the parameters is as follows:
 
 
 - *basename* - Basename from which allow 
-			and deny filenames will be created by appending contents of
-			`allow_suffix` and `deny_suffix`
-			parameters.
+and deny filenames will be created by appending contents of
+`allow_suffix` and `deny_suffix`
+parameters.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -599,8 +599,8 @@ if (allow_routing("basename")) {
 
 
 Returns true if all pairs constructed as described in 
-		[sec call routing](#call_routing) have appropriate permissions 
-		according to the configuration files given as parameters.
+[sec call routing](#call_routing) have appropriate permissions 
+according to the configuration files given as parameters.
 
 
 Meaning of the parameters is as follows:
@@ -608,12 +608,12 @@ Meaning of the parameters is as follows:
 
 - *allow_file* - File containing allow rules.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 - *deny_file* - File containing deny rules.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -632,19 +632,19 @@ if (allow_routing("rules.allow", "rules.deny")) {
 
 
 The function returns true if all pairs constructed as described in [sec registration permissions](#registration_permissions) have appropriate permissions 
-		according to the configuration files given as parameters.
+according to the configuration files given as parameters.
 
 
 Meaning of the parameters is as follows:
 
 
 - *basename* - Basename from which allow 
-			and deny filenames will be created by appending contents of
-			`allow_suffix` and `deny_suffix`
-			parameters.
+and deny filenames will be created by appending contents of
+`allow_suffix` and `deny_suffix`
+parameters.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -668,8 +668,8 @@ if (method=="REGISTER") {
 
 
 The function returns true if all pairs constructed as described in 
-		[sec registration permissions](#registration_permissions) have appropriate 
-		permissions according to the configuration files given as parameters.
+[sec registration permissions](#registration_permissions) have appropriate 
+permissions according to the configuration files given as parameters.
 
 
 Meaning of the parameters is as follows:
@@ -677,12 +677,12 @@ Meaning of the parameters is as follows:
 
 - *allow_file* - File containing allow rules.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 - *deny_file* - File containing deny rules.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -706,21 +706,21 @@ if (method=="REGISTER") {
 
 
 Returns true if the pair constructed as described in [sec uri permissions](#uri_permissions) have appropriate permissions 
-		according to the configuration files specified by the parameter.
+according to the configuration files specified by the parameter.
 
 
 Meaning of the parameter is as follows:
 
 
 - *basename* - Basename from which allow 
-			and deny filenames will be created by appending contents of
-			`allow_suffix` and `deny_suffix`
-			parameters.
+and deny filenames will be created by appending contents of
+`allow_suffix` and `deny_suffix`
+parameters.
 If the parameter doesn't contain full pathname then the function 
-			expects the file to be located in the same directory as the main 
-			configuration file of the server.
+expects the file to be located in the same directory as the main 
+configuration file of the server.
 - *pvar* - Any
-			pseudo-variable defined in OpenSIPS.
+pseudo-variable defined in OpenSIPS.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -742,11 +742,11 @@ if (allow_uri("basename", "$avp(i:705)") {  // Check URI stored in $avp(i:705)
 
 
 Returns true if IP address and port given as values of pvar
-		arguments belonging to a group given as group_id argument
-		matches an IP subnet found in cached address table.
-		Cached address table entry containing port value 0
-		matches any port.  group_id argument can be an integer
-		string or a pseudo variable.
+arguments belonging to a group given as group_id argument
+matches an IP subnet found in cached address table.
+Cached address table entry containing port value 0
+matches any port.  group_id argument can be an integer
+string or a pseudo variable.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -791,9 +791,9 @@ if (!allow_source_address("0")) {
 
 
 Checks if source address/port is found in cached address or
-		subnet table in any group. If yes, returns that group.
-		If not returns -1.  Port value 0 in cached address and
-		group table matches any port.
+subnet table in any group. If yes, returns that group.
+If not returns -1.  Port value 0 in cached address and
+group table matches any port.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -814,20 +814,20 @@ if ($var(group) != -1) {
 
 
 Checks based either on request's source address and transport
-		protocol or source address and transport protocol given
-		in pvar arguments, and From URI of request
-		if request can be trusted without
-		authentication.  Returns 1 if a match is found
-		as described in [sec trusted requests](#trusted_requests)
-		and -1 otherwise.  If a match is found
-		and peer_tag_avp has been defined, adds a
-                non-NULL tag column value of the
-		matching peer to AVP peer_tag_avp.
+protocol or source address and transport protocol given
+in pvar arguments, and From URI of request
+if request can be trusted without
+authentication.  Returns 1 if a match is found
+as described in [sec trusted requests](#trusted_requests)
+and -1 otherwise.  If a match is found
+and peer_tag_avp has been defined, adds a
+non-NULL tag column value of the
+matching peer to AVP peer_tag_avp.
 
 
 Source address and transport protocol given in pvar
-		arguments must be in string format.  Valid transport
-		protocol values are "UDP, "TCP", "TLS", and "SCTP". (case insensitive)
+arguments must be in string format.  Valid transport
+protocol values are "UDP, "TCP", "TLS", and "SCTP". (case insensitive)
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -853,12 +853,12 @@ if (allow_trusted("$si", "$proto")) {
 
 
 Causes permissions module to re-read the contents of
-				address database table into cache
-				memory.  In cache memory the entries are
-				for performance reasons stored in two
-                                different tables:  address table and
-				subnet table depending on the value of
-				the mask field (32 or smaller).
+address database table into cache
+memory.  In cache memory the entries are
+for performance reasons stored in two
+different tables:  address table and
+subnet table depending on the value of
+the mask field (32 or smaller).
 
 
 Parameters: *none*
@@ -868,7 +868,7 @@ Parameters: *none*
 
 
 Causes permissions module to dump
-                   contents of cache memory address table.
+contents of cache memory address table.
 
 
 Parameters: *none*
@@ -878,7 +878,7 @@ Parameters: *none*
 
 
 Causes permissions module to dump
-                   contents of cache memory subnet table.
+contents of cache memory subnet table.
 
 
 Parameters: *none*
@@ -888,7 +888,7 @@ Parameters: *none*
 
 
 Causes permissions module to re-read the contents of
-				trusted table into cache memory.
+trusted table into cache memory.
 
 
 Parameters: *none*
@@ -898,7 +898,7 @@ Parameters: *none*
 
 
 Causes permissions module to dump contents of trusted
-				table from cache memory.
+table from cache memory.
 
 
 Parameters: *none*
@@ -908,21 +908,21 @@ Parameters: *none*
 
 
 Tests if (URI, Contact) pair is allowed according to
-		allow/deny files.  The files must already have been
-		 loaded by OpenSIPS.
+allow/deny files.  The files must already have been
+loaded by OpenSIPS.
 
 
 Parameters:
 
 
 - *basename* -
-						Basename from
-		which allow and deny filenames will be created by
-		appending contents of allow_suffix and deny_suffix
-		parameters.
+Basename from
+which allow and deny filenames will be created by
+appending contents of allow_suffix and deny_suffix
+parameters.
 - *URI* - URI to be tested
 - *Contact* - Contact
-						to be tested
+to be tested
 <!-- CONTRIBUTORS -->
 
 ### License

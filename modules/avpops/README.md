@@ -10,25 +10,25 @@ description: "AVPops (AVP-operations) modules implements a set of script functio
 
 
 AVPops (AVP-operations) modules implements a set of script
-		functions which allow access and manipulation of user AVPs
-		(preferences) and pseudo-variables. AVPs are a powerful tool
-		for implementing services/preferences per user/domain. Now they
-		are usable directly from configuration script. Functions for
-		interfacing DB resources (loading/storing/removing), functions
-		for swapping information between AVPs and SIP messages, function for 
-		testing/checking the value of an AVP.
+functions which allow access and manipulation of user AVPs
+(preferences) and pseudo-variables. AVPs are a powerful tool
+for implementing services/preferences per user/domain. Now they
+are usable directly from configuration script. Functions for
+interfacing DB resources (loading/storing/removing), functions
+for swapping information between AVPs and SIP messages, function for 
+testing/checking the value of an AVP.
 
 
 AVPs are persistent per SIP transaction, being available in "route", 
-		"branch_route" and "failure_route". To make them available in 
-		"onreply_route" armed via TM module, set "onreply_avp_mode" parameter
-		of TM module (note that in the default "onreply_route", the AVPs of
-		the transaction are not available).
+"branch_route" and "failure_route". To make them available in 
+"onreply_route" armed via TM module, set "onreply_avp_mode" parameter
+of TM module (note that in the default "onreply_route", the AVPs of
+the transaction are not available).
 
 
 An up-to-date tutorial providing more information (detailed
-		explanations and commented examples) can be found on Voice Sistem
-		documentation web page at http://voice-system.ro/docs/avpops .
+explanations and commented examples) can be found on Voice Sistem
+documentation web page at http://voice-system.ro/docs/avpops .
 
 
 ### Dependencies
@@ -47,7 +47,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed 
-				before running OpenSIPS with this module loaded:
+before running OpenSIPS with this module loaded:
 
 
 - *None*
@@ -57,9 +57,9 @@ The following libraries or applications must be installed
 
 
 The format of the parameters specifying an AVP in functions exported
-		by this module is:
-			**$avp(avp_flags:avp_name)** or
-			**$avp(avp_alias)**.
+by this module is:
+**$avp(avp_flags:avp_name)** or
+**$avp(avp_alias)**.
 
 
 - *avp_flags* = type_flags [script_flags]; type_flags = 'I' | 'i' | 'S' | 's'; script_flags = 0..255
@@ -67,16 +67,16 @@ The format of the parameters specifying an AVP in functions exported
 'S' or 's' means that the type of avp name is string
 The type flag is mandatory.
 script_flags must be an 8 bit unsigned number, therefore can be set
-		up to 8 flags. If no script flag is provided, the name will
-		match all AVPs, regardless they have or not a script flag set (preserves
-		the compatibility with the old naming schema).
+up to 8 flags. If no script flag is provided, the name will
+match all AVPs, regardless they have or not a script flag set (preserves
+the compatibility with the old naming schema).
 - *avp_name* = string | integer
 string - might be any alphanumeric string, wich contain following
-		characters: [a-z] [A-Z] [0-9] '_'
+characters: [a-z] [A-Z] [0-9] '_'
 integer - might be an unsigned integer, greater than zero, up to 2^16-1
 - *avp_alias* = string
 string - might be any alphanumeric string, wich contain following
-		characters: [a-z] [A-Z] [0-9] '_'
+characters: [a-z] [A-Z] [0-9] '_'
 
 
 ```opensips title="AVP naming examples"
@@ -115,7 +115,7 @@ modparam("avpops","avp_url","mysql://user:passwd@host/database")
 
 
 This parameter has the same meaning as "avp_url"
-			parameter.
+parameter.
 
 
 #### avp_table (string)
@@ -139,7 +139,7 @@ modparam("avpops","avp_table","avptable")
 
 
 If the domain part of the an URI should be used for 
-				identifying an AVP in DB operations.
+identifying an AVP in DB operations.
 
 
 *Default value is 0 (no).*
@@ -259,7 +259,7 @@ modparam("avpops","type_column","type")
 
 
 Definition of a DB scheme to be used for non-standard
-				access to Database information.
+access to Database information.
 
 
 Definition of a DB scheme. Scheme syntax is:
@@ -267,7 +267,7 @@ Definition of a DB scheme. Scheme syntax is:
 
 - *db_scheme = name':'element[';'element]**
 - *element* =
-					
+
 						'uuid_col='string
 						'username_col='string
 						'domain_col='string
@@ -295,17 +295,17 @@ modparam("avpops","db_scheme",
 
 
 Loads from DB into memory the AVPs corresponding to the given
-			*source*. If given, it sets the script flags
-			for loaded AVPs. It returns true if it loaded some values 
-			in AVPs, false otherwise (db error, no avp loaded ...).
+*source*. If given, it sets the script flags
+for loaded AVPs. It returns true if it loaded some values 
+in AVPs, false otherwise (db error, no avp loaded ...).
 
 
 Meaning of the parameters is as follows:
 
 
 - *source* - what info is used for 
-				identifying the AVPs. Parameter syntax:
-				
+identifying the AVPs. Parameter syntax:
+
 					*source = (pvar|str_value)
 					['/'('username'|'domain'|'uri'|'uuid')])*
 					*pvar = any pseudo variable defined in OpenSIPS. If
@@ -313,8 +313,8 @@ Meaning of the parameters is as follows:
 					or $ou (original uri), then the implicit flag is 'uri'.
 					Otherwise, the implicit flag is 'uuid'.*
 - *name* - which AVPs will be loaded
-				from DB into memory. Parameter syntax is:
-				
+from DB into memory. Parameter syntax is:
+
 					*name = avp_spec['/'(table_name|'$'db_scheme)]*
 					*avp_spec = matching_flags|$avp(avp_name)|$avp(avp_alias)*
 					*matching_flags = 'a' | 'A' | 'i' | 'I' | 's' | 'S'
@@ -324,7 +324,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_db_load usage"
@@ -342,16 +342,16 @@ avp_db_load("$ru","$avp(i:123)/$some_scheme");
 
 
 Stores to DB the AVPs corresponding to the given
-			*source*.
+*source*.
 
 
 The meaning and usage of the parameters are identical as for
-			*avp_db_load(source,name)*
-			function. Please refer to its description.
+*avp_db_load(source,name)*
+function. Please refer to its description.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_db_store usage"
@@ -367,16 +367,16 @@ avp_db_store("$ru/username","$avp(email)");
 
 
 Deletes from DB the AVPs corresponding to the given
-			*source*.
+*source*.
 
 
 The meaning and usage of the parameters are identical as for
-			*avp_db_load(source,name)*
-			function. Please refer to its description.
+*avp_db_load(source,name)*
+function. Please refer to its description.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_db_delete usage"
@@ -399,27 +399,27 @@ The meaning and usage of the parameters:
 
 
 - *query* - must be a valid SQL
-				query. The parameter can contain pseudo-variables.
+query. The parameter can contain pseudo-variables.
 You must escape any pseudo-variables manually to prevent
-				SQL injection attacks. You can use the existing transformations
-				*escape.common* and 
-				*unescape.common*
-				to escape and unescape the content of any pseudo-variable.
-				Failing to escape the variables used in the query makes you 
-				vulnerable to SQL injection, e.g. make it possible for an 
-				outside attacker to alter your database content.
+SQL injection attacks. You can use the existing transformations
+*escape.common* and 
+*unescape.common*
+to escape and unescape the content of any pseudo-variable.
+Failing to escape the variables used in the query makes you 
+vulnerable to SQL injection, e.g. make it possible for an 
+outside attacker to alter your database content.
 - *dest* - a list with AVP names where
-				to store the result. The format is
-				"$avp(name1);$avp(name2);...". If this parameter
-				is ommited, the result is stored in 
-				"$avp(i:1);$avp(i:2);...". If the result gives
-				many rows, then multiple AVPs with corresponding name will
-				be added. The value type of the AVP (string or integer) will
-				be derived from the type of the columns.
+to store the result. The format is
+"$avp(name1);$avp(name2);...". If this parameter
+is ommited, the result is stored in 
+"$avp(i:1);$avp(i:2);...". If the result gives
+many rows, then multiple AVPs with corresponding name will
+be added. The value type of the AVP (string or integer) will
+be derived from the type of the columns.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_db_query usage"
@@ -436,23 +436,23 @@ avp_db_query("delete from subscriber");
 
 
 Deletes from memory the AVPs with *name* or,
-			if empty, all AVPs.
+if empty, all AVPs.
 
 
 Meaning of the parameters is as follows:
 
 
 - *name* - which AVPs will be deleted
-				from memory.
-				Parameter syntax is:
-				
+from memory.
+Parameter syntax is:
+
 					*name = (matching_flags|avp_name|avp_alias)['/'flag]*
 					*matching_flags = please refer to avp_db_load() function*
 					*flag = 'g'|'G'*
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_delete usage"
@@ -476,9 +476,9 @@ Meaning of the parameters is as follows:
 
 
 - *destination* - as what will be the
-				AVP value pushed into SIP message.
-				Parameter syntax:
-				
+AVP value pushed into SIP message.
+Parameter syntax:
+
 					*destination = '$ru' ['/'('username'|'domain')] | '$du' |
 					'$br'*
 					*$ru '['/'('username'|'domain')] - write the AVP in the
@@ -487,16 +487,16 @@ Meaning of the parameters is as follows:
 					*$br - write the AVP directly as a new branch (does not 
 					affect RURI)*
 - *name* - which AVP(s)/pseudo-variable
-				should be pushed
-				into the SIP message.
-				Parameter syntax is:
-				
+should be pushed
+into the SIP message.
+Parameter syntax is:
+
 					*name = ( avp_name | avp_alias | pvar_name )['/'flags]*
 					*flags = 'g' - effective only with AVPs*
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_pushto usage"
@@ -521,17 +521,17 @@ Meaning of the parameters is as follows:
 
 
 - *name* - which AVP(s) should be 
-				checked.
-				Parameter syntax is:
-				
+checked.
+Parameter syntax is:
+
 					*name = ( pseudo-variable )*
 - *op_value* - define the operator, 
-				the value and flags for checking.
-				Parameter syntax is:
+the value and flags for checking.
+Parameter syntax is:
 
   - *op_value = operator '/' value ['/'flags]*
   - *operator = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge'
-					| 're' | 'fm' | 'and' | 'or' | 'xor'*
+| 're' | 'fm' | 'and' | 'or' | 'xor'*
   - *value = pseudo-variable | fix_value*
   - *fix_value = 'i:'integer | 's:'string | string*
   - *flags = 'g' | 'G' | 'i' | 'I'*
@@ -549,11 +549,11 @@ Operator meaning:
   - *or* - bitwise 'or'
   - *xor* - bitwise 'xor'
 Integer values can be given in hexadecimal using notation:
-				'i:0xhex_number' (e.g.,: 'i:0xabcd');
+'i:0xhex_number' (e.g.,: 'i:0xabcd');
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_check usage"
@@ -578,20 +578,20 @@ Meaning of the parameters is as follows:
 
 
 - *name1* - which AVP(s) should be 
-				copied/moved.
-				Parameter syntax is:
-				
+copied/moved.
+Parameter syntax is:
+
 					*name = ( avp_name | avp_alias )*
 - *name2* - the new name of the 
-				copied/moved AVP(s).
-				Parameter syntax is:
-				
+copied/moved AVP(s).
+Parameter syntax is:
+
 					*name = ( avp_name | avp_alias ) ['/'flags]*
 					*flags = 'g' | 'G' | 'd' | 'D' | 'n' | 'N' | 's' | 'S'*
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_copy usage"
@@ -607,30 +607,30 @@ avp_copy("$avp(old)","$avp(new)/gd");
 
 
 NOTE: since OpenSIPS 1.3.0 the function has been moved to core
-			and it is an alias to pv_printf().
+and it is an alias to pv_printf().
 
 
 Prints the formatted string 'format' in the AVP 'dest'. The
-			'format' parameter can include any pseudo-variable defined in
-			OpenSIPS. The list with all pseudo-variables in OpenSIPS can
-			be found at:	
-			[http://opensips.org/dokuwiki/](http://opensips.org/dokuwiki/).
+'format' parameter can include any pseudo-variable defined in
+OpenSIPS. The list with all pseudo-variables in OpenSIPS can
+be found at:	
+[http://opensips.org/dokuwiki/](http://opensips.org/dokuwiki/).
 
 
 Meaning of the parameters is as follows:
 
 
 - *dest* - in which AVP should be 
-				stored the result.
-				Parameter syntax is:
+stored the result.
+Parameter syntax is:
 
   - *name = ( avp_name | avp_alias )*
 - *format* - the formatted string
-				to be printed in 'dest' AVP.
+to be printed in 'dest' AVP.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_printf usage"
@@ -651,8 +651,8 @@ Meaning of the parameters is as follows:
 
 
 - *avps* - source AVP, destination AVP
-				and flags. Parameter syntax is:
-				
+and flags. Parameter syntax is:
+
 					*avps = src_avp [ '/' dst_avp [ '/' flags ] ]*
 					*src_avp = ( avp_name | avp_alias )*
 					*dst_avp = ( avp_name | avp_alias ) - if dst_avp is missing
@@ -660,8 +660,8 @@ Meaning of the parameters is as follows:
 					*flags = ( d | D | g | G ) -- (d, D - delete source avp;
 					g, G - apply to all avps matching src_avp name)*
 - *subst* - perl/sed-like reqular expression.
-				Parameter syntax is:
-				
+Parameter syntax is:
+
 					*subst = "/regexp/replacement/flags"*
 					*regexp - regular expression*
 					*replacement - replacement string, can include 
@@ -672,7 +672,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_subst usage"
@@ -691,11 +691,11 @@ avp_subst("$avp(i:678)/$avp(i:679)/g", "/(.*)@(.*)/\1@$rd/");
 
 
 IMPORTANT NOTE: if the replacement string includes src_avp
-			or dst_avp you will get something that you may not expect.
-			In case you have many src_avp and you make the substitution
-			to be applied to all of them, after the first src_avp is
-			processed, it will be added in avp list and next
-			processing will use it.
+or dst_avp you will get something that you may not expect.
+In case you have many src_avp and you make the substitution
+to be applied to all of them, after the first src_avp is
+processed, it will be added in avp list and next
+processing will use it.
 
 
 #### avp_op(name,op_value)
@@ -709,18 +709,18 @@ Meaning of the parameters is as follows:
 
 - *name*
 				- 'source_avp/destination_avp' - which AVP(s) should be 
-				processed and where to store the result. If 'destination_avp'
-				is missing, same name as 'source_avp' is used to store the
-				result.
+processed and where to store the result. If 'destination_avp'
+is missing, same name as 'source_avp' is used to store the
+result.
 Parameter syntax is:
 
   - *name = ( source_avp[/destination_avp] )*
 *source_avp = ( avp_name | avp_alias )*
 *destination_avp = ( avp_name | avp_alias )*
 - *op_value* - define the operation, 
-				the value and flags.
-				Parameter syntax is:
-				
+the value and flags.
+Parameter syntax is:
+
 					*op_value = operator '/' value ['/'flags]*
 					*operator = 'add' | 'sub' | 'mul' | 'div' | 'mod'
 					| 'and' | 'or' | 'xor' | 'not'*
@@ -728,11 +728,11 @@ Parameter syntax is:
 					*fix_value = 'i:'integer*
 					*flags = 'g' | 'G' | 'd' | 'D'*
 Integer values can be given in hexadecimal using notation
-				'i:0xhex_number' (e.g.,: 'i:0xabcd');
+'i:0xhex_number' (e.g.,: 'i:0xabcd');
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_op usage"
@@ -754,15 +754,15 @@ Meaning of the parameters is as follows:
 
 
 - *name* - name of AVP to look for.
-				Parameter syntax is:
-				
+Parameter syntax is:
+
 					*name = avp_name|avp_alias [ '/' flags ])*
 					*flags = ('e'|'s'|'n') - e = empty value; s = value string;
 					n = value number (int)*
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="is_avp_set usage"
@@ -778,11 +778,11 @@ if(is_avp_set("$avp(i:678)"))
 
 
 Prints the list with all the AVPs from memory. This is only a
-			helper/debug function.
+helper/debug function.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
 
 ```opensips title="avp_print usage"

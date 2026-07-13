@@ -13,73 +13,73 @@ description: "SEAS module enables OpenSIPS to transfer the execution logic contr
 
 
 SEAS module enables OpenSIPS to transfer the
-        execution logic control of a sip message to a given external entity,
-        called the Application Server. When the OpenSIPS script is being
-        executed on an incoming SIP message, invocation of the as_relay_t()
-        function makes this module send the message along with some
-        transaction information to the specified Application Server. The
-        Application Server then executes some call-control logic code, and
-        tells OpenSIPS to take some actions, ie. forward the message
-        downstream, or respond to the message with a SIP repy, etc.
+execution logic control of a sip message to a given external entity,
+called the Application Server. When the OpenSIPS script is being
+executed on an incoming SIP message, invocation of the as_relay_t()
+function makes this module send the message along with some
+transaction information to the specified Application Server. The
+Application Server then executes some call-control logic code, and
+tells OpenSIPS to take some actions, ie. forward the message
+downstream, or respond to the message with a SIP repy, etc.
 
 
 The module acts implements a network protocol acting as the
-        interface between OpenSIPS internal API and the external Application
-        Server entity.
+interface between OpenSIPS internal API and the external Application
+Server entity.
 
 
 There's only one relevant function, as_relay_t, exported by this
-        module. This function receives as a parameter the name of the
-        application server to which the message should be relaied. Every
-        message relaied to an Application Server is automatically associated
-        to a SIP transaction (a transaction is created for it). Just after the
-        message is relaied to the Application Server, the script stops its
-        execution on the message, because the control of message-processing is
-        now in the Application Server.
+module. This function receives as a parameter the name of the
+application server to which the message should be relaied. Every
+message relaied to an Application Server is automatically associated
+to a SIP transaction (a transaction is created for it). Just after the
+message is relaied to the Application Server, the script stops its
+execution on the message, because the control of message-processing is
+now in the Application Server.
 
 
 In the context of SEAS module, relaying a message to an App
-        Server, is _not_ done in SIP protocol, but in a special protocol by
-        means of which the SEAS module and the Application Server comunicate
-        efficiently and seamlessly. This procotol is specially designed so
-        that a message doesn't need to be parsed again once it arrives at the
-        Application Server. This protocol carries information regarding the
-        internal structure of the SIP message (to avoid reparsing) and also
-        information about the associated transaction (recall that invoking
-        as_relay_t indirectly calls t_newtran). This way, all the
-        SIP-Transaction machinery, and the SIP-Message parsing, is handled at
-        the OpenSIPS core, while the execution of the Application Logic is
-        carried in the Application Server.
+Server, is _not_ done in SIP protocol, but in a special protocol by
+means of which the SEAS module and the Application Server comunicate
+efficiently and seamlessly. This procotol is specially designed so
+that a message doesn't need to be parsed again once it arrives at the
+Application Server. This protocol carries information regarding the
+internal structure of the SIP message (to avoid reparsing) and also
+information about the associated transaction (recall that invoking
+as_relay_t indirectly calls t_newtran). This way, all the
+SIP-Transaction machinery, and the SIP-Message parsing, is handled at
+the OpenSIPS core, while the execution of the Application Logic is
+carried in the Application Server.
 
 
 The SEAS module and protocol provide a means by which an
-        external entity can utilize OpenSIPS as a transaction-stateful
-        SIP-stack to act on behalf of it. This means that this external entity
-        (which we call the Application Server) is notified whenever a
-        SIP-Request enters OpenSIPS, and this external entity can then order
-        OpenSIPS to execute some actions, either replying the request, or
-        generating new UAC transactions.
+external entity can utilize OpenSIPS as a transaction-stateful
+SIP-stack to act on behalf of it. This means that this external entity
+(which we call the Application Server) is notified whenever a
+SIP-Request enters OpenSIPS, and this external entity can then order
+OpenSIPS to execute some actions, either replying the request, or
+generating new UAC transactions.
 
 
 This version of SEAS works with VozTelecom's WeSIP Application
-        Server. This Application Server is a SipServlet JAVA Container.
+Server. This Application Server is a SipServlet JAVA Container.
 
 
 #### Application Servers
 
 
 When OpenSIPS starts and SEAS module is loaded, a new process is
-        spawn which listens on a server-socket (IP and port are specified as a
-        parameter in the config script). From then on, the Application Servers
-        can connect to that socket so that OpenSIPS can relay messages to them.
-        When an Application Server connects to the socket, it sends its name
-        through the socket, so every App Server is identified with a name.
-        Within the OpenSIPS script, invoking as_relay_t() receives a string as
-        a parameter, which specifies the name of an application server to
-        which the message has to be sent. If that concrete application server
-        hasn't already connected to the module, the function returns a
-        negative value, otherwise (the Application Server is connected), the
-        message is relaied to it.
+spawn which listens on a server-socket (IP and port are specified as a
+parameter in the config script). From then on, the Application Servers
+can connect to that socket so that OpenSIPS can relay messages to them.
+When an Application Server connects to the socket, it sends its name
+through the socket, so every App Server is identified with a name.
+Within the OpenSIPS script, invoking as_relay_t() receives a string as
+a parameter, which specifies the name of an application server to
+which the message has to be sent. If that concrete application server
+hasn't already connected to the module, the function returns a
+negative value, otherwise (the Application Server is connected), the
+message is relaied to it.
 
 
 #### Dependencies
@@ -89,19 +89,19 @@ When OpenSIPS starts and SEAS module is loaded, a new process is
 
 
 SEAS module relies on the Transaction Module (TM module) for
-          operation.
+operation.
 
 
 ##### External Applications
 
 
 Using the SEAS module requires to have an Application Server
-          running and connected to a particular instance of OpenSIPS.
+running and connected to a particular instance of OpenSIPS.
 
 
 At the moment, the only Application Server that works with
-          SEAS is WeSIP Application Server, which can be downloaded from
-          www.wesip.eu, and used freely for non-comercial purposes.
+SEAS is WeSIP Application Server, which can be downloaded from
+www.wesip.eu, and used freely for non-comercial purposes.
 
 
 #### Exported Parameters
@@ -111,15 +111,15 @@ At the moment, the only Application Server that works with
 
 
 The listen_sockets string tells SEAS where to listen for
-          incoming connections of Application Servers. It has the form:
-          "ip:port". SEAS will open two server-sockets on that IP, at the
-          specified port, and another at port+1. Application Servers must be
-          configured to connect to that port.
+incoming connections of Application Servers. It has the form:
+"ip:port". SEAS will open two server-sockets on that IP, at the
+specified port, and another at port+1. Application Servers must be
+configured to connect to that port.
 
 
 In case this parameter is ommited, SEAS listens on the default
-          IP which OpenSIPS is using, and opens the ports 5080 and 5081 to
-          listen for Application Servers.
+IP which OpenSIPS is using, and opens the ports 5080 and 5081 to
+listen for Application Servers.
 
 
 ```opensips title="Set listen_sockets parameter"
@@ -136,10 +136,10 @@ modparam("seas", "listen_sockets","127.0.0.1:5080")
 
 
 Creates a new transaction (if it isn't already created) and
-          sends the SIP Request and transaction information to the Application
-          Server specified in the parameter. Every Application Server
-          connected to OpenSIPS through the SEAS module, must be identified
-          with a different name.
+sends the SIP Request and transaction information to the Application
+Server specified in the parameter. Every Application Server
+connected to OpenSIPS through the SEAS module, must be identified
+with a different name.
 
 
 This function can be used within REQUEST_ROUTE.
@@ -159,23 +159,23 @@ t_reply("500","App Server not connected");
 
 
 In case the Application Server is connected to OpenSIPS, the
-            function does _not_ return, the Application Server is now in
-            charge of processing the request, and it may then reply to the
-            request, initiate new transactions, or whatever the application
-            being executed wants.
+function does _not_ return, the Application Server is now in
+charge of processing the request, and it may then reply to the
+request, initiate new transactions, or whatever the application
+being executed wants.
 
 
 In case the Application Server identified by the string
-            parameter passed to as_relay_t() is not connected to OpenSIPS, the
-            function returns 0, so that the script can continue processing the
-            request.
+parameter passed to as_relay_t() is not connected to OpenSIPS, the
+function returns 0, so that the script can continue processing the
+request.
 
 
 ### WeSIP Application Server
 
 
 At the moment, the only Application Server known to work with SEAS
-      is WeSIP. You can download a copy from www.wesip.eu.
+is WeSIP. You can download a copy from www.wesip.eu.
 
 
 WeSIP is a converged Sip/Http Servlet Container.
@@ -185,31 +185,31 @@ WeSIP is a converged Sip/Http Servlet Container.
 
 
 Servlets are pieces of code that encapsulate the logic of an
-        application. Servlets are deployed into an Application Server.
-        Whenever a user requests service, the Application Server processes the
-        request, and passes control to the servlet. The servlet then executes
-        some logic, may it be a query to a database, the execution of a
-        business process, the creation of customized content for the user, or
-        whatever the service programmer could imagine. When the servlet
-        finishes the execution, it creates a response and gives it back to the
-        Application Server, which is in charge of making it reach back to the
-        user. The Application Server implements the network protocol, it takes
-        care of everything needed for a proper communication between user and
-        server, so the servlet doesn’t have to care about these things. The
-        servlet uses a set of resources from the Application Server, such as
-        Session management, service routing or chaining, and request/response
-        header composition.
+application. Servlets are deployed into an Application Server.
+Whenever a user requests service, the Application Server processes the
+request, and passes control to the servlet. The servlet then executes
+some logic, may it be a query to a database, the execution of a
+business process, the creation of customized content for the user, or
+whatever the service programmer could imagine. When the servlet
+finishes the execution, it creates a response and gives it back to the
+Application Server, which is in charge of making it reach back to the
+user. The Application Server implements the network protocol, it takes
+care of everything needed for a proper communication between user and
+server, so the servlet doesn’t have to care about these things. The
+servlet uses a set of resources from the Application Server, such as
+Session management, service routing or chaining, and request/response
+header composition.
 
 
 In HttpServlets, a service programmer has to implement a method
-        in a JAVA class, which could be called doGet() or doPost(). Whenever
-        an HTTP request arrived at the server, one of these functions was
-        called with the request as a parameter, so the logic of the
-        application was executed over that particular request.
+in a JAVA class, which could be called doGet() or doPost(). Whenever
+an HTTP request arrived at the server, one of these functions was
+called with the request as a parameter, so the logic of the
+application was executed over that particular request.
 
 
 HttpServlet has been extensively used over the past years, in
-        all kinds of business and web services.
+all kinds of business and web services.
 
 
 This is how a typical HttpServlet looks like:
@@ -245,36 +245,36 @@ writer.println("</html>");
 
 
 The successor of HttpServlet for SIP networks, is the SipServlet
-        API. Making most of the success of HttpServlet, the SipServlet API
-        follows the same programming paradigm, so that SIP application
-        programmers can reuse their knowledge in the field.
+API. Making most of the success of HttpServlet, the SipServlet API
+follows the same programming paradigm, so that SIP application
+programmers can reuse their knowledge in the field.
 
 
 SipServlet API works the same way as HttpServlet: an Application
-        Server implements a SIP Stack and executes all the complex protocol
-        logic. It receives and pre-processes the requests from the network,
-        and at the right moment, passes control to the servlet doXxx() method,
-        where the programmer implemented the application logic. Depending on
-        what kind of SIP Message it was, a method or another will be executed.
-        For example, if an INVITE is received, the doInvite() method will be
-        invoked in the servlet.
+Server implements a SIP Stack and executes all the complex protocol
+logic. It receives and pre-processes the requests from the network,
+and at the right moment, passes control to the servlet doXxx() method,
+where the programmer implemented the application logic. Depending on
+what kind of SIP Message it was, a method or another will be executed.
+For example, if an INVITE is received, the doInvite() method will be
+invoked in the servlet.
 
 
 The application can then access all the parts of the request and
-        do its work. When the service has been executed, it passes control
-        back to the Application Server with a response, so that it can be
-        forwarded to the user, and the service be satisfied.
+do its work. When the service has been executed, it passes control
+back to the Application Server with a response, so that it can be
+forwarded to the user, and the service be satisfied.
 
 
 Sip Servlets can be used to implement basic SIP network
-        functionalities (such as Proxy or Registrar servers), but their true
-        power emerges in the implementation of value-added services, which
-        greatly surpasses the basic service functionality of plain SIP
-        servers.
+functionalities (such as Proxy or Registrar servers), but their true
+power emerges in the implementation of value-added services, which
+greatly surpasses the basic service functionality of plain SIP
+servers.
 
 
 Examples of value-added services, are Virtual PBX or IPCentrex,
-        Attended call forwarding, Instant Messaging, etc.
+Attended call forwarding, Instant Messaging, etc.
 
 
 This is the appearance a typical SipServlet:
@@ -308,125 +308,125 @@ ServletException, IOException
 
 
 The servlet programming API is event-ridden: every time a
-        request comes into the Application Server (may it be an Http or SIP
-        one), the specific servlet is executed and the service provided within
-        it.
+request comes into the Application Server (may it be an Http or SIP
+one), the specific servlet is executed and the service provided within
+it.
 
 
 It is a very straightforward way of programming services, and
-        the Servlet API provides very easy and powerful means to access
-        information about the SIP-session or Http-session, about the request
-        or response, about the state of the dialog, or whatever it is
-        needed.
+the Servlet API provides very easy and powerful means to access
+information about the SIP-session or Http-session, about the request
+or response, about the state of the dialog, or whatever it is
+needed.
 
 
 The application programmer has a rich framework of resources
-        that allow him to focus only on the service logic, without having to
-        worry about the underlying protocol specifics (SIP or HTTP).
+that allow him to focus only on the service logic, without having to
+worry about the underlying protocol specifics (SIP or HTTP).
 
 
 The Servlet programming language is JAVA, which offers a
-        wide spectrum of programming API’s dealing with all kinds of
-        techniques, tools and resources, which also are available seamlessly
-        from the Servlet context.
+wide spectrum of programming API’s dealing with all kinds of
+techniques, tools and resources, which also are available seamlessly
+from the Servlet context.
 
 
 This makes the SipServlet API very desirable for all kinds
-        application developers.
+application developers.
 
 
 SipServlet allows a rapid SIP application development and
-        deployment, and also provides a reliable and secure framework of
-        service execution (the JAVA sandbox and the Application Server
-        execution environment).
+deployment, and also provides a reliable and secure framework of
+service execution (the JAVA sandbox and the Application Server
+execution environment).
 
 
 ##### Converged Http/Sip Servlet Containers
 
 
 SipServlets achieve the most of it when they can be deployed
-          along with HttpServlets, in the same Application Server (also known
-          as Servlet Container). This environment truly realizes the power of
-          converged voice/data networks: Http protocol represents one of the
-          most powerful data transmission protocols used in modern networks
-          (think of the SOAP web-services protocol), and SIP is the protocol
-          of choice in most of the modern and future voice over IP (VoIP)
-          networks for the signaling part. So an Application Server capable of
-          combining and leveraging the power of these two APIs will be the
-          most successful.
+along with HttpServlets, in the same Application Server (also known
+as Servlet Container). This environment truly realizes the power of
+converged voice/data networks: Http protocol represents one of the
+most powerful data transmission protocols used in modern networks
+(think of the SOAP web-services protocol), and SIP is the protocol
+of choice in most of the modern and future voice over IP (VoIP)
+networks for the signaling part. So an Application Server capable of
+combining and leveraging the power of these two APIs will be the
+most successful.
 
 
 Convergence of SIP and HTTP protocols into the same
-          Application Server offers, amongst others, the following key
-          advantages:
+Application Server offers, amongst others, the following key
+advantages:
 
 
 -It doesn’t require to have 2 different servers (Http and Sip)
-          so it relieves from maintenance problems, and eases user and
-          configuration provisioning.
+so it relieves from maintenance problems, and eases user and
+configuration provisioning.
 
 
 -It offers great convenience to the application programmer to
-          have all the classes related to the different protocols handled
-          within the same code.
+have all the classes related to the different protocols handled
+within the same code.
 
 
 -As it eases development of interactive and multimedia
-          services, realizing the power of well-known web-services and
-          intermixing them with new voice services.
+services, realizing the power of well-known web-services and
+intermixing them with new voice services.
 
 
 These are some simple, but suggestive examples of services
-          that could be developed within a converged Http/Sip servlet:
+that could be developed within a converged Http/Sip servlet:
 
 
 -IP Centrex: through the use of the Web-interface, users could
-          have a layout of the office in a web page, and see what phones were
-          ringing at a given moment, so they could pick-up a call ringing in
-          another phone in their own desktop. Or they could forward a call to
-          another party by clicking on the web page and selecting which of the
-          office phones it had to be transferred to.
+have a layout of the office in a web page, and see what phones were
+ringing at a given moment, so they could pick-up a call ringing in
+another phone in their own desktop. Or they could forward a call to
+another party by clicking on the web page and selecting which of the
+office phones it had to be transferred to.
 
 
 -Voicemail: users could upload an audio file to the server
-          through a web-page, to be used as the automatic answering message,
-          and then also download their voicemail through the web-page, or
-          organize the messages and remove the old ones.
+through a web-page, to be used as the automatic answering message,
+and then also download their voicemail through the web-page, or
+organize the messages and remove the old ones.
 
 
 -Instant Messaging: users could continue a voice call by
-          starting or joining a new Instant Messaging session carried over a
-          web-page.
+starting or joining a new Instant Messaging session carried over a
+web-page.
 
 
 -Click-to-dial: users could initiate SIP sessions only by
-          clicking a link on a web page, without the need of the Web-Browser
-          being SIP-aware nor needing even a SIP phone: the server could
-          handle all the logic so the user who clicked could receive a call
-          from the server’s SIP network.
+clicking a link on a web page, without the need of the Web-Browser
+being SIP-aware nor needing even a SIP phone: the server could
+handle all the logic so the user who clicked could receive a call
+from the server’s SIP network.
 
 
 #### Configuring WeSIP to work with SEAS
 
 
 The WeSIP Application Server configuration file is based on the
-        Apache Tomcat configuration system: It is an XML-formatted file, in
-        which the different components of the server are specified.
+Apache Tomcat configuration system: It is an XML-formatted file, in
+which the different components of the server are specified.
 
 
 The default config file that comes with the WeSIP distribution
-        package should be suitable for most of the deployment
-        configurations.
+package should be suitable for most of the deployment
+configurations.
 
 
 ##### Server
 
 
 The topmost element in the XML configuration file is the
-          "server" which has 2 xml attributes, called "port" and "shutdown".
-          The former specifies a port on which the WeSIP AS will listen for
-          the shutdown command, and the latter is the magic word that will
-          make the server shutdown.
+"server" which has 2 xml attributes, called "port" and "shutdown".
+The former specifies a port on which the WeSIP AS will listen for
+the shutdown command, and the latter is the magic word that will
+make the server shutdown.
 
 
 ```c
@@ -435,30 +435,30 @@ The topmost element in the XML configuration file is the
 
 
 if you send the magic word "SHUTDOWN" to the port 8005 of the
-          localhost, the server will stop cleanly.
+localhost, the server will stop cleanly.
 
 
 ##### Service
 
 
 Nested within the Server element, must be a "Service" element,
-          with an attribute called "name" which specifies the name for the
-          service. This attribute is not very relevant, you can call it
-          whatever you like.
+with an attribute called "name" which specifies the name for the
+service. This attribute is not very relevant, you can call it
+whatever you like.
 
 
 <Service name="WeSIP-Standalone">
 
 
 Within the Service element must be two or more elements: the
-          connectors and the engines. A connector is the instance that will
-          receive messages from the network. You can specify HTTP connectors
-          and/or SIP connectors. Every connector needs an attribute called
-          "className" which specifies which class will be responsible for
-          receiving the messages from the network. For HTTP connectors, the
-          classname must be "org.apache.catalina.connector.http.HttpConnector"
-          and for SIP connectors
-          "com.voztele.sipservlet.connector.SipConnector".
+connectors and the engines. A connector is the instance that will
+receive messages from the network. You can specify HTTP connectors
+and/or SIP connectors. Every connector needs an attribute called
+"className" which specifies which class will be responsible for
+receiving the messages from the network. For HTTP connectors, the
+classname must be "org.apache.catalina.connector.http.HttpConnector"
+and for SIP connectors
+"com.voztele.sipservlet.connector.SipConnector".
 
 
 ##### Connector
@@ -481,10 +481,10 @@ minProcessors="5"
 
 
 specifies the minimum number of SIPprocessor instances (and
-          threads in the pool) to process incoming SIP messages. More
-          processors should allow more load to be processed. This is the
-          minimum number of instances, even if they are spare and not
-          working.
+threads in the pool) to process incoming SIP messages. More
+processors should allow more load to be processed. This is the
+minimum number of instances, even if they are spare and not
+working.
 
 
 ```c
@@ -493,7 +493,7 @@ maxProcessors="10"
 
 
 specifies the maximum number of SIP processors used (a
-          negative value specifies that there is no limit).
+negative value specifies that there is no limit).
 
 
 ```c
@@ -502,15 +502,15 @@ addresses="localhost:5060"
 
 
 Specifies the SIP address and port in which the Application
-          Server from which the Application Server will process the SIP
-          messages. This Addres is where OpenSIPS listens for the messages, so
-          in fact, OpenSIPS is listening on them, but OpenSIPS passes the
-          messages to WeSIP, so WeSIP must be aware of this IP/port.
+Server from which the Application Server will process the SIP
+messages. This Addres is where OpenSIPS listens for the messages, so
+in fact, OpenSIPS is listening on them, but OpenSIPS passes the
+messages to WeSIP, so WeSIP must be aware of this IP/port.
 
 
 > [!WARNING]
 > this attribute MUST match one of the listening points
-            declared within OpenSIPS in the "listen" parameters. For example in opensips.cfg:
+declared within OpenSIPS in the "listen" parameters. For example in opensips.cfg:
 ```opensips
 listen = tcp:localhost:5060
 listen = udp:localhost:5060
@@ -518,51 +518,51 @@ listen = udp:localhost:5060
 
 
 Within the SIP Connector element there must be an
-          ExtraProperties element, containing nestes Property elements. Each
-          property element specifies a parameter for the SIP Stack. Each
-          property is specified by a key and a value. The most significant
-          keys are:
+ExtraProperties element, containing nestes Property elements. Each
+property element specifies a parameter for the SIP Stack. Each
+property is specified by a key and a value. The most significant
+keys are:
 
 
 - com.voztele.javax.sip.SER_ADDRESS
 This specifies the IP and port in which the OpenSIPS is
-              listening for Application Servers to connect and register.This
-              specifies the IP and port in which the OpenSIPS is listening for
-              Application Servers to connect and register.
+listening for Application Servers to connect and register.This
+specifies the IP and port in which the OpenSIPS is listening for
+Application Servers to connect and register.
 This needs to match the
-                  `listen_sockets` seas module parameter
-                  within the OpenSIPS configuration file. Ie.:
+`listen_sockets` seas module parameter
+within the OpenSIPS configuration file. Ie.:
 
                   ```c
 modparam("seas", "listen_sockets","127.0.0.1:5080")
 ```
 - javax.sip.STACK_NAME
 Specifies the name identifying this instance of the
-              Application Server.
+Application Server.
 This is the name you will set in the OpenSIPS
-                  configuration script when you invoke the WeSIP Application
-                  Server, by calling the as_relay_t function. This is the name
-                  you pass as the parameter of the function. If you have
-                  different WeSIP instances all connecting to the same
-                  OpenSIPS, they must each one have a different STACK_NAME",
-                  and within OpenSIPS you can call each of them by invoking
-                  as_relay_t() with a different name. Example:
+configuration script when you invoke the WeSIP Application
+Server, by calling the as_relay_t function. This is the name
+you pass as the parameter of the function. If you have
+different WeSIP instances all connecting to the same
+OpenSIPS, they must each one have a different STACK_NAME",
+and within OpenSIPS you can call each of them by invoking
+as_relay_t() with a different name. Example:
 
                   ```c
 <Property key="javax.sip.STACK_NAME" value="app_server_one" />
 ```
 - com.voztele.javax.sip.THREAD_POOL_SIZE (integer)
 Specifies the number of threads there must be in the pool
-              to process incoming SIP messages. If unspecificed, the default
-              is "infinity".
+to process incoming SIP messages. If unspecificed, the default
+is "infinity".
 - com.voztele.javax.sip.SPIRAL_HDR
 This property tells WeSIP and SEAS that every SipRequest
-              and UAC transaction generated from WeSIP, must spiral through
-              SER, and will be added a special Header called "X-WeSIP-SPIRAL:
-              true" this will make all the outgoing messages pass again
-              through the OpenSIPS script, so that they can be accounted or
-              whatever the configurator wants. For example, the configuration
-              script could go:
+and UAC transaction generated from WeSIP, must spiral through
+SER, and will be added a special Header called "X-WeSIP-SPIRAL:
+true" this will make all the outgoing messages pass again
+through the OpenSIPS script, so that they can be accounted or
+whatever the configurator wants. For example, the configuration
+script could go:
 ```opensips
 route{
         if(is_present_hf("X-WeSIP-SPIRAL")){
@@ -579,111 +579,111 @@ route{
 
 
 The Engine must also be nested within the Server element,
-          along with the Connectors. It must have a "name" attribute with
-          whatever name you feel like. It needs to have another attribute
-          called "defaultHost" which will be the default host to which to pass
-          the incoming request (in HTTP/1.0 the requests dont have a Host
-          header, so they will be passed to this default host, in SIP, this
-          attribute doesn't have a meaning.). In order to have this Engine
-          handling also SIP messages, the "className" attribute of the Engine
-          *must be
-          "com.voztele.sipservlet.core.ConvergedEngine".*
+along with the Connectors. It must have a "name" attribute with
+whatever name you feel like. It needs to have another attribute
+called "defaultHost" which will be the default host to which to pass
+the incoming request (in HTTP/1.0 the requests dont have a Host
+header, so they will be passed to this default host, in SIP, this
+attribute doesn't have a meaning.). In order to have this Engine
+handling also SIP messages, the "className" attribute of the Engine
+*must be
+"com.voztele.sipservlet.core.ConvergedEngine".*
 
 
 Within the Engine, there can be one or more Hosts, each one
-          specified within a "Host" element nested in the engine.
+specified within a "Host" element nested in the engine.
 
 
 ##### Mapper
 
 
 A mapper is used to map an incoming request to one or another
-          SIP or HTTP host. In case it is a SIP request, the mapping is done
-          based on the sip.xml deployment descriptor rules. The classname of
-          the SIP mapper MUST BE
-          "com.voztele.sipservlet.core.EngineSipMapper". The "mapper" element
-          must also have a "protocol" attribute, specifying which protocol
-          this mapper handles. In*case of the SIP mapper it must be
-          "SIP/2.0". The HTTP mapper's classname must be
-          "org.apache.catalina.core.StandardEngineMapper" and the protocol
-          attribute "HTTP/1.1"*
+SIP or HTTP host. In case it is a SIP request, the mapping is done
+based on the sip.xml deployment descriptor rules. The classname of
+the SIP mapper MUST BE
+"com.voztele.sipservlet.core.EngineSipMapper". The "mapper" element
+must also have a "protocol" attribute, specifying which protocol
+this mapper handles. In*case of the SIP mapper it must be
+"SIP/2.0". The HTTP mapper's classname must be
+"org.apache.catalina.core.StandardEngineMapper" and the protocol
+attribute "HTTP/1.1"*
 
 
 ##### Realm
 
 
 The authentication in HTTP is performed in Apache-Tomcat
-          through Realms. The memory realm is (textual copy from the
-          Apache-Tomcat javadoc"): "Simple implementation of Realm that reads
-          an XML file to configure the valid users, passwords, and
-          roles."
+through Realms. The memory realm is (textual copy from the
+Apache-Tomcat javadoc"): "Simple implementation of Realm that reads
+an XML file to configure the valid users, passwords, and
+roles."
 
 
 The classname must be
-          "org.apache.catalina.realm.MemoryRealm"
+"org.apache.catalina.realm.MemoryRealm"
 
 
 A "pathname" attribute can be specified to tell the Realm
-          which file contains the usernames, passwords and roles. If not
-          specified, it is "conf/wesip-users.xml"
+which file contains the usernames, passwords and roles. If not
+specified, it is "conf/wesip-users.xml"
 
 
 ##### Host
 
 
 A Host represents a VirtualHost in HTTP/1.1 servers, so the
-          requests will be dispatched to one or another virtual host depending
-          on the Host: header. In SIP this doesn't make much sense, because
-          there's no such Host: header, and virtual hosting is not done in
-          this way. Every host must have a "name" attribute which specifies
-          the name of the virtual host, it must also have a "nameSip"
-          attribute which MUST MATCH the IP or hostname _and_ port" specified
-          in OpenSIPS listen parameters and in the Sip Connector the hostname
-          and the port must be separated with an underscore. for example:
-          nameSip="localhost_5060" or nameSip="192.168.1.1_5060" The next
-          important attribute that must have the Host element is "appBase"
-          which declares the directory where the WEB and SIP applications
-          reside. It usually is a directory called apps in the directory from
-          which the server runs. The attribute "unpackWARs" says the WeSIP
-          Application Server to unpack the Web or Sip Application Archives
-          (.war or .sar extensions) found inside the appBase directory. It
-          should usually be set to "true". The "port" attribute specifies the
-          port where this host is going to receive SIP messages . This only
-          has to do with the SIP protocol, not with HTTP. It must be the same
-          as the port specified in OpenSIPS parameter "listen_sockets" (for the
-          seas module). The "autoDeploy" attribute tells the host to monitor
-          the "appBase" directory for new application archives (.sar or .war)
-          so they can automatically be deployed. This parameter should be set
-          to "true". The "className" used for the Host _must_be_
-          "com.voztele.sipservlet.core.ConvergedHost"
+requests will be dispatched to one or another virtual host depending
+on the Host: header. In SIP this doesn't make much sense, because
+there's no such Host: header, and virtual hosting is not done in
+this way. Every host must have a "name" attribute which specifies
+the name of the virtual host, it must also have a "nameSip"
+attribute which MUST MATCH the IP or hostname _and_ port" specified
+in OpenSIPS listen parameters and in the Sip Connector the hostname
+and the port must be separated with an underscore. for example:
+nameSip="localhost_5060" or nameSip="192.168.1.1_5060" The next
+important attribute that must have the Host element is "appBase"
+which declares the directory where the WEB and SIP applications
+reside. It usually is a directory called apps in the directory from
+which the server runs. The attribute "unpackWARs" says the WeSIP
+Application Server to unpack the Web or Sip Application Archives
+(.war or .sar extensions) found inside the appBase directory. It
+should usually be set to "true". The "port" attribute specifies the
+port where this host is going to receive SIP messages . This only
+has to do with the SIP protocol, not with HTTP. It must be the same
+as the port specified in OpenSIPS parameter "listen_sockets" (for the
+seas module). The "autoDeploy" attribute tells the host to monitor
+the "appBase" directory for new application archives (.sar or .war)
+so they can automatically be deployed. This parameter should be set
+to "true". The "className" used for the Host _must_be_
+"com.voztele.sipservlet.core.ConvergedHost"
 
 
 ##### Mapper
 
 
 Hosts must also have a nested Mapper element, but when the
-          mapper is inside a Host (and not in an Engine) the classnames must
-          be "com.voztele.sipservlet.core.SipHostMapper" for the "SIP/2.0"
-          protocol and "org.apache.catalina.core.HttpHostMapper" for the
-          "HTTP/1.1" protocol. (2 mappers must be nested inside the
-          Host).
+mapper is inside a Host (and not in an Engine) the classnames must
+be "com.voztele.sipservlet.core.SipHostMapper" for the "SIP/2.0"
+protocol and "org.apache.catalina.core.HttpHostMapper" for the
+"HTTP/1.1" protocol. (2 mappers must be nested inside the
+Host).
 
 
 #### Configuration Examples
 
 
 In general, you can configure WeSIP to work with your OpenSIPS in
-        two ways: have 2 OpenSIPS instances, the first acting as
-        Proxy/Registrar/Redirect and the second cooperating with WeSIP to act
-        as the Application Server. This is the preferred deployment layout, as
-        the first OpenSIPS works as usual, and the requests that need special
-        services are relaied to another OpenSIPS which acts on behalf of the
-        WeSIP AS. This configuration profile distributes load (call-routing
-        logic in one instance, and Application Services in the other), and is
-        also more fault-tolerant. On the other hand, you can have all your
-        call-routing logic and Application Server on the same OpenSIPS, having
-        one script handle all the logic, and then invoking the App Server at
-        any point.
+two ways: have 2 OpenSIPS instances, the first acting as
+Proxy/Registrar/Redirect and the second cooperating with WeSIP to act
+as the Application Server. This is the preferred deployment layout, as
+the first OpenSIPS works as usual, and the requests that need special
+services are relaied to another OpenSIPS which acts on behalf of the
+WeSIP AS. This configuration profile distributes load (call-routing
+logic in one instance, and Application Services in the other), and is
+also more fault-tolerant. On the other hand, you can have all your
+call-routing logic and Application Server on the same OpenSIPS, having
+one script handle all the logic, and then invoking the App Server at
+any point.
 
 
 ##### opensips.cfg in standalone
@@ -834,235 +834,235 @@ route{
 
 
 The SEAS module runs within the Open Sip Express Router aka.
-      OpenSIPS. OpenSIPS uses a pool of processes to execute the script logic on
-      every new message received. These are called the worker processes. One
-      of these processes will be selected to process the script, and at some
-      point it will find a function invoking the relay of the SIP message to
-      one of the Application Servers registered. This function has been called
-      as_relay_t, which stands for Application Server relay (the _t stands for
-      TransactionStatefully), and receives as the only parameter the name of
-      the application server to be invoked.
+OpenSIPS. OpenSIPS uses a pool of processes to execute the script logic on
+every new message received. These are called the worker processes. One
+of these processes will be selected to process the script, and at some
+point it will find a function invoking the relay of the SIP message to
+one of the Application Servers registered. This function has been called
+as_relay_t, which stands for Application Server relay (the _t stands for
+TransactionStatefully), and receives as the only parameter the name of
+the application server to be invoked.
 
 
 The process will execute the as_relay_t function, which looks up
-      in a table if there is a registered Application Server with that name.
-      If there is one, the process will craft the SEAS header for the SIP
-      message being handled, put it in a shared memory segment, and write the
-      address of that segment to a pipe (4 bytes pointer in IA32).
+in a table if there is a registered Application Server with that name.
+If there is one, the process will craft the SEAS header for the SIP
+message being handled, put it in a shared memory segment, and write the
+address of that segment to a pipe (4 bytes pointer in IA32).
 
 
 This way, we will have all the OpenSIPS processes composing the
-      SEAS header along with the SIP message, and putting its shared memory
-      address into that pipe. This technique of inter-process communication
-      avoids race conditions because writing to a pipe is granted to be an
-      atomic operation if the data to write is less than _POSIX_PIPE_BUF,
-      which usually is 512 bytes.
+SEAS header along with the SIP message, and putting its shared memory
+address into that pipe. This technique of inter-process communication
+avoids race conditions because writing to a pipe is granted to be an
+atomic operation if the data to write is less than _POSIX_PIPE_BUF,
+which usually is 512 bytes.
 
 
 At the initialization of OpenSIPS, the SEAS module creates the
-      discussed pipe, so that all the OpenSIPS worker processes inherit the
-      file descriptor associated to the pipe. Then it spawns a new process,
-      which will be the one to open two server sockets, and wait for the
-      Application Servers to connect and register.
+discussed pipe, so that all the OpenSIPS worker processes inherit the
+file descriptor associated to the pipe. Then it spawns a new process,
+which will be the one to open two server sockets, and wait for the
+Application Servers to connect and register.
 
 
 Each Application Server wishing to receive events from OpenSIPS,
-      will have to open a socket to the module (the port and IP of the socket
-      are defined at start time in the script). After connection, it has to
-      print its identification name. The SEAS process (from now on, called
-      event dispatcher) will then register it in its internal structures, so
-      that the OpenSIPS processes can push events for it. The following
-      picture, shows the internals of the SEAS Event dispatcher
-      process:
+will have to open a socket to the module (the port and IP of the socket
+are defined at start time in the script). After connection, it has to
+print its identification name. The SEAS process (from now on, called
+event dispatcher) will then register it in its internal structures, so
+that the OpenSIPS processes can push events for it. The following
+picture, shows the internals of the SEAS Event dispatcher
+process:
 
 
 Within the SER server, the flowing of SIP Messages and
-      control flow, is depicted in the following diagram:
+control flow, is depicted in the following diagram:
 
 
 ### SEAS Protocol
 
 
 SIP is a very flexible protocol. It can be very easily extended
-      with new features, and SIP entities have a high level of freedom in
-      composing the SIP messages, for example setting IPs or hostnames in
-      URIs, reordering header fields, folding headers, aggregating/scattering
-      headers, etc.
+with new features, and SIP entities have a high level of freedom in
+composing the SIP messages, for example setting IPs or hostnames in
+URIs, reordering header fields, folding headers, aggregating/scattering
+headers, etc.
 
 
 This flexibility, though, makes it difficult to implement
-      efficiently, because parsing of text headers requires a lot of
-      state.
+efficiently, because parsing of text headers requires a lot of
+state.
 
 
 OpenSIPS implements a very efficient parsing mechanism and
-      SIP-transaction machinery. The goal of the SEAS protocol is to keep all
-      this information that has been already extracted at OpenSIPS, so that it
-      can be reused at the Application Server.
+SIP-transaction machinery. The goal of the SEAS protocol is to keep all
+this information that has been already extracted at OpenSIPS, so that it
+can be reused at the Application Server.
 
 
 #### The SEAS protocol
 
 
 The SEAS protocol is a layer of information regarding the
-        internal structure of a SIP message that is added whenever SEAS sends
-        a SIP event to the Application Servers. The protocol is used for
-        communication between OpenSIPS and the Application Servers.
+internal structure of a SIP message that is added whenever SEAS sends
+a SIP event to the Application Servers. The protocol is used for
+communication between OpenSIPS and the Application Servers.
 
 
 Once an incoming SIP message has reached the worker process
-        within OpenSIPS, it copies its content into a private memory area
-        (which is, a memory chunk not shared across processes). In this point,
-        the message first line is parsed to know whether it is a SIP request
-        or response.
+within OpenSIPS, it copies its content into a private memory area
+(which is, a memory chunk not shared across processes). In this point,
+the message first line is parsed to know whether it is a SIP request
+or response.
 
 
 OpenSIPS uses a technique called lazy-parsing, which consists in
-        delaying the parse of headers until some piece of the code requires
-        it.
+delaying the parse of headers until some piece of the code requires
+it.
 
 
 As the SIP message goes traversing functions and the script
-        code, a function called parse_msg() gets called again and again, and
-        the SIP message gets parsed further and further. Each call to
-        parse_msg passes an integer value argument (32 bits) in which every
-        bit signals a header to be parsed, if they are already parsed (because
-        a previous invocation of parse_msg), the function returns immediately,
-        otherwise, the SIP message is scanned and parsed until all the headers
-        requested get parsed.
+code, a function called parse_msg() gets called again and again, and
+the SIP message gets parsed further and further. Each call to
+parse_msg passes an integer value argument (32 bits) in which every
+bit signals a header to be parsed, if they are already parsed (because
+a previous invocation of parse_msg), the function returns immediately,
+otherwise, the SIP message is scanned and parsed until all the headers
+requested get parsed.
 
 
 In each call to parse_msg, different parts of the message are
-        analyzed, and different SIP header-specific structures get filled.
-        Each one of this structures, give quick access to each of the parts of
-        a SIP message header.
+analyzed, and different SIP header-specific structures get filled.
+Each one of this structures, give quick access to each of the parts of
+a SIP message header.
 
 
 For example, a Via header struct is called via_body, and has
-        these members: name, version, transport, host, proto, port, port_str,
-        params, comment, received, rport, etc. each of these members gives
-        quick access to each of the parts of the header. For example, a via
-        header like this: “Via: SIP/2.0/UDP
-        192.168.1.64:5070;branch=z9hG4bK-c02c60cc” would have the member proto
-        pointing to the “U” of “UDP”, and a length of 3, the host member would
-        be pointing to “192.168.1.64” and have a length of 12, the branch
-        member would be pointing to “z9hG4bK-c02c60cc” and a length of 16, and
-        so on.
+these members: name, version, transport, host, proto, port, port_str,
+params, comment, received, rport, etc. each of these members gives
+quick access to each of the parts of the header. For example, a via
+header like this: “Via: SIP/2.0/UDP
+192.168.1.64:5070;branch=z9hG4bK-c02c60cc” would have the member proto
+pointing to the “U” of “UDP”, and a length of 3, the host member would
+be pointing to “192.168.1.64” and have a length of 12, the branch
+member would be pointing to “z9hG4bK-c02c60cc” and a length of 16, and
+so on.
 
 
 This structure is the result of the parsing. All this
-        meta-information regarding the SIP message structure, is stored in a
-        sip_msg structure, using dynamically-allocated memory segments.
+meta-information regarding the SIP message structure, is stored in a
+sip_msg structure, using dynamically-allocated memory segments.
 
 
 OpenSIPS defines different structure types describing different
-        SIP headers, such as via_body, to_body, cseq_body, via_param, and so
-        on. These structures are generally composed of another kind of
-        structure called str.
+SIP headers, such as via_body, to_body, cseq_body, via_param, and so
+on. These structures are generally composed of another kind of
+structure called str.
 
 
 The str structure is a key component of OpenSIPS's high
-        performance. In the C programming language, a string's length is known
-        because a '0' (null-character) is found at the end of it. This forces
-        each of the string manipulation functions to keep looking for a '0' in
-        the byte stream, which is quite processor consuming. Instead of this,
-        OpenSIPS defines a structure composed of a char pointer and an integer.
-        The char points to the start of a string, and the integer gives its
-        length, thus avoiding the '0' lookup problem, and giving a significant
-        performance boost.
+performance. In the C programming language, a string's length is known
+because a '0' (null-character) is found at the end of it. This forces
+each of the string manipulation functions to keep looking for a '0' in
+the byte stream, which is quite processor consuming. Instead of this,
+OpenSIPS defines a structure composed of a char pointer and an integer.
+The char points to the start of a string, and the integer gives its
+length, thus avoiding the '0' lookup problem, and giving a significant
+performance boost.
 
 
 This structure has been quite useful to the design of the SEAS
-        protocol, because it enables the description of the SIP message
-        anatomy by giving pointers to each of its fields, and integers
-        describing each of its lengths.
+protocol, because it enables the description of the SIP message
+anatomy by giving pointers to each of its fields, and integers
+describing each of its lengths.
 
 
 Knowing that a SIP header does not usually occupy more than a
-        few characters (always less than 256), the pointer in the structure
-        has been relativized to the beginning of the SIP message or the
-        beginning of the SIP header, and the integer giving the length, has
-        been casted to an unsigned byte (256 values, so 256 characters maximum
-        length).
+few characters (always less than 256), the pointer in the structure
+has been relativized to the beginning of the SIP message or the
+beginning of the SIP header, and the integer giving the length, has
+been casted to an unsigned byte (256 values, so 256 characters maximum
+length).
 
 
 When messages get transferred from OpenSIPS to the Application
-        Server, it is optimum to keep this worthy meta-information regarding
-        the SIP message, so that it can be used at the AS part. For this to be
-        possible, it is needed to store the pointers to each of the syntactic
-        structures and their length.
+Server, it is optimum to keep this worthy meta-information regarding
+the SIP message, so that it can be used at the AS part. For this to be
+possible, it is needed to store the pointers to each of the syntactic
+structures and their length.
 
 
 In general, pointers are variables that point to a region in the
-        memory of a computer. The region of the memory is counted from the
-        0x00000000 address in IA32 architectures (from the beginning).
+memory of a computer. The region of the memory is counted from the
+0x00000000 address in IA32 architectures (from the beginning).
 
 
 C provides functionality to do any kind of arithmetic operations
-        over pointers (add, subtract, multiply and divide), so that the
-        euclidean distance over the one-dimension address space can be
-        calculated just by subtracting a base address from another
-        pointer.
+over pointers (add, subtract, multiply and divide), so that the
+euclidean distance over the one-dimension address space can be
+calculated just by subtracting a base address from another
+pointer.
 
 
 These pointers will have to be transmitted through the network,
-        along with the SIP message, so for the pointers to keep their meaning,
-        they need to be relativized to a known point, and the most meaningful
-        known point in a SIP message is its start.
+along with the SIP message, so for the pointers to keep their meaning,
+they need to be relativized to a known point, and the most meaningful
+known point in a SIP message is its start.
 
 
 So making the pointers relative to the message start, gives two
-        important features: first, it makes the pointers still valid when they
-        arrive at another computer (because they are relative to the beginning
-        of the message), and they occupy far less memory, because from a
-        4-byte pointer (in IA32) it gets translated to a 1 or 2 byte index,
-        because an important amount of redundant information is elicited (we
-        already know that each of the parts of the message belong to the
-        message, so why carry the message begin address in each of the
-        pointers ?).
+important features: first, it makes the pointers still valid when they
+arrive at another computer (because they are relative to the beginning
+of the message), and they occupy far less memory, because from a
+4-byte pointer (in IA32) it gets translated to a 1 or 2 byte index,
+because an important amount of redundant information is elicited (we
+already know that each of the parts of the message belong to the
+message, so why carry the message begin address in each of the
+pointers ?).
 
 
 The SIP messages are composed of protocol headers and a payload.
-        The headers section don't usually surpass the 1500 byte limit, amongst
-        other reasons, because the usual Maximum Transmission Unit in Ethernet
-        networks is 1500 bytes and the protocol was initially designed to work
-        on UDP. For that reason, 11 bits should be enough to address a
-        particular region within the SIP message, because it yields 2048
-        positions. The closest greater value to 11 bits multiple of a byte
-        (the basic TCP network transport unit) is 16 bits, or 2 bytes, which
-        makes it possible to address 65536 positions from the
-        beginning.
+The headers section don't usually surpass the 1500 byte limit, amongst
+other reasons, because the usual Maximum Transmission Unit in Ethernet
+networks is 1500 bytes and the protocol was initially designed to work
+on UDP. For that reason, 11 bits should be enough to address a
+particular region within the SIP message, because it yields 2048
+positions. The closest greater value to 11 bits multiple of a byte
+(the basic TCP network transport unit) is 16 bits, or 2 bytes, which
+makes it possible to address 65536 positions from the
+beginning.
 
 
 For the SEAS protocol to be extensible and platform-independent,
-        all the 2-byte pointers or indexes to each of the message regions are
-        sent in network-byte-order, or big endian. This is also useful in the
-        JAVA part to retrieve the indexes, because the JAVA natively uses a
-        big-endian representation of integers, regardless the architecture on
-        which it runs.
+all the 2-byte pointers or indexes to each of the message regions are
+sent in network-byte-order, or big endian. This is also useful in the
+JAVA part to retrieve the indexes, because the JAVA natively uses a
+big-endian representation of integers, regardless the architecture on
+which it runs.
 
 
 For each kind of standard SIP header (this is, the headers
-        referred to in the SIP specification) there is a code specification,
-        regarding the composition of the header. Each one of its parts points
-        to one the several components of the header. For example, a From
-        header always has a SipURI and may have several parameters, amongst
-        others, a tag. Then, the From header code has a field indicating where
-        the URI starts, a codification of the URI, and several pointers that
-        point to each one of the parameter names and values. This is the
-        codification of the From header. All the other headers have a similar
-        codification.
+referred to in the SIP specification) there is a code specification,
+regarding the composition of the header. Each one of its parts points
+to one the several components of the header. For example, a From
+header always has a SipURI and may have several parameters, amongst
+others, a tag. Then, the From header code has a field indicating where
+the URI starts, a codification of the URI, and several pointers that
+point to each one of the parameter names and values. This is the
+codification of the From header. All the other headers have a similar
+codification.
 
 
 #### General codification of a header
 
 
 Every header codification, regardless it is known to the server
-        or not, begins with a 2-byte unsigned integer, which points to the
-        beginning of that header counted from the SIP message begin (a SIP
-        message start based pointer to the header). Following these two bytes
-        is another byte giving the length of the name, and another byte giving
-        the length of the entire header (including name and value).
+or not, begins with a 2-byte unsigned integer, which points to the
+beginning of that header counted from the SIP message begin (a SIP
+message start based pointer to the header). Following these two bytes
+is another byte giving the length of the name, and another byte giving
+the length of the entire header (including name and value).
 
 
 For example:
@@ -1072,167 +1072,167 @@ For example:
 
 
 As the SIP URI is one of the most used types in a SIP message,
-          a special structure has been defined to describe the contents of it.
-          A URI is always included inside a SIP header, or may be in the first
-          line of a SIP Request (as the request URI).
+a special structure has been defined to describe the contents of it.
+A URI is always included inside a SIP header, or may be in the first
+line of a SIP Request (as the request URI).
 
 
 The codification of any URI is as follows:
 
 
 What follows is an example of a SIP URI codification with the
-          SEAS protocol.
+SEAS protocol.
 
 
 The first byte in the encoded-URI structure, gives the
-          index where the URI starts, counting from the beginning of the SIP
-          header where it appears. The next two bytes are flags indicating
-          known fields present in the URI (such as port, host, user,
-          etc.).
+index where the URI starts, counting from the beginning of the SIP
+header where it appears. The next two bytes are flags indicating
+known fields present in the URI (such as port, host, user,
+etc.).
 
 
 All the following bytes are uri-start based pointers to the
-          fields that are present in the URI, as specified by the flags. They
-          must appear in the same order shown in the flags, and only appear if
-          the flag was set to 1.
+fields that are present in the URI, as specified by the flags. They
+must appear in the same order shown in the flags, and only appear if
+the flag was set to 1.
 
 
 The end of the field, will be the place where the following
-          pointer points to, minus one (note that all the fields present in a
-          URI are preceded by 1 character, ie
-          sip[:user][:passwod][@host][:port][;param1=x][;param2=y][?hdr1=a][&hdr2=b])
-          it will also be necessary to have a pointer at the end, pointing two
-          past the end of the URI, so that the length of the last header can
-          be computed.
+pointer points to, minus one (note that all the fields present in a
+URI are preceded by 1 character, ie
+sip[:user][:passwod][@host][:port][;param1=x][;param2=y][?hdr1=a][&hdr2=b])
+it will also be necessary to have a pointer at the end, pointing two
+past the end of the URI, so that the length of the last header can
+be computed.
 
 
 The reason to have the “other parameters” and headers flags at
-          the beginning (just after the strictly URI stuff), is that it will
-          be necessary to know the length of the parameters section and the
-          headers section. The parameters can appear in an arbitrary order,
-          they won't be following the convention of
-          transport-ttl-user-method-maddr-lr, so we can't rely on the next
-          pointer to compute the length of the previous pointer field, as the
-          ttl parameter can appear before the transport parameter. So the
-          parameter pointers must have 2 bytes: pointer+length.
+the beginning (just after the strictly URI stuff), is that it will
+be necessary to know the length of the parameters section and the
+headers section. The parameters can appear in an arbitrary order,
+they won't be following the convention of
+transport-ttl-user-method-maddr-lr, so we can't rely on the next
+pointer to compute the length of the previous pointer field, as the
+ttl parameter can appear before the transport parameter. So the
+parameter pointers must have 2 bytes: pointer+length.
 
 
 ##### Codification of To and From headers
 
 
 To and From headers follow the same structure, so the same
-          codification structure has been used to describe both. The structure
-          is depicted in the drawing:
+codification structure has been used to describe both. The structure
+is depicted in the drawing:
 
 
 ##### Codification of Contact
 
 
 The contact header is one of those SIP headers that can be
-          combined, which means that if several headers of the same type are
-          present in the message, they can be aggregated in a single header,
-          having the header values separated by a comma. Thus, a single
-          Contact header can contain more than one contact-value. For this
-          reason, the Contact codification is composed of a several Contact
-          codifications concatenated, and a byte at the beginning telling how
-          much Contact codifications are present. The code is depicted in the
-          following drawing:
+combined, which means that if several headers of the same type are
+present in the message, they can be aggregated in a single header,
+having the header values separated by a comma. Thus, a single
+Contact header can contain more than one contact-value. For this
+reason, the Contact codification is composed of a several Contact
+codifications concatenated, and a byte at the beginning telling how
+much Contact codifications are present. The code is depicted in the
+following drawing:
 
 
 ##### Codification of Route and Record Route headers
 
 
 Both Route and Record-Route headers follow an identical
-          structure, and it is also permitted to combine several headers into
-          one, with their bodies (or header values) separated by commas. In
-          this case, both kinds of headers follow the same structure, defined
-          as follows:
+structure, and it is also permitted to combine several headers into
+one, with their bodies (or header values) separated by commas. In
+this case, both kinds of headers follow the same structure, defined
+as follows:
 
 
 ##### Codification of Accept and Content-Type headers
 
 
 These two kinds of headers carry mime type and subtype
-          definitions in the form “type/subtype” (ie. text/xml,
-          application/sdp or whatever). For internal handling of this headers,
-          SER codifies the known types and subtypes into a single 32 bit
-          integer, with the highest two bytes giving the mime type, and the
-          lowest two bytes giving the subtype.
+definitions in the form “type/subtype” (ie. text/xml,
+application/sdp or whatever). For internal handling of this headers,
+SER codifies the known types and subtypes into a single 32 bit
+integer, with the highest two bytes giving the mime type, and the
+lowest two bytes giving the subtype.
 
 
 The difference is that Accept header can also be combined,
-          carrying more than one header value in a single header row. Thus the
-          Accept header has a leading byte giving the number of mime
-          type/subtype integers present, while the Content-Type only uses 4
-          bytes (a 32-bit integer) giving the type/subtype.
+carrying more than one header value in a single header row. Thus the
+Accept header has a leading byte giving the number of mime
+type/subtype integers present, while the Content-Type only uses 4
+bytes (a 32-bit integer) giving the type/subtype.
 
 
 ##### Codification of Authorization headers
 
 
 SIP has inherited the authentication scheme from HTTP, which
-          is based on a digest scheme. There are several headers regarding
-          these authorization scheme, namely Proxy-Authenticate,
-          WWW-Authenticate, Authorization and Proxy-Authorization. All of them
-          can be codified using the same schema, which is as follows:
+is based on a digest scheme. There are several headers regarding
+these authorization scheme, namely Proxy-Authenticate,
+WWW-Authenticate, Authorization and Proxy-Authorization. All of them
+can be codified using the same schema, which is as follows:
 
 
 For each field present, there are 2 bytes, one pointing the
-          place where it starts, the next giving how long this field is. The
-          URI is a special case, and is composed of 1 byte telling how long is
-          the URI structure, and then the encoded URI structure.
+place where it starts, the next giving how long this field is. The
+URI is a special case, and is composed of 1 byte telling how long is
+the URI structure, and then the encoded URI structure.
 
 
 ##### Codification of Allow headers
 
 
 Allow headers carry request methods that a user agent or proxy
-          understands or is willing to accept. In SER, request methods are
-          codified into a 32-bit integer, each of its bits signals a different
-          kind of header. The Allow header is codified copying that integer
-          into the payload of the header.
+understands or is willing to accept. In SER, request methods are
+codified into a 32-bit integer, each of its bits signals a different
+kind of header. The Allow header is codified copying that integer
+into the payload of the header.
 
 
 ##### Codification of Content-Disposition headers
 
 
 The content-disposition is encoded within 2 bytes: the first
-          is a header-start based pointer to where the content-disposition
-          value starts, and the second is its length. If there are parameters
-          present, each of them uses 1 byte pointing to where the parameter
-          name starts, and 1 byte pointing to where the parameter value
-          starts. From these two values, the parameter name and value lengths
-          can be inferred.
+is a header-start based pointer to where the content-disposition
+value starts, and the second is its length. If there are parameters
+present, each of them uses 1 byte pointing to where the parameter
+name starts, and 1 byte pointing to where the parameter value
+starts. From these two values, the parameter name and value lengths
+can be inferred.
 
 
 ##### Codification of Content-Length header
 
 
 The content length header is codified as a 4-byte unsigned
-          integer, in network byte order.
+integer, in network byte order.
 
 
 ##### Codification of Cseq header
 
 
 The Cseq header is codified using 9 bytes. The first one is a
-          number corresponding to the internal value that SER assigns to that
-          request method (the method ID). The following 4 bytes are an
-          unsigned 32-bit integer according to the Cseq number. The next two
-          bytes are the header based pointer to the beginning of the Cseq
-          number and its length, and two more bytes pointing to the beginning
-          of the method name and its length.
+number corresponding to the internal value that SER assigns to that
+request method (the method ID). The following 4 bytes are an
+unsigned 32-bit integer according to the Cseq number. The next two
+bytes are the header based pointer to the beginning of the Cseq
+number and its length, and two more bytes pointing to the beginning
+of the method name and its length.
 
 
 ##### Codification of Expires header
 
 
 The expires header is composed of 6 bytes. The first four
-          bytes are an unsigned 32-bit integer with the parsed value of the
-          header (which is the number of seconds before a request expires).
-          Then follows 1 byte pointing to the beginning of the header value
-          (the expires value as a string) and a byte giving the length of the
-          value.
+bytes are an unsigned 32-bit integer with the parsed value of the
+header (which is the number of seconds before a request expires).
+Then follows 1 byte pointing to the beginning of the header value
+(the expires value as a string) and a byte giving the length of the
+value.
 
 
 ##### Codification of a SIP message
@@ -1242,117 +1242,117 @@ The expires header is composed of 6 bytes. The first four
 
 
 In SER, not only the headers are parsed with a high degree
-            of optimization, but also the first line is. So for the SEAS
-            protocol to realize this improvement, a codification for the first
-            line of every SIP messages has also been defined.
+of optimization, but also the first line is. So for the SEAS
+protocol to realize this improvement, a codification for the first
+line of every SIP messages has also been defined.
 
 
 The first two bytes of the codification are a 2-byte
-            unsigned integer. If its value is equal or greater than 100, then
-            this is a response, and the integer represents its status code. If
-            its value is smaller than 100, then it is a request, and the
-            integer represents the method of the request being
-            transported.
+unsigned integer. If its value is equal or greater than 100, then
+this is a response, and the integer represents its status code. If
+its value is smaller than 100, then it is a request, and the
+integer represents the method of the request being
+transported.
 
 
 The next two bytes are an unsigned integer which is a
-            pointer to where the actual SIP message starts, beginning from the
-            start of the codified payload.
+pointer to where the actual SIP message starts, beginning from the
+start of the codified payload.
 
 
 The next two bytes are also an unsigned integer giving the
-            SIP message length.
+SIP message length.
 
 
 The next bytes differ on the meaning depending on whether
-            the message is a SIP Request or Response.
+the message is a SIP Request or Response.
 
 
 In case it is a Request:
 
 
 The next two bytes, are a SIP-message-start based pointer to
-            where the method begins, and the method length.
+where the method begins, and the method length.
 
 
 The next two bytes, are a SIP-message-start based pointer to
-            where the Request URI begins, and the request URI length.
+where the Request URI begins, and the request URI length.
 
 
 The next two bytes, are a SIP-message-start based pointer to
-            where the version identifier begins, and the version identifier
-            length.
+where the version identifier begins, and the version identifier
+length.
 
 
 In case it was a Response:
 
 
 The next two bytes, are a SIP-message-start based pointer to
-            where the response code begins, and the response code
-            length.
+where the response code begins, and the response code
+length.
 
 
 The next two bytes, are a SIP-message-start based pointer to
-            where the reason phrase begins, and the reason phrase
-            length.
+where the reason phrase begins, and the reason phrase
+length.
 
 
 The next two bytes, are a SIP-message-start based pointer to
-            where the version identifier begins, and the version identifier
-            length.
+where the version identifier begins, and the version identifier
+length.
 
 
 In case the message is a SIP response, the following bytes
-            correspond to the Request URI codification. The first byte is the
-            length of the URI codification, followed by the URI code.
+correspond to the Request URI codification. The first byte is the
+length of the URI codification, followed by the URI code.
 
 
 The last byte in this set, is the number of headers present
-            in the SIP message. After this byte, goes a section, called the
-            Message Headers Index, which gives quick access to each of the
-            headers and their codifications present in the message.
+in the SIP message. After this byte, goes a section, called the
+Message Headers Index, which gives quick access to each of the
+headers and their codifications present in the message.
 
 
 ###### The headers index section
 
 
 As it has been already discussed, the aim of SEAS project is
-            to achieve as high a performance as possible. One of the
-            techniques enabling high performance in text-based servers is the
-            so called lazy parsing. To enable the laziest possible parsing at
-            the Application Server endpoint, a mechanism has been used so that
-            access to a requested SIP header can be delayed until the
-            application requests it, and the access can be direct to that
-            header, without parsing the former headers present in the SIP
-            message. Recall that one of the performance drawbacks of the SIP
-            protocol is that headers of any type can be spread all along the
-            header section, not having the constraint of putting the most
-            critical sip-specific headers at the beginning and ordered (which
-            would be, in fact, very desirable).
+to achieve as high a performance as possible. One of the
+techniques enabling high performance in text-based servers is the
+so called lazy parsing. To enable the laziest possible parsing at
+the Application Server endpoint, a mechanism has been used so that
+access to a requested SIP header can be delayed until the
+application requests it, and the access can be direct to that
+header, without parsing the former headers present in the SIP
+message. Recall that one of the performance drawbacks of the SIP
+protocol is that headers of any type can be spread all along the
+header section, not having the constraint of putting the most
+critical sip-specific headers at the beginning and ordered (which
+would be, in fact, very desirable).
 
 
 For this to be possible, there is a section right after the
-            beginning of the payload (the general message information section)
-            which is a kind of hash table, giving quick access to the codes
-            (as explained in the previous sections) of each of the headers
-            present in the message.
+beginning of the payload (the general message information section)
+which is a kind of hash table, giving quick access to the codes
+(as explained in the previous sections) of each of the headers
+present in the message.
 
 
 This sort of hash table, is composed of triplets of bytes.
-            The first byte of each three is a code indicating which kind of
-            header it points to (whether it is a From, To, Call-ID, Route
-            header, etc). Then follows a 2 byte network-byte-order integer
-            that points to a section in the codified-header where the body of
-            this header is more specifically described.
+The first byte of each three is a code indicating which kind of
+header it points to (whether it is a From, To, Call-ID, Route
+header, etc). Then follows a 2 byte network-byte-order integer
+that points to a section in the codified-header where the body of
+this header is more specifically described.
 
 
 This gives really fast access to any of the headers. For
-            example, if all the Route Headers were requested by the
-            application, then a lookup in this table would be necessary,
-            looking for the value '9' (corresponding to the Route header) in
-            each of the positions multiple of 3 (0,3,6,9,12, etc). This can be
-            done in a extremely fast and easy way, as this snipped of pseudo
-            code explains:
+example, if all the Route Headers were requested by the
+application, then a lookup in this table would be necessary,
+looking for the value '9' (corresponding to the Route header) in
+each of the positions multiple of 3 (0,3,6,9,12, etc). This can be
+done in a extremely fast and easy way, as this snipped of pseudo
+code explains:
 
 
 for(int j=0,int i=0;i<table_length;i+=3){
@@ -1368,84 +1368,84 @@ results[j++]=i;
 
 
 this would let in the “results” array all the indexes in the
-            headers table that refer to a Route header. Then, the Route
-            codification for each of the headers could be reached thanks to
-            the two-byte unsigned integer that follows each of the header
-            identifiers.
+headers table that refer to a Route header. Then, the Route
+codification for each of the headers could be reached thanks to
+the two-byte unsigned integer that follows each of the header
+identifiers.
 
 
 So a SIP message codified by the SEAS protocol, has the
-            following layout:
+following layout:
 
 
 SIP Messages are a fundamental part of the protocol, but
-            they are not the only one. Transaction play a very important role
-            in the SIP protocol, within SER and in any JAIN-SIP
-            implementation. For this reason, the SEAS protocol also needs to
-            define and implement some semantics regarding transaction
-            handling. The events related to a transaction are: Incoming
-            Request, Outgoing Request, Incoming Response, Outgoing Response,
-            Timeout and Transport Error.
+they are not the only one. Transaction play a very important role
+in the SIP protocol, within SER and in any JAIN-SIP
+implementation. For this reason, the SEAS protocol also needs to
+define and implement some semantics regarding transaction
+handling. The events related to a transaction are: Incoming
+Request, Outgoing Request, Incoming Response, Outgoing Response,
+Timeout and Transport Error.
 
 
 So the SEAS protocol defines a specific format for each one
-            of these events. Internally, SER stores the transactions in a hash
-            table. This hash table generates an integer for each transaction
-            applying a hash function to its Via branch parameter, this integer
-            is the hash index, and it identifies in which slot within the hash
-            table the transaction is stored. The transaction table usually
-            uses 65536 entries, so the hash collision is pretty unlikely.
-            Anyway, every hash entry is in reality a linked list of
-            transactions, so in the case a hash collision (two transactions
-            being assigned to the same hash slot) the transactions are added
-            to the same slot, each one being identified by another integer
-            called the label. The label within a hash slot, is initially
-            generated randomly, and then increased by one each time a
-            transaction falls in the same slot. So every transaction is
-            identified by a hash index and a label.
+of these events. Internally, SER stores the transactions in a hash
+table. This hash table generates an integer for each transaction
+applying a hash function to its Via branch parameter, this integer
+is the hash index, and it identifies in which slot within the hash
+table the transaction is stored. The transaction table usually
+uses 65536 entries, so the hash collision is pretty unlikely.
+Anyway, every hash entry is in reality a linked list of
+transactions, so in the case a hash collision (two transactions
+being assigned to the same hash slot) the transactions are added
+to the same slot, each one being identified by another integer
+called the label. The label within a hash slot, is initially
+generated randomly, and then increased by one each time a
+transaction falls in the same slot. So every transaction is
+identified by a hash index and a label.
 
 
 For incoming SIP requests, a transaction is generated at
-            SER, and the SEAS module gets that transaction identifier (hash
-            index + label), then grabs the source and destination IP, port and
-            transport from every message, and crafts a SEAS RequestIn event.
-            This kind of event carries all this information within it.
+SER, and the SEAS module gets that transaction identifier (hash
+index + label), then grabs the source and destination IP, port and
+transport from every message, and crafts a SEAS RequestIn event.
+This kind of event carries all this information within it.
 
 
 In order to send Responses out for the Server Transactions,
-            JAIN can send a type of Action messages, that order SER to send
-            them to the network. These messages follow a structure very
-            similar to that of RequestIn events: they start with the Action
-            length in bytes, then follows a byte giving the type of action,
-            then follows the Hash Index and the Label associated with the
-            transaction that is being replied, and finally the SIP Message in
-            raw format. It doesn’t use the SEAS codification described above,
-            because SER can easily parse the JAIN provided Response to process
-            it and send it out, so the pre-parsing is not needed in that
-            direction.
+JAIN can send a type of Action messages, that order SER to send
+them to the network. These messages follow a structure very
+similar to that of RequestIn events: they start with the Action
+length in bytes, then follows a byte giving the type of action,
+then follows the Hash Index and the Label associated with the
+transaction that is being replied, and finally the SIP Message in
+raw format. It doesn’t use the SEAS codification described above,
+because SER can easily parse the JAIN provided Response to process
+it and send it out, so the pre-parsing is not needed in that
+direction.
 
 
 In order to generate Client Transactions, that is, sending
-            SIP Requests out, JAIN utilizes another kind of action called Seas
-            Request Action. In this case, when JAIN generates the Request to
-            be sent out, it doesn’t have any means to know the transaction
-            identifier (hash index and label) that will be assigned to it by
-            SER, so a new mechanism has bee implemented to correlate JAIN
-            requests to SER transactions. Basically, JAIN-SIP assigns a unique
-            identifier (an integer) that is incremented by one for each new
-            Client Transaction generated. This identifier is passed to SER
-            along with the SIP Request, so when a SIP Response arrives to SER
-            regarding that transaction, SER sends a ResponseIn event to the
-            JAIN stack, containing both the initial integer identifying the
-            transaction at JAIN and the hash index and label that have been
-            assigned to the transaction. This way, JAIN can correlate its own
-            identifiers with the identifiers used within SER.
+SIP Requests out, JAIN utilizes another kind of action called Seas
+Request Action. In this case, when JAIN generates the Request to
+be sent out, it doesn’t have any means to know the transaction
+identifier (hash index and label) that will be assigned to it by
+SER, so a new mechanism has bee implemented to correlate JAIN
+requests to SER transactions. Basically, JAIN-SIP assigns a unique
+identifier (an integer) that is incremented by one for each new
+Client Transaction generated. This identifier is passed to SER
+along with the SIP Request, so when a SIP Response arrives to SER
+regarding that transaction, SER sends a ResponseIn event to the
+JAIN stack, containing both the initial integer identifying the
+transaction at JAIN and the hash index and label that have been
+assigned to the transaction. This way, JAIN can correlate its own
+identifiers with the identifiers used within SER.
 
 
 In case there is a Transaction Timeout, it is notified to
-            the JAIN SIP Stack by passing it a Seas Incoming Response with a
-            flag called Faked Reply, and a Response code number 408 (Request
-            Timeout).
+the JAIN SIP Stack by passing it a Seas Incoming Response with a
+flag called Faked Reply, and a Response code number 408 (Request
+Timeout).
 <!-- CONTRIBUTORS -->
 
 ### License

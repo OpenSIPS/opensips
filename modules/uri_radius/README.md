@@ -19,7 +19,7 @@ This module implements some URI related Radius based tests.
 
 
 The module depends on the following modules (in the other words 
-			the listed modules must be loaded before this module):
+the listed modules must be loaded before this module):
 
 
 - *none*
@@ -29,11 +29,11 @@ The module depends on the following modules (in the other words
 
 
 The following libraries or applications must be installed 
-			before compilling OpenSIPS with this module loaded:
+before compilling OpenSIPS with this module loaded:
 
 
 - *radiusclient-ng* 0.5.0 or higher -- 
-				library and development files. See [http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
+library and development files. See [http://developer.berlios.de/projects/radiusclient-ng/](http://developer.berlios.de/projects/radiusclient-ng/).
 
 
 ### Exported Parameters
@@ -59,7 +59,7 @@ modparam("uri_radius", "radius_config", "/etc/radiusclient.conf")
 
 
 Radius service type used in
-	`radius_does_uri_exist` and `radius_does_uri_user_exist` checks.
+`radius_does_uri_exist` and `radius_does_uri_user_exist` checks.
 
 
 *Default value is 10 (Call-Check).*
@@ -76,10 +76,10 @@ modparam("uri_radius", "service_type", 11)
 
 
 If zero, `radius_does_uri_exist`
-	sends to RADIUS server Request URI user@host in UserName
-	attribute.  If non-zero, `radius_does_uri_exist`
-	sends to RADIUS server Request URI user in UserName attribute
-	and host in SIP-URI-Host attribute.
+sends to RADIUS server Request URI user@host in UserName
+attribute.  If non-zero, `radius_does_uri_exist`
+sends to RADIUS server Request URI user in UserName attribute
+and host in SIP-URI-Host attribute.
 
 
 *Default value is 0.*
@@ -99,11 +99,11 @@ modparam("uri_radius", "use_sip_uri_host", 1)
 
 
 Checks from Radius if user@host in Request-URI or in
-		URI stored in pseudo variable argument belongs
-		to a local user. Can be used to decide if 404 or 480 should
-		be returned after lookup has failed.   If yes, loads AVP
-		based on SIP-AVP reply items returned from Radius.  Each
-		SIP-AVP reply item must have a string value of form:
+URI stored in pseudo variable argument belongs
+to a local user. Can be used to decide if 404 or 480 should
+be returned after lookup has failed.   If yes, loads AVP
+based on SIP-AVP reply items returned from Radius.  Each
+SIP-AVP reply item must have a string value of form:
 
 
 - *value = SIP_AVP_NAME SIP_AVP_VALUE*
@@ -112,8 +112,8 @@ Checks from Radius if user@host in Request-URI or in
 
 
 Returns 1 if Radius returns Access-Accept, -1 if Radius
-		returns Access-Reject, and -2 in case of internal
-		error.
+returns Access-Reject, and -2 in case of internal
+error.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -132,9 +132,9 @@ if (radius_does_uri_exist()) {
 
 
 Similar to radius_does_uri_exist, but check is done
-		based only on Request-URI user part or user stored in
-		pseudo variable argument.  User should thus
-		be unique among all users, such as an E.164 number.
+based only on Request-URI user part or user stored in
+pseudo variable argument.  User should thus
+be unique among all users, such as an E.164 number.
 
 
 This function can be used from REQUEST_ROUTE.
