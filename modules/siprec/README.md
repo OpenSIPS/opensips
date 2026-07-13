@@ -491,6 +491,11 @@ containing custom information to be added under the
 - *session_custom_extension* - an optional XML block
 containing custom information to be added under the
 *session* tag.
+
+## Samples
+
+[samples](./samples/samples.md "include")
+
 <!-- CONTRIBUTORS -->
 
 ### License

@@ -375,6 +375,11 @@ MI FIFO Command Format:
 
 
 No, the WebSocket fragmentation mechanism is not supported.
+
+## Samples
+
+[samples](./samples/samples.md "include")
+
 <!-- CONTRIBUTORS -->
 
 ### License
