@@ -12,10 +12,10 @@ title: "Stun Module"
 
 
 A stun server working with the same port as SIP (5060) in order to
-			gain accurate information. The benefit would be an exact external 
-			address in the case of NATs translating differently when given 
-			different destination ports. The server may also advertise different
-			network addresses than the ones it is actually listening on.
+gain accurate information. The benefit would be an exact external 
+address in the case of NATs translating differently when given 
+different destination ports. The server may also advertise different
+network addresses than the ones it is actually listening on.
 
 
 #### Basic Operation
@@ -37,16 +37,16 @@ Socket1 must allways be a SIP UDP listener from OpenSIPS.
 
 
 The server will create a separate process.
-				This process will listen for data on created sockets.
-				The server will register a callback function to SIP.
-				This function is called when a specific (stun)header is found.
+This process will listen for data on created sockets.
+The server will register a callback function to SIP.
+This function is called when a specific (stun)header is found.
 
 
 #### Supported STUN Attributes
 
 
 This stun implements RFC3489 (and XOR_MAPPED_ADDRESS from 
-				RFC5389)
+RFC5389)
 
 
 - MAPPED_ADDRESS
@@ -87,7 +87,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-			running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -99,16 +99,14 @@ The following libraries or applications must be installed before
 #### primary_ip (str)
 
 
-The IP of an interface which is configured as an UDP SIP listener
-			in OpenSIPS. This is a mandatory parameter.
-
+The IP of an interface which is configured as an UDP SIP listener in OpenSIPS. This is a mandatory parameter.
 
 Syntax: "ip [/ advertised_ip]
 
 
 By default, the *primary_ip* and the advertised
-			*primary_ip* will be identical.
-			This may be changed with an optional "/ xxx.xxx.xxx.xxx" string.
+*primary_ip* will be identical.
+This may be changed with an optional "/ xxx.xxx.xxx.xxx" string.
 
 
 ```opensips title="Set primary_ip parameter"
@@ -126,15 +124,15 @@ modparam("stun", "primary_ip", "192.168.0.100 / 64.50.46.78")
 
 
 The port configured (together with the *primary_ip*) as an UDP SIP
-			listener in OpenSIPS. The default value is 5060.
+listener in OpenSIPS. The default value is 5060.
 
 
 Syntax: "port [/ advertised_port]
 
 
 By default, the *primary_port* and the advertised
-			*primary_port* will be identical.
-			This may be changed with an optional "/ adv_port" string.
+*primary_port* will be identical.
+This may be changed with an optional "/ adv_port" string.
 
 
 ```opensips title="Set primary_port parameter"
@@ -158,8 +156,8 @@ Syntax: "ip [/ advertised_ip]
 
 
 By default, the *alternate_ip* and the advertised
-			*alternate_ip* will be identical.
-			This may be changed with an optional "/ xxx.xxx.xxx.xxx" string.
+*alternate_ip* will be identical.
+This may be changed with an optional "/ xxx.xxx.xxx.xxx" string.
 
 
 ```opensips title="Set alternate_ip parameter"
@@ -177,15 +175,15 @@ modparam("stun", "alternate_ip", "192.168.0.100 / 64.78.46.50")
 
 
 The port used by the STUN server for the second interface.
-			The default value is 3478 (default STUN port).
+The default value is 3478 (default STUN port).
 
 
 Syntax: "port [/ advertised_port]
 
 
 By default, the *alternate_port* and the advertised
-			*alternate_port* will be identical.
-			This may be changed with an optional "/ adv_port" string.
+*alternate_port* will be identical.
+This may be changed with an optional "/ adv_port" string.
 
 
 ```opensips title="Set alternate_port parameter"
