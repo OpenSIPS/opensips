@@ -1,6 +1,6 @@
 ---
 title: "Load-Balancer Module"
-description: "The Load-Balancer module comes to provide traffic routing based on load. Shortly, when OpenSIPS routes calls to a set of destinations, it is able to keep the load status (as number of ongoing calls) of each destination and to choose to route to the less loaded destination (at that moment). ..."
+description: "The Load-Balancer module comes to provide traffic routing based on load."
 ---
 
 ## Admin Guide
@@ -10,49 +10,49 @@ description: "The Load-Balancer module comes to provide traffic routing based on
 
 
 The Load-Balancer module comes to provide traffic routing based on load. 
-	Shortly, when OpenSIPS routes calls to a set of destinations, it is able 
-	to keep the load status (as number of ongoing calls) of each destination 
-	and to choose to route to the less loaded destination (at that moment). 
-	OpenSIPS is aware of the capacity of each destination - it is preconfigured 
-	with the maximum load accepted by the destinations. To be more precise, 
-	when routing, OpenSIPS will consider the less loaded destination not the 
-	destination with the smallest number of ongoing calls, but the destination 
-	with the largest available slot.
+Shortly, when OpenSIPS routes calls to a set of destinations, it is able 
+to keep the load status (as number of ongoing calls) of each destination 
+and to choose to route to the less loaded destination (at that moment). 
+OpenSIPS is aware of the capacity of each destination - it is preconfigured 
+with the maximum load accepted by the destinations. To be more precise, 
+when routing, OpenSIPS will consider the less loaded destination not the 
+destination with the smallest number of ongoing calls, but the destination 
+with the largest available slot.
 
 
 Also the module has the capability to do failover (to try a new destination
-	if the selected one done not responde), to keep state of the destinations 
-	(to remember the failed destination and avoid using them agai) and to 
-	check the health of the destination (by doing probing of the destination 
-	and auto re-enabling).
+if the selected one done not responde), to keep state of the destinations 
+(to remember the failed destination and avoid using them agai) and to 
+check the health of the destination (by doing probing of the destination 
+and auto re-enabling).
 
 
 ### How it works
 
 
 Please refer to the Load-Balancer tutorial from the OpenSIPS website:
-		[http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing](http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing).
+[http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing](http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing).
 
 
 ### Probing and Disabling destinations
 
 
 The module has the capability to monitor the status of the destinations by
-	doing SIP probing (sending SIP requests like OPTIONS).
+doing SIP probing (sending SIP requests like OPTIONS).
 
 
 For each destination, you can configure what kind of probing should be 
-	done (probe_mode column):
+done (probe_mode column):
 
 
 - *(0)* - no probing at all;
 - *(1)* - probing only when the destination is
-		in disabled mode (disabling via MI command will competely stop the 
-		probing also). The destination will be automatically re-enabled
-		when the probing will succeed next time;
+in disabled mode (disabling via MI command will competely stop the 
+probing also). The destination will be automatically re-enabled
+when the probing will succeed next time;
 - *(2)* - probing all the time. If disabled, 
-		the destination will be automatically re-enabled when the probing 
-		will succeed next time;
+the destination will be automatically re-enabled when the probing 
+will succeed next time;
 
 
 A destination can become disabled in two ways:
@@ -80,7 +80,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -93,7 +93,7 @@ The following libraries or applications must be installed before
 
 
 The URL pointing to the database where the load-balancing rules 
-		are stored.
+are stored.
 
 
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
@@ -126,8 +126,8 @@ modparam("load_balancer", "db_table", "lb")
 
 
 How often (in seconds) the probing of a destination should be done. If
-		set to 0, the probing will be disabled as functionality (for all 
-		destinations)
+set to 0, the probing will be disabled as functionality (for all 
+destinations)
 
 
 *Default value is "30".*
@@ -176,8 +176,8 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 
 
 A comma separted list of SIP reply codes. The codes defined here 
-		will be considered as valid reply codes for probing messages,
-		apart for 200.
+will be considered as valid reply codes for probing messages,
+apart for 200.
 
 
 *Default value is "NULL".*
@@ -194,7 +194,7 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
 
 
 Defines a blacklist based on a lb group. This list will contain the IPs
-		(no port, all protocols) of the destinations matching the given group.
+(no port, all protocols) of the destinations matching the given group.
 
 
 Multiple instances of this param are allowed.
@@ -218,38 +218,38 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 
 
 The function performs load-balancing over the available destinations in
-		order to find the less loaded destination that can provide the 
-		requested resources and belong to a requested group.
+order to find the less loaded destination that can provide the 
+requested resources and belong to a requested group.
 
 
 Meaning of the parameters is as follows:
 
 
 - *grp* - group id for the destinations; the
-			destination may be grouped in several groups you can you for 
-			differnet scenarios; this can be a number or a variable containing
-			a numerical value.
+destination may be grouped in several groups you can you for 
+differnet scenarios; this can be a number or a variable containing
+a numerical value.
 - *resources* - string containing a 
-			semi-colon list of resources required by the current call.
+semi-colon list of resources required by the current call.
 - *algorithm* - algorithm used for 
-			computing the available load on the system:
+computing the available load on the system:
 
   - *0* - Absolute value - the effective
-				available load ( maximum_load - current_load) is used in
-				computing the load of each pear/resource.
+available load ( maximum_load - current_load) is used in
+computing the load of each pear/resource.
   - *1* - Relative value - the relative
-				available load (how many percentages are free) is used in
-				computing the load of each pear/resource.
+available load (how many percentages are free) is used in
+computing the load of each pear/resource.
 If missing, the default algorithm in 0.
 
 
 Function returns true is a new destination URI is set pointing to the 
-		selected destiantion.
-		NOTE that the RURI will not be changed by this function.
+selected destiantion.
+NOTE that the RURI will not be changed by this function.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="load_balance usage"
@@ -268,9 +268,9 @@ if (load_balance("1","trascoding;conference")) {
 
 
 Marks as disabled the last destination that was used for the current
-		call. The disabling done via this function will prevent the 
-		destination to be used for usage from now on. The probing mechanism
-		can re-enable this peer (see the probing section in the begining)
+call. The disabling done via this function will prevent the 
+destination to be used for usage from now on. The probing mechanism
+can re-enable this peer (see the probing section in the begining)
 
 
 This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
@@ -297,27 +297,27 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 
 Checks if the given IP and PORT belongs to a destination configured in
-		the load-balancer's list. Returns true if found and active (see the
-		"active" parameter).
+the load-balancer's list. Returns true if found and active (see the
+"active" parameter).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 Meaning of the parameters is as follows:
 
 
 - *ip* and *port* - IP 
-			and PORT to be checked (any kind of variables are allowed, but
-			take care as the PORT variables should have an interger value); 
-			A value 0 for the port means "any" - will match any port.
+and PORT to be checked (any kind of variables are allowed, but
+take care as the PORT variables should have an interger value); 
+A value 0 for the port means "any" - will match any port.
 - *group* - in what LB group the destination
-			should be looked for; If not specified, the search will be in
-			all groups.
+should be looked for; If not specified, the search will be in
+all groups.
 - *active* - if "1", the search will be
-			performed only over "active" (not disabled) destinations. If 
-			missing, the search will consider any kind of destinations.
+performed only over "active" (not disabled) destinations. If 
+missing, the search will consider any kind of destinations.
 
 
 ```opensips title="lb_is_destination usage"
@@ -333,29 +333,29 @@ if (lb_is_destination("$si","$sp") ) {
 
 
 The function counts the current call as load for a given destination 
-		with some given resources. Note that this call is not going through
-		the load-balancing logic (there are not routing decision taken for the
-		call); it is simply counted by LB as ongoing call for a destination;
+with some given resources. Note that this call is not going through
+the load-balancing logic (there are not routing decision taken for the
+call); it is simply counted by LB as ongoing call for a destination;
 
 
 Meaning of the parameters is as follows:
 
 
 - *ip* and *port* - IP 
-			and PORT to identify the destination the call has to be counted
-			for.
+and PORT to identify the destination the call has to be counted
+for.
 - *grp* - group id for the destinations; if
-			no knows, "-1" will mean all groups.
+no knows, "-1" will mean all groups.
 - *resources* - string containing a 
-			semi-colon list of resources required by the current call.
+semi-colon list of resources required by the current call.
 
 
 Function returns true if the call was properly taken into consideration
-		for estimating the load on the destination.
+for estimating the load on the destination.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="lb_count_count usage"
@@ -398,9 +398,8 @@ MI FIFO Command Format:
 
 
 ```bash
-		:lb_reload:_reply_fifo_file_
-		_empty_line_
-		
+:lb_reload:_reply_fifo_file_
+_empty_line_
 ```
 
 
@@ -408,20 +407,19 @@ MI FIFO Command Format:
 
 
 Changes the capacity for a resource of a destination. The function 
-		receives as parameters the ID (as per DB) of the destination along 
-		with the name of the resource you want to resize.
+receives as parameters the ID (as per DB) of the destination along 
+with the name of the resource you want to resize.
 
 
 MI FIFO Command Format:
 
 
 ```bash
-		:lb_resize:_reply_fifo_file_
-		11   /*dstination id*/
-		voicemail  /*resource name*/
-		56   /* new resource capacity*/
-		_empty_line_
-		
+:lb_resize:_reply_fifo_file_
+11   /*dstination id*/
+voicemail  /*resource name*/
+56   /* new resource capacity*/
+_empty_line_
 ```
 
 
@@ -429,7 +427,7 @@ MI FIFO Command Format:
 
 
 Lists all the destinations and the maximum and current load for each 
-		resource of the destination.
+resource of the destination.
 
 
 MI FIFO Command Format:
@@ -459,11 +457,11 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 
 
 Gets or sets the status (enabled or disabled) of a destination. The 
-		function takes 2 parameters, first mandatory, the id of the destiantion
-		and second, optional, the new status. If no new status is given, the
-		function will return the current status. If a new status is given 
-		(0 - disable, 1 - enable), this status will be forced for the 
-		destination.
+function takes 2 parameters, first mandatory, the id of the destiantion
+and second, optional, the new status. If no new status is given, the
+function will return the current status. If a new status is given 
+(0 - disable, 1 - enable), this status will be forced for the 
+destination.
 
 
 MI FIFO Command Format:
@@ -515,21 +513,21 @@ Take a look at [http://www.opensips.org/](http://www.opensips.org/).
 
 
 First at all check if your question was already answered on one of
-			our mailing lists:
+our mailing lists:
 
 E-mails regarding any stable OpenSIPS release should be sent to 
-			users@lists.opensips.org and e-mails regarding development versions
-			should be sent to devel@lists.opensips.org.
+users@lists.opensips.org and e-mails regarding development versions
+should be sent to devel@lists.opensips.org.
 
 If you want to keep the mail private, send it to 
-			users@lists.opensips.org.
+users@lists.opensips.org.
 
 
 **Q: How can I report a bug?**
 
 
 Please follow the guidelines provided at:
-			[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+[https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
 <!-- CONTRIBUTORS -->
 
 ### License
