@@ -1,0 +1,223 @@
+<!-- HA Behaviour Test Appendix -->
+
+<appendix id="ha-tests" xreflabel="HA Behaviour Tests">
+    <title>HA Behaviour Tests</title>
+    <para>
+	The following tests were performed on a three-node cluster
+	(nodes <emphasis>A</emphasis>=10.22.23.191,
+	<emphasis>B</emphasis>=10.22.23.192,
+	<emphasis>C</emphasis>=10.22.23.193) to verify correct failover,
+	tag stability, and no-steal-on-join behaviour. The sharing tag
+	under test is <varname>vip1</varname> in cluster 1. All nodes run
+	with <varname>manage_shtags=1</varname>.
+    </para>
+    <para>
+	Tag state was queried after each operation via:
+	<programlisting format="linespecific">opensips-cli -x mi clusterer_list_shtags</programlisting>
+    </para>
+
+    <section id="ha-test-baseline">
+	<title>Baseline</title>
+	<para>
+	    All three nodes running. B holds the active tag; A and C are
+	    backup.
+	</para>
+	<programlisting format="linespecific">
+A (10.22.23.191)  svc=active  tag=backup
+B (10.22.23.192)  svc=active  tag=active
+C (10.22.23.193)  svc=active  tag=backup
+	</programlisting>
+    </section>
+
+    <section id="ha-test-1">
+	<title>Test 1 — Stop the active node</title>
+	<para>
+	    B (active) is stopped. The remaining nodes must elect a new
+	    active holder. B must rejoin as backup and must not steal the
+	    tag from whichever node became active.
+	</para>
+	<programlisting format="linespecific">
+# Stop B
+A  svc=active  tag=backup
+B  svc=inactive tag=(down)
+C  svc=active  tag=active   &lt;-- C promoted
+
+# Start B
+A  svc=active  tag=backup
+B  svc=active  tag=backup   &lt;-- rejoined as backup
+C  svc=active  tag=active   &lt;-- C retains active
+	</programlisting>
+	<para>
+	    <emphasis role="bold">Result: PASS.</emphasis>
+	    Failover within the dead-node detection window; rejoining node
+	    did not steal the active tag.
+	</para>
+    </section>
+
+    <section id="ha-test-2">
+	<title>Test 2 — Stop a backup node</title>
+	<para>
+	    A (backup) is stopped. The active tag must remain on C without
+	    any transition. A must rejoin as backup.
+	</para>
+	<programlisting format="linespecific">
+# Stop A
+A  svc=inactive tag=(down)
+B  svc=active  tag=backup
+C  svc=active  tag=active   &lt;-- unchanged
+
+# Start A
+A  svc=active  tag=backup   &lt;-- rejoined as backup
+B  svc=active  tag=backup
+C  svc=active  tag=active   &lt;-- still active
+	</programlisting>
+	<para>
+	    <emphasis role="bold">Result: PASS.</emphasis>
+	    Removing a backup node causes no tag movement; rejoining node
+	    started in backup state.
+	</para>
+    </section>
+
+    <section id="ha-test-3">
+	<title>Test 3 — Stop both backup nodes</title>
+	<para>
+	    A and B (both backup) are stopped simultaneously. The lone
+	    remaining node C must retain the active tag. A and B must
+	    rejoin as backup.
+	</para>
+	<programlisting format="linespecific">
+# Stop A and B
+A  svc=inactive tag=(down)
+B  svc=inactive tag=(down)
+C  svc=active  tag=active   &lt;-- unchanged, lone node
+
+# Start A, then B
+A  svc=active  tag=backup   &lt;-- rejoined as backup
+B  svc=active  tag=backup   &lt;-- rejoined as backup
+C  svc=active  tag=active   &lt;-- still active
+	</programlisting>
+	<para>
+	    <emphasis role="bold">Result: PASS.</emphasis>
+	    Active node remained stable while running alone; both rejoining
+	    nodes came up in backup state.
+	</para>
+    </section>
+
+    <section id="ha-test-4">
+	<title>Test 4 — Stop active node and one backup</title>
+	<para>
+	    B (active) and C (backup) are stopped. The sole remaining node
+	    A must become active. B and C must rejoin as backup.
+	</para>
+	<programlisting format="linespecific">
+# Stop B and C
+A  svc=active  tag=active   &lt;-- A promoted, now lone node
+B  svc=inactive tag=(down)
+C  svc=inactive tag=(down)
+
+# Start B
+A  svc=active  tag=active   &lt;-- retains active
+B  svc=active  tag=backup   &lt;-- rejoined as backup
+C  svc=inactive tag=(down)
+
+# Start C
+A  svc=active  tag=active   &lt;-- retains active
+B  svc=active  tag=backup
+C  svc=active  tag=backup   &lt;-- rejoined as backup
+	</programlisting>
+	<para>
+	    <emphasis role="bold">Result: PASS.</emphasis>
+	    The surviving node correctly claimed the active tag; each
+	    rejoining node started in backup state without challenging the
+	    active holder.
+	</para>
+    </section>
+
+    <section id="ha-test-5">
+	<title>Test 5 — Full cluster restart</title>
+	<para>
+	    All three nodes are stopped (full outage). Nodes are then
+	    started one at a time. The first node up must self-elect as
+	    active (no peers available to sync from). Subsequent nodes must
+	    join as backup and must not steal the active tag.
+	</para>
+	<programlisting format="linespecific">
+# All stopped
+A  svc=inactive tag=(down)
+B  svc=inactive tag=(down)
+C  svc=inactive tag=(down)
+
+# Start A first
+A  svc=active  tag=active   &lt;-- first/lone seed, self-synced
+B  svc=inactive tag=(down)
+C  svc=inactive tag=(down)
+
+# Start B
+A  svc=active  tag=active   &lt;-- retains active
+B  svc=active  tag=backup   &lt;-- joined as backup, did not steal
+C  svc=inactive tag=(down)
+
+# Start C
+A  svc=active  tag=active   &lt;-- retains active
+B  svc=active  tag=backup
+C  svc=active  tag=backup   &lt;-- joined as backup, did not steal
+	</programlisting>
+	<para>
+	    <emphasis role="bold">Result: PASS.</emphasis>
+	    The first node to start elected itself active and no spurious
+	    sync errors were logged. Each subsequent node joined as backup
+	    without challenging the active holder.
+	</para>
+    </section>
+
+    <section id="ha-test-summary">
+	<title>Summary</title>
+	<informaltable frame="all">
+	    <tgroup cols="3">
+		<colspec colwidth="1*"/>
+		<colspec colwidth="3*"/>
+		<colspec colwidth="1*"/>
+		<thead>
+		    <row>
+			<entry>Test</entry>
+			<entry>Scenario</entry>
+			<entry>Result</entry>
+		    </row>
+		</thead>
+		<tbody>
+		    <row>
+			<entry>1</entry>
+			<entry>Stop active node; rejoin</entry>
+			<entry>PASS</entry>
+		    </row>
+		    <row>
+			<entry>2</entry>
+			<entry>Stop backup node; rejoin</entry>
+			<entry>PASS</entry>
+		    </row>
+		    <row>
+			<entry>3</entry>
+			<entry>Stop both backups simultaneously; rejoin</entry>
+			<entry>PASS</entry>
+		    </row>
+		    <row>
+			<entry>4</entry>
+			<entry>Stop active + one backup; rejoin</entry>
+			<entry>PASS</entry>
+		    </row>
+		    <row>
+			<entry>5</entry>
+			<entry>Full cluster restart; sequential startup</entry>
+			<entry>PASS</entry>
+		    </row>
+		</tbody>
+	    </tgroup>
+	</informaltable>
+	<para>
+	    In all five tests: exactly one node held the active sharing tag
+	    at all times (including during the failure window), and no
+	    rejoining node stole the active tag from the current holder.
+	</para>
+    </section>
+
+</appendix>

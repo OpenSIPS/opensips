@@ -327,6 +327,5 @@ static inline module_dependency_t *get_deps_clusterer(const param_export_t *para
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "clusterer", DEP_ABORT);
 }
 
-
 #endif  /* CLUSTERER_API_H */
 

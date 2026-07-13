@@ -39,6 +39,7 @@
 #include "clusterer.h"
 #include "sync.h"
 #include "sharing_tags.h"
+#include "clusterer_ctrl.h"
 #include "clusterer_evi.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
@@ -47,7 +48,23 @@ int ping_timeout = DEFAULT_PING_TIMEOUT;
 int seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;
 int sync_timeout = DEFAULT_SYNC_TIMEOUT;
 int current_id = -1;
+int *_current_id_shm = NULL;
 int db_mode = 1;
+int use_controller = 0;
+
+/* cluster_ids to pre-create when use_controller=1 */
+static int cc_stub_ids[64];
+static int cc_stub_count = 0;
+
+static int cc_add_cluster_id(modparam_t type, void *val)
+{
+	if (cc_stub_count >= 64) {
+		LM_ERR("clusterer: too many cluster_id entries\n");
+		return -1;
+	}
+	cc_stub_ids[cc_stub_count++] = (int)(long)val;
+	return 0;
+}
 
 str clusterer_db_url = {NULL, 0};
 str db_table = str_init("clusterer");
@@ -116,6 +133,7 @@ int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
  */
 
 static const cmd_export_t cmds[] = {
+	{"load_clusterer_ctrl_binds", (cmd_function)load_clusterer_ctrl_binds, {{0,0,0}}, 0},
 	{"load_clusterer",  (cmd_function)load_clusterer, {{0,0,0}}, 0},
 	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, {
 		{CMD_PARAM_INT,0,0},
@@ -166,6 +184,8 @@ static const param_export_t params[] = {
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
+	{"use_controller",			INT_PARAM,		&use_controller			},
+	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cc_add_cluster_id},
 	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,
 		(void*)&provision_neighbor},
 	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,
@@ -395,11 +415,23 @@ static int mod_init(void)
 	flags_col.len = strlen(flags_col.s);
 	description_col.len = strlen(description_col.s);
 
-	/* only allow the DB URL to be skipped in "P2P discovery" mode */
+	/* db_mode defaults to 1 (DB-backed).  If no DB URL is configured there are
+	 * no DB-backed native clusters, so drop to non-DB mode - this keeps
+	 * controller-only and purely static (my_node_info) setups working without
+	 * an explicit db_mode=0.  A DB-native or hybrid setup provides a db_url and
+	 * keeps db_mode. */
+	if (!clusterer_db_url.s && !db_default_url)
+		db_mode = 0;
+
+	/* The DB URL is required whenever native clusters are DB-backed
+	 * (db_mode != 0), even alongside the controller. */
 	init_db_url(clusterer_db_url, db_mode == 0);
 
-	if (current_id < 1) {
-		LM_CRIT("Invalid 'my_node_id' parameter\n");
+	/* my_node_id identifies this node within its *native* clusters (DB or
+	 * static my_node_info).  Controller clusters get their id assigned at
+	 * runtime, so my_node_id is only required when native clusters exist. */
+	if (current_id < 1 && (db_mode != 0 || (cluster_list && *cluster_list != NULL))) {
+		LM_CRIT("Invalid 'my_node_id' parameter (required for DB or static native clusters)\n");
 		return -1;
 	}
 	if (ping_interval <= 0) {
@@ -427,6 +459,21 @@ static int mod_init(void)
 		LM_CRIT("Failed to init lock\n");
 		return -1;
 	}
+	/* Move GET_CURRENT_ID to shared memory so all forked processes
+	 * see the same value when it is updated by the controller.  */
+	{
+		int *_shm_id = shm_malloc(sizeof(int));
+		if (!_shm_id) {
+			LM_CRIT("No shm memory for GET_CURRENT_ID\n");
+			return -1;
+		}
+		/* Seed with the static my_node_id so native (DB/static) clusters see
+		 * the right identity via GET_CURRENT_ID at load time; -1 (a sentinel
+		 * that matches no node) is only used when there is no static id, i.e.
+		 * a controller-only node whose id is assigned at runtime. */
+		*_shm_id = (current_id >= 1) ? current_id : -1;
+		_current_id_shm = _shm_id;
+	}
 
 	/* if statistics are disabled, prevent their registration to core */
 	if (clusterer_enable_stats==0)
@@ -449,16 +496,21 @@ static int mod_init(void)
 				goto error;
 			}
 
-			if (cl->current_node->node_id != current_id) {
+			if (cl->current_node && cl->current_node->node_id != current_id) {
 				LM_ERR("Bad 'my_node_id' parameter, value: %d different than"
-					" the node_id property in the 'my_node_info' parameter\n", current_id);
+					" the node_id property in the 'my_node_info' parameter\n", GET_CURRENT_ID);
 				goto error;
 			}
 		}
 	}
 
+	/* Native clusters backed by the DB (db_mode != 0): bind and load them.  In a
+	 * hybrid this runs even when the controller is also active - DB-native and
+	 * controller clusters are no longer mutually exclusive.  Controller clusters
+	 * are never stored in the DB, so load_db_info only ever brings in native
+	 * ones.  Static my_node_info/neighbor provisioning (db_mode==0) has already
+	 * populated cluster_list at config-parse time. */
 	if (db_mode) {
-		/* bind to the mysql module */
 		if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
 			LM_CRIT("Cannot bind to database module! "
 				"Did you forget to load a database module ?\n");
@@ -468,7 +520,6 @@ static int mod_init(void)
 			LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
 			goto error;
 		}
-		/* init DB connection */
 		if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
 			LM_ERR("cannot initialize database connection\n");
 			goto error;
@@ -477,9 +528,55 @@ static int mod_init(void)
 			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
-
 		dr_dbf.close(db_hdl);
 		db_hdl = NULL;
+	}
+
+	/* Controller-managed clusters: pre-create a stub for each cluster_id the
+	 * controller registered (via the 'cluster_id' modparam), so cl_register_cap()
+	 * succeeds for tm/dialog before clusterer_controller injects the real
+	 * identity.  Each stub is flagged controller_managed: it never touches the DB
+	 * and behaves as db_mode=0, so it coexists with DB-native clusters.  A
+	 * cluster_id must be exclusively controller-managed OR native, never both -
+	 * the native clusters (DB loaded just above, or static from parse time) are
+	 * already in cluster_list, so an overlap is caught here. */
+	if (use_controller) {
+		int _ci;
+		for (_ci = 0; _ci < cc_stub_count; _ci++) {
+			cluster_info_t *_ex;
+			for (_ex = *cluster_list; _ex; _ex = _ex->next)
+				if (_ex->cluster_id == cc_stub_ids[_ci]) {
+					LM_ERR("clusterer: cluster_id %d is registered as "
+						"controller-managed (cluster_id modparam) but is "
+						"already defined via native config "
+						"(my_node_info/neighbor_node_info/DB) or listed "
+						"twice - a cluster_id must be unique and either "
+						"controller-managed or native, not both\n",
+						cc_stub_ids[_ci]);
+					return -1;
+				}
+
+			cluster_info_t *_cl = shm_malloc(sizeof *_cl);
+			if (!_cl) {
+				LM_ERR("clusterer: no shm for cluster %d stub\n",
+				       cc_stub_ids[_ci]);
+				return -1;
+			}
+			memset(_cl, 0, sizeof *_cl);
+			_cl->cluster_id = cc_stub_ids[_ci];
+			_cl->controller_managed = 1;
+			_cl->lock = lock_alloc();
+			if (!_cl->lock || lock_init(_cl->lock) == NULL) {
+				LM_ERR("clusterer: lock_alloc failed for cluster %d\n",
+				       cc_stub_ids[_ci]);
+				shm_free(_cl);
+				return -1;
+			}
+			_cl->next = *cluster_list;
+			*cluster_list = _cl;
+			LM_INFO("clusterer: pre-created controller-managed cluster %d stub\n",
+			        cc_stub_ids[_ci]);
+		}
 	}
 
 	/* register timer */
@@ -542,7 +639,8 @@ static int mod_init(void)
 	/* check if the cluster IDs in the the sharing tag list are valid */
 	shtag_init_list();
 	shtag_init_reporting();
-	shtag_validate_list();
+	if (!use_controller)
+		shtag_validate_list();
 
 	return 0;
 error:
@@ -623,7 +721,7 @@ static mi_response_t *clusterer_set_status(const mi_params_t *params,
 
 	switch (try_get_mi_int_param(params, "node_id", &node_id)) {
 		case -1:
-			node_id = current_id;
+			node_id = GET_CURRENT_ID;
 		case 0:
 			if (node_id < 1)
 				return init_mi_error(400, MI_SSTR("Bad value for 'node_id'"));
@@ -898,7 +996,7 @@ static mi_response_t *clusterer_list_topology(const mi_params_t *params,
 		if (!node_item)
 			goto error;
 
-		if (add_mi_number(node_item, MI_SSTR("node_id"), current_id) < 0)
+		if (add_mi_number(node_item, MI_SSTR("node_id"), GET_CURRENT_ID) < 0)
 			goto error;
 
 		neigh_arr = add_mi_array(node_item, MI_SSTR("Neighbours"));
@@ -930,7 +1028,7 @@ static mi_response_t *clusterer_list_topology(const mi_params_t *params,
 				}
 
 			if (n_info->link_state == LS_UP)
-				if (add_mi_number(neigh_arr, 0,0, current_id) < 0) {
+				if (add_mi_number(neigh_arr, 0,0, GET_CURRENT_ID) < 0) {
 					lock_release(n_info->lock);
 					goto error;
 				}
@@ -1059,7 +1157,7 @@ static mi_response_t *cluster_send_mi(const mi_params_t *params,
 		return init_mi_param_error();
 	if (node_id < 1)
 		return init_mi_error(400, MI_SSTR("Bad value for 'destination'"));
-	if (node_id == current_id)
+	if (node_id == GET_CURRENT_ID)
 		return init_mi_error(400, MI_SSTR("Local node specified as destination"));
 
 	if (get_mi_string_param(params, "cmd_name", &cmd_name.s, &cmd_name.len) < 0)
@@ -1255,7 +1353,7 @@ static inline void generate_msg_tag(pv_value_t *tag_val, int cluster_id)
 	memcpy(tag_val->rs.s, tmp, len);
 	tag_val->rs.s[len] = '-';
 	tag_val->rs.len = len + 1;
-	tmp = int2str(current_id, &len);
+	tmp = int2str(GET_CURRENT_ID, &len);
 	memcpy(tag_val->rs.s + tag_val->rs.len, tmp, len);
 	tag_val->rs.s[tag_val->rs.len + len] = '-';
 	tag_val->rs.len += len + 1;
