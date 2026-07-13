@@ -1,6 +1,6 @@
 ---
 title: "Presence_CallInfo Module"
-description: "The module enables the handling of \"call-info\" and \"line-seize\" events inside the presence module. It is used with the general event handling module: presence and it constructs and adds \"Call-Info\" headers to notification events. To send \"call-info\" notification to wat..."
+description: "The module enables the handling of call-info and line-seize events inside the presence module."
 ---
 
 ## Admin Guide
@@ -10,27 +10,27 @@ description: "The module enables the handling of \"call-info\" and \"line-seize\
 
 
 The module enables the handling of "call-info" and "line-seize"
-	      events inside the presence module.
-	      It is used with the general event handling module: presence and
-	      it constructs and adds "Call-Info" headers to notification events.
-	      To send "call-info" notification to watchers, a third-party
-	      application must publish "call-info" events to the presence server.
+events inside the presence module.
+It is used with the general event handling module: presence and
+it constructs and adds "Call-Info" headers to notification events.
+To send "call-info" notification to watchers, a third-party
+application must publish "call-info" events to the presence server.
 
 
 The module does not currently implement any authorization
-	      rules.  It assumes that publish requests are only issued by
-	      a third-party application and subscribe requests only by
-	      subscriber to call-info and line-seize events.  Authorization
-	      can thus be easily done by OpenSIPS configuration file before
-	      calling handle_publish() and handle_subscribe() functions.
+rules.  It assumes that publish requests are only issued by
+a third-party application and subscribe requests only by
+subscriber to call-info and line-seize events.  Authorization
+can thus be easily done by OpenSIPS configuration file before
+calling handle_publish() and handle_subscribe() functions.
 
 
 The module implements a simple check for the presence of
-	      Call-Info headers in received PUBLISH requests.
+Call-Info headers in received PUBLISH requests.
 
 
 To get better understanding on how the module works please take a
-	      look at the follwing figure:
+look at the follwing figure:
 
 
 ```c
@@ -71,15 +71,15 @@ alice@example  presence  bob@example  watcher@example
 - Alice calls Bob.
 - The publisher is publishing the "alerting" state for Bob.
 - PUBLISH is received and handled by presence module.
-		Presence module updates the "presentity".
-		Presence module checks for active watchers of the presentity.
-		The active watcher is notified via a NOTIFY SIP request.
+Presence module updates the "presentity".
+Presence module checks for active watchers of the presentity.
+The active watcher is notified via a NOTIFY SIP request.
 - Bob answers the call.
 - The publisher is publishing the "active" state for Bob.
 - PUBLISH is received and handled by presence module.
-		Presence module updates the "presentity".
-		Presence module checks for active watchers of the presentity.
-		The active watcher is notified via a NOTIFY SIP request.
+Presence module updates the "presentity".
+Presence module checks for active watchers of the presentity.
+The active watcher is notified via a NOTIFY SIP request.
 
 
 ### Dependencies

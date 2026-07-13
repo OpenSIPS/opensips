@@ -10,8 +10,8 @@ description: "This module is an implementation of a local cache system designed 
 
 
 This module is an implementation of a local cache system designed as
-		a hash table. It registers the three functions for storing, fetching
-		and removing a value to the core memcache management interface.
+a hash table. It registers the three functions for storing, fetching
+and removing a value to the core memcache management interface.
 
 
 ### Dependencies
@@ -27,7 +27,7 @@ None.
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *none*
@@ -40,7 +40,7 @@ The following libraries or applications must be installed before running
 
 
 The size of the hash table. 
-			This parameter will be used as the power of 2 when computing table size.
+This parameter will be used as the power of 2 when computing table size.
 
 
 *Default value is "9 (512)".*
@@ -58,7 +58,7 @@ modparam("localcache", "cache_table_size", 10)
 
 
 The time interval in seconds at which to go through all the
-			records and delete the expired ones.
+records and delete the expired ones.
 
 
 *Default value is "600 (10 minutes)".*
@@ -76,7 +76,7 @@ modparam("localcache", "cache_clean_period", 1200)
 
 
 The module does not export functions to be used
-		in configuration script.
+in configuration script.
 <!-- CONTRIBUTORS -->
 
 ### License

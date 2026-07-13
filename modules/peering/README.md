@@ -10,26 +10,26 @@ description: "Peering module allows SIP providers (operators or organizations) t
 
 
 Peering module allows SIP
-	providers (operators or organizations) to verify from a broker
-	if source or destination of a SIP request is a trusted peer.
+providers (operators or organizations) to verify from a broker
+if source or destination of a SIP request is a trusted peer.
 
 
 In order to participate in the trust community provided by a
-	broker, each SIP provider registers with the broker the domains
-	(host parts of SIP URIs) that they serve.  When a SIP proxy of a
-	provider needs to send a SIP request to a non-local domain, it
-	can find out from the broker using verify_destination() function
-	if the non-local domain is served by a trusted peer.  If so, the
-	provider receives from the broker a hash of the SIP request and
-	a timestamp that it includes in the request to the non-local
-	domain.  When a SIP
-	proxy of the non-local domain receives the SIP request, it, in
-	turn, can verify from the broker using verify_source() function
-	if the request came from a trusted peer.
+broker, each SIP provider registers with the broker the domains
+(host parts of SIP URIs) that they serve.  When a SIP proxy of a
+provider needs to send a SIP request to a non-local domain, it
+can find out from the broker using verify_destination() function
+if the non-local domain is served by a trusted peer.  If so, the
+provider receives from the broker a hash of the SIP request and
+a timestamp that it includes in the request to the non-local
+domain.  When a SIP
+proxy of the non-local domain receives the SIP request, it, in
+turn, can verify from the broker using verify_source() function
+if the request came from a trusted peer.
 
 
 Verification functions communicate with the broker using an AAA
-        protocol.
+protocol.
 
 
 Comments and suggestions for improvements are welcome.
@@ -42,8 +42,8 @@ Comments and suggestions for improvements are welcome.
 
 
 The module depends on the following modules
-			(in the other words 
-			the listed modules must be loaded before this module):
+(in the other words 
+the listed modules must be loaded before this module):
 
 
 - *an AAA implementing module*
@@ -59,7 +59,7 @@ This is the url representing the AAA protocol used and the location of the confi
 
 
 If the parameter is set to empty string, the AAA accounting support
-			will be disabled (even if compiled).
+will be disabled (even if compiled).
 
 
 Default value is "NULL".
@@ -76,12 +76,12 @@ modparam("peering", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 
 
 This is the value of the Service-Type AAA attribute to be
-		used, when sender of SIP Request verifies request's
-	destination using verify_destination() function.
+used, when sender of SIP Request verifies request's
+destination using verify_destination() function.
 
 
 Default value is dictionary value of "Sip-Verify-Destination"
-		Service-Type.
+Service-Type.
 
 
 ```opensips title="verify_destination_service_type parameter usage"
@@ -95,12 +95,12 @@ modparam("peering", "verify_destination_service_type", 21)
 
 
 This is the value of the Service-Type AAA attribute to be
-		used, when receiver of SIP Request verifies request's
-	source using verify_source() function.
+used, when receiver of SIP Request verifies request's
+source using verify_source() function.
 
 
 Default value is dictionary value of "Sip-Verify-Source"
-		Service-Type.
+Service-Type.
 
 
 ```opensips title="verify_source_service_type parameter usage"
@@ -117,9 +117,9 @@ modparam("peering", "verify_source_service_type", 22)
 
 
 Function verify_destination() queries from
-		broker's AAA server if domain (host part) of Request
-	URI is served by a trusted peer.  AAA request contains the
-	following attributes/values:
+broker's AAA server if domain (host part) of Request
+URI is served by a trusted peer.  AAA request contains the
+following attributes/values:
 
 
 - User-Name - Request-URI host
@@ -130,35 +130,35 @@ Function verify_destination() queries from
 
 
 Function returns value 1 if domain of Request URI is
-	served by a trusted peer and -1 otherwise.  In case of positive
-	result, AAA server returns a set of SIP-AVP reply attributes.
-	Value of each SIP-AVP is of form:
+served by a trusted peer and -1 otherwise.  In case of positive
+result, AAA server returns a set of SIP-AVP reply attributes.
+Value of each SIP-AVP is of form:
 
 
 [#]name(:|#)value
 
 
 Value of each SIP-AVP reply attribute is mapped to an
-		 OpenSIPS AVP.  Prefix # in front of name or value indicates a
-	string name or string value, respectively.
+OpenSIPS AVP.  Prefix # in front of name or value indicates a
+string name or string value, respectively.
 
 
 One of the SIP-AVP reply attributes contains a string
-		 that the source peer must include "as is" in a 
-		 P-Request-Hash header when it sends the SIP request to
-		 the destination peer.  The string value may, for
-		 example, be of form hash@timestamp, where hash contains
-		 a hash calculated by the broker based on the attributes
-		 of the query and some local information and timestamp
-		 is the time when the calculation was done.
+that the source peer must include "as is" in a 
+P-Request-Hash header when it sends the SIP request to
+the destination peer.  The string value may, for
+example, be of form hash@timestamp, where hash contains
+a hash calculated by the broker based on the attributes
+of the query and some local information and timestamp
+is the time when the calculation was done.
 
 
 AVP names used in reply attributes are assigned by the
-		 broker.
+broker.
 
 
 This function can be used from REQUEST_ROUTE and
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="verify_destination() usage"
@@ -174,9 +174,9 @@ if (verify_destination()) {
 
 
 Function verify_source() queries from
-		broker's AAA server if SIP request was received from
-	a trusted peer.  AAA request contains the
-	following attributes/values:
+broker's AAA server if SIP request was received from
+a trusted peer.  AAA request contains the
+following attributes/values:
 
 
 - User-Name - Request-URI host
@@ -188,26 +188,26 @@ Function verify_source() queries from
 
 
 Function returns value 1 if SIP request was received
-	from a trusted peer and -1 otherwise.  In case of positive
-	result, AAA server may return a set of SIP-AVP reply
-	attributes.  Value of each SIP-AVP is of form:
+from a trusted peer and -1 otherwise.  In case of positive
+result, AAA server may return a set of SIP-AVP reply
+attributes.  Value of each SIP-AVP is of form:
 
 
 [#]name(:|#)value
 
 
 Value of each SIP-AVP reply attribute is mapped to an
-		 OpenSIPS 
-		 AVP.  Prefix # in front of name or value indicates a
-	string name or string value, respectively.
+OpenSIPS 
+AVP.  Prefix # in front of name or value indicates a
+string name or string value, respectively.
 
 
 AVP names used in reply attributes are
-		 assigned by the broker.
+assigned by the broker.
 
 
 This function can be used from REQUEST_ROUTE and
-		FAILURE_ROUTE.
+FAILURE_ROUTE.
 
 
 ```opensips title="verify_source() usage"

@@ -1,6 +1,6 @@
 ---
 title: "textops Module"
-description: "The module implements text based operations over the SIP message processed by OpenSIPS. SIP is a text based protocol and the module provides a large set of very useful functions to manipulate the message at text level, e.g., regular expression search and replace, Perl-like substitutions, ..."
+description: "The module implements text based operations over the SIP message processed by OpenSIPS."
 ---
 
 ## Admin Guide
@@ -10,19 +10,19 @@ description: "The module implements text based operations over the SIP message p
 
 
 The module implements text based operations over the SIP message
-		processed by OpenSIPS. SIP is a text based protocol and the module
-		provides a large set of very useful functions to manipulate the
-		message at text level, e.g., regular expression search and replace,
-		Perl-like substitutions, checks for method type, header presence,
-		insert of new header and date, etc.
+processed by OpenSIPS. SIP is a text based protocol and the module
+provides a large set of very useful functions to manipulate the
+message at text level, e.g., regular expression search and replace,
+Perl-like substitutions, checks for method type, header presence,
+insert of new header and date, etc.
 
 
 #### Known Limitations
 
 
 search ignores folded lines. For example, 
-		search("(From|f):.*@foo.bar")
-		doesn't match the following From header field:
+search("(From|f):.*@foo.bar")
+doesn't match the following From header field:
 
 
 ```c
@@ -47,7 +47,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -69,7 +69,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search usage"
@@ -92,7 +92,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search_body usage"
@@ -116,7 +116,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search_append usage"
@@ -130,7 +130,7 @@ search_append("[Oo]pen[Ss]er", " SIP Proxy");
 
 
 Searches for the first match of re in the body of the message
-		and appends txt after it.
+and appends txt after it.
 
 
 Meaning of the parameters is as follows:
@@ -141,7 +141,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="search_append_body usage"
@@ -165,7 +165,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace usage"
@@ -179,7 +179,7 @@ replace("opensips", "Open SIP Server");
 
 
 Replaces the first occurrence of re in the body of the message
-		with txt.
+with txt.
 
 
 Meaning of the parameters is as follows:
@@ -190,7 +190,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_body usage"
@@ -214,7 +214,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_all usage"
@@ -228,7 +228,7 @@ replace_all("opensips", "Open SIP Server");
 
 
 Replaces all occurrence of re in the body of the message
-		with txt. Matching is done on a per-line basis.
+with txt. Matching is done on a per-line basis.
 
 
 Meaning of the parameters is as follows:
@@ -239,7 +239,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_body_all usage"
@@ -253,7 +253,7 @@ replace_body_all("opensips", "Open SIP Server");
 
 
 Replaces all occurrence of re in the body of the message
-		with txt. Matching is done over the whole body.
+with txt. Matching is done over the whole body.
 
 
 Meaning of the parameters is as follows:
@@ -264,7 +264,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="replace_body_atonce usage"
@@ -286,15 +286,15 @@ Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular 
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-varibales
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst usage"
@@ -313,22 +313,22 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\2/ig') )
 
 
 Runs the re substitution on the message uri (like subst but works
-		 only on the uri)
+only on the uri)
 
 
 Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular 
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-varibales
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst_uri usage"
@@ -349,22 +349,22 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\0/i')){$
 
 
 Runs the re substitution on the message uri (like subst_uri but works
-		 only on the user portion of the uri)
+only on the user portion of the uri)
 
 
 Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-varibales
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst usage"
@@ -375,7 +375,6 @@ if (subst_user('/3642$/36423463/')){$
 ...
 # adds avp 'user_prefix' as prefix to username in r-uri ending with 3642
 if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
-
 ...
 ```
 
@@ -390,15 +389,15 @@ Meaning of the parameters is as follows:
 
 
 - *'/re/repl/flags'* - sed like regular 
-				expression. flags can be a combination of i (case insensitive),
-				g (global) or s (match newline don't treat it as end of line).
+expression. flags can be a combination of i (case insensitive),
+g (global) or s (match newline don't treat it as end of line).
 're' - is regular expresion
 'repl' - is replacement string - may contain pseudo-varibales
 'flags' - substitution flags (i - ignore case, g - global)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="subst_body usage"
@@ -413,18 +412,18 @@ if ( subst_body('/^o=(.*) /o=$fU ') ) {};
 
 
 Filters multipart body by leaving out all other body
-		parts except the first body part of given type.
+parts except the first body part of given type.
 
 
 Meaning of the parameters is as follows:
 
 
 - *content_type* -
-				Content type to be left in the body.
+Content type to be left in the body.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="filter_body usage"
@@ -445,18 +444,18 @@ if (has_body("multipart/mixed")) {
 
 
 Append txt as header to all replies that will be generated by
-		OpenSIPS for this request.
+OpenSIPS for this request.
 
 
 Meaning of the parameters is as follows:
 
 
 - *txt* - String which may contains
-			pseudo-variables.
+pseudo-variables.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE, ERROR_ROUTE.
+BRANCH_ROUTE, ERROR_ROUTE.
 
 
 ```opensips title="append_to_reply usage"
@@ -477,18 +476,18 @@ Meaning of the parameters is as follows:
 
 
 - *txt* - Header field to be appended. The
-			value can contain pseudo-variables which will be replaced at run
-			time.
+value can contain pseudo-variables which will be replaced at run
+time.
 
 
 Note: Headers which are added in main route cannot be removed in further routes
-		(e.g. failure routes). So, the idea is not to add there any headers that you 
-		might want to remove later. To add headers temporarely use the branch route 
-		because the changes you do there are per-branch.
+(e.g. failure routes). So, the idea is not to add there any headers that you 
+might want to remove later. To add headers temporarely use the branch route 
+because the changes you do there are per-branch.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="append_hf usage"
@@ -509,14 +508,14 @@ Meaning of the parameters is as follows:
 
 
 - *txt* - Header field to be appended. The
-			value can contain pseudo-variables which will be replaced at run
-			time.
+value can contain pseudo-variables which will be replaced at run
+time.
 - *hdr* - Header name after which the 'txt'
-			is appended.
+is appended.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="append_hf usage"
@@ -537,12 +536,12 @@ Meaning of the parameters is as follows:
 
 
 - *txt* - Header field to be inserted. The
-			value can contain pseudo-variables which will be replaced at run
-			time.
+value can contain pseudo-variables which will be replaced at run
+time.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="insert_hf usage"
@@ -563,14 +562,14 @@ Meaning of the parameters is as follows:
 
 
 - *txt* - Header field to be inserted. The
-			value can contain pseudo-variables which will be replaced at run
-			time.
+value can contain pseudo-variables which will be replaced at run
+time.
 - *hdr* - Header name before which the 'txt'
-			is inserted.
+is inserted.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="insert_hf usage"
@@ -585,20 +584,20 @@ insert_hf("To-username: $tU\r\n", "Call-ID");
 
 
 Append header field name with original Request-URI 
-		in middle.
+in middle.
 
 
 Meaning of the parameters is as follows:
 
 
 - *prefix* - string (usually at least 
-			header field name).
+header field name).
 - *suffix* - string (usually at least 
-			line terminator).
+line terminator).
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, 
-		BRANCH_ROUTE.
+BRANCH_ROUTE.
 
 
 ```opensips title="append_urihf usage"
@@ -616,18 +615,18 @@ Return true if a header field is present in message.
 
 > [!NOTE]
 > The function is also able to distinguish the compact names. For
-			exmaple "From" will match with "f"
+exmaple "From" will match with "f"
 
 
 Meaning of the parameters is as follows:
 
 
 - *hf_name* - Header field name.(long or 
-			compact form)
+compact form)
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE.
 
 
 ```opensips title="is_present_hf usage"
@@ -641,9 +640,9 @@ if (is_present_hf("From")) log(1, "From HF Present");
 
 
 Adds a time header to the reply of the request. You must use it
-		before functions that are likely to send a reply, e.g., save()
-		from 'registrar' module. Header format is: 
-		"Date: %a, %d %b %Y %H:%M:%S GMT", with the legend:
+before functions that are likely to send a reply, e.g., save()
+from 'registrar' module. Header format is: 
+"Date: %a, %d %b %Y %H:%M:%S GMT", with the legend:
 
 
 - *%a* abbreviated week of day name (locale)
@@ -659,7 +658,7 @@ Return true if a header was succesfully appended.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, 
-		BRANCH_ROUTE.
+BRANCH_ROUTE.
 
 
 ```opensips title="append_time usage"
@@ -673,23 +672,23 @@ append_time();
 
 
 Check if the method of the message matches the name. If name is a
-		known method (invite, cancel, ack, bye, options, info, update, register,
-		message, subscribe, notify, refer, prack), the function performs method
-		ID testing (integer comparison) instead of ignore case string
-		comparison.
+known method (invite, cancel, ack, bye, options, info, update, register,
+message, subscribe, notify, refer, prack), the function performs method
+ID testing (integer comparison) instead of ignore case string
+comparison.
 
 
 The 'name' can be a list of methods in the form of
-		'method1|method2|...'. In this case, the function returns true if the
-		SIP message's method is one from the list. IMPORTANT NOTE: in the list
-		must be only methods defined in OpenSIPS with ID (invite, cancel, ack,
-		bye, options, info, update, register, message, subscribe, notify,
-		refer, prack, publish; for more see:
-		[http://www.iana.org/assignments/sip-parameters](http://www.iana.org/assignments/sip-parameters)).
+'method1|method2|...'. In this case, the function returns true if the
+SIP message's method is one from the list. IMPORTANT NOTE: in the list
+must be only methods defined in OpenSIPS with ID (invite, cancel, ack,
+bye, options, info, update, register, message, subscribe, notify,
+refer, prack, publish; for more see:
+[http://www.iana.org/assignments/sip-parameters](http://www.iana.org/assignments/sip-parameters)).
 
 
 If used for replies, the function tests the value of method field from
-		CSeq header.
+CSeq header.
 
 
 Meaning of the parameters is as follows:
@@ -699,7 +698,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, and BRANCH_ROUTE.
+FAILURE_ROUTE, and BRANCH_ROUTE.
 
 
 ```opensips title="is_method usage"
@@ -732,7 +731,7 @@ Meaning of the parameters is as follows:
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE and BRANCH_ROUTE.
+FAILURE_ROUTE and BRANCH_ROUTE.
 
 
 ```opensips title="remove_hf usage"
@@ -749,17 +748,17 @@ if(remove_hf("User-Agent"))
 
 
 The function returns *true* if the SIP message
-		has a body attached. The checked includes also the 
-		"Content-Lenght" header presence and value.
+has a body attached. The checked includes also the 
+"Content-Lenght" header presence and value.
 
 
 If a paramter is given, the mime described will be also checked against
-		the "Content-Type" header.
+the "Content-Type" header.
 
 
 If the SIP message has a multipart body and mime is
-                not a multipart type , it will search through
-                all the parts for the given type.
+not a multipart type , it will search through
+all the parts for the given type.
 
 
 It will not handle multi-layer multiparts
@@ -769,12 +768,12 @@ Meaning of the parameters is as follows:
 
 
 - *mime* - mime to be checked against the 
-				"Content-Type" header. If not present or 0, this
-				check will be disabled.
+"Content-Type" header. If not present or 0, this
+check will be disabled.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE and BRANCH_ROUTE.
+FAILURE_ROUTE and BRANCH_ROUTE.
 
 
 ```opensips title="has_body usage"
@@ -791,14 +790,14 @@ if(has_body("application/sdp"))
 
 
 The function returns *true* if 
-                the SIP message has a Privacy header field that includes
-                the given privacy_type among its privacy values.  See
-				[http://www.iana.org/assignments/sip-priv-values](http://www.iana.org/assignments/sip-priv-values)
-                for possible privacy type values.
+the SIP message has a Privacy header field that includes
+the given privacy_type among its privacy values.  See
+[http://www.iana.org/assignments/sip-priv-values](http://www.iana.org/assignments/sip-priv-values)
+for possible privacy type values.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE and BRANCH_ROUTE.
+FAILURE_ROUTE and BRANCH_ROUTE.
 
 
 ```opensips title="is_privacy usage"
@@ -815,13 +814,13 @@ if(is_privacy("id"))
 
 
 If the message has a body, this function deletes it,
-		correcting Content-Length. This function also deletes the 
-		Content-Type header.
+correcting Content-Length. This function also deletes the 
+Content-Type header.
 
 
 If a MIME type is specified it will delete the body if it has
-                the same type or, if the message has a multipart body
-                it will go through the parts and delete all those with the specified type.
+the same type or, if the message has a multipart body
+it will go through the parts and delete all those with the specified type.
 
 
 It will not handle multi-layer multiparts
@@ -831,12 +830,12 @@ Meaning of the parameters is as follows:
 
 
 - *mime* - mime to be checked against the
-				"Content-Type" header. If not present or 0, this
-				check will be disabled.
+"Content-Type" header. If not present or 0, this
+check will be disabled.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="strip_body usage"
@@ -852,15 +851,15 @@ strip_body("application/sdp") # delete all sdp bodies, even ones enclosed in mul
 
 
 This function can be used to add a body to a message. If a body already
-		exists, it will be replaced with the new one. The second parameter is 
-		the content type of the new body. It is optional: in case the function
-		is used to replace an existing body with a body of the same type, there
-		is no need to set this parameter. If the message has no body or if the
-		types are different, it is compulsory to set this parameter.
+exists, it will be replaced with the new one. The second parameter is 
+the content type of the new body. It is optional: in case the function
+is used to replace an existing body with a body of the same type, there
+is no need to set this parameter. If the message has no body or if the
+types are different, it is compulsory to set this parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="add_body usage"
@@ -874,14 +873,14 @@ add_body("Hello World!", "text/plain");
 
 
 This function can be used to verify if a codec exists inside an 
-		sdp payload. It will search for the codec inside all streams from all
-		sdp sessions. If it is found anywhere it will return TRUE otherwise
-		it will	return FALSE. The second parameter is optional, if it is not supplied
-		any clockrate will match. Parameters are CASE INSENSITIVE.
+sdp payload. It will search for the codec inside all streams from all
+sdp sessions. If it is found anywhere it will return TRUE otherwise
+it will	return FALSE. The second parameter is optional, if it is not supplied
+any clockrate will match. Parameters are CASE INSENSITIVE.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_exists usage"
@@ -897,17 +896,17 @@ codec_exists("GSM","8000");
 
 
 This function can be used to delete a codec from inside an
-		sdp payload. It will search for the codec inside all streams from all
-		sdp sessions. If it is found anywhere it will be deleted from the
-		mapping ("a=...") and from the list of indexes ("m=..."). 
-		Returns TRUE if any deletion occured otherwise
-		it will	return FALSE. The second parameter is optional, 
-		if it is not supplied any clockrate will match and all will be deleted.
-		Parameters are CASE INSENSITIVE.
+sdp payload. It will search for the codec inside all streams from all
+sdp sessions. If it is found anywhere it will be deleted from the
+mapping ("a=...") and from the list of indexes ("m=..."). 
+Returns TRUE if any deletion occured otherwise
+it will	return FALSE. The second parameter is optional, 
+if it is not supplied any clockrate will match and all will be deleted.
+Parameters are CASE INSENSITIVE.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_delete usage"
@@ -923,17 +922,17 @@ codec_delete("GSM","8000");
 
 
 This function can be used to move a codec up in the list
-		of indexes ("m=..."). It will search for the codec inside all streams from all
-		sdp sessions. If it is found anywhere it will be moved to the top
-		of the index list. Returns TRUE if any moves occured otherwise
-		it will	return FALSE. The second parameter is optional,
-		if it is not supplied any clockrate will match and all codecs
-		will be moved to the front while preserving their original ordering.
-		Parameters are CASE INSENSITIVE.
+of indexes ("m=..."). It will search for the codec inside all streams from all
+sdp sessions. If it is found anywhere it will be moved to the top
+of the index list. Returns TRUE if any moves occured otherwise
+it will	return FALSE. The second parameter is optional,
+if it is not supplied any clockrate will match and all codecs
+will be moved to the front while preserving their original ordering.
+Parameters are CASE INSENSITIVE.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_move_up usage"
@@ -949,17 +948,17 @@ codec_move_up("GSM","8000");
 
 
 This function can be used to move a codec down in the list
-		of indexes ("m=..."). It will search for the codec inside all streams from all
-		sdp sessions. If it is found anywhere it will be moved to the back
-		of the index list. Returns TRUE if any moves occured otherwise
-		it will	return FALSE. The second parameter is optional,
-		if it is not supplied any clockrate will match and all codecs
-		will be moved to the back while preserving their original ordering.
-		Parameters are CASE INSENSITIVE.
+of indexes ("m=..."). It will search for the codec inside all streams from all
+sdp sessions. If it is found anywhere it will be moved to the back
+of the index list. Returns TRUE if any moves occured otherwise
+it will	return FALSE. The second parameter is optional,
+if it is not supplied any clockrate will match and all codecs
+will be moved to the back while preserving their original ordering.
+Parameters are CASE INSENSITIVE.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_move_down usage"
@@ -990,13 +989,13 @@ codec_move_up("speex");
 
 
 This function has the same effect as codec_exists ( without
-		the clock parameter ) the only
-		difference is that it takes a POSIX regular expression
-		as a parameter.
+the clock parameter ) the only
+difference is that it takes a POSIX regular expression
+as a parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_exists_re usage"
@@ -1010,13 +1009,13 @@ codec_exists_re("sp[a-z]*");
 
 
 This function has the same effect as codec_delete ( without
-		the clock parameter ) the only
-		difference is that it takes a POSIX regular expression
-		as a parameter.
+the clock parameter ) the only
+difference is that it takes a POSIX regular expression
+as a parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_delete_re usage"
@@ -1030,11 +1029,11 @@ codec_delete_re("PCMA|PCMU");
 
 
 This function deletes all the codecs except those specified
-                by the regular expression.
+by the regular expression.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_delete_except_re usage"
@@ -1048,13 +1047,13 @@ codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA and PCMU
 
 
 This function has the same effect as codec_move_up ( without
-		the clock parameter ) the only
-		difference is that it takes a POSIX regular expression
-		as a parameter.
+the clock parameter ) the only
+difference is that it takes a POSIX regular expression
+as a parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_move_up_re usage"
@@ -1068,13 +1067,13 @@ codec_move_up_re("sp[a-z]*");
 
 
 This function has the same effect as codec_move_down ( without
-		the clock parameter ) the only
-		difference is that it takes a POSIX regular expression
-		as a parameter.
+the clock parameter ) the only
+difference is that it takes a POSIX regular expression
+as a parameter.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
 
 ```opensips title="codec_move_down_re usage"
@@ -1103,10 +1102,10 @@ codec_move_up("speex");
 
 
 Search functions are applied to the current message so
-			modifications made to the sdp will be visible
-			to the codec_exists functions( e.g. after
-			calling codec_delete("speex") , codec_exists("speex")
-			will return false ).
+modifications made to the sdp will be visible
+to the codec_exists functions( e.g. after
+calling codec_delete("speex") , codec_exists("speex")
+will return false ).
 <!-- CONTRIBUTORS -->
 
 ### License
