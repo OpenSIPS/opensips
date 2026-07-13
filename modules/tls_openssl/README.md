@@ -1,6 +1,6 @@
 ---
 title: "tls_openssl Module"
-description: "This module implements TLS operations using the [openSSL](https://www.openssl.org/) libarary. It provides the primitives required by the *tls_mgm* module in order to expose a higher-level API used by TLS-based protocol modules like *proto_tls* or *proto_wss* etc."
+description: "This module implements TLS operations using the [openSSL](https://www.openssl.org/) libarary."
 ---
 
 ## Admin Guide
@@ -10,10 +10,10 @@ description: "This module implements TLS operations using the [openSSL](https://
 
 
 This module implements TLS operations using the
-		[openSSL](https://www.openssl.org/) libarary. It provides the primitives
-		required by the *tls_mgm* module in order to expose a
-		higher-level API used by TLS-based protocol modules like
-		*proto_tls* or *proto_wss* etc.
+[openSSL](https://www.openssl.org/) libarary. It provides the primitives
+required by the *tls_mgm* module in order to expose a
+higher-level API used by TLS-based protocol modules like
+*proto_tls* or *proto_wss* etc.
 
 
 ### Dependencies
@@ -35,18 +35,18 @@ OpenSIPS TLS v1.0 support requires the following packages:
 
 
 - *openssl* or
-				*libssl* >= 0.9.6
+*libssl* >= 0.9.6
 - *openssl-dev* or
-				*libssl-dev*
+*libssl-dev*
 
 
 OpenSIPS TLS v1.1/1.2 support requires the following packages:
 
 
 - *openssl* or
-				*libssl* >= 1.0.1e
+*libssl* >= 1.0.1e
 - *openssl-dev* or
-				*libssl-dev*
+*libssl-dev*
 <!-- CONTRIBUTORS -->
 
 ### License
