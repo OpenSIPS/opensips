@@ -1321,7 +1321,7 @@ the destination gets activated or *inactive* if the
 destination is detected unresponsive.
 
 
-### Installation and Running
+## Samples
 
 [samples](./samples/samples.md "include")
 
