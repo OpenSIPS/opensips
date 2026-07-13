@@ -1,6 +1,6 @@
 ---
 title: "sngtc Module"
-description: "The **Sangoma transcoding module** offers the possibility of performing voice transcoding with the D-series transcoding cards manufactured by Sangoma. The module makes use of the Sangoma Transcoding API in order to manage transcoding sessions on the dedicated equipment. For the cards in the ..."
+description: "The **Sangoma transcoding module** offers the possibility of performing voice transcoding with the D-series transcoding cards manufactured by Sangoma."
 ---
 
 ## Admin Guide
@@ -10,25 +10,25 @@ description: "The **Sangoma transcoding module** offers the possibility of perfo
 
 
 The **Sangoma transcoding module** offers the possibility of performing
-	voice transcoding with the D-series transcoding cards manufactured by
-	Sangoma. The module makes use of the Sangoma Transcoding API in order to 
-	manage transcoding sessions on the dedicated equipment. For the cards
-	in the network to be detected, the Sangoma SOAP server must be up and
-	running (*sngtc_server* daemon).
+voice transcoding with the D-series transcoding cards manufactured by
+Sangoma. The module makes use of the Sangoma Transcoding API in order to 
+manage transcoding sessions on the dedicated equipment. For the cards
+in the network to be detected, the Sangoma SOAP server must be up and
+running (*sngtc_server* daemon).
 
 
 ### How it works
 
 
 The module performs several modifications in the SDP body of SIP INVITE,
-	200 OK and ACK messages. In all transcoding scenarios, the UAC performs early
-	SDP negotiation, while the UAS does late negotiation. This way, OpenSIPS
-	becomes responsible for intersecting the codec offer and answer, together with
-	the management of transcoding sessions on the Sangoma cards.
+200 OK and ACK messages. In all transcoding scenarios, the UAC performs early
+SDP negotiation, while the UAS does late negotiation. This way, OpenSIPS
+becomes responsible for intersecting the codec offer and answer, together with
+the management of transcoding sessions on the Sangoma cards.
 
 
 This scenario brings about a couple of
-	**restrictions**:
+**restrictions**:
 
 
 - UACs MUST only perform early SDP negotiation
@@ -36,10 +36,10 @@ This scenario brings about a couple of
 
 
 Since the *sngtc_node* library performs several memory
-	allocations with each newly created transcoding session, the module uses a
-	dedicated process, responsible for the management of the above-mentioned sessions. The
-	*sangoma_worker* process communicates with the OpenSIPS
-	UDP receivers through a series of pipes.
+allocations with each newly created transcoding session, the module uses a
+dedicated process, responsible for the management of the above-mentioned sessions. The
+*sangoma_worker* process communicates with the OpenSIPS
+UDP receivers through a series of pipes.
 
 
 ### Dependencies
@@ -58,7 +58,7 @@ The following  modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *sngtc_node library - [download from Sangoma](http://wiki.sangoma.com/media-transcoding-download), compile and install*.
@@ -72,9 +72,9 @@ The following libraries or applications must be installed before running
 
 
 The function strips off the SDP offer from a SIP INVITE, thus
-		asking for another SDP offer from the opposite endpoint (late negotiation).
-		
-		The following **error codes** may be returned:
+asking for another SDP offer from the opposite endpoint (late negotiation).
+
+The following **error codes** may be returned:
 
 
 - *-1* - SDP parsing error
@@ -99,21 +99,21 @@ The function can be used from REQUEST_ROUTE, ONREPLY_ROUTE.
 
 
 Handles the SDP offer from 200 OK responses, intersects both offers with
-		the capabilities of the transcoding card and creates a new transcoding
-		session on the card **only if** necessary. It then rewrites the 200 OK SDP so that it 
-		contains the information resulted from the codec intersection.
+the capabilities of the transcoding card and creates a new transcoding
+session on the card **only if** necessary. It then rewrites the 200 OK SDP so that it 
+contains the information resulted from the codec intersection.
 
 
 **Parameters** explained:
 
 
 Since the D-series transcoding cards are connected through either a
-		PCI slot or simply an Ethernet connector, they cannot be assigned
-		global IPs. Consequently, the module will write the local, private IP of the
-		card in the SDP answers sent to each of the endpoints. Since this will not
-		work with non-local UAs, the optional parameters force the RTP listen
-		interface for each UA. This way, the script writer can enforce a global IP
-		for the incoming RTP (which can be port forwarded to a transcoding card).
+PCI slot or simply an Ethernet connector, they cannot be assigned
+global IPs. Consequently, the module will write the local, private IP of the
+card in the SDP answers sent to each of the endpoints. Since this will not
+work with non-local UAs, the optional parameters force the RTP listen
+interface for each UA. This way, the script writer can enforce a global IP
+for the incoming RTP (which can be port forwarded to a transcoding card).
 
 
 - *listen_if_A* - the interface where the UAC (the caller) will send RTP after the call is established (IP from the 'c=' SDP line(s))
@@ -145,7 +145,7 @@ onreply_route[1] {
 
 
 Attaches an SDP body to the caller's ACK request, so that it matches
-		the late SDP negotiation done by the UAS.
+the late SDP negotiation done by the UAS.
 
 
 The following **error codes** may be returned:

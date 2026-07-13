@@ -12,9 +12,9 @@ title: "Stun Module"
 
 
 A stun server working with the same port as SIP (5060) in order to
-			gain accurate information. The benefit would be an exact external 
-			address in the case of NATs translating differently when given 
-			different destination ports.
+gain accurate information. The benefit would be an exact external 
+address in the case of NATs translating differently when given 
+different destination ports.
 
 
 #### Basic Operation
@@ -36,16 +36,16 @@ Socket1 must allways be a SIP UDP listener from OpenSIPS.
 
 
 The server will create a separate process.
-				This process will listen for data on created sockets.
-				The server will register a callback function to SIP.
-				This function is called when a specific (stun)header is found.
+This process will listen for data on created sockets.
+The server will register a callback function to SIP.
+This function is called when a specific (stun)header is found.
 
 
 #### Supported STUN Attributes
 
 
 This stun implements RFC3489 (and XOR_MAPPED_ADDRESS from 
-				RFC5389)
+RFC5389)
 
 
 - MAPPED_ADDRESS
@@ -86,7 +86,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before 
-			running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -99,7 +99,7 @@ The following libraries or applications must be installed before
 
 
 The ip of the an interface configured as UDP SIP listener
-			in OpenSIPS. It is a mandatory paramter, by default empty.
+in OpenSIPS. It is a mandatory paramter, by default empty.
 
 
 ```opensips title="Set primary_ip parameter"
@@ -114,7 +114,7 @@ modparam("stun","primary_ip","192.168.0.100")
 
 
 The port configured (together with the primary_ip) as an UDP SIP
-			listener in OpenSIPS. It is a mandatory paramter, by default 5060.
+listener in OpenSIPS. It is a mandatory paramter, by default 5060.
 
 
 ```opensips title="Set primary_port parameter"
@@ -129,7 +129,7 @@ modparam("stun","primary_port","5060")
 
 
 Another ip from another interface. It is mandatory to be set,
-			default is empty (not set).
+default is empty (not set).
 
 
 ```opensips title="Set alternate_ip parameter"
@@ -144,7 +144,7 @@ modparam("stun","alternate_ip","11.22.33.44")
 
 
 Another port used by STUN. It is mandatory to be set, default
-			value is 3478 (default STUN port).
+value is 3478 (default STUN port).
 
 
 ```opensips title="Set alternate_port parameter"
