@@ -1296,6 +1296,11 @@ typedef int (*pres_contains_presence_t)(str* pres_uri);
 
 This function searches is a presence uri has published any presence
 information. It return 1 if a record is found, -1 otherwise.
+
+## Samples
+
+[samples](./samples/samples.md "include")
+
 <!-- CONTRIBUTORS -->
 
 ### License
