@@ -10,13 +10,13 @@ description: "The Status/Report module is a wrapper over the internal status/rep
 
 
 The Status/Report module is a wrapper over the 
-		internal status/report framework, allowing the script writer to 
-		dynamically define and use of SR groups.
+internal status/report framework, allowing the script writer to 
+dynamically define and use of SR groups.
 
 
 By bringing the Status/Report support into the script, it opens the
-		possibility to create custom reports from script, depending on
-		the logic you have there.
+possibility to create custom reports from script, depending on
+the logic you have there.
 
 
 ### Dependencies
@@ -35,7 +35,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before running
-		OpenSIPS with this module loaded:
+OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -48,11 +48,11 @@ The following libraries or applications must be installed before running
 
 
 Name of a new Status/Report group to be created and later used
-		from script level.
+from script level.
 
 
 This parameter may be defined multiple times, in order to define
-		multiple groups.
+multiple groups.
 
 
 ```opensips title="script_sr_group example"
@@ -74,13 +74,13 @@ Meaning of the parameters is as follows:
 
 
 - *group* (string) - the name of the
-			SR group; you can change the status only for the groups defined via
-			this module (as parameter).
+SR group; you can change the status only for the groups defined via
+this module (as parameter).
 - *status* (int) - the new status value
-			( strict positive meaning OK, strict negative meaning NOT OK,
-			0 is not accepts, it is converted to 1 automatically).
+( strict positive meaning OK, strict negative meaning NOT OK,
+0 is not accepts, it is converted to 1 automatically).
 - *details* (string, optional) - a
-			descripting text to detail the status value
+descripting text to detail the status value
 
 
 This function can be used from any route.
@@ -97,15 +97,15 @@ sr_set_status( "script_caching", 1, "completed");
 
 
 Adds a new report/log to a Status/Report group.This must have been
-		defined via this module too.
+defined via this module too.
 
 
 Meaning of the parameters is as follows:
 
 
 - *group* (string) - the name of the
-			SR group; you can change the status only for the groups defined via
-			this module (as parameter).
+SR group; you can change the status only for the groups defined via
+this module (as parameter).
 *report* (string) - the log to be added.
 
 

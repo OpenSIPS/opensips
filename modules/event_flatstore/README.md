@@ -1,6 +1,6 @@
 ---
 title: "event_flatstore Module"
-description: "The *event_flatstore* module provides a logging facility for different events, triggered through the OpenSIPS Event Interface, directly from the OpenSIPS script. The module logs the events along with their parameters in plain text files."
+description: "The *event_flatstore* module provides a logging facility for different events, triggered through the OpenSIPS Event Interface, directly from the OpenSIPS script."
 ---
 
 ## Admin Guide
@@ -10,10 +10,10 @@ description: "The *event_flatstore* module provides a logging facility for diffe
 
 
 The *event_flatstore*
-		module provides a logging facility for different events,
-		triggered through the OpenSIPS Event Interface, directly from the OpenSIPS
-		script. The module logs the events along with their parameters in plain
-		text files.
+module provides a logging facility for different events,
+triggered through the OpenSIPS Event Interface, directly from the OpenSIPS
+script. The module logs the events along with their parameters in plain
+text files.
 
 
 ### Flatstore socket syntax
@@ -26,8 +26,8 @@ Meanings:
 
 
 - *flatstore:* - informs the Event Interface that the
-					events sent to this subscriber should be handled by the
-					*event_flatstore* module.
+events sent to this subscriber should be handled by the
+*event_flatstore* module.
 - *path_to_file* - path to the file where the logged events will be appended to. The file will be created if it does not exist. It must be a valid path and not a directory.
 
 
@@ -47,7 +47,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *none*
@@ -60,9 +60,9 @@ The following libraries or applications must be installed before
 
 
 Defines the maximum number of simultaneously opened files by the
-			module. If the maximum limit is reached, an error message will be
-			thrown, and further subscriptions will only be possible after at
-			least one of the current subscriptions will expire.
+module. If the maximum limit is reached, an error message will be
+thrown, and further subscriptions will only be possible after at
+least one of the current subscriptions will expire.
 
 
 *Default value is "100".*
@@ -95,15 +95,15 @@ modparam("event_flatstore", "delimiter", ";")
 
 
 Optional replacement sequence that will be written *instead
-			of* the [`delimiter`](#param_delimiter)
-			whenever this character (or sequence) occurs inside a string
-			parameter.
-			This allows you to keep the log file parse-friendly even when user
-			data itself may contain delimiter symbols.
+of* the [`delimiter`](#param_delimiter)
+whenever this character (or sequence) occurs inside a string
+parameter.
+This allows you to keep the log file parse-friendly even when user
+data itself may contain delimiter symbols.
 
 
 If set, its length *must be exactly equal* to the
-			length of `delimiter`.
+length of `delimiter`.
 
 
 *Default value is """" (escaping disabled).*
@@ -122,7 +122,7 @@ modparam("event_flatstore", "escape_delimiter", "|")
 
 
 Sets the permissions for the newly created logs. It
-			expects a string representation of a octal value.
+expects a string representation of a octal value.
 
 
 *Default value is "644".*
@@ -155,8 +155,8 @@ modparam("event_flatstore", "suppress_event_name", 1)
 
 
 When used, it triggers a file auto-rotate. The period is matched
-			against the absolute time of the machine, can be useful to trigger
-			auto-rotate every minute, or every hour.
+against the absolute time of the machine, can be useful to trigger
+auto-rotate every minute, or every hour.
 
 
 *Default value is "0/OFF" (the file is never auto-rotated)*
@@ -174,8 +174,8 @@ modparam("event_flatstore", "rotate_period", 3660) # rotate every hour
 
 
 Defines after how many written lines the log file is rotated.
-			The value may exceed the 32-bit integer limit; in that case pass
-			it *as a string*, e.g. "5000000000".
+The value may exceed the 32-bit integer limit; in that case pass
+it *as a string*, e.g. "5000000000".
 
 
 *Default value is "0/OFF".*
@@ -193,10 +193,10 @@ modparam("event_flatstore", "rotate_count", "5000000000")
 
 
 Sets the maximum size of a file before it is rotated.  A size
-		suffix of "k", "m" or "g"
-		(multiples of 1024) may be provided.
-		Very large values can be supplied as strings, e.g.
-		"8589934592" for 8 GiB.
+suffix of "k", "m" or "g"
+(multiples of 1024) may be provided.
+Very large values can be supplied as strings, e.g.
+"8589934592" for 8 GiB.
 
 
 *Default value is "0/OFF".*
@@ -213,19 +213,19 @@ modparam("event_flatstore", "rotate_size", "2g")
 
 
 Modifies the file that OpenSIPS writes events into by
-			appending a suffix to the the file specified in the flatstore
-			*socket*.
+appending a suffix to the the file specified in the flatstore
+*socket*.
 
 
 The suffix can contain string formats (i.e. variables mixed with
-			strings). The path of the resulted file is evaluated when the first
-			event is raised/written in the file after a reload happend, or when
-			the *rotate_period*, if specified, triggers a rotate.
+strings). The path of the resulted file is evaluated when the first
+event is raised/written in the file after a reload happend, or when
+the *rotate_period*, if specified, triggers a rotate.
 
 
 This parameter does not affect the matching of the event socket -
-			the matching will be done exclusively using the flatstore
-			*socket* registered.
+the matching will be done exclusively using the flatstore
+*socket* registered.
 
 
 *Default value is """" (no suffix is added)*
@@ -267,7 +267,7 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi event_flatstore:rotate _path_to_log_file_
-		
+
 ```
 
 
@@ -278,23 +278,23 @@ opensips-cli -x mi event_flatstore:rotate _path_to_log_file_
 
 
 The event is raised every time *event_flatstore*
-		opens a new log file (manual `event_flatstore:rotate`,
-		auto-rotate by `rotate_period`, or
-		thresholds `rotate_count`/`rotate_size`).
-		External apps can subscribe to monitor log-rotation activity.
+opens a new log file (manual `event_flatstore:rotate`,
+auto-rotate by `rotate_period`, or
+thresholds `rotate_count`/`rotate_size`).
+External apps can subscribe to monitor log-rotation activity.
 
 
 Parameters:
 
 
 - *timestamp* – Unix epoch (seconds) when the
-		rotation was performed.
+rotation was performed.
 - *reason* – one of the strings
-		*count*, *size*,
-		*period* or *mi*.
+*count*, *size*,
+*period* or *mi*.
 - *filename* – full path of the new log file.
 - *old_filename* – full path of the previous
-		log file, or empty string if none existed.
+log file, or empty string if none existed.
 <!-- CONTRIBUTORS -->
 
 ### License

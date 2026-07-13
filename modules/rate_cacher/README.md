@@ -1,6 +1,6 @@
 ---
 title: "RATE_CACHER Module"
-description: "The *rate_cacher* module provides a means of caching and real-time querying of the ratesheets assigned to your clients and / or vendors. It also allows for real-time cost-based routing and cost-based filtering."
+description: "The *rate_cacher* module provides a means of caching and real-time querying of the ratesheets assigned to your clients and / or vendors."
 ---
 
 ## Admin Guide
@@ -10,8 +10,8 @@ description: "The *rate_cacher* module provides a means of caching and real-time
 
 
 The *rate_cacher* module provides a means of caching
-	and real-time querying of the ratesheets assigned to your clients and / or vendors.
-	It also allows for real-time cost-based routing and cost-based filtering.
+and real-time querying of the ratesheets assigned to your clients and / or vendors.
+It also allows for real-time cost-based routing and cost-based filtering.
 
 
 ### Dependencies
@@ -30,7 +30,7 @@ The following modules must be loaded before this module:
 
 
 The following libraries or applications must be installed before
-		running OpenSIPS with this module loaded:
+running OpenSIPS with this module loaded:
 
 
 - *None*.
@@ -75,8 +75,8 @@ modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
 
 
 The size of the hash table internally used to keep the vendors. A
-		larger table is much faster but consumes more memory. The hash size
-		must be a power of 2 number.
+larger table is much faster but consumes more memory. The hash size
+must be a power of 2 number.
 
 
 *Default value is "256".*
@@ -125,8 +125,8 @@ modparam("rate_cacher", "clients_db_table", "my_clients_view")
 
 
 The size of the hash table internally used to keep the clients. A
-		larger table is much faster but consumes more memory. The hash size
-		must be a power of 2 number.
+larger table is much faster but consumes more memory. The hash size
+must be a power of 2 number.
 
 
 *Default value is "256".*
@@ -304,8 +304,6 @@ This function can be used from a REQUEST or FAILURE route.
 
 ```opensips title="cost_based_filtering usage"
 ...
-
-
 # If we get a call from testClient on it's wholesale quality,
 # going to number 40720018124, and we have to pick from the list 
 # of vendors 'testVendor,testVendor2' based on a a profit margin 
@@ -376,7 +374,6 @@ $avp(profit_margin)=0;
 
 if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
 	xlog("XXX - Out of the $avp(carrierlist) carriers, we should only use $avp(out_vendor_result) , in the provided order\n");
-
 ...
 ```
 
@@ -408,7 +405,6 @@ MI FIFO Command Format:
 ```bash
 ## Add a new Vendor
 $ opensips-cli -x mi rate_cacher:addVendor myNewVendor
-		
 ```
 
 
@@ -436,7 +432,6 @@ MI FIFO Command Format:
 ```bash
 ## Delete a Vendor
 $ opensipss-cli -x mi rate_cacher:deleteVendor myNewVendor
-		
 ```
 
 
@@ -465,7 +460,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads a Vendor Ratesheet
 $ opensips-cli -x mi rate_cacher:reloadVendorRate myVendor 3
-		
 ```
 
 
@@ -493,7 +487,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads a Vendor Ratesheet
 $ opensips-cli -x mi rate_cacher:deleteVendorRate myVendor
-		
 ```
 
 
@@ -530,7 +523,6 @@ MI FIFO Command Format:
     "increment": 1,
     "currency": "USD"
 }
-		
 ```
 
 
@@ -558,7 +550,6 @@ MI FIFO Command Format:
 ```bash
 ## Add a new Client
 $ opensips-cli -x mi fifo rate_cacher:addClient myNewClient
-		
 ```
 
 
@@ -586,7 +577,6 @@ MI FIFO Command Format:
 ```bash
 ## Delete a Client
 $ opensips-cli -x mi rate_cacher:deleteClient myClient
-		
 ```
 
 
@@ -616,7 +606,6 @@ MI FIFO Command Format:
 ```bash
 ## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
 $ opensips-cli -x mi rate_cacher:reloadClientRate myClient 1 3
-		
 ```
 
 
@@ -645,7 +634,6 @@ MI FIFO Command Format:
 ```bash
 ## Deletes a Client Ratesheet
 $ opensips-cli -x mi rate_cacher:deleteClientRate myClient 1
-		
 ```
 
 
@@ -683,8 +671,6 @@ MI FIFO Command Format:
     "increment": 1,
     "currency": "USD"
 }
-
-		
 ```
 <!-- CONTRIBUTORS -->
 

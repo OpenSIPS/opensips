@@ -10,7 +10,7 @@ description: "This module provides optional, SQL-based support for fine-grained 
 
 
 This module provides optional, SQL-based support for fine-grained
-		management of all TCP connections taking place on OpenSIPS.
+management of all TCP connections taking place on OpenSIPS.
 
 
 ### Dependencies
@@ -77,9 +77,9 @@ Replaces obsolete MI command: *tcp_reload*.
 
 
 Reload all TCP paths from the *tcp_mgm* table
-		without disrupting ongoing traffic.  Note that the reloaded rules will
-		NOT immediately apply to existing TCP connections, rather only to
-		newly established ones.
+without disrupting ongoing traffic.  Note that the reloaded rules will
+NOT immediately apply to existing TCP connections, rather only to
+newly established ones.
 
 
 Example:
@@ -88,8 +88,7 @@ Example:
 ```bash
 # reload all TCP paths
 $ opensips-cli -x mi tcp_mgm:reload
-$ "OK"
-		
+"OK"
 ```
 <!-- CONTRIBUTORS -->
 
