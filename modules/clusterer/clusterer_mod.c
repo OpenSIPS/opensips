@@ -657,6 +657,18 @@ static int child_init(int rank)
 			return -1;
 		}
 	}
+
+	/* One-shot config sanity check (rank 1 fires once, and runs after every
+	 * module's mod_init, so a clusterer_controller would already have bound the
+	 * controller API): use_controller=1 is meaningless without that module -
+	 * the pre-created controller-managed cluster stubs would never obtain an
+	 * identity or form. */
+	if (rank == 1 && use_controller && !clusterer_ctrl_bound)
+		LM_ERR("clusterer: use_controller=1 but no clusterer_controller module "
+		       "registered the controller API - controller-managed cluster(s) "
+		       "will never obtain a node identity or form. Load the "
+		       "clusterer_controller module, or unset use_controller.\n");
+
 	return 0;
 }
 

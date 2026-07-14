@@ -502,11 +502,17 @@
 		</listitem>
 		<listitem>
 		<para>
-		    <emphasis>clusterer</emphasis> — required with
-		    <varname>use_controller=1</varname> set, so that
-		    the clusterer internal API
-		    (<function>load_clusterer_ctrl_binds</function>) is
-		    exported and available at initialisation time.
+		    <emphasis>clusterer</emphasis> — required, and it
+		    <emphasis>must</emphasis> have
+		    <varname>use_controller=1</varname> set. That global switch
+		    is what pre-creates the controller-managed cluster stubs,
+		    marks them so they never touch the database, and arms the
+		    guard that stops the controller from driving a native cluster
+		    of the same id. If <emphasis>clusterer_controller</emphasis>
+		    is loaded while clusterer has
+		    <varname>use_controller=0</varname>, it refuses to start with
+		    a clear error — there is no controller-managed cluster for it
+		    to drive and those safety mechanisms would be off.
 		</para>
 		</listitem>
 	    </itemizedlist>
@@ -520,6 +526,26 @@
 	    resolves the dependency at runtime and will initialize the
 	    required modules first regardless of
 	    <function>loadmodule</function> order.
+	</para>
+	<para>
+	    The reverse is also checked: if
+	    <varname>use_controller=1</varname> is set but the
+	    <emphasis>clusterer_controller</emphasis> module is not loaded,
+	    clusterer logs an error at startup, since the controller-managed
+	    cluster stubs would never obtain a node identity or form. clusterer
+	    itself keeps running, so any native or DB-backed clusters are
+	    unaffected.
+	</para>
+	<para>
+	    <emphasis role="bold">Hybrid deployments are unaffected.</emphasis>
+	    <varname>use_controller</varname> is a single global switch; in a
+	    hybrid instance (native and controller-managed clusters side by side)
+	    it is always <varname>1</varname> and only the
+	    <emphasis>per-cluster</emphasis> kind differs (native via DB/static
+	    provisioning versus controller-managed via the
+	    <varname>cluster_id</varname> list). Both consistency checks above
+	    therefore only fire on a genuine module/config mismatch — never on a
+	    hybrid or pure-controller setup.
 	</para>
 	<para>
 	    All other modules that use the clusterer interface

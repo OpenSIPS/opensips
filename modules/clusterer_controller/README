@@ -496,9 +496,15 @@ on-key")
      * proto_bin — required so that BIN listeners are registered
        and available for discovery when clusterer_controller
        initialises and scans the proto_bin listener list.
-     * clusterer — required with use_controller=1 set, so that the
-       clusterer internal API (load_clusterer_ctrl_binds) is
-       exported and available at initialisation time.
+     * clusterer — required, and it must have use_controller=1
+       set. That global switch is what pre-creates the
+       controller-managed cluster stubs, marks them so they never
+       touch the database, and arms the guard that stops the
+       controller from driving a native cluster of the same id. If
+       clusterer_controller is loaded while clusterer has
+       use_controller=0, it refuses to start with a clear error —
+       there is no controller-managed cluster for it to drive and
+       those safety mechanisms would be off.
 
    Both dependencies are declared in the module's dep_export_t.
    OpenSIPS will refuse to start if either dependency is not
@@ -506,6 +512,22 @@ on-key")
    a particular order in the configuration file — OpenSIPS
    resolves the dependency at runtime and will initialize the
    required modules first regardless of loadmodule order.
+
+   The reverse is also checked: if use_controller=1 is set but the
+   clusterer_controller module is not loaded, clusterer logs an
+   error at startup, since the controller-managed cluster stubs
+   would never obtain a node identity or form. clusterer itself
+   keeps running, so any native or DB-backed clusters are
+   unaffected.
+
+   Hybrid deployments are unaffected. use_controller is a single
+   global switch; in a hybrid instance (native and
+   controller-managed clusters side by side) it is always 1 and
+   only the per-cluster kind differs (native via DB/static
+   provisioning versus controller-managed via the cluster_id
+   list). Both consistency checks above therefore only fire on a
+   genuine module/config mismatch — never on a hybrid or
+   pure-controller setup.
 
    All other modules that use the clusterer interface (tm, dialog,
    dispatcher, usrloc etc.) may be loaded in any order relative to

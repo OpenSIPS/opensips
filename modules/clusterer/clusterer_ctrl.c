@@ -372,12 +372,17 @@ int clusterer_ctrl_unset_shtag_managed(int cluster_id)
 	return 0;
 }
 
+/* 1 once a controller module has bound this API (see clusterer_ctrl.h). */
+int clusterer_ctrl_bound = 0;
+
 int load_clusterer_ctrl_binds(clusterer_ctrl_binds_t *binds)
 {
     if (!binds) {
 	LM_ERR("clusterer: load_clusterer_ctrl_binds: NULL binds\n");
 	return -1;
     }
+    clusterer_ctrl_bound   = 1;
+    binds->use_controller  = use_controller;
     binds->set_my_identity        = clusterer_ctrl_set_identity;
     binds->add_node               = clusterer_ctrl_add_node;
     binds->remove_node            = clusterer_ctrl_remove_node;

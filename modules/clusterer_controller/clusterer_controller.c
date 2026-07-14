@@ -5804,6 +5804,25 @@ static int mod_init(void)
 	    LM_INFO("clusterer_controller: clusterer API loaded - "
 	            "topology will be driven dynamically\n");
 
+	    /* The controller is only meaningful when the clusterer module is told
+	     * to expect it (use_controller=1, a global switch): that is what
+	     * pre-creates the controller-managed cluster stubs, sets each one's
+	     * controller_managed flag (so they never touch the DB), and arms the
+	     * guard that stops the controller from hijacking a native cluster of the
+	     * same id.  With use_controller=0 there is no controller-managed cluster
+	     * at all and those safety mechanisms are off, so refuse to start rather
+	     * than run the control plane against clusters clusterer never authorised
+	     * us to drive.  (Hybrid setups keep use_controller=1 - only the per-
+	     * cluster kind differs - so this never trips them.) */
+	    if (!clctl.use_controller) {
+		LM_ERR("clusterer_controller: loaded but the clusterer module has "
+		       "use_controller=0 - there is no controller-managed cluster and "
+		       "the controller's safety guards are disabled. Set "
+		       "modparam(\"clusterer\", \"use_controller\", 1), or remove the "
+		       "clusterer_controller module.\n");
+		return -1;
+	    }
+
 	    /* When we manage sharing tags, start every tag as BACKUP and
 	     * lock out MI/script changes - the controller master decides
 	     * who becomes active.  (manage_shtags sentinels were already

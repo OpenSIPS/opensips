@@ -157,7 +157,17 @@ typedef struct clusterer_ctrl_binds {
 	 * @return 0 on success, -1 if cluster not found
 	 */
 	int (*unset_shtag_managed)(int cluster_id);
+
+	/* Introspection: the value of the clusterer 'use_controller' modparam at
+	 * bind time.  Lets clusterer_controller detect the mirror misconfiguration
+	 * (controller loaded but clusterer has use_controller=0, so no stubs were
+	 * pre-created). */
+	int use_controller;
 } clusterer_ctrl_binds_t;
+
+/* Set to 1 by load_clusterer_ctrl_binds() when a controller module binds the
+ * API, so clusterer can warn if use_controller=1 yet no controller registered. */
+extern int clusterer_ctrl_bound;
 
 /**
  * load_clusterer_ctrl_binds() — fill a clusterer_ctrl_binds_t struct.
