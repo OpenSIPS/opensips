@@ -194,6 +194,9 @@ static inline int cluster_self_id(const struct cluster_info *cl)
 }
 extern int db_mode;
 extern int use_controller;
+/* cluster_ids declared controller-managed via cluster_options (use_controller=1) */
+extern int cc_stub_ids[];
+extern int cc_stub_count;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 

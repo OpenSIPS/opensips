@@ -106,11 +106,13 @@ Chapter 1. Admin Guide
    each other automatically at startup and the cluster topology is
    maintained dynamically at runtime.
 
-   When use_controller=1 is set in the clusterer module, the
-   clusterer_controller module takes over all topology management:
-   it allocates unique node IDs, discovers peer BIN socket
-   addresses, and calls the clusterer internal API to add or
-   remove nodes as they join or leave the cluster.
+   When a cluster is registered as controller-managed via
+   modparam("clusterer", "cluster_options", "cluster_id=N,
+   use_controller=1"), the clusterer_controller module takes over
+   all topology management: it allocates unique node IDs,
+   discovers peer BIN socket addresses, and calls the clusterer
+   internal API to add or remove nodes as they join or leave the
+   cluster.
 
    By default (manage_shtags=1), the module also provides fully
    automatic sharing tag failover. The controller master node is
@@ -499,15 +501,20 @@ on-key")
      * proto_bin — required so that BIN listeners are registered
        and available for discovery when clusterer_controller
        initialises and scans the proto_bin listener list.
-     * clusterer — required, and it must have use_controller=1
-       set. That global switch is what pre-creates the
+     * clusterer — required, and it must register every
+       controller-managed cluster with modparam("clusterer",
+       "cluster_options", "cluster_id=N, use_controller=1"). That
+       per-cluster parameter is what pre-creates the
        controller-managed cluster stubs, marks them so they never
        touch the database, and arms the guard that stops the
-       controller from driving a native cluster of the same id. If
-       clusterer_controller is loaded while clusterer has
-       use_controller=0, it refuses to start with a clear error —
-       there is no controller-managed cluster for it to drive and
-       those safety mechanisms would be off.
+       controller from driving a native cluster of the same id.
+       The controller-managed ids declared here and the cluster
+       entries configured in clusterer_controller must match
+       exactly: if either side names a cluster the other does not,
+       the controller refuses to start with an error naming the
+       offending id — a managed id with no controller config has
+       no BIN socket or crypto parameters, and a controller config
+       for an unmanaged id has nothing to drive.
 
    Both dependencies are declared in the module's dep_export_t.
    OpenSIPS will refuse to start if either dependency is not
@@ -516,28 +523,30 @@ on-key")
    resolves the dependency at runtime and will initialize the
    required modules first regardless of loadmodule order.
 
-   The reverse is also checked: if use_controller=1 is set but the
-   clusterer_controller module is not loaded, clusterer logs an
-   error at startup, since the controller-managed cluster stubs
-   would never obtain a node identity or form. clusterer itself
-   keeps running, so any native or DB-backed clusters are
-   unaffected.
+   This is also checked from the other side: if a cluster_options
+   entry sets use_controller=1 but the clusterer_controller module
+   is not loaded at all, clusterer logs an error at startup, since
+   the controller-managed cluster stubs would never obtain a node
+   identity or form. clusterer itself keeps running, so any native
+   or DB-backed clusters are unaffected.
 
-   Hybrid deployments are unaffected. use_controller is a single
-   global switch; in a hybrid instance (native and
-   controller-managed clusters side by side) it is always 1 and
-   only the per-cluster kind differs (native via DB/static
-   provisioning versus controller-managed via the cluster_id
-   list). Both consistency checks above therefore only fire on a
-   genuine module/config mismatch — never on a hybrid or
-   pure-controller setup.
+   Hybrid deployments are unaffected. use_controller is a
+   per-cluster option carried in cluster_options, defaulting to 0.
+   In a hybrid instance (native and controller-managed clusters
+   side by side), the controller-managed clusters each get a
+   cluster_options line with use_controller=1, while the native
+   ones are defined the usual way (DB rows or static
+   my_node_info/neighbor_node_info) and need no cluster_options
+   line. The exact-match check above compares only the
+   controller-managed ids against the controller's cluster
+   entries, so it never fires on a native cluster.
 
    All other modules that use the clusterer interface (tm, dialog,
    dispatcher, usrloc etc.) may be loaded in any order relative to
    clusterer_controller. The clusterer module automatically
-   creates a cluster stub when use_controller=1 is set and a
-   module attempts to register a capability for an unknown
-   cluster.
+   creates a cluster stub when a cluster_options entry sets
+   use_controller=1 and a module attempts to register a capability
+   for that cluster.
 
 1.5.2. External Libraries or Applications
 
@@ -832,9 +841,10 @@ modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
 ...
 # clusters 1 and 2 registered as controller-managed on the clusterer sid
 e
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
-modparam("clusterer", "cluster_id", 2)
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 
 # Enable automatic failover for every cluster (this is also the default)
 modparam("clusterer_controller", "manage_shtags", 1)
@@ -849,9 +859,10 @@ modparam("clusterer_controller", "cluster", "id=2,multicast=239.0.90.2:3
 ...
 # clusters 1 and 2 registered as controller-managed on the clusterer sid
 e
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
-modparam("clusterer", "cluster_id", 2)
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 
 # manage_shtags=1 globally, but cluster 2 uses its own MI/event-route sc
 ripts
@@ -866,9 +877,10 @@ modparam("clusterer_controller", "cluster",
 ...
 # clusters 1 and 2 registered as controller-managed on the clusterer sid
 e
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
-modparam("clusterer", "cluster_id", 2)
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 
 # Disable automatic failover globally; enable it only for cluster 1
 modparam("clusterer_controller", "manage_shtags", 0)
@@ -890,10 +902,8 @@ socket=bin:10.22.23.191:3857
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)     # enable the controller p
-ath (global switch)
-modparam("clusterer", "cluster_id",     1)     # register cluster 1 as c
-ontroller-managed
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
 modparam("clusterer", "sharing_tag",   "vip1/1=active")
 modparam("clusterer", "ping_interval", 4)
 modparam("clusterer", "ping_timeout",  1500)
@@ -939,9 +949,10 @@ modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
    Example 1.12. Set master_stickiness parameter
 ...
 # both clusters registered as controller-managed on the clusterer side
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
-modparam("clusterer", "cluster_id", 2)
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 
 # Global default (sticky) — omit entirely for the same effect
 modparam("clusterer_controller", "master_stickiness", 1)
@@ -1210,12 +1221,10 @@ socket=bin:10.0.2.10:5566
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)   # enable the controller pat
-h (global switch)
-modparam("clusterer", "cluster_id", 1)        # cluster 1 is controller-
-managed
-modparam("clusterer", "cluster_id", 2)        # cluster 2 is controller-
-managed
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 
 loadmodule "clusterer_controller.so"
 # Cluster 1 — dialog replication group, LAN segment 10.0.1.0/24
@@ -1238,12 +1247,10 @@ socket=bin:10.22.23.191:3857
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)   # enable the controller pat
-h (global switch)
-modparam("clusterer", "cluster_id", 1)        # cluster 1 is controller-
-managed
-modparam("clusterer", "cluster_id", 2)        # cluster 2 is controller-
-managed
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 
 loadmodule "clusterer_controller.so"
 modparam("clusterer_controller", "cluster",
@@ -1268,10 +1275,11 @@ modparam("dispatcher", "cluster_id", 2)
 
    Which kind a cluster is follows from how it is declared:
      * Controller-managed — every cluster_id registered with the
-       clusterer module via modparam("clusterer", "cluster_id", N)
-       (and matched by a cluster entry in this module). Its
-       topology and this node's node_id are driven at runtime by
-       the controller; it never touches the database and always
+       clusterer module via modparam("clusterer",
+       "cluster_options", "cluster_id=N, use_controller=1") (and
+       matched by a cluster entry in this module). Its topology
+       and this node's node_id are driven at runtime by the
+       controller; it never touches the database and always
        behaves as db_mode=0, regardless of the global db_mode.
      * Native — every cluster loaded from the clusterer database
        (db_mode!=0) or provisioned statically. It behaves exactly
@@ -1315,10 +1323,8 @@ s")
 modparam("clusterer", "my_node_id", 5)      # this node's id in its nati
 ve/DB clusters (global)
 # controller side: cluster 1 is dynamic (no DB, no static rows)
-modparam("clusterer", "use_controller", 1)  # enable the controller path
- (global switch)
-modparam("clusterer", "cluster_id", 1)       # register cluster 1 as con
-troller-managed
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
 
 loadmodule "clusterer_controller.so"
 modparam("clusterer_controller", "cluster",
@@ -1350,10 +1356,8 @@ modparam("clusterer", "my_node_info",       "cluster_id=7, url=bin:10.0.
 modparam("clusterer", "neighbor_node_info", "cluster_id=7, node_id=6, ur
 l=bin:10.0.0.11:5566")
 # controller side: cluster 1 is dynamic
-modparam("clusterer", "use_controller", 1)           # enable the contro
-ller path (global switch)
-modparam("clusterer", "cluster_id", 1)                # register cluster
- 1 as controller-managed
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
 
 loadmodule "clusterer_controller.so"
 modparam("clusterer_controller", "cluster",
@@ -1386,10 +1390,8 @@ socket=bin:10.22.23.191:3857
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)     # enable the controller p
-ath (global switch)
-modparam("clusterer", "cluster_id",     1)     # register cluster 1 as c
-ontroller-managed
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
 modparam("clusterer", "sharing_tag",   "vip1/1=active")
 modparam("clusterer", "ping_interval", 4)
 modparam("clusterer", "ping_timeout",  1500)
@@ -1667,9 +1669,10 @@ A.7. Test 6 — Multiple clusters over one BIN socket
    but both advertise the same BIN socket (bin:IP:3857). Each
    cluster must form independently and its replication must stay
    isolated over the shared socket.
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
-modparam("clusterer", "cluster_id", 2)
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1
+")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1
+")
 modparam("clusterer_controller", "cluster",
     "id=1,multicast=239.0.90.1:3333,bin_socket=bin:IP:3857")
 modparam("clusterer_controller", "cluster",

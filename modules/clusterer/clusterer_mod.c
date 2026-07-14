@@ -51,20 +51,110 @@ int current_id = -1;
 int *_current_id_shm = NULL;
 int db_mode = 1;
 int clusterer_enable_rerouting = 1;
-int use_controller = 0;
+int use_controller = 0;   /* derived: 1 if any cluster_options sets use_controller=1 */
 
-/* cluster_ids to pre-create when use_controller=1 */
-static int cc_stub_ids[64];
-static int cc_stub_count = 0;
+/* cluster_ids marked controller-managed via 'cluster_options' (use_controller=1).
+ * Not static: the controller loads a pointer to these through the ctrl binds so it
+ * can verify it has a matching 'cluster' config for each. */
+int cc_stub_ids[64];
+int cc_stub_count = 0;
 
-static int cc_add_cluster_id(modparam_t type, void *val)
+/* extract "<name>=<int>" from a "key=value, key=value" cluster_options string.
+ * Returns 0 and sets *out on success, 1 if the key is absent, -1 if malformed. */
+static int cc_opt_int(str *descr, str *name, int *out)
 {
-	if (cc_stub_count >= 64) {
-		LM_ERR("clusterer: too many cluster_id entries\n");
+	char *p, *pe;
+	str aux;
+
+	p = str_strstr(descr, name);
+	if (!p)
+		return 1;
+	p += name->len;
+	p = q_memchr(p, '=', descr->s + descr->len - p);
+	if (!p) {
+		LM_ERR("clusterer: expected '=' after '%.*s' in cluster_options\n",
+			name->len, name->s);
 		return -1;
 	}
-	cc_stub_ids[cc_stub_count++] = (int)(long)val;
+	p++;
+	pe = q_memchr(p, ',', descr->s + descr->len - p);
+	aux.s = p;
+	aux.len = pe ? pe - p : descr->s + descr->len - p;
+	str_trim_spaces_lr(aux);
+	if (aux.len == 0 || str2int(&aux, (unsigned int *)out)) {
+		LM_ERR("clusterer: bad value for '%.*s' in cluster_options\n",
+			name->len, name->s);
+		return -1;
+	}
 	return 0;
+}
+
+/* 'cluster_options' modparam: per-cluster settings, same key=value idiom as
+ * my_node_info.  Format: "cluster_id=N, use_controller=0|1".  cluster_id is
+ * required; use_controller is optional and defaults to 0 (native).  Only
+ * use_controller=1 registers the cluster as controller-managed - its identity
+ * and peer list are then driven at runtime by clusterer_controller.  Every other
+ * clusterer option stays a global modparam. */
+static int cc_add_cluster_options(modparam_t type, void *val)
+{
+	static str cid_prop = str_init("cluster_id");
+	static str uc_prop  = str_init("use_controller");
+	str descr;
+	int cid = -1, uc = 0, rc, i;
+
+	if (!val || !*(char *)val) {
+		LM_ERR("clusterer: empty 'cluster_options'\n");
+		return -1;
+	}
+	descr.s = (char *)val;
+	descr.len = strlen(descr.s);
+
+	rc = cc_opt_int(&descr, &cid_prop, &cid);
+	if (rc < 0)
+		return -1;
+	if (rc == 1 || cid < 1) {
+		LM_ERR("clusterer: 'cluster_options' requires cluster_id >= 1, "
+			"e.g. \"cluster_id=1, use_controller=1\"\n");
+		return -1;
+	}
+
+	rc = cc_opt_int(&descr, &uc_prop, &uc);   /* absent (rc==1) -> uc stays 0 */
+	if (rc < 0)
+		return -1;
+	if (uc != 0 && uc != 1) {
+		LM_ERR("clusterer: use_controller in 'cluster_options' must be 0 or 1 "
+			"(cluster_id %d)\n", cid);
+		return -1;
+	}
+
+	if (uc == 0)
+		return 0;   /* native (the default): nothing to register */
+
+	for (i = 0; i < cc_stub_count; i++)
+		if (cc_stub_ids[i] == cid) {
+			LM_ERR("clusterer: cluster_options declares cluster_id %d as "
+				"controller-managed more than once\n", cid);
+			return -1;
+		}
+	if (cc_stub_count >= (int)(sizeof cc_stub_ids / sizeof cc_stub_ids[0])) {
+		LM_ERR("clusterer: too many controller-managed clusters\n");
+		return -1;
+	}
+	cc_stub_ids[cc_stub_count++] = cid;
+	use_controller = 1;   /* at least one controller-managed cluster exists */
+	return 0;
+}
+
+/* Retired interim modparams (never released): controller-managed clusters are now
+ * declared via 'cluster_options'.  Kept registered only to fail with a clear
+ * migration hint instead of a generic "unknown parameter". */
+static int cc_retired_param(modparam_t type, void *val)
+{
+	LM_ERR("clusterer: the 'use_controller'/'cluster_id' modparams have been "
+		"replaced; declare each controller-managed cluster with "
+		"modparam(\"clusterer\", \"cluster_options\", "
+		"\"cluster_id=N, use_controller=1\")\n");
+	return -1;
 }
 
 str clusterer_db_url = {NULL, 0};
@@ -176,8 +266,9 @@ static const param_export_t params[] = {
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
-	{"use_controller",			INT_PARAM,		&use_controller			},
-	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cc_add_cluster_id},
+	{"cluster_options",			STR_PARAM|USE_FUNC_PARAM, (void*)cc_add_cluster_options},
+	{"use_controller",			INT_PARAM|USE_FUNC_PARAM, (void*)cc_retired_param},
+	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cc_retired_param},
 	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,
 		(void*)&provision_neighbor},
 	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,
@@ -526,8 +617,8 @@ static int mod_init(void)
 		db_hdl = NULL;
 	}
 
-	/* Controller-managed clusters: pre-create a stub for each cluster_id the
-	 * controller registered (via the 'cluster_id' modparam), so cl_register_cap()
+	/* Controller-managed clusters: pre-create a stub for each cluster_id declared
+	 * controller-managed (cluster_options use_controller=1), so cl_register_cap()
 	 * succeeds for tm/dialog before clusterer_controller injects the real
 	 * identity.  Each stub is flagged controller_managed: it never touches the DB
 	 * and behaves as db_mode=0, so it coexists with DB-native clusters.  A
@@ -541,7 +632,7 @@ static int mod_init(void)
 			for (_ex = *cluster_list; _ex; _ex = _ex->next)
 				if (_ex->cluster_id == cc_stub_ids[_ci]) {
 					LM_ERR("clusterer: cluster_id %d is registered as "
-						"controller-managed (cluster_id modparam) but is "
+						"controller-managed (cluster_options use_controller=1) but is "
 						"already defined via native config "
 						"(my_node_info/neighbor_node_info/DB) or listed "
 						"twice - a cluster_id must be unique and either "
@@ -660,14 +751,14 @@ static int child_init(int rank)
 
 	/* One-shot config sanity check (rank 1 fires once, and runs after every
 	 * module's mod_init, so a clusterer_controller would already have bound the
-	 * controller API): use_controller=1 is meaningless without that module -
-	 * the pre-created controller-managed cluster stubs would never obtain an
-	 * identity or form. */
+	 * controller API): a controller-managed cluster is meaningless without that
+	 * module - the pre-created stubs would never obtain an identity or form. */
 	if (rank == 1 && use_controller && !clusterer_ctrl_bound)
-		LM_ERR("clusterer: use_controller=1 but no clusterer_controller module "
-		       "registered the controller API - controller-managed cluster(s) "
-		       "will never obtain a node identity or form. Load the "
-		       "clusterer_controller module, or unset use_controller.\n");
+		LM_ERR("clusterer: cluster_options declares controller-managed cluster(s) "
+		       "but no clusterer_controller module registered the controller API - "
+		       "they will never obtain a node identity or form. Load the "
+		       "clusterer_controller module, or drop use_controller from "
+		       "cluster_options.\n");
 
 	return 0;
 }

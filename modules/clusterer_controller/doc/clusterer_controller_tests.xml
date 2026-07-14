@@ -183,9 +183,8 @@ C  svc=active  tag=backup   &lt;-- joined as backup, did not steal
 	    and its replication must stay isolated over the shared socket.
 	</para>
 	<programlisting format="linespecific">
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
-modparam("clusterer", "cluster_id", 2)
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1")
+modparam("clusterer", "cluster_options", "cluster_id=2, use_controller=1")
 modparam("clusterer_controller", "cluster",
     "id=1,multicast=239.0.90.1:3333,bin_socket=bin:IP:3857")
 modparam("clusterer_controller", "cluster",

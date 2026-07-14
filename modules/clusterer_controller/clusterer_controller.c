@@ -5804,23 +5804,59 @@ static int mod_init(void)
 	    LM_INFO("clusterer_controller: clusterer API loaded - "
 	            "topology will be driven dynamically\n");
 
-	    /* The controller is only meaningful when the clusterer module is told
-	     * to expect it (use_controller=1, a global switch): that is what
-	     * pre-creates the controller-managed cluster stubs, sets each one's
-	     * controller_managed flag (so they never touch the DB), and arms the
-	     * guard that stops the controller from hijacking a native cluster of the
-	     * same id.  With use_controller=0 there is no controller-managed cluster
-	     * at all and those safety mechanisms are off, so refuse to start rather
-	     * than run the control plane against clusters clusterer never authorised
-	     * us to drive.  (Hybrid setups keep use_controller=1 - only the per-
-	     * cluster kind differs - so this never trips them.) */
-	    if (!clctl.use_controller) {
-		LM_ERR("clusterer_controller: loaded but the clusterer module has "
-		       "use_controller=0 - there is no controller-managed cluster and "
-		       "the controller's safety guards are disabled. Set "
-		       "modparam(\"clusterer\", \"use_controller\", 1), or remove the "
-		       "clusterer_controller module.\n");
-		return -1;
+	    /* The clusterer marks a cluster controller-managed with
+	     * cluster_options use_controller=1; that pre-creates its stub, sets the
+	     * controller_managed flag (so it never touches the DB), and arms the
+	     * guard against hijacking a native cluster of the same id.  The set of
+	     * clusterer-managed ids and the set of 'cluster' configs here must match
+	     * exactly - either direction of mismatch is a hard error, since neither
+	     * half is usable without the other (a managed id with no controller
+	     * config has no bin socket or crypto params; a controller config for an
+	     * unmanaged id has nothing legitimate to drive).  Abort naming the id. */
+
+	    /* (a) clusterer marks a cluster managed that we have no config for */
+	    {
+		int m, k, found;
+		for (m = 0; m < clctl.managed_count; m++) {
+		    found = 0;
+		    for (k = 0; k < cc_cluster_count; k++)
+			if (cc_clusters[k].cluster_id == clctl.managed_ids[m]) {
+			    found = 1;
+			    break;
+			}
+		    if (!found) {
+			LM_ERR("clusterer_controller: the clusterer marks cluster %d "
+			       "controller-managed (cluster_options use_controller=1) "
+			       "but this module has no configuration for it - add "
+			       "modparam(\"clusterer_controller\", \"cluster\", "
+			       "\"id=%d, ...\"), or drop use_controller for that "
+			       "cluster.\n",
+			       clctl.managed_ids[m], clctl.managed_ids[m]);
+			return -1;
+		    }
+		}
+	    }
+
+	    /* (b) we have a config for a cluster the clusterer did not mark managed */
+	    {
+		int k, m, managed;
+		for (k = 0; k < cc_cluster_count; k++) {
+		    managed = 0;
+		    for (m = 0; m < clctl.managed_count; m++)
+			if (clctl.managed_ids[m] == cc_clusters[k].cluster_id) {
+			    managed = 1;
+			    break;
+			}
+		    if (!managed) {
+			LM_ERR("clusterer_controller: cluster %d is configured here "
+			       "but the clusterer did not mark it controller-managed "
+			       "- add modparam(\"clusterer\", \"cluster_options\", "
+			       "\"cluster_id=%d, use_controller=1\"), or remove this "
+			       "module's 'cluster' config for it.\n",
+			       cc_clusters[k].cluster_id, cc_clusters[k].cluster_id);
+			return -1;
+		    }
+		}
 	    }
 
 	    /* When we manage sharing tags, start every tag as BACKUP and
