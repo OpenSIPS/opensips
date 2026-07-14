@@ -984,6 +984,11 @@ modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
 	    <title>Global <varname>manage_shtags</varname> — applies to all clusters</title>
 	    <programlisting format="linespecific">
 ...
+# clusters 1 and 2 registered as controller-managed on the clusterer side
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "cluster_id", 1)
+modparam("clusterer", "cluster_id", 2)
+
 # Enable automatic failover for every cluster (this is also the default)
 modparam("clusterer_controller", "manage_shtags", 1)
 modparam("clusterer_controller", "cluster", "id=1,multicast=239.0.90.1:3333")
@@ -995,6 +1000,11 @@ modparam("clusterer_controller", "cluster", "id=2,multicast=239.0.90.2:3333")
 	    <title>Per-cluster override — opt one cluster out of automatic failover</title>
 	    <programlisting format="linespecific">
 ...
+# clusters 1 and 2 registered as controller-managed on the clusterer side
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "cluster_id", 1)
+modparam("clusterer", "cluster_id", 2)
+
 # manage_shtags=1 globally, but cluster 2 uses its own MI/event-route scripts
 modparam("clusterer_controller", "manage_shtags", 1)
 modparam("clusterer_controller", "cluster",
@@ -1008,6 +1018,11 @@ modparam("clusterer_controller", "cluster",
 	    <title>Global opt-out with one cluster opting in</title>
 	    <programlisting format="linespecific">
 ...
+# clusters 1 and 2 registered as controller-managed on the clusterer side
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "cluster_id", 1)
+modparam("clusterer", "cluster_id", 2)
+
 # Disable automatic failover globally; enable it only for cluster 1
 modparam("clusterer_controller", "manage_shtags", 0)
 modparam("clusterer_controller", "cluster",
@@ -1029,7 +1044,8 @@ socket=bin:10.22.23.191:3857
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "use_controller", 1)     # enable the controller path (global switch)
+modparam("clusterer", "cluster_id",     1)     # register cluster 1 as controller-managed
 modparam("clusterer", "sharing_tag",   "vip1/1=active")
 modparam("clusterer", "ping_interval", 4)
 modparam("clusterer", "ping_timeout",  1500)
@@ -1091,6 +1107,11 @@ modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
 	    <title>Set <varname>master_stickiness</varname> parameter</title>
 	    <programlisting format="linespecific">
 ...
+# both clusters registered as controller-managed on the clusterer side
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "cluster_id", 1)
+modparam("clusterer", "cluster_id", 2)
+
 # Global default (sticky) — omit entirely for the same effect
 modparam("clusterer_controller", "master_stickiness", 1)
 
@@ -1473,7 +1494,9 @@ socket=bin:10.0.2.10:5566
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "use_controller", 1)   # enable the controller path (global switch)
+modparam("clusterer", "cluster_id", 1)        # cluster 1 is controller-managed
+modparam("clusterer", "cluster_id", 2)        # cluster 2 is controller-managed
 
 loadmodule "clusterer_controller.so"
 # Cluster 1 — dialog replication group, LAN segment 10.0.1.0/24
@@ -1498,7 +1521,9 @@ socket=bin:10.22.23.191:3857
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "use_controller", 1)   # enable the controller path (global switch)
+modparam("clusterer", "cluster_id", 1)        # cluster 1 is controller-managed
+modparam("clusterer", "cluster_id", 2)        # cluster 2 is controller-managed
 
 loadmodule "clusterer_controller.so"
 modparam("clusterer_controller", "cluster",
@@ -1589,13 +1614,15 @@ loadmodule "db_mysql.so"
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-# native side: cluster 10 lives in the DB (nodes provisioned there)
+# native side: cluster 10 is defined entirely by rows in the clusterer DB
+# table (one row per node, including a row whose node_id = my_node_id below
+# for THIS node) - there is no cluster_id modparam for native clusters.
 modparam("clusterer", "db_mode", 1)
 modparam("clusterer", "db_url", "mysql://opensips:pass@localhost/opensips")
-modparam("clusterer", "my_node_id", 5)      # this node's id in cluster 10
-# controller side: cluster 1 is dynamic
-modparam("clusterer", "use_controller", 1)
-modparam("clusterer", "cluster_id", 1)
+modparam("clusterer", "my_node_id", 5)      # this node's id in its native/DB clusters (global)
+# controller side: cluster 1 is dynamic (no DB, no static rows)
+modparam("clusterer", "use_controller", 1)  # enable the controller path (global switch)
+modparam("clusterer", "cluster_id", 1)       # register cluster 1 as controller-managed
 
 loadmodule "clusterer_controller.so"
 modparam("clusterer_controller", "cluster",
@@ -1607,6 +1634,40 @@ modparam("dialog", "dialog_replication_cluster", 1)   # controller-managed
 loadmodule "dispatcher.so"
 modparam("dispatcher", "cluster_id", 10)              # DB-native
 	</programlisting>
+    </example>
+    <example>
+	<title>Hybrid, no DB — static native cluster 7 + controller cluster 1</title>
+	<programlisting format="linespecific">
+socket=bin:10.0.0.10:5566
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+# native side: cluster 7 is provisioned statically (no DB).
+# db_mode=0 is REQUIRED, otherwise my_node_info/neighbor_node_info are ignored.
+modparam("clusterer", "db_mode", 0)
+modparam("clusterer", "my_node_id", 5)               # this node's id in native cluster 7
+modparam("clusterer", "my_node_info",       "cluster_id=7, url=bin:10.0.0.10:5566")
+modparam("clusterer", "neighbor_node_info", "cluster_id=7, node_id=6, url=bin:10.0.0.11:5566")
+# controller side: cluster 1 is dynamic
+modparam("clusterer", "use_controller", 1)           # enable the controller path (global switch)
+modparam("clusterer", "cluster_id", 1)                # register cluster 1 as controller-managed
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.0.10:5566,password=S3cret")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)   # controller-managed (cluster 1)
+
+loadmodule "dispatcher.so"
+modparam("dispatcher", "cluster_id", 7)              # native (cluster 7)
+	</programlisting>
+	<para>
+	    Here <varname>my_node_id=5</varname> is this node's id in the native
+	    cluster 7; in cluster 1 the controller assigns an id at runtime, which
+	    may differ.
+	</para>
     </example>
     </section>
 
@@ -1628,7 +1689,8 @@ socket=bin:10.22.23.191:3857
 loadmodule "proto_bin.so"
 
 loadmodule "clusterer.so"
-modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "use_controller", 1)     # enable the controller path (global switch)
+modparam("clusterer", "cluster_id",     1)     # register cluster 1 as controller-managed
 modparam("clusterer", "sharing_tag",   "vip1/1=active")
 modparam("clusterer", "ping_interval", 4)
 modparam("clusterer", "ping_timeout",  1500)
