@@ -1,0 +1,1813 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+    <title>&adminguide;</title>
+
+    <section id="overview" xreflabel="Overview">
+    <title>Overview</title>
+    <para>
+	The <emphasis>clusterer_controller</emphasis> module provides
+	automatic peer discovery and topology management for the
+	<emphasis>clusterer</emphasis> module via authenticated, encrypted
+	UDP multicast. It eliminates the need for static node configuration
+	or a database — nodes discover each other automatically at startup
+	and the cluster topology is maintained dynamically at runtime.
+    </para>
+    <para>
+	When <varname>use_controller=1</varname> is set in the
+	<emphasis>clusterer</emphasis> module, the
+	<emphasis>clusterer_controller</emphasis> module takes over all
+	topology management: it allocates unique node IDs, discovers peer
+	BIN socket addresses, and calls the clusterer internal API to add
+	or remove nodes as they join or leave the cluster.
+    </para>
+    <para>
+	By default (<varname>manage_shtags=1</varname>), the module also
+	provides fully automatic sharing tag failover. The controller
+	master node is the single decision point for which node holds the
+	active tag — no event routes, MI commands, or
+	<varname>seed_fallback_interval</varname> configuration is needed.
+	Sharing tags are forced to backup at startup regardless of the
+	<emphasis>=active</emphasis> config value, and the active tag is
+	claimed by the controller master automatically when the cluster
+	forms or when the active node departs. An operator can override this
+	automatic allocation and pin the active tag to a chosen node with the
+	<function>cl_ctr_shtag_force</function> MI command, reverting to automatic
+	allocation with <function>cl_ctr_shtag_auto</function>.
+    </para>
+    <para>
+	The minimal configuration per node is a single multicast group
+	address. No IP addresses, node IDs, BIN URLs, or sharing tag
+	management scripts need to be hardcoded or maintained. Any number
+	of nodes can join or leave without any configuration change on
+	the remaining nodes.
+    </para>
+    </section>
+
+    <section id="protocol" xreflabel="Protocol">
+    <title>Discovery Protocol</title>
+    <para>
+	All traffic uses UDP multicast to the configured
+	<varname>multicast</varname> address and port. Clusters are kept
+	apart in two independent ways: by the multicast endpoint (two
+	clusters may use different IP addresses, or the same address with
+	different UDP ports), and by the <varname>id</varname>
+	(<varname>cluster_id</varname>) carried in the cleartext of every
+	packet. A node silently ignores any packet whose cluster_id differs
+	from its own, so several clusters can safely share one multicast
+	group and port. Two clusters merge only if they share
+	<emphasis>all</emphasis> of the multicast address, the UDP port, the
+	cluster_id and the password — i.e. they are configured identically,
+	which is the operator's responsibility to avoid.
+    </para>
+    <para>
+	Every packet is encrypted and authenticated with an AEAD —
+	AES-256-GCM by default, or XChaCha20-Poly1305 when the module is built
+	against libsodium (see the <emphasis>Security Architecture</emphasis>
+	section). Two distinct encryption keys are used depending on the
+	communication phase:
+	<itemizedlist>
+	    <listitem><para>
+		<emphasis role="bold">Bootstrap key</emphasis> — derived from
+		the configured <varname>password</varname> with a memory-hard KDF
+		(<emphasis>scrypt</emphasis> N=2<superscript>16</superscript>, r=8,
+		p=1, or <emphasis>Argon2id</emphasis> in the libsodium build, with a
+		per-cluster salt), so a password captured from a bootstrap packet
+		cannot be brute-forced cheaply offline. Derived once at startup.
+		Used for the admission handshake (JOIN_REQ, KEY_GRANT, JOIN_REJECT)
+		and the split-brain MASTER_BEACON — traffic that must be readable
+		before a session key exists, or by masters holding different
+		session keys.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">Session key</emphasis> — derived via
+		HKDF-SHA256 from the password and a 32-byte master salt
+		generated once when the cluster first bootstraps. All normal
+		cluster traffic uses this key. It is preserved across master
+		changes (a new master reuses the key every member already
+		holds), so failover needs no re-keying.
+	    </para></listitem>
+	</itemizedlist>
+    </para>
+    <para>
+	Each packet wire format begins with a 2-byte magic value
+	identifying the key type and a 2-byte cluster_id, both in cleartext
+	(the magic and cluster_id must be readable before decryption to
+	select the key and to filter foreign clusters), followed by a random
+	AEAD nonce (12 bytes for AES-256-GCM, 24 for XChaCha20-Poly1305) and
+	the ciphertext. The magic and cluster_id are additionally bound into
+	the authentication tag as AAD, so they cannot be altered undetected.
+	Only the payload is encrypted; the authenticated plaintext begins with
+	a 1-byte packet type and a 4-byte monotonic sequence number used for
+	replay protection. A 16-byte authentication tag follows the ciphertext.
+	Packets for a different cluster_id are dropped before decryption;
+	packets encrypted with a different password fail authentication and
+	are silently discarded.
+    </para>
+    <para>
+	The following packet types are defined:
+	<itemizedlist>
+	    <listitem><para>
+		<emphasis role="bold">ALIVE</emphasis> — periodic heartbeat
+		sent by every active node every <varname>query_time</varname>
+		seconds. Carries the sender IP, its X25519 public key (so peers
+		can prepare for key agreement) and a small descriptor of the
+		sender's consistency-critical settings
+		(<varname>manage_shtags</varname>,
+		<varname>master_stickiness</varname>,
+		<varname>query_time</varname>) used for configuration-drift
+		detection (see Security Architecture). Encrypted with the session
+		key.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">JOIN_REQ</emphasis> — sent at startup
+		by a new node, carrying its IP, BIN socket list, X25519
+		ephemeral public key, and a 16-byte random join nonce.
+		Encrypted with the bootstrap key so it can be sent before a
+		session key exists.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">MEMBER_LIST</emphasis> — sent by the
+		master in response to a JOIN_REQ, carrying the member count, the
+		operator-forced sharing-tag holder node_id (0 = automatic), and
+		the full peer IP list so the joining node can participate in
+		elections. Only accepted from the current master (except during
+		initial join when no master is yet known).
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">NODE_ASSIGN</emphasis> — sent by the
+		master to multicast, allocating a node_id and BIN socket
+		record for a joining node. All cluster members receive and
+		apply it.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">GOODBYE</emphasis> — sent on graceful
+		shutdown so peers can remove the node immediately without
+		waiting for timeout. Uses the sender's monotonic sequence
+		counter to prevent forgery.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">MASTER_ALIVE</emphasis> — keepalive
+		sent by the master every 1 second (independent of
+		<varname>query_time</varname>). Used by all peers to detect
+		master failure quickly (3-second timeout). Encrypted with
+		the session key.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">KEY_GRANT</emphasis> — unicast response
+		to a JOIN_REQ, sent by the master directly to the joining
+		node. Contains the master's X25519 public key, the original
+		join nonce, and the master salt wrapped with a per-exchange
+		key derived from ECDH(master_priv, joiner_pub) + password +
+		join_nonce via HKDF-SHA256. Encrypted with the bootstrap key.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">KEY_HANDOFF</emphasis> — unicast packet
+		sent by the outgoing master on graceful shutdown to the
+		next-highest-IP peer, delivering the master salt so that peer
+		can become the new master without a full re-join cycle.
+		Encrypted with the session key.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">JOIN_REJECT</emphasis> — sent by the
+		master to a joining node whose JOIN_REQ repeatedly fails
+		authentication (wrong password). After
+		<emphasis>CC_JOIN_FAIL_LIMIT</emphasis> (3) consecutive
+		bootstrap-key decryption failures from the same source IP the
+		master sends a JOIN_REJECT to that IP. Encrypted with the
+		bootstrap key so it cannot be forged by a node that does not
+		know the cluster password. The joining node logs a critical
+		error and shuts down OpenSIPS on receipt.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">MASTER_BEACON</emphasis> — a master-only
+		announcement multicast every few MASTER_ALIVE ticks, carrying this
+		partition's member count. Unlike MASTER_ALIVE it is encrypted with
+		the <emphasis>bootstrap</emphasis> key, so it is readable even by a
+		master that holds a different session key. This is how a split
+		brain between two independently bootstrapped partitions is detected
+		and merged (see <emphasis>Master Election</emphasis>).
+	    </para></listitem>
+	</itemizedlist>
+    </para>
+    </section>
+
+    <section id="election" xreflabel="Master Election">
+    <title>Master Election</title>
+    <para>
+	Each cluster has three roles: <emphasis role="bold">master</emphasis>
+	(the active coordinator), <emphasis role="bold">backup</emphasis> (the
+	standby promoted when the master fails, always the highest-IP
+	non-master) and <emphasis role="bold">member</emphasis>. The election
+	uses a quantized time window so that all nodes evaluate the same
+	eligible peer set and reach the same result deterministically. No NTP
+	synchronisation between nodes is required for correct election results.
+    </para>
+    <para>
+	The <varname>master_stickiness</varname> parameter (default 1) controls
+	whether a live master is kept when a higher-IP node joins. With
+	stickiness enabled, the master stays put and the higher-IP joiner
+	becomes the backup, minimising handovers; with stickiness disabled the
+	highest-IP node always becomes master. In either mode two live masters
+	are reconciled deterministically (see <emphasis>Split-brain
+	handling</emphasis> below). See the <varname>master_stickiness</varname>
+	parameter for details.
+    </para>
+    <para>
+	Only the master handles JOIN_REQ packets, allocates node_ids, and
+	sends NODE_ASSIGN and MEMBER_LIST packets. Non-master nodes are
+	passive during join events. A joining node receives the current
+	session key from the master (via KEY_GRANT) and joins as a member or
+	backup; it never seizes mastership during the join handshake.
+    </para>
+    <para>
+	<emphasis role="bold">Preserved session key:</emphasis> the session key
+	is generated once, when the first node bootstraps the cluster, and is
+	then preserved across every master change. A new master does not
+	re-key; because every member already holds the key (obtained when it
+	joined), master transitions require no re-keying and no re-JOIN cycle.
+    </para>
+    <para>
+	<emphasis role="bold">Fast master failure detection:</emphasis>
+	the master sends MASTER_ALIVE packets every 1 second. All non-master
+	peers maintain a 3-second watchdog timer that fires if no MASTER_ALIVE
+	is received. On expiry the silent master is aged out of the election
+	window and each peer immediately re-elects, promoting the backup
+	(highest-IP survivor) — which already holds the session key, so it
+	starts serving within one keepalive interval.
+    </para>
+    <para>
+	<emphasis role="bold">Graceful master handoff:</emphasis> when the
+	current master shuts down cleanly, it sends a KEY_HANDOFF packet
+	directly to the next-highest-IP peer before sending GOODBYE to
+	multicast. This confirms the master salt to the incoming master so it
+	can assume control immediately.
+    </para>
+    <para>
+	<emphasis role="bold">Split-brain handling.</emphasis> A split brain
+	(more than one node believing it is master) is prevented and, if it
+	still occurs, healed by three cooperating mechanisms:
+	<itemizedlist>
+	    <listitem><para>
+		<emphasis role="bold">Prevention at join time.</emphasis> When
+		several nodes start simultaneously they all exchange
+		(bootstrap-decryptable) JOIN_REQs and thus learn about each other.
+		At the join deadline, a node that has seen a higher-IP node also
+		still joining defers its own self-promotion (for a few bounded
+		rounds) and joins that node instead, so only the highest-IP starter
+		becomes master and no independent-key lone masters are created.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">Same-key yield.</emphasis> Two masters that
+		share a session key (for example after a network partition heals)
+		can read each other's MASTER_ALIVE; the lower-IP master immediately
+		yields to the higher-IP one.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">Divergent-key merge.</emphasis> Two masters
+		that were bootstrapped independently hold different session keys and
+		so cannot read each other's MASTER_ALIVE. Each therefore emits a
+		MASTER_BEACON encrypted with the shared bootstrap key. On hearing a
+		beacon from a superior partition — larger member count, ties broken
+		by higher IP — a node abandons its partition, re-joins the superior
+		master and adopts its session key, converging the whole cluster onto
+		a single master and key.
+	    </para></listitem>
+	</itemizedlist>
+    </para>
+    </section>
+
+    <section id="security" xreflabel="Security">
+    <title>Security Architecture</title>
+    <para>
+	The module uses a two-phase key agreement to provide forward
+	secrecy and replay protection for all cluster traffic.
+    </para>
+    <para>
+	<emphasis role="bold">Payload encryption and header binding:</emphasis>
+	every packet's payload is sealed with an AEAD. The 2-byte magic (a key
+	selector that must be readable before decryption) and the 2-byte
+	cluster_id that precede the nonce are cleartext framing, but they are
+	bound into the AEAD tag as additional authenticated data (AAD): a
+	captured packet cannot be re-stamped with a different cluster_id and
+	still authenticate, which matters when two clusters share one multicast
+	group and password. A node also drops any packet whose cluster_id does
+	not match its own <emphasis>before</emphasis> attempting decryption, so
+	foreign-cluster traffic on the group never counts as an authentication
+	failure.
+    </para>
+    <para>
+	<emphasis role="bold">Crypto suite (selected at build time):</emphasis>
+	by default the module uses <emphasis>AES-256-GCM</emphasis> (12-byte
+	nonce) for the payload AEAD and <emphasis>scrypt</emphasis>
+	(N=2<superscript>16</superscript>, r=8, p=1) for the bootstrap-key
+	derivation, through WolfSSL. If <emphasis>libsodium</emphasis> is
+	detected on the build host, the module is compiled instead with
+	<emphasis>XChaCha20-Poly1305</emphasis> (24-byte nonce, whose 192-bit
+	nonce space removes any random-nonce collision concern) and
+	<emphasis>Argon2id</emphasis>. The two wire formats are not
+	interoperable, so every node in a cluster must be built with the same
+	suite; the active suite is reported in the startup log
+	(<emphasis>crypto=...</emphasis>).
+    </para>
+    <para>
+	<emphasis role="bold">Phase 1 — bootstrap (JOIN_REQ /
+	KEY_GRANT):</emphasis> each worker process generates an ephemeral
+	X25519 keypair on startup. When joining, the node sends its
+	public key and a 16-byte random join nonce in the JOIN_REQ,
+	encrypted with the bootstrap key (a memory-hard KDF of the password —
+	scrypt, or Argon2id in the libsodium build). The
+	master responds with a KEY_GRANT encrypted with the same bootstrap
+	key, containing its own public key, the echoed join nonce, and
+	the master salt wrapped with a per-exchange key derived via
+	HKDF-SHA256 from:
+	<programlisting format="linespecific">IKM = ECDH(master_priv, joiner_pub) || password || join_nonce</programlisting>
+	This ensures that even if the password is compromised, previously
+	recorded exchanges cannot be decrypted without both the ephemeral
+	private key and the per-exchange join nonce.
+    </para>
+    <para>
+	<emphasis role="bold">Phase 2 — session (all other
+	packets):</emphasis> once the master salt is known, all nodes
+	derive the session key as:
+	<programlisting format="linespecific">session_key = HKDF-SHA256(IKM=password, salt=master_salt, info="cc-session-key")</programlisting>
+	The session key is generated once, when the first node bootstraps the
+	cluster, and preserved across every master change: a new master reuses
+	the key that every member already holds, so master transitions require
+	no re-keying. All normal cluster traffic (ALIVE, MEMBER_LIST,
+	NODE_ASSIGN, GOODBYE, MASTER_ALIVE, KEY_HANDOFF) is encrypted with this
+	key.
+    </para>
+    <para>
+	<emphasis role="bold">Replay protection:</emphasis> each sender
+	maintains a monotonically increasing 32-bit sequence number
+	embedded in the authenticated plaintext of every session-key
+	packet. Each receiver tracks the last accepted sequence number
+	per source IP and rejects any packet whose sequence is not
+	strictly greater than the last accepted value. Sequence counters
+	are reset to zero whenever the session key is (re)derived — at cluster
+	bootstrap and when a joiner adopts the key via KEY_GRANT/KEY_HANDOFF —
+	and on peer restart detection (JOIN_REQ received from a known IP resets
+	that peer's counter; MEMBER_LIST upsert resets all listed peers).
+	This protection does not depend on clock synchronisation.
+    </para>
+    <para>
+	<emphasis role="bold">Rate limiting:</emphasis> a per-source rate
+	limiter (256 slots, 20 packets/second limit) is applied before any
+	decryption attempt. This prevents CPU exhaustion from packet floods
+	directed at the multicast group.
+    </para>
+    <para>
+	<emphasis role="bold">Join authentication and rejection:</emphasis>
+	the master tracks consecutive bootstrap-key decryption failures per
+	source IP in a small worker-local table
+	(<emphasis>CC_JOIN_FAIL_TABLE_SZ</emphasis> = 8 slots). When any
+	source IP accumulates <emphasis>CC_JOIN_FAIL_LIMIT</emphasis> (3)
+	consecutive failures — indicating a node attempting to join with the
+	wrong password — the master sends an encrypted JOIN_REJECT packet
+	and stops responding to further JOIN_REQs from that IP.
+    </para>
+    <para>
+	On the joining side, a received JOIN_REJECT is only acted on while
+	the node is still in the initial join phase
+	(<emphasis>CC_NODE_NEW</emphasis> state) and is addressed to this
+	node; an already-active cluster member ignores any JOIN_REJECT
+	unconditionally, so a node with the correct password can never be
+	evicted by a peer.
+    </para>
+    <para>
+	A node joining with the <emphasis>wrong</emphasis> password cannot
+	decrypt the JOIN_REJECT (it is encrypted with the master's bootstrap
+	key), so it relies on a self-contained signal instead: while joining
+	it counts packets received from other peers that it cannot decrypt.
+	If, at the join deadline, the node is still unjoined and has seen
+	<emphasis>CC_JOIN_FAIL_LIMIT</emphasis> or more such undecryptable
+	packets, it concludes that a cluster it cannot authenticate to exists
+	on the group and shuts down OpenSIPS with a critical log message —
+	rather than promoting itself into a lone, split-brain master (which,
+	with managed sharing tags, would create a duplicate active tag). This
+	counter is reset the moment a KEY_GRANT is successfully processed, so
+	a legitimate joiner that briefly saw an undecryptable packet before
+	receiving its key is never affected.
+    </para>
+    <para>
+	<emphasis role="bold">Rogue traffic isolation:</emphasis> a node
+	requests a re-key in response to an undecryptable session-key packet
+	only when that packet came from its current master (a legitimate key
+	rotation). Undecryptable session packets from any other source — for
+	example a wrong-password or malicious node broadcasting on the
+	multicast group — are ignored, so such traffic cannot drive the
+	cluster into a re-JOIN churn.
+    </para>
+    <para>
+	<emphasis role="bold">Peer table exhaustion defence:</emphasis> the
+	peer table is bounded at <emphasis>CC_MAX_PEERS</emphasis> (256)
+	entries. When the table is full, the master rejects JOIN_REQ
+	packets from unknown IPs with a JOIN_REJECT response. Known peers
+	that are reconnecting after a restart continue to be admitted
+	regardless of the table count, since they already own a slot.
+	This prevents an attacker with the cluster password from exhausting
+	the peer table by flooding JOIN_REQs from spoofed source addresses.
+    </para>
+    <para>
+	<emphasis role="bold">Configuration-consistency enforcement:</emphasis>
+	all nodes of a cluster must use identical consistency-critical settings
+	(<varname>manage_shtags</varname>, <varname>master_stickiness</varname>
+	and <varname>query_time</varname>); a per-node mismatch would otherwise
+	cause silent, inconsistent failover and sharing-tag behaviour (for
+	example, a master with <varname>manage_shtags=0</varname> would leave no
+	node holding the active tag). Each node advertises these effective
+	settings in its ALIVE heartbeat and in its JOIN_REQ, so mismatches are
+	detected. What happens then is controlled by the
+	<varname>on_config_mismatch</varname> modparam:
+	<itemizedlist>
+	    <listitem><para>
+		<emphasis>reject</emphasis> (default) - when a node tries to
+		join an established cluster (a master is alive) with different
+		settings, the master logs the attempt and returns a JOIN_REJECT;
+		the joining node logs the offending settings and shuts down, so a
+		misconfigured node never joins.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis>warn</emphasis> - the node is allowed to join, but any
+		peer that observes a different value logs a single loud
+		<emphasis>CONFIG MISMATCH</emphasis> warning (repeated only if the
+		peer's advertised configuration changes, cleared once it matches).
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis>adopt</emphasis> - the joining node adopts the running
+		cluster's (master's) settings at runtime and continues; the
+		adopted values are what <function>cl_ctr_list_config</function>
+		reports.
+	    </para></listitem>
+	</itemizedlist>
+	This turns an easy-to-miss misconfiguration into an obvious log line, a
+	refused join, or a self-correction rather than a hard-to-diagnose HA
+	failure.
+    </para>
+    <para>
+	<emphasis role="bold">Node identity and node_id allocation:</emphasis>
+	<varname>node_id</varname> values are allocated exclusively by the current
+	master, serialised under the peer-table lock, and a joining node never
+	picks its own id. The master hands out the lowest unused id by scanning
+	the live peer table, so a node that has failed but is not yet timed out
+	still occupies its slot and its id is never handed to a different joiner —
+	new nodes always receive a distinct id even during the failure-detection
+	window. A node that restarts and rejoins from the same address reuses its
+	previous id (and has its replay counter reset), so ids stay stable across
+	restarts. Because peers are keyed by source IP address, every node in a
+	cluster must present a stable, unique source IP: two distinct nodes that
+	appear behind the same address (for example through NAT) would share a
+	single peer slot and <varname>node_id</varname>. Deploy the cluster on a
+	network where each member has its own routable address on the
+	BIN/multicast interface.
+    </para>
+    <para>
+	<emphasis role="bold">Trust model — shared secret, not per-node
+	identity:</emphasis> the cluster is a single shared-secret trust domain.
+	Authentication proves only that a peer holds the cluster password; it does
+	not bind a cryptographic identity to an individual node, and there is no
+	per-node authorisation or revocation. Consequently any party in possession
+	of the password is a fully trusted member and can legitimately win the
+	highest-IP master election and assume the master role — there is no
+	distinction between "may be a member" and "may be master". An attacker
+	<emphasis>without</emphasis> the password cannot affect the election at
+	all: forged or replayed <emphasis>MASTER_ALIVE</emphasis> and beacon
+	packets fail AEAD authentication (or the strict per-source sequence check)
+	and are dropped before any election logic runs. The residual exposure is
+	therefore a malicious or compromised <emphasis>insider</emphasis> that
+	already holds the shared key. Protect the password accordingly, and rotate
+	it if a node is decommissioned or suspected compromised. Removing this
+	limitation — per-node keypairs with enrolment and revocation, so a single
+	node can be distrusted without re-keying the whole cluster — is planned
+	future work.
+    </para>
+    </section>
+
+    <section id="dependencies" xreflabel="Dependencies">
+    <title>Dependencies</title>
+    <section>
+	<title>&osips; Modules</title>
+	<para>
+	The following modules are required by this module:
+	    <itemizedlist>
+		<listitem>
+		<para>
+		    <emphasis>proto_bin</emphasis> — required so that
+		    BIN listeners are registered and available for
+		    discovery when <emphasis>clusterer_controller</emphasis>
+		    initialises and scans the proto_bin listener list.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+		    <emphasis>clusterer</emphasis> — required with
+		    <varname>use_controller=1</varname> set, so that
+		    the clusterer internal API
+		    (<function>load_clusterer_ctrl_binds</function>) is
+		    exported and available at initialisation time.
+		</para>
+		</listitem>
+	    </itemizedlist>
+	</para>
+	<para>
+	    Both dependencies are declared in the module's
+	    <varname>dep_export_t</varname>. &osips; will refuse to
+	    start if either dependency is not satisfied. This does
+	    <emphasis>not</emphasis> imply that the modules must appear
+	    in a particular order in the configuration file — &osips;
+	    resolves the dependency at runtime and will initialize the
+	    required modules first regardless of
+	    <function>loadmodule</function> order.
+	</para>
+	<para>
+	    All other modules that use the clusterer interface
+	    (<emphasis>tm</emphasis>, <emphasis>dialog</emphasis>,
+	    <emphasis>dispatcher</emphasis>, <emphasis>usrloc</emphasis>
+	    etc.) may be loaded in any order relative to
+	    <emphasis>clusterer_controller</emphasis>. The clusterer
+	    module automatically creates a cluster stub when
+	    <varname>use_controller=1</varname> is set and a module
+	    attempts to register a capability for an unknown cluster.
+	</para>
+    </section>
+
+    <section>
+	<title>External Libraries or Applications</title>
+	<para>
+	The following libraries must be installed:
+	    <itemizedlist>
+		<listitem>
+		<para>
+		    <emphasis>tls_wolfssl</emphasis> — the
+		    <emphasis>clusterer_controller</emphasis> module links
+		    statically against the WolfSSL library built by the
+		    <emphasis>tls_wolfssl</emphasis> module
+		    (<emphasis>modules/tls_wolfssl/lib/lib/libwolfssl.a</emphasis>).
+		    WolfSSL provides AES-256-GCM authenticated encryption,
+		    X25519 ECDH key agreement, HKDF-SHA256 key derivation,
+		    the scrypt password KDF, and SHA-256. The <emphasis>tls_wolfssl</emphasis> module
+		    must be present in the source tree; its static library
+		    is built automatically as a dependency if not already
+		    present.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+		    <emphasis>libsodium</emphasis> (optional) — if the build host
+		    has libsodium development files (detected via
+		    <function>pkg-config</function>), the module is compiled with
+		    the stronger crypto suite: XChaCha20-Poly1305 for the payload
+		    AEAD and Argon2id for the bootstrap-key derivation, in place of
+		    AES-256-GCM and scrypt. X25519 ECDH and HKDF continue to use
+		    WolfSSL. libsodium is linked dynamically, so each target host
+		    then also needs the libsodium runtime package (for example
+		    <emphasis>libsodium23</emphasis>). Because the two suites produce
+		    incompatible wire formats, every node in a cluster must be built
+		    the same way; the active suite is printed in the startup log.
+		</para>
+		</listitem>
+	    </itemizedlist>
+	</para>
+    </section>
+    </section>
+
+    <section id="exported_parameters" xreflabel="Exported Parameters">
+    <title>Exported Parameters</title>
+
+	<section id="param_cluster" xreflabel="cluster">
+	<title><varname>cluster</varname> (string)</title>
+	<para>
+	    Define a cluster to participate in. The value is a
+	    comma-separated key=value string with the following fields:
+	    <itemizedlist>
+		<listitem><para>
+		    <emphasis role="bold">id</emphasis> (required) —
+		    positive integer cluster identifier, must match the
+		    <varname>cluster_id</varname> used by clusterer
+		    consumers (dialog, usrloc, dispatcher, etc.).
+		</para></listitem>
+		<listitem><para>
+		    <emphasis role="bold">multicast</emphasis> (required)
+		    — IPv4 multicast address and UDP port in the form
+		    <emphasis>A.B.C.D:PORT</emphasis>. The address must
+		    be in the 224.0.0.0/4 range.
+		</para></listitem>
+		<listitem><para>
+		    <emphasis role="bold">password</emphasis> (optional)
+		    — AES-256 encryption key material. All nodes in the
+		    same cluster must use the same password. Falls back
+		    to the global <varname>password</varname> modparam
+		    if not set.
+		</para></listitem>
+		<listitem><para>
+		    <emphasis role="bold">bin_socket</emphasis>
+		    (optional) — BIN socket to advertise for this
+		    cluster, in the form
+		    <emphasis>bin:IP:PORT</emphasis>. Required when
+		    multiple clusters are defined (so the controller knows
+		    which listener to advertise), but it need
+		    <emphasis>not</emphasis> be distinct — several clusters
+		    may share the same BIN socket. When only one cluster
+		    is defined and only one BIN socket exists, the
+		    socket is auto-detected from the
+		    <emphasis>proto_bin</emphasis> listeners.
+		</para></listitem>
+		<listitem><para>
+		    <emphasis role="bold">manage_shtags</emphasis>
+		    (optional) — per-cluster override for the global
+		    <varname>manage_shtags</varname> modparam. Set to
+		    <emphasis>1</emphasis> to enable automatic sharing
+		    tag failover for this cluster, or
+		    <emphasis>0</emphasis> to disable it. When omitted,
+		    the global <varname>manage_shtags</varname> value
+		    applies, regardless of the order in which
+		    <varname>cluster</varname> and
+		    <varname>manage_shtags</varname> modparams appear
+		    in the config file.
+		</para></listitem>
+	    </itemizedlist>
+	</para>
+	<para>
+	    This parameter may be set multiple times to participate in
+	    multiple clusters simultaneously. Each cluster runs its own
+	    independent worker process.
+	</para>
+	<para>
+	    <emphasis>No default value. At least one cluster must be
+	    defined.</emphasis>
+	</para>
+	<example>
+	    <title>Set <varname>cluster</varname> parameter — single cluster</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+...
+	    </programlisting>
+	</example>
+	<example>
+	    <title>Set <varname>cluster</varname> parameter — multiple clusters
+	    on separate networks (one BIN socket per network)</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.1.10:5566")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,bin_socket=bin:10.0.2.10:5566")
+...
+	    </programlisting>
+	</example>
+	<example>
+	    <title>Set <varname>cluster</varname> parameter — multiple clusters
+	    sharing a single BIN socket (recommended default)</title>
+	    <programlisting format="linespecific">
+...
+# one proto_bin listener serves both clusters; the cluster_id in each
+# BIN packet keeps their replication traffic separate
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.0.10:5566")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,bin_socket=bin:10.0.0.10:5566")
+...
+	    </programlisting>
+	</example>
+	<note><para>
+	    <emphasis role="bold">One BIN socket can serve any number of
+	    clusters.</emphasis> Every clusterer BIN packet carries its
+	    <varname>cluster_id</varname>, so a single <emphasis>proto_bin</emphasis>
+	    listener demultiplexes traffic for all clusters. Unless you specifically
+	    want different clusters on different interfaces or networks, set the
+	    <emphasis>same</emphasis> <varname>bin_socket</varname> value on every
+	    <varname>cluster</varname> entry (it is mandatory once more than one
+	    cluster is defined, but need not be distinct). Using multiple BIN sockets
+	    is for network/interface segregation, <emphasis>not</emphasis> throughput:
+	    the replication data plane runs over BIN (TCP) and scales with the shared
+	    TCP worker pool (<varname>tcp_children</varname>) and IPC dispatch,
+	    independent of the number of BIN sockets. What does scale with the number
+	    of clusters is the controller's own worker set — it spawns one lightweight
+	    control worker (UDP multicast: discovery, election, keepalives) per
+	    cluster — so it is the <emphasis>cluster count</emphasis>, not the
+	    BIN-socket count, that adds processes.
+	</para></note>
+	<note><para>
+	    <emphasis role="bold">Each cluster needs a distinct multicast
+	    endpoint, but clusters may share one BIN socket.</emphasis> The two
+	    sockets play opposite roles. The controller's <varname>multicast</varname>
+	    endpoint is its control plane: every cluster defined in one instance must
+	    use a <emphasis>different</emphasis> multicast address:port — two
+	    <varname>cluster</varname> entries with the same
+	    <varname>multicast</varname> value are rejected at startup
+	    (<emphasis>duplicate multicast</emphasis>). Use a different port
+	    (e.g. <literal>:3333</literal> and <literal>:3334</literal>) or a
+	    different group per cluster. The <varname>bin_socket</varname> is the
+	    replication data plane and is the opposite: it may be freely shared
+	    across clusters, since every BIN packet carries its
+	    <varname>cluster_id</varname>. (The <varname>cluster_id</varname> filter
+	    on the multicast wire header is for a different purpose: letting
+	    <emphasis>separate</emphasis> deployments coexist on a shared multicast
+	    group, not two clusters inside one instance.)
+	</para></note>
+	</section>
+
+	<section id="param_my_ip" xreflabel="my_ip">
+	<title><varname>my_ip</varname> (string)</title>
+	<para>
+	    Explicitly set the local IPv4 address used by the controller
+	    for its own node identity and master election. This is the IP
+	    that the controller advertises to peers in JOIN_REQ and
+	    NODE_ASSIGN packets and uses for the highest-IP master
+	    election algorithm.
+	</para>
+	<para>
+	    Note: this parameter controls the controller's identity only.
+	    The BIN socket address advertised to clusterer peers is
+	    discovered separately from the <emphasis>proto_bin</emphasis>
+	    listener list and is independent of this setting. Do not
+	    confuse <varname>my_ip</varname> with the BIN socket IP
+	    defined by the <emphasis>socket=bin:IP:PORT</emphasis> core
+	    parameter.
+	</para>
+	<para>
+	    When set, the module walks the interface list to find which
+	    local interface owns this address and uses that interface for
+	    multicast traffic. Startup fails if no local interface owns
+	    the given address.
+	</para>
+	<para>
+	    The module supports three identity resolution modes depending
+	    on which modparams are provided:
+	</para>
+	<para>
+	    <emphasis role="bold">Mode 1 — my_ip set:</emphasis>
+	    The given IP is used directly. The owning interface is
+	    resolved automatically from the system interface list.
+	    Use this mode on multi-homed hosts where you want to
+	    pin the controller identity to a specific IP.
+	</para>
+	<para>
+	    <emphasis role="bold">Mode 2 — interface set, my_ip not set:</emphasis>
+	    The first IPv4 address on the named interface is used as
+	    the controller identity IP. A warning is logged if the
+	    interface has multiple IPv4 addresses.
+	</para>
+	<para>
+	    <emphasis role="bold">Mode 3 — neither set (default):</emphasis>
+	    A throw-away UDP socket is connected to the multicast
+	    group and <function>getsockname()</function> is called
+	    to determine which source IP the kernel would select.
+	    The interface name is resolved from the returned IP.
+	    Suitable for single-homed hosts.
+	</para>
+	<para>
+	    <emphasis>Default: auto-detected (Mode 3).</emphasis>
+	</para>
+	<example>
+	    <title>Set <varname>my_ip</varname> parameter</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "my_ip", "10.22.23.191")
+...
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="param_interface" xreflabel="interface">
+	<title><varname>interface</varname> (string)</title>
+	<para>
+	    Explicitly set the network interface name to use for
+	    multicast traffic (e.g. <emphasis>eth0</emphasis>,
+	    <emphasis>enp6s18</emphasis>). The module takes the first
+	    IPv4 address assigned to this interface as the controller's
+	    identity IP. This corresponds to Mode 2 described in the
+	    <varname>my_ip</varname> parameter documentation above.
+	</para>
+	<para>
+	    Like <varname>my_ip</varname>, this parameter affects the
+	    controller's own identity only and has no effect on the
+	    BIN socket addresses advertised to clusterer peers.
+	</para>
+	<para>
+	    If the interface has more than one IPv4 address, a warning
+	    is logged and the first address (in the order returned by
+	    the kernel) is used. Set <varname>my_ip</varname> explicitly
+	    to avoid ambiguity on multi-address interfaces.
+	</para>
+	<para>
+	    Ignored if <varname>my_ip</varname> is also set —
+	    <varname>my_ip</varname> takes precedence.
+	</para>
+	<para>
+	    <emphasis>Default: auto-detected (Mode 3 — see
+	    <varname>my_ip</varname>).</emphasis>
+	</para>
+	<example>
+	    <title>Set <varname>interface</varname> parameter</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "interface", "eth0")
+...
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="param_query_time" xreflabel="query_time">
+	<title><varname>query_time</varname> (integer)</title>
+	<para>
+	    How often (in seconds) each active node sends an ALIVE
+	    heartbeat to the multicast group. This value also controls
+	    the election window
+	    (<emphasis>3 × query_time</emphasis>) and the peer purge
+	    window (<emphasis>6 × query_time</emphasis>).
+	</para>
+	<para>
+	    Smaller values mean faster failure detection but higher
+	    multicast traffic. Valid range: 1–60.
+	</para>
+	<para>
+	    <emphasis>Default value is <quote>5</quote>.</emphasis>
+	</para>
+	<example>
+	    <title>Set <varname>query_time</varname> parameter</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "query_time", 5)
+...
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="param_password" xreflabel="password">
+	<title><varname>password</varname> (string)</title>
+	<para>
+	    Global default encryption password for all clusters. All
+	    nodes in a cluster must use the same password. The password
+	    serves two purposes:
+	    <itemizedlist>
+		<listitem><para>
+		    <emphasis role="bold">Bootstrap key</emphasis> —
+		    the password is stretched with <emphasis>scrypt</emphasis>
+		    (memory-hard, per-cluster salt) to encrypt JOIN_REQ and
+		    KEY_GRANT packets during the initial key exchange phase
+		    before a session key is established.
+		</para></listitem>
+		<listitem><para>
+		    <emphasis role="bold">Session key material</emphasis> —
+		    the password is fed into HKDF-SHA256 together with the
+		    master salt to derive the session key used for all
+		    normal cluster traffic.
+		</para></listitem>
+	    </itemizedlist>
+	    Can be overridden per cluster using the
+	    <varname>password=</varname> key in the
+	    <varname>cluster</varname> parameter.
+	</para>
+	<para>
+	    <emphasis>Default value is <quote>3eCrEt*5629</quote>.
+	    Change this in production.</emphasis> Use a long, high-entropy
+	    secret rather than a memorable phrase — scrypt raises the cost of
+	    an offline guess, but only a strong secret removes the risk. A
+	    generated key is ideal, e.g. <command>openssl rand -base64 32</command>.
+	    The module logs a startup warning if the configured password is the
+	    default or has an estimated entropy below 80 bits.
+	</para>
+	<example>
+	    <title>Set <varname>password</varname> parameter</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
+...
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="param_manage_shtags" xreflabel="manage_shtags">
+	<title><varname>manage_shtags</varname> (integer)</title>
+	<para>
+	    When set to <emphasis role="bold">1</emphasis> (the default),
+	    the controller master node automatically manages sharing tag
+	    failover for all clusters. The controller becomes the single
+	    decision point for which node holds the active tag, eliminating
+	    races between nodes and requiring no script-level event routes
+	    or MI commands to handle failover. While active, the
+	    <function>clusterer_set_tag_active</function> MI command and
+	    the <varname>$shtag()</varname> script variable setter are
+	    blocked for controller-managed clusters, returning an error
+	    to the caller.
+	</para>
+	<para>
+	    Behaviour when <varname>manage_shtags=1</varname>:
+	</para>
+	<para>
+	    <emphasis role="bold">Startup:</emphasis> all local sharing tags
+	    are forced to <emphasis>backup</emphasis> state during module
+	    initialisation, regardless of the <emphasis>=active</emphasis>
+	    value in the clusterer <varname>sharing_tag</varname> modparam.
+	    The deferred BIN broadcast flag is also cleared so no
+	    <emphasis>SHTAG_ACTIVE</emphasis> packet is ever sent at
+	    startup. This ensures that no node can steal the active tag from
+	    an existing cluster member simply by restarting.
+	</para>
+	<para>
+	    <emphasis role="bold">Bootstrap:</emphasis> when the first node
+	    starts alone and no existing master responds within
+	    <varname>query_time</varname> seconds (join deadline), it elects
+	    itself master and activates all local backup tags exactly once.
+	    Nodes that join an existing cluster are never eligible for this
+	    bootstrap path and never self-activate.
+	</para>
+	<para>
+	    <emphasis role="bold">Failover:</emphasis> when any node departs
+	    (graceful shutdown via GOODBYE packet, or timeout-based removal),
+	    the controller master activates its own backup tags for that
+	    cluster. This covers all departure scenarios: last node standing,
+	    master still present, and post re-election.
+	</para>
+	<para>
+	    <emphasis role="bold">Rejoin:</emphasis> a node rejoining an
+	    existing cluster always starts in backup state and never reclaims
+	    the active tag from the current holder, even if
+	    <emphasis>=active</emphasis> appears in its config.
+	</para>
+	<para>
+	    When set to <emphasis role="bold">0</emphasis>, the controller
+	    does not touch sharing tag state at all. The
+	    <emphasis>=active</emphasis> config value,
+	    <varname>seed_fallback_interval</varname>, and external
+	    MI/event-route scripts behave exactly as in stock clusterer
+	    without the controller. Use this when you have existing tag
+	    management scripts and want to opt out of automatic failover.
+	</para>
+	<para>
+	    <emphasis>Default value is <quote>1</quote>.</emphasis>
+	</para>
+	<para>
+	    <emphasis role="bold">Global vs per-cluster scope:</emphasis>
+	    This modparam sets a global default that applies to every cluster
+	    defined via the <varname>cluster</varname> modparam. Individual
+	    clusters can override it by including
+	    <emphasis>manage_shtags=0</emphasis> or
+	    <emphasis>manage_shtags=1</emphasis> directly in the cluster
+	    string. The global default is resolved at startup after all
+	    modparams are processed, so the order of
+	    <varname>manage_shtags</varname> and <varname>cluster</varname>
+	    lines in the config file does not matter.
+	</para>
+	<example>
+	    <title>Global <varname>manage_shtags</varname> — applies to all clusters</title>
+	    <programlisting format="linespecific">
+...
+# Enable automatic failover for every cluster (this is also the default)
+modparam("clusterer_controller", "manage_shtags", 1)
+modparam("clusterer_controller", "cluster", "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "cluster", "id=2,multicast=239.0.90.2:3333")
+...
+	    </programlisting>
+	</example>
+	<example>
+	    <title>Per-cluster override — opt one cluster out of automatic failover</title>
+	    <programlisting format="linespecific">
+...
+# manage_shtags=1 globally, but cluster 2 uses its own MI/event-route scripts
+modparam("clusterer_controller", "manage_shtags", 1)
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,manage_shtags=0")
+...
+	    </programlisting>
+	</example>
+	<example>
+	    <title>Global opt-out with one cluster opting in</title>
+	    <programlisting format="linespecific">
+...
+# Disable automatic failover globally; enable it only for cluster 1
+modparam("clusterer_controller", "manage_shtags", 0)
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,manage_shtags=1")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333")
+...
+	    </programlisting>
+	</example>
+	<example>
+	    <title>Typical full configuration with manage_shtags=1 (default)</title>
+	    <programlisting format="linespecific">
+# All nodes use identical config — only the BIN socket IP differs per node.
+# The =active tag value in sharing_tag is ignored by the controller;
+# it is kept in the config only for compatibility with manage_shtags=0.
+
+socket=bin:10.22.23.191:3857
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "sharing_tag",   "vip1/1=active")
+modparam("clusterer", "ping_interval", 4)
+modparam("clusterer", "ping_timeout",  1500)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",  "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
+# manage_shtags defaults to 1 — no need to set it explicitly
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="param_master_stickiness" xreflabel="master_stickiness">
+	<title><varname>master_stickiness</varname> (integer)</title>
+	<para>
+	    Controls whether a live master keeps its role when a higher-IP
+	    node joins. Default <emphasis>1</emphasis> (sticky).
+	</para>
+	<para>
+	    The module recognises three roles per cluster:
+	    <emphasis role="bold">master</emphasis> (the active coordinator),
+	    <emphasis role="bold">backup</emphasis> (the standby that takes
+	    over when the master fails), and
+	    <emphasis role="bold">member</emphasis> (all other nodes). The
+	    backup is always the highest-IP node that is not the master.
+	</para>
+	<itemizedlist>
+	    <listitem><para>
+		<emphasis role="bold">master_stickiness=1</emphasis> (default):
+		the master is <emphasis>sticky</emphasis> — a live master keeps
+		the role and is not displaced when a higher-IP node joins. The
+		newly joined node becomes the backup (replacing the previous
+		backup if it has a higher IP); the master only changes when the
+		current master actually fails, at which point the backup is
+		promoted. This minimises the number of master handovers.
+	    </para></listitem>
+	    <listitem><para>
+		<emphasis role="bold">master_stickiness=0</emphasis>: pure
+		highest-IP election — a higher-IP node takes over as master as
+		soon as it appears. This produces more handovers but always
+		keeps the highest-IP node as master.
+	    </para></listitem>
+	</itemizedlist>
+	<para>
+	    In both modes a split-brain (two nodes each believing they are
+	    master, e.g. after a network partition heals) is resolved
+	    deterministically: the lower-IP master yields to the higher-IP one.
+	</para>
+	<para>
+	    <emphasis role="bold">Global vs per-cluster scope:</emphasis>
+	    like <varname>manage_shtags</varname>, this sets a global default
+	    that individual clusters can override with
+	    <emphasis>master_stickiness=0</emphasis> or
+	    <emphasis>master_stickiness=1</emphasis> in the
+	    <varname>cluster</varname> string. Resolution happens at startup
+	    regardless of modparam order.
+	</para>
+	<example>
+	    <title>Set <varname>master_stickiness</varname> parameter</title>
+	    <programlisting format="linespecific">
+...
+# Global default (sticky) — omit entirely for the same effect
+modparam("clusterer_controller", "master_stickiness", 1)
+
+# Per-cluster override: cluster 2 always promotes the highest-IP node
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.2:3333,master_stickiness=0")
+...
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="param_on_config_mismatch" xreflabel="on_config_mismatch">
+	<title><varname>on_config_mismatch</varname> (string)</title>
+	<para>
+	    Policy applied when a node's consistency-critical settings
+	    (<varname>manage_shtags</varname>,
+	    <varname>master_stickiness</varname>, <varname>query_time</varname>)
+	    differ from those of the running cluster. All nodes of a cluster are
+	    expected to use identical values; this parameter decides what happens
+	    when they do not. One of:
+	    <itemizedlist>
+		<listitem><para><emphasis>reject</emphasis> (default) - the
+		master refuses the join with a JOIN_REJECT and the joining node
+		shuts down after logging which settings differ.</para></listitem>
+		<listitem><para><emphasis>warn</emphasis> - the node is allowed
+		to join; a single <emphasis>CONFIG MISMATCH</emphasis> warning is
+		logged per mismatching peer.</para></listitem>
+		<listitem><para><emphasis>adopt</emphasis> - the joining node
+		adopts the running cluster's settings at runtime and
+		continues.</para></listitem>
+	    </itemizedlist>
+	    Global only (not per-cluster). Default: <emphasis>reject</emphasis>.
+	</para>
+	<example>
+	    <title>Set <varname>on_config_mismatch</varname> parameter</title>
+	    <programlisting format="linespecific">
+...
+modparam("clusterer_controller", "on_config_mismatch", "reject")
+...
+	    </programlisting>
+	</example>
+	</section>
+
+    </section><!-- exported_parameters -->
+
+    <section id="exported_mi" xreflabel="Exported MI Functions">
+    <title>Exported MI Functions</title>
+
+	<section id="mi_cl_ctr_list_members" xreflabel="cl_ctr_list_members">
+	<title><function moreinfo="none">cl_ctr_list_members</function></title>
+	<para>
+	    List all current cluster members with their node_id, status and
+	    BIN socket addresses. Status is one of <emphasis>master</emphasis>,
+	    <emphasis>backup</emphasis> (the standby that will be promoted if
+	    the master fails) or <emphasis>member</emphasis>. Only peers within
+	    the current election window are shown.
+	</para>
+	<para>Parameters: <emphasis>none</emphasis></para>
+	<example>
+	    <title><function>cl_ctr_list_members</function> usage</title>
+	    <programlisting format="linespecific">
+opensips-cli -x mi cl_ctr_list_members
+[
+    {
+        "cluster_id": 1,
+        "members": [
+            {
+                "ip": "10.22.23.191",
+                "node_id": 1,
+                "status": "master",
+                "bin_sockets": [ "bin:10.22.23.191:3857" ]
+            },
+            {
+                "ip": "10.22.23.193",
+                "node_id": 2,
+                "status": "backup",
+                "bin_sockets": [ "bin:10.22.23.193:3857" ]
+            },
+            {
+                "ip": "10.22.23.192",
+                "node_id": 3,
+                "status": "member",
+                "bin_sockets": [ "bin:10.22.23.192:3857" ]
+            }
+        ]
+    }
+]
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="mi_cl_ctr_node_info" xreflabel="cl_ctr_node_info">
+	<title><function moreinfo="none">cl_ctr_node_info</function></title>
+	<para>
+	    Return full information for a specific node identified by
+	    its allocated node_id.
+	</para>
+	<para>Parameters:</para>
+	<itemizedlist>
+	    <listitem><para>
+		<emphasis>node_id</emphasis> — the integer node_id to
+		look up.
+	    </para></listitem>
+	</itemizedlist>
+	<example>
+	    <title><function>cl_ctr_node_info</function> usage</title>
+	    <programlisting format="linespecific">
+opensips-cli -x mi cl_ctr_node_info node_id=2
+{
+    "node_id": 2,
+    "ip": "10.22.23.192",
+    "cluster_id": 1,
+    "status": "backup",
+    "bin_sockets": [ "bin:10.22.23.192:3857" ]
+}
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="mi_cl_ctr_list_config" xreflabel="cl_ctr_list_config">
+	<title><function moreinfo="none">cl_ctr_list_config</function></title>
+	<para>
+	    List all configured clusters and their resolved settings — the
+	    effective values actually in use after global defaults and
+	    per-cluster overrides have been applied. Useful for confirming that
+	    a per-cluster <varname>master_stickiness</varname> or
+	    <varname>manage_shtags</varname> override took effect. The cluster
+	    password is never exposed.
+	</para>
+	<para>
+	    The <varname>shtag_mode</varname> field reports the current
+	    sharing-tag allocation policy: <emphasis>auto</emphasis> when the
+	    active tag follows the master automatically, or
+	    <emphasis>override:&lt;node_id&gt;</emphasis> when an operator has
+	    pinned a fixed holder with <function>cl_ctr_shtag_force</function>.
+	</para>
+	<para>Parameters: <emphasis>none</emphasis></para>
+	<example>
+	    <title><function>cl_ctr_list_config</function> usage</title>
+	    <programlisting format="linespecific">
+opensips-cli -x mi cl_ctr_list_config
+[
+    {
+        "cluster_id": 1,
+        "multicast": "239.0.90.1:3333",
+        "my_ip": "10.22.23.191",
+        "bin_socket": "bin:10.22.23.191:3857",
+        "query_time": 5,
+        "master_stickiness": 1,
+        "manage_shtags": 1,
+        "shtag_mode": "auto",
+        "member_count": 3
+    }
+]
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="mi_cl_ctr_shtag_force" xreflabel="cl_ctr_shtag_force">
+	<title><function moreinfo="none">cl_ctr_shtag_force</function></title>
+	<para>
+	    Force a specific node to hold the active sharing tag, overriding the
+	    normal master-driven allocation. This is useful for planned
+	    maintenance or manual traffic steering: the chosen node becomes the
+	    sole active shtag holder cluster-wide while every other node —
+	    including the master — is put into backup for that tag.
+	</para>
+	<para>
+	    The command must be issued on the current <emphasis>master</emphasis>
+	    (it returns an error otherwise). The override is propagated to all
+	    members in the MEMBER_LIST and <emphasis>survives master
+	    fail-over</emphasis>: a newly elected master keeps honouring it rather
+	    than reclaiming the tag. Automatic allocation stays suspended until
+	    <function>cl_ctr_shtag_auto</function> is called. If the forced node
+	    leaves the cluster or times out, the override is cleared
+	    automatically and automatic allocation resumes.
+	</para>
+	<para>Parameters:</para>
+	<itemizedlist>
+	    <listitem><para><emphasis>cluster_id</emphasis> — the target cluster.</para></listitem>
+	    <listitem><para><emphasis>node_id</emphasis> — the node that must hold the active tag; it must be a current member of the cluster.</para></listitem>
+	</itemizedlist>
+	<example>
+	    <title><function>cl_ctr_shtag_force</function> usage</title>
+	    <programlisting format="linespecific">
+opensips-cli -x mi cl_ctr_shtag_force cluster_id=1 node_id=3
+	    </programlisting>
+	</example>
+	</section>
+
+	<section id="mi_cl_ctr_shtag_auto" xreflabel="cl_ctr_shtag_auto">
+	<title><function moreinfo="none">cl_ctr_shtag_auto</function></title>
+	<para>
+	    Clear any override set by <function>cl_ctr_shtag_force</function> and
+	    resume automatic, master-driven sharing-tag allocation — the active
+	    tag follows the master again. Must be issued on the current master.
+	</para>
+	<para>Parameters:</para>
+	<itemizedlist>
+	    <listitem><para><emphasis>cluster_id</emphasis> — the target cluster.</para></listitem>
+	</itemizedlist>
+	<example>
+	    <title><function>cl_ctr_shtag_auto</function> usage</title>
+	    <programlisting format="linespecific">
+opensips-cli -x mi cl_ctr_shtag_auto cluster_id=1
+	    </programlisting>
+	</example>
+	</section>
+
+    </section><!-- exported_mi -->
+
+    <section id="exported_pvars" xreflabel="Exported Pseudo-Variables">
+    <title>Exported Pseudo-Variables</title>
+    <para>
+	These read-only pseudo-variables expose live cluster state to the
+	routing script, so a decision such as <quote>only the master runs this
+	job</quote> can be made without an MI call.  They read directly from
+	shared memory and are therefore available in every process (SIP
+	workers included).
+    </para>
+    <para>
+	Each variable optionally takes a cluster id as its argument, e.g.
+	<emphasis>$cl_ctr_role(2)</emphasis>.  The bare form
+	(<emphasis>$cl_ctr_role</emphasis>) resolves to the only configured
+	cluster; when several clusters are defined the bare form returns NULL
+	and logs a one-time warning, so the cluster must be named explicitly.
+	An unknown cluster id, or a value that is not currently known (e.g. no
+	master yet), returns NULL.  All of them are read-only - assigning to
+	them fails.
+    </para>
+    <itemizedlist>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_role</emphasis> — this node's role
+	    in the cluster: <emphasis>master</emphasis>,
+	    <emphasis>backup</emphasis>, <emphasis>member</emphasis>, or
+	    <emphasis>joining</emphasis> (still authenticating / before the
+	    first election).
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_is_master</emphasis> — 1 if this
+	    node is the cluster master, 0 otherwise.  A fast path for the most
+	    common check.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_master_ip</emphasis> — IP of the
+	    current master (NULL if none is elected yet).
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_backup_ip</emphasis> — IP of the
+	    current backup / standby master (NULL if none).
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_node_id</emphasis> — this node's
+	    <varname>node_id</varname> within that cluster (NULL until
+	    assigned).  A node may hold different ids in different clusters.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_my_ip</emphasis> — the controller
+	    identity IP of this node.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_members</emphasis> — number of live
+	    members currently in the cluster.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_shtag_mode</emphasis> —
+	    <emphasis>auto</emphasis> (tags follow the elected master) or
+	    <emphasis>forced</emphasis> (an operator pinned them with
+	    <function>cl_ctr_shtag_force</function>).
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">$cl_ctr_forced_node</emphasis> — the
+	    <varname>node_id</varname> the active sharing tag is pinned to
+	    (NULL when in <emphasis>auto</emphasis> mode).
+	</para></listitem>
+    </itemizedlist>
+    <example>
+	<title>Using <varname>$cl_ctr_*</varname> in the script</title>
+	<programlisting format="linespecific">
+# single cluster: run a periodic job only on the master
+if ($cl_ctr_is_master)
+    route(do_master_only_work);
+
+# several clusters: name the one you mean
+xlog("cluster 2 master is $cl_ctr_master_ip(2), I am $cl_ctr_role(2)\n");
+
+	</programlisting>
+    </example>
+    </section>
+
+    <section id="exported_functions" xreflabel="Exported Functions">
+    <title>Exported Functions</title>
+    <para>
+	Per-peer lookups take two arguments <emphasis>(cluster_id, node_id)</emphasis>
+	and are therefore script <emphasis>functions</emphasis>, not
+	pseudo-variables (a comma inside a variable's parentheses is ambiguous when
+	the variable is used as a function argument).  Boolean checks return
+	true/false for use directly in an <emphasis>if</emphasis>; value lookups
+	write into an output variable.  All are usable from any route.
+    </para>
+    <itemizedlist>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_node_is_master(cluster_id, node_id)</emphasis>
+	    — true if that node is the cluster master.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_node_present(cluster_id, node_id)</emphasis>
+	    — true if that <varname>node_id</varname> is a live member.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_get_node_role(cluster_id, node_id, out_var)</emphasis>
+	    — write that node's role
+	    (<emphasis>master</emphasis>/<emphasis>backup</emphasis>/<emphasis>member</emphasis>)
+	    into <emphasis>out_var</emphasis>; returns false if it is not a member.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_get_node_ip(cluster_id, node_id, out_var)</emphasis>
+	    — write that node's IP into <emphasis>out_var</emphasis>.
+	</para></listitem>
+    </itemizedlist>
+    <example>
+	<title>Per-peer lookup functions</title>
+	<programlisting format="linespecific">
+if (cl_ctr_node_present(1, 3) &amp;&amp; cl_ctr_node_is_master(1, 3)) {
+    cl_ctr_get_node_ip(1, 3, $var(ip));
+    xlog("node 3 ($var(ip)) leads cluster 1\n");
+}
+	</programlisting>
+    </example>
+    </section>
+
+    <section id="multiple_clusters" xreflabel="Multiple Clusters">
+    <title>Multiple Clusters</title>
+    <para>
+	A single &osips; instance can participate in multiple clusters
+	simultaneously by repeating the <varname>cluster</varname>
+	modparam. Each cluster runs an independent worker process with
+	its own multicast socket, peer table, master election, and
+	node_id space.
+    </para>
+    <para>
+	Clusters are distinguished by the combination of their multicast
+	IP address and UDP port. Two useful topologies are possible:
+    </para>
+    <itemizedlist>
+	<listitem><para>
+	    <emphasis role="bold">Different ports, same multicast IP</emphasis>
+	    — convenient when all clusters share the same L2 segment.
+	    The port number alone separates traffic for each cluster.
+	    Each cluster's <varname>password</varname> should also
+	    differ to provide an additional encryption barrier.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">Different multicast IPs</emphasis>
+	    — useful when clusters span different network segments or
+	    when multicast routing is scoped differently per cluster.
+	</para></listitem>
+    </itemizedlist>
+    <para>
+	When multiple clusters are defined and the node has more than
+	one BIN socket, the <varname>bin_socket=</varname> key must be
+	specified in each cluster string to indicate which BIN socket
+	to advertise for that cluster. If only one BIN socket exists,
+	it is used for all clusters automatically.
+    </para>
+    <para>
+	Each cluster has its own independent clusterer
+	<varname>cluster_id</varname>, allowing different &osips;
+	subsystems to replicate on different clusters:
+    </para>
+    <example>
+	<title>Multiple clusters — dialog on cluster 1, usrloc on cluster 2</title>
+	<programlisting format="linespecific">
+# Two BIN sockets, one per cluster
+socket=bin:10.0.1.10:5566
+socket=bin:10.0.2.10:5566
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+
+loadmodule "clusterer_controller.so"
+# Cluster 1 — dialog replication group, LAN segment 10.0.1.0/24
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.1.10:5566")
+# Cluster 2 — usrloc replication group, LAN segment 10.0.2.0/24
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.1:3334,bin_socket=bin:10.0.2.10:5566")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+
+loadmodule "usrloc.so"
+modparam("usrloc", "cluster_id", 2)
+	</programlisting>
+    </example>
+    <example>
+	<title>Multiple clusters — same multicast IP, different ports</title>
+	<programlisting format="linespecific">
+socket=bin:10.22.23.191:3857
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,password=ClusterOneSecret")
+modparam("clusterer_controller", "cluster",
+    "id=2,multicast=239.0.90.1:3334,password=ClusterTwoSecret")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+
+loadmodule "dispatcher.so"
+modparam("dispatcher", "cluster_id", 2)
+	</programlisting>
+    </example>
+    </section>
+
+    <section id="hybrid" xreflabel="Hybrid Topologies">
+    <title>Hybrid Topologies (native + controller clusters)</title>
+    <para>
+	A single &osips; instance can run <emphasis>native</emphasis> clusterer
+	clusters (defined in the database or statically via
+	<varname>my_node_info</varname>/<varname>neighbor_node_info</varname>)
+	and <emphasis>controller-managed</emphasis> clusters side by side.
+	This allows, for example, a fixed, DB-provisioned replication cluster
+	to coexist with a zero-config controller-driven HA cluster on the same
+	node.
+    </para>
+    <para>
+	Which kind a cluster is follows from how it is declared:
+    </para>
+    <itemizedlist>
+	<listitem><para>
+	    <emphasis role="bold">Controller-managed</emphasis> — every
+	    <varname>cluster_id</varname> registered with the clusterer module
+	    via <emphasis>modparam("clusterer", "cluster_id", N)</emphasis>
+	    (and matched by a <varname>cluster</varname> entry in this module).
+	    Its topology and this node's <varname>node_id</varname> are driven
+	    at runtime by the controller; it never touches the database and
+	    always behaves as <varname>db_mode=0</varname>, regardless of the
+	    global <varname>db_mode</varname>.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">Native</emphasis> — every cluster loaded
+	    from the clusterer database (<varname>db_mode!=0</varname>) or
+	    provisioned statically. It behaves exactly as classic clusterer:
+	    fixed <varname>my_node_id</varname>, DB persistence (when
+	    DB-backed), script/MI-managed sharing tags.
+	</para></listitem>
+    </itemizedlist>
+    <para>
+	The rules that keep the two kinds apart:
+    </para>
+    <itemizedlist>
+	<listitem><para>
+	    A <varname>cluster_id</varname> is <emphasis>exclusively</emphasis>
+	    controller-managed or native — declaring the same id both ways is
+	    rejected at startup.
+	</para></listitem>
+	<listitem><para>
+	    <varname>my_node_id</varname> identifies this node in its
+	    <emphasis>native</emphasis> clusters only and is required only when
+	    native clusters exist; controller clusters get their node id
+	    assigned at runtime, and this node may well hold
+	    <emphasis>different</emphasis> node ids in different clusters.
+	</para></listitem>
+	<listitem><para>
+	    <varname>db_url</varname>/<varname>db_mode</varname> apply to
+	    native clusters only. A controller-only deployment needs neither.
+	</para></listitem>
+	<listitem><para>
+	    Sharing tags: only tags of controller-managed clusters are forced
+	    to backup at startup and driven by the controller master; tags of
+	    native clusters keep their configured state (<emphasis>=active</emphasis>
+	    included) and stay script/MI-managed.
+	</para></listitem>
+	<listitem><para>
+	    Native and controller clusters may share the same BIN socket - the
+	    <varname>cluster_id</varname> carried in every BIN packet keeps
+	    their traffic apart.
+	</para></listitem>
+    </itemizedlist>
+    <example>
+	<title>Hybrid — DB-native cluster 10 + controller cluster 1</title>
+	<programlisting format="linespecific">
+socket=bin:10.0.0.10:5566
+
+loadmodule "db_mysql.so"
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+# native side: cluster 10 lives in the DB (nodes provisioned there)
+modparam("clusterer", "db_mode", 1)
+modparam("clusterer", "db_url", "mysql://opensips:pass@localhost/opensips")
+modparam("clusterer", "my_node_id", 5)      # this node's id in cluster 10
+# controller side: cluster 1 is dynamic
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "cluster_id", 1)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333,bin_socket=bin:10.0.0.10:5566,password=S3cret")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)   # controller-managed
+
+loadmodule "dispatcher.so"
+modparam("dispatcher", "cluster_id", 10)              # DB-native
+	</programlisting>
+    </example>
+    </section>
+
+    <section id="configuration" xreflabel="Configuration Example">
+    <title>Configuration Example</title>
+    <para>
+	The following example shows a minimal two-module configuration
+	for zero-config HA clustering with dialog replication. The
+	<function>loadmodule</function> order does not matter — the
+	dependency system enforces correct initialization order
+	automatically.
+    </para>
+    <example>
+	<title>Minimal HA cluster configuration</title>
+	<programlisting format="linespecific">
+# Each node needs an explicit BIN socket (no wildcard)
+socket=bin:10.22.23.191:3857
+
+loadmodule "proto_bin.so"
+
+loadmodule "clusterer.so"
+modparam("clusterer", "use_controller", 1)
+modparam("clusterer", "sharing_tag",   "vip1/1=active")
+modparam("clusterer", "ping_interval", 4)
+modparam("clusterer", "ping_timeout",  1500)
+
+loadmodule "clusterer_controller.so"
+modparam("clusterer_controller", "cluster",
+    "id=1,multicast=239.0.90.1:3333")
+modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
+
+loadmodule "tm.so"
+modparam("tm", "tm_replication_cluster", 1)
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+modparam("dialog", "cluster_auto_sync", 1)
+
+loadmodule "dispatcher.so"
+modparam("dispatcher", "cluster_id",           1)
+modparam("dispatcher", "cluster_probing_mode", "distributed")
+	</programlisting>
+    </example>
+    <para>
+	The same configuration file (with the node-specific
+	<emphasis>socket=bin:IP:PORT</emphasis> line changed per node)
+	is used on every node. No other per-node customization is
+	required.
+    </para>
+    </section>
+
+    <section id="limitations" xreflabel="Limitations">
+    <title>Limitations</title>
+    <itemizedlist>
+	<listitem><para>
+	    IPv4 only. IPv6 multicast is not currently supported.
+	</para></listitem>
+	<listitem><para>
+	    The module pre-allocates approximately 152 KB of shared
+	    memory (<emphasis>-m</emphasis>) per cluster and 6 KB of
+	    private memory (<emphasis>-M</emphasis>) per worker process
+	    at startup. If either allocation fails, OpenSIPS will refuse
+	    to start with an error in the log.
+	</para></listitem>
+	<listitem><para>
+	    Wildcard BIN sockets (<emphasis>bin:*:PORT</emphasis>) are
+	    rejected at startup. An explicit IP address must be used in
+	    the <emphasis>socket=</emphasis> line.
+	</para></listitem>
+	<listitem><para>
+	    Node IDs are not persistent across a full cluster restart
+	    (all nodes down simultaneously). IDs are reallocated
+	    starting from 1 when the cluster reforms. This has no
+	    operational impact as long as at least one node remains up
+	    during rolling restarts.
+	</para></listitem>
+	<listitem><para>
+	    The multicast network must support IP multicast routing
+	    between all cluster nodes. Nodes on different L3 segments
+	    require PIM or similar multicast routing.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">PIM-DM networks:</emphasis> PIM Dense
+	    Mode periodically re-floods multicast traffic (prune state
+	    typically expires every 3 minutes). On slow or congested
+	    networks this brief re-flood/prune cycle could cause a gap
+	    in MASTER_ALIVE delivery and trigger a spurious master
+	    re-election. If this occurs, increase the effective timeout
+	    by raising <varname>CC_MASTER_KA_MISSED</varname> in the
+	    source from 3 to 5 or higher. PIM Sparse Mode (PIM-SM) or
+	    networks with IGMP snooping do not have this issue.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">L2 overlay tunnels (Geneve, VXLAN,
+	    GRE):</emphasis> if the overlay presents a flat L2 segment
+	    with multicast support, the controller works transparently.
+	    However, some VXLAN deployments disable multicast entirely
+	    (no underlay multicast group, no BUM replication) — in that
+	    case the controller will not function, as it has no unicast
+	    fallback. Encapsulation overhead also adds latency and
+	    jitter; on high-latency overlays consider raising
+	    <varname>CC_MASTER_KA_MISSED</varname> to avoid spurious
+	    re-elections.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">IPsec-protected links:</emphasis>
+	    native IPsec multicast requires GDOI/GET VPN (RFC 6407),
+	    which is rarely deployed. The recommended approach is to
+	    run multicast inside an inner tunnel (GRE-over-IPsec,
+	    Geneve-over-IPsec) that presents a multicast-capable
+	    interface. Running the controller over such a setup results
+	    in double encryption (application-layer AES-256-GCM plus
+	    IPsec ESP), which is harmless but adds minor CPU overhead.
+	    IPsec ESP tunnel mode also reduces the effective MTU by
+	    approximately 50 bytes, which compounds the MEMBER_LIST
+	    fragmentation issue described below.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">MEMBER_LIST fragmentation:</emphasis>
+	    the MEMBER_LIST packet grows with cluster size and reaches
+	    approximately 4395 bytes at the maximum of 256 nodes.  This
+	    exceeds the 1472-byte UDP payload budget of a standard
+	    1500-byte MTU Ethernet link and requires IP fragmentation:
+	    <itemizedlist>
+		<listitem><para>Standard Ethernet (1500 MTU): 3 fragments</para></listitem>
+		<listitem><para>IPsec ESP tunnel (~1400 MTU): 4 fragments</para></listitem>
+		<listitem><para>GRE-over-IPsec (~1350 MTU): 4–5 fragments</para></listitem>
+	    </itemizedlist>
+	    All other packet types (ALIVE, JOIN_REQ, KEY_GRANT, GOODBYE,
+	    etc.) fit comfortably within a single datagram on any of
+	    these links.  The DF bit is not set, so IP fragmentation
+	    occurs transparently where the network allows it.  However,
+	    firewalls or stateless middleboxes that silently drop
+	    fragmented UDP will prevent new nodes from joining, since
+	    MEMBER_LIST is required to complete the join sequence.
+	    Verify that fragmented UDP is permitted on all paths between
+	    cluster nodes, particularly over VPN tunnels and across
+	    datacenter firewalls.
+	</para></listitem>
+    </itemizedlist>
+    </section>
+
+    <section id="planned" xreflabel="Planned Features">
+    <title>Planned Features</title>
+    <para>
+	The following features are planned for future releases:
+    </para>
+    <itemizedlist>
+	<listitem><para>
+	    <emphasis role="bold">Node maintenance mode</emphasis> — take a node
+	    out of duty for a rolling upgrade while it stays in the cluster.  A
+	    node in maintenance keeps replicating and answering pings and stays
+	    visible in <function>cl_ctr_list_members</function>, but is excluded
+	    from election (never master or backup; if it is master it hands over
+	    gracefully first) and sheds its sharing tags (a
+	    <function>cl_ctr_shtag_force</function> pin on it auto-clears).  Two
+	    levels are planned:
+	    <itemizedlist>
+		<listitem><para><emphasis>evicted</emphasis> — out of election
+		and tags; the routing script refuses new work while established
+		dialogs finish.</para></listitem>
+		<listitem><para><emphasis>full</emphasis> — additionally marks
+		the node down for clusterer consumers so peers stop routing
+		replication work to it.</para></listitem>
+	    </itemizedlist>
+	    The state is cluster-wide (carried in the ALIVE/MEMBER_LIST control
+	    plane, so every node agrees and it survives master failover) and
+	    runtime-only — a restart brings the node back in service.
+	</para>
+	<para>
+	    Interfaces (following the read-only variables and MI commands above):
+	    <itemizedlist>
+		<listitem><para>
+		    MI <function>cl_ctr_maintenance</function> (any node, the
+		    master propagates it) sets a target node's state
+		    <emphasis>evicted</emphasis>/<emphasis>full</emphasis>/<emphasis>off</emphasis>;
+		    <function>cl_ctr_list_members</function> gains a maintenance
+		    column.
+		</para></listitem>
+		<listitem><para>
+		    Script function <function>cl_ctr_set_maintenance()</function>
+		    (a verb - an action) for a node to put itself in or out of
+		    maintenance from the routing logic.
+		</para></listitem>
+		<listitem><para>
+		    Read-only variables <emphasis>$cl_ctr_maintenance</emphasis>
+		    (this node: none/evicted/full) and
+		    <emphasis>$cl_ctr_node_maint(cluster_id, node_id)</emphasis>
+		    (any peer); <emphasis>$cl_ctr_role</emphasis> gains a
+		    <emphasis>maintenance</emphasis> value.
+		</para></listitem>
+		<listitem><para>
+		    Event <emphasis>E_CL_CTR_MAINTENANCE</emphasis> raised on
+		    every node when any member's maintenance state changes, so an
+		    <function>event_route</function> can react (e.g. shift
+		    dispatcher weights).
+		</para></listitem>
+	    </itemizedlist>
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">Statistics</emphasis> — module statistics
+	    (current role, member count, master changes, nodes joined/left,
+	    JOIN_REJECTs, decrypt failures, config mismatches, split-brain
+	    merges) exposed via <function>get_statistics</function> and
+	    monitoring exporters.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">Events</emphasis> — events raised on state
+	    transitions (became master, demoted, node joined/left, split-brain
+	    merged, config mismatch, authentication reject), named
+	    <emphasis>E_CL_CTR_*</emphasis> and consumable from an
+	    <function>event_route</function> or any event subscriber transport.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">IPv6 multicast</emphasis> — the control plane
+	    currently uses IPv4 multicast (groups in <emphasis>224.0.0.0/4</emphasis>).
+	    Add IPv6 multicast support (<emphasis>ff00::/8</emphasis> groups,
+	    <emphasis>AF_INET6</emphasis> sockets and membership) so the controller
+	    can run on IPv6-only or dual-stack deployments.
+	</para></listitem>
+    </itemizedlist>
+    <para>
+	Read-only script variables for cluster state
+	(<emphasis>$cl_ctr_role</emphasis>,
+	<emphasis>$cl_ctr_is_master</emphasis>, and the rest) are already
+	available - see <xref linkend="exported_pvars"/>.
+    </para>
+    </section>
+
+</chapter>

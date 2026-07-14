@@ -137,6 +137,17 @@ struct cluster_info {
 
 	cluster_bridge_t *bridges;          /* replication links to other clusters */
 
+	/* Set by clusterer_controller when manage_shtags=1 for this cluster.
+	 * Blocks MI and script-variable shtag activation to prevent conflicts
+	 * with controller-managed failover. */
+	int shtag_managed;
+
+	/* 1 = this cluster's topology and identity are driven at runtime by
+	 * clusterer_controller (registered via the 'cluster_id' modparam); it never
+	 * touches the DB and behaves as db_mode=0 regardless of the global db_mode.
+	 * 0 = a native cluster defined via DB or static my_node_info/neighbor. */
+	int controller_managed;
+
 	struct cluster_info *next;
 };
 
@@ -167,16 +178,39 @@ extern str clnk_shtag_col;
 extern str clnk_dst_node_col;
 
 extern int current_id;
+extern int *_current_id_shm;
+/* Read current_id from shm if available (cross-process after fork) */
+#define GET_CURRENT_ID (_current_id_shm ? *_current_id_shm : current_id)
+
+/* This node's node_id *within a specific cluster*.  With the controller a node
+ * can hold a different node_id in each cluster, so the per-cluster identity in
+ * shared memory (cl->current_node) is authoritative.  Returns -1 (a node_id
+ * that matches nothing) when this cluster's identity is not yet established, so
+ * a not-yet-joined cluster can never accidentally match or stamp a real id
+ * (in particular it never borrows another cluster's id via the legacy global). */
+static inline int cluster_self_id(const struct cluster_info *cl)
+{
+	return (cl && cl->current_node) ? cl->current_node->node_id : -1;
+}
 extern int db_mode;
+extern int use_controller;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
+
+/* Effective db_mode *for one cluster*.  Controller-managed clusters never use
+ * the DB (their topology is injected at runtime), so they always behave as
+ * db_mode=0 even in a hybrid where native clusters are DB-backed (db_mode!=0). */
+static inline int cl_db_mode(const struct cluster_info *cl)
+{
+	return (cl && cl->controller_managed) ? 0 : db_mode;
+}
 
 int update_db_state(int cluster_id, int node_id, int state);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
-					str *str_vals);
+					str *str_vals, int self_id);
 void remove_node_list(cluster_info_t *cl, node_info_t *node);
 
 int provision_neighbor(modparam_t type, void* val);
@@ -196,6 +230,7 @@ static inline cluster_info_t *get_cluster_by_id(int cluster_id)
 {
 	cluster_info_t *cl;
 
+	if (!cluster_list || !*cluster_list) return NULL;
 	for (cl = *cluster_list; cl; cl = cl->next)
 		if (cl->cluster_id == cluster_id)
 			return cl;
