@@ -47,10 +47,12 @@ struct clusterer_binds cluster_api;
 
 static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *ri)
 {
+	static context_p my_ctx = NULL;
 	int itmp;
 	char *tmp;
 	str stmp;
 	struct cell *t;
+	context_p old_ctx;
 	/* build a nice static message, exactly how t_lookupOriginalT() expects */
 	struct sip_msg msg;
 	struct via_body via;
@@ -119,6 +121,19 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 
 	LM_DBG("Got CANCEL with branch id=%.*s\n", branch.value.len, branch.value.s);
 
+	old_ctx = current_processing_ctx;
+
+	if (my_ctx==NULL) {
+		my_ctx = context_alloc(CONTEXT_GLOBAL);
+		if (my_ctx==NULL) {
+			LM_ERR("failed to alloc new ctx in pkg\n");
+			free_sip_msg(&msg);
+			return;
+		}
+	}
+	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
+	set_global_context(my_ctx);
+
 	/* try to get the transaction */
 	set_t(T_UNDEFINED); /* set undefined, because we might have already got a cancel here */
 	reset_cancelled_t();
@@ -126,7 +141,7 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	/* if transaction is not here, must be somebody else's */
 	if (!t) {
 		LM_DBG("Original transaction not here!\n");
-		return;
+		goto cleanup_ctx;
 	}
 
 	/* transaction is located here - do a proper parsing if not done already */
@@ -158,6 +173,13 @@ cleanup:
 
 	if ((t=get_t()) != NULL && t != T_UNDEFINED)
 		t_unref_cell(t);
+
+cleanup_ctx:
+	if (current_processing_ctx==NULL)
+		my_ctx=NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, my_ctx);
+	set_global_context(old_ctx);
 
 	free_sip_msg(&msg);
 }
