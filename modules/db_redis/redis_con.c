@@ -493,14 +493,40 @@ void rdb_maybe_refresh(struct redis_con *con)
 }
 
 
-/* determine whether the endpoint is a cluster ("cluster_enabled:1"
- * in CLUSTER INFO); on any error assume non-cluster */
+/* log the discovered master pool and how many slots each owns; also
+ * reports whether the warm TCP connection to each master is up */
+static void rdb_log_pool(struct redis_con *con)
+{
+	redis_node *n;
+	int i, slots, total_masters = 0, up = 0;
+
+	for (n = con->nodes; n; n = n->next) {
+		slots = 0;
+		for (i = 0; i < RDB_NR_SLOTS; i++)
+			if (con->slot_map[i] == n)
+				slots++;
+		total_masters++;
+		if (n->ctx)
+			up++;
+		LM_DBG("redis cluster master %s:%u - %d slots, connection %s\n",
+			n->host, n->port, slots, n->ctx ? "up" : "down");
+	}
+	LM_INFO("redis cluster pool ready: %d masters discovered, "
+		"%d warm connections\n", total_masters, up);
+}
+
+
+/* determine whether the endpoint is a cluster; the "cluster_enabled"
+ * field lives in the "Cluster" section of the general INFO command
+ * (it is not part of CLUSTER INFO) and is reliably reported as
+ * cluster_enabled:0/1 by both standalone and cluster instances; on any
+ * error assume non-cluster */
 static int rdb_probe_cluster(redisContext *ctx)
 {
 	redisReply *reply;
 	int enabled = 0;
 
-	reply = redisCommand(ctx, "CLUSTER INFO");
+	reply = redisCommand(ctx, "INFO CLUSTER");
 	if (!reply)
 		return 0;
 	if (reply->type == REDIS_REPLY_STRING || reply->type == REDIS_REPLY_STATUS) {
@@ -572,7 +598,9 @@ struct redis_con* db_redis_new_connection(const struct db_id* id)
 		/* the seed served its purpose; the pool holds the masters
 		 * (the seed itself is in the pool if it is a master) */
 		redisFree(seed);
-		LM_INFO("connected to redis cluster via %s:%u\n", id->host, port);
+		LM_INFO("connected to redis cluster via seed %s:%u\n",
+			id->host, port);
+		rdb_log_pool(con);
 	} else {
 		con->mode = RDB_MODE_SINGLE;
 		/* the seed becomes the single pooled node */
