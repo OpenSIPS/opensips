@@ -1,5 +1,5 @@
 ---
-title: "SST Module (SIP Session Timer)"
+title: "SIP Session Timer module"
 description: "The sst module provides a way to update the dialog expire timer based on the SIP INVITE/200 OK Session-Expires header value."
 ---
 
