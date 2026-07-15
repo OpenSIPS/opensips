@@ -137,16 +137,18 @@ struct cluster_info {
 
 	cluster_bridge_t *bridges;          /* replication links to other clusters */
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 	/* Set by clusterer_controller when manage_shtags=1 for this cluster.
 	 * Blocks MI and script-variable shtag activation to prevent conflicts
 	 * with controller-managed failover. */
 	int shtag_managed;
 
 	/* 1 = this cluster's topology and identity are driven at runtime by
-	 * clusterer_controller (registered via the 'cluster_id' modparam); it never
-	 * touches the DB and behaves as db_mode=0 regardless of the global db_mode.
+	 * clusterer_controller (registered via cluster_options use_controller=1); it
+	 * never touches the DB and behaves as db_mode=0 regardless of global db_mode.
 	 * 0 = a native cluster defined via DB or static my_node_info/neighbor. */
 	int controller_managed;
+#endif
 
 	struct cluster_info *next;
 };
@@ -178,42 +180,62 @@ extern str clnk_shtag_col;
 extern str clnk_dst_node_col;
 
 extern int current_id;
+
+/* Controller-support identity accessors.  When the clusterer_controller module
+ * is NOT part of the build these all collapse to the stock global 'current_id',
+ * so every call site compiles to the exact upstream behaviour with no #ifdef of
+ * its own.  With the controller, a node can hold a different node_id per cluster
+ * and its identity is (re)assigned at runtime, so the per-cluster shm value and a
+ * shm-backed global are authoritative instead. */
+#ifdef CLUSTERER_CTRL_SUPPORT
 extern int *_current_id_shm;
 /* Read current_id from shm if available (cross-process after fork) */
 #define GET_CURRENT_ID (_current_id_shm ? *_current_id_shm : current_id)
 
-/* This node's node_id *within a specific cluster*.  With the controller a node
- * can hold a different node_id in each cluster, so the per-cluster identity in
- * shared memory (cl->current_node) is authoritative.  Returns -1 (a node_id
- * that matches nothing) when this cluster's identity is not yet established, so
- * a not-yet-joined cluster can never accidentally match or stamp a real id
- * (in particular it never borrows another cluster's id via the legacy global). */
+/* This node's node_id *within a specific cluster*.  Returns -1 (a node_id that
+ * matches nothing) when this cluster's identity is not yet established, so a
+ * not-yet-joined cluster can never accidentally match or stamp a real id. */
 static inline int cluster_self_id(const struct cluster_info *cl)
 {
 	return (cl && cl->current_node) ? cl->current_node->node_id : -1;
 }
-extern int db_mode;
 extern int use_controller;
 /* cluster_ids declared controller-managed via cluster_options (use_controller=1) */
 extern int cc_stub_ids[];
 extern int cc_stub_count;
+#else
+#define GET_CURRENT_ID       (current_id)
+#define cluster_self_id(cl)  (current_id)
+#define use_controller       0
+#endif
+
+extern int db_mode;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
 /* Effective db_mode *for one cluster*.  Controller-managed clusters never use
  * the DB (their topology is injected at runtime), so they always behave as
- * db_mode=0 even in a hybrid where native clusters are DB-backed (db_mode!=0). */
+ * db_mode=0 even in a hybrid where native clusters are DB-backed (db_mode!=0).
+ * Without the controller every cluster is native, so this is just db_mode. */
+#ifdef CLUSTERER_CTRL_SUPPORT
 static inline int cl_db_mode(const struct cluster_info *cl)
 {
 	return (cl && cl->controller_managed) ? 0 : db_mode;
 }
+#else
+#define cl_db_mode(cl)  (db_mode)
+#endif
 
 int update_db_state(int cluster_id, int node_id, int state);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
+#ifdef CLUSTERER_CTRL_SUPPORT
 					str *str_vals, int self_id);
+#else
+					str *str_vals);
+#endif
 void remove_node_list(cluster_info_t *cl, node_info_t *node);
 
 int provision_neighbor(modparam_t type, void* val);
@@ -233,7 +255,9 @@ static inline cluster_info_t *get_cluster_by_id(int cluster_id)
 {
 	cluster_info_t *cl;
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 	if (!cluster_list || !*cluster_list) return NULL;
+#endif
 	for (cl = *cluster_list; cl; cl = cl->next)
 		if (cl->cluster_id == cluster_id)
 			return cl;

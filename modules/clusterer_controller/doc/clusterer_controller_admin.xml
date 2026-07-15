@@ -611,6 +611,43 @@
     </section>
     </section>
 
+    <section id="building" xreflabel="Building the Module">
+    <title>Building the Module</title>
+	<para>
+	    <emphasis>clusterer_controller</emphasis> is
+	    <emphasis role="bold">excluded from the default build</emphasis> (it is
+	    listed in <varname>exclude_modules</varname> in
+	    <filename>Makefile.conf.template</filename>), like the other modules that
+	    depend on external libraries. A stock &osips; build therefore does not
+	    include it. To build it, add it to <varname>include_modules</varname> in
+	    your <filename>Makefile.conf</filename>:
+	</para>
+	<programlisting format="linespecific">
+include_modules= clusterer_controller
+</programlisting>
+	<para>
+	    then rebuild (<emphasis>make all</emphasis> /
+	    <emphasis>make modules</emphasis>). Because the module links WolfSSL (and
+	    optionally libsodium), the same external-library requirements as
+	    <emphasis>tls_wolfssl</emphasis> apply.
+	</para>
+	<para>
+	    <emphasis role="bold">The clusterer module is unmodified when
+	    clusterer_controller is not built.</emphasis> The controller integration
+	    on the <emphasis>clusterer</emphasis> side (the
+	    <varname>clusterer_ctrl</varname> API, the <varname>cluster_options</varname>
+	    modparam and all controller hooks) is compiled only when
+	    clusterer_controller is part of the build: the top-level Makefile detects
+	    this and passes <varname>-DCLUSTERER_CTRL_SUPPORT</varname> to the
+	    clusterer module. A build without clusterer_controller produces the
+	    stock clusterer module, unchanged in behaviour and exported interface -
+	    in particular the <varname>cluster_options</varname> parameter does not
+	    exist and is rejected as unknown. Enabling clusterer_controller
+	    automatically rebuilds clusterer with the support compiled in; the two
+	    are always a matched pair.
+	</para>
+    </section>
+
     <section id="exported_parameters" xreflabel="Exported Parameters">
     <title>Exported Parameters</title>
 

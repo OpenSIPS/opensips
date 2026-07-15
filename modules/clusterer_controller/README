@@ -14,32 +14,33 @@ CLUSTERER_CONTROLLER Module
               1.5.1. OpenSIPS Modules
               1.5.2. External Libraries or Applications
 
-        1.6. Exported Parameters
+        1.6. Building the Module
+        1.7. Exported Parameters
 
-              1.6.1. cluster (string)
-              1.6.2. my_ip (string)
-              1.6.3. interface (string)
-              1.6.4. query_time (integer)
-              1.6.5. password (string)
-              1.6.6. manage_shtags (integer)
-              1.6.7. master_stickiness (integer)
-              1.6.8. on_config_mismatch (string)
+              1.7.1. cluster (string)
+              1.7.2. my_ip (string)
+              1.7.3. interface (string)
+              1.7.4. query_time (integer)
+              1.7.5. password (string)
+              1.7.6. manage_shtags (integer)
+              1.7.7. master_stickiness (integer)
+              1.7.8. on_config_mismatch (string)
 
-        1.7. Exported MI Functions
+        1.8. Exported MI Functions
 
-              1.7.1. cl_ctr_list_members
-              1.7.2. cl_ctr_node_info
-              1.7.3. cl_ctr_list_config
-              1.7.4. cl_ctr_shtag_force
-              1.7.5. cl_ctr_shtag_auto
+              1.8.1. cl_ctr_list_members
+              1.8.2. cl_ctr_node_info
+              1.8.3. cl_ctr_list_config
+              1.8.4. cl_ctr_shtag_force
+              1.8.5. cl_ctr_shtag_auto
 
-        1.8. Exported Pseudo-Variables
-        1.9. Exported Functions
-        1.10. Multiple Clusters
-        1.11. Hybrid Topologies (native + controller clusters)
-        1.12. Configuration Example
-        1.13. Limitations
-        1.14. Planned Features
+        1.9. Exported Pseudo-Variables
+        1.10. Exported Functions
+        1.11. Multiple Clusters
+        1.12. Hybrid Topologies (native + controller clusters)
+        1.13. Configuration Example
+        1.14. Limitations
+        1.15. Planned Features
 
    A. HA Behaviour Tests
 
@@ -572,9 +573,35 @@ on-key")
        every node in a cluster must be built the same way; the
        active suite is printed in the startup log.
 
-1.6. Exported Parameters
+1.6. Building the Module
 
-1.6.1. cluster (string)
+   clusterer_controller is excluded from the default build (it is
+   listed in exclude_modules in Makefile.conf.template), like the
+   other modules that depend on external libraries. A stock
+   OpenSIPS build therefore does not include it. To build it, add
+   it to include_modules in your Makefile.conf:
+include_modules= clusterer_controller
+
+   then rebuild (make all / make modules). Because the module
+   links WolfSSL (and optionally libsodium), the same
+   external-library requirements as tls_wolfssl apply.
+
+   The clusterer module is unmodified when clusterer_controller is
+   not built. The controller integration on the clusterer side
+   (the clusterer_ctrl API, the cluster_options modparam and all
+   controller hooks) is compiled only when clusterer_controller is
+   part of the build: the top-level Makefile detects this and
+   passes -DCLUSTERER_CTRL_SUPPORT to the clusterer module. A
+   build without clusterer_controller produces the stock clusterer
+   module, unchanged in behaviour and exported interface - in
+   particular the cluster_options parameter does not exist and is
+   rejected as unknown. Enabling clusterer_controller
+   automatically rebuilds clusterer with the support compiled in;
+   the two are always a matched pair.
+
+1.7. Exported Parameters
+
+1.7.1. cluster (string)
 
    Define a cluster to participate in. The value is a
    comma-separated key=value string with the following fields:
@@ -667,7 +694,7 @@ Note
    letting separate deployments coexist on a shared multicast
    group, not two clusters inside one instance.)
 
-1.6.2. my_ip (string)
+1.7.2. my_ip (string)
 
    Explicitly set the local IPv4 address used by the controller
    for its own node identity and master election. This is the IP
@@ -711,7 +738,7 @@ Note
 modparam("clusterer_controller", "my_ip", "10.22.23.191")
 ...
 
-1.6.3. interface (string)
+1.7.3. interface (string)
 
    Explicitly set the network interface name to use for multicast
    traffic (e.g. eth0, enp6s18). The module takes the first IPv4
@@ -737,7 +764,7 @@ modparam("clusterer_controller", "my_ip", "10.22.23.191")
 modparam("clusterer_controller", "interface", "eth0")
 ...
 
-1.6.4. query_time (integer)
+1.7.4. query_time (integer)
 
    How often (in seconds) each active node sends an ALIVE
    heartbeat to the multicast group. This value also controls the
@@ -754,7 +781,7 @@ modparam("clusterer_controller", "interface", "eth0")
 modparam("clusterer_controller", "query_time", 5)
 ...
 
-1.6.5. password (string)
+1.7.5. password (string)
 
    Global default encryption password for all clusters. All nodes
    in a cluster must use the same password. The password serves
@@ -783,7 +810,7 @@ modparam("clusterer_controller", "query_time", 5)
 modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
 ...
 
-1.6.6. manage_shtags (integer)
+1.7.6. manage_shtags (integer)
 
    When set to 1 (the default), the controller master node
    automatically manages sharing tag failover for all clusters.
@@ -914,7 +941,7 @@ modparam("clusterer_controller", "cluster",  "id=1,multicast=239.0.90.1:
 modparam("clusterer_controller", "password", "MyStr0ngPassw0rd!")
 # manage_shtags defaults to 1 — no need to set it explicitly
 
-1.6.7. master_stickiness (integer)
+1.7.7. master_stickiness (integer)
 
    Controls whether a live master keeps its role when a higher-IP
    node joins. Default 1 (sticky).
@@ -964,7 +991,7 @@ modparam("clusterer_controller", "cluster",
     "id=2,multicast=239.0.90.2:3333,master_stickiness=0")
 ...
 
-1.6.8. on_config_mismatch (string)
+1.7.8. on_config_mismatch (string)
 
    Policy applied when a node's consistency-critical settings
    (manage_shtags, master_stickiness, query_time) differ from
@@ -986,9 +1013,9 @@ modparam("clusterer_controller", "cluster",
 modparam("clusterer_controller", "on_config_mismatch", "reject")
 ...
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. cl_ctr_list_members
+1.8.1. cl_ctr_list_members
 
    List all current cluster members with their node_id, status and
    BIN socket addresses. Status is one of master, backup (the
@@ -1025,7 +1052,7 @@ opensips-cli -x mi cl_ctr_list_members
     }
 ]
 
-1.7.2. cl_ctr_node_info
+1.8.2. cl_ctr_node_info
 
    Return full information for a specific node identified by its
    allocated node_id.
@@ -1043,7 +1070,7 @@ opensips-cli -x mi cl_ctr_node_info node_id=2
     "bin_sockets": [ "bin:10.22.23.192:3857" ]
 }
 
-1.7.3. cl_ctr_list_config
+1.8.3. cl_ctr_list_config
 
    List all configured clusters and their resolved settings — the
    effective values actually in use after global defaults and
@@ -1074,7 +1101,7 @@ opensips-cli -x mi cl_ctr_list_config
     }
 ]
 
-1.7.4. cl_ctr_shtag_force
+1.8.4. cl_ctr_shtag_force
 
    Force a specific node to hold the active sharing tag,
    overriding the normal master-driven allocation. This is useful
@@ -1100,7 +1127,7 @@ opensips-cli -x mi cl_ctr_list_config
    Example 1.17. cl_ctr_shtag_force usage
 opensips-cli -x mi cl_ctr_shtag_force cluster_id=1 node_id=3
 
-1.7.5. cl_ctr_shtag_auto
+1.8.5. cl_ctr_shtag_auto
 
    Clear any override set by cl_ctr_shtag_force and resume
    automatic, master-driven sharing-tag allocation — the active
@@ -1113,7 +1140,7 @@ opensips-cli -x mi cl_ctr_shtag_force cluster_id=1 node_id=3
    Example 1.18. cl_ctr_shtag_auto usage
 opensips-cli -x mi cl_ctr_shtag_auto cluster_id=1
 
-1.8. Exported Pseudo-Variables
+1.9. Exported Pseudo-Variables
 
    These read-only pseudo-variables expose live cluster state to
    the routing script, so a decision such as “only the master runs
@@ -1159,7 +1186,7 @@ xlog("cluster 2 master is $cl_ctr_master_ip(2), I am $cl_ctr_role(2)\n")
 ;
 
 
-1.9. Exported Functions
+1.10. Exported Functions
 
    Per-peer lookups take two arguments (cluster_id, node_id) and
    are therefore script functions, not pseudo-variables (a comma
@@ -1183,7 +1210,7 @@ if (cl_ctr_node_present(1, 3) && cl_ctr_node_is_master(1, 3)) {
     xlog("node 3 ($var(ip)) leads cluster 1\n");
 }
 
-1.10. Multiple Clusters
+1.11. Multiple Clusters
 
    A single OpenSIPS instance can participate in multiple clusters
    simultaneously by repeating the cluster modparam. Each cluster
@@ -1264,7 +1291,7 @@ modparam("dialog", "dialog_replication_cluster", 1)
 loadmodule "dispatcher.so"
 modparam("dispatcher", "cluster_id", 2)
 
-1.11. Hybrid Topologies (native + controller clusters)
+1.12. Hybrid Topologies (native + controller clusters)
 
    A single OpenSIPS instance can run native clusterer clusters
    (defined in the database or statically via
@@ -1376,7 +1403,7 @@ modparam("dispatcher", "cluster_id", 7)              # native (cluster 7
    cluster 1 the controller assigns an id at runtime, which may
    differ.
 
-1.12. Configuration Example
+1.13. Configuration Example
 
    The following example shows a minimal two-module configuration
    for zero-config HA clustering with dialog replication. The
@@ -1416,7 +1443,7 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
    socket=bin:IP:PORT line changed per node) is used on every
    node. No other per-node customization is required.
 
-1.13. Limitations
+1.14. Limitations
 
      * IPv4 only. IPv6 multicast is not currently supported.
      * The module pre-allocates approximately 152 KB of shared
@@ -1481,7 +1508,7 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
        paths between cluster nodes, particularly over VPN tunnels
        and across datacenter firewalls.
 
-1.14. Planned Features
+1.15. Planned Features
 
    The following features are planned for future releases:
      * Node maintenance mode — take a node out of duty for a

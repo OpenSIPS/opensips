@@ -25,6 +25,11 @@
 #include "topology.h"       /* delete_neighbour */     /* shtag_event_handler */
 #include "clusterer_ctrl.h"
 
+/* This whole API is compiled only when the clusterer_controller module is part
+ * of the build (see modules/clusterer/Makefile).  In a stock clusterer build the
+ * translation unit is empty. */
+#ifdef CLUSTERER_CTRL_SUPPORT
+
 /* declared in clusterer.c — raises E_CLUSTERER_NODE_STATE_CHANGED */
 int report_node_state(enum clusterer_event event, int cluster_id, int node_id);
 
@@ -382,7 +387,6 @@ int load_clusterer_ctrl_binds(clusterer_ctrl_binds_t *binds)
 	return -1;
     }
     clusterer_ctrl_bound   = 1;
-    binds->use_controller  = use_controller;
     binds->managed_count   = cc_stub_count;
     binds->managed_ids     = cc_stub_ids;
     binds->set_my_identity        = clusterer_ctrl_set_identity;
@@ -396,3 +400,5 @@ int load_clusterer_ctrl_binds(clusterer_ctrl_binds_t *binds)
     binds->force_backup_shtags    = clusterer_ctrl_force_backup_shtags;
     return 0;
 }
+
+#endif /* CLUSTERER_CTRL_SUPPORT */

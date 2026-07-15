@@ -387,6 +387,7 @@ int shtag_modparam_func(modparam_t type, void *val_s)
 			tag_name.len, tag_name.s);
 		return -1;
 	}
+#ifdef CLUSTERER_CTRL_SUPPORT
 	/* Force the given state.  Only a *controller-managed* cluster's active tag
 	 * is forced to backup here (its controller master activates it when
 	 * appropriate); a native cluster keeps its configured =active state - the
@@ -410,6 +411,14 @@ int shtag_modparam_func(modparam_t type, void *val_s)
 			tag->send_active_msg = 1;
 	}
 	}
+#else
+	/* force the given state */
+	tag->state = init_state;
+
+	if (init_state == SHTAG_STATE_ACTIVE)
+		/* broadcast (later) in cluster that this tag is active */
+		tag->send_active_msg = 1;
+#endif
 
 	return 0;
 }
@@ -893,6 +902,7 @@ int handle_shtag_active(bin_packet_t *packet, int cluster_id, int source_id)
 }
 
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 /**
  * shtag_force_all_backup() - force every sharing tag for the given
  * cluster to BACKUP state, ignoring the =active config value.
@@ -957,6 +967,7 @@ int shtag_activate_all_backup(int cluster_id)
 	}
 	return 0;
 }
+#endif /* CLUSTERER_CTRL_SUPPORT */
 
 void shtag_event_handler(int cluster_id, enum clusterer_event ev, int node_id)
 {
@@ -1042,6 +1053,7 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 		tag.len, tag.s, c_id);
 
 	lock_start_read(cl_list_lock);
+#ifdef CLUSTERER_CTRL_SUPPORT
 	{
 		cluster_info_t *_cl = get_cluster_by_id(c_id);
 		if (!_cl) {
@@ -1056,6 +1068,12 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 				"controller-managed; manual activation not allowed"));
 		}
 	}
+#else
+	if (!get_cluster_by_id(c_id)) {
+		lock_stop_read(cl_list_lock);
+		return init_mi_error(404, MI_SSTR("Cluster ID not found"));
+	}
+#endif
 	lock_stop_read(cl_list_lock);
 
 	if (shtag_activate( &tag, c_id, MI_SSTR("MI command"))<0) {
@@ -1149,6 +1167,7 @@ int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 		return 0;
 	}
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 	lock_start_read(cl_list_lock);
 	{
 		cluster_info_t *_cl = get_cluster_by_id(v_name->cluster_id);
@@ -1161,6 +1180,7 @@ int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 		}
 	}
 	lock_stop_read(cl_list_lock);
+#endif
 
 	if (shtag_activate( &v_name->shtag, v_name->cluster_id,
 	MI_SSTR("script variable"))==-1) {

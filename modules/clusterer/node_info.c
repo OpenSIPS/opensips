@@ -77,8 +77,16 @@ cluster_info_t **cluster_list;
 int load_cluster_bridges(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
+#ifdef CLUSTERER_CTRL_SUPPORT
 					str *str_vals, int self_id)
 {
+#else
+					str *str_vals)
+{
+/* Without the controller a node has a single global identity; the caller passes
+ * no per-cluster id, so self_id is just current_id here. */
+#define self_id current_id
+#endif
 	char *host;
 	int hlen, port;
 	int proto;
@@ -303,6 +311,9 @@ error:
 	}
 	return -1;
 }
+#ifndef CLUSTERER_CTRL_SUPPORT
+#undef self_id
+#endif
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_check) \
     do { \
@@ -499,7 +510,11 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list)
 			strlen(str_vals[STR_VALS_DESCRIPTION_COL].s) : 0;
 
 		/* add info to backing list */
-		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals, GET_CURRENT_ID)) != 0) {
+		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals
+#ifdef CLUSTERER_CTRL_SUPPORT
+				, GET_CURRENT_ID
+#endif
+				)) != 0) {
 			LM_ERR("Unable to add node info to backing list\n");
 			if (rc < 0) {
 				/* serious error happened, better give up */
@@ -770,7 +785,11 @@ int provision_neighbor(modparam_t type, void *val)
 		*cluster_list = NULL;
 	}
 
-	if (add_node_info(&new_info, cluster_list, int_vals, str_vals, GET_CURRENT_ID) < 0) {
+	if (add_node_info(&new_info, cluster_list, int_vals, str_vals
+#ifdef CLUSTERER_CTRL_SUPPORT
+			, GET_CURRENT_ID
+#endif
+			) < 0) {
 		LM_ERR("Unable to add node info to backing list\n");
 		return -1;
 	}
@@ -837,7 +856,11 @@ int provision_current(modparam_t type, void *val)
 		*cluster_list = NULL;
 	}
 
-	if (add_node_info(&new_info, cluster_list, int_vals, str_vals, GET_CURRENT_ID) != 0) {
+	if (add_node_info(&new_info, cluster_list, int_vals, str_vals
+#ifdef CLUSTERER_CTRL_SUPPORT
+			, GET_CURRENT_ID
+#endif
+			) != 0) {
 		LM_ERR("Unable to add node info to backing list\n");
 		return -1;
 	}
@@ -1149,7 +1172,11 @@ int cl_get_my_sip_addr(int cluster_id, str *out_addr)
 		memset(out_addr, 0, sizeof *out_addr);
 		rc = 0;
 	} else {
+#ifdef CLUSTERER_CTRL_SUPPORT
 		if (cl->current_node && pkg_str_dup(out_addr, &cl->current_node->sip_addr) != 0) {
+#else
+		if (pkg_str_dup(out_addr, &cl->current_node->sip_addr) != 0) {
+#endif
 			LM_ERR("oom\n");
 			memset(out_addr, 0, sizeof *out_addr);
 			rc = -1;

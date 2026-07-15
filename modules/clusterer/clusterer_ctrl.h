@@ -158,10 +158,6 @@ typedef struct clusterer_ctrl_binds {
 	 */
 	int (*unset_shtag_managed)(int cluster_id);
 
-	/* Introspection: 1 if the clusterer has any controller-managed cluster
-	 * (a cluster_options with use_controller=1), else 0. */
-	int use_controller;
-
 	/* The set of cluster_ids the clusterer marked controller-managed
 	 * (cluster_options use_controller=1): count, and a pointer to the clusterer's
 	 * own array (valid for the process lifetime; read pre-fork in mod_init).  The

@@ -195,8 +195,10 @@ void heartbeats_timer(void)
 	lock_start_read(cl_list_lock);
 
 	for (clusters_it = *cluster_list; clusters_it; clusters_it = clusters_it->next) {
+#ifdef CLUSTERER_CTRL_SUPPORT
 		if (!clusters_it->current_node)
 			continue; /* identity not yet set by controller */
+#endif
 		lock_get(clusters_it->current_node->lock);
 		if (!(clusters_it->current_node->flags & NODE_STATE_ENABLED)) {
 			lock_release(clusters_it->current_node->lock);
@@ -716,7 +718,11 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 	int_vals[INT_VALS_NODE_ID_COL] = src_node_id;
 	int_vals[INT_VALS_STATE_COL] = 1;	/* enabled */
 
-	if (add_node_info(&new_node, &cl, int_vals, str_vals, cluster_self_id(cl)) != 0) {
+	if (add_node_info(&new_node, &cl, int_vals, str_vals
+#ifdef CLUSTERER_CTRL_SUPPORT
+			, cluster_self_id(cl)
+#endif
+			) != 0) {
 		LM_ERR("Unable to add node info to backing list\n");
 		return NULL;
 	}

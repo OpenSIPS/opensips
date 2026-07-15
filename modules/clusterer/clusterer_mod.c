@@ -39,7 +39,9 @@
 #include "clusterer.h"
 #include "sync.h"
 #include "sharing_tags.h"
+#ifdef CLUSTERER_CTRL_SUPPORT
 #include "clusterer_ctrl.h"
+#endif
 #include "clusterer_evi.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
@@ -48,10 +50,16 @@ int ping_timeout = DEFAULT_PING_TIMEOUT;
 int seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;
 int sync_timeout = DEFAULT_SYNC_TIMEOUT;
 int current_id = -1;
-int *_current_id_shm = NULL;
 int db_mode = 1;
 int clusterer_enable_rerouting = 1;
-int use_controller = 0;   /* derived: 1 if any cluster_options sets use_controller=1 */
+
+#ifdef CLUSTERER_CTRL_SUPPORT
+/* shm-backed mirror of current_id so runtime identity changes are visible across
+ * forked workers; and the derived 'controller active' flag.  Both exist only in a
+ * controller-enabled build - stock code reaches these through the GET_CURRENT_ID
+ * and use_controller fallbacks in node_info.h. */
+int *_current_id_shm = NULL;
+int use_controller = 0;   /* 1 if any cluster_options sets use_controller=1 */
 
 /* cluster_ids marked controller-managed via 'cluster_options' (use_controller=1).
  * Not static: the controller loads a pointer to these through the ctrl binds so it
@@ -156,6 +164,7 @@ static int cc_retired_param(modparam_t type, void *val)
 		"\"cluster_id=N, use_controller=1\")\n");
 	return -1;
 }
+#endif /* CLUSTERER_CTRL_SUPPORT */
 
 str clusterer_db_url = {NULL, 0};
 
@@ -213,7 +222,9 @@ int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
  */
 
 static const cmd_export_t cmds[] = {
+#ifdef CLUSTERER_CTRL_SUPPORT
 	{"load_clusterer_ctrl_binds", (cmd_function)load_clusterer_ctrl_binds, {{0,0,0}}, 0},
+#endif
 	{"load_clusterer",  (cmd_function)load_clusterer, {{0,0,0}}, 0},
 	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, {
 		{CMD_PARAM_INT,0,0},
@@ -266,9 +277,11 @@ static const param_export_t params[] = {
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
+#ifdef CLUSTERER_CTRL_SUPPORT
 	{"cluster_options",			STR_PARAM|USE_FUNC_PARAM, (void*)cc_add_cluster_options},
 	{"use_controller",			INT_PARAM|USE_FUNC_PARAM, (void*)cc_retired_param},
 	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cc_retired_param},
+#endif
 	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,
 		(void*)&provision_neighbor},
 	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,
@@ -500,6 +513,7 @@ static int mod_init(void)
 	flags_col.len = strlen(flags_col.s);
 	description_col.len = strlen(description_col.s);
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 	/* db_mode defaults to 1 (DB-backed).  If no DB URL is configured there are
 	 * no DB-backed native clusters, so drop to non-DB mode - this keeps
 	 * controller-only and purely static (my_node_info) setups working without
@@ -507,11 +521,11 @@ static int mod_init(void)
 	 * keeps db_mode. */
 	if (!clusterer_db_url.s && !db_default_url)
 		db_mode = 0;
+#endif
 
-	/* The DB URL is required whenever native clusters are DB-backed
-	 * (db_mode != 0), even alongside the controller. */
 	init_db_url(clusterer_db_url, db_mode == 0);
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 	/* my_node_id identifies this node within its *native* clusters (DB or
 	 * static my_node_info).  Controller clusters get their id assigned at
 	 * runtime, so my_node_id is only required when native clusters exist. */
@@ -519,6 +533,12 @@ static int mod_init(void)
 		LM_CRIT("Invalid 'my_node_id' parameter (required for DB or static native clusters)\n");
 		return -1;
 	}
+#else
+	if (current_id < 1) {
+		LM_CRIT("Invalid 'my_node_id' parameter\n");
+		return -1;
+	}
+#endif
 	if (ping_interval <= 0) {
 		LM_WARN("Invalid ping_interval parameter, using default value\n");
 		ping_interval = DEFAULT_PING_INTERVAL;
@@ -544,6 +564,7 @@ static int mod_init(void)
 		LM_CRIT("Failed to init lock\n");
 		return -1;
 	}
+#ifdef CLUSTERER_CTRL_SUPPORT
 	/* Move GET_CURRENT_ID to shared memory so all forked processes
 	 * see the same value when it is updated by the controller.  */
 	{
@@ -559,6 +580,7 @@ static int mod_init(void)
 		*_shm_id = (current_id >= 1) ? current_id : -1;
 		_current_id_shm = _shm_id;
 	}
+#endif
 
 	/* if statistics are disabled, prevent their registration to core */
 	if (clusterer_enable_stats==0)
@@ -625,6 +647,7 @@ static int mod_init(void)
 	 * cluster_id must be exclusively controller-managed OR native, never both -
 	 * the native clusters (DB loaded just above, or static from parse time) are
 	 * already in cluster_list, so an overlap is caught here. */
+#ifdef CLUSTERER_CTRL_SUPPORT
 	if (use_controller) {
 		int _ci;
 		for (_ci = 0; _ci < cc_stub_count; _ci++) {
@@ -663,6 +686,7 @@ static int mod_init(void)
 			        cc_stub_ids[_ci]);
 		}
 	}
+#endif /* CLUSTERER_CTRL_SUPPORT */
 
 	/* register timer */
 	heartbeats_timer_interval = gcd(ping_interval*1000, ping_timeout);
@@ -724,8 +748,12 @@ static int mod_init(void)
 	/* check if the cluster IDs in the the sharing tag list are valid */
 	shtag_init_list();
 	shtag_init_reporting();
+#ifdef CLUSTERER_CTRL_SUPPORT
 	if (!use_controller)
 		shtag_validate_list();
+#else
+	shtag_validate_list();
+#endif
 
 	return 0;
 error:
@@ -749,6 +777,7 @@ static int child_init(int rank)
 		}
 	}
 
+#ifdef CLUSTERER_CTRL_SUPPORT
 	/* One-shot config sanity check (rank 1 fires once, and runs after every
 	 * module's mod_init, so a clusterer_controller would already have bound the
 	 * controller API): a controller-managed cluster is meaningless without that
@@ -759,6 +788,7 @@ static int child_init(int rank)
 		       "they will never obtain a node identity or form. Load the "
 		       "clusterer_controller module, or drop use_controller from "
 		       "cluster_options.\n");
+#endif /* CLUSTERER_CTRL_SUPPORT */
 
 	return 0;
 }
