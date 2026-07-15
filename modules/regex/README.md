@@ -18,7 +18,8 @@ when the module is loaded, storing the compiled PCRE objects in an array. A
 function to match a string or pseudo-variable against any of these groups is
 provided. The text file can be modified and reloaded at any time via a MI command.
 The module also offers a function to perform a PCRE matching operation against a
-regular expression provided as function parameter.
+regular expression provided as function parameter, as well as a transformation
+for PCRE-based string substitutions.
 
 
 For a detailed list of PCRE features read the
@@ -258,6 +259,48 @@ BRANCH_ROUTE and LOCAL_ROUTE.
 ...
 if (pcre_match_group($rU, 2)) {
     xlog("L_INFO", "RURI username matches group 2\n");
+}
+...
+```
+
+
+### Exported Transformations
+
+
+#### pcre.subst
+
+
+Applies a PCRE substitution expression to the input string. The
+expression format is /pattern/replacement/[flags] the first
+character is used as the separator, similarly to the core
+re.subst transformation. If the pattern does not match, the
+original input string is returned unchanged.
+
+The pattern is compiled using the PCRE library, so PCRE syntax
+such as \Q...\E is supported. Replacement strings use the
+OpenSIPS substitution replacement syntax, including \0 to \9
+for matched subexpressions, \n, \r, \t, \u for the
+request URI and pseudo-variables.
+
+The supported expression flags are:
+- *i* - case-insensitive matching.
+- *s* - dot matches newline.
+- *m* - multiline matching.
+- *x* - extended pattern syntax.
+- *g* - replace all matches.
+
+
+
+```opensips title="pcre.subst usage"
+...
+loadmodule "regex.so"
+
+startup_route {
+   # Remove + from E.164 number using pcre regex
+   $var(e164_number) = "sip:+123456789@127.0.0.1";
+   # Escape the string between \Q and \E
+   $var(reg) = "/\Q+123456789\E/123456789/";
+   $var(out) = $(var(e164_number){pcre.subst,$var(reg)});
 }
 ...
 ```
