@@ -24,9 +24,6 @@ table schema, so loading any file on its own is enough.
 
 Notes on specific modules:
 
-  - usrloc also issues raw SQL queries (e.g. to enumerate domains),
-    which db_redis does not implement; only the structured contact
-    read/write path works against Redis.
   - The tm module keeps no database table and therefore has no schema
     here.
 

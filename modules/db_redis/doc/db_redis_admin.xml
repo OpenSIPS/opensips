@@ -352,8 +352,11 @@ redis-cli [-c] &lt; scripts/redis/dialog-create.redis
 		<listitem><para>
 			The module is intended for modules that use the structured DB API
 			with per-row primary-key access, such as
-			<emphasis>dialog</emphasis>. Modules that issue raw SQL queries
-			are not supported.
+			<emphasis>dialog</emphasis>, <emphasis>dispatcher</emphasis>,
+			<emphasis>clusterer</emphasis> and <emphasis>usrloc</emphasis>.
+			Raw SQL queries are not implemented; a module that relies on them
+			works only if it also offers a structured-query path (as
+			<emphasis>usrloc</emphasis> does for contact loading).
 		</para></listitem>
 		<listitem><para>
 			As with the SQL backends, sharing rows between several &osips;

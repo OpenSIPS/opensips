@@ -282,8 +282,11 @@ redis-cli [-c] < scripts/redis/dialog-create.redis
      * Updating the value of the primary-key column of an existing
        row is not supported.
      * The module is intended for modules that use the structured
-       DB API with per-row primary-key access, such as dialog.
-       Modules that issue raw SQL queries are not supported.
+       DB API with per-row primary-key access, such as dialog,
+       dispatcher, clusterer and usrloc. Raw SQL queries are not
+       implemented; a module that relies on them works only if it
+       also offers a structured-query path (as usrloc does for
+       contact loading).
      * As with the SQL backends, sharing rows between several
        OpenSIPS instances through the same Redis store requires
        the instances to use a matching configuration (for the
