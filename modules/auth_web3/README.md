@@ -1,5 +1,5 @@
 ---
-title: "The Web3 Auth Module"
+title: "Auth WEB3 Module"
 description: "The *auth_web3* module provides Web3-based authentication for OpenSIPS, enabling SIP authentication through blockchain technology and ENS (Ethereum Name Service) resolution."
 ---
 
