@@ -1,13 +1,34 @@
 db_redis provisioning files
 ===========================
 
-These files provision table schemas for the db_redis module. Load them
-with (add -c when talking to a Redis Cluster):
+These files provision table schemas for the db_redis module. Load the
+ones for the modules you intend to back with Redis (add -c when talking
+to a Redis Cluster):
 
     redis-cli [-c] < dialog-create.redis
 
 Note: redis-cli piped input does not support comment lines, so these
 files contain commands only.
+
+Available files
+---------------
+
+    dialog-create.redis      - dialog module     (dialog table, v12)
+    dispatcher-create.redis  - dispatcher module (dispatcher table, v9)
+    usrloc-create.redis      - usrloc module     (location table, v1013)
+    clusterer-create.redis   - clusterer module  (clusterer table v4,
+                                                  clusterer_bridge v1)
+
+Each file is self-contained: it also (re)creates the small "version"
+table schema, so loading any file on its own is enough.
+
+Notes on specific modules:
+
+  - usrloc also issues raw SQL queries (e.g. to enumerate domains),
+    which db_redis does not implement; only the structured contact
+    read/write path works against Redis.
+  - The tm module keeps no database table and therefore has no schema
+    here.
 
 Data model
 ----------
