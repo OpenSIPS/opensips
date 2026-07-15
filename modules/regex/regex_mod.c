@@ -52,6 +52,8 @@
 #define PCRE2_MULTILINE PCRE_MULTILINE
 #define PCRE2_DOTALL PCRE_DOTALL
 #define PCRE2_EXTENDED PCRE_EXTENDED
+#define PCRE2_NOTBOL PCRE_NOTBOL
+#define PCRE2_UNSET ((PCRE2_SIZE)-1)
 #define PCRE2_ERROR_NOMATCH PCRE_ERROR_NOMATCH
 #define PCRE2_UCHAR unsigned char
 #define PCRE2_SPTR char *
@@ -80,6 +82,9 @@
 #include "../../pvar.h"
 #include "../../error.h"
 #include "../../mi/mi.h"
+#include "../../re.h"
+#include "../../trim.h"
+#include "../../ut.h"
 
 #define START 0
 #define RELOAD 1
@@ -89,6 +94,22 @@
 #define GROUP_MAX_SIZE 8192      /*!< Max size of a group */
 
 #define ERROR_BUF_SIZE 100
+#define MAX_REPLACE_WITH 100
+
+enum tr_pcre_subtype {
+	TR_PCRE_NONE = 0,
+	TR_PCRE_SUBST
+};
+
+struct pcre_subst_expr {
+	pcre2_code *re;
+	str replacement;
+	int replace_all;
+	int n_escapes;
+	int max_pmatch;
+	int capture_count;
+	struct replace_with replace[1];
+};
 
 
 /*
@@ -116,6 +137,10 @@ static pcre2_code **pcres;
 static pcre2_code ***pcres_addr;
 static int *num_pcres;
 static int pcre_options = 0x00000000;
+static char *pcre_subst_tmp_buf;
+static str pcre_subst_cached = {0, 0};
+static str pcre_subst_out = {0, 0};
+static struct pcre_subst_expr *pcre_subst_re;
 
 
 /*
@@ -132,6 +157,10 @@ static int load_pcres(int);
 static void free_shared_memory(void);
 static int fixup_check_pv_setf(void **param);
 static int set_match_pvar(struct sip_msg *msg, pv_spec_t *match, str *value);
+static void pcre_subst_expr_free(struct pcre_subst_expr *se);
+static struct pcre_subst_expr *pcre_subst_parser(str *subst);
+static int pcre_subst_apply(struct sip_msg *msg, str *input,
+		struct pcre_subst_expr *se, str *out, int *out_len, int *count);
 
 
 /*
@@ -140,6 +169,18 @@ static int set_match_pvar(struct sip_msg *msg, pv_spec_t *match, str *value);
 static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s,
 		pv_spec_t *match);
 static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre);
+
+/*
+ * Exported transformations
+ */
+static int tr_pcre_parse(str *in, trans_t *t);
+static int tr_pcre_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+static const trans_export_t trans[] = {
+	{str_const_init("pcre"), tr_pcre_parse, tr_pcre_eval},
+	{{0,0},0,0}
+};
 
 
 /*
@@ -219,7 +260,7 @@ struct module_exports exports = {
 	0,                         /*!< exported statistics */
 	mi_cmds,                   /*!< exported MI functions */
 	0,                         /*!< exported pseudo-variables */
-	0,                         /*!< exported transformations */
+	trans,                     /*!< exported transformations */
 	0,                         /*!< extra processes */
 	0,                         /*!< module pre-initialization function */
 	mod_init,                  /*!< module initialization function */
@@ -303,6 +344,24 @@ err:
 
 static void destroy(void)
 {
+	if (pcre_subst_re) {
+		pcre_subst_expr_free(pcre_subst_re);
+		pcre_subst_re = NULL;
+	}
+	if (pcre_subst_tmp_buf) {
+		pkg_free(pcre_subst_tmp_buf);
+		pcre_subst_tmp_buf = NULL;
+	}
+	if (pcre_subst_cached.s) {
+		pkg_free(pcre_subst_cached.s);
+		pcre_subst_cached.s = NULL;
+		pcre_subst_cached.len = 0;
+	}
+	if (pcre_subst_out.s) {
+		pkg_free(pcre_subst_out.s);
+		pcre_subst_out.s = NULL;
+		pcre_subst_out.len = 0;
+	}
 	free_shared_memory();
 }
 
@@ -627,6 +686,547 @@ static int set_match_pvar(struct sip_msg *msg, pv_spec_t *match, str *value)
 	}
 
 	return 0;
+}
+
+
+static void pcre_subst_expr_free(struct pcre_subst_expr *se)
+{
+	int i;
+
+	if (!se)
+		return;
+
+	if (se->replacement.s)
+		pkg_free(se->replacement.s);
+	if (se->re)
+		pcre2_code_free(se->re);
+	for (i = 0; i < se->n_escapes; i++) {
+		if (se->replace[i].type != REPLACE_SPEC)
+			continue;
+		if (se->replace[i].u.spec.pvp.pvi.type == PV_IDX_PVAR)
+			pv_spec_free(se->replace[i].u.spec.pvp.pvi.u.dval);
+		if ((se->replace[i].u.spec.pvp.pvv_flags & PV_PARAM_PVV_SHM) &&
+				se->replace[i].u.spec.pvp.pvv.s)
+			shm_free(se->replace[i].u.spec.pvp.pvv.s);
+	}
+	pkg_free(se);
+}
+
+
+static struct pcre_subst_expr *pcre_subst_parser(str *subst)
+{
+	char c;
+	char *end;
+	char *p;
+	char *re;
+	char *re_end = NULL;
+	char *repl;
+	char *repl_end;
+	char saved = 0;
+	int re_saved = 0;
+	struct replace_with rw[MAX_REPLACE_WITH];
+	int r;
+	int rw_no;
+	int replace_all = 0;
+	int max_pmatch = 0;
+	int pcre_flags = pcre_options;
+	pcre2_code *pcre_re = NULL;
+	struct pcre_subst_expr *se = NULL;
+	PCRE2_ERR pcre_error;
+	PCRE2_UCHAR pcre_error_str[ERROR_BUF_SIZE];
+	PCRE2_SIZE pcre_erroffset;
+#ifdef PCRE2_LIB
+	uint32_t capture_count = 0;
+#else
+	int capture_count = 0;
+#endif
+
+	if (subst->len < 3) {
+		LM_ERR("expression is too short: %.*s\n", subst->len, subst->s);
+		goto error;
+	}
+
+	p = subst->s;
+	end = subst->s + subst->len;
+
+	c = *p;
+	if (c == '\\') {
+		LM_ERR("invalid separator char <%c> in %.*s\n",
+				c, subst->len, subst->s);
+		goto error;
+	}
+	p++;
+
+	re = p;
+	for (; p < end; p++) {
+		if ((*p == c) && (*(p - 1) != '\\'))
+			goto found_re;
+	}
+	LM_ERR("no separator found: %.*s\n", subst->len, subst->s);
+	goto error;
+
+found_re:
+	re_end = p;
+	if (end < p + 2) {
+		LM_ERR("string too short\n");
+		goto error;
+	}
+
+	repl = p + 1;
+	if ((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP)) < 0)
+		goto error;
+
+	repl_end = p;
+	p++;
+
+	for (; p < end; p++) {
+		switch (*p) {
+		case 'i':
+			pcre_flags |= PCRE2_CASELESS;
+			break;
+		case 's':
+			pcre_flags |= PCRE2_DOTALL;
+			break;
+		case 'm':
+			pcre_flags |= PCRE2_MULTILINE;
+			break;
+		case 'x':
+			pcre_flags |= PCRE2_EXTENDED;
+			break;
+		case 'g':
+			replace_all = 1;
+			break;
+		default:
+			LM_ERR("unknown flag %c in %.*s\n", *p, subst->len, subst->s);
+			goto error;
+		}
+	}
+
+	saved = *re_end;
+	*re_end = '\0';
+	re_saved = 1;
+	pcre_re = pcre2_compile((PCRE2_SPTR)re, PCRE2_ZERO_TERMINATED,
+			pcre_flags, &pcre_error, &pcre_erroffset, NULL);
+	*re_end = saved;
+	re_saved = 0;
+	if (pcre_re == NULL) {
+		pcre2_get_error_message(pcre_error, pcre_error_str,
+				sizeof(pcre_error_str));
+		LM_ERR("pcre subst compilation of '%.*s' failed at offset %lu: %s\n",
+				(int)(re_end - re), re, (unsigned long)pcre_erroffset,
+				pcre_error_str);
+		goto error;
+	}
+
+	if (pcre2_pattern_info(pcre_re, PCRE2_INFO_CAPTURECOUNT,
+				&capture_count) != 0) {
+		LM_ERR("failed to read pcre capture count\n");
+		goto error;
+	}
+
+	if (max_pmatch > (int)capture_count) {
+		LM_ERR("illegal access to the %i-th subexpr of the pcre subst expr\n",
+				max_pmatch);
+		goto error;
+	}
+
+	se = pkg_malloc(sizeof(*se) +
+			((rw_no) ? (rw_no - 1) * sizeof(struct replace_with) : 0));
+	if (!se) {
+		LM_ERR("out of pkg memory (pcre subst expr)\n");
+		goto error;
+	}
+	memset(se, 0, sizeof(*se));
+
+	se->replacement.len = repl_end - repl;
+	if (se->replacement.len > 0) {
+		se->replacement.s = pkg_malloc(se->replacement.len);
+		if (!se->replacement.s) {
+			LM_ERR("out of pkg memory (replacement)\n");
+			goto error;
+		}
+		memcpy(se->replacement.s, repl, se->replacement.len);
+	}
+
+	se->re = pcre_re;
+	pcre_re = NULL;
+	se->replace_all = replace_all;
+	se->n_escapes = rw_no;
+	se->max_pmatch = max_pmatch;
+	se->capture_count = (int)capture_count;
+	for (r = 0; r < rw_no; r++)
+		se->replace[r] = rw[r];
+
+	return se;
+
+error:
+	if (re_saved)
+		*re_end = saved;
+	if (se)
+		pcre_subst_expr_free(se);
+	if (pcre_re)
+		pcre2_code_free(pcre_re);
+	return NULL;
+}
+
+
+static int pcre_subst_append(str *out, int *out_len, const char *src, int len)
+{
+	if (len <= 0)
+		return 0;
+
+	if (pkg_str_extend(out, *out_len + len + 1) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	memcpy(out->s + *out_len, src, len);
+	*out_len += len;
+	out->s[*out_len] = '\0';
+	return 0;
+}
+
+
+static int pcre_subst_append_replacement(struct sip_msg *msg, str *input,
+		struct pcre_subst_expr *se, PCRE2_SIZE *ovector, int match_count,
+		str *out, int *out_len)
+{
+	int r;
+	int size;
+	int nmatch;
+	str *uri;
+	pv_value_t sv;
+	char *p;
+	char *end;
+
+	if (se->replacement.len == 0)
+		return 0;
+
+	p = se->replacement.s;
+	end = p + se->replacement.len;
+
+	for (r = 0; r < se->n_escapes; r++) {
+		size = se->replacement.s + se->replace[r].offset - p;
+		if (pcre_subst_append(out, out_len, p, size) < 0)
+			return -1;
+		p += size + se->replace[r].size;
+
+		switch (se->replace[r].type) {
+		case REPLACE_NMATCH:
+			nmatch = se->replace[r].u.nmatch;
+			if (nmatch < match_count &&
+					ovector[2 * nmatch] != PCRE2_UNSET &&
+					ovector[2 * nmatch + 1] != PCRE2_UNSET) {
+				if (pcre_subst_append(out, out_len,
+							input->s + ovector[2 * nmatch],
+							(int)(ovector[2 * nmatch + 1] -
+								ovector[2 * nmatch])) < 0)
+					return -1;
+			}
+			break;
+		case REPLACE_CHAR:
+			if (pcre_subst_append(out, out_len, &se->replace[r].u.c, 1) < 0)
+				return -1;
+			break;
+		case REPLACE_URI:
+			if (msg == NULL || msg->first_line.type != SIP_REQUEST) {
+				LM_CRIT("uri substitution attempt on no request message\n");
+				break;
+			}
+			uri = (msg->new_uri.s) ? &msg->new_uri :
+				&msg->first_line.u.request.uri;
+			if (pcre_subst_append(out, out_len, uri->s, uri->len) < 0)
+				return -1;
+			break;
+		case REPLACE_SPEC:
+			if (msg == NULL) {
+				LM_DBG("replace spec attempted on no message\n");
+				break;
+			}
+			if (pv_get_spec_value(msg, &se->replace[r].u.spec, &sv) != 0 ||
+					!(sv.flags & PV_VAL_STR)) {
+				LM_CRIT("item substitution returned error\n");
+				break;
+			}
+			if (pcre_subst_append(out, out_len, sv.rs.s, sv.rs.len) < 0)
+				return -1;
+			break;
+		default:
+			LM_CRIT("unknown replacement type %d\n", se->replace[r].type);
+			break;
+		}
+	}
+
+	return pcre_subst_append(out, out_len, p, end - p);
+}
+
+
+static int pcre_subst_apply(struct sip_msg *msg, str *input,
+		struct pcre_subst_expr *se, str *out, int *out_len, int *count)
+{
+	int pcre_rc;
+	int cnt = 0;
+	int start_offset = 0;
+	int last_offset = 0;
+	int match_options = 0;
+#ifndef PCRE2_LIB
+	int nmatch = se->capture_count + 1;
+#endif
+#ifdef PCRE2_LIB
+	pcre2_match_data *match_data = NULL;
+	PCRE2_SIZE *ovector;
+#else
+	int *ovector = NULL;
+#endif
+
+	*out_len = 0;
+
+#ifdef PCRE2_LIB
+	match_data = pcre2_match_data_create_from_pattern(se->re, NULL);
+	if (!match_data) {
+		LM_ERR("failed to allocate pcre match data\n");
+		goto error;
+	}
+#else
+	ovector = pkg_malloc(sizeof(int) * 3 * nmatch);
+	if (!ovector) {
+		LM_ERR("failed to allocate pcre ovector\n");
+		goto error;
+	}
+#endif
+
+	do {
+#ifdef PCRE2_LIB
+		pcre_rc = pcre2_match(se->re, (PCRE2_SPTR)input->s,
+				(PCRE2_SIZE)input->len, (PCRE2_SIZE)start_offset,
+				match_options, match_data, NULL);
+		ovector = pcre2_get_ovector_pointer(match_data);
+#else
+		pcre_rc = pcre_exec(se->re, NULL, input->s, input->len,
+				start_offset, match_options, ovector, 3 * nmatch);
+		if (pcre_rc == 0)
+			pcre_rc = nmatch;
+#endif
+		if (pcre_rc == PCRE2_ERROR_NOMATCH)
+			break;
+		if (pcre_rc < 0) {
+			LM_ERR("pcre subst matching error '%d'\n", pcre_rc);
+			goto error;
+		}
+		if (ovector[0] == PCRE2_UNSET || ovector[1] == PCRE2_UNSET ||
+				ovector[0] > ovector[1] ||
+				ovector[1] > (PCRE2_SIZE)input->len) {
+			LM_ERR("invalid pcre subst match offsets\n");
+			goto error;
+		}
+		if (ovector[0] == ovector[1]) {
+			LM_ERR("matched string is empty... invalid regexp?\n");
+			goto error;
+		}
+
+		if (pcre_subst_append(out, out_len, input->s + last_offset,
+					(int)ovector[0] - last_offset) < 0)
+			goto error;
+		if (pcre_subst_append_replacement(msg, input, se, ovector,
+					pcre_rc, out, out_len) < 0)
+			goto error;
+
+		last_offset = (int)ovector[1];
+		start_offset = last_offset;
+		if (last_offset > 0 &&
+				(input->s[last_offset - 1] == '\n' ||
+				 input->s[last_offset - 1] == '\r'))
+			match_options &= ~PCRE2_NOTBOL;
+		else
+			match_options |= PCRE2_NOTBOL;
+		cnt++;
+	} while (se->replace_all);
+
+	if (cnt > 0 && pcre_subst_append(out, out_len,
+				input->s + last_offset, input->len - last_offset) < 0)
+		goto error;
+
+	if (count)
+		*count = cnt;
+#ifdef PCRE2_LIB
+	pcre2_match_data_free(match_data);
+#else
+	pkg_free(ovector);
+#endif
+	return 0;
+
+error:
+	if (count)
+		*count = -1;
+#ifdef PCRE2_LIB
+	if (match_data)
+		pcre2_match_data_free(match_data);
+#else
+	if (ovector)
+		pkg_free(ovector);
+#endif
+	return -1;
+}
+
+
+#define pcre_tr_is_in_str(p, in) ((p) < (in)->s + (in)->len && *(p))
+
+static int tr_pcre_parse(str *in, trans_t *t)
+{
+	char *p;
+	str name;
+	tr_param_t *tp = NULL;
+
+	if (in == NULL || t == NULL)
+		return -1;
+
+	p = in->s;
+	name.s = in->s;
+
+	while (pcre_tr_is_in_str(p, in) &&
+			*p != TR_PARAM_MARKER && *p != TR_RBRACKET)
+		p++;
+	if (*p == '\0') {
+		LM_ERR("invalid transformation: %.*s\n", in->len, in->s);
+		goto error;
+	}
+
+	name.len = p - name.s;
+	trim(&name);
+
+	if (name.len == 5 && strncasecmp(name.s, "subst", 5) == 0) {
+		t->subtype = TR_PCRE_SUBST;
+		if (*p != TR_PARAM_MARKER) {
+			LM_ERR("invalid pcre subst transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		if (tr_parse_sparam(p, in, &tp, 1) == NULL)
+			goto error;
+		t->params = tp;
+		return 0;
+	}
+
+	LM_ERR("unknown pcre transformation: %.*s/%.*s/%d\n", in->len, in->s,
+			name.len, name.s, name.len);
+
+error:
+	if (tp)
+		free_tr_param(tp);
+	return -1;
+}
+
+
+static int tr_pcre_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	pv_value_t v;
+	str sv;
+	str subst;
+	char *buf;
+	char *s;
+	char *e;
+	char *p;
+	int match_no = 0;
+	int out_len = 0;
+
+	if (!val)
+		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if (!(val->flags & PV_VAL_STR) || val->rs.len <= 0)
+		goto error;
+
+	switch (subtype) {
+	case TR_PCRE_SUBST:
+		if (tp->type == TR_PARAM_STRING) {
+			sv = tp->v.s;
+		} else {
+			if (pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v) != 0 ||
+					(!(v.flags & PV_VAL_STR)) || v.rs.len <= 0) {
+				LM_ERR("cannot get pcre subst value from spec\n");
+				goto error;
+			}
+			sv = v.rs;
+		}
+
+		buf = pkg_realloc(pcre_subst_tmp_buf, sv.len + 1);
+		if (!buf) {
+			LM_ERR("not enough memory for pcre subst buffer %d [%.*s]\n",
+					sv.len, sv.len, sv.s);
+			goto error;
+		}
+		pcre_subst_tmp_buf = buf;
+
+		subst.s = buf;
+		subst.len = sv.len;
+		for (s = sv.s, e = sv.s + sv.len, p = buf; s < e; s++, p++) {
+			if (*s == '\\') {
+				if (s + 1 >= e)
+					break;
+				if (*(s + 1) == TR_RBRACKET ||
+						*(s + 1) == TR_LBRACKET) {
+					s++;
+					subst.len--;
+				}
+			}
+			*p = *s;
+		}
+		*p = '\0';
+
+		LM_INFO("Trying to apply pcre subst [%.*s] on : [%.*s]\n",
+				subst.len, subst.s, val->rs.len, val->rs.s);
+
+		if (pcre_subst_re == NULL || !pcre_subst_cached.s ||
+				pcre_subst_cached.len != subst.len ||
+				memcmp(pcre_subst_cached.s, subst.s, subst.len) != 0) {
+			if (pcre_subst_re != NULL) {
+				pcre_subst_expr_free(pcre_subst_re);
+				pcre_subst_re = NULL;
+			}
+
+			pcre_subst_re = pcre_subst_parser(&subst);
+			if (!pcre_subst_re) {
+				LM_ERR("cannot compile pcre subst expression\n");
+				goto error;
+			}
+
+			if (pkg_str_extend(&pcre_subst_cached, subst.len) != 0) {
+				LM_ERR("oom\n");
+				goto error;
+			}
+			memcpy(pcre_subst_cached.s, subst.s, subst.len);
+			pcre_subst_cached.len = subst.len;
+		}
+
+		if (pcre_subst_apply(msg, &val->rs, pcre_subst_re,
+					&pcre_subst_out, &out_len, &match_no) < 0) {
+			LM_ERR("pcre subst failed\n");
+			goto error;
+		}
+		if (match_no == 0) {
+			LM_INFO("no match for pcre subst expression\n");
+			break;
+		}
+
+		val->flags = PV_VAL_STR;
+		val->rs.s = pcre_subst_out.s;
+		val->rs.len = out_len;
+		val->ri = 0;
+		break;
+	default:
+		LM_BUG("unknown pcre transformation subtype [%d]\n", subtype);
+		goto error;
+	}
+
+	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 
