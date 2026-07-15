@@ -1,5 +1,5 @@
 ---
-title: "topology_hiding Module"
+title: "Topology Hiding Module"
 description: "This is a module which provides topology hiding capabilities."
 ---
 
