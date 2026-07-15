@@ -1,0 +1,390 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides a &osips; DB API backend that stores data in
+		a <ulink url="https://redis.io">Redis</ulink> server or a Redis
+		Cluster. It implements the structured database interface used by
+		modules such as <emphasis>dialog</emphasis>, so that their tables
+		can be persisted in Redis instead of a traditional SQL database.
+	</para>
+	<para>
+		Unlike the <emphasis>cachedb_redis</emphasis> module, which exposes
+		Redis through the key-value NoSQL interface, <emphasis>db_redis</emphasis>
+		presents Redis as a relational-style backend behind the standard
+		<varname>db_url</varname> mechanism. A module is switched to Redis
+		simply by pointing its <varname>db_url</varname> at a
+		<emphasis>redis://</emphasis> URL; no code change is required in the
+		consuming module.
+	</para>
+	<para>
+		The connection type is auto-detected at startup: the module works
+		either against a single Redis endpoint (a standalone server, or the
+		current master reached through an external load balancer/Sentinel
+		setup) or against a fully-enabled Redis Cluster, where it discovers
+		the whole topology and keeps a connection open to every master
+		shard.
+	</para>
+	</section>
+
+	<section id="data_model" xreflabel="Data Model">
+	<title>Data Model</title>
+	<para>
+		Redis is schemaless, so the module needs the table layout to be
+		declared out of band. Both the schema definitions and the data are
+		stored as Redis hashes:
+	</para>
+	<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>Schema</emphasis> - the hash
+			<quote>schema:&lt;table&gt;</quote> describes one table. It holds
+			a <quote>__cols</quote> field with the ordered, space-separated
+			list of column names, a <quote>__pk</quote> field naming the
+			primary-key column, and one field per column giving its type as
+			<quote>type[,null][,auto]</quote>. The supported types are
+			<emphasis>int</emphasis>, <emphasis>bigint</emphasis>,
+			<emphasis>double</emphasis>, <emphasis>string</emphasis>,
+			<emphasis>blob</emphasis> and <emphasis>datetime</emphasis>. The
+			<emphasis>null</emphasis> attribute marks a nullable column and
+			<emphasis>auto</emphasis> marks an auto-increment primary key.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Rows</emphasis> - each row is the hash
+			<quote>&lt;table&gt;:&lt;primary key value&gt;</quote>, with one
+			field per non-NULL column. A NULL column is represented by the
+			absence of the field. Values of <emphasis>blob</emphasis> columns
+			are stored verbatim (binary-safe), with no encoding overhead.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Sequences</emphasis> - auto-increment primary keys are
+			generated with <emphasis>INCR</emphasis> on the counter
+			<quote>seq:&lt;table&gt;</quote>.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Table version</emphasis> - the standard &osips;
+			<quote>version</quote> table is provisioned like any other table,
+			with one row per served table, for example
+			<quote>HSET version:dialog table_name dialog table_version 12</quote>.
+		</para>
+		</listitem>
+	</itemizedlist>
+	<para>
+		The key prefixes <quote>schema:</quote> and <quote>seq:</quote> are
+		reserved by the module and must not be used as table names. Ready-made
+		provisioning files are shipped under the <quote>scripts/redis/</quote>
+		directory; see that directory's README for details. A schema is
+		loaded from Redis on first access to a table and cached for the
+		lifetime of the connection.
+	</para>
+	</section>
+
+	<section id="deployment_modes" xreflabel="Deployment Modes">
+	<title>Deployment Modes</title>
+	<para>
+		At connection time the module issues an <quote>INFO CLUSTER</quote>
+		command and inspects the <quote>cluster_enabled</quote> field to
+		decide how to operate. The detected behaviour can be pinned with the
+		<xref linkend="param_mode"/> parameter.
+	</para>
+	<section>
+		<title>Single endpoint</title>
+		<para>
+			Used for a standalone Redis server, or when a Redis Sentinel
+			deployment is fronted by an external load balancer that always
+			routes to the current master. The module keeps a single
+			connection and transparently reconnects on I/O errors or when it
+			receives a <quote>-READONLY</quote> reply (which indicates it is
+			talking to a demoted master after a failover). Sentinel discovery
+			and master election are expected to be handled externally.
+		</para>
+	</section>
+	<section>
+		<title>Redis Cluster</title>
+		<para>
+			When the endpoint is a cluster node, the module fetches the full
+			topology (via <quote>CLUSTER SHARDS</quote>, falling back to
+			<quote>CLUSTER SLOTS</quote> on older servers) starting from the
+			single seed host given in <varname>db_url</varname>. It then opens
+			and keeps warm a connection to every master shard, so that a key
+			routed to any shard can be served immediately over an already
+			established connection rather than paying a new TCP handshake on
+			each redirect.
+		</para>
+		<para>
+			Each key is routed to its shard by computing the CRC16 hash slot
+			(honouring <quote>{hash tag}</quote> braces). <quote>MOVED</quote>
+			redirects are served from the warm connection pool and trigger a
+			deferred topology refresh; <quote>ASK</quote> redirects are
+			followed with a one-shot <quote>ASKING</quote>; and
+			<quote>TRYAGAIN</quote> replies (seen during slot migration) are
+			retried after a short back-off. Full-table operations scan every
+			master and merge the results.
+		</para>
+		<para>
+			Only master nodes are used; the module always reads from and
+			writes to masters to guarantee read-your-writes consistency.
+		</para>
+	</section>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>hiredis</emphasis> - the minimalistic Redis client
+				C library (development package, typically
+				<emphasis>libhiredis-dev</emphasis>).
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_connect_timeout" xreflabel="connect_timeout">
+		<title><varname>connect_timeout</varname> (integer)</title>
+		<para>
+		The timeout, in milliseconds, for establishing a TCP connection to a
+		Redis node. It also bounds how long a failover blackout can stall an
+		operation before it is retried or failed.
+		</para>
+		<para>
+		<emphasis>Default value is 1000 (1 second).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_redis", "connect_timeout", 500)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_query_timeout" xreflabel="query_timeout">
+		<title><varname>query_timeout</varname> (integer)</title>
+		<para>
+		The send/receive timeout, in milliseconds, applied to commands issued
+		on an established connection. Keep it small enough that a stalled node
+		does not block &osips; worker processes for long, especially when the
+		dialog module is used in realtime <varname>db_mode</varname>.
+		</para>
+		<para>
+		<emphasis>Default value is 2000 (2 seconds).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>query_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_redis", "query_timeout", 1000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_scan_count" xreflabel="scan_count">
+		<title><varname>scan_count</varname> (integer)</title>
+		<para>
+		The <quote>COUNT</quote> hint passed to the Redis <quote>SCAN</quote>
+		command when iterating a whole table (used by full-table loads and by
+		queries that are not addressed by primary key). Larger values reduce
+		the number of round-trips at the cost of larger individual replies.
+		</para>
+		<para>
+		<emphasis>Default value is 100.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>scan_count</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_redis", "scan_count", 500)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_mode" xreflabel="mode">
+		<title><varname>mode</varname> (string)</title>
+		<para>
+		Pins the connection mode instead of auto-detecting it. Accepted
+		values are:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>auto</emphasis> - detect single vs. cluster from
+				<quote>INFO CLUSTER</quote> (the default).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>single</emphasis> - force single-endpoint mode;
+				startup fails if the endpoint is a cluster node.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cluster</emphasis> - force cluster mode; startup
+				fails if the endpoint has cluster support disabled.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		Pinning the mode turns an accidental misconfiguration (for example a
+		<varname>db_url</varname> pointing at the wrong kind of server) into a
+		clear startup error instead of a silently wrong runtime behaviour.
+		</para>
+		<para>
+		<emphasis>Default value is "auto".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_redis", "mode", "cluster")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from the configuration file.
+		</para>
+	</section>
+
+	<section id="usage" xreflabel="Usage">
+	<title>Usage</title>
+	<para>
+		The module is used by pointing a consuming module's
+		<varname>db_url</varname> at a <emphasis>redis://</emphasis> URL. The
+		URL has the standard &osips; form
+		<quote>redis://[:password@]host[:port]/db</quote>. The database path
+		component is mandatory for the URL parser but is only meaningful for a
+		standalone server (it selects the logical database number); it is
+		ignored in cluster mode. A password-only Redis is authenticated with
+		the <quote>:password@</quote> form.
+	</para>
+	<example>
+	<title>Persisting the dialog table in a single Redis server</title>
+	<programlisting format="linespecific">
+...
+loadmodule "db_redis/db_redis.so"
+loadmodule "dialog/dialog.so"
+
+modparam("dialog", "db_mode", 1)
+modparam("dialog", "db_url", "redis://127.0.0.1:6379/0")
+...
+</programlisting>
+	</example>
+	<example>
+	<title>Persisting the dialog table in a Redis Cluster</title>
+	<programlisting format="linespecific">
+...
+loadmodule "db_redis/db_redis.so"
+loadmodule "dialog/dialog.so"
+
+modparam("dialog", "db_mode", 1)
+# a single cluster node is enough as a seed; the rest of the topology
+# is discovered automatically
+modparam("dialog", "db_url", "redis://:secretpass@10.0.0.20:6379/0")
+...
+</programlisting>
+	</example>
+	<para>
+		Before starting &osips;, provision the table schemas into Redis, for
+		example (add <quote>-c</quote> when talking to a cluster):
+	</para>
+	<programlisting format="linespecific">
+redis-cli [-c] &lt; scripts/redis/dialog-create.redis
+</programlisting>
+	</section>
+
+	<section id="limitations" xreflabel="Limitations">
+	<title>Limitations</title>
+	<itemizedlist>
+		<listitem><para>
+			Queries support equality and the ordering operators
+			(<quote>=</quote>, <quote>&lt;</quote>, <quote>&gt;</quote>,
+			<quote>&lt;=</quote>, <quote>&gt;=</quote>, <quote>!=</quote>) on
+			any column, combined with AND or OR, plus a single
+			<quote>ORDER BY</quote> column. Lookups addressed by the primary
+			key are served directly; every other query performs a table scan
+			and filters in the client. There is no <quote>JOIN</quote> support
+			(the &osips; DB API does not provide one) and no raw-query
+			support.
+		</para></listitem>
+		<listitem><para>
+			Updating the value of the primary-key column of an existing row
+			is not supported.
+		</para></listitem>
+		<listitem><para>
+			The module is intended for modules that use the structured DB API
+			with per-row primary-key access, such as
+			<emphasis>dialog</emphasis>. Modules that issue raw SQL queries
+			are not supported.
+		</para></listitem>
+		<listitem><para>
+			As with the SQL backends, sharing rows between several &osips;
+			instances through the same Redis store requires the instances to
+			use a matching configuration (for the dialog table, an identical
+			<varname>hash_size</varname> and matching listening sockets).
+		</para></listitem>
+	</itemizedlist>
+	</section>
+
+	<section>
+	<title>Installation</title>
+		<para>
+		Because it depends on an external library, the db_redis module is not
+		compiled and installed by default. You can use one of the next
+		options.
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>
+			- edit the "Makefile" and remove "db_redis" from
+			"excluded_modules" list. Then follow the standard procedure to
+			install &osips;: "make all; make install".
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+			- from command line use: 'make all include_modules="db_redis";
+			make install include_modules="db_redis"'.
+			</para>
+			</listitem>
+		</itemizedlist>
+	</section>
+</chapter>
