@@ -1,0 +1,32 @@
+db_redis provisioning files
+===========================
+
+These files provision table schemas for the db_redis module. Load them
+with (add -c when talking to a Redis Cluster):
+
+    redis-cli [-c] < dialog-create.redis
+
+Note: redis-cli piped input does not support comment lines, so these
+files contain commands only.
+
+Data model
+----------
+
+A table schema is the hash "schema:<table>" holding:
+
+    __cols   -> ordered, space-separated column names
+    __pk     -> primary-key column name
+    <column> -> type[,null][,auto]
+
+where type is one of: int, bigint, double, string, blob, datetime.
+The "auto" attribute marks an auto-increment primary key, emulated by
+the module through INCR on "seq:<table>".
+
+Rows are stored as hashes at "<table>:<pk value>", one field per
+non-NULL column. The "version" table is provisioned like any other
+table, with one row per served table, e.g.:
+
+    HSET version:dialog table_name dialog table_version 12
+
+The key prefixes "schema:" and "seq:" are reserved by the module and
+must not be used as table names.
