@@ -674,6 +674,8 @@ int b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 	str st;
 	b2b_dlg_t *aux_dlg;
 	b2b_table table = entity_type == B2B_SERVER ? server_htable:client_htable;
+	str cb_key = {NULL, 0}, cb_logic_key = {NULL, 0};
+	void *cb_param;
 
 	/* search for the callback registered by the module that
 	 * this entity belongs to */
@@ -723,10 +725,32 @@ int b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		}
 	}
 
+	/* The callback runs with the bucket lock released (it may re-enter b2b
+	 * and would otherwise deadlock), during which another process can free
+	 * this dialog under the lock. Copy the arguments that point into the
+	 * dialog's shm (entity key, logic key) while we still hold the lock, so
+	 * the callback never dereferences a freed dlg. param is opaque and owned
+	 * by the logic layer, so it is safe to pass by value. */
+	if (pkg_str_dup(&cb_key,
+			entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid) < 0) {
+		LM_ERR("no more pkg memory for callback key\n");
+		return -1;
+	}
+	if (dlg->logic_key.s && pkg_str_dup(&cb_logic_key, &dlg->logic_key) < 0) {
+		LM_ERR("no more pkg memory for callback logic key\n");
+		pkg_free(cb_key.s);
+		return -1;
+	}
+	cb_param = dlg->param;
+
 	B2BE_LOCK_RELEASE(table, hash_index);
 
-	cb->cbf(entity_type, entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid,
-		&dlg->logic_key, dlg->param, event_type, storage, backend);
+	cb->cbf(entity_type, &cb_key, &cb_logic_key, cb_param, event_type,
+		storage, backend);
+
+	pkg_free(cb_key.s);
+	if (cb_logic_key.s)
+		pkg_free(cb_logic_key.s);
 
 	B2BE_LOCK_GET(table, hash_index);
 
