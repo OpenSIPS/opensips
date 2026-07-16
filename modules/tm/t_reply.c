@@ -140,6 +140,56 @@ int t_get_picked_branch(void)
 */
 
 
+/* Safely replace a script-route reference that may live inside a shared
+   transaction cell (t->on_negative, t->on_reply, t->on_branch, ...).
+  
+   The previous code did an unlocked read-modify-write directly on the shared
+   field:
+       if (*holder) shm_free(*holder);
+       *holder = dup_ref_script_route_in_shm(ref, 0);
+   When a request route runs against an ALREADY-EXISTING transaction -- a
+   retransmitted ACK matched via t_check_trans() and processed by multiple
+   UDP workers -- two processes read the same pointer and both
+   shm_free() it. The second free aborts inside the shm allocator while holding
+   the global shm lock, blocking the whole server. Every process eventually
+   spins on the orphaned lock.
+ 
+   Here the pointer is swapped atomically under the cell's reply lock, and the
+   (now private) swapped-out pointer is freed afterwards. The shm alloc/free are
+   kept OUTSIDE LOCK_REPLIES so the reply lock is never nested around the global
+   shm lock.
+ 
+   The lock is taken only in REQUEST_ROUTE, the only context that can reach a
+   shared cell field concurrently without already holding the reply lock.
+   FAILURE_ROUTE and -- with onreply_avp_mode -- ONREPLY_ROUTE already execute
+   under LOCK_REPLIES (see run_failure_handlers() / reply_received()), and those
+   routes call t_on_reply()/t_on_failure() to re-arm handlers;
+   taking the non-recursive reply lock again there would self-deadlock. The
+   pre-transaction static holder and BRANCH_ROUTE are single-owner and need no
+   lock.
+*/
+
+
+void tm_set_script_route_ref(struct cell *t, struct script_route_ref **holder,
+		struct script_route_ref *ref)
+{
+	struct script_route_ref *old, *new_ref;
+	int locked = (t && t!=T_UNDEFINED && route_type==REQUEST_ROUTE);
+
+	/* allocate outside the lock (dup calls shm_malloc) */
+	new_ref = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
+
+	if (locked) LOCK_REPLIES(t);
+	old = *holder;
+	*holder = new_ref;
+	if (locked) UNLOCK_REPLIES(t);
+
+	/* the swapped-out pointer is now private to us -> free outside the lock */
+	if (old)
+		shm_free( old );
+}
+
+
 void t_on_negative( struct script_route_ref *ref )
 {
 	struct cell *t = get_t();
@@ -150,11 +200,7 @@ void t_on_negative( struct script_route_ref *ref )
 	 * created; if not -> use the static variable */
 	holder = (!t || t==T_UNDEFINED ) ? &goto_on_negative : &t->on_negative ;
 
-	/* if something already set, free it first */
-	if (*holder)
-		shm_free( *holder );
-
-	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
+	tm_set_script_route_ref( t, holder, ref );
 }
 
 
@@ -171,11 +217,7 @@ void t_on_reply( struct script_route_ref *ref  )
 		( route_type==BRANCH_ROUTE ?
 			&TM_BRANCH(t,_tm_branch_index).on_reply : &t->on_reply );
 
-	/* if something already set, free it first */
-	if (*holder)
-		shm_free( *holder );
-
-	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
+	tm_set_script_route_ref( t, holder, ref );
 }
 
 

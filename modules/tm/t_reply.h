@@ -165,6 +165,10 @@ struct script_route_ref *get_on_negative();
 void t_on_reply( struct script_route_ref *ref );
 struct script_route_ref *get_on_reply();
 
+/* atomically replace a (possibly shared-cell) script-route ref; see t_reply.c */
+void tm_set_script_route_ref(struct cell *t, struct script_route_ref **holder,
+		struct script_route_ref *ref);
+
 /* Retransmits the last sent inbound reply.
  * Returns  -1 - error
  *           1 - OK
