@@ -1796,13 +1796,22 @@ static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
 	struct sip_msg* p_msg = trans->uas.request;
 	str to_tag_rpl= {0, 0};
 
+	/* p_msg (trans->uas.request) is a shared-memory clone; two processes
+	 * building a reply for the same transaction otherwise race on the single
+	 * p_msg->reply_lump list and corrupt it (SIGSEGV in add_lump_rpl). Hold
+	 * the reply lock across the whole lump lifecycle - add, build and free -
+	 * and release it before _reply_light(), which keeps managing the lock on
+	 * its own exactly as before. */
+	if (lock_replies)
+		LOCK_REPLIES( trans );
+
 	/* add the lumps for new_header and for body (by bogdan) */
 	if (new_header && new_header->len) {
 		hdr_lump = add_lump_rpl( p_msg, new_header->s,
 			new_header->len, LUMP_RPL_HDR );
 		if ( !hdr_lump ) {
 			LM_ERR("failed to add hdr lump\n");
-			goto error;
+			goto error_unlock;
 		}
 	} else {
 		hdr_lump = 0;
@@ -1855,6 +1864,9 @@ static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
 		free_lump_rpl( body_lump );
 	}
 
+	if (lock_replies)
+		UNLOCK_REPLIES( trans );
+
 	if (rpl.s==0) {
 		LM_ERR("failed in doing build_res_buf_from_sip_req()\n");
 		goto error;
@@ -1871,6 +1883,9 @@ error_1:
 		unlink_lump_rpl( p_msg, hdr_lump);
 		free_lump_rpl( hdr_lump );
 	}
+error_unlock:
+	if (lock_replies)
+		UNLOCK_REPLIES( trans );
 error:
 	return -1;
 }
