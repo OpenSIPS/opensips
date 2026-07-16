@@ -908,7 +908,7 @@ if(shuffle_avps( $avp(foo) ))
 		<programlisting format="linespecific">
 {
 ...
-async( sleep("5"), after_sleep );
+async( sleep(5), after_sleep );
 }
 
 route[after_sleep] {
@@ -939,7 +939,7 @@ route[after_sleep] {
 		<programlisting format="linespecific">
 {
 ...
-async( usleep("1000"), after_usleep );
+async( usleep(1000), after_usleep );
 }
 
 route[after_usleep] {
