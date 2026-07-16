@@ -26,6 +26,7 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../db/db.h"
+#include "../../db/db_ut.h"
 #include "../../db/db_pool.h"
 #include "db_redis.h"
 #include "redis_con.h"
@@ -107,27 +108,31 @@ static int rdb_val2str(const db_val_t *v, str *out, char *buf)
 		return 0;
 	}
 
+	out->len = RDB_NUM_MAX;
+	out->s = buf;
+
 	switch (VAL_TYPE(v)) {
 	case DB_INT:
-		out->len = snprintf(buf, RDB_NUM_MAX, "%d", VAL_INT(v));
-		out->s = buf;
-		break;
-	case DB_BIGINT:
-		out->len = snprintf(buf, RDB_NUM_MAX, "%lld", VAL_BIGINT(v));
-		out->s = buf;
+		if (db_int2str(VAL_INT(v), buf, &out->len) < 0)
+			return -1;
 		break;
 	case DB_BITMAP:
-		out->len = snprintf(buf, RDB_NUM_MAX, "%u", VAL_BITMAP(v));
-		out->s = buf;
+		if (db_int2str((int)VAL_BITMAP(v), buf, &out->len) < 0)
+			return -1;
+		break;
+	case DB_BIGINT:
+		if (db_bigint2str(VAL_BIGINT(v), buf, &out->len) < 0)
+			return -1;
 		break;
 	case DB_DOUBLE:
-		out->len = snprintf(buf, RDB_NUM_MAX, "%.17g", VAL_DOUBLE(v));
-		out->s = buf;
+		if (db_double2str(VAL_DOUBLE(v), buf, &out->len) < 0)
+			return -1;
 		break;
 	case DB_DATETIME:
-		out->len = snprintf(buf, RDB_NUM_MAX, "%lld",
-			(long long)VAL_TIME(v));
-		out->s = buf;
+		/* stored as a Unix timestamp, so it stays numerically
+		 * comparable and sortable */
+		if (db_bigint2str((long long)VAL_TIME(v), buf, &out->len) < 0)
+			return -1;
 		break;
 	case DB_STRING:
 		out->s = (char *)VAL_STRING(v);
@@ -541,17 +546,25 @@ static int rdb_fill_val(db_val_t *val, db_type_t type, str *stored)
 
 	switch (type) {
 	case DB_INT:
-		VAL_INT(val) = (int)strtol(stored->s, NULL, 10);
+		if (db_str2int(stored->s, &VAL_INT(val)) < 0)
+			goto badval;
 		break;
 	case DB_BIGINT:
-		VAL_BIGINT(val) = strtoll(stored->s, NULL, 10);
+		if (db_str2bigint(stored->s, &VAL_BIGINT(val)) < 0)
+			goto badval;
 		break;
 	case DB_DOUBLE:
-		VAL_DOUBLE(val) = strtod(stored->s, NULL);
+		if (db_str2double(stored->s, &VAL_DOUBLE(val)) < 0)
+			goto badval;
 		break;
-	case DB_DATETIME:
-		VAL_TIME(val) = (time_t)strtoll(stored->s, NULL, 10);
+	case DB_DATETIME: {
+		/* stored as a Unix timestamp (see rdb_val2str) */
+		long long ts;
+		if (db_str2bigint(stored->s, &ts) < 0)
+			goto badval;
+		VAL_TIME(val) = (time_t)ts;
 		break;
+	}
 	case DB_STR:
 		VAL_STR(val).s = stored->s;
 		VAL_STR(val).len = stored->len;
@@ -570,6 +583,12 @@ static int rdb_fill_val(db_val_t *val, db_type_t type, str *stored)
 		return -1;
 	}
 	return 0;
+
+badval:
+	LM_ERR("failed to parse stored value <%.*s> as type %d\n",
+		stored->len, stored->s, type);
+	VAL_NULL(val) = 1;
+	return -1;
 }
 
 
@@ -792,8 +811,12 @@ static int rdb_next_id(struct redis_con *con, const str *table,
 		return -1;
 	}
 	con->last_insert_id = reply->integer;
-	out->len = snprintf(numbuf, RDB_NUM_MAX, "%lld", reply->integer);
+	out->len = RDB_NUM_MAX;
 	out->s = numbuf;
+	if (db_bigint2str(reply->integer, numbuf, &out->len) < 0) {
+		freeReplyObject(reply);
+		return -1;
+	}
 	freeReplyObject(reply);
 	return 0;
 }
