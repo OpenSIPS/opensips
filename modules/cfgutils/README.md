@@ -800,7 +800,7 @@ online Manual.
 ```opensips title="async sleep usage"
 {
 ...
-async( sleep("5"), after_sleep );
+async( sleep(5), after_sleep );
 }
 
 route[after_sleep] {
@@ -827,7 +827,7 @@ online Manual.
 ```opensips title="async usleep usage"
 {
 ...
-async( usleep("1000"), after_usleep );
+async( usleep(1000), after_usleep );
 }
 
 route[after_usleep] {
