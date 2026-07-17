@@ -147,20 +147,19 @@ Chapter 1. Admin Guide
    the password — i.e. they are configured identically, which is
    the operator's responsibility to avoid.
 
-   Every packet is encrypted and authenticated with an AEAD —
-   AES-256-GCM by default, or XChaCha20-Poly1305 when the module
-   is built against libsodium (see the Security Architecture
+   Every packet is encrypted and authenticated with the
+   XChaCha20-Poly1305 AEAD (see the Security Architecture
    section). Two distinct encryption keys are used depending on
    the communication phase:
-     * Bootstrap key — derived from the configured password with a
-       memory-hard KDF (scrypt N=2^16, r=8, p=1, or Argon2id in
-       the libsodium build, with a per-cluster salt), so a
+     * Bootstrap key — derived from the configured password with
+       the Argon2id memory-hard KDF (per-cluster salt), so a
        password captured from a bootstrap packet cannot be
-       brute-forced cheaply offline. Derived once at startup. Used
-       for the admission handshake (JOIN_REQ, KEY_GRANT,
-       JOIN_REJECT) and the split-brain MASTER_BEACON — traffic
-       that must be readable before a session key exists, or by
-       masters holding different session keys.
+       brute-forced cheaply offline. Derived once at startup. It
+       is both the outer AEAD key for the admission handshake
+       (JOIN_REQ, KEY_GRANT, JOIN_REJECT) and the split-brain
+       MASTER_BEACON — traffic that must be readable before a
+       session key exists, or by masters holding different session
+       keys — and the pre-shared key for the Noise join handshake.
      * Session key — derived via HKDF-SHA256 from the password and
        a 32-byte master salt generated once when the cluster first
        bootstraps. All normal cluster traffic uses this key. It is
@@ -172,16 +171,16 @@ Chapter 1. Admin Guide
    identifying the key type and a 2-byte cluster_id, both in
    cleartext (the magic and cluster_id must be readable before
    decryption to select the key and to filter foreign clusters),
-   followed by a random AEAD nonce (12 bytes for AES-256-GCM, 24
-   for XChaCha20-Poly1305) and the ciphertext. The magic and
-   cluster_id are additionally bound into the authentication tag
-   as AAD, so they cannot be altered undetected. Only the payload
-   is encrypted; the authenticated plaintext begins with a 1-byte
-   packet type and a 4-byte monotonic sequence number used for
-   replay protection. A 16-byte authentication tag follows the
-   ciphertext. Packets for a different cluster_id are dropped
-   before decryption; packets encrypted with a different password
-   fail authentication and are silently discarded.
+   followed by a random 24-byte AEAD nonce and the ciphertext. The
+   magic and cluster_id are additionally bound into the
+   authentication tag as AAD, so they cannot be altered
+   undetected. Only the payload is encrypted; the authenticated
+   plaintext begins with a 1-byte packet type and a 4-byte
+   monotonic sequence number used for replay protection. A 16-byte
+   authentication tag follows the ciphertext. Packets for a
+   different cluster_id are dropped before decryption; packets
+   encrypted with a different password fail authentication and are
+   silently discarded.
 
    The following packet types are defined:
      * ALIVE — periodic heartbeat sent by every active node every
@@ -192,9 +191,9 @@ Chapter 1. Admin Guide
        used for configuration-drift detection (see Security
        Architecture). Encrypted with the session key.
      * JOIN_REQ — sent at startup by a new node, carrying its IP,
-       BIN socket list, X25519 ephemeral public key, and a 16-byte
-       random join nonce. Encrypted with the bootstrap key so it
-       can be sent before a session key exists.
+       BIN socket list, and Noise message 1 (the initiator's fresh
+       ephemeral public key). Encrypted with the bootstrap key so
+       it can be sent before a session key exists.
      * MEMBER_LIST — sent by the master in response to a JOIN_REQ,
        carrying the member count, the operator-forced sharing-tag
        holder node_id (0 = automatic), and the full peer IP list
@@ -211,17 +210,17 @@ Chapter 1. Admin Guide
        (independent of query_time). Used by all peers to detect
        master failure quickly (3-second timeout). Encrypted with
        the session key.
-     * KEY_GRANT — unicast response to a JOIN_REQ, sent by the
-       master directly to the joining node. Contains the master's
-       X25519 public key, the original join nonce, and the master
-       salt wrapped with a per-exchange key derived from
-       ECDH(master_priv, joiner_pub) + password + join_nonce via
-       HKDF-SHA256. Encrypted with the bootstrap key.
-     * KEY_HANDOFF — unicast packet sent by the outgoing master on
-       graceful shutdown to the next-highest-IP peer, delivering
-       the master salt so that peer can become the new master
-       without a full re-join cycle. Encrypted with the session
+     * KEY_GRANT — the master's response to a JOIN_REQ, addressed
+       to the joining node. Carries Noise message 2 (the master's
+       ephemeral plus the AEAD-encrypted master salt), completing
+       the Noise_NNpsk0 handshake. Encrypted with the bootstrap
        key.
+     * KEY_HANDOFF — sent by the outgoing master on graceful
+       shutdown to the next-highest-IP peer, delivering the master
+       salt (as an anonymous crypto_box sealed to that peer's
+       long-lived X25519 key, learned from its ALIVE) so it can
+       become the new master without a full re-join cycle.
+       Encrypted with the session key.
      * JOIN_REJECT — sent by the master to a joining node whose
        JOIN_REQ repeatedly fails authentication (wrong password).
        After CC_JOIN_FAIL_LIMIT (3) consecutive bootstrap-key
@@ -328,32 +327,28 @@ Chapter 1. Admin Guide
    attempting decryption, so foreign-cluster traffic on the group
    never counts as an authentication failure.
 
-   Crypto suite (selected at build time): if libsodium is detected
-   on the build host, the module is built sodium-only:
+   Crypto (all libsodium; a hard requirement): the payload AEAD is
    XChaCha20-Poly1305 (24-byte nonce, whose 192-bit nonce space
-   removes any random-nonce collision concern) for the payload
-   AEAD, Argon2id for the bootstrap-key derivation, and X25519 /
-   HKDF-SHA256 / RNG also from libsodium — WolfSSL is not linked
-   at all. Without libsodium the module falls back to WolfSSL:
-   AES-256-GCM (12-byte nonce) and scrypt (N=2^16, r=8, p=1). The
-   two wire formats are not interoperable, so every node in a
-   cluster must be built with the same suite; the active suite is
-   reported in the startup log (crypto=...).
+   removes any random-nonce collision concern); the bootstrap-key
+   KDF is Argon2id; and X25519 / HKDF-SHA256 / RNG also come from
+   libsodium. The active suite is reported in the startup log
+   (crypto=...).
 
-   Phase 1 — bootstrap (JOIN_REQ / KEY_GRANT): each worker process
-   generates an ephemeral X25519 keypair on startup. When joining,
-   the node sends its public key and a 16-byte random join nonce
-   in the JOIN_REQ, encrypted with the bootstrap key (a
-   memory-hard KDF of the password — scrypt, or Argon2id in the
-   libsodium build). The master responds with a KEY_GRANT
-   encrypted with the same bootstrap key, containing its own
-   public key, the echoed join nonce, and the master salt wrapped
-   with a per-exchange key derived via HKDF-SHA256 from:
-IKM = ECDH(master_priv, joiner_pub) || password || join_nonce
+   Phase 1 — join handshake (JOIN_REQ / KEY_GRANT): the join is a
+   Noise_NNpsk0_25519_ChaChaPoly_SHA256 handshake with the
+   pre-shared key set to the Argon2id bootstrap key:
+-> psk, e     JOIN_REQ  carries Noise message 1 (a fresh ephemeral)
+<- e, ee      KEY_GRANT carries Noise message 2; its AEAD payload = mast
+er_salt
 
-   This ensures that even if the password is compromised,
-   previously recorded exchanges cannot be decrypted without both
-   the ephemeral private key and the per-exchange join nonce.
+   Authentication comes from the shared PSK, forward secrecy from
+   the ephemeral-ephemeral DH, and the Noise handshake hash binds
+   the whole transcript — so a stale KEY_GRANT for a superseded
+   JOIN_REQ simply fails to decrypt. Both handshake messages also
+   travel inside the bootstrap-key AEAD envelope, so a
+   wrong-password node is rejected at the envelope before the
+   handshake is even reached. This replaces the earlier
+   hand-rolled ECDH-and-XOR salt wrap.
 
    Phase 2 — session (all other packets): once the master salt is
    known, all nodes derive the session key as:
@@ -552,31 +547,17 @@ on-key")
 
 1.5.2. External Libraries or Applications
 
-   One of the following two crypto libraries is required;
-   libsodium is preferred and used exclusively when found:
-     * libsodium (preferred) — if the build host has libsodium
-       development files (detected via pkg-config), the module is
-       built sodium-only: XChaCha20-Poly1305 for the payload AEAD,
-       Argon2id for the bootstrap-key derivation, and X25519 ECDH,
-       HKDF-SHA256 and the RNG also from libsodium — WolfSSL is
-       not linked at all, keeping the module binary small (a few
-       hundred KB instead of several MB of statically-linked
-       WolfSSL). libsodium is linked dynamically, so each target
-       host also needs the libsodium runtime package (for example
-       libsodium23).
-     * tls_wolfssl (fallback) — without libsodium, the module
-       links statically against the WolfSSL library built by the
-       tls_wolfssl module
-       (modules/tls_wolfssl/lib/lib/libwolfssl.a), providing
-       AES-256-GCM authenticated encryption, X25519 ECDH,
-       HKDF-SHA256 and the scrypt password KDF. The tls_wolfssl
-       module must then be present in the source tree; its static
-       library is built automatically as a dependency if not
-       already present.
+   libsodium is required:
+     * libsodium (required) — provides the payload AEAD
+       (XChaCha20-Poly1305), the bootstrap-key KDF (Argon2id), the
+       Noise_NNpsk0 join handshake, and X25519 / HKDF-SHA256 /
+       RNG. The build fails with a clear error if libsodium
+       development files are not found. It is linked dynamically,
+       so each target host also needs the libsodium runtime
+       package (for example libsodium23). No other crypto library
+       is used or linked.
 
-   Because the two suites produce incompatible wire formats, every
-   node in a cluster must be built the same way; the active suite
-   is printed in the startup log.
+   The active suite is printed in the startup log (crypto=...).
 
 1.6. Building the Module
 
@@ -587,11 +568,9 @@ on-key")
    it to include_modules in your Makefile.conf:
 include_modules= clusterer_controller
 
-   then rebuild (make all / make modules). With libsodium
-   development files on the build host the module builds
-   sodium-only (no WolfSSL); otherwise it links the bundled
-   WolfSSL and the same external-library requirements as
-   tls_wolfssl apply — see External Libraries or Applications.
+   then rebuild (make all / make modules). libsodium development
+   files must be present on the build host or the build fails —
+   see External Libraries or Applications.
 
    The clusterer module is unmodified when clusterer_controller is
    not built. The controller integration on the clusterer side
@@ -618,9 +597,10 @@ include_modules= clusterer_controller
      * multicast (required) — IPv4 multicast address and UDP port
        in the form A.B.C.D:PORT. The address must be in the
        224.0.0.0/4 range.
-     * password (optional) — AES-256 encryption key material. All
-       nodes in the same cluster must use the same password. Falls
-       back to the global password modparam if not set.
+     * password (optional) — XChaCha20-Poly1305 encryption key
+       material. All nodes in the same cluster must use the same
+       password. Falls back to the global password modparam if not
+       set.
      * bin_socket (optional) — BIN socket to advertise for this
        cluster, in the form bin:IP:PORT. Required when multiple
        clusters are defined (so the controller knows which
@@ -793,10 +773,10 @@ modparam("clusterer_controller", "query_time", 5)
    Global default encryption password for all clusters. All nodes
    in a cluster must use the same password. The password serves
    two purposes:
-     * Bootstrap key — the password is stretched with scrypt
-       (memory-hard, per-cluster salt) to encrypt JOIN_REQ and
-       KEY_GRANT packets during the initial key exchange phase
-       before a session key is established.
+     * Bootstrap key — the password is stretched with Argon2id
+       (memory-hard, per-cluster salt); it is the pre-shared key
+       for the Noise join handshake (JOIN_REQ / KEY_GRANT) and the
+       AEAD key for bootstrap traffic before a session key exists.
      * Session key material — the password is fed into HKDF-SHA256
        together with the master salt to derive the session key
        used for all normal cluster traffic.
@@ -806,7 +786,7 @@ modparam("clusterer_controller", "query_time", 5)
 
    Default value is “3eCrEt*5629”. Change this in production. Use
    a long, high-entropy secret rather than a memorable phrase —
-   scrypt raises the cost of an offline guess, but only a strong
+   Argon2id raises the cost of an offline guess, but only a strong
    secret removes the risk. A generated key is ideal, e.g. openssl
    rand -base64 32. The module logs a startup warning if the
    configured password is the default or has an estimated entropy
@@ -1491,11 +1471,11 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
        tunnel (GRE-over-IPsec, Geneve-over-IPsec) that presents a
        multicast-capable interface. Running the controller over
        such a setup results in double encryption
-       (application-layer AES-256-GCM plus IPsec ESP), which is
-       harmless but adds minor CPU overhead. IPsec ESP tunnel mode
-       also reduces the effective MTU by approximately 50 bytes,
-       which compounds the MEMBER_LIST fragmentation issue
-       described below.
+       (application-layer XChaCha20-Poly1305 plus IPsec ESP),
+       which is harmless but adds minor CPU overhead. IPsec ESP
+       tunnel mode also reduces the effective MTU by approximately
+       50 bytes, which compounds the MEMBER_LIST fragmentation
+       issue described below.
      * MEMBER_LIST fragmentation: the MEMBER_LIST packet grows
        with cluster size and reaches approximately 4395 bytes at
        the maximum of 256 nodes. This exceeds the 1472-byte UDP
