@@ -932,6 +932,8 @@ static int addIdentityInfo(struct sip_msg * msg)
 static int getIdentityHF(char * identityHF, struct sip_msg * msg)
 {
 	struct hdr_field * identity = NULL;
+	char *identity_body;
+	int identity_len;
 
 	if(!identityHF || !msg)
 	{
@@ -946,15 +948,24 @@ static int getIdentityHF(char * identityHF, struct sip_msg * msg)
 		return 0;
 	}
 
-	if(((identity->body.len) - 2) >= MAX_IDENTITY)
+	if (identity->body.len >= 2 &&
+			identity->body.s[0] == '"' &&
+			identity->body.s[identity->body.len - 1] == '"') {
+		identity_body = identity->body.s + 1;
+		identity_len = identity->body.len - 2;
+	} else {
+		identity_body = identity->body.s;
+		identity_len = identity->body.len;
+	}
+
+	if(identity_len >= MAX_IDENTITY)
 	{
 		LM_ERR("identity header to long\n");
 		return -1;
 	}
 
-	/* " at the beginning and at the end are cutted */
-	memcpy( identityHF, identity->body.s+1, identity->body.len-2);
-	identityHF[(identity->body.len) - 2] = '\0';
+	memcpy( identityHF, identity_body, identity_len);
+	identityHF[identity_len] = '\0';
 
 	return 1;
 }
@@ -1902,4 +1913,3 @@ static int id_add_header(struct sip_msg* msg, char* s, int len)
 
 	return 0;
 }
-
