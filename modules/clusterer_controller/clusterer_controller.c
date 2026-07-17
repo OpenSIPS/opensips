@@ -34,14 +34,13 @@
  * blocks re-stamping a captured packet onto a different cluster_id when two
  * clusters share a multicast group and password).
  *
- * CRYPTO SUITE (build-time choice; every node in a cluster must match):
- *   - Default (WolfSSL):   AES-256-GCM   payload AEAD, 12-byte nonce;
- *                          scrypt        bootstrap-key KDF (N=2^16, r=8, p=1).
- *   - If libsodium is detected on the build host (-DCC_HAVE_SODIUM, see the
- *     Makefile): XChaCha20-Poly1305 payload AEAD, 24-byte nonce (its 192-bit
- *     nonce removes any random-nonce collision worry); Argon2id bootstrap KDF.
- *   The two wire formats are NOT interoperable (nonce size and primitives
- *   differ).  The active suite is logged at startup ("crypto=...").
+ * CRYPTO SUITE (all libsodium; libsodium is a hard build requirement):
+ *   - XChaCha20-Poly1305 payload AEAD, 24-byte nonce (its 192-bit nonce space
+ *     removes any random-nonce collision worry).
+ *   - Argon2id bootstrap-key KDF.
+ *   - Noise_NNpsk0_25519_ChaChaPoly_SHA256 for the join handshake (PSK = the
+ *     Argon2id bootstrap key); crypto_box for the KEY_HANDOFF salt delivery.
+ *   The active suite is logged at startup ("crypto=...").
  *
  * Two key types are used, selected by the 2-byte magic:
  *
@@ -206,29 +205,17 @@
 
 #include "../clusterer/clusterer_ctrl.h"  /* set_my_identity, add_node, remove_node */
 
-#include <wolfssl/options.h>             /* must be first: build-time feature flags */
-#include <wolfssl/wolfcrypt/aes.h>       /* Aes, wc_AesGcmSetKey/Encrypt/Decrypt    */
-#include <wolfssl/wolfcrypt/random.h>    /* WC_RNG, wc_RNG_GenerateBlock            */
-#include <wolfssl/wolfcrypt/kdf.h>       /* wc_HKDF                                 */
-#include <wolfssl/wolfcrypt/curve25519.h>/* curve25519_key, wc_curve25519_*         */
-#include <wolfssl/wolfcrypt/sha256.h>    /* wc_Sha256Hash                           */
-#include <wolfssl/wolfcrypt/pwdbased.h>  /* wc_scrypt (bootstrap key hardening)     */
 #include <sys/timerfd.h>    /* timerfd_create(), timerfd_settime()            */
 #include "../../reactor_proc.h" /* reactor_proc_init/add_fd/loop              */
 
-/* Optional stronger crypto suite.  Selected at BUILD time: if libsodium is
- * detected on the build host (see the module Makefile -> -DCC_HAVE_SODIUM), the
- * payload AEAD becomes XChaCha20-Poly1305 (192-bit nonce -> no random-nonce
- * collision worry, even for the static bootstrap key) and the bootstrap KDF
- * becomes Argon2id.  Otherwise we fall back to WolfSSL AES-256-GCM + scrypt.
- * NOTE: the wire formats are NOT interoperable (nonce size and primitives
- * differ), so every node in a cluster must be built with the same suite. */
-#ifdef CC_HAVE_SODIUM
+/* All cryptography is provided by libsodium, which is a hard requirement (the
+ * module Makefile fails the build if it is not found).  The payload AEAD is
+ * XChaCha20-Poly1305 (192-bit nonce -> no random-nonce collision worry, even for
+ * the static bootstrap key), the bootstrap KDF is Argon2id, the join handshake
+ * is Noise_NNpsk0_25519_ChaChaPoly_SHA256, and X25519 / HKDF-SHA256 / RNG also
+ * come from libsodium. */
 #include <sodium.h>
-#define CC_CRYPTO_SUITE "XChaCha20-Poly1305 + Argon2id"
-#else
-#define CC_CRYPTO_SUITE "AES-256-GCM + scrypt"
-#endif
+#define CC_CRYPTO_SUITE "XChaCha20-Poly1305 + Argon2id + Noise_NNpsk0"
 
 /* =========================================================================
  * Wire-format constants
@@ -277,40 +264,28 @@ static const unsigned char CC_BOOTSTRAP_MAGIC[CC_MAGIC_SZ] = { 0xCC, 0x01 };
 /* BIN info block: [bin_count 1B][sock1 NUL-term]...[sockN NUL-term]         */
 #define CC_BIN_INFO_MAX_SZ   (1 + CC_MAX_BIN_SOCKETS * CC_MAX_BIN_SOCK_LEN)
 
-/* AES-256-GCM encryption constants
- *   wire:      [magic 2B][cluster_id 2B BE][nonce 12B][ciphertext][GCM tag 16B]
+/* AEAD encryption constants
+ *   wire:      [magic 2B][cluster_id 2B BE][nonce 24B][ciphertext][tag 16B]
  *   plaintext: [type 1B][seq 4B][payload]
  * The cluster_id is cleartext (like the magic) so a node can drop packets that
  * belong to a different cluster sharing the same multicast group WITHOUT its
  * key - before decryption, so foreign traffic never counts as an auth failure. */
-#ifdef CC_HAVE_SODIUM
 #define CC_NONCE_SZ          24   /* XChaCha20-Poly1305 nonce (192-bit)       */
-#else
-#define CC_NONCE_SZ          12   /* AES-GCM nonce, random per packet         */
-#endif
-#define CC_TAG_SZ            16   /* AEAD tag (16 for both AES-GCM & XChaCha)  */
+#define CC_TAG_SZ            16   /* Poly1305 AEAD tag                        */
 #define CC_SEQ_SZ             4   /* uint32_t monotonic sequence in plaintext  */
 #define CC_CLUSTER_ID_SZ      2   /* cleartext uint16 cluster_id (BE) selector */
 #define CC_NONCE_OFF         (CC_MAGIC_SZ + CC_CLUSTER_ID_SZ)  /* nonce starts here */
 #define CC_WIRE_HDR_SZ       (CC_MAGIC_SZ + CC_CLUSTER_ID_SZ + CC_NONCE_SZ) /* 16 (GCM) / 28 (XChaCha) */
 #define CC_PLAIN_HDR_SZ      (1 + CC_SEQ_SZ)     /* type + seq = 5           */
 
-/* Bootstrap-key hardening: the join/admission key is derived from the shared
- * password with scrypt (memory-hard) instead of a single SHA-256, so a
- * password captured from a JOIN_REQ cannot be brute-forced cheaply offline.
- * Derived ONCE in mod_init (main process, before fork), so the cost is a
- * transient startup cost only - cost=16/r=8 is ~64 MiB for ~0.3 s, freed
- * immediately; workers inherit the 32-byte key and never run scrypt.  (Argon2id
- * would be preferable but this WolfSSL build does not provide it.)            */
-#define CC_SCRYPT_COST        16   /* log2(N): N = 65536 (2x offline cost)      */
-#define CC_SCRYPT_BLOCKSIZE    8   /* r                                        */
-#define CC_SCRYPT_PARALLEL     1   /* p                                        */
-#ifdef CC_HAVE_SODIUM
-/* Argon2id parameters (libsodium crypto_pwhash).  Fixed so every node derives
- * the same key; ~64 MiB to match the scrypt fallback's memory hardness.       */
+/* Bootstrap-key hardening: the join/admission key (also the Noise PSK) is
+ * derived from the shared password with Argon2id (memory-hard) instead of a
+ * single SHA-256, so a password captured from a JOIN_REQ cannot be brute-forced
+ * cheaply offline.  Derived ONCE in mod_init (main process, before fork), so the
+ * ~64 MiB working set is a transient startup cost; workers inherit the 32-byte
+ * key.  Fixed parameters so every node derives the same key.                   */
 #define CC_ARGON2_OPSLIMIT     3UL
 #define CC_ARGON2_MEMLIMIT     (64UL * 1024 * 1024)
-#endif
 /* Minimum estimated password entropy (bits) before a startup warning fires.  */
 #define CC_MIN_PASSWORD_BITS  80
 #define CC_DEFAULT_PASSWORD  "3eCrEt*5629"   /* insecure placeholder; warn if used */
@@ -649,7 +624,6 @@ static int   on_config_mismatch   = CC_CFGMISMATCH_REJECT; /* resolved; default 
 static char my_ip_buf[INET_ADDRSTRLEN];
 static char my_interface_buf[IF_NAMESIZE];
 
-static WC_RNG cc_rng;
 
 /* Local node identity - populated at mod_init by scanning the config file */
 static uint16_t my_node_id                              = 0;
@@ -1713,11 +1687,12 @@ static void cc_update_peer_bin_locked(const char *ip, uint16_t node_id,
 }
 
 /* =========================================================================
- * AES-256-GCM packet encryption / decryption
+ * Packet encryption / decryption (AEAD)
  *
- * Every packet is fully encrypted and authenticated with AES-256-GCM.
- * A 12-byte random nonce (generated fresh for each packet via WolfSSL RNG)
- * ensures that even identical payloads produce different ciphertext.
+ * Every packet is fully encrypted and authenticated with the build's AEAD
+ * (XChaCha20-Poly1305 with libsodium, AES-256-GCM with wolfSSL).  A fresh
+ * random nonce per packet ensures that even identical payloads produce
+ * different ciphertext.
  *
  * A 4-byte monotonic sequence number is included inside the plaintext.
  * Receivers track the highest sequence seen from each peer and reject any
@@ -1734,61 +1709,71 @@ static void cc_update_peer_bin_locked(const char *ip, uint16_t node_id,
  *   [type 1B][seq 4B][payload]
  * ========================================================================= */
 
+/* cc_random_bytes() - fill buf with cryptographically secure random bytes
+ * (libsodium's randombytes draws from the kernel CSPRNG). */
+static int cc_random_bytes(unsigned char *buf, size_t len)
+{
+    randombytes_buf(buf, len);
+    return 0;
+}
+
+/* RFC 5869 HKDF-SHA256 built on libsodium's HMAC-SHA256 (libsodium 1.0.18 has
+ * no native HKDF; crypto_auth_hmacsha256_init accepts any key length).  Every
+ * use in this module needs exactly 32 output bytes (= HashLen), so the expand
+ * phase is a single iteration: OKM = HMAC(PRK, info || 0x01). */
 static int cc_hkdf_sha256(const unsigned char *ikm,  size_t ikm_len,
                            const unsigned char *salt, size_t salt_len,
                            const char          *info,
                            unsigned char        out[32])
 {
+    crypto_auth_hmacsha256_state st;
+    unsigned char prk[crypto_auth_hmacsha256_BYTES];
+    static const unsigned char zeros[crypto_auth_hmacsha256_BYTES];
+    const unsigned char ctr = 0x01;
     size_t info_len = info ? strlen(info) : 0;
-    return wc_HKDF(WC_SHA256,
-                   ikm,  (word32)ikm_len,
-                   salt, (word32)salt_len,
-                   (const byte *)info, (word32)info_len,
-                   out, 32) == 0 ? 0 : -1;
+
+    /* extract: PRK = HMAC(salt, IKM); an absent salt is HashLen zero bytes */
+    if (crypto_auth_hmacsha256_init(&st, salt_len ? salt : zeros,
+                                    salt_len ? salt_len : sizeof(zeros)) != 0)
+        return -1;
+    crypto_auth_hmacsha256_update(&st, ikm, (unsigned long long)ikm_len);
+    crypto_auth_hmacsha256_final(&st, prk);
+
+    /* expand: T(1) = HMAC(PRK, info || 0x01) */
+    if (crypto_auth_hmacsha256_init(&st, prk, sizeof(prk)) != 0)
+        return -1;
+    if (info_len)
+        crypto_auth_hmacsha256_update(&st, (const unsigned char *)info,
+                                      (unsigned long long)info_len);
+    crypto_auth_hmacsha256_update(&st, &ctr, 1);
+    crypto_auth_hmacsha256_final(&st, out);
+    return 0;
 }
 
 static int cc_gen_ecdh_keypair(unsigned char *privkey, unsigned char *pubkey)
 {
-    curve25519_key k;
-    word32         len = CC_PUBKEY_SZ;
-    int            rc  = -1;
-
-    if (wc_curve25519_init(&k) != 0) goto done;
-    if (wc_curve25519_make_key(&cc_rng, 32, &k) != 0) goto free;
-    if (wc_curve25519_export_private_raw(&k, privkey, &len) != 0) goto free;
-    len = CC_PUBKEY_SZ;
-    if (wc_curve25519_export_public(&k, pubkey, &len) != 0) goto free;
-    rc = 0;
-free:
-    wc_curve25519_free(&k);
-done:
-    if (rc < 0)
+    randombytes_buf(privkey, CC_PUBKEY_SZ);
+    if (crypto_scalarmult_base(pubkey, privkey) != 0) {
         LM_ERR("clusterer_controller: X25519 keygen failed\n");
-    return rc;
+        return -1;
+    }
+    return 0;
 }
 
 static int cc_ecdh_shared(const unsigned char *my_priv,
                            const unsigned char *peer_pub,
                            unsigned char        out[CC_PUBKEY_SZ])
 {
-    curve25519_key priv_k, pub_k;
-    word32         len = CC_PUBKEY_SZ;
-    int            rc  = -1;
-
-    if (wc_curve25519_init(&priv_k) != 0) return -1;
-    if (wc_curve25519_init(&pub_k)  != 0) { wc_curve25519_free(&priv_k); return -1; }
-
-    if (wc_curve25519_import_private(my_priv,  CC_PUBKEY_SZ, &priv_k) != 0) goto done;
-    if (wc_curve25519_import_public(peer_pub,  CC_PUBKEY_SZ, &pub_k)  != 0) goto done;
-    if (wc_curve25519_shared_secret(&priv_k, &pub_k, out, &len)           != 0) goto done;
-    rc = 0;
-done:
-    wc_curve25519_free(&priv_k);
-    wc_curve25519_free(&pub_k);
-    if (rc < 0)
+    /* crypto_scalarmult clamps the scalar internally (RFC 7748); reject an
+     * all-zero result (peer sent a low-order point). */
+    if (crypto_scalarmult(out, my_priv, peer_pub) != 0 ||
+        sodium_is_zero(out, CC_PUBKEY_SZ)) {
         LM_ERR("clusterer_controller: X25519 derive failed\n");
-    return rc;
+        return -1;
+    }
+    return 0;
 }
+
 
 /**
  * cc_wrap_salt() - XOR-encrypt master_salt for a specific peer using ECDH.
@@ -1926,14 +1911,13 @@ static int cc_derive_key(cc_cluster_t *cl)
 
     /* Per-cluster salt: a fixed domain-separation label plus the multicast
      * address, so the same password on different clusters yields different
-     * bootstrap keys.  The salt is public by design - scrypt's work factor,
+     * bootstrap keys.  The salt is public by design - Argon2id's work factor,
      * not salt secrecy, is what defeats brute force.                        */
     saltlen = snprintf(salt, sizeof(salt), "opensips-cc-bootstrap-v1:%s",
                        cl->multicast_address);
     if (saltlen < 0 || saltlen >= (int)sizeof(salt))
         saltlen = (int)strlen(salt);
 
-#ifdef CC_HAVE_SODIUM
     /* Argon2id.  crypto_pwhash needs a fixed-length 16-byte salt, so fold our
      * variable-length domain-separation salt into one with BLAKE2b.           */
     {
@@ -1949,16 +1933,6 @@ static int cc_derive_key(cc_cluster_t *cl)
             return -1;
         }
     }
-#else
-    if (wc_scrypt(cl->key, (const byte *)cl->password, (int)strlen(cl->password),
-                  (const byte *)salt, saltlen,
-                  CC_SCRYPT_COST, CC_SCRYPT_BLOCKSIZE, CC_SCRYPT_PARALLEL,
-                  32) != 0) {
-	LM_ERR("clusterer_controller: key derivation (scrypt) failed for "
-	       "cluster %d\n", cl->cluster_id);
-	return -1;
-    }
-#endif
     return 0;
 }
 
@@ -1984,10 +1958,8 @@ static int cc_encrypt_pkt(char *buf, int plain_off, int plain_len,
     /* AAD = cleartext header (magic + cluster_id): binding it to the tag stops
      * a captured packet being re-stamped with another cluster_id on a shared
      * multicast+password group (cross-cluster injection).  The nonce is the
-     * AEAD IV, already bound.  Random nonces are safe here: at this volume the
-     * AES-GCM 96-bit collision bound is unreachable, and XChaCha20's 192-bit
-     * nonce removes the concern outright.                                     */
-#ifdef CC_HAVE_SODIUM
+     * AEAD IV, already bound.  XChaCha20's 192-bit nonce makes random nonces
+     * collision-safe outright.                                                */
     {
         unsigned char      nonce[CC_NONCE_SZ];
         unsigned long long clen = 0;
@@ -2003,35 +1975,6 @@ static int cc_encrypt_pkt(char *buf, int plain_off, int plain_len,
         }
         return plain_off + (int)clen;   /* clen = plain_len + CC_TAG_SZ */
     }
-#else
-    {
-        Aes           aes;
-        unsigned char nonce[CC_NONCE_SZ];
-        unsigned char tag[CC_TAG_SZ];
-        if (wc_RNG_GenerateBlock(&cc_rng, nonce, CC_NONCE_SZ) != 0) {
-            LM_ERR("clusterer_controller: RNG failed\n");
-            return -1;
-        }
-        memcpy(buf + CC_NONCE_OFF, nonce, CC_NONCE_SZ);
-        if (wc_AesGcmSetKey(&aes, key, 32) != 0) {
-            LM_ERR("clusterer_controller: AesGcmSetKey failed\n");
-            return -1;
-        }
-        if (wc_AesGcmEncrypt(&aes,
-                             (byte *)buf + plain_off,
-                             (const byte *)buf + plain_off, (word32)plain_len,
-                             nonce, CC_NONCE_SZ,
-                             tag, CC_TAG_SZ,
-                             (const byte *)buf, CC_MAGIC_SZ + CC_CLUSTER_ID_SZ) != 0) {
-            LM_ERR("clusterer_controller: AesGcmEncrypt failed\n");
-            wc_AesFree(&aes);
-            return -1;
-        }
-        wc_AesFree(&aes);
-        memcpy(buf + plain_off + plain_len, tag, CC_TAG_SZ);
-        return plain_off + plain_len + CC_TAG_SZ;
-    }
-#endif
 }
 
 /**
@@ -2056,7 +1999,6 @@ static int cc_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
 	return -1;
     }
 
-#ifdef CC_HAVE_SODIUM
     {
         unsigned char     *nonce = (unsigned char *)buf + CC_NONCE_OFF;
         unsigned long long mlen  = 0;
@@ -2077,36 +2019,6 @@ static int cc_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
             return -1;
         }
     }
-#else
-    {
-        Aes            aes;
-        unsigned char *nonce = (unsigned char *)buf + CC_NONCE_OFF;
-        unsigned char *tag   = (unsigned char *)buf + n - CC_TAG_SZ;
-        int            ret;
-        if (wc_AesGcmSetKey(&aes, key, 32) != 0) {
-            LM_ERR("clusterer_controller: AesGcmSetKey failed\n");
-            return -1;
-        }
-        ret = wc_AesGcmDecrypt(&aes,
-                               (byte *)buf + CC_WIRE_HDR_SZ,
-                               (const byte *)buf + CC_WIRE_HDR_SZ, (word32)cipher_len,
-                               nonce, CC_NONCE_SZ,
-                               tag, CC_TAG_SZ,
-                               (const byte *)buf, CC_MAGIC_SZ + CC_CLUSTER_ID_SZ);
-        wc_AesFree(&aes);
-        if (ret != 0) {
-            if (is_bootstrap)
-                LM_WARN("clusterer_controller: bootstrap decryption failed "
-                        "from %s - wrong password, foreign cluster, or "
-                        "tampered packet\n", sender_ip);
-            else
-                LM_DBG("clusterer_controller: session packet from %s did not "
-                       "decrypt - transient key mismatch during (re)key or "
-                       "split-brain heal\n", sender_ip);
-            return -1;
-        }
-    }
-#endif
     return 0;
 }
 
@@ -2458,7 +2370,7 @@ static void cc_send_join_req_pkt(int sock, cc_cluster_t *cl)
 
     /* Append per-exchange nonce; master echoes it in KEY_GRANT to bind the
      * ECDH wrap to this specific exchange even if password is later compromised */
-    if (wc_RNG_GenerateBlock(&cc_rng, cl->my_join_nonce, CC_JOIN_NONCE_SZ) != 0) {
+    if (cc_random_bytes(cl->my_join_nonce, CC_JOIN_NONCE_SZ) != 0) {
 	LM_ERR("clusterer_controller: RNG for join_nonce failed\n");
 	return;
     }
@@ -2758,7 +2670,7 @@ static void cc_send_key_handoff(int sock, const char *next_master_ip,
 static void cc_on_became_master(cc_cluster_t *cl)
 {
     cl->join_pending = 0;   /* any pending re-key join is now moot */
-    if (wc_RNG_GenerateBlock(&cc_rng, cl->peers->master_salt, CC_MASTER_SALT_SZ) != 0) {
+    if (cc_random_bytes(cl->peers->master_salt, CC_MASTER_SALT_SZ) != 0) {
         LM_ERR("clusterer_controller: [cluster %d] RNG for master_salt failed\n",
                cl->cluster_id);
         return;
@@ -5580,17 +5492,10 @@ static int mod_init(void)
 
     LM_INFO("clusterer_controller: initialising\n");
 
-    if (wc_InitRng(&cc_rng) != 0) {
-	LM_ERR("clusterer_controller: wc_InitRng failed\n");
-	return -1;
-    }
-
-#ifdef CC_HAVE_SODIUM
     if (sodium_init() < 0) {
 	LM_ERR("clusterer_controller: sodium_init() failed\n");
 	return -1;
     }
-#endif
 
     /* Resolve the on_config_mismatch policy string. */
     if (on_config_mismatch_s) {
@@ -5886,12 +5791,8 @@ static int mod_init(void)
 
 static int cc_child_init(int rank)
 {
-	/* Re-seed RNG after fork - each worker must have independent state. */
-	wc_FreeRng(&cc_rng);
-	if (wc_InitRng(&cc_rng) != 0) {
-		LM_ERR("clusterer_controller: wc_InitRng failed in child\n");
-		return -1;
-	}
+	/* Re-seed the CSPRNG after fork - each worker must have independent state. */
+	randombytes_stir();
 
 	/* Sync current_id from shared memory in every child process.
 	 * The global current_id diverges after fork - each process needs

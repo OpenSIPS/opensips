@@ -328,16 +328,17 @@ Chapter 1. Admin Guide
    attempting decryption, so foreign-cluster traffic on the group
    never counts as an authentication failure.
 
-   Crypto suite (selected at build time): by default the module
-   uses AES-256-GCM (12-byte nonce) for the payload AEAD and
-   scrypt (N=2^16, r=8, p=1) for the bootstrap-key derivation,
-   through WolfSSL. If libsodium is detected on the build host,
-   the module is compiled instead with XChaCha20-Poly1305 (24-byte
-   nonce, whose 192-bit nonce space removes any random-nonce
-   collision concern) and Argon2id. The two wire formats are not
-   interoperable, so every node in a cluster must be built with
-   the same suite; the active suite is reported in the startup log
-   (crypto=...).
+   Crypto suite (selected at build time): if libsodium is detected
+   on the build host, the module is built sodium-only:
+   XChaCha20-Poly1305 (24-byte nonce, whose 192-bit nonce space
+   removes any random-nonce collision concern) for the payload
+   AEAD, Argon2id for the bootstrap-key derivation, and X25519 /
+   HKDF-SHA256 / RNG also from libsodium — WolfSSL is not linked
+   at all. Without libsodium the module falls back to WolfSSL:
+   AES-256-GCM (12-byte nonce) and scrypt (N=2^16, r=8, p=1). The
+   two wire formats are not interoperable, so every node in a
+   cluster must be built with the same suite; the active suite is
+   reported in the startup log (crypto=...).
 
    Phase 1 — bootstrap (JOIN_REQ / KEY_GRANT): each worker process
    generates an ephemeral X25519 keypair on startup. When joining,
@@ -551,27 +552,31 @@ on-key")
 
 1.5.2. External Libraries or Applications
 
-   The following libraries must be installed:
-     * tls_wolfssl — the clusterer_controller module links
-       statically against the WolfSSL library built by the
-       tls_wolfssl module
-       (modules/tls_wolfssl/lib/lib/libwolfssl.a). WolfSSL
-       provides AES-256-GCM authenticated encryption, X25519 ECDH
-       key agreement, HKDF-SHA256 key derivation, the scrypt
-       password KDF, and SHA-256. The tls_wolfssl module must be
-       present in the source tree; its static library is built
-       automatically as a dependency if not already present.
-     * libsodium (optional) — if the build host has libsodium
+   One of the following two crypto libraries is required;
+   libsodium is preferred and used exclusively when found:
+     * libsodium (preferred) — if the build host has libsodium
        development files (detected via pkg-config), the module is
-       compiled with the stronger crypto suite: XChaCha20-Poly1305
-       for the payload AEAD and Argon2id for the bootstrap-key
-       derivation, in place of AES-256-GCM and scrypt. X25519 ECDH
-       and HKDF continue to use WolfSSL. libsodium is linked
-       dynamically, so each target host then also needs the
-       libsodium runtime package (for example libsodium23).
-       Because the two suites produce incompatible wire formats,
-       every node in a cluster must be built the same way; the
-       active suite is printed in the startup log.
+       built sodium-only: XChaCha20-Poly1305 for the payload AEAD,
+       Argon2id for the bootstrap-key derivation, and X25519 ECDH,
+       HKDF-SHA256 and the RNG also from libsodium — WolfSSL is
+       not linked at all, keeping the module binary small (a few
+       hundred KB instead of several MB of statically-linked
+       WolfSSL). libsodium is linked dynamically, so each target
+       host also needs the libsodium runtime package (for example
+       libsodium23).
+     * tls_wolfssl (fallback) — without libsodium, the module
+       links statically against the WolfSSL library built by the
+       tls_wolfssl module
+       (modules/tls_wolfssl/lib/lib/libwolfssl.a), providing
+       AES-256-GCM authenticated encryption, X25519 ECDH,
+       HKDF-SHA256 and the scrypt password KDF. The tls_wolfssl
+       module must then be present in the source tree; its static
+       library is built automatically as a dependency if not
+       already present.
+
+   Because the two suites produce incompatible wire formats, every
+   node in a cluster must be built the same way; the active suite
+   is printed in the startup log.
 
 1.6. Building the Module
 
@@ -582,9 +587,11 @@ on-key")
    it to include_modules in your Makefile.conf:
 include_modules= clusterer_controller
 
-   then rebuild (make all / make modules). Because the module
-   links WolfSSL (and optionally libsodium), the same
-   external-library requirements as tls_wolfssl apply.
+   then rebuild (make all / make modules). With libsodium
+   development files on the build host the module builds
+   sodium-only (no WolfSSL); otherwise it links the bundled
+   WolfSSL and the same external-library requirements as
+   tls_wolfssl apply — see External Libraries or Applications.
 
    The clusterer module is unmodified when clusterer_controller is
    not built. The controller integration on the clusterer side
