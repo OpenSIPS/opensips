@@ -29,6 +29,7 @@
 
 
 #include "topo_hiding_logic.h"
+#include "th_store.h"
 
 struct tm_binds tm_api;
 struct dlg_binds dlg_api;
@@ -48,6 +49,7 @@ str th_contact_callee_var = str_init("_th_contact_callee_username_var_");
 int th_ct_enc_scheme;
 
 static int mod_init(void);
+static int child_init(int rank);
 static void mod_destroy(void);
 static int fixup_mmode(void **param);
 static int fixup_th_params(void **param);
@@ -79,6 +81,9 @@ static const param_export_t params[] = {
 	{ "th_contact_caller_username_var", STR_PARAM, &th_contact_caller_var.s  },
 	{ "th_contact_callee_username_var", STR_PARAM, &th_contact_callee_var.s  },
 	{ "th_callid_loop_protection",      INT_PARAM, &th_loop_protection       },
+	{ "th_state_url",                STR_PARAM, &th_state_url.s              },
+	{ "th_state_ttl",                INT_PARAM, &th_state_ttl                },
+	{ "th_state_ttl_short",          INT_PARAM, &th_state_ttl_short          },
 	{0, 0, 0}
 };
 
@@ -106,6 +111,7 @@ static const dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "force_dialog",		get_deps_dialog },
+		{ "th_state_url",		get_deps_cachedb_url },
 		{ NULL, NULL },
 	},
 };
@@ -129,7 +135,7 @@ struct module_exports exports= {
 	mod_init,         /* module initialization function */
 	(response_function) 0,
 	mod_destroy,
-	0,                /* per-child init function */
+	child_init,       /* per-child init function */
 	0                 /* reload confirm function */
 };
 
@@ -163,6 +169,11 @@ static int mod_init(void)
 		goto error;
 	}
 
+
+	if (th_store_init() < 0) {
+		LM_ERR("failed to initialize the topology hiding state storage\n");
+		goto error;
+	}
 
 	/* loading dependencies */
 	if (load_tm_api(&tm_api)!=0) {
@@ -202,9 +213,19 @@ error:
 	return -1;
 }
 
+static int child_init(int rank)
+{
+	if (th_store_child_init() < 0) {
+		LM_ERR("failed to connect to the topology hiding state storage\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static void mod_destroy(void)
 {
-	return;
+	th_store_destroy();
 }
 
 static int fixup_mmode(void **param)
