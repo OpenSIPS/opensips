@@ -487,6 +487,7 @@ typedef struct cc_cluster_ {
     int            cluster_id;
     char           multicast_address[INET_ADDRSTRLEN];
     int            multicast_port;
+    struct sockaddr_in mcast_dest;   /* resolved once in cc_setup_socket */
     char           password[1025];
     unsigned char  key[32];         /* bootstrap key = SHA256(password); JOIN only */
     unsigned char  session_key[32]; /* group key = HKDF(password, master_salt)     */
@@ -1600,26 +1601,39 @@ static void cc_apply_master_from_list_locked(const char *master_ip, cc_cluster_t
 }
 
 /**
+ * cc_peer_by_ip_locked() - find a peer entry by IP string.
+ * Returns the entry pointer, or NULL if not present.
+ * Must be called with cl->peers->lock held (read or write).
+ */
+static cc_peer_t *cc_peer_by_ip_locked(cc_cluster_t *cl, const char *ip)
+{
+    int i;
+    for (i = 0; i < cl->peers->count; i++)
+        if (strcmp(cl->peers->entries[i].ip, ip) == 0)
+            return &cl->peers->entries[i];
+    return NULL;
+}
+
+/**
  * cc_upsert_peer_locked() - insert or refresh a peer entry.
  * Does NOT call cc_elect_master(cl); callers do that explicitly.
  * Must be called with cl->peers->lock held.
  */
 static void cc_upsert_peer_locked(const char *src_ip, cc_cluster_t *cl)
 {
-    int          i;
     unsigned int src_num = ip_to_num(src_ip);
     time_t       now     = time(NULL);
+    cc_peer_t   *found;
 
     if (src_num == 0) {
 	LM_WARN("clusterer_controller: ignoring invalid IP '%s'\n", src_ip);
 	return;
     }
 
-    for (i = 0; i < cl->peers->count; i++) {
-	if (strcmp(cl->peers->entries[i].ip, src_ip) == 0) {
-	    cl->peers->entries[i].last_seen = now;
-	    return;   /* updated */
-	}
+    found = cc_peer_by_ip_locked(cl, src_ip);
+    if (found) {
+	found->last_seen = now;
+	return;   /* updated */
     }
 
     /* New entry */
@@ -1673,16 +1687,12 @@ static void cc_update_peer_bin_locked(const char *ip, uint16_t node_id,
                                       const char (*bin_sockets)[CC_MAX_BIN_SOCK_LEN],
                                       cc_cluster_t *cl)
 {
-    int i;
-    for (i = 0; i < cl->peers->count; i++) {
-	if (strcmp(cl->peers->entries[i].ip, ip) == 0) {
-	    cl->peers->entries[i].node_id   = node_id;
-	    cl->peers->entries[i].bin_count = bin_count;
-	    if (bin_count > 0)
-		memcpy(cl->peers->entries[i].bin_sockets, bin_sockets,
-		       bin_count * CC_MAX_BIN_SOCK_LEN);
-	    return;
-	}
+    cc_peer_t *e = cc_peer_by_ip_locked(cl, ip);
+    if (e) {
+	e->node_id   = node_id;
+	e->bin_count = bin_count;
+	if (bin_count > 0)
+	    memcpy(e->bin_sockets, bin_sockets, bin_count * CC_MAX_BIN_SOCK_LEN);
     }
 }
 
@@ -2152,6 +2162,9 @@ static int cc_setup_socket(cc_cluster_t *cl)
     LM_INFO("clusterer_controller: [cluster %d] socket ready, joined %s:%d\n",
             cl->cluster_id, cl->multicast_address, cl->multicast_port);
 
+    /* cl->mcast_dest was resolved in mod_init (main process) and inherited
+     * across fork; no need to rebuild it here. */
+
     /* Set non-blocking so sendto() never hangs the worker if the kernel
      * UDP send buffer fills up.  recvfrom() already relies on select()
      * for readiness, so O_NONBLOCK is safe and consistent for both.    */
@@ -2169,6 +2182,39 @@ static int cc_setup_socket(cc_cluster_t *cl)
  * ========================================================================= */
 
 /**
+ * cc_seal_and_send() - encrypt a prepared packet in place and multicast it.
+ *
+ * On entry @pkt holds the cleartext framing (magic already stamped) plus the
+ * @plain_len-byte plaintext starting at CC_WIRE_HDR_SZ; cc_encrypt_pkt() fills
+ * the cluster_id + nonce and appends the AEAD tag.  Every controller packet
+ * targets the cluster's multicast group (cached in cl->mcast_dest), so all
+ * senders share this tail.  @type is only used for logging.
+ *
+ * @return 0 on success, -1 on encrypt or send failure.
+ */
+static int cc_seal_and_send(int sock, cc_cluster_t *cl, char *pkt, int plain_len,
+                            const unsigned char *key, unsigned char type)
+{
+    int total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, key,
+                                   cl->cluster_id);
+    if (total_len < 0)
+        return -1;
+
+    if (sendto(sock, pkt, total_len, 0,
+               (struct sockaddr *)&cl->mcast_dest, sizeof(cl->mcast_dest)) < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            LM_DBG("clusterer_controller: [cluster %d] sendto (type=0x%02x) "
+                   "would block\n", cl->cluster_id, type);
+        else
+            LM_ERR("clusterer_controller: [cluster %d] sendto (type=0x%02x): %s\n",
+                   cl->cluster_id, type, strerror(errno));
+        return -1;
+    }
+    LM_DBG("clusterer_controller: [cluster %d] sent 0x%02x\n", cl->cluster_id, type);
+    return 0;
+}
+
+/**
  * cc_send_pkt_with_ip() - build and multicast a small (ALIVE/GOODBYE) packet.
  * JOIN_REQ is handled by cc_send_join_req_pkt() which carries BIN socket info.
  *
@@ -2181,8 +2227,7 @@ static void cc_send_pkt_with_ip(int sock, unsigned char type, cc_cluster_t *cl)
     char               pkt[CC_SMALL_PKT_SZ + CC_PUBKEY_SZ + CC_CONFIG_SZ];
     uint32_t           seq     = htonl(++cl->peers->my_seq);
     int                ip_len  = (int)strlen(my_ip);
-    int                plain_len, total_len;
-    struct sockaddr_in dest;
+    int                plain_len;
 
     if (ip_len > CC_MAX_IP_LEN)
 	ip_len = CC_MAX_IP_LEN;
@@ -2212,26 +2257,7 @@ static void cc_send_pkt_with_ip(int sock, unsigned char type, cc_cluster_t *cl)
 	}
     }
 
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->session_key, cl->cluster_id);
-    if (total_len < 0)
-	return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0) {
-	if (errno == EAGAIN || errno == EWOULDBLOCK)
-	    LM_DBG("clusterer_controller: [cluster %d] sendto (type=0x%02x) would block\n",
-	           cl->cluster_id, type);
-	else
-	    LM_ERR("clusterer_controller: [cluster %d] sendto (type=0x%02x): %s\n",
-	           cl->cluster_id, type, strerror(errno));
-    } else {
-	LM_DBG("clusterer_controller: [cluster %d] sent 0x%02x\n", cl->cluster_id, type);
-    }
+    cc_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type);
 }
 
 #define cc_send_alive(sock, cl)    cc_send_pkt_with_ip((sock), CC_PKT_ALIVE, (cl))
@@ -2250,8 +2276,7 @@ static void cc_send_list_pkt(int sock, unsigned char type, cc_cluster_t *cl)
     uint16_t           count_be;
     char              *p;
     time_t             cutoff;
-    struct sockaddr_in dest;
-    int                i, plain_len, total_len;
+    int                i, plain_len;
 
     memcpy(pkt, CC_PACKET_MAGIC, CC_MAGIC_SZ);
     /* nonce at [8..19] written by cc_encrypt_pkt */
@@ -2290,20 +2315,7 @@ static void cc_send_list_pkt(int sock, unsigned char type, cc_cluster_t *cl)
 
     plain_len = 1 + CC_SEQ_SZ + CC_LIST_COUNT_SZ + CC_NODE_ID_SZ
                 + count * CC_IP_ENTRY_SZ;
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->session_key, cl->cluster_id);
-    if (total_len < 0)
-	return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-	LM_ERR("clusterer_controller: [cluster %d] sendto MEMBER_LIST: %s\n",
-	       cl->cluster_id, strerror(errno));
-    else
+    if (cc_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type) == 0)
 	LM_INFO("clusterer_controller: [cluster %d] sent MEMBER_LIST (%d members)\n",
 	        cl->cluster_id, count);
 }
@@ -2338,8 +2350,7 @@ static void cc_send_join_req_pkt(int sock, cc_cluster_t *cl)
     seq = htonl(++cl->peers->my_seq);
     int                ip_len  = (int)strlen(my_ip);
     char              *p;
-    int                plain_len, total_len;
-    struct sockaddr_in dest;
+    int                plain_len;
 
     if (ip_len > CC_MAX_IP_LEN)
 	ip_len = CC_MAX_IP_LEN;
@@ -2388,20 +2399,7 @@ static void cc_send_join_req_pkt(int sock, cc_cluster_t *cl)
     }
 
     plain_len = (int)(p - (pkt + CC_WIRE_HDR_SZ));
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->key, cl->cluster_id);
-    if (total_len < 0)
-	return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-	LM_ERR("clusterer_controller: [cluster %d] sendto JOIN_REQ: %s\n",
-	       cl->cluster_id, strerror(errno));
-    else
+    if (cc_seal_and_send(sock, cl, pkt, plain_len, cl->key, CC_PKT_JOIN_REQ) == 0)
 	LM_DBG("clusterer_controller: [cluster %d] sent JOIN_REQ bin=%s\n",
 	       cl->cluster_id, cl->bin_socket);
 }
@@ -2424,8 +2422,7 @@ static void cc_send_node_assign(int sock, const char *ip, uint16_t node_id,
     uint16_t           nid_be   = htons(node_id);
     int                ip_len   = (int)strnlen(ip, CC_MAX_IP_LEN);
     char              *p;
-    int                i, plain_len, total_len;
-    struct sockaddr_in dest;
+    int                i, plain_len;
 
     memcpy(pkt, CC_PACKET_MAGIC, CC_MAGIC_SZ);
 
@@ -2458,20 +2455,7 @@ static void cc_send_node_assign(int sock, const char *ip, uint16_t node_id,
      * GCM auth on receipt ("session key mismatch"), driving a JOIN_REQ storm.
      * KEY_GRANT is sent before NODE_ASSIGN so the joiner already holds the
      * session key by the time this arrives. */
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->session_key, cl->cluster_id);
-    if (total_len < 0)
-	return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-	LM_ERR("clusterer_controller: [cluster %d] sendto NODE_ASSIGN: %s\n",
-	       cl->cluster_id, strerror(errno));
-    else
+    if (cc_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, CC_PKT_NODE_ASSIGN) == 0)
 	LM_INFO("clusterer_controller: [cluster %d] NODE_ASSIGN node_id=%u ip=%s\n",
 	        cl->cluster_id, node_id, ip);
 }
@@ -2485,27 +2469,14 @@ static void cc_send_master_alive(int sock, cc_cluster_t *cl)
 {
     char               pkt[CC_WIRE_HDR_SZ + CC_PLAIN_HDR_SZ + CC_TAG_SZ];
     uint32_t           seq   = htonl(++cl->peers->my_seq);
-    int                total_len;
-    struct sockaddr_in dest;
 
     memcpy(pkt, CC_PACKET_MAGIC, CC_MAGIC_SZ);
     pkt[CC_WIRE_HDR_SZ]     = (char)CC_PKT_MASTER_ALIVE;
     memcpy(pkt + CC_WIRE_HDR_SZ + 1, &seq, CC_SEQ_SZ);
     /* no payload beyond type+seq */
 
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, CC_PLAIN_HDR_SZ,
-                               cl->session_key, cl->cluster_id);
-    if (total_len < 0) return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-        LM_ERR("clusterer_controller: [cluster %d] sendto MASTER_ALIVE: %s\n",
-               cl->cluster_id, strerror(errno));
+    cc_seal_and_send(sock, cl, pkt, CC_PLAIN_HDR_SZ, cl->session_key,
+                     CC_PKT_MASTER_ALIVE);
 }
 
 /**
@@ -2523,8 +2494,6 @@ static void cc_send_master_beacon(int sock, cc_cluster_t *cl)
     char               pkt[CC_WIRE_HDR_SZ + CC_PLAIN_HDR_SZ + 2 + CC_TAG_SZ];
     uint32_t           seq   = htonl(++cl->peers->my_seq);
     uint16_t           cnt_be;
-    int                total_len;
-    struct sockaddr_in dest;
 
     lock_start_read(cl->peers->lock);
     cnt_be = htons((uint16_t)cl->peers->count);
@@ -2535,19 +2504,8 @@ static void cc_send_master_beacon(int sock, cc_cluster_t *cl)
     memcpy(pkt + CC_WIRE_HDR_SZ + 1, &seq, CC_SEQ_SZ);
     memcpy(pkt + CC_WIRE_HDR_SZ + CC_PLAIN_HDR_SZ, &cnt_be, 2);
 
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, CC_PLAIN_HDR_SZ + 2,
-                               cl->key, cl->cluster_id);
-    if (total_len < 0) return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-        LM_ERR("clusterer_controller: [cluster %d] sendto MASTER_BEACON: %s\n",
-               cl->cluster_id, strerror(errno));
+    cc_seal_and_send(sock, cl, pkt, CC_PLAIN_HDR_SZ + 2, cl->key,
+                     CC_PKT_MASTER_BEACON);
 }
 
 /**
@@ -2569,8 +2527,7 @@ static void cc_send_key_grant(int sock, const char *target_ip, cc_cluster_t *cl,
     uint32_t           seq     = htonl(++cl->peers->my_seq);
     unsigned char      wrapped[CC_MASTER_SALT_SZ];
     char              *p;
-    int                ip_len, plain_len, total_len;
-    struct sockaddr_in dest;
+    int                ip_len, plain_len;
 
     if (cc_wrap_salt(cl->my_privkey, joiner_pubkey, cl->password,
                      cl->peers->master_salt, "cc_key_grant",
@@ -2590,19 +2547,7 @@ static void cc_send_key_grant(int sock, const char *target_ip, cc_cluster_t *cl,
     memcpy(p, wrapped,        CC_MASTER_SALT_SZ);      p += CC_MASTER_SALT_SZ;
 
     plain_len = (int)(p - (pkt + CC_WIRE_HDR_SZ));
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->key, cl->cluster_id);
-    if (total_len < 0) return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-        LM_ERR("clusterer_controller: [cluster %d] sendto KEY_GRANT: %s\n",
-               cl->cluster_id, strerror(errno));
-    else
+    if (cc_seal_and_send(sock, cl, pkt, plain_len, cl->key, CC_PKT_KEY_GRANT) == 0)
         LM_INFO("clusterer_controller: [cluster %d] sent KEY_GRANT to %s\n",
                 cl->cluster_id, target_ip);
 }
@@ -2621,8 +2566,7 @@ static void cc_send_key_handoff(int sock, const char *next_master_ip,
     uint32_t           seq     = htonl(++cl->peers->my_seq);
     unsigned char      wrapped[CC_MASTER_SALT_SZ];
     char              *p;
-    int                ip_len, plain_len, total_len;
-    struct sockaddr_in dest;
+    int                ip_len, plain_len;
 
     if (cc_wrap_salt(cl->my_privkey, next_master_pubkey, cl->password,
                      cl->peers->master_salt, "cc_key_handoff",
@@ -2641,19 +2585,8 @@ static void cc_send_key_handoff(int sock, const char *next_master_ip,
     memcpy(p, wrapped,        CC_MASTER_SALT_SZ);          p += CC_MASTER_SALT_SZ;
 
     plain_len = (int)(p - (pkt + CC_WIRE_HDR_SZ));
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->session_key, cl->cluster_id);
-    if (total_len < 0) return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-        LM_ERR("clusterer_controller: [cluster %d] sendto KEY_HANDOFF: %s\n",
-               cl->cluster_id, strerror(errno));
-    else
+    if (cc_seal_and_send(sock, cl, pkt, plain_len, cl->session_key,
+                         CC_PKT_KEY_HANDOFF) == 0)
         LM_INFO("clusterer_controller: [cluster %d] sent KEY_HANDOFF to %s\n",
                 cl->cluster_id, next_master_ip);
 }
@@ -4000,8 +3933,7 @@ static void cc_send_join_reject(int sock, const char *target_ip, cc_cluster_t *c
 {
     char               pkt[CC_SMALL_PKT_SZ + 1];   /* +1 for the reason byte */
     uint32_t           seq = htonl(++cl->peers->my_seq);
-    int                ip_len, plain_len, total_len;
-    struct sockaddr_in dest;
+    int                ip_len, plain_len;
 
     ip_len = (int)strnlen(target_ip, CC_MAX_IP_LEN);
 
@@ -4014,19 +3946,7 @@ static void cc_send_join_reject(int sock, const char *target_ip, cc_cluster_t *c
     pkt[CC_WIRE_HDR_SZ + CC_PLAIN_HDR_SZ + ip_len + 1] = (char)reason;
 
     plain_len = CC_PLAIN_HDR_SZ + ip_len + 1 + 1;
-    total_len = cc_encrypt_pkt(pkt, CC_WIRE_HDR_SZ, plain_len, cl->key, cl->cluster_id);
-    if (total_len < 0) return;
-
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family      = AF_INET;
-    dest.sin_port        = htons((uint16_t)cl->multicast_port);
-    dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
-
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&dest, sizeof(dest)) < 0)
-        LM_ERR("clusterer_controller: [cluster %d] sendto JOIN_REJECT failed: %s\n",
-               cl->cluster_id, strerror(errno));
-    else
+    if (cc_seal_and_send(sock, cl, pkt, plain_len, cl->key, CC_PKT_JOIN_REJECT) == 0)
         LM_WARN("clusterer_controller: [cluster %d] sent JOIN_REJECT to %s (%s)\n",
                 cl->cluster_id, target_ip,
                 reason == CC_REJECT_CONFIG ? "different cluster settings"
@@ -4168,7 +4088,7 @@ static void cc_recv_one(int sock, cc_cluster_t *cl)
 	    if (_new && strcmp(sender_ip_buf, my_ip) != 0)
 		cl->auth_fail_pkts++;
 
-	    if (memcmp(buf, CC_BOOTSTRAP_MAGIC, CC_MAGIC_SZ) == 0) {
+	    if (is_bootstrap) {
 
 		/* Master: track per-IP bootstrap failures; send JOIN_REJECT on limit.
 		 * JOIN_REJECT is encrypted (BOOTSTRAP_MAGIC/GCM) so only nodes with
@@ -4187,7 +4107,7 @@ static void cc_recv_one(int sock, cc_cluster_t *cl)
 		if (_new && _lm[0] != '\0' && strcmp(sender_ip_buf, _lm) == 0)
 		    cl->bootstrap_auth_fails++;
 	    }
-	    if (memcmp(buf, CC_PACKET_MAGIC, CC_MAGIC_SZ) == 0 && !cl->join_pending) {
+	    if (!is_bootstrap && !cl->join_pending) {
 		/* Session key mismatch: request a re-key ONLY when the packet we
 		 * could not decrypt came from OUR current master (a legitimate key
 		 * rotation).  Undecryptable session packets from any other source
@@ -4210,7 +4130,7 @@ static void cc_recv_one(int sock, cc_cluster_t *cl)
 	 * counter the worker uses - GOODBYE gets a valid monotonic seq number
 	 * without any special-casing.
 	 * Bootstrap packets (CC_BOOTSTRAP_MAGIC) use join_nonce instead. */
-	if (memcmp(buf, CC_PACKET_MAGIC, CC_MAGIC_SZ) == 0) {
+	if (!is_bootstrap) {
 	    uint32_t pkt_seq;
 	    memcpy(&pkt_seq, buf + CC_WIRE_HDR_SZ + 1, CC_SEQ_SZ);
 	    pkt_seq = ntohl(pkt_seq);
@@ -4220,14 +4140,9 @@ static void cc_recv_one(int sock, cc_cluster_t *cl)
 
 	pkt_type    = (unsigned char)buf[CC_WIRE_HDR_SZ];
 	payload     = buf + CC_WIRE_HDR_SZ + CC_PLAIN_HDR_SZ;
+	/* Non-negative: the minimum-length gate above guarantees
+	 * n >= CC_WIRE_HDR_SZ + CC_PLAIN_HDR_SZ + CC_TAG_SZ. */
 	payload_len = (int)(n - CC_WIRE_HDR_SZ - CC_PLAIN_HDR_SZ - CC_TAG_SZ);
-
-	if (payload_len < 0) {
-	    LM_WARN("clusterer_controller: empty payload from %s, dropping\n",
-	            sender_ip_buf);
-	    return;
-	}
-
 
 	switch (pkt_type) {
 
@@ -5534,8 +5449,16 @@ static int mod_init(void)
     /* ---- Parse and validate all cluster strings ------------------------ */
 
     for (i = 0; i < cc_cluster_str_count; i++) {
-	if (cc_parse_cluster_str(cc_cluster_strs[i], &cc_clusters[i]) < 0)
+	cc_cluster_t *cl = &cc_clusters[i];
+	if (cc_parse_cluster_str(cc_cluster_strs[i], cl) < 0)
 	    return -1;
+	/* Resolve the multicast destination once, in the main process, so both
+	 * the forked workers (via fork) and mod_destroy's GOODBYE path (main
+	 * process) can send without rebuilding it. */
+	memset(&cl->mcast_dest, 0, sizeof(cl->mcast_dest));
+	cl->mcast_dest.sin_family      = AF_INET;
+	cl->mcast_dest.sin_port        = htons((uint16_t)cl->multicast_port);
+	cl->mcast_dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
 	cc_cluster_count++;
 	pkg_free(cc_cluster_strs[i]);
 	cc_cluster_strs[i] = NULL;
