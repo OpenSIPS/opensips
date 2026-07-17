@@ -439,6 +439,10 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 			break;
 		case HEP_PAYLOAD:
 			/* captured packet payload */
+			if (h3.payload_chunk_free) {
+				pkg_free(h3.payload_chunk.data);
+				h3.payload_chunk_free = 0;
+			}
 			h3.payload_chunk = *((hep_chunk_payload_t*)buf);
 			h3.payload_chunk.data = (char *)buf + sizeof(hep_chunk_t);
 
@@ -449,6 +453,10 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 		case HEP_COMPRESSED_PAYLOAD:
 			/* captured compressed payload(GZIP/inflate)*/
 
+			if (h3.payload_chunk_free) {
+				pkg_free(h3.payload_chunk.data);
+				h3.payload_chunk_free = 0;
+			}
 			h3.payload_chunk = *((hep_chunk_payload_t*)buf);
 			h3.payload_chunk.data = (char *)buf + sizeof(hep_chunk_t);
 
@@ -474,6 +482,8 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 				/* update the length based on the new length */
 				h3.payload_chunk.chunk.length += (decompress_len - compress_len);
 				h3.payload_chunk.data = decompressed_payload.s;
+				h3.payload_chunk_free = 1;
+				decompressed_payload.s = NULL;
 			}/* else we're just a proxy; leaving everything as is */
 
 			break;
@@ -528,6 +538,9 @@ safe_exit:
 	return 0;
 
 error:
+	if (h3.payload_chunk_free)
+		pkg_free(h3.payload_chunk.data);
+
 	while (h3.chunk_list) {
 		it = h3.chunk_list;
 		h3.chunk_list = it->next;

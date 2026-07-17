@@ -266,6 +266,9 @@ void free_hep_context(void *ptr)
 	/* for version 3 we may have custom chunks which are in shm so we
 	 * need to free them */
 	if (h->version == 3) {
+		if (h->u.hepv3.payload_chunk_free)
+			pkg_free(h->u.hepv3.payload_chunk.data);
+
 		it = h->u.hepv3.chunk_list;
 		while (it) {
 			if (foo) {
