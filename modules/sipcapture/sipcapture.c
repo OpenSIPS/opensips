@@ -1696,6 +1696,11 @@ static int del_hep_chunk(struct hepv3* h3, unsigned int chunk_id)
 	/* payload */
 	case HEP_PAYLOAD:
 	case HEP_COMPRESSED_PAYLOAD/* gzipped payload */:
+		if (h3->payload_chunk_free) {
+			pkg_free(h3->payload_chunk.data);
+			h3->payload_chunk_free = 0;
+		}
+		h3->payload_chunk.data = NULL;
 		h3->payload_chunk.chunk.length = 0;
 
 		break;
@@ -2139,6 +2144,10 @@ set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data)
 			return -1;
 		}
 
+		if (h3->payload_chunk_free) {
+			pkg_free(h3->payload_chunk.data);
+			h3->payload_chunk_free = 0;
+		}
 		memcpy(payload_buf, data->s, data->len);
 		h3->payload_chunk.data = payload_buf;
 		h3->payload_chunk.chunk.length = data->len + sizeof(hep_chunk_t);
