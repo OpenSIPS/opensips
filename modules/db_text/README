@@ -441,13 +441,13 @@ Chapter 3. Contributors
    7. Vlad Patrascu (@rvlad-patrascu) 8 6 94 49
    8. Ovidiu Sas (@ovidiusas) 7 5 61 8
    9. Sergey Khripchenko (@shripchenko) 5 2 185 2
-   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
+   10. Stefan Darius 5 2 139 4
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Maksym Sobolyev (@sobomax), Stefan Darius, Konstantin Bokarius,
-   Razvan Pistolea, Chris Heiser, Norman Brandinger (@NormB),
-   Peter Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan
-   Klinec (@ph4r05), Andrei Pelinescu-Onciul.
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev (@sobomax),
+   Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
+   Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Dusan Klinec (@ph4r05), Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -469,8 +469,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jun 2026
-   2.  Stefan Darius                       Jun 2026 - Jun 2026
+   1.  Stefan Darius                       Jun 2026 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jun 2026
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021

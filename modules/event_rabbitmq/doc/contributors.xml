@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Stefan Darius</entry>
+		<entry align="center">5</entry>
+		<entry align="center">2</entry>
+		<entry align="center">148</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">25</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>franklyfox</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">44</entry>
 		<entry align="center">5</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Stefan Darius, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Julián Moreno Patiño, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Julián Moreno Patiño, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2011 - Jun 2026</entry>
+		<entry>Stefan Darius</entry>
+		<entry align="center">Jun 2026 - Jul 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Stefan Darius</entry>
-		<entry align="center">Jun 2026 - Jun 2026</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Sep 2011 - Jun 2026</entry>
 	</row>
 	<row>
 		<entry>3. </entry>

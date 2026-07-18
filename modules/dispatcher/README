@@ -1517,12 +1517,12 @@ Chapter 3. Contributors
    All remaining contributors: Carsten Bock, Ionel Cerghit
    (@ionel-cerghit), Elena-Ramona Modroiu, John Burke
    (@john08burke), Klaus Darilion, Maksym Sobolyev (@sobomax),
-   Anca Vamanu, Jarrod Baumann (@jarrodb), wangdd, Walter Doekes
-   (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
-   Andrei Pelinescu-Onciul, Peter Lemenkov (@lemenkov), Stanislaw
-   Pitucha, Federico Cabiddu, Konstantin Bokarius, Andreas Granig,
-   John Riordan, Aron Podrigal (@ar45), Julián Moreno Patiño,
-   Kevin McAllister, Roman Sevko, UnixDev, Stefan Darius, David
+   Anca Vamanu, Jarrod Baumann (@jarrodb), wangdd, Stefan Darius,
+   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Jan Janak
+   (@janakj), Andrei Pelinescu-Onciul, Peter Lemenkov (@lemenkov),
+   Stanislaw Pitucha, Federico Cabiddu, Konstantin Bokarius,
+   Andreas Granig, John Riordan, Aron Podrigal (@ar45), Julián
+   Moreno Patiño, Kevin McAllister, Roman Sevko, UnixDev, David
    Sanders, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1545,8 +1545,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     May 2011 - Jun 2026
-   2.  Stefan Darius                       Jun 2026 - Jun 2026
+   1.  Stefan Darius                       Jun 2026 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea)     May 2011 - Jun 2026
    3.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2025
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2023
    5.  wangdd                              Apr 2023 - May 2023
