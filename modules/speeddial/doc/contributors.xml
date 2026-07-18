@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Stefan Darius</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">112</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">41</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">5</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Elena-Ramona Modroiu</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Sergio Gutierrez</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Anca Vamanu, Andrei Pelinescu-Onciul, Konstantin Bokarius, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Stefan Darius.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Anca Vamanu, Andrei Pelinescu-Onciul, Konstantin Bokarius, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2015 - Jun 2026</entry>
+		<entry>Stefan Darius</entry>
+		<entry align="center">Jun 2026 - Jul 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Stefan Darius</entry>
-		<entry align="center">Jun 2026 - Jun 2026</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2015 - Jun 2026</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
