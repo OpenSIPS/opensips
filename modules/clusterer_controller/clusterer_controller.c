@@ -495,6 +495,20 @@ typedef struct {
     cc_cipherstate_t cs;
 } cc_symstate_t;
 
+/* This node's own role in a cluster.  Tracked across elections so
+ * cc_elect_master() can log an explicit transition (member->backup,
+ * backup->master, master->member, ...) whenever it changes. */
+enum cc_role { CC_ROLE_MEMBER = 0, CC_ROLE_BACKUP, CC_ROLE_MASTER };
+
+static inline const char *cc_role_name(int r)
+{
+    switch (r) {
+    case CC_ROLE_MASTER: return "master";
+    case CC_ROLE_BACKUP: return "backup";
+    default:             return "member";
+    }
+}
+
 /**
  * cc_cluster_t - per-cluster runtime state.
  * One instance per "cluster" modparam; one worker process per instance.
@@ -608,6 +622,11 @@ typedef struct cc_cluster_ {
      * otherwise a demoted node keeps broadcasting MASTER_ALIVE and lower-IP
      * peers oscillate between two masters.  Worker-local.                     */
     int              master_ka_armed;
+    /* This node's last-known role in the cluster (enum cc_role).  Compared in
+     * cc_elect_master() to emit a one-line transition log on every change.
+     * Zero-initialised to CC_ROLE_MEMBER, which matches a not-yet-joined node.
+     * Worker-local. */
+    int              my_role;
 } cc_cluster_t;
 
 static cc_cluster_t  cc_clusters[CC_MAX_CLUSTERS];
@@ -1418,8 +1437,28 @@ static void cc_elect_master(cc_cluster_t *cl)
 	            (b_ip && strcmp(b_ip, my_ip) == 0) ? " [me]" : "",
 	            n_in);
 	}
+
+	/* Log this node's own role transition (member/backup/master) whenever
+	 * it changes, so a failover or a peer (re)joining that demotes/promotes
+	 * us gets its own line rather than being implied by the roles list. */
+	{
+	    int my_new_role = i_am_elected ? CC_ROLE_MASTER :
+	        ((b_ip && strcmp(b_ip, my_ip) == 0) ? CC_ROLE_BACKUP :
+	         CC_ROLE_MEMBER);
+	    if (my_new_role != cl->my_role) {
+		LM_INFO("clusterer_controller: [cluster %d] my role changed: "
+		        "%s -> %s\n", cl->cluster_id,
+		        cc_role_name(cl->my_role), cc_role_name(my_new_role));
+		cl->my_role = my_new_role;
+	    }
+	}
     } else {
-	/* No eligible peer - cluster has no master */
+	/* No eligible peer - cluster has no master; we are a plain member. */
+	if (cl->my_role != CC_ROLE_MEMBER) {
+	    LM_INFO("clusterer_controller: [cluster %d] my role changed: %s -> "
+	            "member\n", cl->cluster_id, cc_role_name(cl->my_role));
+	    cl->my_role = CC_ROLE_MEMBER;
+	}
 	if (cl->peers->last_master[0] != '\0') {
 	    LM_INFO("clusterer_controller: [cluster %d] master lost (%s), "
 	            "no eligible peers in election window\n",
@@ -3546,8 +3585,10 @@ static void cc_handle_goodbye(int sock, const char *src_ip, cc_cluster_t *cl)
 	    cc_send_member_list(sock, cl);
 	}
     } else {
+	/* This node's own role change (if any) is logged separately by
+	 * cc_elect_master() as a "my role changed" transition line. */
 	LM_INFO("clusterer_controller: re-election complete - "
-	        "master is %s, my role is member (%d node(s) remaining)\n",
+	        "master is %s (%d node(s) remaining)\n",
 	        new_master[0] ? new_master : "(none)",
 	        remaining);
     }
