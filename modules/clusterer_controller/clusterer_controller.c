@@ -407,72 +407,20 @@ typedef enum {
     CC_NODE_ACTIVE = 1    /* fully participating, sends ALIVE               */
 } cc_node_state_t;
 
-/* TODO: maintenance mode
+/* Planned: node maintenance mode (see the module documentation roadmap).
  *
- * Add CC_NODE_MAINTENANCE = 2 to cc_node_state_t.  A node in maintenance
- * must never become master, must not participate in elections (treated as
- * absent from cc_elect_master), and must not become active shtag holder for
- * any cluster even when manage_shtags=1.
+ * A CC_NODE_MAINTENANCE state would let a node be drained without leaving the
+ * cluster: never elected master, excluded from cc_elect_master (advertised in
+ * the ALIVE payload so peers drop it from the election window without waiting
+ * for a MEMBER_LIST refresh), and never the active sharing-tag holder even
+ * with manage_shtags=1.  It is local policy, so it would live in cc_cluster_t
+ * (not the shared peer table) and survive MEMBER_LIST resets, toggled by a
+ * local MI command.
  *
- * Entry / exit: new MI command  cc_maintenance {on|off}  sets the flag on the
- * local node.  Advertise the state in the ALIVE payload so all peers know to
- * exclude this node from elections without waiting for a MEMBER_LIST refresh.
- * The maintenance flag should survive MEMBER_LIST resets (it is local policy,
- * not part of the cluster-wide peer table - store it in cc_cluster_t, not
- * cc_peer_t).
- *
- * In cc_elect_master: skip any peer whose ALIVE-advertised maintenance flag
- * is set (treat it as not in the election window even if last_seen is fresh).
- *
- * In cc_transition_to_active and shtag activation paths: gate all
- * activate_backup_shtags / set_active_shtag calls behind
- *   if (cl->peers->node_state != CC_NODE_MAINTENANCE)
- *
- * TODO: shtag override mode
- *
- * Add MI command  cc_set_shtag_holder <cluster_id> <node_ip>  to force a
- * specific non-maintenance node to be the active shtag holder for a cluster,
- * overriding the normal master-drives-shtag logic.  Persist the override in
- * a new field  cc_peers_t.shtag_override_ip[CC_MAX_IP_LEN+1]  (in shm so
- * it is visible across processes).
- *
- * When shtag_override_ip is set for a cluster:
- *   - the designated node calls set_active_shtag regardless of mastership
- *   - all other nodes stay in backup shtag state
- *   - the override is NOT cleared on MEMBER_LIST or key rotation - it is
- *     explicit operator intent and must be cleared only by
- *     cc_clear_shtag_override (see below) or automatically when the
- *     overridden node enters maintenance mode
- *   - if the overridden node is put into maintenance mode, the override is
- *     automatically cleared and normal master-driven shtag logic resumes
- *
- * TODO: shtag override clear
- *
- * Add MI command  cc_clear_shtag_override <cluster_id>  to cancel a
- * previously set shtag override and return the cluster to normal mode where
- * the elected master drives shtag activation.
- *
- * Implementation:
- *   - zero cc_peers_t.shtag_override_ip for the cluster
- *   - the current master immediately calls set_active_shtag on itself and
- *     activate_backup_shtags on all other nodes, restoring normal state
- *   - non-master nodes that were held in backup shtag state due to the
- *     override need no explicit action - the next election cycle reapplies
- *     correct shtag assignments automatically
- *   - log at INFO: "shtag override cleared for cluster <id>, resuming
- *     normal master-driven shtag assignment (master: <ip>)"
- *   - return error if no override is active for the given cluster_id
- *
- * TODO: MI status commands
- *
- * cc_list_shtags  - list all clusters with their active shtag holder,
- *   whether the holder was elected normally or overridden, and which nodes
- *   are in maintenance mode.  Output columns: cluster_id, shtag, holder_ip,
- *   status in {elected | overridden | maintenance | no_holder}.
- *
- * cl_ctr_list_members should be extended to include a 'mode' field per node:
- *   active | maintenance, and an 'shtag_status' field: holder | backup |
- *   overridden | n/a (when manage_shtags=0 for that cluster).
+ * It would build on what is already here: the sharing-tag override
+ * (cl_ctr_shtag_force / cl_ctr_shtag_auto) would auto-clear when the forced
+ * node enters maintenance, and cl_ctr_list_members / cl_ctr_list_config would
+ * gain a per-node maintenance indicator alongside the existing shtag_mode.
  */
 
 /* =========================================================================
