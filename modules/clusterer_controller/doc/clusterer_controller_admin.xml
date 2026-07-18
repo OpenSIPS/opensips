@@ -559,6 +559,22 @@
 	    <varname>use_controller=1</varname> and a module attempts to register
 	    a capability for that cluster.
 	</para>
+	<para>
+	    Because a controller-managed node receives its
+	    <varname>node_id</varname> at runtime (after it joins) rather than
+	    from static configuration at startup, any module that stamps this
+	    node's id into on-the-wire data must read it live per message
+	    instead of caching it once at initialisation — a value read at
+	    startup would be the not-yet-assigned placeholder, and it may also
+	    change on a re-election. In particular <emphasis>tm</emphasis>'s
+	    anycast support (<varname>tm_replication_cluster</varname> /
+	    <function>t_anycast_replicate()</function>) stamps this node's id
+	    into the <varname>cid</varname> Via parameter so that a reply landing
+	    on a different anycast member can be relayed to the node holding the
+	    transaction; it renders that parameter from the current id on each
+	    request, so anycast reply routing works unchanged under a
+	    controller-managed cluster.
+	</para>
     </section>
 
     <section>
