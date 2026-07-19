@@ -118,6 +118,34 @@ int tls_get_method(str *method_str,
 	return 0;
 }
 
+static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
+{
+	if (d->flags & DOM_FLAG_SRV) {
+		if (d->verify_cert ) {
+			*verify_mode = SSL_VERIFY_PEER;
+			if (d->require_client_cert ) {
+				LM_INFO("client verification activated. Client "
+						"certificates are mandatory.\n");
+				*verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+			} else {
+				LM_INFO("client verification activated. Client "
+						"certificates are NOT mandatory.\n");
+			}
+		} else {
+			*verify_mode = SSL_VERIFY_NONE;
+			LM_INFO("client verification NOT activated. Weaker security.\n");
+		}
+	} else {
+		if (d->verify_cert ) {
+			*verify_mode = SSL_VERIFY_PEER;
+			LM_INFO("server verification activated.\n");
+		} else {
+			*verify_mode = SSL_VERIFY_NONE;
+			LM_INFO("server verification NOT activated. Weaker security.\n");
+		}
+	}
+}
+
 static int verify_callback(int pre_verify_ok, WOLFSSL_X509_STORE_CTX *ctx) {
 	char buf[256];
 	WOLFSSL_X509 *cert;
@@ -194,12 +222,17 @@ int _wolfssl_reg_sni_cb(tls_sni_cb_f cb)
 
 int _wolfssl_switch_ssl_ctx(struct tls_domain *dom, void *ssl_ctx)
 {
+	int verify_mode = 0;
+
 	wolfSSL_set_SSL_CTX((WOLFSSL *)ssl_ctx, dom->ctx);
 
 	if (!wolfSSL_set_ex_data((WOLFSSL *)ssl_ctx, SSL_EX_DOM_IDX, dom)) {
 		LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
 		return -1;
 	}
+
+	get_ssl_ctx_verify_mode(dom, &verify_mode);
+	wolfSSL_set_verify((WOLFSSL *)ssl_ctx, verify_mode, verify_callback);
 
 	return 0;
 }
@@ -484,30 +517,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		wolfSSL_CTX_set_servername_arg(d->ctx, d);
 	}
 
-	if (d->flags & DOM_FLAG_SRV) {
-		if (d->verify_cert ) {
-			verify_mode = SSL_VERIFY_PEER;
-			if (d->require_client_cert ) {
-				LM_INFO("client verification activated. Client "
-						"certificates are mandatory.\n");
-				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-			} else {
-				LM_INFO("client verification activated. Client "
-						"certificates are NOT mandatory.\n");
-			}
-		} else {
-			verify_mode = SSL_VERIFY_NONE;
-			LM_INFO("client verification NOT activated. Weaker security.\n");
-		}
-	} else {
-		if (d->verify_cert ) {
-			verify_mode = SSL_VERIFY_PEER;
-			LM_INFO("server verification activated.\n");
-		} else {
-			verify_mode = SSL_VERIFY_NONE;
-			LM_INFO("server verification NOT activated. Weaker security.\n");
-		}
-	}
+	get_ssl_ctx_verify_mode(d, &verify_mode);
 
 	wolfSSL_CTX_set_verify(d->ctx, verify_mode, verify_callback);
 	wolfSSL_CTX_set_verify_depth(d->ctx, VERIFY_DEPTH_S);
