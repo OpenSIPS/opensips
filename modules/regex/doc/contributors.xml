@@ -44,6 +44,14 @@
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">11</entry>
+		<entry align="center">3</entry>
+		<entry align="center">717</entry>
+		<entry align="center">24</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">9</entry>
 		<entry align="center">6</entry>
@@ -51,7 +59,7 @@
 		<entry align="center">88</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">6</entry>
@@ -59,7 +67,7 @@
 		<entry align="center">7</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>MonkeyTester</entry>
 		<entry align="center">6</entry>
 		<entry align="center">3</entry>
@@ -67,20 +75,12 @@
 		<entry align="center">14</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">3</entry>
 		<entry align="center">4</entry>
 		<entry align="center">4</entry>
-	</row>
-	<row>
-		<entry>8. </entry>
-		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">116</entry>
-		<entry align="center">23</entry>
 	</row>
 	<row>
 		<entry>9. </entry>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2011 - Jun 2026</entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">Jan 2013 - Jul 2026</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
-		<entry align="center">Jan 2013 - May 2026</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Sep 2011 - Jun 2026</entry>
 	</row>
 	<row>
 		<entry>3. </entry>

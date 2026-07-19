@@ -459,12 +459,12 @@ Chapter 3. Contributors
    9. Alexandra Titoc 5 3 13 6
    10. Sergey Khripchenko (@shripchenko) 5 2 185 2
 
-   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
-   Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev (@sobomax),
-   Stefan Darius, Konstantin Bokarius, Razvan Pistolea, Chris
-   Heiser, Norman Brandinger (@NormB), Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert, Dusan Klinec (@ph4r05), Andrei
-   Pelinescu-Onciul.
+   All remaining contributors: Stefan Darius, Jiri Kuthan
+   (@jiriatipteldotorg), Ionut Ionita (@ionutrazvanionita), Maksym
+   Sobolyev (@sobomax), Konstantin Bokarius, Razvan Pistolea,
+   Chris Heiser, Norman Brandinger (@NormB), Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Dusan Klinec (@ph4r05),
+   Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -486,8 +486,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jun 2026
-   2.  Stefan Darius                       Jun 2026 - Jun 2026
+   1.  Stefan Darius                       Jun 2026 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jun 2026
    3.  Alexandra Titoc                     Sep 2024 - Sep 2024
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    5.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Mar 2024

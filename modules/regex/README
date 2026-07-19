@@ -441,11 +441,11 @@ Chapter 2. Contributors
    1. Razvan Crainea (@razvancrainea) 25 21 163 72
    2. Iñaki Baz Castillo 15 3 1242 2
    3. Liviu Chircu (@liviuchircu) 12 10 25 42
-   4. Vlad Patrascu (@rvlad-patrascu) 9 6 63 88
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 12 7
-   6. MonkeyTester 6 3 188 14
-   7. Norman Brandinger (@NormB) 5 3 4 4
-   8. Ovidiu Sas (@ovidiusas) 4 2 116 23
+   4. Ovidiu Sas (@ovidiusas) 11 3 717 24
+   5. Vlad Patrascu (@rvlad-patrascu) 9 6 63 88
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 12 7
+   7. MonkeyTester 6 3 188 14
+   8. Norman Brandinger (@NormB) 5 3 4 4
    9. Steve Ayre 4 2 64 48
    10. Sergio Gutierrez 3 1 19 1
 
@@ -472,8 +472,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2026
-   2.  Ovidiu Sas (@ovidiusas)             Jan 2013 - May 2026
+   1.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2026
    3.  Steve Ayre                          Sep 2025 - Sep 2025
    4.  Ken Rice                            Sep 2025 - Sep 2025
    5.  MonkeyTester                        Aug 2023 - Aug 2023
