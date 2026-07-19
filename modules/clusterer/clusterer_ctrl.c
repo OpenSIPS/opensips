@@ -387,8 +387,8 @@ int load_clusterer_ctrl_binds(clusterer_ctrl_binds_t *binds)
 	return -1;
     }
     clusterer_ctrl_bound   = 1;
-    binds->managed_count   = cc_stub_count;
-    binds->managed_ids     = cc_stub_ids;
+    binds->managed_count   = cl_ctr_stub_count;
+    binds->managed_ids     = cl_ctr_stub_ids;
     binds->set_my_identity        = clusterer_ctrl_set_identity;
     binds->add_node               = clusterer_ctrl_add_node;
     binds->remove_node            = clusterer_ctrl_remove_node;

@@ -223,7 +223,7 @@ Chapter 1. Admin Guide
        Encrypted with the session key.
      * JOIN_REJECT — sent by the master to a joining node whose
        JOIN_REQ repeatedly fails authentication (wrong password).
-       After CC_JOIN_FAIL_LIMIT (3) consecutive bootstrap-key
+       After CL_CTR_JOIN_FAIL_LIMIT (3) consecutive bootstrap-key
        decryption failures from the same source IP the master
        sends a JOIN_REJECT to that IP. Encrypted with the
        bootstrap key so it cannot be forged by a node that does
@@ -382,15 +382,15 @@ on-key")
 
    Join authentication and rejection: the master tracks
    consecutive bootstrap-key decryption failures per source IP in
-   a small worker-local table (CC_JOIN_FAIL_TABLE_SZ = 8 slots).
-   When any source IP accumulates CC_JOIN_FAIL_LIMIT (3)
+   a small worker-local table (CL_CTR_JOIN_FAIL_TABLE_SZ = 8 slots).
+   When any source IP accumulates CL_CTR_JOIN_FAIL_LIMIT (3)
    consecutive failures — indicating a node attempting to join
    with the wrong password — the master sends an encrypted
    JOIN_REJECT packet and stops responding to further JOIN_REQs
    from that IP.
 
    On the joining side, a received JOIN_REJECT is only acted on
-   while the node is still in the initial join phase (CC_NODE_NEW
+   while the node is still in the initial join phase (CL_CTR_NODE_NEW
    state) and is addressed to this node; an already-active cluster
    member ignores any JOIN_REJECT unconditionally, so a node with
    the correct password can never be evicted by a peer.
@@ -400,7 +400,7 @@ on-key")
    so it relies on a self-contained signal instead: while joining
    it counts packets received from other peers that it cannot
    decrypt. If, at the join deadline, the node is still unjoined
-   and has seen CC_JOIN_FAIL_LIMIT or more such undecryptable
+   and has seen CL_CTR_JOIN_FAIL_LIMIT or more such undecryptable
    packets, it concludes that a cluster it cannot authenticate to
    exists on the group and shuts down OpenSIPS with a critical log
    message — rather than promoting itself into a lone, split-brain
@@ -419,7 +419,7 @@ on-key")
    cluster into a re-JOIN churn.
 
    Peer table exhaustion defence: the peer table is bounded at
-   CC_MAX_PEERS (256) entries. When the table is full, the master
+   CL_CTR_MAX_PEERS (256) entries. When the table is full, the master
    rejects JOIN_REQ packets from unknown IPs with a JOIN_REJECT
    response. Known peers that are reconnecting after a restart
    continue to be admitted regardless of the table count, since
@@ -1467,7 +1467,7 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
        re-flood/prune cycle could cause a gap in MASTER_ALIVE
        delivery and trigger a spurious master re-election. If this
        occurs, increase the effective timeout by raising
-       CC_MASTER_KA_MISSED in the source from 3 to 5 or higher.
+       CL_CTR_MASTER_KA_MISSED in the source from 3 to 5 or higher.
        PIM Sparse Mode (PIM-SM) or networks with IGMP snooping do
        not have this issue.
      * L2 overlay tunnels (Geneve, VXLAN, GRE): if the overlay
@@ -1478,7 +1478,7 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
        controller will not function, as it has no unicast
        fallback. Encapsulation overhead also adds latency and
        jitter; on high-latency overlays consider raising
-       CC_MASTER_KA_MISSED to avoid spurious re-elections.
+       CL_CTR_MASTER_KA_MISSED to avoid spurious re-elections.
      * IPsec-protected links: native IPsec multicast requires
        GDOI/GET VPN (RFC 6407), which is rarely deployed. The
        recommended approach is to run multicast inside an inner

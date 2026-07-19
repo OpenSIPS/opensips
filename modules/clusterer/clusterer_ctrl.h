@@ -64,7 +64,7 @@ typedef struct clusterer_ctrl_binds {
      * The clusterer ping timer picks it up within one ping interval
      * and establishes the BIN link automatically.
      *
-     * Called on every CC_PKT_NODE_ASSIGN received for a peer.
+     * Called on every CL_CTR_PKT_NODE_ASSIGN received for a peer.
      * Safe to call if the node already exists — returns 0 (no-op).
      *
      * @cluster_id  must match a cluster initialised by set_my_identity()
@@ -80,7 +80,7 @@ typedef struct clusterer_ctrl_binds {
      * Removes from the node_list and cleans up routing state.
      * The BIN connection is closed by the clusterer's own cleanup path.
      *
-     * Called on CC_PKT_GOODBYE or when election-window expiry removes
+     * Called on CL_CTR_PKT_GOODBYE or when election-window expiry removes
      * the peer from the controller's own peer table.
      *
      * @cluster_id  cluster the node belongs to

@@ -201,8 +201,8 @@ static inline int cluster_self_id(const struct cluster_info *cl)
 }
 extern int use_controller;
 /* cluster_ids declared controller-managed via cluster_options (use_controller=1) */
-extern int cc_stub_ids[];
-extern int cc_stub_count;
+extern int cl_ctr_stub_ids[];
+extern int cl_ctr_stub_count;
 #else
 #define GET_CURRENT_ID       (current_id)
 #define cluster_self_id(cl)  (current_id)

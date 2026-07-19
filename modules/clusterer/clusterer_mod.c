@@ -64,12 +64,12 @@ int use_controller = 0;   /* 1 if any cluster_options sets use_controller=1 */
 /* cluster_ids marked controller-managed via 'cluster_options' (use_controller=1).
  * Not static: the controller loads a pointer to these through the ctrl binds so it
  * can verify it has a matching 'cluster' config for each. */
-int cc_stub_ids[64];
-int cc_stub_count = 0;
+int cl_ctr_stub_ids[64];
+int cl_ctr_stub_count = 0;
 
 /* extract "<name>=<int>" from a "key=value, key=value" cluster_options string.
  * Returns 0 and sets *out on success, 1 if the key is absent, -1 if malformed. */
-static int cc_opt_int(str *descr, str *name, int *out)
+static int cl_ctr_opt_int(str *descr, str *name, int *out)
 {
 	char *p, *pe;
 	str aux;
@@ -103,7 +103,7 @@ static int cc_opt_int(str *descr, str *name, int *out)
  * use_controller=1 registers the cluster as controller-managed - its identity
  * and peer list are then driven at runtime by clusterer_controller.  Every other
  * clusterer option stays a global modparam. */
-static int cc_add_cluster_options(modparam_t type, void *val)
+static int cl_ctr_add_cluster_options(modparam_t type, void *val)
 {
 	static str cid_prop = str_init("cluster_id");
 	static str uc_prop  = str_init("use_controller");
@@ -117,7 +117,7 @@ static int cc_add_cluster_options(modparam_t type, void *val)
 	descr.s = (char *)val;
 	descr.len = strlen(descr.s);
 
-	rc = cc_opt_int(&descr, &cid_prop, &cid);
+	rc = cl_ctr_opt_int(&descr, &cid_prop, &cid);
 	if (rc < 0)
 		return -1;
 	if (rc == 1 || cid < 1) {
@@ -126,7 +126,7 @@ static int cc_add_cluster_options(modparam_t type, void *val)
 		return -1;
 	}
 
-	rc = cc_opt_int(&descr, &uc_prop, &uc);   /* absent (rc==1) -> uc stays 0 */
+	rc = cl_ctr_opt_int(&descr, &uc_prop, &uc);   /* absent (rc==1) -> uc stays 0 */
 	if (rc < 0)
 		return -1;
 	if (uc != 0 && uc != 1) {
@@ -138,17 +138,17 @@ static int cc_add_cluster_options(modparam_t type, void *val)
 	if (uc == 0)
 		return 0;   /* native (the default): nothing to register */
 
-	for (i = 0; i < cc_stub_count; i++)
-		if (cc_stub_ids[i] == cid) {
+	for (i = 0; i < cl_ctr_stub_count; i++)
+		if (cl_ctr_stub_ids[i] == cid) {
 			LM_ERR("clusterer: cluster_options declares cluster_id %d as "
 				"controller-managed more than once\n", cid);
 			return -1;
 		}
-	if (cc_stub_count >= (int)(sizeof cc_stub_ids / sizeof cc_stub_ids[0])) {
+	if (cl_ctr_stub_count >= (int)(sizeof cl_ctr_stub_ids / sizeof cl_ctr_stub_ids[0])) {
 		LM_ERR("clusterer: too many controller-managed clusters\n");
 		return -1;
 	}
-	cc_stub_ids[cc_stub_count++] = cid;
+	cl_ctr_stub_ids[cl_ctr_stub_count++] = cid;
 	use_controller = 1;   /* at least one controller-managed cluster exists */
 	return 0;
 }
@@ -156,7 +156,7 @@ static int cc_add_cluster_options(modparam_t type, void *val)
 /* Retired interim modparams (never released): controller-managed clusters are now
  * declared via 'cluster_options'.  Kept registered only to fail with a clear
  * migration hint instead of a generic "unknown parameter". */
-static int cc_retired_param(modparam_t type, void *val)
+static int cl_ctr_retired_param(modparam_t type, void *val)
 {
 	LM_ERR("clusterer: the 'use_controller'/'cluster_id' modparams have been "
 		"replaced; declare each controller-managed cluster with "
@@ -278,9 +278,9 @@ static const param_export_t params[] = {
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
 #ifdef CLUSTERER_CTRL_SUPPORT
-	{"cluster_options",			STR_PARAM|USE_FUNC_PARAM, (void*)cc_add_cluster_options},
-	{"use_controller",			INT_PARAM|USE_FUNC_PARAM, (void*)cc_retired_param},
-	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cc_retired_param},
+	{"cluster_options",			STR_PARAM|USE_FUNC_PARAM, (void*)cl_ctr_add_cluster_options},
+	{"use_controller",			INT_PARAM|USE_FUNC_PARAM, (void*)cl_ctr_retired_param},
+	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cl_ctr_retired_param},
 #endif
 	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,
 		(void*)&provision_neighbor},
@@ -650,40 +650,40 @@ static int mod_init(void)
 #ifdef CLUSTERER_CTRL_SUPPORT
 	if (use_controller) {
 		int _ci;
-		for (_ci = 0; _ci < cc_stub_count; _ci++) {
+		for (_ci = 0; _ci < cl_ctr_stub_count; _ci++) {
 			cluster_info_t *_ex;
 			for (_ex = *cluster_list; _ex; _ex = _ex->next)
-				if (_ex->cluster_id == cc_stub_ids[_ci]) {
+				if (_ex->cluster_id == cl_ctr_stub_ids[_ci]) {
 					LM_ERR("clusterer: cluster_id %d is registered as "
 						"controller-managed (cluster_options use_controller=1) but is "
 						"already defined via native config "
 						"(my_node_info/neighbor_node_info/DB) or listed "
 						"twice - a cluster_id must be unique and either "
 						"controller-managed or native, not both\n",
-						cc_stub_ids[_ci]);
+						cl_ctr_stub_ids[_ci]);
 					return -1;
 				}
 
 			cluster_info_t *_cl = shm_malloc(sizeof *_cl);
 			if (!_cl) {
 				LM_ERR("clusterer: no shm for cluster %d stub\n",
-				       cc_stub_ids[_ci]);
+				       cl_ctr_stub_ids[_ci]);
 				return -1;
 			}
 			memset(_cl, 0, sizeof *_cl);
-			_cl->cluster_id = cc_stub_ids[_ci];
+			_cl->cluster_id = cl_ctr_stub_ids[_ci];
 			_cl->controller_managed = 1;
 			_cl->lock = lock_alloc();
 			if (!_cl->lock || lock_init(_cl->lock) == NULL) {
 				LM_ERR("clusterer: lock_alloc failed for cluster %d\n",
-				       cc_stub_ids[_ci]);
+				       cl_ctr_stub_ids[_ci]);
 				shm_free(_cl);
 				return -1;
 			}
 			_cl->next = *cluster_list;
 			*cluster_list = _cl;
 			LM_INFO("clusterer: pre-created controller-managed cluster %d stub\n",
-			        cc_stub_ids[_ci]);
+			        cl_ctr_stub_ids[_ci]);
 		}
 	}
 #endif /* CLUSTERER_CTRL_SUPPORT */

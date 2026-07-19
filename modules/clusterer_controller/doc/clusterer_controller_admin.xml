@@ -171,7 +171,7 @@
 		<emphasis role="bold">JOIN_REJECT</emphasis> — sent by the
 		master to a joining node whose JOIN_REQ repeatedly fails
 		authentication (wrong password). After
-		<emphasis>CC_JOIN_FAIL_LIMIT</emphasis> (3) consecutive
+		<emphasis>CL_CTR_JOIN_FAIL_LIMIT</emphasis> (3) consecutive
 		bootstrap-key decryption failures from the same source IP the
 		master sends a JOIN_REJECT to that IP. Encrypted with the
 		bootstrap key so it cannot be forged by a node that does not
@@ -353,8 +353,8 @@
 	<emphasis role="bold">Join authentication and rejection:</emphasis>
 	the master tracks consecutive bootstrap-key decryption failures per
 	source IP in a small worker-local table
-	(<emphasis>CC_JOIN_FAIL_TABLE_SZ</emphasis> = 8 slots). When any
-	source IP accumulates <emphasis>CC_JOIN_FAIL_LIMIT</emphasis> (3)
+	(<emphasis>CL_CTR_JOIN_FAIL_TABLE_SZ</emphasis> = 8 slots). When any
+	source IP accumulates <emphasis>CL_CTR_JOIN_FAIL_LIMIT</emphasis> (3)
 	consecutive failures — indicating a node attempting to join with the
 	wrong password — the master sends an encrypted JOIN_REJECT packet
 	and stops responding to further JOIN_REQs from that IP.
@@ -362,7 +362,7 @@
     <para>
 	On the joining side, a received JOIN_REJECT is only acted on while
 	the node is still in the initial join phase
-	(<emphasis>CC_NODE_NEW</emphasis> state) and is addressed to this
+	(<emphasis>CL_CTR_NODE_NEW</emphasis> state) and is addressed to this
 	node; an already-active cluster member ignores any JOIN_REJECT
 	unconditionally, so a node with the correct password can never be
 	evicted by a peer.
@@ -373,7 +373,7 @@
 	key), so it relies on a self-contained signal instead: while joining
 	it counts packets received from other peers that it cannot decrypt.
 	If, at the join deadline, the node is still unjoined and has seen
-	<emphasis>CC_JOIN_FAIL_LIMIT</emphasis> or more such undecryptable
+	<emphasis>CL_CTR_JOIN_FAIL_LIMIT</emphasis> or more such undecryptable
 	packets, it concludes that a cluster it cannot authenticate to exists
 	on the group and shuts down OpenSIPS with a critical log message —
 	rather than promoting itself into a lone, split-brain master (which,
@@ -393,7 +393,7 @@
     </para>
     <para>
 	<emphasis role="bold">Peer table exhaustion defence:</emphasis> the
-	peer table is bounded at <emphasis>CC_MAX_PEERS</emphasis> (256)
+	peer table is bounded at <emphasis>CL_CTR_MAX_PEERS</emphasis> (256)
 	entries. When the table is full, the master rejects JOIN_REQ
 	packets from unknown IPs with a JOIN_REJECT response. Known peers
 	that are reconnecting after a restart continue to be admitted
@@ -1787,7 +1787,7 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
 	    networks this brief re-flood/prune cycle could cause a gap
 	    in MASTER_ALIVE delivery and trigger a spurious master
 	    re-election. If this occurs, increase the effective timeout
-	    by raising <varname>CC_MASTER_KA_MISSED</varname> in the
+	    by raising <varname>CL_CTR_MASTER_KA_MISSED</varname> in the
 	    source from 3 to 5 or higher. PIM Sparse Mode (PIM-SM) or
 	    networks with IGMP snooping do not have this issue.
 	</para></listitem>
@@ -1800,7 +1800,7 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
 	    case the controller will not function, as it has no unicast
 	    fallback. Encapsulation overhead also adds latency and
 	    jitter; on high-latency overlays consider raising
-	    <varname>CC_MASTER_KA_MISSED</varname> to avoid spurious
+	    <varname>CL_CTR_MASTER_KA_MISSED</varname> to avoid spurious
 	    re-elections.
 	</para></listitem>
 	<listitem><para>

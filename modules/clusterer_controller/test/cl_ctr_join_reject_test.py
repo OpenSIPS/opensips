@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-cc_join_reject_test.py - rogue-joiner security test for clusterer_controller.
+cl_ctr_join_reject_test.py - rogue-joiner security test for clusterer_controller.
 
 Simulates an unauthorized node on the cluster's multicast group WITHOUT touching
 any node config.  It exercises two defences:
@@ -20,7 +20,7 @@ any node config.  It exercises two defences:
 Run this on a host on the multicast segment that is NOT a live cluster member
 (e.g. one node with `systemctl stop opensips`).  Requires only python3.
 
-  ./cc_join_reject_test.py --group 239.0.90.1 --port 3333
+  ./cl_ctr_join_reject_test.py --group 239.0.90.1 --port 3333
 """
 import argparse, collections, os, socket, struct, threading, time
 
