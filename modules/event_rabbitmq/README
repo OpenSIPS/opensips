@@ -590,11 +590,11 @@ Chapter 3. Contributors
    6. Maksym Sobolyev (@sobomax) 10 8 21 21
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 10 10
    8. Peter Lemenkov (@lemenkov) 5 3 2 3
-   9. Ionut Ionita (@ionutrazvanionita) 4 2 52 25
-   10. franklyfox 4 2 44 5
+   9. Stefan Darius 5 2 148 4
+   10. Ionut Ionita (@ionutrazvanionita) 4 2 52 25
 
-   All remaining contributors: Jarrod Baumann (@jarrodb), Stefan
-   Darius, Norman Brandinger (@NormB), Eric Tamme (@etamme),
+   All remaining contributors: franklyfox, Jarrod Baumann
+   (@jarrodb), Norman Brandinger (@NormB), Eric Tamme (@etamme),
    Julián Moreno Patiño, Ken Rice, Walter Doekes (@wdoekes), Vlad
    Paiu (@vladpaiu).
 
@@ -618,8 +618,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Razvan Crainea (@razvancrainea) Jan 2017 - Jun 2026
-   2.  Stefan Darius                   Jun 2026 - Jun 2026
+   1.  Stefan Darius                   Jun 2026 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea) Jan 2017 - Jun 2026
    3.  Norman Brandinger (@NormB)      Apr 2026 - Apr 2026
    4.  Ovidiu Sas (@ovidiusas)         Jun 2015 - Nov 2025
    5.  Ken Rice                        Sep 2025 - Sep 2025
