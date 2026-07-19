@@ -779,7 +779,8 @@ static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
 static void cl_ctr_handle_member_list(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
-                               cl_ctr_cluster_t *cl);
+                               cl_ctr_cluster_t *cl,
+                               const struct sockaddr *src, socklen_t src_len);
 static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl);
@@ -2298,26 +2299,32 @@ static int cl_ctr_setup_socket(cl_ctr_cluster_t *cl)
  * ========================================================================= */
 
 /**
- * cl_ctr_seal_and_send() - encrypt a prepared packet in place and multicast it.
+ * cl_ctr_seal_and_send_to() - encrypt a prepared packet in place and send it to
+ * an explicit destination.
  *
  * On entry @pkt holds the cleartext framing (magic already stamped) plus the
  * @plain_len-byte plaintext starting at CL_CTR_WIRE_HDR_SZ; cl_ctr_encrypt_pkt() fills
- * the cluster_id + nonce and appends the AEAD tag.  Every controller packet
- * targets the cluster's multicast group (cached in cl->mcast_dest), so all
- * senders share this tail.  @type is only used for logging.
+ * the cluster_id + nonce and appends the AEAD tag.  @dest/@destlen is the target
+ * sockaddr: the cluster's multicast group for group packets (see the
+ * cl_ctr_seal_and_send() wrapper), or a single peer for the strictly 1:1 packets
+ * of the join handshake (e.g. KEY_GRANT), which every other member would
+ * otherwise decrypt only to discard.  @dest is passed straight to sendto(), so
+ * its address family is whatever the caller supplies - v4 today, v6-ready.
+ * @type is only used for logging.
  *
  * @return 0 on success, -1 on encrypt or send failure.
  */
-static int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
-                            const unsigned char *key, unsigned char type)
+static int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
+                               int plain_len, const unsigned char *key,
+                               unsigned char type,
+                               const struct sockaddr *dest, socklen_t destlen)
 {
     int total_len = cl_ctr_encrypt_pkt(pkt, CL_CTR_WIRE_HDR_SZ, plain_len, key,
                                    cl->cluster_id);
     if (total_len < 0)
         return -1;
 
-    if (sendto(sock, pkt, total_len, 0,
-               (struct sockaddr *)&cl->mcast_dest, sizeof(cl->mcast_dest)) < 0) {
+    if (sendto(sock, pkt, total_len, 0, dest, destlen) < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             LM_DBG("clusterer_controller: [cluster %d] sendto (type=0x%02x) "
                    "would block\n", cl->cluster_id, type);
@@ -2328,6 +2335,20 @@ static int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int p
     }
     LM_DBG("clusterer_controller: [cluster %d] sent 0x%02x\n", cl->cluster_id, type);
     return 0;
+}
+
+/**
+ * cl_ctr_seal_and_send() - multicast wrapper over cl_ctr_seal_and_send_to().
+ *
+ * Sends to the cluster's multicast group (cached in cl->mcast_dest); used by
+ * every group packet (ALIVE, MASTER_ALIVE, MEMBER_LIST, NODE_ASSIGN, ...).
+ */
+static int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
+                            const unsigned char *key, unsigned char type)
+{
+    return cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, key, type,
+                               (const struct sockaddr *)&cl->mcast_dest,
+                               sizeof(cl->mcast_dest));
 }
 
 /**
@@ -2626,7 +2647,11 @@ static void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl)
 /**
  * cl_ctr_send_key_grant() - send ECDH-wrapped master_salt to a joining node.
  * Encrypted with bootstrap key (CL_CTR_BOOTSTRAP_MAGIC) so the joining node can
- * read it before having the session key.
+ * read it before having the session key.  Unicast to the joiner (@dest, its
+ * JOIN_REQ datagram source): it is strictly 1:1, so multicasting it only made
+ * every other member spend an AEAD decrypt to discard a KEY_GRANT not addressed
+ * to it.  The wire format is unchanged (target_ip still carried), so this
+ * interoperates with peers that still multicast it.
  *
  * Runs the Noise responder over the joiner's msg 1 and answers with msg 2,
  * whose AEAD payload is the master_salt.  The Noise handshake authenticates the
@@ -2636,7 +2661,8 @@ static void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl)
  * Payload: [target_ip NUL][noise_msg2 64B]
  */
 static void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
-                              const unsigned char *msg1, int msg1_len)
+                              const unsigned char *msg1, int msg1_len,
+                              const struct sockaddr *dest, socklen_t destlen)
 {
     char               pkt[CL_CTR_KEY_GRANT_SZ];
     uint32_t           seq     = htonl(++cl->peers->my_seq);
@@ -2663,8 +2689,9 @@ static void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluste
     memcpy(p, msg2, m2);                              p += m2;
 
     plain_len = (int)(p - (pkt + CL_CTR_WIRE_HDR_SZ));
-    if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->key, CL_CTR_PKT_KEY_GRANT) == 0)
-        LM_INFO("clusterer_controller: [cluster %d] sent KEY_GRANT to %s\n",
+    if (cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->key,
+                            CL_CTR_PKT_KEY_GRANT, dest, destlen) == 0)
+        LM_INFO("clusterer_controller: [cluster %d] sent KEY_GRANT to %s (unicast)\n",
                 cl->cluster_id, target_ip);
 }
 
@@ -2983,7 +3010,8 @@ static void cl_ctr_handle_alive(const char *src_ip,
  *   5. If joining IP <= own IP: send MEMBER_LIST (self still master).
  */
 static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
-                               cl_ctr_cluster_t *cl)
+                               cl_ctr_cluster_t *cl,
+                               const struct sockaddr *src, socklen_t src_len)
 {
     const char    *p         = payload;
     const char    *end       = payload + payload_len;
@@ -3165,7 +3193,8 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
     /* Send KEY_GRANT first (bootstrap key) so joiner can derive session_key,
      * then NODE_ASSIGN + MEMBER_LIST (session key). */
     if (noise_msg1)   /* Noise msg 1 present -> run responder, answer msg 2 */
-        cl_ctr_send_key_grant(sock, src_ip, cl, noise_msg1, noise_msg1_len);
+        cl_ctr_send_key_grant(sock, src_ip, cl, noise_msg1, noise_msg1_len,
+                          src, src_len);
 
     lock_start_write(cl->peers->lock);
 
@@ -4253,7 +4282,8 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
 	}
 
 	case CL_CTR_PKT_JOIN_REQ:
-	    cl_ctr_handle_join_req(sock, payload, payload_len, cl);
+	    cl_ctr_handle_join_req(sock, payload, payload_len, cl,
+	                       (const struct sockaddr *)&src_addr, src_len);
 	    break;
 
 	case CL_CTR_PKT_MEMBER_LIST:
