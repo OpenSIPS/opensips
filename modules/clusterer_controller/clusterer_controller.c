@@ -3950,10 +3950,14 @@ static void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t
 	} else {
 	    LM_INFO("clusterer_controller: re-election complete - "
 	            "I reclaimed mastership after %s departed "
-	            "(%d node(s) remaining) - sending MEMBER_LIST\n",
+	            "(%d node(s) remaining)\n",
 	            src_ip, remaining);
 	    cl_ctr_arm_master_timers(cl, 1);
-	    cl_ctr_send_member_list(sock, cl);
+	    /* No full MEMBER_LIST is broadcast: every member re-elected the same
+	     * deterministic master locally on this same GOODBYE, MASTER_ALIVE
+	     * re-asserts it within a keepalive, and the membership digest
+	     * reconciles anyone who missed the departure - so the O(N) re-broadcast
+	     * (which fragments at large N) is redundant. */
 	}
     } else {
 	/* This node's own role change (if any) is logged separately by
@@ -5073,10 +5077,12 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
 
     cl_ctr_arm_master_timers(cl, now_master);
 
-    /* The new master announces itself; all members already hold the session
-     * key so no re-keying is needed. */
-    if (now_master)
-        cl_ctr_send_member_list(cl->sock, cl);
+    /* No full MEMBER_LIST is broadcast: every surviving member ran the same
+     * deterministic re-election on its own keepalive timeout, MASTER_ALIVE
+     * (which the new master now emits) re-asserts the winner, and the
+     * membership digest reconciles any divergence - so the O(N) re-broadcast
+     * (which fragments at large N) is redundant.  A node still joining reaches
+     * the new master through its own JOIN_REQ retry. */
     return 0;
 }
 
