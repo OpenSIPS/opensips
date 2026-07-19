@@ -2655,7 +2655,8 @@ static void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster
  *
  * Wire: [magic 2B][cluster_id 2B][nonce 12B][AES-256-GCM([type 1B][seq 4B][count 2B][entries...])][tag 16B]
  */
-static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl)
+static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
+                             const struct sockaddr *dest, socklen_t destlen)
 {
     char               pkt[CL_CTR_LIST_PKT_MAX_SZ];
     uint32_t           seq      = htonl(++cl->peers->my_seq);
@@ -2702,12 +2703,14 @@ static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t 
 
     plain_len = 1 + CL_CTR_SEQ_SZ + CL_CTR_LIST_COUNT_SZ + CL_CTR_NODE_ID_SZ
                 + count * CL_CTR_IP_ENTRY_SZ;
-    if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type) == 0)
-	LM_INFO("clusterer_controller: [cluster %d] sent MEMBER_LIST (%d members)\n",
-	        cl->cluster_id, count);
+    if ((dest ? cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->session_key,
+                                    type, dest, destlen)
+              : cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type)) == 0)
+	LM_INFO("clusterer_controller: [cluster %d] sent MEMBER_LIST (%d members)%s\n",
+	        cl->cluster_id, count, dest ? " (unicast)" : "");
 }
 
-#define cl_ctr_send_member_list(sock, cl) cl_ctr_send_list_pkt((sock), CL_CTR_PKT_MEMBER_LIST, (cl))
+#define cl_ctr_send_member_list(sock, cl) cl_ctr_send_list_pkt((sock), CL_CTR_PKT_MEMBER_LIST, (cl), NULL, 0)
 
 /**
  * cl_ctr_send_join_req_pkt() - send CL_CTR_PKT_JOIN_REQ with BIN socket info.
@@ -2801,7 +2804,8 @@ static void cl_ctr_send_join_req_pkt(int sock, cl_ctr_cluster_t *cl)
 static void cl_ctr_send_node_assign(int sock, const char *ip, uint16_t node_id,
                                 uint8_t bin_count,
                                 const char (*bin_sockets)[CL_CTR_MAX_BIN_SOCK_LEN],
-                                cl_ctr_cluster_t *cl)
+                                cl_ctr_cluster_t *cl,
+                                const struct sockaddr *dest, socklen_t destlen)
 {
     char               pkt[CL_CTR_NODE_ASSIGN_MAX_SZ];
     uint32_t           seq      = htonl(++cl->peers->my_seq);
@@ -2841,9 +2845,12 @@ static void cl_ctr_send_node_assign(int sock, const char *ip, uint16_t node_id,
      * GCM auth on receipt ("session key mismatch"), driving a JOIN_REQ storm.
      * KEY_GRANT is sent before NODE_ASSIGN so the joiner already holds the
      * session key by the time this arrives. */
-    if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, CL_CTR_PKT_NODE_ASSIGN) == 0)
-	LM_INFO("clusterer_controller: [cluster %d] NODE_ASSIGN node_id=%u ip=%s\n",
-	        cl->cluster_id, node_id, ip);
+    if ((dest ? cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->session_key,
+                                    CL_CTR_PKT_NODE_ASSIGN, dest, destlen)
+              : cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key,
+                                 CL_CTR_PKT_NODE_ASSIGN)) == 0)
+	LM_INFO("clusterer_controller: [cluster %d] NODE_ASSIGN node_id=%u ip=%s%s\n",
+	        cl->cluster_id, node_id, ip, dest ? " (unicast)" : "");
 }
 
 
@@ -2953,7 +2960,7 @@ static void cl_ctr_broadcast_full_state(cl_ctr_cluster_t *cl)
             continue;
         cl_ctr_send_node_assign(cl->sock, e->ip, e->node_id, e->bin_count,
                             (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])e->bin_sockets,
-                            cl);
+                            cl, NULL, 0);   /* re-broadcast to the group */
     }
     lock_stop_read(cl->peers->lock);
     cl_ctr_send_member_list(cl->sock, cl);
@@ -3579,18 +3586,23 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
     lock_start_write(cl->peers->lock);
 
     /* Send NODE_ASSIGN for joining node */
+    /* the newcomer's assignment must reach every member - multicast (a member
+     * that misses it self-heals via the membership digest). */
     cl_ctr_send_node_assign(sock, src_ip, new_id, bin_cnt,
-                        (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])bin_socks, cl);
+                        (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])bin_socks, cl, NULL, 0);
 
-    /* Send NODE_ASSIGN for each existing peer so joining node learns
-     * all current node_ids and BIN sockets                           */
+    /* Send NODE_ASSIGN for each existing peer so the joining node learns all
+     * current node_ids and BIN sockets.  Only the joiner needs these, so unicast
+     * them to it rather than re-multicasting to the whole cluster; a member that
+     * would once have re-learned a peer from this burst now self-heals via the
+     * membership digest instead. */
     for (i = 0; i < cl->peers->count; i++) {
 	cl_ctr_peer_t *e = &cl->peers->entries[i];
 	if (strcmp(e->ip, src_ip) == 0 || e->node_id == 0)
 	    continue;
 	cl_ctr_send_node_assign(sock, e->ip, e->node_id, e->bin_count,
 	                    (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])e->bin_sockets,
-	                    cl);
+	                    cl, src, src_len);
     }
 
     /* A current master NEVER hands mastership to a joining node during the
@@ -3608,7 +3620,9 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
     LM_INFO("clusterer_controller: [cluster %d] I am master, "
             "new node %s assigned node_id=%u\n",
             cl->cluster_id, src_ip, new_id);
-    cl_ctr_send_member_list(sock, cl);
+    /* the joiner's authoritative snapshot - unicast to it (a member that misses
+     * it self-heals via the membership digest; the joiner, via its JOIN_REQ retry). */
+    cl_ctr_send_list_pkt(sock, CL_CTR_PKT_MEMBER_LIST, cl, src, src_len);
 }
 
 /**
