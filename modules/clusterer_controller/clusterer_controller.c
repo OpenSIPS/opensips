@@ -242,6 +242,7 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #define CL_CTR_PKT_KEY_HANDOFF      0x08  /* outgoing master -> next master: salt handoff  */
 #define CL_CTR_PKT_JOIN_REJECT      0x09  /* master -> joiner: authentication rejected     */
 #define CL_CTR_PKT_ACK              0x0B  /* receiver -> sender: ack of a 1:1 handshake pkt */
+#define CL_CTR_PKT_RESYNC           0x0C  /* member -> master: my view differs, resend state */
 #define CL_CTR_PKT_MASTER_BEACON    0x0A  /* master-only announce (BOOTSTRAP key) so
                                        * masters with divergent session keys can
                                        * still discover each other and merge a
@@ -339,6 +340,21 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #if (CL_CTR_RETX_MAX_RETRIES * CL_CTR_RETX_INTERVAL_US) >= (CL_CTR_JOIN_DEFER_SECS * 1000000)
 #error "retransmit budget must stay shorter than the JOIN_REQ retry interval"
 #endif
+
+/*
+ * Membership digest, carried in every MASTER_ALIVE so a member can notice it is
+ * out of sync and pull a resend.  A peer's node_id/BIN mapping travels only in
+ * NODE_ASSIGN, which is multicast (best-effort) - a member that dropped one
+ * knows the peer exists (from its ALIVE) but not its node_id, so its clusterer
+ * BIN mesh to that peer is incomplete with no other repair.  The digest closes
+ * that: [member_count 2B BE][set_hash 8B BE] over the active peers; a mismatch
+ * triggers a rate-limited RESYNC, to which the master re-broadcasts the full
+ * NODE_ASSIGN set + MEMBER_LIST.  Multicast/group packets stay unacked - this
+ * is their anti-entropy repair, the counterpart to the 1:1 ACK path.
+ */
+#define CL_CTR_DIGEST_SZ      (2 + 8)
+#define CL_CTR_RESYNC_MIN_US  1000000  /* member: min between RESYNCs; master:      */
+                                       /* min between full-state re-broadcasts (1 s) */
 
 /* Per-source-IP rate limiter: checked before decryption to shed floods cheaply.
  * Tracks up to CL_CTR_RATE_TBL_SZ source IPs with a 1-second sliding window. */
@@ -552,6 +568,11 @@ typedef struct cl_ctr_cluster_ {
     int                 retx_tfd;
     int                 retx_count;
     cl_ctr_retx_entry_t retx_q[CL_CTR_RETX_QUEUE_SZ];
+    /* Membership-digest resync throttles (worker-local): a member sends at most
+     * one RESYNC, and a master re-broadcasts full state at most once, per
+     * CL_CTR_RESYNC_MIN_US. */
+    utime_t             last_resync_us;
+    utime_t             last_full_state_us;
     /* Master-side per-IP table tracking bootstrap-decrypt failures.
      * Worker-local (no shm, no lock needed).  After CL_CTR_JOIN_FAIL_LIMIT
      * failures from the same source IP the master sends JOIN_REJECT.       */
@@ -818,6 +839,10 @@ static void cl_ctr_worker(int rank);
 static int  cl_ctr_on_sock(int fd, void *param, int was_timeout);
 static void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
 static int  cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout);
+static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint64_t *hash);
+static void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
+                           const struct sockaddr *dest, socklen_t destlen);
+static void cl_ctr_broadcast_full_state(cl_ctr_cluster_t *cl);
 static int  cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout);
 static void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master);
 static int  cl_ctr_on_join_tfd(int fd, void *param, int was_timeout);
@@ -834,7 +859,9 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
 static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl);
-static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl);
+static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
+                                   const char *payload, int payload_len,
+                                   const struct sockaddr *src, socklen_t src_len);
 static void cl_ctr_handle_key_grant(const char *payload, int payload_len,
                                 const char *sender_ip, cl_ctr_cluster_t *cl,
                                 uint32_t in_seq, const struct sockaddr *src,
@@ -2820,22 +2847,144 @@ static void cl_ctr_send_node_assign(int sock, const char *ip, uint16_t node_id,
 }
 
 
+/*
+ * Order-independent digest of the active peer set: the XOR of a per-peer FNV-1a
+ * over (node_id, ip_num).  A member that missed a peer's NODE_ASSIGN carries
+ * node_id 0 for it and so computes a different hash from the master's - which is
+ * how the gap is detected.  Roles are deliberately excluded (they reconcile via
+ * MASTER_ALIVE itself) to avoid spurious resyncs on transient role churn.
+ * Takes the read lock itself - the caller must NOT hold cl->peers->lock.
+ */
+static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint64_t *hash)
+{
+    uint64_t h = 0;
+    uint16_t c = 0;
+    time_t   cutoff = time(NULL) - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
+    int      i, k;
+
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e = &cl->peers->entries[i];
+        uint64_t      ph = 1469598103934665603ULL;   /* FNV-1a offset basis */
+        unsigned char b[6];
+        if (e->last_seen < cutoff)
+            continue;
+        b[0] = (unsigned char)(e->node_id >> 8);  b[1] = (unsigned char)e->node_id;
+        b[2] = (unsigned char)(e->ip_num >> 24);  b[3] = (unsigned char)(e->ip_num >> 16);
+        b[4] = (unsigned char)(e->ip_num >> 8);   b[5] = (unsigned char)e->ip_num;
+        for (k = 0; k < 6; k++) { ph ^= b[k]; ph *= 1099511628211ULL; }
+        h ^= ph;
+        c++;
+    }
+    lock_stop_read(cl->peers->lock);
+    *count = c;
+    *hash  = h;
+}
+
 /**
- * cl_ctr_send_master_alive() - master-only keepalive, no payload beyond the header.
- * Encrypted with session_key (CL_CTR_PACKET_MAGIC).
+ * cl_ctr_send_master_alive() - master-only keepalive.  Encrypted with session_key
+ * (CL_CTR_PACKET_MAGIC).  Carries the membership digest ([count 2B][hash 8B]) so
+ * members can detect a missed NODE_ASSIGN and pull a RESYNC.
  */
 static void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
 {
-    char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_TAG_SZ];
-    uint32_t           seq   = htonl(++cl->peers->my_seq);
+    char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
+                           + CL_CTR_DIGEST_SZ + CL_CTR_TAG_SZ];
+    uint32_t           seq = htonl(++cl->peers->my_seq);
+    uint16_t           cnt;
+    uint64_t           hash;
+    char              *p;
+    int                k;
+
+    cl_ctr_membership_digest(cl, &cnt, &hash);
 
     memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
     pkt[CL_CTR_WIRE_HDR_SZ]     = (char)CL_CTR_PKT_MASTER_ALIVE;
     memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
-    /* no payload beyond type+seq */
+    p = pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ;
+    *p++ = (char)(cnt >> 8); *p++ = (char)cnt;
+    for (k = 0; k < 8; k++) *p++ = (char)(hash >> (56 - 8 * k));
 
-    cl_ctr_seal_and_send(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ, cl->session_key,
-                     CL_CTR_PKT_MASTER_ALIVE);
+    cl_ctr_seal_and_send(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ,
+                     cl->session_key, CL_CTR_PKT_MASTER_ALIVE);
+}
+
+/*
+ * cl_ctr_send_resync() - member -> master (unicast, session-keyed): "my membership
+ * view differs from your digest, please resend".  Carries our own digest for
+ * the master's logs.  Best-effort and rate-limited by the caller.
+ */
+static void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
+                           const struct sockaddr *dest, socklen_t destlen)
+{
+    char     pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ
+                 + CL_CTR_TAG_SZ];
+    uint32_t seq = htonl(++cl->peers->my_seq);
+    uint16_t cnt;
+    uint64_t hash;
+    char    *p;
+    int      k;
+
+    cl_ctr_membership_digest(cl, &cnt, &hash);
+    memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
+    pkt[CL_CTR_WIRE_HDR_SZ] = (char)CL_CTR_PKT_RESYNC;
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
+    p = pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ;
+    *p++ = (char)(cnt >> 8); *p++ = (char)cnt;
+    for (k = 0; k < 8; k++) *p++ = (char)(hash >> (56 - 8 * k));
+
+    cl_ctr_seal_and_send_to(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ,
+                        cl->session_key, CL_CTR_PKT_RESYNC, dest, destlen);
+}
+
+/*
+ * cl_ctr_broadcast_full_state() - master re-multicasts every peer's NODE_ASSIGN
+ * (node_id + BIN mapping) followed by the MEMBER_LIST.  This is the same state a
+ * join emits; here it repairs members that missed a NODE_ASSIGN.  Master path.
+ */
+static void cl_ctr_broadcast_full_state(cl_ctr_cluster_t *cl)
+{
+    int i;
+
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e = &cl->peers->entries[i];
+        if (e->node_id == 0)
+            continue;
+        cl_ctr_send_node_assign(cl->sock, e->ip, e->node_id, e->bin_count,
+                            (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])e->bin_sockets,
+                            cl);
+    }
+    lock_stop_read(cl->peers->lock);
+    cl_ctr_send_member_list(cl->sock, cl);
+}
+
+/*
+ * cl_ctr_handle_resync() - a member reported a membership mismatch.  Only the
+ * master answers, and coalesces a burst of RESYNCs into one full-state
+ * re-broadcast per CL_CTR_RESYNC_MIN_US.
+ */
+static void cl_ctr_handle_resync(const char *sender_ip, cl_ctr_cluster_t *cl)
+{
+    int     i_am_master;
+    utime_t now;
+
+    lock_start_read(cl->peers->lock);
+    i_am_master = cl_ctr_i_am_master_locked(cl);
+    lock_stop_read(cl->peers->lock);
+    if (!i_am_master)
+        return;
+
+    now = get_uticks();
+    if ((utime_t)(now - cl->last_full_state_us) < CL_CTR_RESYNC_MIN_US) {
+        LM_DBG("clusterer_controller: [cluster %d] RESYNC from %s coalesced\n",
+               cl->cluster_id, sender_ip);
+        return;
+    }
+    cl->last_full_state_us = now;
+    LM_INFO("clusterer_controller: [cluster %d] RESYNC from %s - re-broadcasting "
+            "full state\n", cl->cluster_id, sender_ip);
+    cl_ctr_broadcast_full_state(cl);
 }
 
 /**
@@ -3906,7 +4055,9 @@ static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
  * preemption modes, so two masters (e.g. after a network partition heals) can
  * never both stick.
  */
-static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl)
+static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
+                                   const char *payload, int payload_len,
+                                   const struct sockaddr *src, socklen_t src_len)
 {
     int i_am_master, yielded = 0;
     int from_self = (strcmp(sender_ip, my_ip) == 0);
@@ -3941,6 +4092,31 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
     /* Non-masters (including a node that just yielded) watch the keepalive. */
     if (!i_am_master || yielded)
         cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+
+    /* Membership digest: if the master advertises a set we do not match, we may
+     * have missed a NODE_ASSIGN (a peer known from its ALIVE but with node_id/BIN
+     * unknown).  Pull a rate-limited RESYNC.  Only as a member holding the key,
+     * and never off our own loopback. */
+    if (!i_am_master && !from_self && cl->have_session_key &&
+        payload_len >= CL_CTR_DIGEST_SZ) {
+        const unsigned char *d = (const unsigned char *)payload;
+        uint16_t adv_cnt = (uint16_t)((d[0] << 8) | d[1]);
+        uint16_t my_cnt;
+        uint64_t adv_hash = 0, my_hash;
+        int      k;
+        for (k = 0; k < 8; k++) adv_hash = (adv_hash << 8) | d[2 + k];
+        cl_ctr_membership_digest(cl, &my_cnt, &my_hash);
+        if (adv_cnt != my_cnt || adv_hash != my_hash) {
+            utime_t now = get_uticks();
+            if ((utime_t)(now - cl->last_resync_us) >= CL_CTR_RESYNC_MIN_US) {
+                cl->last_resync_us = now;
+                LM_DBG("clusterer_controller: [cluster %d] membership digest "
+                       "mismatch with master %s (theirs %u, ours %u) - RESYNC\n",
+                       cl->cluster_id, sender_ip, adv_cnt, my_cnt);
+                cl_ctr_send_resync(cl->sock, cl, src, src_len);
+            }
+        }
+    }
 }
 
 /**
@@ -4545,7 +4721,12 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
 	    break;
 
 	case CL_CTR_PKT_MASTER_ALIVE:
-	    cl_ctr_handle_master_alive(sender_ip_buf, cl);
+	    cl_ctr_handle_master_alive(sender_ip_buf, cl, payload, payload_len,
+	                           (const struct sockaddr *)&src_addr, src_len);
+	    break;
+
+	case CL_CTR_PKT_RESYNC:
+	    cl_ctr_handle_resync(sender_ip_buf, cl);
 	    break;
 
 	case CL_CTR_PKT_KEY_GRANT: {
