@@ -241,6 +241,7 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #define CL_CTR_PKT_KEY_GRANT        0x07  /* master -> joiner: ECDH-wrapped master_salt    */
 #define CL_CTR_PKT_KEY_HANDOFF      0x08  /* outgoing master -> next master: salt handoff  */
 #define CL_CTR_PKT_JOIN_REJECT      0x09  /* master -> joiner: authentication rejected     */
+#define CL_CTR_PKT_ACK              0x0B  /* receiver -> sender: ack of a 1:1 handshake pkt */
 #define CL_CTR_PKT_MASTER_BEACON    0x0A  /* master-only announce (BOOTSTRAP key) so
                                        * masters with divergent session keys can
                                        * still discover each other and merge a
@@ -315,6 +316,29 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #define CL_CTR_JOIN_DEFER_HARDMAX  20   /* absolute cap on deferrals incl. resets - */
                                     /* a peer stuck joining can't stall forever */
 #define CL_CTR_JOIN_REQ_MIN_US 500000   /* min microseconds between JOIN_REQ sends   */
+
+/*
+ * Reliable delivery (ACK + bounded retransmit) for the strictly 1:1 packets of
+ * the join handshake - KEY_GRANT today, the joiner's NODE_ASSIGN burst next.
+ * The receiver ACKs each one (CL_CTR_PKT_ACK, echoing the packet's seq); the
+ * sender retransmits the cached bytes until ACKed or the budget runs out.
+ *
+ * Multicast/group packets are deliberately NOT ACKed - ACKing from every member
+ * is ACK implosion; their loss is healed by the periodic membership digest.
+ *
+ * The budget is pinned to the join timers so master-side ARQ nests inside one
+ * JOIN_REQ retry cycle: CL_CTR_RETX_MAX_RETRIES x CL_CTR_RETX_INTERVAL_US of
+ * retransmit (750 ms), then give up and let the joiner's own JOIN_REQ retry
+ * (~1 s) restart the handshake with fresh packets.  ACKs are ONLY retransmit
+ * accounting - a never-ACKed packet is dropped, never gating a join or any
+ * cluster state, so a lost ACK or a dead joiner can never stall anything.
+ */
+#define CL_CTR_RETX_INTERVAL_US  (CL_CTR_JOIN_REQ_MIN_US / 2)  /* 250 ms          */
+#define CL_CTR_RETX_MAX_RETRIES  3                             /* then give up     */
+#define CL_CTR_RETX_QUEUE_SZ     128  /* max outstanding unacked 1:1 packets      */
+#if (CL_CTR_RETX_MAX_RETRIES * CL_CTR_RETX_INTERVAL_US) >= (CL_CTR_JOIN_DEFER_SECS * 1000000)
+#error "retransmit budget must stay shorter than the JOIN_REQ retry interval"
+#endif
 
 /* Per-source-IP rate limiter: checked before decryption to shed floods cheaply.
  * Tracks up to CL_CTR_RATE_TBL_SZ source IPs with a 1-second sliding window. */
@@ -457,6 +481,25 @@ static inline const char *cl_ctr_role_name(int r)
     }
 }
 
+/*
+ * One outstanding 1:1 handshake packet awaiting an ACK.  The full sealed bytes
+ * are cached so a retransmit is a single sendto() with no re-encryption: the
+ * same seq/nonce is resent, which a peer that already got it (and ACKed) will
+ * not see again, while one that lost it still has an older last_seq and accepts
+ * it.  Worker-local (only the controller worker touches the queue), so no lock.
+ */
+typedef struct {
+    int                     used;
+    uint32_t                seq;          /* packet seq, echoed by the ACK        */
+    unsigned char           type;         /* packet type, for logging             */
+    int                     retries_left;
+    utime_t                 next_due_us;   /* get_uticks() deadline for next send  */
+    struct sockaddr_storage dest;         /* unicast destination                  */
+    socklen_t               destlen;
+    int                     pkt_len;      /* sealed length                        */
+    unsigned char           pkt[CL_CTR_NODE_ASSIGN_MAX_SZ]; /* cached sealed bytes */
+} cl_ctr_retx_entry_t;
+
 /**
  * cl_ctr_cluster_t - per-cluster runtime state.
  * One instance per "cluster" modparam; one worker process per instance.
@@ -504,6 +547,11 @@ typedef struct cl_ctr_cluster_ {
      * (broadcast MASTER_ALIVE) while this is 0, or it would encrypt with an
      * underived key that no member can decrypt.                             */
     int            have_session_key;
+    /* Reliable-delivery queue for 1:1 handshake packets (worker-local, no lock).
+     * retx_tfd sweeps it every CL_CTR_RETX_INTERVAL_US while retx_count > 0.    */
+    int                 retx_tfd;
+    int                 retx_count;
+    cl_ctr_retx_entry_t retx_q[CL_CTR_RETX_QUEUE_SZ];
     /* Master-side per-IP table tracking bootstrap-decrypt failures.
      * Worker-local (no shm, no lock needed).  After CL_CTR_JOIN_FAIL_LIMIT
      * failures from the same source IP the master sends JOIN_REJECT.       */
@@ -768,6 +816,8 @@ static int  cl_ctr_child_init(int rank);
 static void mod_destroy(void);
 static void cl_ctr_worker(int rank);
 static int  cl_ctr_on_sock(int fd, void *param, int was_timeout);
+static void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
+static int  cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout);
 static int  cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout);
 static void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master);
 static int  cl_ctr_on_join_tfd(int fd, void *param, int was_timeout);
@@ -786,7 +836,9 @@ static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
 static void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_key_grant(const char *payload, int payload_len,
-                                const char *sender_ip, cl_ctr_cluster_t *cl);
+                                const char *sender_ip, cl_ctr_cluster_t *cl,
+                                uint32_t in_seq, const struct sockaddr *src,
+                                socklen_t src_len);
 static void cl_ctr_handle_key_handoff(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_join_reject(const char *payload, int payload_len,
@@ -1974,6 +2026,8 @@ static int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl)
     for (i = 0; i < cl->peers->count; i++)
         cl->peers->entries[i].last_seq = 0;
     cl->have_session_key = 1;   /* a valid group key now exists */
+    /* The salt (and my_seq) just changed, so any queued retransmit is now stale. */
+    cl_ctr_retx_flush(cl);
     return 0;
 }
 
@@ -2351,6 +2405,175 @@ static int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int p
                                sizeof(cl->mcast_dest));
 }
 
+/* =========================================================================
+ * Reliable delivery: ACK + bounded retransmit for 1:1 handshake packets.
+ * All of this runs only in the controller worker, so the queue needs no lock.
+ * ========================================================================= */
+
+/* Arm a timerfd with microsecond resolution (one-shot; 0/0 disarms). */
+static void cl_ctr_arm_tfd_us(int tfd, uint64_t usec_value, uint64_t usec_interval)
+{
+    struct itimerspec its;
+    memset(&its, 0, sizeof(its));
+    its.it_value.tv_sec     = (time_t)(usec_value / 1000000);
+    its.it_value.tv_nsec    = (long)((usec_value % 1000000) * 1000);
+    its.it_interval.tv_sec  = (time_t)(usec_interval / 1000000);
+    its.it_interval.tv_nsec = (long)((usec_interval % 1000000) * 1000);
+    if (timerfd_settime(tfd, 0, &its, NULL) < 0)
+        LM_WARN("clusterer_controller: timerfd_settime(us): %s\n", strerror(errno));
+}
+
+/*
+ * Drop every outstanding retransmit.  Called on loss of mastership and on
+ * session-key rotation, so a demoted or re-keyed node never keeps delivering a
+ * stale master-keyed KEY_GRANT/NODE_ASSIGN that would push a joiner onto a dead
+ * key - the split-brain guard for the ARQ layer.  ACKs never influence election
+ * or membership, so dropping these entries can only stop redundant sends.
+ */
+static void cl_ctr_retx_flush(cl_ctr_cluster_t *cl)
+{
+    if (cl->retx_count == 0)
+        return;
+    LM_DBG("clusterer_controller: [cluster %d] flushing %d pending retransmit(s)\n",
+           cl->cluster_id, cl->retx_count);
+    memset(cl->retx_q, 0, sizeof(cl->retx_q));
+    cl->retx_count = 0;
+    cl_ctr_arm_tfd_us(cl->retx_tfd, 0, 0);   /* disarm */
+}
+
+/*
+ * Queue a just-sent 1:1 packet (already sealed in @pkt, @pkt_len bytes) for
+ * retransmit until ACKed.  Best-effort: if the queue is full the packet still
+ * went out once and the joiner's JOIN_REQ retry remains the backstop.
+ */
+static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned char type,
+                            const unsigned char *pkt, int pkt_len,
+                            const struct sockaddr *dest, socklen_t destlen)
+{
+    cl_ctr_retx_entry_t *e;
+    int i, slot = -1, was_empty;
+
+    if (pkt_len <= 0 || pkt_len > (int)sizeof(cl->retx_q[0].pkt) ||
+        destlen == 0 || destlen > (socklen_t)sizeof(cl->retx_q[0].dest))
+        return;
+
+    for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++)
+        if (!cl->retx_q[i].used) { slot = i; break; }
+    if (slot < 0) {
+        LM_DBG("clusterer_controller: [cluster %d] retransmit queue full, "
+               "0x%02x sent best-effort\n", cl->cluster_id, type);
+        return;
+    }
+
+    was_empty = (cl->retx_count == 0);
+    e = &cl->retx_q[slot];
+    memset(e, 0, sizeof(*e));
+    e->used         = 1;
+    e->seq          = seq;
+    e->type         = type;
+    e->retries_left = CL_CTR_RETX_MAX_RETRIES;
+    e->next_due_us  = get_uticks() + CL_CTR_RETX_INTERVAL_US;
+    memcpy(&e->dest, dest, destlen);
+    e->destlen      = destlen;
+    memcpy(e->pkt, pkt, pkt_len);
+    e->pkt_len      = pkt_len;
+    cl->retx_count++;
+    if (was_empty)
+        cl_ctr_arm_tfd_us(cl->retx_tfd, CL_CTR_RETX_INTERVAL_US, 0);
+}
+
+/* An ACK arrived: drop the queued packet whose seq it echoes. */
+static void cl_ctr_handle_ack(const char *payload, int payload_len, cl_ctr_cluster_t *cl)
+{
+    uint32_t acked_be, acked;
+    int i;
+
+    if (payload_len < (int)sizeof(uint32_t))
+        return;
+    memcpy(&acked_be, payload, sizeof(acked_be));
+    acked = ntohl(acked_be);
+
+    for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++) {
+        cl_ctr_retx_entry_t *e = &cl->retx_q[i];
+        if (!e->used || e->seq != acked)
+            continue;
+        /* seq is unique within a key epoch (a rekey flushes the queue), so this
+         * is the acknowledged packet; drop it. */
+        LM_DBG("clusterer_controller: [cluster %d] ACK for 0x%02x seq %u\n",
+               cl->cluster_id, e->type, acked);
+        e->used = 0;
+        cl->retx_count--;
+        break;
+    }
+    if (cl->retx_count == 0)
+        cl_ctr_arm_tfd_us(cl->retx_tfd, 0, 0);   /* nothing pending - disarm */
+}
+
+/*
+ * Retransmit sweep: resend every entry whose deadline has passed, one step of
+ * its budget at a time; drop an entry once the budget is spent (the joiner's
+ * JOIN_REQ retry is the outer backstop).  Re-arms only while work remains.
+ */
+static int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout)
+{
+    cl_ctr_cluster_t *cl  = (cl_ctr_cluster_t *)param;
+    utime_t          now = get_uticks();
+    int              i;
+    (void)was_timeout;
+
+    cl_ctr_drain_tfd(fd);
+
+    for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++) {
+        cl_ctr_retx_entry_t *e = &cl->retx_q[i];
+        if (!e->used || now < e->next_due_us)
+            continue;
+
+        if (sendto(cl->sock, e->pkt, e->pkt_len, 0,
+                   (struct sockaddr *)&e->dest, e->destlen) < 0 &&
+            errno != EAGAIN && errno != EWOULDBLOCK)
+            LM_DBG("clusterer_controller: [cluster %d] retransmit 0x%02x: %s\n",
+                   cl->cluster_id, e->type, strerror(errno));
+
+        if (--e->retries_left <= 0) {
+            LM_DBG("clusterer_controller: [cluster %d] 0x%02x (seq %u) unacked "
+                   "after %d retransmits, giving up - joiner will re-JOIN_REQ\n",
+                   cl->cluster_id, e->type, e->seq, CL_CTR_RETX_MAX_RETRIES);
+            e->used = 0;
+            cl->retx_count--;
+        } else {
+            e->next_due_us = now + CL_CTR_RETX_INTERVAL_US;
+        }
+    }
+
+    if (cl->retx_count > 0)
+        cl_ctr_arm_tfd_us(cl->retx_tfd, CL_CTR_RETX_INTERVAL_US, 0);
+    return 0;
+}
+
+/*
+ * Send an ACK for @acked_seq back to @dest.  Sealed in the same key class as the
+ * packet being acknowledged (@use_bootstrap: KEY_GRANT is bootstrap-keyed), so
+ * the sender can read it without assuming the receiver already holds a key.
+ */
+static void cl_ctr_send_ack(int sock, cl_ctr_cluster_t *cl, uint32_t acked_seq,
+                        int use_bootstrap, const struct sockaddr *dest, socklen_t destlen)
+{
+    char          pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + sizeof(uint32_t)
+                      + CL_CTR_TAG_SZ];
+    uint32_t      seq      = htonl(++cl->peers->my_seq);
+    uint32_t      acked_be = htonl(acked_seq);
+    const unsigned char *key = use_bootstrap ? cl->key : cl->session_key;
+
+    memcpy(pkt, use_bootstrap ? CL_CTR_BOOTSTRAP_MAGIC : CL_CTR_PACKET_MAGIC,
+           CL_CTR_MAGIC_SZ);
+    pkt[CL_CTR_WIRE_HDR_SZ] = (char)CL_CTR_PKT_ACK;
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ, &acked_be, sizeof(acked_be));
+
+    cl_ctr_seal_and_send_to(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + (int)sizeof(acked_be),
+                        key, CL_CTR_PKT_ACK, dest, destlen);
+}
+
 /**
  * cl_ctr_send_pkt_with_ip() - build and multicast a small (ALIVE/GOODBYE) packet.
  * JOIN_REQ is handled by cl_ctr_send_join_req_pkt() which carries BIN socket info.
@@ -2665,7 +2888,8 @@ static void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluste
                               const struct sockaddr *dest, socklen_t destlen)
 {
     char               pkt[CL_CTR_KEY_GRANT_SZ];
-    uint32_t           seq     = htonl(++cl->peers->my_seq);
+    uint32_t           seq_h   = ++cl->peers->my_seq;
+    uint32_t           seq     = htonl(seq_h);
     unsigned char      msg2[32 + CL_CTR_MASTER_SALT_SZ + CL_CTR_TAG_SZ];
     char              *p;
     int                ip_len, plain_len, m2;
@@ -2690,9 +2914,13 @@ static void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluste
 
     plain_len = (int)(p - (pkt + CL_CTR_WIRE_HDR_SZ));
     if (cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->key,
-                            CL_CTR_PKT_KEY_GRANT, dest, destlen) == 0)
+                            CL_CTR_PKT_KEY_GRANT, dest, destlen) == 0) {
         LM_INFO("clusterer_controller: [cluster %d] sent KEY_GRANT to %s (unicast)\n",
                 cl->cluster_id, target_ip);
+        /* Critical 1:1 packet - retransmit until the joiner ACKs it. */
+        cl_ctr_retx_enqueue(cl, seq_h, CL_CTR_PKT_KEY_GRANT, (const unsigned char *)pkt,
+                        CL_CTR_WIRE_HDR_SZ + plain_len + CL_CTR_TAG_SZ, dest, destlen);
+    }
 }
 
 /**
@@ -2774,6 +3002,9 @@ static void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master)
         cl_ctr_arm_tfd(cl->master_alive_tfd, CL_CTR_MASTER_KA_INTERVAL, CL_CTR_MASTER_KA_INTERVAL);
         cl_ctr_arm_tfd(cl->master_dead_tfd,  0, 0);   /* disarm watchdog */
     } else {
+        /* No longer master: drop any queued master->joiner retransmits so a
+         * demoted node can't keep pushing a joiner onto a now-stale key. */
+        cl_ctr_retx_flush(cl);
         cl_ctr_arm_tfd(cl->master_alive_tfd, 0, 0);   /* disarm sender   */
         cl_ctr_arm_tfd(cl->master_dead_tfd,  CL_CTR_MASTER_KA_TIMEOUT, 0);
     }
@@ -3818,7 +4049,9 @@ static void cl_ctr_handle_master_beacon(const char *sender_ip, uint16_t sender_c
  * Only processed if target_ip == my_ip (multicast - all nodes receive it).
  */
 static void cl_ctr_handle_key_grant(const char *payload, int payload_len,
-                                const char *sender_ip, cl_ctr_cluster_t *cl)
+                                const char *sender_ip, cl_ctr_cluster_t *cl,
+                                uint32_t in_seq, const struct sockaddr *src,
+                                socklen_t src_len)
 {
     const char    *p         = payload;
     const char    *end       = payload + payload_len;
@@ -3869,6 +4102,10 @@ static void cl_ctr_handle_key_grant(const char *payload, int payload_len,
         /* Clear join_pending so the next decryption failure or rejoin_tfd can
          * issue a fresh JOIN_REQ. */
         cl->join_pending = 0;
+        /* If we already hold a session key, this is a duplicate of a KEY_GRANT
+         * we handled whose ACK was lost - re-ACK so the master stops retrying. */
+        if (cl->have_session_key)
+            cl_ctr_send_ack(cl->sock, cl, in_seq, 1/*bootstrap*/, src, src_len);
         return;
     }
     cl->noise_hs_valid = 0;   /* handshake consumed */
@@ -3886,6 +4123,10 @@ static void cl_ctr_handle_key_grant(const char *payload, int payload_len,
     cl->auth_defer_count       = 0;
     LM_INFO("clusterer_controller: [cluster %d] KEY_GRANT from %s - "
             "session key updated\n", cl->cluster_id, sender_ip);
+    /* Acknowledge to the master (bootstrap key class, matching KEY_GRANT) so it
+     * stops retransmitting.  Best-effort: a lost ACK just draws a retransmit,
+     * which we re-ACK via the duplicate path above; never gates our join. */
+    cl_ctr_send_ack(cl->sock, cl, in_seq, 1/*bootstrap*/, src, src_len);
 }
 
 /**
@@ -4307,8 +4548,17 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
 	    cl_ctr_handle_master_alive(sender_ip_buf, cl);
 	    break;
 
-	case CL_CTR_PKT_KEY_GRANT:
-	    cl_ctr_handle_key_grant(payload, payload_len, sender_ip_buf, cl);
+	case CL_CTR_PKT_KEY_GRANT: {
+	    uint32_t in_seq;
+	    memcpy(&in_seq, buf + CL_CTR_WIRE_HDR_SZ + 1, CL_CTR_SEQ_SZ);
+	    in_seq = ntohl(in_seq);
+	    cl_ctr_handle_key_grant(payload, payload_len, sender_ip_buf, cl,
+	                        in_seq, (const struct sockaddr *)&src_addr, src_len);
+	    break;
+	}
+
+	case CL_CTR_PKT_ACK:
+	    cl_ctr_handle_ack(payload, payload_len, cl);
 	    break;
 
 	case CL_CTR_PKT_KEY_HANDOFF:
@@ -4709,8 +4959,9 @@ static void cl_ctr_worker(int rank)
     cl->rejoin_tfd       = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     cl->master_alive_tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     cl->master_dead_tfd  = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    cl->retx_tfd         = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (cl->alive_tfd < 0 || cl->join_tfd < 0 || cl->rejoin_tfd < 0 ||
-        cl->master_alive_tfd < 0 || cl->master_dead_tfd < 0) {
+        cl->master_alive_tfd < 0 || cl->master_dead_tfd < 0 || cl->retx_tfd < 0) {
 	LM_CRIT("clusterer_controller: [cluster %d] timerfd_create: %s\n",
 	        cl->cluster_id, strerror(errno));
 	exit(-1);
@@ -4750,7 +5001,8 @@ static void cl_ctr_worker(int rank)
         reactor_proc_add_fd(cl->join_tfd,        cl_ctr_on_join_tfd,        cl) < 0 ||
         reactor_proc_add_fd(cl->rejoin_tfd,      cl_ctr_on_rejoin_tfd,      cl) < 0 ||
         reactor_proc_add_fd(cl->master_alive_tfd, cl_ctr_on_master_alive_tfd, cl) < 0 ||
-        reactor_proc_add_fd(cl->master_dead_tfd,  cl_ctr_on_master_dead_tfd,  cl) < 0) {
+        reactor_proc_add_fd(cl->master_dead_tfd,  cl_ctr_on_master_dead_tfd,  cl) < 0 ||
+        reactor_proc_add_fd(cl->retx_tfd,         cl_ctr_on_retx_tfd,         cl) < 0) {
 	LM_CRIT("clusterer_controller: [cluster %d] reactor_proc_add_fd failed\n",
 	        cl->cluster_id);
 	exit(-1);
