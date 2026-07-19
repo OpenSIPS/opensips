@@ -326,12 +326,17 @@ int openssl_reg_sni_cb(tls_sni_cb_f cb)
 
 int openssl_switch_ssl_ctx(struct tls_domain *dom, void *ssl_ctx)
 {
+	int verify_mode = 0;
+
 	SSL_set_SSL_CTX((SSL *)ssl_ctx, (SSL_CTX *)dom->ctx);
 
 	if (!SSL_set_ex_data((SSL *)ssl_ctx, SSL_EX_DOM_IDX, dom)) {
 		LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
 		return -1;
 	}
+
+	get_ssl_ctx_verify_mode(dom, &verify_mode);
+	SSL_set_verify((SSL *)ssl_ctx, verify_mode, NULL); /* NULL = use the previously defined callback */
 
 	return 0;
 }
