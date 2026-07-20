@@ -355,6 +355,17 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #define CL_CTR_DIGEST_SZ      (2 + 8)
 #define CL_CTR_RESYNC_MIN_US  1000000  /* member: min between RESYNCs; master:      */
                                        /* min between full-state re-broadcasts (1 s) */
+/*
+ * Liveness bitmap relayed by the master in every MASTER_ALIVE: one bit per
+ * node_id.  A settled non-master unicasts its ALIVE to the master and no longer
+ * hears peers' ALIVEs directly, so the master reports which node_ids it has seen
+ * within the election window and non-masters refresh those peers' last_seen from
+ * it - turning the old all-to-all O(N^2) liveness gossip into O(N).  Built from
+ * the ELECTION-window cutoff (not the purge window) so a departed node drops out
+ * of the bitmap on the same schedule it drops out of an election.  Sized to
+ * cover node_id 1..CL_CTR_MAX_PEERS.
+ */
+#define CL_CTR_ALIVE_BITMAP_SZ  ((CL_CTR_MAX_PEERS / 8) + 1)
 
 /* Per-source-IP rate limiter: checked before decryption to shed floods cheaply.
  * Tracks up to CL_CTR_RATE_TBL_SZ source IPs with a 1-second sliding window. */
@@ -2608,7 +2619,8 @@ static void cl_ctr_send_ack(int sock, cl_ctr_cluster_t *cl, uint32_t acked_seq,
  * ALIVE: [type 1B][seq 4B][ip NUL][pubkey 32B]   - peers learn our pubkey here
  * GOODBYE: [type 1B][seq 4B][ip NUL]              - no pubkey needed
  */
-static void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl)
+static void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
+                                const struct sockaddr *dest, socklen_t destlen)
 {
     /* Sized for ALIVE which carries an extra pubkey + config descriptor */
     char               pkt[CL_CTR_SMALL_PKT_SZ + CL_CTR_PUBKEY_SZ + CL_CTR_CONFIG_SZ];
@@ -2644,10 +2656,16 @@ static void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster
 	}
     }
 
-    cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type);
+    if (dest)
+        cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->session_key, type,
+                            dest, destlen);
+    else
+        cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type);
 }
 
-#define cl_ctr_send_alive(sock, cl)    cl_ctr_send_pkt_with_ip((sock), CL_CTR_PKT_ALIVE, (cl))
+#define cl_ctr_send_alive(sock, cl)    cl_ctr_send_pkt_with_ip((sock), CL_CTR_PKT_ALIVE, (cl), NULL, 0)
+#define cl_ctr_send_alive_to(sock, cl, dest, dlen) \
+        cl_ctr_send_pkt_with_ip((sock), CL_CTR_PKT_ALIVE, (cl), (dest), (dlen))
 #define cl_ctr_send_join_req(sock, cl) cl_ctr_send_join_req_pkt((sock), (cl))
 
 /**
@@ -2888,6 +2906,54 @@ static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint
     *hash  = h;
 }
 
+/* Build a sockaddr_in for an IPv4 dotted string + port (for unicast sends). */
+static void cl_ctr_sockaddr_in(const char *ip, int port, struct sockaddr_in *out)
+{
+    memset(out, 0, sizeof(*out));
+    out->sin_family      = AF_INET;
+    out->sin_port        = htons((uint16_t)port);
+    out->sin_addr.s_addr = inet_addr(ip);
+}
+
+/* Fill @bm (CL_CTR_ALIVE_BITMAP_SZ bytes) with a bit set for every peer the
+ * master has seen inside the election window - the liveness it relays. */
+static void cl_ctr_build_alive_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm)
+{
+    time_t cutoff = time(NULL) - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
+    int    i;
+
+    memset(bm, 0, CL_CTR_ALIVE_BITMAP_SZ);
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e   = &cl->peers->entries[i];
+        uint16_t       nid = e->node_id;
+        if (e->last_seen < cutoff || nid == 0 || nid > CL_CTR_MAX_PEERS)
+            continue;
+        bm[nid >> 3] |= (unsigned char)(1u << (nid & 7));
+    }
+    lock_stop_read(cl->peers->lock);
+}
+
+/* Refresh last_seen for every peer whose node_id the master reports alive in @bm,
+ * so a settled non-master keeps its election window populated without hearing the
+ * peers' ALIVEs directly.  Only a non-master applies this. */
+static void cl_ctr_apply_alive_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm)
+{
+    time_t now = time(NULL);
+    int    i;
+
+    lock_start_write(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e   = &cl->peers->entries[i];
+        uint16_t       nid = e->node_id;
+        if (nid == 0 || nid > CL_CTR_MAX_PEERS)
+            continue;
+        if (bm[nid >> 3] & (unsigned char)(1u << (nid & 7)))
+            e->last_seen = now;
+    }
+    lock_stop_write(cl->peers->lock);
+}
+
 /**
  * cl_ctr_send_master_alive() - master-only keepalive.  Encrypted with session_key
  * (CL_CTR_PACKET_MAGIC).  Carries the membership digest ([count 2B][hash 8B]) so
@@ -2896,7 +2962,7 @@ static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint
 static void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
 {
     char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
-                           + CL_CTR_DIGEST_SZ + CL_CTR_TAG_SZ];
+                           + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ + CL_CTR_TAG_SZ];
     uint32_t           seq = htonl(++cl->peers->my_seq);
     uint16_t           cnt;
     uint64_t           hash;
@@ -2911,8 +2977,13 @@ static void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
     p = pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ;
     *p++ = (char)(cnt >> 8); *p++ = (char)cnt;
     for (k = 0; k < 8; k++) *p++ = (char)(hash >> (56 - 8 * k));
+    /* relay the per-node liveness bitmap so settled non-masters can refresh
+     * their election window without hearing peers' ALIVEs directly */
+    cl_ctr_build_alive_bitmap(cl, (unsigned char *)p);
+    p += CL_CTR_ALIVE_BITMAP_SZ;
 
-    cl_ctr_seal_and_send(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ,
+    cl_ctr_seal_and_send(sock, cl, pkt,
+                     CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ,
                      cl->session_key, CL_CTR_PKT_MASTER_ALIVE);
 }
 
@@ -4111,6 +4182,14 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
     if (!i_am_master || yielded)
         cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
 
+    /* Liveness relay: the master reports which node_ids it has seen in-window;
+     * refresh those peers' last_seen so our election window stays populated even
+     * though a settled non-master no longer hears the peers' ALIVEs directly. */
+    if (!i_am_master && !from_self &&
+        payload_len >= CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ)
+        cl_ctr_apply_alive_bitmap(cl,
+            (const unsigned char *)payload + CL_CTR_DIGEST_SZ);
+
     /* Membership digest: if the master advertises a set we do not match, we may
      * have missed a NODE_ASSIGN (a peer known from its ALIVE but with node_id/BIN
      * unknown).  Pull a rate-limited RESYNC.  Only as a member holding the key,
@@ -4805,8 +4884,33 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     int prev_master, now_master;
     cl_ctr_drain_tfd(fd);
-    cl_ctr_send_alive(cl->sock, cl);
+    /* ALIVE transport: a settled non-master unicasts its heartbeat to the master,
+     * which relays liveness to the whole group via the MASTER_ALIVE bitmap - so
+     * the old all-to-all O(N^2) becomes O(N).  During formation (no settled master
+     * or key yet) fall back to multicast for discovery; the master itself keeps
+     * multicasting its own ALIVE so its liveness and config still reach everyone. */
+    {
+        int  _im, _active;
+        char _lm[CL_CTR_MAX_IP_LEN + 1];
+        lock_start_read(cl->peers->lock);
+        _im     = cl_ctr_i_am_master_locked(cl);
+        _active = (cl->peers->node_state == CL_CTR_NODE_ACTIVE);
+        memcpy(_lm, cl->peers->last_master, sizeof(_lm));
+        lock_stop_read(cl->peers->lock);
+        if (!_im && _active && cl->have_session_key && _lm[0] != '\0') {
+            struct sockaddr_in d;
+            cl_ctr_sockaddr_in(_lm, cl->multicast_port, &d);
+            cl_ctr_send_alive_to(cl->sock, cl, (struct sockaddr *)&d, sizeof(d));
+        } else {
+            cl_ctr_send_alive(cl->sock, cl);
+        }
+    }
     lock_start_write(cl->peers->lock);
+    /* Refresh our own liveness first: a settled non-master unicasts its ALIVE to
+     * the master and no longer hears a multicast loopback, so without this it
+     * would age itself out of its own election window once the master is gone
+     * and briefly find "no eligible peers" during a failover. */
+    cl_ctr_upsert_peer_locked(my_ip, cl);
     prev_master = cl_ctr_i_am_master_locked(cl);
     cl_ctr_prune_stale(cl);
     cl_ctr_elect_master(cl);
@@ -6324,7 +6428,7 @@ static void mod_destroy(void)
 	                   cl->peers->master_salt, CL_CTR_MASTER_SALT_SZ,
 	                   "cl_ctr_session", cl->session_key);
 	}
-	cl_ctr_send_pkt_with_ip(sock, CL_CTR_PKT_GOODBYE, cl);
+	cl_ctr_send_pkt_with_ip(sock, CL_CTR_PKT_GOODBYE, cl, NULL, 0);
 	close(sock);
 	LM_INFO("clusterer_controller: [cluster %d] GOODBYE sent\n",
 	        cl->cluster_id);
