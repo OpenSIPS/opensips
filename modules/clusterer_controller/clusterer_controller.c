@@ -536,9 +536,6 @@ typedef struct cl_ctr_cluster_ {
     char           multicast_address[INET_ADDRSTRLEN];
     int            multicast_port;
     struct sockaddr_in mcast_dest;   /* resolved once in cl_ctr_setup_socket */
-    int            unicast_ok;       /* 0 if this cluster shares its multicast   */
-                                     /* port with another local cluster (then the */
-                                     /* 1:1 packets fall back to multicast)       */
     char           password[1025];
     unsigned char  key[32];         /* bootstrap key = SHA256(password); JOIN only */
     unsigned char  session_key[32]; /* group key = HKDF(password, master_salt)     */
@@ -2416,16 +2413,11 @@ static int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
 {
     int total_len;
 
-    /* If this cluster cannot use unicast (it shares its multicast port with
-     * another local cluster, so a unicast to my_ip:port could not be demuxed to
-     * the right socket), redirect any unicast dest to the group - IP membership
-     * is the only reliable demultiplexer there.  Multicast sends already pass
-     * mcast_dest, so this is a no-op for them. */
-    if (!cl->unicast_ok) {
-        dest    = (const struct sockaddr *)&cl->mcast_dest;
-        destlen = sizeof(cl->mcast_dest);
-    }
-
+    /* Always unicast to @dest as the caller asked.  When several local clusters
+     * share a multicast port a unicast reply may be delivered by the kernel to
+     * the wrong sibling's socket (unicast is demuxed by port alone); the
+     * receiver recovers it by cluster_id in cl_ctr_maybe_forward(), so we no
+     * longer fall back to the multicast group here. */
     total_len = cl_ctr_encrypt_pkt(pkt, CL_CTR_WIRE_HDR_SZ, plain_len, key,
                                    cl->cluster_id);
     if (total_len < 0)
@@ -4638,7 +4630,22 @@ static void cl_ctr_handle_join_reject(const char *payload, int payload_len,
 /**
  * cl_ctr_recv_one() - read one datagram, validate header, dispatch by type.
  */
-static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
+/* A datagram received on a shared ip:port for a sibling local cluster, handed
+ * to that cluster's worker (still encrypted) by its cleartext cluster_id. */
+struct cl_ctr_fwd_pkt {
+    cl_ctr_cluster_t   *cl;      /* target cluster (owns the reply socket)  */
+    struct sockaddr_in  src;     /* original datagram source                */
+    int                 n;       /* length of buf                           */
+    unsigned char       buf[1];  /* the encrypted packet (flexible array)   */
+};
+static void cl_ctr_rpc_forward(int sender, void *param);
+static void cl_ctr_maybe_forward(const char *buf, int n,
+                             const struct sockaddr_in *src, uint16_t pkt_cid,
+                             cl_ctr_cluster_t *from);
+
+static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
+                        const char *fwd_buf, int fwd_n,
+                        const struct sockaddr_in *fwd_src)
 {
     /* Static buffer: avoids a 64 KB stack frame; safe because cl_ctr_recv_one
      * is called only from the single-threaded cl_ctr_worker process.         */
@@ -4650,12 +4657,22 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
     const char        *payload;
     int                payload_len;
 
-    n = recvfrom(sock, buf, sizeof(buf) - 1, 0,
-                 (struct sockaddr *)&src_addr, &src_len);
-    if (n < 0) {
-	if (errno != EAGAIN && errno != EWOULDBLOCK)
-	    LM_ERR("clusterer_controller: recvfrom(): %s\n", strerror(errno));
-	return;
+    if (fwd_buf) {
+	/* Forwarded from a sibling cluster's worker that received this on our
+	 * shared ip:port (see cl_ctr_maybe_forward).  Process it exactly as if
+	 * it had arrived on our own socket. */
+	n = (fwd_n > (int)sizeof(buf) - 1) ? (int)sizeof(buf) - 1 : fwd_n;
+	memcpy(buf, fwd_buf, (size_t)n);
+	src_addr = *fwd_src;
+	(void)src_len;
+    } else {
+	n = recvfrom(sock, buf, sizeof(buf) - 1, 0,
+	             (struct sockaddr *)&src_addr, &src_len);
+	if (n < 0) {
+	    if (errno != EAGAIN && errno != EWOULDBLOCK)
+		LM_ERR("clusterer_controller: recvfrom(): %s\n", strerror(errno));
+	    return;
+	}
     }
 
     /* Minimum: magic(2)+cluster_id(2)+nonce(12)+type(1)+seq(4)+tag(16) = 37 */
@@ -4679,9 +4696,17 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
 	uint16_t pkt_cid_be;
 	memcpy(&pkt_cid_be, buf + CL_CTR_MAGIC_SZ, CL_CTR_CLUSTER_ID_SZ);
 	if (ntohs(pkt_cid_be) != (uint16_t)cl->cluster_id) {
-	    LM_DBG("clusterer_controller: [cluster %d] ignoring packet for "
-	           "cluster %u on shared group\n", cl->cluster_id,
-	           ntohs(pkt_cid_be));
+	    /* Not ours.  On a shared ip:port the kernel routes unicast by port
+	     * alone, so it may have delivered a sibling local cluster's packet
+	     * to us - hand it to that cluster's worker by its cleartext
+	     * cluster_id (still encrypted; the sibling decrypts with its own
+	     * key).  A packet we were already forwarded is never re-forwarded. */
+	    if (!fwd_buf)
+		cl_ctr_maybe_forward(buf, (int)n, &src_addr, ntohs(pkt_cid_be), cl);
+	    else
+		LM_DBG("clusterer_controller: [cluster %d] forwarded packet for "
+		       "cluster %u is not ours, dropping\n", cl->cluster_id,
+		       ntohs(pkt_cid_be));
 	    return;
 	}
     }
@@ -4880,6 +4905,86 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
     }
 }
 
+/*
+ * cl_ctr_maybe_forward() - hand a datagram received on a shared ip:port to the
+ * sibling local cluster it actually belongs to.
+ *
+ * On a shared multicast_port every controller cluster on this node binds the
+ * same ip:port; the kernel demultiplexes multicast by group membership but
+ * unicast by port alone, so a 1:1 reply meant for a co-located cluster can be
+ * delivered to the wrong worker.  We recover it here: find the local cluster
+ * whose cluster_id matches the packet's cleartext header and forward the still-
+ * encrypted bytes to its worker via IPC.  The target decrypts with its own key.
+ *
+ * Called only from the original receiver (never re-entered for a forwarded
+ * packet), so no forwarding loop is possible.
+ */
+static void cl_ctr_maybe_forward(const char *buf, int n,
+                             const struct sockaddr_in *src, uint16_t pkt_cid,
+                             cl_ctr_cluster_t *from)
+{
+    cl_ctr_cluster_t      *target = NULL;
+    struct cl_ctr_fwd_pkt *fp;
+    int                    i, proc_no;
+
+    /* Bound the work: only a legitimately-sized unicast is worth forwarding. */
+    if (n <= 0 || n > CL_CTR_LIST_PKT_MAX_SZ)
+	return;
+
+    for (i = 0; i < cl_ctr_cluster_count; i++) {
+	if ((uint16_t)cl_ctr_clusters[i].cluster_id == pkt_cid &&
+	    &cl_ctr_clusters[i] != from) {
+	    target = &cl_ctr_clusters[i];
+	    break;
+	}
+    }
+    if (!target) {
+	LM_DBG("clusterer_controller: [cluster %d] no local cluster %u for "
+	       "packet on shared port, dropping\n", from->cluster_id, pkt_cid);
+	return;
+    }
+
+    /* Shed floods before allocating: charge the source against our own limiter
+     * (the target re-checks after it receives the forward). */
+    if (cl_ctr_rate_check(from, src->sin_addr.s_addr) < 0)
+	return;
+
+    /* worker_proc_no is written once at worker fork and stable thereafter. */
+    proc_no = target->peers ? target->peers->worker_proc_no : -1;
+    if (proc_no < 0)
+	return;   /* target worker not up yet */
+
+    fp = shm_malloc(sizeof(*fp) + (size_t)n - 1);
+    if (!fp) {
+	LM_ERR("clusterer_controller: out of shm forwarding to cluster %u\n",
+	       pkt_cid);
+	return;
+    }
+    fp->cl  = target;
+    fp->src = *src;
+    fp->n   = n;
+    memcpy(fp->buf, buf, (size_t)n);
+
+    if (ipc_send_rpc(proc_no, cl_ctr_rpc_forward, fp) < 0) {
+	LM_ERR("clusterer_controller: ipc forward to cluster %u failed\n",
+	       pkt_cid);
+	shm_free(fp);
+    }
+}
+
+/*
+ * cl_ctr_rpc_forward() - runs in the target cluster's worker; process a datagram
+ * a sibling worker forwarded to us (see cl_ctr_maybe_forward).
+ */
+static void cl_ctr_rpc_forward(int sender, void *param)
+{
+    struct cl_ctr_fwd_pkt *fp = (struct cl_ctr_fwd_pkt *)param;
+    (void)sender;
+
+    cl_ctr_recv_one(fp->cl->sock, fp->cl, (char *)fp->buf, fp->n, &fp->src);
+    shm_free(fp);
+}
+
 /* =========================================================================
  * Background worker process
  * ========================================================================= */
@@ -4890,7 +4995,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl)
 
 static int cl_ctr_on_sock(int fd, void *param, int was_timeout)
 {
-    cl_ctr_recv_one(fd, (cl_ctr_cluster_t *)param);
+    cl_ctr_recv_one(fd, (cl_ctr_cluster_t *)param, NULL, 0, NULL);
     return 0;
 }
 
@@ -6148,16 +6253,13 @@ static int mod_init(void)
 	cl_ctr_cluster_strs[i] = NULL;
     }
 
-    /* Validate cluster_id / (multicast,port) uniqueness, and decide per cluster
-     * whether unicast is safe.  Every local controller socket binds
-     * INADDR_ANY:multicast_port, so a unicast to my_ip:port is demultiplexed by
-     * port alone - if two local clusters share a port (distinct groups), a
-     * unicast could land on the wrong cluster's socket and be dropped by the
-     * cluster_id filter.  Such clusters fall back to multicast for their 1:1
-     * packets too (correct, only unoptimised); the common single-cluster and
-     * distinct-port cases keep unicast. */
-    for (i = 0; i < cl_ctr_cluster_count; i++)
-        cl_ctr_clusters[i].unicast_ok = 1;
+    /* Validate cluster_id / (multicast,port) uniqueness.  Every local controller
+     * socket binds INADDR_ANY:multicast_port, so a unicast to my_ip:port is
+     * demultiplexed by port alone - if two local clusters share a port (distinct
+     * groups), a unicast can land on the wrong cluster's socket.  That is now
+     * recovered at the receiver by the packet's cleartext cluster_id (see
+     * cl_ctr_maybe_forward()), so shared ports stay fully unicast; we only note
+     * it. */
     for (i = 0; i < cl_ctr_cluster_count; i++) {
 	for (j = i + 1; j < cl_ctr_cluster_count; j++) {
 	    if (cl_ctr_clusters[i].cluster_id == cl_ctr_clusters[j].cluster_id) {
@@ -6174,13 +6276,10 @@ static int mod_init(void)
 		       cl_ctr_clusters[i].multicast_port);
 		return -1;
 	    }
-	    /* same port, different group: unicast cannot be demuxed to the
-	     * right cluster - both fall back to multicast for their 1:1 packets */
-	    cl_ctr_clusters[i].unicast_ok = 0;
-	    cl_ctr_clusters[j].unicast_ok = 0;
-	    LM_WARN("clusterer_controller: clusters %d and %d share multicast "
-	            "port %d - using multicast for their 1:1 packets; give them "
-	            "distinct ports to enable unicast\n",
+	    /* same port, different group: unicast is demuxed by port alone and
+	     * routed to the right cluster by cluster_id at the receiver */
+	    LM_INFO("clusterer_controller: clusters %d and %d share multicast "
+	            "port %d - unicast is routed by cluster_id\n",
 	            cl_ctr_clusters[i].cluster_id, cl_ctr_clusters[j].cluster_id,
 	            cl_ctr_clusters[i].multicast_port);
 	}
