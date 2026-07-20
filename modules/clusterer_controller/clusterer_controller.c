@@ -536,6 +536,9 @@ typedef struct cl_ctr_cluster_ {
     char           multicast_address[INET_ADDRSTRLEN];
     int            multicast_port;
     struct sockaddr_in mcast_dest;   /* resolved once in cl_ctr_setup_socket */
+    int            unicast_ok;       /* 0 if this cluster shares its multicast   */
+                                     /* port with another local cluster (then the */
+                                     /* 1:1 packets fall back to multicast)       */
     char           password[1025];
     unsigned char  key[32];         /* bootstrap key = SHA256(password); JOIN only */
     unsigned char  session_key[32]; /* group key = HKDF(password, master_salt)     */
@@ -2411,7 +2414,19 @@ static int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
                                unsigned char type,
                                const struct sockaddr *dest, socklen_t destlen)
 {
-    int total_len = cl_ctr_encrypt_pkt(pkt, CL_CTR_WIRE_HDR_SZ, plain_len, key,
+    int total_len;
+
+    /* If this cluster cannot use unicast (it shares its multicast port with
+     * another local cluster, so a unicast to my_ip:port could not be demuxed to
+     * the right socket), redirect any unicast dest to the group - IP membership
+     * is the only reliable demultiplexer there.  Multicast sends already pass
+     * mcast_dest, so this is a no-op for them. */
+    if (!cl->unicast_ok) {
+        dest    = (const struct sockaddr *)&cl->mcast_dest;
+        destlen = sizeof(cl->mcast_dest);
+    }
+
+    total_len = cl_ctr_encrypt_pkt(pkt, CL_CTR_WIRE_HDR_SZ, plain_len, key,
                                    cl->cluster_id);
     if (total_len < 0)
         return -1;
@@ -6133,7 +6148,16 @@ static int mod_init(void)
 	cl_ctr_cluster_strs[i] = NULL;
     }
 
-    /* Validate cluster_id uniqueness and (multicast, port) uniqueness */
+    /* Validate cluster_id / (multicast,port) uniqueness, and decide per cluster
+     * whether unicast is safe.  Every local controller socket binds
+     * INADDR_ANY:multicast_port, so a unicast to my_ip:port is demultiplexed by
+     * port alone - if two local clusters share a port (distinct groups), a
+     * unicast could land on the wrong cluster's socket and be dropped by the
+     * cluster_id filter.  Such clusters fall back to multicast for their 1:1
+     * packets too (correct, only unoptimised); the common single-cluster and
+     * distinct-port cases keep unicast. */
+    for (i = 0; i < cl_ctr_cluster_count; i++)
+        cl_ctr_clusters[i].unicast_ok = 1;
     for (i = 0; i < cl_ctr_cluster_count; i++) {
 	for (j = i + 1; j < cl_ctr_cluster_count; j++) {
 	    if (cl_ctr_clusters[i].cluster_id == cl_ctr_clusters[j].cluster_id) {
@@ -6141,14 +6165,24 @@ static int mod_init(void)
 		       cl_ctr_clusters[i].cluster_id);
 		return -1;
 	    }
+	    if (cl_ctr_clusters[i].multicast_port != cl_ctr_clusters[j].multicast_port)
+		continue;
 	    if (strcmp(cl_ctr_clusters[i].multicast_address,
-	               cl_ctr_clusters[j].multicast_address) == 0 &&
-	        cl_ctr_clusters[i].multicast_port == cl_ctr_clusters[j].multicast_port) {
+	               cl_ctr_clusters[j].multicast_address) == 0) {
 		LM_ERR("clusterer_controller: duplicate multicast %s:%d\n",
 		       cl_ctr_clusters[i].multicast_address,
 		       cl_ctr_clusters[i].multicast_port);
 		return -1;
 	    }
+	    /* same port, different group: unicast cannot be demuxed to the
+	     * right cluster - both fall back to multicast for their 1:1 packets */
+	    cl_ctr_clusters[i].unicast_ok = 0;
+	    cl_ctr_clusters[j].unicast_ok = 0;
+	    LM_WARN("clusterer_controller: clusters %d and %d share multicast "
+	            "port %d - using multicast for their 1:1 packets; give them "
+	            "distinct ports to enable unicast\n",
+	            cl_ctr_clusters[i].cluster_id, cl_ctr_clusters[j].cluster_id,
+	            cl_ctr_clusters[i].multicast_port);
 	}
     }
 
