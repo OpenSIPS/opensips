@@ -180,12 +180,12 @@ if (lua_exec("mongo_alias")) {
 
   <section id="exported_mi_functions" xreflabel="Exported MI Functions">
   <title>Exported MI Functions</title>
-  <section id="mi_watch" xreflabel="watch">
+  <section id="mi_watch" xreflabel="lua:watch">
     <title>
-    <function moreinfo="none">watch</function>
+    <function moreinfo="none">lua:watch</function>
     </title>
     <para>
-    Name: <emphasis>watch</emphasis>
+    Name: <emphasis>lua:watch</emphasis>
     </para>
     <para>Parameters: <emphasis>none</emphasis></para>
     <itemizedlist>
@@ -199,7 +199,7 @@ if (lua_exec("mongo_alias")) {
     </itemizedlist>
     <para>MI FIFO Command Format:</para>
   <programlisting  format="linespecific">
-  opensips-cli -x mi watch
+  opensips-cli -x mi lua:watch
   </programlisting>
   </section>
 

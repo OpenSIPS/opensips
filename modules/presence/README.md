@@ -718,14 +718,14 @@ if($rm=="SUBSCRIBE")
 ### Exported MI Functions
 
 
-#### refresh_watchers
+#### presence:refresh_watchers
 
 
 Triggers sending Notify messages to watchers if a change in watchers
 authorization or in published state occurred.
 
 
-Name: *refresh_watchers*
+Name: *presence:refresh_watchers*
 
 
 Parameters:
@@ -746,18 +746,18 @@ MI FIFO Command Format:
 
 
 ```bash
-opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi presence:refresh_watchers sip:11@192.168.2.132 presence 1
 ```
 
 
-#### cleanup
+#### presence:cleanup
 
 
 Manually triggers the cleanup functions for watchers and presentity tables. Useful if you
 have set `clean_period` to zero or less.
 
 
-Name: *cleanup*
+Name: *presence:cleanup*
 
 
 Parameters: *none*
@@ -767,7 +767,7 @@ MI FIFO Command Format:
 
 
 ```bash
-opensips-cli -x mi cleanup
+opensips-cli -x mi presence:cleanup
 ```
 
 
@@ -794,13 +794,13 @@ opensips-cli -x mi presence:phtable_list
 ```
 
 
-#### subs_phtable_list
+#### presence:subs_phtable_list
 
 
 Lists all the subscription records, or the subscriptions for which the "To" and "From" URIs match the given parameters.
 
 
-Name: *subs_phtable_list*
+Name: *presence:subs_phtable_list*
 
 
 Parameters
@@ -814,7 +814,7 @@ MI FIFO Command Format:
 
 
 ```bash
-opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
+opensips-cli -x mi presence:subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 ```
 
 

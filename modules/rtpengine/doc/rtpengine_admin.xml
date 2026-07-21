@@ -1767,8 +1767,8 @@ $ opensips-cli -x mi rtpengine:reload type=soft
 			</example>
 		</section>
 
-		<section id="mi_teardown" xreflabel="teardown">
-			<title><function moreinfo="none">teardown</function></title>
+		<section id="mi_teardown" xreflabel="rtpengine:teardown">
+			<title><function moreinfo="none">rtpengine:teardown</function></title>
 			<para>
 			Terminates the SIP dialog by the SIP Call-ID given as parameter.
 			</para>
@@ -1787,10 +1787,10 @@ $ opensips-cli -x mi rtpengine:reload type=soft
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">teardown</function> usage</title>
+				<function moreinfo="none">rtpengine:teardown</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
+$ opensips-cli -x mi rtpengine:teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
 			</programlisting>
 			</example>

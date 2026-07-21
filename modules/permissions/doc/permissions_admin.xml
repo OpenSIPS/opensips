@@ -936,9 +936,9 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-	<section id="mi_address_reload" xreflabel="address_reload">
+	<section id="mi_address_reload" xreflabel="permissions:address_reload">
 		<title>
-		<function moreinfo="none">address_reload</function>
+		<function moreinfo="none">permissions:address_reload</function>
 		</title>
 		<para>
 				Causes permissions module to re-read the contents of
@@ -961,9 +961,9 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 
 	</section>
 
-	<section id="mi_address_dump" xreflabel="address_dump">
+	<section id="mi_address_dump" xreflabel="permissions:address_dump">
 		<title>
-		<function moreinfo="none">address_dump</function>
+		<function moreinfo="none">permissions:address_dump</function>
 		</title>
 		<para>
 				Causes permissions module to dump contents of
@@ -982,9 +982,9 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 
 	</section>
 
-	<section id="mi_subnet_dump" xreflabel="subnet_dump">
+	<section id="mi_subnet_dump" xreflabel="permissions:subnet_dump">
 		<title>
-		<function moreinfo="none">subnet_dump</function>
+		<function moreinfo="none">permissions:subnet_dump</function>
 		</title>
 		<para>
 				Causes permissions module to dump
@@ -1003,9 +1003,9 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 
 	</section>
 
-	<section id="mi_allow_uri" xreflabel="allow_uri">
+	<section id="mi_allow_uri" xreflabel="permissions:allow_uri">
 		<title>
-		<function moreinfo="none">allow_uri</function>
+		<function moreinfo="none">permissions:allow_uri</function>
 		</title>
 		<para>
 		Tests if (URI, Contact) pair is allowed according to
@@ -1034,4 +1034,3 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 	</section>
 
 </chapter>
-

@@ -1466,7 +1466,7 @@ $ opensips-cli -x mi rtpengine:reload type=soft
 ```
 
 
-#### teardown
+#### rtpengine:teardown
 
 
 Terminates the SIP dialog by the SIP Call-ID given as parameter.
@@ -1485,9 +1485,9 @@ make rtpengine happy when trying to terminate SIP calls based on
 RTP timeouts.
 
 
-```bash title="teardown usage"
+```bash title="rtpengine:teardown usage"
 ...
-$ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
+$ opensips-cli -x mi rtpengine:teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
 ```
 

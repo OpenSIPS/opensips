@@ -953,8 +953,8 @@ route[after_usleep] {
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
-		<section id="mi_rand_set_prop" xreflabel="rand_set_prop">
-			<title><function moreinfo="none">rand_set_prop</function></title>
+		<section id="mi_rand_set_prob" xreflabel="cfgutils:rand_set_prob">
+			<title><function moreinfo="none">cfgutils:rand_set_prob</function></title>
 			<para>
 				Set the probability value to the given parameter.
 			</para>
@@ -966,17 +966,17 @@ route[after_usleep] {
 				</para></listitem>
 			</itemizedlist>
 			<example>
-				<title><function moreinfo="none">rand_set_prob</function> usage</title>
+				<title><function moreinfo="none">cfgutils:rand_set_prob</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi rand_set_prob 10
+$ opensips-cli -x mi cfgutils:rand_set_prob 10
 ...
 </programlisting>
 			</example>
 			
 		</section>
-		<section id="mi_rand_reset_prob" xreflabel="rand_reset_prob">
-			<title><function moreinfo="none">rand_reset_prob</function></title>
+		<section id="mi_rand_reset_prob" xreflabel="cfgutils:rand_reset_prob">
+			<title><function moreinfo="none">cfgutils:rand_reset_prob</function></title>
 			<para>
 				Reset the probability value to the inital start value.
 			</para>
@@ -985,16 +985,16 @@ $ opensips-cli -x mi rand_set_prob 10
 			</para>
 			<example>
 				<title>
-					<function moreinfo="none">rand_reset_prob</function> usage</title>
+					<function moreinfo="none">cfgutils:rand_reset_prob</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi rand_reset_prob
+$ opensips-cli -x mi cfgutils:rand_reset_prob
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_rand_get_prob" xreflabel="rand_get_prob">
-			<title><function moreinfo="none">rand_get_prob</function></title>
+		<section id="mi_rand_get_prob" xreflabel="cfgutils:rand_get_prob">
+			<title><function moreinfo="none">cfgutils:rand_get_prob</function></title>
 			<para>
 				Return the actual probability setting.
 			</para>
@@ -1002,17 +1002,17 @@ $ opensips-cli -x mi rand_reset_prob
 				The function return the actual probability value.
 			</para>
 			<example>
-				<title><function moreinfo="none">rand_get_prob</function> usage</title>
+				<title><function moreinfo="none">cfgutils:rand_get_prob</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi get_prob
+$ opensips-cli -x mi cfgutils:rand_get_prob
 The actual probability is 50 percent.
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_check_config_hash" xreflabel="check_config_hash">
-			<title><function moreinfo="none">check_config_hash</function></title>
+		<section id="mi_check_config_hash" xreflabel="cfgutils:check_config_hash">
+			<title><function moreinfo="none">cfgutils:check_config_hash</function></title>
 			<para>
 				Check if the actual config file hash is identical to the stored one.
 			</para>
@@ -1022,17 +1022,17 @@ The actual probability is 50 percent.
 				and 500 on errors. Additional a short text message is printed.
 			</para>
 			<example>
-				<title><function moreinfo="none">check_config_hash</function> usage</title>
+				<title><function moreinfo="none">cfgutils:check_config_hash</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi check_config_hash
+$ opensips-cli -x mi cfgutils:check_config_hash
 The actual config file hash is identical to the stored one.
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_get_config_hash" xreflabel="get_config_hash">
-			<title><function moreinfo="none">get_config_hash</function></title>
+		<section id="mi_get_config_hash" xreflabel="cfgutils:get_config_hash">
+			<title><function moreinfo="none">cfgutils:get_config_hash</function></title>
 			<para>
 				Return the stored config file hash.
 			</para>
@@ -1041,17 +1041,17 @@ The actual config file hash is identical to the stored one.
 				file for hashing has been configured.
 			</para>
 			<example>
-				<title><function moreinfo="none">get_config_hash</function> usage</title>
+				<title><function moreinfo="none">cfgutils:get_config_hash</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi get_config_hash
+$ opensips-cli -x mi cfgutils:get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_shv_set" xreflabel="shv_set">
-			<title><function moreinfo="none">shv_set</function></title>
+		<section id="mi_shv_set" xreflabel="cfgutils:shv_set">
+			<title><function moreinfo="none">cfgutils:shv_set</function></title>
 			<para>
 				Set the value of a shared variable ($shv(name)).
 			</para>
@@ -1069,16 +1069,16 @@ $ opensips-cli -x mi get_config_hash
 			<listitem><para><emphasis>value</emphasis> : value to be set</para></listitem>
 		</itemizedlist>
 		<example>
-		<title><function moreinfo="none">shv_set</function> usage</title>
+		<title><function moreinfo="none">cfgutils:shv_set</function> usage</title>
 		<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi shv_set debug int 0
+$ opensips-cli -x mi cfgutils:shv_set debug int 0
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_shv_get" xreflabel="shv_get">
-			<title><function moreinfo="none">shv_get</function></title>
+		<section id="mi_shv_get" xreflabel="cfgutils:shv_get">
+			<title><function moreinfo="none">cfgutils:shv_get</function></title>
 			<para>
 				Get the value of a shared variable ($shv(name)).
 			</para>
@@ -1088,11 +1088,11 @@ $ opensips-cli -x mi shv_set debug int 0
 			is missing, all shared variables are returned.</para></listitem>
 		</itemizedlist>
 		<example>
-		<title><function moreinfo="none">shv_get</function> usage</title>
+		<title><function moreinfo="none">cfgutils:shv_get</function> usage</title>
 		<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi shv_get debug
-$ opensips-cli -x mi shv_get
+$ opensips-cli -x mi cfgutils:shv_get debug
+$ opensips-cli -x mi cfgutils:shv_get
 ...
 </programlisting>
 			</example>
@@ -1209,4 +1209,3 @@ if ($shv(debug) == 1) {
 	</section>
 </section>
 </chapter>
-

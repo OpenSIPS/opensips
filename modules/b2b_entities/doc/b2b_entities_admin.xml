@@ -608,9 +608,9 @@ ua_session_terminate($var(b2b_key));
 	</programlisting>
 	</section>
 
-	<section id="mi_ua_session_client_start" xreflabel="ua_session_client_start">
+	<section id="mi_ua_session_client_start" xreflabel="b2b_entities:ua_session_client_start">
 		<title>
-		<function moreinfo="none">ua_session_client_start</function>
+		<function moreinfo="none">b2b_entities:ua_session_client_start</function>
 		</title>
 		<para>
 		This command starts a new UAC session by sending an initial INVITE.
@@ -618,7 +618,7 @@ ua_session_terminate($var(b2b_key));
 		be handled via the <xref linkend="event_E_UA_SESSION"/> event.
 		</para>
 		<para>
-		Name: <emphasis>ua_session_client_start</emphasis>
+		Name: <emphasis>b2b_entities:ua_session_client_start</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -661,14 +661,14 @@ ua_session_terminate($var(b2b_key));
 		</itemizedlist>
 		<para>opensips-cli Command Format:</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ua_session_client_start ruri=sip:bob@opensips.org \
+opensips-cli -x mi b2b_entities:ua_session_client_start ruri=sip:bob@opensips.org \
 to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
 </programlisting>
 	</section>
 
-	<section id="mi_ua_session_update" xreflabel="ua_session_update">
+	<section id="mi_ua_session_update" xreflabel="b2b_entities:ua_session_update">
 		<title>
-		<function moreinfo="none">ua_session_update</function>
+		<function moreinfo="none">b2b_entities:ua_session_update</function>
 		</title>
 		<para>
 		Sends a sequential request for a UA session started with the
@@ -676,7 +676,7 @@ to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
 		the <xref linkend="mi_ua_session_client_start"/> MI function.
 		</para>
 		<para>
-		Name: <emphasis>ua_session_update</emphasis>
+		Name: <emphasis>b2b_entities:ua_session_update</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -703,13 +703,13 @@ to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
 		</itemizedlist>
 		<para>opensips-cli Command Format:</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIONS
+opensips-cli -x mi b2b_entities:ua_session_update key=B2B.436.1925389.1649338095 method=OPTIONS
 </programlisting>
 	</section>
 
-	<section id="mi_ua_session_reply" xreflabel="ua_session_reply">
+	<section id="mi_ua_session_reply" xreflabel="b2b_entities:ua_session_reply">
 		<title>
-		<function moreinfo="none">ua_session_reply</function>
+		<function moreinfo="none">b2b_entities:ua_session_reply</function>
 		</title>
 		<para>
 		Sends a reply for a UA session started with the
@@ -717,7 +717,7 @@ opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIO
 		the <xref linkend="mi_ua_session_client_start"/> MI function.
 		</para>
 		<para>
-		Name: <emphasis>ua_session_reply</emphasis>
+		Name: <emphasis>b2b_entities:ua_session_reply</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -750,13 +750,13 @@ opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIO
 		</itemizedlist>
 		<para>opensips-cli Command Format:</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 method=OPTIONS code=200 reason=OK
+opensips-cli -x mi b2b_entities:ua_session_reply key=B2B.436.1925389.1649338095 method=OPTIONS code=200 reason=OK
 </programlisting>
 	</section>
 
-	<section id="mi_ua_session_terminate" xreflabel="ua_session_terminate">
+	<section id="mi_ua_session_terminate" xreflabel="b2b_entities:ua_session_terminate">
 		<title>
-		<function moreinfo="none">ua_session_terminate</function>
+		<function moreinfo="none">b2b_entities:ua_session_terminate</function>
 		</title>
 		<para>
 		Terminate a UA session started with the
@@ -764,7 +764,7 @@ opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 method=OPTION
 		the <xref linkend="mi_ua_session_client_start"/> MI function.
 		</para>
 		<para>
-		Name: <emphasis>ua_session_terminate</emphasis>
+		Name: <emphasis>b2b_entities:ua_session_terminate</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -778,13 +778,13 @@ opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 method=OPTION
 		</itemizedlist>
 		<para>opensips-cli Command Format:</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
+opensips-cli -x mi b2b_entities:ua_session_terminate key=B2B.436.1925389.1649338095
 </programlisting>
 	</section>
 
-	<section id="mi_ua_session_list" xreflabel="ua_session_list">
+	<section id="mi_ua_session_list" xreflabel="b2b_entities:ua_session_list">
 		<title>
-		<function moreinfo="none">ua_session_list</function>
+		<function moreinfo="none">b2b_entities:ua_session_list</function>
 		</title>
 		<para>
 		List information about UA sessions started with
@@ -792,7 +792,7 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
 		the <xref linkend="mi_ua_session_client_start"/> MI function.
 		</para>
 		<para>
-		Name: <emphasis>ua_session_list</emphasis>
+		Name: <emphasis>b2b_entities:ua_session_list</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -803,7 +803,7 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 	<programlisting  format="linespecific">
-	opensips-cli -x mi ua_session_list
+	opensips-cli -x mi b2b_entities:ua_session_list
 	</programlisting>
 	</section>
 

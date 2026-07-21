@@ -51,6 +51,7 @@ static mi_response_t *build_err_resp(int code, const char *msg, int msg_len,
 
 #define MI_MODULE_SEP ':'
 #define MI_DEFAULT_MODULE_NAME "core"
+#define MI_PROTO_MODULE_PREFIX "proto_"
 
 struct mi_mod_group {
 	int id;
@@ -229,6 +230,10 @@ static const char *get_mi_mod_name(const char *mod_name)
 {
 	if (!mod_name || !*mod_name)
 		return MI_DEFAULT_MODULE_NAME;
+
+	if (strncmp(mod_name, MI_PROTO_MODULE_PREFIX,
+			sizeof(MI_PROTO_MODULE_PREFIX) - 1) == 0)
+		return mod_name + sizeof(MI_PROTO_MODULE_PREFIX) - 1;
 
 	return mod_name;
 }

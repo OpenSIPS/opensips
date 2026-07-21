@@ -839,7 +839,7 @@ route[after_usleep] {
 ### Exported MI Functions
 
 
-#### rand_set_prop
+#### cfgutils:rand_set_prob
 
 
 Set the probability value to the given parameter.
@@ -852,14 +852,14 @@ Parameters:
 a percent value (number from 0 to 99).
 
 
-```bash title="rand_set_prob usage"
+```bash title="cfgutils:rand_set_prob usage"
 ...
-$ opensips-cli -x mi rand_set_prob 10
+$ opensips-cli -x mi cfgutils:rand_set_prob 10
 ...
 ```
 
 
-#### rand_reset_prob
+#### cfgutils:rand_reset_prob
 
 
 Reset the probability value to the inital start value.
@@ -868,14 +868,14 @@ Reset the probability value to the inital start value.
 This command don't need a parameter.
 
 
-```bash title="rand_reset_prob usage"
+```bash title="cfgutils:rand_reset_prob usage"
 ...
-$ opensips-cli -x mi rand_reset_prob
+$ opensips-cli -x mi cfgutils:rand_reset_prob
 ...
 ```
 
 
-#### rand_get_prob
+#### cfgutils:rand_get_prob
 
 
 Return the actual probability setting.
@@ -884,15 +884,15 @@ Return the actual probability setting.
 The function return the actual probability value.
 
 
-```bash title="rand_get_prob usage"
+```bash title="cfgutils:rand_get_prob usage"
 ...
-$ opensips-cli -x mi get_prob
+$ opensips-cli -x mi cfgutils:rand_get_prob
 The actual probability is 50 percent.
 ...
 ```
 
 
-#### check_config_hash
+#### cfgutils:check_config_hash
 
 
 Check if the actual config file hash is identical to the stored one.
@@ -903,15 +903,15 @@ there are not identical, 404 if no file for hashing has been configured
 and 500 on errors. Additional a short text message is printed.
 
 
-```bash title="check_config_hash usage"
+```bash title="cfgutils:check_config_hash usage"
 ...
-$ opensips-cli -x mi check_config_hash
+$ opensips-cli -x mi cfgutils:check_config_hash
 The actual config file hash is identical to the stored one.
 ...
 ```
 
 
-#### get_config_hash
+#### cfgutils:get_config_hash
 
 
 Return the stored config file hash.
@@ -921,15 +921,15 @@ The function returns 200 OK and the hash value on success or 404 if no
 file for hashing has been configured.
 
 
-```bash title="get_config_hash usage"
+```bash title="cfgutils:get_config_hash usage"
 ...
-$ opensips-cli -x mi get_config_hash
+$ opensips-cli -x mi cfgutils:get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
 ...
 ```
 
 
-#### shv_set
+#### cfgutils:shv_set
 
 
 Set the value of a shared variable ($shv(name)).
@@ -946,14 +946,14 @@ Parameters:
 - *value* : value to be set
 
 
-```bash title="shv_set usage"
+```bash title="cfgutils:shv_set usage"
 ...
-$ opensips-cli -x mi shv_set debug int 0
+$ opensips-cli -x mi cfgutils:shv_set debug int 0
 ...
 ```
 
 
-#### shv_get
+#### cfgutils:shv_get
 
 
 Get the value of a shared variable ($shv(name)).
@@ -966,10 +966,10 @@ Parameters:
 is missing, all shared variables are returned.
 
 
-```bash title="shv_get usage"
+```bash title="cfgutils:shv_get usage"
 ...
-$ opensips-cli -x mi shv_get debug
-$ opensips-cli -x mi shv_get
+$ opensips-cli -x mi cfgutils:shv_get debug
+$ opensips-cli -x mi cfgutils:shv_get
 ...
 ```
 
