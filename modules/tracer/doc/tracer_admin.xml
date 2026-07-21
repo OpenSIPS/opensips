@@ -32,12 +32,12 @@
 	The tracing tracing can be turned on/off using fifo command.
 	</para>
 	<para>
-	opensips-cli -x mi trace on
-	opensips-cli -x mi trace [some_trace_id] on
+	opensips-cli -x mi tracer:trace on
+	opensips-cli -x mi tracer:trace [some_trace_id] on
 	</para>
 	<para>
-	opensips-cli -x mi trace off
-	opensips-cli -x mi trace [some_trace_id] off
+	opensips-cli -x mi tracer:trace off
+	opensips-cli -x mi tracer:trace [some_trace_id] off
 	</para>
 
 	<para>
@@ -462,9 +462,9 @@ modparam("tracer", "file_mode", 0644)
 
    <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_trace" xreflabel="trace">
+	<section id="mi_trace" xreflabel="tracer:trace">
 		<title>
-		<function moreinfo="none">trace</function>
+		<function moreinfo="none">tracer:trace</function>
 		</title>
 		<para>
 			Enable/disable tracing(globally or for a specific trace id) or dump
@@ -472,7 +472,7 @@ modparam("tracer", "file_mode", 0644)
 			(each parameter is ginven in the format param_name=param_value).
 		</para>
 		<para>
-			Name: <emphasis>trace</emphasis>
+			Name: <emphasis>tracer:trace</emphasis>
 		</para>
 		<para>
 			Parameters:
@@ -516,11 +516,11 @@ modparam("tracer", "file_mode", 0644)
 		</para>
 		<programlisting  format="linespecific">
 # Display global tracing mode and all trace destinations:
-opensips-cli -x mi trace
+opensips-cli -x mi tracer:trace
 # Turn off global tracing:
-opensips-cli -x mi trace mode=off
+opensips-cli -x mi tracer:trace mode=off
 # Turn on tracing for destination id tid2:
-opensips-cli -x mi trace id=tid2 mode=on
+opensips-cli -x mi tracer:trace id=tid2 mode=on
 		</programlisting>
 	</section>
 
@@ -676,4 +676,3 @@ opensips-cli -x mi trace id=tid2 mode=on
 	</section>
 
 </chapter>
-

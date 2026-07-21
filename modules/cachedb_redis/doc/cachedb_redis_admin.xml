@@ -676,9 +676,9 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
 
-		<section id="mi_redis_cluster_info" xreflabel="redis_cluster_info">
+		<section id="mi_redis_cluster_info" xreflabel="cachedb_redis:redis_cluster_info">
 			<title>
-			<function moreinfo="none">redis_cluster_info</function>
+			<function moreinfo="none">cachedb_redis:redis_cluster_info</function>
 			</title>
 			<para>
 			Displays detailed information about all Redis connections managed
@@ -747,16 +747,16 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 			</para>
 			<programlisting format="linespecific">
 ## list all Redis connections
-opensips-cli -x mi redis_cluster_info
+opensips-cli -x mi cachedb_redis:redis_cluster_info
 
 ## list only the "local" group
-opensips-cli -x mi redis_cluster_info group=local
+opensips-cli -x mi cachedb_redis:redis_cluster_info group=local
 			</programlisting>
 		</section>
 
-		<section id="mi_redis_cluster_refresh" xreflabel="redis_cluster_refresh">
+		<section id="mi_redis_cluster_refresh" xreflabel="cachedb_redis:redis_cluster_refresh">
 			<title>
-			<function moreinfo="none">redis_cluster_refresh</function>
+			<function moreinfo="none">cachedb_redis:redis_cluster_refresh</function>
 			</title>
 			<para>
 			Forces an immediate topology refresh on Redis Cluster connections.
@@ -787,16 +787,16 @@ opensips-cli -x mi redis_cluster_info group=local
 			</para>
 			<programlisting format="linespecific">
 ## refresh all cluster connections
-opensips-cli -x mi redis_cluster_refresh
+opensips-cli -x mi cachedb_redis:redis_cluster_refresh
 
 ## refresh only the "local" group
-opensips-cli -x mi redis_cluster_refresh group=local
+opensips-cli -x mi cachedb_redis:redis_cluster_refresh group=local
 			</programlisting>
 		</section>
 
-		<section id="mi_redis_ping_nodes" xreflabel="redis_ping_nodes">
+		<section id="mi_redis_ping_nodes" xreflabel="cachedb_redis:redis_ping_nodes">
 			<title>
-			<function moreinfo="none">redis_ping_nodes</function>
+			<function moreinfo="none">cachedb_redis:redis_ping_nodes</function>
 			</title>
 			<para>
 			Sends a PING command to each Redis node and reports per-node
@@ -836,10 +836,10 @@ opensips-cli -x mi redis_cluster_refresh group=local
 			</para>
 			<programlisting format="linespecific">
 ## ping all Redis nodes
-opensips-cli -x mi redis_ping_nodes
+opensips-cli -x mi cachedb_redis:redis_ping_nodes
 
 ## ping only the "local" group
-opensips-cli -x mi redis_ping_nodes group=local
+opensips-cli -x mi cachedb_redis:redis_ping_nodes group=local
 			</programlisting>
 		</section>
 

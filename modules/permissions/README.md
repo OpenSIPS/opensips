@@ -760,7 +760,7 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 ### Exported MI Functions
 
 
-#### address_reload
+#### permissions:address_reload
 
 
 Causes permissions module to re-read the contents of
@@ -780,7 +780,7 @@ the name of the partition to be reloaded. If none
 specified all the partitions shall be reloaded.
 
 
-#### address_dump
+#### permissions:address_dump
 
 
 Causes permissions module to dump contents of
@@ -795,7 +795,7 @@ the name of the partition to be dumped. If none
 specified all the partitions shall be dumped.
 
 
-#### subnet_dump
+#### permissions:subnet_dump
 
 
 Causes permissions module to dump
@@ -810,7 +810,7 @@ the name of the partition to be dumped. If none
 specified all the partitions shall be dumped.
 
 
-#### allow_uri
+#### permissions:allow_uri
 
 
 Tests if (URI, Contact) pair is allowed according to

@@ -847,16 +847,16 @@ if($rm=="SUBSCRIBE")
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_refresh_watchers" xreflabel="refresh_watchers">
+	<section id="mi_refresh_watchers" xreflabel="presence:refresh_watchers">
 		<title>
-		<function moreinfo="none">refresh_watchers</function>
+		<function moreinfo="none">presence:refresh_watchers</function>
 		</title>
 		<para>
 		Triggers sending Notify messages to watchers if a change in watchers
 		authorization or in published state occurred.
 		</para>
 		<para>
-		Name: <emphasis>refresh_watchers</emphasis>
+		Name: <emphasis>presence:refresh_watchers</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -892,20 +892,20 @@ if($rm=="SUBSCRIBE")
 		MI FIFO Command Format:
 		</para>
 	<programlisting  format="linespecific">
-opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi presence:refresh_watchers sip:11@192.168.2.132 presence 1
 	</programlisting>
 	</section>
 
-	<section id="mi_cleanup" xreflabel="cleanup">
+	<section id="mi_cleanup" xreflabel="presence:cleanup">
 	  <title>
-		<function moreinfo="none">cleanup</function>
+		<function moreinfo="none">presence:cleanup</function>
 	  </title>
 	  <para>
 		Manually triggers the cleanup functions for watchers and presentity tables. Useful if you
 		have set <varname>clean_period</varname> to zero or less.
 	  </para>
 	  <para>
-		Name: <emphasis>cleanup</emphasis>
+		Name: <emphasis>presence:cleanup</emphasis>
 	  </para>
 	  <para>Parameters: <emphasis>none</emphasis></para>
 
@@ -913,7 +913,7 @@ opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensips-cli -x mi cleanup
+opensips-cli -x mi presence:cleanup
 	  </programlisting>
 	</section>
 
@@ -941,15 +941,15 @@ opensips-cli -x mi presence:phtable_list
 	  </programlisting>
 	</section>
 
-	<section id="mi_subs_phtable_list" xreflabel="subs_phtable_list">
+	<section id="mi_subs_phtable_list" xreflabel="presence:subs_phtable_list">
 	  <title>
-		<function moreinfo="none">subs_phtable_list</function>
+		<function moreinfo="none">presence:subs_phtable_list</function>
 	  </title>
 	  <para>
 		Lists all the subscription records, or the subscriptions for which the "To" and "From" URIs match the given parameters.
 	  </para>
 	  <para>
-		Name: <emphasis>subs_phtable_list</emphasis>
+		Name: <emphasis>presence:subs_phtable_list</emphasis>
 	  </para>
 	  <para>Parameters</para>
 	  <itemizedlist>
@@ -964,7 +964,7 @@ opensips-cli -x mi presence:phtable_list
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
+opensips-cli -x mi presence:subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 	  </programlisting>
 	</section>
 

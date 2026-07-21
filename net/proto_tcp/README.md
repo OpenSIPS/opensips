@@ -344,10 +344,10 @@ route[tcp_filter] {
 ### Exported MI Functions
 
 
-#### tcp_trace
+#### tcp:trace
 
 
-Name: *tcp_trace*
+Name: *tcp:trace*
 
 
 Parameters:
@@ -364,7 +364,7 @@ MI FIFO Command Format:
 
 
 ```bash
-			:tcp_trace:_reply_fifo_file_
+			:tcp:trace:_reply_fifo_file_
 			trace_mode
 			_empty_line_
 			

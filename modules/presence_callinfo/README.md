@@ -305,6 +305,88 @@ This function can be used from REQUEST_ROUTE.
 	}
 ...
 ```
+
+
+### Exported MI Functions
+
+
+#### presence_callinfo:list_lines
+
+
+Replaces obsolete MI command: *sca_list_lines*.
+
+
+Lists the SCA lines and indexes currently tracked by the module.
+
+
+Parameters:
+
+
+- *sca_line* (optional) - only list
+information for this SCA line.
+
+
+MI FIFO Command Format:
+
+
+```bash
+opensips-cli -x mi presence_callinfo:list_lines
+opensips-cli -x mi presence_callinfo:list_lines sca_line=sip:line@example.com
+```
+
+
+#### presence_callinfo:release_line
+
+
+Replaces obsolete MI command: *sca_release_line*.
+
+
+Releases a tracked SCA line, a specific index from a line, or all
+lines.
+
+
+Parameters:
+
+
+- *sca_line* - the SCA line to release;
+use *ALL* to release all lines.
+- *sca_index* (optional) - release only
+this index from the selected line.
+
+
+MI FIFO Command Format:
+
+
+```bash
+opensips-cli -x mi presence_callinfo:release_line sca_line=sip:line@example.com
+opensips-cli -x mi presence_callinfo:release_line sca_line=sip:line@example.com sca_index=1
+opensips-cli -x mi presence_callinfo:release_line sca_line=ALL
+```
+
+
+#### presence_callinfo:set_log_level
+
+
+Replaces obsolete MI command: *sca_set_log_level*.
+
+
+Gets or sets the SCA-specific log level used by this module.
+
+
+Parameters:
+
+
+- *log_level* (optional) - the new log
+level. If missing, the command returns the current level.
+
+
+MI FIFO Command Format:
+
+
+```bash
+opensips-cli -x mi presence_callinfo:set_log_level
+opensips-cli -x mi presence_callinfo:set_log_level log_level=3
+```
 <!-- CONTRIBUTORS -->
 
 ### License

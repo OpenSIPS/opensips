@@ -183,10 +183,10 @@ Logs informations about memory.
 ### Exported MI Functions
 
 
-#### watch
+#### lua:watch
 
 
-Name: *watch*
+Name: *lua:watch*
 
 
 Parameters: *none*
@@ -201,7 +201,7 @@ MI FIFO Command Format:
 
 
 ```bash
-$ opensips-cli -x mi watch
+$ opensips-cli -x mi lua:watch
 ```
 
 

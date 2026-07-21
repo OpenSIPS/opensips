@@ -132,16 +132,16 @@ modparam("xcap_client", "query_period", 50)
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_refreshXcapDoc" xreflabel="refreshXcapDoc">
+	<section id="mi_refreshXcapDoc" xreflabel="xcap_client:refreshXcapDoc">
 		<title>
-		<function moreinfo="none">refreshXcapDoc</function>
+		<function moreinfo="none">xcap_client:refreshXcapDoc</function>
 		</title>
 		<para>
 		MI command that should be sent by an xcap server when a
 		stored document changes.
 		</para>
 		<para>
-		Name: <emphasis>refreshXcapDoc</emphasis>
+		Name: <emphasis>xcap_client:refreshXcapDoc</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -158,7 +158,7 @@ modparam("xcap_client", "query_period", 50)
 		</para>
         <programlisting  format="linespecific">
 ...
-opensips-cli -x mi refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml 8000
+opensips-cli -x mi xcap_client:refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml 8000
 ...
 		</programlisting>
 	</section>

@@ -114,14 +114,14 @@ None to be used in configuration file.
 ### Exported MI Functions
 
 
-#### refreshXcapDoc
+#### xcap_client:refreshXcapDoc
 
 
 MI command that should be sent by an xcap server when a
 stored document changes.
 
 
-Name: *refreshXcapDoc*
+Name: *xcap_client:refreshXcapDoc*
 
 
 Parameters:
@@ -136,7 +136,7 @@ MI FIFO Command Format:
 
 ```bash
 ...
-opensips-cli -x mi refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml 8000
+opensips-cli -x mi xcap_client:refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/buddies-resource-list.xml 8000
 ...
 ```
 

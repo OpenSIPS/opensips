@@ -401,16 +401,16 @@ route[tcp_filter] {
 	<section>
 	<title>Exported MI Functions</title>
 
-		<section id="tcp-trace">
+		<section id="tcp-trace" xreflabel="tcp:trace">
 			<title>
-			<function moreinfo="none">tcp_trace</function>
+			<function moreinfo="none">tcp:trace</function>
 			</title>
 
 			<para>
 			</para>
 
 			<para>
-			Name: <emphasis>tcp_trace</emphasis>
+			Name: <emphasis>tcp:trace</emphasis>
 			</para>
 
 			<para>Parameters: </para>
@@ -432,7 +432,7 @@ route[tcp_filter] {
 			MI FIFO Command Format:
 			</para>
 			<programlisting  format="linespecific">
-			:tcp_trace:_reply_fifo_file_
+			:tcp:trace:_reply_fifo_file_
 			trace_mode
 			_empty_line_
 			</programlisting>

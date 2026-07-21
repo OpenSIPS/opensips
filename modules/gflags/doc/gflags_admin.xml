@@ -144,8 +144,8 @@ if(is_gflag(4))
 			should be changed as in the functions available in the routing 
 			script.
 		</para>
-		<section id="mi_set_gflag" xreflabel="set_gflag">
-			<title><function moreinfo="none">set_gflag</function></title>
+		<section id="mi_set_gflag" xreflabel="gflags:set_gflag">
+			<title><function moreinfo="none">gflags:set_gflag</function></title>
 			<para>
 			Set the value of some flags (specified by bitmask) to 1.
 			</para>
@@ -154,18 +154,18 @@ if(is_gflag(4))
 			The bitmaks has a 32 bit size.
 			</para>
 			<example>
-			<title><function moreinfo="none">set_gflag</function> usage</title>
+			<title><function moreinfo="none">gflags:set_gflag</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi set_gflag 1
-$ opensips-cli -x mi set_gflag 0x3
+$ opensips-cli -x mi gflags:set_gflag 1
+$ opensips-cli -x mi gflags:set_gflag 0x3
 ...
 </programlisting>
 			</example>
 
 		</section>
-		<section id="mi_reset_gflag" xreflabel="reset_gflag">
-			<title><function moreinfo="none">reset_gflag</function></title>
+		<section id="mi_reset_gflag" xreflabel="gflags:reset_gflag">
+			<title><function moreinfo="none">gflags:reset_gflag</function></title>
 			<para>
 			Reset the value of some flags to 0.
 			</para>
@@ -175,17 +175,17 @@ $ opensips-cli -x mi set_gflag 0x3
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">reset_gflag</function> usage</title>
+				<function moreinfo="none">gflags:reset_gflag</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi reset_gflag 1
-$ opensips-cli -x mi reset_gflag 0x3
+$ opensips-cli -x mi gflags:reset_gflag 1
+$ opensips-cli -x mi gflags:reset_gflag 0x3
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_is_gflag" xreflabel="is_gflag">
-			<title><function moreinfo="none">is_gflag</function></title>
+		<section id="mi_is_gflag" xreflabel="gflags:is_gflag">
+			<title><function moreinfo="none">gflags:is_gflag</function></title>
 			<para>
 			Returns true if the all the flags from the bitmask are set.
 			</para>
@@ -198,39 +198,39 @@ $ opensips-cli -x mi reset_gflag 0x3
 			and FALSE if at least one is not set.
 			</para>
 			<example>
-			<title><function moreinfo="none">is_gflag</function> usage</title>
+			<title><function moreinfo="none">gflags:is_gflag</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi set_gflag 1024
-$ opensips-cli -x mi is_gflag 1024
+$ opensips-cli -x mi gflags:set_gflag 1024
+$ opensips-cli -x mi gflags:is_gflag 1024
 TRUE
-$ opensips-cli -x mi is_gflag 1025
+$ opensips-cli -x mi gflags:is_gflag 1025
 TRUE
-$ opensips-cli -x mi is_gflag 1023
+$ opensips-cli -x mi gflags:is_gflag 1023
 FALSE
-$ opensips-cli -x mi set_gflag 0x10
-$ opensips-cli -x mi is_gflag 1023
+$ opensips-cli -x mi gflags:set_gflag 0x10
+$ opensips-cli -x mi gflags:is_gflag 1023
 TRUE
-$ opensips-cli -x mi is_gflag 1007
+$ opensips-cli -x mi gflags:is_gflag 1007
 FALSE
-$ opensips-cli -x mi is_gflag 16
+$ opensips-cli -x mi gflags:is_gflag 16
 TRUE
 ...
 </programlisting>
 			</example>
 		</section>
-		<section id="mi_get_gflags" xreflabel="get_gflags">
-			<title><function moreinfo="none">get_gflags</function></title>
+		<section id="mi_get_gflags" xreflabel="gflags:get_gflags">
+			<title><function moreinfo="none">gflags:get_gflags</function></title>
 			<para>
 			Return the bitmap with all flags. The function gets no 
 			parameters and returns the bitmap in hexa and decimal format.
 			</para>
 			<example>
 			<title>
-				<function moreinfo="none">get_gflags</function> usage</title>
+				<function moreinfo="none">gflags:get_gflags</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensips-cli -x mi get_gflags
+$ opensips-cli -x mi gflags:get_gflags
 0x3039
 12345
 ...
