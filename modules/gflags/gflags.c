@@ -47,10 +47,10 @@
 /* flag buffer size for FIFO protocool */
 #define MAX_FLAG_LEN 12
 /* FIFO action protocol names */
-#define FIFO_SET_GFLAG "set_gflag"
-#define FIFO_IS_GFLAG "is_gflag"
-#define FIFO_RESET_GFLAG "reset_gflag"
-#define FIFO_GET_GFLAGS "get_gflags"
+#define FIFO_SET_GFLAG "set"
+#define FIFO_IS_GFLAG "check"
+#define FIFO_RESET_GFLAG "reset"
+#define FIFO_GET_GFLAGS "get"
 
 #include <stdio.h>
 #include "../../sr_module.h"
@@ -100,16 +100,16 @@ static const param_export_t params[]={
 static const mi_export_t mi_cmds[] = {
 	{ FIFO_SET_GFLAG, 0, 0, 0, {
 		{mi_set_gflag, {"bitmask", 0}},
-		{EMPTY_MI_RECIPE}}, {0}},
+		{EMPTY_MI_RECIPE}}, {"set_gflag", "gflags:set_gflag", 0}},
 	{ FIFO_RESET_GFLAG, 0, 0, 0, {
 		{mi_reset_gflag, {"bitmask", 0}},
-		{EMPTY_MI_RECIPE}}, {0}},
+		{EMPTY_MI_RECIPE}}, {"reset_gflag", "gflags:reset_gflag", 0}},
 	{ FIFO_IS_GFLAG, 0, 0, 0, {
 		{mi_is_gflag, {"bitmask", 0}},
-		{EMPTY_MI_RECIPE}}, {0}},
+		{EMPTY_MI_RECIPE}}, {"is_gflag", "gflags:is_gflag", 0}},
 	{ FIFO_GET_GFLAGS, 0, 0, 0, {
 		{mi_get_gflags, {0}},
-		{EMPTY_MI_RECIPE}}, {0}},
+		{EMPTY_MI_RECIPE}}, {"get_gflags", "gflags:get_gflags", 0}},
 	{EMPTY_MI_EXPORT}
 };
 

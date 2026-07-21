@@ -137,7 +137,7 @@ should be changed as in the functions available in the routing
 script.
 
 
-#### gflags:set_gflag
+#### gflags:set
 
 
 Set the value of some flags (specified by bitmask) to 1.
@@ -147,15 +147,15 @@ The parameter value must be a bitmask in decimal or hexa format.
 The bitmaks has a 32 bit size.
 
 
-```bash title="gflags:set_gflag usage"
+```bash title="gflags:set usage"
 ...
-$ opensips-cli -x mi gflags:set_gflag 1
-$ opensips-cli -x mi gflags:set_gflag 0x3
+$ opensips-cli -x mi gflags:set 1
+$ opensips-cli -x mi gflags:set 0x3
 ...
 ```
 
 
-#### gflags:reset_gflag
+#### gflags:reset
 
 
 Reset the value of some flags to 0.
@@ -165,15 +165,15 @@ The parameter value must be a bitmask in decimal or hexa format.
 The bitmaks has a 32 bit size.
 
 
-```bash title="gflags:reset_gflag usage"
+```bash title="gflags:reset usage"
 ...
-$ opensips-cli -x mi gflags:reset_gflag 1
-$ opensips-cli -x mi gflags:reset_gflag 0x3
+$ opensips-cli -x mi gflags:reset 1
+$ opensips-cli -x mi gflags:reset 0x3
 ...
 ```
 
 
-#### gflags:is_gflag
+#### gflags:check
 
 
 Returns true if the all the flags from the bitmask are set.
@@ -187,36 +187,36 @@ The function returns TRUE if all the flags from the set are set
 and FALSE if at least one is not set.
 
 
-```bash title="gflags:is_gflag usage"
+```bash title="gflags:check usage"
 ...
-$ opensips-cli -x mi gflags:set_gflag 1024
-$ opensips-cli -x mi gflags:is_gflag 1024
+$ opensips-cli -x mi gflags:set 1024
+$ opensips-cli -x mi gflags:check 1024
 TRUE
-$ opensips-cli -x mi gflags:is_gflag 1025
+$ opensips-cli -x mi gflags:check 1025
 TRUE
-$ opensips-cli -x mi gflags:is_gflag 1023
+$ opensips-cli -x mi gflags:check 1023
 FALSE
-$ opensips-cli -x mi gflags:set_gflag 0x10
-$ opensips-cli -x mi gflags:is_gflag 1023
+$ opensips-cli -x mi gflags:set 0x10
+$ opensips-cli -x mi gflags:check 1023
 TRUE
-$ opensips-cli -x mi gflags:is_gflag 1007
+$ opensips-cli -x mi gflags:check 1007
 FALSE
-$ opensips-cli -x mi gflags:is_gflag 16
+$ opensips-cli -x mi gflags:check 16
 TRUE
 ...
 ```
 
 
-#### gflags:get_gflags
+#### gflags:get
 
 
 Return the bitmap with all flags. The function gets no 
 parameters and returns the bitmap in hexa and decimal format.
 
 
-```bash title="gflags:get_gflags usage"
+```bash title="gflags:get usage"
 ...
-$ opensips-cli -x mi gflags:get_gflags
+$ opensips-cli -x mi gflags:get
 0x3039
 12345
 ...
