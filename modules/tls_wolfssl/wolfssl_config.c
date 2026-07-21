@@ -118,32 +118,17 @@ int tls_get_method(str *method_str,
 	return 0;
 }
 
-static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
+static int get_wolfssl_verify_mode(struct tls_domain *d)
 {
-	if (d->flags & DOM_FLAG_SRV) {
-		if (d->verify_cert ) {
-			*verify_mode = SSL_VERIFY_PEER;
-			if (d->require_client_cert ) {
-				LM_INFO("client verification activated. Client "
-						"certificates are mandatory.\n");
-				*verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-			} else {
-				LM_INFO("client verification activated. Client "
-						"certificates are NOT mandatory.\n");
-			}
-		} else {
-			*verify_mode = SSL_VERIFY_NONE;
-			LM_INFO("client verification NOT activated. Weaker security.\n");
-		}
-	} else {
-		if (d->verify_cert ) {
-			*verify_mode = SSL_VERIFY_PEER;
-			LM_INFO("server verification activated.\n");
-		} else {
-			*verify_mode = SSL_VERIFY_NONE;
-			LM_INFO("server verification NOT activated. Weaker security.\n");
-		}
-	}
+	int tls_verify_mode = get_ssl_ctx_verify_mode(d);
+	int verify_mode = SSL_VERIFY_NONE;
+
+	if (tls_verify_mode & TLS_VERIFY_PEER)
+		verify_mode |= SSL_VERIFY_PEER;
+	if (tls_verify_mode & TLS_VERIFY_FAIL_IF_NO_PEER_CERT)
+		verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+
+	return verify_mode;
 }
 
 static int verify_callback(int pre_verify_ok, WOLFSSL_X509_STORE_CTX *ctx) {
@@ -231,7 +216,7 @@ int _wolfssl_switch_ssl_ctx(struct tls_domain *dom, void *ssl_ctx)
 		return -1;
 	}
 
-	get_ssl_ctx_verify_mode(dom, &verify_mode);
+	verify_mode = get_wolfssl_verify_mode(dom);
 	wolfSSL_set_verify((WOLFSSL *)ssl_ctx, verify_mode, verify_callback);
 
 	return 0;
@@ -517,7 +502,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		wolfSSL_CTX_set_servername_arg(d->ctx, d);
 	}
 
-	get_ssl_ctx_verify_mode(d, &verify_mode);
+	verify_mode = get_wolfssl_verify_mode(d);
 
 	wolfSSL_CTX_set_verify(d->ctx, verify_mode, verify_callback);
 	wolfSSL_CTX_set_verify_depth(d->ctx, VERIFY_DEPTH_S);
