@@ -55,8 +55,10 @@
 #define PCRE2_ERROR_NOMATCH PCRE_ERROR_NOMATCH
 #define PCRE2_UCHAR unsigned char
 #define PCRE2_SPTR char *
+#define PCRE2_INFO_SIZE PCRE_INFO_SIZE
+#define PCRE2_INFO_CAPTURECOUNT PCRE_INFO_CAPTURECOUNT
 #define pcre2_pattern_info(subst_comp, flag, ret) \
-	pcre_fullinfo(subst_comp, NULL, PCRE_INFO_CAPTURECOUNT, ret);
+	pcre_fullinfo(subst_comp, NULL, flag, ret)
 #define pcre2_compile(pattern, _, flags, error, erroffset, ctx) \
 	pcre_compile(pattern, flags, error, erroffset, NULL)
 #define pcre2_code_free pcre_free
