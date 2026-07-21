@@ -44,7 +44,12 @@
 #define DOM_FLAG_CLI			(1<<1)
 #define DOM_FLAG_DB				(1<<2)
 
+#define TLS_VERIFY_NONE 0
+#define TLS_VERIFY_PEER (1<<0)
+#define TLS_VERIFY_FAIL_IF_NO_PEER_CERT (1<<1)
+
 #include "tls_config_helper.h"
+#include "../../dprint.h"
 #include "../../locking.h"
 
 enum {
@@ -98,5 +103,88 @@ struct tls_domain {
 	enum tls_method method_max;
 	struct tls_domain *next;
 };
+
+static inline int get_ssl_ctx_verify_mode(struct tls_domain *d)
+{
+	int verify_mode;
+
+	/* Set verification procedure
+	 * The verification can be made null with SSL_VERIFY_NONE, or
+	 * at least easier with SSL_VERIFY_CLIENT_ONCE instead of
+	 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT.
+	 * For extra control, instead of 0, we can specify a callback function:
+	 *           int (*verify_callback)(int, X509_STORE_CTX *)
+	 * Also, depth 2 may be not enough in some scenarios ... though no need
+	 * to increase it much further */
+
+	if (d->flags & DOM_FLAG_SRV) {
+		/* Server mode:
+		 * SSL_VERIFY_NONE
+		 *   the server will not send a client certificate request to the
+		 *   client, so the client  will not send a certificate.
+		 * SSL_VERIFY_PEER
+		 *   the server sends a client certificate request to the client.
+		 *   The certificate returned (if any) is checked. If the verification
+		 *   process fails, the TLS/SSL handshake is immediately terminated
+		 *   with an alert message containing the reason for the verification
+		 *   failure. The behaviour can be controlled by the additional
+		 *   SSL_VERIFY_FAIL_IF_NO_PEER_CERT and SSL_VERIFY_CLIENT_ONCE flags.
+		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
+		 *   if the client did not return a certificate, the TLS/SSL handshake
+		 *   is immediately terminated with a ``handshake failure'' alert.
+		 *   This flag must be used together with SSL_VERIFY_PEER.
+		 * SSL_VERIFY_CLIENT_ONCE
+		 *   only request a client certificate on the initial TLS/SSL
+		 *   handshake. Do not ask for a client certificate again in case of
+		 *   a renegotiation. This flag must be used together with
+		 *   SSL_VERIFY_PEER.
+		 */
+
+		if (d->verify_cert) {
+			verify_mode = TLS_VERIFY_PEER;
+			if (d->require_client_cert) {
+				LM_INFO("client verification activated. Client "
+						"certificates are mandatory.\n");
+				verify_mode |= TLS_VERIFY_FAIL_IF_NO_PEER_CERT;
+			} else {
+				LM_INFO("client verification activated. Client "
+						"certificates are NOT mandatory.\n");
+			}
+		} else {
+			verify_mode = TLS_VERIFY_NONE;
+			LM_INFO("client verification NOT activated. Weaker security.\n");
+		}
+	} else {
+		/* Client mode:
+		 * SSL_VERIFY_NONE
+		 *   if not using an anonymous cipher (by default disabled), the
+		 *   server will send a certificate which will be checked. The result
+		 *   of the certificate verification process can be checked after the
+		 *   TLS/SSL handshake using the SSL_get_verify_result(3) function.
+		 *   The handshake will be continued regardless of the verification
+		 *   result.
+		 * SSL_VERIFY_PEER
+		 *   the server certificate is verified. If the verification process
+		 *   fails, the TLS/SSL handshake is immediately terminated with an
+		 *   alert message containing the reason for the verification failure.
+		 *   If no server certificate is sent, because an anonymous cipher is
+		 *   used, SSL_VERIFY_PEER is ignored.
+		 * SSL_VERIFY_FAIL_IF_NO_PEER_CERT
+		 *   ignored
+		 * SSL_VERIFY_CLIENT_ONCE
+		 *   ignored
+		 */
+
+		if (d->verify_cert) {
+			verify_mode = TLS_VERIFY_PEER;
+			LM_INFO("server verification activated.\n");
+		} else {
+			verify_mode = TLS_VERIFY_NONE;
+			LM_INFO("server verification NOT activated. Weaker security.\n");
+		}
+	}
+
+	return verify_mode;
+}
 
 #endif /* TLS_HELPER_H */
