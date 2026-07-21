@@ -63,6 +63,17 @@ struct b2b_callback *b2b_trig_cbs, *b2b_recv_cbs;
 
 static str storage_cap = str_init("b2b-storage-bin");
 
+static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable);
+
+/* called with the entity hash lock held */
+static void b2b_dlg_unref(b2b_dlg_t *dlg, b2b_table htable,
+		unsigned int hash_index)
+{
+	if (--dlg->ref || !dlg->deleted)
+		return;
+
+	b2b_delete_record(dlg, htable, hash_index);
+}
 
 
 /* This is the "transaction created" callback for the UAC transactions,
@@ -744,6 +755,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int b2b_cb_flags = 0;
 	unsigned int ua_flags = 0;
 	int ua_ev_type = -1;
+	int dlg_ref = 0;
 
 	storage.buffer.s = NULL;
 
@@ -1354,6 +1366,10 @@ run_cb:
 	dlg_state = dlg->state;
 
 	ua_flags = dlg->ua_flags;
+	if (!(ua_flags & UA_FL_IS_UA_ENTITY) && b2b_cback) {
+		dlg->ref++;
+		dlg_ref = 1;
+	}
 
 	B2BE_LOCK_RELEASE(table, hash_index);
 
@@ -1389,6 +1405,12 @@ run_cb:
 	}
 
 	B2BE_LOCK_GET(table, hash_index);
+	if (dlg_ref && dlg->deleted) {
+		current_dlg = 0;
+		b2b_dlg_unref(dlg, table, hash_index);
+		B2BE_LOCK_RELEASE(table, hash_index);
+		return SCB_DROP_MSG;
+	}
 
 	if(dlg_state>B2B_CONFIRMED)
 	{
@@ -1401,6 +1423,9 @@ run_cb:
 		if(!aux_dlg)
 		{
 			LM_DBG("Record not found anymore\n");
+			current_dlg = 0;
+			if (dlg_ref)
+				b2b_dlg_unref(dlg, table, hash_index);
 			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_DROP_MSG;
 		}
@@ -1411,14 +1436,22 @@ run_cb:
 			b2b_ev = B2B_EVENT_ACK;
 
 			if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend) != 0)
+				&storage, serialize_backend) != 0) {
+				current_dlg = 0;
+				if (dlg_ref)
+					b2b_dlg_unref(dlg, table, hash_index);
 				goto done;
+			}
 		} else if (dlg_state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 
 			if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend) != 0)
+				&storage, serialize_backend) != 0) {
+				current_dlg = 0;
+				if (dlg_ref)
+					b2b_dlg_unref(dlg, table, hash_index);
 				goto done;
+			}
 		}
 	}
 
@@ -1428,6 +1461,8 @@ run_cb:
 		if(b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
 	}
+	if (dlg_ref)
+		b2b_dlg_unref(dlg, table, hash_index);
 
 	B2BE_LOCK_RELEASE(table, hash_index);
 
@@ -2010,8 +2045,10 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index)
 {
-	str reply_text = str_init("Request Timeout");
-	struct to_body *pto;
+	if (dlg->ref) {
+		dlg->deleted = 1;
+		return;
+	}
 
 	if(dlg->prev == NULL)
 	{
@@ -2024,6 +2061,14 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 
 	if(dlg->next)
 		dlg->next->prev = dlg->prev;
+
+	b2b_free_record(dlg, htable);
+}
+
+static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable)
+{
+	str reply_text = str_init("Request Timeout");
+	struct to_body *pto;
 
 	if(htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
@@ -2121,6 +2166,10 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
+		B2BE_LOCK_RELEASE(table, hash_index);
+		return;
+	}
+	if (dlg->deleted) {
 		B2BE_LOCK_RELEASE(table, hash_index);
 		return;
 	}

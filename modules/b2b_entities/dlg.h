@@ -119,6 +119,8 @@ typedef struct b2b_dlg
 	struct b2b_tracer   *tracer;
 	void                *param;
 	b2b_param_free_cb    free_param;
+	unsigned int         ref;
+	int                  deleted;
 	str                  prack_headers;
 }b2b_dlg_t;
 
