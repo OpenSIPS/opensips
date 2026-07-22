@@ -1066,14 +1066,14 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 				BRANCH_BM_RST_ALL( si->branch_mask );
 			}
 		}
-		goto unref;
+		return;
 	}
 
 	/* we start a session only for successful calls */
 	dlg = cgr_dlgb.get_dlg();
 	if (!dlg) {
 		LM_ERR("cannot find dialog!\n");
-		goto unref;
+		return;
 	}
 	time(&ctx->answer_time);
 	list_for_each(l, ctx->sessions) {
@@ -1098,7 +1098,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 		si->flags |= CGRF_ENGAGED;
 	}
 
-	/* should have reffed engaged and unref tm, so we simply exit :D */
+	/* the tm ref is released by the callback release hook */
 	return;
 error:
 	/* TODO: should we close all the started sessions now? */
@@ -1107,8 +1107,6 @@ error:
 	if (run_dlg_api(&cgr_dlgb, terminate_dlg, NULL, dlg->h_entry, dlg->h_id, &terminate_str) >= 0)
 		return;
 	LM_ERR("cannot terminate the dialog!\n");
-unref:
-	cgr_ref_acc_ctx(ctx, -1, "tm");
 }
 
 static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
@@ -1132,6 +1130,8 @@ static void cgr_cdr_cb(struct cell* t, int type, struct tmcb_params *ps)
 			continue;
 		cgr_cdr(ps->req, ctx, s, &dlg->callid);
 	}
+	if (cgr_restore_acc_ctx(dlg, NULL) < 0)
+		LM_ERR("cannot reset context %p in dialog %p\n", ctx, dlg);
 	cgr_ref_acc_ctx(ctx, -1, "engaged");
 }
 
@@ -1430,8 +1430,11 @@ static void cgr_dlg_callback(struct dlg_cell *dlg, int type,
 			}
 		}
 	}
-	if (!registered)
+	if (!registered) {
+		if (cgr_restore_acc_ctx(dlg, NULL) < 0)
+			LM_ERR("cannot reset context %p in dialog %p\n", ctx, dlg);
 		cgr_ref_acc_ctx(ctx, -1, "dialog");
+	}
 }
 
 int cgr_acc_terminate(json_object *param, json_object **ret)
