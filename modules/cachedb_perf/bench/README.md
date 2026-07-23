@@ -26,6 +26,7 @@ not misses.
 | `queue` | Does a queued producer/consumer write path help? (fixed thread budget) |
 | `warmup` | What does first-touch page faulting cost, and does pre-warming help? |
 | `hugetlb` | Do 2M huge pages help? Needs `sysctl -w vm.nr_hugepages=160` first |
+| `hugetlb2` | Modern routes: `MADV_COLLAPSE`, THP-shmem, overcommit pool, 1GB pages. Takes a mode arg (`base`/`collapse`/`madvise`/`hugetlb`/`huge1g`) and verifies pages went huge via meminfo |
 
 ## Caveats
 

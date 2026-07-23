@@ -238,13 +238,66 @@ to startup rather than removing it. First touch costs ~287 ns/entry against a
 41 ns write, so the benefit is latency predictability during traffic, not
 throughput.
 
-**Caveats on `MAP_HUGETLB`.** It requires pages pre-reserved by the
-administrator (`vm.nr_hugepages`); unreserved, the `mmap` simply fails.
-Reserved pages are exclusive and unswappable — on a 3 GB VM like 223, a 320 MB
-reservation is over 10% of the machine, gone whether the cache uses it or not.
-SBC VMs are frequently sized like this. Therefore hugetlb must be **opt-in with
-a clean 4 K fallback**: a module that will not start without a sysctl is a
-module that gets rolled back.
+**Caveats on statically reserved `MAP_HUGETLB`.** `vm.nr_hugepages` pages are
+exclusive and unswappable — on a 3 GB VM like 223, a 320 MB reservation is over
+10% of the machine, gone whether the cache uses it or not. SBC VMs are
+frequently sized like this. See §2.6.1 for the modern routes that remove this
+objection.
+
+(Both build hosts are the same silicon — Xeon E5-2699 v4, 16 vCPU, the same
+CPU as the PR #4114 benchmark host — so differences between their numbers are
+kernel/VM noise, not hardware.)
+
+### 2.6.1 Modern-kernel routes (measured on 6.8 and 6.12)
+
+Four ways to get 2 MB pages onto a `MAP_SHARED|MAP_ANON` region, ranked by
+admin burden (`bench/hugetlb2.c`; every run verified by the `ShmemHugePages` /
+`HugePages_Free` delta — never assume the pages went huge, see below):
+
+| route | admin action | 223 (6.8) | 224 (6.12) | chase |
+|---|---|---|---|---|
+| `MADV_COLLAPSE` after fill | **none** | works even with `shmem_enabled=never` | EINVAL — needs `advise` | 177→156 ns |
+| THP-shmem: `shmem_enabled=advise` + `MADV_HUGEPAGE` | one sysfs write | works | works | 177→158 ns |
+| `vm.nr_overcommit_hugepages` + `MAP_HUGETLB` | one sysctl | works, **no reservation** | works | **177→125 ns (1.42×)** |
+| static `vm.nr_hugepages` | reservation | works | works | 172→145 ns |
+
+Findings:
+
+- **`MADV_COLLAPSE` (5.14 anon / 6.1 shmem) is the zero-config route, but
+  kernel-fickle**: 6.8 collapses the existing mapping with no configuration at
+  all; 6.12 tightened it to respect `shmem_enabled`, so the identical call
+  fails EINVAL there until `advise` is set. One-time cost 221 ms–1.9 s per
+  256 MB depending on memory fragmentation. Because it retrofits an *existing*
+  mapping, the maintenance worker could in principle point it at the whole
+  OpenSIPS shm segment — a core-wide TLB win beyond this module.
+- **`vm.nr_overcommit_hugepages` removes the reservation objection**: pages are
+  taken from free memory at fault time and returned on exit — nothing is held
+  hostage while the cache is not running. Best numbers of everything tested,
+  and the fastest pre-fault: **85 ms vs 318–509 ms** for 256 MB, since faulting
+  at 2 MB granularity is ~4–5× cheaper. `mmap` fails cleanly if memory is
+  fragmented, which the fallback ladder absorbs.
+- **1 GB pages: ruled out.** `pdpe1gb` is present on both hosts, but runtime
+  allocation fails even with 6 GB free (no contiguous aligned GB exists after
+  any uptime — boot-cmdline only), and the arithmetic says skip it regardless:
+  Broadwell's STLB holds ~1536 2 MB entries = 3 GB of TLB coverage, so a ≤1 GB
+  arena already fits entirely in TLB on 2 MB pages.
+- **Verify, never infer.** One 6.12 run came back fully huge yet benchmarked
+  *worse* than base (single-run VM noise), and the 6.12 EINVAL proves kernel
+  version does not predict behaviour. The module must check the region's smaps
+  and report the achieved tier through CP-06.
+
+**Consequence for CP-20 — the fallback ladder**, all inside the single
+`pcache_chunk_alloc()`:
+
+```
+1. MAP_HUGETLB              (static pool or overcommit present)   best, 1.42x
+2. + MADV_HUGEPAGE          (shmem_enabled permits)               huge at fault
+3. + MADV_COLLAPSE post-fill (zero-config on 6.8-class kernels)   retrofit
+4. plain 4K                 (always works)                        today
+```
+
+Each tier degrades to the next; no tier can prevent startup; CP-06 reports the
+tier actually achieved and the huge-page coverage in MB.
 
 ## 3. Design
 
@@ -700,18 +753,23 @@ documented answer for anything large.
   costing ~5 300 CPS against ~9 000 for a dialog, because the worker blocks for
   the round trip.
 - **CP-19** Restart persistency (rpm), if wanted. Also not in v1.
-- **CP-20** Hugetlb backing store for the arena (§2.6, §3.3). Own
-  `mmap(MAP_SHARED|MAP_ANONYMOUS|MAP_HUGETLB)` behind
-  `pcache_chunk_alloc()`, worth a measured **1.19–1.43×**. Must be **opt-in**
-  with runtime detection and a clean 4 K fallback — `vm.nr_hugepages` is an
-  administrator action we cannot perform, reserved pages are exclusive and
-  unswappable, and a module that will not start without a sysctl gets rolled
-  back. Pre-fault with `MADV_POPULATE_WRITE` (5.14+; 223 and 224 have it, 222
-  does not), else touch-per-page. Also add a warm-up size modparam — unlike
-  `cache_collections` this degrades **gracefully** (too small: pages fault
-  later and self-correct; too large: wasted RAM), so it is an acceptable knob;
-  default it to the arena's initial chunk size. Memory taken outside shm will
-  not appear in `shm:` statistics, so CP-06 must report it.
+- **CP-20** Huge-page backing for the arena (§2.6, §2.6.1, §3.3): the
+  four-tier fallback ladder inside `pcache_chunk_alloc()` —
+  `MAP_HUGETLB` (static or overcommit pool; best, 1.42×) → `MADV_HUGEPAGE`
+  (THP-shmem, huge at fault time) → `MADV_COLLAPSE` post-fill (zero-config on
+  6.8-class kernels; needs `shmem_enabled=advise` on 6.12+) → plain 4 K.
+  Every tier is runtime-detected by *trying it*, never by kernel version (the
+  6.8/6.12 `MADV_COLLAPSE` divergence proves version checks lie); no tier may
+  prevent startup. Verify achieved coverage via the region's smaps and export
+  tier + huge-MB through CP-06 — memory taken outside shm is invisible to
+  `shm:` statistics otherwise. Pre-fault per §2.6: `MADV_POPULATE_WRITE`
+  (5.14+; 223/224 yes, 222 no), else touch-per-page, never memset — and note
+  a hugetlb-backed region pre-faults ~4–5× faster (85 ms vs 318–509 ms per
+  256 MB). Warm-up size modparam is acceptable — it degrades gracefully
+  (too small: pages fault later; too large: wasted RAM), unlike
+  `cache_collections`; default to the arena's initial chunk size. 1 GB pages
+  ruled out (§2.6.1): runtime allocation is unobtainable and 2 MB pages
+  already give a ≤1 GB arena full TLB residency on Broadwell.
 
 **Validation**
 - **CP-16** Correctness suite: concurrent readers/writers, TTL boundaries,

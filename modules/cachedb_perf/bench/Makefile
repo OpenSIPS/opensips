@@ -3,7 +3,7 @@
 
 CC      ?= gcc
 CFLAGS  ?= -O2 -Wall
-PROGS    = hashtest lookup structs worker expire2 concur wbuf queue warmup hugetlb
+PROGS    = hashtest lookup structs worker expire2 concur wbuf queue warmup hugetlb hugetlb2
 
 all: $(PROGS)
 
@@ -24,6 +24,7 @@ run: all
 	@echo; echo "=== 8. queued (producer/consumer) writes ==="; ./queue
 	@echo; echo "=== 9. first-touch cost ==="; ./warmup
 	@echo; echo "=== 10. huge pages (needs: sysctl -w vm.nr_hugepages=160) ==="; ./hugetlb
+	@echo; echo "=== 11. modern routes: base/collapse/madvise/hugetlb/huge1g ==="; ./hugetlb2 base
 
 clean:
 	rm -f $(PROGS)
