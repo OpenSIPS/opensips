@@ -410,7 +410,7 @@ static void *tm_replicate_cancel(struct sip_msg *msg)
 		break;
 	}
 	bin_free_packet(&packet);
-	return NULL; /* dummy return to comply with TM_BIN_PUSH() */
+	return rc == CLUSTERER_SEND_SUCCESS ? (void *)1 : NULL;
 }
 #undef TM_BIN_PUSH
 /**
@@ -454,7 +454,7 @@ static int tm_replicate_broadcast(struct sip_msg *msg)
 
 	bin_packet_t *packet = tm_replicate_packet(msg, TM_CLUSTER_REQUEST);
 	if (!packet)
-		return -1;
+		return 0;
 
 	rc = cluster_api.send_all(packet, tm_repl_cluster);
 	switch (rc) {
@@ -475,7 +475,7 @@ static int tm_replicate_broadcast(struct sip_msg *msg)
 		break;
 	}
 	bin_free_packet(packet);
-	return 0;
+	return rc == CLUSTERER_SEND_SUCCESS;
 }
 
 /**
