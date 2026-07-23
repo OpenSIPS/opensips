@@ -241,8 +241,73 @@ diffable. This is safe: OpenSIPS loads modules with **`RTLD_NOW`, not
 `RTLD_GLOBAL`** (`sr_module.h:98`), so identical symbol names across two loaded
 modules do not collide. Verified before relying on it.
 
-Feature parity to decide per task: clusterer replication (`cluster_id`) and
-restart persistency (`enable_restart_persistency` / rpm) are **not** in v1.
+Feature parity: restart persistency (`enable_restart_persistency` / rpm) is
+**not** in v1. Clusterer replication is **not** in v1 either — see §5.1.
+
+### 5.1 Why clusterer replication is not inherited as-is
+
+`cachedb_local`'s replication does **not** hold bucket locks — the lock is
+released (`hash.c:171`) before `replicate_cache_insert` is called
+(`hash.c:178`), and likewise on remove. That concern does not apply.
+
+It is slow for a different reason: `clusterer_api.send_all()` runs
+**synchronously in the SIP worker on every `set()` and every `remove()`** —
+one BIN packet fanned out to every node in the cluster, per write, with the
+full value copied into the packet each time. There is no batching, no
+coalescing and no async queue. Under the `th_store` TTL-bump pattern this
+replicates a value that has not changed, on every refresh.
+
+Two further defects worth not reproducing:
+
+- **Fire-and-forget.** No ack, no retry. A node that misses a packet stays
+  silently wrong until that key is written again.
+- **`LM_ERR` per failed write** (`cachedb_local_replication.c:139`). During a
+  peer outage this emits one error log per write — a log flood on top of an
+  outage.
+
+If replication is added to `cachedb_perf` later (CP-15), it must be batched
+and driven from the maintenance worker (CP-10), never inline in the SIP
+worker.
+
+## 5.2 Introspection: keys, scan, and single-key access
+
+`cachedb_local` is **not** missing key enumeration — `cachedb_local:fetch_chunk
+<glob> [collection]` exists and is documented (`doc/cachedb_local_admin.xml:350`).
+It is simply not usable at scale:
+
+1. **Always returns values as well as names** — no keys-only mode. `"*"` over
+   50 000 entries with 200-byte values is a ~10 MB MI response.
+2. **Full table scan holding every bucket lock**, with a `memcpy` and an
+   `fnmatch` per key. On a large cache this stalls SIP traffic — the same
+   reason Redis deprecated `KEYS` for production use.
+3. **No limit, no cursor, no pagination.** Redis's answer is `SCAN`; there is
+   no equivalent.
+4. **No TTL in the output**, so you cannot see what is about to expire.
+
+`cachedb_perf` provides instead:
+
+| command | purpose |
+|---|---|
+| `keys <glob> [collection] [limit]` | names only, bounded. The `KEYS th*` equivalent. |
+| `scan <cursor> [glob] [count]` | cursor-based incremental iteration, Redis `SCAN` semantics |
+| `dump <glob> [collection] [limit]` | names **and** values — explicit opt-in, never the default |
+| `get <key> [collection]` | single key: value + TTL + size |
+| `set <key> <value> [ttl] [collection]` | single key write |
+| `del <key> [collection]` | single key delete |
+| `stats [collection]` | CP-06 |
+
+Two properties make `scan` sound here, both falling out of choices already made
+for other reasons:
+
+- **Buckets never move** (§3.4 — growth appends a segment), so a cursor is just
+  a `(segment, bucket)` index and stays valid across a resize. This is the same
+  property Redis's SCAN guarantee rests on: an element present for the whole
+  iteration is returned at least once.
+- **Seqlock reads take no locks** (§3.2), so unlike `cachedb_local`'s scan a
+  `keys`/`scan` pass cannot stall writers, and `count` bounds the work per call.
+
+`keys` and `dump` must still enforce a default limit, and `scan` is the
+documented answer for anything large.
 
 ## 6. Tasks
 
@@ -264,8 +329,14 @@ restart persistency (`enable_restart_persistency` / rpm) are **not** in v1.
 - **CP-06** Statistics + MI dump: entries, buckets, load factor, avg/max probe,
   arena occupancy, bytes. `cachedb_local` exports **zero** statistics, which is
   why the 20× cliff was invisible; do not repeat that.
-- **CP-07** `iter_keys`, `cache_remove_chunk`, `fetch_chunk`.
+- **CP-07** `iter_keys` plus the `cache_remove_chunk` script function and the
+  `remove_chunk` MI, matching `cachedb_local` semantics for parity.
 - **CP-08** Docs: `doc/cachedb_perf_admin.xml` + generated README.
+- **CP-18** Introspection MI (§5.2): `keys`, `scan`, `dump`, `get`, `set`,
+  `del`. `scan` is cursor-based and lock-free; `keys` is names-only with a
+  default limit; `dump` returns values only on explicit request. This is the
+  operability gap that makes `cachedb_local` hard to run — treat it as core,
+  not optional.
 
 **Phase 3 — scale**
 - **CP-09** Segmented directory + linear-hashing growth (§3.4).
