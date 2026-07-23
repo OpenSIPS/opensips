@@ -675,6 +675,11 @@ This function bridges two entities, in the context of an existing B2B session
 (the initial entities are already connected). At least one of the two entities
 has to be a new client entity.
 
+When a *provmedia_uri* is used together with the *provmedia-extra-headers* flag,
+the extra headers configured for the new client entity through
+[b2b client new](#func_b2b_client_new) are also added to the INVITE sent to the
+provisional media server.
+
 
 Parameters:
 
@@ -712,6 +717,8 @@ media server to be connected with the caller while the callee answers.
    helpful when doing in-dialog authentication that requires the stored
    AVPs for username and password, but can also be useful to store other
    information across the bridge.
+   - *provmedia-extra-headers* - Add the extra headers configured for the new
+   client entity to the INVITE sent to the provisional media server.
 
 
 This function can be used from the b2b_logic request routes.
