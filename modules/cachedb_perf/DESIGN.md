@@ -147,13 +147,32 @@ Exactly one cache line, verified `sizeof == 64`:
 ```c
 struct pcache_bucket {          /* __attribute__((aligned(64))) */
     volatile unsigned version;  /* seqlock: even = stable, odd = writer inside */
-    volatile unsigned lock;     /* writers only */
+    gen_lock_t        lock;     /* writers only */
     unsigned char     tags[6];  /* 1 byte of hash per slot, never 0 */
-    unsigned char     used;
-    unsigned char     _pad;
+    unsigned short    used:4,   /* 0..6 */
+                      owner:12; /* process_no of the writer holding the lock */
     pcache_rec       *slot[6];
 };
 ```
+
+**Owner tracking — decided.** The writer stores its `process_no` in `owner`
+after acquiring the lock and clears it before releasing. This exists so the
+maintenance worker can detect a bucket whose lock is held by a process that
+has since died (§3.5b, irreducible residue) and recover it, rather than that
+bucket being unreachable for the lifetime of the server.
+
+Two ways to carry this were considered. Putting the PID in the lock word
+itself (CAS `0 -> pid` rather than `0 -> 1`) costs no space, but means
+hand-rolling the lock and so forfeits the adaptive futex sleep that §3.5b
+requires. Taking it from the bucket's own spare bytes costs nothing and keeps
+`gen_lock_t`: `used` needs only 3 bits, so `used:4 / owner:12` fits the two
+bytes already there and covers 4096 processes. The bucket stays **exactly 64
+bytes** — assert it.
+
+Recovery is the *worker's* job, never a reader's or writer's: they must treat
+a stuck lock as simply contended (the §3.2 fallback already handles waiting).
+Only the worker checks liveness via the process table and only it may force a
+release, after confirming the owner is gone.
 
 Lookup: mask to a bucket, compare 6 one-byte tags, and only dereference a slot
 whose tag matches. A tag rejects ~255/256 of non-matching slots without
@@ -293,8 +312,12 @@ lock, that lock is stuck forever — there is no owner left to release it. This
 is true of *every* shm spinlock in OpenSIPS, not just this module, and it is
 not solved anywhere in the codebase. The only real mitigation is rule 3: a
 critical section of tens of nanoseconds makes the window vanishingly small.
-Optionally the lock word can carry the owner PID so the maintenance worker can
-detect a dead holder and recover; decide during CP-03.
+**Decided:** the bucket carries the writer's `process_no` in its `owner` field
+(§3.1) so the maintenance worker can detect a dead holder and recover the
+bucket. Recovery is the worker's job alone — readers and writers treat a stuck
+lock as ordinary contention and use the §3.2 fallback. Only the worker checks
+liveness against the process table, and only after confirming the owner is gone
+may it force a release.
 
 ### 3.6 Threads vs processes — use neither pthreads nor thread-local state
 
