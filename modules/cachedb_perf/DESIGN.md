@@ -202,7 +202,39 @@ Per-bucket `min_expires` (§2.4), swept frequently. Expired entries are also
 treated as absent on read, as in `cachedb_local`, so expiry timing is memory
 reclamation only and never correctness.
 
-### 3.6 Deliberately deferred
+### 3.6 Threads vs processes — use neither pthreads nor thread-local state
+
+`cachedb_perf` uses **`__atomic_*` builtins and `gen_lock_t`**, nothing else.
+Both are process-agnostic: shm is `MAP_SHARED` and mapped before fork
+(`mem/shm_mem.c:252`), and cache coherence is hardware-level, so the seqlock in
+§3.2 behaves identically across processes and threads. pthreads would add
+nothing — the cache is shared across *processes*, so a thread pool inside one
+worker cannot help the other seven, the read path is already lock-free, and the
+worker processes already saturate the cores.
+
+The maintenance worker (CP-10) is a **process** via `proc_export_t`, not a
+thread: that inherits process-table registration, IPC/MI, logging and signal
+handling.
+
+Threads are not foreign to the codebase — `net/net_tcp.c` runs a pthread pool
+(`pthread_create`, line 1376, gated on `tcp_threads`; the 4.1 TCP single-IO
+mode) and `lock_ops.h:105` offers a `pthread_mutex_t` lock backend. No
+OpenSIPS *module* calls `pthread_create`. So if anyone reaches for them later,
+two hazards:
+
+1. **A pthread primitive in shm is silently broken across processes unless
+   initialised `PTHREAD_PROCESS_SHARED`** — the default is `PROCESS_PRIVATE`,
+   which is undefined behaviour in shared memory. OpenSIPS's own backend does
+   this correctly (`lock_ops.h:114`, `pthread_mutexattr_setpshared`).
+   **`bench/concur.c` is thread-based and would pass such a bug.** The rig
+   cannot catch this class of defect by construction — only CP-16's
+   multi-process validation can.
+2. **fork and threads, in that order, do not mix.** Workers are forked at
+   startup. A thread created in `mod_init` (pre-fork) is not inherited by the
+   children, and any lock it held at fork time stays locked forever in every
+   child. Threads may only be created in `child_init`, post-fork, if at all.
+
+### 3.7 Deliberately deferred
 
 **Cuckoo displacement.** It mainly buys load factor / memory efficiency, and it
 badly complicates concurrent resize across processes. Overflow chaining in v1;
