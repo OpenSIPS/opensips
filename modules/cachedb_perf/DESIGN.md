@@ -16,6 +16,23 @@ loadmodule "cachedb_perf.so"
 modparam("topology_hiding", "th_state_url", "perf://th")
 ```
 
+### Scope of v1 — decided, not open
+
+**`cachedb_perf` v1 is a fast single-node in-memory cache. Nothing else.**
+No clusterer replication, no restart persistency, no remote backend. Every
+node keeps its own copy and shares nothing.
+
+This is a deliberate scope decision, not an omission to be quietly filled in
+later. It keeps v1 to one job — be the fastest local cache available — and it
+keeps the lock-free read path (§3.2) free of any cross-node coordination that
+would compromise it.
+
+The consequence to be aware of: v1 is a drop-in for **non-shared** uses such as
+`topology_hiding`'s `th_store` on a single node, but it is **not** a drop-in
+wherever `cachedb_local` is used with `cluster_id` for shared state — e.g. the
+staging RGSs' usrloc full-sharing. Those must stay on `cachedb_local` until
+§5.3 is built.
+
 > `DESIGN.md` and `bench/` are working documents. `git rm` both before
 > proposing anything upstream.
 
@@ -297,9 +314,41 @@ Two further defects worth not reproducing:
   peer outage this emits one error log per write — a log flood on top of an
   outage.
 
-If replication is added to `cachedb_perf` later (CP-15), it must be batched
-and driven from the maintenance worker (CP-10), never inline in the SIP
-worker.
+If replication is ever added (CP-15), it must be batched and driven from the
+maintenance worker (CP-10), never inline in the SIP worker.
+
+### 5.3 If sharing is needed later — two options, neither in v1
+
+v1 shares nothing. If a deployment later needs state shared across nodes,
+there are two routes, to be chosen on evidence at that time:
+
+**(a) Clusterer replication.** Reuse the existing `clusterer` capability, but
+fix what §5.1 documents: batch writes, coalesce repeated writes to the same
+key (the `th_store` TTL bump rewrites an unchanged value on every refresh),
+drive the send from the maintenance worker instead of the SIP worker, and rate-
+limit the failure logging. Cheapest to build, inherits clusterer's node
+membership and sync-on-startup. Still eventually-consistent and fire-and-forget
+unless acks are added.
+
+**(b) A shared backend behind `cachedb_perf`.** Keep the fast local table as a
+cache, and back it with a shared store — either speaking to an external
+Redis-like server, or exposing our own store over a Redis-like protocol so
+nodes share one authoritative copy. Turns `cachedb_perf` into a local cache in
+front of shared state rather than a replicated peer. More work, but it gives a
+single source of truth instead of N converging copies, and it reuses a wire
+protocol operators already have tooling for.
+
+Note the interaction with §5.2: option (b) makes `keys`/`scan` genuinely
+useful, because there is then one authoritative keyspace to enumerate rather
+than a per-node view. It also raises questions v1 does not have to answer —
+write-through vs write-back, what happens to the local copy on backend failure,
+and whether TTLs are authoritative locally or remotely.
+
+Do not start either until a real deployment needs it. PR #4114's measurements
+are the reminder here: a remote store cost the proxy its throughput ceiling
+(~5 300 CPS vs ~9 000 for a dialog) because the round-trip is synchronous and
+a worker blocks for its duration. Any shared backend must be asynchronous or it
+will undo exactly the performance this module exists to deliver.
 
 ## 5.2 Introspection: keys, scan, and single-key access
 
@@ -388,7 +437,17 @@ documented answer for anything large.
   Only if these turn out to be hot.
 - **CP-13** 32-bit arena offsets instead of pointers (6 → ~11 slots/bucket).
 - **CP-14** Cuckoo displacement, if occupancy proves to be the constraint.
-- **CP-15** Clusterer replication and restart persistency, if wanted.
+- **CP-15** Sharing state across nodes — **explicitly out of scope for v1**
+  (see "Scope of v1" and §5.3). Two candidate routes when a deployment
+  actually needs it: **(a)** clusterer replication, batched and driven from the
+  maintenance worker, fixing the defects in §5.1; or **(b)** a shared
+  Redis-like backend behind the local table, either talking to an external
+  server or exposing our own store over a Redis-like protocol. Option (b) also
+  makes `keys`/`scan` authoritative rather than per-node. Whichever is chosen
+  must be **asynchronous** — PR #4114 measured a synchronous remote store
+  costing ~5 300 CPS against ~9 000 for a dialog, because the worker blocks for
+  the round trip.
+- **CP-19** Restart persistency (rpm), if wanted. Also not in v1.
 
 **Validation**
 - **CP-16** Correctness suite: concurrent readers/writers, TTL boundaries,
