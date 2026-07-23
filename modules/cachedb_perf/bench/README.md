@@ -22,6 +22,8 @@ not misses.
 | `worker` | Does moving the sort off the hot path pay? (eager vs deferred + merge cost) |
 | `expire2` | Full sweep vs per-bucket min-expires hint vs timer wheel |
 | `concur` | Does the lock-on-every-read path limit scaling? (1/2/4/8 threads) |
+| `wbuf` | Does a write-staging buffer help? (shared vs per-process, + read penalty) |
+| `queue` | Does a queued producer/consumer write path help? (fixed thread budget) |
 
 ## Caveats
 

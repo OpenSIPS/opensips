@@ -3,14 +3,14 @@
 
 CC      ?= gcc
 CFLAGS  ?= -O2 -Wall
-PROGS    = hashtest lookup structs worker expire2 concur
+PROGS    = hashtest lookup structs worker expire2 concur wbuf queue
 
 all: $(PROGS)
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-concur: concur.c
+concur wbuf queue: %: %.c
 	$(CC) $(CFLAGS) -pthread -o $@ $<
 
 run: all
@@ -20,6 +20,8 @@ run: all
 	@echo; echo "=== 4. deferred sorting / worker ==="; ./worker
 	@echo; echo "=== 5. expiry strategies ==="; ./expire2
 	@echo; echo "=== 6. concurrent read path (threads) ==="; ./concur
+	@echo; echo "=== 7. write staging buffer ==="; ./wbuf
+	@echo; echo "=== 8. queued (producer/consumer) writes ==="; ./queue
 
 clean:
 	rm -f $(PROGS)

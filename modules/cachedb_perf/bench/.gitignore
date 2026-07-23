@@ -4,3 +4,7 @@ structs
 worker
 expire2
 concur
+wbuf
+queue
+warmup
+hugetlb

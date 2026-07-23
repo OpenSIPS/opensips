@@ -130,6 +130,74 @@ The `min_expires` hint gets that for **zero hot-path cost and zero extra
 per-entry memory**; the wheel's further 84× buys nothing and costs
 74 ns/insert plus 16 B/entry.
 
+### 2.5 Write staging and queueing — both measured, both rejected
+
+Two variants of "make writes cheaper by not writing to the table directly"
+were tested (`bench/wbuf.c`, `bench/queue.c`).
+
+**Staging buffer.** A ~1 MB buffer that writes append to, drained later by a
+worker. Write throughput, 1→8 threads:
+
+| threads | per-bucket lock | **shared** buffer | **per-process** buffer |
+|---|---|---|---|
+| 1 | 20.16 | 25.67 | 35.76 |
+| 8 | **130.12** | **18.52** | **291.72** |
+| scaling | 6.45× | **0.72×** | 8.16× |
+
+A *shared* buffer **loses throughput as threads are added** — the single atomic
+append offset is the hottest cache line in the system, and at 8 threads it is
+7× worse than the per-bucket locks it was meant to replace. Removing the lock
+did not remove the coordination, it concentrated it. Per-bucket locks are only
+uncontended *because* they are spread over thousands of buckets.
+
+*Per-process* buffers do scale (8.16×, 2.24× faster than bucket locks). But
+staging live entries penalises the read path, because a reader must consult the
+buffers to see writes not yet applied: 48.9 → 52.7 ns with 8 buffer probes.
+With ~95% reads that trade is a net loss:
+
+```
+baseline  0.95(49.0) + 0.05(49.0) = 49.0
+staged    0.95(52.7) + 0.05(21.9) = 51.2   <- worse
+```
+
+**Break-even is ~12% writes.** Nothing measured in SIP workloads is close. The
+read-side model was also generous (one hot array index per buffer, where a real
+staging index needs a hash lookup and a pointer chase), so the true break-even
+is higher still. Three further costs: 1 MB holds 4 519 entries — 0.75 s of
+headroom at 6 000 CPS, so the drain must keep up or writers fall back; the
+`th_store` TTL-bump pattern fills the buffer with duplicate versions of keys
+that never changed; and deletes need tombstones on the read path.
+
+**Queued (producer/consumer) writes.** Same idea shaped as a message queue.
+At a fixed 8-thread budget, counting *applied* writes:
+
+| split | applied Mops/s | vs direct | ring full |
+|---|---|---|---|
+| 8 direct writers | **116.33** | 1.00× | — |
+| 7 prod + 1 cons | 24.09 | 0.21× | 99% |
+| 4 prod + 4 cons | 54.64 | **0.47×** | 97% |
+| 2 prod + 6 cons | 45.14 | 0.39× | 94% |
+
+The best split does less than half the work of writing directly. The consumer
+performs *exactly the work the producer would have done* — take the bucket
+lock, mutate, release — so the queue adds enqueue/dequeue overhead and then
+leaves fewer threads to do the actual applying. Note the ring-full column:
+producers are back-pressured 94–99% of the time, so writes block anyway, and
+now they block on a **global** queue rather than on **one of 16 384** buckets.
+
+Correctness objections are independent of the numbers: async writes break
+read-your-writes (a `set()` that returns before the value is visible), and
+`add`/`sub` cannot be queued at all since they must return the new value to the
+caller — so a synchronous path would be needed regardless, and both paths
+maintained.
+
+**The rule this establishes:** queue when the consumer is genuinely slower than
+the producer, or does something the producer must not wait for. Never queue
+when the consumer does the same work the producer could have done inline. The
+design already applies this correctly in the three places it holds — deferred
+frees, replication (§5.3), and EVI events (CP-11) — all of which have a
+genuinely slow consumer.
+
 ## 3. Design
 
 Two designs from the literature converge on the same shape for precisely this
@@ -376,6 +444,23 @@ measure occupancy; revisit only if memory becomes the constraint.
   (`register_timer`/`register_utimer` are periodic only, `timer.h:92`) and EVI
   is a synchronous publish bus, so it cannot schedule anything. EVI as
   *notification* is a separate legitimate feature (CP-11).
+- **A shared write-staging buffer** — §2.5. Negative scaling (0.72× at 8
+  threads); one atomic append offset is worse than thousands of bucket locks.
+- **Staging live entries in per-process buffers** — §2.5. Scales well on the
+  write side but penalises the ~95% of operations that are reads. Break-even is
+  ~12% writes, which no measured SIP workload approaches. Revisit only if
+  CP-06's statistics show a real deployment above that.
+- **Queued / producer-consumer writes** — §2.5. 0.21–0.47× of direct writes at
+  a fixed thread budget, producers back-pressured 94–99% of the time, and it
+  breaks read-your-writes while being unable to express `add`/`sub` at all.
+- **A `cache_ratio` (expected read/write mix) modparam.** This would be the
+  `cache_collections` mistake in a new place: a static number the operator
+  cannot reasonably know, that silently degrades when reality diverges — and
+  that parameter is the entire reason this module exists. The module counts
+  reads and writes itself (CP-06), continuously and per collection, so it never
+  needs to be told. More generally: **adapt on the effect, not the cause** —
+  key off observed seqlock retry rate (real contention), observed load factor,
+  and observed expiry rate; never off a predicted workload mix.
 
 ## 5. Compatibility
 
