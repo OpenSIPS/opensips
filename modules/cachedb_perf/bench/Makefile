@@ -1,14 +1,17 @@
-# cachedb_local performance benchmarks - standalone, no OpenSIPS build needed.
+# cachedb_perf design benchmarks - standalone, no OpenSIPS build needed.
 # Each program embeds core_hash() verbatim from ../../../hash_func.h.
 
 CC      ?= gcc
 CFLAGS  ?= -O2 -Wall
-PROGS    = hashtest lookup structs worker expire2
+PROGS    = hashtest lookup structs worker expire2 concur
 
 all: $(PROGS)
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $<
+
+concur: concur.c
+	$(CC) $(CFLAGS) -pthread -o $@ $<
 
 run: all
 	@echo "=== 1. hash distribution: is core_hash to blame? ==="; ./hashtest
@@ -16,6 +19,7 @@ run: all
 	@echo; echo "=== 3. index structure shootout ==="; ./structs
 	@echo; echo "=== 4. deferred sorting / worker ==="; ./worker
 	@echo; echo "=== 5. expiry strategies ==="; ./expire2
+	@echo; echo "=== 6. concurrent read path (threads) ==="; ./concur
 
 clean:
 	rm -f $(PROGS)
