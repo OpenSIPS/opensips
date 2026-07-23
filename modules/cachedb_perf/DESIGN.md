@@ -287,6 +287,20 @@ Findings:
   *worse* than base (single-run VM noise), and the 6.12 EINVAL proves kernel
   version does not predict behaviour. The module must check the region's smaps
   and report the achieved tier through CP-06.
+- **Shmem THP needs the VA and the shmem *file offset* congruent mod 2M**
+  (found by the CP-01 mod_init probe). Offset 0 is pinned to wherever the
+  mapping starts, so a range VA-aligned *inside* an unaligned
+  `MAP_SHARED|MAP_ANON` mapping sits at a non-congruent offset and is simply
+  ineligible — `THPeligible: 0`, `MADV_COLLAPSE` EINVAL — while the identical
+  call in another process succeeds on ASLR luck (which is exactly how it
+  presented: probe fine standalone, EINVAL inside opensips). Any shmem region
+  meant to go huge must be *created* on a 2M boundary: reserve VA `PROT_NONE`,
+  then `MAP_FIXED` the shmem inside the reservation (atomic replace, no
+  race). Two further verification facts from the same debugging: a shmem
+  `MADV_COLLAPSE` creates the huge folio *without* PMD-mapping it in the
+  caller (later faults do that), so per-process smaps shows nothing — verify
+  collapse via the global `ShmemHugePages` meminfo delta, as the bench does;
+  smaps `ShmemPmdMapped` is the right check only for fault-time THP (tier 2).
 
 ### 2.6.2 Swap pinning (measured on 223, verified against the live SBC)
 
@@ -560,6 +574,40 @@ struct pcache_rec {
 Key and the start of the value share the entry's first cache line, so a
 counter-sized hit costs two lines total: bucket + this.
 
+**Concrete arena layout (CP-02, done 2026-07-24).** 21 size classes on a
+~×1.5 ladder, 64 B to 64 KB, all multiples of 32; a 2 KB LUT maps request
+size to class. Per-class chunk sizes: 256 KB for cells ≤ 8 KB, else 32
+cells per chunk (up to 2 MB) — divisors/multiples of the 2 M page so CP-20
+reservations stay congruent. **Byte 0 of every cell is the class id,
+stamped for the whole chunk at carve time, before the chunk is reachable,
+and never written again.** That is how the §3.2 copy-out clamp finds its
+bound through a stale pointer with *unaligned, scattered* shm chunks — no
+chunk-header lookup, no alignment waste: `pcache_cell_bound()` range-checks
+the byte and returns the cell size. The record's first byte is therefore a
+read-only class field. Free cells link through bytes 8–15, never byte 0.
+Allocation state is per-process and lives in pkg (lazy row per class: bump
+chunk + private free stack) — zero shm false sharing and zero atomics on
+the fast path, per §2.5; a carved chunk belongs wholly to the carving
+process. Owner frees go to the private stack (LIFO reuse); a stack over
+256 cells donates half to a per-class global pool under the arena lock,
+which also serves refills (batches of 32) and takes cross-process frees
+(expiry — CP-05/CP-10). Values needing over 64 KB fail allocation in v1;
+CP-04 sets the policy (error vs dedicated exact-size chunks — either keeps
+chunks class-bound). Fork inheritance: `child_init` donates any pre-fork
+allocator state to the global pool and resets — two processes must never
+share a bump pointer. All arena memory funnels through one internal
+function (`pcache_chunk_backing`), the CP-20 seam.
+
+**A refinement CP-02 makes explicit:** same-class recycling is safe under
+live optimistic readers *without* any grace period — a stale slot pointer
+into a recycled cell reads another same-class record (klen/vlen still
+within the class bound, the doomed copy bounded by the clamp) and the
+bucket version check discards the attempt, since recycling a slot implies
+the bucket changed. Deferred frees therefore exist **only** to keep
+allocator work out of the bucket lock (§3.5b), not for reader safety: the
+owner reclaims its own frees at the next allocation; the maintenance
+worker is needed only for frees the owner cannot do (expiry).
+
 Optional later: address entries by 32-bit arena offset instead of 8-byte
 pointer, which raises slots-per-bucket from 6 to ~11 at the same 64 bytes.
 
@@ -726,6 +774,15 @@ two hazards:
 badly complicates concurrent resize across processes. Overflow chaining in v1;
 measure occupancy; revisit only if memory becomes the constraint.
 
+Concrete v1 overflow (CP-03): a small chained side table behind one lock,
+gated by an `ovf_count` that readers check only after a stable bucket miss —
+one cached load in the common case. Invariant: **a key lives in its bucket
+or in overflow, never both** (writers check both, in bucket→overflow lock
+order). Without growth this path is not rare — 200 keys over 16 buckets put
+104 in overflow in the selftest, and even the 2^14 default at 50 k entries
+would overflow ~3.5% of buckets — which is exactly why CP-09's splits must
+drain overflow as they go.
+
 ## 4. Ruled out — do not re-litigate
 
 - **B-tree / skip list as the primary index.** Exact-match KV store; a hash is
@@ -775,13 +832,49 @@ measure occupancy; revisit only if memory becomes the constraint.
 `cachedb_perf` implements the same `cachedb_funcs` vtable as every other
 backend, so any module taking a `cachedb_url` works unchanged:
 `get`, `set` (with `expires`), `remove`, `add`, `sub`, `get_counter`,
-`iter_keys`, plus `cache_remove_chunk` / `fetch_chunk`.
+`iter_keys`. Core script usage (`cache_store("perf", ...)` and friends)
+also works unchanged — only the backend name in the first argument
+changes.
+
+**Everything script-facing that the module itself exports is
+`perf_`-prefixed and deliberately NOT parity-named** (decided at CP-07,
+2026-07-24): there is no `cache_remove_chunk` / `fetch_chunk` here.
+Scripts migrating those calls from `cachedb_local` must change to the
+Redis-verb equivalents — `perf_del`, `perf_mget`, `perf_mget_json`
+(CP-07) — which are also strictly more capable (multi-value returns,
+JSON form, limits). The CP-18 MI commands follow the same rule
+(`perf_keys`, `perf_scan`, `perf_dump`, `perf_get`, `perf_set`,
+`perf_del`, `perf_stats` — §5.2).
 
 Internal function names deliberately mirror `cachedb_local`'s
 (`lcache_htable_insert` → `pcache_htable_insert` and so on) so the two are
 diffable. This is safe: OpenSIPS loads modules with **`RTLD_NOW`, not
 `RTLD_GLOBAL`** (`sr_module.h:98`), so identical symbol names across two loaded
 modules do not collide. Verified before relying on it.
+
+**The module shell is deliberately *not* mirrored** (decided at CP-01,
+2026-07-24). Only about a quarter of `cachedb_local.c` is framework
+contract; the rest is rpm persistency, clusterer replication, the
+per-collection allocator indirection (which exists only to switch shm↔rpm —
+our arena makes it meaningless) and the §5.2 glob machinery — all outside v1
+scope. The shell is written fresh (~440 lines with docs, vs 986 + docs) and
+fixes three `cachedb_local` shell bugs on the way: collection resolution by
+*prefix* `memcmp` (`cachedb_local.c:441` — URL `.../th` can bind collection
+`th2`, plus an out-of-bounds read since `col_name` has no NUL), a leaked
+connection on the unknown-collection path, and the silently-ignored URL host
+(`local://th` binds the *default* collection, not `th`). `cachedb_perf`
+resolves the collection as **database part if present, else host part**
+(`perf:///th` and `perf://th` are equivalent — a host has no meaning for a
+local cache), exact-length match, hard startup error on an undefined name,
+and a warning if a URL carries both and they differ. Two framework facts the
+shell rests on, verified: `check_cachedb_api` (`cachedb_cap.h:58`)
+auto-derives capability flags from non-NULL vtable pointers (only
+`CACHEDB_CAP_BINARY_VALUE` is declared manually), and the core script path
+calls vtable entries **without NULL checks** (`cachedb.c` `cachedb_remove`) —
+so unimplemented operations must be error-returning stubs, never NULL
+pointers. One layout contract to respect: `pcache_con` must keep
+`id/ref/next` as its first three fields, overlaying `cachedb_pool_con`
+(`cachedb_pool.h:32`).
 
 Feature parity: restart persistency (`enable_restart_persistency` / rpm) is
 **not** in v1. Clusterer replication is **not** in v1 either — see §5.1.
@@ -858,17 +951,28 @@ It is simply not usable at scale:
    no equivalent.
 4. **No TTL in the output**, so you cannot see what is about to expire.
 
-`cachedb_perf` provides instead:
+`cachedb_perf` provides instead — **every user-exposed name carries the
+`perf_` prefix** (user decision, 2026-07-24): the MI namespace is flat
+underneath the core's `module:` display form, and bare `get`/`set`/`del`
+are collision bait (`statistics:get` already owns bare `get`). The prefix
+also makes the MI verbs match the script functions one to one:
 
 | command | purpose |
 |---|---|
-| `keys <glob> [collection] [limit]` | names only, bounded. The `KEYS th*` equivalent. |
-| `scan <cursor> [glob] [count]` | cursor-based incremental iteration, Redis `SCAN` semantics |
-| `dump <glob> [collection] [limit]` | names **and** values — explicit opt-in, never the default |
-| `get <key> [collection]` | single key: value + TTL + size |
-| `set <key> <value> [ttl] [collection]` | single key write |
-| `del <key> [collection]` | single key delete |
-| `stats [collection]` | CP-06 |
+| `perf_keys <glob> [collection] [limit]` | names only, bounded. The `KEYS th*` equivalent. |
+| `perf_scan <cursor> [glob] [count]` | cursor-based incremental iteration, Redis `SCAN` semantics |
+| `perf_dump <glob> [collection] [limit]` | names **and** values — explicit opt-in, never the default |
+| `perf_get <key> [collection]` | single key: value + TTL + size |
+| `perf_set <key> <value> [ttl] [collection]` | single key write |
+| `perf_del <glob> [collection]` | delete matching keys — the MI face of the `perf_del` script function (a literal name without metacharacters matches exactly) |
+| `perf_stats [collection]` | CP-06 |
+
+(Module parameters stay unprefixed on purpose: `modparam("cachedb_perf",
+...)` already scopes them, and keeping `cache_collections`/`cachedb_url`
+verbatim is what makes migration a loadmodule + URL change.)
+
+From script, the same walker backs `perf_del(glob)`, `perf_mget(glob,
+keys_avp, vals_avp)` and `perf_mget_json(glob, dst_var)` — see CP-07.
 
 Two properties make `scan` sound here, both falling out of choices already made
 for other reasons:
@@ -896,12 +1000,41 @@ documented answer for anything large.
   Clamp the configured size to `[4,24]` — `cachedb_local`'s
   `1 << coll_size` on an unbounded unsigned (`cachedb_local.c:895,940`) is UB
   at `th=32` and yields a zero-size table at `th=64`; do not reproduce it.
+  **Done 2026-07-24** — fresh minimal shell, not a mirror (§5): clamp with
+  warning, exact-match collection resolve from database-or-host URL part,
+  default collection auto-created, error-stub data ops, docbook stubs.
+  Initial-size default is 2^14 buckets (1 MB), not `cachedb_local`'s 2^9.
+  Also landed here: **CP-20's detection half** (`pcache_mem.c`) — mod_init
+  probes the four tiers *by trying* each on a scratch 2M mapping (hugetlb
+  mmap+touch; MADV_HUGEPAGE then smaps; MADV_COLLAPSE then smaps), reports
+  the achieved tier at NOTICE, and when tier 1 is unavailable warns with the
+  exact `vm.nr_overcommit_hugepages` sysctl and why (measured chase numbers).
+  The probe is advisory — the CP-20 allocator re-runs the ladder per chunk.
 - **CP-02** Slab arena: size classes, alloc/free, never returns to shm.
+  **Done 2026-07-24** — see the concrete-layout paragraph in §3.3
+  (`pcache_arena.{c,h}`): class-byte-stamped cells, per-process pkg
+  allocator state, private stacks + global per-class pool with donation,
+  `pcache_chunk_backing()` as the CP-20 seam. Ships a startup selftest
+  behind modparam `arena_selftest` (class mapping, stamp/bound contract,
+  LIFO reuse, chunk growth, donation, refill-without-growth, extents,
+  oversize, fork-reset); it fails startup on any mismatch.
 - **CP-03** Bucket + tags + seqlock: the 64-byte layout, optimistic read with
   the §3.2 copy-out rules (clamp, arena-extent check, per-process scratch,
   natural alignment), writer path, tag mapping `t ? t : 1`, SWAR tag scan
   (§3.1). Assert `sizeof(bucket) == 64` at compile time — fires by design
   under non-4-byte lock backends (§3.1); say so in the message.
+  **Done 2026-07-24** (`pcache_htable.{c,h}`): everything above, plus —
+  because they are writer-path-intrinsic — the versionless TTL bump (§2.7,
+  selftest proves the bucket version does not move) and in-place update
+  when the value fits the cell. The §3.4 routing word and both re-check
+  rules (reader miss path, writer post-lock) are wired now with split
+  always 0, so CP-09 only adds the split machinery. Segmented directory
+  pre-allocated; overflow per §3.7; frees strictly after lock release;
+  bounded-retry fallback takes the bucket lock; owner set/cleared in
+  `meta`. Gotcha recorded: `get_ticks()` is still **0 during mod_init**
+  (the timer starts post-fork) — the selftest runs expiry under a
+  synthetic clock through an internal `_pcache_ht_fetch(..., now)` seam.
+  Selftest ships as modparam `htable_selftest`.
 - **CP-04** `cachedb_funcs` vtable: get/set/remove/add/sub/get_counter,
   in-place update when the value fits. Two specifics:
   - **Versionless TTL bump** (§2.7): a `set()` whose value is byte-identical
@@ -913,6 +1046,20 @@ documented answer for anything large.
     sets `PCACHE_F_INT`; arithmetic is then fixed-width under the bucket lock
     and formatting happens on `get` — no parse/format/realloc inside the
     critical section, keeping §3.5b rule 3 for the counter workload.
+  **Done 2026-07-24.** The vtable is thin adapters over the table core;
+  TTL→absolute conversion happens at this boundary only. Native counters as
+  specced (`pcache_ht_add`: create / fixed-width accumulate / convert a
+  numeric string on first touch / refuse NaN; the int64 payload may be
+  unaligned, so in-place accumulation goes under the version bumps, never
+  bare). Every user-facing read formats counters as decimal — fetch,
+  `get_counter` (fetch + strict parse) and the walker, so `perf_mget_json`
+  shows `"hits":"6"`. One semantics fix found by the e2e test: **the glob
+  functions' default collection is the default (groupless) connection's
+  collection** — exactly where `cache_store("perf", ...)` writes — not the
+  collection literally named "default"; anything else makes the two views
+  silently disagree. Validated end-to-end from script on 223: store/fetch,
+  add/sub/counter_fetch, mget, mget_json (counter formatting included),
+  glob delete, post-delete miss, empty-table `{}`.
 
 **Phase 2 — correctness and operability**
 - **CP-05** Expiry: per-bucket `min_expires`, frequent sweep, expired-as-absent
@@ -927,14 +1074,38 @@ documented answer for anything large.
   permanently in the hot path by the observability feature. Per-process
   counter cache lines, plain increments, summed at read time behind
   `STAT_IS_FUNC`.
-- **CP-07** `iter_keys` plus the `cache_remove_chunk` script function and the
-  `remove_chunk` MI, matching `cachedb_local` semantics for parity.
+- **CP-07** Glob operations + `iter_keys`. **Reworked 2026-07-24 (user
+  decision): the shell no longer mirrors `cachedb_local`, so the parity
+  names (`cache_remove_chunk`, `remove_chunk` MI) go too — script-facing
+  functions are `perf_`-prefixed with Redis verbs, and migrating scripts
+  must change those calls.** Delivered:
+  - `perf_del(glob[, collection])` — delete every key matching the glob
+    (expired included); returns the removed count, script-false on none.
+  - `perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])` — every
+    live key/value matching the glob into two index-paired AVPs; limit
+    defaults to 1000 (0 = unbounded); returns the match count.
+  - `perf_mget_json(glob, dst_var[, collection[, limit]])` — same
+    matches as one JSON object `{"key":"value",...}` in a writable
+    variable; length-based escaping so binary values survive (bytes >=
+    0x80 pass through — strict-JSON consumers need UTF-8 values).
+  - `iter_keys` (cachedb vtable) — live entries only.
+  All four ride one lock-free walker (`pcache_ht_iter`): per-slot
+  optimistic snapshots, overflow chains under the overflow lock, Redis
+  SCAN-class guarantee (a concurrently-mutated entry may be seen once,
+  twice or not at all); the overflow leg runs under the overflow lock so
+  `iter_keys` callbacks must not re-enter the same cache. `perf_del`
+  collects matches lock-free, then removes per key — a glob delete is
+  not an atomic snapshot. The `remove_chunk`-equivalent MI folds into
+  CP-18: its `perf_del` takes a glob, not a single key. **Done
+  2026-07-24.**
 - **CP-08** Docs: `doc/cachedb_perf_admin.xml` + generated README.
-- **CP-18** Introspection MI (§5.2): `keys`, `scan`, `dump`, `get`, `set`,
-  `del`. `scan` is cursor-based and lock-free; `keys` is names-only with a
-  default limit; `dump` returns values only on explicit request. This is the
-  operability gap that makes `cachedb_local` hard to run — treat it as core,
-  not optional.
+- **CP-18** Introspection MI (§5.2): `perf_keys`, `perf_scan`, `perf_dump`,
+  `perf_get`, `perf_set`, `perf_del` — all `perf_`-prefixed per §5.2 (flat
+  MI namespace; consistency with the script functions). `perf_scan` is
+  cursor-based and lock-free; `perf_keys` is names-only with a default
+  limit; `perf_dump` returns values only on explicit request. This is the
+  operability gap that makes `cachedb_local` hard to run — treat it as
+  core, not optional.
 
 **Phase 3 — scale**
 - **CP-09** Segmented directory + linear-hashing growth (§3.4), including the
@@ -1000,7 +1171,10 @@ documented answer for anything large.
   inherent unswappability (§2.6.2 already skips `mlock` there); the shmem
   tiers lock chunks as they are committed. Backing (a) `shm_malloc` is
   immune — the whole shm pool is mapped pre-fork — one more reason v1 ships
-  on it.
+  on it. The reservation must additionally be **2M-aligned with chunks at
+  2M-congruent offsets** — shmem THP requires VA/offset congruence
+  (§2.6.1); an unaligned reservation makes every THP tier silently
+  ineligible.
 
 **Validation**
 - **CP-16** Correctness suite: concurrent readers/writers, TTL boundaries,
