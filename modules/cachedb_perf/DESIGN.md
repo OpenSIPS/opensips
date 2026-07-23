@@ -7,7 +7,7 @@ by URL scheme, but none of its internals.
 
 - Module: `cachedb_perf`
 - Scheme: `perf://`
-- Branch: `feature/cachedb-local-perf-devel` on `10.22.20.223:/dn/opensips-devel`
+- Branch: `feature/cachedb-perf-devel` on `10.22.20.223:/dn/opensips-devel`
 
 `cachedb_local` is left **completely untouched** by this branch.
 
