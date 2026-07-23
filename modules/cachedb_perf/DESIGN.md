@@ -198,6 +198,54 @@ design already applies this correctly in the three places it holds — deferred
 frees, replication (§5.3), and EVI events (CP-11) — all of which have a
 genuinely slow consumer.
 
+### 2.6 Memory backing: huge pages and pre-faulting
+
+OpenSIPS shm is `mmap(MAP_SHARED|MAP_ANONYMOUS)` (`mem/shm_mem.c:252`) with
+**no `MAP_POPULATE`, no `MAP_HUGETLB`, no `mlock` and no `madvise` anywhere**
+in `mem/` or `main.c`. So pages are demand-faulted on first touch, and a
+multi-hundred-MB cache runs entirely on 4 KB pages.
+
+Both effects were measured over a 256 MB region (`bench/hugetlb.c`), on the
+build target **223** (Xeon E5-2699 v4, kernel 6.8 — the same CPU as the
+PR #4114 benchmark host) and confirmed on **224** (kernel 6.12):
+
+| access pattern | 4K pages | 2M hugepages | gain (223 / 224) |
+|---|---|---|---|
+| independent random reads | 29.82 ns | 20.86 ns | **1.43× / 1.46×** |
+| dependent pointer chase | 172.37 ns | 145.14 ns | **1.19× / 1.24×** |
+
+Note the *independent* pattern benefits more, which is the opposite of the
+intuition that a dependent chain exposes TLB cost: in the chase, serialized
+DRAM latency dominates and hides the page walk, whereas parallel access makes
+page-walk bandwidth the bottleneck that huge pages relieve.
+
+Pre-fault cost for the same 256 MB:
+
+| mechanism | 223 | 224 |
+|---|---|---|
+| `memset` whole region | 1414.0 ms | 899.1 ms |
+| touch 1 byte per 4 K page | 291.2 ms | 198.2 ms |
+| **`MADV_POPULATE_WRITE`** | **177.4 ms** | **154.8 ms** |
+
+**Use `MADV_POPULATE_WRITE` where available, touch-per-page below Linux 5.14,
+never `memset`.** `mmap(MAP_ANON)` already returns zeroed pages, so zeroing
+buys nothing for correctness and costs 8× the bandwidth. Kernel spread matters
+even across our own build hosts: 223 is 6.8 and 224 is 6.12 (both have it),
+222 is **5.4** (does not).
+
+Note also what pre-faulting does and does not do: it **moves** the fault cost
+to startup rather than removing it. First touch costs ~287 ns/entry against a
+41 ns write, so the benefit is latency predictability during traffic, not
+throughput.
+
+**Caveats on `MAP_HUGETLB`.** It requires pages pre-reserved by the
+administrator (`vm.nr_hugepages`); unreserved, the `mmap` simply fails.
+Reserved pages are exclusive and unswappable — on a 3 GB VM like 223, a 320 MB
+reservation is over 10% of the machine, gone whether the cache uses it or not.
+SBC VMs are frequently sized like this. Therefore hugetlb must be **opt-in with
+a clean 4 K fallback**: a module that will not start without a sysctl is a
+module that gets rolled back.
+
 ## 3. Design
 
 Two designs from the literature converge on the same shape for precisely this
@@ -300,6 +348,25 @@ them. Three reasons:
 
 Optional later: address entries by 32-bit arena offset instead of 8-byte
 pointer, which raises slots-per-bucket from 6 to ~11 at the same 64 bytes.
+
+**The arena takes its chunks through a one-function backing-store interface**,
+so where the memory comes from stays a late-binding decision:
+
+```c
+void *pcache_chunk_alloc(size_t size);   /* (a) shm_malloc  - default, always works
+                                            (b) mmap MAP_HUGETLB - opt-in, CP-20 */
+```
+
+v1 ships on (a). §2.6 measures (b) as worth 1.19–1.43×, but it depends on a
+sysctl we do not control, so it is an opt-in follow-up rather than a v1
+dependency. Keeping it behind this one function means adding it later touches
+nothing in the bucket, read path or vtable.
+
+Whichever backing is used, the region must be created in `mod_init`
+(pre-fork, `MAP_SHARED`) and **never unmapped** — that is the invariant §3.2
+depends on. A dedicated mapping satisfies it even more clearly than shm does.
+Pre-fault it per §2.6: `MADV_POPULATE_WRITE`, else touch-per-page, never
+`memset`.
 
 ### 3.4 Growth
 
@@ -633,6 +700,18 @@ documented answer for anything large.
   costing ~5 300 CPS against ~9 000 for a dialog, because the worker blocks for
   the round trip.
 - **CP-19** Restart persistency (rpm), if wanted. Also not in v1.
+- **CP-20** Hugetlb backing store for the arena (§2.6, §3.3). Own
+  `mmap(MAP_SHARED|MAP_ANONYMOUS|MAP_HUGETLB)` behind
+  `pcache_chunk_alloc()`, worth a measured **1.19–1.43×**. Must be **opt-in**
+  with runtime detection and a clean 4 K fallback — `vm.nr_hugepages` is an
+  administrator action we cannot perform, reserved pages are exclusive and
+  unswappable, and a module that will not start without a sysctl gets rolled
+  back. Pre-fault with `MADV_POPULATE_WRITE` (5.14+; 223 and 224 have it, 222
+  does not), else touch-per-page. Also add a warm-up size modparam — unlike
+  `cache_collections` this degrades **gracefully** (too small: pages fault
+  later and self-correct; too large: wasted RAM), so it is an acceptable knob;
+  default it to the arena's initial chunk size. Memory taken outside shm will
+  not appear in `shm:` statistics, so CP-06 must report it.
 
 **Validation**
 - **CP-16** Correctness suite: concurrent readers/writers, TTL boundaries,

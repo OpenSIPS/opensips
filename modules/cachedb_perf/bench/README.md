@@ -24,6 +24,8 @@ not misses.
 | `concur` | Does the lock-on-every-read path limit scaling? (1/2/4/8 threads) |
 | `wbuf` | Does a write-staging buffer help? (shared vs per-process, + read penalty) |
 | `queue` | Does a queued producer/consumer write path help? (fixed thread budget) |
+| `warmup` | What does first-touch page faulting cost, and does pre-warming help? |
+| `hugetlb` | Do 2M huge pages help? Needs `sysctl -w vm.nr_hugepages=160` first |
 
 ## Caveats
 
