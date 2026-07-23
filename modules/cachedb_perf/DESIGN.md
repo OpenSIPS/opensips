@@ -286,6 +286,46 @@ Findings:
   version does not predict behaviour. The module must check the region's smaps
   and report the achieved tier through CP-06.
 
+### 2.6.2 Swap pinning (measured on 223, verified against the live SBC)
+
+Swap is real in this deployment: 223 carries 3.8 GB of swap and **test SBC 191
+has 1 GB with 20 MB already in use**. A swapped-out cache page turns a 130 ns
+read into a disk fault — and can occur *inside a writer's critical section*,
+violating §3.5b through the page-fault handler. The ladder also makes
+swappability inconsistent by accident: tier 1 (`MAP_HUGETLB`) is inherently
+unswappable, tiers 2–4 are shmem, which swaps.
+
+**Mechanism: `mlock()` the arena in `mod_init`.** All verified empirically
+(`bench/mlockt.c`), counters read from `/proc/meminfo`, never assumed:
+
+- `mlock` of 256 MB shows **Mlocked/Unevictable +255 MB**; `munlock` returns
+  it to baseline.
+- **Locks are not inherited across fork, but the pages are shared** — a child
+  with no lock of its own still sees the pages Mlocked globally, because the
+  pre-fork process holds the lock. So one `mlock` in `mod_init` pins the arena
+  for every worker, for as long as the main process lives. Post-fork chunks
+  (CP-09 growth) are locked by the allocating process; OpenSIPS workers are
+  permanent, so any long-lived process's lock suffices.
+- **Cold `mlock` doubles as the pre-fault**: it must populate to pin.
+  212–298 ms per 256 MB, versus 179 + 21 ms for `MADV_POPULATE_WRITE` + warm
+  lock — same work, one syscall. On kernels without `POPULATE_WRITE` (222's
+  5.4), `mlock` *is* the portable populate.
+- Order on the THP tiers: **collapse first, then lock**.
+- Tier 1 skips `mlock` entirely — hugetlb pages cannot swap and do not count
+  against `RLIMIT_MEMLOCK`.
+
+**The production blocker found while checking:** the SBC unit runs
+`User=opensips` with the systemd default `LimitMEMLOCK=65536` — the live
+opensips process on 191 has **Max locked memory = 64 KB**. `mlock` of any real
+arena fails there today. The fix is a one-line drop-in
+(`systemctl edit opensips` → `[Service] LimitMEMLOCK=infinity`), documented in
+CP-08. Ubuntu 24's defaults are ~484 MB, so the build host misleads here —
+another "verify on the real unit" case.
+
+Failure handling follows the ladder's rule: if `mlock` fails, log **one**
+warning naming `LimitMEMLOCK`, continue unpinned, and export the pinned state
+through CP-06 (`locked_mb`) — never fail startup over it.
+
 **Consequence for CP-20 — the fallback ladder**, all inside the single
 `pcache_chunk_alloc()`:
 

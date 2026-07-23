@@ -27,6 +27,7 @@ not misses.
 | `warmup` | What does first-touch page faulting cost, and does pre-warming help? |
 | `hugetlb` | Do 2M huge pages help? Needs `sysctl -w vm.nr_hugepages=160` first |
 | `hugetlb2` | Modern routes: `MADV_COLLAPSE`, THP-shmem, overcommit pool, 1GB pages. Takes a mode arg (`base`/`collapse`/`madvise`/`hugetlb`/`huge1g`) and verifies pages went huge via meminfo |
+| `mlockt` | Can the arena be pinned against swap? mlock cost, fork inheritance, meminfo verification |
 
 ## Caveats
 
