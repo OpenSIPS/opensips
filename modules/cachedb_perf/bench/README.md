@@ -28,6 +28,7 @@ not misses.
 | `hugetlb` | Do 2M huge pages help? Needs `sysctl -w vm.nr_hugepages=160` first |
 | `hugetlb2` | Modern routes: `MADV_COLLAPSE`, THP-shmem, overcommit pool, 1GB pages. Takes a mode arg (`base`/`collapse`/`madvise`/`hugetlb`/`huge1g`) and verifies pages went huge via meminfo |
 | `mlockt` | Can the arena be pinned against swap? mlock cost, fork inheritance, meminfo verification |
+| `rpath` | Is the seqlock the fastest read protocol? seqlock vs versionless-bump hybrid vs QSBR pointer-publication, with seqlock retries/1k reads (DESIGN 2.7) |
 
 ## Caveats
 
@@ -36,14 +37,21 @@ behaviour in a single process; they do not model shm allocation, multi-process
 coherence, or OpenSIPS locking primitives. Treat the numbers as ranking
 designs, not predicting throughput.
 
-`concur.c` is the only threaded one. Its result **refuted** the hypothesis it
-was written to confirm: `cachedb_local`'s lock-on-every-read does *not* wreck
-scaling (it scales 8.4× on 8 threads, because with 65 536 buckets workers
-rarely collide on a bucket lock). The proposed design's 3–4× is a
-per-operation constant factor — no atomic RMW on reads, one cache line per
-bucket, tag filtering — not a scaling win. Do not quote it as one. Note also
-that it gives `cachedb_local` its best case, a perfectly sized table; against
-the shipped 512-bucket default the gap is ~90×.
+`concur.c` and `rpath.c` are the threaded ones, and both results went
+*against* the hypothesis each was written to test. `concur.c` **refuted**
+lock-on-every-read as a scaling killer: `cachedb_local` scales 8.4× on 8
+threads, because with 65 536 buckets workers rarely collide on a bucket lock.
+The proposed design's 3–4× is a per-operation constant factor — no atomic RMW
+on reads, one cache line per bucket, tag filtering — not a scaling win. Do
+not quote it as one. Note also that it gives `cachedb_local` its best case, a
+perfectly sized table; against the shipped 512-bucket default the gap is
+~90×. `rpath.c` showed dropping the seqlock for QSBR pointer-publication
+reads is worth nothing at 100% reads — the version loads are free on x86/TSO
+— and pays only under single-hot-bucket write contention SIP traffic does not
+exhibit; only the versionless TTL bump survived into the design (CP-04).
+Note `concur.c`'s writers only bump versions (no slot churn), and its
+`tag | 1` mapping halves the tag alphabet — both fine for what it measures,
+neither to be copied into the module.
 
 `expire2.c` supersedes an earlier `expire.c` that was unsound: its
 min-expires hint was reset to a value that defeated skipping, its wheel loop

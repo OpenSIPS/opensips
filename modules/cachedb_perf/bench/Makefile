@@ -3,14 +3,14 @@
 
 CC      ?= gcc
 CFLAGS  ?= -O2 -Wall
-PROGS    = hashtest lookup structs worker expire2 concur wbuf queue warmup hugetlb hugetlb2 mlockt
+PROGS    = hashtest lookup structs worker expire2 concur wbuf queue warmup hugetlb hugetlb2 mlockt rpath
 
 all: $(PROGS)
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-concur wbuf queue: %: %.c
+concur wbuf queue rpath: %: %.c
 	$(CC) $(CFLAGS) -pthread -o $@ $<
 
 run: all
@@ -26,6 +26,7 @@ run: all
 	@echo; echo "=== 10. huge pages (needs: sysctl -w vm.nr_hugepages=160) ==="; ./hugetlb
 	@echo; echo "=== 11. modern routes: base/collapse/madvise/hugetlb/huge1g ==="; ./hugetlb2 base
 	@echo; echo "=== 12. swap pinning (mlock) ==="; ./mlockt
+	@echo; echo "=== 13. read-path protocols: seqlock / hybrid / qsbr ==="; ./rpath
 
 clean:
 	rm -f $(PROGS)

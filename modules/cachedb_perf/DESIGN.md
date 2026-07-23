@@ -111,7 +111,9 @@ scaling win.
 Two caveats worth keeping honest: this gave `cachedb_local` its **best case**
 (a perfectly sized table); against the shipped 512-bucket default the gap is
 ~90×. And it is threads, not processes — cache coherence behaves identically,
-but OpenSIPS workers are processes sharing shm.
+but OpenSIPS workers are processes sharing shm. Note also that `concur.c`'s
+writers only bump versions — no insert/remove/relink churn — so it prices the
+read protocol; churn correctness is CP-16's job.
 
 ### 2.4 Expiry is not a CPU problem
 
@@ -339,6 +341,54 @@ through CP-06 (`locked_mb`) — never fail startup over it.
 Each tier degrades to the next; no tier can prevent startup; CP-06 reports the
 tier actually achieved and the huge-page coverage in MB.
 
+### 2.7 Read-path protocol: seqlock vs pointer-publication (QSBR) — measured
+
+Is the seqlock the fastest possible read protocol? The one credible
+alternative is to make the **slot pointer the unit of publication**: readers
+do one acquire load of `slot[s]` and no version check at all; entries are
+immutable while visible (a value update writes a shadow entry and swaps the
+pointer with a release store); reclamation waits for a grace period (QSBR —
+every process observed outside a cachedb op since the free). Readers then
+never retry and can never be blocked, even by a writer SIGKILLed mid-update.
+
+`bench/rpath.c` measures three variants on the same 64-byte bucket: **S** —
+§3.2 as written; **H** — seqlock reads plus the versionless TTL bump (below);
+**Q** — full QSBR. Writes are 7/8 TTL bump + 1/8 value rewrite, the
+`th_store` refresh shape. Mops/s on 223:
+
+| mix | thr | S seqlock | H hybrid | Q qsbr | S retries/1k reads |
+|---|---|---|---|---|---|
+| 100% read, uniform | 8 | 162.1 | 157.4 | 166.2 | 0 |
+| 95/5, uniform | 8 | 112.7 | 120.8 | 125.6 | 1.2 |
+| 50/50, one hot key | 2 | 9.8 | 15.3 | 18.1 | 588 |
+| 50/50, one hot key | 8 | 4.7 | 6.1 | 6.8 | 1373 |
+
+(The hot-bucket mode degenerates to a single hot key by construction — the
+honest worst case.)
+
+Three findings:
+
+- **At 100% reads the three are identical within noise.** On x86/TSO the two
+  version loads hit the bucket line the tag scan already loaded — the seqlock
+  read protocol is *free*. QSBR is not a read-speed win.
+- **QSBR pays only under write contention on one hot bucket** (where S shows
+  588–1900 retries/1k reads), a profile uniform SIP traffic does not exhibit
+  (1.2/1k at 95/5). Contention that rare does not justify per-process
+  quiescence tracking in shm plus its interplay with dead-process recovery.
+  **Ruled out — §4.**
+- **The versionless TTL bump is the useful part, and it needs none of that
+  machinery.** A `set()` that finds the stored value byte-identical and only
+  changes `expires` takes the bucket lock but **skips the version bumps and
+  the `memcpy`**: the only mutation is one aligned 4-byte store, which
+  readers cannot tear, so concurrent readers of the bucket are undisturbed
+  instead of retrying. +7% at 8 threads uniform 95/5, +25–57% on the hot
+  bucket — on the motivating workload's dominant write. Adopted into CP-04.
+  The expired-as-absent check may observe old-or-new `expires`; both are
+  valid, and §3.5 already makes expiry timing non-correctness.
+
+The observed seqlock retry rate is also the right contention metric for
+CP-06 — adapt on the effect, never a predicted cause.
+
 ## 3. Design
 
 Two designs from the literature converge on the same shape for precisely this
@@ -378,6 +428,13 @@ requires. Taking it from the bucket's own spare bytes costs nothing and keeps
 bytes already there and covers 4096 processes. The bucket stays **exactly 64
 bytes** — assert it.
 
+The 64-byte claim is per lock backend: `gen_lock_t` is 4 bytes under the
+futex and fastlock backends (`futex_lock.h:50`), but `pthread_mutex_t`
+(40 bytes) under `USE_PTHREAD_MUTEX` and a debug struct under `DBG_LOCK` —
+there the compile-time assert fires by design. Make the assert message say
+"cachedb_perf requires a 4-byte lock backend", not just that a size differs;
+a two-cache-line bucket fallback can be added if such a build ever matters.
+
 Recovery is the *worker's* job, never a reader's or writer's: they must treat
 a stuck lock as simply contended (the §3.2 fallback already handles waiting).
 Only the worker checks liveness via the process table and only it may force a
@@ -387,6 +444,12 @@ Lookup: mask to a bucket, compare 6 one-byte tags, and only dereference a slot
 whose tag matches. A tag rejects ~255/256 of non-matching slots without
 touching a second cache line — which is the whole point, since the pointer
 chase is the expensive part.
+
+Two tag-scan details. Map a zero tag byte as `t ? t : 1`, never `t | 1` —
+OR-ing halves the tag alphabet to 128 values and doubles false-positive
+dereferences (`bench/concur.c` does this; do not copy it). And scan all six
+tags with one aligned 8-byte load of bucket bytes 8–15 plus the SWAR
+has-zero trick, rather than a byte loop.
 
 ### 3.2 Optimistic reads, and why they are safe here
 
@@ -425,6 +488,37 @@ check** — never return a pointer into the table.
 This is exactly why the slab arena (§3.3) is not optional: entries must never
 leave the arena, or the guarantee breaks.
 
+**Copy-out rules — what the optimistic section may trust.** The version
+re-check validates the copy only *after* it completes, so nothing read inside
+the optimistic section may be used to size or address further memory access
+without a bound. A stale slot pointer can point into memory the maintenance
+worker has already recycled, and the bytes at the `vlen` offset are then
+arbitrary — "garbage but not a fault" holds for *dereferencing*, not for an
+unbounded `memcpy`, which runs off the end of the arena mapping and faults.
+Four rules:
+
+1. Clamp `klen`/`vlen` to the size-class bound taken from the chunk header —
+   trustworthy even through a stale pointer because chunks are permanently
+   class-bound (§3.3).
+2. Check `ptr` and `ptr + len` against the arena extents before copying.
+   Extents only grow, so an unlocked read of them is safe.
+3. Copy into a per-process scratch buffer of the maximum class size, *then*
+   re-check the version, and only then `pkg_malloc` the exact length for the
+   caller.
+4. Lay out `vlen` and `expires` naturally aligned (§3.3), so their loads are
+   single-copy-atomic and a torn length cannot be observed at all on x86.
+
+**Version wrap — accepted.** A false match needs a reader preempted across
+exactly 2³² version increments of one bucket: at the ~20 M lock-serialized
+writes/s a single bucket can sustain, that is a ≥3.5-minute preemption
+mid-read. Not worth widening the field.
+
+**A dead writer and the read fallback.** A reader that exhausts its retries
+falls back to `lock_get` on a lock whose holder may have been SIGKILLed; it
+then sleeps until the maintenance worker recovers the bucket (§3.5b). The
+recovery sweep interval is therefore the worst-case read stall and must be
+documented as such.
+
 ### 3.3 Slab arena
 
 Large chunks taken from shm once, entries sub-allocated in size classes inside
@@ -438,6 +532,33 @@ them. Three reasons:
    in place when the value fits.
 3. It is the precondition for any compaction. You cannot compact `shm_malloc`
    directly — no placement control.
+
+**Chunks are permanently bound to their size class.** A chunk, once assigned
+to a class, is never repurposed to another, and compaction (CP-10) is
+within-class only. This is not an allocator preference — it is load-bearing
+for §3.2: the copy-out clamp derives its bound from the chunk header through
+a pointer that may be stale, and only immutable, permanently-classed chunk
+headers make that bound trustworthy.
+
+**Entry layout** — specified here because line economy is the entire game:
+
+```c
+struct pcache_rec {
+    unsigned          hash;     /* full 32-bit hash: split relink without
+                                   rehashing (§3.4); memcmp skip on tag
+                                   collision; hash-in-node was worth
+                                   111->86 ns even for plain chains (§2.2) */
+    unsigned          vlen;     /* naturally aligned - single-copy-atomic */
+    volatile unsigned expires;  /* naturally aligned - the TTL bump is one
+                                   atomic store (§2.7, CP-04) */
+    unsigned short    klen;
+    unsigned short    flags;    /* PCACHE_F_INT: native counter (CP-04) */
+    char              data[];   /* key, then value, contiguous */
+};
+```
+
+Key and the start of the value share the entry's first cache line, so a
+counter-sized hit costs two lines total: bucket + this.
 
 Optional later: address entries by 32-bit arena offset instead of 8-byte
 pointer, which raises slots-per-bucket from 6 to ~11 at the same 64 bytes.
@@ -465,10 +586,30 @@ Pre-fault it per §2.6: `MADV_POPULATE_WRITE`, else touch-per-page, never
 
 Segmented directory (a directory of fixed 4096-bucket segments) plus linear
 hashing. Growth appends a segment, so **existing buckets never move** — no
-pointer invalidation and no RCU/epoch problem across processes. Splits happen
-one bucket at a time under that bucket's lock. Publish `(level, split)` as a
-single 64-bit word only *after* a split completes, so a racing reader sees
-either pre- or post-split state; both are correct.
+pointer invalidation and no RCU/epoch problem across processes. The directory
+itself is pre-allocated at its maximum (2²⁴ max buckets / 4096 per segment =
+4096 segment slots, 32 KB), so it never relocates either. Splits happen one
+bucket at a time under that bucket's lock, and `(level, split)` is published
+as a single 64-bit word only *after* a split completes.
+
+**Publish-after-split alone is not sufficient.** The failing interleaving: a
+reader loads the old word and routes to bucket `s`; the splitter finishes
+relinking (the key now lives in `s + 2^level`) and publishes; the reader's
+optimistic pass over `s` begins *after* the split writer released — a
+perfectly stable post-split bucket that no longer contains the key. Clean
+seqlock pass, false miss: pre-split routing over post-split content. Two
+rules close it, one line of code each:
+
+- **Reader, miss path only:** after a miss, re-read the routing word; if it
+  changed since the probe was routed, recompute the bucket and retry. Hits
+  cannot be false, and the extra load is on a read-mostly line.
+- **Writer:** after `lock_get`, re-verify the routing word still maps the key
+  to this bucket; if not, release and re-route. Otherwise an insert racing a
+  split lands in the pre-split bucket and is permanently invisible to
+  post-split readers.
+
+Splits relink entries by the full hash stored in the entry (§3.3) — splitting
+a bucket rehashes nothing.
 
 ### 3.5 Expiry
 
@@ -621,6 +762,13 @@ measure occupancy; revisit only if memory becomes the constraint.
   needs to be told. More generally: **adapt on the effect, not the cause** —
   key off observed seqlock retry rate (real contention), observed load factor,
   and observed expiry rate; never off a predicted workload mix.
+- **Dropping the seqlock for pointer-publication reads (QSBR).** Measured
+  (§2.7): identical at 100% reads — on x86/TSO the version loads are free —
+  and ahead only under single-hot-bucket write contention that SIP traffic
+  does not exhibit. It would cost per-process quiescence tracking in shm plus
+  its interplay with dead-process recovery, and it forbids in-place updates.
+  The one genuinely useful piece — the versionless TTL bump — is adopted into
+  CP-04 without any of that machinery.
 
 ## 5. Compatibility
 
@@ -725,10 +873,15 @@ It is simply not usable at scale:
 Two properties make `scan` sound here, both falling out of choices already made
 for other reasons:
 
-- **Buckets never move** (§3.4 — growth appends a segment), so a cursor is just
-  a `(segment, bucket)` index and stays valid across a resize. This is the same
-  property Redis's SCAN guarantee rests on: an element present for the whole
-  iteration is returned at least once.
+- **Buckets never move** (§3.4 — growth appends a segment), so a cursor is
+  just a `(segment, bucket)` index and stays valid across a resize. The
+  ≥-once guarantee (an element present for the whole iteration is returned at
+  least once) holds for a plain **ascending** cursor because linear hashing
+  only ever moves entries *forward*: a split sends entries from bucket `s` to
+  `s + 2^level` and there is no shrink, so an entry is either still in place
+  when the cursor arrives or has moved to a bucket the cursor has not reached
+  yet. Redis needs reverse-binary cursor masking for the same guarantee
+  because it rehashes the whole table; here ascending order suffices.
 - **Seqlock reads take no locks** (§3.2), so unlike `cachedb_local`'s scan a
   `keys`/`scan` pass cannot stall writers, and `count` bounds the work per call.
 
@@ -744,17 +897,36 @@ documented answer for anything large.
   `1 << coll_size` on an unbounded unsigned (`cachedb_local.c:895,940`) is UB
   at `th=32` and yields a zero-size table at `th=64`; do not reproduce it.
 - **CP-02** Slab arena: size classes, alloc/free, never returns to shm.
-- **CP-03** Bucket + tags + seqlock: the 64-byte layout, optimistic read,
-  writer path. Assert `sizeof(bucket) == 64` at compile time.
+- **CP-03** Bucket + tags + seqlock: the 64-byte layout, optimistic read with
+  the §3.2 copy-out rules (clamp, arena-extent check, per-process scratch,
+  natural alignment), writer path, tag mapping `t ? t : 1`, SWAR tag scan
+  (§3.1). Assert `sizeof(bucket) == 64` at compile time — fires by design
+  under non-4-byte lock backends (§3.1); say so in the message.
 - **CP-04** `cachedb_funcs` vtable: get/set/remove/add/sub/get_counter,
-  in-place update when the value fits.
+  in-place update when the value fits. Two specifics:
+  - **Versionless TTL bump** (§2.7): a `set()` whose value is byte-identical
+    to the stored one takes the bucket lock but skips the version bumps and
+    the `memcpy` — one atomic `expires` store. Measured +7% at 8 threads
+    uniform 95/5, +25–57% on a hot bucket, on the motivating workload's
+    dominant write.
+  - **Native counters**: the first `add` on an absent key stores an int64 and
+    sets `PCACHE_F_INT`; arithmetic is then fixed-width under the bucket lock
+    and formatting happens on `get` — no parse/format/realloc inside the
+    critical section, keeping §3.5b rule 3 for the counter workload.
 
 **Phase 2 — correctness and operability**
 - **CP-05** Expiry: per-bucket `min_expires`, frequent sweep, expired-as-absent
   on read.
 - **CP-06** Statistics + MI dump: entries, buckets, load factor, avg/max probe,
-  arena occupancy, bytes. `cachedb_local` exports **zero** statistics, which is
-  why the 20× cliff was invisible; do not repeat that.
+  arena occupancy, bytes, seqlock retry rate (§2.7 — the contention signal
+  this design adapts on). `cachedb_local` exports **zero** statistics, which is
+  why the 20× cliff was invisible; do not repeat that. **Hard rule: never
+  count per-operation events through `update_stat()`** — it is an
+  `atomic_fetch_add` on a single shared variable (`statistics.h:240`), i.e.
+  the §2.5 shared-cache-line collapse (0.72× at 8 threads) installed
+  permanently in the hot path by the observability feature. Per-process
+  counter cache lines, plain increments, summed at read time behind
+  `STAT_IS_FUNC`.
 - **CP-07** `iter_keys` plus the `cache_remove_chunk` script function and the
   `remove_chunk` MI, matching `cachedb_local` semantics for parity.
 - **CP-08** Docs: `doc/cachedb_perf_admin.xml` + generated README.
@@ -765,11 +937,13 @@ documented answer for anything large.
   not optional.
 
 **Phase 3 — scale**
-- **CP-09** Segmented directory + linear-hashing growth (§3.4).
+- **CP-09** Segmented directory + linear-hashing growth (§3.4), including the
+  split/miss re-route protocol and the pre-allocated maximum directory.
 - **CP-10** Background maintenance worker via `proc_export_t` (pattern
   `rtpengine.c:795`): incremental splits, arena compaction. Rules: never hold
   more than one bucket lock at a time; bounded work per wakeup with a yield;
-  `PROC_FLAG_HAS_IPC` if MI-triggered.
+  `PROC_FLAG_HAS_IPC` if MI-triggered; compaction is within-class only —
+  chunks never change size class (§3.3, load-bearing for the read path).
 
 **Phase 4 — optional**
 - **CP-11** `E_CACHEDB_PERF_EXPIRED` event, gated by `evi_probe_event()`
@@ -810,11 +984,32 @@ documented answer for anything large.
   `cache_collections`; default to the arena's initial chunk size. 1 GB pages
   ruled out (§2.6.1): runtime allocation is unobtainable and 2 MB pages
   already give a ≤1 GB arena full TLB residency on Broadwell.
+  **Growth interaction — pre-reserve, never map post-fork.** A
+  `mmap(MAP_SHARED|MAP_ANONYMOUS)` created *after* fork is private to the
+  creating process — sharing is established by inheritance at fork or by a
+  file object, never retroactively — so a growth chunk mapped by one worker
+  would be invisible to every other worker: a split-brain table with no
+  crash. The mmap tiers must therefore **reserve the maximum arena VA in
+  `mod_init`** and only commit within it afterwards. The tiers support this
+  naturally: overcommit `MAP_HUGETLB` faults pages at first touch (nothing
+  held while unused — the §2.6.1 property), the 4 K tier reserves with
+  `MAP_NORESERVE`, and `MADV_COLLAPSE` retrofits an *existing* shared
+  mapping, making it the one tier that is post-fork-safe as-is. Note the
+  pinning tension: `mlock` cannot pin pages that have not faulted, so lazy
+  commit and full pre-pinning conflict — resolved for tier 1 by hugetlb's
+  inherent unswappability (§2.6.2 already skips `mlock` there); the shmem
+  tiers lock chunks as they are committed. Backing (a) `shm_malloc` is
+  immune — the whole shm pool is mapped pre-fork — one more reason v1 ships
+  on it.
 
 **Validation**
 - **CP-16** Correctness suite: concurrent readers/writers, TTL boundaries,
   overwrite-in-place, arena reuse, seqlock retry under contention (ThreadSanitizer
-  or equivalent), and a soak test against `cachedb_local` as oracle.
+  or equivalent), and a soak test against `cachedb_local` as oracle. Must
+  cover slot churn (insert/remove/relink) under concurrent readers and the
+  §3.4 split race specifically — `bench/concur.c`'s writers only bump
+  versions and cannot catch either; `bench/rpath.c`'s retry counting carries
+  over.
 - **CP-17** Re-run the `th_store` benchmark from PR #4114 with `perf://` and
   compare against the `cachedb_local` and dialog rows.
 
@@ -829,6 +1024,9 @@ reproduce on **10.22.20.223** (Ubuntu 24) within ~10%: the sorted-bucket result
 measures 16.5× there vs 18.6×, the expiry hint 26.7× vs 29.8×. Absolute
 nanoseconds differ with CPU; the ranking and order-of-magnitude conclusions do
 not. `concur.c` needs `-pthread` and reports Mops/s at 1/2/4/8 threads.
+`rpath.c` (§2.7, also `-pthread`) compares the read-path protocols — seqlock /
+versionless-bump hybrid / QSBR — and reports Mops/s plus seqlock retries per
+1 000 reads; its hot-bucket mode degenerates to one hot key by construction.
 
 The rig is a model, not the module: it measures structure and cache behaviour
 in a single process with threads. It does not model shm allocation, multi-process
