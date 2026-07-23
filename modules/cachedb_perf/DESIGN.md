@@ -165,16 +165,26 @@ chase is the expensive part.
 Readers take **no lock**:
 
 ```
-do {
+for (tries = 0; tries < PCACHE_SEQ_RETRIES; tries++) {
     v1 = load_acquire(version);
-    if (v1 & 1) continue;              /* writer inside, retry */
+    if (v1 & 1) { cpu_relax(); continue; }   /* writer inside */
     ... scan tags, deref match, COPY the value out ...
     fence_acquire();
     v2 = load_relaxed(version);
-} while (v1 != v2 || (v1 & 1));
+    if (v1 == v2)
+        return HIT;                          /* copy is trustworthy */
+}
+/* fell through: a writer is stalled mid-update. Do NOT keep spinning -
+ * take the bucket lock, which sleeps under futex, and read under it. */
+lock_get(&b->lock); ... read ... lock_release(&b->lock);
 ```
 
 Writers take the bucket lock, bump `version` to odd, mutate, bump to even.
+
+**The bounded retry is not optional.** An unbounded `while (v1 != v2)` livelocks
+if the writer is preempted between the two version bumps: every reader spins on
+a value that cannot change until the writer is rescheduled. The fallback
+converts that into a bounded wait. See §3.7.
 
 The usual blocker is that a reader may dereference a pointer a writer is
 concurrently freeing — `libcuckoo` takes read locks specifically for this, at a
@@ -218,6 +228,73 @@ either pre- or post-split state; both are correct.
 Per-bucket `min_expires` (§2.4), swept frequently. Expired entries are also
 treated as absent on read, as in `cachedb_local`, so expiry timing is memory
 reclamation only and never correctness.
+
+### 3.5b Preemption: it cannot be prevented, only made harmless
+
+There is **no userspace primitive on Linux to prevent preemption**. A worker
+can be descheduled at any instruction, including while holding a bucket lock,
+and nothing in the module can stop that. So the design target is not "do not
+get interrupted" — it is "being interrupted costs nobody anything". Four rules:
+
+**1. Readers never block anyone.** The lock-free read path (§3.2) means a
+preempted reader has zero effect on other processes. This is the single most
+valuable property here and it is why the seqlock design was chosen.
+
+**2. Bounded retry on the read path.** Without it, a writer preempted between
+its two version bumps livelocks every reader (§3.2). Bounded retries plus a
+lock fallback turn an unbounded spin into a bounded wait.
+
+**3. Nothing slow inside a writer's critical section.** Between `lock_get` and
+`lock_release` a writer must not: allocate or free, log, make a syscall, or
+call into any other subsystem that takes a lock. Target is tens of nanoseconds
+— a few stores and a `memcpy`.
+
+`cachedb_local` violates this in five places, and it is instructive: it calls
+the shm allocator while holding a bucket lock — `func_free` at `hash.c:166`
+(via `lcache_htable_remove_safe`), `:290`, `:432`, `:510`, and `func_realloc`
+at `:325`. That nests the bucket lock inside the shm allocator's own lock,
+making the critical section unboundedly long and creating a lock-order
+dependency between two unrelated subsystems. A preemption there stalls every
+process that wants that bucket.
+
+`cachedb_perf` avoids it structurally: the slab arena (§3.3) sub-allocates
+without a global lock, updates in place when the value fits, and **defers
+frees** — a writer pushes a dead entry onto a per-process free list and the
+maintenance worker (CP-10) reclaims it later. No allocator call ever happens
+under a bucket lock.
+
+**4. Let the lock sleep rather than spin.** `futex_lock.h` implements an
+adaptive lock that spins briefly and then sleeps (`USE_FUTEX`, documented in
+`Makefile.defs:609`). Use `gen_lock_t` and inherit whatever the build selects —
+do not hand-roll a spinlock, which would burn cores while a preempted holder
+waits to be rescheduled.
+
+**What not to do.** Real-time scheduling (`SCHED_FIFO`) is worse, not better:
+an RT process spinning on a lock held by a preempted normal-priority process
+can prevent that process from ever running — classic priority inversion, and it
+can hang the box. CPU pinning does not prevent preemption. Neither belongs
+here.
+
+**What is and is not atomic.** Being uninterrupted is not the same as being
+atomic, and the guarantee offered should be stated exactly:
+
+- A single `get` / `set` / `remove` is atomic with respect to other processes.
+  A reader sees the state either fully before or fully after a write, never a
+  torn one — that is what the version counter enforces.
+- `add` / `sub` are atomic read-modify-write: the writer holds the bucket lock
+  across the whole read-compute-write, so two processes incrementing the same
+  counter cannot lose an update.
+- **Operations on different keys are not atomic with respect to each other.**
+  There are no multi-key transactions and none are planned. A caller needing
+  two keys to change together must not assume it.
+
+**The irreducible residue.** If a process is `SIGKILL`ed while holding a bucket
+lock, that lock is stuck forever — there is no owner left to release it. This
+is true of *every* shm spinlock in OpenSIPS, not just this module, and it is
+not solved anywhere in the codebase. The only real mitigation is rule 3: a
+critical section of tens of nanoseconds makes the window vanishingly small.
+Optionally the lock word can carry the owner PID so the maintenance worker can
+detect a dead holder and recover; decide during CP-03.
 
 ### 3.6 Threads vs processes — use neither pthreads nor thread-local state
 
