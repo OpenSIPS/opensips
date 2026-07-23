@@ -432,6 +432,9 @@ modparam("dialog", "db_update_period", 120)
 The interval (seconds) at which OpenSIPS will generate in-dialog
 OPTIONS pings for one or both of the involved parties.
 
+This global value may be overridden per dialog through
+[$DLG_options_ping_interval](#pv_DLG_options_ping_interval).
+
 
 *Default value is "30".*
 
@@ -448,6 +451,9 @@ modparam("dialog", "options_ping_interval", 20)
 
 The interval (seconds) at which OpenSIPS will generate in-dialog
 Re-INVITE pings for one or both of the involved parties.
+
+This global value may be overridden per dialog through
+[$DLG_reinvite_ping_interval](#pv_DLG_reinvite_ping_interval).
 
 
 **Important:** the ping timeout detection
@@ -3033,6 +3039,66 @@ module param) for the delete delaying.
 
 The variable must be used when the context of a dialog is
 available in script.
+
+
+#### $DLG_options_ping_interval
+
+
+Used to set the in-dialog OPTIONS ping interval, in seconds, for
+the current dialog. The value must be positive and the dialog must
+have OPTIONS pinging enabled through the
+"options-ping-caller" and/or
+"options-ping-callee" flags of
+[create dialog](#func_create_dialog).
+
+When assigned before the dialog is matched or created, the value is
+stored in the current processing context and applied once the dialog
+is available. When assigned on an already confirmed dialog, the
+OPTIONS ping timer is rescheduled immediately. Assignments from
+*local_route* while a generated OPTIONS ping is
+being sent are applied to the dialog and used when the current ping
+cycle schedules the next ping.
+
+When read, the variable returns the configured interval before the
+dialog is confirmed and the number of seconds until the next OPTIONS
+ping after the dialog is confirmed. NULL is returned if there is no
+dialog or processing context, or if OPTIONS pinging is not enabled
+for the dialog.
+
+The custom interval is replicated to backup nodes when dialog
+replication is enabled. It is not stored in the dialog database;
+dialogs restored from DB use the
+[options ping interval](#param_options_ping_interval) module parameter.
+
+
+#### $DLG_reinvite_ping_interval
+
+
+Used to set the in-dialog Re-INVITE ping interval, in seconds, for
+the current dialog. The value must be positive and the dialog must
+have Re-INVITE pinging enabled through the
+"reinvite-ping-caller" and/or
+"reinvite-ping-callee" flags of
+[create dialog](#func_create_dialog).
+
+When assigned before the dialog is matched or created, the value is
+stored in the current processing context and applied once the dialog
+is available. When assigned on an already confirmed dialog, the
+Re-INVITE ping timer is rescheduled immediately. Assignments from
+*local_route* while a generated Re-INVITE ping is
+being sent are applied to the dialog and used when the current ping
+cycle schedules the next ping.
+
+When read, the variable returns the configured interval before the
+dialog is confirmed and the number of seconds until the next
+Re-INVITE ping after the dialog is confirmed. NULL is returned if
+there is no dialog or processing context, or if Re-INVITE pinging is
+not enabled for the dialog.
+
+The custom interval is replicated to backup nodes when dialog
+replication is enabled. It is not stored in the dialog database;
+dialogs restored from DB use the
+[reinvite ping interval](#param_reinvite_ping_interval) module parameter.
 
 
 #### $DLG_json

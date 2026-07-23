@@ -521,6 +521,10 @@ modparam("dialog", "db_update_period", 120)
 		OPTIONS pings for one or both of the involved parties.
 		</para>
 		<para>
+		This global value may be overridden per dialog through
+		<xref linkend="pv_DLG_options_ping_interval"/>.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>30</quote>.
 		</emphasis>
@@ -540,6 +544,10 @@ modparam("dialog", "options_ping_interval", 20)
 		<para>
 		The interval (seconds) at which OpenSIPS will generate in-dialog
 		Re-INVITE pings for one or both of the involved parties.
+		</para>
+		<para>
+		This global value may be overridden per dialog through
+		<xref linkend="pv_DLG_reinvite_ping_interval"/>.
 		</para>
 		<para>
 		<emphasis role='bold'>Important:</emphasis> the ping timeout detection
@@ -3574,6 +3582,74 @@ route {
 			<para>
 				The variable must be used when the context of a dialog is
 				available in script.
+			</para>
+		</section>
+
+		<section id="pv_DLG_options_ping_interval" xreflabel="$DLG_options_ping_interval">
+			<title><varname>$DLG_options_ping_interval</varname></title>
+			<para>
+				Used to set the in-dialog OPTIONS ping interval, in seconds, for
+				the current dialog. The value must be positive and the dialog must
+				have OPTIONS pinging enabled through the
+				<quote>options-ping-caller</quote> and/or
+				<quote>options-ping-callee</quote> flags of
+				<xref linkend="func_create_dialog"/>.
+			</para>
+			<para>
+				When assigned before the dialog is matched or created, the value is
+				stored in the current processing context and applied once the dialog
+				is available. When assigned on an already confirmed dialog, the
+				OPTIONS ping timer is rescheduled immediately. Assignments from
+				<emphasis>local_route</emphasis> while a generated OPTIONS ping is
+				being sent are applied to the dialog and used when the current ping
+				cycle schedules the next ping.
+			</para>
+			<para>
+				When read, the variable returns the configured interval before the
+				dialog is confirmed and the number of seconds until the next OPTIONS
+				ping after the dialog is confirmed. NULL is returned if there is no
+				dialog or processing context, or if OPTIONS pinging is not enabled
+				for the dialog.
+			</para>
+			<para>
+				The custom interval is replicated to backup nodes when dialog
+				replication is enabled. It is not stored in the dialog database;
+				dialogs restored from DB use the
+				<xref linkend="param_options_ping_interval"/> module parameter.
+			</para>
+		</section>
+
+		<section id="pv_DLG_reinvite_ping_interval" xreflabel="$DLG_reinvite_ping_interval">
+			<title><varname>$DLG_reinvite_ping_interval</varname></title>
+			<para>
+				Used to set the in-dialog Re-INVITE ping interval, in seconds, for
+				the current dialog. The value must be positive and the dialog must
+				have Re-INVITE pinging enabled through the
+				<quote>reinvite-ping-caller</quote> and/or
+				<quote>reinvite-ping-callee</quote> flags of
+				<xref linkend="func_create_dialog"/>.
+			</para>
+			<para>
+				When assigned before the dialog is matched or created, the value is
+				stored in the current processing context and applied once the dialog
+				is available. When assigned on an already confirmed dialog, the
+				Re-INVITE ping timer is rescheduled immediately. Assignments from
+				<emphasis>local_route</emphasis> while a generated Re-INVITE ping is
+				being sent are applied to the dialog and used when the current ping
+				cycle schedules the next ping.
+			</para>
+			<para>
+				When read, the variable returns the configured interval before the
+				dialog is confirmed and the number of seconds until the next
+				Re-INVITE ping after the dialog is confirmed. NULL is returned if
+				there is no dialog or processing context, or if Re-INVITE pinging is
+				not enabled for the dialog.
+			</para>
+			<para>
+				The custom interval is replicated to backup nodes when dialog
+				replication is enabled. It is not stored in the dialog database;
+				dialogs restored from DB use the
+				<xref linkend="param_reinvite_ping_interval"/> module parameter.
 			</para>
 		</section>
 
