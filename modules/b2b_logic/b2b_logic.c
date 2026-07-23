@@ -1048,6 +1048,7 @@ static str bridge_flags[] =
 	str_init("hold"),            /* B2BL_BR_FLAG_HOLD */
 	str_init("no-late-sdp"),     /* B2BL_BR_FLAG_RENEW_SDP */
 	str_init("propagate-avps"),  /* B2BL_BR_FLAG_PROPAGATE_AVPS */
+	str_init("provmedia-extra-headers"), /* B2BL_BR_FLAG_PROV_MEDIA_EXTRA_HEADERS */
 	STR_NULL
 };
 static str bridge_kv_flags[] =

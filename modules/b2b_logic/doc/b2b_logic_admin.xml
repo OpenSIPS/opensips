@@ -763,6 +763,12 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 			(the initial entities are already connected). At least one of the two entities
 			has to be a new client entity.
 		</para>
+		<para>
+			When a <emphasis>provmedia_uri</emphasis> is used together with the
+			<emphasis>provmedia-extra-headers</emphasis> flag, the extra headers
+			configured for the new client entity through <xref linkend="func_b2b_client_new"/>
+			are also added to the INVITE sent to the provisional media server.
+		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
@@ -816,6 +822,11 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 					helpful when doing in-dialog authentication that requires the stored
 					AVPs for username and password, but can also be useful to store other
 					information across the bridge.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>provmedia-extra-headers</emphasis> - Add the extra headers
+					configured for the new client entity to the INVITE sent to the
+					provisional media server.
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>

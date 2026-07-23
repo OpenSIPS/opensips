@@ -1551,6 +1551,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	b2bl_entity_id_t* bridge_entities[2];
 	b2bl_entity_id_t* entity = NULL;
 	str *hdrs = NULL;
+	str *provmedia_hdrs;
 	int i;
 
 	memset(bridge_entities, 0, 2*sizeof(b2bl_entity_id_t*));
@@ -1596,6 +1597,9 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	if (provmedia_uri)
 		tuple->bridge_flags |= B2BL_BR_FLAG_PROV_MEDIA;
 
+	provmedia_hdrs =
+		(tuple->bridge_flags & B2BL_BR_FLAG_PROV_MEDIA_EXTRA_HEADERS) ? hdrs : NULL;
+
 	/* I have the two entities ->  now do the first step of the bridging scenario
 	 * -> send reInvite or Invite to one of the parties */
 	if(old_entity)
@@ -1605,7 +1609,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 		if (tuple->bridge_flags & B2BL_BR_FLAG_HOLD) {
 			/* put the old entity on hold first */
 			if (bridging_start_hold(tuple, old_entity, bridge_entities[1],
-				provmedia_uri, hdrs) < 0) {
+				provmedia_uri, provmedia_hdrs) < 0) {
 				LM_ERR("Failed to put old entity on hold\n");
 				goto error;
 			}
@@ -1615,7 +1619,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 			if (provmedia_uri) {
 				/* connect the old entity with the prov media server */
 				if (bridging_start_old_ent(tuple, old_entity, bridge_entities[1],
-					provmedia_uri, NULL, hdrs) < 0) {
+					provmedia_uri, NULL, provmedia_hdrs) < 0) {
 					LM_ERR("Failed to start bridging with provisional media\n");
 					goto error;
 				}
@@ -1637,7 +1641,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 			if (provmedia_uri) {
 				/* connect the old entity with the prov media server */
 				if (bridging_start_old_ent(tuple, old_entity, bridge_entities[1],
-					provmedia_uri, NULL, hdrs) < 0) {
+					provmedia_uri, NULL, provmedia_hdrs) < 0) {
 					LM_ERR("Failed to start bridging with provisional media\n");
 					goto error;
 				}

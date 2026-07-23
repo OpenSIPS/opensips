@@ -147,6 +147,12 @@ typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int ent
    This function allows bridging an entity that is in a call
    handled by b2b_logic to another entity.
 		</para>
+		<para>
+   Bridge flows preserve the extra headers configured on newly created
+   client entities. If provisional media is used while bridging, those
+   headers are also passed to the provisional media client entity only
+   when the bridge is started with the provmedia-extra-headers flag.
+		</para>
 </section>
 
 <section>
@@ -249,4 +255,3 @@ typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);
 </section>
 
 </chapter>
-
