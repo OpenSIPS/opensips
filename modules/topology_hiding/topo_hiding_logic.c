@@ -25,7 +25,10 @@
 */
 
 #include "../../ut.h"
+#include "../../parser/parse_expires.h"
+#include "../../parser/parse_sst.h"
 #include "topo_hiding_logic.h"
+#include "th_store.h"
 
 extern int force_dialog;
 extern struct tm_binds tm_api;
@@ -63,8 +66,11 @@ static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param);
 static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param);
-static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes,str *ct_user);
+static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes,str *ct_user,int store_state);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
+static int th_state_msg_ttl(struct sip_msg *msg);
+static int th_state_storable(struct sip_msg *msg);
+static str *th_msg_key_tag(struct sip_msg *msg);
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
 		int init_req, int dir, int dst_leg);
 
@@ -895,7 +901,8 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 
 	if ( !(rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
 		if (topo_no_dlg_encode_contact(rpl,flags,
-				(p?&p->routes:NULL),(p?&p->username:NULL)) < 0) {
+				(p?&p->routes:NULL),(p?&p->username:NULL),
+				-1/*decide from the reply*/) < 0) {
 			LM_ERR("Failed to encode contact header \n");
 			return;
 		}
@@ -986,7 +993,8 @@ static int topo_hiding_no_dlg(struct sip_msg *req,
 		return -1;
 	}
 
-	if (topo_no_dlg_encode_contact(req,extra_flags,NULL, &params->ct_caller_user) < 0) {
+	if (topo_no_dlg_encode_contact(req,extra_flags,NULL, &params->ct_caller_user,
+	-1/*decide from the request*/) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
@@ -1758,14 +1766,16 @@ error:
 
 /* We encode the RR headers, the actual Contact and the socket str for this leg */
 /* Via headers will be restored using the TM module, no need to save anything for them */
-static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags)
+static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags, int store_state)
 {
 	short rr_len,ct_len,addr_len,flags_len;
-	char *suffix_plain,*suffix_enc,*p,*s;
+	char *suffix_plain = NULL,*suffix_enc = NULL,*p,*s;
 	str rr_set = {NULL, 0};
 	str contact;
 	str flags_str;
-	int i,total_len,enc_len;
+	int i,total_len,enc_len,wire_len;
+	char *blob_buf = NULL;
+	str blob, key;
 	struct sip_uri ctu;
 	struct th_ct_params* el;
 	param_t *it;
@@ -1817,14 +1827,20 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	if (topo_ct_short_len(msg->rcv.bind_address->sock_str.len,
 			&addr_len, "bind address") < 0)
 		goto error;
-	local_len += rr_len + ct_len + flags_len + addr_len; 
+	local_len += rr_len + ct_len + flags_len + addr_len;
 	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
 		calc_word64_encode_len(local_len) : calc_word32_encode_len(local_len);
-	total_len = enc_len +  
-		1 /* ; */ + 
-		th_contact_encode_param.len + 
-		1 /* = */  + 
-		1 /* > */;	 
+	/* a sequential request keeps whatever its dialog is already using,
+	 * anything else is decided upon here */
+	if (store_state < 0)
+		store_state = th_state_storable(msg);
+	/* with a server-side storage, only the key travels in the Contact */
+	wire_len = store_state ? TH_KEY_WIRE_LEN : enc_len;
+	total_len = wire_len +
+		1 /* ; */ +
+		th_contact_encode_param.len +
+		1 /* = */  +
+		1 /* > */;
 
 	if (th_param_list) {
 		if ( parse_contact(msg->contact)<0 ||
@@ -1894,20 +1910,103 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	p+= sizeof(short);
 	memcpy(p,msg->rcv.bind_address->sock_str.s,msg->rcv.bind_address->sock_str.len);
 	p+= msg->rcv.bind_address->sock_str.len;
-	for (i=0;i<(int)(p-suffix_plain);i++)
-		suffix_plain[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len];
 
 	s = suffix_enc;
 	*s++ = ';';
 	memcpy(s,th_contact_encode_param.s,th_contact_encode_param.len);
 	s+= th_contact_encode_param.len;
 	*s++ = '=';
-	if (th_ct_enc_scheme == ENC_BASE64)
-		word64encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
-	else
-		word32encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
-	s = s+enc_len;
-	
+	if (store_state) {
+		/* the state is kept on the server side under a key. It never
+		 * travels on the wire, so it needs neither the XOR obfuscation
+		 * nor the URI-safe word encoding a Contact-borne state does -
+		 * keep it printable and inspectable in the store, framed as
+		 * length-prefixed "<decimal-len>:<bytes>" fields in the same
+		 * order (route set, contact, flags, receiving socket). */
+		char *b, *ls;
+		int   ll;
+
+		blob_buf = pkg_malloc(local_len + 4*6);
+		if (!blob_buf) {
+			LM_ERR("no more pkg\n");
+			goto error;
+		}
+		b = blob_buf;
+		#define __put_ascii_field(_f) \
+			do { \
+				ls = int2str((unsigned long)(_f).len, &ll); \
+				memcpy(b, ls, ll); b += ll; \
+				*b++ = ':'; \
+				if ((_f).len) { memcpy(b, (_f).s, (_f).len); b += (_f).len; } \
+			} while (0)
+		__put_ascii_field(rr_set);
+		__put_ascii_field(contact);
+		__put_ascii_field(flags_str);
+		__put_ascii_field(msg->rcv.bind_address->sock_str);
+		#undef __put_ascii_field
+		blob.s = blob_buf;
+		blob.len = b - blob_buf;
+
+		/* mark the key, so that it can never be taken for an encoded
+		 * state travelling in the Contact instead */
+		*s = TH_KEY_MARKER;
+
+		/* the key is derived straight into the Contact buffer */
+		key.s = s + 1;
+		key.len = TH_KEY_LEN;
+
+		/*
+		 * Key the state on the dialog leg it belongs to, so that a
+		 * refresh of that leg derives the very same key and just
+		 * overwrites its state, instead of leaving a new one behind on
+		 * every request (no dialog holds these, so nothing else would
+		 * ever reclaim them). The leg is the party whose Contact we are
+		 * hiding: its call and its own tag - the From tag of a request
+		 * it sends, the To tag of a reply it sends - both stable for as
+		 * long as the dialog lives. The encoding password is mixed in to
+		 * keep the key from being guessable out of the clear-text call-id
+		 * and tags.
+		 */
+		{
+			str seeds[3];
+			str *own_tag = th_msg_key_tag(msg);
+
+			if (!own_tag) {
+				/* th_state_storable() only lets a message reach here
+				 * once it can be keyed (has both a call-id and its
+				 * leg's tag); the sole caller which forces the state
+				 * to be stored - a sequential request being re-encoded
+				 * - is in-dialog and thus always has both */
+				LM_BUG("no call-id or tag to key the topology hiding "
+					"state on\n");
+				goto error;
+			}
+
+			seeds[0] = topo_hiding_ct_encode_pw;
+			seeds[1] = msg->callid->body;
+			seeds[2] = *own_tag;
+			th_store_make_key(seeds, 3, key.s);
+		}
+
+		if (th_store_put(&blob, &key, th_state_msg_ttl(msg)) < 0) {
+			LM_ERR("failed to store the topology hiding state\n");
+			goto error;
+		}
+		pkg_free(blob_buf);
+		blob_buf = NULL;
+	} else {
+		/* the state travels inline in the Contact - obfuscate it and
+		 * then URI-safe encode it onto the wire */
+		for (i=0;i<(int)(p-suffix_plain);i++)
+			suffix_plain[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len];
+		if (th_ct_enc_scheme == ENC_BASE64)
+			word64encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
+		else
+			word32encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
+	}
+	s = s+wire_len;
+
+
 	if (th_param_list) {
 		for (el=th_param_list;el;el=el->next) {
 			/* we just iterate over the unknown params */
@@ -1941,10 +2040,364 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 error:
 	if (rr_set.s && free_rr_set)
 		pkg_free(rr_set.s);
+	if (blob_buf)
+		pkg_free(blob_buf);
+	if (suffix_plain)
+		pkg_free(suffix_plain);
+	if (suffix_enc)
+		pkg_free(suffix_enc);
 	return NULL;
 }
 
-static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes, str *ct_user)
+/*
+ * How long the state of @msg has to outlive it.
+ *
+ * The states are only removed when they expire, and a new one is stored
+ * for each request whose Contact gets encoded, so keeping them for longer
+ * than needed just piles them up in the storage.
+ */
+/* the method @msg is about, be it a request or the reply to one */
+static int th_msg_method(struct sip_msg *msg)
+{
+	if (msg->first_line.type == SIP_REQUEST)
+		return msg->first_line.u.request.method_value;
+
+	return (msg->cseq && get_cseq(msg)) ?
+		get_cseq(msg)->method_id : METHOD_UNDEF;
+}
+
+
+/*
+ * The expires @msg is subject to, or -1 if it carries none. It may be
+ * given either as an "expires" Contact parameter or as the Expires
+ * header, the parameter taking precedence (RFC 3261 10.2.1.1).
+ */
+static int th_msg_expires(struct sip_msg *msg)
+{
+	exp_body_t *exp;
+	contact_t *ct;
+	unsigned int ct_exp;
+
+	if (msg->contact ||
+	(parse_headers(msg, HDR_CONTACT_F, 0) == 0 && msg->contact)) {
+		if (msg->contact->parsed || parse_contact(msg->contact) == 0) {
+			ct = ((contact_body_t *)msg->contact->parsed)->contacts;
+			if (ct && ct->expires && ct->expires->body.len &&
+			str2int(&ct->expires->body, &ct_exp) == 0) {
+				LM_DBG("expires in %us, per the Contact\n", ct_exp);
+				return (int)ct_exp;
+			}
+		}
+	}
+
+	if (parse_headers(msg, HDR_EXPIRES_F, 0) == 0 && msg->expires) {
+		if (msg->expires->parsed || parse_expires(msg->expires) == 0) {
+			exp = (exp_body_t *)msg->expires->parsed;
+			if (exp && exp->valid) {
+				LM_DBG("expires in %ds, per the Expires header\n",
+					exp->val);
+				return exp->val;
+			}
+		}
+		LM_DBG("unparsable Expires header\n");
+	}
+
+	return -1;
+}
+
+
+#define SUB_STATE_HDR     "Subscription-State"
+#define SUB_STATE_HDR_LEN (sizeof(SUB_STATE_HDR)-1)
+
+/*
+ * What a NOTIFY has to say about the lifetime of its subscription.
+ *
+ * A NOTIFY carries it in its Subscription-State header rather than in an
+ * Expires one (RFC 6665 4.1.3), and the value is the one the notifier
+ * actually granted, which may well be shorter than what the subscriber
+ * had asked for.
+ *
+ * Returns the seconds the subscription still has, 0 if it is over, or -1
+ * if the message says nothing about it.
+ */
+static int th_notify_sub_expires(struct sip_msg *msg)
+{
+	struct hdr_field *hf;
+	param_hooks_t hooks;
+	param_t *params = NULL, *p;
+	str body, state;
+	unsigned int val;
+	int ret = -1;
+	char *sep;
+
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
+		return -1;
+
+	/* not one of the headers the parser knows about */
+	for (hf = msg->headers; hf; hf = hf->next)
+		if (hf->type == HDR_OTHER_T &&
+		hf->name.len == SUB_STATE_HDR_LEN &&
+		strncasecmp(hf->name.s, SUB_STATE_HDR, SUB_STATE_HDR_LEN) == 0)
+			break;
+	if (!hf)
+		return -1;
+
+	body = hf->body;
+	trim(&body);
+	if (!body.len)
+		return -1;
+
+	sep = memchr(body.s, ';', body.len);
+
+	state = body;
+	if (sep)
+		state.len = sep - body.s;
+	trim(&state);
+
+	/* a subscription which is over is not going to come back */
+	if (state.len == 10 && strncasecmp(state.s, "terminated", 10) == 0)
+		return 0;
+
+	if (!sep)
+		return -1;
+
+	/* the parameters start past the separator */
+	body.len -= sep - body.s + 1;
+	body.s = sep + 1;
+	if (body.len <= 0)
+		return -1;
+
+	if (parse_params(&body, CLASS_ANY, &hooks, &params) < 0) {
+		LM_DBG("unparsable " SUB_STATE_HDR " parameters\n");
+		return -1;
+	}
+
+	for (p = params; p; p = p->next)
+		if (p->name.len == 7 &&
+		strncasecmp(p->name.s, "expires", 7) == 0) {
+			if (str2int(&p->body, &val) == 0) {
+				LM_DBG("subscription has %us left, per " SUB_STATE_HDR "\n",
+					val);
+				ret = (int)val;
+			}
+			break;
+		}
+
+	free_params(params);
+	return ret;
+}
+
+
+/*
+ * The lifetime the subscription @msg belongs to still has, or -1 if it
+ * carries nothing about it. A NOTIFY reports the granted value, so it is
+ * preferred over anything the subscriber may have merely asked for.
+ */
+static int th_sub_expires(struct sip_msg *msg, int method)
+{
+	int expires = -1;
+
+	if (method == METHOD_NOTIFY)
+		expires = th_notify_sub_expires(msg);
+
+	if (expires < 0)
+		expires = th_msg_expires(msg);
+
+	return expires;
+}
+
+
+/* does @msg tear down the subscription it belongs to? */
+static int th_msg_ends_subscription(struct sip_msg *msg)
+{
+	int method = th_msg_method(msg);
+
+	if (method != METHOD_SUBSCRIBE && method != METHOD_NOTIFY)
+		return 0;
+
+	return th_sub_expires(msg, method) == 0;
+}
+
+
+/*
+ * Does @msg push the lifetime of the dialog it belongs to further, and
+ * by how much? Returns 0 if it does not say anything about it.
+ *
+ * Only the messages which do carry the lifetime of their dialog may
+ * answer here: refreshing a state off, say, an in-dialog OPTIONS would
+ * cut the state of the call it runs into down to a minute.
+ */
+static int th_msg_refreshes_state(struct sip_msg *msg)
+{
+	struct session_expires se;
+	int expires, method;
+
+	method = th_msg_method(msg);
+
+	switch (method) {
+	case METHOD_SUBSCRIBE:
+	case METHOD_NOTIFY:
+		expires = th_sub_expires(msg, method);
+		/* an ending subscription drops its state instead */
+		if (expires <= 0)
+			return 0;
+		return expires + TH_STATE_TTL_MARGIN;
+
+	case METHOD_INVITE:
+	case METHOD_UPDATE:
+		if (parse_session_expires(msg, &se) == parse_sst_success &&
+		se.interval > 0)
+			return (int)se.interval + TH_STATE_TTL_MARGIN;
+		return 0;
+
+	default:
+		return 0;
+	}
+}
+
+
+/*
+ * May the state of @msg be kept on the server side?
+ *
+ * Only if @msg tells us how long its dialog is going to live: a state
+ * which expires from under a dialog which is still up cannot be matched
+ * anymore, and takes down everything that was still to be routed through
+ * it - the BYE of a call, most notably. Whatever cannot be bounded keeps
+ * travelling in the Contact instead, where it never expires.
+ *
+ * Note that a call which does get a dialog never reaches here: the
+ * dialog holds its state and bounds it for exactly as long as it lives,
+ * which is a better answer than this mode could ever give it.
+ */
+/*
+ * The stable identifier of the dialog leg whose Contact @msg carries -
+ * the tag the party owns: its From tag when it sends a request, its To
+ * tag when it sends a reply. Both last as long as the dialog, so every
+ * message of that leg derives the same storage key off it.
+ *
+ * Returns NULL when the state cannot be keyed - either the call-id or the
+ * tag is missing. The latter is most notably the reply of an
+ * out-of-dialog transaction (a 200 OK to an OPTIONS keepalive, say),
+ * which carries a Contact but never a To tag. Such a state is not stored:
+ * it travels in the Contact instead (there is no sequential traffic to
+ * match it against anyway).
+ */
+static str *th_msg_key_tag(struct sip_msg *msg)
+{
+	str *tag;
+
+	/* the key is derived from the call-id and the leg's tag, so both
+	 * have to be there - the call-id of any message, and the tag its
+	 * leg owns */
+	if ((!msg->callid && parse_headers(msg, HDR_CALLID_F, 0) < 0) ||
+	!msg->callid)
+		return NULL;
+
+	if (msg->first_line.type == SIP_REQUEST) {
+		if (parse_from_header(msg) < 0 || !msg->from || !get_from(msg))
+			return NULL;
+		tag = &get_from(msg)->tag_value;
+	} else {
+		if (parse_to_header(msg) < 0 || !msg->to || !get_to(msg))
+			return NULL;
+		tag = &get_to(msg)->tag_value;
+	}
+
+	return tag->len ? tag : NULL;
+}
+
+
+static int th_state_storable(struct sip_msg *msg)
+{
+	struct session_expires se;
+
+	if (!th_store_enabled())
+		return 0;
+
+	/* the state is keyed on the call-id and the leg's tag; with no way
+	 * to key it, it cannot be stored and stays in the Contact instead */
+	if (!th_msg_key_tag(msg))
+		return 0;
+
+	switch (th_msg_method(msg)) {
+	case METHOD_INVITE:
+	case METHOD_UPDATE:
+		/* a call lasts for as long as it pleases, unless the session
+		 * timers bound it */
+		if (parse_session_expires(msg, &se) == parse_sst_success &&
+		se.interval > 0)
+			return 1;
+		LM_DBG("no session timers on this call - keeping its state in "
+			"the Contact, as it may outlive any expiration\n");
+		return 0;
+
+	default:
+		/* a subscription is bounded by its expires, and the rest only
+		 * lives as long as its transaction */
+		return 1;
+	}
+}
+
+
+static int th_state_msg_ttl(struct sip_msg *msg)
+{
+	struct session_expires se;
+	int method, expires;
+
+	method = th_msg_method(msg);
+
+	switch (method) {
+	case METHOD_SUBSCRIBE:
+	case METHOD_NOTIFY:
+		/* The state is needed for as long as the subscription lives,
+		 * and a subscription may very well outlive the generic
+		 * th_state_ttl. */
+		expires = th_sub_expires(msg, method);
+		if (expires < 0)
+			return th_state_ttl;
+		/* a subscription being torn down only needs its transaction to
+		 * complete, and the final NOTIFY to be routed back */
+		if (expires == 0)
+			return th_state_ttl_short;
+		return expires + TH_STATE_TTL_MARGIN;
+
+	case METHOD_INVITE:
+	case METHOD_UPDATE:
+		/* When the session timers are in use, the session is refreshed
+		 * every Session-Expires seconds (RFC 4028), and each refresh
+		 * encodes the Contact anew, so the state only has to survive
+		 * one interval. Should a refresh not come, the session is torn
+		 * down anyway, hence the state of a live call can never be
+		 * expired from under it. Without the header, the call may last
+		 * for as long as it wants to.
+		 *
+		 * Note the value is negotiated, but each message carries the
+		 * one it is subject to, and both the request and the reply are
+		 * encoded from their own message. */
+		if (parse_session_expires(msg, &se) == parse_sst_success &&
+		se.interval > 0) {
+			LM_DBG("session refreshed every %us, per Session-Expires\n",
+				se.interval);
+			return (int)se.interval + TH_STATE_TTL_MARGIN;
+		}
+		return th_state_ttl;
+
+	case METHOD_OPTIONS:
+	case METHOD_MESSAGE:
+	case METHOD_INFO:
+	case METHOD_PUBLISH:
+		/* these neither open a dialog nor refresh the target of one
+		 * (RFC 3261 12.2.1.2), so their Contact is only of interest
+		 * while their transaction is running */
+		return th_state_ttl_short;
+
+	default:
+		return th_state_ttl;
+	}
+}
+
+
+static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes, str *ct_user, int store_state)
 {
 	struct lump* lump;
 	char *prefix=NULL,*suffix=NULL,*ct_username=NULL;
@@ -2011,7 +2464,8 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (!(suffix = build_encoded_contact_suffix(msg, routes, &suffix_len, flags))) {
+	if (!(suffix = build_encoded_contact_suffix(msg, routes, &suffix_len, flags,
+	store_state))) {
 		LM_ERR("Failed to build suffix \n");
 		goto error;
 	}
@@ -2057,6 +2511,10 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	str route_buf = {0, 0};
 	struct th_no_dlg_param *param = NULL;
 	transaction_cb* used_cb;
+	str stored_blob = {NULL, 0};
+	str consumed_key = {NULL, 0};
+	int ttl;
+	int from_storage = 0;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
@@ -2064,48 +2522,115 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		return -1;
 	}
 
+	/*
+	 * The state either travels in the Contact or was left in the
+	 * storage, and both may be in use at the same time, as it is
+	 * decided per dialog when its Contact is encoded. A key is told
+	 * apart by its marker, which none of the encodings of an actual
+	 * state can produce.
+	 */
+	if (th_store_enabled() && info->len == TH_KEY_WIRE_LEN &&
+	info->s[0] == TH_KEY_MARKER) {
+		/* the Contact only carried the key of the state - fetch the
+		 * actual encoded state and go on decoding it as usual. Keep
+		 * the key around, it still points into the request */
+		consumed_key.s = info->s + 1;
+		consumed_key.len = TH_KEY_LEN;
+		if (th_store_get(&consumed_key, &stored_blob) < 0)
+			return -1;
+		info = &stored_blob;
+		from_storage = 1;
+	}
+
 	/* delete vias */
 	if(topo_delete_vias(msg) < 0) {
 		LM_ERR("Failed to remove via headers\n");
-		return -1;
+		goto err_free_blob;
 	}
 
 	/* delete record route */
 	for (it=msg->record_route;it;it=it->sibling) {
 		if (del_lump(msg, it->name.s - buf, it->len, 0) == 0) {
 			LM_ERR("del_lump failed\n");
-			return -1;
+			goto err_free_blob;
 		}
 	}
 
-	max_size = th_ct_enc_scheme == ENC_BASE64 ?
-		calc_max_word64_decode_len(info->len) :
-		calc_max_word32_decode_len(info->len);
-	dec_buf = pkg_malloc(max_size);
-	if (dec_buf==NULL) {
-		LM_ERR("No more pkg\n");
-		return -1;
+	if (from_storage) {
+		/* a stored state is kept raw, so it needs no URI-safe decode and
+		 * no de-obfuscation - use the fetched buffer as-is. Its ownership
+		 * passes to dec_buf here (see the refresh block below), so there
+		 * is nothing to copy and nothing extra to free. */
+		dec_buf = stored_blob.s;
+		dec_len = stored_blob.len;
+	} else {
+		max_size = th_ct_enc_scheme == ENC_BASE64 ?
+			calc_max_word64_decode_len(info->len) :
+			calc_max_word32_decode_len(info->len);
+		dec_buf = pkg_malloc(max_size);
+		if (dec_buf==NULL) {
+			LM_ERR("No more pkg\n");
+			goto err_free_blob;
+		}
+
+		if (th_ct_enc_scheme == ENC_BASE64)
+			dec_len = word64decode((unsigned char *)dec_buf,
+				(unsigned char *)info->s,info->len);
+		else
+			dec_len = word32decode((unsigned char *)dec_buf,
+				(unsigned char *)info->s,info->len);
+		for (i=0;i<dec_len;i++)
+			dec_buf[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len];
 	}
 
-	if (th_ct_enc_scheme == ENC_BASE64)
-		dec_len = word64decode((unsigned char *)dec_buf,
-			(unsigned char *)info->s,info->len);
-	else
-		dec_len = word32decode((unsigned char *)dec_buf,
-			(unsigned char *)info->s,info->len);
-	for (i=0;i<dec_len;i++)
-		dec_buf[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len]; 
+	/* the fetched state now backs dec_buf directly (aliased above) */
+	if (stored_blob.s) {
+		/*
+		 * A dialog which is being kept alive has to keep its state
+		 * alive as well: the party which sent us here may well go on
+		 * using this very state - it only learns a new one if the
+		 * reply it gets carries a Contact of its own.
+		 */
+		ttl = th_msg_refreshes_state(msg);
+		if (ttl > 0)
+			th_store_refresh(&consumed_key, &stored_blob, ttl);
 
+		/* dec_buf owns this buffer now - hand it over instead of
+		 * freeing it, and drop our reference so the error path (which
+		 * frees dec_buf and then stored_blob.s) cannot free it twice. */
+		stored_blob.s = NULL;
+		info = NULL;
+	}
+
+	/* A field is length-prefixed: a raw 2-byte short for a state that
+	 * came inline in the Contact, or a printable "<decimal-len>:" for one
+	 * read back from the store (see build_encoded_contact_suffix). Parse
+	 * in place either way - the field just points into the decode buffer. */
 	#define __extract_len_and_buf(_p, _len, _s) \
 		do { \
-			(_s).len = *(short *)p;\
-			if ((_s).len<0 || (_s).len>_len) {\
+			if (from_storage) { \
+				int _n = 0; \
+				while ((_len) > 0 && *(_p) >= '0' && *(_p) <= '9') { \
+					_n = _n*10 + (*(_p) - '0'); (_p)++; (_len)--; \
+				} \
+				if ((_len) <= 0 || *(_p) != ':') { \
+					LM_ERR("bad length framing in stored contact\n"); \
+					goto err_free_buf; \
+				} \
+				(_p)++; (_len)--; \
+				(_s).len = _n; \
+			} else { \
+				(_s).len = *(short *)(_p); \
+				(_p) += sizeof(short); \
+				(_len) -= sizeof(short); \
+			} \
+			if ((_s).len<0 || (_s).len>(_len)) {\
 				LM_ERR("bad length %d in encoded contact\n", (_s).len);\
 				goto err_free_buf;\
 			}\
-			(_s).s = _p + sizeof(short);\
-			_p += sizeof(short) + (_s).len;\
-			_len -= sizeof(short) + (_s).len;\
+			(_s).s = (_p);\
+			(_p) += (_s).len;\
+			(_len) -= (_s).len;\
 		} while(0)
 
 	p = dec_buf;
@@ -2342,7 +2867,19 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		free_rr(&head);
 	pkg_free(dec_buf);
 
-	if (topo_no_dlg_encode_contact(msg,flags,NULL,NULL) < 0) {
+	/*
+	 * A subscription being torn down will not be sending anything to
+	 * this state again, so drop it now rather than leaving it behind
+	 * for as long as the subscription it belonged to was going to last.
+	 * The Contact encoded below gets a state of its own, which is what
+	 * routes the final NOTIFY back.
+	 */
+	if (consumed_key.s && th_msg_ends_subscription(msg))
+		th_store_del(&consumed_key);
+
+	/* keep this dialog on whichever of the two it came in with */
+	if (topo_no_dlg_encode_contact(msg,flags,NULL,NULL,
+	consumed_key.s ? 1 : 0) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
@@ -2357,5 +2894,8 @@ err_free_head:
 		free_rr(&head);
 err_free_buf:
 	pkg_free(dec_buf);
+err_free_blob:
+	if (stored_blob.s)
+		pkg_free(stored_blob.s);
 	return -1;
 }

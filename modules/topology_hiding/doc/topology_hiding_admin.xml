@@ -281,6 +281,273 @@ modparam("topology_hiding", "th_callid_loop_protection", 1)
 		</example>
 	</section>
 
+	<section id="param_th_state_url" xreflabel="th_state_url">
+		<title><varname>th_state_url</varname> (string)</title>
+		<para>
+			The URL of a <emphasis>cachedb</emphasis> backend where the
+			topology hiding state of dialog-less calls is to be kept.
+		</para>
+		<para>
+			When topology hiding runs without a dialog, the whole encoded
+			state normally travels inside the Contact URI parameter (see
+			<xref linkend="param_th_contact_encode_param"/>), which makes
+			that URI long. Some user agents cannot cope with it and truncate
+			the parameter, after which
+			<xref linkend="func_topology_hiding_match"/> can no longer decode
+			it and the sequential requests of those calls are lost. This is
+			most visible for non-INVITE dialogs, such as SUBSCRIBE, as those
+			can never be given a dialog to hold the state - the
+			<emphasis>dialog</emphasis> module only handles INVITE based
+			dialogs.
+		</para>
+		<para>
+			With this parameter set, the state is stored in the given backend
+			under a short key, and only that key travels in the Contact URI,
+			keeping it short regardless of how large the hidden topology is.
+			Off the wire the obfuscation and URI-safe encoding a Contact-borne
+			state carries serve no purpose, so the stored copy holds neither:
+			it is kept as plain, length-prefixed text.
+		</para>
+		<para>
+			A state is only ever kept on the server side when the message it
+			belongs to tells how long its dialog is going to live, since a
+			state which expires from under a dialog which is still up cannot
+			be matched anymore, and takes down everything that was still to be
+			routed through it - the BYE of a call, most notably. A
+			subscription is bounded by its expires, and the messages which
+			open no dialog only live as long as their transaction, so those
+			are stored. A call is not bounded by anything, unless the session
+			timers are in use, so the state of a call which has none keeps
+			travelling in its Contact, where it cannot expire - exactly as it
+			does without this parameter. Both may well be in use at the same
+			time, as this is decided for each dialog as its Contact is
+			encoded.
+		</para>
+		<para>
+			Note that a call which is given a dialog never gets here at all:
+			the <emphasis>dialog</emphasis> module holds its state and bounds
+			it for exactly as long as the call lives, and its Contact carries
+			just the dialog id, so it is already both short and correct.
+			Engaging a dialog for the calls (see
+			<xref linkend="param_force_dialog"/>) is therefore a better answer
+			for them than this parameter could ever be, which is left to serve
+			what a dialog cannot: everything that is not INVITE based.
+		</para>
+		<para>
+			The state must be readable by whichever node receives the
+			sequential requests, so when the traffic is distributed or fails
+			over between several &osips; instances, the backend must be shared
+			between them (e.g. a common <emphasis>cachedb_redis</emphasis>
+			instance or cluster). For a single instance, a local backend such
+			as <emphasis>cachedb_local</emphasis> is enough - it is kept in
+			shared memory, so all the &osips; workers do see it, but its
+			contents are lost on restart and are not visible to the other
+			nodes.
+		</para>
+		<para>
+			<emphasis role="bold">Security:</emphasis> the state kept in the
+			backend is stored in the clear. It is not encrypted, and - unlike
+			the copy that travels inside a Contact - it is not obfuscated
+			either, so anyone able to read the backend can see the topology it
+			hides: the real Contact, the route set and the receiving socket of
+			each call. This is intentional. The store is meant to be a trusted,
+			internal backend reachable only by the &osips; nodes that share it:
+			deploy it on a private or DMZ network, bind it to the internal
+			interface, enable the backend's own authentication, and keep it off
+			any untrusted network. Do not point
+			<varname>th_state_url</varname> at a backend that is reachable
+			beyond that trust boundary.
+		</para>
+		<para>
+			The state is immutable, so re-encoding a Contact on a sequential
+			request only pushes its expiration further out. To spare the
+			backend a write on every such request, each node keeps a small
+			in-memory record of what it last stored and skips the write while
+			the state still has enough of its lifetime left - a write that
+			would actually shorten a state (a subscription being torn down)
+			is never skipped. This is transparent and needs no configuration.
+		</para>
+		<para>
+			A state is only ever removed from the backend when it expires
+			(see <xref linkend="param_th_state_ttl"/>), therefore the backend
+			must implement the expiration of the values it stores. All the
+			cachedb backends do, except for
+			<emphasis>cachedb_mongodb</emphasis>, which silently ignores it -
+			using it here would pile up the states forever, so it is rejected
+			at startup.
+		</para>
+		<para>
+			<emphasis>
+				By default this parameter is not set, and the state travels
+				in the Contact URI.
+			</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_state_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# a single instance - state kept in its own shared memory
+loadmodule "cachedb_local.so"
+modparam("topology_hiding", "th_state_url", "local://topohiding")
+
+# several instances sharing a Redis server
+loadmodule "cachedb_redis.so"
+modparam("topology_hiding", "th_state_url", "redis://127.0.0.1:6379/0")
+
+# a password protected Redis cluster - one node is enough,
+# the rest of the cluster is discovered from it
+modparam("topology_hiding", "th_state_url",
+         "redis://:secretpass@10.0.0.20:6379/0")
+
+# a Memcached server
+loadmodule "cachedb_memcached.so"
+modparam("topology_hiding", "th_state_url",
+         "memcached://127.0.0.1:11211/")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_th_state_ttl" xreflabel="th_state_ttl">
+		<title><varname>th_state_ttl</varname> (int)</title>
+		<para>
+			For how long, in seconds, a topology hiding state is kept in the
+			backend configured through <xref linkend="param_th_state_url"/>.
+			It should be at least as long as the calls whose topology is
+			hidden are expected to last, as a call whose state has expired can
+			no longer have its sequential requests matched.
+		</para>
+		<para>
+			Whenever a message which keeps its dialog alive is matched, the
+			state it was sent to has its expiration pushed further, for as
+			long as that message says the dialog is going to live. This
+			matters because the party which sent it only learns of a new state
+			if the reply it gets back carries a Contact of its own - otherwise
+			it goes on using the state it already knows, which therefore has
+			to outlive its original expiration. Only the messages which do
+			carry the lifetime of their dialog may refresh it - a
+			<emphasis>SUBSCRIBE</emphasis> or <emphasis>NOTIFY</emphasis>
+			through its expires, an <emphasis>INVITE</emphasis> or
+			<emphasis>UPDATE</emphasis> through its
+			<emphasis>Session-Expires</emphasis> - so that, say, an in-dialog
+			OPTIONS cannot cut the state of the call it runs into down to
+			<xref linkend="param_th_state_ttl_short"/>.
+		</para>
+		<para>
+			A state is stored each time a Contact is encoded, and is otherwise
+			only removed when it expires, so the module tries not to keep any
+			state for longer than it may be needed:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+				for <emphasis>SUBSCRIBE</emphasis> and
+				<emphasis>NOTIFY</emphasis>, the state has to outlive the
+				subscription, so its duration is taken from the very message
+				being encoded (plus a small margin, to cover the refresh). A
+				NOTIFY reports how long the subscription actually has left in
+				its <emphasis>Subscription-State</emphasis> header (RFC 6665
+				4.1.3), which is what the notifier granted rather than what
+				the subscriber asked for, so it is preferred. Failing that, it
+				is looked for as an <quote>expires</quote> parameter of the
+				Contact first and as the <emphasis>Expires</emphasis> header
+				afterwards, the parameter taking precedence over the header.
+				This matters because a notifier is free to grant a shorter
+				subscription than the one asked for, and its NOTIFYs are what
+				bring the state of a subscription back in line with what was
+				really granted.
+				Note that a subscription may last much longer than this
+				parameter, in which case its state is kept for longer as
+				well. A message which ends a subscription (an expires of
+				<quote>0</quote>, or a NOTIFY reporting it as
+				<quote>terminated</quote>) drops the state it was sent to
+				right away,
+				instead of leaving it behind for as long as the subscription
+				was going to last - the Contact it gets encoded with still
+				takes <xref linkend="param_th_state_ttl_short"/>, so that the
+				final NOTIFY may be routed back;
+			</para></listitem>
+			<listitem><para>
+				for <emphasis>INVITE</emphasis> and
+				<emphasis>UPDATE</emphasis>, when the session timers are in
+				use, the session gets refreshed every
+				<emphasis>Session-Expires</emphasis> seconds (RFC 4028) and
+				each refresh encodes the Contact anew, so the state only has
+				to survive one interval - that value (plus the margin) is used
+				then. Should a refresh not come, the session is torn down
+				anyway, so this can never expire the state of a live call.
+				Note that the <emphasis>Expires</emphasis> header is
+				deliberately <emphasis>not</emphasis> used here: on an INVITE
+				it limits the validity of the invitation, not the duration of
+				the call it may lead to;
+			</para></listitem>
+			<listitem><para>
+				<emphasis>OPTIONS</emphasis>, <emphasis>MESSAGE</emphasis>,
+				<emphasis>INFO</emphasis> and <emphasis>PUBLISH</emphasis>
+				neither open a dialog nor refresh the target of one, so their
+				Contact is only of interest while their transaction is
+				running - they get
+				<xref linkend="param_th_state_ttl_short"/>;
+			</para></listitem>
+			<listitem><para>
+				everything else, and any of the above whose expiry could not
+				be told (no session timers, no Expires), may last for any
+				amount of time, so it gets this parameter.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			This parameter is only used when
+			<xref linkend="param_th_state_url"/> is set.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>3600</quote> (one hour).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_state_ttl</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# hide the topology of calls which may last up to 12 hours
+modparam("topology_hiding", "th_state_ttl", 43200)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_th_state_ttl_short" xreflabel="th_state_ttl_short">
+		<title><varname>th_state_ttl_short</varname> (int)</title>
+		<para>
+			For how long, in seconds, to keep the topology hiding state of the
+			messages which do not open a dialog nor refresh the target of one
+			- see <xref linkend="param_th_state_ttl"/> for the exact list.
+			Their Contact is only used while their transaction is alive, so
+			keeping their state for as long as a call's would needlessly fill
+			up the storage.
+		</para>
+		<para>
+			It only needs to cover the lifetime of a transaction. Raise it to
+			the value of <xref linkend="param_th_state_ttl"/> if you have user
+			agents which wrongly latch onto the Contact of such a request and
+			keep using it afterwards.
+		</para>
+		<para>
+			This parameter is only used when
+			<xref linkend="param_th_state_url"/> is set.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>60</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_state_ttl_short</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_state_ttl_short", 120)
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
