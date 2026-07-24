@@ -135,6 +135,112 @@ modparam("cachedb_perf", "cachedb_url", "perf:prof:///profiles")
 		</example>
 	</section>
 
+	<section id="param_growth_load_factor" xreflabel="growth_load_factor">
+		<title><varname>growth_load_factor</varname> (integer)</title>
+		<para>
+		The target number of entries per bucket the maintenance timer grows
+		the table toward. As entries accumulate the timer splits buckets to
+		keep the load factor near this value, so lookups stay flat as the
+		cache scales - the behaviour <emphasis>cachedb_local</emphasis>
+		lacks. 0 disables growth, leaving the table fixed at its declared
+		size. Default is 2.
+		</para>
+		<example>
+		<title>Set <varname>growth_load_factor</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "growth_load_factor", 2)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_growth_budget" xreflabel="growth_budget">
+		<title><varname>growth_budget</varname> (integer)</title>
+		<para>
+		The maximum number of bucket splits the maintenance timer performs
+		on a single run, bounding the work of one growth pass so the timer
+		never stalls under a burst of inserts. Default is 4096.
+		</para>
+		<example>
+		<title>Set <varname>growth_budget</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "growth_budget", 4096)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_arena_hugepage_mb" xreflabel="arena_hugepage_mb">
+		<title><varname>arena_hugepage_mb</varname> (integer)</title>
+		<para>
+		Size, in megabytes, of a huge-page-backed reservation for the cache
+		entries. When set, the module reserves this much memory at startup
+		and backs it with 2 MB pages to cut TLB misses on a large cache. It
+		does not pick a mechanism: it climbs a detect-by-trying ladder -
+		overcommit hugetlb pool (<emphasis>MAP_HUGETLB</emphasis>) then
+		transparent huge pages (<emphasis>MADV_HUGEPAGE</emphasis>) then
+		<emphasis>MADV_COLLAPSE</emphasis> then plain 4 KB - and keeps the
+		best tier the running kernel actually grants, which it reports at
+		startup and through the <emphasis>memory_tier</emphasis> statistic
+		and <emphasis>perf_stats</emphasis>. 0 (default) uses plain
+		demand-faulted shared memory.
+		</para>
+		<para>
+		To make the faster tiers available: allow on-demand huge pages with
+		<emphasis>sysctl vm.nr_overcommit_hugepages=N</emphasis> (N &gt;=
+		<emphasis>arena_hugepage_mb</emphasis>/2), and/or enable shmem THP
+		with <emphasis>echo advise &gt; /sys/kernel/mm/transparent_hugepage/shmem_enabled</emphasis>.
+		Except for the hugetlb tier (which is unswappable and exempt), the
+		reservation is <emphasis>mlock</emphasis>-pinned against swap; that
+		needs <emphasis>LimitMEMLOCK=infinity</emphasis> in the systemd unit,
+		otherwise the module warns and runs the arena unpinned.
+		</para>
+		<example>
+		<title>Set <varname>arena_hugepage_mb</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "arena_hugepage_mb", 512)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_arena_selftest" xreflabel="arena_selftest">
+		<title><varname>arena_selftest</varname> (integer)</title>
+		<para>
+		When set to 1, the slab arena runs a self-test at startup and aborts
+		startup on any mismatch - a permanent, cheap diagnostic. Default is 0
+		(off).
+		</para>
+		<example>
+		<title>Set <varname>arena_selftest</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "arena_selftest", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_htable_selftest" xreflabel="htable_selftest">
+		<title><varname>htable_selftest</varname> (integer)</title>
+		<para>
+		When set to 1, the hash table and its runtime-growth machinery run a
+		self-test at startup and abort startup on any mismatch. Default is 0
+		(off).
+		</para>
+		<example>
+		<title>Set <varname>htable_selftest</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "htable_selftest", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_statistics" xreflabel="Exported Statistics">
@@ -185,7 +291,7 @@ opensips-cli -x mi cachedb_perf:perf_stats th
 	</section>
 
 	<section id="mi_introspection" xreflabel="introspection">
-		<title>Key introspection: perf_keys / perf_scan / perf_dump / perf_get / perf_set / perf_del</title>
+		<title>Key introspection: perf_keys / perf_scan / perf_dump / perf_get / perf_set / perf_ttl / perf_del</title>
 		<para>
 		These give an operator the visibility that
 		<emphasis>cachedb_local</emphasis> lacks. All are lock-free: the
