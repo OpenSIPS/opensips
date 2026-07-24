@@ -210,6 +210,75 @@ out:
 	munmap(resv, len);
 }
 
+/*
+ * CP-20: reserve a large 2M-aligned MAP_SHARED region for the arena, backed
+ * by huge pages via the same ladder as the probe, mlock-pinned against swap.
+ * Created pre-fork and never unmapped, so every worker inherits it (the
+ * invariant the lock-free read path and CP-09 growth both need).  Returns
+ * the base (NULL on total failure -> caller falls back to shm_malloc),
+ * sets *tier to what was achieved and *locked_mb to the pinned amount.
+ */
+void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
+		unsigned long *locked_mb)
+{
+	size_t asize = (size + PCACHE_HPS - 1) & ~(PCACHE_HPS - 1);
+	char *resv, *base;
+	long shmem_kb;
+	void *p;
+
+	*locked_mb = 0;
+	*tier = PCACHE_MEM_4K;
+
+	/* tier 1: MAP_HUGETLB - unswappable, exempt from RLIMIT_MEMLOCK */
+	p = mmap(NULL, asize, PROT_READ|PROT_WRITE,
+	         MAP_SHARED|MAP_ANONYMOUS|MAP_HUGETLB, -1, 0);
+	if (p != MAP_FAILED) {
+		memset(p, 0, asize);           /* commit the pool pages */
+		*tier = PCACHE_MEM_HUGETLB;
+		return p;
+	}
+
+	/* tiers 2-4: 2M-aligned MAP_SHARED|ANON (reserve PROT_NONE, then
+	 * MAP_FIXED at a 2M boundary - VA/offset congruence, DESIGN 2.6.1) */
+	resv = mmap(NULL, asize + PCACHE_HPS, PROT_NONE,
+	            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+	if (resv == MAP_FAILED)
+		return NULL;
+	base = (char *)(((unsigned long)resv + PCACHE_HPS - 1)
+	                & ~(PCACHE_HPS - 1));
+	p = mmap(base, asize, PROT_READ|PROT_WRITE,
+	         MAP_SHARED|MAP_ANONYMOUS|MAP_FIXED, -1, 0);
+	if (p == MAP_FAILED) {
+		munmap(resv, asize + PCACHE_HPS);
+		return NULL;
+	}
+
+	/* advise huge before first touch (tier 2), then pin+populate: a cold
+	 * mlock populates to pin, so it doubles as the pre-fault (DESIGN 2.6.2) */
+	madvise(base, asize, MADV_HUGEPAGE);
+	shmem_kb = read_shmem_huge_kb();
+	if (mlock(base, asize) == 0) {
+		*locked_mb = asize >> 20;
+	} else {
+		LM_WARN("mlock of the %zu MB arena failed (%s): continuing "
+			"unpinned (swappable). If running under systemd, add "
+			"LimitMEMLOCK=infinity to the unit.\n",
+			asize >> 20, strerror(errno));
+		memset(base, 0, asize);        /* still pre-fault */
+	}
+
+	if (range_is_huge((unsigned long)base)) {
+		*tier = PCACHE_MEM_THP_ADVISE;
+	} else if (shmem_kb >= 0 &&
+	           madvise(base, asize, MADV_COLLAPSE) == 0 &&
+	           read_shmem_huge_kb() - shmem_kb >= (long)(asize / 1024)) {
+		*tier = PCACHE_MEM_THP_COLLAPSE;
+	} else {
+		*tier = PCACHE_MEM_4K;         /* reserved+pinned but 4K */
+	}
+	return base;
+}
+
 const char *pcache_mem_tier_str(enum pcache_mem_tier tier)
 {
 	switch (tier) {

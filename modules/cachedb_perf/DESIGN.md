@@ -1190,7 +1190,25 @@ documented answer for anything large.
   costing ~5 300 CPS against ~9 000 for a dialog, because the worker blocks for
   the round trip.
 - **CP-19** Restart persistency (rpm), if wanted. Also not in v1.
-- **CP-20** Huge-page backing for the arena (§2.6, §2.6.1, §3.3): the
+- **CP-20** Huge-page backing for the arena (§2.6, §2.6.1, §3.3).
+  **Done 2026-07-24** (`pcache_mem_reserve()` in `pcache_mem.c`, wired via the
+  `pcache_chunk_backing()` seam in `pcache_arena.c`, modparam
+  `arena_hugepage_mb`, default 0 = off). At mod_init the arena reserves one
+  2M-aligned `MAP_SHARED` region via the ladder (hugetlb → THP-advise →
+  MADV_COLLAPSE → 4K), `mlock`-pins it, and chunks bump from it **lock-free**
+  (atomic offset — the seam is called both under and outside the arena lock,
+  so a lock there would deadlock); `shm_malloc` is the fallback once the
+  reservation is exhausted or if reserve fails. The region is created
+  pre-fork and never unmapped, so it is inherited by every worker (the same
+  invariant CP-09 growth needs — post-fork mmaps would be per-process
+  private). `pcache_arena_destroy` munmaps it as a whole (never `shm_free`s
+  the sub-blocks). **Measured (−O3, 8 workers, medians):** +13% at 50k
+  resident (24.0 vs 21.2 Mops/s), +7% near-empty — below the isolated
+  1.19–1.43× pointer-chase because the per-op also does the hash, tag scan
+  and a `pkg_malloc`/copy of the value, which dilute the TLB win; the gain
+  is larger at 50k where the working set spreads over ~13 MB (more 4K TLB
+  misses to relieve). `mlock` needs `LimitMEMLOCK=infinity` on the systemd
+  unit (warns and continues unpinned otherwise). The reference:
   four-tier fallback ladder inside `pcache_chunk_alloc()` —
   `MAP_HUGETLB` (static or overcommit pool; best, 1.42×) → `MADV_HUGEPAGE`
   (THP-shmem, huge at fault time) → `MADV_COLLAPSE` post-fill (zero-config on

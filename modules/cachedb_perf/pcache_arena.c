@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+#include <sys/mman.h>
 
 #include "../../dprint.h"
 #include "../../locking.h"
@@ -28,6 +29,11 @@
 #include "../../mem/shm_mem.h"
 
 #include "pcache_arena.h"
+#include "pcache_mem.h"
+
+/* CP-20: MB to reserve for the huge-page arena; 0 = disabled (shm_malloc).
+ * Set by the cachedb_perf "arena_hugepage_mb" modparam. */
+int pcache_arena_hugepage_mb = 0;
 
 /* ~x1.5 ladder, all multiples of 32 so cells stay 8-aligned */
 static const unsigned int cell_sizes[PCACHE_NCLASSES] = {
@@ -63,6 +69,15 @@ typedef struct pcache_arena {
 	void *gpool[PCACHE_NCLASSES];           /* global free cells */
 	unsigned int gpool_n[PCACHE_NCLASSES];
 	unsigned long lo, hi;                   /* extent watermarks */
+
+	/* CP-20 huge-page reservation: a pre-fork, never-unmapped, 2M-aligned
+	 * MAP_SHARED region.  Chunks bump from it lock-free (atomic hoff);
+	 * shm_malloc is the fallback once it is exhausted or if reserve fails */
+	char                 *hbase;
+	unsigned long         hsize;
+	volatile unsigned long hoff;
+	enum pcache_mem_tier  htier;
+	unsigned long         hlocked_mb;
 } pcache_arena_t;
 
 /* per-process allocation state - pkg, lazily created, reset on fork */
@@ -111,11 +126,24 @@ static inline void *gpool_pop(int c)
 
 /*
  * THE CP-20 SEAM: every byte of arena memory funnels through here.
- * (a) shm_malloc today; (b) the huge-page ladder (DESIGN 2.6.1) replaces
- * the internals later.  Memory is NEVER returned while the server runs.
+ * If a huge-page reservation exists, bump from it lock-free (the caller's
+ * lock state varies - carve_chunk holds the arena lock, pcache_region_alloc
+ * does not - so an atomic bump is the only safe choice here); otherwise, or
+ * once it is exhausted, fall back to shm_malloc.  Memory is NEVER returned
+ * while the server runs.
  */
 static void *pcache_chunk_backing(size_t size)
 {
+	if (arena->hbase) {
+		unsigned long asz = (size + 63) & ~63UL;   /* keep 64-aligned */
+		unsigned long off = __atomic_fetch_add(&arena->hoff, asz,
+			__ATOMIC_RELAXED);
+		if (off + asz <= arena->hsize)
+			return arena->hbase + off;
+		/* exhausted: undo would race other bumpers, so just leave hoff
+		 * past the end (further huge allocs also fall through) and use
+		 * shm - correctness holds, we only lose the tail slack */
+	}
 	return shm_malloc(size);
 }
 
@@ -208,6 +236,25 @@ int pcache_arena_init(void)
 		size2class[idx] = (unsigned char)c;   /* NCLASSES = impossible */
 	}
 
+	/* CP-20: reserve the huge-page arena, pre-fork, if requested */
+	if (pcache_arena_hugepage_mb > 0) {
+		arena->hsize = (unsigned long)pcache_arena_hugepage_mb << 20;
+		arena->hbase = pcache_mem_reserve(arena->hsize, &arena->htier,
+			&arena->hlocked_mb);
+		if (!arena->hbase) {
+			LM_WARN("huge-page arena reservation of %d MB failed; "
+				"falling back to shm_malloc (4K)\n",
+				pcache_arena_hugepage_mb);
+			arena->hsize = 0;
+		} else {
+			arena->lo = (unsigned long)arena->hbase;
+			arena->hi = (unsigned long)arena->hbase + arena->hsize;
+			LM_NOTICE("huge-page arena: %d MB on %s, %lu MB pinned\n",
+				pcache_arena_hugepage_mb,
+				pcache_mem_tier_str(arena->htier), arena->hlocked_mb);
+		}
+	}
+
 	LM_DBG("arena ready: %d classes, %u B to %u B cells\n",
 		PCACHE_NCLASSES, cell_sizes[0], cell_sizes[PCACHE_NCLASSES-1]);
 	return 0;
@@ -249,14 +296,24 @@ void pcache_arena_destroy(void)
 	if (!arena)
 		return;
 
+	/* blocks carved from the huge reservation are part of one mmap - they
+	 * must be munmap'd as a whole (below), never shm_free'd individually */
+#define IN_HARENA(_p) (arena->hbase && (char *)(_p) >= arena->hbase && \
+	(char *)(_p) < arena->hbase + arena->hsize)
+
 	for (rg = arena->regions; rg; rg = rnext) {
 		rnext = rg->next;
-		shm_free(rg);
+		if (!IN_HARENA(rg))
+			shm_free(rg);
 	}
 	for (ch = arena->chunks; ch; ch = next) {
 		next = ch->next;
-		shm_free(ch);
+		if (!IN_HARENA(ch))
+			shm_free(ch);
 	}
+	if (arena->hbase)
+		munmap(arena->hbase, arena->hsize);
+#undef IN_HARENA
 	lock_destroy(&arena->lock);
 	shm_free(arena);
 	arena = NULL;

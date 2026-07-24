@@ -56,6 +56,7 @@ pcache_url_t *pcache_url_list = NULL;
 static pcache_col_t *pcache_default_col = NULL;
 static int arena_selftest = 0;
 static int htable_selftest = 0;
+extern int pcache_arena_hugepage_mb;
 static int expiry_sweep_period = 1;   /* seconds; 0 disables the sweep */
 
 static int pcache_parse_collections(unsigned int type, void *val);
@@ -98,6 +99,7 @@ static const param_export_t params[] = {
 		(void *)pcache_store_urls },
 	{ "arena_selftest",    INT_PARAM, &arena_selftest },
 	{ "htable_selftest",   INT_PARAM, &htable_selftest },
+	{ "arena_hugepage_mb", INT_PARAM, &pcache_arena_hugepage_mb },
 	{ "expiry_sweep_period", INT_PARAM, &expiry_sweep_period },
 	{0,0,0}
 };

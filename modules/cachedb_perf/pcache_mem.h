@@ -43,4 +43,9 @@ extern struct pcache_mem_info pcache_mem;
 void pcache_mem_probe(void);
 const char *pcache_mem_tier_str(enum pcache_mem_tier tier);
 
+/* CP-20: reserve a huge-page-backed, mlock-pinned, 2M-aligned MAP_SHARED
+ * region for the arena (pre-fork, never unmapped). NULL -> use shm_malloc. */
+void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
+		unsigned long *locked_mb);
+
 #endif /* _PCACHE_MEM_H_ */
