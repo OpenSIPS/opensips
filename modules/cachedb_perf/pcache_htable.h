@@ -179,6 +179,11 @@ int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
 /* 1 = removed; 0 = was absent; -1 = error */
 int pcache_ht_remove(pcache_htable_t *ht, const str *key);
 
+/* re-arm an existing key's TTL without rewriting the value (MI perf_ttl):
+ * one aligned store of expires under the bucket lock, the versionless bump
+ * of 2.7.  @expires is absolute ticks (0 = never).  1 = re-armed, 0 = absent */
+int pcache_ht_touch(pcache_htable_t *ht, const str *key, unsigned int expires);
+
 /* atomic counter add (CP-04): creates a native counter on an absent key,
  * accumulates fixed-width on an existing one, converts a numeric string
  * record on first touch.  0 = ok (*new_val = the result); -1 = error or

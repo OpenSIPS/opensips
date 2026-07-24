@@ -546,6 +546,96 @@ static mi_response_t *do_perf_del_mi(str *glob, str *col_s)
 	return resp;
 }
 
+/* re-arm the TTL of every live key matching a glob (perf_ttl): collect the
+ * matches lock-free, then touch each - like perf_del, not an atomic snapshot */
+struct touch_ctx {
+	const char *pat;
+	str *keys;
+	unsigned int n, cap, now;
+	int oom;
+};
+
+static int touch_collect_cb(const str *key, const str *val, unsigned int exp,
+		void *p)
+{
+	struct touch_ctx *tc = p;
+	str *grown;
+
+	if (exp && exp <= tc->now)          /* skip expired: never revive them */
+		return 0;
+	if (fnmatch(tc->pat, key->s, 0))
+		return 0;
+	if (tc->n == tc->cap) {
+		tc->cap = tc->cap ? 2 * tc->cap : 64;
+		grown = pkg_realloc(tc->keys, tc->cap * sizeof *tc->keys);
+		if (!grown) {
+			tc->oom = 1;
+			return -1;
+		}
+		tc->keys = grown;
+	}
+	if (pkg_str_dup(&tc->keys[tc->n], key) < 0) {
+		tc->oom = 1;
+		return -1;
+	}
+	tc->n++;
+	return 0;
+}
+
+static int perf_touch_run(pcache_col_t *col, str *glob, unsigned int expires)
+{
+	struct touch_ctx tc;
+	char *pat;
+	unsigned int i, touched = 0;
+
+	pat = glob_dup(glob);
+	if (!pat)
+		return -1;
+	memset(&tc, 0, sizeof tc);
+	tc.pat = pat;
+	tc.now = get_ticks();
+	pcache_ht_iter(col->htable, touch_collect_cb, &tc);
+
+	for (i = 0; i < tc.n; i++) {
+		if (pcache_ht_touch(col->htable, &tc.keys[i], expires) == 1)
+			touched++;
+		pkg_free(tc.keys[i].s);
+	}
+	if (tc.keys)
+		pkg_free(tc.keys);
+	pkg_free(pat);
+	if (tc.oom) {
+		LM_ERR("out of pkg memory mid-walk - re-arm is partial\n");
+		return -1;
+	}
+	return (int)touched;
+}
+
+/* perf_ttl <glob> <ttl> [collection] - re-arm the TTL of matching keys */
+static mi_response_t *do_perf_ttl(str *glob, int ttl, str *col_s)
+{
+	pcache_col_t *col;
+	mi_response_t *resp;
+	mi_item_t *obj;
+	int touched;
+
+	col = col_by_name(col_s);
+	if (!col)
+		return init_mi_error(404, MI_SSTR("no such collection"));
+	touched = perf_touch_run(col, glob, ttl_to_abs(ttl));
+	if (touched < 0)
+		return init_mi_error(500, MI_SSTR("out of memory - update partial"));
+
+	resp = init_mi_result_object(&obj);
+	if (!resp)
+		return NULL;
+	if (add_mi_number(obj, MI_SSTR("updated"), touched) < 0) {
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("internal error"));
+	}
+	return resp;
+}
+
 /* thin per-arity recipe wrappers: extract params, then defer to the workers */
 #define MI_S(nm, dst) \
 	do { if (get_mi_string_param(params, nm, &(dst).s, &(dst).len) < 0) \
@@ -606,6 +696,12 @@ static mi_response_t *mi_perf_del_1(const mi_params_t *params, struct mi_handler
 static mi_response_t *mi_perf_del_2(const mi_params_t *params, struct mi_handler *a)
 { str g, c; MI_S("glob", g); MI_S("collection", c); return do_perf_del_mi(&g, &c); }
 
+static mi_response_t *mi_perf_ttl_2(const mi_params_t *params, struct mi_handler *a)
+{ str g; int t; MI_S("glob", g); MI_I("ttl", t); return do_perf_ttl(&g, t, NULL); }
+static mi_response_t *mi_perf_ttl_3(const mi_params_t *params, struct mi_handler *a)
+{ str g, c; int t; MI_S("glob", g); MI_I("ttl", t); MI_S("collection", c);
+  return do_perf_ttl(&g, t, &c); }
+
 #undef MI_S
 #undef MI_I
 
@@ -661,6 +757,13 @@ static const mi_export_t mi_cmds[] = {
 		0, 0, {
 		{mi_perf_del_1, {"glob", 0}},
 		{mi_perf_del_2, {"glob", "collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_ttl", "re-arm the TTL of every key matching a glob (ttl seconds, "
+		"0 = never); returns the count updated", 0, 0, {
+		{mi_perf_ttl_2, {"glob", "ttl", 0}},
+		{mi_perf_ttl_3, {"glob", "ttl", "collection", 0}},
 		{EMPTY_MI_RECIPE}},
 		{0}
 	},

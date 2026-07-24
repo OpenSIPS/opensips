@@ -689,6 +689,69 @@ nan:
 	return -1;
 }
 
+/*
+ * Re-arm an existing key's TTL without touching its value (MI perf_ttl).
+ * The only mutation is one aligned store of `expires` under the bucket lock
+ * - the versionless TTL bump of 2.7: no version bump, no memcpy, so the
+ * lock-free readers are undisturbed and a reader that catches the store
+ * mid-flight sees either the old or the new value, never a torn one.
+ * @expires is absolute ticks (0 = never).  1 = re-armed, 0 = no such key.
+ */
+int pcache_ht_touch(pcache_htable_t *ht, const str *key, unsigned int expires)
+{
+	pcache_bucket_t *b;
+	pcache_rec_t *r;
+	struct povf *on;
+	unsigned long route;
+	unsigned int hash, idx;
+	unsigned char tag;
+	int i, rc = 0;
+
+	hash = core_hash(key, NULL, 0);
+	tag = tag_of(hash);
+
+again:
+	idx = route_idx(ht, hash, &route);
+	b = bucket_at(ht, idx);
+
+	lock_get(&b->lock);
+	bkt_set_owner(b);
+	if (ht->route != route) {              /* 3.4 writer rule: re-routed */
+		bkt_clear_owner(b);
+		lock_release(&b->lock);
+		goto again;
+	}
+
+	i = find_slot(b, key, hash, tag);
+	if (i >= 0) {
+		r = b->slot[i];
+		__atomic_store_n(&r->expires, expires, __ATOMIC_RELAXED);
+		hint_update(ht, idx, expires);
+		rc = 1;
+	}
+	bkt_clear_owner(b);
+	lock_release(&b->lock);
+
+	if (rc)
+		return 1;
+
+	/* a bucket miss may mean a completed split re-routed the key */
+	if (ht->route != route)
+		goto again;
+
+	/* else it may sit in overflow (hash-keyed, under the overflow lock) */
+	if (ht->ovf_count) {
+		lock_get(&ht->ovf_lock);
+		on = ovf_find(ht, key, hash, NULL);
+		if (on) {
+			on->rec->expires = expires;
+			rc = 1;
+		}
+		lock_release(&ht->ovf_lock);
+	}
+	return rc;
+}
+
 int pcache_ht_remove(pcache_htable_t *ht, const str *key)
 {
 	pcache_bucket_t *b;

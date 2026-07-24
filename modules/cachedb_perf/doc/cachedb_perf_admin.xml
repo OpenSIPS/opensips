@@ -217,6 +217,12 @@ opensips-cli -x mi cachedb_perf:perf_stats th
 		<listitem><para><emphasis>perf_set &lt;key&gt; &lt;value&gt; [ttl] [collection]</emphasis>
 			- write one key; <emphasis>ttl</emphasis> is seconds (0 or omitted =
 			never expires).</para></listitem>
+		<listitem><para><emphasis>perf_ttl &lt;glob&gt; &lt;ttl&gt; [collection]</emphasis>
+			- re-arm the TTL of every key matching the glob without rewriting its
+			value (one atomic expiry store under the bucket lock, so lock-free
+			readers are undisturbed); <emphasis>ttl</emphasis> is seconds (0 =
+			never). Returns the count updated; a literal key matches exactly
+			one.</para></listitem>
 		<listitem><para><emphasis>perf_del &lt;glob&gt; [collection]</emphasis>
 			- delete every key matching the glob; returns the count. The MI face
 			of the <emphasis>perf_del()</emphasis> script function.</para></listitem>
@@ -231,6 +237,7 @@ opensips-cli -x mi cachedb_perf:perf_scan 384 "user-*" 128
 opensips-cli -x mi cachedb_perf:perf_dump "profile-*"
 opensips-cli -x mi cachedb_perf:perf_get session-abc123
 opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
+opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
 opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
 </programlisting>
 		</example>
