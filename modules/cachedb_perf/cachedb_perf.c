@@ -58,6 +58,11 @@ static int arena_selftest = 0;
 static int htable_selftest = 0;
 extern int pcache_arena_hugepage_mb;
 static int expiry_sweep_period = 1;   /* seconds; 0 disables the sweep */
+/* CP-09 growth: split buckets while entries/nbuckets exceeds this; 0 = off.
+ * Default 2 keeps load factor low so the 84 ns bucket shape holds at scale -
+ * the whole reason this module exists (cachedb_local cannot resize). */
+static int growth_load_factor = 2;
+static int growth_budget = 4096;      /* max splits per maintenance tick */
 
 static int pcache_parse_collections(unsigned int type, void *val);
 static int pcache_store_urls(unsigned int type, void *val);
@@ -101,6 +106,8 @@ static const param_export_t params[] = {
 	{ "htable_selftest",   INT_PARAM, &htable_selftest },
 	{ "arena_hugepage_mb", INT_PARAM, &pcache_arena_hugepage_mb },
 	{ "expiry_sweep_period", INT_PARAM, &expiry_sweep_period },
+	{ "growth_load_factor",  INT_PARAM, &growth_load_factor },
+	{ "growth_budget",       INT_PARAM, &growth_budget },
 	{0,0,0}
 };
 
@@ -832,13 +839,15 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 }
 
 
-/* CP-05: reclaim expired records.  Expiry is never correctness (expired
- * entries are already invisible to reads) - this is memory reclamation,
- * hint-routed so an idle collection costs a 16-hints-per-line scan */
+/* CP-05 + CP-09: the maintenance timer.  Runs in a single timer process
+ * (so it is the SOLE splitter, which the growth code relies on).  First
+ * reclaims expired records (CP-05, hint-routed - an idle collection costs a
+ * 16-hints-per-line scan), then grows any collection whose load factor has
+ * climbed past growth_load_factor (CP-09), bounded per tick. */
 static void pcache_expire_timer(unsigned int ticks, void *param)
 {
 	pcache_col_t *col;
-	unsigned int now = get_ticks(), freed;
+	unsigned int now = get_ticks(), freed, split;
 
 	for (col = pcache_collection; col; col = col->next) {
 		if (!col->htable)
@@ -847,6 +856,13 @@ static void pcache_expire_timer(unsigned int ticks, void *param)
 		if (freed)
 			LM_DBG("collection <%.*s>: reclaimed %u expired records\n",
 				col->col_name.len, col->col_name.s, freed);
+		if (growth_load_factor > 0) {
+			split = pcache_ht_grow(col->htable,
+				growth_load_factor, growth_budget);
+			if (split)
+				LM_DBG("collection <%.*s>: grew by %u splits\n",
+					col->col_name.len, col->col_name.s, split);
+		}
 	}
 }
 

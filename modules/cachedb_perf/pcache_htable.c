@@ -75,7 +75,9 @@ static inline unsigned char tag_of(unsigned int h)
 static inline unsigned int route_idx(pcache_htable_t *ht, unsigned int h,
 		unsigned long *route_out)
 {
-	unsigned long r = ht->route;
+	/* acquire pairs with the release-publish in pcache_ht_split: seeing a
+	 * new routing word implies the partner bucket's slots are visible */
+	unsigned long r = __atomic_load_n(&ht->route, __ATOMIC_ACQUIRE);
 	unsigned int level = (unsigned int)(r >> 32);
 	unsigned int split = (unsigned int)r;
 	unsigned int idx = h & ((1U << level) - 1);
@@ -974,6 +976,145 @@ void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out)
 	out->entries = out->created - out->destroyed;
 }
 
+/*
+ * CP-09: linear-hash growth.  The maintenance timer is the SOLE splitter, so
+ * splits never race one another; readers and writers use the routing word
+ * plus the 3.4 re-check protocol already wired into fetch/store/remove.
+ * Existing buckets never move (growth appends), so no pointer invalidation.
+ */
+
+/* allocate the segment (+ its hint segment) containing bucket @idx if absent.
+ * Single-splitter, so no alloc race; the seg pointer is published (release)
+ * only once fully built, and always before the routing word that makes any
+ * bucket in it reachable. */
+static int ensure_segment(pcache_htable_t *ht, unsigned int idx)
+{
+	unsigned int s = idx >> PCACHE_SEG_BITS, i;
+	pcache_bucket_t *seg;
+	unsigned int *hseg;
+
+	if (ht->seg[s])
+		return 0;
+	seg = pcache_region_alloc((unsigned long)PCACHE_SEG_SIZE * sizeof *seg);
+	if (!seg)
+		return -1;
+	memset(seg, 0, (unsigned long)PCACHE_SEG_SIZE * sizeof *seg);
+	for (i = 0; i < PCACHE_SEG_SIZE; i++)
+		lock_init(&seg[i].lock);
+	hseg = pcache_region_alloc(PCACHE_SEG_SIZE * sizeof(unsigned int));
+	if (!hseg)
+		return -1;
+	memset(hseg, 0, PCACHE_SEG_SIZE * sizeof(unsigned int));
+	ht->hint_seg[s] = hseg;
+	__atomic_store_n(&ht->seg[s], seg, __ATOMIC_RELEASE);
+	return 1;
+}
+
+/*
+ * Split the current bucket (index = split), redistributing its 6 slots into
+ * itself and the new partner (split + 2^level) by bit `level` of each entry's
+ * stored hash (no rehash).  Overflow is hash-keyed and bucket-agnostic
+ * (ovf_find matches by hash+key regardless of routing), so a split leaves
+ * overflow entries findable and does not touch them - they drain as the
+ * freed slots absorb new inserts.  Returns 1 on a split, 0 at the ceiling,
+ * -1 on OOM.
+ */
+static int pcache_ht_split(pcache_htable_t *ht)
+{
+	unsigned long r = ht->route, nr;
+	unsigned int level = (unsigned int)(r >> 32);
+	unsigned int split = (unsigned int)r;
+	unsigned int sidx = split, pidx = split + (1U << level);
+	pcache_bucket_t *S, *P;
+	unsigned int used, pused, i, smin = 0, pmin = 0;
+	pcache_rec_t *rec;
+
+	if (pidx >= PCACHE_NSEGS * PCACHE_SEG_SIZE)
+		return 0;                          /* at the 2^24 ceiling */
+	if (ensure_segment(ht, pidx) < 0)
+		return -1;
+
+	S = bucket_at(ht, sidx);
+	P = bucket_at(ht, pidx);               /* fresh, zeroed, unreachable */
+
+	lock_get(&S->lock);
+	bkt_set_owner(S);
+	__atomic_add_fetch(&S->version, 1, __ATOMIC_RELEASE);  /* writer in */
+
+	used = bkt_used(S);
+	pused = 0;
+	i = 0;
+	while (i < used) {
+		rec = S->slot[i];
+		if ((rec->hash >> level) & 1) {            /* -> partner */
+			P->slot[pused] = rec;
+			P->tags[pused] = S->tags[i];
+			pused++;
+			S->slot[i] = S->slot[used - 1];
+			S->tags[i] = S->tags[used - 1];
+			S->slot[used - 1] = NULL;
+			S->tags[used - 1] = 0;
+			used--;
+		} else {
+			i++;
+		}
+	}
+	bkt_set_used(S, used);
+	bkt_set_used(P, pused);
+
+	/* recompute both expiry hints (moved entries left S) */
+	for (i = 0; i < used; i++)
+		if (S->slot[i]->expires && (!smin || S->slot[i]->expires < smin))
+			smin = S->slot[i]->expires;
+	for (i = 0; i < pused; i++)
+		if (P->slot[i]->expires && (!pmin || P->slot[i]->expires < pmin))
+			pmin = P->slot[i]->expires;
+	*hint_at(ht, sidx) = smin;
+	*hint_at(ht, pidx) = pmin;
+
+	/* Publish the new routing word WHILE S's version is odd.  The even
+	 * bump below is a release that happens-after this store, so any
+	 * reader which later observes S even (via acquire) and misses a
+	 * moved key is guaranteed to see the new route on its 3.4 re-read
+	 * and re-route to the partner - no false-miss window. */
+	if (split + 1 == (1U << level))
+		nr = (unsigned long)(level + 1) << 32;     /* level up, split 0 */
+	else
+		nr = ((unsigned long)level << 32) | (split + 1);
+	__atomic_store_n(&ht->route, nr, __ATOMIC_RELEASE);
+	ht->nbuckets++;
+
+	__atomic_add_fetch(&S->version, 1, __ATOMIC_RELEASE);  /* S stable */
+	bkt_clear_owner(S);
+	lock_release(&S->lock);
+	return 1;
+}
+
+/*
+ * Split buckets while the load factor exceeds @target_lf, up to @budget
+ * splits.  Called only from the maintenance timer (single splitter).  The
+ * live-entry count is read once - splitting only redistributes, never
+ * changes it - so the loop just watches nbuckets climb.  Returns the number
+ * of splits performed.
+ */
+unsigned int pcache_ht_grow(pcache_htable_t *ht, unsigned int target_lf,
+		unsigned int budget)
+{
+	pcache_ht_totals_t t;
+	unsigned int did = 0;
+
+	if (!target_lf)
+		return 0;
+	pcache_ht_totals(ht, &t);
+	while (did < budget &&
+	       t.entries > (unsigned long)target_lf * ht->nbuckets) {
+		if (pcache_ht_split(ht) <= 0)
+			break;                         /* ceiling or OOM */
+		did++;
+	}
+	return did;
+}
+
 pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 {
 	pcache_htable_t *ht;
@@ -985,22 +1126,32 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 		return NULL;
 	memset(ht, 0, sizeof *ht);
 
-	for (s = 0, done = 0; done < nbuckets; s++, done += n) {
-		n = nbuckets - done < PCACHE_SEG_SIZE ?
-			nbuckets - done : PCACHE_SEG_SIZE;
-		seg = pcache_region_alloc((unsigned long)n * sizeof *seg);
+	/* Segments are FIXED at PCACHE_SEG_SIZE buckets (the directory is a
+	 * directory of fixed segments, DESIGN 3.4) - always allocate full
+	 * segments, even when the initial nbuckets is smaller, so linear-hash
+	 * growth can fill a segment up to its boundary without going out of
+	 * bounds.  n rounds nbuckets up to whole segments. */
+	n = (nbuckets + PCACHE_SEG_SIZE - 1) / PCACHE_SEG_SIZE;
+	if (n == 0)
+		n = 1;
+	for (s = 0; s < n; s++) {
+		seg = pcache_region_alloc(
+			(unsigned long)PCACHE_SEG_SIZE * sizeof *seg);
 		if (!seg)
 			return NULL;
-		memset(seg, 0, (unsigned long)n * sizeof *seg);
-		for (i = 0; i < n; i++)
+		memset(seg, 0, (unsigned long)PCACHE_SEG_SIZE * sizeof *seg);
+		for (i = 0; i < PCACHE_SEG_SIZE; i++)
 			lock_init(&seg[i].lock);
 		ht->seg[s] = seg;
 
-		ht->hint_seg[s] = pcache_region_alloc(n * sizeof(unsigned int));
+		ht->hint_seg[s] = pcache_region_alloc(
+			PCACHE_SEG_SIZE * sizeof(unsigned int));
 		if (!ht->hint_seg[s])
 			return NULL;
-		memset(ht->hint_seg[s], 0, n * sizeof(unsigned int));
+		memset(ht->hint_seg[s], 0,
+			PCACHE_SEG_SIZE * sizeof(unsigned int));
 	}
+	(void)done;
 
 	ht->pstats_n = PCACHE_MAX_PROCS;
 	ht->pstats = pcache_region_alloc(
@@ -1296,6 +1447,38 @@ int pcache_htable_selftest(void)
 		HCHK(t.retries == 0 && t.fallbacks == 0,
 			"single-process retries %lu, fallbacks %lu\n",
 			t.retries, t.fallbacks);
+	}
+
+	/* CP-09 growth: fill a small table past its load factor, split it
+	 * down, and prove every key survives the relink + re-routing */
+	{
+		pcache_htable_t *g = pcache_htable_new(4);   /* 16 buckets */
+		unsigned int nb0, grown, miss = 0;
+		HCHK(g != NULL, "growth table creation failed\n");
+		for (i = 0; i < 1000; i++) {
+			k.len = snprintf(kb, sizeof kb, "grow-%04u", i); k.s = kb;
+			v.len = snprintf(vb, sizeof vb, "gv-%04u", i); v.s = vb;
+			HCHK(pcache_ht_store(g, &k, &v, 0) == 0, "grow store %u\n", i);
+		}
+		nb0 = g->nbuckets;
+		HCHK(nb0 == 16, "unexpected initial buckets %u\n", nb0);
+		grown = pcache_ht_grow(g, 2, 100000);        /* target LF 2 */
+		HCHK(g->nbuckets > nb0, "table did not grow (%u)\n", g->nbuckets);
+		HCHK(g->nbuckets * 2 >= 1000, "grew short: %u buckets for 1000 "
+			"entries at LF 2\n", g->nbuckets);
+		/* every key still findable after the splits */
+		for (i = 0; i < 1000; i++) {
+			k.len = snprintf(kb, sizeof kb, "grow-%04u", i); k.s = kb;
+			v.len = snprintf(vb, sizeof vb, "gv-%04u", i);
+			if (pcache_ht_fetch(g, &k, &out) != 0) { miss++; continue; }
+			if (out.len != (unsigned int)v.len || memcmp(out.s, vb, v.len))
+				miss++;
+			pkg_free(out.s);
+		}
+		HCHK(miss == 0, "%u of 1000 keys lost/wrong after growth "
+			"(%u->%u buckets, %u splits)\n", miss, nb0, g->nbuckets, grown);
+		LM_INFO("htable selftest: growth %u->%u buckets (%u splits), "
+			"all 1000 keys intact\n", nb0, g->nbuckets, grown);
 	}
 
 	/* every bucket must end on an even (stable) version */

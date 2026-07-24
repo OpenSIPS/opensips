@@ -1160,13 +1160,33 @@ documented answer for anything large.
   core, not optional.
 
 **Phase 3 — scale**
-- **CP-09** Segmented directory + linear-hashing growth (§3.4), including the
-  split/miss re-route protocol and the pre-allocated maximum directory.
-- **CP-10** Background maintenance worker via `proc_export_t` (pattern
-  `rtpengine.c:795`): incremental splits, arena compaction. Rules: never hold
-  more than one bucket lock at a time; bounded work per wakeup with a yield;
-  `PROC_FLAG_HAS_IPC` if MI-triggered; compaction is within-class only —
-  chunks never change size class (§3.3, load-bearing for the read path).
+- **CP-09** Segmented directory + linear-hashing growth (§3.4).
+  **Done 2026-07-24** (`pcache_ht_split` / `ensure_segment` / `pcache_ht_grow`
+  in `pcache_htable.c`). A split redistributes one bucket's six slots into
+  itself and its new partner (`split + 2^level`) by bit `level` of each
+  entry's stored hash — no rehash, existing buckets never move. The routing
+  word is published (release) *while the split bucket's version is odd*, so
+  the even bump release-covers it and a reader that later sees the bucket
+  even and misses a moved key is guaranteed to see the new route on its §3.4
+  re-read (no false-miss window); `route_idx` reads the word with acquire to
+  pair. **Overflow is left untouched** — it is hash-keyed and
+  bucket-agnostic (`ovf_find` matches on hash+key regardless of routing), so
+  entries stay findable across a split and drain as freed slots absorb new
+  inserts. Segments are fixed `PCACHE_SEG_SIZE` (a partial initial segment
+  was the first bug — growth ran off its end). Verified: 1000 entries into a
+  16-bucket table → 484 splits → 500 buckets, **all 1000 keys intact** after
+  the relink. Segments allocated on demand as splits cross a boundary; the
+  directory is pre-allocated at its 2^24-bucket maximum.
+- **CP-10** Maintenance driver. **Done 2026-07-24** — folded into the CP-05
+  expiry timer rather than a separate `proc_export_t`: the timer already
+  runs in a single timer process, which is exactly the single-splitter
+  guarantee growth needs (concurrent splitters would race the same bucket).
+  Per tick it sweeps expiry then calls `pcache_ht_grow(target_lf, budget)`
+  per collection — bounded splits per wakeup. Modparams
+  `growth_load_factor` (default 2, 0=off — the whole point of the module,
+  keeping the 84 ns bucket shape as entries scale) and `growth_budget`
+  (splits/tick). Arena compaction (within-class only) remains a later
+  refinement.
 
 **Phase 4 — optional**
 - **CP-11** `E_CACHEDB_PERF_EXPIRED` event, gated by `evi_probe_event()`

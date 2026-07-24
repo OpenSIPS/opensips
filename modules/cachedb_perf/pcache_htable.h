@@ -205,6 +205,11 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
  * the number of records reclaimed. */
 unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now);
 
+/* linear-hash growth (CP-09): split buckets while entries/nbuckets exceeds
+ * @target_lf, up to @budget splits.  Single-splitter (maintenance timer). */
+unsigned int pcache_ht_grow(pcache_htable_t *ht, unsigned int target_lf,
+		unsigned int budget);
+
 /* modparam-triggered startup selftest; -1 on any mismatch */
 int pcache_htable_selftest(void);
 
