@@ -1291,7 +1291,10 @@ documented answer for anything large.
   ran off `pl->cls[]`. Fixed so a child drops its inherited copy instead of
   donating cells it does not own. **Post-fix result:** 8 processes, 24M
   ops, 3093 concurrent splits, 0 crashes, `torn_reads=0`, counter
-  sum == adds, all immortals intact; clean under `Q_MALLOC_DBG` too. The
+  sum == adds, all immortals intact; clean under `Q_MALLOC_DBG` too, and
+  identical clean passes under all three core allocators — `F_MALLOC`,
+  `Q_MALLOC`, `HP_MALLOC` — driving both pkg (per-process state) and shm
+  (the arena's chunk backing, since huge pages are off in this config). The
   `cachedb_local`-as-oracle cross-check and a ThreadSanitizer build remain
   optional follow-ups.
 - **CP-17** Re-run the `th_store` benchmark from PR #4114 with `perf://` and
