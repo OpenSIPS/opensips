@@ -33,9 +33,9 @@
 	<warning>
 	<para>
 		Work in progress: this module is under active development. Data
-		operations are functional; still missing are the background
-		expiry sweep (expired entries are invisible but their memory is
-		not yet reclaimed), runtime table growth, and statistics.
+		operations, the background expiry sweep, runtime table growth,
+		statistics and the huge-page arena are all functional; still
+		missing is the introspection MI (per-key inspect/scan/dump).
 	</para>
 	</warning>
 	</section>
