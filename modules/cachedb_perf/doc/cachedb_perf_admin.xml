@@ -36,7 +36,8 @@
 		functionally complete for a single node - data operations, the
 		background expiry sweep, runtime table growth, statistics, the
 		huge-page arena, the introspection MI and the observability events
-		are all in place. Cross-node
+		are all in place, and whole collections can be persisted to a
+		db_* backend. Cross-node
 		replication and restart persistency are intentionally out of scope.
 	</para>
 	</warning>
@@ -263,6 +264,97 @@ modparam("cachedb_perf", "event_expired_collections", "sessions,subscriptions")
 		</example>
 	</section>
 
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		URL of a <emphasis>db_*</emphasis> (SQL) backend used to persist
+		collections - see <xref linkend="persistence"/>. The matching
+		<emphasis>db_*</emphasis> module must be loaded. When unset,
+		persistence is disabled. The DB is a shared, durable store; the
+		in-memory cache is a view over it.
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "db_url", "mysql://opensips:pw@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_db_table" xreflabel="db_table">
+		<title><varname>db_table</varname> (string)</title>
+		<para>
+		Table that holds the persisted entries. Default is
+		<quote>cachedb_perf</quote>. See <xref linkend="persistence"/> for
+		the schema.
+		</para>
+	</section>
+
+	<section id="param_db_mode" xreflabel="db_mode">
+		<title><varname>db_mode</varname> (integer)</title>
+		<para>
+		Automatic persistence for the collections listed in
+		<xref linkend="param_persist_collections"/>: 0 = off (default;
+		load/save only on the <emphasis>perf_load</emphasis>/
+		<emphasis>perf_save</emphasis> MI commands), 1 = load them from the
+		DB at startup, 2 = load at startup and save on a graceful shutdown.
+		</para>
+		<example>
+		<title>Set <varname>db_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "db_mode", 2)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_persist_collections" xreflabel="persist_collections">
+		<title><varname>persist_collections</varname> (string)</title>
+		<para>
+		Comma-separated list of the collections that
+		<xref linkend="param_db_mode"/> loads at startup and saves at
+		shutdown. Empty (default) means none are persisted automatically -
+		though <emphasis>perf_save</emphasis>/<emphasis>perf_load</emphasis>
+		still work on any collection on demand.
+		</para>
+		<example>
+		<title>Set <varname>persist_collections</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "persist_collections", "sessions,profiles")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="persistence" xreflabel="DB persistence">
+	<title>DB persistence</title>
+	<para>
+		With <xref linkend="param_db_url"/> set, a whole collection can be
+		saved to and loaded from an SQL backend. A save is a full snapshot:
+		the collection's rows are deleted and every live entry is re-inserted,
+		with its TTL stored as an absolute wall-clock time so it survives a
+		restart (already-expired entries are skipped on both save and load).
+		Native counters round-trip as their decimal value.
+	</para>
+	<para>
+		Trigger it on demand with the <emphasis>perf_save</emphasis> /
+		<emphasis>perf_load</emphasis> MI commands, or automatically via
+		<xref linkend="param_db_mode"/>. This is single-node durability; it
+		is not cross-node replication.
+	</para>
+	<para>The table (default <quote>cachedb_perf</quote>) needs these columns:</para>
+	<programlisting format="linespecific">
+collection   string   - the collection name
+pkey         string   - the cache key
+pvalue       binary   - the value (BLOB; binary-safe)
+expires      int      - absolute unix expiry, 0 = never
+</programlisting>
 	</section>
 
 	<section id="exported_statistics" xreflabel="Exported Statistics">
@@ -367,6 +459,26 @@ opensips-cli -x mi cachedb_perf:perf_get session-abc123
 opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
 opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
 opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
+</programlisting>
+		</example>
+	</section>
+
+	<section id="mi_perf_save" xreflabel="perf_save / perf_load">
+		<title><function moreinfo="none">perf_save / perf_load</function></title>
+		<para>
+		Persist a collection to, or restore it from, the
+		<xref linkend="param_db_url"/> backend (see
+		<xref linkend="persistence"/>). With no argument they operate on
+		every declared collection; with a collection name, only that one.
+		The reply reports how many collections and entries were written or
+		read.
+		</para>
+		<example>
+		<title><function>perf_save</function> / <function>perf_load</function> usage</title>
+		<programlisting format="linespecific">
+opensips-cli -x mi cachedb_perf:perf_save
+opensips-cli -x mi cachedb_perf:perf_save sessions
+opensips-cli -x mi cachedb_perf:perf_load sessions
 </programlisting>
 		</example>
 	</section>

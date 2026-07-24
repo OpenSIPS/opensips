@@ -42,6 +42,7 @@
 #include "pcache_mem.h"
 #include "pcache_arena.h"
 #include "pcache_htable.h"
+#include "pcache_db.h"
 
 str pcache_mod_name = str_init("perf");
 
@@ -89,6 +90,14 @@ static str evp_overcommit   = str_init("overcommit_pages");
 /* CSV of collections opted in to E_CACHEDB_PERF_EXPIRED (per-collection so a
  * high-churn collection reaping in bulk pays only if it asked to); "" = none */
 static char *event_expired_collections = NULL;
+
+/* ---- CP-19 DB persistence ---- */
+static char *db_url = NULL;                    /* a db_* backend URL */
+static char *db_table = (char *)"cachedb_perf";
+/* 0 = off, 1 = load on startup, 2 = load on startup + save on shutdown */
+static int db_mode = 0;
+/* CSV of the collections that auto load/save with db_mode; "" = none */
+static char *persist_collections = NULL;
 /* huge pages requested but the granted tier is sub-optimal; raised once from
  * the first maintenance tick, since EVI has no subscribers yet at mod_init.
  * The one-shot gate is in shm with an atomic test-and-set, so exactly one
@@ -148,6 +157,10 @@ static const param_export_t params[] = {
 	{ "growth_load_factor",  INT_PARAM, &growth_load_factor },
 	{ "growth_budget",       INT_PARAM, &growth_budget },
 	{ "event_expired_collections", STR_PARAM, &event_expired_collections },
+	{ "db_url",              STR_PARAM, &db_url },
+	{ "db_table",            STR_PARAM, &db_table },
+	{ "db_mode",             INT_PARAM, &db_mode },
+	{ "persist_collections", STR_PARAM, &persist_collections },
 	{0,0,0}
 };
 
@@ -669,6 +682,58 @@ static mi_response_t *do_perf_ttl(str *glob, int ttl, str *col_s)
 	return resp;
 }
 
+/* perf_save / perf_load [collection] - persist to / restore from the DB
+ * backend; with no collection, all declared collections */
+static mi_response_t *do_perf_persist(str *col_s, int save)
+{
+	pcache_col_t *col;
+	mi_response_t *resp;
+	mi_item_t *obj;
+	int total = 0, ncol = 0, rc;
+
+	if (!pcache_db_enabled())
+		return init_mi_error(500,
+			MI_SSTR("no DB backend configured (set db_url)"));
+
+	if (col_s) {
+		col = col_by_name(col_s);
+		if (!col)
+			return init_mi_error(404, MI_SSTR("no such collection"));
+		rc = save ? pcache_db_save(col) : pcache_db_load(col);
+		if (rc < 0)
+			return init_mi_error(500, MI_SSTR("DB operation failed"));
+		total = rc;
+		ncol = 1;
+	} else {
+		for (col = pcache_collection; col; col = col->next) {
+			if (!col->htable)
+				continue;
+			rc = save ? pcache_db_save(col) : pcache_db_load(col);
+			if (rc < 0)
+				return init_mi_error(500, MI_SSTR("DB operation failed"));
+			total += rc;
+			ncol++;
+		}
+	}
+
+	resp = init_mi_result_object(&obj);
+	if (!resp)
+		return NULL;
+	if (add_mi_number(obj, MI_SSTR("collections"), ncol) < 0)
+		goto err;
+	if (save) {
+		if (add_mi_number(obj, MI_SSTR("saved"), total) < 0)
+			goto err;
+	} else {
+		if (add_mi_number(obj, MI_SSTR("loaded"), total) < 0)
+			goto err;
+	}
+	return resp;
+err:
+	free_mi_response(resp);
+	return init_mi_error(500, MI_SSTR("internal error"));
+}
+
 /* thin per-arity recipe wrappers: extract params, then defer to the workers */
 #define MI_S(nm, dst) \
 	do { if (get_mi_string_param(params, nm, &(dst).s, &(dst).len) < 0) \
@@ -735,6 +800,15 @@ static mi_response_t *mi_perf_ttl_3(const mi_params_t *params, struct mi_handler
 { str g, c; int t; MI_S("glob", g); MI_I("ttl", t); MI_S("collection", c);
   return do_perf_ttl(&g, t, &c); }
 
+static mi_response_t *mi_perf_save_0(const mi_params_t *params, struct mi_handler *a)
+{ return do_perf_persist(NULL, 1); }
+static mi_response_t *mi_perf_save_1(const mi_params_t *params, struct mi_handler *a)
+{ str c; MI_S("collection", c); return do_perf_persist(&c, 1); }
+static mi_response_t *mi_perf_load_0(const mi_params_t *params, struct mi_handler *a)
+{ return do_perf_persist(NULL, 0); }
+static mi_response_t *mi_perf_load_1(const mi_params_t *params, struct mi_handler *a)
+{ str c; MI_S("collection", c); return do_perf_persist(&c, 0); }
+
 #undef MI_S
 #undef MI_I
 
@@ -797,6 +871,20 @@ static const mi_export_t mi_cmds[] = {
 		"0 = never); returns the count updated", 0, 0, {
 		{mi_perf_ttl_2, {"glob", "ttl", 0}},
 		{mi_perf_ttl_3, {"glob", "ttl", "collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_save", "snapshot a collection to the DB backend (all declared "
+		"collections if none is named)", 0, 0, {
+		{mi_perf_save_0, {0}},
+		{mi_perf_save_1, {"collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_load", "load a collection from the DB backend (all declared "
+		"collections if none is named)", 0, 0, {
+		{mi_perf_load_0, {0}},
+		{mi_perf_load_1, {"collection", 0}},
 		{EMPTY_MI_RECIPE}},
 		{0}
 	},
@@ -1502,6 +1590,38 @@ static void pcache_expire_timer(unsigned int ticks, void *param)
 	}
 }
 
+/* set a per-collection flag for every declared collection named in a CSV
+ * modparam (event_expired_collections, persist_collections) */
+enum col_flag { COL_FLAG_EXPIRED, COL_FLAG_PERSIST };
+static void mark_collections(char *csv_s, const char *what, enum col_flag f)
+{
+	csv_record *cr, *c;
+	pcache_col_t *col;
+	str csv;
+
+	if (!csv_s || !*csv_s)
+		return;
+	csv.s = csv_s;
+	csv.len = strlen(csv_s);
+	cr = parse_csv_record(&csv);
+	for (c = cr; c; c = c->next) {
+		int found = 0;
+		for (col = pcache_collection; col; col = col->next)
+			if (col->col_name.len == c->s.len &&
+			        !memcmp(col->col_name.s, c->s.s, c->s.len)) {
+				if (f == COL_FLAG_EXPIRED)
+					col->raise_expired = 1;
+				else
+					col->persist = 1;
+				found = 1;
+			}
+		if (!found)
+			LM_WARN("%s: <%.*s> is not a declared collection\n",
+				what, c->s.len, c->s.s);
+	}
+	free_csv_record(cr);
+}
+
 static int mod_init(void)
 {
 	cachedb_engine cde;
@@ -1643,27 +1763,26 @@ static int mod_init(void)
 			col->col_name.len, col->col_name.s, col->size_log2);
 	}
 
-	/* CP-11: mark the collections opted in to E_CACHEDB_PERF_EXPIRED */
-	if (event_expired_collections && *event_expired_collections) {
-		csv_record *cr, *c;
-		str csv;
+	/* CP-11 / CP-19: per-collection opt-ins */
+	mark_collections(event_expired_collections, "event_expired_collections",
+		COL_FLAG_EXPIRED);
+	mark_collections(persist_collections, "persist_collections",
+		COL_FLAG_PERSIST);
 
-		csv.s = event_expired_collections;
-		csv.len = strlen(event_expired_collections);
-		cr = parse_csv_record(&csv);
-		for (c = cr; c; c = c->next) {
-			int found = 0;
+	/* CP-19: bind the DB backend and load the persisted collections before
+	 * the workers fork (so every worker starts with a warm cache) */
+	if (db_url && *db_url) {
+		str url = { db_url, strlen(db_url) };
+		str tbl = { db_table, strlen(db_table) };
+
+		if (pcache_db_init(&url, &tbl) < 0)
+			return -1;
+		if (db_mode >= 1)
 			for (col = pcache_collection; col; col = col->next)
-				if (col->col_name.len == c->s.len &&
-				        !memcmp(col->col_name.s, c->s.s, c->s.len)) {
-					col->raise_expired = 1;
-					found = 1;
-				}
-			if (!found)
-				LM_WARN("event_expired_collections: <%.*s> is not a "
-					"declared collection\n", c->s.len, c->s.s);
-		}
-		free_csv_record(cr);
+				if (col->persist && col->htable)
+					pcache_db_load(col);
+	} else if (db_mode) {
+		LM_WARN("db_mode is set but db_url is not - persistence disabled\n");
 	}
 
 	/* one script connection per configured URL, or a default one */
@@ -1732,6 +1851,12 @@ static int child_init(int rank)
 static void mod_destroy(void)
 {
 	pcache_col_t *col, *next;
+
+	/* CP-19: persist the marked collections on a graceful shutdown */
+	if (db_mode >= 2 && pcache_db_enabled())
+		for (col = pcache_collection; col; col = col->next)
+			if (col->persist && col->htable)
+				pcache_db_save(col);
 
 	for (col = pcache_collection; col; col = next) {
 		next = col->next;
