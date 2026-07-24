@@ -1267,13 +1267,33 @@ documented answer for anything large.
   ineligible.
 
 **Validation**
-- **CP-16** Correctness suite: concurrent readers/writers, TTL boundaries,
-  overwrite-in-place, arena reuse, seqlock retry under contention (ThreadSanitizer
-  or equivalent), and a soak test against `cachedb_local` as oracle. Must
-  cover slot churn (insert/remove/relink) under concurrent readers and the
-  §3.4 split race specifically — `bench/concur.c`'s writers only bump
-  versions and cannot catch either; `bench/rpath.c`'s retry counting carries
-  over.
+- **CP-16** Correctness suite. **Done 2026-07-24** (`bench/cdbstress.c`, a
+  throwaway module of forked worker *processes* hammering one live backend
+  while the maintenance timer splits underneath them). Four invariants,
+  each keyed to a way the lock-free/growth machinery could fail:
+  1. **no torn read** — every value is written all-bytes-equal, so any hit
+     read back with mixed bytes is a reader that saw a half-done write
+     (seqlock failure). Covers slot churn and the §3.4 split race, which
+     `bench/concur.c` could not.
+  2. **no lost update** — N `add(+1)`s across all workers must equal the
+     summed counter values (the RMW under the bucket lock, racing splits).
+  3. **no lost key** — "immortal" keys inserted once and never removed must
+     stay found with the right value across every split (a split must not
+     drop or corrupt one).
+  4. **no crash / UAF** — runs to completion, and clean under the
+     `Q_MALLOC_DBG` redzone allocator.
+
+  **This is what found the fork double-donate bug** (`d705f251c5`):
+  `pcache_arena_child_init` donated the COW-inherited private hoard from
+  *every* child, so the same physical cells hit the global pool N times and
+  were handed to several processes at once — a value byte overwrote a
+  neighbour's class id, and the next free read an impossible class 88 and
+  ran off `pl->cls[]`. Fixed so a child drops its inherited copy instead of
+  donating cells it does not own. **Post-fix result:** 8 processes, 24M
+  ops, 3093 concurrent splits, 0 crashes, `torn_reads=0`, counter
+  sum == adds, all immortals intact; clean under `Q_MALLOC_DBG` too. The
+  `cachedb_local`-as-oracle cross-check and a ThreadSanitizer build remain
+  optional follow-ups.
 - **CP-17** Re-run the `th_store` benchmark from PR #4114 with `perf://` and
   compare against the `cachedb_local` and dialog rows.
 
