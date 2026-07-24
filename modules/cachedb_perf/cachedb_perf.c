@@ -53,6 +53,7 @@ pcache_url_t *pcache_url_list = NULL;
 static pcache_col_t *pcache_default_col = NULL;
 static int arena_selftest = 0;
 static int htable_selftest = 0;
+static int expiry_sweep_period = 1;   /* seconds; 0 disables the sweep */
 
 static int pcache_parse_collections(unsigned int type, void *val);
 static int pcache_store_urls(unsigned int type, void *val);
@@ -94,6 +95,7 @@ static const param_export_t params[] = {
 		(void *)pcache_store_urls },
 	{ "arena_selftest",    INT_PARAM, &arena_selftest },
 	{ "htable_selftest",   INT_PARAM, &htable_selftest },
+	{ "expiry_sweep_period", INT_PARAM, &expiry_sweep_period },
 	{0,0,0}
 };
 
@@ -632,6 +634,24 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 }
 
 
+/* CP-05: reclaim expired records.  Expiry is never correctness (expired
+ * entries are already invisible to reads) - this is memory reclamation,
+ * hint-routed so an idle collection costs a 16-hints-per-line scan */
+static void pcache_expire_timer(unsigned int ticks, void *param)
+{
+	pcache_col_t *col;
+	unsigned int now = get_ticks(), freed;
+
+	for (col = pcache_collection; col; col = col->next) {
+		if (!col->htable)
+			continue;
+		freed = pcache_ht_sweep(col->htable, now);
+		if (freed)
+			LM_DBG("collection <%.*s>: reclaimed %u expired records\n",
+				col->col_name.len, col->col_name.s, freed);
+	}
+}
+
 static int mod_init(void)
 {
 	cachedb_engine cde;
@@ -788,6 +808,17 @@ static int mod_init(void)
 		}
 
 		pcache_default_col = ((pcache_con *)con->data)->col;
+	}
+
+	if (expiry_sweep_period > 0) {
+		if (register_timer("cachedb-perf-expire", pcache_expire_timer,
+		        NULL, expiry_sweep_period, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+			LM_ERR("failed to register the expiry sweep timer\n");
+			return -1;
+		}
+	} else {
+		LM_WARN("expiry sweep disabled: expired records stay invisible "
+			"but their memory is never reclaimed\n");
 	}
 
 	return 0;

@@ -301,6 +301,31 @@ Findings:
   caller (later faults do that), so per-process smaps shows nothing — verify
   collapse via the global `ShmemHugePages` meminfo delta, as the bench does;
   smaps `ShmemPmdMapped` is the right check only for fault-time THP (tier 2).
+- **Version checks lie in both directions** (2026-07-24): 224 moved to
+  6.12.96 (Debian 13) and `MADV_COLLAPSE` with `shmem_enabled=never`
+  *works again* there — same major version that EINVAL'd on Ubuntu's 6.12.
+  The mod_init probe silently got the better tier; a version check would
+  have pessimised it. Also refined: with `pdpe1gb` exposed, **1 GB pages
+  are allocatable at runtime on a fresh boot** (2 granted right after
+  boot) — "unobtainable" holds only once uptime fragments memory. The
+  ruling against 1 GB stands on the coverage arithmetic, not
+  obtainability.
+
+### 2.6.3 NUMA (measured on a pinned two-socket guest, 2026-07-24)
+
+224 as vNUMA testbed (Proxmox `numaN: ...,hostnodes=N,policy=bind` onto a
+dual E5-2699 v4 host — plain `numa: 1` without `hostnodes` fabricates
+topology over one memory domain and measured *flat*, 123–134 ns in every
+bind combination). With real binding: dependent chase **146.5 ns local vs
+194.6 ns remote (+33%)** on the node-0 axis; node 1's vCPUs float across
+host sockets (blended ~170 ns both ways), so NUMA experiments run pinned
+`numactl -N0` with the memory bind toggled. Design consequences, both
+already in place rather than motivating change: cross-socket *reads* of a
+shared cache cannot be sharded away (only replication avoids them, and §2.3
+shows no lock contention for sharding to relieve); *writes* are node-local
+by construction via per-process chunk first-touch. Open item for CP-17/
+CP-20: quantify whether huge pages are worth more than 1.42× on two
+sockets — page walks against remote memory should amplify the TLB effect.
 
 ### 2.6.2 Swap pinning (measured on 223, verified against the live SBC)
 
@@ -1063,7 +1088,21 @@ documented answer for anything large.
 
 **Phase 2 — correctness and operability**
 - **CP-05** Expiry: per-bucket `min_expires`, frequent sweep, expired-as-absent
-  on read.
+  on read. **Done 2026-07-24.** The hints live in per-segment arrays
+  *parallel* to the buckets — the 64-byte bucket is full, and a separate
+  array sweeps better anyway: 16 hints per cache line, no bucket touched
+  unless due. Writers update a hint under the bucket lock only when a
+  LOWER expiry arrives, so the hot TTL-bump path (which only raises) never
+  writes it; a stale-low hint costs one wasted visit and self-heals (the
+  sweep recomputes the bucket's true minimum). The sweep runs from the
+  core timer (`expiry_sweep_period` modparam, default 1 s, 0 disables)
+  and reclaims through the **global** pool — the timer process is not an
+  allocator, so private-stack frees would never drain. Overflow chains
+  are unhinted and swept whole in bounded unlink batches whenever any
+  overflow exists — overflow exists to be small (CP-09). Validated: the
+  selftest sweeps 100 expiring keys through both legs with a
+  never-expiring survivor intact, and the live timer reclaims a 1 s-TTL
+  key stored from script.
 - **CP-06** Statistics + MI dump: entries, buckets, load factor, avg/max probe,
   arena occupancy, bytes, seqlock retry rate (§2.7 — the contention signal
   this design adapts on). `cachedb_local` exports **zero** statistics, which is

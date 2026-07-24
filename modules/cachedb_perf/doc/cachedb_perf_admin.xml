@@ -85,6 +85,26 @@ modparam("cachedb_perf", "cache_collections", "th=16;profiles")
 		</example>
 	</section>
 
+	<section id="param_expiry_sweep_period" xreflabel="expiry_sweep_period">
+		<title><varname>expiry_sweep_period</varname> (integer)</title>
+		<para>
+		How often, in seconds, expired records are reclaimed. Expired
+		entries are already invisible to reads the moment they expire -
+		the sweep only frees their memory, guided by per-bucket hints so
+		idle collections cost next to nothing. Default is 1 second; 0
+		disables the sweep (expired records then hold their memory until
+		overwritten or deleted).
+		</para>
+		<example>
+		<title>Set <varname>expiry_sweep_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "expiry_sweep_period", 5)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>

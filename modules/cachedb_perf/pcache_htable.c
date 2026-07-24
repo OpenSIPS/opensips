@@ -91,6 +91,21 @@ static inline pcache_bucket_t *bucket_at(pcache_htable_t *ht, unsigned int idx)
 	return &ht->seg[idx >> PCACHE_SEG_BITS][idx & (PCACHE_SEG_SIZE - 1)];
 }
 
+static inline unsigned int *hint_at(pcache_htable_t *ht, unsigned int idx)
+{
+	return &ht->hint_seg[idx >> PCACHE_SEG_BITS][idx & (PCACHE_SEG_SIZE - 1)];
+}
+
+/* under the bucket lock; only a LOWER expiry writes (TTL bumps raise) */
+static inline void hint_update(pcache_htable_t *ht, unsigned int idx,
+		unsigned int exp)
+{
+	unsigned int *h = hint_at(ht, idx);
+
+	if (exp && (!*h || exp < *h))
+		*h = exp;
+}
+
 /* one 8-byte load of tags[6]+meta; 0x80 at byte i = tags[i] matches.
  * The SWAR borrow can produce a false positive after a true match byte -
  * filtered by the key compare, never a false negative. */
@@ -391,6 +406,7 @@ again:
 			 * aligned store readers cannot tear - no version bumps,
 			 * no reader disturbance */
 			__atomic_store_n(&old->expires, expires, __ATOMIC_RELAXED);
+			hint_update(ht, idx, expires);
 			old = nr;                     /* discard the prebuilt one */
 			goto done;
 		}
@@ -402,6 +418,7 @@ again:
 			memcpy(old->data + key->len, val->s, val->len);
 			old->expires = expires;
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			hint_update(ht, idx, expires);
 			old = nr;                     /* discard the prebuilt one */
 			goto done;
 		}
@@ -410,6 +427,7 @@ again:
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
 		b->slot[i] = nr;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		hint_update(ht, idx, expires);
 		goto done;
 	}
 
@@ -434,6 +452,7 @@ again:
 		b->tags[used] = tag;
 		bkt_set_used(b, used + 1);
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		hint_update(ht, idx, expires);
 		goto done;
 	}
 
@@ -528,6 +547,7 @@ again:
 			memcpy(r->data + r->klen, &cur, 8);
 			r->expires = expires;
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			hint_update(ht, idx, expires);
 			old = nr;
 			goto done;
 		}
@@ -539,6 +559,7 @@ again:
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
 		b->slot[i] = nr;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		hint_update(ht, idx, expires);
 		old = r;
 		goto done;
 	}
@@ -579,6 +600,7 @@ again:
 		b->tags[used] = tag;
 		bkt_set_used(b, used + 1);
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		hint_update(ht, idx, expires);
 		goto done;
 	}
 
@@ -807,6 +829,94 @@ out:
 	return rc < 0 ? rc : 0;
 }
 
+unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now)
+{
+	pcache_bucket_t *b;
+	pcache_rec_t *r, *dead[PCACHE_SLOTS];
+	pcache_rec_t *batch_r[64];
+	struct povf *n, **prev, *batch_n[64];
+	unsigned int idx, i, used, hint, newmin, ndead, freed = 0;
+	int bn;
+
+	for (idx = 0; idx < ht->nbuckets; idx++) {
+		hint = *hint_at(ht, idx);
+		if (!hint || hint > now)
+			continue;               /* 16 hints per line, no bucket touch */
+
+		b = bucket_at(ht, idx);
+		lock_get(&b->lock);
+		bkt_set_owner(b);
+
+		ndead = 0;
+		newmin = 0;
+		i = 0;
+		while (i < (used = bkt_used(b))) {
+			r = b->slot[i];
+			if (r->expires && r->expires <= now) {
+				if (!ndead)
+					__atomic_add_fetch(&b->version, 1,
+						__ATOMIC_RELEASE);
+				dead[ndead++] = r;
+				b->slot[i] = b->slot[used - 1];
+				b->tags[i] = b->tags[used - 1];
+				b->slot[used - 1] = NULL;
+				b->tags[used - 1] = 0;
+				bkt_set_used(b, used - 1);
+				continue;           /* re-examine the swapped-in slot */
+			}
+			if (r->expires && (!newmin || r->expires < newmin))
+				newmin = r->expires;
+			i++;
+		}
+		if (ndead)
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		*hint_at(ht, idx) = newmin;
+
+		bkt_clear_owner(b);
+		lock_release(&b->lock);
+
+		/* reclamation strictly after the lock (3.5b), through the
+		 * global pool - the sweeping process is not an allocator */
+		for (i = 0; i < ndead; i++)
+			pcache_cell_free_global(dead[i]);
+		freed += ndead;
+	}
+
+	if (!ht->ovf_count)
+		return freed;
+
+	/* overflow: unhinted, scanned whole - it exists to be small */
+	for (idx = 0; idx < PCACHE_OVF_BUCKETS; idx++) {
+		do {
+			bn = 0;
+			lock_get(&ht->ovf_lock);
+			prev = &ht->ovf_tab[idx];
+			for (n = *prev; n && bn < 64; ) {
+				if (n->rec->expires && n->rec->expires <= now) {
+					*prev = n->next;
+					batch_n[bn] = n;
+					batch_r[bn] = n->rec;
+					bn++;
+					__atomic_sub_fetch(&ht->ovf_count, 1,
+						__ATOMIC_RELAXED);
+					n = *prev;
+				} else {
+					prev = &n->next;
+					n = n->next;
+				}
+			}
+			lock_release(&ht->ovf_lock);
+			for (i = 0; i < (unsigned int)bn; i++) {
+				pcache_cell_free_global(batch_r[i]);
+				pcache_cell_free_global(batch_n[i]);
+			}
+			freed += bn;
+		} while (bn == 64);
+	}
+
+	return freed;
+}
+
 pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 {
 	pcache_htable_t *ht;
@@ -828,6 +938,11 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 		for (i = 0; i < n; i++)
 			lock_init(&seg[i].lock);
 		ht->seg[s] = seg;
+
+		ht->hint_seg[s] = pcache_region_alloc(n * sizeof(unsigned int));
+		if (!ht->hint_seg[s])
+			return NULL;
+		memset(ht->hint_seg[s], 0, n * sizeof(unsigned int));
 	}
 
 	ht->ovf_tab = pcache_region_alloc(
@@ -1062,6 +1177,43 @@ int pcache_htable_selftest(void)
 	for (i = 0, nb_used = 0; i < ht->nbuckets; i++)
 		nb_used += bkt_used(bucket_at(ht, i));
 	HCHK(nb_used == 0, "%u slots still used after full drain\n", nb_used);
+
+	/* expiry sweep (CP-05): hint-routed, bucket + overflow legs, mixed
+	 * with never-expiring survivors */
+	{
+		unsigned int freed;
+
+		/* the never-expiring survivor goes in FIRST so it takes a bucket
+		 * slot - stored last it would land in overflow and the count
+		 * checks below would misread a correct sweep */
+		k.s = "stay"; k.len = 4;
+		v.s = "keep"; v.len = 4;
+		HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "stay store\n");
+		for (i = 0; i < 100; i++) {
+			k.len = snprintf(kb, sizeof kb, "ex-%03u", i); k.s = kb;
+			v.s = "tmp"; v.len = 3;
+			HCHK(pcache_ht_store(ht, &k, &v, 10) == 0,
+				"sweep store %u\n", i);
+		}
+		HCHK(ht->ovf_count > 0, "sweep set never overflowed\n");
+
+		freed = pcache_ht_sweep(ht, 5);
+		HCHK(freed == 0, "sweep before expiry freed %u\n", freed);
+		freed = pcache_ht_sweep(ht, 20);
+		HCHK(freed == 100, "sweep freed %u of 100\n", freed);
+		HCHK(ht->ovf_count == 0, "sweep left %u in overflow\n",
+			ht->ovf_count);
+
+		k.s = "stay"; k.len = 4;
+		rc = pcache_ht_fetch(ht, &k, &out);
+		HCHK(rc == 0 && out.len == 4, "never-expiring key swept\n");
+		pkg_free(out.s);
+		HCHK(pcache_ht_remove(ht, &k) == 1, "stay remove\n");
+		for (i = 0, nb_used = 0; i < ht->nbuckets; i++)
+			nb_used += bkt_used(bucket_at(ht, i));
+		HCHK(nb_used == 0, "%u slots used after the sweep test\n",
+			nb_used);
+	}
 
 	/* every bucket must end on an even (stable) version */
 	for (i = 0; i < ht->nbuckets; i++)

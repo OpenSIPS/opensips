@@ -124,6 +124,14 @@ typedef struct pcache_htable {
 	struct povf           **ovf_tab;     /* PCACHE_OVF_BUCKETS heads */
 
 	pcache_bucket_t        *seg[PCACHE_NSEGS];
+
+	/* per-bucket min-expires hints (CP-05), parallel to seg[]: the 64B
+	 * bucket is full, and a separate array sweeps better anyway - 16
+	 * hints per cache line, no bucket touched unless due.  Written under
+	 * the bucket lock, only when a LOWER expiry arrives (a TTL bump only
+	 * raises, so the hot bump path never writes here); a stale-low hint
+	 * just costs one wasted bucket visit.  0 = nothing expiring */
+	unsigned int           *hint_seg[PCACHE_NSEGS];
 } pcache_htable_t;
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
@@ -162,6 +170,13 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 typedef int (*pcache_iter_cb)(const str *key, const str *val,
 		unsigned int expires, void *ctx);
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
+
+/* expiry sweep (CP-05): visits only buckets whose hint is due, removes
+ * expired records (overflow chains too whenever any overflow exists) and
+ * reclaims their cells through the global pool - the sweeping process is
+ * not an allocator, so private-stack frees would never drain.  Returns
+ * the number of records reclaimed. */
+unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now);
 
 /* modparam-triggered startup selftest; -1 on any mismatch */
 int pcache_htable_selftest(void);
