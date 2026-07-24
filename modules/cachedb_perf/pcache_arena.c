@@ -327,30 +327,26 @@ void pcache_arena_destroy(void)
 void pcache_arena_child_init(void)
 {
 	struct pcache_palloc *pl = my_palloc;
-	void *cell;
-	int c;
 
 	if (!pl)
 		return;
+
+	/*
+	 * After fork every child holds a COW copy of the parent's private
+	 * allocator state - the SAME bump pointer and the SAME free-list cell
+	 * addresses.  A child must not keep them (two processes bumping one
+	 * chunk would hand out the same cell), and it must NOT donate them to
+	 * the global pool either: every child inherited the identical copy, so
+	 * each would push the same physical cells, landing one cell on the free
+	 * list N times - later popped by several processes at once and written
+	 * through concurrently (the CP-16 corruption: a value byte overwrites a
+	 * neighbour's class id, and the next free reads an impossible class).
+	 *
+	 * The leftover cells belong to the parent.  The child simply discards
+	 * its inherited copy and starts empty, carving its own chunk on first
+	 * use.  The parent keeps its own small hoard.
+	 */
 	my_palloc = NULL;
-
-	/* donate everything the pre-fork process held: after fork each child
-	 * has a private COPY of this state, and two processes bumping the
-	 * same chunk would hand out the same cells */
-	lock_get(&arena->lock);
-	for (c = 0; c < PCACHE_NCLASSES; c++) {
-		while ((cell = pl->cls[c].free_head) != NULL) {
-			pl->cls[c].free_head = cell_next(cell);
-			gpool_push(c, cell);
-		}
-		while (pl->cls[c].left) {
-			gpool_push(c, pl->cls[c].bump);
-			pl->cls[c].bump += cell_sizes[c];
-			pl->cls[c].left--;
-		}
-	}
-	lock_release(&arena->lock);
-
 	pkg_free(pl);
 }
 
