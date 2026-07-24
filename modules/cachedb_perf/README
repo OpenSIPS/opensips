@@ -1,0 +1,521 @@
+cachedb_perf Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. cache_collections (string)
+              1.3.2. expiry_sweep_period (integer)
+              1.3.3. cachedb_url (string)
+              1.3.4. growth_load_factor (integer)
+              1.3.5. growth_budget (integer)
+              1.3.6. arena_hugepage_mb (integer)
+              1.3.7. arena_selftest (integer)
+              1.3.8. htable_selftest (integer)
+              1.3.9. event_expired_collections (string)
+              1.3.10. db_url (string)
+              1.3.11. db_table (string)
+              1.3.12. db_mode (integer)
+              1.3.13. persist_collections (string)
+
+        1.4. DB persistence
+        1.5. Exported Statistics
+        1.6. Exported MI Functions
+
+              1.6.1. perf_stats
+              1.6.2. Key introspection: perf_keys / perf_scan /
+                      perf_dump / perf_get / perf_set / perf_ttl /
+                      perf_del
+
+              1.6.3. perf_save / perf_load
+
+        1.7. Exported Events
+
+              1.7.1. E_CACHEDB_PERF_EXPIRED
+              1.7.2. E_CACHEDB_PERF_NOMEM
+              1.7.3. E_CACHEDB_PERF_GROWN
+              1.7.4. E_CACHEDB_PERF_MEM_DEGRADED
+
+        1.8. Exported Functions
+
+              1.8.1. perf_del(glob[, collection])
+              1.8.2. perf_mget(glob, keys_avp, vals_avp[,
+                      collection[, limit]])
+
+              1.8.3. perf_mget_json(glob, dst_var[, collection[,
+                      limit]])
+
+   List of Examples
+
+   1.1. Set cache_collections parameter
+   1.2. Set expiry_sweep_period parameter
+   1.3. Set cachedb_url parameter
+   1.4. Set growth_load_factor parameter
+   1.5. Set growth_budget parameter
+   1.6. Set arena_hugepage_mb parameter
+   1.7. Set arena_selftest parameter
+   1.8. Set htable_selftest parameter
+   1.9. Set event_expired_collections parameter
+   1.10. Set db_url parameter
+   1.11. Set db_mode parameter
+   1.12. Set persist_collections parameter
+   1.13. perf_stats usage
+   1.14. introspection usage
+   1.15. perf_save / perf_load usage
+   1.16. perf_del() usage
+   1.17. perf_mget() usage
+   1.18. perf_mget_json() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module is a high-performance local memory cache
+   implementing the Key-Value interface exported by the OpenSIPS
+   core. It is a drop-in alternative to cachedb_local, selected by
+   URL scheme (perf:// instead of local://), designed for large,
+   high-churn caches: lock-free reads, cache-line-sized buckets
+   and a table that grows at runtime instead of being sized once
+   at startup.
+
+   The cache is strictly single-node: no clusterer replication and
+   no restart persistency. Every OpenSIPS instance keeps its own
+   independent copy. Deployments that share cache state across
+   nodes via cachedb_local with cluster_id must stay on
+   cachedb_local.
+
+   Data is organized in named collections (hash tables), declared
+   via the cache_collections parameter. Each cachedb_url points to
+   one collection; a URL naming no collection uses the collection
+   named “default”, which always exists.
+
+Warning
+
+   Work in progress: this module is under active development, but
+   functionally complete for a single node - data operations, the
+   background expiry sweep, runtime table growth, statistics, the
+   huge-page arena, the introspection MI and the observability
+   events are all in place, and whole collections can be persisted
+   to a db_* backend. Cross-node replication and restart
+   persistency are intentionally out of scope.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   None.
+
+1.2.2. External Libraries or Applications
+
+   None.
+
+1.3. Exported Parameters
+
+1.3.1. cache_collections (string)
+
+   Declares the collections and, optionally, their initial hash
+   table size, as a semicolon-separated list of name or name=size
+   entries. The size is the power-of-2 exponent of the initial
+   bucket count (as in cachedb_local) and only sets the starting
+   point - the table grows at runtime as entries accumulate.
+   Values are clamped to the [4, 24] range; the default is 14
+   (16384 buckets).
+
+   The cachedb_local replication marker (“/r”) is rejected: this
+   cache is single-node.
+
+   Example 1.1. Set cache_collections parameter
+...
+modparam("cachedb_perf", "cache_collections", "th=16;profiles")
+...
+
+1.3.2. expiry_sweep_period (integer)
+
+   How often, in seconds, expired records are reclaimed. Expired
+   entries are already invisible to reads the moment they expire -
+   the sweep only frees their memory, guided by per-bucket hints
+   so idle collections cost next to nothing. Default is 1 second;
+   0 disables the sweep (expired records then hold their memory
+   until overwritten or deleted).
+
+   Example 1.2. Set expiry_sweep_period parameter
+...
+modparam("cachedb_perf", "expiry_sweep_period", 5)
+...
+
+1.3.3. cachedb_url (string)
+
+   URL(s) usable from the script or by other modules. The
+   collection is given by the URL's database part (perf:///name)
+   or, equivalently, its host part (perf://name) - a host has no
+   meaning for a local cache, so both forms select the collection.
+   A URL naming no collection (perf://) uses the “default”
+   collection. Naming an undefined collection is a startup error.
+   Multiple URLs may share one collection; use a group
+   (perf:group_name:///name) to address a specific URL from the
+   script.
+
+   Example 1.3. Set cachedb_url parameter
+...
+modparam("cachedb_perf", "cachedb_url", "perf:///th")
+modparam("cachedb_perf", "cachedb_url", "perf:prof:///profiles")
+
+# usage from script:
+#   cache_store("perf", ...)        - collection "th"
+#   cache_store("perf:prof", ...)   - collection "profiles"
+...
+
+1.3.4. growth_load_factor (integer)
+
+   The target number of entries per bucket the maintenance timer
+   grows the table toward. As entries accumulate the timer splits
+   buckets to keep the load factor near this value, so lookups
+   stay flat as the cache scales - the behaviour cachedb_local
+   lacks. 0 disables growth, leaving the table fixed at its
+   declared size. Default is 2.
+
+   Example 1.4. Set growth_load_factor parameter
+...
+modparam("cachedb_perf", "growth_load_factor", 2)
+...
+
+1.3.5. growth_budget (integer)
+
+   The maximum number of bucket splits the maintenance timer
+   performs on a single run, bounding the work of one growth pass
+   so the timer never stalls under a burst of inserts. Default is
+   4096.
+
+   Example 1.5. Set growth_budget parameter
+...
+modparam("cachedb_perf", "growth_budget", 4096)
+...
+
+1.3.6. arena_hugepage_mb (integer)
+
+   Size, in megabytes, of a huge-page-backed reservation for the
+   cache entries. When set, the module reserves this much memory
+   at startup and backs it with 2 MB pages to cut TLB misses on a
+   large cache. It does not pick a mechanism: it climbs a
+   detect-by-trying ladder - overcommit hugetlb pool (MAP_HUGETLB)
+   then transparent huge pages (MADV_HUGEPAGE) then MADV_COLLAPSE
+   then plain 4 KB - and keeps the best tier the running kernel
+   actually grants, which it reports at startup and through the
+   memory_tier statistic and perf_stats. 0 (default) uses plain
+   demand-faulted shared memory.
+
+   To make the faster tiers available: allow on-demand huge pages
+   with sysctl vm.nr_overcommit_hugepages=N (N >=
+   arena_hugepage_mb/2), and/or enable shmem THP with echo advise
+   > /sys/kernel/mm/transparent_hugepage/shmem_enabled. Except for
+   the hugetlb tier (which is unswappable and exempt), the
+   reservation is mlock-pinned against swap; that needs
+   LimitMEMLOCK=infinity in the systemd unit, otherwise the module
+   warns and runs the arena unpinned.
+
+   Example 1.6. Set arena_hugepage_mb parameter
+...
+modparam("cachedb_perf", "arena_hugepage_mb", 512)
+...
+
+1.3.7. arena_selftest (integer)
+
+   When set to 1, the slab arena runs a self-test at startup and
+   aborts startup on any mismatch - a permanent, cheap diagnostic.
+   Default is 0 (off).
+
+   Example 1.7. Set arena_selftest parameter
+...
+modparam("cachedb_perf", "arena_selftest", 1)
+...
+
+1.3.8. htable_selftest (integer)
+
+   When set to 1, the hash table and its runtime-growth machinery
+   run a self-test at startup and abort startup on any mismatch.
+   Default is 0 (off).
+
+   Example 1.8. Set htable_selftest parameter
+...
+modparam("cachedb_perf", "htable_selftest", 1)
+...
+
+1.3.9. event_expired_collections (string)
+
+   Comma-separated list of the collections that raise
+   E_CACHEDB_PERF_EXPIRED (one event per reaped key) as the sweep
+   reclaims them. It is opt-in per collection because a high-churn
+   collection can reap in bulk, and event delivery is synchronous
+   - a collection should pay for the per-key events only if
+   something is listening for them. Empty (default) means no
+   collection raises the event. See Exported Events.
+
+   Example 1.9. Set event_expired_collections parameter
+...
+modparam("cachedb_perf", "event_expired_collections", "sessions,subscrip
+tions")
+...
+
+1.3.10. db_url (string)
+
+   URL of a db_* (SQL) backend used to persist collections - see
+   DB persistence. The matching db_* module must be loaded. When
+   unset, persistence is disabled. The DB is a shared, durable
+   store; the in-memory cache is a view over it.
+
+   Example 1.10. Set db_url parameter
+...
+modparam("cachedb_perf", "db_url", "mysql://opensips:pw@localhost/opensi
+ps")
+...
+
+1.3.11. db_table (string)
+
+   Table that holds the persisted entries. Default is
+   “cachedb_perf”. See DB persistence for the schema.
+
+1.3.12. db_mode (integer)
+
+   Automatic persistence for the collections listed in
+   persist_collections: 0 = off (default; load/save only on the
+   perf_load/ perf_save MI commands), 1 = load them from the DB at
+   startup, 2 = load at startup and save on a graceful shutdown.
+
+   Example 1.11. Set db_mode parameter
+...
+modparam("cachedb_perf", "db_mode", 2)
+...
+
+1.3.13. persist_collections (string)
+
+   Comma-separated list of the collections that db_mode loads at
+   startup and saves at shutdown. Empty (default) means none are
+   persisted automatically - though perf_save/perf_load still work
+   on any collection on demand.
+
+   Example 1.12. Set persist_collections parameter
+...
+modparam("cachedb_perf", "persist_collections", "sessions,profiles")
+...
+
+1.4. DB persistence
+
+   With db_url set, a whole collection can be saved to and loaded
+   from an SQL backend. A save is a full snapshot: the
+   collection's rows are deleted and every live entry is
+   re-inserted, with its TTL stored as an absolute wall-clock time
+   so it survives a restart (already-expired entries are skipped
+   on both save and load). Native counters round-trip as their
+   decimal value.
+
+   Trigger it on demand with the perf_save / perf_load MI
+   commands, or automatically via db_mode. This is single-node
+   durability; it is not cross-node replication.
+
+   The table (default “cachedb_perf”) needs these columns:
+collection   string   - the collection name
+pkey         string   - the cache key
+pvalue       binary   - the value (BLOB; binary-safe)
+expires      int      - absolute unix expiry, 0 = never
+
+1.5. Exported Statistics
+
+   All counters are aggregated per-process and summed only when
+   read, so instrumentation never touches a shared cache line on
+   the hot path. Query with get_statistics cachedb_perf:.
+     * hits / misses - fetch outcomes (expired counts as a miss)
+     * stores / removes - write and delete operations
+     * entries - live records across all collections
+     * seqlock_retries - optimistic-read retries (the contention
+       signal)
+     * lock_fallbacks - reads that fell back to the bucket lock
+     * arena_bytes / arena_chunks - memory taken from shm
+     * memory_tier - the achieved huge-page tier (1 hugetlb .. 4
+       plain 4K)
+
+   The perf_stats MI command gives the same figures broken down
+   per collection, plus load factor, overflow occupancy,
+   retries-per-1k-reads and the memory-backing description.
+
+1.6. Exported MI Functions
+
+1.6.1. perf_stats
+
+   Reports per-collection statistics (entries, buckets, overflow,
+   hits/misses/stores/removes, load factor, seqlock retries and
+   retries-per-1k-reads) plus the arena occupancy and the achieved
+   memory tier. With no parameter it reports every collection; an
+   optional collection name restricts it to one.
+
+   Name: perf_stats. Parameters: collection (optional).
+
+   Example 1.13. perf_stats usage
+opensips-cli -x mi cachedb_perf:perf_stats
+opensips-cli -x mi cachedb_perf:perf_stats th
+
+1.6.2. Key introspection: perf_keys / perf_scan / perf_dump /
+perf_get / perf_set / perf_ttl / perf_del
+
+   These give an operator the visibility that cachedb_local lacks.
+   All are lock-free: the walkers take no bucket locks (seqlock
+   reads), so unlike a cachedb_local key scan they never stall SIP
+   traffic. Every command carries the perf_ prefix, matching the
+   script functions and staying clear of the core's bare get/set.
+   The optional collection selects the table; omitted, it is the
+   groupless cachedb_url's collection.
+     * perf_keys <glob> [collection] [limit] - names (and TTL) of
+       the keys matching a shell glob, bounded (default 1000; the
+       reply carries a note when it truncates). The KEYS
+       equivalent.
+     * perf_scan <cursor> [glob] [count] - cursored incremental
+       iteration with Redis SCAN semantics over the default
+       collection: start with cursor 0 and repeat with the
+       returned cursor until it comes back 0. An entry present
+       throughout is returned at least once; count bounds the
+       buckets visited per call. This is the answer for a large
+       cache, where perf_keys would truncate.
+     * perf_dump <glob> [collection] [limit] - like perf_keys but
+       includes the values; values are opt-in, never the default.
+     * perf_get <key> [collection] - one key: its value, remaining
+       TTL (-1 = never) and size.
+     * perf_set <key> <value> [ttl] [collection] - write one key;
+       ttl is seconds (0 or omitted = never expires).
+     * perf_ttl <glob> <ttl> [collection] - re-arm the TTL of
+       every key matching the glob without rewriting its value
+       (one atomic expiry store under the bucket lock, so
+       lock-free readers are undisturbed); ttl is seconds (0 =
+       never). Returns the count updated; a literal key matches
+       exactly one.
+     * perf_del <glob> [collection] - delete every key matching
+       the glob; returns the count. The MI face of the perf_del()
+       script function.
+
+   Example 1.14. introspection usage
+opensips-cli -x mi cachedb_perf:perf_keys "session-*"
+opensips-cli -x mi cachedb_perf:perf_keys "session-*" th 50
+opensips-cli -x mi cachedb_perf:perf_scan 0
+opensips-cli -x mi cachedb_perf:perf_scan 384 "user-*" 128
+opensips-cli -x mi cachedb_perf:perf_dump "profile-*"
+opensips-cli -x mi cachedb_perf:perf_get session-abc123
+opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
+opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
+opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
+
+1.6.3. perf_save / perf_load
+
+   Persist a collection to, or restore it from, the db_url backend
+   (see DB persistence). With no argument they operate on every
+   declared collection; with a collection name, only that one. The
+   reply reports how many collections and entries were written or
+   read.
+
+   Example 1.15. perf_save / perf_load usage
+opensips-cli -x mi cachedb_perf:perf_save
+opensips-cli -x mi cachedb_perf:perf_save sessions
+opensips-cli -x mi cachedb_perf:perf_load sessions
+
+1.7. Exported Events
+
+   Every event is gated by evi_probe_event(), so with no
+   subscriber it costs a single shared read and nothing more; none
+   of them sit on the lock-free get/set path.
+
+1.7.1. E_CACHEDB_PERF_EXPIRED
+
+   Raised by the sweep for each expired record it reclaims, but
+   only for the collections named in event_expired_collections
+   (opt-in, since a high-churn collection reaps in bulk and
+   delivery is synchronous). Parameters: collection, key.
+
+1.7.2. E_CACHEDB_PERF_NOMEM
+
+   Raised when a write is dropped because the arena is full - the
+   cache is out of memory and rejecting stores. One event per
+   dropped write (subscribers should expect bursts under memory
+   pressure). Parameters: collection, key, size (the value's byte
+   length).
+
+1.7.3. E_CACHEDB_PERF_GROWN
+
+   Raised by the maintenance timer after it grows a collection's
+   table. Parameters: collection, prev_buckets, buckets, splits,
+   entries.
+
+1.7.4. E_CACHEDB_PERF_MEM_DEGRADED
+
+   Raised once at startup when arena_hugepage_mb was set but the
+   arena settled on a tier below hugetlb (missing
+   vm.nr_overcommit_hugepages, for instance) - the node is running
+   slower than intended. Parameters: requested_mb, tier (1 hugetlb
+   .. 4 plain 4K), backing (its description), overcommit_pages.
+
+1.8. Exported Functions
+
+   Single-key operations go through the core cache functions
+   (cache_store(), cache_fetch(), ...) with the “perf” backend.
+   The functions below are the module's own glob (multi-key)
+   operations. All of them match keys with shell-style globs
+   (fnmatch), walk the table lock-free and give the Redis SCAN
+   class of guarantee: an entry mutated concurrently may be seen
+   once, twice or not at all. Unlike cachedb_local's
+   cache_remove_chunk(), these are perf_-prefixed - scripts
+   migrating from cachedb_local must rename those calls. When the
+   optional collection argument is omitted, they operate on the
+   collection of the default (groupless) cachedb_url - exactly
+   where cache_store("perf", ...) writes.
+
+1.8.1. perf_del(glob[, collection])
+
+   Deletes every key matching the glob (expired entries included).
+   Returns the number of keys removed, or -1 (false) if none
+   matched.
+
+   Example 1.16. perf_del() usage
+...
+perf_del("session-*");
+perf_del("th-*", "th");
+...
+
+1.8.2. perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])
+
+   Returns every live key/value pair matching the glob into two
+   writable variables (use AVPs - each match adds one value to
+   each, and the indexes correspond pairwise; ordering is
+   unspecified). limit bounds the number of matches, default 1000,
+   0 = unbounded. Returns the match count, or -1 (false) if none
+   matched.
+
+   Example 1.17. perf_mget() usage
+...
+if (perf_mget("user-*", $avp(k), $avp(v))) {
+    xlog("first match: $(avp(k)[0]) = $(avp(v)[0])\n");
+}
+...
+
+1.8.3. perf_mget_json(glob, dst_var[, collection[, limit]])
+
+   Like perf_mget(), but returns all matches as one JSON object
+   {"key":"value",...} in a single writable variable ({} when
+   nothing matches). Quote, backslash and control bytes are
+   escaped, so binary values survive; bytes above 0x7F pass
+   through unescaped - strict JSON consumers therefore need UTF-8
+   values. Returns the match count, or -1 (false) if none matched.
+
+   Example 1.18. perf_mget_json() usage
+...
+if (perf_mget_json("user-*", $var(blob), , 100))
+    xlog("users: $var(blob)\n");
+...
+
+   Documentation Copyrights:
+
+   Copyright © 2026 Yury Kirsanov
