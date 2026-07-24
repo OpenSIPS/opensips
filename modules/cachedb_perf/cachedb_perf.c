@@ -73,6 +73,13 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 		str *col_s, int *limit);
 static int fixup_check_wvar(void **param);
 
+/* introspection MI (CP-18) - defined just above the mi_cmds table; these
+ * forward decls let that table sit before the glob/collection helpers */
+static pcache_col_t *col_by_name(const str *name);
+static char *glob_dup(const str *glob);
+static int perf_del_run(pcache_col_t *col, str *glob);
+static inline unsigned int ttl_to_abs(int expires);
+
 #define PERF_ROUTES (REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|\
 	LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE)
 
@@ -294,10 +301,366 @@ static mi_response_t *mi_perf_stats_2(const mi_params_t *params,
 	return mi_perf_stats(&c);
 }
 
+/*
+ * Introspection MI (CP-18, DESIGN 5.2).  Every command is perf_-prefixed to
+ * match the script functions and to stay clear of the core's bare get/set.
+ * The walkers are lock-free (seqlock reads), so unlike cachedb_local's scan
+ * they never stall writers; keys/dump are bounded and scan is the cursored
+ * answer for anything large.
+ */
+#define PCACHE_MI_DEF_LIMIT 1000
+
+struct mi_walk_ctx {
+	const char *pat;         /* fnmatch pattern, NULL = match all */
+	mi_item_t *arr;
+	unsigned int limit;      /* 0 = unbounded (scan bounds by buckets) */
+	unsigned int now;
+	int with_values;         /* dump vs keys */
+	unsigned int n;
+	int err;
+};
+
+static int mi_walk_cb(const str *key, const str *val, unsigned int exp, void *p)
+{
+	struct mi_walk_ctx *w = p;
+	mi_item_t *o;
+	int ttl;
+
+	if (exp && exp <= w->now)
+		return 0;                          /* expired-as-absent (3.5) */
+	if (w->pat && fnmatch(w->pat, key->s, 0))
+		return 0;
+
+	o = add_mi_object(w->arr, NULL, 0);
+	if (!o)
+		goto oom;
+	if (add_mi_string(o, MI_SSTR("key"), (char *)key->s, key->len) < 0)
+		goto oom;
+	ttl = exp ? (int)(exp - w->now) : -1;   /* -1 = never expires */
+	if (add_mi_number(o, MI_SSTR("ttl"), ttl) < 0)
+		goto oom;
+	if (w->with_values &&
+	        add_mi_string(o, MI_SSTR("value"), (char *)val->s, val->len) < 0)
+		goto oom;
+
+	w->n++;
+	if (w->limit && w->n >= w->limit)
+		return -1;                          /* stop: limit reached */
+	return 0;
+oom:
+	w->err = 1;
+	return -1;
+}
+
+/* backs perf_keys (with_values = 0) and perf_dump (with_values = 1) */
+static mi_response_t *do_perf_keys(str *glob, str *col_s, int limit,
+		int with_values)
+{
+	pcache_col_t *col;
+	mi_response_t *resp;
+	mi_item_t *obj, *arr;
+	struct mi_walk_ctx w;
+	char *pat = NULL;
+
+	col = col_by_name(col_s);
+	if (!col)
+		return init_mi_error(404, MI_SSTR("no such collection"));
+	if (glob && glob->len) {
+		pat = glob_dup(glob);
+		if (!pat)
+			return init_mi_error(500, MI_SSTR("out of memory"));
+	}
+
+	resp = init_mi_result_object(&obj);
+	if (!resp) {
+		if (pat)
+			pkg_free(pat);
+		return NULL;
+	}
+	arr = add_mi_array(obj, MI_SSTR("keys"));
+	if (!arr)
+		goto err;
+
+	memset(&w, 0, sizeof w);
+	w.pat = pat;
+	w.arr = arr;
+	w.limit = limit > 0 ? (unsigned int)limit : PCACHE_MI_DEF_LIMIT;
+	w.now = get_ticks();
+	w.with_values = with_values;
+	pcache_ht_iter(col->htable, mi_walk_cb, &w);
+	if (pat) {
+		pkg_free(pat);
+		pat = NULL;
+	}
+	if (w.err)
+		goto err;
+
+	if (add_mi_number(obj, MI_SSTR("returned"), w.n) < 0)
+		goto err;
+	/* tell the operator the result was cut so they narrow it or use scan */
+	if (w.n >= w.limit && add_mi_string(obj, MI_SSTR("note"),
+	        MI_SSTR("limit reached - truncated; narrow the glob or use perf_scan")) < 0)
+		goto err;
+	return resp;
+err:
+	if (pat)
+		pkg_free(pat);
+	free_mi_response(resp);
+	return init_mi_error(500, MI_SSTR("internal error"));
+}
+
+/* perf_scan <cursor> [glob] [count] - cursored, on the default collection */
+static mi_response_t *do_perf_scan(int cursor_in, str *glob, int count)
+{
+	pcache_col_t *col;
+	mi_response_t *resp;
+	mi_item_t *obj, *arr;
+	struct mi_walk_ctx w;
+	char *pat = NULL;
+	unsigned int cur;
+
+	if (cursor_in < 0)
+		return init_mi_param_error();
+	col = col_by_name(NULL);            /* the groupless default collection */
+	if (!col)
+		return init_mi_error(404, MI_SSTR("no default collection"));
+	if (glob && glob->len) {
+		pat = glob_dup(glob);
+		if (!pat)
+			return init_mi_error(500, MI_SSTR("out of memory"));
+	}
+
+	resp = init_mi_result_object(&obj);
+	if (!resp) {
+		if (pat)
+			pkg_free(pat);
+		return NULL;
+	}
+	arr = add_mi_array(obj, MI_SSTR("keys"));
+	if (!arr)
+		goto err;
+
+	memset(&w, 0, sizeof w);
+	w.pat = pat;
+	w.arr = arr;
+	w.limit = 0;                        /* bucket-bounded: no per-entry stop */
+	w.now = get_ticks();
+	w.with_values = 0;                  /* SCAN returns names + ttl */
+	cur = (unsigned int)cursor_in;
+	pcache_ht_scan(col->htable, &cur, count > 0 ? (unsigned int)count : 0,
+		mi_walk_cb, &w);
+	if (pat) {
+		pkg_free(pat);
+		pat = NULL;
+	}
+	if (w.err)
+		goto err;
+
+	/* cursor 0 = iteration complete; feed any other value back verbatim */
+	if (add_mi_number(obj, MI_SSTR("cursor"), cur) < 0 ||
+	    add_mi_number(obj, MI_SSTR("returned"), w.n) < 0)
+		goto err;
+	return resp;
+err:
+	if (pat)
+		pkg_free(pat);
+	free_mi_response(resp);
+	return init_mi_error(500, MI_SSTR("internal error"));
+}
+
+/* perf_get <key> [collection] - value + TTL + size for one key */
+static mi_response_t *do_perf_get(str *key, str *col_s)
+{
+	pcache_col_t *col;
+	mi_response_t *resp;
+	mi_item_t *obj;
+	str val;
+	unsigned int exp = 0, now;
+	int rc, ttl;
+
+	col = col_by_name(col_s);
+	if (!col)
+		return init_mi_error(404, MI_SSTR("no such collection"));
+
+	rc = pcache_ht_fetch_ex(col->htable, key, &val, &exp);
+	if (rc == -2)
+		return init_mi_error(404, MI_SSTR("key not found"));
+	if (rc < 0)
+		return init_mi_error(500, MI_SSTR("internal error"));
+
+	now = get_ticks();
+	ttl = exp ? (int)(exp - now) : -1;
+
+	resp = init_mi_result_object(&obj);
+	if (!resp) {
+		pkg_free(val.s);
+		return NULL;
+	}
+	if (add_mi_string(obj, MI_SSTR("key"), key->s, key->len) < 0 ||
+	    add_mi_string(obj, MI_SSTR("value"), val.s, val.len) < 0 ||
+	    add_mi_number(obj, MI_SSTR("size"), val.len) < 0 ||
+	    add_mi_number(obj, MI_SSTR("ttl"), ttl) < 0) {
+		pkg_free(val.s);
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("internal error"));
+	}
+	pkg_free(val.s);
+	return resp;
+}
+
+/* perf_set <key> <value> [ttl] [collection] - single key write */
+static mi_response_t *do_perf_set(str *key, str *value, int ttl, str *col_s)
+{
+	pcache_col_t *col;
+
+	col = col_by_name(col_s);
+	if (!col)
+		return init_mi_error(404, MI_SSTR("no such collection"));
+	if (pcache_ht_store(col->htable, key, value, ttl_to_abs(ttl)) < 0)
+		return init_mi_error(500, MI_SSTR("store failed"));
+	return init_mi_result_ok();
+}
+
+/* perf_del <glob> [collection] - the MI face of the perf_del() script fn */
+static mi_response_t *do_perf_del_mi(str *glob, str *col_s)
+{
+	pcache_col_t *col;
+	mi_response_t *resp;
+	mi_item_t *obj;
+	int removed;
+
+	col = col_by_name(col_s);
+	if (!col)
+		return init_mi_error(404, MI_SSTR("no such collection"));
+	removed = perf_del_run(col, glob);
+	if (removed < 0)
+		return init_mi_error(500, MI_SSTR("out of memory - deletion partial"));
+
+	resp = init_mi_result_object(&obj);
+	if (!resp)
+		return NULL;
+	if (add_mi_number(obj, MI_SSTR("deleted"), removed) < 0) {
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("internal error"));
+	}
+	return resp;
+}
+
+/* thin per-arity recipe wrappers: extract params, then defer to the workers */
+#define MI_S(nm, dst) \
+	do { if (get_mi_string_param(params, nm, &(dst).s, &(dst).len) < 0) \
+		return init_mi_param_error(); } while (0)
+#define MI_I(nm, dst) \
+	do { if (get_mi_int_param(params, nm, &(dst)) < 0) \
+		return init_mi_param_error(); } while (0)
+
+static mi_response_t *mi_perf_keys_1(const mi_params_t *params, struct mi_handler *a)
+{ str g; MI_S("glob", g); return do_perf_keys(&g, NULL, 0, 0); }
+static mi_response_t *mi_perf_keys_2(const mi_params_t *params, struct mi_handler *a)
+{ str g, c; MI_S("glob", g); MI_S("collection", c); return do_perf_keys(&g, &c, 0, 0); }
+static mi_response_t *mi_perf_keys_3(const mi_params_t *params, struct mi_handler *a)
+{ str g, c; int l; MI_S("glob", g); MI_S("collection", c); MI_I("limit", l);
+  return do_perf_keys(&g, &c, l, 0); }
+static mi_response_t *mi_perf_keys_gl(const mi_params_t *params, struct mi_handler *a)
+{ str g; int l; MI_S("glob", g); MI_I("limit", l); return do_perf_keys(&g, NULL, l, 0); }
+
+static mi_response_t *mi_perf_dump_1(const mi_params_t *params, struct mi_handler *a)
+{ str g; MI_S("glob", g); return do_perf_keys(&g, NULL, 0, 1); }
+static mi_response_t *mi_perf_dump_2(const mi_params_t *params, struct mi_handler *a)
+{ str g, c; MI_S("glob", g); MI_S("collection", c); return do_perf_keys(&g, &c, 0, 1); }
+static mi_response_t *mi_perf_dump_3(const mi_params_t *params, struct mi_handler *a)
+{ str g, c; int l; MI_S("glob", g); MI_S("collection", c); MI_I("limit", l);
+  return do_perf_keys(&g, &c, l, 1); }
+static mi_response_t *mi_perf_dump_gl(const mi_params_t *params, struct mi_handler *a)
+{ str g; int l; MI_S("glob", g); MI_I("limit", l); return do_perf_keys(&g, NULL, l, 1); }
+
+static mi_response_t *mi_perf_scan_1(const mi_params_t *params, struct mi_handler *a)
+{ int cu; MI_I("cursor", cu); return do_perf_scan(cu, NULL, 0); }
+static mi_response_t *mi_perf_scan_2(const mi_params_t *params, struct mi_handler *a)
+{ int cu; str g; MI_I("cursor", cu); MI_S("glob", g); return do_perf_scan(cu, &g, 0); }
+static mi_response_t *mi_perf_scan_3(const mi_params_t *params, struct mi_handler *a)
+{ int cu, co; str g; MI_I("cursor", cu); MI_S("glob", g); MI_I("count", co);
+  return do_perf_scan(cu, &g, co); }
+static mi_response_t *mi_perf_scan_cc(const mi_params_t *params, struct mi_handler *a)
+{ int cu, co; MI_I("cursor", cu); MI_I("count", co); return do_perf_scan(cu, NULL, co); }
+
+static mi_response_t *mi_perf_get_1(const mi_params_t *params, struct mi_handler *a)
+{ str k; MI_S("key", k); return do_perf_get(&k, NULL); }
+static mi_response_t *mi_perf_get_2(const mi_params_t *params, struct mi_handler *a)
+{ str k, c; MI_S("key", k); MI_S("collection", c); return do_perf_get(&k, &c); }
+
+static mi_response_t *mi_perf_set_2(const mi_params_t *params, struct mi_handler *a)
+{ str k, v; MI_S("key", k); MI_S("value", v); return do_perf_set(&k, &v, 0, NULL); }
+static mi_response_t *mi_perf_set_3(const mi_params_t *params, struct mi_handler *a)
+{ str k, v; int t; MI_S("key", k); MI_S("value", v); MI_I("ttl", t);
+  return do_perf_set(&k, &v, t, NULL); }
+static mi_response_t *mi_perf_set_4(const mi_params_t *params, struct mi_handler *a)
+{ str k, v, c; int t; MI_S("key", k); MI_S("value", v); MI_I("ttl", t);
+  MI_S("collection", c); return do_perf_set(&k, &v, t, &c); }
+static mi_response_t *mi_perf_set_kvc(const mi_params_t *params, struct mi_handler *a)
+{ str k, v, c; MI_S("key", k); MI_S("value", v); MI_S("collection", c);
+  return do_perf_set(&k, &v, 0, &c); }
+
+static mi_response_t *mi_perf_del_1(const mi_params_t *params, struct mi_handler *a)
+{ str g; MI_S("glob", g); return do_perf_del_mi(&g, NULL); }
+static mi_response_t *mi_perf_del_2(const mi_params_t *params, struct mi_handler *a)
+{ str g, c; MI_S("glob", g); MI_S("collection", c); return do_perf_del_mi(&g, &c); }
+
+#undef MI_S
+#undef MI_I
+
 static const mi_export_t mi_cmds[] = {
-	{ "perf_stats", 0, 0, 0, {
+	{ "perf_stats", "per-collection stats (entries, buckets, load factor, "
+		"overflow, seqlock retries, memory tier)", 0, 0, {
 		{mi_perf_stats_1, {0}},
 		{mi_perf_stats_2, {"collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_keys", "names of keys matching a glob, bounded (KEYS-like)", 0, 0, {
+		{mi_perf_keys_1, {"glob", 0}},
+		{mi_perf_keys_2, {"glob", "collection", 0}},
+		{mi_perf_keys_gl, {"glob", "limit", 0}},
+		{mi_perf_keys_3, {"glob", "collection", "limit", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_scan", "cursor-based incremental iteration (Redis SCAN); pass "
+		"cursor 0 to start, iteration ends when it returns 0", 0, 0, {
+		{mi_perf_scan_1, {"cursor", 0}},
+		{mi_perf_scan_2, {"cursor", "glob", 0}},
+		{mi_perf_scan_cc, {"cursor", "count", 0}},
+		{mi_perf_scan_3, {"cursor", "glob", "count", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_dump", "keys AND values matching a glob, bounded (opt-in values)",
+		0, 0, {
+		{mi_perf_dump_1, {"glob", 0}},
+		{mi_perf_dump_2, {"glob", "collection", 0}},
+		{mi_perf_dump_gl, {"glob", "limit", 0}},
+		{mi_perf_dump_3, {"glob", "collection", "limit", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_get", "one key: value, TTL and size", 0, 0, {
+		{mi_perf_get_1, {"key", 0}},
+		{mi_perf_get_2, {"key", "collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_set", "write one key (optional ttl seconds, 0 = never)", 0, 0, {
+		{mi_perf_set_2, {"key", "value", 0}},
+		{mi_perf_set_3, {"key", "value", "ttl", 0}},
+		{mi_perf_set_kvc, {"key", "value", "collection", 0}},
+		{mi_perf_set_4, {"key", "value", "ttl", "collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_del", "delete keys matching a glob (the perf_del() script fn)",
+		0, 0, {
+		{mi_perf_del_1, {"glob", 0}},
+		{mi_perf_del_2, {"glob", "collection", 0}},
 		{EMPTY_MI_RECIPE}},
 		{0}
 	},
@@ -624,21 +987,20 @@ static int del_collect_cb(const str *key, const str *val, unsigned int exp,
 	return 0;
 }
 
-static int w_perf_del(struct sip_msg *msg, str *glob, str *col_s)
+/* glob-delete core, shared by the script perf_del() and the MI perf_del:
+ * collect matches lock-free, then remove one by one - a glob delete is not
+ * an atomic snapshot (and cannot usefully be).  Returns the number removed
+ * (>= 0), or -1 on OOM (the removal is then partial). */
+static int perf_del_run(pcache_col_t *col, str *glob)
 {
-	pcache_col_t *col = col_by_name(col_s);
 	struct del_ctx dc;
 	char *pat;
 	unsigned int i, removed = 0;
 
-	if (!col)
-		return -1;
 	pat = glob_dup(glob);
 	if (!pat)
 		return -1;
 
-	/* collect matches lock-free, then remove one by one - a glob delete
-	 * is not an atomic snapshot (and cannot usefully be) */
 	memset(&dc, 0, sizeof dc);
 	dc.pat = pat;
 	pcache_ht_iter(col->htable, del_collect_cb, &dc);
@@ -657,7 +1019,18 @@ static int w_perf_del(struct sip_msg *msg, str *glob, str *col_s)
 		LM_ERR("out of pkg memory mid-walk - removal is partial\n");
 		return -1;
 	}
-	return removed ? (int)removed : -1;
+	return (int)removed;
+}
+
+static int w_perf_del(struct sip_msg *msg, str *glob, str *col_s)
+{
+	pcache_col_t *col = col_by_name(col_s);
+	int removed;
+
+	if (!col)
+		return -1;
+	removed = perf_del_run(col, glob);
+	return removed > 0 ? removed : -1;   /* 0 matches / OOM -> script-false */
 }
 
 /* growing pkg buffer for the JSON form */

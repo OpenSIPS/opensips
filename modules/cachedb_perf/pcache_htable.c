@@ -248,7 +248,7 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 /* @now is a parameter (not read inside) so the selftest can run under a
  * synthetic clock - get_ticks() is still 0 during mod_init */
 static int _pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val,
-		unsigned int now)
+		unsigned int now, unsigned int *exp_out)
 {
 	pcache_bucket_t *b;
 	unsigned long route;
@@ -312,6 +312,8 @@ settled:
 		return -2;                    /* expired-as-absent (3.5) */
 	}
 	HT_ST(ht, hits);
+	if (exp_out)
+		*exp_out = exp;                  /* absolute ticks, 0 = never */
 
 	if ((fl & PCACHE_F_INT) && vlen == 8) {
 		/* native counter: format on read */
@@ -337,7 +339,15 @@ settled:
 
 int pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val)
 {
-	return _pcache_ht_fetch(ht, key, val, get_ticks());
+	return _pcache_ht_fetch(ht, key, val, get_ticks(), NULL);
+}
+
+/* like pcache_ht_fetch, but also returns the record's absolute expiry
+ * (0 = never) - the MI perf_get needs the TTL alongside the value */
+int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
+		unsigned int *expires)
+{
+	return _pcache_ht_fetch(ht, key, val, get_ticks(), expires);
 }
 
 /* writer-side slot scan, under the bucket lock - plain and exact */
@@ -740,19 +750,142 @@ again:
 	return dead ? 1 : 0;
 }
 
+/*
+ * One optimistic seqlock snapshot of slot @i of bucket @b into @kbuf/@vbuf
+ * (each >= PCACHE_CELL_MAX), applying the 3.2 copy-out clamps and the
+ * stalled-writer lock fallback.  Returns 1 and fills the out-params if a
+ * live record was captured, 0 if the slot is empty.  Shared verbatim by the
+ * full-table walk (pcache_ht_iter) and the cursored scan (pcache_ht_scan).
+ */
+static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
+		char *kbuf, char *vbuf, unsigned int *klen_o, unsigned int *vlen_o,
+		unsigned int *exp_o, unsigned char *fl_o,
+		unsigned long lo, unsigned long hi)
+{
+	pcache_rec_t *r;
+	unsigned int v1, v2, tries, bound = 0, klen = 0, vlen = 0, exp = 0;
+	unsigned char fl = 0;
+	int have = 0;
+
+	for (tries = 0; tries < PCACHE_SEQ_RETRIES; tries++) {
+		v1 = __atomic_load_n(&b->version, __ATOMIC_ACQUIRE);
+		if (v1 & 1) {
+			pcache_pause();
+			continue;
+		}
+		r = b->slot[i];
+		/* 3.2 copy-out rules, as in scan_bucket() */
+		if (r && ((unsigned long)r < lo ||
+		        (unsigned long)r + PCACHE_REC_HDR > hi))
+			r = NULL;
+		if (r) {
+			bound = pcache_cell_bound(r);
+			if (!bound || (unsigned long)r + bound > hi)
+				r = NULL;
+		}
+		if (r) {
+			klen = r->klen;
+			if (PCACHE_REC_HDR + klen > bound)
+				klen = bound - PCACHE_REC_HDR;
+			vlen = r->vlen;
+			if (PCACHE_REC_HDR + klen + vlen > bound)
+				vlen = bound - PCACHE_REC_HDR - klen;
+			memcpy(kbuf, r->data, klen);
+			memcpy(vbuf, r->data + klen, vlen);
+			exp = r->expires;
+			fl = r->rflags;
+		}
+		__atomic_thread_fence(__ATOMIC_ACQUIRE);
+		v2 = __atomic_load_n(&b->version, __ATOMIC_RELAXED);
+		if (v1 == v2) {
+			have = r != NULL;
+			break;
+		}
+	}
+	if (tries == PCACHE_SEQ_RETRIES) {
+		/* stalled writer: read this slot under the lock (record stable) */
+		lock_get(&b->lock);
+		bkt_set_owner(b);
+		r = b->slot[i];
+		if (r) {
+			klen = r->klen;
+			vlen = r->vlen;
+			exp = r->expires;
+			fl = r->rflags;
+			memcpy(kbuf, r->data, klen);
+			memcpy(vbuf, r->data + klen, vlen);
+			have = 1;
+		}
+		bkt_clear_owner(b);
+		lock_release(&b->lock);
+	}
+	if (!have)
+		return 0;
+	*klen_o = klen; *vlen_o = vlen; *exp_o = exp; *fl_o = fl;
+	return 1;
+}
+
+/*
+ * Format one snapshotted entry (native counters -> decimal), NUL-terminate
+ * both buffers and hand it to the callback.  @vbuf must have room for the
+ * 24-byte decimal form.  Returns the callback's rc (<0 stops the walk).
+ */
+static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
+		unsigned int klen, char *vbuf, unsigned int vlen,
+		unsigned int exp, unsigned char fl)
+{
+	str key, val;
+	long long ll;
+
+	if ((fl & PCACHE_F_INT) && vlen == 8) {
+		memcpy(&ll, vbuf, 8);
+		vlen = snprintf(vbuf, 24, "%lld", ll);
+	}
+	kbuf[klen] = 0;
+	vbuf[vlen] = 0;
+	key.s = kbuf; key.len = klen;
+	val.s = vbuf; val.len = vlen;
+	return cb(&key, &val, exp, ctx);
+}
+
+/* walk the overflow leg under the overflow lock; @kbuf/@vbuf are the caller's
+ * snapshot buffers.  Returns the last callback rc (<0 stops). */
+static int iter_overflow(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
+		char *kbuf, char *vbuf)
+{
+	pcache_rec_t *r;
+	struct povf *n;
+	unsigned int idx, klen, vlen;
+	int rc = 0;
+
+	if (!ht->ovf_count)
+		return 0;
+	lock_get(&ht->ovf_lock);
+	for (idx = 0; idx < PCACHE_OVF_BUCKETS && rc >= 0; idx++) {
+		for (n = ht->ovf_tab[idx]; n; n = n->next) {
+			r = n->rec;
+			klen = r->klen;
+			vlen = r->vlen;
+			memcpy(kbuf, r->data, klen);
+			memcpy(vbuf, r->data + klen, vlen);
+			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen,
+				r->expires, r->rflags);
+			if (rc < 0)
+				break;
+		}
+	}
+	lock_release(&ht->ovf_lock);
+	return rc;
+}
+
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 {
 	pcache_bucket_t *b;
-	pcache_rec_t *r;
-	struct povf *n;
-	str key, val;
 	unsigned long lo, hi;
-	unsigned int idx, i, v1, v2, tries, bound = 0, klen = 0, vlen = 0,
-		exp = 0;
-	unsigned char fl = 0;
-	long long ll;
+	unsigned int idx, i, klen, vlen, exp;
+	unsigned char fl;
 	char *kbuf, *vbuf;
-	int rc = 0, have;
+	int rc = 0;
 
 	kbuf = pkg_malloc(2 * PCACHE_CELL_MAX);
 	if (!kbuf) {
@@ -766,100 +899,78 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 	for (idx = 0; idx < ht->nbuckets; idx++) {
 		b = bucket_at(ht, idx);
 		for (i = 0; i < PCACHE_SLOTS; i++) {
-			have = 0;
-			for (tries = 0; tries < PCACHE_SEQ_RETRIES; tries++) {
-				v1 = __atomic_load_n(&b->version, __ATOMIC_ACQUIRE);
-				if (v1 & 1) {
-					pcache_pause();
-					continue;
-				}
-				r = b->slot[i];
-				/* 3.2 copy-out rules, as in scan_bucket() */
-				if (r && ((unsigned long)r < lo ||
-				        (unsigned long)r + PCACHE_REC_HDR > hi))
-					r = NULL;
-				if (r) {
-					bound = pcache_cell_bound(r);
-					if (!bound || (unsigned long)r + bound > hi)
-						r = NULL;
-				}
-				if (r) {
-					klen = r->klen;
-					if (PCACHE_REC_HDR + klen > bound)
-						klen = bound - PCACHE_REC_HDR;
-					vlen = r->vlen;
-					if (PCACHE_REC_HDR + klen + vlen > bound)
-						vlen = bound - PCACHE_REC_HDR - klen;
-					memcpy(kbuf, r->data, klen);
-					memcpy(vbuf, r->data + klen, vlen);
-					exp = r->expires;
-					fl = r->rflags;
-				}
-				__atomic_thread_fence(__ATOMIC_ACQUIRE);
-				v2 = __atomic_load_n(&b->version, __ATOMIC_RELAXED);
-				if (v1 == v2) {
-					have = r != NULL;
-					break;
-				}
-			}
-			if (tries == PCACHE_SEQ_RETRIES) {
-				/* stalled writer: this slot under the lock */
-				lock_get(&b->lock);
-				bkt_set_owner(b);
-				r = b->slot[i];
-				if (r) {
-					klen = r->klen;
-					vlen = r->vlen;
-					exp = r->expires;
-					fl = r->rflags;
-					memcpy(kbuf, r->data, klen);
-					memcpy(vbuf, r->data + klen, vlen);
-					have = 1;
-				}
-				bkt_clear_owner(b);
-				lock_release(&b->lock);
-			}
-			if (!have)
+			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
+			        &exp, &fl, lo, hi))
 				continue;
-			if ((fl & PCACHE_F_INT) && vlen == 8) {
-				memcpy(&ll, vbuf, 8);
-				vlen = snprintf(vbuf, 24, "%lld", ll);
-			}
-			kbuf[klen] = 0;
-			vbuf[vlen] = 0;
-			key.s = kbuf; key.len = klen;
-			val.s = vbuf; val.len = vlen;
-			rc = cb(&key, &val, exp, ctx);
+			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen, exp, fl);
 			if (rc < 0)
 				goto out;
 		}
 	}
 
 	/* overflow leg - under the lock; the callback must not re-enter */
-	if (ht->ovf_count) {
-		lock_get(&ht->ovf_lock);
-		for (idx = 0; idx < PCACHE_OVF_BUCKETS && rc >= 0; idx++) {
-			for (n = ht->ovf_tab[idx]; n; n = n->next) {
-				r = n->rec;
-				klen = r->klen;
-				vlen = r->vlen;
-				memcpy(kbuf, r->data, klen);
-				memcpy(vbuf, r->data + klen, vlen);
-				if ((r->rflags & PCACHE_F_INT) && vlen == 8) {
-					memcpy(&ll, vbuf, 8);
-					vlen = snprintf(vbuf, 24, "%lld", ll);
-				}
-				kbuf[klen] = 0;
-				vbuf[vlen] = 0;
-				key.s = kbuf; key.len = klen;
-				val.s = vbuf; val.len = vlen;
-				rc = cb(&key, &val, r->expires, ctx);
-				if (rc < 0)
-					break;
-			}
-		}
-		lock_release(&ht->ovf_lock);
+	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
+out:
+	pkg_free(kbuf);
+	return rc < 0 ? rc : 0;
+}
+
+/*
+ * Cursored, bounded walk for the MI perf_scan (Redis SCAN semantics).  From
+ * bucket *@cursor it visits up to @max_buckets buckets, invoking @cb per live
+ * entry, then sets *@cursor to the bucket to resume from - or 0 once the walk
+ * is complete, the overflow leg being emitted in that final call.  Buckets
+ * never move and the table only grows (3.4), so a plain ascending cursor gives
+ * the >=-once guarantee and stays valid across a concurrent resize.  The cursor
+ * advances a whole bucket at a time, so @cb sees every entry of a visited
+ * bucket and is never asked to stop mid-bucket (no intra-bucket duplicates on
+ * resume).  Returns 0, or <0 on error / callback stop.
+ */
+int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
+		unsigned int max_buckets, pcache_iter_cb cb, void *ctx)
+{
+	pcache_bucket_t *b;
+	unsigned long lo, hi;
+	unsigned int idx, end, i, klen, vlen, exp, nb;
+	unsigned char fl;
+	char *kbuf, *vbuf;
+	int rc = 0;
+
+	if (!max_buckets)
+		max_buckets = PCACHE_SCAN_BUCKETS;
+
+	kbuf = pkg_malloc(2 * PCACHE_CELL_MAX);
+	if (!kbuf) {
+		LM_ERR("no more pkg memory for the scan buffers\n");
+		return -1;
 	}
+	vbuf = kbuf + PCACHE_CELL_MAX;
+	pcache_arena_extents(&lo, &hi);
+
+	nb = ht->nbuckets;
+	idx = *cursor;
+	end = (idx > nb || nb - idx < max_buckets) ? nb : idx + max_buckets;
+
+	for (; idx < end; idx++) {
+		b = bucket_at(ht, idx);
+		for (i = 0; i < PCACHE_SLOTS; i++) {
+			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
+			        &exp, &fl, lo, hi))
+				continue;
+			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen, exp, fl);
+			if (rc < 0)
+				goto out;
+		}
+	}
+
+	if (idx < nb) {
+		*cursor = idx;               /* more buckets remain */
+		goto out;
+	}
+
+	/* last bucket reached: drain overflow once, then signal completion */
+	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
+	*cursor = 0;
 out:
 	pkg_free(kbuf);
 	return rc < 0 ? rc : 0;
@@ -1296,9 +1407,9 @@ int pcache_htable_selftest(void)
 	 * wrapper here) */
 	v.s = "temp"; v.len = 4;
 	HCHK(pcache_ht_store(ht, &k, &v, 500) == 0, "expired store failed\n");
-	HCHK(_pcache_ht_fetch(ht, &k, &out, 1000) == -2,
+	HCHK(_pcache_ht_fetch(ht, &k, &out, 1000, NULL) == -2,
 		"expired key still hits\n");
-	rc = _pcache_ht_fetch(ht, &k, &out, 400);
+	rc = _pcache_ht_fetch(ht, &k, &out, 400, NULL);
 	HCHK(rc == 0, "live key missed\n");
 	pkg_free(out.s);
 	pcache_ht_remove(ht, &k);

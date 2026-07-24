@@ -1153,11 +1153,20 @@ documented answer for anything large.
 - **CP-08** Docs: `doc/cachedb_perf_admin.xml` + generated README.
 - **CP-18** Introspection MI (§5.2): `perf_keys`, `perf_scan`, `perf_dump`,
   `perf_get`, `perf_set`, `perf_del` — all `perf_`-prefixed per §5.2 (flat
-  MI namespace; consistency with the script functions). `perf_scan` is
-  cursor-based and lock-free; `perf_keys` is names-only with a default
-  limit; `perf_dump` returns values only on explicit request. This is the
-  operability gap that makes `cachedb_local` hard to run — treat it as
-  core, not optional.
+  MI namespace; consistency with the script functions). **Done 2026-07-24.**
+  `perf_scan` is cursor-based and lock-free (`pcache_ht_scan`: an ascending
+  `(segment,bucket)` cursor, a whole bucket advanced per step so no
+  intra-bucket duplicate on resume, stable across a concurrent resize);
+  `perf_keys` is names+TTL, bounded (default 1000, with a truncation note);
+  `perf_dump` adds values on explicit request; `perf_get` returns
+  value+TTL+size (`pcache_ht_fetch_ex` adds the expiry to the fetch);
+  `perf_set` writes one key; `perf_del` is the MI face of the script glob
+  delete (shared `perf_del_run`). The walkers share one lock-free per-slot
+  snapshot helper (`snapshot_slot`) with the full-table `pcache_ht_iter`.
+  Named MI params, so any sensible arg subset resolves (e.g. `glob`+`limit`
+  without a `collection`). Verified over a datagram MI: set/get/keys/scan
+  (cursor 0→…→0, every entry seen exactly once)/dump/del plus the 404 and
+  bad-param paths.
 
 **Phase 3 — scale**
 - **CP-09** Segmented directory + linear-hashing growth (§3.4).

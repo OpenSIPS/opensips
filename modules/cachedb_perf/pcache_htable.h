@@ -171,6 +171,11 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
  * -1 = error */
 int pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val);
 
+/* as pcache_ht_fetch, plus *@expires = the record's absolute expiry (0 =
+ * never) on a hit - the MI perf_get reports the TTL with the value */
+int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
+		unsigned int *expires);
+
 /* 1 = removed; 0 = was absent; -1 = error */
 int pcache_ht_remove(pcache_htable_t *ht, const str *key);
 
@@ -197,6 +202,21 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 typedef int (*pcache_iter_cb)(const str *key, const str *val,
 		unsigned int expires, void *ctx);
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
+
+/* default buckets visited per perf_scan call when count is unset */
+#define PCACHE_SCAN_BUCKETS 100
+
+/*
+ * Cursored, bounded walk (MI perf_scan, Redis SCAN semantics).  Starts at
+ * bucket *@cursor, visits up to @max_buckets buckets calling @cb per live
+ * entry, and updates *@cursor to the bucket to resume from - 0 once the walk
+ * (overflow leg included) is complete.  Pass *@cursor = 0 to begin.  The
+ * ascending cursor is stable across a concurrent resize (3.4 / 5.2) and gives
+ * the >=-once guarantee; it advances a whole bucket at a time.  0, or <0 on
+ * error / callback stop.
+ */
+int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
+		unsigned int max_buckets, pcache_iter_cb cb, void *ctx);
 
 /* expiry sweep (CP-05): visits only buckets whose hint is due, removes
  * expired records (overflow chains too whenever any overflow exists) and

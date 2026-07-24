@@ -32,10 +32,11 @@
 	</para>
 	<warning>
 	<para>
-		Work in progress: this module is under active development. Data
-		operations, the background expiry sweep, runtime table growth,
-		statistics and the huge-page arena are all functional; still
-		missing is the introspection MI (per-key inspect/scan/dump).
+		Work in progress: this module is under active development, but
+		functionally complete for a single node - data operations, the
+		background expiry sweep, runtime table growth, statistics, the
+		huge-page arena and the introspection MI are all in place. Cross-node
+		replication and restart persistency are intentionally out of scope.
 	</para>
 	</warning>
 	</section>
@@ -179,6 +180,58 @@ modparam("cachedb_perf", "cachedb_url", "perf:prof:///profiles")
 		<programlisting format="linespecific">
 opensips-cli -x mi perf_stats
 opensips-cli -x mi perf_stats th
+</programlisting>
+		</example>
+	</section>
+
+	<section id="mi_introspection" xreflabel="introspection">
+		<title>Key introspection: perf_keys / perf_scan / perf_dump / perf_get / perf_set / perf_del</title>
+		<para>
+		These give an operator the visibility that
+		<emphasis>cachedb_local</emphasis> lacks. All are lock-free: the
+		walkers take no bucket locks (seqlock reads), so unlike a
+		<emphasis>cachedb_local</emphasis> key scan they never stall SIP
+		traffic. Every command carries the <emphasis>perf_</emphasis> prefix,
+		matching the script functions and staying clear of the core's bare
+		<emphasis>get</emphasis>/<emphasis>set</emphasis>. The optional
+		<emphasis>collection</emphasis> selects the table; omitted, it is the
+		groupless <emphasis>cachedb_url</emphasis>'s collection.
+		</para>
+		<itemizedlist>
+		<listitem><para><emphasis>perf_keys &lt;glob&gt; [collection] [limit]</emphasis>
+			- names (and TTL) of the keys matching a shell glob, bounded (default
+			1000; the reply carries a note when it truncates). The
+			<emphasis>KEYS</emphasis> equivalent.</para></listitem>
+		<listitem><para><emphasis>perf_scan &lt;cursor&gt; [glob] [count]</emphasis>
+			- cursored incremental iteration with Redis <emphasis>SCAN</emphasis>
+			semantics over the default collection: start with cursor 0 and
+			repeat with the returned cursor until it comes back 0. An entry
+			present throughout is returned at least once; <emphasis>count</emphasis>
+			bounds the buckets visited per call. This is the answer for a large
+			cache, where <emphasis>perf_keys</emphasis> would truncate.</para></listitem>
+		<listitem><para><emphasis>perf_dump &lt;glob&gt; [collection] [limit]</emphasis>
+			- like <emphasis>perf_keys</emphasis> but includes the values;
+			values are opt-in, never the default.</para></listitem>
+		<listitem><para><emphasis>perf_get &lt;key&gt; [collection]</emphasis>
+			- one key: its value, remaining TTL (-1 = never) and size.</para></listitem>
+		<listitem><para><emphasis>perf_set &lt;key&gt; &lt;value&gt; [ttl] [collection]</emphasis>
+			- write one key; <emphasis>ttl</emphasis> is seconds (0 or omitted =
+			never expires).</para></listitem>
+		<listitem><para><emphasis>perf_del &lt;glob&gt; [collection]</emphasis>
+			- delete every key matching the glob; returns the count. The MI face
+			of the <emphasis>perf_del()</emphasis> script function.</para></listitem>
+		</itemizedlist>
+		<example>
+		<title>introspection usage</title>
+		<programlisting format="linespecific">
+opensips-cli -x mi perf_keys "session-*"
+opensips-cli -x mi perf_keys "session-*" th 50
+opensips-cli -x mi perf_scan 0
+opensips-cli -x mi perf_scan 384 "user-*" 128
+opensips-cli -x mi perf_dump "profile-*"
+opensips-cli -x mi perf_get session-abc123
+opensips-cli -x mi perf_set greeting hello 300
+opensips-cli -x mi perf_del "session-abc*"
 </programlisting>
 		</example>
 	</section>
