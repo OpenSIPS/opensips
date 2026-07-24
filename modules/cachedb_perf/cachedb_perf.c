@@ -36,6 +36,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../lib/csv.h"
+#include "../../evi/evi_modules.h"
 
 #include "cachedb_perf.h"
 #include "pcache_mem.h"
@@ -63,6 +64,37 @@ static int expiry_sweep_period = 1;   /* seconds; 0 disables the sweep */
  * the whole reason this module exists (cachedb_local cannot resize). */
 static int growth_load_factor = 2;
 static int growth_budget = 4096;      /* max splits per maintenance tick */
+
+/* ---- CP-11 observability events ---- */
+static str evi_expired_name  = str_init("E_CACHEDB_PERF_EXPIRED");
+static str evi_nomem_name    = str_init("E_CACHEDB_PERF_NOMEM");
+static str evi_grown_name    = str_init("E_CACHEDB_PERF_GROWN");
+static str evi_degraded_name = str_init("E_CACHEDB_PERF_MEM_DEGRADED");
+static event_id_t evi_expired_id  = EVI_ERROR;
+static event_id_t evi_nomem_id    = EVI_ERROR;
+static event_id_t evi_grown_id    = EVI_ERROR;
+static event_id_t evi_degraded_id = EVI_ERROR;
+/* event parameter names */
+static str evp_collection   = str_init("collection");
+static str evp_key          = str_init("key");
+static str evp_size         = str_init("size");
+static str evp_buckets      = str_init("buckets");
+static str evp_prev_buckets = str_init("prev_buckets");
+static str evp_splits       = str_init("splits");
+static str evp_entries      = str_init("entries");
+static str evp_tier         = str_init("tier");
+static str evp_backing      = str_init("backing");
+static str evp_requested_mb = str_init("requested_mb");
+static str evp_overcommit   = str_init("overcommit_pages");
+/* CSV of collections opted in to E_CACHEDB_PERF_EXPIRED (per-collection so a
+ * high-churn collection reaping in bulk pays only if it asked to); "" = none */
+static char *event_expired_collections = NULL;
+/* huge pages requested but the granted tier is sub-optimal; raised once from
+ * the first maintenance tick, since EVI has no subscribers yet at mod_init.
+ * The one-shot gate is in shm with an atomic test-and-set, so exactly one
+ * process raises it however many run the timer */
+static int mem_degraded = 0;
+static int *mem_degraded_gate = NULL;
 
 static int pcache_parse_collections(unsigned int type, void *val);
 static int pcache_store_urls(unsigned int type, void *val);
@@ -115,6 +147,7 @@ static const param_export_t params[] = {
 	{ "expiry_sweep_period", INT_PARAM, &expiry_sweep_period },
 	{ "growth_load_factor",  INT_PARAM, &growth_load_factor },
 	{ "growth_budget",       INT_PARAM, &growth_budget },
+	{ "event_expired_collections", STR_PARAM, &event_expired_collections },
 	{0,0,0}
 };
 
@@ -882,6 +915,101 @@ static void pcache_destroy(cachedb_con *con)
 
 
 /*
+ * CP-11 event raising.  Every raise is gated by evi_probe_event(), so with
+ * no subscribers the cost is one shared read and nothing else - none of
+ * these sit on the lock-free get/set hot path (expiry/growth run in the
+ * maintenance timer, NOMEM only on a dropped write, degraded once at boot).
+ */
+static void pcache_on_expired(const str *key, void *ctx)
+{
+	str *coll = ctx;
+	evi_params_p list;
+
+	/* the timer already probed before opting this sweep into events */
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &evp_collection, coll) ||
+	    evi_param_add_str(list, &evp_key, key)) {
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(evi_expired_id, list))
+		LM_ERR("failed to raise %.*s\n", evi_expired_name.len,
+			evi_expired_name.s);
+}
+
+static void pcache_raise_nomem(str *coll, str *key, int size)
+{
+	evi_params_p list;
+
+	if (evi_nomem_id == EVI_ERROR || !evi_probe_event(evi_nomem_id))
+		return;
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &evp_collection, coll) ||
+	    evi_param_add_str(list, &evp_key, key) ||
+	    evi_param_add_int(list, &evp_size, &size)) {
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(evi_nomem_id, list))
+		LM_ERR("failed to raise %.*s\n", evi_nomem_name.len,
+			evi_nomem_name.s);
+}
+
+static void pcache_raise_grown(str *coll, int prev_b, int new_b, int splits,
+		int entries)
+{
+	evi_params_p list;
+
+	if (evi_grown_id == EVI_ERROR || !evi_probe_event(evi_grown_id))
+		return;
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &evp_collection, coll) ||
+	    evi_param_add_int(list, &evp_prev_buckets, &prev_b) ||
+	    evi_param_add_int(list, &evp_buckets, &new_b) ||
+	    evi_param_add_int(list, &evp_splits, &splits) ||
+	    evi_param_add_int(list, &evp_entries, &entries)) {
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(evi_grown_id, list))
+		LM_ERR("failed to raise %.*s\n", evi_grown_name.len,
+			evi_grown_name.s);
+}
+
+static void pcache_raise_degraded(void)
+{
+	evi_params_p list;
+	str backing;
+	int req = pcache_arena_hugepage_mb;
+	int tier = pcache_arena_tier();
+	int oc = pcache_mem.huge_overcommit;
+
+	if (evi_degraded_id == EVI_ERROR || !evi_probe_event(evi_degraded_id))
+		return;
+	list = evi_get_params();
+	if (!list)
+		return;
+	backing.s = (char *)pcache_mem_tier_str(tier);
+	backing.len = strlen(backing.s);
+	if (evi_param_add_int(list, &evp_requested_mb, &req) ||
+	    evi_param_add_int(list, &evp_tier, &tier) ||
+	    evi_param_add_str(list, &evp_backing, &backing) ||
+	    evi_param_add_int(list, &evp_overcommit, &oc)) {
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(evi_degraded_id, list))
+		LM_ERR("failed to raise %.*s\n", evi_degraded_name.len,
+			evi_degraded_name.s);
+}
+
+/*
  * the cachedb vtable (CP-04) - thin adapters over the table core.  TTL to
  * absolute-ticks conversion happens here; internals only see absolutes.
  */
@@ -934,9 +1062,17 @@ static int pcache_htable_fetch_counter(cachedb_con *con, str *attr, int *val)
 static int pcache_htable_insert(cachedb_con *con, str *attr, str *val,
 		int expires)
 {
-	pcache_htable_t *ht = con_ht(con);
+	pcache_col_t *col = con ? ((pcache_con *)con->data)->col : NULL;
+	int rc;
 
-	return ht ? pcache_ht_store(ht, attr, val, ttl_to_abs(expires)) : -1;
+	if (!col || !col->htable)
+		return -1;
+	rc = pcache_ht_store(col->htable, attr, val, ttl_to_abs(expires));
+	if (rc == -2) {                       /* arena full - write dropped */
+		pcache_raise_nomem(&col->col_name, attr, val ? val->len : 0);
+		return -1;
+	}
+	return rc;
 }
 
 static int pcache_htable_remove(cachedb_con *con, str *attr)
@@ -1323,21 +1459,45 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 static void pcache_expire_timer(unsigned int ticks, void *param)
 {
 	pcache_col_t *col;
-	unsigned int now = get_ticks(), freed, split;
+	pcache_ht_totals_t t;
+	unsigned int now = get_ticks(), freed, split, prev_b, new_b;
+
+	/* one-shot: huge pages were requested but the granted tier is
+	 * sub-optimal.  Deferred here from mod_init because EVI has no
+	 * subscribers that early; the shm gate's atomic test-and-set makes it
+	 * fire exactly once even if more than one process runs the timer. */
+	if (mem_degraded && mem_degraded_gate &&
+	        __sync_bool_compare_and_swap(mem_degraded_gate, 0, 1))
+		pcache_raise_degraded();
 
 	for (col = pcache_collection; col; col = col->next) {
 		if (!col->htable)
 			continue;
-		freed = pcache_ht_sweep(col->htable, now);
+
+		/* only pay for the per-key expiry callback where a collection
+		 * opted in AND someone is listening */
+		if (col->raise_expired && evi_probe_event(evi_expired_id))
+			freed = pcache_ht_sweep(col->htable, now,
+				pcache_on_expired, &col->col_name);
+		else
+			freed = pcache_ht_sweep(col->htable, now, NULL, NULL);
 		if (freed)
 			LM_DBG("collection <%.*s>: reclaimed %u expired records\n",
 				col->col_name.len, col->col_name.s, freed);
+
 		if (growth_load_factor > 0) {
+			prev_b = pcache_ht_nbuckets(col->htable);
 			split = pcache_ht_grow(col->htable,
 				growth_load_factor, growth_budget);
-			if (split)
-				LM_DBG("collection <%.*s>: grew by %u splits\n",
-					col->col_name.len, col->col_name.s, split);
+			if (split) {
+				new_b = pcache_ht_nbuckets(col->htable);
+				LM_DBG("collection <%.*s>: grew by %u splits "
+					"(%u->%u buckets)\n", col->col_name.len,
+					col->col_name.s, split, prev_b, new_b);
+				pcache_ht_totals(col->htable, &t);
+				pcache_raise_grown(&col->col_name, prev_b, new_b,
+					split, t.entries);
+			}
 		}
 	}
 }
@@ -1392,6 +1552,20 @@ static int mod_init(void)
 		return -1;
 	}
 
+	/* CP-11: huge pages were asked for but the arena settled on a lesser
+	 * tier - flagged now, raised from the first timer tick (EVI has no
+	 * subscribers this early) via a shm one-shot gate */
+	mem_degraded = (pcache_arena_hugepage_mb > 0 &&
+		pcache_arena_tier() != PCACHE_MEM_HUGETLB);
+	if (mem_degraded) {
+		mem_degraded_gate = shm_malloc(sizeof *mem_degraded_gate);
+		if (!mem_degraded_gate) {
+			LM_ERR("no more shm memory\n");
+			return -1;
+		}
+		*mem_degraded_gate = 0;
+	}
+
 	if (arena_selftest && pcache_arena_selftest() < 0) {
 		LM_ERR("arena selftest failed\n");
 		return -1;
@@ -1421,6 +1595,16 @@ static int mod_init(void)
 		LM_ERR("failed to register the 'perf' cachedb engine\n");
 		return -1;
 	}
+
+	/* CP-11: publish the observability events.  A failed publish just
+	 * leaves the id EVI_ERROR and the raise is skipped - never fatal. */
+	evi_expired_id  = evi_publish_event(evi_expired_name);
+	evi_nomem_id    = evi_publish_event(evi_nomem_name);
+	evi_grown_id    = evi_publish_event(evi_grown_name);
+	evi_degraded_id = evi_publish_event(evi_degraded_name);
+	if (evi_expired_id == EVI_ERROR || evi_nomem_id == EVI_ERROR ||
+	    evi_grown_id == EVI_ERROR || evi_degraded_id == EVI_ERROR)
+		LM_ERR("could not publish one or more cachedb_perf events\n");
 
 	/* make sure the default collection exists */
 	for (col = pcache_collection; col; col = col->next)
@@ -1457,6 +1641,29 @@ static int mod_init(void)
 		}
 		LM_DBG("collection <%.*s>: 2^%u buckets\n",
 			col->col_name.len, col->col_name.s, col->size_log2);
+	}
+
+	/* CP-11: mark the collections opted in to E_CACHEDB_PERF_EXPIRED */
+	if (event_expired_collections && *event_expired_collections) {
+		csv_record *cr, *c;
+		str csv;
+
+		csv.s = event_expired_collections;
+		csv.len = strlen(event_expired_collections);
+		cr = parse_csv_record(&csv);
+		for (c = cr; c; c = c->next) {
+			int found = 0;
+			for (col = pcache_collection; col; col = col->next)
+				if (col->col_name.len == c->s.len &&
+				        !memcmp(col->col_name.s, c->s.s, c->s.len)) {
+					col->raise_expired = 1;
+					found = 1;
+				}
+			if (!found)
+				LM_WARN("event_expired_collections: <%.*s> is not a "
+					"declared collection\n", c->s.len, c->s.s);
+		}
+		free_csv_record(cr);
 	}
 
 	/* one script connection per configured URL, or a default one */
@@ -1533,6 +1740,11 @@ static void mod_destroy(void)
 		shm_free(col);
 	}
 	pcache_collection = NULL;
+
+	if (mem_degraded_gate) {
+		shm_free(mem_degraded_gate);
+		mem_degraded_gate = NULL;
+	}
 
 	pcache_arena_destroy();
 }

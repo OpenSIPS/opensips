@@ -161,9 +161,15 @@ typedef struct pcache_htable {
 /* sum the per-process shards; entries = created - destroyed */
 void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out);
 
+/* current live bucket count (grows at runtime, CP-09) - for the CP-11
+ * growth event, which reports the before/after span */
+unsigned int pcache_ht_nbuckets(pcache_htable_t *ht);
+
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 
-/* 0 = stored; -1 = error.  @expires is absolute ticks, 0 = never */
+/* 0 = stored; -1 = error; -2 = out of memory (the arena could not allocate
+ * a cell - the cache is full and the write was dropped).  @expires is
+ * absolute ticks, 0 = never */
 int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires);
 
@@ -223,12 +229,20 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx);
 
+/* CP-11: invoked for each record the sweep reaps, after the bucket lock is
+ * released and while the key is still valid, so the caller can raise an
+ * expiry event.  @key points into the about-to-be-freed record; do not
+ * retain it past the call. */
+typedef void (*pcache_expired_cb)(const str *key, void *ctx);
+
 /* expiry sweep (CP-05): visits only buckets whose hint is due, removes
  * expired records (overflow chains too whenever any overflow exists) and
  * reclaims their cells through the global pool - the sweeping process is
- * not an allocator, so private-stack frees would never drain.  Returns
- * the number of records reclaimed. */
-unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now);
+ * not an allocator, so private-stack frees would never drain.  If @cb is
+ * non-NULL it is called once per reaped record (CP-11).  Returns the number
+ * of records reclaimed. */
+unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
+		pcache_expired_cb cb, void *cb_ctx);
 
 /* linear-hash growth (CP-09): split buckets while entries/nbuckets exceeds
  * @target_lf, up to @budget splits.  Single-splitter (maintenance timer). */

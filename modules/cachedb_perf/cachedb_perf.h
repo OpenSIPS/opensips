@@ -42,6 +42,7 @@ typedef struct pcache_col {
 	str col_name;
 	unsigned int size_log2;         /* initial table size (log2 buckets) */
 	struct pcache_htable *htable;
+	int raise_expired;              /* CP-11: emit E_CACHEDB_PERF_EXPIRED */
 	struct pcache_col *next;
 } pcache_col_t;
 

@@ -35,7 +35,8 @@
 		Work in progress: this module is under active development, but
 		functionally complete for a single node - data operations, the
 		background expiry sweep, runtime table growth, statistics, the
-		huge-page arena and the introspection MI are all in place. Cross-node
+		huge-page arena, the introspection MI and the observability events
+		are all in place. Cross-node
 		replication and restart persistency are intentionally out of scope.
 	</para>
 	</warning>
@@ -241,6 +242,27 @@ modparam("cachedb_perf", "htable_selftest", 1)
 		</example>
 	</section>
 
+	<section id="param_event_expired_collections" xreflabel="event_expired_collections">
+		<title><varname>event_expired_collections</varname> (string)</title>
+		<para>
+		Comma-separated list of the collections that raise
+		<emphasis>E_CACHEDB_PERF_EXPIRED</emphasis> (one event per reaped key)
+		as the sweep reclaims them. It is opt-in per collection because a
+		high-churn collection can reap in bulk, and event delivery is
+		synchronous - a collection should pay for the per-key events only if
+		something is listening for them. Empty (default) means no collection
+		raises the event. See <xref linkend="exported_events"/>.
+		</para>
+		<example>
+		<title>Set <varname>event_expired_collections</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_perf", "event_expired_collections", "sessions,subscriptions")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_statistics" xreflabel="Exported Statistics">
@@ -347,6 +369,56 @@ opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
 opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
 </programlisting>
 		</example>
+	</section>
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<para>
+		Every event is gated by <emphasis>evi_probe_event()</emphasis>, so
+		with no subscriber it costs a single shared read and nothing more;
+		none of them sit on the lock-free get/set path.
+	</para>
+	<section id="event_E_CACHEDB_PERF_EXPIRED" xreflabel="E_CACHEDB_PERF_EXPIRED">
+		<title><function moreinfo="none">E_CACHEDB_PERF_EXPIRED</function></title>
+		<para>
+		Raised by the sweep for each expired record it reclaims, but only for
+		the collections named in
+		<xref linkend="param_event_expired_collections"/> (opt-in, since a
+		high-churn collection reaps in bulk and delivery is synchronous).
+		Parameters: <emphasis>collection</emphasis>, <emphasis>key</emphasis>.
+		</para>
+	</section>
+	<section id="event_E_CACHEDB_PERF_NOMEM" xreflabel="E_CACHEDB_PERF_NOMEM">
+		<title><function moreinfo="none">E_CACHEDB_PERF_NOMEM</function></title>
+		<para>
+		Raised when a write is dropped because the arena is full - the cache
+		is out of memory and rejecting stores. One event per dropped write
+		(subscribers should expect bursts under memory pressure). Parameters:
+		<emphasis>collection</emphasis>, <emphasis>key</emphasis>,
+		<emphasis>size</emphasis> (the value's byte length).
+		</para>
+	</section>
+	<section id="event_E_CACHEDB_PERF_GROWN" xreflabel="E_CACHEDB_PERF_GROWN">
+		<title><function moreinfo="none">E_CACHEDB_PERF_GROWN</function></title>
+		<para>
+		Raised by the maintenance timer after it grows a collection's table.
+		Parameters: <emphasis>collection</emphasis>,
+		<emphasis>prev_buckets</emphasis>, <emphasis>buckets</emphasis>,
+		<emphasis>splits</emphasis>, <emphasis>entries</emphasis>.
+		</para>
+	</section>
+	<section id="event_E_CACHEDB_PERF_MEM_DEGRADED" xreflabel="E_CACHEDB_PERF_MEM_DEGRADED">
+		<title><function moreinfo="none">E_CACHEDB_PERF_MEM_DEGRADED</function></title>
+		<para>
+		Raised once at startup when
+		<emphasis>arena_hugepage_mb</emphasis> was set but the arena settled
+		on a tier below hugetlb (missing <emphasis>vm.nr_overcommit_hugepages</emphasis>,
+		for instance) - the node is running slower than intended. Parameters:
+		<emphasis>requested_mb</emphasis>, <emphasis>tier</emphasis> (1 hugetlb
+		.. 4 plain 4K), <emphasis>backing</emphasis> (its description),
+		<emphasis>overcommit_pages</emphasis>.
+		</para>
 	</section>
 	</section>
 

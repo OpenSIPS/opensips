@@ -406,7 +406,7 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 	/* build the full replacement record before any lock (3.5b rule 3) */
 	nr = pcache_cell_alloc(PCACHE_REC_SIZE(key->len, val->len));
 	if (!nr)
-		return -1;
+		return -2;                        /* arena full - write dropped */
 	nr->rflags = 0;
 	nr->klen = (unsigned short)key->len;
 	nr->vlen = (unsigned int)val->len;
@@ -498,7 +498,7 @@ again:
 		node = pcache_cell_alloc(sizeof *node);
 		if (!node) {
 			pcache_cell_free(nr);
-			return -1;
+			return -2;                    /* arena full - write dropped */
 		}
 		goto again;
 	}
@@ -1039,13 +1039,20 @@ out:
 	return rc < 0 ? rc : 0;
 }
 
-unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now)
+unsigned int pcache_ht_nbuckets(pcache_htable_t *ht)
+{
+	return __atomic_load_n(&ht->nbuckets, __ATOMIC_RELAXED);
+}
+
+unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
+		pcache_expired_cb cb, void *cb_ctx)
 {
 	pcache_bucket_t *b;
 	pcache_rec_t *r, *dead[PCACHE_SLOTS];
 	pcache_rec_t *batch_r[64];
 	struct povf *n, **prev, *batch_n[64];
 	unsigned int idx, i, used, hint, newmin, ndead, freed = 0;
+	str dk;
 	int bn;
 
 	for (idx = 0; idx < ht->nbuckets; idx++) {
@@ -1087,8 +1094,14 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now)
 
 		/* reclamation strictly after the lock (3.5b), through the
 		 * global pool - the sweeping process is not an allocator */
-		for (i = 0; i < ndead; i++)
+		for (i = 0; i < ndead; i++) {
+			if (cb) {
+				dk.s = dead[i]->data;
+				dk.len = dead[i]->klen;
+				cb(&dk, cb_ctx);          /* CP-11 expiry event, unlocked */
+			}
 			pcache_cell_free_global(dead[i]);
+		}
 		freed += ndead;
 	}
 
@@ -1119,6 +1132,11 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now)
 			}
 			lock_release(&ht->ovf_lock);
 			for (i = 0; i < (unsigned int)bn; i++) {
+				if (cb) {
+					dk.s = batch_r[i]->data;
+					dk.len = batch_r[i]->klen;
+					cb(&dk, cb_ctx);      /* CP-11 expiry event, unlocked */
+				}
 				pcache_cell_free_global(batch_r[i]);
 				pcache_cell_free_global(batch_n[i]);
 			}
@@ -1587,9 +1605,9 @@ int pcache_htable_selftest(void)
 		}
 		HCHK(ht->ovf_count > 0, "sweep set never overflowed\n");
 
-		freed = pcache_ht_sweep(ht, 5);
+		freed = pcache_ht_sweep(ht, 5, NULL, NULL);
 		HCHK(freed == 0, "sweep before expiry freed %u\n", freed);
-		freed = pcache_ht_sweep(ht, 20);
+		freed = pcache_ht_sweep(ht, 20, NULL, NULL);
 		HCHK(freed == 100, "sweep freed %u of 100\n", freed);
 		HCHK(ht->ovf_count == 0, "sweep left %u in overflow\n",
 			ht->ovf_count);

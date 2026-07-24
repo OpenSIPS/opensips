@@ -21,6 +21,7 @@ cachedb_perf Module
               1.3.6. arena_hugepage_mb (integer)
               1.3.7. arena_selftest (integer)
               1.3.8. htable_selftest (integer)
+              1.3.9. event_expired_collections (string)
 
         1.4. Exported Statistics
         1.5. Exported MI Functions
@@ -30,13 +31,20 @@ cachedb_perf Module
                       perf_dump / perf_get / perf_set / perf_ttl /
                       perf_del
 
-        1.6. Exported Functions
+        1.6. Exported Events
 
-              1.6.1. perf_del(glob[, collection])
-              1.6.2. perf_mget(glob, keys_avp, vals_avp[,
+              1.6.1. E_CACHEDB_PERF_EXPIRED
+              1.6.2. E_CACHEDB_PERF_NOMEM
+              1.6.3. E_CACHEDB_PERF_GROWN
+              1.6.4. E_CACHEDB_PERF_MEM_DEGRADED
+
+        1.7. Exported Functions
+
+              1.7.1. perf_del(glob[, collection])
+              1.7.2. perf_mget(glob, keys_avp, vals_avp[,
                       collection[, limit]])
 
-              1.6.3. perf_mget_json(glob, dst_var[, collection[,
+              1.7.3. perf_mget_json(glob, dst_var[, collection[,
                       limit]])
 
    List of Examples
@@ -49,11 +57,12 @@ cachedb_perf Module
    1.6. Set arena_hugepage_mb parameter
    1.7. Set arena_selftest parameter
    1.8. Set htable_selftest parameter
-   1.9. perf_stats usage
-   1.10. introspection usage
-   1.11. perf_del() usage
-   1.12. perf_mget() usage
-   1.13. perf_mget_json() usage
+   1.9. Set event_expired_collections parameter
+   1.10. perf_stats usage
+   1.11. introspection usage
+   1.12. perf_del() usage
+   1.13. perf_mget() usage
+   1.14. perf_mget_json() usage
 
 Chapter 1. Admin Guide
 
@@ -83,9 +92,9 @@ Warning
    Work in progress: this module is under active development, but
    functionally complete for a single node - data operations, the
    background expiry sweep, runtime table growth, statistics, the
-   huge-page arena and the introspection MI are all in place.
-   Cross-node replication and restart persistency are
-   intentionally out of scope.
+   huge-page arena, the introspection MI and the observability
+   events are all in place. Cross-node replication and restart
+   persistency are intentionally out of scope.
 
 1.2. Dependencies
 
@@ -228,6 +237,22 @@ modparam("cachedb_perf", "arena_selftest", 1)
 modparam("cachedb_perf", "htable_selftest", 1)
 ...
 
+1.3.9. event_expired_collections (string)
+
+   Comma-separated list of the collections that raise
+   E_CACHEDB_PERF_EXPIRED (one event per reaped key) as the sweep
+   reclaims them. It is opt-in per collection because a high-churn
+   collection can reap in bulk, and event delivery is synchronous
+   - a collection should pay for the per-key events only if
+   something is listening for them. Empty (default) means no
+   collection raises the event. See Exported Events.
+
+   Example 1.9. Set event_expired_collections parameter
+...
+modparam("cachedb_perf", "event_expired_collections", "sessions,subscrip
+tions")
+...
+
 1.4. Exported Statistics
 
    All counters are aggregated per-process and summed only when
@@ -259,7 +284,7 @@ modparam("cachedb_perf", "htable_selftest", 1)
 
    Name: perf_stats. Parameters: collection (optional).
 
-   Example 1.9. perf_stats usage
+   Example 1.10. perf_stats usage
 opensips-cli -x mi cachedb_perf:perf_stats
 opensips-cli -x mi cachedb_perf:perf_stats th
 
@@ -300,7 +325,7 @@ perf_get / perf_set / perf_ttl / perf_del
        the glob; returns the count. The MI face of the perf_del()
        script function.
 
-   Example 1.10. introspection usage
+   Example 1.11. introspection usage
 opensips-cli -x mi cachedb_perf:perf_keys "session-*"
 opensips-cli -x mi cachedb_perf:perf_keys "session-*" th 50
 opensips-cli -x mi cachedb_perf:perf_scan 0
@@ -311,7 +336,42 @@ opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
 opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
 opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
 
-1.6. Exported Functions
+1.6. Exported Events
+
+   Every event is gated by evi_probe_event(), so with no
+   subscriber it costs a single shared read and nothing more; none
+   of them sit on the lock-free get/set path.
+
+1.6.1. E_CACHEDB_PERF_EXPIRED
+
+   Raised by the sweep for each expired record it reclaims, but
+   only for the collections named in event_expired_collections
+   (opt-in, since a high-churn collection reaps in bulk and
+   delivery is synchronous). Parameters: collection, key.
+
+1.6.2. E_CACHEDB_PERF_NOMEM
+
+   Raised when a write is dropped because the arena is full - the
+   cache is out of memory and rejecting stores. One event per
+   dropped write (subscribers should expect bursts under memory
+   pressure). Parameters: collection, key, size (the value's byte
+   length).
+
+1.6.3. E_CACHEDB_PERF_GROWN
+
+   Raised by the maintenance timer after it grows a collection's
+   table. Parameters: collection, prev_buckets, buckets, splits,
+   entries.
+
+1.6.4. E_CACHEDB_PERF_MEM_DEGRADED
+
+   Raised once at startup when arena_hugepage_mb was set but the
+   arena settled on a tier below hugetlb (missing
+   vm.nr_overcommit_hugepages, for instance) - the node is running
+   slower than intended. Parameters: requested_mb, tier (1 hugetlb
+   .. 4 plain 4K), backing (its description), overcommit_pages.
+
+1.7. Exported Functions
 
    Single-key operations go through the core cache functions
    (cache_store(), cache_fetch(), ...) with the “perf” backend.
@@ -326,19 +386,19 @@ opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
    collection of the default (groupless) cachedb_url - exactly
    where cache_store("perf", ...) writes.
 
-1.6.1. perf_del(glob[, collection])
+1.7.1. perf_del(glob[, collection])
 
    Deletes every key matching the glob (expired entries included).
    Returns the number of keys removed, or -1 (false) if none
    matched.
 
-   Example 1.11. perf_del() usage
+   Example 1.12. perf_del() usage
 ...
 perf_del("session-*");
 perf_del("th-*", "th");
 ...
 
-1.6.2. perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])
+1.7.2. perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])
 
    Returns every live key/value pair matching the glob into two
    writable variables (use AVPs - each match adds one value to
@@ -347,14 +407,14 @@ perf_del("th-*", "th");
    0 = unbounded. Returns the match count, or -1 (false) if none
    matched.
 
-   Example 1.12. perf_mget() usage
+   Example 1.13. perf_mget() usage
 ...
 if (perf_mget("user-*", $avp(k), $avp(v))) {
     xlog("first match: $(avp(k)[0]) = $(avp(v)[0])\n");
 }
 ...
 
-1.6.3. perf_mget_json(glob, dst_var[, collection[, limit]])
+1.7.3. perf_mget_json(glob, dst_var[, collection[, limit]])
 
    Like perf_mget(), but returns all matches as one JSON object
    {"key":"value",...} in a single writable variable ({} when
@@ -363,7 +423,7 @@ if (perf_mget("user-*", $avp(k), $avp(v))) {
    through unescaped - strict JSON consumers therefore need UTF-8
    values. Returns the match count, or -1 (false) if none matched.
 
-   Example 1.13. perf_mget_json() usage
+   Example 1.14. perf_mget_json() usage
 ...
 if (perf_mget_json("user-*", $var(blob), , 100))
     xlog("users: $var(blob)\n");

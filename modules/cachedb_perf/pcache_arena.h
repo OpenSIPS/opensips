@@ -80,6 +80,10 @@ void pcache_arena_extents(unsigned long *lo, unsigned long *hi);
 
 void pcache_arena_stats(unsigned int *nchunks, unsigned long *bytes);
 
+/* the memory tier the huge-page reservation actually achieved (1 hugetlb ..
+ * 4 plain 4K), as opposed to the pcache_mem.tier probe - CP-11 */
+int pcache_arena_tier(void);
+
 /* modparam-triggered startup selftest; returns -1 on any mismatch */
 int pcache_arena_selftest(void);
 

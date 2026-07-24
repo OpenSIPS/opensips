@@ -475,6 +475,15 @@ void pcache_arena_stats(unsigned int *nchunks, unsigned long *bytes)
 	lock_release(&arena->lock);
 }
 
+/* the tier the huge-page reservation actually got (CP-11 MEM_DEGRADED) -
+ * distinct from pcache_mem.tier, which is the optimistic probe; with no
+ * reservation (arena_hugepage_mb=0 or a failed reserve) the arena is plain
+ * shm, reported as 4K */
+int pcache_arena_tier(void)
+{
+	return arena->hbase ? (int)arena->htier : PCACHE_MEM_4K;
+}
+
 
 /*
  * startup selftest (modparam "arena_selftest"): exercises class mapping,
