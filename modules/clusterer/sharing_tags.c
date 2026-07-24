@@ -387,12 +387,38 @@ int shtag_modparam_func(modparam_t type, void *val_s)
 			tag_name.len, tag_name.s);
 		return -1;
 	}
+#ifdef CLUSTERER_CTRL_SUPPORT
+	/* Force the given state.  Only a *controller-managed* cluster's active tag
+	 * is forced to backup here (its controller master activates it when
+	 * appropriate); a native cluster keeps its configured =active state - the
+	 * old global use_controller check wrongly demoted native tags too in a
+	 * hybrid.  A controller cluster's stub is created later, in mod_init, so at
+	 * this parse-time point it is normally not yet in cluster_list; the
+	 * controller then forces its tags to backup at runtime via
+	 * set_shtag_managed()/shtag_force_all_backup() (which also clears any pending
+	 * active broadcast set below). */
+	{
+	cluster_info_t *_tcl = get_cluster_by_id(c_id);
+	if (_tcl && _tcl->controller_managed && init_state == SHTAG_STATE_ACTIVE) {
+		tag->state = SHTAG_STATE_BACKUP;
+		LM_INFO("clusterer: [cluster %d] sharing tag [%.*s] "
+		        "forced to backup (controller-managed)\n",
+		        tag->cluster_id, tag->name.len, tag->name.s);
+	} else {
+		tag->state = init_state;
+		if (init_state == SHTAG_STATE_ACTIVE)
+			/* broadcast (later) in cluster that this tag is active */
+			tag->send_active_msg = 1;
+	}
+	}
+#else
 	/* force the given state */
 	tag->state = init_state;
 
 	if (init_state == SHTAG_STATE_ACTIVE)
 		/* broadcast (later) in cluster that this tag is active */
 		tag->send_active_msg = 1;
+#endif
 
 	return 0;
 }
@@ -876,6 +902,73 @@ int handle_shtag_active(bin_packet_t *packet, int cluster_id, int source_id)
 }
 
 
+#ifdef CLUSTERER_CTRL_SUPPORT
+/**
+ * shtag_force_all_backup() - force every sharing tag for the given
+ * cluster to BACKUP state, ignoring the =active config value.
+ * Called by clusterer_controller at startup when manage_shtags=1 so
+ * that tag activation is decided solely by the controller master.
+ * Runs pre-cluster-join: no BIN broadcast needed.
+ */
+int shtag_force_all_backup(int cluster_id)
+{
+	struct sharing_tag *tag;
+	int lock_old_flag;
+
+	if (!shtags_list || !*shtags_list)
+		return 0;
+
+	lock_start_sw_read(shtags_lock);
+	for (tag = *shtags_list; tag; tag = tag->next) {
+		if (tag->cluster_id != cluster_id ||
+		    tag->state != SHTAG_STATE_ACTIVE)
+			continue;
+		lock_switch_write(shtags_lock, lock_old_flag);
+		tag->state = SHTAG_STATE_BACKUP;
+		tag->send_active_msg = 0; /* suppress pending active broadcast */
+		lock_switch_read(shtags_lock, lock_old_flag);
+		LM_INFO("clusterer: [cluster %d] sharing tag [%.*s] forced to "
+		        "backup (controller-managed)\n",
+		        cluster_id, tag->name.len, tag->name.s);
+	}
+	lock_stop_sw_read(shtags_lock);
+	return 0;
+}
+
+/**
+ * shtag_activate_all_backup() - activate every BACKUP sharing tag for
+ * the given cluster. Called by clusterer_controller master on node departure.
+ */
+int shtag_activate_all_backup(int cluster_id)
+{
+	struct sharing_tag *tag;
+	/* collect names under lock to avoid O(n²) restart-from-head loop */
+#define SHTAG_MAX_ACTIVATE 64
+	str  to_activate[SHTAG_MAX_ACTIVATE];
+	int  n = 0, i;
+
+	if (!shtags_list || !*shtags_list)
+		return 0;
+
+	lock_start_read(shtags_lock);
+	for (tag = *shtags_list; tag && n < SHTAG_MAX_ACTIVATE; tag = tag->next) {
+		if (tag->cluster_id != cluster_id ||
+		    tag->state != SHTAG_STATE_BACKUP)
+			continue;
+		to_activate[n++] = tag->name;
+	}
+	lock_stop_read(shtags_lock);
+
+	for (i = 0; i < n; i++) {
+		LM_INFO("clusterer: [cluster %d] promoting sharing tag "
+		        "[%.*s] from backup to active (controller master)\n",
+		        cluster_id, to_activate[i].len, to_activate[i].s);
+		shtag_activate(&to_activate[i], cluster_id, MI_SSTR("controller master"));
+	}
+	return 0;
+}
+#endif /* CLUSTERER_CTRL_SUPPORT */
+
 void shtag_event_handler(int cluster_id, enum clusterer_event ev, int node_id)
 {
 	if (ev == CLUSTER_NODE_UP)
@@ -960,10 +1053,27 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 		tag.len, tag.s, c_id);
 
 	lock_start_read(cl_list_lock);
+#ifdef CLUSTERER_CTRL_SUPPORT
+	{
+		cluster_info_t *_cl = get_cluster_by_id(c_id);
+		if (!_cl) {
+			lock_stop_read(cl_list_lock);
+			return init_mi_error(404, MI_SSTR("Cluster ID not found"));
+		}
+		if (_cl->shtag_managed) {
+			lock_stop_read(cl_list_lock);
+			LM_WARN("clusterer: MI shtag activation blocked for cluster %d "
+			        "— sharing tags are controller-managed\n", c_id);
+			return init_mi_error(403, MI_SSTR("Sharing tag is "
+				"controller-managed; manual activation not allowed"));
+		}
+	}
+#else
 	if (!get_cluster_by_id(c_id)) {
 		lock_stop_read(cl_list_lock);
 		return init_mi_error(404, MI_SSTR("Cluster ID not found"));
 	}
+#endif
 	lock_stop_read(cl_list_lock);
 
 	if (shtag_activate( &tag, c_id, MI_SSTR("MI command"))<0) {
@@ -1057,7 +1167,22 @@ int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 		return 0;
 	}
 
-	if (shtag_activate( &v_name->shtag, v_name->cluster_id, 
+#ifdef CLUSTERER_CTRL_SUPPORT
+	lock_start_read(cl_list_lock);
+	{
+		cluster_info_t *_cl = get_cluster_by_id(v_name->cluster_id);
+		if (_cl && _cl->shtag_managed) {
+			lock_stop_read(cl_list_lock);
+			LM_WARN("clusterer: script shtag activation blocked for "
+			        "tag <%.*s/%d> — sharing tags are controller-managed\n",
+			        v_name->shtag.len, v_name->shtag.s, v_name->cluster_id);
+			return -1;
+		}
+	}
+	lock_stop_read(cl_list_lock);
+#endif
+
+	if (shtag_activate( &v_name->shtag, v_name->cluster_id,
 	MI_SSTR("script variable"))==-1) {
 		LM_ERR("failed to set sharing tag <%.*s/%d> to new state %d\n",
 			v_name->shtag.len, v_name->shtag.s, v_name->cluster_id, state);

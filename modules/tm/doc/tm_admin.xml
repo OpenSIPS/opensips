@@ -791,6 +791,13 @@ modparam("tm", "auto_100trying", 0)
 		Check out the <xref linkend="tm_anycast"/> section for more details.
 		</para>
 		<para>
+		This node's clusterer id is read at the moment each request is sent
+		(and each reply examined), not cached at startup, so anycast
+		replication also works when the id is assigned at runtime and may
+		change — as with a <emphasis>clusterer_controller</emphasis>-managed
+		cluster.
+		</para>
+		<para>
 		<emphasis>
 			Anycast replication is disabled by default.
 		</emphasis>

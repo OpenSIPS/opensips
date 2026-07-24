@@ -720,6 +720,12 @@ modparam("tm", "auto_100trying", 0)
 
    Check out the tm_anycast section for more details.
 
+   This node's clusterer id is read at the moment each request is
+   sent (and each reply examined), not cached at startup, so
+   anycast replication also works when the id is assigned at
+   runtime and may change — as with a clusterer_controller-managed
+   cluster.
+
    Anycast replication is disabled by default.
 
    Example 1.20. Set tm_replication_cluster parameter
