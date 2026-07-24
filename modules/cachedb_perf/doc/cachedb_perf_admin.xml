@@ -136,6 +136,54 @@ modparam("cachedb_perf", "cachedb_url", "perf:prof:///profiles")
 
 	</section>
 
+	<section id="exported_statistics" xreflabel="Exported Statistics">
+	<title>Exported Statistics</title>
+	<para>
+		All counters are aggregated per-process and summed only when read,
+		so instrumentation never touches a shared cache line on the hot
+		path. Query with <emphasis>get_statistics cachedb_perf:</emphasis>.
+	</para>
+	<itemizedlist>
+		<listitem><para><emphasis>hits</emphasis> / <emphasis>misses</emphasis> - fetch outcomes (expired counts as a miss)</para></listitem>
+		<listitem><para><emphasis>stores</emphasis> / <emphasis>removes</emphasis> - write and delete operations</para></listitem>
+		<listitem><para><emphasis>entries</emphasis> - live records across all collections</para></listitem>
+		<listitem><para><emphasis>seqlock_retries</emphasis> - optimistic-read retries (the contention signal)</para></listitem>
+		<listitem><para><emphasis>lock_fallbacks</emphasis> - reads that fell back to the bucket lock</para></listitem>
+		<listitem><para><emphasis>arena_bytes</emphasis> / <emphasis>arena_chunks</emphasis> - memory taken from shm</para></listitem>
+		<listitem><para><emphasis>memory_tier</emphasis> - the achieved huge-page tier (1 hugetlb .. 4 plain 4K)</para></listitem>
+	</itemizedlist>
+	<para>
+		The <emphasis>perf_stats</emphasis> MI command gives the same
+		figures broken down per collection, plus load factor, overflow
+		occupancy, retries-per-1k-reads and the memory-backing description.
+	</para>
+	</section>
+
+	<section id="mi_commands" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+	<section id="mi_perf_stats" xreflabel="perf_stats">
+		<title><function moreinfo="none">perf_stats</function></title>
+		<para>
+		Reports per-collection statistics (entries, buckets, overflow,
+		hits/misses/stores/removes, load factor, seqlock retries and
+		retries-per-1k-reads) plus the arena occupancy and the achieved
+		memory tier. With no parameter it reports every collection; an
+		optional collection name restricts it to one.
+		</para>
+		<para>
+		Name: <emphasis>perf_stats</emphasis>. Parameters:
+		<emphasis>collection</emphasis> (optional).
+		</para>
+		<example>
+		<title><function>perf_stats</function> usage</title>
+		<programlisting format="linespecific">
+opensips-cli -x mi perf_stats
+opensips-cli -x mi perf_stats th
+</programlisting>
+		</example>
+	</section>
+	</section>
+
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<para>

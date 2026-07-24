@@ -34,6 +34,10 @@
 #define PCACHE_NSEGS        (1U << (24 - PCACHE_SEG_BITS))   /* for 2^24 max */
 #define PCACHE_SEQ_RETRIES  64
 #define PCACHE_OVF_BUCKETS  1024
+/* per-process stat shards: sized to a fixed cap, not counted_max_processes
+ * (not yet final when the table is built in mod_init, pre-fork).  The
+ * owner:12 bucket field already caps the system at 4096 processes. */
+#define PCACHE_MAX_PROCS    1024
 
 /*
  * The record (DESIGN 3.3).  Byte 0 is the arena class id, stamped by the
@@ -112,6 +116,22 @@ _Static_assert(offsetof(pcache_bucket_t, tags) == 8,
 
 struct povf;
 
+/*
+ * Per-process op counters (CP-06): one cache line per process per table,
+ * plain increments on the owner's own line, summed only at read time.
+ * NEVER update_stat() per operation - that is one shared atomic line,
+ * the measured 0.72x collapse (DESIGN 2.5) installed by observability.
+ */
+typedef struct pcache_pstat {
+	unsigned long hits, misses, stores, removes,
+	              created, destroyed, retries, fallbacks;
+} __attribute__((aligned(64))) pcache_pstat_t;
+
+typedef struct pcache_ht_totals {
+	unsigned long hits, misses, stores, removes,
+	              created, destroyed, retries, fallbacks, entries;
+} pcache_ht_totals_t;
+
 typedef struct pcache_htable {
 	/* the 3.4 routing word: (level << 32) | split, published whole.
 	 * On its own line - everything else here mutates */
@@ -132,7 +152,14 @@ typedef struct pcache_htable {
 	 * raises, so the hot bump path never writes here); a stale-low hint
 	 * just costs one wasted bucket visit.  0 = nothing expiring */
 	unsigned int           *hint_seg[PCACHE_NSEGS];
+
+	/* CP-06 counters, indexed by process_no */
+	pcache_pstat_t         *pstats;
+	unsigned int            pstats_n;
 } pcache_htable_t;
+
+/* sum the per-process shards; entries = created - destroyed */
+void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out);
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 

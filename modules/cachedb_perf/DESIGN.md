@@ -1112,7 +1112,20 @@ documented answer for anything large.
   the §2.5 shared-cache-line collapse (0.72× at 8 threads) installed
   permanently in the hot path by the observability feature. Per-process
   counter cache lines, plain increments, summed at read time behind
-  `STAT_IS_FUNC`.
+  `STAT_IS_FUNC`. **Done 2026-07-24.** Each table carries a
+  `pcache_pstat_t[PCACHE_MAX_PROCS]` (64-byte-aligned, one line per
+  process); the hot paths do a plain `pstats[process_no].field++` on the
+  caller's own line, and totals are summed only when read. Sizing is a
+  fixed cap, **not** `counted_max_processes` — that is not final when the
+  table is built in `mod_init` (pre-fork), which zeroed `pstats_n` and
+  silently suppressed all counting until the selftest's counter-sanity
+  check caught it. Exported both as ten core statistics under
+  `cachedb_perf:` (hits/misses/stores/removes/entries/seqlock_retries/
+  lock_fallbacks/arena_bytes/arena_chunks/memory_tier, all
+  `STAT_IS_FUNC`) and the richer `perf_stats` MI (per collection: load
+  factor, overflow, retries-per-1k-reads, backing-tier string).
+  `entries = created − destroyed` from the shards, no separate atomic.
+  Verified on 224 via mi_fifo.
 - **CP-07** Glob operations + `iter_keys`. **Reworked 2026-07-24 (user
   decision): the shell no longer mirrors `cachedb_local`, so the parity
   names (`cache_remove_chunk`, `remove_chunk` MI) go too — script-facing

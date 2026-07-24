@@ -106,6 +106,19 @@ static inline void hint_update(pcache_htable_t *ht, unsigned int idx,
 		*h = exp;
 }
 
+/* CP-06: plain increments on the calling process's own cache line */
+#define HT_ST(_ht, _f) \
+	do { \
+		if ((unsigned int)process_no < (_ht)->pstats_n) \
+			(_ht)->pstats[process_no]._f++; \
+	} while (0)
+
+#define HT_ST_ADD(_ht, _f, _n) \
+	do { \
+		if ((unsigned int)process_no < (_ht)->pstats_n) \
+			(_ht)->pstats[process_no]._f += (_n); \
+	} while (0)
+
 /* one 8-byte load of tags[6]+meta; 0x80 at byte i = tags[i] matches.
  * The SWAR borrow can produce a false positive after a true match byte -
  * filtered by the key compare, never a false negative. */
@@ -275,8 +288,11 @@ again:
 	rc = scan_bucket(b, key, hash, tag, scratch, &vlen, &exp, &fl);
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
+	HT_ST(ht, fallbacks);
 
 settled:
+	if (tries)
+		HT_ST_ADD(ht, retries, tries);
 	if (rc == -2) {
 		/* 3.4: a completed split may have re-routed the key */
 		if (ht->route != route)
@@ -284,11 +300,16 @@ settled:
 		if (ht->ovf_count)
 			rc = ovf_fetch(ht, key, hash, scratch, &vlen, &exp, &fl);
 	}
-	if (rc == -2)
+	if (rc == -2) {
+		HT_ST(ht, misses);
 		return -2;
+	}
 
-	if (exp && exp <= now)
+	if (exp && exp <= now) {
+		HT_ST(ht, misses);
 		return -2;                    /* expired-as-absent (3.5) */
+	}
+	HT_ST(ht, hits);
 
 	if ((fl & PCACHE_F_INT) && vlen == 8) {
 		/* native counter: format on read */
@@ -358,7 +379,7 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 	unsigned long route;
 	unsigned int hash, idx, used;
 	unsigned char tag;
-	int i;
+	int i, inserted = 0;
 
 	if (key->len > 0xFFFF ||
 	        PCACHE_REC_SIZE(key->len, val->len) > PCACHE_CELL_MAX) {
@@ -453,6 +474,7 @@ again:
 		bkt_set_used(b, used + 1);
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
 		hint_update(ht, idx, expires);
+		inserted = 1;
 		goto done;
 	}
 
@@ -477,6 +499,7 @@ again:
 	__atomic_add_fetch(&ht->ovf_count, 1, __ATOMIC_RELAXED);
 	lock_release(&ht->ovf_lock);
 	node = NULL;
+	inserted = 1;
 
 done:
 	bkt_clear_owner(b);
@@ -487,6 +510,9 @@ done:
 		pcache_cell_free(old);
 	if (node)
 		pcache_cell_free(node);
+	HT_ST(ht, stores);
+	if (inserted)
+		HT_ST(ht, created);
 	return 0;
 }
 
@@ -500,7 +526,7 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 	unsigned int hash, idx, used;
 	unsigned char tag;
 	long long cur;
-	int i;
+	int i, inserted = 0;
 
 	if (key->len > 0xFFFF)
 		return -1;
@@ -601,6 +627,7 @@ again:
 		bkt_set_used(b, used + 1);
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
 		hint_update(ht, idx, expires);
+		inserted = 1;
 		goto done;
 	}
 
@@ -623,6 +650,7 @@ again:
 	__atomic_add_fetch(&ht->ovf_count, 1, __ATOMIC_RELAXED);
 	lock_release(&ht->ovf_lock);
 	node = NULL;
+	inserted = 1;
 
 done:
 	bkt_clear_owner(b);
@@ -632,6 +660,9 @@ done:
 		pcache_cell_free(old);
 	if (node)
 		pcache_cell_free(node);
+	HT_ST(ht, stores);
+	if (inserted)
+		HT_ST(ht, created);
 	if (new_val)
 		*new_val = cur;
 	return 0;
@@ -697,8 +728,11 @@ again:
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
 
-	if (dead)
+	if (dead) {
 		pcache_cell_free(dead);
+		HT_ST(ht, removes);
+		HT_ST(ht, destroyed);
+	}
 	if (on)
 		pcache_cell_free(on);
 	return dead ? 1 : 0;
@@ -882,8 +916,10 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now)
 		freed += ndead;
 	}
 
-	if (!ht->ovf_count)
+	if (!ht->ovf_count) {
+		HT_ST_ADD(ht, destroyed, freed);
 		return freed;
+	}
 
 	/* overflow: unhinted, scanned whole - it exists to be small */
 	for (idx = 0; idx < PCACHE_OVF_BUCKETS; idx++) {
@@ -914,7 +950,28 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now)
 		} while (bn == 64);
 	}
 
+	HT_ST_ADD(ht, destroyed, freed);
 	return freed;
+}
+
+void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out)
+{
+	pcache_pstat_t *p;
+	unsigned int i;
+
+	memset(out, 0, sizeof *out);
+	for (i = 0; i < ht->pstats_n; i++) {
+		p = &ht->pstats[i];
+		out->hits += p->hits;
+		out->misses += p->misses;
+		out->stores += p->stores;
+		out->removes += p->removes;
+		out->created += p->created;
+		out->destroyed += p->destroyed;
+		out->retries += p->retries;
+		out->fallbacks += p->fallbacks;
+	}
+	out->entries = out->created - out->destroyed;
 }
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2)
@@ -944,6 +1001,14 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 			return NULL;
 		memset(ht->hint_seg[s], 0, n * sizeof(unsigned int));
 	}
+
+	ht->pstats_n = PCACHE_MAX_PROCS;
+	ht->pstats = pcache_region_alloc(
+		(unsigned long)ht->pstats_n * sizeof *ht->pstats);
+	if (!ht->pstats)
+		return NULL;
+	memset(ht->pstats, 0,
+		(unsigned long)ht->pstats_n * sizeof *ht->pstats);
 
 	ht->ovf_tab = pcache_region_alloc(
 		PCACHE_OVF_BUCKETS * sizeof *ht->ovf_tab);
@@ -1213,6 +1278,24 @@ int pcache_htable_selftest(void)
 			nb_used += bkt_used(bucket_at(ht, i));
 		HCHK(nb_used == 0, "%u slots used after the sweep test\n",
 			nb_used);
+	}
+
+	/* CP-06 counter sanity: every create matched by a destroy after the
+	 * full drain, and a single process never retries against itself */
+	{
+		pcache_ht_totals_t t;
+
+		pcache_ht_totals(ht, &t);
+		HCHK(t.hits > 0 && t.misses > 0 && t.stores > 0 && t.removes > 0,
+			"dead counters: h=%lu m=%lu s=%lu r=%lu\n",
+			t.hits, t.misses, t.stores, t.removes);
+		HCHK(t.created == t.destroyed,
+			"record leak: created %lu, destroyed %lu\n",
+			t.created, t.destroyed);
+		HCHK(t.entries == 0, "%lu entries after the drain\n", t.entries);
+		HCHK(t.retries == 0 && t.fallbacks == 0,
+			"single-process retries %lu, fallbacks %lu\n",
+			t.retries, t.fallbacks);
 	}
 
 	/* every bucket must end on an even (stable) version */

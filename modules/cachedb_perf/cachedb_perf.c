@@ -27,6 +27,9 @@
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
+#include "../../statistics.h"
+#include "../../mi/mi.h"
+#include "../../mi/item.h"
 #include "../../ut.h"
 #include "../../pvar.h"
 #include "../../timer.h"
@@ -99,6 +102,199 @@ static const param_export_t params[] = {
 	{0,0,0}
 };
 
+/*
+ * CP-06 statistics: everything is STAT_IS_FUNC - sums of the per-process
+ * shards computed at read time.  No shared counter is ever touched on the
+ * hot path (DESIGN 2.5 hard rule).
+ */
+enum pcache_stat_field {
+	PSF_HITS, PSF_MISSES, PSF_STORES, PSF_REMOVES, PSF_ENTRIES,
+	PSF_RETRIES, PSF_FALLBACKS
+};
+
+static unsigned long pcache_stat_field(enum pcache_stat_field which)
+{
+	pcache_col_t *col;
+	pcache_ht_totals_t t;
+	unsigned long sum = 0;
+
+	for (col = pcache_collection; col; col = col->next) {
+		if (!col->htable)
+			continue;
+		pcache_ht_totals(col->htable, &t);
+		switch (which) {
+		case PSF_HITS:      sum += t.hits; break;
+		case PSF_MISSES:    sum += t.misses; break;
+		case PSF_STORES:    sum += t.stores; break;
+		case PSF_REMOVES:   sum += t.removes; break;
+		case PSF_ENTRIES:   sum += t.entries; break;
+		case PSF_RETRIES:   sum += t.retries; break;
+		case PSF_FALLBACKS: sum += t.fallbacks; break;
+		}
+	}
+	return sum;
+}
+
+#define PSTATF(_fn, _which) \
+	static unsigned long _fn(void *ctx) \
+	{ return pcache_stat_field(_which); }
+
+PSTATF(smf_hits, PSF_HITS)
+PSTATF(smf_misses, PSF_MISSES)
+PSTATF(smf_stores, PSF_STORES)
+PSTATF(smf_removes, PSF_REMOVES)
+PSTATF(smf_entries, PSF_ENTRIES)
+PSTATF(smf_retries, PSF_RETRIES)
+PSTATF(smf_fallbacks, PSF_FALLBACKS)
+
+static unsigned long smf_arena_bytes(void *ctx)
+{
+	unsigned int c;
+	unsigned long b;
+
+	pcache_arena_stats(&c, &b);
+	return b;
+}
+
+static unsigned long smf_arena_chunks(void *ctx)
+{
+	unsigned int c;
+	unsigned long b;
+
+	pcache_arena_stats(&c, &b);
+	return c;
+}
+
+static unsigned long smf_mem_tier(void *ctx)
+{
+	return pcache_mem.tier;
+}
+
+static const stat_export_t mod_stats[] = {
+	{"hits",            STAT_IS_FUNC, (stat_var **)smf_hits},
+	{"misses",          STAT_IS_FUNC, (stat_var **)smf_misses},
+	{"stores",          STAT_IS_FUNC, (stat_var **)smf_stores},
+	{"removes",         STAT_IS_FUNC, (stat_var **)smf_removes},
+	{"entries",         STAT_IS_FUNC, (stat_var **)smf_entries},
+	{"seqlock_retries", STAT_IS_FUNC, (stat_var **)smf_retries},
+	{"lock_fallbacks",  STAT_IS_FUNC, (stat_var **)smf_fallbacks},
+	{"arena_bytes",     STAT_IS_FUNC, (stat_var **)smf_arena_bytes},
+	{"arena_chunks",    STAT_IS_FUNC, (stat_var **)smf_arena_chunks},
+	{"memory_tier",     STAT_IS_FUNC, (stat_var **)smf_mem_tier},
+	{0,0,0}
+};
+
+/* the perf_stats MI (5.2): per-collection detail the flat stats cannot carry */
+static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
+{
+	pcache_htable_t *ht = col->htable;
+	pcache_ht_totals_t t;
+	unsigned long reads;
+	char buf[32];
+	int n;
+
+	pcache_ht_totals(ht, &t);
+	if (add_mi_string(cobj, MI_SSTR("name"),
+	        col->col_name.s, col->col_name.len) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("buckets"), ht->nbuckets) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("entries"), t.entries) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("overflow"), ht->ovf_count) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("hits"), t.hits) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("misses"), t.misses) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("stores"), t.stores) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("removes"), t.removes) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("seqlock_retries"), t.retries) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("lock_fallbacks"), t.fallbacks) < 0)
+		return -1;
+
+	n = snprintf(buf, sizeof buf, "%.3f",
+		(double)t.entries / ht->nbuckets);
+	if (add_mi_string(cobj, MI_SSTR("load_factor"), buf, n) < 0)
+		return -1;
+	reads = t.hits + t.misses;
+	n = snprintf(buf, sizeof buf, "%.3f",
+		reads ? 1000.0 * t.retries / reads : 0.0);
+	return add_mi_string(cobj, MI_SSTR("retries_per_1k_reads"), buf, n);
+}
+
+static mi_response_t *mi_perf_stats(str *col_s)
+{
+	mi_response_t *resp;
+	mi_item_t *obj, *arr, *cobj, *aobj;
+	pcache_col_t *col;
+	const char *tier;
+	unsigned long bytes;
+	unsigned int nchunks, matched = 0;
+
+	resp = init_mi_result_object(&obj);
+	if (!resp)
+		return NULL;
+
+	arr = add_mi_array(obj, MI_SSTR("collections"));
+	if (!arr)
+		goto err;
+	for (col = pcache_collection; col; col = col->next) {
+		if (col_s && (col->col_name.len != col_s->len ||
+		        memcmp(col->col_name.s, col_s->s, col_s->len)))
+			continue;
+		if (!col->htable)
+			continue;
+		cobj = add_mi_object(arr, NULL, 0);
+		if (!cobj || mi_stats_fill(cobj, col) < 0)
+			goto err;
+		matched++;
+	}
+	if (col_s && !matched) {
+		free_mi_response(resp);
+		return init_mi_error(404, MI_SSTR("no such collection"));
+	}
+
+	aobj = add_mi_object(obj, MI_SSTR("arena"));
+	if (!aobj)
+		goto err;
+	pcache_arena_stats(&nchunks, &bytes);
+	if (add_mi_number(aobj, MI_SSTR("chunks"), nchunks) < 0 ||
+	    add_mi_number(aobj, MI_SSTR("bytes"), bytes) < 0)
+		goto err;
+
+	tier = pcache_mem_tier_str(pcache_mem.tier);
+	if (add_mi_number(obj, MI_SSTR("memory_tier"), pcache_mem.tier) < 0 ||
+	    add_mi_string(obj, MI_SSTR("memory_backing"),
+	        (char *)tier, strlen(tier)) < 0)
+		goto err;
+
+	return resp;
+err:
+	free_mi_response(resp);
+	return init_mi_error(500, MI_SSTR("Internal error"));
+}
+
+static mi_response_t *mi_perf_stats_1(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	return mi_perf_stats(NULL);
+}
+
+static mi_response_t *mi_perf_stats_2(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	str c;
+
+	if (get_mi_string_param(params, "collection", &c.s, &c.len) < 0)
+		return init_mi_param_error();
+	return mi_perf_stats(&c);
+}
+
+static const mi_export_t mi_cmds[] = {
+	{ "perf_stats", 0, 0, 0, {
+		{mi_perf_stats_1, {0}},
+		{mi_perf_stats_2, {"collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
 static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -119,8 +315,8 @@ struct module_exports exports = {
 	cmds,                       /* exported functions */
 	0,                          /* exported async functions */
 	params,                     /* exported parameters */
-	0,                          /* exported statistics */
-	0,                          /* exported MI functions */
+	mod_stats,                  /* exported statistics */
+	mi_cmds,                    /* exported MI functions */
 	0,                          /* exported pseudo-variables */
 	0,                          /* exported transformations */
 	0,                          /* extra processes */
