@@ -1298,7 +1298,12 @@ documented answer for anything large.
   `cachedb_local`-as-oracle cross-check and a ThreadSanitizer build remain
   optional follow-ups.
 - **CP-17** Re-run the `th_store` benchmark from PR #4114 with `perf://` and
-  compare against the `cachedb_local` and dialog rows.
+  compare against the `cachedb_local` and dialog rows. **Done 2026-07-24** —
+  isolated-cache (2.3–7.8× vs `cachedb_local`), 50k-held-call end-to-end
+  (~1.5× sustained-ceiling lift over `cachedb_local`), and 100k three-way
+  (`perf`-TH ≈ no-TH ≫ dialog-TH); all tables and charts in PR #4118. The
+  two-socket huge-page-arena end-to-end quantification (§7 NUMA) is the one
+  measurement still outstanding.
 
 ## 7. Reproduction
 
