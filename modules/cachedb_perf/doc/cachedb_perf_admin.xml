@@ -178,8 +178,8 @@ modparam("cachedb_perf", "cachedb_url", "perf:prof:///profiles")
 		<example>
 		<title><function>perf_stats</function> usage</title>
 		<programlisting format="linespecific">
-opensips-cli -x mi perf_stats
-opensips-cli -x mi perf_stats th
+opensips-cli -x mi cachedb_perf:perf_stats
+opensips-cli -x mi cachedb_perf:perf_stats th
 </programlisting>
 		</example>
 	</section>
@@ -224,14 +224,14 @@ opensips-cli -x mi perf_stats th
 		<example>
 		<title>introspection usage</title>
 		<programlisting format="linespecific">
-opensips-cli -x mi perf_keys "session-*"
-opensips-cli -x mi perf_keys "session-*" th 50
-opensips-cli -x mi perf_scan 0
-opensips-cli -x mi perf_scan 384 "user-*" 128
-opensips-cli -x mi perf_dump "profile-*"
-opensips-cli -x mi perf_get session-abc123
-opensips-cli -x mi perf_set greeting hello 300
-opensips-cli -x mi perf_del "session-abc*"
+opensips-cli -x mi cachedb_perf:perf_keys "session-*"
+opensips-cli -x mi cachedb_perf:perf_keys "session-*" th 50
+opensips-cli -x mi cachedb_perf:perf_scan 0
+opensips-cli -x mi cachedb_perf:perf_scan 384 "user-*" 128
+opensips-cli -x mi cachedb_perf:perf_dump "profile-*"
+opensips-cli -x mi cachedb_perf:perf_get session-abc123
+opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
+opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
 </programlisting>
 		</example>
 	</section>
