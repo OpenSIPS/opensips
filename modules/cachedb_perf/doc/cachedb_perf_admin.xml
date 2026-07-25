@@ -524,6 +524,44 @@ opensips-cli -x mi cachedb_perf:perf_stats th
 		</example>
 	</section>
 
+	<section id="mi_perf_stats_reset" xreflabel="perf_stats_reset">
+		<title><function moreinfo="none">perf_stats_reset</function></title>
+		<para>
+		The counters behind <emphasis>perf_stats</emphasis> - hits,
+		misses, stores, removes, expired, destroyed, retries - are
+		running totals since startup, so every rate derived from them is
+		a lifetime average. A burst of misses right after a restart, when
+		sequential requests arrive for dialogs older than the cache,
+		keeps dragging the hit rate down long after the cache has
+		recovered. This command re-baselines them so the next reading
+		covers a fresh interval, without restarting &osips;.
+		</para>
+		<para>
+		The counters themselves are not rewound: each process owns its
+		own counter cache line and must never have it written from
+		another process. Only a baseline is recorded, and the reported
+		figures are the difference. Live gauges - entries, buckets,
+		overflow, load factor and the arena figures - are read from
+		current state rather than from the counters, so a reset does not
+		disturb them.
+		</para>
+		<para>
+		With no parameter every collection is reset; an optional
+		collection name restricts it to one.
+		</para>
+		<para>
+		Name: <emphasis>perf_stats_reset</emphasis>. Parameters:
+		<emphasis>collection</emphasis> (optional).
+		</para>
+		<example>
+		<title><function>perf_stats_reset</function> usage</title>
+		<programlisting format="linespecific">
+opensips-cli -x mi cachedb_perf:perf_stats_reset
+opensips-cli -x mi cachedb_perf:perf_stats_reset th
+</programlisting>
+		</example>
+	</section>
+
 	<section id="mi_introspection" xreflabel="introspection">
 		<title>Key introspection: perf_keys / perf_scan / perf_dump / perf_get / perf_set / perf_ttl / perf_del</title>
 		<para>

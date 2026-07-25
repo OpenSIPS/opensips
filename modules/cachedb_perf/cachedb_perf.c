@@ -278,6 +278,8 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	pcache_htable_t *ht = col->htable;
 	pcache_ht_totals_t t;
 	unsigned long reads;
+	const char *note;
+	double rate;
 	char buf[32];
 	int n;
 
@@ -297,14 +299,27 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	    add_mi_number(cobj, MI_SSTR("lock_fallbacks"), t.fallbacks) < 0)
 		return -1;
 
-	n = snprintf(buf, sizeof buf, "%.1f",
-		(t.hits + t.misses) ? 100.0 * t.hits / (t.hits + t.misses) : 0.0);
+	reads = t.hits + t.misses;
+	rate = reads ? 100.0 * t.hits / reads : 0.0;
+	n = snprintf(buf, sizeof buf, "%.1f", rate);
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_pct"), buf, n) < 0)
 		return -1;
-	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"),
-	        MI_SSTR("healthy: the large majority of lookups hit (>80% under "
-	                "steady dialog traffic); a low or falling rate means cached "
-	                "state is being lost or is expiring before it is used")) < 0)
+	/* The counters are cumulative since startup (or the last
+	 * perf_stats_reset), so this is a lifetime average: right after a
+	 * restart it is dragged down by every sequential request whose dialog
+	 * predates the cache, and it recovers only as those age out.  Judge a
+	 * running system on the trend between two polls, not on one reading. */
+	if (!reads)
+		note = "no lookups yet";
+	else if (rate >= 80.0)
+		note = "healthy: the large majority of lookups hit";
+	else if (rate >= 40.0)
+		note = "fair: normal while the cache refills after a restart - "
+		       "if it does not climb, state is expiring before it is used";
+	else
+		note = "low: cached state is being lost or is expiring before it "
+		       "is used - expected only shortly after a restart";
+	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"), note, strlen(note)) < 0)
 		return -1;
 
 	n = snprintf(buf, sizeof buf, "%.3f",
@@ -383,6 +398,66 @@ static mi_response_t *mi_perf_stats_2(const mi_params_t *params,
 	if (get_mi_string_param(params, "collection", &c.s, &c.len) < 0)
 		return init_mi_param_error();
 	return mi_perf_stats(&c);
+}
+
+/*
+ * perf_stats_reset - re-baseline the cumulative counters.
+ *
+ * hits/misses/stores/removes/expired/destroyed/retries are running totals
+ * since startup, so the rates derived from them are lifetime averages: a
+ * burst of misses right after a restart keeps dragging the hit rate down
+ * long after the cache has recovered.  Resetting gives a clean interval to
+ * measure over without restarting OpenSIPS.
+ *
+ * The counters themselves are not rewound - the hot paths own their per
+ * process cache lines and must never be written from another process.  Only
+ * a baseline is recorded, and pcache_ht_totals() reports the difference.
+ * Live gauges (entries, buckets, overflow, load factor, arena) are derived
+ * from current state, not from the counters, so a reset does not disturb them.
+ */
+static mi_response_t *mi_perf_stats_reset(str *col_s)
+{
+	mi_response_t *resp;
+	mi_item_t *obj;
+	pcache_col_t *col;
+	unsigned int matched = 0;
+
+	for (col = pcache_collection; col; col = col->next) {
+		if (col_s && (col->col_name.len != col_s->len ||
+		        memcmp(col->col_name.s, col_s->s, col_s->len)))
+			continue;
+		if (!col->htable)
+			continue;
+		pcache_ht_stats_reset(col->htable);
+		matched++;
+	}
+	if (col_s && !matched)
+		return init_mi_error(404, MI_SSTR("no such collection"));
+
+	resp = init_mi_result_object(&obj);
+	if (!resp)
+		return init_mi_error(500, MI_SSTR("Internal error"));
+	if (add_mi_number(obj, MI_SSTR("collections_reset"), matched) < 0) {
+		free_mi_response(resp);
+		return init_mi_error(500, MI_SSTR("Internal error"));
+	}
+	return resp;
+}
+
+static mi_response_t *mi_perf_stats_reset_1(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	return mi_perf_stats_reset(NULL);
+}
+
+static mi_response_t *mi_perf_stats_reset_2(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	str c;
+
+	if (get_mi_string_param(params, "collection", &c.s, &c.len) < 0)
+		return init_mi_param_error();
+	return mi_perf_stats_reset(&c);
 }
 
 /*
@@ -1003,6 +1078,13 @@ static const mi_export_t mi_cmds[] = {
 		"overflow, seqlock retries, memory tier)", 0, 0, {
 		{mi_perf_stats_1, {0}},
 		{mi_perf_stats_2, {"collection", 0}},
+		{EMPTY_MI_RECIPE}},
+		{0}
+	},
+	{ "perf_stats_reset", "re-baseline the cumulative counters so the rates "
+		"cover a fresh interval; live gauges are unaffected", 0, 0, {
+		{mi_perf_stats_reset_1, {0}},
+		{mi_perf_stats_reset_2, {"collection", 0}},
 		{EMPTY_MI_RECIPE}},
 		{0}
 	},

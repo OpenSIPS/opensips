@@ -1192,7 +1192,43 @@ void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out)
 		out->retries += p->retries;
 		out->fallbacks += p->fallbacks;
 	}
+	/* live gauge: always absolute, never relative to a reset */
 	out->entries = out->created - out->destroyed;
+
+	/* everything else is a running total - report it since the last reset */
+	out->hits      -= ht->base.hits;
+	out->misses    -= ht->base.misses;
+	out->stores    -= ht->base.stores;
+	out->removes   -= ht->base.removes;
+	out->created   -= ht->base.created;
+	out->destroyed -= ht->base.destroyed;
+	out->expired   -= ht->base.expired;
+	out->retries   -= ht->base.retries;
+	out->fallbacks -= ht->base.fallbacks;
+}
+
+void pcache_ht_stats_reset(pcache_htable_t *ht)
+{
+	pcache_ht_totals_t now;
+	unsigned long entries;
+
+	/* read through the current baseline, then fold it back in: the shards
+	 * are only ever read here, never rewound, so a worker incrementing one
+	 * concurrently just lands in the next interval. */
+	pcache_ht_totals(ht, &now);
+	entries = now.entries;
+
+	ht->base.hits      += now.hits;
+	ht->base.misses    += now.misses;
+	ht->base.stores    += now.stores;
+	ht->base.removes   += now.removes;
+	ht->base.created   += now.created;
+	ht->base.destroyed += now.destroyed;
+	ht->base.expired   += now.expired;
+	ht->base.retries   += now.retries;
+	ht->base.fallbacks += now.fallbacks;
+
+	LM_INFO("statistics reset; %lu entries live\n", entries);
 }
 
 /*

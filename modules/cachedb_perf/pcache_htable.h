@@ -156,10 +156,23 @@ typedef struct pcache_htable {
 	/* CP-06 counters, indexed by process_no */
 	pcache_pstat_t         *pstats;
 	unsigned int            pstats_n;
+
+	/* Baseline for perf_stats_reset: the shard sums as of the last reset.
+	 * The counters themselves are never rewound - the hot paths own their
+	 * own cache lines and must not be written from another process - so a
+	 * reset just records where to count from, and pcache_ht_totals()
+	 * reports the difference.  'entries' is a live gauge computed from the
+	 * raw created/destroyed, so it survives a reset untouched. */
+	pcache_ht_totals_t      base;
 } pcache_htable_t;
 
-/* sum the per-process shards; entries = created - destroyed */
+/* sum the per-process shards, less the reset baseline; entries is absolute */
 void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out);
+
+/* re-baseline the cumulative counters: everything perf_stats reports as a
+ * running total starts from zero again.  Live gauges (entries, buckets,
+ * overflow, arena) are unaffected. */
+void pcache_ht_stats_reset(pcache_htable_t *ht);
 
 /* current live bucket count (grows at runtime, CP-09) - for the CP-11
  * growth event, which reports the before/after span */
