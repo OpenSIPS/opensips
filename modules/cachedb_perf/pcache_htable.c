@@ -53,6 +53,24 @@
 #include "pcache_arena.h"
 #include "pcache_htable.h"
 
+/* The selftest deliberately drives two rejection paths (a non-numeric add
+ * and an oversize store).  Both log at L_ERR by design, which in a PASSING
+ * selftest reads as a real fault.  This flag downgrades exactly those two
+ * messages while the selftest provokes them.  It is only ever set pre-fork,
+ * single-threaded, from pcache_htable_selftest(), and is never set in normal
+ * operation.  (The core set_proc_log_level() cannot be used here: it writes
+ * pt[process_no], and the process table does not exist yet at mod_init.) */
+static int st_expect_reject;
+
+#define PCACHE_REJECT_LOG(...) \
+	do { \
+		if (st_expect_reject) \
+			LM_DBG(__VA_ARGS__); \
+		else \
+			LM_ERR(__VA_ARGS__); \
+	} while (0)
+
+
 #if defined(__x86_64__) || defined(__i386__)
 #define pcache_pause() __builtin_ia32_pause()
 #else
@@ -395,7 +413,7 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 
 	if (key->len > 0xFFFF ||
 	        PCACHE_REC_SIZE(key->len, val->len) > PCACHE_CELL_MAX) {
-		LM_ERR("key %d + value %d bytes exceed the %d byte record limit\n",
+		PCACHE_REJECT_LOG("key %d + value %d bytes exceed the %d byte record limit\n",
 			key->len, val->len, PCACHE_CELL_MAX);
 		return -1;
 	}
@@ -682,7 +700,7 @@ done:
 nan:
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
-	LM_ERR("value of <%.*s> is not an integer\n", key->len, key->s);
+	PCACHE_REJECT_LOG("value of <%.*s> is not an integer\n", key->len, key->s);
 	pcache_cell_free(nr);
 	if (node)
 		pcache_cell_free(node);
@@ -1529,14 +1547,22 @@ int pcache_htable_selftest(void)
 		k.s = "nan"; k.len = 3;
 		v.s = "abc"; v.len = 3;
 		HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "nan store\n");
-		HCHK(pcache_ht_add(ht, &k, 1, 0, &nv) == -1, "nan add passed\n");
+		/* drives the reject path on purpose - see st_expect_reject */
+		st_expect_reject = 1;
+		rc = pcache_ht_add(ht, &k, 1, 0, &nv);
+		st_expect_reject = 0;
+		HCHK(rc == -1, "nan add passed\n");
 		HCHK(pcache_ht_remove(ht, &k) == 1, "nan remove\n");
 	}
 
 	/* record-size limit */
 	k.s = "key-one"; k.len = 7;
 	v.s = vb; v.len = PCACHE_CELL_MAX;       /* header pushes it over */
-	HCHK(pcache_ht_store(ht, &k, &v, 0) == -1, "oversize store passed\n");
+	/* an expected rejection too - see st_expect_reject */
+	st_expect_reject = 1;
+	rc = pcache_ht_store(ht, &k, &v, 0);
+	st_expect_reject = 0;
+	HCHK(rc == -1, "oversize store passed\n");
 
 	/* overflow: 200 keys over 16 buckets force chains, then drain */
 	for (i = 0; i < 200; i++) {
