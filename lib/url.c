@@ -18,10 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+/* _GNU_SOURCE must stay defined for the rest of this file. On musl libc
+ * the feature-test macros are re-evaluated by every system header, so
+ * undefining it here would hide the clock_gettime()/ctime_r() prototypes
+ * that ut.h and dprint.h (via <time.h>) rely on, breaking the build. */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
-#undef _GNU_SOURCE
 
 #include "../mem/mem.h"
 #include "../ut.h"
