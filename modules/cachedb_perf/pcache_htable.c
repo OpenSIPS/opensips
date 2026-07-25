@@ -78,6 +78,12 @@ static int st_expect_reject;
 #endif
 
 struct povf {
+	/* byte 0 is the arena class id (pcache_cell_free reads it from every
+	 * cell) - it must never be overwritten, so the link pointer cannot
+	 * live at offset 0 the way it briefly did (its low byte clobbered
+	 * the class, sending frees to an out-of-range class -> pool
+	 * corruption -> crashes in the donate walk) */
+	unsigned char cls_reserved;
 	struct povf *next;
 	pcache_rec_t *rec;
 	unsigned int hash;

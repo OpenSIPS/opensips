@@ -416,6 +416,14 @@ void pcache_cell_free(void *cell)
 	unsigned int c = *(unsigned char *)cell, i;
 	void *d;
 
+	if (c >= PCACHE_NCLASSES) {
+		/* the class byte was clobbered - freeing through it would
+		 * corrupt the pools; leak the cell and shout instead */
+		LM_CRIT("cell %p carries invalid class %u - leaking it\n",
+			cell, c);
+		return;
+	}
+
 	pl = get_palloc();
 	if (!pl) {
 		/* cannot even track it privately - hand it to the pool */
@@ -444,6 +452,11 @@ void pcache_cell_free_global(void *cell)
 {
 	unsigned int c = *(unsigned char *)cell;
 
+	if (c >= PCACHE_NCLASSES) {
+		LM_CRIT("cell %p carries invalid class %u - leaking it\n",
+			cell, c);
+		return;
+	}
 	lock_get(&arena->lock);
 	gpool_push(c, cell);
 	lock_release(&arena->lock);
