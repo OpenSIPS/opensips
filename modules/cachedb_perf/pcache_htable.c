@@ -1131,6 +1131,7 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 
 	if (!ht->ovf_count) {
 		HT_ST_ADD(ht, destroyed, freed);
+		HT_ST_ADD(ht, expired, freed);
 		return freed;
 	}
 
@@ -1169,6 +1170,7 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 	}
 
 	HT_ST_ADD(ht, destroyed, freed);
+	HT_ST_ADD(ht, expired, freed);
 	return freed;
 }
 
@@ -1186,6 +1188,7 @@ void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out)
 		out->removes += p->removes;
 		out->created += p->created;
 		out->destroyed += p->destroyed;
+		out->expired += p->expired;
 		out->retries += p->retries;
 		out->fallbacks += p->fallbacks;
 	}

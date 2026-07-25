@@ -124,12 +124,12 @@ struct povf;
  */
 typedef struct pcache_pstat {
 	unsigned long hits, misses, stores, removes,
-	              created, destroyed, retries, fallbacks;
+	              created, destroyed, expired, retries, fallbacks;
 } __attribute__((aligned(64))) pcache_pstat_t;
 
 typedef struct pcache_ht_totals {
 	unsigned long hits, misses, stores, removes,
-	              created, destroyed, retries, fallbacks, entries;
+	              created, destroyed, expired, retries, fallbacks, entries;
 } pcache_ht_totals_t;
 
 typedef struct pcache_htable {

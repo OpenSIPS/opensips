@@ -436,7 +436,18 @@ node)\n");
    read, so instrumentation never touches a shared cache line on
    the hot path. Query with get_statistics cachedb_perf:.
      * hits / misses - fetch outcomes (expired counts as a miss)
-     * stores / removes - write and delete operations
+     * stores / removes - write and explicit delete operations
+       (removes counts only remove/perf_del, never TTL expiry)
+     * expired - records reclaimed by the TTL expiry sweep (this
+       is where timed-out keys are accounted, separate from
+       removes)
+     * destroyed - total records whose cells were freed back to
+       the arena, from any cause; it equals removes + expired.
+       Overwriting an existing key does not count here (the cell
+       is reused in place), so entries = created - destroyed. A
+       large gap between stores and entries with a small destroyed
+       means most churn is same-key overwrites rather than expiry
+       or deletes.
      * entries - live records across all collections
      * seqlock_retries - optimistic-read retries (the contention
        signal)

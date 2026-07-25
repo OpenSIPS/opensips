@@ -191,7 +191,7 @@ static const param_export_t params[] = {
  */
 enum pcache_stat_field {
 	PSF_HITS, PSF_MISSES, PSF_STORES, PSF_REMOVES, PSF_ENTRIES,
-	PSF_RETRIES, PSF_FALLBACKS
+	PSF_RETRIES, PSF_FALLBACKS, PSF_EXPIRED, PSF_DESTROYED
 };
 
 static unsigned long pcache_stat_field(enum pcache_stat_field which)
@@ -209,6 +209,8 @@ static unsigned long pcache_stat_field(enum pcache_stat_field which)
 		case PSF_MISSES:    sum += t.misses; break;
 		case PSF_STORES:    sum += t.stores; break;
 		case PSF_REMOVES:   sum += t.removes; break;
+		case PSF_EXPIRED:   sum += t.expired; break;
+		case PSF_DESTROYED: sum += t.destroyed; break;
 		case PSF_ENTRIES:   sum += t.entries; break;
 		case PSF_RETRIES:   sum += t.retries; break;
 		case PSF_FALLBACKS: sum += t.fallbacks; break;
@@ -225,6 +227,8 @@ PSTATF(smf_hits, PSF_HITS)
 PSTATF(smf_misses, PSF_MISSES)
 PSTATF(smf_stores, PSF_STORES)
 PSTATF(smf_removes, PSF_REMOVES)
+PSTATF(smf_expired, PSF_EXPIRED)
+PSTATF(smf_destroyed, PSF_DESTROYED)
 PSTATF(smf_entries, PSF_ENTRIES)
 PSTATF(smf_retries, PSF_RETRIES)
 PSTATF(smf_fallbacks, PSF_FALLBACKS)
@@ -257,6 +261,8 @@ static const stat_export_t mod_stats[] = {
 	{"misses",          STAT_IS_FUNC, (stat_var **)smf_misses},
 	{"stores",          STAT_IS_FUNC, (stat_var **)smf_stores},
 	{"removes",         STAT_IS_FUNC, (stat_var **)smf_removes},
+	{"expired",         STAT_IS_FUNC, (stat_var **)smf_expired},
+	{"destroyed",       STAT_IS_FUNC, (stat_var **)smf_destroyed},
 	{"entries",         STAT_IS_FUNC, (stat_var **)smf_entries},
 	{"seqlock_retries", STAT_IS_FUNC, (stat_var **)smf_retries},
 	{"lock_fallbacks",  STAT_IS_FUNC, (stat_var **)smf_fallbacks},
@@ -285,6 +291,8 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	    add_mi_number(cobj, MI_SSTR("misses"), t.misses) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("stores"), t.stores) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("removes"), t.removes) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("expired"), t.expired) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("destroyed"), t.destroyed) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("seqlock_retries"), t.retries) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("lock_fallbacks"), t.fallbacks) < 0)
 		return -1;

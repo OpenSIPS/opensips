@@ -479,7 +479,9 @@ event_route[E_CACHEDB_PERF_SYNCED] {
 	</para>
 	<itemizedlist>
 		<listitem><para><emphasis>hits</emphasis> / <emphasis>misses</emphasis> - fetch outcomes (expired counts as a miss)</para></listitem>
-		<listitem><para><emphasis>stores</emphasis> / <emphasis>removes</emphasis> - write and delete operations</para></listitem>
+		<listitem><para><emphasis>stores</emphasis> / <emphasis>removes</emphasis> - write and explicit delete operations (<emphasis>removes</emphasis> counts only <emphasis>remove</emphasis>/<emphasis>perf_del</emphasis>, never TTL expiry)</para></listitem>
+		<listitem><para><emphasis>expired</emphasis> - records reclaimed by the TTL expiry sweep (this is where timed-out keys are accounted, separate from <emphasis>removes</emphasis>)</para></listitem>
+		<listitem><para><emphasis>destroyed</emphasis> - total records whose cells were freed back to the arena, from any cause; it equals <emphasis>removes</emphasis> + <emphasis>expired</emphasis>. Overwriting an existing key does not count here (the cell is reused in place), so <emphasis>entries</emphasis> = created - <emphasis>destroyed</emphasis>. A large gap between <emphasis>stores</emphasis> and <emphasis>entries</emphasis> with a small <emphasis>destroyed</emphasis> means most churn is same-key overwrites rather than expiry or deletes.</para></listitem>
 		<listitem><para><emphasis>entries</emphasis> - live records across all collections</para></listitem>
 		<listitem><para><emphasis>seqlock_retries</emphasis> - optimistic-read retries (the contention signal)</para></listitem>
 		<listitem><para><emphasis>lock_fallbacks</emphasis> - reads that fell back to the bucket lock</para></listitem>
