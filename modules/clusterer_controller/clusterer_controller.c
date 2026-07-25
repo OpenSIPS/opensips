@@ -2033,12 +2033,20 @@ static int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[3
                           const unsigned char *msg2, size_t msg2_len,
                           unsigned char *payload_out)
 {
-    unsigned char re2[32], dh[32];
-    if (msg2_len < 32) return -1;
+    unsigned char re2[32], dh[32], scratch[64];
+    int pl;
+    /* decrypt into a scratch large enough for the max ciphertext (mirrors
+     * the scratch[64] on the write2 side), then hand back exactly the
+     * master_salt.  Bounding the decrypt output here keeps a malformed or
+     * oversized KEY_GRANT from ever writing past payload_out. */
+    if (msg2_len < 32 || msg2_len - 32 > sizeof scratch) return -1;
     memcpy(re2, msg2, 32); cl_ctr_ss_mixhash(s, re2, 32); cl_ctr_ss_mixkey(s, re2, 32);
     if (crypto_scalarmult(dh, e_priv, re2) != 0) return -1;
     cl_ctr_ss_mixkey(s, dh, 32);
-    return cl_ctr_ss_decrypt_hash(s, msg2 + 32, msg2_len - 32, payload_out);
+    pl = cl_ctr_ss_decrypt_hash(s, msg2 + 32, msg2_len - 32, scratch);
+    if (pl != CL_CTR_MASTER_SALT_SZ) return -1;
+    memcpy(payload_out, scratch, CL_CTR_MASTER_SALT_SZ);
+    return pl;
 }
 
 /**
