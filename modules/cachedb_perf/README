@@ -458,7 +458,13 @@ node)\n");
 
    The perf_stats MI command gives the same figures broken down
    per collection, plus load factor, overflow occupancy,
-   retries-per-1k-reads and the memory-backing description.
+   retries-per-1k-reads, the memory-backing description and
+   hit_rate_pct - hits / (hits + misses) as a percentage. On a
+   healthy server the large majority of lookups hit (upwards of
+   80% under steady dialog traffic); a persistently low or falling
+   hit rate means the cached state is being lost or is expiring
+   before it is used. The same guidance rides inline in the
+   hit_rate_note field.
 
 1.7. Exported MI Functions
 

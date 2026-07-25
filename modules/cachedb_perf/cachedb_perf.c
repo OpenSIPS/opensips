@@ -297,6 +297,16 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	    add_mi_number(cobj, MI_SSTR("lock_fallbacks"), t.fallbacks) < 0)
 		return -1;
 
+	n = snprintf(buf, sizeof buf, "%.1f",
+		(t.hits + t.misses) ? 100.0 * t.hits / (t.hits + t.misses) : 0.0);
+	if (add_mi_string(cobj, MI_SSTR("hit_rate_pct"), buf, n) < 0)
+		return -1;
+	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"),
+	        MI_SSTR("healthy: the large majority of lookups hit (>80% under "
+	                "steady dialog traffic); a low or falling rate means cached "
+	                "state is being lost or is expiring before it is used")) < 0)
+		return -1;
+
 	n = snprintf(buf, sizeof buf, "%.3f",
 		(double)t.entries / ht->nbuckets);
 	if (add_mi_string(cobj, MI_SSTR("load_factor"), buf, n) < 0)
