@@ -66,10 +66,9 @@ static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param);
 static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *param);
 static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params *param);
-static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes,str *ct_user,int store_state,
-		struct sip_msg *ttl_src);
+static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags,str *routes,str *ct_user,int store_state);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
-static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src);
+static int th_state_msg_ttl(struct sip_msg *msg);
 static int th_state_storable(struct sip_msg *msg);
 static str *th_msg_key_tag(struct sip_msg *msg);
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
@@ -903,8 +902,7 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 	if ( !(rpl->REPLY_STATUS>=300 && rpl->REPLY_STATUS<400) ) {
 		if (topo_no_dlg_encode_contact(rpl,flags,
 				(p?&p->routes:NULL),(p?&p->username:NULL),
-				-1/*decide from the reply*/,
-				req/*the reply may omit the lifetime*/) < 0) {
+				-1/*decide from the reply*/) < 0) {
 			LM_ERR("Failed to encode contact header \n");
 			return;
 		}
@@ -996,7 +994,7 @@ static int topo_hiding_no_dlg(struct sip_msg *req,
 	}
 
 	if (topo_no_dlg_encode_contact(req,extra_flags,NULL, &params->ct_caller_user,
-	-1/*decide from the request*/, NULL) < 0) {
+	-1/*decide from the request*/) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
@@ -1768,8 +1766,7 @@ error:
 
 /* We encode the RR headers, the actual Contact and the socket str for this leg */
 /* Via headers will be restored using the TM module, no need to save anything for them */
-static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags, int store_state,
-		struct sip_msg *ttl_src)
+static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int *suffix_len, int flags, int store_state)
 {
 	short rr_len,ct_len,addr_len,flags_len;
 	char *suffix_plain = NULL,*suffix_enc = NULL,*p,*s;
@@ -1991,7 +1988,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 			th_store_make_key(seeds, 3, key.s);
 		}
 
-		if (th_store_put(&blob, &key, th_state_msg_ttl(msg, ttl_src)) < 0) {
+		if (th_store_put(&blob, &key, th_state_msg_ttl(msg)) < 0) {
 			LM_ERR("failed to store the topology hiding state\n");
 			goto error;
 		}
@@ -2342,19 +2339,7 @@ static int th_state_storable(struct sip_msg *msg)
 }
 
 
-/*
- * How long the state encoded out of @msg has to stay alive.
- *
- * @ttl_src, when given, is the request @msg is a reply to.  A reply does not
- * always carry the dialog's lifetime while the request it answers does - a
- * 200 OK to a NOTIFY has neither an Expires header nor a Subscription-State,
- * yet the NOTIFY carries the notifier-granted expiry, and a 200 OK may answer
- * an INVITE whose Session-Expires it does not repeat.  Consulting it keeps a
- * leg's state from being stamped with the generic th_state_ttl just because
- * the message that happened to re-encode it was uninformative.  It is only
- * ever a fallback: a reply that does carry the lifetime still wins.
- */
-static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
+static int th_state_msg_ttl(struct sip_msg *msg)
 {
 	struct session_expires se;
 	int method, expires;
@@ -2368,8 +2353,6 @@ static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 		 * and a subscription may very well outlive the generic
 		 * th_state_ttl. */
 		expires = th_sub_expires(msg, method);
-		if (expires < 0 && ttl_src)
-			expires = th_sub_expires(ttl_src, th_msg_method(ttl_src));
 		if (expires < 0)
 			return th_state_ttl;
 		/* a subscription being torn down only needs its transaction to
@@ -2397,12 +2380,6 @@ static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 				se.interval);
 			return (int)se.interval + TH_STATE_TTL_MARGIN;
 		}
-		if (ttl_src && parse_session_expires(ttl_src, &se) == parse_sst_success &&
-		se.interval > 0) {
-			LM_DBG("session refreshed every %us, per the request's "
-				"Session-Expires\n", se.interval);
-			return (int)se.interval + TH_STATE_TTL_MARGIN;
-		}
 		return th_state_ttl;
 
 	case METHOD_OPTIONS:
@@ -2420,8 +2397,7 @@ static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 }
 
 
-static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes, str *ct_user, int store_state,
-		struct sip_msg *ttl_src)
+static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes, str *ct_user, int store_state)
 {
 	struct lump* lump;
 	char *prefix=NULL,*suffix=NULL,*ct_username=NULL;
@@ -2489,7 +2465,7 @@ static int topo_no_dlg_encode_contact(struct sip_msg *msg,int flags, str *routes
 	prefix = NULL;
 
 	if (!(suffix = build_encoded_contact_suffix(msg, routes, &suffix_len, flags,
-	store_state, ttl_src))) {
+	store_state))) {
 		LM_ERR("Failed to build suffix \n");
 		goto error;
 	}
@@ -2903,7 +2879,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 
 	/* keep this dialog on whichever of the two it came in with */
 	if (topo_no_dlg_encode_contact(msg,flags,NULL,NULL,
-	consumed_key.s ? 1 : 0, NULL) < 0) {
+	consumed_key.s ? 1 : 0) < 0) {
 		LM_ERR("Failed to encode contact header \n");
 		return -1;
 	}
