@@ -174,7 +174,7 @@ int pcache_db_load(pcache_col_t *col)
 	str key, val;
 	unsigned int now_ticks;
 	long now_wall;
-	int i, expires, remaining, n = 0;
+	int i, expires, remaining, n = 0, stale = 0;
 
 	if (!pcache_db_bound) {
 		LM_ERR("no DB backend configured (set db_url)\n");
@@ -215,8 +215,10 @@ int pcache_db_load(pcache_col_t *col)
 			remaining = 0;                /* never expires */
 		} else {
 			remaining = expires - (int)now_wall;
-			if (remaining <= 0)
-				continue;                 /* already expired in the DB */
+			if (remaining <= 0) {
+				stale++;                  /* already expired in the DB */
+				continue;
+			}
 		}
 		if (pcache_ht_store(col->htable, &key, &val,
 		        remaining ? now_ticks + (unsigned int)remaining : 0) < 0) {
@@ -227,6 +229,33 @@ int pcache_db_load(pcache_col_t *col)
 		n++;
 	}
 	pcache_dbf.free_result(dbh, res);
+
+	/* Rows whose wall-clock expiry has passed are dead weight: nothing will
+	 * ever load them, and without a save to rewrite the snapshot (a crash, or
+	 * db_mode=1 which never writes) they would sit there forever.  Drop them
+	 * in one ranged delete now that the result set is released.  expires=0
+	 * means "never expires", so it must be excluded explicitly - it would
+	 * otherwise match the <= comparison. */
+	if (stale > 0) {
+		db_key_t dk[3] = { &col_collection, &col_expires, &col_expires };
+		db_op_t  dop[3] = { OP_EQ, OP_GT, OP_LEQ };
+		db_val_t dv[3];
+
+		memset(dv, 0, sizeof dv);
+		VAL_TYPE(&dv[0]) = DB_STR;  VAL_STR(&dv[0]) = col->col_name;
+		VAL_TYPE(&dv[1]) = DB_INT;  VAL_INT(&dv[1]) = 0;
+		VAL_TYPE(&dv[2]) = DB_INT;  VAL_INT(&dv[2]) = (int)now_wall;
+
+		if (pcache_dbf.delete(dbh, dk, dop, dv, 3) < 0)
+			LM_WARN("collection <%.*s>: could not remove %d stale entries "
+				"- they are ignored, but will be retried on the next "
+				"load and cleared by the next save\n",
+				col->col_name.len, col->col_name.s, stale);
+		else
+			LM_INFO("collection <%.*s>: removed %d stale entries\n",
+				col->col_name.len, col->col_name.s, stale);
+	}
+
 	pcache_dbf.close(dbh);
 	LM_INFO("collection <%.*s>: loaded %d entries\n",
 		col->col_name.len, col->col_name.s, n);
