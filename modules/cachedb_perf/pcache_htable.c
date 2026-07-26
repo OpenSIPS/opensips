@@ -203,7 +203,7 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		unsigned int *exp_out, unsigned char *fl_out)
 {
 	unsigned long m, lo, hi;
-	unsigned int bound, vlen, klen;
+	unsigned int bound, vlen, klen, avail;
 	pcache_rec_t *r;
 	int i;
 
@@ -234,8 +234,12 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 			continue;
 
 		vlen = r->vlen;                       /* aligned 4-byte load */
-		if (PCACHE_REC_HDR + klen + vlen > bound)
-			vlen = bound - PCACHE_REC_HDR - klen;  /* doomed copy, bounded */
+		/* subtractive, never additive: bound >= PCACHE_REC_HDR + klen was
+		 * checked above, while PCACHE_REC_HDR + klen + vlen would wrap for
+		 * a torn vlen and skip the very clamp that bounds a doomed copy */
+		avail = bound - PCACHE_REC_HDR - klen;
+		if (vlen > avail)
+			vlen = avail;
 		memcpy(scratch, r->data + klen, vlen);
 		*vlen_out = vlen;
 		*exp_out = r->expires;
@@ -485,6 +489,11 @@ again:
 			 * the release half, but are kept ACQ_REL so no site has
 			 * to be classified by hand. */
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
+			/* this is a plain value: drop any flag the cell carried
+			 * from a previous life.  Without it, storing an 8-byte
+			 * string over a native counter left PCACHE_F_INT set and
+			 * the read path re-interpreted the ASCII as an int64 */
+			old->rflags = 0;
 			old->vlen = (unsigned int)val->len;
 			memcpy(old->data + key->len, val->s, val->len);
 			old->expires = expires;
@@ -890,7 +899,7 @@ static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 				klen = bound - PCACHE_REC_HDR;
 			vlen = r->vlen;
 			if (PCACHE_REC_HDR + klen + vlen > bound)
-				vlen = bound - PCACHE_REC_HDR - klen;
+				vlen = bound - PCACHE_REC_HDR - klen;  /* see scan_bucket */
 			memcpy(kbuf, r->data, klen);
 			memcpy(vbuf, r->data + klen, vlen);
 			exp = r->expires;
