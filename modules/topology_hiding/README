@@ -164,6 +164,12 @@ ram;custom_param")
    not already created ). This will only work for INVITE based
    dialogs, and the dialog module must be loaded.
 
+   This only controls whether the module creates a dialog of its
+   own. A dialog created by the script itself, with
+   create_dialog(), has the same effect: once a dialog exists, it
+   carries the topology hiding state. See th_state_url for when
+   that is what you want and when it is not.
+
    Default value is “0”
 
    Example 1.5. Set force_dialog parameter
@@ -303,11 +309,41 @@ modparam("topology_hiding", "th_callid_loop_protection", 1)
    Note that a call which is given a dialog never gets here at
    all: the dialog module holds its state and bounds it for
    exactly as long as the call lives, and its Contact carries just
-   the dialog id, so it is already both short and correct.
-   Engaging a dialog for the calls (see force_dialog) is therefore
-   a better answer for them than this parameter could ever be,
-   which is left to serve what a dialog cannot: everything that is
-   not INVITE based.
+   the dialog id, so it is already both short and correct. The
+   rule is simply whether a dialog exists by the time
+   topology_hiding() runs: if one does, the dialog carries the
+   state and this parameter is not consulted for that call.
+   force_dialog only governs whether the module creates a dialog
+   when none exists yet - a script that calls create_dialog()
+   itself, as most do for accounting, BYE handling or sharing
+   tags, puts its INVITEs on the dialog path whatever force_dialog
+   is set to.
+
+   Where a call is going to have a dialog anyway, that is the
+   better place for its state. The dialog's lifetime is the call's
+   own, rather than a timer: the cached state can only approximate
+   it from Session-Expires, or fall back to th_state_ttl when the
+   call is not session timed, whereas a dialog is torn down with
+   the call instead of waiting out a TTL. A dialog is also
+   replicated by the dialog module's own clustering, and two of
+   this module's features - hiding the Call-ID, and carrying the
+   dialog id in the Contact user - are dialog-only, and are
+   skipped with a warning when no dialog is engaged. This
+   parameter is left to serve what a dialog cannot: everything
+   that is not INVITE based.
+
+   The reverse holds where dialogs are not wanted in the first
+   place. A load balancer or other high-throughput proxy that has
+   no use for dialog state - no accounting, no BYE handling,
+   nothing to replicate to its peers - still pays for every dialog
+   it creates, in shared memory and in the work of creating,
+   matching and expiring it, and at high call rates that cost is
+   the dominant one. Such a deployment is better off leaving
+   force_dialog at 0, not creating dialogs from the script, and
+   pointing this parameter at a fast local backend instead:
+   cachedb_perf is built for this traffic shape and keeps lookups
+   flat as the number of concurrent calls grows, where
+   cachedb_local degrades once its fixed hash table is outgrown.
 
    The state must be readable by whichever node receives the
    sequential requests, so when the traffic is distributed or

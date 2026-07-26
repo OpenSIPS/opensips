@@ -138,6 +138,14 @@ modparam("topology_hiding", "th_passed_contact_params", "paramname1;myparam;cust
 			If set to 1, the module will internally create the dialog ( if not already created ). This will only work for INVITE based dialogs, and the dialog module must be loaded.
 		</para>
 		<para>
+			This only controls whether the module creates a dialog of its
+			own. A dialog created by the script itself, with
+			<function>create_dialog()</function>, has the same effect: once a
+			dialog exists, it carries the topology hiding state. See
+			<xref linkend="param_th_state_url"/> for when that is what you
+			want and when it is not.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>0</quote>
 		</emphasis>
@@ -327,11 +335,45 @@ modparam("topology_hiding", "th_callid_loop_protection", 1)
 			Note that a call which is given a dialog never gets here at all:
 			the <emphasis>dialog</emphasis> module holds its state and bounds
 			it for exactly as long as the call lives, and its Contact carries
-			just the dialog id, so it is already both short and correct.
-			Engaging a dialog for the calls (see
-			<xref linkend="param_force_dialog"/>) is therefore a better answer
-			for them than this parameter could ever be, which is left to serve
-			what a dialog cannot: everything that is not INVITE based.
+			just the dialog id, so it is already both short and correct. The
+			rule is simply whether a dialog exists by the time
+			<function>topology_hiding()</function> runs: if one does, the
+			dialog carries the state and this parameter is not consulted for
+			that call. <xref linkend="param_force_dialog"/> only governs
+			whether the module creates a dialog when none exists yet - a
+			script that calls <function>create_dialog()</function> itself,
+			as most do for accounting, BYE handling or sharing tags, puts its
+			INVITEs on the dialog path whatever
+			<varname>force_dialog</varname> is set to.
+		</para>
+		<para>
+			Where a call is going to have a dialog anyway, that is the better
+			place for its state. The dialog's lifetime is the call's own,
+			rather than a timer: the cached state can only approximate it
+			from <emphasis>Session-Expires</emphasis>, or fall back to
+			<xref linkend="param_th_state_ttl"/> when the call is not session
+			timed, whereas a dialog is torn down with the call instead of
+			waiting out a TTL. A dialog is also replicated by the dialog
+			module's own clustering, and two of this module's features -
+			hiding the Call-ID, and carrying the dialog id in the Contact
+			user - are dialog-only, and are skipped with a warning when no
+			dialog is engaged. This parameter is left to serve what a dialog
+			cannot: everything that is not INVITE based.
+		</para>
+		<para>
+			The reverse holds where dialogs are not wanted in the first
+			place. A load balancer or other high-throughput proxy that has no
+			use for dialog state - no accounting, no BYE handling, nothing to
+			replicate to its peers - still pays for every dialog it creates,
+			in shared memory and in the work of creating, matching and
+			expiring it, and at high call rates that cost is the dominant
+			one. Such a deployment is better off leaving
+			<varname>force_dialog</varname> at 0, not creating dialogs from
+			the script, and pointing this parameter at a fast local backend
+			instead: <emphasis>cachedb_perf</emphasis> is built for this
+			traffic shape and keeps lookups flat as the number of concurrent
+			calls grows, where <emphasis>cachedb_local</emphasis> degrades
+			once its fixed hash table is outgrown.
 		</para>
 		<para>
 			The state must be readable by whichever node receives the
