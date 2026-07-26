@@ -469,21 +469,35 @@ again:
 		}
 
 		if (PCACHE_REC_SIZE(key->len, val->len) <= pcache_cell_bound(old)) {
-			/* in-place: the new value fits the cell */
-			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			/* in-place: the new value fits the cell.
+			 *
+			 * Every seqlock ENTRY bump is ACQ_REL, not RELEASE.  A
+			 * release RMW only orders accesses that PRECEDE it and
+			 * lets stores that follow be observed first, so on a
+			 * weakly-ordered CPU (aarch64, ppc64le) the payload
+			 * writes below could become visible before the version
+			 * turned odd - a reader would then see an even version,
+			 * scan a half-written record, re-read the same even
+			 * version and accept the tear.  The acquire half stops
+			 * the hoist.  (Linux writes seq++ then smp_wmb() for the
+			 * same reason.)  x86-64 is unaffected either way: the
+			 * RMW is already a full barrier.  EXIT bumps only need
+			 * the release half, but are kept ACQ_REL so no site has
+			 * to be classified by hand. */
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 			old->vlen = (unsigned int)val->len;
 			memcpy(old->data + key->len, val->s, val->len);
 			old->expires = expires;
-			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 			hint_update(ht, idx, expires);
 			old = nr;                     /* discard the prebuilt one */
 			goto done;
 		}
 
 		/* replace the record; the tag stays (same key, same hash) */
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[i] = nr;
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		hint_update(ht, idx, expires);
 		goto done;
 	}
@@ -504,11 +518,11 @@ again:
 
 	used = bkt_used(b);
 	if (used < PCACHE_SLOTS) {
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[used] = nr;
 		b->tags[used] = tag;
 		bkt_set_used(b, used + 1);
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		hint_update(ht, idx, expires);
 		inserted = 1;
 		goto done;
@@ -605,10 +619,10 @@ again:
 			 * it changes under the version, never bare */
 			memcpy(&cur, r->data + r->klen, 8);
 			cur += delta;
-			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 			memcpy(r->data + r->klen, &cur, 8);
 			r->expires = expires;
-			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 			hint_update(ht, idx, expires);
 			old = nr;
 			goto done;
@@ -618,9 +632,9 @@ again:
 			goto nan;
 		cur += delta;
 		memcpy(nr->data + key->len, &cur, 8);
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[i] = nr;
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		hint_update(ht, idx, expires);
 		old = r;
 		goto done;
@@ -657,11 +671,11 @@ again:
 	/* absent: nr already carries the delta as the initial value */
 	used = bkt_used(b);
 	if (used < PCACHE_SLOTS) {
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[used] = nr;
 		b->tags[used] = tag;
 		bkt_set_used(b, used + 1);
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		hint_update(ht, idx, expires);
 		inserted = 1;
 		goto done;
@@ -806,13 +820,13 @@ again:
 	if (i >= 0) {
 		dead = b->slot[i];
 		used = bkt_used(b);
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[i] = b->slot[used - 1];       /* compact: readers retry */
 		b->tags[i] = b->tags[used - 1];
 		b->slot[used - 1] = NULL;
 		b->tags[used - 1] = 0;
 		bkt_set_used(b, used - 1);
-		__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 	} else if (ht->ovf_count) {
 		lock_get(&ht->ovf_lock);
 		on = ovf_find(ht, key, hash, &prev);
@@ -1096,7 +1110,7 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 			if (r->expires && r->expires <= now) {
 				if (!ndead)
 					__atomic_add_fetch(&b->version, 1,
-						__ATOMIC_RELEASE);
+						__ATOMIC_ACQ_REL);
 				dead[ndead++] = r;
 				b->slot[i] = b->slot[used - 1];
 				b->tags[i] = b->tags[used - 1];
@@ -1110,7 +1124,7 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 			i++;
 		}
 		if (ndead)
-			__atomic_add_fetch(&b->version, 1, __ATOMIC_RELEASE);
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		*hint_at(ht, idx) = newmin;
 
 		bkt_clear_owner(b);
@@ -1294,7 +1308,7 @@ static int pcache_ht_split(pcache_htable_t *ht)
 
 	lock_get(&S->lock);
 	bkt_set_owner(S);
-	__atomic_add_fetch(&S->version, 1, __ATOMIC_RELEASE);  /* writer in */
+	__atomic_add_fetch(&S->version, 1, __ATOMIC_ACQ_REL);  /* writer in */
 
 	used = bkt_used(S);
 	pused = 0;
@@ -1339,7 +1353,7 @@ static int pcache_ht_split(pcache_htable_t *ht)
 	__atomic_store_n(&ht->route, nr, __ATOMIC_RELEASE);
 	ht->nbuckets++;
 
-	__atomic_add_fetch(&S->version, 1, __ATOMIC_RELEASE);  /* S stable */
+	__atomic_add_fetch(&S->version, 1, __ATOMIC_ACQ_REL);  /* S stable */
 	bkt_clear_owner(S);
 	lock_release(&S->lock);
 	return 1;
