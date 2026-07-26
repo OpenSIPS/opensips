@@ -34,12 +34,13 @@ cachedb_perf Module
         1.7. Exported MI Functions
 
               1.7.1. perf_stats
-              1.7.2. Key introspection: perf_keys / perf_scan /
+              1.7.2. perf_stats_reset
+              1.7.3. Key introspection: perf_keys / perf_scan /
                       perf_dump / perf_get / perf_set / perf_ttl /
                       perf_del
 
-              1.7.3. perf_save / perf_load
-              1.7.4. perf_sync
+              1.7.4. perf_save / perf_load
+              1.7.5. perf_sync
 
         1.8. Exported Events
 
@@ -75,12 +76,13 @@ cachedb_perf Module
    1.13. Set sync_cluster_id parameter
    1.14. Cluster-sync setup (one authority, two read replicas)
    1.15. perf_stats usage
-   1.16. introspection usage
-   1.17. perf_save / perf_load usage
-   1.18. perf_sync usage
-   1.19. perf_del() usage
-   1.20. perf_mget() usage
-   1.21. perf_mget_json() usage
+   1.16. perf_stats_reset usage
+   1.17. introspection usage
+   1.18. perf_save / perf_load usage
+   1.19. perf_sync usage
+   1.20. perf_del() usage
+   1.21. perf_mget() usage
+   1.22. perf_mget_json() usage
 
 Chapter 1. Admin Guide
 
@@ -396,7 +398,18 @@ Warning
    perf_sync still saves to the DB, just without the peer signal.
 
    When active, the module's capability shows in the clusterer's
-   clusterer_list_cap MI command as “cachedb-perf-sync”.
+   clusterer_list_cap MI command as “cachedb-perf-sync”. Note that
+   the state the clusterer reports there (“Ok”) only means the
+   capability is registered and enabled: this module does not take
+   part in the clusterer's startup data-sync, so that field never
+   reflects whether the caches have converged. It would read “not
+   synced” only if the capability were disabled administratively.
+   To see the sync activity itself, use the last_sync_out /
+   last_sync_in / last_sync_source fields of perf_stats, which
+   report how many seconds ago this node last pushed a snapshot
+   and last reloaded one at a peer's request (-1 = never), or
+   subscribe to E_CACHEDB_PERF_SYNCED. Between syncs the nodes are
+   expected to differ - convergence is on demand, by design.
 
    Because it runs a full save first, perf_sync carries the same
    blocking cost as perf_save (see the warning under DB
@@ -482,7 +495,35 @@ node)\n");
 opensips-cli -x mi cachedb_perf:perf_stats
 opensips-cli -x mi cachedb_perf:perf_stats th
 
-1.7.2. Key introspection: perf_keys / perf_scan / perf_dump /
+1.7.2. perf_stats_reset
+
+   The counters behind perf_stats - hits, misses, stores, removes,
+   expired, destroyed, retries - are running totals since startup,
+   so every rate derived from them is a lifetime average. A burst
+   of misses right after a restart, when sequential requests
+   arrive for dialogs older than the cache, keeps dragging the hit
+   rate down long after the cache has recovered. This command
+   re-baselines them so the next reading covers a fresh interval,
+   without restarting OpenSIPS.
+
+   The counters themselves are not rewound: each process owns its
+   own counter cache line and must never have it written from
+   another process. Only a baseline is recorded, and the reported
+   figures are the difference. Live gauges - entries, buckets,
+   overflow, load factor and the arena figures - are read from
+   current state rather than from the counters, so a reset does
+   not disturb them.
+
+   With no parameter every collection is reset; an optional
+   collection name restricts it to one.
+
+   Name: perf_stats_reset. Parameters: collection (optional).
+
+   Example 1.16. perf_stats_reset usage
+opensips-cli -x mi cachedb_perf:perf_stats_reset
+opensips-cli -x mi cachedb_perf:perf_stats_reset th
+
+1.7.3. Key introspection: perf_keys / perf_scan / perf_dump /
 perf_get / perf_set / perf_ttl / perf_del
 
    These give an operator the visibility that cachedb_local lacks.
@@ -519,7 +560,7 @@ perf_get / perf_set / perf_ttl / perf_del
        the glob; returns the count. The MI face of the perf_del()
        script function.
 
-   Example 1.16. introspection usage
+   Example 1.17. introspection usage
 opensips-cli -x mi cachedb_perf:perf_keys "session-*"
 opensips-cli -x mi cachedb_perf:perf_keys "session-*" th 50
 opensips-cli -x mi cachedb_perf:perf_scan 0
@@ -530,7 +571,7 @@ opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
 opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
 opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
 
-1.7.3. perf_save / perf_load
+1.7.4. perf_save / perf_load
 
    Persist a collection to, or restore it from, the db_url backend
    (see DB persistence). With no argument they operate on every
@@ -538,18 +579,18 @@ opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
    reply reports how many collections and entries were written or
    read.
 
-   Example 1.17. perf_save / perf_load usage
+   Example 1.18. perf_save / perf_load usage
 opensips-cli -x mi cachedb_perf:perf_save
 opensips-cli -x mi cachedb_perf:perf_save sessions
 opensips-cli -x mi cachedb_perf:perf_load sessions
 
-1.7.4. perf_sync
+1.7.5. perf_sync
 
    Save a collection to the DB and signal the cluster to reload it
    (see Cluster sync); all declared collections if none is named.
    Also available as a script function, perf_sync([collection]).
 
-   Example 1.18. perf_sync usage
+   Example 1.19. perf_sync usage
 opensips-cli -x mi cachedb_perf:perf_sync sessions
 
 1.8. Exported Events
@@ -615,7 +656,7 @@ opensips-cli -x mi cachedb_perf:perf_sync sessions
    Returns the number of keys removed, or -1 (false) if none
    matched.
 
-   Example 1.19. perf_del() usage
+   Example 1.20. perf_del() usage
 ...
 perf_del("session-*");
 perf_del("th-*", "th");
@@ -630,7 +671,7 @@ perf_del("th-*", "th");
    0 = unbounded. Returns the match count, or -1 (false) if none
    matched.
 
-   Example 1.20. perf_mget() usage
+   Example 1.21. perf_mget() usage
 ...
 if (perf_mget("user-*", $avp(k), $avp(v))) {
     xlog("first match: $(avp(k)[0]) = $(avp(v)[0])\n");
@@ -646,7 +687,7 @@ if (perf_mget("user-*", $avp(k), $avp(v))) {
    through unescaped - strict JSON consumers therefore need UTF-8
    values. Returns the match count, or -1 (false) if none matched.
 
-   Example 1.21. perf_mget_json() usage
+   Example 1.22. perf_mget_json() usage
 ...
 if (perf_mget_json("user-*", $var(blob), , 100))
     xlog("users: $var(blob)\n");

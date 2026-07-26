@@ -434,7 +434,20 @@ expires      int      - absolute unix expiry, 0 = never
 	<para>
 		When active, the module's capability shows in the clusterer's
 		<emphasis>clusterer_list_cap</emphasis> MI command as
-		<quote>cachedb-perf-sync</quote>.
+		<quote>cachedb-perf-sync</quote>. Note that the
+		<emphasis>state</emphasis> the clusterer reports there
+		(<quote>Ok</quote>) only means the capability is registered and
+		enabled: this module does not take part in the clusterer's
+		startup data-sync, so that field never reflects whether the caches
+		have converged. It would read <quote>not synced</quote> only if the
+		capability were disabled administratively. To see the sync activity
+		itself, use the <emphasis>last_sync_out</emphasis> /
+		<emphasis>last_sync_in</emphasis> / <emphasis>last_sync_source</emphasis>
+		fields of <emphasis>perf_stats</emphasis>, which report how many
+		seconds ago this node last pushed a snapshot and last reloaded one at
+		a peer's request (-1 = never), or subscribe to
+		<emphasis>E_CACHEDB_PERF_SYNCED</emphasis>. Between syncs the nodes
+		are expected to differ - convergence is on demand, by design.
 	</para>
 	<para>
 		Because it runs a full save first, <emphasis>perf_sync</emphasis>

@@ -322,6 +322,22 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"), note, strlen(note)) < 0)
 		return -1;
 
+	/* Cluster sync is on-demand, so report WHEN this node last pushed or
+	 * pulled rather than implying the caches match.  -1 = never.  Note the
+	 * clusterer's own "Ok" for the cachedb-perf-sync capability only means
+	 * it is registered and enabled - it says nothing about convergence. */
+	if (sync_cluster_id > 0) {
+		if (add_mi_number(cobj, MI_SSTR("last_sync_out"),
+		        col->last_sync_out ?
+		            (int)(get_ticks() - col->last_sync_out) : -1) < 0 ||
+		    add_mi_number(cobj, MI_SSTR("last_sync_in"),
+		        col->last_sync_in ?
+		            (int)(get_ticks() - col->last_sync_in) : -1) < 0 ||
+		    add_mi_number(cobj, MI_SSTR("last_sync_source"),
+		        col->last_sync_src) < 0)
+			return -1;
+	}
+
 	n = snprintf(buf, sizeof buf, "%.3f",
 		(double)t.entries / ht->nbuckets);
 	if (add_mi_string(cobj, MI_SSTR("load_factor"), buf, n) < 0)
@@ -880,8 +896,11 @@ static void pcache_sync_recv(bin_packet_t *packet)
 	}
 	LM_INFO("cluster sync: reloading <%.*s> from DB (issued by node %d)\n",
 		coll.len, coll.s, packet->src_id);
-	if (pcache_db_load(col) >= 0)
+	if (pcache_db_load(col) >= 0) {
+		col->last_sync_in = get_ticks();
+		col->last_sync_src = packet->src_id;
 		pcache_raise_synced(&col->col_name, packet->src_id);
+	}
 }
 
 /* broadcast "reload collection X" to the cluster (best-effort - the DB
@@ -914,6 +933,7 @@ static int perf_sync_one(pcache_col_t *col, int *bcast)
 
 	if (rc < 0)
 		return -1;
+	col->last_sync_out = get_ticks();
 	pcache_sync_broadcast(&col->col_name);
 	if (sync_ready)
 		(*bcast)++;
