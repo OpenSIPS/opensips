@@ -62,6 +62,8 @@ str lb_probe_from = str_init("sip:prober@localhost");
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
+int use_cpu_factor;
+
 int fetch_freeswitch_stats;
 int initial_fs_load = 1000;
 
@@ -173,6 +175,7 @@ static const param_export_t mod_params[]={
 	{ "cluster_id",            INT_PARAM, &lb_cluster_id            },
 	{ "cluster_sharing_tag",   STR_PARAM, &lb_cluster_shtag         },
 	{ "fetch_freeswitch_stats",  INT_PARAM, &fetch_freeswitch_stats },
+	{ "use_cpu_factor",          INT_PARAM, &use_cpu_factor         },
 	{ "initial_freeswitch_load", INT_PARAM, &initial_fs_load        },
 	{ 0,0,0 }
 };
@@ -556,8 +559,20 @@ static int w_lb_start(struct sip_msg *req, int *grp_no,
 		for( f=flstr->s ; f<flstr->s+flstr->len ; f++ ) {
 			switch( *f ) {
 				case 'r':
+					if( flags & LB_FLAGS_PERCENT_WITH_CPU ) {
+						LM_ERR("flags i & r are mutually exclusive (r)\n");
+						return -5;
+					}
 					flags |= LB_FLAGS_RELATIVE;
 					LM_DBG("using relative versus absolute estimation\n");
+					break;
+				case 'i':
+					if( flags & LB_FLAGS_RELATIVE ) {
+						LM_ERR("flags i & r are mutually exclusive (i)\n");
+						return -5;
+					}
+					flags |= LB_FLAGS_PERCENT_WITH_CPU;
+					LM_DBG("using integrated estimation (percentage of max sessions used, tracing real time allocations) \n");
 					break;
 				case 'n':
 					flags |= LB_FLAGS_NEGATIVE;
@@ -795,12 +810,28 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 				            dst->rmap[ri].resource->profile, &dst->profile_id);
 				old = dst->rmap[ri].max_load;
 
+				// if ( flags & LB_FLAGS_PERCENT_WITH_CPU ) { todo flags not avavilable here
 				/*
-				 * The normal case. OpenSIPS sees, at _most_, the same number
-				 * of sessions as FreeSWITCH does. Any differences must be
-				 * subtracted from the remote "max sessions" value
+				 * In LB_FLAGS_PERCENT_WITH_CPU mode we capture the raw values and use these in each LB calculation. This
+				 * means we do not use profile counting in the load calculation. This is suitable for
+				 * architectures where many unreplicated OpenSIPs instances feed calls into the same pool
+				 * of FreeSWITCH instances.
 				 */
+				dst->rmap[ri].max_sessions = dst->fs_sock->stats.max_sess;
+				dst->rmap[ri].current_sessions = dst->fs_sock->stats.sess;
+				dst->rmap[ri].cpu_idle = dst->fs_sock->stats.id_cpu / (float)100;
+				/*
+				 * reset sessions since last heartbeat counter
+				 * todo ideally this happens when the heartbeat arrives, this fires according to fetch_freeswitch_stats timer
+                 */
+				dst->rmap[ri].sessions_since_last_heartbeat = 0;
+
 				if (psz < dst->fs_sock->stats.max_sess) {
+					/*
+					 * The normal case. OpenSIPS sees, at _most_, the same number
+					 * of sessions as FreeSWITCH does. Any differences must be
+					 * subtracted from the remote "max sessions" value
+					 */
 					dst->rmap[ri].max_load =
 					(dst->fs_sock->stats.id_cpu / (float)100) *
 						(dst->fs_sock->stats.max_sess -
