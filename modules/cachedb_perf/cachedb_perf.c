@@ -1450,6 +1450,21 @@ static int pcache_htable_fetch(cachedb_con *con, str *attr, str *val)
 	return ht ? pcache_ht_fetch(ht, attr, val) : -1;
 }
 
+/* CACHEDB_CAP_GET_BUF: the allocation-free read.  Note this deliberately
+ * does NOT touch pcache_htable_fetch() above - the vtable get() keeps its
+ * own documented behaviour, byte for byte. */
+static int pcache_htable_fetch_buf(cachedb_con *con, str *attr, char *buf,
+		unsigned int buflen, unsigned int *vlen, unsigned int *needed)
+{
+	pcache_htable_t *ht = con_ht(con);
+
+	if (vlen)
+		*vlen = 0;
+	if (needed)
+		*needed = 0;
+	return ht ? pcache_ht_fetch_buf(ht, attr, buf, buflen, vlen, needed) : -1;
+}
+
 static int pcache_htable_fetch_counter(cachedb_con *con, str *attr, int *val)
 {
 	pcache_htable_t *ht = con_ht(con);
@@ -2028,6 +2043,7 @@ static int mod_init(void)
 	cde.cdb_func.init = pcache_init;
 	cde.cdb_func.destroy = pcache_destroy;
 	cde.cdb_func.get = pcache_htable_fetch;
+	cde.cdb_func.get_buf = pcache_htable_fetch_buf;
 	cde.cdb_func.get_counter = pcache_htable_fetch_counter;
 	cde.cdb_func.set = pcache_htable_insert;
 	cde.cdb_func.remove = pcache_htable_remove;
@@ -2035,7 +2051,7 @@ static int mod_init(void)
 	cde.cdb_func.sub = pcache_htable_sub;
 	cde.cdb_func.iter_keys = pcache_htable_iter_keys;
 
-	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
+	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE | CACHEDB_CAP_GET_BUF;
 
 	if (register_cachedb(&cde) < 0) {
 		LM_ERR("failed to register the 'perf' cachedb engine\n");

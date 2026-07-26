@@ -186,6 +186,35 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires);
 
+/* get_buf(): @buf was too small.  *vlen stays 0 and *needed carries the
+ * size the value would have needed - never a length the caller could
+ * mistake for "bytes written into buf". */
+#define PCACHE_E_TOOSMALL   (-3)
+
+/* Smallest buffer get_buf() will accept.  A native counter is 8 raw bytes
+ * formatted as decimal on read, so anything shorter could not represent
+ * every legal hit; enforced rather than assumed. */
+#define PCACHE_GETBUF_MIN   24
+
+/*
+ * Allocation-free read into a caller-owned buffer: the value is copied
+ * once, straight from the record to @buf, instead of being copied to the
+ * internal scratch and then into a freshly pkg_malloc'd str.
+ *
+ * @buf MUST be private to the calling process (its own stack or pkg).  The
+ * lock-free read path writes into it SPECULATIVELY - a retried optimistic
+ * section may leave a partial value behind - so on any return other than 0
+ * the contents are undefined and must not be used.  The value is not
+ * NUL-terminated.
+ *
+ * 0 = hit, *vlen bytes written (always <= @buflen); -2 = miss or expired;
+ * -1 = error or malformed request; PCACHE_E_TOOSMALL = value does not fit,
+ * *needed holds the required size.  *vlen and *needed are zeroed first.
+ * @needed may be NULL.
+ */
+int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
+		unsigned int buflen, unsigned int *vlen, unsigned int *needed);
+
 /* 0 = hit (val->s pkg-allocated, caller frees); -2 = miss or expired;
  * -1 = error */
 int pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val);

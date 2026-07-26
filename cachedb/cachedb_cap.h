@@ -51,6 +51,10 @@ typedef enum {
 	CACHEDB_CAP_MAP_REMOVE   = 1<<13,
 	CACHEDB_CAP_MAP =
 		(CACHEDB_CAP_MAP_GET|CACHEDB_CAP_MAP_SET|CACHEDB_CAP_MAP_REMOVE),
+
+	/* backend implements get_buf() - an allocation-free read into a
+	 * caller-owned buffer.  Optional: every backend still provides get() */
+	CACHEDB_CAP_GET_BUF      = 1<<14,
 } cachedb_cap;
 
 #define CACHEDB_CAPABILITY(cdbf,cpv) (((cdbf)->capability & (cpv)) == (cpv))

@@ -199,8 +199,9 @@ static char *get_scratch(void)
  * 0 = hit (scratch filled), -2 = miss.
  */
 static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
-		unsigned char tag, char *scratch, unsigned int *vlen_out,
-		unsigned int *exp_out, unsigned char *fl_out)
+		unsigned char tag, char *dst, unsigned int dstlen,
+		unsigned int *vlen_out, unsigned int *exp_out,
+		unsigned char *fl_out)
 {
 	unsigned long m, lo, hi;
 	unsigned int bound, vlen, klen, avail;
@@ -240,10 +241,15 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		avail = bound - PCACHE_REC_HDR - klen;
 		if (vlen > avail)
 			vlen = avail;
-		memcpy(scratch, r->data + klen, vlen);
+		/* report the true length either way, so a caller whose buffer is
+		 * too small learns what it would need.  Trusted, like every other
+		 * field here, only once the version re-check passes */
 		*vlen_out = vlen;
 		*exp_out = r->expires;
 		*fl_out = r->rflags;
+		if (vlen > dstlen)
+			return PCACHE_E_TOOSMALL;   /* nothing copied */
+		memcpy(dst, r->data + klen, vlen);
 		return 0;
 	}
 	return -2;
@@ -251,8 +257,8 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 
 /* overflow lookup - records are stable under the overflow lock */
 static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
-		char *scratch, unsigned int *vlen_out, unsigned int *exp_out,
-		unsigned char *fl_out)
+		char *dst, unsigned int dstlen, unsigned int *vlen_out,
+		unsigned int *exp_out, unsigned char *fl_out)
 {
 	struct povf *n;
 	int rc = -2;
@@ -265,7 +271,11 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 		*vlen_out = n->rec->vlen;
 		*exp_out = n->rec->expires;
 		*fl_out = n->rec->rflags;
-		memcpy(scratch, n->rec->data + key->len, *vlen_out);
+		if (*vlen_out > dstlen) {
+			rc = PCACHE_E_TOOSMALL;     /* nothing copied */
+			break;
+		}
+		memcpy(dst, n->rec->data + key->len, *vlen_out);
 		rc = 0;
 		break;
 	}
@@ -275,19 +285,37 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 
 /* @now is a parameter (not read inside) so the selftest can run under a
  * synthetic clock - get_ticks() is still 0 during mod_init */
-static int _pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val,
-		unsigned int now, unsigned int *exp_out)
+/*
+ * The one implementation of the read path.  @dst/@dstlen is where the value
+ * lands: the internal scratch when the caller wanted an allocated str, or
+ * the caller's own buffer for the allocation-free entry point.  Everything
+ * else - the optimistic loop, the lock fallback, the re-route retry, the
+ * overflow leg, expiry - is shared, so the two entry points can never
+ * disagree about which record they return.
+ */
+static int _pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key,
+		char *dst, unsigned int dstlen, unsigned int *vlen_out,
+		unsigned int now, unsigned int *exp_out, long long *ll_out)
 {
 	pcache_bucket_t *b;
 	unsigned long route;
 	unsigned int hash, idx, v1, v2, vlen = 0, exp = 0, tries;
 	unsigned char tag, fl = 0;
 	long long ll;
-	char *scratch;
 	int rc;
 
-	scratch = get_scratch();
-	if (!scratch)
+	/* fail closed: a caller that ignores the return code must not read an
+	 * uninitialised length against a perfectly valid buffer */
+	*vlen_out = 0;
+	if (ll_out)
+		*ll_out = 0;
+	if (exp_out)
+		*exp_out = 0;
+
+	/* the destination now comes from outside the module on one of the two
+	 * paths, so a bad one is an API misuse to reject, not an invariant to
+	 * assume */
+	if (!ht || !key || !dst)
 		return -1;
 
 	hash = core_hash(key, NULL, 0);
@@ -304,7 +332,7 @@ again:
 			pcache_pause();
 			continue;
 		}
-		rc = scan_bucket(b, key, hash, tag, scratch, &vlen, &exp, &fl);
+		rc = scan_bucket(b, key, hash, tag, dst, dstlen, &vlen, &exp, &fl);
 		__atomic_thread_fence(__ATOMIC_ACQUIRE);
 		v2 = __atomic_load_n(&b->version, __ATOMIC_RELAXED);
 		if (v1 == v2)
@@ -315,7 +343,7 @@ again:
 	 * the lock (3.2 fallback; the lock sleeps under futex) */
 	lock_get(&b->lock);
 	bkt_set_owner(b);
-	rc = scan_bucket(b, key, hash, tag, scratch, &vlen, &exp, &fl);
+	rc = scan_bucket(b, key, hash, tag, dst, dstlen, &vlen, &exp, &fl);
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
 	HT_ST(ht, fallbacks);
@@ -328,7 +356,7 @@ settled:
 		if (ht->route != route)
 			goto again;
 		if (ht->ovf_count)
-			rc = ovf_fetch(ht, key, hash, scratch, &vlen, &exp, &fl);
+			rc = ovf_fetch(ht, key, hash, dst, dstlen, &vlen, &exp, &fl);
 	}
 	if (rc == -2) {
 		HT_ST(ht, misses);
@@ -342,10 +370,49 @@ settled:
 	HT_ST(ht, hits);
 	if (exp_out)
 		*exp_out = exp;                  /* absolute ticks, 0 = never */
+	*vlen_out = vlen;
+
+	/* the value did not fit: the length above tells the caller what it
+	 * would need, and @dst holds nothing usable */
+	if (rc == PCACHE_E_TOOSMALL)
+		return PCACHE_E_TOOSMALL;
 
 	if ((fl & PCACHE_F_INT) && vlen == 8) {
-		/* native counter: format on read */
-		memcpy(&ll, scratch, 8);
+		/* native counter: the 8 raw bytes are meaningless to the caller,
+		 * so hand back the integer and let the entry point format it */
+		if (!ll_out)
+			return -1;
+		memcpy(&ll, dst, 8);
+		*ll_out = ll;
+		return 1;                        /* hit, and it is a counter */
+	}
+	return 0;
+}
+
+/*
+ * Allocating entry point: copies into the per-process scratch, then into a
+ * pkg buffer the caller owns.  The scratch is PCACHE_CELL_MAX bytes, i.e.
+ * as large as the biggest legal record, so the too-small path below cannot
+ * be reached from here - it is handled defensively all the same.
+ */
+static int _pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val,
+		unsigned int now, unsigned int *exp_out)
+{
+	unsigned int vlen = 0;
+	long long ll = 0;
+	char *scratch;
+	int rc;
+
+	scratch = get_scratch();
+	if (!scratch)
+		return -1;
+
+	rc = _pcache_ht_fetch_buf(ht, key, scratch, PCACHE_CELL_MAX, &vlen,
+		now, exp_out, &ll);
+	if (rc < 0)
+		return rc == PCACHE_E_TOOSMALL ? -1 : rc;
+
+	if (rc == 1) {                       /* native counter: format on read */
 		val->s = pkg_malloc(24);
 		if (!val->s) {
 			LM_ERR("no more pkg memory\n");
@@ -376,6 +443,43 @@ int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
 		unsigned int *expires)
 {
 	return _pcache_ht_fetch(ht, key, val, get_ticks(), expires);
+}
+
+/* allocation-free entry point - see the contract in pcache_htable.h */
+int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
+		unsigned int buflen, unsigned int *vlen, unsigned int *needed)
+{
+	long long ll = 0;
+	int rc;
+
+	if (vlen)
+		*vlen = 0;
+	if (needed)
+		*needed = 0;
+	if (!vlen || !buf || buflen < PCACHE_GETBUF_MIN) {
+		LM_BUG("get_buf called with buf=%p buflen=%u vlen=%p\n",
+			buf, buflen, vlen);
+		return -1;
+	}
+
+	rc = _pcache_ht_fetch_buf(ht, key, buf, buflen, vlen, get_ticks(),
+		NULL, &ll);
+
+	if (rc == PCACHE_E_TOOSMALL) {
+		/* *vlen must never exceed the caller's buffer: {buf,*vlen} has to
+		 * stay a valid str whatever the caller does with the return code */
+		if (needed)
+			*needed = *vlen;
+		*vlen = 0;
+		return PCACHE_E_TOOSMALL;
+	}
+	if (rc < 0)
+		return rc;
+	if (rc == 1)                         /* counter: format into the caller's
+	                                      * buffer; >= PCACHE_GETBUF_MIN is
+	                                      * enforced above, so it always fits */
+		*vlen = snprintf(buf, buflen, "%lld", ll);
+	return 0;
 }
 
 /* writer-side slot scan, under the bucket lock - plain and exact */
