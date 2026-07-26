@@ -47,10 +47,10 @@ Presence Module
 
         1.6. Exported MI Functions
 
-              1.6.1. refresh_watchers
-              1.6.2. cleanup
+              1.6.1. presence:refresh_watchers
+              1.6.2. presence:cleanup
               1.6.3. presence:phtable_list
-              1.6.4. subs_phtable_list
+              1.6.4. presence:subs_phtable_list
               1.6.5. presence:expose
 
         1.7. Exported Events
@@ -658,12 +658,12 @@ if($rm=="SUBSCRIBE")
 
 1.6. Exported MI Functions
 
-1.6.1.  refresh_watchers
+1.6.1.  presence:refresh_watchers
 
    Triggers sending Notify messages to watchers if a change in
    watchers authorization or in published state occurred.
 
-   Name: refresh_watchers
+   Name: presence:refresh_watchers
 
    Parameters:
      * presentity_uri : the uri of the user who made the change
@@ -678,20 +678,21 @@ if($rm=="SUBSCRIBE")
             is set): refresh type!= 0.
 
    MI FIFO Command Format:
-opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi presence:refresh_watchers sip:11@192.168.2.132 presen
+ce 1
 
-1.6.2.  cleanup
+1.6.2.  presence:cleanup
 
    Manually triggers the cleanup functions for watchers and
    presentity tables. Useful if you have set clean_period to zero
    or less.
 
-   Name: cleanup
+   Name: presence:cleanup
 
    Parameters: none
 
    MI FIFO Command Format:
-opensips-cli -x mi cleanup
+opensips-cli -x mi presence:cleanup
 
 1.6.3.  presence:phtable_list
 
@@ -706,20 +707,20 @@ opensips-cli -x mi cleanup
    MI FIFO Command Format:
 opensips-cli -x mi presence:phtable_list
 
-1.6.4.  subs_phtable_list
+1.6.4.  presence:subs_phtable_list
 
    Lists all the subscription records, or the subscriptions for
    which the "To" and "From" URIs match the given parameters.
 
-   Name: subs_phtable_list
+   Name: presence:subs_phtable_list
 
    Parameters
      * from(optional) - wildcard for "From" URI
      * to(optional) - wildcard for "To" URI
 
    MI FIFO Command Format:
-opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@exam
-ple.com
+opensips-cli -x mi presence:subs_phtable_list sip:222@domain2.com sip:us
+er_1@example.com
 
 1.6.5.  presence:expose
 
@@ -1075,7 +1076,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 660 247 24146 12623
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 155 96 3230 1846
-   3. Razvan Crainea (@razvancrainea) 47 38 489 236
+   3. Razvan Crainea (@razvancrainea) 49 39 584 249
    4. Liviu Chircu (@liviuchircu) 35 25 287 397
    5. Vlad Patrascu (@rvlad-patrascu) 33 19 631 481
    6. Ovidiu Sas (@ovidiusas) 29 20 618 170
@@ -1115,7 +1116,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jul 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2026
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2025
    4.  Norman Brandinger (@NormB)          May 2024 - Nov 2024

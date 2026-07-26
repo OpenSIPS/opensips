@@ -27,7 +27,7 @@ lua Module
 
         1.7. Exported MI Functions
 
-              1.7.1. watch
+              1.7.1. lua:watch
 
    2. OpenSIPS Lua API
 
@@ -210,16 +210,16 @@ if (lua_exec("mongo_alias")) {
 
 1.7. Exported MI Functions
 
-1.7.1.  watch
+1.7.1.  lua:watch
 
-   Name: watch
+   Name: lua:watch
 
    Parameters: none
      * action (optional) - 'add' or 'delete'
      * extension (optional) - required if action is provided
 
    MI FIFO Command Format:
-  opensips-cli -x mi watch
+  opensips-cli -x mi lua:watch
 
 Chapter 2. OpenSIPS Lua API
 
@@ -358,8 +358,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Arnaud Chong + Eric Gouyer 38 1 4335 0
-   2. Razvan Crainea (@razvancrainea) 37 30 284 241
+   1. Razvan Crainea (@razvancrainea) 39 31 288 245
+   2. Arnaud Chong + Eric Gouyer 38 1 4335 0
    3. Vlad Patrascu (@rvlad-patrascu) 25 17 319 276
    4. Liviu Chircu (@liviuchircu) 13 10 15 63
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 9 3
@@ -389,7 +389,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2026
    2.  Ken Rice                            Sep 2025 - Sep 2025
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023

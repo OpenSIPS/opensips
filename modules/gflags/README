@@ -19,10 +19,10 @@ gflags Module
 
         1.5. Exported MI Functions
 
-              1.5.1. set_gflag
-              1.5.2. reset_gflag
-              1.5.3. is_gflag
-              1.5.4. get_gflags
+              1.5.1. gflags:set
+              1.5.2. gflags:reset
+              1.5.3. gflags:check
+              1.5.4. gflags:get
 
    2. Contributors
 
@@ -46,10 +46,10 @@ gflags Module
    1.2. set_gflag() usage
    1.3. reset_gflag() usage
    1.4. is_gflag() usage
-   1.5. set_gflag usage
-   1.6. reset_gflag usage
-   1.7. is_gflag usage
-   1.8. get_gflags usage
+   1.5. gflags:set usage
+   1.6. gflags:reset usage
+   1.7. gflags:check usage
+   1.8. gflags:get usage
 
 Chapter 1. Admin Guide
 
@@ -146,33 +146,33 @@ if(is_gflag(4))
    that should be changed as in the functions available in the
    routing script.
 
-1.5.1. set_gflag
+1.5.1. gflags:set
 
    Set the value of some flags (specified by bitmask) to 1.
 
    The parameter value must be a bitmask in decimal or hexa
    format. The bitmaks has a 32 bit size.
 
-   Example 1.5. set_gflag usage
+   Example 1.5. gflags:set usage
 ...
-$ opensips-cli -x mi set_gflag 1
-$ opensips-cli -x mi set_gflag 0x3
+$ opensips-cli -x mi gflags:set 1
+$ opensips-cli -x mi gflags:set 0x3
 ...
 
-1.5.2. reset_gflag
+1.5.2. gflags:reset
 
    Reset the value of some flags to 0.
 
    The parameter value must be a bitmask in decimal or hexa
    format. The bitmaks has a 32 bit size.
 
-   Example 1.6.  reset_gflag usage
+   Example 1.6.  gflags:reset usage
 ...
-$ opensips-cli -x mi reset_gflag 1
-$ opensips-cli -x mi reset_gflag 0x3
+$ opensips-cli -x mi gflags:reset 1
+$ opensips-cli -x mi gflags:reset 0x3
 ...
 
-1.5.3. is_gflag
+1.5.3. gflags:check
 
    Returns true if the all the flags from the bitmask are set.
 
@@ -182,32 +182,32 @@ $ opensips-cli -x mi reset_gflag 0x3
    The function returns TRUE if all the flags from the set are set
    and FALSE if at least one is not set.
 
-   Example 1.7. is_gflag usage
+   Example 1.7. gflags:check usage
 ...
-$ opensips-cli -x mi set_gflag 1024
-$ opensips-cli -x mi is_gflag 1024
+$ opensips-cli -x mi gflags:set 1024
+$ opensips-cli -x mi gflags:check 1024
 TRUE
-$ opensips-cli -x mi is_gflag 1025
+$ opensips-cli -x mi gflags:check 1025
 TRUE
-$ opensips-cli -x mi is_gflag 1023
+$ opensips-cli -x mi gflags:check 1023
 FALSE
-$ opensips-cli -x mi set_gflag 0x10
-$ opensips-cli -x mi is_gflag 1023
+$ opensips-cli -x mi gflags:set 0x10
+$ opensips-cli -x mi gflags:check 1023
 TRUE
-$ opensips-cli -x mi is_gflag 1007
+$ opensips-cli -x mi gflags:check 1007
 FALSE
-$ opensips-cli -x mi is_gflag 16
+$ opensips-cli -x mi gflags:check 16
 TRUE
 ...
 
-1.5.4. get_gflags
+1.5.4. gflags:get
 
    Return the bitmap with all flags. The function gets no
    parameters and returns the bitmap in hexa and decimal format.
 
-   Example 1.8.  get_gflags usage
+   Example 1.8.  gflags:get usage
 ...
-$ opensips-cli -x mi get_gflags
+$ opensips-cli -x mi gflags:get
 0x3039
 12345
 ...
@@ -220,9 +220,9 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 41 31 423 326
-   2. Daniel-Constantin Mierla (@miconda) 14 12 42 22
-   3. Liviu Chircu (@liviuchircu) 13 11 27 59
-   4. Razvan Crainea (@razvancrainea) 12 10 32 34
+   2. Razvan Crainea (@razvancrainea) 15 12 90 93
+   3. Daniel-Constantin Mierla (@miconda) 14 12 42 22
+   4. Liviu Chircu (@liviuchircu) 13 11 27 59
    5. Henning Westerholt (@henningw) 8 6 42 31
    6. Jiri Kuthan (@jiriatipteldotorg) 8 4 278 4
    7. Vlad Patrascu (@rvlad-patrascu) 7 4 88 94
@@ -255,7 +255,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jul 2026
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2024
    3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2022
