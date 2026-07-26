@@ -49,13 +49,13 @@ cfgutils Module
 
         1.6. Exported MI Functions
 
-              1.6.1. rand_set_prop
-              1.6.2. rand_reset_prob
-              1.6.3. rand_get_prob
-              1.6.4. check_config_hash
-              1.6.5. get_config_hash
-              1.6.6. shv_set
-              1.6.7. shv_get
+              1.6.1. cfgutils:rand_set_prob
+              1.6.2. cfgutils:rand_reset_prob
+              1.6.3. cfgutils:rand_get_prob
+              1.6.4. cfgutils:check_config_hash
+              1.6.5. cfgutils:get_config_hash
+              1.6.6. cfgutils:shv_set
+              1.6.7. cfgutils:shv_get
 
         1.7. Exported Pseudo-Variables
 
@@ -110,13 +110,13 @@ cfgutils Module
    1.26. shuffle_avps usage
    1.27. async sleep usage
    1.28. async usleep usage
-   1.29. rand_set_prob usage
-   1.30. rand_reset_prob usage
-   1.31. rand_get_prob usage
-   1.32. check_config_hash usage
-   1.33. get_config_hash usage
-   1.34. shv_set usage
-   1.35. shv_get usage
+   1.29. cfgutils:rand_set_prob usage
+   1.30. cfgutils:rand_reset_prob usage
+   1.31. cfgutils:rand_get_prob usage
+   1.32. cfgutils:check_config_hash usage
+   1.33. cfgutils:get_config_hash usage
+   1.34. cfgutils:shv_set usage
+   1.35. cfgutils:shv_get usage
    1.36. env(name) pseudo-variable usage
    1.37. RANDOM pseudo-variable usage
    1.38. ctime(name) pseudo-variable usage
@@ -768,7 +768,7 @@ route[after_usleep] {
 
 1.6. Exported MI Functions
 
-1.6.1. rand_set_prop
+1.6.1. cfgutils:rand_set_prob
 
    Set the probability value to the given parameter.
 
@@ -776,35 +776,35 @@ route[after_usleep] {
      * prob_proc - the parameter should be a percent value (number
        from 0 to 99).
 
-   Example 1.29. rand_set_prob usage
+   Example 1.29. cfgutils:rand_set_prob usage
 ...
-$ opensips-cli -x mi rand_set_prob 10
+$ opensips-cli -x mi cfgutils:rand_set_prob 10
 ...
 
-1.6.2. rand_reset_prob
+1.6.2. cfgutils:rand_reset_prob
 
    Reset the probability value to the inital start value.
 
    This command don't need a parameter.
 
-   Example 1.30.  rand_reset_prob usage
+   Example 1.30.  cfgutils:rand_reset_prob usage
 ...
-$ opensips-cli -x mi rand_reset_prob
+$ opensips-cli -x mi cfgutils:rand_reset_prob
 ...
 
-1.6.3. rand_get_prob
+1.6.3. cfgutils:rand_get_prob
 
    Return the actual probability setting.
 
    The function return the actual probability value.
 
-   Example 1.31. rand_get_prob usage
+   Example 1.31. cfgutils:rand_get_prob usage
 ...
-$ opensips-cli -x mi get_prob
+$ opensips-cli -x mi cfgutils:rand_get_prob
 The actual probability is 50 percent.
 ...
 
-1.6.4. check_config_hash
+1.6.4. cfgutils:check_config_hash
 
    Check if the actual config file hash is identical to the stored
    one.
@@ -814,26 +814,26 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.32. check_config_hash usage
+   Example 1.32. cfgutils:check_config_hash usage
 ...
-$ opensips-cli -x mi check_config_hash
+$ opensips-cli -x mi cfgutils:check_config_hash
 The actual config file hash is identical to the stored one.
 ...
 
-1.6.5. get_config_hash
+1.6.5. cfgutils:get_config_hash
 
    Return the stored config file hash.
 
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.33. get_config_hash usage
+   Example 1.33. cfgutils:get_config_hash usage
 ...
-$ opensips-cli -x mi get_config_hash
+$ opensips-cli -x mi cfgutils:get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
 ...
 
-1.6.6. shv_set
+1.6.6. cfgutils:shv_set
 
    Set the value of a shared variable ($shv(name)).
 
@@ -844,12 +844,12 @@ $ opensips-cli -x mi get_config_hash
           + “str”: string value
      * value : value to be set
 
-   Example 1.34. shv_set usage
+   Example 1.34. cfgutils:shv_set usage
 ...
-$ opensips-cli -x mi shv_set debug int 0
+$ opensips-cli -x mi cfgutils:shv_set debug int 0
 ...
 
-1.6.7. shv_get
+1.6.7. cfgutils:shv_get
 
    Get the value of a shared variable ($shv(name)).
 
@@ -857,10 +857,10 @@ $ opensips-cli -x mi shv_set debug int 0
      * name : shared variable name. If this parameter is missing,
        all shared variables are returned.
 
-   Example 1.35. shv_get usage
+   Example 1.35. cfgutils:shv_get usage
 ...
-$ opensips-cli -x mi shv_get debug
-$ opensips-cli -x mi shv_get
+$ opensips-cli -x mi cfgutils:shv_get debug
+$ opensips-cli -x mi cfgutils:shv_get
 ...
 
 1.7. Exported Pseudo-Variables
@@ -941,7 +941,7 @@ Chapter 2. Contributors
    1. Liviu Chircu (@liviuchircu) 96 45 2967 1512
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 24 464 111
    3. Henning Westerholt (@henningw) 30 18 1088 86
-   4. Razvan Crainea (@razvancrainea) 23 18 299 96
+   4. Razvan Crainea (@razvancrainea) 25 19 328 126
    5. Vlad Patrascu (@rvlad-patrascu) 20 7 357 548
    6. Elena-Ramona Modroiu 14 3 1183 7
    7. Daniel-Constantin Mierla (@miconda) 12 10 84 32
@@ -974,9 +974,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Norman Brandinger (@NormB)          Jul 2026 - Jul 2026
-   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2026
-   3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jul 2026
+   2.  Norman Brandinger (@NormB)          Jul 2026 - Jul 2026
+   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2026
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2026
    5.  Alexandra Titoc                     Sep 2024 - Sep 2024
    6.  Maksym Sobolyev (@sobomax)          Dec 2015 - Nov 2023
@@ -997,8 +997,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Norman Brandinger (@NormB), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Last edited by: Razvan Crainea (@razvancrainea), Norman
+   Brandinger (@NormB), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
    Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad
    Patrascu (@rvlad-patrascu), Anca Vamanu, Sergio Gutierrez,
    Henning Westerholt (@henningw), Daniel-Constantin Mierla

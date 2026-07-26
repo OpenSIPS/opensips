@@ -1916,10 +1916,10 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1141 657 23454 17247
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1147 658 24069 17247
    2. Jiri Kuthan (@jiriatipteldotorg) 542 198 18723 11167
    3. Jan Janak (@janakj) 162 76 6462 1840
-   4. Razvan Crainea (@razvancrainea) 156 121 2160 915
+   4. Razvan Crainea (@razvancrainea) 157 122 2163 918
    5. Andrei Pelinescu-Onciul 147 105 2447 1210
    6. Liviu Chircu (@liviuchircu) 122 94 1420 952
    7. Vlad Paiu (@vladpaiu) 47 35 714 345
@@ -1934,10 +1934,10 @@ Chapter 4. Contributors
    Darilion, Peter Lemenkov (@lemenkov), Andreas Granig, Elias
    Baixas, Marcus Hunger, Christophe Sollet (@csollet), Jeffrey
    Magder, Norman Brandinger (@NormB), Ezequiel Lovelle
-   (@lovelle), Carsten Bock, Saúl Ibarra Corretgé (@saghul),
-   Elena-Ramona Modroiu, John Riordan, Julián Moreno Patiño,
-   Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius, Aron
-   Podrigal (@ar45), Anonymous, Dusan Klinec (@ph4r05), Mark
+   (@lovelle), Carsten Bock, Nate Fischer, Saúl Ibarra Corretgé
+   (@saghul), Elena-Ramona Modroiu, John Riordan, Julián Moreno
+   Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius,
+   Aron Podrigal (@ar45), Anonymous, Dusan Klinec (@ph4r05), Mark
    Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev
    (@vasilevalex), Fabian Gast (@fgast), Nick Altmann (@nikbyte),
    Zero King (@l2dy), Edson Gellert Schubert, MayamaTakeshi, Ingo
@@ -1963,20 +1963,20 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jul 2026
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2026
-   3.  Norman Brandinger (@NormB)          Feb 2026 - Jun 2026
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2026
-   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jan 2026
-   6.  Carsten Bock                        Mar 2024 - Mar 2024
-   7.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   9.  MayamaTakeshi                       Oct 2022 - Oct 2022
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jul 2026
+   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jul 2026
+   3.  Nate Fischer                        Jul 2026 - Jul 2026
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2026
+   5.  Norman Brandinger (@NormB)          Feb 2026 - Jun 2026
+   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jan 2026
+   7.  Carsten Bock                        Mar 2024 - Mar 2024
+   8.  Maksym Sobolyev (@sobomax)          Mar 2004 - Nov 2023
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   10. MayamaTakeshi                       Oct 2022 - Oct 2022
 
-   All remaining contributors: Zero King (@l2dy), Dan Pascu
-   (@danpascu), Fabian Gast (@fgast), Aron Podrigal (@ar45),
-   Alexey Vasilyev (@vasilevalex), Ionut Ionita
+   All remaining contributors: Peter Lemenkov (@lemenkov), Zero
+   King (@l2dy), Dan Pascu (@danpascu), Fabian Gast (@fgast), Aron
+   Podrigal (@ar45), Alexey Vasilyev (@vasilevalex), Ionut Ionita
    (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
    (@nikbyte), Ovidiu Sas (@ovidiusas), Dusan Klinec (@ph4r05),
    Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes),

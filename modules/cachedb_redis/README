@@ -38,9 +38,9 @@ cachedb_redis Module
         1.8. Exported Functions
         1.9. Exported MI Functions
 
-              1.9.1. redis_cluster_info
-              1.9.2. redis_cluster_refresh
-              1.9.3. redis_ping_nodes
+              1.9.1. cachedb_redis:redis_cluster_info
+              1.9.2. cachedb_redis:redis_cluster_refresh
+              1.9.3. cachedb_redis:redis_ping_nodes
 
         1.10. Exported Statistics
 
@@ -156,7 +156,7 @@ Chapter 1. Admin Guide
      * A query targets a slot with no known owner, suggesting the
        topology is stale.
      * An operator triggers a manual refresh via the
-       redis_cluster_refresh MI command.
+       cachedb_redis:redis_cluster_refresh MI command.
 
    Automatic refreshes are rate-limited to at most once per second
    to avoid excessive load on the cluster. The MI-triggered
@@ -301,10 +301,10 @@ k")
      * TCP keepalive is not applicable to Unix sockets and is
        automatically skipped.
 
-   The redis_cluster_info MI command will display Unix socket
-   connections with transport=unix and the socket path. The
-   redis_ping_nodes command works normally with Unix socket
-   connections.
+   The cachedb_redis:redis_cluster_info MI command will display
+   Unix socket connections with transport=unix and the socket
+   path. The cachedb_redis:redis_ping_nodes command works normally
+   with Unix socket connections.
 
 1.7.2. connect_timeout (integer)
 
@@ -495,7 +495,7 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 
 1.9. Exported MI Functions
 
-1.9.1.  redis_cluster_info
+1.9.1.  cachedb_redis:redis_cluster_info
 
    Displays detailed information about all Redis connections
    managed by the module, including cluster topology, per-node
@@ -530,12 +530,12 @@ modparam("cachedb_redis", "ftsearch_json_mset_expire", 7200)
 
    MI FIFO Command Format:
 ## list all Redis connections
-opensips-cli -x mi redis_cluster_info
+opensips-cli -x mi cachedb_redis:redis_cluster_info
 
 ## list only the "local" group
-opensips-cli -x mi redis_cluster_info group=local
+opensips-cli -x mi cachedb_redis:redis_cluster_info group=local
 
-1.9.2.  redis_cluster_refresh
+1.9.2.  cachedb_redis:redis_cluster_refresh
 
    Forces an immediate topology refresh on Redis Cluster
    connections. This bypasses the normal once-per-second rate
@@ -557,12 +557,12 @@ opensips-cli -x mi redis_cluster_info group=local
 
    MI FIFO Command Format:
 ## refresh all cluster connections
-opensips-cli -x mi redis_cluster_refresh
+opensips-cli -x mi cachedb_redis:redis_cluster_refresh
 
 ## refresh only the "local" group
-opensips-cli -x mi redis_cluster_refresh group=local
+opensips-cli -x mi cachedb_redis:redis_cluster_refresh group=local
 
-1.9.3.  redis_ping_nodes
+1.9.3.  cachedb_redis:redis_ping_nodes
 
    Sends a PING command to each Redis node and reports per-node
    reachability status with round-trip latency. Useful for
@@ -583,10 +583,10 @@ opensips-cli -x mi redis_cluster_refresh group=local
 
    MI FIFO Command Format:
 ## ping all Redis nodes
-opensips-cli -x mi redis_ping_nodes
+opensips-cli -x mi cachedb_redis:redis_ping_nodes
 
 ## ping only the "local" group
-opensips-cli -x mi redis_ping_nodes group=local
+opensips-cli -x mi cachedb_redis:redis_ping_nodes group=local
 
 1.10. Exported Statistics
 
@@ -613,7 +613,7 @@ opensips-cli -x mi redis_ping_nodes group=local
    CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
    for automatic refreshes (triggered by MOVED responses or
    unreachable nodes) and manual refreshes (triggered via the
-   redis_cluster_refresh MI command).
+   cachedb_redis:redis_cluster_refresh MI command).
 
 1.11. Raw Query Syntax
 
@@ -663,7 +663,7 @@ Chapter 2. Contributors
    1. Debian 61 3 6168 356
    2. Liviu Chircu (@liviuchircu) 43 23 1720 288
    3. Vlad Paiu (@vladpaiu) 33 19 1446 50
-   4. Razvan Crainea (@razvancrainea) 21 17 181 73
+   4. Razvan Crainea (@razvancrainea) 22 18 193 85
    5. Vlad Patrascu (@rvlad-patrascu) 12 6 595 38
    6. Norman Brandinger (@NormB) 7 5 58 4
    7. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
@@ -696,7 +696,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                     Name                 Commit Activity
-   1.  Razvan Crainea (@razvancrainea) Feb 2012 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea) Feb 2012 - Jul 2026
    2.  Debian                          Mar 2026 - Mar 2026
    3.  rdondeti                        Mar 2026 - Mar 2026
    4.  Norman Brandinger (@NormB)      Mar 2026 - Feb 2026

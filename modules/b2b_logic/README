@@ -673,6 +673,11 @@ b2b_client_new("client1", "sip:alice@opensips.org");
    connected). At least one of the two entities has to be a new
    client entity.
 
+   When a provmedia_uri is used together with the
+   provmedia-extra-headers flag, the extra headers configured for
+   the new client entity through b2b_client_new() are also added
+   to the INVITE sent to the provisional media server.
+
    Parameters:
      * entity1 (string) - ID of the first entity to bridge; the
        special values: peer and this can also be used to refer to
@@ -710,6 +715,9 @@ b2b_client_new("client1", "sip:alice@opensips.org");
             authentication that requires the stored AVPs for
             username and password, but can also be useful to store
             other information across the bridge.
+          + provmedia-extra-headers - Add the extra headers
+            configured for the new client entity to the INVITE
+            sent to the provisional media server.
 
    This function can be used from the b2b_logic request routes.
 
@@ -1273,6 +1281,12 @@ typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname
    This function allows bridging an entity that is in a call
    handled by b2b_logic to another entity.
 
+   Bridge flows preserve the extra headers configured on newly
+   created client entities. If provisional media is used while
+   bridging, those headers are also passed to the provisional
+   media client entity only when the bridge is started with the
+   provmedia-extra-headers flag.
+
 2.4.  bridge_extern
 
    Field type:
@@ -1339,19 +1353,19 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 239 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 68 44 1976 409
+   2. Razvan Crainea (@razvancrainea) 69 45 2008 419
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 19 14 216 130
    4. Nick Altmann (@nikbyte) 14 10 346 36
    5. Carsten Bock 12 5 679 23
    6. Alexandra Titoc 11 9 14 14
    7. Maksym Sobolyev (@sobomax) 7 5 31 31
    8. Norman Brandinger (@NormB) 6 4 5 5
-   9. Liviu Chircu (@liviuchircu) 5 3 4 3
-   10. truong.hua 4 2 8 7
+   9. Ovidiu Sas (@ovidiusas) 5 3 24 20
+   10. Liviu Chircu (@liviuchircu) 5 3 4 3
 
-   All remaining contributors: andingv, Ovidiu Sas (@ovidiusas),
-   Aron Podrigal (@ar45), Rick Barenthin, Shanee Vanstone, Zero
-   King (@l2dy), dirkbro.
+   All remaining contributors: truong.hua, andingv, Aron Podrigal
+   (@ar45), Rick Barenthin, Shanee Vanstone, Zero King (@l2dy),
+   dirkbro.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1373,16 +1387,16 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jul 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2026
-   3.  Ovidiu Sas (@ovidiusas)             Dec 2025 - Dec 2025
-   4.  dirkbro                             Dec 2025 - Dec 2025
-   5.  andingv                             Nov 2025 - Nov 2025
-   6.  Alexandra Titoc                     Sep 2024 - Sep 2024
-   7.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
-   8.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
-   9.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   10. Rick Barenthin                      Nov 2023 - Nov 2023
+   3.  dirkbro                             Dec 2025 - Dec 2025
+   4.  andingv                             Nov 2025 - Nov 2025
+   5.  Alexandra Titoc                     Sep 2024 - Sep 2024
+   6.  Norman Brandinger (@NormB)          May 2024 - Jun 2024
+   7.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
+   8.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   9.  Rick Barenthin                      Nov 2023 - Nov 2023
+   10. Ovidiu Sas (@ovidiusas)             Dec 2025 - Oct 2023
 
    All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
    Shanee Vanstone, truong.hua, Nick Altmann (@nikbyte), Carsten

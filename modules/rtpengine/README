@@ -91,7 +91,7 @@ rtpengine Module
               1.8.1. rtpengine:enable
               1.8.2. rtpengine:show
               1.8.3. rtpengine:reload
-              1.8.4. teardown
+              1.8.4. rtpengine:teardown
 
         1.9. Exported Events
 
@@ -166,7 +166,7 @@ rtpengine Module
    1.45. rtpengine:enable usage
    1.46. rtpengine:show usage
    1.47. rtpengine:reload usage
-   1.48. teardown usage
+   1.48. rtpengine:teardown usage
 
 Chapter 1. Admin Guide
 
@@ -1386,7 +1386,7 @@ $ opensips-cli -x mi rtpengine:reload
 $ opensips-cli -x mi rtpengine:reload type=soft
 ...
 
-1.8.4. teardown
+1.8.4. rtpengine:teardown
 
    Terminates the SIP dialog by the SIP Call-ID given as
    parameter.
@@ -1399,10 +1399,10 @@ $ opensips-cli -x mi rtpengine:reload type=soft
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.48.  teardown usage
+   Example 1.48.  rtpengine:teardown usage
 ...
-$ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
-Q
+$ opensips-cli -x mi rtpengine:teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAz
+NGM1ZDY0ZDQ
 ...
 
 1.9. Exported Events
@@ -1509,7 +1509,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 255 147 6529 3196
+   1. Razvan Crainea (@razvancrainea) 257 148 6533 3200
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 36 21 446 606
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173
@@ -1546,7 +1546,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jul 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2026
    3.  Norman Brandinger (@NormB)          Jun 2024 - Apr 2026
    4.  rdondeti                            Mar 2026 - Mar 2026

@@ -27,7 +27,7 @@ Tracer Module
 
         1.5. Exported MI Functions
 
-              1.5.1. trace
+              1.5.1. tracer:trace
               1.5.2. tracer:start
               1.5.3. tracer:stop
 
@@ -85,11 +85,11 @@ Chapter 1. Admin Guide
 
    The tracing tracing can be turned on/off using fifo command.
 
-   opensips-cli -x mi trace on opensips-cli -x mi trace
-   [some_trace_id] on
+   opensips-cli -x mi tracer:trace on opensips-cli -x mi
+   tracer:trace [some_trace_id] on
 
-   opensips-cli -x mi trace off opensips-cli -x mi trace
-   [some_trace_id] off
+   opensips-cli -x mi tracer:trace off opensips-cli -x mi
+   tracer:trace [some_trace_id] off
 
    Starting with OpenSIPS 3.0 you can use the trace_start to
    create dynamic dynamic tracing destinations based on some
@@ -372,14 +372,14 @@ ww_challenge() */
 
 1.5. Exported MI Functions
 
-1.5.1.  trace
+1.5.1.  tracer:trace
 
    Enable/disable tracing(globally or for a specific trace id) or
    dump info about trace ids. This command requires named
    parameters (each parameter is ginven in the format
    param_name=param_value).
 
-   Name: trace
+   Name: tracer:trace
 
    Parameters:
      * id (optional) - the name of the tracing instance. If this
@@ -403,11 +403,11 @@ ww_challenge() */
 
    MI FIFO Command Format:
 # Display global tracing mode and all trace destinations:
-opensips-cli -x mi trace
+opensips-cli -x mi tracer:trace
 # Turn off global tracing:
-opensips-cli -x mi trace mode=off
+opensips-cli -x mi tracer:trace mode=off
 # Turn on tracing for destination id tid2:
-opensips-cli -x mi trace id=tid2 mode=on
+opensips-cli -x mi tracer:trace id=tid2 mode=on
 
 1.5.2.  tracer:start
 
@@ -502,7 +502,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 116 89 1320 877
    2. Ionut Ionita (@ionutrazvanionita) 107 52 2676 1887
-   3. Razvan Crainea (@razvancrainea) 83 59 1718 488
+   3. Razvan Crainea (@razvancrainea) 84 60 1728 499
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
    5. Liviu Chircu (@liviuchircu) 26 23 87 80
    6. Vlad Paiu (@vladpaiu) 24 10 402 568
@@ -539,7 +539,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2026
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Feb 2026
    3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2024
    4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Apr 2024

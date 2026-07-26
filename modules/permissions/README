@@ -51,10 +51,10 @@ permissions Module
 
         1.5. Exported MI Functions
 
-              1.5.1. address_reload
-              1.5.2. address_dump
-              1.5.3. subnet_dump
-              1.5.4. allow_uri
+              1.5.1. permissions:address_reload
+              1.5.2. permissions:address_dump
+              1.5.3. permissions:subnet_dump
+              1.5.4. permissions:allow_uri
 
    2. Contributors
 
@@ -699,7 +699,7 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 
 1.5. Exported MI Functions
 
-1.5.1.  address_reload
+1.5.1.  permissions:address_reload
 
    Causes permissions module to re-read the contents of the
    address database table into cache memory. In cache memory the
@@ -711,7 +711,7 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
      * partition - the name of the partition to be reloaded. If
        none specified all the partitions shall be reloaded.
 
-1.5.2.  address_dump
+1.5.2.  permissions:address_dump
 
    Causes permissions module to dump contents of the address table
    from cache memory.
@@ -720,7 +720,7 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
      * partition - the name of the partition to be dumped. If none
        specified all the partitions shall be dumped.
 
-1.5.3.  subnet_dump
+1.5.3.  permissions:subnet_dump
 
    Causes permissions module to dump contents of cache memory
    subnet table.
@@ -729,7 +729,7 @@ if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
      * partition - the name of the partition to be dumped. If none
        specified all the partitions shall be dumped.
 
-1.5.4.  allow_uri
+1.5.4.  permissions:allow_uri
 
    Tests if (URI, Contact) pair is allowed according to allow/deny
    files. The files must already have been loaded by OpenSIPS.
@@ -753,7 +753,7 @@ Chapter 2. Contributors
    3. Jan Janak (@janakj) 57 21 2871 621
    4. Irina-Maria Stanescu 52 9 1218 1908
    5. Liviu Chircu (@liviuchircu) 32 21 414 371
-   6. Razvan Crainea (@razvancrainea) 30 25 184 127
+   6. Razvan Crainea (@razvancrainea) 31 26 192 136
    7. Bence Szigeti 29 8 812 812
    8. Daniel-Constantin Mierla (@miconda) 17 11 126 221
    9. Ionut Ionita (@ionutrazvanionita) 16 4 970 175
@@ -788,7 +788,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jun 2026
+   1.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jul 2026
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2025
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Jun 2025
    4.  Bence Szigeti                       Jan 2025 - May 2025
