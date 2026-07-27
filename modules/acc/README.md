@@ -152,7 +152,7 @@ or other message or system values. The syntax of the parameter is:
 
 The full list of supported pseudo-variables in OpenSIPS is
 availabe at: 
-[http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar](http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar)
+[https://docs.opensips.org/manual/1-4/script-corevar/](https://docs.opensips.org/manual/1-4/script-corevar/)
 
 
 Via *log_name* you define how/where the 
