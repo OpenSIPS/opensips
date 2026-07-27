@@ -340,7 +340,7 @@ modparam("osp","networkid_param","networkid")
 #### source_device_avp
 
 
-The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(s:_osp_source_device_)".  Then the source device IP can be set by "$avp(s:_osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(s:_osp_source_device_)".  Then the source device IP can be set by "$avp(s:_osp_source_device_) = pseudo-variables".  All pseudo variables are described in https://docs.opensips.org/manual/1-6/script-corevar/.
 
 
 ```opensips title="Setting the source device IP AVP"
@@ -352,7 +352,7 @@ modparam("osp","source_device_avp","$avp(s:srcdev)")
 #### source_networkid_avp
 
 
-The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(s:_osp_source_networkid_)".  Then the source network ID can be set by "$avp(s:_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(s:_osp_source_networkid_)".  Then the source network ID can be set by "$avp(s:_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in https://docs.opensips.org/manual/1-6/script-corevar/.
 
 
 ```opensips title="Setting the source network ID AVP"
@@ -364,7 +364,7 @@ modparam("osp","source_networkid_avp","$avp(s:snid)")
 #### custom_info_avp
 
 
-The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(s:_osp_custom_info_)".  Then the custom information can be set by "$avp(s:_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(s:_osp_custom_info_)".  Then the custom information can be set by "$avp(s:_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in https://docs.opensips.org/manual/1-6/script-corevar/.
 
 
 ```opensips title="Setting the custom info AVP"
