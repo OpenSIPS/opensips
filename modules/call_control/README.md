@@ -361,7 +361,7 @@ The left-hand side of the assignment can be any string.
 
 
 The right-hand side of the assignment must be a script pseudo variable or
-a script AVP. For more information about them see [CookBooks - Scripting Variables](https://opensips.org/Resources/DocsCoreVar15).
+a script AVP. For more information about them see [CookBooks - Scripting Variables](https://docs.opensips.org/manual/2-4/script-corevar/).
 
 
 If the parameter is not set, the default initialize message is sent.
@@ -394,7 +394,7 @@ The left-hand side of the assignment can be any string.
 
 
 The right-hand side of the assignment must be a script pseudo variable or
-a script AVP. For more information about them see [CookBooks - Scripting Variables](https://opensips.org/Resources/DocsCoreVar15).
+a script AVP. For more information about them see [CookBooks - Scripting Variables](https://docs.opensips.org/manual/2-4/script-corevar/).
 
 
 If the parameter is not set, the default start message is sent.
@@ -427,7 +427,7 @@ The left-hand side of the assignment can be any string.
 
 
 The right-hand side of the assignment must be a script pseudo variable or
-a script AVP. For more information about them see [CookBooks - Scripting Variables](https://opensips.org/Resources/DocsCoreVar15).
+a script AVP. For more information about them see [CookBooks - Scripting Variables](https://docs.opensips.org/manual/2-4/script-corevar/).
 
 
 If the parameter is not set, the default stop message is sent.
