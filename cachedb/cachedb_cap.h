@@ -57,6 +57,25 @@ typedef enum {
 	CACHEDB_CAP_GET_BUF      = 1<<14,
 } cachedb_cap;
 
+/*
+ * Preprocessor-visible companion to CACHEDB_CAP_GET_BUF.  A consumer cannot test
+ * for the endpoint at runtime alone: get_buf is a struct member, so referencing it
+ * fails to compile against a core that predates it, and the capability above is an
+ * enum constant the preprocessor cannot see.  This lets a module compile against
+ * either core and pick the allocation-free path up automatically:
+ *
+ *   #ifdef CACHEDB_HAVE_GET_BUF
+ *       if (cdbf.get_buf && CACHEDB_CAPABILITY(&cdbf, CACHEDB_CAP_GET_BUF))
+ *           ... use it ...
+ *       else
+ *   #endif
+ *           ... use get() ...
+ *
+ * The runtime half stays necessary: a core may provide the endpoint while the
+ * configured backend does not implement it.
+ */
+#define CACHEDB_HAVE_GET_BUF 1
+
 #define CACHEDB_CAPABILITY(cdbf,cpv) (((cdbf)->capability & (cpv)) == (cpv))
 
 static inline int check_cachedb_api(cachedb_engine *cde)
