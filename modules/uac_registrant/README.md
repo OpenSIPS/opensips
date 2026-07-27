@@ -902,7 +902,7 @@ $ opensips-cli -x mi  sr_list_reports uac_registrant
 
 
 For how to access and use the Status/Report information, please see
-[https://www.opensips.org/Documentation/Interface-StatusReport-3-6](>https://www.opensips.org/Documentation/Interface-StatusReport-3-6).
+[https://docs.opensips.org/manual/devel/interface-statusreport/](>https://docs.opensips.org/manual/devel/interface-statusreport/).
 <!-- CONTRIBUTORS -->
 
 ### License
