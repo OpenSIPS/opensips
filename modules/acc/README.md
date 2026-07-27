@@ -146,7 +146,7 @@ related) from both request and reply in the same time.
 
 The full list of supported pseudo-variables in OpenSIPS is
 availabe at: 
-[http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar](http://www.opensips.org/pmwiki.php?n=Resources.DocsCoreVar)
+[https://docs.opensips.org/manual/1-7/script-corevar/](https://docs.opensips.org/manual/1-7/script-corevar/)
 
 
 Via *log_name* you define how/where the 
