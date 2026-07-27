@@ -379,7 +379,7 @@ modparam("osp","parameterstring_value","")
 #### source_device_avp
 
 
-The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(_osp_source_device_)".  Then the source device IP can be set by "$avp(_osp_source_device_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The source_device_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source device IP value in the indirect work mode. The default value is "$avp(_osp_source_device_)".  Then the source device IP can be set by "$avp(_osp_source_device_) = pseudo-variables".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the source device IP AVP"
@@ -391,7 +391,7 @@ modparam("osp","source_device_avp","$avp(srcdev)")
 #### source_networkid_avp
 
 
-The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(_osp_source_networkid_)".  Then the source network ID can be set by "$avp(_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The source_networkid_avp (string) parameter instructs the OSP module to use the defined AVP to pass the source network ID value. The default value is "$avp(_osp_source_networkid_)".  Then the source network ID can be set by "$avp(_osp_source_networkid_) = pseudo-variables".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the source network ID AVP"
@@ -403,7 +403,7 @@ modparam("osp","source_networkid_avp","$avp(snid)")
 #### custom_info_avp
 
 
-The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(_osp_custom_info_)".  Then the custom information can be set by "$avp(_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The custom_info_avp (string) parameter instructs the OSP module to use the defined AVP to pass the custom information values. The default value is "$avp(_osp_custom_info_)".  Then the custom information can be set by "$avp(_osp_custom_info_) = pseudo-variables".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the custom info AVP"
@@ -415,7 +415,7 @@ modparam("osp","custom_info_avp","$avp(cinfo)")
 #### cnam_avp
 
 
-The cnam_avp (string) parameter instructs the OSP module to use the defined AVP to pass the CNAM values. The default value is "$avp(_osp_cnam_)".  Then the CNAM can be used by "$avp(_osp_cnam_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The cnam_avp (string) parameter instructs the OSP module to use the defined AVP to pass the CNAM values. The default value is "$avp(_osp_cnam_)".  Then the CNAM can be used by "$avp(_osp_cnam_)".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the CNAM AVP"
@@ -427,7 +427,7 @@ modparam("osp","cnam_avp","$avp(cnam)")
 #### source_media_avp, destination_media_avp
 
 
-These parameters are used to tell the OSP module which AVPs are used to store media addresses. The default values are "$avp(_osp_source_media_address_)" and "$avp(_osp_destination_media_address_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+These parameters are used to tell the OSP module which AVPs are used to store media addresses. The default values are "$avp(_osp_source_media_address_)" and "$avp(_osp_destination_media_address_)".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the media address AVPs"
@@ -440,7 +440,7 @@ modparam("osp", "destination_media_avp", "$avp(destmedia)")
 #### request_date_avp
 
 
-The request_date_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SIP request Date header values. The default value is "$avp(_osp_request_date_)".  Then the request date can be used by "$avp(_osp_request_date_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The request_date_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SIP request Date header values. The default value is "$avp(_osp_request_date_)".  Then the request date can be used by "$avp(_osp_request_date_)".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the request date AVP"
@@ -452,7 +452,7 @@ modparam("osp","request_date_avp","$avp(reqdate)")
 #### sdp_fingerprint_avp
 
 
-The sdp_fingerprint_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SDP fing print attribute values. The default value is "$avp(_osp_sdp_fingerprint_)".  Then the SDP finger print attributes can be used by "$avp(_osp_sdp_fingerprint_)".  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+The sdp_fingerprint_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SDP fing print attribute values. The default value is "$avp(_osp_sdp_fingerprint_)".  Then the SDP finger print attributes can be used by "$avp(_osp_sdp_fingerprint_)".  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the SDP finger print AVP"
@@ -464,7 +464,7 @@ modparam("osp","sdp_fingerprint_avp","$avp(sdpfp)")
 #### identity_signature_avp, identity_algorithm_avp, identity_information_avp, identity_type_avp, identity_canon_avp
 
 
-These parameters instruct the OSP module to use the defined AVPs to pass the Identity related values. The default values are "$avp(_osp_identity_signature_)", "$avp(_osp_identity_algorithm_)", "$avp(_osp_identity_information_)", "$avp(_osp_identity_type_)", "$avp(_osp_identity_canon_)".  Then the indentity related values can be used by these AVPs.  All pseudo variables are described in http://www.opensips.org/Resources/DocsCoreVar.
+These parameters instruct the OSP module to use the defined AVPs to pass the Identity related values. The default values are "$avp(_osp_identity_signature_)", "$avp(_osp_identity_algorithm_)", "$avp(_osp_identity_information_)", "$avp(_osp_identity_type_)", "$avp(_osp_identity_canon_)".  Then the indentity related values can be used by these AVPs.  All pseudo variables are described in https://docs.opensips.org/manual/1-11/script-corevar/.
 
 
 ```opensips title="Setting the Identity related AVPs"
