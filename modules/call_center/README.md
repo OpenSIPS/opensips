@@ -43,7 +43,7 @@ The main entities in the modules are the flows (queues) and agents.
 Each entity has a corresponding table in the database, for 
 provisioning purposes - the *cc_flows* and 
 *cc_agents* tables, see
-[DB schema](https://opensips.org/Documentation/Install-DBSchema--3-3#AEN2656).
+[DB schema](https://docs.opensips.org/manual/3-3/install-dbschema/).
 Data is loaded at startup and cached into memory ; runtime reload is 
 possible via the MI commands (see the *cc_reload* 
 command in [exported mi functions](#exported_mi_functions)).
