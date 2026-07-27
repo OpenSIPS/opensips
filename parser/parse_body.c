@@ -219,7 +219,7 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 	if (part->mime < 0)
 		part->mime = ((TYPE_TEXT) << 16) + SUBTYPE_PLAIN;
 
-	if (tmp>end) {
+	if (tmp>end-2) {
 		/* we hit the end of body part while looking for EOH, so
 		 * it means there is no actual body */
 		part->body.s = NULL;
