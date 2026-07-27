@@ -2224,6 +2224,11 @@ cancel all braches.
 
 Please follow the guidelines provided at:
 [https://github.com/OpenSIPS/opensips/issues](https://github.com/OpenSIPS/opensips/issues).
+
+## Samples
+
+[samples](./samples/samples.md "include")
+
 <!-- CONTRIBUTORS -->
 
 ### License

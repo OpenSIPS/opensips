@@ -2,7 +2,7 @@
 
 Simple working example, on top of the default SIP-to-SIP configuration, showing how to do parallel forking by adding one more branch (to a mobile number) when routing a call to a user (registration based)
 
-[opensips-parallel-fork.cfg](./opensips-paralle-fork.cfg "include")
+[opensips-parallel-fork.cfg](./opensips-parallel-fork.cfg "include")
 
 
 ### Serial forking example
