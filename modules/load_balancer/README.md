@@ -31,7 +31,7 @@ and auto re-enabling).
 
 
 Please refer to the Load-Balancer tutorial from the OpenSIPS website:
-[http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing](http://www.opensips.org/index.php?n=Resources.DocsTutLoadbalancing).
+[https://docs.opensips.org/tutorials-loadbalancing/](https://docs.opensips.org/tutorials-loadbalancing/).
 
 
 ### Probing and Disabling destinations
