@@ -30,6 +30,9 @@
 #include "../../error.h"
 #include "../../mem/mem.h"
 
+#include "rest_cb.h"   /* struct rest_hdr_sink */
+#include "rest_cache.h" /* struct rcc_ctx */
+
 /* maximum size for the first line */
 #define FLINE_MAX 512
 #define BODY_MAX 1024
@@ -47,6 +50,9 @@ extern int ssl_verifyhost;
 
 extern int curl_http_version;
 extern int no_concurrent_connects;
+
+struct curl_slist *rest_pending_headers(void);
+void rest_clear_pending_headers(void);
 extern unsigned int curl_conn_lifetime;
 
 /* handle for use with synchronous reqs */
@@ -122,13 +128,20 @@ typedef struct rest_async_param_ {
 	pv_spec_p body_pv;
 	pv_spec_p ctype_pv;
 	pv_spec_p code_pv;
+	pv_spec_p source_pv;   /* where the answer came from - see rcc_ctx.src */
+
+	/* the cache travels with the transfer: the lookup happened before the
+	 * yield, the store must happen in the resume, where the body lands */
+	struct rest_hdr_sink hdr_sink;
+	struct rcc_ctx rcc;
 } rest_async_param;
 
 int init_sync_handle(void);
 int rcl_init_internals(void);
 int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
                        char *url, str *body, str *ctype, pv_spec_p body_pv,
-                       pv_spec_p ctype_pv, pv_spec_p code_pv);
+                       pv_spec_p ctype_pv, pv_spec_p code_pv,
+                       pv_spec_p source_pv);
 int rcl_acquire_url(const char *url, char **url_host);
 void rcl_release_url(char *url_host, int update_conn_ts);
 

@@ -40,6 +40,7 @@
 #include "rest_client.h"
 #include "rest_methods.h"
 #include "rest_cb.h"
+#include "rest_cache.h"
 
 #define REST_CORRELATION_COOKIE "RESTCORR"
 
@@ -693,7 +694,8 @@ static inline char rest_easy_perform(
  */
 int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
           /* in */    char *url, str *body, str *ctype,
-          /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
+          /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv,
+                      pv_spec_p source_pv)
 {
 	int ret;
 	CURLcode rc;
@@ -701,6 +703,47 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	pv_value_t pv_val;
 	rest_trace_param_t tparam;
 	str st = STR_NULL, res_body = STR_NULL, tbody, ttype;
+	struct rest_hdr_sink sink;
+	struct rcc_ctx rcc;
+
+	memset(&rcc, 0, sizeof rcc);
+
+	/* Prepare the cache here, before clean_header_list drops the pending
+	 * rest_append_hf() list - it takes part in the key. */
+	{
+		str u;
+
+		init_str(&u, url);
+		if (rcc_prepare(&rcc, rest_client_method_str(method), &u, header_list)) {
+			if (rcc_lookup(&rcc, &tbody, &ttype, &ret)) {
+				/* served without touching the network */
+				LM_DBG("%s %s [%.*s] -> hit\n",
+					rest_client_method_str(method), url,
+					rcc.key.len, rcc.key.s);
+				clean_header_list;
+
+				if (code_pv) {
+					pv_val.flags = PV_VAL_INT|PV_TYPE_INT;
+					pv_val.ri = ret;
+					if (pv_set_value(msg, code_pv, 0, &pv_val) != 0)
+						LM_ERR("Set code pv value failed!\n");
+				}
+				pv_val.flags = PV_VAL_STR;
+				pv_val.rs = tbody;
+				if (pv_set_value(msg, body_pv, 0, &pv_val) != 0)
+					LM_ERR("Set body pv value failed!\n");
+				if (ctype_pv && ttype.len) {
+					pv_val.rs = ttype;
+					if (pv_set_value(msg, ctype_pv, 0, &pv_val) != 0)
+						LM_ERR("Set content type pv value failed!\n");
+				}
+				/* tbody/ttype point into the cache scratch - owned by
+				 * rest_cache.c, already copied into the pvars above */
+				rcc_set_source(msg, source_pv, &rcc);
+				return RCL_OK;
+			}
+		}
+	}
 
 	curl_easy_reset(sync_handle);
 	if (init_transfer(sync_handle, url, 0) != 0) {
@@ -729,9 +772,11 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
 
+	sink.ctype = &st;
+	sink.cache = rcc.enabled ? &rcc.hdrs : NULL;
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
 	/* coverity[bad_sizeof] */
-	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &st);
+	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &sink);
 
 	if (rest_trace_enabled())
 		init_rest_trace(sync_handle, msg, &tparam);
@@ -762,6 +807,21 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 		LM_ERR("Set body pv value failed!\n");
 		return RCL_INTERNAL_ERR;
 	}
+
+	/* Store while res_body is still alive - tbody points into it, and the
+	 * content type is taken from st directly so that a script which asked for
+	 * no ctype output variable still caches the same thing. */
+	if (rcc.enabled) {
+		str cached_ct = st;
+
+		trim(&cached_ct);
+		rcc_decide(&rcc, rest_client_method_str(method), (int)http_rc);
+		if (rcc.store_ttl > 0)
+			rcc_store(&rcc, &tbody, &cached_ct, (int)http_rc);
+		LM_DBG("%s %s [%.*s] -> %s\n", rest_client_method_str(method), url,
+			rcc.key.len, rcc.key.s, rcc.src ? rcc.src : "miss");
+	}
+	rcc_set_source(msg, source_pv, &rcc);
 
 	if (res_body.s)
 		pkg_free(res_body.s);
@@ -862,10 +922,17 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	w_curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_func);
 	w_curl_easy_setopt(handle, CURLOPT_WRITEDATA, body);
 
-	if (ctype) {
-		w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
-		w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, ctype);
-	}
+	/* installed unconditionally: the caching headers must be parsed even when
+	 * the script asked for no content-type output variable */
+	/* when caching, capture the content-type even if the script did not ask
+	 * for it in a variable - the stored entry needs it, and param->ctype is
+	 * always present.  It is only copied to a pvar when ctype_pv was given. */
+	async_parm->hdr_sink.ctype = ctype ? ctype :
+		(async_parm->rcc.enabled ? &async_parm->ctype : NULL);
+	async_parm->hdr_sink.cache =
+		async_parm->rcc.enabled ? &async_parm->rcc.hdrs : NULL;
+	w_curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, header_func);
+	w_curl_easy_setopt(handle, CURLOPT_HEADERDATA, &async_parm->hdr_sink);
 
 	if (rest_trace_enabled()) {
 		async_parm->tparam = pkg_malloc(sizeof(rest_trace_param_t));
@@ -1196,6 +1263,25 @@ cleanup:
 
 	LM_DBG("HTTP response code: %ld\n", http_rc);
 
+	/* the response has landed - store it if the policy allows.  This is the
+	 * async store site: putting it only at the call site would cache nothing
+	 * for any transfer that actually yielded.  Deliberately the same shape as
+	 * the sync site: rcc_decide runs even on a failed transfer (http_rc 0 is
+	 * denied as miss:status) so the counters agree between the two flavours,
+	 * and the source is published unconditionally so a bypassed call reports
+	 * "bypass" from the resume route instead of leaving the variable stale. */
+	if (param->rcc.enabled) {
+		rcc_decide(&param->rcc, rest_client_method_str(param->method),
+			(int)http_rc);
+		if (param->rcc.store_ttl > 0)
+			rcc_store(&param->rcc, &param->body, &param->ctype, (int)http_rc);
+		LM_DBG("async %s [%.*s] -> %s\n",
+			rest_client_method_str(param->method),
+			param->rcc.key.len, param->rcc.key.s,
+			param->rcc.src ? param->rcc.src : "miss");
+	}
+	rcc_set_source(msg, param->source_pv, &param->rcc);
+
 out:
 	mrc = curl_multi_remove_handle(multi_handle, param->handle);
 	if (mrc != CURLM_OK) {
@@ -1238,6 +1324,18 @@ enum async_ret_code time_out_async_http_req(int fd, struct sip_msg *msg, void *_
  * @msg:		sip message struct
  * @hfv:		HTTP header field and value
  */
+/* the pending rest_append_hf() list and its reset - exposed so the async
+ * dispatcher (in rest_client.c) can key the cache on it and drop it on a hit */
+struct curl_slist *rest_pending_headers(void)
+{
+	return header_list;
+}
+
+void rest_clear_pending_headers(void)
+{
+	clean_header_list;
+}
+
 int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 {
 	char buf[MAX_HEADER_FIELD_LEN];

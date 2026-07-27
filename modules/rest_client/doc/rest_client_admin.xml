@@ -23,6 +23,92 @@
 	</para>
 	</section>
 
+	<section id="response-caching" xreflabel="Response Caching">
+	<title>Response Caching</title>
+	<para>
+	When <xref linkend="param_cachedb_url"/> is set, the module keeps a local
+	cache of the HTTP responses it receives and serves repeated queries from it
+	instead of going back to the origin server.
+	</para>
+	<para>
+	Only <emphasis role='bold'>GET</emphasis> responses are stored, in both
+	the blocking and the asynchronous flavour.
+	<emphasis>rest_post()</emphasis> and <emphasis>rest_put()</emphasis>
+	accept the same output variable and report
+	<emphasis>miss:method</emphasis>, but nothing they fetch is ever cached:
+	a POST or a PUT is a request to change something, and the cache key does
+	not cover the request body, so two POSTs to one URL that differ only in
+	what they send must not be allowed to look alike.
+	</para>
+	<para>
+	The module does not replicate anything itself, so whether the cache is
+	private to one instance or shared by a cluster is decided entirely by the
+	backend you point it at, and both are useful:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+			an <emphasis role='bold'>in-process</emphasis> backend
+			(<emphasis>cachedb_local</emphasis>,
+			<emphasis>cachedb_perf</emphasis>) gives the cheapest possible hit,
+			at the cost of each instance having to warm its own cache;
+		</para></listitem>
+		<listitem><para>
+			a <emphasis role='bold'>shared</emphasis> backend (one
+			<emphasis>cachedb_redis</emphasis> instance used by the whole
+			cluster) means a response fetched by any one node is then served by
+			all of them, which raises the hit rate and cuts the load on the
+			origin, at the cost of a network round trip per hit.
+		</para></listitem>
+	</itemizedlist>
+	<para>
+	The useful rule is not local-versus-remote but simply that the backend
+	should be cheaper than the call it is replacing.  Against an origin that
+	answers in milliseconds, a shared redis is a large win and shares the
+	benefit across the cluster; against one that answers in microseconds,
+	only an in-process backend is worth the trouble.
+	</para>
+	<para>
+	One backend requirement is not negotiable: it must actually honour the
+	expiry it is given.  <emphasis role='bold'>cachedb_mongodb does
+	not</emphasis> - it accepts the expiry argument and ignores it, so an
+	entry written there never expires and the cache would grow without
+	bound.  The module stores an absolute expiry inside each entry and
+	refuses to serve one that has passed, so it will not hand out a stale
+	response on such a backend, but it cannot reclaim the space either.  Use
+	a backend that expires what it is told to.
+	</para>
+	<para>
+	By default the module obeys the origin: a response is cached only if the
+	server's own <emphasis>Cache-Control</emphasis> and
+	<emphasis>Expires</emphasis> headers permit it, and only for as long as they
+	allow.  A response carrying <emphasis>no-store</emphasis>,
+	<emphasis>no-cache</emphasis>, <emphasis>private</emphasis>,
+	<emphasis>Set-Cookie</emphasis> or <emphasis>Vary</emphasis> is never
+	stored; neither is a reply whose status falls outside the small
+	RFC-cacheable set (200, 203, 204, 300, 301, 308, 404, 405, 410, 414,
+	501 - with 206 deliberately excluded, as the cache does not handle
+	ranges), nor one larger than
+	<xref linkend="param_cache_max_body"/>.  See
+	<xref linkend="param_cache_policy"/> for the looser modes, and
+	<xref linkend="func_rest_cache_ctl"/> for overriding the decision on a
+	single call.
+	</para>
+	<para>
+	The cache key covers the method, the full URL and any headers queued with
+	<emphasis>rest_append_hf()</emphasis>.  The headers matter: they are what
+	usually carries the Authorization or the tenant identifier, so leaving them
+	out of the key would let one subscriber's answer be served to another.  Two
+	calls that differ only in an appended header are therefore two distinct
+	cache entries.
+	</para>
+	<para>
+	Every function accepts an optional trailing output variable which reports
+	where the answer came from — see <xref linkend="func_rest_get"/>.  Together
+	with the exported statistics this is the way to tell a cache that is working
+	from one that is quietly storing nothing because the origin forbids it.
+	</para>
+	</section>
+
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
@@ -372,13 +458,156 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
 		</example>
 	</section>
 
+
+	<section id="param_cachedb_url" xreflabel="cachedb_url">
+		<title><varname>cachedb_url</varname> (string)</title>
+		<para>
+		URL of a cachedb backend in which to cache HTTP responses.  Setting it
+		is what enables the response cache; without it, no caching is performed
+		and the module behaves exactly as before.
+		</para>
+		<para>
+		Any backend that expires what it is told to will do, since only the
+		generic <emphasis>get</emphasis> and <emphasis>set</emphasis>
+		operations are used.  The choice decides whether the cache is private
+		to this instance or shared by the cluster, and what a hit costs - see
+		<xref linkend="response-caching"/>, which also explains why
+		<emphasis>cachedb_mongodb</emphasis> is not a suitable backend.
+		</para>
+		<para>
+		Only <emphasis>GET</emphasis> requests are ever cached.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote> (caching disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>cachedb_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "cachedb_url", "perf:///rest")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cache_policy" xreflabel="cache_policy">
+		<title><varname>cache_policy</varname> (string)</title>
+		<para>
+		How far to go beyond what the origin server explicitly permits.  One of:
+		</para>
+		<itemizedlist>
+		<listitem><para>
+			<emphasis>off</emphasis> - never cache.  Useful to disable caching
+			without removing <varname>cachedb_url</varname> from the config.
+		</para></listitem>
+		<listitem><para>
+			<emphasis>strict</emphasis> - cache only what the origin explicitly
+			permits, taking the lifetime from its
+			<emphasis>Cache-Control: max-age</emphasis> (or
+			<emphasis>s-maxage</emphasis>, or <emphasis>Expires</emphasis>).  A
+			response with no caching headers is not cached.
+		</para></listitem>
+		<listitem><para>
+			<emphasis>heuristic</emphasis> - as strict, but a response whose
+			origin said nothing about caching is cached for
+			<varname>cache_ttl</varname> seconds.  An explicit prohibition is
+			still honoured.
+		</para></listitem>
+		<listitem><para>
+			<emphasis>force</emphasis> - as heuristic, but responses the origin
+			asked not to store are cached anyway, for
+			<varname>cache_ttl</varname> seconds.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		Under every policy, a response is refused if it is not a GET, if its
+		status code is not cacheable, if it carries a
+		<emphasis>Vary</emphasis> header, or if it exceeds
+		<varname>cache_max_body</varname>.
+		</para>
+		<para>
+		<emphasis>force</emphasis> reinterprets every endpoint the module talks
+		to, including ones added later.  Prefer
+		<xref linkend="func_rest_cache_ctl"/> to override a single call site.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>strict</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>cache_policy</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "cache_policy", "heuristic")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cache_ttl" xreflabel="cache_ttl">
+		<title><varname>cache_ttl</varname> (integer)</title>
+		<para>
+		Lifetime, in seconds, applied when the origin server gave none and the
+		policy allows caching anyway.  Required by the
+		<emphasis>heuristic</emphasis> and <emphasis>force</emphasis> policies -
+		either is rejected at startup if this is not positive, since it would
+		otherwise silently cache nothing.
+		</para>
+		<para>
+		It is never used in place of a lifetime the origin did supply.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (do not cache silent responses).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>cache_ttl</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "cache_ttl", 300)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cache_max_body" xreflabel="cache_max_body">
+		<title><varname>cache_max_body</varname> (integer)</title>
+		<para>
+		Largest response body, in bytes, that will be stored.  Anything above it
+		is returned to the script as usual but not cached, and reported as
+		<emphasis>miss:oversize</emphasis>.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>65536</quote>.
+		</emphasis>
+		</para>
+		<para>
+		Values above 64 KB are clamped to 64 KB with a startup warning - the
+		encoded entry lives in a fixed 64 KB buffer, so a larger setting would
+		otherwise pass startup and then silently store nothing.
+		</para>
+		<example>
+		<title>Setting the <varname>cache_max_body</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "cache_max_body", 131072)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<section id="func_rest_get" xreflabel="rest_get()">
 		<title>
-		<function moreinfo="none">rest_get(url, body_pv, [ctype_pv], [retcode_pv])</function>
+		<function moreinfo="none">rest_get(url, body_pv, [ctype_pv], [retcode_pv], [source_pv])</function>
 		</title>
 		<para>
 		Perform a blocking HTTP GET on the given <emphasis>url</emphasis> and
@@ -402,6 +631,20 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
 				retain the status code of the HTTP response.
 				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
 				reply arrived at all.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>source_pv</emphasis> (var, optional) - output variable
+				reporting where the answer came from, when the response cache is
+				enabled: <emphasis>hit</emphasis> (served from the cache),
+				<emphasis>miss</emphasis> (fetched and stored),
+				<emphasis>miss:reason</emphasis> (fetched but not storable - the
+				reason is one of <emphasis>no-store</emphasis>,
+				<emphasis>no-cache</emphasis>, <emphasis>private</emphasis>,
+				<emphasis>set-cookie</emphasis>, <emphasis>vary</emphasis>,
+				<emphasis>silent</emphasis>, <emphasis>status</emphasis>,
+				<emphasis>method</emphasis>, <emphasis>oversize</emphasis> or
+				<emphasis>expired</emphasis>), or
+				<emphasis>bypass</emphasis> (the cache was not consulted).
 			</para></listitem>
 		</itemizedlist>
 
@@ -437,7 +680,7 @@ if ($var(rcode) != 200) {
 	<section id="func_rest_post" xreflabel="rest_post()">
 		<title>
 		<function moreinfo="none">rest_post(url, send_body, [send_ctype],
-				recv_body_pv, [recv_ctype_pv], [retcode_pv])
+				recv_body_pv, [recv_ctype_pv], [retcode_pv], [source_pv])
 		</function>
 		</title>
 		<para>
@@ -477,6 +720,20 @@ if ($var(rcode) != 200) {
 				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
 				reply arrived at all.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>source_pv</emphasis> (var, optional) - output variable
+				reporting where the answer came from, when the response cache is
+				enabled: <emphasis>hit</emphasis> (served from the cache),
+				<emphasis>miss</emphasis> (fetched and stored),
+				<emphasis>miss:reason</emphasis> (fetched but not storable - the
+				reason is one of <emphasis>no-store</emphasis>,
+				<emphasis>no-cache</emphasis>, <emphasis>private</emphasis>,
+				<emphasis>set-cookie</emphasis>, <emphasis>vary</emphasis>,
+				<emphasis>silent</emphasis>, <emphasis>status</emphasis>,
+				<emphasis>method</emphasis>, <emphasis>oversize</emphasis> or
+				<emphasis>expired</emphasis>), or
+				<emphasis>bypass</emphasis> (the cache was not consulted).
+			</para></listitem>
 		</itemizedlist>
 
 		&rest_return_codes;
@@ -510,7 +767,7 @@ if ($var(rcode) != 200) {
 	<section id="func_rest_put" xreflabel="rest_put()">
 		<title>
 		<function moreinfo="none">rest_put(url, send_body, [send_ctype],
-				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [source_pv]]]])
 		</function>
 		</title>
 		<para>
@@ -548,6 +805,20 @@ if ($var(rcode) != 200) {
 				which will retain the status code of the HTTP response.
 				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
 				reply arrived at all.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>source_pv</emphasis> (var, optional) - output variable
+				reporting where the answer came from, when the response cache is
+				enabled: <emphasis>hit</emphasis> (served from the cache),
+				<emphasis>miss</emphasis> (fetched and stored),
+				<emphasis>miss:reason</emphasis> (fetched but not storable - the
+				reason is one of <emphasis>no-store</emphasis>,
+				<emphasis>no-cache</emphasis>, <emphasis>private</emphasis>,
+				<emphasis>set-cookie</emphasis>, <emphasis>vary</emphasis>,
+				<emphasis>silent</emphasis>, <emphasis>status</emphasis>,
+				<emphasis>method</emphasis>, <emphasis>oversize</emphasis> or
+				<emphasis>expired</emphasis>), or
+				<emphasis>bypass</emphasis> (the cache was not consulted).
 			</para></listitem>
 		</itemizedlist>
 
@@ -612,6 +883,54 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 		</programlisting>
 		</example>
 	</section>
+	<section id="func_rest_cache_ctl" xreflabel="rest_cache_ctl()">
+		<title>
+		<function moreinfo="none">rest_cache_ctl(ttl)</function>
+		</title>
+		<para>
+		Overrides the cache decision for the <emphasis>next</emphasis>
+		rest_get(), rest_post() or rest_put() only, then reverts - the same
+		"applies once" behaviour as <xref linkend="func_rest_append_hf"/>.
+		Requires <varname>cachedb_url</varname>; without it the call is ignored.
+		</para>
+		<para>Meaning of <emphasis>ttl</emphasis>:</para>
+		<itemizedlist>
+		<listitem><para>
+			<emphasis>0</emphasis> - bypass the cache entirely for that call:
+			no lookup, no store.  For the one endpoint that must always be live.
+		</para></listitem>
+		<listitem><para>
+			<emphasis>greater than 0</emphasis> - serve that call from the
+			cache if present, and store its response for that many seconds,
+			regardless of <varname>cache_policy</varname> and of what the
+			origin's own cache headers say.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This is the recommended way to cache an endpoint whose server sends
+		unhelpful headers, in preference to
+		<varname>cache_policy</varname> = <emphasis>force</emphasis>, because it
+		affects one call site rather than every endpoint the module talks to.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>rest_cache_ctl()</function> usage</title>
+		<programlisting format="linespecific">
+...
+# this rate lookup is safe to cache for five minutes, whatever it claims
+rest_cache_ctl(300);
+rest_get("http://rates/lookup", $var(body), $var(ct), $var(rc));
+
+# ...but the fraud check must always be live
+rest_cache_ctl(0);
+rest_get("http://fraud/check", $var(body), $var(ct), $var(rc));
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="func_rest_init_client_tls" xreflabel="rest_init_client_tls()">
 		<title>
 		<function moreinfo="none">rest_init_client_tls(tls_client_domain)</function>
@@ -651,7 +970,7 @@ if (!rest_get("https://example.com"))
 	<title>Exported Asynchronous Functions</title>
 	<section id="afunc_rest_get" xreflabel="rest_get()">
 		<title>
-		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv][, [source_pv]]]])
 		</function>
 		</title>
 		<para>
@@ -693,7 +1012,7 @@ route [resume] {
 	<section id="afunc_rest_post" xreflabel="rest_post()">
 		<title>
 		<function moreinfo="none">rest_post(url, send_body_pv, [send_ctype_pv],
-				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [source_pv]]]])
 		</function>
 		</title>
 		<para>
@@ -735,7 +1054,7 @@ route [resume] {
 	<section id="afunc_rest_put" xreflabel="rest_put()">
 		<title>
 		<function moreinfo="none">rest_put(url, send_body_pv, [send_ctype_pv],
-				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+				recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [source_pv]]]])
 		</function>
 		</title>
 		<para>
@@ -773,6 +1092,45 @@ route [resume] {
 		</example>
 	</section>
 
+	</section>
+
+
+	<section id="exported_statistics" xreflabel="Exported Statistics">
+	<title>Exported Statistics</title>
+	<para>
+	The statistics are always exported; while the response cache is disabled
+	the counters simply stay at 0 and the hit rate reads 0.
+	</para>
+	<itemizedlist>
+	<listitem><para>
+		<emphasis>rest_cache_hits</emphasis> - requests served from the cache,
+		without contacting the origin.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>rest_cache_misses</emphasis> - requests that went to the
+		origin.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>rest_cache_stores</emphasis> - responses actually written to
+		the cache.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>rest_cache_skipped</emphasis> - responses fetched but not
+		storable, because the policy, the origin's headers or the size limit
+		refused them.  Worth
+		watching: a cache that stores nothing because every origin sends
+		<emphasis>no-store</emphasis> is otherwise indistinguishable from one
+		that is misconfigured, and neither the hit rate nor response times will
+		tell you apart.  The per-response reason is in the debug log and in the
+		<emphasis>source</emphasis> output variable of each function.
+	</para></listitem>
+	<listitem><para>
+		<emphasis>rest_cache_hit_rate</emphasis> - hits as a whole percentage of
+		lookups, 0 when nothing has been looked up yet.  It covers the lifetime
+		of the process, so a low value shortly after a restart is a cold cache
+		rather than a problem.
+	</para></listitem>
+	</itemizedlist>
 	</section>
 
     <section id="exported_transformations">
@@ -841,5 +1199,182 @@ xlog("$(var(tmp){rest.unescape})\n");
         </section>
 
     </section>
+
+	<section id="cache_examples" xreflabel="Response Cache Examples">
+	<title>Response Cache Examples</title>
+	<para>
+	The examples below all assume an in-process backend, since the point of
+	the cache is to be cheaper than the HTTP call it replaces:
+	</para>
+	<example>
+	<title>Response cache: loading the module with a cache backend</title>
+	<programlisting format="linespecific">
+loadmodule "cachedb_local.so"
+loadmodule "rest_client.so"
+
+modparam("rest_client", "cachedb_url", "local://")
+</programlisting>
+	</example>
+
+	<section id="cache_example_wellbehaved">
+	<title>An origin that sends cache headers</title>
+	<para>
+	Nothing beyond <emphasis>cachedb_url</emphasis> is needed.  The default
+	<emphasis>strict</emphasis> policy caches the response for exactly as long
+	as the server said it may, and re-fetches after that:
+	</para>
+	<example>
+	<title>Response cache: an origin that sends cache headers</title>
+	<programlisting format="linespecific">
+# origin answers with:  Cache-Control: max-age=300
+$var(rc) = rest_get("http://rates.internal/lookup?prefix=$rU",
+                    $var(body), $var(ct), $var(rcode));
+
+# for the next 5 minutes this same prefix is answered locally
+</programlisting>
+	</example>
+	</section>
+
+	<section id="cache_example_silent">
+	<title>An origin that sends no cache headers</title>
+	<para>
+	Many internal APIs send no <emphasis>Cache-Control</emphasis> at all.
+	Under the default policy those responses are never cached — the module
+	will not invent a lifetime the server did not give it.  If you know the
+	data is safe to hold for a while, say so explicitly:
+	</para>
+	<example>
+	<title>Response cache: an origin that sends no cache headers</title>
+	<programlisting format="linespecific">
+modparam("rest_client", "cache_policy", "heuristic")
+modparam("rest_client", "cache_ttl", 60)
+</programlisting>
+	</example>
+	<para>
+	<emphasis>heuristic</emphasis> still obeys an origin that actively refuses
+	caching; it only fills in a lifetime where the origin was silent.  It is
+	rejected at startup without a positive <emphasis>cache_ttl</emphasis>,
+	because a heuristic policy with nothing to fall back on would silently
+	behave like <emphasis>strict</emphasis>.
+	</para>
+	</section>
+
+	<section id="cache_example_percall">
+	<title>Overriding a single call</title>
+	<para>
+	Different endpoints behind the same module often deserve different
+	treatment.  Rather than loosening the policy globally — which reinterprets
+	every endpoint you have, including the ones that were right — override the
+	individual call:
+	</para>
+	<example>
+	<title>Response cache: overriding a single call</title>
+	<programlisting format="linespecific">
+# an expensive, rarely-changing lookup whose origin forgot the headers:
+# cache it for 5 minutes regardless of policy or origin
+rest_cache_ctl(300);
+$var(rc) = rest_get("http://rates.internal/tariff?id=$var(tid)",
+                    $var(tariff));
+
+# a fraud check must never be answered from a cache, even a warm one
+rest_cache_ctl(0);
+$var(rc) = rest_get("http://fraud.internal/score?num=$fU", $var(score));
+</programlisting>
+	</example>
+	<para>
+	The override applies to the <emphasis>next</emphasis> REST call only and
+	is consumed by it, in the same way as
+	<xref linkend="func_rest_append_hf"/>.  This holds for asynchronous calls
+	too: the value is captured when the transfer is dispatched, not when it
+	completes, so a later request cannot change how an in-flight one is
+	cached.
+	</para>
+	</section>
+
+	<section id="cache_example_headers">
+	<title>Per-account queries</title>
+	<para>
+	Headers queued with <emphasis>rest_append_hf()</emphasis> are part of the
+	cache key, so a per-tenant or per-subscriber credential separates the
+	entries automatically — the two calls below never see each other's
+	response, even though the URL is identical:
+	</para>
+	<example>
+	<title>Response cache: per-account queries</title>
+	<programlisting format="linespecific">
+rest_append_hf("Authorization: Bearer $var(tenant_token)");
+$var(rc) = rest_get("http://api.internal/limits", $var(limits));
+</programlisting>
+	</example>
+	<para>
+	The header values are hashed into the key rather than stored in it, so a
+	bearer token never appears in the backend's key space or in whatever
+	dump/inspection tooling the backend offers.
+	</para>
+	</section>
+
+	<section id="cache_example_async">
+	<title>Asynchronous calls</title>
+	<para>
+	The cache works identically for the asynchronous flavours.  A hit
+	completes the call inline — the resume route still runs, and the script
+	sees the same variables it would have seen after a real transfer:
+	</para>
+	<example>
+	<title>Response cache: asynchronous calls with the cache</title>
+	<programlisting format="linespecific">
+route {
+	async(rest_get("http://rates.internal/lookup?prefix=$rU",
+	               $var(body), $var(ct), $var(rcode), $var(src)), resume);
+}
+
+route [resume] {
+	if ($rc &lt; 0) {
+		xlog("rate lookup failed: $rc\n");
+		send_reply(500, "Server Internal Error");
+		exit;
+	}
+	xlog("rate for $rU came from: $var(src)\n");
+	...
+}
+</programlisting>
+	</example>
+	</section>
+
+	<section id="cache_example_observability">
+	<title>Knowing whether the cache is doing anything</title>
+	<para>
+	A cache that stores nothing because every origin sends
+	<emphasis>no-store</emphasis> looks exactly like a working one from the
+	outside: no errors, and a hit rate of zero either way.  The trailing
+	output variable says which it is, per call:
+	</para>
+	<example>
+	<title>Response cache: reporting where a response came from</title>
+	<programlisting format="linespecific">
+$var(rc) = rest_get("http://rates.internal/lookup?prefix=$rU",
+                    $var(body), $var(ct), $var(rcode), $var(src));
+
+# $var(src) is one of:
+#   hit            served locally, the origin was not contacted
+#   miss           fetched from the origin and stored
+#   miss:no-store  fetched, but the origin forbade storing it
+#   miss:silent    fetched, but the origin gave no lifetime and the
+#                  policy is strict
+#   bypass         the cache was not consulted (disabled, or
+#                  rest_cache_ctl(0))
+if ($var(src) =~ "^miss:") {
+	xlog("L_INFO", "not cacheable ($var(src)): $rU\n");
+}
+</programlisting>
+	</example>
+	<para>
+	The same reasons are counted in
+	<emphasis>rest_cache_skipped</emphasis> and logged at debug level, so the
+	question can be answered from monitoring without touching the script.
+	</para>
+	</section>
+
+	</section>
 
 </chapter>
