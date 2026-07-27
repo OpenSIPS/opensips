@@ -1532,7 +1532,7 @@ discarding the old ones.
 
 
 For how to access and use the Status/Report information, please see
-[https://www.opensips.org/Documentation/Interface-StatusReport-3-3](>https://www.opensips.org/Documentation/Interface-StatusReport-3-3).
+[https://docs.opensips.org/manual/4-0/interface-statusreport/](>https://docs.opensips.org/manual/4-0/interface-statusreport/).
 
 
 ## Samples
