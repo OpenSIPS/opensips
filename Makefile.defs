@@ -538,46 +538,6 @@ REGENERATE_MEM_STATS=remove-mem-stats
 endif
 endif
 
-ifeq ($(DBXML2HTML),)
-DBXML2HTML = $(shell which xsltproc)
-endif
-
-ifneq ($(DBXML2HTML),)
-ifeq ($(DBHTMLCSS),)
-DBHTMLCSS = ../../../docs/module-docbook.css
-endif
-#DBHTMLXSL = /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
-# On CentOS, this is the right path:
-#DBHTMLXSL = /usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl
-
-DBHTMLXSL=$(shell \
-	if   [ -e /usr/share/xml/docbook/xsl-stylesheets-1.79.2-nons/xhtml/docbook.xsl ]; then \
-		echo "/usr/share/xml/docbook/xsl-stylesheets-1.79.2-nons/xhtml/docbook.xsl"; \
-	elif [ -e /usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl ]; then \
-		echo "/usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl"; \
-	elif [ -e /usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl ]; then \
-		echo "/usr/share/sgml/docbook/xsl-stylesheets/xhtml/docbook.xsl"; \
-	elif [ -e /usr/share/xml/docbook/xsl-stylesheets*/xhtml/docbook.xsl ]; then \
-		ls -1 /usr/share/xml/docbook/xsl-stylesheets*/xhtml/docbook.xsl; \
-	fi)
-DBXML2HTMLPARAMS = --stringparam section.autolabel 1
-DBXML2HTMLPARAMS += --stringparam section.label.includes.component.label 1
-DBXML2HTMLPARAMS += --stringparam generate.toc "book toc,title,figure,table,example"
-DBXML2HTMLPARAMS += --stringparam html.stylesheet $(DBHTMLCSS)
-endif
-
-ifeq ($(DBHTML2TXT),)
-DBHTML2TXT = $(shell which lynx)
-endif
-
-ifneq ($(DBHTML2TXT),)
-DBHTML2TXTPARAMS = -force_html -dump -nolist -width=72
-endif
-
-ifeq ($(DBXML2PDF),)
-DBXML2PDF = $(shell which docbook2pdf)
-endif
-
 MKTAGS=ctags -R .
 
 # compile-time options

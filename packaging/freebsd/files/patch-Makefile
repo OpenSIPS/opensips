@@ -66,12 +66,14 @@
  		mkdir -p $(modules-prefix)/$(lib-dir)/opensipsctl ; \
  		sed -e "s#/usr/local/share/opensips#$(data-target)#g" \
 @@ -624,9 +611,7 @@
- 			if [ -f modules/"$$r"/README ]; then \
+-			if [ -f modules/"$$r"/README ]; then \
++			if [ -f modules/"$$r"/README.md ]; then \
  				$(INSTALL_TOUCH)  $(doc-prefix)/$(doc-dir)/README ; \
- 				$(INSTALL_DOC)  modules/"$$r"/README  \
+-				$(INSTALL_DOC)  modules/"$$r"/README  \
 -									$(doc-prefix)/$(doc-dir)/README ; \
 -				mv -f $(doc-prefix)/$(doc-dir)/README \
 -						$(doc-prefix)/$(doc-dir)/README."$$r" ; \
++				$(INSTALL_DOC)  modules/"$$r"/README.md  \
 +					$(doc-prefix)/$(doc-dir)/README."$$r" ; \
  			fi ; \
  		fi ; \
