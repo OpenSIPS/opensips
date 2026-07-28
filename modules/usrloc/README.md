@@ -90,7 +90,7 @@ MongoDB and Cassandra. Of these two, only the MongoDB OpenSIPS driver
 has been so far extended to implement the required NoSQL API endpoints.
 
 
-The [federated user location tutorial](https://docs.opensips.org/tutorials-distributed-user-location-federation)
+The [federated user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-federation/)
 contains precise details on how to achieve this setup (including High
 Availability support).
 
@@ -134,7 +134,7 @@ equivalent support for Apache Cassandra 3.x was added for the 3.0
 OpenSIPS release.
 
 
-The ["full sharing" user location tutorial](https://docs.opensips.org/tutorials-distributed-user-location-full-sharing)
+The ["full sharing" user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-full-sharing/)
 contains precise details on how to achieve this setup (including full
 NoSQL storage support).
 
@@ -700,7 +700,7 @@ OpenSIPS will run with a "federation-cachedb"
 [cluster mode](#param_cluster_mode) and
 "sync-from-cluster" [restart persistency](#param_restart_persistency).
 This will require the configuration of multiple "seed" nodes in
-the cluster. Refer to the [federated user location tutorial](https://docs.opensips.org/tutorials-distributed-user-location-federation) for more
+the cluster. Refer to the [federated user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-federation/) for more
 details.
 - **"full-sharing-cluster"** -
 OpenSIPS will run with a "full-sharing"
