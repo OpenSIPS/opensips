@@ -71,7 +71,7 @@ modparam("proto_udp", "udp_port", 5070)
 **Q: After switching to OpenSIPS 2.1, I'm getting this error: "listeners found for protocol udp, but no module can handle it"**
 
 
-You need to load the "proto_udp" module. In your script, make sure you do a **loadmodule "proto_udp.so"** after setting the **[mpath](https://docs.opensips.org/manual/2-1/script-coreparameters#mpath)**.
+You need to load the "proto_udp" module. In your script, make sure you do a **loadmodule "proto_udp.so"** after setting the **[mpath](https://docs.opensips.org/manual/3-5/script-coreparameters#mpath)**.
 
 
 **Q: I cannot locate "proto_udp.so". Where is it?**
