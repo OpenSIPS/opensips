@@ -128,7 +128,7 @@ cache_fetch("redis:cluster1", "credit_$fU", $var(ret));
 
 ```
 
-More complex examples can be found in the [Key-Value Interface Tutorial](https://docs.opensips.org/tutorials-keyvalueinterface).
+More complex examples can be found in the [Key-Value Interface Tutorial](https://docs.opensips.org/tutorials/keyvalueinterface/).
 
 ## cache_add( storage_id, attribute_name,increment_value,expire)
 
@@ -158,7 +158,7 @@ cache_sub("redis:cluster1", "my_counter", 5, 0);
 
 ```
 
-More complex examples can be found in the [Key-Value Interface Tutorial](https://docs.opensips.org/tutorials-keyvalueinterface).
+More complex examples can be found in the [Key-Value Interface Tutorial](https://docs.opensips.org/tutorials/keyvalueinterface/).
 
 ## break()
 

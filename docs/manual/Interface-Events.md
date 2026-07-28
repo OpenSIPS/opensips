@@ -13,7 +13,7 @@ In order to notify an external application about OpenSIPS internal events, the *
 * exports generic functions to raise an event (regardless the transport protocol used)
 * communicates with different transport protocols to send the events
 
-More detailed information about **OpenSIPS Event Interface** can be found in the [Event Interface Tutorial](https://docs.opensips.org/tutorials-eventinterface-1-8).
+More detailed information about **OpenSIPS Event Interface** can be found in the [Event Interface Tutorial](https://docs.opensips.org/tutorials/eventinterface/-1-8).
 
 ---
 
