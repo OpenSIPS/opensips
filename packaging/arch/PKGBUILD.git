@@ -93,12 +93,9 @@ build() {
 	# create documentation targets
 	make \
 		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib \
-		doxygen \
-		modules-docbook-html \
-		modules-readme
+		doxygen
 		# dbschema-docbook-html
 		# dbschema-docbook-pdf \
-		# modules-docbook-pdf \
 }
 
 package_opensips-git() {
@@ -202,7 +199,7 @@ package_opensips-git-documentation() {
 
 	msg2 "install documentation targets"
 	make \
-		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-doc install-modules-docbook
+		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-doc
 
 	DOC_DIR="$pkgdir/usr/share/doc/${_pkgname}"
 
