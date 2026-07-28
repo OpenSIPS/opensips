@@ -123,18 +123,6 @@ dosetrev:
 	@echo "$(THISREVISION)" >.$(VERSIONTYPE)revision
 
 
-.PHONY: docbook-clean
-docbook-clean:
-	-@for r in $(modules) $(static_modules_path) "" ; do \
-		if [ -d "$$r" ]; then \
-			if [ -d "$$r"/doc ]; then \
-				rm -f "$$r"/doc/*.txt ; \
-				rm -f "$$r"/doc/*.html ; \
-				rm -f "$$r"/doc/*.pdf ; \
-			fi ; \
-		fi ; \
-	done
-
 .PHONY: dbschema-docbook-clean
 dbschema-docbook-clean:
 	-@if [ -d docs/database ] ; then \
@@ -145,7 +133,7 @@ dbschema-docbook-clean:
 	fi
 
 .PHONY: clean
-clean: docbook-clean dbschema-docbook-clean
+clean: dbschema-docbook-clean
 	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
 	-@for r in $(all_modules) "" ; do \
 		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
