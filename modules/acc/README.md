@@ -74,7 +74,7 @@ module.
 
 A very comprehensive description of how the accounting module works in 
 terms accounting scope, accounting events and accounting backends can 
-be found in this online [Advanced Accounting Tutorial](https://docs.opensips.org/tutorials-advanced-accounting).
+be found in this online [Advanced Accounting Tutorial](https://docs.opensips.org/tutorials/advanced-accounting/).
 
 
 #### General Example
