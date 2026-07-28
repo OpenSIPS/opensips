@@ -226,7 +226,7 @@
  * (it must be readable before decryption to choose bootstrap vs session key).
  * Both share the 0xCC prefix; the second byte distinguishes the key tier.
  * Only a sanity/routing tag on a dedicated multicast group:port - the real
- * confidentiality and integrity come from the AES-256-GCM payload.          */
+ * confidentiality and integrity come from the XChaCha20-Poly1305 payload.   */
 #define CL_CTR_MAGIC_SZ          2
 static const unsigned char CL_CTR_PACKET_MAGIC[CL_CTR_MAGIC_SZ]    = { 0xCC, 0x00 };
 static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x01 };
@@ -277,7 +277,7 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #define CL_CTR_SEQ_SZ             4   /* uint32_t monotonic sequence in plaintext  */
 #define CL_CTR_CLUSTER_ID_SZ      2   /* cleartext uint16 cluster_id (BE) selector */
 #define CL_CTR_NONCE_OFF         (CL_CTR_MAGIC_SZ + CL_CTR_CLUSTER_ID_SZ)  /* nonce starts here */
-#define CL_CTR_WIRE_HDR_SZ       (CL_CTR_MAGIC_SZ + CL_CTR_CLUSTER_ID_SZ + CL_CTR_NONCE_SZ) /* 16 (GCM) / 28 (XChaCha) */
+#define CL_CTR_WIRE_HDR_SZ       (CL_CTR_MAGIC_SZ + CL_CTR_CLUSTER_ID_SZ + CL_CTR_NONCE_SZ) /* 28 */
 #define CL_CTR_PLAIN_HDR_SZ      (1 + CL_CTR_SEQ_SZ)     /* type + seq = 5           */
 
 /* Bootstrap-key hardening: the join/admission key (also the Noise PSK) is
@@ -1800,22 +1800,21 @@ static void cl_ctr_update_peer_bin_locked(const char *ip, uint16_t node_id,
 /* =========================================================================
  * Packet encryption / decryption (AEAD)
  *
- * Every packet is fully encrypted and authenticated with the build's AEAD
- * (XChaCha20-Poly1305 with libsodium, AES-256-GCM with wolfSSL).  A fresh
- * random nonce per packet ensures that even identical payloads produce
- * different ciphertext.
+ * Every packet is fully encrypted and authenticated with XChaCha20-Poly1305
+ * (libsodium).  A fresh random nonce per packet ensures that even identical
+ * payloads produce different ciphertext.
  *
  * A 4-byte monotonic sequence number is included inside the plaintext.
  * Receivers track the highest sequence seen from each peer and reject any
  * packet whose sequence is not strictly greater.  This stops replays
  * without requiring NTP-synchronised clocks or a finite nonce cache.
  * The counter resets to 0 on every session key rotation; old packets
- * encrypted with the previous key fail AES-GCM authentication anyway.
+ * encrypted with the previous key fail AEAD authentication anyway.
  * Bootstrap-key packets (CL_CTR_BOOTSTRAP_MAGIC) skip the sequence check -
  * their per-exchange join_nonce provides equivalent replay protection.
  *
  * Wire layout:
- *   [magic 2B][cluster_id 2B][nonce 12B][ciphertext][GCM tag 16B]
+ *   [magic 2B][cluster_id 2B][nonce 24B][ciphertext][Poly1305 tag 16B]
  * Plaintext:
  *   [type 1B][seq 4B][payload]
  * ========================================================================= */
@@ -2067,7 +2066,7 @@ static int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl)
         return -1;
     }
     /* Reset sequence counters: old packets encrypted with the previous key
-     * fail AES-GCM authentication, so starting from 0 is safe. */
+     * fail AEAD authentication, so starting from 0 is safe. */
     cl->peers->my_seq = 0;
     for (i = 0; i < cl->peers->count; i++)
         cl->peers->entries[i].last_seq = 0;
@@ -2164,14 +2163,14 @@ static int cl_ctr_derive_key(cl_ctr_cluster_t *cl)
 }
 
 /**
- * cl_ctr_encrypt_pkt() - encrypt plaintext in-place and append the GCM tag.
+ * cl_ctr_encrypt_pkt() - encrypt plaintext in-place and append the Poly1305 tag.
  *
  * On entry:  buf[0..CL_CTR_MAGIC_SZ-1]   = magic (set by caller)
  *            buf[plain_off..]        = plaintext to encrypt
  * On return: buf[CL_CTR_MAGIC_SZ..]      = cleartext cluster_id (BE)
  *            buf[CL_CTR_NONCE_OFF..]     = random nonce
  *            buf[plain_off..]        = ciphertext (same length)
- *            buf[plain_off+plain_len..+CL_CTR_TAG_SZ-1] = GCM tag
+ *            buf[plain_off+plain_len..+CL_CTR_TAG_SZ-1] = Poly1305 tag
  *
  * @return total packet length, or -1 on error
  */
@@ -2686,7 +2685,7 @@ static void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster
 /**
  * cl_ctr_send_list_pkt() - encrypt and multicast the active peer table.
  *
- * Wire: [magic 2B][cluster_id 2B][nonce 12B][AES-256-GCM([type 1B][seq 4B][count 2B][entries...])][tag 16B]
+ * Wire: [magic 2B][cluster_id 2B][nonce 24B][XChaCha20-Poly1305([type 1B][seq 4B][count 2B][entries...])][tag 16B]
  */
 static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
                              const struct sockaddr *dest, socklen_t destlen)
@@ -2875,7 +2874,7 @@ static void cl_ctr_send_node_assign(int sock, const char *ip, uint16_t node_id,
     /* NODE_ASSIGN carries the CL_CTR_PACKET_MAGIC session magic, so the receiver
      * decrypts it with session_key.  It MUST therefore be encrypted with
      * session_key, not the bootstrap key - otherwise every NODE_ASSIGN fails
-     * GCM auth on receipt ("session key mismatch"), driving a JOIN_REQ storm.
+     * AEAD auth on receipt ("session key mismatch"), driving a JOIN_REQ storm.
      * KEY_GRANT is sent before NODE_ASSIGN so the joiner already holds the
      * session key by the time this arrives. */
     if ((dest ? cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->session_key,
@@ -4510,8 +4509,8 @@ static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip)
 /* -- Join-reject helpers ----------------------------------------------------
  *
  * Security model: JOIN_REJECT is sent as a normal CL_CTR_BOOTSTRAP_MAGIC packet
- * (AES-256-GCM authenticated with the bootstrap key).  An attacker without
- * the cluster password cannot forge a GCM-authenticated reject, so they
+ * (XChaCha20-Poly1305 authenticated with the bootstrap key).  An attacker
+ * without the cluster password cannot forge an authenticated reject, so they
  * cannot kick nodes out or block joins.  cl_ctr_handle_join_reject() also guards
  * on CL_CTR_NODE_NEW state so that even a legitimate cluster member with the
  * correct password cannot send a JOIN_REJECT to an already-active node.
@@ -4764,7 +4763,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    if (is_bootstrap) {
 
 		/* Master: track per-IP bootstrap failures; send JOIN_REJECT on limit.
-		 * JOIN_REJECT is encrypted (BOOTSTRAP_MAGIC/GCM) so only nodes with
+		 * JOIN_REJECT is encrypted (BOOTSTRAP_MAGIC/AEAD) so only nodes with
 		 * the correct password can read it.  Forgeries are impossible without
 		 * the bootstrap key.                                                  */
 		if (_im && cl_ctr_join_fail_check(sender_ip_buf, cl))
