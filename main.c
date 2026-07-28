@@ -520,7 +520,7 @@ int main(int argc, char** argv)
 					/* ignoring, parsed previously */
 					break;
 			case 'i':
-					modload_check_rev = 0;
+					in_tree_mode = 1;
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
