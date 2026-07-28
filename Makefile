@@ -250,94 +250,6 @@ git-dir:
 modules-contrib: git-dir
 	@set -e; ./docs/build-contrib.sh $(modules)
 
-.PHONY: modules-readme
-modules-readme: tool-lynx tool-xsltproc
-	@set -e; \
-	for mod in $(doc_modules); do \
-		r=`basename $$mod`;\
-		echo "Reading directory $$mod for module $$r";\
-		if [ ! -d "$$mod/doc" ]; then \
-			continue; \
-		fi; \
-		cd "$$mod/doc"; \
-		if [ -f "$$r".xml ]; then \
-			echo "docbook xml to html: $$r.xml"; \
-			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-						$$r.xml; \
-			echo "docbook html to txt: $$r.html"; \
-			$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
-			echo "docbook txt to readme: $$r.txt"; \
-			rm $$r.html; \
-			mv $$r.txt ../README; \
-			echo ""; \
-		fi; \
-		cd ../../..; \
-	done
-
-.PHONY: modules-docbook-txt
-modules-docbook-txt: tool-lynx tool-xsltproc
-	@set -e; \
-	for mod in $(doc_modules); do \
-		r=`basename $$mod`;\
-		echo "Reading directory $$mod for module $$r";\
-		if [ ! -d "$$mod/doc" ]; then \
-			continue; \
-		fi; \
-		cd "$$mod/doc"; \
-		if [ -f "$$r".xml ]; then \
-			echo ""; \
-			echo "docbook xml to html: $$r.xml"; \
-			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-						$$r.xml; \
-			echo "docbook html to txt: $$r.html"; \
-			$(DBHTML2TXT) $(DBHTML2TXTPARAMS) $$r.html >$$r.txt; \
-			rm $$r.html; \
-			echo ""; \
-		fi; \
-		cd ../../..; \
-	done
-
-.PHONY: modules-docbook-html
-modules-docbook-html: tool-xsltproc
-	@set -e; \
-	for mod in $(doc_modules); do \
-		r=`basename $$mod`;\
-		echo "Reading directory $$mod for module $$r";\
-		if [ ! -d "$$mod/doc" ]; then \
-			continue; \
-		fi; \
-		cd "$$mod/doc"; \
-		if [ -f "$$r".xml ]; then \
-			echo ""; \
-			echo "docbook xml to html: $$r.xml"; \
-			$(DBXML2HTML) -o $$r.html $(DBXML2HTMLPARAMS) $(DBHTMLXSL) \
-						$$r.xml; \
-			echo ""; \
-		fi; \
-		cd ../../..; \
-	done
-
-.PHONY: modules-docbook-pdf
-modules-docbook-pdf: tool-docbook2pdf
-	@set -e; \
-	for mod in $(doc_modules); do \
-		r=`basename $$mod`;\
-		echo "Reading directory $$mod for module $$r";\
-		if [ ! -d "$$mod/doc" ]; then \
-			continue; \
-		fi; \
-		cd "$$mod/doc"; \
-		if [ -f "$$r".xml ]; then \
-			echo ""; \
-			echo "docbook xml to pdf: $$r.xml"; \
-			$(DBXML2PDF) "$$r".xml; \
-		fi; \
-		cd ../../..; \
-	done
-
-.PHONY: modules-docbook
-modules-docbook: modules-docbook-txt modules-docbook-html modules-docbook-pdf
-
 .PHONY: dbschema-docbook-txt
 dbschema-docbook-txt: dbschema
 	@set -e; \
@@ -644,9 +556,9 @@ install-app-doc: $(doc_prefix)/$(doc_dir)
 install-modules-doc: $(doc_prefix)/$(doc_dir)
 	-@for r in $(modules_basenames) "" ; do \
 		if [ -n "$$r" ]; then \
-			if [ -f modules/"$$r"/README ]; then \
+			if [ -f modules/"$$r"/README.md ]; then \
 				$(INSTALL_TOUCH)  $(doc_prefix)/$(doc_dir)/README."$$r" ; \
-				$(INSTALL_DOC)  modules/"$$r"/README  \
+				$(INSTALL_DOC)  modules/"$$r"/README.md  \
 									$(doc_prefix)/$(doc_dir)/README."$$r" ; \
 			fi ; \
 		fi ; \
@@ -679,29 +591,6 @@ install-man: $(man_prefix)/$(man_dir)/man8 $(man_prefix)/$(man_dir)/man5
 			< utils/opensipsunix/opensipsunix.8 > \
 			$(man_prefix)/$(man_dir)/man8/opensipsunix.8
 		chmod 644  $(man_prefix)/$(man_dir)/man8/opensipsunix.8
-
-install-modules-docbook: $(doc_prefix)/$(doc_dir)
-	-@for r in $(modules_basenames) "" ; do \
-		if [ -n "$$r" ]; then \
-			if [ -d modules/"$$r"/doc ]; then \
-				if [ -f modules/"$$r"/doc/"$$r".txt ]; then \
-					$(INSTALL_TOUCH)  $(doc_prefix)/$(doc_dir)/"$$r".txt ; \
-					$(INSTALL_DOC)  modules/"$$r"/doc/"$$r".txt  \
-									$(doc_prefix)/$(doc_dir)/"$$r".txt ; \
-				fi ; \
-				if [ -f modules/"$$r"/doc/"$$r".html ]; then \
-					$(INSTALL_TOUCH)  $(doc_prefix)/$(doc_dir)/"$$r".html ; \
-					$(INSTALL_DOC)  modules/"$$r"/doc/"$$r".html  \
-									$(doc_prefix)/$(doc_dir)/"$$r".html ; \
-				fi ; \
-				if [ -f modules/"$$r"/doc/"$$r".pdf ]; then \
-					$(INSTALL_TOUCH)  $(doc_prefix)/$(doc_dir)/"$$r".pdf ; \
-					$(INSTALL_DOC)  modules/"$$r"/doc/"$$r".pdf  \
-									$(doc_prefix)/$(doc_dir)/"$$r".pdf ; \
-				fi ; \
-			fi ; \
-		fi ; \
-	done
 
 doxygen:
 	-@echo "Create Doxygen documentation"
