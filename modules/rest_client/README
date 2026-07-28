@@ -7,58 +7,75 @@ rest_client Module
 
         1.1. Overview
         1.2. TCP Connection Reusage
-        1.3. Dependencies
+        1.3. Response Caching
+        1.4. Dependencies
 
-              1.3.1. OpenSIPS Modules
-              1.3.2. External Libraries or Applications
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
 
-        1.4. Exported Parameters
+        1.5. Exported Parameters
 
-              1.4.1. curl_timeout (integer)
-              1.4.2. connection_timeout (integer)
-              1.4.3. connect_poll_interval (integer)
-              1.4.4. max_async_transfers (integer)
-              1.4.5. max_transfer_size (integer)
-              1.4.6. ssl_verifypeer (integer)
-              1.4.7. ssl_verifyhost (integer)
-              1.4.8. ssl_capath (integer)
-              1.4.9. curl_http_version (integer)
-              1.4.10. enable_expect_100 (boolean)
-              1.4.11. no_concurrent_connects (boolean)
-              1.4.12. curl_conn_lifetime (integer)
+              1.5.1. curl_timeout (integer)
+              1.5.2. connection_timeout (integer)
+              1.5.3. connect_poll_interval (integer)
+              1.5.4. max_async_transfers (integer)
+              1.5.5. max_transfer_size (integer)
+              1.5.6. ssl_verifypeer (integer)
+              1.5.7. ssl_verifyhost (integer)
+              1.5.8. ssl_capath (integer)
+              1.5.9. curl_http_version (integer)
+              1.5.10. enable_expect_100 (boolean)
+              1.5.11. no_concurrent_connects (boolean)
+              1.5.12. curl_conn_lifetime (integer)
+              1.5.13. cachedb_url (string)
+              1.5.14. cache_policy (string)
+              1.5.15. cache_ttl (integer)
+              1.5.16. cache_max_body (integer)
 
-        1.5. Exported Functions
+        1.6. Exported Functions
 
-              1.5.1. rest_get(url, body_pv, [ctype_pv],
-                      [retcode_pv])
+              1.6.1. rest_get(url, body_pv, [ctype_pv],
+                      [retcode_pv], [source_pv])
 
-              1.5.2. rest_post(url, send_body, [send_ctype],
-                      recv_body_pv, [recv_ctype_pv], [retcode_pv])
+              1.6.2. rest_post(url, send_body, [send_ctype],
+                      recv_body_pv, [recv_ctype_pv], [retcode_pv],
+                      [source_pv])
 
-              1.5.3. rest_put(url, send_body, [send_ctype],
+              1.6.3. rest_put(url, send_body, [send_ctype],
                       recv_body_pv[, [recv_ctype_pv][,
-                      [retcode_pv]]])
+                      [retcode_pv][, [source_pv]]]])
 
-              1.5.4. rest_append_hf(txt)
-              1.5.5. rest_init_client_tls(tls_client_domain)
+              1.6.4. rest_append_hf(txt)
+              1.6.5. rest_cache_ctl(ttl)
+              1.6.6. rest_init_client_tls(tls_client_domain)
 
-        1.6. Exported Asynchronous Functions
+        1.7. Exported Asynchronous Functions
 
-              1.6.1. rest_get(url, body_pv[, [ctype_pv][,
-                      [retcode_pv]]])
+              1.7.1. rest_get(url, body_pv[, [ctype_pv][,
+                      [retcode_pv][, [source_pv]]]])
 
-              1.6.2. rest_post(url, send_body_pv, [send_ctype_pv],
+              1.7.2. rest_post(url, send_body_pv, [send_ctype_pv],
                       recv_body_pv[, [recv_ctype_pv][,
-                      [retcode_pv]]])
+                      [retcode_pv][, [source_pv]]]])
 
-              1.6.3. rest_put(url, send_body_pv, [send_ctype_pv],
+              1.7.3. rest_put(url, send_body_pv, [send_ctype_pv],
                       recv_body_pv[, [recv_ctype_pv][,
-                      [retcode_pv]]])
+                      [retcode_pv][, [source_pv]]]])
 
-        1.7. Exported script transformations
+        1.8. Exported Statistics
+        1.9. Exported script transformations
 
-              1.7.1. {rest.escape}
-              1.7.2. {rest.unescape}
+              1.9.1. {rest.escape}
+              1.9.2. {rest.unescape}
+
+        1.10. Response Cache Examples
+
+              1.10.1. An origin that sends cache headers
+              1.10.2. An origin that sends no cache headers
+              1.10.3. Overriding a single call
+              1.10.4. Per-account queries
+              1.10.5. Asynchronous calls
+              1.10.6. Knowing whether the cache is doing anything
 
    2. Contributors
 
@@ -90,16 +107,28 @@ rest_client Module
    1.10. Setting the enable_expect_100 parameter
    1.11. Setting the no_concurrent_connects parameter
    1.12. Setting the curl_conn_lifetime parameter
-   1.13. rest_get usage
-   1.14. rest_post usage
-   1.15. rest_put usage
-   1.16. rest_append_hf usage
-   1.17. rest_init_client_tls usage
-   1.18. async rest_get usage
-   1.19. async rest_post usage
-   1.20. async rest_put usage
-   1.21. rest.escape usage
-   1.22. rest.unescape usage
+   1.13. Setting the cachedb_url parameter
+   1.14. Setting the cache_policy parameter
+   1.15. Setting the cache_ttl parameter
+   1.16. Setting the cache_max_body parameter
+   1.17. rest_get usage
+   1.18. rest_post usage
+   1.19. rest_put usage
+   1.20. rest_append_hf usage
+   1.21. rest_cache_ctl() usage
+   1.22. rest_init_client_tls usage
+   1.23. async rest_get usage
+   1.24. async rest_post usage
+   1.25. async rest_put usage
+   1.26. rest.escape usage
+   1.27. rest.unescape usage
+   1.28. Response cache: loading the module with a cache backend
+   1.29. Response cache: an origin that sends cache headers
+   1.30. Response cache: an origin that sends no cache headers
+   1.31. Response cache: overriding a single call
+   1.32. Response cache: per-account queries
+   1.33. Response cache: asynchronous calls with the cache
+   1.34. Response cache: reporting where a response came from
 
 Chapter 1. Admin Guide
 
@@ -118,22 +147,89 @@ Chapter 1. Admin Guide
    These connections are not shared among OpenSIPS workers — each
    worker maintains its own set of connections.
 
-1.3. Dependencies
+1.3. Response Caching
 
-1.3.1. OpenSIPS Modules
+   When cachedb_url is set, the module keeps a local cache of the
+   HTTP responses it receives and serves repeated queries from it
+   instead of going back to the origin server.
+
+   Only GET responses are stored, in both the blocking and the
+   asynchronous flavour. rest_post() and rest_put() accept the
+   same output variable and report miss:method, but nothing they
+   fetch is ever cached: a POST or a PUT is a request to change
+   something, and the cache key does not cover the request body,
+   so two POSTs to one URL that differ only in what they send must
+   not be allowed to look alike.
+
+   The module does not replicate anything itself, so whether the
+   cache is private to one instance or shared by a cluster is
+   decided entirely by the backend you point it at, and both are
+   useful:
+     * an in-process backend (cachedb_local, cachedb_perf) gives
+       the cheapest possible hit, at the cost of each instance
+       having to warm its own cache;
+     * a shared backend (one cachedb_redis instance used by the
+       whole cluster) means a response fetched by any one node is
+       then served by all of them, which raises the hit rate and
+       cuts the load on the origin, at the cost of a network round
+       trip per hit.
+
+   The useful rule is not local-versus-remote but simply that the
+   backend should be cheaper than the call it is replacing.
+   Against an origin that answers in milliseconds, a shared redis
+   is a large win and shares the benefit across the cluster;
+   against one that answers in microseconds, only an in-process
+   backend is worth the trouble.
+
+   One backend requirement is not negotiable: it must actually
+   honour the expiry it is given. cachedb_mongodb does not - it
+   accepts the expiry argument and ignores it, so an entry written
+   there never expires and the cache would grow without bound. The
+   module stores an absolute expiry inside each entry and refuses
+   to serve one that has passed, so it will not hand out a stale
+   response on such a backend, but it cannot reclaim the space
+   either. Use a backend that expires what it is told to.
+
+   By default the module obeys the origin: a response is cached
+   only if the server's own Cache-Control and Expires headers
+   permit it, and only for as long as they allow. A response
+   carrying no-store, no-cache, private, Set-Cookie or Vary is
+   never stored; neither is a reply whose status falls outside the
+   small RFC-cacheable set (200, 203, 204, 300, 301, 308, 404,
+   405, 410, 414, 501 - with 206 deliberately excluded, as the
+   cache does not handle ranges), nor one larger than
+   cache_max_body. See cache_policy for the looser modes, and
+   rest_cache_ctl() for overriding the decision on a single call.
+
+   The cache key covers the method, the full URL and any headers
+   queued with rest_append_hf(). The headers matter: they are what
+   usually carries the Authorization or the tenant identifier, so
+   leaving them out of the key would let one subscriber's answer
+   be served to another. Two calls that differ only in an appended
+   header are therefore two distinct cache entries.
+
+   Every function accepts an optional trailing output variable
+   which reports where the answer came from — see rest_get().
+   Together with the exported statistics this is the way to tell a
+   cache that is working from one that is quietly storing nothing
+   because the origin forbids it.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * No dependencies on other OpenSIPS modules..
 
-1.3.2. External Libraries or Applications
+1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libcurl.
 
-1.4. Exported Parameters
+1.5. Exported Parameters
 
-1.4.1. curl_timeout (integer)
+1.5.1. curl_timeout (integer)
 
    The maximum allowed time for any HTTP(S) transfer to complete.
    This interval is inclusive of the initial connect time window,
@@ -147,7 +243,7 @@ Chapter 1. Admin Guide
 modparam("rest_client", "curl_timeout", 10)
 ...
 
-1.4.2. connection_timeout (integer)
+1.5.2. connection_timeout (integer)
 
    The maximum allowed time to establish a connection with the
    server.
@@ -159,7 +255,7 @@ modparam("rest_client", "curl_timeout", 10)
 modparam("rest_client", "connection_timeout", 4)
 ...
 
-1.4.3. connect_poll_interval (integer)
+1.5.3. connect_poll_interval (integer)
 
    Only relevant with async requests. Allows complete control over
    how quickly we want to detect libcurl's completed blocking
@@ -174,7 +270,7 @@ modparam("rest_client", "connection_timeout", 4)
 modparam("rest_client", "connect_poll_interval", 2)
 ...
 
-1.4.4. max_async_transfers (integer)
+1.5.4. max_async_transfers (integer)
 
    Maximum number of asynchronous HTTP transfers a single OpenSIPS
    worker is allowed to run simultaneously. As long as this
@@ -189,7 +285,7 @@ modparam("rest_client", "connect_poll_interval", 2)
 modparam("rest_client", "max_async_transfers", 300)
 ...
 
-1.4.5. max_transfer_size (integer)
+1.5.5. max_transfer_size (integer)
 
    The maximum allowed size of a single transfer (download).
    Reaching this limit during a transfer will cause the transfer
@@ -203,7 +299,7 @@ modparam("rest_client", "max_async_transfers", 300)
 modparam("rest_client", "max_transfer_size", 64)
 ...
 
-1.4.6. ssl_verifypeer (integer)
+1.5.6. ssl_verifypeer (integer)
 
    Set this to 0 in order to disable the verification of the
    remote peer's certificate. Verification is done using a default
@@ -216,7 +312,7 @@ modparam("rest_client", "max_transfer_size", 64)
 modparam("rest_client", "ssl_verifypeer", 0)
 ...
 
-1.4.7. ssl_verifyhost (integer)
+1.5.7. ssl_verifyhost (integer)
 
    Set this to 0 in order to disable the verification that the
    remote peer actually corresponds to the server listed in the
@@ -229,7 +325,7 @@ modparam("rest_client", "ssl_verifypeer", 0)
 modparam("rest_client", "ssl_verifyhost", 0)
 ...
 
-1.4.8. ssl_capath (integer)
+1.5.8. ssl_capath (integer)
 
    An optional path for CA certificates to be used for host
    verifications.
@@ -239,7 +335,7 @@ modparam("rest_client", "ssl_verifyhost", 0)
 modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
 
-1.4.9. curl_http_version (integer)
+1.5.9. curl_http_version (integer)
 
    Use a specific HTTP version for all requests. Possible values:
 
@@ -267,7 +363,7 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 modparam("rest_client", "curl_http_version", 3)
 ...
 
-1.4.10. enable_expect_100 (boolean)
+1.5.10. enable_expect_100 (boolean)
 
    Include a "Expect: 100-continue" HTTP header field whenever the
    body size of a POST or PUT request exceeds 1024 bytes. Once
@@ -282,7 +378,7 @@ modparam("rest_client", "curl_http_version", 3)
 modparam("rest_client", "enable_expect_100", true)
 ...
 
-1.4.11. no_concurrent_connects (boolean)
+1.5.11. no_concurrent_connects (boolean)
 
    Set to true in order to only allow one OpenSIPS worker to
    connect to a given URL hostname at a time. While a worker is
@@ -308,7 +404,7 @@ modparam("rest_client", "enable_expect_100", true)
 modparam("rest_client", "no_concurrent_connects", true)
 ...
 
-1.4.12. curl_conn_lifetime (integer)
+1.5.12. curl_conn_lifetime (integer)
 
    Only relevant when no_concurrent_connects is enabled. By
    setting this parameter, script developers can leverage the
@@ -332,9 +428,95 @@ modparam("rest_client", "no_concurrent_connects", true)
 modparam("rest_client", "curl_conn_lifetime", 1800)
 ...
 
-1.5. Exported Functions
+1.5.13. cachedb_url (string)
 
-1.5.1.  rest_get(url, body_pv, [ctype_pv], [retcode_pv])
+   URL of a cachedb backend in which to cache HTTP responses.
+   Setting it is what enables the response cache; without it, no
+   caching is performed and the module behaves exactly as before.
+
+   Any backend that expires what it is told to will do, since only
+   the generic get and set operations are used. The choice decides
+   whether the cache is private to this instance or shared by the
+   cluster, and what a hit costs - see Response Caching, which
+   also explains why cachedb_mongodb is not a suitable backend.
+
+   Only GET requests are ever cached.
+
+   Default value is “NULL” (caching disabled).
+
+   Example 1.13. Setting the cachedb_url parameter
+...
+modparam("rest_client", "cachedb_url", "perf:///rest")
+...
+
+1.5.14. cache_policy (string)
+
+   How far to go beyond what the origin server explicitly permits.
+   One of:
+     * off - never cache. Useful to disable caching without
+       removing cachedb_url from the config.
+     * strict - cache only what the origin explicitly permits,
+       taking the lifetime from its Cache-Control: max-age (or
+       s-maxage, or Expires). A response with no caching headers
+       is not cached.
+     * heuristic - as strict, but a response whose origin said
+       nothing about caching is cached for cache_ttl seconds. An
+       explicit prohibition is still honoured.
+     * force - as heuristic, but responses the origin asked not to
+       store are cached anyway, for cache_ttl seconds.
+
+   Under every policy, a response is refused if it is not a GET,
+   if its status code is not cacheable, if it carries a Vary
+   header, or if it exceeds cache_max_body.
+
+   force reinterprets every endpoint the module talks to,
+   including ones added later. Prefer rest_cache_ctl() to override
+   a single call site.
+
+   Default value is “strict”.
+
+   Example 1.14. Setting the cache_policy parameter
+...
+modparam("rest_client", "cache_policy", "heuristic")
+...
+
+1.5.15. cache_ttl (integer)
+
+   Lifetime, in seconds, applied when the origin server gave none
+   and the policy allows caching anyway. Required by the heuristic
+   and force policies - either is rejected at startup if this is
+   not positive, since it would otherwise silently cache nothing.
+
+   It is never used in place of a lifetime the origin did supply.
+
+   Default value is “0” (do not cache silent responses).
+
+   Example 1.15. Setting the cache_ttl parameter
+...
+modparam("rest_client", "cache_ttl", 300)
+...
+
+1.5.16. cache_max_body (integer)
+
+   Largest response body, in bytes, that will be stored. Anything
+   above it is returned to the script as usual but not cached, and
+   reported as miss:oversize.
+
+   Default value is “65536”.
+
+   Values above 64 KB are clamped to 64 KB with a startup warning
+   - the encoded entry lives in a fixed 64 KB buffer, so a larger
+   setting would otherwise pass startup and then silently store
+   nothing.
+
+   Example 1.16. Setting the cache_max_body parameter
+...
+modparam("rest_client", "cache_max_body", 131072)
+...
+
+1.6. Exported Functions
+
+1.6.1.  rest_get(url, body_pv, [ctype_pv], [retcode_pv], [source_pv])
 
    Perform a blocking HTTP GET on the given url and return a
    representation of the resource.
@@ -349,6 +531,13 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
      * retcode_pv (var, optional) - output variable which will
        retain the status code of the HTTP response. A 0 status
        code value means no HTTP reply arrived at all.
+     * source_pv (var, optional) - output variable reporting where
+       the answer came from, when the response cache is enabled:
+       hit (served from the cache), miss (fetched and stored),
+       miss:reason (fetched but not storable - the reason is one
+       of no-store, no-cache, private, set-cookie, vary, silent,
+       status, method, oversize or expired), or bypass (the cache
+       was not consulted).
 
    Return Codes
      * 1 - Success
@@ -369,7 +558,7 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
 
    This function can be used from any route.
 
-   Example 1.13. rest_get usage
+   Example 1.17. rest_get usage
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
@@ -389,8 +578,8 @@ if ($var(rcode) != 200) {
 }
 ...
 
-1.5.2.  rest_post(url, send_body, [send_ctype], recv_body_pv,
-[recv_ctype_pv], [retcode_pv])
+1.6.2.  rest_post(url, send_body, [send_ctype], recv_body_pv,
+[recv_ctype_pv], [retcode_pv], [source_pv])
 
    Perform a blocking HTTP POST on the given url.
 
@@ -413,6 +602,13 @@ if ($var(rcode) != 200) {
      * retcode_pv (var, optional) - output variable which will
        retain the status code of the HTTP response. A 0 status
        code value means no HTTP reply arrived at all.
+     * source_pv (var, optional) - output variable reporting where
+       the answer came from, when the response cache is enabled:
+       hit (served from the cache), miss (fetched and stored),
+       miss:reason (fetched but not storable - the reason is one
+       of no-store, no-cache, private, set-cookie, vary, silent,
+       status, method, oversize or expired), or bypass (the cache
+       was not consulted).
 
    Return Codes
      * 1 - Success
@@ -433,7 +629,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.14. rest_post usage
+   Example 1.18. rest_post usage
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
@@ -452,8 +648,8 @@ if ($var(rcode) != 200) {
 ...
 
 
-1.5.3.  rest_put(url, send_body, [send_ctype], recv_body_pv[,
-[recv_ctype_pv][, [retcode_pv]]])
+1.6.3.  rest_put(url, send_body, [send_ctype], recv_body_pv[,
+[recv_ctype_pv][, [retcode_pv][, [source_pv]]]])
 
    Perform a blocking HTTP PUT on the given url.
 
@@ -476,6 +672,13 @@ if ($var(rcode) != 200) {
      * retcode_pv (var, optional) - output variable which will
        retain the status code of the HTTP response. A 0 status
        code value means no HTTP reply arrived at all.
+     * source_pv (var, optional) - output variable reporting where
+       the answer came from, when the response cache is enabled:
+       hit (served from the cache), miss (fetched and stored),
+       miss:reason (fetched but not storable - the reason is one
+       of no-store, no-cache, private, set-cookie, vary, silent,
+       status, method, oversize or expired), or bypass (the cache
+       was not consulted).
 
    Return Codes
      * 1 - Success
@@ -496,7 +699,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.15. rest_put usage
+   Example 1.19. rest_put usage
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT
 request
@@ -516,7 +719,7 @@ if ($var(rcode) != 200) {
 }
 ...
 
-1.5.4.  rest_append_hf(txt)
+1.6.4.  rest_append_hf(txt)
 
    Append txt to the HTTP headers of the subsequent request.
    Multiple headers can be appended by making multiple calls
@@ -530,7 +733,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.16. rest_append_hf usage
+   Example 1.20. rest_append_hf usage
 ...
 # Example of querying a REST service requiring additional headers
 
@@ -538,7 +741,40 @@ rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
 $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 ...
 
-1.5.5.  rest_init_client_tls(tls_client_domain)
+1.6.5.  rest_cache_ctl(ttl)
+
+   Overrides the cache decision for the next rest_get(),
+   rest_post() or rest_put() only, then reverts - the same
+   "applies once" behaviour as rest_append_hf(). Requires
+   cachedb_url; without it the call is ignored.
+
+   Meaning of ttl:
+     * 0 - bypass the cache entirely for that call: no lookup, no
+       store. For the one endpoint that must always be live.
+     * greater than 0 - serve that call from the cache if present,
+       and store its response for that many seconds, regardless of
+       cache_policy and of what the origin's own cache headers
+       say.
+
+   This is the recommended way to cache an endpoint whose server
+   sends unhelpful headers, in preference to cache_policy = force,
+   because it affects one call site rather than every endpoint the
+   module talks to.
+
+   This function can be used from any route.
+
+   Example 1.21. rest_cache_ctl() usage
+...
+# this rate lookup is safe to cache for five minutes, whatever it claims
+rest_cache_ctl(300);
+rest_get("http://rates/lookup", $var(body), $var(ct), $var(rc));
+
+# ...but the fraud check must always be live
+rest_cache_ctl(0);
+rest_get("http://fraud/check", $var(body), $var(ct), $var(rc));
+...
+
+1.6.6.  rest_init_client_tls(tls_client_domain)
 
    Force a specific TLS domain to be used at most once, during the
    next GET/POST/PUT request. Refer to the tls_mgm module for
@@ -552,16 +788,17 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 
    This function can be used from any route.
 
-   Example 1.17. rest_init_client_tls usage
+   Example 1.22. rest_init_client_tls usage
 ...
 rest_init_client_tls("dom1");
 if (!rest_get("https://example.com"))
     xlog("query failed\n");
 ...
 
-1.6. Exported Asynchronous Functions
+1.7. Exported Asynchronous Functions
 
-1.6.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+1.7.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv][,
+[source_pv]]]])
 
    Perform an asynchronous HTTP GET. This function behaves exactly
    the same as rest_get() (in terms of input, output and
@@ -569,7 +806,7 @@ if (!rest_get("https://example.com"))
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.18. async rest_get usage
+   Example 1.23. async rest_get usage
 route {
         ...
         async(rest_get("http://getcredit.org/?account=$fU",
@@ -595,8 +832,8 @@ $fU\n");
         ...
 }
 
-1.6.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
-[recv_ctype_pv][, [retcode_pv]]])
+1.7.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+[recv_ctype_pv][, [retcode_pv][, [source_pv]]]])
 
    Perform an asynchronous HTTP POST. This function behaves
    exactly the same as rest_post() (in terms of input, output and
@@ -604,7 +841,7 @@ $fU\n");
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.19. async rest_post usage
+   Example 1.24. async rest_post usage
 route {
         ...
         async(rest_post("http://myserver.org/register_user",
@@ -630,8 +867,8 @@ route [resume] {
 }
 
 
-1.6.3.  rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
-[recv_ctype_pv][, [retcode_pv]]])
+1.7.3.  rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+[recv_ctype_pv][, [retcode_pv][, [source_pv]]]])
 
    Perform an asynchronous HTTP PUT. This function behaves exactly
    the same as rest_put() (in terms of input, output and
@@ -639,7 +876,7 @@ route [resume] {
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.20. async rest_put usage
+   Example 1.25. async rest_put usage
 route {
         ...
         async(rest_put("http://myserver.org/users/$fU", $var(userinfo),
@@ -664,7 +901,30 @@ route [resume] {
         ...
 }
 
-1.7. Exported script transformations
+1.8. Exported Statistics
+
+   The statistics are always exported; while the response cache is
+   disabled the counters simply stay at 0 and the hit rate reads
+   0.
+     * rest_cache_hits - requests served from the cache, without
+       contacting the origin.
+     * rest_cache_misses - requests that went to the origin.
+     * rest_cache_stores - responses actually written to the
+       cache.
+     * rest_cache_skipped - responses fetched but not storable,
+       because the policy, the origin's headers or the size limit
+       refused them. Worth watching: a cache that stores nothing
+       because every origin sends no-store is otherwise
+       indistinguishable from one that is misconfigured, and
+       neither the hit rate nor response times will tell you
+       apart. The per-response reason is in the debug log and in
+       the source output variable of each function.
+     * rest_cache_hit_rate - hits as a whole percentage of
+       lookups, 0 when nothing has been looked up yet. It covers
+       the lifetime of the process, so a low value shortly after a
+       restart is a cold cache rather than a problem.
+
+1.9. Exported script transformations
 
    The module also provides a way for encoding and decoding
    parameters contained in an arbitrary script variable, in
@@ -675,14 +935,14 @@ route [resume] {
    performed through libcurl API method curl_easy_escape (or
    curl_escape for libcurl < 7.15.4).
 
-1.7.1.  {rest.escape}
+1.9.1.  {rest.escape}
 
    The result of this transformation is to produce percent encoded
    string value which can be safely used in URI construction.
 
    There are no parameters for this transformation.
 
-   Example 1.21. rest.escape usage
+   Example 1.26. rest.escape usage
 ...
 # This example would produce log entry: "Output: call%40example.com%26sa
 fe%3Dfalse"
@@ -694,14 +954,14 @@ $var(rc) = rest_get("https://call-info.org/?id=$(ci{rest.escape})", $var
 (body_pv));
 ...
 
-1.7.2.  {rest.unescape}
+1.9.2.  {rest.unescape}
 
    The result of this transformation is to decode percent encoded
    string values.
 
    There are no parameters for this transformation.
 
-   Example 1.22. rest.unescape usage
+   Example 1.27. rest.unescape usage
 ...
 # This example would produce log entry: "Output: 1+1=2!"
 $var(tmp) = "1%2B1%3D2%21";
@@ -712,6 +972,142 @@ ery SIP!"
 $var(tmp) = "OpenSIPs%2C%20tastes%20better%20with%20every%20SIP%21";
 xlog("$(var(tmp){rest.unescape})\n");
 ...
+
+1.10. Response Cache Examples
+
+   The examples below all assume an in-process backend, since the
+   point of the cache is to be cheaper than the HTTP call it
+   replaces:
+
+   Example 1.28. Response cache: loading the module with a cache
+   backend
+loadmodule "cachedb_local.so"
+loadmodule "rest_client.so"
+
+modparam("rest_client", "cachedb_url", "local://")
+
+1.10.1. An origin that sends cache headers
+
+   Nothing beyond cachedb_url is needed. The default strict policy
+   caches the response for exactly as long as the server said it
+   may, and re-fetches after that:
+
+   Example 1.29. Response cache: an origin that sends cache
+   headers
+# origin answers with:  Cache-Control: max-age=300
+$var(rc) = rest_get("http://rates.internal/lookup?prefix=$rU",
+                    $var(body), $var(ct), $var(rcode));
+
+# for the next 5 minutes this same prefix is answered locally
+
+1.10.2. An origin that sends no cache headers
+
+   Many internal APIs send no Cache-Control at all. Under the
+   default policy those responses are never cached — the module
+   will not invent a lifetime the server did not give it. If you
+   know the data is safe to hold for a while, say so explicitly:
+
+   Example 1.30. Response cache: an origin that sends no cache
+   headers
+modparam("rest_client", "cache_policy", "heuristic")
+modparam("rest_client", "cache_ttl", 60)
+
+   heuristic still obeys an origin that actively refuses caching;
+   it only fills in a lifetime where the origin was silent. It is
+   rejected at startup without a positive cache_ttl, because a
+   heuristic policy with nothing to fall back on would silently
+   behave like strict.
+
+1.10.3. Overriding a single call
+
+   Different endpoints behind the same module often deserve
+   different treatment. Rather than loosening the policy globally
+   — which reinterprets every endpoint you have, including the
+   ones that were right — override the individual call:
+
+   Example 1.31. Response cache: overriding a single call
+# an expensive, rarely-changing lookup whose origin forgot the headers:
+# cache it for 5 minutes regardless of policy or origin
+rest_cache_ctl(300);
+$var(rc) = rest_get("http://rates.internal/tariff?id=$var(tid)",
+                    $var(tariff));
+
+# a fraud check must never be answered from a cache, even a warm one
+rest_cache_ctl(0);
+$var(rc) = rest_get("http://fraud.internal/score?num=$fU", $var(score));
+
+   The override applies to the next REST call only and is consumed
+   by it, in the same way as rest_append_hf(). This holds for
+   asynchronous calls too: the value is captured when the transfer
+   is dispatched, not when it completes, so a later request cannot
+   change how an in-flight one is cached.
+
+1.10.4. Per-account queries
+
+   Headers queued with rest_append_hf() are part of the cache key,
+   so a per-tenant or per-subscriber credential separates the
+   entries automatically — the two calls below never see each
+   other's response, even though the URL is identical:
+
+   Example 1.32. Response cache: per-account queries
+rest_append_hf("Authorization: Bearer $var(tenant_token)");
+$var(rc) = rest_get("http://api.internal/limits", $var(limits));
+
+   The header values are hashed into the key rather than stored in
+   it, so a bearer token never appears in the backend's key space
+   or in whatever dump/inspection tooling the backend offers.
+
+1.10.5. Asynchronous calls
+
+   The cache works identically for the asynchronous flavours. A
+   hit completes the call inline — the resume route still runs,
+   and the script sees the same variables it would have seen after
+   a real transfer:
+
+   Example 1.33. Response cache: asynchronous calls with the cache
+route {
+        async(rest_get("http://rates.internal/lookup?prefix=$rU",
+                       $var(body), $var(ct), $var(rcode), $var(src)), re
+sume);
+}
+
+route [resume] {
+        if ($rc < 0) {
+                xlog("rate lookup failed: $rc\n");
+                send_reply(500, "Server Internal Error");
+                exit;
+        }
+        xlog("rate for $rU came from: $var(src)\n");
+        ...
+}
+
+1.10.6. Knowing whether the cache is doing anything
+
+   A cache that stores nothing because every origin sends no-store
+   looks exactly like a working one from the outside: no errors,
+   and a hit rate of zero either way. The trailing output variable
+   says which it is, per call:
+
+   Example 1.34. Response cache: reporting where a response came
+   from
+$var(rc) = rest_get("http://rates.internal/lookup?prefix=$rU",
+                    $var(body), $var(ct), $var(rcode), $var(src));
+
+# $var(src) is one of:
+#   hit            served locally, the origin was not contacted
+#   miss           fetched from the origin and stored
+#   miss:no-store  fetched, but the origin forbade storing it
+#   miss:silent    fetched, but the origin gave no lifetime and the
+#                  policy is strict
+#   bypass         the cache was not consulted (disabled, or
+#                  rest_cache_ctl(0))
+if ($var(src) =~ "^miss:") {
+        xlog("L_INFO", "not cacheable ($var(src)): $rU\n");
+}
+
+   The same reasons are counted in rest_cache_skipped and logged
+   at debug level, so the question can be answered from monitoring
+   without touching the script.
 
 Chapter 2. Contributors
 
