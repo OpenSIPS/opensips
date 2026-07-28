@@ -1262,7 +1262,7 @@ the old ones.
 
 
 For how to access and use the Status/Report information, please see
-[Status/Report Interface documentation](https://docs.opensips.org/manual/3-4/interface-statusreport).
+[Status/Report Interface documentation](https://docs.opensips.org/manual/3-4/interface-statusreport/).
 
 
 ### Usage Example
