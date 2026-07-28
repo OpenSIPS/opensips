@@ -135,26 +135,24 @@ post-patch:
 .endif
 	@${REINPLACE_CMD} -e 's|-g -O9 ||' -e 's|-O9 ||' ${WRKSRC}/Makefile.defs
 	@${REINPLACE_CMD} -e 's|/etc/opensips|${PREFIX}/etc/opensips|' \
-		${WRKSRC}/modules/mediaproxy/README \
-		${WRKSRC}/modules/cpl_c/README \
+		${WRKSRC}/modules/mediaproxy/README.md \
+		${WRKSRC}/modules/cpl_c/README.md \
 		${WRKSRC}/INSTALL
 	@${REINPLACE_CMD} -e 's|/usr/local/sbin/opensips|${PREFIX}/sbin/opensips|' \
 		${WRKSRC}/INSTALL
 	@${REINPLACE_CMD} -e 's|/usr/local|${PREFIX}|' \
 		${WRKSRC}/etc/opensips.cfg \
-		${WRKSRC}/modules/acc/README \
-		${WRKSRC}/modules/avp_radius/README \
-		${WRKSRC}/modules/db_berkeley/README \
-		${WRKSRC}/modules/ldap/README \
-		${WRKSRC}/modules/osp/README \
-		${WRKSRC}/modules/perl/README \
-		${WRKSRC}/modules/snmpstats/README \
-		${WRKSRC}/modules/speeddial/README \
-		${WRKSRC}/modules/unixodbc/README
+		${WRKSRC}/modules/acc/README.md \
+		${WRKSRC}/modules/db_berkeley/README.md \
+		${WRKSRC}/modules/ldap/README.md \
+		${WRKSRC}/modules/osp/README.md \
+		${WRKSRC}/modules/perl/README.md \
+		${WRKSRC}/modules/snmpstats/README.md \
+		${WRKSRC}/modules/speeddial/README.md
 	@${REINPLACE_CMD} -e 's|/usr/local|${LOCALBASE}|' \
 		${WRKSRC}/modules/acc/etc/radiusclient.conf
 	@${REINPLACE_CMD} -e 's|/usr/local/etc/radiusclient|${PREFIX}/etc/opensips/acc|' \
-		${WRKSRC}/modules/acc/acc_mod.c ${WRKSRC}/modules/acc/README
+		${WRKSRC}/modules/acc/acc_mod.c ${WRKSRC}/modules/acc/README.md
 
 post-install:
 	${INSTALL_DATA} ${WRKSRC}/etc/opensips.cfg \
