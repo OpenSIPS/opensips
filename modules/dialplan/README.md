@@ -91,7 +91,7 @@ to do with the module, you need to populate the appropriate DB records.
 
 
 The definition of the tables used by the dialplan module can be found
-at [[http://www.opensips.org/html/docs/db/db-schema-devel.html](http://www.opensips.org/html/docs/db/db-schema-devel.html)#AEN1501](https://docs.opensips.org/manual/2-2/install-dbschema/#table-dialplan)
+at [dialplan table documentation](https://docs.opensips.org/manual/2-2/install-dbschema/#table-dialplan)
 
 
 #### What to place in table
