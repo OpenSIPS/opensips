@@ -24,7 +24,7 @@ with the largest available slot.
 
 
 Please refer to the Load-Balancer tutorial from the OpenSIPS website:
-[https://docs.opensips.org/tutorials-loadbalancing/](https://docs.opensips.org/tutorials-loadbalancing/).
+[https://docs.opensips.org/tutorials/loadbalancing/](https://docs.opensips.org/tutorials/loadbalancing/).
 
 
 ### Dependencies

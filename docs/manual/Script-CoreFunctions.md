@@ -125,7 +125,7 @@ cache_fetch("local","passwd_$tu", $var(x) );
 
 ```
 
-More complex examples can be found in the [Key-Value Interface Tutorial](https://docs.opensips.org/tutorials-keyvalueinterface).
+More complex examples can be found in the [Key-Value Interface Tutorial](https://docs.opensips.org/tutorials/keyvalueinterface/).
 
 ## break()
 
