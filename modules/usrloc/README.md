@@ -89,7 +89,7 @@ backends to support these abstractions at the time of writing are
 MongoDB and Cassandra.
 
 
-The [federated user location tutorial](https://docs.opensips.org/tutorials-distributed-user-location-federation)
+The [federated user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-federation/)
 contains precise details on how to achieve this setup (including High
 Availability support).
 
@@ -130,7 +130,7 @@ Example known backends to currently support these abstractions are MongoDB
 and Apache Cassandra.
 
 
-The ["full sharing" user location tutorial](https://docs.opensips.org/tutorials-distributed-user-location-full-sharing)
+The ["full sharing" user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-full-sharing/)
 contains precise details on how to achieve this setup (including full
 NoSQL storage support).
 
@@ -696,7 +696,7 @@ OpenSIPS will run with a "federation-cachedb"
 [cluster mode](#param_cluster_mode) and
 "sync-from-cluster" [restart persistency](#param_restart_persistency).
 This will require the configuration of multiple "seed" nodes in
-the cluster. Refer to the [federated user location tutorial](https://docs.opensips.org/tutorials-distributed-user-location-federation) for more
+the cluster. Refer to the [federated user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-federation/) for more
 details.
 - **"full-sharing-cluster"** -
 OpenSIPS will run with a "full-sharing"
