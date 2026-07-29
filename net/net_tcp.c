@@ -1513,6 +1513,12 @@ int tcp_async_write_job(struct tcp_connection *tcpconn)
 	cond_lock(&tcp_write_queue->cond);
 	if (tcpconn->flags & F_CONN_WRITE_QUEUED) {
 		cond_unlock(&tcp_write_queue->cond);
+		/* a write job is already queued for this connection and it owns
+		 * exactly one reference, which it releases on completion; our
+		 * callers treat success as a transfer of their own reference, so
+		 * it has to be released here, otherwise it leaks and the
+		 * connection can never be destroyed */
+		tcpconn_put(tcpconn);
 		return 0;
 	}
 
