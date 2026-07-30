@@ -415,11 +415,6 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 		tag_match = th_no_dlg_one_way_hiding(msg->rcv.bind_address);
 		
 		if (self_route || tag_match) {
-			if (!tag_match) {
-				LM_ERR("Inbound socket is not a trusted internal socket or tag matching disable\n");
-				return TOPOH_MATCH_FAILURE;
-			}
-
 			for (i = 0; i < route_uri.u_params_no; i++) {
 				// encoding the socket uses the compact encoding regardless of the option
 				// reuse the same param name and password but with compact encoding
@@ -433,7 +428,12 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 			}
 
 			if (thinfo == NULL) {
-				LM_ERR("No known th_contact_encode_param_password param in auto Route\n");
+				LM_DBG("No known th_contact_encode_param_password param in auto Route\n");
+				return TOPOH_MATCH_FAILURE;
+			}
+
+			if (!tag_match) {
+				LM_ERR("Inbound socket is not a trusted internal socket or tag matching disable\n");
 				return TOPOH_MATCH_FAILURE;
 			}
 
@@ -662,6 +662,10 @@ static inline int th_no_dlg_onrequest(struct sip_msg *req, uint16_t flags, str *
 
 			if (topo_delete_record_route_uris(req, 0) < 0) {
 				LM_ERR("Failed to remove Record Route header \n");
+				goto error;
+			}
+			if (topo_delete_record_route_lmps(req) < 0) {
+				LM_ERR("Failed to remove Record Route header lumps\n");
 				goto error;
 			}
 		} else if (do_rr && auto_route_on_trusted_socket) {
@@ -1240,6 +1244,11 @@ static inline int topo_no_dlg_route(struct sip_msg *msg, str rr_buf[static 1]) {
 
 	if (is_2rr(&rr_uri.params)) {
 		route_flags |= ROUTE_DOUBLE_RR;
+	}
+
+	if (grep_sock_info(&rr_uri.host, rr_uri.port_no ? rr_uri.port_no : SIP_PORT, rr_uri.proto) != NULL) {
+		LM_DBG("First Route header resolves to one of our sockets, removing it\n");
+		route_flags |= ROUTE_SELF;
 	}
 
 	if (route_flags & (ROUTE_STRICT | ROUTE_SELF)) {

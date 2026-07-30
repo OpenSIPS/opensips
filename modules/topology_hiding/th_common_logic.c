@@ -75,6 +75,62 @@ int topo_parse_passed_hdr_ct_params(str *params)
 	return topo_parse_passed_params(params, &th_hdr_param_list);
 }
 
+/* FIXME - we will be losing uac_replace_from/to in case of no dialog */
+int topo_delete_record_route_lmps(struct sip_msg *req) {
+	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
+	/* delete also the added record route and the did param */
+	for(crt = req->add_rm; crt;) {
+		if ((crt->type == HDR_RECORDROUTE_T) && (crt->op == LUMP_NOP) ) {
+			/* lump found */
+			lump = crt;
+			crt = crt->next;
+			a = lump->before;
+			while(a) {
+				foo = a; a = a->before;
+				if (!(foo->flags & LUMPFLAG_SHMEM))
+					free_lump(foo);
+				if (!(foo->flags & LUMPFLAG_SHMEM))
+					pkg_free(foo);
+			}
+
+			a = lump->after;
+			while(a) {
+				foo = a; a = a->after;
+				if (!(foo->flags & LUMPFLAG_SHMEM))
+					free_lump(foo);
+				if (!(foo->flags & LUMPFLAG_SHMEM))
+					pkg_free(foo);
+			}
+			if (lump == req->add_rm) {
+				if (lump->flags & LUMPFLAG_SHMEM) {
+					/*
+					 * if the chunk is in shm, we cannot remove it, because
+					 * it be in the middle of the big shm chunk
+					 * therefore we simply mark it as false and move on
+					 */
+					if (lump->after)
+						insert_cond_lump_after(lump, COND_FALSE, 0);
+					if (lump->before)
+						insert_cond_lump_before(lump, COND_FALSE, 0);
+				} else {
+					req->add_rm = lump->next;
+				}
+				prev_crt = lump;
+			} else
+				prev_crt->next = lump->next;
+			if (!(lump->flags & LUMPFLAG_SHMEM))
+				free_lump(lump);
+			if (!(lump->flags & LUMPFLAG_SHMEM))
+				pkg_free(lump);
+			continue;
+		}
+		prev_crt = crt;
+		crt = crt->next;
+	}
+
+	return 1; // Just doing this for consistency
+}
+
 static inline int topo_delete_record_route_or_route_uris(struct sip_msg *msg, hdr_types_t hdr_type, int uris_to_delete) {
 	struct hdr_field *it = NULL;
 	rr_t *curr_rr = NULL, *next_rr = NULL;
@@ -151,61 +207,10 @@ int topo_delete_record_route_uris(struct sip_msg *msg, int delete_count) {
 }
 
 int topo_delete_record_routes(struct sip_msg *req) {
-	struct lump* lump, *crt, *prev_crt =0, *a, *foo;
 	struct hdr_field *it;
 	char* buf;
 
-	/* FIXME - we will be losing uac_replace_from/to in case of no dialog */
-
-	/* delete also the added record route and the did param */
-	for(crt = req->add_rm; crt;) {
-		if ((crt->type == HDR_RECORDROUTE_T) && (crt->op == LUMP_NOP) ) {
-			/* lump found */
-			lump = crt;
-			crt = crt->next;
-			a = lump->before;
-			while(a) {
-				foo = a; a = a->before;
-				if (!(foo->flags & LUMPFLAG_SHMEM))
-					free_lump(foo);
-				if (!(foo->flags & LUMPFLAG_SHMEM))
-					pkg_free(foo);
-			}
-
-			a = lump->after;
-			while(a) {
-				foo = a; a = a->after;
-				if (!(foo->flags & LUMPFLAG_SHMEM))
-					free_lump(foo);
-				if (!(foo->flags & LUMPFLAG_SHMEM))
-					pkg_free(foo);
-			}
-			if (lump == req->add_rm) {
-				if (lump->flags & LUMPFLAG_SHMEM) {
-					/*
-					 * if the chunk is in shm, we cannot remove it, because
-					 * it be in the middle of the big shm chunk
-					 * therefore we simply mark it as false and move on
-					 */
-					if (lump->after)
-						insert_cond_lump_after(lump, COND_FALSE, 0);
-					if (lump->before)
-						insert_cond_lump_before(lump, COND_FALSE, 0);
-				} else {
-					req->add_rm = lump->next;
-				}
-				prev_crt = lump;
-			} else
-				prev_crt->next = lump->next;
-			if (!(lump->flags & LUMPFLAG_SHMEM))
-				free_lump(lump);
-			if (!(lump->flags & LUMPFLAG_SHMEM))
-				pkg_free(lump);
-			continue;
-		}
-		prev_crt = crt;
-		crt = crt->next;
-	}
+	topo_delete_record_route_lmps(req);
 
 	buf = req->buf;
 
