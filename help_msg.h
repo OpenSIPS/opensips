@@ -81,7 +81,9 @@ Options:\n\
     -d           Debugging mode (multiple -d increase the level)\n\
     -D           Run in debug mode\n\
     -F           Daemon mode, but leave main process foreground\n\
-    -i           Ignore SCM revision differences for loaded modules\n\
+    -i           In-tree development mode: ignore SCM revision differences\n\
+                  for loaded modules and use ./modules as a module path\n\
+                  fallback\n\
     -N processes Number of TCP worker processes (default: equal to `-n`)\n\
     -W method    poll method\n\
     -V           Version number\n\

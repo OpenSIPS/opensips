@@ -105,8 +105,8 @@ Copyright: 2002 Andrei Pelinescu-Onciul <pelinescu-onciul@fokus.fraunhofer.de>
   2015-2017 Răzvan Crainea <razvan@opensips.org>
 License: GPL-2+
 
-Files: doc/dbschema/xsl/pi_framework_mod.xsl
-  doc/dbschema/xsl/pi_framework_table.xsl
+Files: docs/dbschema/xsl/pi_framework_mod.xsl
+  docs/dbschema/xsl/pi_framework_table.xsl
 Copyright: 2010-2014, VoIP Embedded, Inc
 License: GPL-2+
 
@@ -167,10 +167,6 @@ Files: mem/common.h
   mem/hp_malloc.h
   mem/hp_malloc_stats.c
   mem/hp_malloc_stats.h
-Copyright: 2011-2015, OpenSIPS Solutions
-License: GPL-2+
-
-Files: menuconfig/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 

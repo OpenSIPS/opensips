@@ -260,7 +260,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		}
 
 		if (r==0) {
-			if (ul.insert_urecord(_d, _a, &r, 0) < 0) {
+			if (ul.insert_urecord(_d, _a, &r, 0, NULL, NULL) < 0) {
 				rerrno = R_UL_NEW_R;
 				LM_ERR("failed to insert new record structure\n");
 				goto error;

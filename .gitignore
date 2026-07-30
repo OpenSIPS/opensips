@@ -16,11 +16,9 @@ cscope*
 /.svnrevision
 /.gitrevision
 
-# /doc/
-/doc/database
+# /docs/
+/docs/database
 
-# /menuconfig/
-/menuconfig/configure
 /Makefile.conf
 /mem/mem_stats.c
 /mem/mem_stats.h

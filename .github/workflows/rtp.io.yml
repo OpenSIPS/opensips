@@ -65,7 +65,7 @@ jobs:
 
     - name: Build
       run: |
-        KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops"
+        KEEP_MODULES="dialog sipmsgops sl tm rr maxfwd rtp.io rtpproxy textops nathelper"
         SKIP_MODULES="usrloc event_routing clusterer rtp_relay"
         mkdir tmp
         cd modules
@@ -129,7 +129,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rtpp-tag: [debian_12-slim, ubuntu_latest]
+        rtpp-tag: [debian_13-slim, ubuntu_latest]
 
   all_done:
     needs: build_test_rtp_io_dock
@@ -137,4 +137,6 @@ jobs:
     with:
       job_name: "rtp.io"
       job_result: ${{ needs.build_test_rtp_io_dock.result }}
-    if: ${{ always() }}
+    secrets:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    if: ${{ always() && !cancelled() }}

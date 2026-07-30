@@ -530,7 +530,8 @@ static struct otel_span *otel_span_start(const char *name, int route_type,
 static struct otel_span *otel_message_span_start(struct sip_msg *msg,
 	int route_type, int depth)
 {
-	return otel_span_start_named(otel_build_message_span_name(msg, route_type),
+	return otel_span_start_named(
+		msg?otel_build_message_span_name(msg, route_type):"Process Profiling",
 		NULL, route_type, depth, 1, NULL, 0);
 }
 
@@ -579,7 +580,7 @@ static void otel_on_start(int data_type, const char *name, int subtype,
 
 	otel_message_span_start(msg, subtype, depth);
 
-	if (otel_span_top && otel_span_top->span) {
+	if (otel_span_top && otel_span_top->span && msg) {
 		otel_set_msg_attributes(msg, otel_span_top->span.get(), subtype);
 		otel_span_top->span->SetAttribute("sip.raw",
 			opentelemetry::nostd::string_view(msg->buf, msg->len));

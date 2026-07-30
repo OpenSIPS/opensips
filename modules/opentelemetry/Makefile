@@ -23,4 +23,10 @@ LIBS+=$(OTEL_CPP_LIBS)
 include ../../Makefile.modules
 
 opentelemetry.o: opentelemetry.cpp
-	$(Q)$(CXX) $(CXXFLAGS) $(DEFS) $(INCLUDE) -fPIC -c $< -o $@
+	$(Q)$(CXX) $(CXXFLAGS) $(DEFS) $(INCLUDE) $(DEBUGSYM) -fPIC -c $< -o $@
+
+clean: clean-opentelemetry
+
+.PHONY: clean-opentelemetry
+clean-opentelemetry:
+	-@rm -f opentelemetry.o

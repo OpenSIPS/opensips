@@ -51,6 +51,7 @@
 #include "../../mem/mem.h"
 #include "../../parser/parser_f.h"
 #include "../../parser/parse_body.h"
+#include "../../context.h"
 #include "t_funcs.h"
 #include "t_hooks.h"
 #include "t_msgbuilder.h"
@@ -58,6 +59,7 @@
 #include "t_cancel.h"
 #include "t_lookup.h"
 #include "t_fwd.h"
+#include "t_reply.h"
 #include "fix_lumps.h"
 #include "config.h"
 #include "cluster.h"
@@ -81,11 +83,7 @@ void t_on_branch( struct script_route_ref *ref )
 	 * created; if not -> use the static variable */
 	holder = (!t || t==T_UNDEFINED ) ? &goto_on_branch : &t->on_branch ;
 
-	/* if something already set, free it first */
-	if (*holder)
-		shm_free( *holder );
-
-	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
+	tm_set_script_route_ref( t, holder, ref );
 }
 
 
@@ -1110,14 +1108,39 @@ int t_wait_no_more_branches( struct cell *t, int extra)
 
 int t_wait_no_more_branches_timeout(struct cell *t, int code)
 {
+	static context_p my_ctx = NULL;
+	context_p old_ctx;
+	struct cell *old_t;
 	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	int b;
 
 	for (b = t->nr_of_outgoings - 1; b >= t->first_branch; b--) {
 		if (TM_BRANCH(t, b).flags & T_UAC_IS_PHONY) {
 			if (TM_BRANCH(t, b).last_received < 200) {
+				old_ctx = current_processing_ctx;
+				old_t = get_t();
+				if (my_ctx == NULL) {
+					my_ctx = context_alloc(CONTEXT_GLOBAL);
+					if (my_ctx == NULL) {
+						LM_ERR("failed to alloc new ctx in pkg\n");
+						return -1;
+					}
+				}
+				memset(my_ctx, 0, context_size(CONTEXT_GLOBAL));
+				set_global_context(my_ctx);
+				set_t(t);
+
+				_tm_branch_index = b;
 				LOCK_REPLIES(t);
 				relay_reply(t, FAKED_REPLY, b, code, cancel_bitmap);
+				_tm_branch_index = 0;
+
+				if (current_processing_ctx == NULL)
+					my_ctx = NULL;
+				else
+					context_destroy(CONTEXT_GLOBAL, my_ctx);
+				set_global_context(old_ctx);
+				set_t(old_t);
 			}
 			TM_BRANCH(t, b).br_flags = t->nr_of_outgoings;
 			return 0;

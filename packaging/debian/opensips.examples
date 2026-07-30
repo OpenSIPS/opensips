@@ -1,1 +1,4 @@
-examples/*
+examples/*.cfg
+examples/*.sh
+examples/*.xml
+examples/web_im

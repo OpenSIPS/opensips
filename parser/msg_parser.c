@@ -1231,7 +1231,7 @@ int rewrite_ruri(struct sip_msg *msg, str *sval, int ival,
 	if (crt+len>end) goto error;
 	memcpy(crt,tmp,len);crt+=len;
 
-	if (part==RW_RURI_PREFIX) {
+	if (part==RW_RURI_PREFIX && sval->len) {
 		if (crt+sval->len>end) goto error;
 		memcpy( crt, sval->s, sval->len);
 		crt+=sval->len;

@@ -35,6 +35,17 @@ static inline void bin_parse_headers(struct tcp_req *req){
 
 	px = (unsigned int*)(req->buf + MARKER_SIZE);
 	req->content_len = (*px);
+	if (req->content_len < MIN_BIN_PACKET_SIZE) {
+		LM_ERR("invalid BIN packet size %u\n", req->content_len);
+		req->error = TCP_REQ_BAD_LEN;
+		return;
+	}
+	if (req->content_len > BIN_MAX_BUF_LEN) {
+		LM_ERR("BIN packet size %u exceeds max size %zu\n",
+				req->content_len, (size_t)BIN_MAX_BUF_LEN);
+		req->error = TCP_REQ_BAD_LEN;
+		return;
+	}
 	if(req->pos - req->buf == req->content_len){
 		LM_DBG("received a COMPLETE message\n");
 		req->complete = 1;

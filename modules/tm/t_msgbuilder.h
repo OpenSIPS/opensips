@@ -344,6 +344,19 @@ out0:
 
 inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 {
+	/* GH#3796: if b2b re-flattened the faked request into standalone pkg
+	 * memory, it no longer shares anything with the transaction clone -- so
+	 * release it as an ordinary pkg sip_msg instead of the clone-relative
+	 * teardown below (which assumes SHM-backed buffer/parsed structures and a
+	 * single-block pkg header list). */
+	if (faked_req->msg_flags & FL_TM_FAKE_REQ_REBUILT) {
+		char *buf = faked_req->buf;
+		free_sip_msg(faked_req);
+		if (buf)
+			pkg_free(buf);
+		return;
+	}
+
 	if (faked_req->new_uri.s) {
 		pkg_free(faked_req->new_uri.s);
 		faked_req->new_uri.s = NULL;

@@ -33,6 +33,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+/* needed to expose FNM_CASEFOLD from <fnmatch.h> on glibc */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include "../../mem/mem.h"
 #include "../../lib/csv.h"
 #include "tls_domain.h"
@@ -403,7 +408,9 @@ tls_find_domain_by_filters(struct ip_addr *ip, unsigned short port,
 	for (i = 0; i < dom_array->size; i++) {
 		memcpy(fnm_s, domain_filter->s, domain_filter->len);
 		fnm_s[domain_filter->len] = 0;
-		if (!fnmatch(dom_array->arr[i].hostname->s.s, fnm_s, 0)) {
+		/* SNI hostnames are DNS names, so match case-insensitively
+		 * (RFC 6066 / RFC 4343) */
+		if (!fnmatch(dom_array->arr[i].hostname->s.s, fnm_s, FNM_CASEFOLD)) {
 			ref_tls_dom(dom_array->arr[i].dom_link);
 			if (dom_lock)
 				lock_stop_read(dom_lock);

@@ -856,7 +856,8 @@ static int fork_dynamic_timer_process(void *si_filter)
 		/* set a more detailed description */
 		set_proc_attrs("Timer handler");
 		if (timer_proc_reactor_init() < 0 ||
-		init_child(20000) < 0) {
+		init_child(20000) < 0 ||
+		self_update_routing_script() < 0) {
 			goto error;
 		}
 

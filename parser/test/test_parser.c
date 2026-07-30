@@ -143,6 +143,132 @@ void test_parse_uri(void)
 	ok(str_match(&u.pn_purr_val, const_str("t")), "puri-43");
 }
 
+/*
+ * Behavioural spec for trim_user_params() (parser/parse_uri.c).
+ *
+ * It drops the RFC 4904 user parameters (tgrp, trunk-context, isub, ...) that
+ * parse_uri() folds into the URI userinfo (.user) along with the leading value,
+ * by truncating the str in place at the first ';'.  Each case below reads as
+ * given <a .user value> / when trimmed / then <expected result>.
+ */
+void test_trim_user_params(void)
+{
+	str tn;
+	char *orig;
+
+	/* given an E.164 number carrying RFC 4904 tgrp/trunk-context params, when
+	 * trimmed, then only the leading number survives - and .s (the buffer
+	 * pointer) is left unchanged, pinning the documented "in place" contract */
+	tn = *_str("+33123456789;tgrp=grp1;trunk-context=example.com");
+	orig = tn.s;
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("+33123456789")) && tn.s == orig,
+		"trim-up-rfc4904");
+
+	/* given a single trailing parameter, when trimmed, then the value survives */
+	tn = *_str("+15551234;isub=99");
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("+15551234")), "trim-up-single-param");
+
+	/* given a userinfo with no parameters, when trimmed, then it is untouched */
+	tn = *_str("+441632960000");
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("+441632960000")), "trim-up-noparam");
+
+	/* given multiple parameters, when trimmed, then it cuts at the first ';' */
+	tn = *_str("+1;a=1;b=2;c=3");
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("+1")), "trim-up-multi-semi");
+
+	/* given a userinfo whose first char is ';', when trimmed, then it is empty */
+	tn = *_str(";tgrp=grp1");
+	trim_user_params(&tn);
+	ok(tn.len == 0, "trim-up-leading-semi");
+
+	/* given a bare ';', when trimmed, then it is empty */
+	tn = *_str(";");
+	trim_user_params(&tn);
+	ok(tn.len == 0, "trim-up-only-semi");
+
+	/* given an empty userinfo, when trimmed, then it stays empty (no crash) */
+	tn.s = NULL;
+	tn.len = 0;
+	trim_user_params(&tn);
+	ok(tn.len == 0, "trim-up-empty");
+
+	/* trimming is idempotent: re-trimming an already-clean value is a no-op */
+	tn = *_str("+33123456789;tgrp=grp1");
+	trim_user_params(&tn);
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("+33123456789")), "trim-up-idempotent");
+
+	/* --- backslashes and other special characters --------------------- */
+
+	/* given a value containing a backslash before the params, when trimmed,
+	 * then the backslash is preserved and only the params are dropped */
+	tn = *_str("a\\b;tgrp=x");
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("a\\b")), "trim-up-backslash");
+
+	/* given a backslash immediately before the ';', when trimmed, then the
+	 * ';' is NOT treated as escaped: this helper is escape-agnostic and still
+	 * cuts at that first ';' (so "a\;b" -> "a\", not "a\;b") */
+	tn = *_str("a\\;b");
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("a\\")), "trim-up-backslash-no-escape");
+
+	/* given a value full of special characters before the ';', when trimmed,
+	 * then every one of them survives up to the first ';' */
+	tn = *_str("+1*#!~&%\\'\";trunk-context=x");
+	trim_user_params(&tn);
+	ok(str_match(&tn, const_str("+1*#!~&%\\'\"")), "trim-up-special-chars");
+
+	/* given userinfo with an embedded NUL before the ';', when trimmed, then
+	 * the NUL is preserved and the cut still lands on the ';' after it -
+	 * trim_user_params() is length-based (q_memchr), not NUL-terminated like
+	 * strchr would be, which would stop at the NUL and never see the ';'.
+	 * Use a writable buffer (not a read-only string literal) so the case stays
+	 * valid even for a future implementation that writes through .s. */
+	{
+		static char nul_buf[] = { '+', '1', '\0', '9', ';', 'p', '=', '1' };
+
+		tn.s = nul_buf;
+		tn.len = sizeof nul_buf;   /* 8 bytes: + 1 \0 9 ; p = 1 */
+		trim_user_params(&tn);
+		ok(tn.len == 4 && tn.s[0] == '+' && tn.s[2] == '\0' && tn.s[3] == '9',
+			"trim-up-embedded-nul");
+	}
+
+	/* --- end-to-end: parse_uri() + trim_user_params() compose correctly -----
+	 * Pins the load-bearing premise of issue #3904: for a sip:...@host URI,
+	 * parse_uri() folds the RFC 4904 userinfo params into uri.user (NOT into
+	 * uri.user_param), so trimming uri.user yields the bare E.164 number. The
+	 * isolated cases above would all stay green if parse_uri() ever routed the
+	 * params elsewhere; these would not. */
+	{
+		struct sip_uri u;
+		str in;
+
+		in = *_str("sip:+33123456789;tgrp=grp1;trunk-context=example.com@host.example");
+		ok(parse_uri(in.s, in.len, &u) == 0, "trim-up-e2e-sip-parse");
+		ok(u.user_param.len == 0, "trim-up-e2e-sip-user_param-empty");
+		trim_user_params(&u.user);
+		ok(str_match(&u.user, const_str("+33123456789")), "trim-up-e2e-sip");
+
+		in = *_str("sip:+15551234567;tgrp=grp1@host");
+		ok(parse_uri(in.s, in.len, &u) == 0, "trim-up-e2e-sip2-parse");
+		trim_user_params(&u.user);
+		ok(str_match(&u.user, const_str("+15551234567")), "trim-up-e2e-sip2");
+
+		/* a tel: URI already splits the params into uri.host/params, so uri.user
+		 * is clean on arrival and the trim is a (correct) no-op */
+		in = *_str("tel:+15551234567;tgrp=grp1;trunk-context=example.com");
+		ok(parse_uri(in.s, in.len, &u) == 0, "trim-up-e2e-tel-parse");
+		trim_user_params(&u.user);
+		ok(str_match(&u.user, const_str("+15551234567")), "trim-up-e2e-tel");
+	}
+}
+
 static const struct tts {
 	const char *tmsg;
 	int tres;
@@ -197,6 +323,7 @@ void test_parse_msg(void)
 void test_parser(void)
 {
 	test_parse_uri();
+	test_trim_user_params();
 	test_parse_msg();
 	test_parse_qop_val();
 	test_parse_fcaps();

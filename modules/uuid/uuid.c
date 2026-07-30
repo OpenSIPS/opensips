@@ -97,6 +97,7 @@ struct module_exports exports= {
 	0
 };
 
+#ifdef UUID_TYPE_DCE_TIME_V7
 static int gen_uuidv7(uuid_t value) {
 	// random bytes
 	if (getentropy(value, 16) != 0) {
@@ -124,6 +125,8 @@ static int gen_uuidv7(uuid_t value) {
 
 	return RET_OK;
 }
+#endif
+
 
 static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 {
@@ -135,6 +138,13 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 	#endif
 
 	switch (vers) {
+	case UUID_VERS_7:
+	#ifdef UUID_TYPE_DCE_TIME_V7
+		rc = gen_uuidv7(uuid);
+		break;
+	#else
+		LM_WARN("UUID version 7 not supported! Using algorithm 0\n");
+	#endif
 	case UUID_VERS_0:
 		uuid_generate(uuid);
 		break;
@@ -173,9 +183,6 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 	#endif
 	case UUID_VERS_4:
 		uuid_generate_random(uuid);
-		break;
-	case UUID_VERS_7:
-		rc = gen_uuidv7(uuid);
 		break;
 	default:
 		LM_BUG("Bad UUID generation algorithm selected\n");
@@ -256,6 +263,9 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 	#ifndef	UUID_TYPE_DCE_SHA1
 	case UUID_VERS_5:
 	#endif
+	#ifndef UUID_TYPE_DCE_TIME_V7
+	case UUID_VERS_7:
+	#endif
 		LM_WARN("UUID version: %d not supported! Using default algorithm\n",
 			vers);
 		vers = UUID_VERS_0;
@@ -266,7 +276,9 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 	case UUID_VERS_3:
 	#endif
 	case UUID_VERS_4:
+	#ifdef UUID_TYPE_DCE_TIME_V7
 	case UUID_VERS_7:
+	#endif
 	#ifdef UUID_TYPE_DCE_SHA1
 	case UUID_VERS_5:
 	#endif

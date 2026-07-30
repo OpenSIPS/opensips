@@ -14,7 +14,6 @@ libmemcached-dev
 libmicrohttpd-dev
 libmnl-dev
 libmysqlclient-dev
-libncurses5-dev
 libpcre2-dev
 libperl-dev
 libpq-dev

@@ -230,6 +230,7 @@ struct hep_desc {
 			} addr;
 
 			hep_chunk_payload_t payload_chunk;
+			int payload_chunk_free;
 			generic_chunk_t* chunk_list;
 		} hepv3;
 	} u;
@@ -298,4 +299,3 @@ int correlate_w(struct sip_msg*, str* hep_id,
 		str* type2, str* correlation2);
 int correlate_fixup(void** param, int param_no);
 #endif
-

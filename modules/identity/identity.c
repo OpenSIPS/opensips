@@ -932,6 +932,8 @@ static int addIdentityInfo(struct sip_msg * msg)
 static int getIdentityHF(char * identityHF, struct sip_msg * msg)
 {
 	struct hdr_field * identity = NULL;
+	char *identity_body;
+	int identity_len;
 
 	if(!identityHF || !msg)
 	{
@@ -946,15 +948,24 @@ static int getIdentityHF(char * identityHF, struct sip_msg * msg)
 		return 0;
 	}
 
-	if(((identity->body.len) - 2) >= MAX_IDENTITY)
+	if (identity->body.len >= 2 &&
+			identity->body.s[0] == '"' &&
+			identity->body.s[identity->body.len - 1] == '"') {
+		identity_body = identity->body.s + 1;
+		identity_len = identity->body.len - 2;
+	} else {
+		identity_body = identity->body.s;
+		identity_len = identity->body.len;
+	}
+
+	if(identity_len >= MAX_IDENTITY)
 	{
 		LM_ERR("identity header to long\n");
 		return -1;
 	}
 
-	/* " at the beginning and at the end are cutted */
-	memcpy( identityHF, identity->body.s+1, identity->body.len-2);
-	identityHF[(identity->body.len) - 2] = '\0';
+	memcpy( identityHF, identity_body, identity_len);
+	identityHF[identity_len] = '\0';
 
 	return 1;
 }
@@ -1420,13 +1431,13 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 		return -1;
 	}
 
-	if((ASN1_UTCTIME_check(dateString)) && (dateString->length == 13))
+	if((ASN1_UTCTIME_check(dateString)) && (ASN1_STRING_length(dateString) == 13))
 	{
 		/* UTCTIME string, GMT
 		YYMMDDhhmmssZ
 		*/
 
-		tmp = dateString->data;
+		tmp = (unsigned char *)ASN1_STRING_get0_data(dateString);
 
 		tmDate.tm_year = (tmp[0] - '0') * 10 + (tmp[1] - '0');
 		if(tmDate.tm_year < 50) //see chap. 4.1.2.5.1, rfc 3280
@@ -1444,12 +1455,12 @@ static time_t parseX509Date(ASN1_STRING * dateString)
 	}
 
 	/* needed for years >= 2050 */
-	if ((ASN1_GENERALIZEDTIME_check(dateString)) && (dateString->length == 15))
+	if ((ASN1_GENERALIZEDTIME_check(dateString)) && (ASN1_STRING_length(dateString) == 15))
 	{
 		/* GENERALIZEDTIME string; GMT
 		YYYYMMDDhhmmssZ
 		*/
-		tmp = dateString->data;
+		tmp = (unsigned char *)ASN1_STRING_get0_data(dateString);
 
 		tmDate.tm_year = (tmp[0] - '0') * 1000 +
 			(tmp[1] - '0') * 100 + (tmp[2] - '0') * 10 + (tmp[3] - '0') - 1900;
@@ -1902,4 +1913,3 @@ static int id_add_header(struct sip_msg* msg, char* s, int len)
 
 	return 0;
 }
-

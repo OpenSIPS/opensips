@@ -64,6 +64,18 @@ struct b2b_callback *b2b_trig_cbs, *b2b_recv_cbs;
 
 static str storage_cap = str_init("b2b-storage-bin");
 
+static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable);
+
+/* called with the entity hash lock held */
+static void b2b_dlg_unref(b2b_dlg_t *dlg, b2b_table htable,
+		unsigned int hash_index)
+{
+	if (--dlg->ref || !dlg->deleted)
+		return;
+
+	b2b_delete_record(dlg, htable, hash_index);
+}
+
 dlg_leg_t* b2b_add_leg(b2b_dlg_t* dlg, struct sip_msg* msg, str* to_tag);
 
 static int b2b_get_leg_index(b2b_dlg_t *dlg, const str *to_tag)
@@ -874,6 +886,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int ua_ev_type = -1;
 	dlg_leg_t *leg = NULL;
 	int leg_idx = -1;
+	int dlg_ref = 0;
 
 	storage.buffer.s = NULL;
 
@@ -1511,6 +1524,10 @@ run_cb:
 	dlg_state = dlg->state;
 
 	ua_flags = dlg->ua_flags;
+	if (!(ua_flags & UA_FL_IS_UA_ENTITY) && b2b_cback) {
+		dlg->ref++;
+		dlg_ref = 1;
+	}
 
 	B2BE_LOCK_RELEASE(table, hash_index);
 
@@ -1546,6 +1563,12 @@ run_cb:
 	}
 
 	B2BE_LOCK_GET(table, hash_index);
+	if (dlg_ref && dlg->deleted) {
+		current_dlg = 0;
+		b2b_dlg_unref(dlg, table, hash_index);
+		B2BE_LOCK_RELEASE(table, hash_index);
+		goto scb_drop_msg;
+	}
 
 	if(dlg_state>B2B_CONFIRMED)
 	{
@@ -1558,6 +1581,9 @@ run_cb:
 		if(!aux_dlg)
 		{
 			LM_DBG("Record not found anymore\n");
+			current_dlg = 0;
+			if (dlg_ref)
+				b2b_dlg_unref(dlg, table, hash_index);
 			B2BE_LOCK_RELEASE(table, hash_index);
 			goto scb_drop_msg;
 		}
@@ -1568,14 +1594,22 @@ run_cb:
 			b2b_ev = B2B_EVENT_ACK;
 
 			if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend) != 0)
+				&storage, serialize_backend) != 0) {
+				current_dlg = 0;
+				if (dlg_ref)
+					b2b_dlg_unref(dlg, table, hash_index);
 				goto done;
+			}
 		} else if (dlg_state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 
 			if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend) != 0)
+				&storage, serialize_backend) != 0) {
+				current_dlg = 0;
+				if (dlg_ref)
+					b2b_dlg_unref(dlg, table, hash_index);
 				goto done;
+			}
 		}
 	}
 
@@ -1585,6 +1619,8 @@ run_cb:
 		if(b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
 	}
+	if (dlg_ref)
+		b2b_dlg_unref(dlg, table, hash_index);
 
 	B2BE_LOCK_RELEASE(table, hash_index);
 
@@ -2199,8 +2235,10 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index)
 {
-	str reply_text = str_init("Request Timeout");
-	struct to_body *pto;
+	if (dlg->ref) {
+		dlg->deleted = 1;
+		return;
+	}
 
 	if(dlg->prev == NULL)
 	{
@@ -2213,6 +2251,14 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 
 	if(dlg->next)
 		dlg->next->prev = dlg->prev;
+
+	b2b_free_record(dlg, htable);
+}
+
+static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable)
+{
+	str reply_text = str_init("Request Timeout");
+	struct to_body *pto;
 
 	if(htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
@@ -2304,6 +2350,10 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
+		B2BE_LOCK_RELEASE(table, hash_index);
+		return;
+	}
+	if (dlg->deleted) {
 		B2BE_LOCK_RELEASE(table, hash_index);
 		return;
 	}
@@ -3922,7 +3972,7 @@ dummy_reply:
 				}
 				else
 				{
-					b2b_dlginfo_t dlginfo;
+					b2b_dlginfo_t *dlginfo;
 					b2b_add_dlginfo_t add_infof= dlg->add_dlginfo;
 					int confirmed_leg_id = b2b_get_leg_index(dlg, &to_tag);
 
@@ -3937,9 +3987,22 @@ dummy_reply:
 					if (confirmed_leg_id >= 0)
 						leg->id = confirmed_leg_id;
 					dlg->tag[CALLEE_LEG] = leg->tag;
-					dlginfo.fromtag = to_tag;
-					dlginfo.callid = dlg->callid;
-					dlginfo.totag = dlg->tag[CALLER_LEG];
+
+					/* Deep-copy dialog info while holding the hash lock.
+					 * The previous code did shallow copies of dlg->callid
+					 * and dlg->tag[CALLER_LEG] (pointers into shm) and
+					 * used them after releasing the lock — a TOCTOU race
+					 * where another thread could modify the shm strings
+					 * between size calculation and memcpy, causing a
+					 * heap buffer overflow. */
+					dlginfo = b2b_new_dlginfo(&dlg->callid,
+						&to_tag, &dlg->tag[CALLER_LEG]);
+					if(dlginfo == NULL)
+					{
+						LM_ERR("Failed to create dlginfo\n");
+						goto error;
+					}
+
 					dlg->state = B2B_CONFIRMED;
 
 					current_dlg = dlg;
@@ -3955,11 +4018,13 @@ dummy_reply:
 					B2BE_LOCK_RELEASE(htable, hash_index);
 
 					if(add_infof && add_infof(logic_key.s?&logic_key:0, b2b_key,
-							etype,&dlginfo, b2b_param)< 0)
+							etype, dlginfo, b2b_param)< 0)
 					{
 						LM_ERR("Failed to add dialoginfo\n");
+						shm_free(dlginfo);
 						goto error1;
 					}
+					shm_free(dlginfo);
 
 					goto done1;
 				}
@@ -4227,6 +4292,91 @@ int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
 }
 
 
+/* GH#3796: apply pending lumps to a TM faked request.
+ *
+ * A faked request (FL_TM_FAKE_REQ, built by tm's fake_req() for the async
+ * resume / failure routes) is a hybrid: its header-node list is a single pkg
+ * block, but the nodes' parsed sub-structures AND the message buffer live in
+ * the SHM transaction clone.  The generic in-place path used by
+ * b2b_apply_lumps() (free_sip_msg() then reparse into the same buffer) cannot
+ * run on it: free_sip_msg() would pkg_free() those SHM parsed structures
+ * (the GH#3796 crash) and the reparse would overwrite the SHM clone buffer.
+ *
+ * Instead, flatten the lumps into a private pkg buffer, parse it into a fresh,
+ * fully pkg-owned sip_msg, and graft that self-contained state onto the faked
+ * request (the caller holds it by address, so we replace contents, not the
+ * pointer).  The pkg fields that fake_req() set up (URIs, advertised
+ * address/port, send socket, branch flags) are carried over.  Marking
+ * FL_TM_FAKE_REQ_REBUILT tells tm's free_faked_req() that the message is now a
+ * standalone pkg structure and must be released as such, rather than via the
+ * clone-relative cleanup. */
+static int b2b_apply_lumps_fake_req(struct sip_msg *msg)
+{
+	struct sip_msg nmsg;
+	str obuf;
+	char *newbuf;
+
+	obuf.s = build_req_buf_from_sip_req(msg, (unsigned int *)&obuf.len,
+		msg->rcv.bind_address, msg->rcv.proto, NULL, MSG_TRANS_NOVIA_FLAG);
+	if (!obuf.s) {
+		LM_ERR("failed to build flattened request buffer\n");
+		return -1;
+	}
+
+	/* private pkg copy of the flattened buffer */
+	newbuf = pkg_malloc(obuf.len + 1);
+	if (!newbuf) {
+		LM_ERR("no more pkg mem for flattened buffer\n");
+		pkg_free(obuf.s);
+		return -1;
+	}
+	memcpy(newbuf, obuf.s, obuf.len);
+	newbuf[obuf.len] = '\0';
+	pkg_free(obuf.s);
+
+	/* parse the flattened buffer into a fresh, self-contained pkg message */
+	memset(&nmsg, 0, sizeof nmsg);
+	nmsg.buf = newbuf;
+	nmsg.len = obuf.len;
+	nmsg.rcv = msg->rcv;
+	nmsg.id  = msg->id;
+	if (parse_msg(newbuf, obuf.len, &nmsg) != 0) {
+		LM_ERR("failed to parse flattened faked request\n");
+		free_sip_msg(&nmsg);
+		pkg_free(newbuf);
+		return -1;
+	}
+	if (!parse_sdp(&nmsg))
+		LM_DBG("flattened faked request has no parsable SDP\n");
+
+	/* carry over the pkg-owned context the reparse cannot reproduce */
+	nmsg.flags              = msg->flags;
+	nmsg.msg_flags          = msg->msg_flags | FL_TM_FAKE_REQ_REBUILT;
+	nmsg.hash_index         = msg->hash_index;
+	nmsg.force_send_socket  = msg->force_send_socket;
+	nmsg.set_global_address = msg->set_global_address;
+	nmsg.set_global_port    = msg->set_global_port;
+	nmsg.dst_uri            = msg->dst_uri;
+	nmsg.path_vec           = msg->path_vec;
+	nmsg.new_uri            = msg->new_uri;
+	nmsg.ruri_q             = msg->ruri_q;
+	nmsg.ruri_bflags        = msg->ruri_bflags;
+
+	/* release ONLY the old pkg-owned parts of the faked req; the SHM parsed
+	 * sub-structures and the SHM buffer belong to the transaction clone and
+	 * must NOT be freed.  The header-node list is a single pkg block. */
+	if (msg->headers)
+		pkg_free(msg->headers);
+	if (msg->body)
+		free_sip_body(msg->body);
+
+	/* graft the standalone pkg message onto the faked req; the stolen pkg
+	 * fields above now have a single owner */
+	memcpy(msg, &nmsg, sizeof *msg);
+
+	return 1;
+}
+
 int b2b_apply_lumps(struct sip_msg* msg)
 {
 	str obuf;
@@ -4238,6 +4388,11 @@ int b2b_apply_lumps(struct sip_msg* msg)
 
 	if(!msg->body_lumps && !msg->add_rm)
 		return 0;
+
+	/* TM faked request: cannot reparse in place (SHM-backed headers/buffer
+	 * owned by the transaction clone) -- see GH#3796 */
+	if (msg->msg_flags & FL_TM_FAKE_REQ)
+		return b2b_apply_lumps_fake_req(msg);
 
 	if (msg->first_line.type==SIP_REQUEST)
 		obuf.s = build_req_buf_from_sip_req(msg, (unsigned int*)&obuf.len,

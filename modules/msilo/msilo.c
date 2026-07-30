@@ -774,9 +774,11 @@ static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 	int i, db_no_cols = 6, db_no_keys = 3, mid, n;
 	unsigned int sent_cnt = 0;
 	unsigned int maxmsg_i = 0;
+	unsigned int mime;
 	static char hdr_buf[1024];
 	static char body_buf[1024];
 	struct sip_uri puri;
+	char *p;
 
 	str str_vals[4], hdr_str , body_str;
 	time_t rtime;
@@ -935,12 +937,26 @@ static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 			goto error;
 		}
 
-		LM_DBG("msg [%d-%d] for: %.*s@%.*s\n", i+1, mid, puri.user.len, puri.user.s, puri.host.len, puri.host.s);
+		LM_DBG("msg [%d-%d] for: %.*s@%.*s\n", i+1, mid,
+			puri.user.len, puri.user.s, puri.host.len, puri.host.s);
+
+		/* build special body (with extra info) only if text/plain */
+		p = decode_mime_type( str_vals[3].s , str_vals[3].s+str_vals[3].len,
+			&mime, NULL);
+		if (p==NULL || p!=str_vals[3].s+str_vals[3].len) {
+			LM_ERR("failed to parse content type [%.*s], assuming unknown\n",
+				str_vals[3].len, str_vals[3].s);
+			n = -1;
+		} else
+		if ((mime&0x00ff)==SUBTYPE_PLAIN && (mime>>16)==TYPE_TEXT) {
+			body_str.len = 1024;
+			n = m_build_body(&body_str, rtime, str_vals[2/*body*/],
+				rtime /*Date*/, 0 /*not a reminder*/);
+		} else {
+			n = -1;
+		}
 
 		/** sending using TM function: t_uac */
-		body_str.len = 1024;
-		n = m_build_body(&body_str, rtime, str_vals[2/*body*/],
-			rtime /*Date*/, 0 /*not a reminder*/);
 		if(n<0)
 			LM_DBG("sending simple body\n");
 		else
@@ -1108,7 +1124,8 @@ void m_send_ontimer(unsigned int ticks, void *param)
 	static char hdr_buf[1024];
 	static char uri_buf[1024];
 	static char body_buf[1024];
-	char cbuf[26];
+	unsigned int mime;
+	char cbuf[26], *p;
 	str puri;
 	time_t ttime;
 
@@ -1202,12 +1219,25 @@ void m_send_ontimer(unsigned int ticks, void *param)
 
 		LM_DBG("msg [%d-%d] for: %.*s\n", i+1, mid,	puri.len, puri.s);
 
+		/* build special body (with extra info) only if text/plain */
+		p = decode_mime_type( str_vals[3].s , str_vals[3].s+str_vals[3].len,
+			&mime, NULL);
+		if (p==NULL || p!=str_vals[3].s+str_vals[3].len) {
+			LM_ERR("failed to parse content type [%.*s], assuming unknown\n",
+				str_vals[3].len, str_vals[3].s);
+			n = -1;
+		} else
+		if ((mime&0x00ff)==SUBTYPE_PLAIN && (mime>>16)==TYPE_TEXT) {
+			body_str.len = 1024;
+			stime =
+				(time_t)RES_ROWS(db_res)[i].values[5/*snd time*/].val.int_val;
+			n = m_build_body(&body_str, 0, str_vals[2/*body*/], stime,
+				1 /*is a reminder*/);
+		} else {
+			n = -1;
+		}
+
 		/** sending using TM function: t_uac */
-		body_str.len = 1024;
-		stime =
-			(time_t)RES_ROWS(db_res)[i].values[5/*snd time*/].val.int_val;
-		n = m_build_body(&body_str, 0, str_vals[2/*body*/], stime,
-			1 /*is a reminder*/);
 		if(n<0)
 			LM_DBG("sending simple body\n");
 		else

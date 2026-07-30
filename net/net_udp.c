@@ -434,7 +434,8 @@ static int fork_dynamic_udp_process(void *si_filter)
 		/* we first need to init the reactor to be able to add fd
 		 * into it in child_init routines */
 		if (udp_proc_reactor_init(si) < 0 ||
-		init_child(10000/*FIXME*/) < 0) {
+		init_child(10000/*FIXME*/) < 0 ||
+		self_update_routing_script() < 0) {
 			goto error;
 		}
 		report_conditional_status( 1, 0); /*report success*/

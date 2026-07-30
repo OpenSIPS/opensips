@@ -131,6 +131,11 @@ enum request_method {
 #define FL_USE_SIPTRACE_B2B  (1<<23) /* used by tracer to check if the b2b
                                       * tracing was enabled */
 #define FL_ACK_WITH_BODY     (1<<24) /* ACK message has SDP body */
+#define FL_TM_FAKE_REQ_REBUILT (1<<25) /* a TM faked request whose buffer and
+                                      * parsed structures were re-flattened by
+                                      * b2b into standalone pkg memory, no
+                                      * longer sharing the transaction clone
+                                      * (GH#3796) */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10
