@@ -1,0 +1,85 @@
+name: Coverity Scan
+
+on:
+  push:
+    branches:
+      - coverity_scan
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverity-scan
+  cancel-in-progress: true
+
+env:
+  COVERITY_PROJECT: OpenSIPS/opensips
+
+jobs:
+  coverity:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git lsb-release gnupg2 curl wget
+
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install OpenSIPS dependencies
+        env:
+          BUILD_OS: ubuntu-22.04
+          COMPILER: gcc
+        run: sh -x scripts/build/install_depends.sh
+
+      - name: Download Coverity build tools
+        env:
+          COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        run: |
+          test -n "$COVERITY_SCAN_TOKEN"
+          curl --fail --show-error --location \
+            --form "token=$COVERITY_SCAN_TOKEN" \
+            --form "project=$COVERITY_PROJECT" \
+            --output coverity-tools.tar.gz \
+            https://scan.coverity.com/download/cxx/linux64
+          mkdir coverity-tools
+          tar --extract --gzip --strip-components=1 \
+            --file coverity-tools.tar.gz --directory coverity-tools
+          echo "$GITHUB_WORKSPACE/coverity-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Build all supported OpenSIPS modules
+        run: |
+          # do_build.sh excludes only modules that cannot be built on this
+          # runner because they require unavailable/proprietary dependencies.
+          CC_EXTRA_OPTS=-Wno-error \
+            cov-build --dir cov-int \
+            sh -x scripts/build/do_build.sh
+
+      - name: Read OpenSIPS version
+        id: version
+        run: |
+          VERSION=$(./opensips -V 2>&1 | awk '/version:/ { print $2; exit }')
+          test -n "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Submit Coverity analysis
+        env:
+          COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          COVERITY_EMAIL: ${{ secrets.COVERITY_EMAIL }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          test -n "$COVERITY_SCAN_TOKEN"
+          test -n "$COVERITY_EMAIL"
+          tar --create --gzip --file cov-int.tar.gz cov-int
+          curl --fail --show-error --location \
+            --form "token=$COVERITY_SCAN_TOKEN" \
+            --form "email=$COVERITY_EMAIL" \
+            --form "file=@cov-int.tar.gz" \
+            --form "version=$VERSION" \
+            --form "description=GitHub Actions coverity_scan $GITHUB_SHA" \
+            "https://scan.coverity.com/builds?project=OpenSIPS%2Fopensips"
