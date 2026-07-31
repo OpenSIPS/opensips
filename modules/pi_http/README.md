@@ -36,9 +36,13 @@ The layout of the provisioning interface is controlled via the global
 core, independently of this HTTP transport.
 An example of a framework xml file is provided inside the examples
 directory of the pi_http module.
-The `opensips-cli pframework create` command is currently not functional.
-Use the committed framework files under `scripts/pi_http/` as a starting
-point and adapt the XML to the modules and database schema in use.
+Use the committed framework files under `scripts/pi/` as a starting
+point and adapt the XML to the modules and database schema in use. The
+fragment files and final framework can be regenerated with:
+
+```bash
+make -C db/schema pi_framework
+```
 
 
 ### Framework

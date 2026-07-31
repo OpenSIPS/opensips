@@ -2,7 +2,7 @@
 <!--
  *
  *
- * XSL converter script for pi_http framework mod
+ * XSL converter script for PI framework mod
  *
  * Copyright (C) 2012 VoIP Embedded, Inc.
  * This file is part of opensips, a free SIP server.
@@ -28,7 +28,7 @@
 
 	<xsl:import href="sql.xsl"/>
 
-	<!-- Create the file for the mod in pi_http subdirectory -->
+	<!-- Create the file for the mod in PI framework directory -->
 	<xsl:template match="/">
 		<xsl:variable name="path" select="concat($dir, concat('/', concat($prefix, 'mod')))"/>
 		<xsl:document href="{$path}" method="text" indent="no" omit-xml-declaration="yes">

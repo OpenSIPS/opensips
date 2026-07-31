@@ -59,26 +59,26 @@ all: mysql postgres dbtext db_berkeley docbook oracle pi_framework sqlite
 pi_framework:
 	for FILE in $(TABLES); do \
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
-		--stringparam dir "$(ROOT)/scripts/pi_http" \
+		--stringparam dir "$(ROOT)/scripts/pi" \
 		--stringparam prefix "$$FILE-" \
 		$(PI_FRAMEWORK_TABLE_XSL) opensips-"$$FILE".xml ; \
 	done
 	for FILE in $(TABLES); do \
 		XML_CATALOG_FILES=$(CATALOG) $(XSLTPROC) $(XSLTPROC_FLAGS) \
-		--stringparam dir "$(ROOT)/scripts/pi_http" \
+		--stringparam dir "$(ROOT)/scripts/pi" \
 		--stringparam prefix "$$FILE-" \
 		$(PI_FRAMEWORK_MOD_XSL) opensips-"$$FILE".xml ; \
 	done
-	cat $(ROOT)/scripts/pi_http/pi_framework-00 \
-		$(ROOT)/scripts/pi_http/*-table \
-		$(ROOT)/scripts/pi_http/pi_framework-01 \
-		$(ROOT)/scripts/pi_http/*-mod \
-		$(ROOT)/scripts/pi_http/pi_framework-02 > \
-		$(ROOT)/scripts/pi_http/pi_framework.xml
+	cat $(ROOT)/scripts/pi/pi_framework-00 \
+		$(ROOT)/scripts/pi/*-table \
+		$(ROOT)/scripts/pi/pi_framework-01 \
+		$(ROOT)/scripts/pi/*-mod \
+		$(ROOT)/scripts/pi/pi_framework-02 > \
+		$(ROOT)/scripts/pi/pi_framework.xml
 
 pi_framework_clean:
-	-@rm -f $(ROOT)/scripts/pi_http/*-table
-	-@rm -f $(ROOT)/scripts/pi_http/*-mod
+	-@rm -f $(ROOT)/scripts/pi/*-table
+	-@rm -f $(ROOT)/scripts/pi/*-mod
 
 .PHONY: mysql mysql_clean
 mysql:

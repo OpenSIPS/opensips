@@ -354,7 +354,7 @@ sunpkg:
 .PHONY: install-app install-config-templates install-modules-all install
 # Install app only, excluding console, modules and module docs
 install-app: mk-install-dirs install-cfg install-bin \
-	install-app-doc install-man install-config-templates
+	install-app-doc install-man install-config-templates install-pi-framework
 
 # Install all module stuff
 install-modules-files: install-modules install-modules-doc
@@ -373,6 +373,17 @@ install-config-templates: $(data_prefix)/$(data_dir)
 		$(data_prefix)/$(data_dir)/examples/templates/README.md
 	sed -i -e "s#/usr/.*lib/$(NAME)/modules/#$(modules_target)#" \
 		$(data_prefix)/$(data_dir)/examples/templates/*.m4
+
+install-pi-framework: $(data_prefix)/$(data_dir)
+	mkdir -p $(data_prefix)/$(data_dir)/pi
+	for FILE in $(wildcard scripts/pi/*) ; do \
+		if [ -f $$FILE ] ; then \
+			$(INSTALL_TOUCH) $$FILE \
+				$(data_prefix)/$(data_dir)/pi/`basename "$$FILE"` ; \
+			$(INSTALL_CFG) $$FILE \
+				$(data_prefix)/$(data_dir)/pi/`basename "$$FILE"` ; \
+		fi ; \
+	done
 
 .PHONY: dbschema
 dbschema:

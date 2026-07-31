@@ -1444,7 +1444,7 @@ fi
 %{_libdir}/opensips/modules/mi_http.so
 %doc docdir/README.mi_http
 %{_libdir}/opensips/modules/pi_http.so
-%{_datadir}/opensips/pi_http/*
+%{_datadir}/opensips/pi/*
 %doc docdir/README.pi_http
 
 %files identity-module

@@ -2,7 +2,7 @@
 <!--
  *
  *
- * XSL converter script for pi_http framework table
+ * XSL converter script for PI framework table
  *
  * Copyright (C) 2012 VoIP Embedded, Inc.
  * This file is part of opensips, a free SIP server.
@@ -28,7 +28,7 @@
 
 	<xsl:import href="sql.xsl"/>
 
-	<!-- Create the file for the table in pi_http subdirectory -->
+	<!-- Create the file for the table in PI framework directory -->
 	<xsl:template match="/">
 
 		<xsl:variable name="path" select="concat($dir, concat('/', concat($prefix, 'table')))"/>
