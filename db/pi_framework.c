@@ -1669,10 +1669,18 @@ static int pi_resolve_connectors(pi_framework_t *framework)
 
 		for (j = 0; j < module->cmds_size; j++) {
 			command = &module->cmds[j];
-			if (command->db_table->db_url_id.len)
+			if (command->db_table->db_url_id.len) {
 				table_url = pi_find_db_url_id(framework,
 						&command->db_table->db_url_id);
-			else
+				if (!table_url) {
+					LM_ERR("unknown database connector id [%.*s] for table [%.*s]\n",
+						command->db_table->db_url_id.len,
+						command->db_table->db_url_id.s,
+						command->db_table->id.len,
+						command->db_table->id.s);
+					return -1;
+				}
+			} else
 				table_url = module_url;
 			if (!table_url) {
 				LM_ERR("no database connector for module [%.*s], table [%.*s]; "
