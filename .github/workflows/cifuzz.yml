@@ -1,5 +1,9 @@
 name: CIFuzz
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+      - coverity_scan
+  pull_request:
 jobs:
   Fuzzing:
     runs-on: ubuntu-latest

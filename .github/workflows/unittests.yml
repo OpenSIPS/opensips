@@ -6,6 +6,8 @@ name: Unit Tests
 on:
   # Triggers the workflow on all push or pull request events
   push:
+    branches-ignore:
+      - coverity_scan
   pull_request:
 
   # Allows you to run this workflow manually from the Actions tab
