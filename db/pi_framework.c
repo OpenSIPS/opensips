@@ -171,8 +171,9 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 		}
 	}
 	if(_pi_framework_data->pi_db_urls_size==0){
-		LM_ERR("No [%s] node in config file\n", PI_XML_DB_URL_NODE);
-		return -1;
+		LM_DBG("No [%s] nodes in config file; connectors will be resolved "
+				"from modules\n", PI_XML_DB_URL_NODE);
+		return 0;
 	}
 	/* */
 	for(i=0;i<_pi_framework_data->pi_db_urls_size;i++){
