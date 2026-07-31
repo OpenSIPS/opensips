@@ -53,6 +53,9 @@ jobs:
           echo "$GITHUB_WORKSPACE/coverity-tools/bin" >> "$GITHUB_PATH"
 
       - name: Build all supported OpenSIPS modules
+        env:
+          COMPILER: gcc
+          BUILD_OS: ubuntu-22.04
         run: |
           # do_build.sh excludes only modules that cannot be built on this
           # runner because they require unavailable/proprietary dependencies.
