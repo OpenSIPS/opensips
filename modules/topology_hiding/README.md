@@ -122,34 +122,54 @@ modparam("topology_hiding", "force_dialog", 1)
 ```
 
 
-#### th_contact_encode_passwd (string)
+#### th_contact_encode_param_password (string)
 
 
-When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. The parameter configures the string password that will be used for encoding/decoding that specific param .
+When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. This parameter defines a Contact URI param together with the password used for encoding/decoding the data stored in it, and (optionally) the encoding layout.
 
 
-*Default value is ""ToPoCtPaSS""*
+The value has the format *param_name[:password[:encoding_type]]*:
 
 
-```opensips title="Set th_contact_encode_passwd parameter"
+- *param_name* - the name of the Contact URI parameter holding the encoded topology hiding information.
+- *password* - the string password used to encode/decode the data. If omitted, the default password "ToPoCtPaSS" is used.
+- *encoding_type* - the encoding layout, one of *C*/*c* (compact, the default) or *L*/*l* (long).
+
+
+This parameter may be set more than once in order to define multiple (param name, password) entries, which allows password rotation - data encoded with an older password can still be decoded while new data is encoded with the current one. At most 2 entries are supported. Use *th_use_param* to select which entry is used when encoding.
+
+
+*Default value is ""thinfo:ToPoCtPaSS:C"" ( param name "thinfo", password "ToPoCtPaSS", compact encoding ).*
+
+
+```opensips title="Set th_contact_encode_param_password parameter"
 ...
-modparam("topology_hiding", "th_contact_encode_passwd", "my_topoh_passwd")
+# only define the param name, use the default password and compact encoding
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam")
+...
+# define param name and password
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam:my_topoh_passwd")
+...
+# define param name, password and long encoding, plus a second entry for rotation
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam:new_passwd:L")
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam_old:old_passwd:L")
 ...
 ```
 
 
-#### th_contact_encode_param (string)
+#### th_use_param (string)
 
 
-When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. The parameter configures the respective parameter name.
+Selects, by name, which of the Contact URI params defined via *th_contact_encode_param_password* is used when *encoding* the topology hiding information. All defined params are always considered when *decoding*, but only the one referenced here is used for encoding. The value must match one of the configured param names.
 
 
 *Default value is ""thinfo""*
 
 
-```opensips title="Set th_contact_encode_param parameter"
+```opensips title="Set th_use_param parameter"
 ...
-modparam("topology_hiding", "th_contact_encode_param", "customparam")
+modparam("topology_hiding", "th_contact_encode_param_password", "customparam:new_passwd:L")
+modparam("topology_hiding", "th_use_param", "customparam")
 ...
 ```
 
@@ -225,6 +245,63 @@ due to the additional from_tag information being embedded.
 ```opensips title="Set th_callid_loop_protection parameter"
 ...
 modparam("topology_hiding", "th_callid_loop_protection", 1)
+...
+```
+
+
+#### th_internal_trusted_tag (string)
+
+
+Socket tag identifying the internal (trusted) sockets, as defined via the *tag* attribute of a listening socket. When set, requests forced through this socket will allow the network topology information(Contact, Record-Routes and Vias) to percolate through to the next hop. This applies to requests and replies and allows for the internal side to have a complete network topology while removing internal topology information from the SIP message sent outbound.
+
+
+*Default value is "empty" ( no internal trusted tag )*
+
+
+```opensips title="Set th_internal_trusted_tag parameter"
+...
+socket=udp:203.0.113.1:5060
+socket=udp:10.0.0.1:5060 tag internal
+...
+$socket_out = "10.0.0.1:5060";
+topology_hiding();
+t_relay();
+...
+modparam("topology_hiding", "th_internal_trusted_tag", "internal")
+...
+```
+
+
+#### th_external_socket_tag (string)
+
+
+Socket tag identifying the external sockets, as defined via the *tag* attribute of a listening socket. When a sequential from an auto Route request cannot be matched because the socket address was encoded on a different instance this tag is used to select an appropriate socket for sending outbound.
+
+
+*Default value is "empty" ( no external socket tag )*
+
+
+```opensips title="Set th_external_socket_tag parameter"
+...
+socket=udp:203.0.113.1:5060 tag external
+...
+modparam("topology_hiding", "th_external_socket_tag", "external")
+...
+```
+
+
+#### th_auto_route_on_trusted_socket (int)
+
+
+When enabled, and when doing topology hiding without dialog support, the module automatically adds a Record-Route header encoding the receiving socket information, so that sequential requests can be matched and routed back through the correct socket without relying on the dialog module. The encoded Route is decoded using the passwords defined via *th_contact_encode_param_password*.
+
+
+*Default value is "1" / enabled.*
+
+
+```opensips title="Set th_auto_route_on_trusted_socket parameter"
+...
+modparam("topology_hiding", "th_auto_route_on_trusted_socket", 0)
 ...
 ```
 
