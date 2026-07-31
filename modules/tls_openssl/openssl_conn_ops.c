@@ -341,8 +341,10 @@ void openssl_tls_conn_clean(struct tcp_connection *c, struct tls_domain **tls_do
 	if (c->extra_data) {
 		d = SSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX);
 
-		openssl_tls_update_fd(c,c->s);
-		openssl_tls_conn_shutdown(c);
+		if (c->s != -1) {
+			openssl_tls_update_fd(c, c->s);
+			openssl_tls_conn_shutdown(c);
+		}
 		SSL_free((SSL *) c->extra_data);
 		c->extra_data = 0;
 	}
