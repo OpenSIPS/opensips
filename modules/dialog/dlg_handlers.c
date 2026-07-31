@@ -1109,6 +1109,7 @@ static void dlg_update_req_info(str *buffer, struct dlg_cell *dlg, int leg,
 	if (t && is_invite(t))
 		dlg_leg_push_cseq_map(dlg, t, DLG_CALLER_LEG, &msg);
 	dlg_update_out_sdp(dlg, leg, other_leg(dlg, leg), &msg,
+			msg.first_line.type == SIP_REQUEST &&
 			msg.REQ_METHOD != METHOD_ACK);
 	free_sip_msg(&msg);
 }
