@@ -31,6 +31,7 @@
 #include "dprint.h"
 #include "daemonize.h"
 #include "globals.h"
+#include "db/pi_framework.h"
 #include "pt.h"
 #include "route.h"
 #include "script_cb.h"
@@ -58,6 +59,7 @@ void cleanup(int show_status)
 #endif
 
 	handle_ql_shutdown();
+	pi_framework_destroy_db();
 	destroy_modules();
 	udp_destroy();
 	tcp_destroy();

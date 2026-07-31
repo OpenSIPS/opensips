@@ -1,5 +1,5 @@
 /*
- * http_db_handler module
+ * PI framework database support
  *
  * Copyright (C) 2012 VoIP Embedded, Inc.
  *
@@ -30,9 +30,9 @@
 #include "pi_framework.h"
 
 
-int init_http_db(ph_framework_t *framework_data, int index);
-int use_table(ph_db_table_t *db_table);
-int connect_http_db(ph_framework_t *framework_data, int index);
-void destroy_http_db(ph_framework_t *framework_data);
+int pi_init_db(pi_framework_t *framework_data, int index);
+int pi_use_table(pi_db_table_t *db_table);
+int pi_connect_db(pi_framework_t *framework_data, int index);
+void pi_destroy_db(pi_framework_t *framework_data);
 
 #endif

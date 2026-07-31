@@ -41,6 +41,7 @@
 #include "dprint.h"
 #include "error.h"
 #include "globals.h"
+#include "db/pi_framework.h"
 #include "mem/mem.h"
 #include "pt.h"
 #include "ut.h"
@@ -750,6 +751,8 @@ int init_child(int rank)
 	}
 
 	rc = init_mod_child(modules, rank, type, 0);
+	if (rc == 0)
+		rc = pi_framework_child_init();
 	ready_time = time(NULL);
 	ready_delay = ready_time - startup_time;
 
@@ -1002,4 +1005,3 @@ int modules_validate_reload(void)
 
 	return ret;
 }
-

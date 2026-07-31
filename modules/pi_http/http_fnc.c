@@ -69,7 +69,14 @@ str http_root = str_init("pi");
 int http_method = 0;
 httpd_api_t httpd_api;
 
-ph_html_page_data_t html_page_data;
+typedef struct pi_html_page_data_ {
+	str page;
+	str buffer;
+	int mod;
+	int cmd;
+}pi_html_page_data_t;
+
+pi_html_page_data_t html_page_data;
 
 #define PI_HTTP_DB_UNDEF	0
 #define PI_HTTP_DB_QUERY	1
@@ -221,14 +228,14 @@ do{								\
 	p = page->s + page->len;				\
 	PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_4d);	\
 	page->len = p - page->s;				\
-	if(ph_build_reply_footer((page), (buffer)->len)<0)	\
+	if(pi_build_reply_footer((page), (buffer)->len)<0)	\
 		goto error;					\
 }while(0)
 
 
 #define PI_HTTP_BUILD_REPLY(page,buffer,mod,cmd,fmt,args...)	\
 do{								\
-	if(ph_build_reply((page),(buffer)->len,(mod),(cmd))<0)	\
+	if(pi_build_reply((page),(buffer)->len,(mod),(cmd))<0)	\
 		goto error;					\
 	_len = snprintf((page)->s + (page)->len,		\
 			(buffer)->len - (page)->len,		\
@@ -240,7 +247,7 @@ do{								\
 	p = page->s + page->len;				\
 	PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_td_4d);	\
 	page->len = p - page->s;				\
-	if(ph_build_reply_footer((page), (buffer)->len)<0)	\
+	if(pi_build_reply_footer((page), (buffer)->len)<0)	\
 		goto error;					\
 }while(0)
 
@@ -407,7 +414,7 @@ static const str PI_HTTP_HREF_3 = str_init("</a>");
 
 
 
-int ph_build_form_imput(char **p, char *buf, str *page, int max_page_len,
+int pi_build_form_imput(char **p, char *buf, str *page, int max_page_len,
 		int mod, int cmd, str *clause, db_val_t *values)
 {
 	unsigned long i, j;
@@ -416,11 +423,11 @@ int ph_build_form_imput(char **p, char *buf, str *page, int max_page_len,
 	str val_str;
 	str temp_holder;
 	int temp_counter;
-	ph_cmd_t *command;
-	ph_mod_t *ph_modules;
+	pi_cmd_t *command;
+	pi_mod_t *pi_modules;
 
-	ph_modules = ph_framework_data->ph_modules;
-	command = &ph_modules[mod].cmds[cmd];
+	pi_modules = pi_framework_data->pi_modules;
+	command = &pi_modules[mod].cmds[cmd];
 	if(command->c_keys_size && (command->type==DB_CAP_QUERY ||
 				command->type==DB_CAP_DELETE ||
 				command->type==DB_CAP_UPDATE)){
@@ -648,13 +655,13 @@ error:
 }
 
 
-int ph_build_header(str *page, int max_page_len, int mod, int cmd)
+int pi_build_header(str *page, int max_page_len, int mod, int cmd)
 {
 	int i;
 	char *p, *buf;
-	ph_mod_t *ph_modules;
+	pi_mod_t *pi_modules;
 
-	ph_modules = ph_framework_data->ph_modules;
+	pi_modules = pi_framework_data->pi_modules;
 	if (page->s == NULL) {
 		LM_ERR("Please provide a valid page\n");
 		return -1;
@@ -667,7 +674,7 @@ int ph_build_header(str *page, int max_page_len, int mod, int cmd)
 			PI_HTTP_Response_Title_Table_3);
 	/* Building module menu */
 	PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Table_1);
-	for(i=0;i<ph_framework_data->ph_modules_size;i++) {
+	for(i=0;i<pi_framework_data->pi_modules_size;i++) {
 		if(i!=mod) {
 			PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Table_2);
 		} else {
@@ -677,9 +684,9 @@ int ph_build_header(str *page, int max_page_len, int mod, int cmd)
 		if (http_root.len) {
 			PI_HTTP_COPY_2(p,http_root,PI_HTTP_SLASH);
 		}
-		PI_HTTP_COPY_3(p,ph_modules[i].module,
+		PI_HTTP_COPY_3(p,pi_modules[i].module,
 				PI_HTTP_Response_Menu_Table_3,
-				ph_modules[i].module);
+				pi_modules[i].module);
 		if(i!=mod) {
 			PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Table_4);
 		} else {
@@ -698,12 +705,12 @@ error:
 
 
 
-int ph_build_reply(str *page, int max_page_len, int mod, int cmd)
+int pi_build_reply(str *page, int max_page_len, int mod, int cmd)
 {
 	char *p, *buf;
-	ph_mod_t *ph_modules;
+	pi_mod_t *pi_modules;
 
-	ph_modules = ph_framework_data->ph_modules;
+	pi_modules = pi_framework_data->pi_modules;
 	buf = page->s;
 	p = page->s + page->len;
 
@@ -715,15 +722,15 @@ int ph_build_reply(str *page, int max_page_len, int mod, int cmd)
 	if (http_root.len) {
 		PI_HTTP_COPY_2(p,http_root, PI_HTTP_SLASH);
 	}
-	PI_HTTP_COPY_6(p,ph_modules[mod].module,
+	PI_HTTP_COPY_6(p,pi_modules[mod].module,
 			PI_HTTP_SLASH,
-			ph_modules[mod].cmds[cmd].name,
+			pi_modules[mod].cmds[cmd].name,
 			PI_HTTP_SQUOT_GT,
-			ph_modules[mod].cmds[cmd].name,
+			pi_modules[mod].cmds[cmd].name,
 			PI_HTTP_Response_Menu_Cmd_td_4a);
 	/* Print cmd name */
 	PI_HTTP_COPY_9(p,PI_HTTP_Response_Menu_Cmd_td_1e,
-			ph_modules[mod].cmds[cmd].name,
+			pi_modules[mod].cmds[cmd].name,
 			PI_HTTP_Response_Menu_Cmd_td_4d,
 			PI_HTTP_Response_Menu_Cmd_tr_2,
 			PI_HTTP_Response_Menu_Cmd_tr_1,
@@ -740,7 +747,7 @@ error:
 	return -1;
 }
 
-int ph_build_reply_footer(str *page, int max_page_len)
+int pi_build_reply_footer(str *page, int max_page_len)
 {
 	char *p, *buf;
 	/* Here we print the footer */
@@ -757,13 +764,13 @@ error:
 	return -1;
 }
 
-int ph_build_content(str *page, int max_page_len, int mod, int cmd, str *clause, db_val_t *values)
+int pi_build_content(str *page, int max_page_len, int mod, int cmd, str *clause, db_val_t *values)
 {
 	char *p, *buf;
 	int j;
-	ph_mod_t *ph_modules;
+	pi_mod_t *pi_modules;
 
-	ph_modules = ph_framework_data->ph_modules;
+	pi_modules = pi_framework_data->pi_modules;
 	buf = page->s;
 	p = page->s + page->len;
 
@@ -776,30 +783,30 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd, str *clause,
 		if (http_root.len) {
 			PI_HTTP_COPY_2(p,http_root,PI_HTTP_SLASH);
 		}
-		PI_HTTP_COPY_6(p,ph_modules[mod].module,
+		PI_HTTP_COPY_6(p,pi_modules[mod].module,
 				PI_HTTP_SLASH,
-				ph_modules[mod].cmds[0].name,
+				pi_modules[mod].cmds[0].name,
 				PI_HTTP_SQUOT_GT,
-				ph_modules[mod].cmds[0].name,
+				pi_modules[mod].cmds[0].name,
 				PI_HTTP_Response_Menu_Cmd_td_4a);
 		if (cmd>=0) {
 			PI_HTTP_COPY_3(p,PI_HTTP_Response_Menu_Cmd_td_1b,
-					ph_modules[mod].cmds[cmd].name,
+					pi_modules[mod].cmds[cmd].name,
 					PI_HTTP_Response_Menu_Cmd_td_4b);
 		}
 		PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_tr_2);
-		for(j=1;j<ph_modules[mod].cmds_size;j++) {
+		for(j=1;j<pi_modules[mod].cmds_size;j++) {
 			PI_HTTP_COPY_3(p,PI_HTTP_Response_Menu_Cmd_tr_1,
 					PI_HTTP_Response_Menu_Cmd_td_1a,
 					PI_HTTP_SLASH);
 			if (http_root.len) {
 				PI_HTTP_COPY_2(p,http_root, PI_HTTP_SLASH);
 			}
-			PI_HTTP_COPY_6(p,ph_modules[mod].module,
+			PI_HTTP_COPY_6(p,pi_modules[mod].module,
 					PI_HTTP_SLASH,
-					ph_modules[mod].cmds[j].name,
+					pi_modules[mod].cmds[j].name,
 					PI_HTTP_SQUOT_GT,
-					ph_modules[mod].cmds[j].name,
+					pi_modules[mod].cmds[j].name,
 					PI_HTTP_Response_Menu_Cmd_td_4a);
 			if (cmd>=0){
 				if (j==1) {
@@ -810,7 +817,7 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd, str *clause,
 						PI_HTTP_Post_Form_1a,
 						PI_HTTP_METHOD[http_method],
 						PI_HTTP_Post_Form_1b);
-					if(ph_build_form_imput(&p, buf, page, max_page_len,
+					if(pi_build_form_imput(&p, buf, page, max_page_len,
 							mod, cmd, clause, values)!=0)
 						return -1;
 					PI_HTTP_COPY_2(p, PI_HTTP_Post_Form_2,
@@ -836,7 +843,7 @@ int ph_build_content(str *page, int max_page_len, int mod, int cmd, str *clause,
 						PI_HTTP_Post_Form_1a,
 						PI_HTTP_METHOD[http_method],
 						PI_HTTP_Post_Form_1b);
-				if(ph_build_form_imput(&p, buf, page, max_page_len,
+				if(pi_build_form_imput(&p, buf, page, max_page_len,
 						mod, cmd, clause, values)!=0)
 					return -1;
 				PI_HTTP_COPY_3(p, PI_HTTP_Post_Form_2,
@@ -867,14 +874,14 @@ error:
 }
 
 
-int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table,
+int getVal(db_val_t *val, db_type_t val_type, db_key_t key, pi_db_table_t *table,
 	str *arg, str *page, str *buffer, int mod, int cmd)
 {
 	char *p = page->s + page->len;
 	char *buf = page->s;
 	int _len, i;
 	int max_page_len = buffer->len;
-	ph_val_flags flags;
+	pi_val_flags flags;
 
 	str host;
 	int port, proto;
@@ -888,8 +895,8 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 			if(table->cols[i].validation==0) continue;
 			flags = table->cols[i].validation;
 			LM_DBG("[%.*s] has flags [%u]\n", key->len, key->s, flags);
-			if(flags&PH_FLAG_P_HOST_PORT){
-				//flags&= ~ PH_FLAG_P_HOST_PORT;
+			if(flags&PI_FLAG_P_HOST_PORT){
+				//flags&= ~ PI_FLAG_P_HOST_PORT;
 				if (parse_phostport(arg->s, arg->len,
 						&host.s, &host.len,
 						&port, &proto)!=0){
@@ -905,8 +912,8 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 				continue;
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
-			if(flags&PH_FLAG_P_IPV4_PORT){
-				//flags&= ~ PH_FLAG_P_IPV4_PORT;
+			if(flags&PI_FLAG_P_IPV4_PORT){
+				//flags&= ~ PI_FLAG_P_IPV4_PORT;
 				if (parse_phostport(arg->s, arg->len,
 						&host.s, &host.len,
 						&port, &proto)!=0){
@@ -931,8 +938,8 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 				continue;
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
-			if(flags&PH_FLAG_IPV4){
-				//flags&= ~ PH_FLAG_IPV4;
+			if(flags&PI_FLAG_IPV4){
+				//flags&= ~ PI_FLAG_IPV4;
 				if (str2ip(arg)==NULL) {
 					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 						"Invalid IPv4 for %.*s [%.*s].",
@@ -942,8 +949,8 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 				continue;
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
-			if(flags&PH_FLAG_URI){
-				//flags&= ~ PH_FLAG_URI;
+			if(flags&PI_FLAG_URI){
+				//flags&= ~ PI_FLAG_URI;
 				if (parse_uri(arg->s, arg->len, &uri)<0){
 					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 						"Invalid SIP URI for %.*s [%.*s].",
@@ -953,8 +960,8 @@ int getVal(db_val_t *val, db_type_t val_type, db_key_t key, ph_db_table_t *table
 				continue;
 			}
 			LM_DBG("[%.*s] has flags [%d]\n", key->len, key->s, flags);
-			if(flags&PH_FLAG_URI_IPV4HOST){
-				//flags&= ~ PH_FLAG_URI_IPV4HOST;
+			if(flags&PI_FLAG_URI_IPV4HOST){
+				//flags&= ~ PI_FLAG_URI_IPV4HOST;
 				if (parse_uri(arg->s, arg->len, &uri)<0){
 					PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 						"Invalid SIP URI for %.*s [%.*s].",
@@ -1069,7 +1076,7 @@ error:
 
 
 
-int ph_run_pi_cmd(int mod, int cmd,
+int pi_run_cmd(int mod, int cmd,
 			void *connection, void *con_cls,
 			str *page, str *buffer)
 {
@@ -1084,7 +1091,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	int i;
 	int j;
 	int max_page_len;
-	ph_cmd_t *command;
+	pi_cmd_t *command;
 
 	int _len;
 	int link_on;
@@ -1096,13 +1103,13 @@ int ph_run_pi_cmd(int mod, int cmd,
 	db_val_t *val;
 	str val_str = {NULL, 0};
 	int nr_rows;
-	ph_db_url_t *db_url = NULL;
+	pi_db_url_t *db_url = NULL;
 	db_res_t *res = NULL;
 	db_val_t *values = NULL;
 	db_row_t *rows;
-	ph_mod_t *ph_modules;
+	pi_mod_t *pi_modules;
 
-	ph_modules = ph_framework_data->ph_modules;
+	pi_modules = pi_framework_data->pi_modules;
 
 	html_page_data.page.s = buffer->s;
 	html_page_data.page.len = 0;
@@ -1112,31 +1119,31 @@ int ph_run_pi_cmd(int mod, int cmd,
 	html_page_data.cmd = cmd;
 	max_page_len = buffer->len;
 
-	if (0!=ph_build_header(page, buffer->len, mod, cmd)) return -1;
+	if (0!=pi_build_header(page, buffer->len, mod, cmd)) return -1;
 	buf = page->s;
 	p = page->s + page->len;
 
-	if (cmd<0) return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+	if (cmd<0) return pi_build_content(page, buffer->len, mod, cmd, NULL, NULL);
 
 	httpd_api.lookup_arg(connection, "cmd", con_cls, &l_arg);
-	if(l_arg.s==NULL) return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+	if(l_arg.s==NULL) return pi_build_content(page, buffer->len, mod, cmd, NULL, NULL);
 
 	LM_DBG("got arg cmd=[%.*s]\n", l_arg.len, l_arg.s);
 
-	command = &ph_modules[mod].cmds[cmd];
+	command = &pi_modules[mod].cmds[cmd];
 
 	if (l_arg.len==3 && strncmp(l_arg.s, "pre", 3)==0) {
 		/* We prebuild values only for update */
 		if(command->type!=DB_CAP_UPDATE) {
 			LM_ERR("command [%.*s] is not DB_CAP_UPDATE type\n",
 				command->name.len, command->name.s);
-			return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+			return pi_build_content(page, buffer->len, mod, cmd, NULL, NULL);
 		}
 		/* We prebuild values only for single clause update command */
 		if(command->c_keys_size!=1) {
 			LM_ERR("command [%.*s] has [%d] clause keys\n",
 				command->name.len, command->name.s, command->c_keys_size);
-			return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+			return pi_build_content(page, buffer->len, mod, cmd, NULL, NULL);
 		}
 		LM_DBG("[%.*s] with clause key [%.*s]\n",
 			command->name.len, command->name.s,
@@ -1150,7 +1157,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			LM_ERR("missing clause key [%.*s] in args\n",
 				command->c_keys[0]->len, command->c_keys[0]->s);
 			command->c_keys[0]->s[command->c_keys[0]->len] = tmp;
-			return ph_build_content(page, buffer->len, mod, cmd, NULL, NULL);
+			return pi_build_content(page, buffer->len, mod, cmd, NULL, NULL);
 		}
 		command->c_keys[0]->s[command->c_keys[0]->len] = tmp;
 
@@ -1175,7 +1182,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 
 		/* Let's run the query to get the values for the record to update*/
 		db_url = command->db_table->db_url;
-		if(use_table(command->db_table)<0){
+		if(pi_use_table(command->db_table)<0){
 			PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 				"Error on table [%.*s].",
 				command->db_table->name.len,
@@ -1183,7 +1190,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 			goto finish_page;
 		}
 
-		if(db_url->http_dbf.query(*db_url->http_db_handle,
+		if(db_url->dbf.query(*db_url->db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->q_keys,
 			command->c_keys_size,
@@ -1215,8 +1222,8 @@ int ph_run_pi_cmd(int mod, int cmd,
 
 		rows = RES_ROWS(res);
 		values = ROW_VALUES(rows);
-		ret = ph_build_content(page, buffer->len, mod, cmd, &l_arg, values);
-		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
+		ret = pi_build_content(page, buffer->len, mod, cmd, &l_arg, values);
+		db_url->dbf.free_result(*db_url->db_handle, res);
 		//res = NULL;
 		return ret;
 	} else if(l_arg.len==2 && strncmp(l_arg.s, "on", 2)==0) {
@@ -1306,14 +1313,14 @@ int ph_run_pi_cmd(int mod, int cmd,
 	}
 
 	db_url = command->db_table->db_url;
-	if(use_table(command->db_table)<0){
+	if(pi_use_table(command->db_table)<0){
 		PI_HTTP_BUILD_REPLY(page, buffer, mod, cmd,
 			"Error on table [%.*s].",
 			command->db_table->name.len,
 			command->db_table->name.s);
 		goto done;
 	}
-	if(ph_build_reply(page, buffer->len, mod, cmd)<0)
+	if(pi_build_reply(page, buffer->len, mod, cmd)<0)
 		goto error;
 	p = page->s + page->len;
 	switch (command->type) {
@@ -1324,8 +1331,8 @@ int ph_run_pi_cmd(int mod, int cmd,
 					PI_HTTP_Response_Menu_Cmd_td_4d);
 
 		}
-		if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
-			if(db_url->http_dbf.query(*db_url->http_db_handle,
+		if (DB_CAPABILITY(db_url->dbf, DB_CAP_FETCH)){
+			if(db_url->dbf.query(*db_url->db_handle,
 				command->c_keys, command->c_ops, c_vals,
 				command->q_keys,
 				command->c_keys_size,
@@ -1335,14 +1342,14 @@ int ph_run_pi_cmd(int mod, int cmd,
 					"Error while querying (fetch) database.");
 				goto done;
 			}
-			if(db_url->http_dbf.fetch_result(*db_url->http_db_handle,
+			if(db_url->dbf.fetch_result(*db_url->db_handle,
 					&res, 100)<0){
 				PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Fetching rows failed.");
 				goto done;
 			}
 		}else{
-			if(db_url->http_dbf.query(*db_url->http_db_handle,
+			if(db_url->dbf.query(*db_url->db_handle,
 				command->c_keys, command->c_ops, c_vals,
 				command->q_keys,
 				command->c_keys_size,
@@ -1370,7 +1377,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 						if (http_root.len) {
 							PI_HTTP_COPY_2(p,http_root, PI_HTTP_SLASH);
 						}
-						PI_HTTP_COPY_2(p,ph_modules[mod].module, PI_HTTP_SLASH);
+						PI_HTTP_COPY_2(p,pi_modules[mod].module, PI_HTTP_SLASH);
 						PI_HTTP_COPY(p,command->link_cmd[j]); /* this is the command */
 						PI_HTTP_COPY_3(p,PI_HTTP_HREF_2,
 								*command->q_keys[j],
@@ -1516,8 +1523,8 @@ int ph_run_pi_cmd(int mod, int cmd,
 				PI_HTTP_COPY(p,PI_HTTP_Response_Menu_Cmd_tr_2);
 			}
 			/* any more data to be fetched ?*/
-			if (DB_CAPABILITY(db_url->http_dbf, DB_CAP_FETCH)){
-				if(db_url->http_dbf.fetch_result(*db_url->http_db_handle,
+			if (DB_CAPABILITY(db_url->dbf, DB_CAP_FETCH)){
+				if(db_url->dbf.fetch_result(*db_url->db_handle,
 					&res, 100)<0){
 					LM_ERR("fetching more rows failed\n");
 					goto error;
@@ -1527,12 +1534,12 @@ int ph_run_pi_cmd(int mod, int cmd,
 				nr_rows = 0;
 			}
 		}while (nr_rows>0);
-		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
+		db_url->dbf.free_result(*db_url->db_handle, res);
 		res=NULL;
 		goto finish_page;
 		break;
 	case DB_CAP_INSERT:
-		if((db_url->http_dbf.insert(*db_url->http_db_handle,
+		if((db_url->dbf.insert(*db_url->db_handle,
 			command->q_keys, q_vals, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to add record to db.");
@@ -1543,7 +1550,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_DELETE:
-		if((db_url->http_dbf.delete(*db_url->http_db_handle,
+		if((db_url->dbf.delete(*db_url->db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->c_keys_size))!=0) {
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
@@ -1555,7 +1562,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_UPDATE:
-		if((db_url->http_dbf.update(*db_url->http_db_handle,
+		if((db_url->dbf.update(*db_url->db_handle,
 			command->c_keys, command->c_ops, c_vals,
 			command->q_keys, q_vals,
 			command->c_keys_size, command->q_keys_size))!=0){
@@ -1568,7 +1575,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 		goto done;
 		break;
 	case DB_CAP_REPLACE:
-		if((db_url->http_dbf.replace(*db_url->http_db_handle,
+		if((db_url->dbf.replace(*db_url->db_handle,
 			command->q_keys, q_vals, command->q_keys_size))!=0){
 			PI_HTTP_COMPLETE_REPLY(page, buffer, mod, cmd,
 					"Unable to replace record.");
@@ -1585,7 +1592,7 @@ int ph_run_pi_cmd(int mod, int cmd,
 	LM_ERR("You shoudn't end up here\n");
 error:
 	if (db_url && res)
-		db_url->http_dbf.free_result(*db_url->http_db_handle, res);
+		db_url->dbf.free_result(*db_url->db_handle, res);
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
 	return -1;
@@ -1594,7 +1601,7 @@ finish_page:
 	if(c_vals) pkg_free(c_vals);
 	if(q_vals) pkg_free(q_vals);
 	page->len = p - page->s;
-	return ph_build_reply_footer(page, buffer->len);
+	return pi_build_reply_footer(page, buffer->len);
 
 done:
 	if(c_vals) pkg_free(c_vals);
