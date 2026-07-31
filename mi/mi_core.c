@@ -50,6 +50,7 @@
 #include "../xlog.h"
 #include "../cfg_reload.h"
 #include "../status_report.h"
+#include "../db/db_pi.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -982,6 +983,14 @@ static mi_response_t *w_reload_routes(const mi_params_t *params,
 
 
 static const mi_export_t mi_core_cmds[] = {
+	{ "pi_list", "lists the provisioning framework", 0, 0, {
+		{w_mi_pi_list, {0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ "pi_reload", "reloads the provisioning framework", 0, 0, {
+		{w_mi_pi_reload, {0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
 	{ "uptime", "prints various time information about OpenSIPS - "
 		"when it started to run, for how long it runs", 0, init_mi_uptime, {
 		{mi_uptime, {0}},

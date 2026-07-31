@@ -27,6 +27,7 @@
 #define globals_h
 
 #include <time.h>
+#include "str.h"
 
 typedef struct __str * const strptr_t;
 
@@ -40,6 +41,7 @@ extern char * cfg_file;
 extern char *preproc;
 extern int config_check;
 extern char *stat_file;
+extern str pi_framework;
 
 extern char* pid_file;
 extern char* pgid_file;

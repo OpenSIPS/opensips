@@ -207,6 +207,7 @@ OPEN_FD_LIMIT		"open_files_limit"
 ENABLE_ASSERTS	enable_asserts
 ABORT_ON_ASSERT	abort_on_assert
 LOGLEVEL	log_level
+PI_FRAMEWORK	pi_framework
 LOGPREFIX	log_prefix
 LOGSTDOUT	log_stdout
 STDERROR_ENABLED	stderror_enabled
@@ -420,6 +421,7 @@ SPACE		[ ]
 
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
+<INITIAL>{PI_FRAMEWORK}	{ count(); yylval.strval=yytext; return PI_FRAMEWORK; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;

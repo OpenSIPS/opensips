@@ -23,10 +23,10 @@
  */
 
 
-#ifndef _PI_HTTP_HTTP_FNC_H
-#define _PI_HTTP_HTTP_FNC_H
+#ifndef _PI_FRAMEWORK_H
+#define _PI_FRAMEWORK_H
 
-#include "../../db/db.h"
+#include "db.h"
 
 /**< no validation required */
 #define	PH_FLAG_NONE		0
@@ -103,6 +103,8 @@ typedef struct ph_framework_ {
 	int ph_modules_size;
 }ph_framework_t;
 
+extern ph_framework_t *ph_framework_data;
+
 
 typedef struct ph_html_page_data_ {
 	str page;
@@ -116,9 +118,9 @@ int ph_init_async_lock(void);
 void ph_destroy_async_lock(void);
 
 int ph_init_cmds(ph_framework_t **framework_data, const char* filename);
+int pi_framework_init(void);
 int ph_parse_url(const char* url, int* mod, int* cmd);
 int ph_run_pi_cmd(int mod, int cmd, void *connection, void *con_cls,
 			str *page, str *buffer);
 
 #endif
-

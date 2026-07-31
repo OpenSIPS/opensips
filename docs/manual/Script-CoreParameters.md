@@ -828,6 +828,23 @@ Example of usage:
 
 ```
 
+### pi_framework
+
+The path to the XML provisioning framework used by the active PI transport.
+The framework describes the database URLs, tables and provisioning commands
+available through the provisioning interface.
+
+This parameter is required when using the `pi_http` module. The framework can
+be reloaded at runtime with the core `pi_reload` MI command, and its modules
+and commands can be inspected with `pi_list`.
+
+Example of usage:
+```opensips
+
+    pi_framework = "/usr/local/etc/opensips/pi_framework.xml"
+
+```
+
 ### poll_method
 
 The poll method used by the internal I/O reactor. By default, the best method for the current OS is selected.

@@ -276,6 +276,7 @@ extern int cfg_parse_only_routes;
 %token EXIT
 %token RETURN
 %token LOG_TOK
+%token PI_FRAMEWORK
 %token ERROR
 %token ROUTE
 %token ROUTE_FAILURE
@@ -956,6 +957,11 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			/* in debug mode, force logging to DEBUG level*/
 			*log_level = debug_mode?L_DBG:$3;
 			}
+		| PI_FRAMEWORK EQUAL STRING { IFOR();
+			pi_framework.s = $3;
+			pi_framework.len = strlen($3);
+			}
+		| PI_FRAMEWORK EQUAL error { yyerror("string value expected"); }
 		| LOGPREFIX EQUAL STRING { IFOR();
 			if (*$3) {
 				int len = strlen($3);

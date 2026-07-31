@@ -24,8 +24,10 @@
  *  2012-03-19  initial version (Ovidiu Sas)
  */
 
-#ifndef PI_HTTP_HTTP_DB_HANDLER
-#define PI_HTTP_HTTP_DB_HANDLER
+#ifndef _PI_FRAMEWORK_DB_H_
+#define _PI_FRAMEWORK_DB_H_
+
+#include "pi_framework.h"
 
 
 int init_http_db(ph_framework_t *framework_data, int index);

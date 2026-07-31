@@ -107,6 +107,7 @@
 #include "route.h"
 #include "bin_interface.h"
 #include "globals.h"
+#include "db/pi_framework.h"
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 #include "mem/rpm_mem.h"
@@ -223,6 +224,7 @@ static const struct main_script main_script[] = {
 	FN_HNDLR(resolv_blacklist_init, !=, 0, "resolver's blacklist"),
 	FN_HNDLR(init_dset, !=, 0, "SIP forking logic"),
 	FN_HNDLR(init_db_support, !=, 0, "SQL database support"),
+	FN_HNDLR(pi_framework_init, !=, 0, "PI framework"),
 	FN_HNDLR(init_cdb_support, !=, 0, "CacheDB support"),
 	FN_HNDLR(init_pvar_support, !=, 0, "pseudo-variable support"),
 	FN_HNDLR(init_modules, !=, 0, "modules"),

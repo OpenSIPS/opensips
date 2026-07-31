@@ -133,6 +133,42 @@ Examples of usage:
 
 ```
 
+### pi_list
+Lists the modules and provisioning commands defined by the configured PI
+framework.
+
+**Arguments**: none
+
+**Output**: an object whose keys are framework modules and whose values are
+arrays containing the provisioning commands exposed by each module.
+
+Example of usage:
+```bash
+
+    $ opensips-mi pi_list
+    {
+        "dispatcher": [
+            "show_all",
+            "add_gw"
+        ]
+    }
+
+```
+
+### pi_reload
+Reloads the provisioning framework configured by the [pi_framework](Script-CoreParameters.md#pi_framework) core parameter.
+
+**Arguments**: none
+
+**Output**: success or an error if the framework cannot be reloaded.
+
+Example of usage:
+```bash
+
+    $ opensips-mi pi_reload
+
+```
+
 ### profiling_proc
 Get or set the profiling level globally or per process. If no **level** is given, the function will list the current profiling level of the specified processes. If **level** is given, it gives the incremental verbosity level - from the lowest to higher level, we have: **0** OFF, **1** SIP level (I/O reactor, SIP stack -TM, dialog, b2b-, scripting), **2** Extra Processes too (like MI, RTPproxy, HTTPD) and **3** TIMER/FULL (timer job execution).
 What are the impacted processes may be controlled via the **ID** (internal ID) or **PID** ids. If none given, all processes will be impacted by the set/get operation.

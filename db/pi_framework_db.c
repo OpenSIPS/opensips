@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../db/db.h"
-#include "http_fnc.h"
+#include "db.h"
+#include "pi_framework.h"
 
 
 

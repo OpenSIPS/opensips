@@ -52,6 +52,7 @@ int testing_framework;
 char *testing_module = "core";
 
 char* cfg_file = 0;
+str pi_framework = {0, 0};
 char *preproc = NULL;
 unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 						  not want to exceed during the
