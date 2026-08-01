@@ -928,7 +928,7 @@ static const mi_export_t mi_cmds[] = {
 	{
 	    {mi_cl_ctr_members, {0}},
 	    {EMPTY_MI_RECIPE}
-	}
+	}, {0}
     },
     {
 	"cl_ctr_node_info",
@@ -937,7 +937,7 @@ static const mi_export_t mi_cmds[] = {
 	{
 	    {mi_cl_ctr_node_info, {"node_id", 0}},
 	    {EMPTY_MI_RECIPE}
-	}
+	}, {0}
     },
     {
 	"cl_ctr_list_config",
@@ -946,7 +946,7 @@ static const mi_export_t mi_cmds[] = {
 	{
 	    {mi_cl_ctr_config, {0}},
 	    {EMPTY_MI_RECIPE}
-	}
+	}, {0}
     },
     {
 	"cl_ctr_shtag_force",
@@ -956,7 +956,7 @@ static const mi_export_t mi_cmds[] = {
 	{
 	    {mi_cl_ctr_shtag_force, {"cluster_id", "node_id", 0}},
 	    {EMPTY_MI_RECIPE}
-	}
+	}, {0}
     },
     {
 	"cl_ctr_shtag_auto",
@@ -965,7 +965,7 @@ static const mi_export_t mi_cmds[] = {
 	{
 	    {mi_cl_ctr_shtag_auto, {"cluster_id", 0}},
 	    {EMPTY_MI_RECIPE}
-	}
+	}, {0}
     },
     {EMPTY_MI_EXPORT}
 };
