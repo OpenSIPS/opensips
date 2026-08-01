@@ -1,5 +1,5 @@
 ---
-title: "SNMPStats Module (Simple Network Management Protocal Statistic Module)"
+title: "SNMPStats Module"
 description: "The SNMPStats module provides an SNMP management interface to OpenSIPS."
 ---
 
@@ -9,11 +9,7 @@ description: "The SNMPStats module provides an SNMP management interface to Open
 ### Overview
 
 
-The SNMPStats module provides an SNMP management interface
-to OpenSIPS.  Specifically, it provides general SNMP queryable
-scalar statistics, table representations of more complicated data
-such as user and contact information, and alarm monitoring
-capabilities.
+The SNMPStats module (Simple Network Management Protocal Statistic Module) provides an SNMP management interface to OpenSIPS.  Specifically, it provides general SNMP queryable scalar statistics, table representations of more complicated data such as user and contact information, and alarm monitoring capabilities.
 
 
 #### General Scalar Statistics

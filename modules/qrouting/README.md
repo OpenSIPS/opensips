@@ -1,5 +1,5 @@
 ---
-title: "qrouting (Quality-based Routing) Module"
+title: "Quality-based Routing Module"
 description: "*qrouting* is a module which sits on top of [drouting](../drouting/doc/drouting.html), [dialog](../dialog/doc/dialog.html) and [tm](../tm/doc/tm.html) and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)."
 ---
 

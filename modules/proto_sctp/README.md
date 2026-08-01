@@ -74,7 +74,7 @@ modparam("proto_sctp", "sctp_port", 5070)
 
 You need to load the "proto_sctp" module. In your script, make sure
 you do a **loadmodule "proto_sctp.so"**
-after setting the **[mpath](https://docs.opensips.org/manual/2-1/script-coreparameters#mpath)**.
+after setting the **[mpath](https://docs.opensips.org/manual/devel/script-coreparameters#mpath)**.
 <!-- CONTRIBUTORS -->
 
 ### License

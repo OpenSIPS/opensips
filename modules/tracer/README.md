@@ -33,12 +33,12 @@ or for a certain trace_id.
 The tracing tracing can be turned on/off using fifo command.
 
 ```bash
-opensips-cli -x mi trace on
-opensips-cli -x mi trace [some_trace_id] on
+opensips-cli -x mi tracer:trace on
+opensips-cli -x mi tracer:trace [some_trace_id] on
 
 
-opensips-cli -x mi trace off
-opensips-cli -x mi trace [some_trace_id] off
+opensips-cli -x mi tracer:trace off
+opensips-cli -x mi tracer:trace [some_trace_id] off
 ```
 
 Starting with OpenSIPS 3.0 you can use the *trace_start* to
@@ -377,7 +377,7 @@ to correlate this traffic (transaction, dialog) with other traffic.
 ### Exported MI Functions
 
 
-#### trace
+#### tracer:trace
 
 
 Enable/disable tracing(globally or for a specific trace id) or dump
@@ -385,7 +385,7 @@ info about trace ids. This command requires named parameters
 (each parameter is ginven in the format param_name=param_value).
 
 
-Name: *trace*
+Name: *tracer:trace*
 
 
 Parameters:
@@ -416,11 +416,11 @@ MI FIFO Command Format:
 
 ```bash
 # Display global tracing mode and all trace destinations:
-opensips-cli -x mi trace
+opensips-cli -x mi tracer:trace
 # Turn off global tracing:
-opensips-cli -x mi trace mode=off
+opensips-cli -x mi tracer:trace mode=off
 # Turn on tracing for destination id tid2:
-opensips-cli -x mi trace id=tid2 mode=on
+opensips-cli -x mi tracer:trace id=tid2 mode=on
 		
 ```
 

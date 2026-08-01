@@ -1,5 +1,5 @@
 ---
-title: "Auth_aka Module"
+title: "AUTH AKA Module"
 description: "This module contains functions that are used to perform digest authentication using the AKA (Authentication and Key Agreement) security protocol. This mechanism is being used in IMS networks to provide mutual authentication between the UE (device) and the 3G/4G/5G network."
 ---
 

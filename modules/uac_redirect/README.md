@@ -1,5 +1,5 @@
 ---
-title: "UAC_REDIRECT Module"
+title: "UAC REDIRECT Module"
 description: "UAC REDIRECT - User Agent Client redirection - module enhance OpenSIPS with the functionality of being able to handle (interpret, filter, log and follow) redirect responses ( 3xx replies class)."
 ---
 

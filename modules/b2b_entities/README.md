@@ -304,7 +304,7 @@ modparam("b2b_entities", "passthru_prack", 1)
 
 
 Contact to use in generated messages for UA session started with the
-[mi ua session client start](#mi_ua_session_client_start) MI function.
+[b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
 ```opensips title="Set advertised_contact parameter"
@@ -320,7 +320,7 @@ modparam("b2b_entities", "advertised_contact", "opensips@10.10.10.10:5060")
 
 Default timeout, in seconds, for UA session started with the
 [ua session server init](#func_ua_session_server_init) function or the
-[mi ua session client start](#mi_ua_session_client_start) MI function. After this
+[b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function. After this
 interval a BYE will be sent and the session will be deleted.
 
 
@@ -401,7 +401,7 @@ if(is_method("INVITE") && !has_totag()) {
 
 Sends a sequential request for a UA session started with the 
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
 Parameters:
@@ -435,7 +435,7 @@ ua_session_update($var(b2b_key), "OPTIONS");
 
 Sends a reply for a UA session started with the 
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
 Parameters:
@@ -471,7 +471,7 @@ ua_session_reply($var(b2b_key), "INVITE", 180, "Ringing");
 
 Terminate a UA session started with the
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
 Parameters:
@@ -520,7 +520,7 @@ MI FIFO Command Format:
 ```
 
 
-#### ua_session_client_start
+#### b2b_entities:ua_session_client_start
 
 
 This command starts a new UAC session by sending an initial INVITE.
@@ -528,7 +528,7 @@ Further requests/replies received belonging to this session will only
 be handled via the [E UA SESSION](#event_e_ua_session) event.
 
 
-Name: *ua_session_client_start*
+Name: *b2b_entities:ua_session_client_start*
 
 
 Parameters:
@@ -558,20 +558,20 @@ opensips-cli Command Format:
 
 
 ```bash
-opensips-cli -x mi ua_session_client_start ruri=sip:bob@opensips.org \
+opensips-cli -x mi b2b_entities:ua_session_client_start ruri=sip:bob@opensips.org \
 to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
 ```
 
 
-#### ua_session_update
+#### b2b_entities:ua_session_update
 
 
 Sends a sequential request for a UA session started with the
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
-Name: *ua_session_update*
+Name: *b2b_entities:ua_session_update*
 
 
 Parameters:
@@ -593,19 +593,19 @@ opensips-cli Command Format:
 
 
 ```bash
-opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIONS
+opensips-cli -x mi b2b_entities:ua_session_update key=B2B.436.1925389.1649338095 method=OPTIONS
 ```
 
 
-#### ua_session_reply
+#### b2b_entities:ua_session_reply
 
 
 Sends a reply for a UA session started with the
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
-Name: *ua_session_reply*
+Name: *b2b_entities:ua_session_reply*
 
 
 Parameters:
@@ -629,19 +629,19 @@ opensips-cli Command Format:
 
 
 ```bash
-opensips-cli -x mi ua_session_reply key=B2B.436.1925389.1649338095 method=OPTIONS code=200 reason=OK
+opensips-cli -x mi b2b_entities:ua_session_reply key=B2B.436.1925389.1649338095 method=OPTIONS code=200 reason=OK
 ```
 
 
-#### ua_session_terminate
+#### b2b_entities:ua_session_terminate
 
 
 Terminate a UA session started with the
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
-Name: *ua_session_terminate*
+Name: *b2b_entities:ua_session_terminate*
 
 
 Parameters:
@@ -656,19 +656,19 @@ opensips-cli Command Format:
 
 
 ```bash
-opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
+opensips-cli -x mi b2b_entities:ua_session_terminate key=B2B.436.1925389.1649338095
 ```
 
 
-#### ua_session_list
+#### b2b_entities:ua_session_list
 
 
 List information about UA sessions started with
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
-Name: *ua_session_list*
+Name: *b2b_entities:ua_session_list*
 
 
 Parameters:
@@ -682,7 +682,7 @@ MI FIFO Command Format:
 
 
 ```bash
-	opensips-cli -x mi ua_session_list
+	opensips-cli -x mi b2b_entities:ua_session_list
 	
 ```
 
@@ -696,7 +696,7 @@ MI FIFO Command Format:
 This event is triggered for requests/replies belonging to an ongoing UA
 session started with the
 [ua session server init](#func_ua_session_server_init) function or
-the [mi ua session client start](#mi_ua_session_client_start) MI function.
+the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
 
 
 Note that replies will not be reported at all unless the

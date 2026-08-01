@@ -88,7 +88,7 @@ and the node cannot be reconnected.
 - A *query targets a slot with no known owner*,
 suggesting the topology is stale.
 - An operator triggers a manual refresh via the
-[mi redis cluster refresh](#mi_redis_cluster_refresh) MI command.
+[cachedb_redis:redis_cluster_refresh](#mi_redis_cluster_refresh) MI command.
 
 
 Automatic refreshes are rate-limited to at most once per second to
@@ -272,9 +272,9 @@ ignored with a warning if `use_tls` is enabled.
 automatically skipped.
 
 
-The [mi redis cluster info](#mi_redis_cluster_info) MI command will display
+The [cachedb_redis:redis_cluster_info](#mi_redis_cluster_info) MI command will display
 Unix socket connections with `transport=unix` and
-the socket path. The [mi redis ping nodes](#mi_redis_ping_nodes) command
+the socket path. The [cachedb_redis:redis_ping_nodes](#mi_redis_ping_nodes) command
 works normally with Unix socket connections.
 
 
@@ -518,7 +518,7 @@ in configuration script.
 ### Exported MI Functions
 
 
-#### redis_cluster_info
+#### cachedb_redis:redis_cluster_info
 
 
 Displays detailed information about all Redis connections managed
@@ -572,15 +572,15 @@ MI FIFO Command Format:
 
 ```bash
 ## list all Redis connections
-opensips-cli -x mi redis_cluster_info
+opensips-cli -x mi cachedb_redis:redis_cluster_info
 
 ## list only the "local" group
-opensips-cli -x mi redis_cluster_info group=local
+opensips-cli -x mi cachedb_redis:redis_cluster_info group=local
 			
 ```
 
 
-#### redis_cluster_refresh
+#### cachedb_redis:redis_cluster_refresh
 
 
 Forces an immediate topology refresh on Redis Cluster connections.
@@ -612,15 +612,15 @@ MI FIFO Command Format:
 
 ```bash
 ## refresh all cluster connections
-opensips-cli -x mi redis_cluster_refresh
+opensips-cli -x mi cachedb_redis:redis_cluster_refresh
 
 ## refresh only the "local" group
-opensips-cli -x mi redis_cluster_refresh group=local
+opensips-cli -x mi cachedb_redis:redis_cluster_refresh group=local
 			
 ```
 
 
-#### redis_ping_nodes
+#### cachedb_redis:redis_ping_nodes
 
 
 Sends a PING command to each Redis node and reports per-node
@@ -657,10 +657,10 @@ MI FIFO Command Format:
 
 ```bash
 ## ping all Redis nodes
-opensips-cli -x mi redis_ping_nodes
+opensips-cli -x mi cachedb_redis:redis_ping_nodes
 
 ## ping only the "local" group
-opensips-cli -x mi redis_ping_nodes group=local
+opensips-cli -x mi cachedb_redis:redis_ping_nodes group=local
 			
 ```
 
@@ -698,7 +698,7 @@ Total number of cluster topology refreshes performed (via
 CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
 for automatic refreshes (triggered by MOVED responses or
 unreachable nodes) and manual refreshes (triggered via the
-[mi redis cluster refresh](#mi_redis_cluster_refresh) MI command).
+[cachedb_redis:redis_cluster_refresh](#mi_redis_cluster_refresh) MI command).
 
 
 ### Raw Query Syntax

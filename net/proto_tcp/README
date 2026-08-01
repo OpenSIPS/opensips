@@ -40,7 +40,7 @@ Razvan Crainea
 
         1.5. Exported MI Functions
 
-              1.5.1. tcp_trace
+              1.5.1. tcp:trace
 
    2. Frequently Asked Questions
 
@@ -263,7 +263,7 @@ modparam("proto_tcp", "trace_destination", "hep_dest")
    This controls whether tracing for tcp is on or not. You still
    need to define Section 1.4.9, “trace_destination (string)”in
    order to work, but this value will be controlled using mi
-   function Section 1.5.1, “ tcp_trace ”.
+   function tcp:trace.
    Default value is 0(tracing inactive).
 
    Example 1.12. Set trace_on parameter
@@ -294,8 +294,8 @@ modparam("proto_tcp", "trace_on", 1)
    $socket_in(port) (port) can be used.
 
    WARNING: IF Section 1.4.10, “trace_on (int)” is set to 0 or
-   tracing is deactived via the mi command Section 1.5.1, “
-   tcp_trace ” this route won't be called.
+   tracing is deactived via the mi command tcp:trace this route
+   won't be called.
    Default value is none(no route is set).
 
    Example 1.13. Set trace_filter_route parameter
@@ -321,9 +321,9 @@ route[tcp_filter] {
 
 1.5. Exported MI Functions
 
-1.5.1.  tcp_trace
+1.5.1.  tcp:trace
 
-   Name: tcp_trace
+   Name: tcp:trace
 
    Parameters:
      * trace_mode(optional): set tcp tracing on and off. This
@@ -334,7 +334,7 @@ route[tcp_filter] {
           + off
 
    MI FIFO Command Format:
-                        :tcp_trace:_reply_fifo_file_
+                        :tcp:trace:_reply_fifo_file_
                         trace_mode
                         _empty_line_
 

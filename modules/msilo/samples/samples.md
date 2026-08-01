@@ -1,4 +1,4 @@
-### OpenSIPS Config Script - Msilo Usage
+### OpenSIPS Config Script - Msilo (Message SILO) Usage
 
-[msilo.cfg](./msilo.cfg "include")
+[opensips-msilo.cfg](./opensips-msilo.cfg "include")
 

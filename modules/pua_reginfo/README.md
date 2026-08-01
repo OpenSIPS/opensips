@@ -1,5 +1,5 @@
 ---
-title: "pua_reginfo Module"
+title: "PUA reginfo Module"
 description: "This module publishes information about \"reg\"-events according to to RFC 3680."
 ---
 
@@ -76,7 +76,7 @@ constructing the uri for the registrar callback.
 
 ```opensips title="Set default_domain parameter"
 ...
-modparam("pua_reginfo", "default_domain", "kamailio.org")
+modparam("pua_reginfo", "default_domain", "opensips.org")
 ...
 ```
 
@@ -108,7 +108,7 @@ The outbound_proxy uri to be used when sending Subscribe and Publish requests.
 
 ```opensips title="Set outbound_proxy parameter"
 ...
-modparam("pua_reginfo", "outbound_proxy", "sip:proxy@kamailio.org")
+modparam("pua_reginfo", "outbound_proxy", "sip:proxy@opensips.org")
 ...
 ```
 

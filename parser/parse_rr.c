@@ -472,6 +472,53 @@ error:
 }
 
 
+int list_rr_body(struct hdr_field *iroute, str **oroute)
+{
+	rr_t *p;
+	int n = 0;
+#define MAX_RR_HDRS	64
+	static str route[MAX_RR_HDRS];
+	struct hdr_field *hdr;
+
+	if(iroute==NULL)
+		return 0;
+
+	memset(route, 0, MAX_RR_HDRS*sizeof(str));
+
+	while (iroute!=NULL)
+	{
+		hdr=iroute;
+		if (parse_rr(hdr) < 0)
+		{
+			LM_ERR("failed to parse RR\n");
+			goto error;
+		}
+
+		p =(rr_t*)hdr->parsed;
+		while (p)
+		{
+			route[n].s = p->nameaddr.name.s;
+			route[n].len = p->len;
+			LM_DBG("current rr is %.*s\n", route[n].len, route[n].s);
+
+			n++;
+			if(n==MAX_RR_HDRS)
+			{
+				LM_ERR("too many RR\n");
+				goto error;
+			}
+			p = p->next;
+		}
+
+		iroute = iroute->sibling;
+	}
+
+	*oroute = &route[0];
+
+	return n;
+error:
+	return -1;
+}
 
 /*
  * Path must be available. Function returns the first uri

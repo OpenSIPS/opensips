@@ -1,5 +1,5 @@
 ---
-title: "Presence User Agent for XMPP (Presence gateway between SIP and XMPP)"
+title: "PUA XMPP module"
 description: "This module is a gateway for presence between SIP and XMPP."
 ---
 

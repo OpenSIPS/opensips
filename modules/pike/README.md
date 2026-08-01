@@ -306,7 +306,7 @@ In terms of reports/logs, the following events will be reported:
 
 
 For how to access and use the Status/Report information, please see
-[https://www.opensips.org/Documentation/Interface-StatusReport-3-3](>https://www.opensips.org/Documentation/Interface-StatusReport-3-3).
+[https://docs.opensips.org/manual/devel/interface-statusreport/](>https://docs.opensips.org/manual/devel/interface-statusreport/).
 
 
 ## Developer Guide

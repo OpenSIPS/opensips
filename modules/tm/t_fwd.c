@@ -59,6 +59,7 @@
 #include "t_cancel.h"
 #include "t_lookup.h"
 #include "t_fwd.h"
+#include "t_reply.h"
 #include "fix_lumps.h"
 #include "config.h"
 #include "cluster.h"
@@ -82,11 +83,7 @@ void t_on_branch( struct script_route_ref *ref )
 	 * created; if not -> use the static variable */
 	holder = (!t || t==T_UNDEFINED ) ? &goto_on_branch : &t->on_branch ;
 
-	/* if something already set, free it first */
-	if (*holder)
-		shm_free( *holder );
-
-	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
+	tm_set_script_route_ref( t, holder, ref );
 }
 
 
