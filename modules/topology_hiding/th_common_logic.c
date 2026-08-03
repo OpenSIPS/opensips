@@ -310,6 +310,11 @@ struct lump* restore_vias_from_req(struct sip_msg *req, struct sip_msg *rpl)
 	char *received_buf=0,*rport_buf=0;
 	unsigned int rport_len=0,received_len=0;
 	int size;
+	int bytes_before = 0;
+	int bytes_after = 0;
+	int bytes_between = 0;
+	char *between = NULL;
+	char *after = NULL;
 
 	lmp = anchor_lump(rpl,rpl->headers->name.s - buf,0);
 	if (lmp == 0)
@@ -371,12 +376,6 @@ struct lump* restore_vias_from_req(struct sip_msg *req, struct sip_msg *rpl)
 		p += received_len;
 		memcpy(p,rport_buf,rport_len);
 		p += rport_len;
-
-		int bytes_before = 0;
-		int bytes_after = 0;
-		int bytes_between = 0;
-		char *between = NULL;
-		char *after = NULL;
 
 		if (req->via1->received) {
 			if (!req->via1->rport) {

@@ -489,6 +489,7 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 	int rebuild_req_rrs = 0;
 	int one_way_hiding = th_no_dlg_one_way_hiding(t->uas.response.dst.send_sock);
 	int req_one_way_hiding = th_no_dlg_one_way_hiding(TM_BRANCH(t, t->relaied_reply_branch).request.dst.send_sock);
+	int i;
 	route_count_t route_count = { 0 };
 
 	LM_DBG("Response callback with flags %u \n", flags);
@@ -538,7 +539,7 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 				rr_lmp = anchor_lump(rpl, rpl->headers->name.s - rpl->buf, HDR_RECORDROUTE_T);
 			}
 
-			for (int i = 0; i < rpl_rr_count; i++) {
+			for (i = 0; i < rpl_rr_count; i++) {
 				BUILD_RR_HEADER_BUFFER(rpl_rr_buf, rpl_rr_buf_len, rpl_original_rrs[i]);
 
 				if (!rpl_rr_buf) {
@@ -589,7 +590,7 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 			goto cleanup;
 		}
 
-		for (int i = 0; i < req_rr_count; i++) {
+		for (i = 0; i < req_rr_count; i++) {
 			BUILD_RR_HEADER_BUFFER(req_rr_buf, req_rr_buf_len, additional_rrs[i]);
 
 			if (!req_rr_buf) {
@@ -1734,6 +1735,7 @@ static struct lump* th_no_dlg_add_auto_record_route(struct sip_msg* msg, uint16_
     str *rpl_rrs = NULL;
     unsigned int rpl_rr_count = 0;
     int is_reply = msg->first_line.type == SIP_REPLY;
+	int i;
 
     if (parse_headers(msg, HDR_EOH_F, 0)< 0) {
 		LM_ERR("Failed to parse reply\n");
@@ -1820,7 +1822,7 @@ static struct lump* th_no_dlg_add_auto_record_route(struct sip_msg* msg, uint16_
 
     if (rpl_rr_count > 0) {
         if (is_reply) {
-            for (int i = rpl_rr_count - 1; i >= 0; i--) {
+            for (i = rpl_rr_count - 1; i >= 0; i--) {
                 BUILD_RR_HEADER_BUFFER(rpl_route_hdr, rpl_route_hdr_len, rpl_rrs[i]);
 
                 if (!rpl_route_hdr) {
@@ -1835,7 +1837,7 @@ static struct lump* th_no_dlg_add_auto_record_route(struct sip_msg* msg, uint16_
                 }
             }
         } else {
-            for (int i = 0; i < rpl_rr_count; i++) {
+            for (i = 0; i < rpl_rr_count; i++) {
                 BUILD_RR_HEADER_BUFFER(rpl_route_hdr, rpl_route_hdr_len, rpl_rrs[i]);
 
                 if (!rpl_route_hdr) {
@@ -2100,10 +2102,12 @@ add_password:
 }
 
 static thinfo_options_t *th_get_options(const str *pn) {
+	int i;
+
 	if (!pn || !pn->s)
 		return NULL;
 
-	for (int i = 0; i < TH_INFO_PASSWORD_ROTATION_SIZE; i++) {
+	for (i = 0; i < TH_INFO_PASSWORD_ROTATION_SIZE; i++) {
 		if (pn->len == param_passwords[i].param_name.len &&
 			memcmp(pn->s, param_passwords[i].param_name.s, pn->len) == 0)
 			return &param_passwords[i];

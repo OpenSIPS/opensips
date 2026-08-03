@@ -125,6 +125,7 @@ static uint8_t encode_params(unsigned char *p, uint16_t *uri_properties, str *pa
     int remaining, param_len_current;
     uint8_t param_len = 0;
     int skip_encode = 0;
+	int i;
     
     if (!params || params->len == 0 || params->len > UINT8_MAX) {
         return 0;
@@ -149,7 +150,7 @@ static uint8_t encode_params(unsigned char *p, uint16_t *uri_properties, str *pa
         end = memchr(src, ';', remaining);
         param_len_current = end ? (end - src) : remaining;
 
-        for (int i = 0; i < param_count; i++) {
+        for (i = 0; i < param_count; i++) {
             LM_DBG("Checking param [%.*s]\n", params_to_skip[i].len, params_to_skip[i].s);
             if (param_len_current >= params_to_skip[i].len && strncmp(src, params_to_skip[i].s, params_to_skip[i].len) == 0) {
                 if ((param_len_current == lr_uri_param.len && memcmp(src, lr_uri_param.s, lr_uri_param.len) == 0) ||
@@ -329,6 +330,7 @@ int thinfo_encode_socket(thinfo_encoded_t *thinfo, const struct socket_info *si)
     unsigned char *p;
     uint8_t flags = 0;
     int has_port = 0;
+	int bytes_written;
 
     if (si == NULL) {
         LM_ERR("Socket is null\n");
@@ -379,7 +381,7 @@ int thinfo_encode_socket(thinfo_encoded_t *thinfo, const struct socket_info *si)
         *p++ = si->port_no & 0xFF;
     }
     
-    int bytes_written = p - (thinfo->buf + thinfo->len);
+    bytes_written = p - (thinfo->buf + thinfo->len);
     thinfo->len = p - thinfo->buf;
     
     return bytes_written;
