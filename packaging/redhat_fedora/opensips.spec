@@ -54,7 +54,11 @@ BuildRequires:  bison
 BuildRequires:  flex
 BuildRequires:  subversion
 BuildRequires:  which
+%if 0%{?rhel} >= 10
+BuildRequires:  mariadb-devel
+%else
 BuildRequires:  mysql-devel
+%endif
 BuildRequires:  postgresql-devel
 BuildRequires:  autoconf
 BuildRequires:  automake
@@ -528,7 +532,11 @@ This package provides the MSRP protocol support for OpenSIPS.
 Summary:  MySQL database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+%if 0%{?rhel} >= 10
+Requires: mariadb-libs
+%else
 Requires: mysql-libs
+%endif
 
 %description  mysql-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
