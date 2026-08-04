@@ -104,6 +104,11 @@ struct tcp_worker *tcp_workers=0;
  * quickly finding the corresponding connection for a reply */
 static unsigned int* connection_id=0;
 
+/* connections are created both by TCP main (on accept) and by any other
+ * process (on connect), so the counter above must be incremented under lock -
+ * otherwise concurrent creations may end up sharing the same connection ID */
+static gen_lock_t* connection_id_lock=0;
+
 /* array of TCP partitions */
 static struct tcp_partition tcp_parts[TCP_PARTITION_SIZE];
 
@@ -880,6 +885,18 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 }
 
 
+static inline unsigned int tcpconn_next_id(void)
+{
+	unsigned int id;
+
+	lock_get(connection_id_lock);
+	id = (*connection_id)++;
+	lock_release(connection_id_lock);
+
+	return id;
+}
+
+
 static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* su,
                     const struct socket_info* si, const struct tcp_conn_profile *prof,
                     int state, int flags, int in_main_proc)
@@ -917,7 +934,7 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 	c->rcv.dst_port = su_getport(&local_su);
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	LM_DBG("on port %d, proto %d\n", c->rcv.src_port, si->proto);
-	c->id=(*connection_id)++;
+	c->id=tcpconn_next_id();
 	c->cid = (unsigned long long)c->id
 				| ( (unsigned long long)(startup_time&0xFFFFFF) << 32 )
 					| ( (unsigned long long)(rand()&0xFF) << 56 );
@@ -1825,6 +1842,17 @@ int tcp_init(void)
 	// The  rand()  function returns a pseudo-random integer in the range 0 to
 	// RAND_MAX inclusive (i.e., the mathematical range [0, RAND_MAX]).
 	*connection_id=(unsigned int)rand();
+	connection_id_lock=lock_alloc();
+	if (connection_id_lock==0){
+		LM_CRIT("could not alloc connection ID lock\n");
+		goto error;
+	}
+	if (lock_init(connection_id_lock)==0){
+		LM_CRIT("could not init connection ID lock\n");
+		lock_dealloc((void*)connection_id_lock);
+		connection_id_lock=0;
+		goto error;
+	}
 	memset( &tcp_parts, 0, TCP_PARTITION_SIZE*sizeof(struct tcp_partition));
 	/* init partitions */
 	for( i=0 ; i<TCP_PARTITION_SIZE ; i++ ) {
@@ -1880,6 +1908,12 @@ void tcp_destroy(void)
 	if (connection_id){
 		shm_free(connection_id);
 		connection_id=0;
+	}
+
+	if (connection_id_lock){
+		lock_destroy(connection_id_lock);
+		lock_dealloc((void*)connection_id_lock);
+		connection_id_lock=0;
 	}
 
 	for ( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
