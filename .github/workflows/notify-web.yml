@@ -1,0 +1,117 @@
+name: Publish opensips.org documentation
+
+on:
+  push:
+    paths:
+      - 'examples/**'
+      - 'modules/*/samples/**'
+      - 'docs/manual/**'
+      - 'net/*/README.md'
+      - 'modules/*/README.md'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notify-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changed-components:
+    name: Find changed documentation components
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.components.outputs.matrix }}
+      has-components: ${{ steps.components.outputs.has-components }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed components
+        id: components
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [[ "$EVENT_NAME" != "push" ]]; then
+            changed_files=$'examples/\ndocs/manual/\nmodules/all/README.md'
+          elif [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+            changed_files="$(git ls-tree -r --name-only "$SHA")"
+          else
+            changed_files="$(git diff --name-only "$BEFORE" "$SHA")"
+          fi
+
+          components=()
+          modules=()
+          declare -A module_names=()
+
+          while IFS= read -r path; do
+            [[ "$path" =~ ^examples/ || "$path" =~ ^modules/[^/]+/samples/ ]] && components+=(samples)
+            [[ "$path" =~ ^docs/manual/ ]] && components+=(manual)
+            if [[ "$path" =~ ^(net|modules)/([^/]+)/README\.md$ ]]; then
+              module_names["${BASH_REMATCH[2]}"]=1
+            fi
+          done <<< "$changed_files"
+
+          components=( $(printf '%s\n' "${components[@]}" | sort -u) )
+          for module in "${!module_names[@]}"; do
+            modules+=("$module")
+          done
+          IFS=$'\n' read -r -d '' -a modules < <(printf '%s\n' "${modules[@]}" | sort && printf '\0') || true
+
+          if [[ ${#components[@]} -eq 0 && ${#modules[@]} -eq 0 ]]; then
+            echo 'has-components=false' >> "$GITHUB_OUTPUT"
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          components_json="$(printf '%s\n' "${components[@]}" | jq -R -s 'split("\n") | map(select(length > 0) | {component: .})')"
+          modules_json="$(printf '%s\n' "${modules[@]}" | jq -R -s 'split("\n") | map(select(length > 0) | {component: "modules", module: .})')"
+          matrix="$(jq -cn --argjson components "$components_json" --argjson modules "$modules_json" '{include: ($components + $modules)}')"
+          echo "has-components=true" >> "$GITHUB_OUTPUT"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  dispatch:
+    name: Trigger ${{ matrix.component }} publication
+    needs: changed-components
+    if: ${{ needs.changed-components.outputs.has-components == 'true' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.changed-components.outputs.matrix) }}
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.OPENSIPS_WEB_APP }}
+          private-key: ${{ secrets.OPENSIPS_WEB_KEY }}
+          owner: OpenSIPS
+          repositories: ${{ secrets.OPENSIPS_WEB_REPO }}
+          permission-actions: write
+
+      - name: Trigger private publish workflow
+        if: ${{ matrix.module == '' }}
+        uses: step-security/workflow-dispatch@v1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repo: ${{ secrets.OPENSIPS_WEB_REPO }}
+          workflow: publish.yml
+          ref: main
+          inputs: '{"component": "${{ matrix.component }}", "version": "${{ github.ref_name }}"}'
+
+      - name: Trigger private module publication
+        if: ${{ matrix.module != '' }}
+        uses: step-security/workflow-dispatch@v1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repo: ${{ secrets.OPENSIPS_WEB_REPO }}
+          workflow: publish.yml
+          ref: main
+          inputs: '{"component": "modules", "module": "${{ matrix.module }}", "version": "${{ github.ref_name }}"}'
