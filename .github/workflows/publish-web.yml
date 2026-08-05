@@ -17,9 +17,9 @@ on:
         required: true
         type: choice
         options:
-          - samples
-          - modules
           - manual
+          - modules
+          - samples
       module:
         description: Module(s) to publish when component is modules (space-separated)
         required: false
