@@ -32,11 +32,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef _ADDED_XOPEN
-#undef _ADDED_XOPEN
-#undef _XOPEN_SOURCE
-#undef _GNU_SOURCE
-#endif
+/* The feature-test macros above must stay defined for the OpenSIPS headers
+ * below.  musl evaluates them in every system header, so undefining them
+ * here leaves the translation unit with none of them set and takes ctime_r()
+ * out of <time.h>, which dprint.h needs. */
 
 #include <errno.h>
 #include <ctype.h>
