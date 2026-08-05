@@ -3,6 +3,13 @@ on:
   push:
     branches-ignore:
       - coverity_scan
+    paths:
+      - '**/Makefile*'
+      - '**/*.c'
+      - '**/*.h'
+      - 'cfg.y'
+      - 'cfg.lex'
+      - 'scripts/**'
   pull_request:
 jobs:
   Fuzzing:
