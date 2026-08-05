@@ -10,12 +10,26 @@ on:
       - 'modules/*/README.md'
 
   workflow_dispatch:
+    inputs:
+      component:
+        description: Documentation component to publish
+        required: true
+        type: choice
+        options:
+          - samples
+          - modules
+          - manual
+      module:
+        description: Module(s) to publish when component is modules (space-separated)
+        required: false
+        default: all
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: notify-web-${{ github.ref }}
+  group: publish-web-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,9 +52,34 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE: ${{ github.event.before }}
           SHA: ${{ github.sha }}
+          COMPONENT: ${{ inputs.component }}
+          MODULE: ${{ inputs.module }}
         run: |
           if [[ "$EVENT_NAME" != "push" ]]; then
-            changed_files=$'examples/\ndocs/manual/\nmodules/all/README.md'
+            case "$COMPONENT" in
+              samples)
+                changed_files='examples/'
+                ;;
+              manual)
+                changed_files='docs/manual/'
+                ;;
+              modules)
+                modules_input="${MODULE:-all}"
+                if [[ "$modules_input" == "all" ]]; then
+                  changed_files='modules/all/README.md'
+                else
+                  changed_files=''
+                  modules_input="${modules_input//,/ }"
+                  read -ra requested_modules <<< "$modules_input"
+                  for module in "${requested_modules[@]}"; do
+                    module="${module#"${module%%[![:space:]]*}"}"
+                    module="${module%"${module##*[![:space:]]}"}"
+                    [[ -z "$module" ]] && continue
+                    changed_files+="$(printf 'modules/%s/README.md\nnet/%s/README.md\n' "$module" "$module")"
+                  done
+                fi
+                ;;
+            esac
           elif [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
             changed_files="$(git ls-tree -r --name-only "$SHA")"
           else
@@ -110,8 +149,18 @@ jobs:
           repositories: ${{ secrets.OPENSIPS_WEB_REPO }}
           permission-actions: write
 
-      - name: Trigger private publish workflow
-        if: ${{ matrix.module == '' }}
+      - name: Trigger samples publication
+        if: ${{ matrix.component == 'samples' }}
+        uses: step-security/workflow-dispatch@v1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repo: ${{ secrets.OPENSIPS_WEB_REPO }}
+          workflow: publish.yml
+          ref: main
+          inputs: '{"component": "samples"}'
+
+      - name: Trigger manual publication
+        if: ${{ matrix.component == 'manual' }}
         uses: step-security/workflow-dispatch@v1
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -120,7 +169,7 @@ jobs:
           ref: main
           inputs: '{"component": "${{ matrix.component }}", "version": "${{ github.ref_name }}"}'
 
-      - name: Trigger private module publication
+      - name: Trigger modules publication
         if: ${{ matrix.module != '' }}
         uses: step-security/workflow-dispatch@v1
         with:
