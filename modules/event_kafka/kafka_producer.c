@@ -45,7 +45,7 @@
 #define F_KAFKA_JOB -3    /* new job from an worker process */
 #define F_KAFKA_EVENT -4  /* new event in librdkafka main event queue */
 
-#define KAFKA_REACTOR_TIMEOUT 1
+#define KAFKA_REACTOR_TIMEOUT 1000 /* ms */
 
 void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque);
 

@@ -248,6 +248,7 @@ MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
 SHM_MEMLOG_SIZE			"shm_memlog_size"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
+WORKER_REACTOR_TIMEOUT	"workerreactortimeout"|"worker_reactor_timeout"
 EXECDNSTHRESHOLD		"execdnsthreshold"|"exec_dns_threshold"
 TCPTHRESHOLD			"tcpthreshold"|"tcp_threshold"
 EVENT_SHM_THRESHOLD		"event_shm_threshold"
@@ -482,6 +483,7 @@ SPACE		[ ]
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
 <INITIAL>{SHM_MEMLOG_SIZE}	{ count(); yylval.strval=yytext; return SHM_MEMLOG_SIZE; }
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
+<INITIAL>{WORKER_REACTOR_TIMEOUT}	{ count(); yylval.strval=yytext; return WORKER_REACTOR_TIMEOUT; }
 <INITIAL>{EXECDNSTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECDNSTHRESHOLD; }
 <INITIAL>{TCPTHRESHOLD}	{ count(); yylval.strval=yytext; return TCPTHRESHOLD; }
 <INITIAL>{EVENT_SHM_THRESHOLD}	{ count(); yylval.strval=yytext; return EVENT_SHM_THRESHOLD; }

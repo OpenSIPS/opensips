@@ -72,6 +72,7 @@ enum fd_types { F_NONE=0,
 
 extern io_wait_h _worker_io;
 extern unsigned int reactor_size;
+extern unsigned int worker_reactor_timeout;
 
 int init_reactor_size(void);
 

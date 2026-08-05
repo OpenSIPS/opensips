@@ -28,11 +28,16 @@
 
 #include "io_wait.h"
 #include "globals.h"
+#include "reactor_proc.h"
 
 /* one reactor per process variable */
 io_wait_h _worker_io;
 /* max number of fds per reactor */
 unsigned int reactor_size = 0;
+
+/* the reactor timeout (ms) to be used by the OpenSIPS worker procs;
+ * By "worker" we understand here processes handling SIP traffic */
+unsigned int worker_reactor_timeout = REACTOR_PROC_TIMEOUT;
 
 #define FD_MEM_PERCENT  10
 
@@ -96,8 +101,16 @@ int init_reactor_size(void)
 		}
 	}
 
-	LM_INFO("reactor size %d (using up to %.2fMb of memory per process)\n",
-			reactor_size, 1.0 * n * reactor_size / 1024 / 1024);
+	/* not smaller than 100ms, but not higher than 1sec */
+	if (worker_reactor_timeout<100)
+		worker_reactor_timeout = 100;
+	else if (worker_reactor_timeout>1000)
+		worker_reactor_timeout = 1000;
+
+	LM_INFO("reactor size %d (using up to %.2fMb of memory per process)"
+		", worker timeout %d ms\n",
+		reactor_size, 1.0 * n * reactor_size / 1024 / 1024,
+		worker_reactor_timeout);
 
 	return 0;
 }

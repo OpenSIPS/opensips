@@ -29,7 +29,7 @@
  * load and pkg stats, will allow running scripting and proper shutdown.
  */
 
-#define REACTOR_PROC_TIMEOUT  1
+#define REACTOR_PROC_TIMEOUT  1000 /* ms */
 
 typedef int (*reactor_proc_cb_f) (int fd, void *param, int was_timeout);
 

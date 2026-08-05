@@ -62,7 +62,7 @@ static int handle_io(struct fd_map* fm, int idx,int event_type) {
 /*! \brief io_wait_loop_x style function
  * wait for io using poll()
  * \param h io_wait handle
- * \param t timeout in s
+ * \param t timeout in ms
  * \param repeat if !=0 handle_io will be called until it returns <=0
  * \return number of IO events handled on success (can be 0), -1 on error
  */
@@ -74,7 +74,7 @@ inline static int io_wait_loop_poll(io_wait_h* h, int t, int repeat)
 	unsigned int curr_time;
 
 again:
-		ret=n=poll(h->fd_array, h->fd_no, t*1000);
+		ret=n=poll(h->fd_array, h->fd_no, t);
 		if (n==-1){
 			if (errno==EINTR) goto again; /* signal, ignore it */
 			else{
@@ -136,8 +136,8 @@ inline static int io_wait_loop_select(io_wait_h* h, int t, int repeat)
 
 again:
 		sel_set=h->master_set;
-		timeout.tv_sec=t;
-		timeout.tv_usec=0;
+		timeout.tv_sec=t/1000;
+		timeout.tv_usec=(t%1000)*1000;
 		ret=n=select(h->max_fd_select+1, &sel_set, 0, 0, &timeout);
 		if (n<0){
 			if (errno==EINTR) goto again; /* just a signal */
@@ -172,25 +172,25 @@ inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 	struct fd_map *e;
 	struct epoll_event ep_event;
 	int fd;
-	unsigned int curr_time;
+	utime_t curr_time;
 
 again:
-		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
+		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t);
 		if (n==-1){
 			if (errno == EINTR) {
 				goto again; /* signal, ignore it */
 			} else if (h->fd_no == 0) {
-				sleep(t);
+				poll(NULL, 0, t);
 				return 0;
 			} else {
 				LM_ERR("[%s] epoll_wait(%d, %p, %d, %d): %s [%d]\n",
-					h->name,h->epfd, h->ep_array, h->fd_no, t*1000,
+					h->name,h->epfd, h->ep_array, h->fd_no, t,
 					strerror(errno), errno);
 				goto error;
 			}
 		}
 
-		curr_time = get_ticks();
+		curr_time = get_uticks();
 
 		for (r=0; r<n; r++) {
 #if 0
@@ -327,8 +327,8 @@ inline static int io_wait_loop_kqueue(io_wait_h* h, int t, int repeat)
 	struct fd_map *e;
 	unsigned int curr_time;
 
-	tspec.tv_sec=t;
-	tspec.tv_nsec=0;
+	tspec.tv_sec=t/1000;
+	tspec.tv_nsec=(t%1000)*1000000;
 again:
 		ret=n=kevent(h->kq_fd, h->kq_changes, h->kq_nchanges,  h->kq_array,
 					h->fd_no, &tspec);
@@ -397,8 +397,8 @@ inline static int io_wait_loop_sigio_rt(io_wait_h* h, int t)
 	struct fd_map* fm;
 
 	ret=1; /* 1 event per call normally */
-	ts.tv_sec=t;
-	ts.tv_nsec=0;
+	ts.tv_sec=t/1000;
+	ts.tv_nsec=(t%1000)*1000000;
 	if (!sigismember(&h->sset, h->signo) || !sigismember(&h->sset, SIGIO)){
 		LM_CRIT("[%s] the signal mask is not properly set!\n",h->name);
 		goto error;
@@ -505,7 +505,7 @@ inline static int io_wait_loop_devpoll(io_wait_h* h, int t, int repeat)
 	struct fd_map *e;
 	unsigned int curr_time;
 
-		dpoll.dp_timeout=t*1000;
+		dpoll.dp_timeout=t;
 		dpoll.dp_nfds=h->fd_no;
 		dpoll.dp_fds=h->dp_changes;
 again:

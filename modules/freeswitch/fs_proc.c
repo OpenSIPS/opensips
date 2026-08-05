@@ -37,7 +37,7 @@
 #include "fs_api.h"
 #include "fs_ipc.h"
 
-#define FS_REACTOR_TIMEOUT  1 /* sec */
+#define FS_REACTOR_TIMEOUT  1000 /* ms */
 #define FS_STATS_EVENT_NAME "HEARTBEAT"
 
 extern struct list_head *fs_sockets;

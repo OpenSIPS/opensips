@@ -37,7 +37,7 @@
 
 #define JSONRPC_REQ_NEW		0
 #define JSONRPC_REQ_SENT	1
-#define STREAM_REACTOR_TIMEOUT  1 /* sec */
+#define STREAM_REACTOR_TIMEOUT  1000 /* ms */
 #define STREAM_MAX_PENDING_READS 4
 #define IS_ERR(_err) (errno == _err)
 #define STREAM_ADDR(con) \

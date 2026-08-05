@@ -866,7 +866,7 @@ static int fork_dynamic_timer_process(void *si_filter)
 		clean_read_pipeend();
 
 		/* launch the reactor */
-		reactor_main_loop( 1/*timeout in sec*/, error , );
+		reactor_main_loop( worker_reactor_timeout, error , );
 		destroy_worker_reactor();
 error:
 		report_failure_status();
@@ -945,7 +945,7 @@ int start_timer_extra_processes(int *chd_rank)
 				report_conditional_status( (!no_daemon_mode), 0);
 
 				/* launch the reactor */
-				reactor_main_loop( 1/*timeout in sec*/, error , );
+				reactor_main_loop( worker_reactor_timeout, error , );
 				destroy_worker_reactor();
 
 				exit(-1);

@@ -111,6 +111,7 @@
 #include "config.h"
 #include "mem/rpm_mem.h"
 #include "poll_types.h"
+#include "reactor_defs.h"
 
 #ifdef SHM_EXTRA_STATS
 #include "mem/module_info.h"
@@ -354,6 +355,7 @@ extern int cfg_parse_only_routes;
 %token MEMDUMP
 %token SHM_MEMLOG_SIZE
 %token EXECMSGTHRESHOLD
+%token WORKER_REACTOR_TIMEOUT
 %token EXECDNSTHRESHOLD
 %token TCPTHRESHOLD
 %token EVENT_SHM_THRESHOLD
@@ -1259,6 +1261,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| MEMDUMP EQUAL error { yyerror("int value expected"); }
 		| EXECMSGTHRESHOLD EQUAL NUMBER {  IFOR();execmsgthreshold=$3; }
 		| EXECMSGTHRESHOLD EQUAL error { yyerror("int value expected"); }
+		| WORKER_REACTOR_TIMEOUT EQUAL NUMBER { IFOR(); worker_reactor_timeout=$3; }
+		| WORKER_REACTOR_TIMEOUT EQUAL error { yyerror("int value expected"); }
 		| EXECDNSTHRESHOLD EQUAL NUMBER { IFOR(); execdnsthreshold=$3; }
 		| EXECDNSTHRESHOLD EQUAL error { yyerror("int value expected"); }
 		| TCPTHRESHOLD EQUAL NUMBER { IFOR(); tcpthreshold=$3; }

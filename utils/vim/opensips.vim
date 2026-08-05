@@ -39,6 +39,7 @@ syn keyword osGlobalParam dns_use_search_list shm_hash_split_percentage
 syn keyword osGlobalParam shm_secondary_hash_size mem_warming mem_warming_enabled
 syn keyword osGlobalParam mem_warming_pattern_file mem_warming_percentage
 syn keyword osGlobalParam mem_log mem_dump execmsgthreshold execdnsthreshold
+syn keyword osGlobalParam worker_reactor_timeout workerreactortimeout
 syn keyword osGlobalParam dns_use_search_list shm_hash_split_percentage
 syn keyword osGlobalParam tcp_threshold tcpthreshold event_shm_threshold
 syn keyword osGlobalParam event_pkg_threshold query_buffer_size

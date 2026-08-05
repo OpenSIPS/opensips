@@ -114,7 +114,7 @@ struct fd_map {
 	                       * internal usage */
 	int app_flags;        /* flags to be used by upper layer apps, not by
 	                       * the reactor */
-	unsigned int timeout;
+	utime_t timeout;
 };
 
 
@@ -219,7 +219,7 @@ static inline struct fd_map* hash_fd_map(	io_wait_h* h,
 						fd_type type,
 						void* data,
 						int flags,
-						unsigned int timeout,
+						utime_t timeout,
 						int *already)
 {
 	if (h->fd_hash[fd].fd <= 0) {
@@ -367,7 +367,7 @@ inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 								fd_type type,
 								void* data,
 								int prio,
-								unsigned int timeout,
+								utime_t timeout,
 								int flags)
 {
 
@@ -474,8 +474,9 @@ inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 		return 0;
 	}
 
+	/* convert timeout from seconds to miliseconds*/
 	if (timeout)
-		timeout+=get_ticks();
+		timeout = timeout*1000000 + get_uticks();
 
 	if ((e=hash_fd_map(h, fd, type, data,flags, timeout, &already))==0){
 		LM_ERR("[%s] failed to hash the fd %d\n",h->name, fd);

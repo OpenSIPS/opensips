@@ -275,7 +275,7 @@ error:
 void tcp_worker_proc_loop(void)
 {
 	/* main loop */
-	reactor_main_loop(TCP_CHILD_SELECT_TIMEOUT, error,);
+	reactor_main_loop( worker_reactor_timeout, error,);
 	LM_CRIT("exiting...");
 	exit(-1);
 error:
