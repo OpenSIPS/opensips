@@ -6,6 +6,13 @@ name: Multi-Architecture Build
 on:
   # Triggers the workflow on all push or pull request events
   push:
+    paths:
+      - '**/Makefile*'
+      - '**/*.c'
+      - '**/*.h'
+      - 'cfg.y'
+      - 'cfg.lex'
+      - 'scripts/**'
   pull_request:
 
   # Allows you to run this workflow manually from the Actions tab
