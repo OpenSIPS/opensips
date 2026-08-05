@@ -96,6 +96,7 @@ Options:\n\
                       F_PARALLEL_MALLOC   F_PARALLEL_MALLOC_DBG\n\
                       Q_MALLOC            Q_MALLOC_DBG\n\
                       HP_MALLOC           HP_MALLOC_DBG\n\
+                      HG_MALLOC           HG_MALLOC_DBG\n\
     -k allocator The pkg memory allocator to use (overrides -a)\n\
     -s allocator The shared memory allocator to use (overrides -a)\n\
     -e allocator The restart-persistent memory allocator to use (overrides -a)\n\

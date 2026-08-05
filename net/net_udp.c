@@ -419,6 +419,7 @@ static int fork_dynamic_udp_process(void *si_filter)
 		.proc_desc = "UDP receiver",
 		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
 		.type = TYPE_UDP,
+		.sock = si,
 	};
 
 	if ((p_id=internal_fork(&ifp_udp_rcv))<0) {
@@ -499,7 +500,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 	struct socket_info_full *sif;
 	int p_id;
 	int i,p;
-	const struct internal_fork_params ifp_udp_rcv = {
+	struct internal_fork_params ifp_udp_rcv = {
 		.proc_desc = "UDP receiver",
 		.flags = OSS_PROC_NEEDS_SCRIPT,
 		.type = TYPE_UDP,
@@ -521,6 +522,9 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 				LM_ERR("failed to create group of UDP processes for <%.*s>, "
 					"auto forking will not be possible\n",
 					si->name.len, si->name.s);
+
+			/* so a listener naming pin_cpus confines its own workers */
+			ifp_udp_rcv.sock = si;
 
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;

@@ -67,6 +67,11 @@ struct socket_info {
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
+	/* CPU list this listener's workers are confined to, as written in
+	 * the config ("0-3,8"); NULL means fall back to the process-type
+	 * group. Only meaningful for the UDP-based protocols, which are the
+	 * only ones with per-listener workers. */
+	char *pin_cpus;
 	unsigned short tos;
 	struct scaling_profile *s_profile;
 	void *extra_data;

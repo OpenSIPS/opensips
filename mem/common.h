@@ -37,14 +37,16 @@ extern gen_lock_t *hash_locks[TOTAL_F_PARALLEL_POOLS];
 
 #include "meminfo.h"
 
-#if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)
+#if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC) && \
+    !defined(F_PARALLEL_MALLOC) && !defined(HG_MALLOC)
 #error "no memory allocator selected"b
 
 /* if exactly one allocator was selected, let's inline it! */
-#elif ((!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)) || \
-    (!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(F_PARALLEL_MALLOC)) || \
-    (!defined(F_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)) || \
-    (!defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)))
+#elif ((!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC)) || \
+    (!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(HG_MALLOC)) || \
+    (!defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(F_PARALLEL_MALLOC) && !defined(HG_MALLOC)) || \
+    (!defined(F_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC) && !defined(HG_MALLOC)) || \
+    (!defined(Q_MALLOC) && !defined(HP_MALLOC) && !defined(F_PARALLEL_MALLOC) && !defined(HG_MALLOC)))
 #define INLINE_ALLOC
 #endif
 
@@ -55,10 +57,12 @@ enum osips_mm {
 	MM_Q_MALLOC,
 	MM_HP_MALLOC,
 	MM_F_PARALLEL_MALLOC,
+	MM_HG_MALLOC,
 	MM_F_MALLOC_DBG,
 	MM_Q_MALLOC_DBG,
 	MM_HP_MALLOC_DBG,
 	MM_F_PARALLEL_MALLOC_DBG,
+	MM_HG_MALLOC_DBG,
 };
 
 #if defined F_MALLOC
@@ -75,6 +79,10 @@ enum osips_mm {
 
 #if defined F_PARALLEL_MALLOC
 #include "f_parallel_malloc.h"
+#endif
+
+#if defined HG_MALLOC
+#include "hg_malloc.h"
 #endif
 
 extern int mem_warming_enabled;
@@ -94,10 +102,12 @@ int parse_mm(const char *mm_name, enum osips_mm *mm);
 	 (mm) == MM_Q_MALLOC ? "Q_MALLOC" : \
 	 (mm) == MM_HP_MALLOC ? "HP_MALLOC" : \
 	 (mm) == MM_F_PARALLEL_MALLOC ? "F_PARALLEL_MALLOC" : \
+	 (mm) == MM_HG_MALLOC ? "HG_MALLOC" : \
 	 (mm) == MM_F_MALLOC_DBG ? "F_MALLOC_DBG" : \
 	 (mm) == MM_Q_MALLOC_DBG ? "Q_MALLOC_DBG" : \
 	 (mm) == MM_F_PARALLEL_MALLOC_DBG ? "F_PARALLEL_MALLOC_DBG" : \
-	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : "unknown")
+	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : \
+	 (mm) == MM_HG_MALLOC_DBG ? "HG_MALLOC_DBG" : "unknown")
 
 #ifdef DBG_MALLOC
 typedef void *(*osips_block_malloc_f) (void *block, unsigned long size,

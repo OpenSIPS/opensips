@@ -706,11 +706,13 @@ int start_timer_processes(void)
 		.proc_desc = "time_keeper",
 		.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
 		.type = TYPE_NONE,
+		.pin_group = TYPE_TIMER,
 	    },
 	    ifp_timer = {
 		.proc_desc = "timer",
 		.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
 		.type = TYPE_NONE,
+		.pin_group = TYPE_TIMER,
 	};
 
 	/*

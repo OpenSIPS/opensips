@@ -95,6 +95,13 @@ int check_via =  0;
 /* debugging level for memory stats */
 int memlog = L_DBG + 11;
 int memdump = L_DBG + 10;
+/* pin each worker to one CPU (0 = off). See pt.c pin_worker_to_cpu(). */
+int pin_workers = 0;
+/* optional per-process-type CPU lists, e.g. "0-7". NULL = all allowed CPUs */
+char *pin_udp_cpus = NULL;
+char *pin_tcp_cpus = NULL;
+char *pin_timer_cpus = NULL;
+char *pin_module_cpus = NULL;
 unsigned int shm_memlog_size = 0;
 /* debugging in case msg processing takes. too long disabled by default */
 int execmsgthreshold = 0;

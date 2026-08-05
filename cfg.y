@@ -182,6 +182,7 @@ extern char *finame;
 struct listen_param {
 	enum si_flags flags;
 	int workers;
+	char *pin_cpus;
 	int tos;
 	struct socket_id *socket;
 	char *tag;
@@ -352,6 +353,11 @@ extern int cfg_parse_only_routes;
 %token RPM_MEM_SIZE
 %token MEMLOG
 %token MEMDUMP
+%token PIN_WORKERS
+%token PIN_UDP_CPUS
+%token PIN_TCP_CPUS
+%token PIN_TIMER_CPUS
+%token PIN_MODULE_CPUS
 %token SHM_MEMLOG_SIZE
 %token EXECMSGTHRESHOLD
 %token EXECDNSTHRESHOLD
@@ -459,6 +465,7 @@ extern int cfg_parse_only_routes;
 %token SLASH
 %token AS
 %token USE_WORKERS
+%token PIN_CPUS
 %token SOCK_TOS
 %token USE_AUTO_SCALING_PROFILE
 %token MAX
@@ -760,6 +767,9 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
+					}
+				| PIN_CPUS STRING { IFOR();
+					p_tmp.pin_cpus=$2;
 					}
 				| SOCK_TOS NUMBER { IFOR();
 					p_tmp.tos=$2;
@@ -1257,6 +1267,16 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| SHM_MEMLOG_SIZE EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL snumber { IFOR(); memdump=$3; }
 		| MEMDUMP EQUAL error { yyerror("int value expected"); }
+		| PIN_WORKERS EQUAL snumber { IFOR(); pin_workers=$3; }
+		| PIN_WORKERS EQUAL error { yyerror("int value expected"); }
+		| PIN_UDP_CPUS EQUAL STRING { IFOR(); pin_udp_cpus=$3; pin_workers=1; }
+		| PIN_UDP_CPUS EQUAL error { yyerror("string value expected"); }
+		| PIN_TCP_CPUS EQUAL STRING { IFOR(); pin_tcp_cpus=$3; pin_workers=1; }
+		| PIN_TCP_CPUS EQUAL error { yyerror("string value expected"); }
+		| PIN_TIMER_CPUS EQUAL STRING { IFOR(); pin_timer_cpus=$3; pin_workers=1; }
+		| PIN_TIMER_CPUS EQUAL error { yyerror("string value expected"); }
+		| PIN_MODULE_CPUS EQUAL STRING { IFOR(); pin_module_cpus=$3; pin_workers=1; }
+		| PIN_MODULE_CPUS EQUAL error { yyerror("string value expected"); }
 		| EXECMSGTHRESHOLD EQUAL NUMBER {  IFOR();execmsgthreshold=$3; }
 		| EXECMSGTHRESHOLD EQUAL error { yyerror("int value expected"); }
 		| EXECDNSTHRESHOLD EQUAL NUMBER { IFOR(); execdnsthreshold=$3; }
@@ -2793,6 +2813,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 	while (s) {
 		s->flags |= param->flags;
 		s->workers = param->workers;
+		s->pin_cpus = param->pin_cpus;
 		s->tos = param->tos;
 		s->auto_scaling_profile = param->auto_scaling_profile;
 		s->tag = param->tag;

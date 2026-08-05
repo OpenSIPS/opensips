@@ -1,0 +1,279 @@
+HG_MALLOC - hugepage-backed slab allocator
+==========================================
+
+HG_MALLOC is one of the memory allocators OpenSIPS can use for its shared
+(shm) and process-private (pkg) memory. It is built around two ideas the
+other allocators do not use: huge pages, and a per-process allocation fast
+path that takes no lock and touches no shared cache line.
+
+It is selected at runtime like any other allocator:
+
+    opensips -a HG_MALLOC            # both shm and pkg
+    opensips -s HG_MALLOC            # shm only
+    opensips -k HG_MALLOC            # pkg only
+
+and compiled in by default (-DHG_MALLOC in Makefile.conf). "opensips -V"
+lists it in the flags line when present, and "opensips -h" lists the
+accepted values.
+
+
+Sizing
+------
+
+    -m <MB>   shared memory, one arena for the whole server
+    -M <MB>   private memory, per process
+
+Minimums for a small configuration (a handful of modules):
+
+    absolute minimum      -m 8 -M 2
+    recommended floor     -m 64 -M 16
+
+Below the minimum the allocator refuses to serve and says so, e.g.
+
+    ERROR:core:carve_chunk: shm: no more HG_MALLOC arena memory for a
+    65536 byte chunk (class 7) - increase the arena size
+
+A real configuration needs more. Loading cachedb_perf, for instance,
+raises the shm floor noticeably: at 200 CPS, -m 64 produced a stream of
+carve_chunk failures and tm could not clone messages, while -m 256 ran
+clean. If you see carve_chunk in the log, raise -m or -M; it is not a
+leak.
+
+Note that -m is rounded up to a whole number of huge pages, so on a
+machine with 2 MB huge pages the real granularity is 2 MB.
+
+
+Budget about twice the shm you give F_MALLOC
+--------------------------------------------
+
+An arena that is enough under one of the other allocators is not
+necessarily enough here, and the gap widens with call concurrency rather
+than with call rate. Two properties of the design cause it:
+
+  * every allocation is rounded up to its size class, so a request lands
+    in a cell up to one class larger than it asked for;
+  * a freed cell goes back to the class it came from and is never
+    reclassified, so memory the peak of one class took is not available
+    to another afterwards.
+
+Neither is a leak, and neither shows up at low concurrency - both are
+proportional to how many objects are alive at once.
+
+Measured on a topology-hiding proxy (three nodes, four UDP workers each,
+INVITE/200/ACK/BYE held for 500 ms, so roughly 1500 calls in flight per
+node at 3000 CPS):
+
+    F_MALLOC    -m 512    clean
+    HG_MALLOC   -m 512    carve_chunk failures on the hot class within
+                          seconds; topology_hiding could no longer store
+                          its state and the calls were lost
+    HG_MALLOC   -m 1024   clean - 0 carve_chunk, 0 failed calls, and
+                          25% less CPU than F_MALLOC at the same load
+
+So the rule of thumb is to give HG_MALLOC twice the arena that the same
+traffic needs under F_MALLOC, and to confirm it against the log rather
+than by arithmetic. The exact requirement here was somewhere between
+512 and 1024 MB; it was not bracketed more finely, and it will differ
+with the mix of allocation sizes a particular config makes.
+
+The failure is loud but it is not fatal, which is the trap: the server
+keeps running and keeps answering, while the module that could not get
+memory quietly drops what it was doing. Watch for carve_chunk in the log
+of any new deployment before trusting a capacity number from it.
+
+Unlike the other allocators, HG_MALLOC pre-faults and mlock()s its whole
+reservation at startup, so the memory is resident immediately rather than
+growing as it is used. Budget for -m plus (-M x number of processes).
+
+
+Huge pages
+----------
+
+The arena is obtained through a four-tier ladder, best first. Each tier is
+attempted and then *verified* through /proc - never assumed from the
+kernel version or from sysfs settings:
+
+    1  mmap(MAP_HUGETLB)                 huge pages from the hugetlb pool
+    2  MADV_HUGEPAGE                     THP, huge at first fault
+    3  MADV_COLLAPSE                     THP, retrofitted after filling
+    4  plain 4K pages                    always works
+
+A miss degrades to the next tier; it never fails the startup. Which tier
+was actually achieved is logged, and that log line is the only reliable
+way to know:
+
+    NOTICE:core:hg_malloc_init: shm HG_MALLOC arena: 256 MB on
+    MAP_HUGETLB 2M pages, 256 MB pinned
+
+Tier 1 needs a hugetlb pool big enough for the arena, e.g.
+
+    sysctl -w vm.nr_overcommit_hugepages=<pages>
+
+Huge pages are worth having but are not where most of the benefit comes
+from. Measured on one host at 800 CPS, allocator CPU self-time varied only
+between 2.75% (tier 1) and 3.38% (tier 4, huge pages fully disabled) -
+while the other allocators on the same machine and workload ranged from
+9.5% to 22.8%. If the machine cannot give you huge pages, HG_MALLOC is
+still worth using.
+
+
+Per-module memory accounting
+----------------------------
+
+Building with -DSHM_EXTRA_STATS lets a config attribute shared memory to
+named groups of modules:
+
+    mem-group = "core": "core"
+    mem-group = "tm": "tm"
+
+which then appear as ordinary statistics - shmem_core:memory_used,
+shmem_tm:fragments and so on - queryable over MI.
+
+It is not free, but close to it. Measured on the same host and workload as
+above, HG_MALLOC's allocator CPU self-time went from 2.74% without it to
+2.90% with it (two runs each). The symbols that exist only in this build -
+update_module_stats plus the two per-cell index accessors - account for
+0.13-0.15% of CPU directly. Most of that is not specific to this
+allocator: update_module_stats is called from the generic shared-memory
+wrappers, so every allocator pays it.
+
+Set against the 9.5% to 22.8% the other allocators spend on allocation
+alone, the accounting is worth having.
+
+
+Sharing the hugetlb pool with cachedb_perf
+------------------------------------------
+
+cachedb_perf reserves its own huge-page arena (arena_hugepage_mb). Both it
+and HG_MALLOC can be on tier 1 at the same time, but they do not
+coordinate with each other - each simply asks the kernel and takes what is
+available. Two consequences:
+
+  * Size the pool for the SUM of every arena, not the largest one:
+
+        nr_overcommit_hugepages >= (-m + -M + arena_hugepage_mb) / 2
+
+    on a 2 MB huge page machine, plus headroom.
+
+  * HG_MALLOC always claims first. shm and pkg are initialised in main()
+    before any module is loaded, so cachedb_perf only ever sees what is
+    left. With a pool too small for both, it is the *core* arena that
+    degrades to a lower tier while cachedb_perf still gets tier 1.
+
+Nothing fails when the pool is short - each arena just lands on a lower
+tier - so check both startup log lines rather than assuming.
+
+Also note that pkg is a private mapping made before the workers fork, so
+every worker copies its huge pages as it writes to them; pool consumption
+grows with the number of processes.
+
+
+CPU pinning
+-----------
+
+The core option "pin_workers=1" pins each worker process to a single CPU,
+chosen by occupancy (see below) rather than round-robin. It is off by
+default and independent of the allocator, but it matters here:
+HG_MALLOC's fast path keeps its free lists in per-process memory, so once
+workers stop migrating those lists stay warm in one CPU's cache.
+
+A UDP listener can name its own CPU list, which is finer-grained than
+any of the above and takes precedence over them:
+
+    socket = udp:203.0.113.10:5060  use_workers 2  pin_cpus "0-1"
+    socket = udp:10.0.0.10:5060     use_workers 2  pin_cpus "2-3"
+    socket = udp:10.0.0.10:5080     use_workers 4  pin_cpus "4-7"
+
+so a public interface and a private one need not compete for the same
+cores. Naming pin_cpus on a listener turns pinning on by itself. If the
+list is shorter than use_workers the workers share it, taking the
+least-occupied CPU in the list - three workers on a one-CPU list all land
+on that CPU, which is a legitimate thing to ask for.
+
+A listener that names no list is not affected: its workers fall back to
+pin_udp_cpus and are spread across that group by occupancy, so the coarse
+option stays the sensible default and pin_cpus is the exception you make
+for the interfaces that need one. With
+
+    pin_udp_cpus = "8-11"
+    socket = udp:203.0.113.10:5060  use_workers 2  pin_cpus "0-1"
+    socket = udp:10.0.0.10:5060     use_workers 4
+    socket = udp:10.0.0.10:5080     use_workers 2
+
+the first listener gets CPUs 0 and 1 to itself, and the other six workers
+share 8-11 two-two-one-one. Nothing lands on 0-1 by accident.
+
+This only exists for the UDP-based protocols, because they are the only
+ones with per-listener workers. A TCP worker is not tied to a listener:
+TCP main hands connections to one shared pool, so there is nothing per
+socket to confine. pin_cpus on a TCP listener is reported and ignored;
+use pin_tcp_cpus for the pool as a whole.
+
+Each kind of process can instead be given its own CPU list, which is
+usually what you want - the point of pinning is normally to keep the
+packet-receiving workers away from everything else:
+
+    pin_udp_cpus    = "0-7"
+    pin_tcp_cpus    = "8-11"
+    pin_timer_cpus  = "12"
+    pin_module_cpus = "13-15"
+
+Setting any of these turns pinning on by itself, so pin_workers=1 is only
+needed to pin everything with no grouping. A type with no list may use
+every CPU it is allowed. Lists take the usual "0-7,12" form.
+
+The TCP main process is a special case: it is multithreaded - its IO
+pool defaults to one thread per online CPU - so pinning it to a single
+CPU would serialise all of that onto one core. It is therefore confined
+to the WHOLE pin_tcp_cpus list rather than to one CPU chosen from it
+(internally, a pin_whole_group flag set only on TCP main's own fork
+params - not a config option, just how the two cases are told apart
+internally), and its threads inherit that confinement. The single-CPU
+rule applies only to the single-threaded worker processes.
+
+There is no bin or hep group. Neither forks processes of its own: they are
+transport protocols carried by the ordinary UDP and TCP workers, so a
+"bin:" listener is served by TCP workers and follows pin_tcp_cpus, and HEP
+follows the UDP or TCP list depending on the transport it runs over.
+
+CPUs are chosen from the set the process is already allowed to run on, so
+a cpuset or container restriction is respected and can only be narrowed,
+never widened - a group is intersected with that set, never substituted
+for it. If the intersection is empty those processes are left unpinned
+with a warning rather than failing the startup, and a malformed list is
+reported naming the option and the value.
+
+Within its group, each process gets the least-occupied CPU, counted over
+the processes running at that moment rather than derived from a process
+index. This matters with auto-scaling: workers come and go, and an index
+would say nothing about who is already running where.
+
+NUMA placement is deliberately NOT implemented. On a 2-socket test machine
+the arena was pinned to one node and the workers run first on the same node
+and then on the other; the remote arrangement measured no worse (in fact
+marginally better, the node hosting the network interrupts being the busier
+one). Until a workload shows a real cost, there is nothing here to recover.
+
+Limitations
+-----------
+
+  * Allocations are served from fixed size classes up to 64K, and from a
+    coalescing tier above that. There is no defragmentation or garbage
+    collection: memory is never returned to the OS while the server runs.
+  * On exhaustion it fails loudly rather than falling back to another
+    allocator. Raise -m / -M.
+  * NUMA-aware arena placement is not implemented - see CPU pinning
+    above for why.
+  * The arena is excluded from core dumps (MADV_DONTDUMP). Since every
+    page is resident, including it would add the full arena size to every
+    worker's core file.
+
+
+Testing
+-------
+
+modules/hgstress is a throwaway stress module that hammers shm from every
+worker at once and detects the failure mode ordinary tests miss - the same
+block being handed to two processes. Each worker stamps its blocks with a
+value derived from its own pid and re-reads them later, so a foreign
+writer is caught and named. See that module's source for the parameters.

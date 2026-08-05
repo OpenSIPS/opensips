@@ -2619,6 +2619,10 @@ int tcp_start_listener(void)
 		.proc_desc = "TCP main",
 		.flags = 0,
 		.type = TYPE_NONE,
+		.pin_group = TYPE_TCP,
+		/* TCP main is multithreaded - its IO pool defaults to one thread
+		 * per online CPU - so it takes the whole group, not one CPU */
+		.pin_whole_group = 1,
 	};
 
 	if (tcp_disabled)

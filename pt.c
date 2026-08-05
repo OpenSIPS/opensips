@@ -19,11 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* for cpu_set_t / CPU_SET / sched_setaffinity, used by the pin_*_cpu()
+ * helpers below. Defined before the first include and never #undef'd -
+ * undefining it after the fact is what broke the musl build in lib/url.c
+ * (see PR #4119). */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <sched.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 
 #include "lib/dbg/profiling.h"
 #include "mem/shm_mem.h"
@@ -81,6 +91,271 @@ void register_fork_handler(struct internal_fork_handler *h)
 	hp->_next = h;
 };
 
+/*
+ * CPU pinning is Linux-only: cpu_set_t and sched_setaffinity() are a
+ * glibc/Linux interface. OpenSIPS also builds on the BSDs, Solaris and
+ * Darwin, which each spell this differently (FreeBSD has cpuset_t and
+ * cpuset_setaffinity, for instance), so the whole feature is compiled out
+ * elsewhere rather than guessed at. Configuring it there is reported once
+ * instead of silently doing nothing.
+ */
+#ifdef __OS_linux
+
+/*
+ * Per-process-type CPU groups.
+ *
+ * "pin_workers=1" turns pinning on; each of these then optionally confines
+ * one kind of process to a CPU list:
+ *
+ *     pin_udp_cpus   = "0-7"
+ *     pin_tcp_cpus   = "8-11"
+ *     pin_timer_cpus = "12"
+ *
+ * A type with no list set may use every CPU the process is allowed. Note
+ * that bin and hep are not process types of their own - they are transport
+ * protocols carried by the ordinary UDP/TCP workers, so they follow
+ * whichever of those they run over.
+ */
+static cpu_set_t pin_type_set[TYPE_MODULE + 1];
+static char pin_type_has[TYPE_MODULE + 1];
+static int pin_spec_parsed;
+
+/* "0-7,12" -> set. Returns -1 on malformed input. */
+static int pin_parse_cpulist(const char *s, cpu_set_t *set)
+{
+	long a, b;
+	char *end;
+
+	CPU_ZERO(set);
+	while (*s) {
+		while (*s == ' ' || *s == ',') s++;
+		if (!*s)
+			break;
+		a = strtol(s, &end, 10);
+		if (end == s || a < 0 || a >= CPU_SETSIZE)
+			return -1;
+		s = end;
+		b = a;
+		if (*s == '-') {
+			s++;
+			b = strtol(s, &end, 10);
+			if (end == s || b < a || b >= CPU_SETSIZE)
+				return -1;
+			s = end;
+		}
+		for (; a <= b; a++)
+			CPU_SET(a, set);
+	}
+	return 0;
+}
+
+static void pin_set_group(enum process_type t, const char *list,
+                                                       const char *name)
+{
+	if (!list)
+		return;
+	if (pin_parse_cpulist(list, &pin_type_set[t]) < 0 ||
+	    CPU_COUNT(&pin_type_set[t]) == 0) {
+		LM_ERR("pin_%s_cpus: bad or empty CPU list \"%s\"\n", name, list);
+		return;
+	}
+	pin_type_has[t] = 1;
+	LM_INFO("pinning %s processes to %d CPU(s)\n", name,
+		CPU_COUNT(&pin_type_set[t]));
+}
+
+/* did the config name a CPU list for any process type at all? */
+static int pin_any_group(void)
+{
+	int t;
+
+	for (t = 0; t <= TYPE_MODULE; t++)
+		if (pin_type_has[t])
+			return 1;
+
+	return 0;
+}
+
+/* parsed once, lazily, in the parent before any fork */
+static void pin_parse_spec(void)
+{
+	pin_spec_parsed = 1;
+	pin_set_group(TYPE_UDP,    pin_udp_cpus,    "udp");
+	pin_set_group(TYPE_TCP,    pin_tcp_cpus,    "tcp");
+	pin_set_group(TYPE_TIMER,  pin_timer_cpus,  "timer");
+	pin_set_group(TYPE_MODULE, pin_module_cpus, "module");
+}
+
+/*
+ * Choose the CPU a new process should be pinned to, or -1 for "do not pin".
+ * Runs in the PARENT, before fork.
+ *
+ * Two things matter here:
+ *
+ *  - The candidate CPUs come from the set this process is ALREADY allowed to
+ *    run on, read back with sched_getaffinity() rather than assumed from the
+ *    machine's CPU count. Under a cgroup or cpuset - a container, a systemd
+ *    slice - we may be confined to a subset, and picking a raw CPU number
+ *    would either fail or quietly widen affinity past what the operator
+ *    confined us to. Intersecting can only ever narrow.
+ *
+ *  - The CPU is the least-occupied one, counted over the processes actually
+ *    running right now. Deriving it from the process-table slot instead would
+ *    look balanced at startup and drift badly afterwards: with auto-scaling,
+ *    slots are freed and reused, so a recycled slot can land on a CPU that
+ *    already has workers while another sits idle.
+ */
+static int pin_pick_cpu(enum process_type ptype, struct socket_info *sock)
+{
+	cpu_set_t allowed;
+	cpu_set_t sock_set;
+	int count[CPU_SETSIZE];
+	int i, n, best = -1, best_load = 0;
+
+	if (!pin_workers && !(sock && sock->pin_cpus))
+		return -1;
+
+	if (!pin_spec_parsed)
+		pin_parse_spec();
+
+	CPU_ZERO(&allowed);
+	if (sched_getaffinity(0, sizeof allowed, &allowed) != 0) {
+		LM_WARN("cannot read CPU affinity, leaving new process unpinned: %s\n",
+			strerror(errno));
+		return -1;
+	}
+
+	/* narrow to this process type's group, if the spec named one. The
+	 * intersection keeps the cpuset guarantee: a group can only ever
+	 * restrict further, never grant a CPU we were not already allowed. */
+	if (sock && sock->pin_cpus) {
+		/* the listener named its own CPUs - more specific than the group */
+		if (pin_parse_cpulist(sock->pin_cpus, &sock_set) < 0 ||
+		    CPU_COUNT(&sock_set) == 0) {
+			LM_ERR("pin_cpus: bad or empty CPU list \"%s\" on listener "
+				"%.*s - leaving its workers unpinned\n", sock->pin_cpus,
+				sock->name.len, sock->name.s);
+			return -1;
+		}
+		CPU_AND(&allowed, &allowed, &sock_set);
+		if (CPU_COUNT(&allowed) == 0) {
+			LM_WARN("pin_cpus on listener %.*s has no CPU in common with "
+				"the allowed set - leaving its workers unpinned\n",
+				sock->name.len, sock->name.s);
+			return -1;
+		}
+	} else if (ptype >= 0 && ptype <= TYPE_MODULE && pin_type_has[ptype]) {
+		CPU_AND(&allowed, &allowed, &pin_type_set[ptype]);
+		if (CPU_COUNT(&allowed) == 0) {
+			LM_WARN("pin_workers: group for this process type has no CPU "
+				"in common with the allowed set - leaving unpinned\n");
+			return -1;
+		}
+	} else if (pin_any_group()) {
+		/* This process belongs to no named group while other groups do
+		 * exist. Pinning it anyway would place it by occupancy across
+		 * every CPU, including the ones a group was given precisely so
+		 * that nothing else would run there - which is the opposite of
+		 * what the operator asked for. Leave it to the scheduler. */
+		return -1;
+	}
+
+	n = CPU_COUNT(&allowed);
+	if (n < 1)
+		return -1;
+
+	memset(count, 0, sizeof count);
+	for (i = 0; i < counted_max_processes; i++) {
+		int c = pt[i].pinned_cpu;
+
+		if (c >= 0 && c < CPU_SETSIZE && is_process_running(i))
+			count[c]++;
+	}
+
+	for (i = 0; i < CPU_SETSIZE; i++) {
+		if (!CPU_ISSET(i, &allowed))
+			continue;
+		if (best < 0 || count[i] < best_load) {
+			best = i;
+			best_load = count[i];
+		}
+	}
+
+	return best;
+}
+
+/* Apply the choice made above. Runs in the CHILD. */
+static void pin_apply_cpu(int cpu)
+{
+	cpu_set_t one;
+
+	if (cpu < 0)
+		return;
+
+	CPU_ZERO(&one);
+	CPU_SET(cpu, &one);
+	if (sched_setaffinity(0, sizeof one, &one) != 0) {
+		LM_WARN("failed to pin process %d to CPU %d: %s\n",
+			process_no, cpu, strerror(errno));
+		return;
+	}
+
+	LM_INFO("process %d pinned to CPU %d\n", process_no, cpu);
+}
+
+/* Confine a multithreaded process to its group's whole CPU list. Runs in
+ * the CHILD, before any of its threads exist, so they all inherit it. */
+static void pin_apply_group(enum process_type t)
+{
+	cpu_set_t set;
+
+	if (!pin_spec_parsed)
+		pin_parse_spec();
+	if (t < 0 || t > TYPE_MODULE || !pin_type_has[t])
+		return;
+
+	if (sched_getaffinity(0, sizeof set, &set) != 0)
+		return;
+	CPU_AND(&set, &set, &pin_type_set[t]);
+	if (CPU_COUNT(&set) == 0) {
+		LM_WARN("pin group for process %d has no CPU in common with the "
+			"allowed set - leaving it unpinned\n", process_no);
+		return;
+	}
+	if (sched_setaffinity(0, sizeof set, &set) != 0) {
+		LM_WARN("failed to pin process %d to its CPU group: %s\n",
+			process_no, strerror(errno));
+		return;
+	}
+	LM_INFO("process %d pinned to a %d-CPU group\n", process_no,
+		CPU_COUNT(&set));
+}
+
+
+#else  /* !__OS_linux */
+
+static int pin_pick_cpu(enum process_type ptype, struct socket_info *sock)
+{
+	static int warned;
+
+	if (pin_workers && !warned) {
+		warned = 1;
+		LM_WARN("CPU pinning is only implemented on Linux - "
+			"pin_workers and pin_*_cpus have no effect here\n");
+	}
+	return -1;
+}
+
+static void pin_apply_cpu(int cpu)
+{
+}
+
+static void pin_apply_group(enum process_type t)
+{
+}
+
+#endif /* __OS_linux */
+
 static unsigned long count_running_processes(void *x)
 {
 	int i,cnt=0;
@@ -119,6 +394,7 @@ int init_multi_proc_support(void)
 	for( i=0 ; i<counted_max_processes ; i++ ) {
 		/* reset fds to prevent bogus ops */
 		pt[i].pid = -1;
+		pt[i].pinned_cpu = -1;
 		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 		pt[i].ipc_sync_pipe[0] = pt[i].ipc_sync_pipe[1] = -1;
 	}
@@ -224,6 +500,7 @@ void reset_process_slot( int p_id )
 	/* we cannot simply do a memset here, as we need to preserve the holders
 	 * with the inter-process communication fds */
 	pt[p_id].pid = -1;
+	pt[p_id].pinned_cpu = -1;
 	pt[p_id].type = TYPE_NONE;
 	pt[p_id].pg_filter = NULL;
 	pt[p_id].desc[0] = 0;
@@ -320,6 +597,15 @@ int internal_fork(const struct internal_fork_params *ifpp)
 
 	atomic_init(&pt[new_idx].startup_result, CHLD_STARTING);
 
+	/* decided here, in the parent, while the process table is stable;
+	 * a whole-group process gets no single CPU - it is confined to the
+	 * full group in the child instead, and must not count as occupying
+	 * one slot of it here */
+	pt[new_idx].pinned_cpu = ifpp->pin_whole_group ? -1 :
+	                         pin_pick_cpu(ifpp->pin_group ?
+	                                     ifpp->pin_group : ifpp->type,
+	                                     ifpp->sock);
+
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",ifpp->proc_desc,
 				errno, strerror(errno));
@@ -331,6 +617,41 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		const struct internal_fork_handler *cfhp;
 		/* child process */
 		is_main = 0; /* a child is not main process */
+
+		/* Pin BEFORE the allocator reset below: the reset makes this
+		 * worker carve fresh chunks on first use, and we want that to
+		 * happen once it is already on its final CPU. The CPU itself was
+		 * chosen by the parent (pin_pick_cpu) so the decision could see a
+		 * consistent view of who is running where. */
+		if (ifpp->pin_whole_group)
+			pin_apply_group(ifpp->pin_group ? ifpp->pin_group : ifpp->type);
+		else
+			pin_apply_cpu(pt[new_idx].pinned_cpu);
+
+#ifdef HG_MALLOC
+		/*
+		 * MUST run before this child allocates anything. HG_MALLOC keeps
+		 * its fast-path allocation state (per-size-class bump pointer +
+		 * private free stack) in plain process memory, so a fresh child
+		 * inherits an identical COPY of the parent's - pointing at the
+		 * very same shm cells. Left alone, every worker would hand out
+		 * the same cells to different callers.
+		 */
+		if (mem_allocator_shm == MM_HG_MALLOC ||
+		    mem_allocator_shm == MM_HG_MALLOC_DBG) {
+			hg_malloc_child_init((struct hg_block *)shm_block);
+#ifdef DBG_MALLOC
+			if (shm_dbg_block)
+				hg_malloc_child_init((struct hg_block *)shm_dbg_block);
+#endif
+		}
+#ifdef PKG_MALLOC
+		if (mem_allocator_pkg == MM_HG_MALLOC ||
+		    mem_allocator_pkg == MM_HG_MALLOC_DBG)
+			hg_malloc_child_init((struct hg_block *)mem_block);
+#endif
+#endif /* HG_MALLOC */
+
 		/* set uid */
 		process_no = new_idx;
 		/* set attributes, pid etc */

@@ -183,12 +183,17 @@ struct socket_info_full* new_sock_info(struct socket_id *sid, str *orig_name)
 		if (sid->workers)
 			LM_WARN("number of workers per non UDP-based <%.*s> listener not "
 				"supported -> ignoring...\n", si->name.len, si->name.s);
+		if (sid->pin_cpus)
+			LM_WARN("pin_cpus on non UDP-based <%.*s> listener not supported - "
+				"its workers come from one shared pool, not from this listener "
+				"-> ignoring...\n", si->name.len, si->name.s);
 		if (sid->auto_scaling_profile)
 			LM_WARN("auto-scaling for non UDP-based <%.*s> listener not "
 				"supported -> ignoring...\n", si->name.len, si->name.s);
 	} else {
 		if (sid->workers)
 			si->workers = sid->workers;
+		si->pin_cpus = sid->pin_cpus;
 		si->tos = sid->tos;
 		if (sid->auto_scaling_profile) {
 			si->s_profile = get_scaling_profile(sid->auto_scaling_profile);
