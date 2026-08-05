@@ -77,6 +77,20 @@ jobs:
           echo "has-components=true" >> "$GITHUB_OUTPUT"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
+      - name: Show publication matrix
+        env:
+          MATRIX: ${{ steps.components.outputs.matrix }}
+        run: |
+          echo 'Publication matrix:'
+          echo "$MATRIX" | jq .
+          {
+            echo '### Documentation publication matrix'
+            echo
+            echo '```json'
+            echo "$MATRIX" | jq .
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
   dispatch:
     name: Trigger ${{ matrix.component }} publication
     needs: changed-components
