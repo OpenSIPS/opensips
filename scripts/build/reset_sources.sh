@@ -7,7 +7,7 @@ if [ "${RELEASE}" = "bookworm" ]
 then
   RELEASE="jammy"
 fi
-URL="http://archive.ubuntu.com/ubuntu"
+URL="https://archive.ubuntu.com/ubuntu"
 
 echo "deb $URL $RELEASE main universe
 deb $URL $RELEASE-updates main universe
