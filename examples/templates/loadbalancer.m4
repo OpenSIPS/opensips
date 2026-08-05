@@ -7,7 +7,7 @@
 #   opensips -f examples/templates/loadbalancer.m4 -p m4
 #
 # Please refer to the OpenSIPS Manuals at:
-#      https://opensips.org/Documentation/Manuals
+#      https://docs.opensips.org/manual/devel/
 # for an explanation of available statements, functions and parameters.
 #
 
