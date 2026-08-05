@@ -14,7 +14,7 @@ for OpenSIPS.
 It is designed to work in tandem with the presence_callinfo module.
 
 
-The module handles the basic SIP signalling for call controll while
+The module handles the basic SIP signalling for call control while
 publishing callinfo events to a presence server.
 It is built on top of the b2b_logic module and it is using the
 'top hiding' scenario to control SIP signalling.
@@ -100,7 +100,7 @@ The following modules must be loaded before this module:
 
 
 The size of the hash table internally used to keep the shared calls.
-A larger table means faster acces at the expense of memory.
+A larger table means faster access at the expense of memory.
 The hash size is a power of number two.
 
 
@@ -161,7 +161,7 @@ route {
 
 
 Mandatory parameter.
-Opaque string identifing the shared line/call.
+Opaque string identifying the shared line/call.
 The shared_line_spec_param MUST be set before calling sca_init_request();
 
 
@@ -217,7 +217,7 @@ modparam("b2b_sca", "db_url", "[dbdriver]://[[username]:[password]]@[dbhost]/[db
 The b2b_sca module can utilize database for persistent call appearance storage.
 Using a database ensure that active call appearances will survive
 machine restarts or SW crashes.
-The following databse accessing modes are available for b2b_sca module:
+The following database accessing modes are available for b2b_sca module:
 
 
 - NO DB STORAGE - set this parameter to 0
@@ -403,7 +403,7 @@ Meaning of the parameters:
 
 
 - *shared_line* (int) - an integer
-identifying the call leg as being an "appearnace" call or a "shared" call:
+identifying the call leg as being an "appearance" call or a "shared" call:
 	* 0: "shared" call
 	* 1: "appearance" call
 

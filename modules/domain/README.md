@@ -55,7 +55,7 @@ Default value is
 
 
 ```opensips title="Setting db_url parameter"
-modparam("domain", "db_url", "mysql://ser:pass@db_host/ser")
+modparam("domain", "db_url", "mysql://set:pass@db_host/ser")
 ```
 
 

@@ -14,7 +14,7 @@ XMLRPC servers whenever certain notifications are raised by OpenSIPS. It
 acts as a transport layer for the Event Notification Interface.
 
 
-Basicly, the module executes a remote procedure call when an event is
+Basically, the module executes a remote procedure call when an event is
 raised from OpenSIPS's script, core or modules using the Event
 Interface.
 

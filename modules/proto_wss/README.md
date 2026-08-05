@@ -99,7 +99,7 @@ part (if the destination WSS URI has no explicit port).
 
 
 If you want to change only the listening port for WSS, use the port
-option in the SIP listener defintion.
+option in the SIP socket definition.
 
 
 *Default value is 443.*
@@ -179,7 +179,7 @@ SSL certificate as the one set for the current signaling operation.
 
 This checking is done only when comes to send SIP traffic via TLS and
 it is applied only against connections that were created / initiated 
-by OpenSIPS (as TLS client). Any accepte connection (as TLS server) will
+by OpenSIPS (as TLS client). Any accept connection (as TLS server) will
 automatically match (the extra test will be skipped).
 
 
@@ -263,7 +263,7 @@ on at the time this connection is opened.
 
 > [!WARNING]
 > If [trace on](#param_trace_on) is
-> set to 0 or tracing is deactived via the mi command [mi trace](#mi_trace)
+> set to 0 or tracing is deactivated via the mi command [mi trace](#mi_trace)
 > this route won't be called.
 
 

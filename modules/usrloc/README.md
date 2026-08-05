@@ -1013,7 +1013,7 @@ modparam("usrloc", "max_contact_delete", 10)
 
 The number of entries of the hash table used by usrloc to store the
 location records is 2^hash_size. For hash_size=4, the number of entries
-of the hash table is 16. Since version 2.2, the maximu size of this
+of the hash table is 16. Since version 2.2, the maximum size of this
 parameter is 16, meaning that the hash supports maximum 65536 entries.
 
 
@@ -1178,7 +1178,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 Enable a timer which will periodically scan a sorted list of contacts
 and raise the [E UL CONTACT REFRESH](#event_e_ul_contact_refresh) for any of
 them which are past their re-registration time interval limit.  This
-limit may given by registrar's *pn_trigger_interval*
+limit may given by registrar's *on_trigger_interval*
 module parameter, for example.
 
 
@@ -1468,7 +1468,7 @@ Exported statistics are listed in the next sections.
 
 
 Number of AOR existing in the USRLOC memory cache for that domain
-			- can not be resetted; this statistic will be register for each
+			- can not be reset; this statistic will be register for each
 used domain (Ex: location).
 
 
@@ -1476,14 +1476,14 @@ used domain (Ex: location).
 
 
 Number of contacts existing in the USRLOC memory cache for that
-domain - can not be resetted; this statistic will be register for
+domain - can not be reset; this statistic will be register for
 each used domain (Ex: location).
 
 
 #### expires
 
 
-Total number of expired contacts for that domain - can be resetted;
+Total number of expired contacts for that domain - can be reset;
 this statistic will be register for each used domain
 (Ex: location).
 
@@ -1492,7 +1492,7 @@ this statistic will be register for each used domain
 
 
 Total number of AOR existing in the USRLOC memory cache for all
-domains - can not be resetted.
+domains - can not be reset.
 
 
 ### Exported Events
@@ -1555,7 +1555,7 @@ value.
 *NOTICE:*Can contain spaces.
 - *socket* - The SIP socket/listener
 (as string) used by OpenSIPS to receive the contact
-registations.
+registrations.
 - *bflags* - The branch flags (bflags) of the
 contact (in integer value of the bitmask)
 - *expires* - The expires value of the
@@ -1634,7 +1634,7 @@ value.
 *NOTICE:*Can contain spaces.
 - *socket* - The SIP socket/listener
 (as string) used by OpenSIPS to receive the contact
-registations.
+registrations.
 - *bflags* - The branch flags (bflags) of the
 contact (in integer value of the bitmask)
 - *expires* - The expires value of the
@@ -1894,7 +1894,7 @@ contact.
 
 
 The function retrieves all contacts of all registered users from the
-given doamin and returns them in the caller-supplied buffer. If the
+given domain and returns them in the caller-supplied buffer. If the
 buffer is too small, the function returns positive value indicating
 how much additional space would be necessary to accommodate all of
 them. Please note that the positive return value should be used only
@@ -1995,7 +1995,7 @@ Meaning of the parameters is as follows:
 
 
 The function register with USRLOC a callback function to be called
-when some event occures inside USRLOC.
+when some event occurs inside USRLOC.
 
 
 Meaning of the parameters is as follows:

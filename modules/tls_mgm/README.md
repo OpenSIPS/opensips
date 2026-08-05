@@ -39,7 +39,7 @@ A script example which details this module's usage can be found in
 
 
 Besides TLS certificates and parameters, this module also acts as
-an inteface between the actual TLS implemenation (provided by
+an interface between the actual TLS implementation (provided by
 *openSSL* or *wolfSSL* libraries)
 and transport protocol modules like *proto_tls* or
 *proto_wss*. The *tls_mgm* module
@@ -69,7 +69,7 @@ in the config file).
 
 
 For example, TLS domains can be used in virtual hosting scenarios with TLS.
-OpenSIPS offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Altough
+OpenSIPS offers SIP service for multiple domains, e.g. atlanta.com and biloxi.com. Although
 both domains will be hosted on a single SIP proxy, the SIP proxy needs 2 certificates: One
 for atlanta.com and one for biloxi.com. For incoming TLS connections, the SIP proxy
 has to present the respective certificate during the TLS handshake. As the SIP proxy
@@ -693,7 +693,7 @@ Sets the verrify certificate column name.
 Default value is "verify_cert".
 
 
-```opensips title="Usage of vertify_cert_col block"
+```opensips title="Usage of verify_cert_col block"
 modparam("tls_mgm", "verify_cert_col", "verify_cert") 
 ```
 
@@ -820,7 +820,7 @@ Default value is "dh_params".
 
 
 ```opensips title="Usage of dh_params_col block"
-modparam("tls_mgm", "dh_params_col", "dh_parms")
+modparam("tls_mgm", "dh_params_col", "dh_params")
 ```
 
 
@@ -843,7 +843,7 @@ modparam("tls_mgm", "ec_curve_col", "ec_curve")
 
 The IP addresses and ports used to match a TLS connection with a
 virtual TLS domain. For TLS server domains, these values will be
-mathced against the socket on which the connection is received. For
+matched against the socket on which the connection is received. For
 TLS client domains, the values will be compared with the destination
 socket of the connection.
 
@@ -1010,7 +1010,7 @@ route{
 ### Variables
 
 
-This module exports the follong variables:
+This module exports the following variables:
 
 
 Some variables are available for both, the peer'S certificate and
@@ -1290,8 +1290,8 @@ String type.
       exit;
   };
 
-  # if somene claims to belong to our domain in From,
-  # challenge him (skip REGISTERs -- we will chalenge them later)
+  # if someone claims to belong to our domain in From,
+  # challenge him (skip REGISTERRs -- we will challenge them later)
   if (is_myself("$fd")) {
       setflag(1);
       if ( is_method("INVITE|SUBSCRIBE|MESSAGE")
@@ -1360,7 +1360,7 @@ String type.
       };
       if ($au!=$tU) {
           xlog("TO hdr Cheating attempt\n");
-          send_reply(403, "That is ugly -- use To=id in REGISTERs");
+          send_reply(403, "That is ugly -- use To=id in REGISTERRs");
           exit;
       };
       # it is an authenticated request, update Contact database now
@@ -1525,7 +1525,7 @@ Initialization related functions and parameters.
 extern SSL_CTX *default_client_ctx;
 
 
-The ssl context is a member of the TLS domain strcuture. Thus, every
+The ssl context is a member of the TLS domain structure. Thus, every
 TLS domain, default and virtual - servers and clients, have its own SSL context.
 
 

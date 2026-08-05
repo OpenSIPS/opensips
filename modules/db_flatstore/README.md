@@ -55,7 +55,7 @@ Name of files in that directory will follow the following pattern:
 
 
 For example, without setting any module parameter, the
-entries writen by OpenSIPS process 8 into acc table would
+entries written by OpenSIPS process 8 into acc table would
 be written in file acc_8.log. For each table there will be several
 files, one file for every OpenSIPS process that wrote some data into
 that table. The main reason why there are several files for each
@@ -195,7 +195,7 @@ modparam("db_flatstore", "suffix", "$time(%H)")
 The table name prefix. Can be a pseudo variable.
 
 
-*Defaul value is none.*
+*Default value is none.*
 
 
 ```opensips title="Set 'prefix' parameter"

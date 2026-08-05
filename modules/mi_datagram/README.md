@@ -264,7 +264,7 @@ No function exported to be used from configuration file.
 
 
 This is an example showing the DATAGRAM format for the
-"get_statistics dialog: tm:" MI commad:
+"get_statistics dialog: tm:" MI command:
 request.
 
 
@@ -277,7 +277,7 @@ request.
 
 
 **Q: Both UNIX and UDP type of socket can be created 
-simultaneusly?**
+simultaneously?**
 
 
 This version supports only one kind of socket at a time.

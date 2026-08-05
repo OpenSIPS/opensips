@@ -90,7 +90,7 @@ its value is 0 (cannot be decremented).
 - *-2 (false)* - error during processing.
 
 
-The return code may be extensivly tested via script variable 
+The return code may be extensively tested via script variable 
 "retcode" (or "$?").
 
 
@@ -136,7 +136,7 @@ not set.
 - *-3 (false)* - error during processing.
 
 
-The return code may be extensivly tested via script variable 
+The return code may be extensively tested via script variable 
 "retcode" (or "$?").
 
 

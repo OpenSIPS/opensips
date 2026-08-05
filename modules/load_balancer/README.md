@@ -22,7 +22,7 @@ with the largest available slot.
 
 Also the module has the capability to do failover (to try a new destination
 if the selected one does not respond), to keep state of the destinations 
-(to remember the failed destination and avoid using them agai) and to 
+(to remember the failed destination and avoid using them again) and to 
 check the health of the destination (by doing probing of the destination 
 and auto re-enabling).
 
@@ -47,7 +47,7 @@ done (probe_mode column):
 
 - *(0)* - no probing at all;
 - *(1)* - probing only when the destination is
-in disabled mode (disabling via MI command will competely stop the 
+in disabled mode (disabling via MI command will completely stop the 
 probing also). The destination will be automatically re-enabled
 when the probing will succeed next time;
 - *(2)* - probing all the time. If disabled, 
@@ -180,7 +180,7 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
 #### probing_reply_codes (string)
 
 
-A comma separted list of SIP reply codes. The codes defined here 
+A comma separated list of SIP reply codes. The codes defined here 
 will be considered as valid reply codes for probing messages,
 apart for 200.
 
@@ -322,7 +322,7 @@ used in load-balancer module for two purposes: for sharing the status
 of the destinations and for controlling the pinging to destinations.
 
 
-If clustering enbled, the module will automatically share changes
+If clustering enabled, the module will automatically share changes
 over the status of the destinations with the other 
 OpenSIPS instances that are part of a cluster. Whenever such a status 
 changes (following an MI command, a probing result, a script command),
@@ -409,12 +409,12 @@ Meaning of the parameters is as follows:
 
 - *grp* (int) - group id for the destinations;
 the destination may be grouped in several groups you can you for 
-differnet scenarios.
+different scenarios.
 - *resources* (string) - a 
 semi-colon separated list of resources required by the current
 call.
 - *flags* (string, optional) - various flags
-to controll the LB algorithm ( or computing the available load on
+to control the LB algorithm ( or computing the available load on
 the system):
 
   - *n* - Negative availability  - use
@@ -450,8 +450,8 @@ not be changed by this function.
 - *-1 (false)* - generic internal error
 (memory allocation, parsing)
 - *-2 (false)* - no capacity available 
-(detinations are up and available, but they do not have any 
-availabe channels)
+(destinations are up and available, but they do not have any 
+available channels)
 - *-3 (false)* - no destinations available 
 (the requested resources did not match any active destination)
 - *-4 (false)* - bad resources 
@@ -502,8 +502,8 @@ not be changed by this function.
 - *-1 (false)* - generic internal error
 (memory allocation, parsing)
 - *-2 (false)* - no capacity available 
-(detinations are up and available, but they do not have any 
-availabe channels)
+(destinations are up and available, but they do not have any 
+available channels)
 - *-3 (false)* - no more destinations 
 available (the requested resources did not match any active 
 destination)
@@ -550,7 +550,7 @@ Take care, this will become obsolete.
 
 Function to stop and flush a current LB session. To be used in 
 failure route, if you want to stop the current LB session (not to try
-any other destinations from this session) and to start a completly new
+any other destinations from this session) and to start a completely new
 one.
 
 
@@ -719,7 +719,7 @@ if (lb_is_destination($si,$sp) ) {
 Replaces obsolete MI command: *lb_reload*.
 
 
-Trigers the reload of the load balancing data from the DB.
+Triggers the reload of the load balancing data from the DB.
 
 
 MI FIFO Command Format:

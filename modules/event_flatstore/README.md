@@ -219,7 +219,7 @@ appending a suffix to the the file specified in the flatstore
 
 The suffix can contain string formats (i.e. variables mixed with
 strings). The path of the resulted file is evaluated when the first
-event is raised/written in the file after a reload happend, or when
+event is raised/written in the file after a reload happened, or when
 the *rotate_period*, if specified, triggers a rotate.
 
 

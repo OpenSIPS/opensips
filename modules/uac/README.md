@@ -219,7 +219,7 @@ uac_restore_from();
 This function can be called only from failure route and will 
 build the authentication response header and insert it into the
 request without sending anything.
-Credentials for buiding the authentication response will be taken
+Credentials for building the authentication response will be taken
 from the list of credentials provided by the uac_auth module (static
 or via AVPs).
 
@@ -258,7 +258,7 @@ failure_route[check_auth] {
     ...
     if ($T_reply_code==407) {
         if (uac_auth("MD5,MD5-sess")) {
-            # auth is succesful, just relay
+            # auth is successful, just relay
             t_relay();
             exit;
         }

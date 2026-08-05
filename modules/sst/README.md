@@ -46,7 +46,7 @@ expire timeout value. See the dialog module users guide for
 more information.
 
 
-The sstCheckMin() script function can be used to varify
+The sstCheckMin() script function can be used to verify
 the Session-expires / MIN-SE header field values are not too
 small for a proxy. If the SST min_se parameter value is
 smaller then the messages Session-Expires / MIN-SE values, the
@@ -274,7 +274,7 @@ modules minimum value, this function will return
 true.
 
 
-If the fuction is called with the
+If the function is called with the
 send_reply_flag set to true (1) and the requested
 Session-Expires / MIN-SE values are too small, a 422
 reply will be sent for you. The 422 will carry a

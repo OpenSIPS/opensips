@@ -103,12 +103,12 @@ is optional and the default value is 60 seconds.
 establishment timeout to "ttl".
 This parameter is optional and the default value 
 is 60 seconds.
-All of the previous parameters can be used with the offical
+All of the previous parameters can be used with the official
 RTPProxy release, except for the last one. It has been
 added, together with other modifications to RTPProxy in order
 to work properly. The patch is located in the
 *patches* directory in the module.
-To get the patched version from git you must follow theese steps:
+To get the patched version from git you must follow these steps:
 
 
 Get the latest source code: "git clone git://sippy.git.sourceforge.net/gitroot/sippy/rtpproxy"
@@ -165,7 +165,7 @@ treated as a UNIX socket.
 The definition also supports to specify a different IP that will
 be advertised instead of the one returned by RTPProxy. This is
 useful when having multiple RTPProxy servers that are located
-behind NAT, and listen only on private intefaces, but need to
+behind NAT, and listen only on private interfaces, but need to
 advertise a public one.
 
 
@@ -282,7 +282,7 @@ modparam("rtpproxy", "default_set", 1)
 
 
 The parameter sets the SDP attribute used by rtpproxy to mark
-the packet SDP informations have already been mangled.
+the packet SDP information have already been mangled.
 
 
 If empty string, no marker will be added or checked.
@@ -495,7 +495,7 @@ should use the 'ie' flags. Depending on the scenario, the 'ii'
 and 'ee' combination are also supported. Only makes sense when
 RTPProxy is running in the bridge mode.
 *NOTE:* when using RTPProxy in bridge mode,
-all sessions are considered asymmetric (as oposed to symmetric
+all sessions are considered asymmetric (as opposed to symmetric
 if used in normal mode). If you have symmetric clients (this
 is the most common scenario), you'll have to force the
 *s*!
@@ -530,7 +530,7 @@ ttl for the caller. The NN represents the timeout in seconds
 for that stream. This can be useful in music on hold scenarios
 where only one client is sending RTP.
   - *TNN* - Similar to the *tNN*
-paramaeter, but used for tuning the calllee's ttl for RTP.
+parameter, but used for tuning the callee's ttl for RTP.
   - *zNN* - requests the RTPproxy to perform
 re-packetization of RTP traffic coming from the UA which
 has sent the current message to increase or decrease payload
@@ -539,9 +539,9 @@ target payload size in ms, for the most codecs its value should
 be in 10ms increments, however for some codecs the increment
 could differ (e.g. 30ms for GSM or 20ms for G.723).  The
 RTPproxy would select the closest value supported by the codec.
-This feature could be used for significantly reducing bandwith
+This feature could be used for significantly reducing bandwidth
 overhead for low bitrate codecs, for example with G.729 going
-from 10ms to 100ms saves two thirds of the network bandwith.
+from 10ms to 100ms saves two thirds of the network bandwidth.
 - *ip_address(string, optional)* - new SDP IP address.
 - *set_id(int, optional)* - the set used for this call.
 - *sock_var(var, optional)* - variable used to store the RTPProxy
@@ -748,7 +748,7 @@ socket chosen for this call.
 
 Stop streaming of announcement/prompt/MOH started previously by the
 respective `rtpproxy_stream2xxx`.  The uac/uas
-suffix selects whose announcement relatively to tha current
+suffix selects whose announcement relatively to the current
 transaction should be stopped - UAC or UAS.
 
 
@@ -852,7 +852,7 @@ All the returned values stored in an AVP that can be further read by
 indexing the AVP.
 
 
-This command is only available starting with RTPProxy 2.1 realease.
+This command is only available starting with RTPProxy 2.1 release.
 
 
 Meaning of the parameters is as follows:
@@ -924,7 +924,7 @@ Parameters:
 the config file).
 - *rtpproxy:enable* - 1 - enable, 0 - disable the RTPproxy node, 2 - put the RTPproxy node in probing mode.
 - *setid* (optional) - the rtpproxy set ID (used
-for better indentification of the rtpproxy instance to be enabled,
+for better identification of the rtpproxy instance to be enabled,
 for example when a rtpproxy is used in multiple sets).
 
 

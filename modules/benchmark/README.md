@@ -219,7 +219,7 @@ Parameters:
 
 
 - *enable* - value may be -1, 0 or 1. See
-discription of "enable" parameter.
+description of "enable" parameter.
 
 
 MI FIFO Command Format:
@@ -270,7 +270,7 @@ Parameters:
 
 
 - *benchmark:granularity* - See
-discription of "granularity" parameter.
+description of "granularity" parameter.
 
 
 MI FIFO Command Format:
@@ -295,7 +295,7 @@ Parameters:
 
 
 - *log_level* - See
-discription of "loglevel" parameter.
+description of "loglevel" parameter.
 
 
 MI FIFO Command Format:

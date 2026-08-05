@@ -131,7 +131,7 @@ if(is_gflag(4))
 
 
 Functions that check or change some flags accepts one parameter 
-which is the flag bitmap/mask specifing the corresponding flags.
+which is the flag bitmap/mask specifying the corresponding flags.
 It is not possible to specify directly the flag position that 
 should be changed as in the functions available in the routing 
 script.
@@ -144,7 +144,7 @@ Set the value of some flags (specified by bitmask) to 1.
 
 
 The parameter value must be a bitmask in decimal or hexa format.
-The bitmaks has a 32 bit size.
+The bitmask has a 32 bit size.
 
 
 ```bash title="gflags:set usage"
@@ -162,7 +162,7 @@ Reset the value of some flags to 0.
 
 
 The parameter value must be a bitmask in decimal or hexa format.
-The bitmaks has a 32 bit size.
+The bitmask has a 32 bit size.
 
 
 ```bash title="gflags:reset usage"
@@ -180,7 +180,7 @@ Returns true if the all the flags from the bitmask are set.
 
 
 The parameter value must be a bitmask in decimal or hexa format.
-The bitmaks has a 32 bit size.
+The bitmask has a 32 bit size.
 
 
 The function returns TRUE if all the flags from the set are set

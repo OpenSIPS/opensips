@@ -15,7 +15,7 @@ This module offers the possibility of processing ISDN User Part(ISUP) messages e
 The supported ISUP message types are only the ones that can be included in a SIP message according to the SIP-I(SIP with encapsulated ISUP) protocol defined by ITU-T.
 
 
-The format and specification of the ISUP messages and parameters follow the recomandations from ITU-T Rec. Q.763.
+The format and specification of the ISUP messages and parameters follow the recommendations from ITU-T Rec. Q.763.
 
 
 ### Dependencies
@@ -123,14 +123,14 @@ modparam("sip_i", "country_code", "+4")
 Adds a new ISUP part to the SIP message body.
 
 
-With the exception of some ISUP message types(IAM, REL, ACM, CPG, ANM, CON), the newly added part contains a blank ISUP message(i.e. all mandatory parameters zeroed and no optional ones) and all the required parameters should be set through $isup_param. For the previously mentioned message types, the mandatory parameters and some optional ones are automaticaly set to default values according to basic SIP-ISUP interworking rules from ITU-T Rec. Q.1912.5. This only provides a general and simplified mapping from SIP headers and message type (request method, reply code etc.) to ISUP parameters and you should not base your SIP-ISUP interworking only on this.
+With the exception of some ISUP message types(IAM, REL, ACM, CPG, ANM, CON), the newly added part contains a blank ISUP message(i.e. all mandatory parameters zeroed and no optional ones) and all the required parameters should be set through $isup_param. For the previously mentioned message types, the mandatory parameters and some optional ones are automatically set to default values according to basic SIP-ISUP interworking rules from ITU-T Rec. Q.1912.5. This only provides a general and simplified mapping from SIP headers and message type (request method, reply code etc.) to ISUP parameters and you should not base your SIP-ISUP interworking only on this.
 
 
 Meaning of the parameters is as follows:
 
 
 - *isup_msg_type (string, optional)* - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. *IAM* for "Initial address").
-- *extra_headers (string, string, optional)* - a chunk of fully defined SIP headers (including header terminatior) to be inserted into the ISUP part next to the *Content-Type* header. It overrides the global module parameter *default_part_headers*. If not specified, the *default_part_headers* value will be used.
+- *extra_headers (string, string, optional)* - a chunk of fully defined SIP headers (including header terminator) to be inserted into the ISUP part next to the *Content-Type* header. It overrides the global module parameter *default_part_headers*. If not specified, the *default_part_headers* value will be used.
 
 
 If *isup_msg_type* is not explicitly provided, it is automatically deduced from the SIP message as follows:
@@ -208,12 +208,12 @@ The format of the subname for `$isup_param` is the following:
 The ISUP parameter can be addressed in different ways:
 
 
-- entire parameter - by providing as subname for the varaiable only the ISUP parameter name, allowing access to the contents of the entire parameter as: a hex string(similar to a hex "dump") for read/write, a string alias for writing, or an integer value for read/write; when assigning a hex string, the hex value must be preceded by "0x"; when reading, if string aliases are supported for this parameter, an associated integer value will be returned, otherwise a hex string is returned
-- at subfield level - by providing as subname for the varaiable the ISUP parameter name and the subfield name, allowing access to the specific subfield as an integer value or string value(eg. telephone number for parameters such as Called Party Number) for read/write or as a string alias for writing
+- entire parameter - by providing as subname for the variable only the ISUP parameter name, allowing access to the contents of the entire parameter as: a hex string(similar to a hex "dump") for read/write, a string alias for writing, or an integer value for read/write; when assigning a hex string, the hex value must be preceded by "0x"; when reading, if string aliases are supported for this parameter, an associated integer value will be returned, otherwise a hex string is returned
+- at subfield level - by providing as subname for the variable the ISUP parameter name and the subfield name, allowing access to the specific subfield as an integer value or string value(eg. telephone number for parameters such as Called Party Number) for read/write or as a string alias for writing
 - at byte level - by providing as subname for the variable the ISUP parameter name and an index, allowing access to the byte with the specified index as an integer value
 
 
-Addressing at entire parameter level as a hex string and at byte level are supported for all the ISUP parameters defined in the ITU-T Rec. Q.763. Addressing at subfield level is supported only for some ISUP parameters and not all of the subfields of a parameter defined in the ITU Recommandation are supported.
+Addressing at entire parameter level as a hex string and at byte level are supported for all the ISUP parameters defined in the ITU-T Rec. Q.763. Addressing at subfield level is supported only for some ISUP parameters and not all of the subfields of a parameter defined in the ITU Recommendation are supported.
 
 
 String aliases are not available for all parameters or parameter subfields. Also, not all the possible values of a parameter or parameter subfield have a string alias defined.
@@ -291,7 +291,7 @@ Read-only variable, returns the ISUP message type as string.
 ### Exported script transformations
 
 
-The module also provides a way for accessing the value of ISUP parameters and their subfields from an ISUP message contained in a arbitrary script variable as opposed to directly from the processed SIP (with encapsulated ISUP) message. This is done by aplying a transformation to a script variable containing the ISUP message body. The value of the original variable is not altered and a corresponding integer or string value (representing an ISUP parameter or subfield as the exact value or string alias) is returned.
+The module also provides a way for accessing the value of ISUP parameters and their subfields from an ISUP message contained in a arbitrary script variable as opposed to directly from the processed SIP (with encapsulated ISUP) message. This is done by applying a transformation to a script variable containing the ISUP message body. The value of the original variable is not altered and a corresponding integer or string value (representing an ISUP parameter or subfield as the exact value or string alias) is returned.
 
 
 #### {isup.param,param_name,[subfield_name]}

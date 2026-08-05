@@ -39,7 +39,7 @@ Currently, the nathelper module supports two types of NAT pings:
 - *UDP package* - 4 bytes (zero filled) UDP
 packages are sent to the contact address.
 
-  - *Advantages:* low bandwitdh traffic,
+  - *Advantages:* low bandwidth traffic,
 easy to generate by OpenSIPS;
   - *Disadvantages:* unidirectional
 traffic through NAT (inbound - from outside to inside); As
@@ -54,7 +54,7 @@ traffic) will force the SIP client to generate a SIP reply
 (outbound traffic) - the NAT bind will be surely kept open.
 Since version 2.2, one can also choose to remove contacts
 from the location table if a certain threshold is detected.
-  - *Disadvantages:* higher bandwitdh
+  - *Disadvantages:* higher bandwidth
 traffic, more expensive (as time) to generate by OpenSIPS;
 
 
@@ -241,7 +241,7 @@ the [ping threshold](#param_ping_threshold) is exceeded.
 
 ```opensips title="Set remove_on_timeout_bflag parameter"
 ...
-modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_RTO")
+modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_TO")
 ...
 ```
 
@@ -325,7 +325,7 @@ modparam("nathelper", "sipping_method", "INFO")
 
 
 The parameter sets the SDP attribute used by nathelper to mark
-the packet SDP informations have already been mangled.
+the packet SDP information have already been mangled.
 
 
 If empty string, no marker will be added or checked.
@@ -522,10 +522,10 @@ if (search("User-Agent: Cisco ATA.*") {
 #### fix_nated_sdp(flags [, ip_address [, sdp_fields]])
 
 
-Alters the SDP information in orer to facilitate NAT traversal. What
-changes to be performed may be controled via the
+Alters the SDP information in order to facilitate NAT traversal. What
+changes to be performed may be controlled via the
 "flags" parameter. Since version 1.12 the name of the old
-ip fields are "a=oldoip" for old origin ip and "a=oldcip" for old meda
+ip fields are "a=oldoip" for old origin ip and "a=oldcip" for old media
 ip.
 
 
@@ -604,7 +604,7 @@ Contact header.
 This function can be used from REQUEST_ROUTE.
 
 
-```opensips title="add_rcv_paramer usage"
+```opensips title="add_rcv_parameter usage"
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....

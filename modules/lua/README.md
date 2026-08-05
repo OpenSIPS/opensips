@@ -51,7 +51,7 @@ if (lua_exec("mongo_alias")) {
 
 On the Lua side, you have access to opensips functions and
 variables (AVP, pseudoVar, ...). Read the documentation below
-for further informations.
+for further information.
 
 
 ### Dependencies
@@ -105,7 +105,7 @@ installed:
 
 
 This is the file name of your script. This may be set once
-only, but it may include an arbitary number of functions and
+only, but it may include an arbitrary number of functions and
 "use" as many Lua module as necessary.
 
 
@@ -177,7 +177,7 @@ if (lua_exec("mongo_alias")) {
 #### lua_meminfo()
 
 
-Logs informations about memory.
+Logs information about memory.
 
 
 ### Exported MI Functions

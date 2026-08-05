@@ -24,7 +24,7 @@ taking place in one OpenSIPS instance to one or multiple other instances without
 the need of third party dependencies.
 The process is simplified by using the clusterer module which facilitates the
 management of a cluster of OpenSIPS noeds and the sending of replication-related
-BIN packets (binary-encoded, using proto_bin). This might be usefull for implementing
+BIN packets (binary-encoded, using proto_bin). This might be useful for implementing
 a hot stand-by system, where the stand-by instance can take over without the need
 of filling the cache by its own.
 
@@ -39,7 +39,7 @@ The following cache operations will be distributet within the cluster:
 
 
 In addition to the event-driven replication, an OpenSIPS instance will first
-try to learn all the local cache information from antoher node in the cluster at startup.
+try to learn all the local cache information from another node in the cluster at startup.
 The data synchronization mechanism requires defining one of the nodes in the cluster
 as a "**seed**" node.
 See the [clusterer](../clusterer#capabilities)
@@ -51,7 +51,7 @@ you want to replicate when you set [cache collections](#param_cache_collections)
 
 
 **Limitations:** The clustering operations are not atomic
-and constistency over the cluster nodes is not guaranteed.
+and consistency over the cluster nodes is not guaranteed.
 
 
 ### Dependencies
@@ -360,7 +360,7 @@ The parameter was removed because it was redundant. Since the
 addition of collections, the old hash now belongs to the
 default collection. This collection is created every time and
 it has a default size of 512. The size can be changed by
-setting the default collection size using cache_collections paramter.
+setting the default collection size using cache_collections parameter.
 <!-- CONTRIBUTORS -->
 
 ### License

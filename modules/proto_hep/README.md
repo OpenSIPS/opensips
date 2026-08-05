@@ -67,7 +67,7 @@ HEP protocol used. All parameters inside
 **;**. The parameters
 are given in key-value format, the possible keys being
 **uri**, **transport**
-and **version**, except destiantion's
+and **version**, except destination's
 URI which doesn't have a key and is in **host:port**. **transport** key can be
 **TCP**, **UDP** or
 **TLS**.
@@ -334,7 +334,7 @@ the second extra correlation id that will be put in the extra correlation chunk.
 ```opensips title="correlate usage"
 ...
 /* see declaration of hep_dst in trace_id section */
-/* we suppose we have two correlations in two varibles: cor1 and cor2 */
+/* we suppose we have two correlations in two variables: cor1 and cor2 */
 correlate("hep_dst", "correlation-no-1", $var(cor1), "correlation-no-2", $var(cor2));
 ...
 ```

@@ -186,7 +186,7 @@ parameter will only consist of the MI command.
 - *ret_var(var, optional)* - a
 variable used to store the return of the
 MI command execution. In case of success,
-a JSON is stored, otherwise an erorr message.
+a JSON is stored, otherwise an error message.
 - *params_avp(avp, optional)* - an
 AVP consisting of all the parameters names that
 will be sent to the MI command. If this parameter

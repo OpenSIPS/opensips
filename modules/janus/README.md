@@ -16,7 +16,7 @@ events from them.
 
 
 This driver can be seen as a centralized Janus connection manager.
-It will connect to each Janus server, establish the connection hanler ID and the clients can be transparent from the connection handler ID point of view, simply passing the desired Janus commands that they want to run.
+It will connect to each Janus server, establish the connection handler ID and the clients can be transparent from the connection handler ID point of view, simply passing the desired Janus commands that they want to run.
 
 
 ### External Libraries or Applications
@@ -175,7 +175,7 @@ arrives. The timeout for this operation can be controlled via the
 Meaning of the parameters is as follows:
 
 
-- *janus_id* (string) - the ID of the janus connection as defined in the databsae.
+- *janus_id* (string) - the ID of the janus connection as defined in the database.
 - *janus_command* (string) - the JANUS command to run.
 - *response_var (var, optional)* - a
 variable which will hold the text result of the Janus command.

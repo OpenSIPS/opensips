@@ -46,7 +46,7 @@ The default parameter used when the [example str](#func_example_str)
 function is called without any parameter.
 
 
-*Default value is "" (empty sring).*
+*Default value is "" (empty string).*
 
 
 ```opensips title="Set 'default_str' parameter"

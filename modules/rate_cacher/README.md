@@ -414,7 +414,7 @@ $ opensips-cli -x mi rate_cacher:addVendor myNewVendor
 Replaces obsolete MI command: *rc_deleteVendor*.
 
 
-Removes a vendor from memory, along with the ratesheet asigned with it ( if any )
+Removes a vendor from memory, along with the ratesheet assigned with it ( if any )
 
 
 Name: *rate_cacher:deleteVendor*
@@ -559,7 +559,7 @@ $ opensips-cli -x mi fifo rate_cacher:addClient myNewClient
 Replaces obsolete MI command: *rc_deleteClient*.
 
 
-Removes a Client from memory, along with the ratesheet asigned with it ( if any )
+Removes a Client from memory, along with the ratesheet assigned with it ( if any )
 
 
 Name: *rate_cacher:deleteClient*
@@ -595,7 +595,7 @@ Name: *rate_cacher:reloadClientRate*
 Parameters :
 
 
-- *clientName* - name of the Cient
+- *clientName* - name of the Client
 - *isWholesale* - is the ratesheet assigned on the wholesale or retail quality
 - *ratesheet_id* - ID of the ratesheet to be reloaded and assigned
 

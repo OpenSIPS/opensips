@@ -347,7 +347,7 @@ WWW-Authenticate header fields containing digest challenges. It will
 put the header field(s) into a response generated from the request the
 server is processing and will send the reply. Upon reception of such a
 reply the user agent should compute credentials using the used
-authentication vector annd retry the request.
+authentication vector and retry the request.
 For more information regarding digest authentication 
 see RFC2617, RFC3261, RFC3310 and RFC8760.
 
@@ -397,7 +397,7 @@ Possible return codes:
 
 
 - *-1* - generic parsing error, generated
-when there is not enoough data to build the challange
+when there is not enoough data to build the challenge
 - *-2* - no AV vector could not be fetched
 - *-3* - authentication headers could not
 be built
@@ -449,7 +449,7 @@ if (!aka_proxy_authorize("siphub.com"))
 #### aka_av_add(public_identity, private_identity, authenticate, authorize, confidentiality_key, integrity_key[, algorithms])
 
 
-Adds an authentication vector for the user identitied by 
+Adds an authentication vector for the user identified by 
 *public_identity* and
 *private_identity*.
 
@@ -494,7 +494,7 @@ aka_av_add("sip:test@siphub.com", "test@siphub.com",
 
 Drops the authentication vector corresponding to the 
 *authenticate/nonce* value
-for an user identitied by 
+for an user identified by 
 *public_identity* and
 *private_identity*.
 
@@ -525,7 +525,7 @@ aka_av_drop("sip:test@siphub.com", "test@siphub.com",
 #### aka_av_drop_all(public_identity, private_identity[, count])
 
 
-Drops all authentication vectors for an user identitied by 
+Drops all authentication vectors for an user identified by 
 *public_identity* and
 *private_identity*. This function is useful
 when a synchronization must be done.
@@ -563,7 +563,7 @@ failed, unlocking the processing of the message.
 *Note:* this function is useful when you
 know that fetching a new authentication vector is not possible
 (due to various reasons) - calling it will resume the message
-procesing, using only the available AVs fetched so far.
+processing, using only the available AVs fetched so far.
 
 
 Meaning of the parameters is as follows:
@@ -653,7 +653,7 @@ Parameters:
 - *private_identity* (string) - the private identity
 (IMPI) of the user to add authentication vector for.
 - *authenticate* (string) - the authenticate/nonce
-to indentify the authentication vector.
+to identify the authentication vector.
 
 
 ```bash title="auth_aka:av_drop usage"
@@ -711,7 +711,7 @@ vector has failed, unlocking the processing of the message.
 *Note:* this function is useful when you
 know that fetching a new authentication vector is not possible
 (due to various reasons) - calling it will resume the message
-procesing, using only the available AVs fetched so far.
+processing, using only the available AVs fetched so far.
 
 
 Parameters:

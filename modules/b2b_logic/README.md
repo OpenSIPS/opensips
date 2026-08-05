@@ -565,7 +565,7 @@ This function can be used from REQUEST_ROUTE.
 > If you have a multi interface setup and want to change the outbound interface,
 it is mandatory to use the "force_send_socket()" core function before passing
 control to b2b function. If you do not do it, the requests may be correctly routed,
-but the SIP pacakge may be invalid (as Contact, Via, etc).
+but the SIP package may be invalid (as Contact, Via, etc).
 
 
 ```opensips title="b2b_init_request usage"
@@ -931,7 +931,7 @@ advertise in generated messages.
 - *flags (string, optional)* - Flags that can modify the
 behavior of the function. Available flags are:
    * *late_bye* - instead of terminating the replaced entity
-      on the stop, leave it pending until the new enity fully establishes.
+      on the stop, leave it pending until the new entity fully establishes.
 
 
 ```opensips title="b2b_bridge_request usage"
@@ -974,7 +974,7 @@ in a different session on this B2B-UA (e.g. useful for receiving out-of-dialog R
 side should receive the NOTIFY of the session (0 = A-Party of the session, 1 = B-Party of the session)
 - *peer1 (string)* - Parameters to define the A-Party of the triggered scenario
 
-  - *entitiy_name (string)* - Name of the entity
+  - *entity_name (string)* - Name of the entity
   - *RURI (string)* - R-URI of the entity to contact
   - *Proxy (string, optional)* - Outbound Proxy to be used for this entity
   - *Display-Name (string, optional)* - Display Name to be used for this entity
@@ -985,7 +985,7 @@ list of extra header bodies (corresponding to the headers given in the
 *extra_headers_peer1* parameter) to be added for any request
 sent for the first entity.
 - *peer2 (string)* - Parameters to define the B-Party of the
-triggered scenario. The format is identitical to the definition of *peer1*.
+triggered scenario. The format is identical to the definition of *peer1*.
 - *extra_headers_peer2 (var, optional)* - AVP variable holding a list
 of extra headers (the header names) to be added for any request sent for the second entity.
 - *extra_headers_contents_peer2 (var, optional)* - AVP variable holding a
@@ -1031,7 +1031,7 @@ Name: *b2b_logic:trigger_scenario*
 Parameters:
 
 
-- *senario_id* : ID for the scenario of this B2B session.
+- *scenario_id* : ID for the scenario of this B2B session.
 - *entity1* - first entity to be connected; specified
 in the following format: *id,dest_uri[,from_dname]* where:
 
@@ -1083,7 +1083,7 @@ callid;from-tag;to-tag
 - *prov_media_uri* (optional) - the uri of a media server able to play 
 provisional media starting from the beginning of the bridging scenario
 to the end of it. It is optional. If not present, no other entity will be
-envolved in the bridging scenario
+involved in the bridging scenario
 
 
 MI FIFO Command Format:
@@ -1412,7 +1412,7 @@ will also show from which side the BYE is received, so it
 can be B2B_BYE_E1 or B2B_BYE_E2*
 - *If while bridging, a negative reply is received from the
 second entity - the event is B2B_REJECT_E2.*
-- *When the b2b logic entity is deleted- the evnet is
+- *When the b2b logic entity is deleted- the event is
 B2B_DESTROY*
 
 

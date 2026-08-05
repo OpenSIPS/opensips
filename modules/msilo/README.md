@@ -474,7 +474,7 @@ modparam("msilo", "sc_snd_time", "send_reminder_time")
 
 
 The name of an AVP which may contain the time when to sent
-the received message as reminder.The AVP is used ony by m_store().
+the received message as reminder.The AVP is used only by m_store().
 
 
 If the parameter is not set, the module does not look for this AVP. If
@@ -495,7 +495,7 @@ modparam("msilo", "snd_time_avp", "$avp(snd_time)")
 #### add_date (int)
 
 
-Wheter to add as prefix the date when the message was stored.
+Whether to add as prefix the date when the message was stored.
 
 
 *Default value is "1" (1==on/0==off).*

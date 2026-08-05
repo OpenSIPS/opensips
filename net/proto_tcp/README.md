@@ -104,7 +104,7 @@ destination URI has no explicit port).
 
 
 If you want to change only the listening port for TCP, use the port
-option in the SIP listener defintion.
+option in the SIP socket definition.
 
 
 *Default value is 5060.*
@@ -316,7 +316,7 @@ on at the time this connection is opened.
 
 > [!WARNING] 
 > If [trace on](#param_trace_on) is
-> set to 0 or tracing is deactived via the mi command [tcp trace](#mi_tcp_trace)
+> set to 0 or tracing is deactivated via the mi command [tcp trace](#mi_tcp_trace)
 > this route won't be called.
 
 

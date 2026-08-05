@@ -210,7 +210,7 @@ Default value is "NULL" (none).
 modparam("msrp_relay", "socket_route", "msrp_routing")
 
 route[msrp_routing] {
-	xlog("MSRP request comming from $si:$sp on $socket_in socket\n");
+	xlog("MSRP request coming from $si:$sp on $socket_in socket\n");
 	xlog("trying to go to $var(dst_schema)://$var(dst_host)\n");
 
 	$socket_out = "msrp:1.2.3.4:9999";
@@ -246,7 +246,7 @@ Default value is "$var(dst_host)".
 
 
 The realm to be provided in the WWW-Authenticate header when the relay
-automatically challanges an MSRP client.
+automatically challenges an MSRP client.
 
 
 If this parameter is not set, the realm chose by the relay is the
@@ -357,7 +357,7 @@ chosen based on the URI in the To-Path header of the AUTH request.
 This parameter can be set multiple times
 
 
-If the port is not set explicitly, the default value of 2855 wil
+If the port is not set explicitly, the default value of 2855 will
 be assumed. The session-id part of the URI should not be set
 
 

@@ -19,12 +19,12 @@ already defined by IETF and may become available in the future.
 
 
 The TLS support was originally developed by Peter Griffiths and posted
-as a patch on SER development mailing list. Thanks to Cesc
+as a patch on SET development mailing list. Thanks to Cesc
 Santasusana, several problems were fixed and some improvements were
 added.
 
 
-The TLS support was simultaneously added in both projects. In SER,
+The TLS support was simultaneously added in both projects. In SET,
 the support was committed in a separate "experimental"
 CVS tree, as patch to the main CVS tree. In OpenSIPS, the support was
 integrated directly into the CVS tree, as a built-in component, and is
@@ -195,7 +195,7 @@ part (if the destination URI has no explicit port).
 
 
 If you want to change only the listening port for TLS, use the port
-option in the SIP listener defintion.
+option in the SIP socket definition.
 
 
 *Default value is 5061.*
@@ -278,7 +278,7 @@ SSL certificate as the one set for the current signaling operation.
 
 This checking is done only when comes to send SIP traffic via TLS and
 it is applied only against connections that were created / initiated 
-by OpenSIPS (as TLS client). Any accepte connection (as TLS server) will
+by OpenSIPS (as TLS client). Any accept connection (as TLS server) will
 automatically match (the extra test will be skipped).
 
 
@@ -361,7 +361,7 @@ on at the time this connection is opened.
 
 
 > [!WARNING]
-> If [trace on](#param_trace_on) is set to 0 or tracing is deactived via the mi command [mi trace](#mi_trace) this route won't be called.
+> If [trace on](#param_trace_on) is set to 0 or tracing is deactivated via the mi command [mi trace](#mi_trace) this route won't be called.
 
 
 ```opensips title="Set trace_filter_route parameter"

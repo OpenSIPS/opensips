@@ -37,7 +37,7 @@ bitmask column
 - *"Regex matching" rule* - uses Perl
 Compatible Regular Expressions, and will attempt to match the rule's
 expression against an input string. The regex
-maching can be done in a caseless manner by enabling bit 1 of the
+matching can be done in a caseless manner by enabling bit 1 of the
 rule's "match_flags" bitmask column
 (i.e. set the column value to 1 or 0, for insensitive or sensitive)
 

@@ -51,13 +51,13 @@ module's parameter.
 
 In order to be able to deliver messages to SMSc, an ESME needs to
 first bind to the SMSc. This is done at OpenSIPS startup by sending
-a SMPP *bind_transciever* command to connect
+a SMPP *bind_transceiver* command to connect
 to the SMSc, or an *outbind* command to inform
 an SMSc it can now bind to our gateway.
 
 
 The description of all SMSc servers is provisioned in the database.
-For each server, one can cofigure the following information:
+For each server, one can configure the following information:
 
 
 - *Name* - an unique name given to
@@ -73,7 +73,7 @@ authenticate to the SMSc.
 - *System Type* - Usually
 "SMPP", this field is required by some SMPP providers.
 - *Source Type of Number (TON)* - Specifies
-the format of the number used to send messages from. Some comon values are:
+the format of the number used to send messages from. Some common values are:
 
 				*0* - Unknown
 				*1* - International
@@ -85,7 +85,7 @@ the format of the number used to send messages from. Some comon values are:
 
 			Default value is *0 - Unknown*.
 - *Source Number Plan Indicator (NPI)* - Specifies
-the numbering scheme of the number used to send messages from. Some comon values are:
+the numbering scheme of the number used to send messages from. Some common values are:
 
 	- *0* - Unknown
 	- *1* - ISDN/telephone numbering plan (E163/E164)
@@ -108,13 +108,13 @@ Specifies the numbering scheme of the number used to send messages to. Can have
 the same values as *Source Number Plan Indicator (NPI)*
 and *default value is *0 - Unknown**.
 - *Session Type* - Specifies what type of session
-should be used to connecto th the SMSc. Possible values are:
-	- *1* - Transciever
+should be used to connect th the SMSc. Possible values are:
+	- *1* - Transceiver
 	- *2* - Transmitter
 	- *3* - Receiver
 	- *4* - Outbind
 
-	*Default value is *1 - Transciever**.
+	*Default value is *1 - Transceiver**.
 
 
 When OpenSIPS starts up, it reads all SMSc specifications from the

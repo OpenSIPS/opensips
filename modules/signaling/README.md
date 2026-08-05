@@ -78,7 +78,7 @@ OpenSIPS with this module loaded:
 
 
 For the current request, a reply is sent back having the given code 
-and text reason. The reply is sent stateless or statefull depending 
+and text reason. The reply is sent stateless or stateful depending 
 on which module is loaded and if a transaction was created, as 
 explained above.
 
@@ -123,7 +123,7 @@ Otherwise you may get different values for the To-tag!!
 
 > [!NOTE]
 > The variable returns the To-Tag that will be used by OpenSIPS
-> in the locally generated reply. This may be completly different from
+> in the locally generated reply. This may be completely different from
 > the To-tag in the replies received and forwarded by OpenSIPS.
 
 

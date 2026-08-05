@@ -35,7 +35,7 @@ The OSP module depends on the following modules which must be loaded before the 
 - *sipmsgops* -- SIP operations module
 - *sl* -- Stateless replier module
 - *tm* -- Transaction (stateful) module
-- *uac* -- UAC functionalies (FROM mangling and UAC auth)
+- *uac* -- UAC functionalities (FROM mangling and UAC auth)
 - *uac_auth* -- UAC Authentication functionality
 - *usrloc* -- User location implementation module
 - *OSP Toolkit* -- The OSP Toolkit, available from https://github.com/TransNexus/osptoolkit, must be built before building OpenSIPS with the OSP module. For instructions on building OpenSIPS with the OSP Toolkit, see http://www.http://transnexus.com/wp-content/uploads/OSP-Routing-and-CDR-Collection-Server-with-OpenSIPS-1.7.2.pdf. For OpenSIPS 2.4.0, OSP Toolkit 4.16.0 or later versions should be used.
@@ -266,7 +266,7 @@ modparam("osp","max_destinations",12)
 #### report_networkid
 
 
-The report_networkid (integer) parameter is used to tell the OSP module if to report network ID in completed call CDRs. If it is set to 0, ths OSP module does not report any network ID. If it is set to 1, the OSP module reports source network ID. If it is set to 2, the OSP module reports destination network ID. If it is set to 3, the OSP module report both source and destination network IDs.  The default value is 3.
+The report_networkid (integer) parameter is used to tell the OSP module if to report network ID in completed call CDRs. If it is set to 0, the OSP module does not report any network ID. If it is set to 1, the OSP module reports source network ID. If it is set to 2, the OSP module reports destination network ID. If it is set to 3, the OSP module report both source and destination network IDs.  The default value is 3.
 
 
 ```opensips title="Setting report network ID flag"
@@ -294,7 +294,7 @@ The use_number_portability (integer) parameter instructs the OSP module how to u
 
 
 ```opensips title="Instructing the module to use number portability parameters in Request URI"
-modparam("osp","use_number_portablity",1)
+modparam("osp","use_number_portability",1)
         
 ```
 
@@ -510,7 +510,7 @@ modparam("osp","request_date_avp","$avp(reqdate)")
 #### sdp_fingerprint_avp
 
 
-The sdp_fingerprint_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SDP fing print attribute values. The default value is "$avp(_osp_sdp_fingerprint_)".  Then the SDP finger print attributes can be used by "$avp(_osp_sdp_fingerprint_)".  All pseudo variables are described in https://docs.opensips.org/manual/devel/script-corevar/.
+The sdp_fingerprint_avp (string) parameter instructs the OSP module to use the defined AVP to pass the SDP find print attribute values. The default value is "$avp(_osp_sdp_fingerprint_)".  Then the SDP finger print attributes can be used by "$avp(_osp_sdp_fingerprint_)".  All pseudo variables are described in https://docs.opensips.org/manual/devel/script-corevar/.
 
 
 ```opensips title="Setting the SDP finger print AVP"
@@ -522,7 +522,7 @@ modparam("osp","sdp_fingerprint_avp","$avp(sdpfp)")
 #### identity_signature_avp, identity_algorithm_avp, identity_information_avp, identity_type_avp, identity_canon_avp
 
 
-These parameters instruct the OSP module to use the defined AVPs to pass the Identity related values. The default values are "$avp(_osp_identity_signature_)", "$avp(_osp_identity_algorithm_)", "$avp(_osp_identity_information_)", "$avp(_osp_identity_type_)", "$avp(_osp_identity_canon_)".  Then the indentity related values can be used by these AVPs.  All pseudo variables are described in https://docs.opensips.org/manual/devel/script-corevar/.
+These parameters instruct the OSP module to use the defined AVPs to pass the Identity related values. The default values are "$avp(_osp_identity_signature_)", "$avp(_osp_identity_algorithm_)", "$avp(_osp_identity_information_)", "$avp(_osp_identity_type_)", "$avp(_osp_identity_canon_)".  Then the identity related values can be used by these AVPs.  All pseudo variables are described in https://docs.opensips.org/manual/devel/script-corevar/.
 
 
 ```opensips title="Setting the Identity related AVPs"

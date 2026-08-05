@@ -87,7 +87,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
 #### cache_type (string)
 
 
-Databse memory caching options. The following options are available:
+Database memory caching options. The following options are available:
 
 
 - *STANDARD* - Read database from file system;

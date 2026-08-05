@@ -43,7 +43,7 @@ depending on the "delete_delay"
 	- [delete delay](#param_delete_delay)) setting, it may be kept for a
 while in memory, in a read-only state (no action, no changes, nothing).
 This delaying may be used to help with the routing of late in-dialog
-request that may be received after the dialog terminted (like late BYE's
+request that may be received after the dialog terminated (like late BYE's
 due retransmissions, cross BYE requests, auth'ed BYE request, slow ACK on
 re-INVITEs, etc).
 
@@ -82,7 +82,7 @@ the original request.
 
 Dialog profiles can also be used in distributed systems, using the OpenSIPS
 CacheDB Interface or the *clusterer* module. This feature
-allows you to share dialog profile information with multiple OpenSIPS instaces
+allows you to share dialog profile information with multiple OpenSIPS instances
 that use the same CacheDB backend or are part of an OpenSIPS cluster. In order
 to do that, the **cachedb_url** or
 **profile_replication_cluster** parameters must be defined.
@@ -128,7 +128,7 @@ is also enabled
 
 
 In addition to the event-driven replication, an OpenSIPS instance will first
-try to learn all the dialog information from antoher node in the cluster at startup.
+try to learn all the dialog information from another node in the cluster at startup.
 The data synchronization mechanism requires defining one of the nodes in the cluster
 as a "**seed**" node.
 See the [clusterer](../clusterer#capabilities) 
@@ -301,7 +301,7 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 #### dlg_match_mode (integer)
 
 
-How the seqential requests should be matched against the known dialogs.
+How the sequential requests should be matched against the known dialogs.
 The modes are a combination between matching based on a cookie (DID)
 stored as cookie in Record-Route header and the matching based on SIP
 elements (as in RFC3261).
@@ -1215,7 +1215,7 @@ is created.
 #### create_dialog([flags])
 
 
-The function creats the dialog for the currently processed request. The
+The function creates the dialog for the currently processed request. The
 request must be an initial request.
 
 Optionally,the function also receives a string parameter, which specifies
@@ -1416,7 +1416,7 @@ in "avp", and a negative error code is returned.
 
 > [!NOTE]
 > The function does not require to be called in the context of
-> a dialog - you can use it whenever / whereever for searching for other
+> a dialog - you can use it whenever / wherever for searching for other
 > dialogs.
 
 
@@ -1475,7 +1475,7 @@ be AVPs.
 
 > [!NOTE]
 > The function does not require to be called in the context of
-> a dialog - you can use it whenever / whereever for searching for other
+> a dialog - you can use it whenever / wherever for searching for other
 > dialogs.
 
 
@@ -1515,7 +1515,7 @@ The function looks up through the whole dialog table for dialogs containing a $d
 
 > [!NOTE]
 > The function does not require to be called in the context of
-> a dialog - you can use it whenever / whereever for searching for other
+> a dialog - you can use it whenever / wherever for searching for other
 > dialogs.
 
 
@@ -1554,7 +1554,7 @@ The function looks up through the whole dialog table for dialogs configured to b
 
 > [!NOTE]
 > The function does not require to be called in the context of
-> a dialog - you can use it whenever / whereever for searching for other
+> a dialog - you can use it whenever / wherever for searching for other
 > dialogs.
 
 
@@ -2354,7 +2354,7 @@ Replaces obsolete MI command: *dlg_list*.
 Lists the description of the dialogs (calls). If no parameter is given,
 all dialogs will be listed. If a dialog identifier is passed
 as parameter (callid and fromtag), only that dialog will be listed. If
-a index and conter parameter is passed, it will list only a number of
+a index and counter parameter is passed, it will list only a number of
 "counter" dialogs starting with index (as offset) - this is used to
 get only section of dialogs.
 
@@ -2362,7 +2362,7 @@ get only section of dialogs.
 Name: *dialog:list*
 
 
-Parameters (with dialog idetification):
+Parameters (with dialog identification):
 
 
 - *callid* (optional) - callid if a single
@@ -2451,7 +2451,7 @@ Parameters are:
 of the dialog - it can be either (1) the unique ID 
 of the dialog (as provided by dialog:list), either (2) the 
 SIP Call-ID of the dialog.
-- *extra_hdrs* - (optional) string containg
+- *extra_hdrs* - (optional) string containing
 the extra headers (full format) to be added to the BYE
 requests.
 
@@ -2466,7 +2466,7 @@ MI FIFO Command Format:
 # terminate the dialog via the internal Dialog-ID
 opensips-cli -x mi dialog:end_dlg 6ae.4b38d013
 # terminate the dialog via its SIP Call-ID
-opensips-cli -x mi dialog:end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
+opensips-cli -x mi dialog:end_dlg Y2IwYjQ2YmE2ZDg5MWVkANDNkZGIwZjAzNGM1ZDY
 
 ```
 
@@ -2587,7 +2587,7 @@ Name: *dialog:profile_end_dlgs*
 Parameters:
 
 
-- *profile* - name of the profile that will have its dialogs termianted
+- *profile* - name of the profile that will have its dialogs terminated
 - *value* - (optional) if the profile supports values terminate only the dialogs
 with the specified value
 
@@ -2956,7 +2956,7 @@ NULL will be returned if there is no dialog for the request.
 #### $DLG_flags
 
 
-Returns the dialog flags (as a list of flag names separted by space)
+Returns the dialog flags (as a list of flag names separated by space)
 of the dialog corresponding to the processed sequential request.
 This PV will be available only for sequential requests,
 after doing loose_route().

@@ -457,7 +457,7 @@ The meaning of the return code is as follows:
 
 - *2* - no matching fraud rule was found
 - *1* - a matching rule was found, but there is no
-parameter above the rule's threshlod, i.e - everything is ok
+parameter above the rule's threshold, i.e - everything is ok
 - *-1* - there is a parameter above the warning threshold value.
 Check the raised event for more info
 - *-2* - there is a parameter above the critical threshold value.

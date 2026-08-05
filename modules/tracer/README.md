@@ -267,7 +267,7 @@ This function has replaced the *sip_trace()* in OpenSIPS 3.0.
 
 
 Store or replicate current processed SIP message, transaction / dialog or B2B session.
-It is stored in the form prior applying chages made to it. The traced_user_avp
+It is stored in the form prior applying changes made to it. The traced_user_avp
 parameter is now an argument to trace() function. Since version 2.2, this function
 also catches internally generated replies in stateless mode(sl_send_reply(...)).
 
@@ -319,7 +319,7 @@ shall be stored in the trace_attrs column in the sip_trace table.
 flags over the tracing process (how and what to be traced).
 
   - *C* - trace only the SIP caller side;
-  - *c* - trace onlt the SIP callee side;
+  - *c* - trace only the SIP callee side;
 If both *C* and *c* flags are missing, tracing of both sides/legs is assumed.
 NOTE these flags are supported only by transactional and dialog tracing
 - *correlation_id (string,pvar)* a custom
@@ -400,7 +400,7 @@ possible values are:
 
   - "on" - enable tracing
   - "off" - disable tracing
-If the first parameter is missing, the command wil set the global
+If the first parameter is missing, the command will set the global
 tracing state, otherwise it will set the state for a specific trace id.
 If you turn global trace on but some of the trace ids had tracing set to
 off, then they shall not do tracing. If you want to turn the tracing on

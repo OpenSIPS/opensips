@@ -9,7 +9,7 @@ description: "The SNMPStats module provides an SNMP management interface to Open
 ### Overview
 
 
-The SNMPStats module (Simple Network Management Protocal Statistic Module) provides an SNMP management interface to OpenSIPS.  Specifically, it provides general SNMP queryable scalar statistics, table representations of more complicated data such as user and contact information, and alarm monitoring capabilities.
+The SNMPStats module (Simple Network Management Protocol Statistic Module) provides an SNMP management interface to OpenSIPS.  Specifically, it provides general SNMP queryable scalar statistics, table representations of more complicated data such as user and contact information, and alarm monitoring capabilities.
 
 
 #### General Scalar Statistics
@@ -373,7 +373,7 @@ compiled and up and running.
 
 In order for the SNMPStats module to compile, you will need to have
 installed the packages providing SNMP (Simple Network Management
-Protocol) libray and development files.
+Protocol) library and development files.
 
 
 The SNMPStats modules makefile requires that the SNMP script

@@ -25,7 +25,7 @@ This is actually a Contact Center and it is able to handle both
 RTP/audio calls and (multiple) MSRP/chat calls, in the same time.
 
 
-The module provides an internal buit-in dispatching logic (for sending the
+The module provides an internal built-in dispatching logic (for sending the
 calls/chats to the agents), but also offers the possibility to use an
 external logic to do the dispatching
 (see [mi dispatch call to agent](#mi_dispatch_call_to_agent) MI command).
@@ -237,7 +237,7 @@ will not deliver call to agent during this wrapup interval.
 
 
 This value may be overwritten by the per-agent value (if defined)
-and furher more, by the per-flow value (if defined).
+and further more, by the per-flow value (if defined).
 
 
 *Default value is "30 seconds".*
@@ -306,7 +306,7 @@ calls (of course, if you have mixed agetns with audio/chat)
 - **full-load** - the distribution
 will try to make usage of an agent in the best possible way when
 comes to chat sessions - once the agent take a chat, all the
-following chats will be assigned ot him - the idea is to try to 
+following chats will be assigned to him - the idea is to try to 
 be efficient in using the resource/sessions of an agents, to leave
 as much room as possible for calls. Of course, this may lead to an
 un-even loading of chat agents - some will be full, others empty.
@@ -328,7 +328,7 @@ modparam("call_center", "chat_dispatch_policy", "balancing")
 A parameter to tell if the internal/buit-in call dispatching to agent
 should be used or not. If enabled, the module will automatically
 dispatch (by itself) the queued/incoming calls to the available agents.
-If disabled, the module will not do such dispaching by itself and it
+If disabled, the module will not do such dispatching by itself and it
 is expected to use the  [mi dispatch call to agent](#mi_dispatch_call_to_agent)
 MI command to dispatch the queued calls to agents. This allows the
 implementation of an external, custom dispatching logic. The value of
@@ -899,7 +899,7 @@ Total number of calls (audio/RTP and chat/MSRP) answered by agents. (counter typ
 Total number of chat/MSRP only calls answered by agents. (counter type)
 
 
-##### ccg_abandonned_incalls
+##### ccg_abandoned_incalls
 
 
 Total number of calls terminated by caller before being
@@ -942,13 +942,13 @@ Number of distributed calls in this flow. (counter type)
 ##### ccf_answ_incalls_flowID
 
 
-Nnumber of calls (audio/RTP and chat/MSRP) from the flow answered by agents. (counter type)
+Number of calls (audio/RTP and chat/MSRP) from the flow answered by agents. (counter type)
 
 
 ##### ccf_answ_incalls_flowID
 
 
-Nnumber of chat/MSRP only calls from the flow answered by agents. (counter type)
+Number of chat/MSRP only calls from the flow answered by agents. (counter type)
 
 
 ##### ccf_aban_incalls_flowID
@@ -993,7 +993,7 @@ Estimated Time to Wait for this flow. (realtime type)
 ##### ccf_awt_flowID
 
 
-Avg. Wating Time for this flow. (realtime type)
+Avg. Waiting Time for this flow. (realtime type)
 
 
 ##### ccg_load_flowID
@@ -1117,7 +1117,7 @@ Replaces obsolete MI command: *cc_list_flows*.
 Command to list all the flows - for each flow, the 
 following attributes will be printed: the flow ID, the avg. call 
 duration, how many calls were processed, how many agents are logged, 
-and how many onging calls are.
+and how many ongoing calls are.
 
 
 It takes no parameter.

@@ -39,12 +39,12 @@ headers can be compressed isolated from the body in a specific header.
 
 Also the module does message compaction: reduction of sip header names
 to short form (for example "Via" becomes 'v' and so on), sdp body
-codec attributes unnecesary description ("a=rtpmap:0 PCMU/8000" becomes
+codec attributes unnecessary description ("a=rtpmap:0 PCMU/8000" becomes
 "a=rtpmap:0"), unwanted headers removal by specfing the ones you want
 to keep in a whitelist.
 
 
-The module also does message decompresion and base64 decoding. It can
+The module also does message decompression and base64 decoding. It can
 detect the algorithm used for compression from the Content-Encoding
 header. At this moment only gzip and deflate algorithms are supported.
 
@@ -122,7 +122,7 @@ meaning that a new header named "Comp-Hdrs" will be created, and this
 header will keep the content of the compressed headers. Also, "Headers-Encoding"
 header will be created in order to keep the algorithm used to compress the
 headers. If this flag is not specified, the headers and the body (if 'b' and 'h'
-flags are specified) will be compressed alltogether in the new body of the
+flags are specified) will be compressed altogether in the new body of the
 message.
   - "e" - specify that you want base64 Encoding. If you do not specify
 this flag, by default the module will send the raw compressed message in
@@ -156,7 +156,7 @@ if (!mc_compress(0, "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
 $avp(algo) = 1;
 $var(flags) = "bs";
 $var(list) = "Max-Forwards | Contact";
-mc_compres($avp(algo), $var(flags), $var(list);
+mc_compress($avp(algo), $var(flags), $var(list);
 xlog("compression registered\n");
 ...
 	

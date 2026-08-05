@@ -26,7 +26,7 @@ or subscribing to a resource through fifo. The pua_usrloc module calls
 a function exported by pua modules to publish elementary presence
 information, such as basic status "open" or "closed", for clients that
 do not implement client-to-server presence.
-The pua_dialoginfo provideds BLF support, by publishing the status of
+The pua_dialoginfo provides BLF support, by publishing the status of
 the participants into a call (like ringing, established, terminated).
 Through pua_bla , BRIDGED LINE APPEARANCE features are added to 
 OpenSIPs.
@@ -71,7 +71,7 @@ with that presentity.
 > important to set a very low update interval for the DB (for data being
 > flushed from memoryc cache into DB), to get the DB content updated as 
 > realtime as possible. See the the [update period](#param_update_period),
-> module parameter, with recomanded values like 2-5 seconds.
+> module parameter, with recommended values like 2-5 seconds.
 
 
 On the OpenSIPS clustering layer, the PUA module use the sharing-tags
@@ -381,7 +381,7 @@ typedef struct publ_info
                           to Publish msg*/
   publrpl_cb_t* cbrpl;/*  callback function to be called when receiving
                           the reply for the sent request */
-  void* cbparam;      /*  extra parameter for tha callback function */
+  void* cbparam;      /*  extra parameter for the callback function */
 
   str outbound_proxy; /*  the outbound proxy to be used when sending
 							the Publish request*/

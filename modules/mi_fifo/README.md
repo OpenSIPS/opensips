@@ -272,7 +272,7 @@ No function exported to be used from configuration file.
 
 
 This is an example showing the FIFO format for the
-"get_statistics dialog: tm:" MI commad:
+"get_statistics dialog: tm:" MI command:
 response.
 
 

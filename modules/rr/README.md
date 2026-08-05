@@ -15,7 +15,7 @@ The module contains record routing logic
 ### Dialog support
 
 
-OpenSIPS is basically *only* a transaction statefull 
+OpenSIPS is basically *only* a transaction stateful 
 proxy, without any dialog support build in. There are many features/services
 which actually require dialog awareness, like storing the information in 
 the dialog creation stage, information which will be used during the whole 
@@ -193,10 +193,10 @@ loose-router.
 
 The loose_route() function analyzes the Route headers in the requests. 
 If there is no Route header, the function returns FALSE and routing 
-should be done exclusivly via RURI. If a Route header is 
+should be done exclusively via RURI. If a Route header is 
 found, the function returns TRUE and behaves as described in section 
 16.12 of RFC 3261. The only exception is for requests with preload
-Route headers (intial requests, carrying a Route header): if there is 
+Route headers (initial requests, carrying a Route header): if there is 
 only one Route header indicating the local proxy, then the Route 
 header is removed and the function returns FALSE.
 
@@ -503,7 +503,7 @@ Meaning of the parameters is as follows:
 - *struct sip_msg* msg* - request that
 will have the Route header parameter searched.
 - *str *name* - contains the Route header
-parameter to be serached.
+parameter to be searched.
 - *str *val* - returns the value of the 
 searched Route header parameter if found. It might be empty 
 string if the parameter had no value.

@@ -97,8 +97,8 @@ an error.
 
 The downside of this algorithm is that it can lead to SIP client
 synchronization. During a relatively long interval only the first
-requests (i.e. REGISTERs) would make it through. Following messages
-(i.e. RE-REGISTERs) will all hit the SIP proxy at the same time when a
+requests (i.e. REGISTERRs) would make it through. Following messages
+(i.e. RE-REGISTERRs) will all hit the SIP proxy at the same time when a
 common Expire timer expired. Other requests will be retransmissed
 after given time, the same on all devices with the same firmware/by
 the same vendor.
@@ -124,7 +124,7 @@ encounter this.
 SBT holds a window consisting of one or more slots. You can set the
 *window_size* parameter(seconds) which means for
 how long we should look back to count the calls and
-*slot_period* parameter(miliseconds) which tells
+*slot_period* parameter(milliseconds) which tells
 how granular the algorithm should be. The number of slots will be
 *window_size*/*slot_period*.
 If, for example, you have *window_size*=
@@ -186,7 +186,7 @@ happen much faster.
 
 
 > [!IMPORTANT]
-> As this algorithm is diven by the load factor, the values
+> As this algorithm is given by the load factor, the values
 > for the limits must be between 0 and 100 (as percentages) and the limits
 > for all the checks and pipes must be the same (only one value). Again, this
 > limitation are specific to this algorithm and not to the implementation.
@@ -551,7 +551,7 @@ algorithm parameter doesn't exist, the default one is used.
 > [!NOTE]
 > This function increments the pipe's counter every time it is
 > called, even if the call should be declined. Therefore If you are using
-> ratelimit to limit only successful traffic, you need to explicitely
+> ratelimit to limit only successful traffic, you need to explicitly
 > decrease the counter for the declined calls using the
 > *rl_dec_count()* function.
 
@@ -573,7 +573,7 @@ limit of the pipe. It is strongly related to the algorithm
 used. Note that the limit should be specified as per-second, not
 per-timer_interval.
 - *algorithm* (string, optional) - this parameter
-reffers to the algorithm used to check the pipe. If it is
+refers to the algorithm used to check the pipe. If it is
 not set, the default value is used.
 
 
@@ -722,7 +722,7 @@ The filter is a shell wildcard pattern (see glob(7)).
 
 
 > [!NOTE]
-> You cannot combine multiple paramters when calling this
+> You cannot combine multiple parameters when calling this
 > function. If using parameters, only one is accepted.
 
 

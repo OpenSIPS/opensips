@@ -35,7 +35,7 @@ with various other applications*
 instances can easily share key-value information*
 - *This module also implements the CacheDB Raw query
 capability, thus you can run whatever query that the MongoDB
-back-end supports, taking full advatange of it.*
+back-end supports, taking full advantage of it.*
 
 
 ### Limitations

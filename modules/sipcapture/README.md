@@ -17,7 +17,7 @@ OpenSIPs can capture SIP messages in three mode
 
 - IPIP encapsulation. (ETHHDR+IPHDR+IPHDR+UDPHDR).
 - Monitoring/mirroring port.
-- Homer encapsulation protocl mode (HEP v1/2/3). With version 2.2
+- Homer encapsulation protocol mode (HEP v1/2/3). With version 2.2
 comes the new HEPv3 support using the proto _hep module. Also
 header manipulation support for HEPv3 has been added. See
 [hep set](#func_hep_set) for more details. If you want more
@@ -126,7 +126,7 @@ modparam("sipcapture", "rtcp_table_name", "homer_%m_%d_%H")
 #### capture_on (integer)
 
 
-Parameter to enable/disable capture globaly (on(1)/off(0))
+Parameter to enable/disable capture globally (on(1)/off(0))
 
 
 *Default value is "0".*
@@ -338,7 +338,7 @@ of efficiency reasons; from here you can modify the hep chunks(if hep version
 3 is used) and relay the hep messages to other hep capture nodes;
 
 
-*Default value is sip(going thorugh the main request route).*
+*Default value is sip(going through the main request route).*
 
 
 ```opensips title="Set hep_route parameter"
@@ -459,7 +459,7 @@ Meaning of the parameters is as follows:
 				- id of the chunk to be added; most of the generic
 chunks are in the internal hep structure. For these you can skip the data_type
 and vendor_id since they are already known. Generic chunks that don't have built
-in support are the followinig: 0x000d(keep alive timer), 0x000e(authenticate key),
+in support are the following: 0x000d(keep alive timer), 0x000e(authenticate key),
 0x0011(internal correltion id), 0x0012(vlan ID). You can set these chunks, but
 only with vendor id 0x0000, other values shall result in an error. Timestamp(0x0009)
 and timestamp_us(0x000A) chunks can't be set. For chunks
@@ -657,7 +657,7 @@ route[my_hep_route] {
 
 
 Save the message inside the database. The query is being done
-asnychronously only if the database supports async operations.
+asynchronously only if the database supports async operations.
 The query might not be executed exactly at this moment, it depends
 on the *max_async_queries* parameter.
 
@@ -700,7 +700,7 @@ proto_family, of the sending node.
 proto_family, of the receiving node(OpenSIPS hep interface ip on which
 the message was received).
 - *src_port* - Sending node port.
-- *dst_port* - Receiving port(OpenSIPS hep interace
+- *dst_port* - Receiving port(OpenSIPS hep interface
 port on which the message was received).
 
 

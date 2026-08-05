@@ -35,7 +35,7 @@ OpenSIPS supports the following WebSocket operations:
 - text and binary - can both send and receive WebSocket messages that contain text or binary body
 - close - messages used to safely close the WebSocket communication using a 2-messages handshake
 - ping - responds with pong messages. There is no mechanism to trigger ping messages.
-- pong - sent when a ping message is received. OpenSIPS, absorbes the pong messages received.
+- pong - sent when a ping message is received. OpenSIPS, absorbs the pong messages received.
 
 
 Once loaded, you will be able to define WebSocket listeners in your script. To
@@ -88,7 +88,7 @@ destination WS URI has no explicit port).
 
 
 If you want to change only the listening port for WS, use the port
-option in the SIP listener defintion.
+option in the SIP socket definition.
 
 
 *Default value is 80.*
@@ -210,7 +210,7 @@ on at the time this connection is opened.
 
 > [!WARNING]
 > If [trace on](#param_trace_on) is
-> set to 0 or tracing is deactived via the mi command [mi trace](#mi_trace)
+> set to 0 or tracing is deactivated via the mi command [mi trace](#mi_trace)
 > this route won't be called.
 
 

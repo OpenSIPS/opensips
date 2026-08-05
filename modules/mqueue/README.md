@@ -96,7 +96,7 @@ If not set the queue will be limitless.
 queue is written to database table when the SIP server is
 stopped (i.e., ensure persistency over restarts).
 If set to 2, it is written at shutdown but not read at startup.
-If set to 3, it is read at sartup but not written at shutdown.
+If set to 3, it is read at startup but not written at shutdown.
 Default value is 0 (no db table interaction).
   - *addmode*: how to add new (key,value) pairs.
 	- *0*:

@@ -141,7 +141,7 @@ running OpenSIPS with this module loaded:
 ### LDAP Configuration File
 
 
-The module reads an external confiuration file at module
+The module reads an external configuration file at module
 initialization time that includes LDAP session definitions.
 
 
@@ -667,7 +667,7 @@ matched, e.g. `SIPIdentitySIPURI`
 **string_to_match (string)**
 
 
-String to be matched. Included AVPs and pseudo variabels
+String to be matched. Included AVPs and pseudo variables
 do get expanded.
 
 
@@ -817,7 +817,7 @@ URL filter string.
 **`string`**
 
 
-String to apply RFC 4515 and URL escpaing rules to.
+String to apply RFC 4515 and URL escaping rules to.
 AVPs and pseudo variables do get expanded. Example:
 `"cn=$avp(name)"`
 

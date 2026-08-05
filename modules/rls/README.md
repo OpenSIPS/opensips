@@ -325,7 +325,7 @@ It can return 3 codes:
 
 - *1* - the Notify was inside a dialog that was
 recognized by the RLS server and was processed successfully.
-- *2* - the Notify did not belog to a dialog initiated
+- *2* - the Notify did not belong to a dialog initiated
 by the RLS server.
 - *-1* - an error occurred during processing.
 

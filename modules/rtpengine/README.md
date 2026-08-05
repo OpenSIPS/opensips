@@ -510,7 +510,7 @@ the incoming network and the outgoing network. For example,
 used for SIP message received from the local interface and sent out on the
 external interface.
   - *internal, external* - these the old flags used to
-specify the direction of call. They are now obsolate, being replaced by the
+specify the direction of call. They are now obsolete, being replaced by the
 "in-iface=internal out-iface=external" configuration.
   - *auto-bridge* - this flag an alternative to the
 "internal" and "external" flags
@@ -566,9 +566,9 @@ target payload size in ms, for the most codecs its value should
 be in 10ms increments, however for some codecs the increment
 could differ (e.g. 30ms for GSM or 20ms for G.723).  The
 RTP proxy would select the closest value supported by the codec.
-This feature could be used for significantly reducing bandwith
+This feature could be used for significantly reducing bandwidth
 overhead for low bitrate codecs, for example with G.729 going
-from 10ms to 100ms saves two thirds of the network bandwith.
+from 10ms to 100ms saves two thirds of the network bandwidth.
 Not supported by Sipwise rtpengine.
   - *loop-protect* - flag that instructs RTP to
 avoid rewriting the SDP when looping the same message.
@@ -624,7 +624,7 @@ to the recipient of this message, regardless of whether it was offered
 originally or not.
   - *rtcp-mux-require* - Similar to offer but pretends that
 the client has accepted rtcp-mux. This breaks RFC 5761 and will not advertise
-seperate RTCP ports. This option is necessary for WebRTC clients.
+separate RTCP ports. This option is necessary for WebRTC clients.
   - *rtcp-mux-accept* - if rtcp-mux was offered, make the
 RTP proxy accept the offer and also offer it to the recipient of this
 message. Can be combined with "rtcp-mux-offer" to always offer it.
@@ -765,7 +765,7 @@ the module tries to use a new node to handle the affected command.
 
 This parameter can be used to extend the list
 (see [failover](#param_failover) of errors the module
-implicitely fails over.
+implicitly fails over.
 
 
 > [!NOTE]
@@ -870,7 +870,7 @@ Meaning of the parameters is as follows:
 
 
 - *flags(string, optional)* - flags used to change the behavior
-of the recorder. An importat value to set is the *call-id*
+of the recorder. An important value to set is the *call-id*
 value, which can be used to start recording a different call than the requested one.
 - *sock_var(var, optional)* - variable used to store the rtpengine
 socket chosen for this call.
@@ -897,7 +897,7 @@ Meaning of the parameters is as follows:
 
 
 - *flags(string, optional)* - flags used to change the behavior
-of the recorder. An importat value to set is the *call-id*
+of the recorder. An important value to set is the *call-id*
 value, which can be used to start recording a different call than the requested one.
 - *sock_var(var, optional)* - variable used to store the rtpengine
 socket chosen for this call.
@@ -927,7 +927,7 @@ Meaning of the parameters is as follows:
 
 
 - *flags(string, optional)* - flags used to change the behavior
-of the recorder. An importat value to set is the *call-id*
+of the recorder. An important value to set is the *call-id*
 value, which can be used to start recording a different call than the requested one.
 - *sock_var(var, optional)* - variable used to store the rtpengine
 socket chosen for this call.
@@ -1055,7 +1055,7 @@ if (is_method("INVITE") && has_totag()) {
 
 
 This function will block the media sent from one of the endpoints.
-The direction to be blocked is controled by the *flags*
+The direction to be blocked is controlled by the *flags*
 parameter, the *from-tag* value.
 
 
@@ -1074,7 +1074,7 @@ rtpengine_block_media();
 
 
 This function will resume/unblock the media sent from one of the endpoints.
-The direction to be blocked is controled by the *flags*
+The direction to be blocked is controlled by the *flags*
 parameter, the *from-tag* value.
 
 
@@ -1093,7 +1093,7 @@ rtpengine_unblock_media();
 
 
 This function will block the DTMF media sent from one of the endpoints.
-The direction to be blocked is controled by the *flags*
+The direction to be blocked is controlled by the *flags*
 parameter, the *from-tag* value.
 
 
@@ -1112,7 +1112,7 @@ rtpengine_block_dtmf();
 
 
 This function will resume/unblock the DTMF media sent from one of the endpoints.
-The direction to be blocked is controled by the *flags*
+The direction to be blocked is controlled by the *flags*
 parameter, the *from-tag* value.
 
 
@@ -1131,8 +1131,8 @@ rtpengine_unblock_dtmf();
 
 
 This function will start forwarding the media to a TLS destination specified
-in the *tls-send-to* parmeter of RTPEngine. This function allows you
-to select the media stream to forward, by specifing the *from-tag*
+in the *tls-send-to* parameter of RTPEngine. This function allows you
+to select the media stream to forward, by specifying the *from-tag*
 of the entity you want to forward the media. If missing, all media streams are forwarded.
 
 
@@ -1274,7 +1274,7 @@ are provided as a string and it does contain several packet counters.
 #### $rtpstat(STAT)[index]
 
 
-Returnes one of the pre-fined statistics listed below:
+Returns one of the pre-fined statistics listed below:
 
 
 - *MOS-average* - without an index, it returns the average
@@ -1286,58 +1286,58 @@ will return the average MOS of all the streams generated by that endpoint
 with the associated tag value. If you need more granular statistics, check
 the *$rtpquery* variable.
 - *jitter-average* - similar behavior with
-*MOS-average*, but returnes the average jitter.
+*MOS-average*, but returns the average jitter.
 - *roundtrip-average* - similar behavior with
-*MOS-average*, but returnes the average roundtrip.
+*MOS-average*, but returns the average roundtrip.
 - *packetloss-average* - similar behavior with
-*MOS-average*, but returnes the average packet loss.
+*MOS-average*, but returns the average packet loss.
 - *MOS-min* - without an index, it returns the minimum
 MOS value (integer value between 0 and 50) of all RTP streams involved in the
 call, both caller and callee.
 If the index is specified, it has the same effect as for
 *MOS-average*.
 - *jitter-min* - similar behavior with
-*MOS-min*, but returnes the minimum jitter of a leg/call.
+*MOS-min*, but returns the minimum jitter of a leg/call.
 - *roundtrip-min* - similar behavior with
-*MOS-min*, but returnes the minimum roundtrip of a leg/call.
+*MOS-min*, but returns the minimum roundtrip of a leg/call.
 - *packetloss-min* - similar behavior with
-*MOS-min*, but returnes the minimum packet loss of a leg/call.
+*MOS-min*, but returns the minimum packet loss of a leg/call.
 - *MOS-max* - without an index, it returns the maximum
 MOS value (integer value between 0 and 50) of all RTP streams involved in the
 call, both caller and callee.
 If the index is specified, it has the same effect as for
 *MOS-average*.
 - *jitter-max* - similar behavior with
-*MOS-max*, but returnes the maximum jitter of a leg/call.
+*MOS-max*, but returns the maximum jitter of a leg/call.
 - *roundtrip-max* - similar behavior with
-*MOS-max*, but returnes the maximum roundtrip of a leg/call.
+*MOS-max*, but returns the maximum roundtrip of a leg/call.
 - *packetloss-max* - similar behavior with
-*MOS-max*, but returnes the maximum packet loss of a leg/call.
+*MOS-max*, but returns the maximum packet loss of a leg/call.
 - *MOS-min-at* - without an index, it returns the time in
 seconds elapsed from the start of the call when the MOS value is minimum.
 If the index is specified, it has the same effect as for
 *MOS-average*.
 - *jitter-min-at* - similar behavior with
-*MOS-min-at*, but returnes the time when the minimum
+*MOS-min-at*, but returns the time when the minimum
 jitter was detected.
 - *roundtrip-min-at* - similar behavior with
-*MOS-min-at*, but returnes the time when the minimum
+*MOS-min-at*, but returns the time when the minimum
 roundtrip was detected.
 - *packetloss-min-at* - similar behavior with
-*MOS-min-at*, but returnes the time when the minimum
+*MOS-min-at*, but returns the time when the minimum
 packet loss of a leg/call was detected.
 - *MOS-max-at* - without an index, it returns the time in
 seconds elapsed from the start of the call when the MOS value is maximum.
 If the index is specified, it has the same effect as for
 *MOS-average*.
 - *jitter-max-at* - similar behavior with
-*MOS-max-at*, but returnes the time when the maximum
+*MOS-max-at*, but returns the time when the maximum
 value of jitter was detected.
 - *roundtrip-max-at* - similar behavior with
-*MOS-max-at*, but returnes the time when the maximum
+*MOS-max-at*, but returns the time when the maximum
 value of roundtrip was detected.
 - *packetloss-min-at* - similar behavior with
-*MOS-max-at*, but returnes the time when the maximum
+*MOS-max-at*, but returns the time when the maximum
 packet loss of a leg/call was detected.
 
 
@@ -1487,7 +1487,7 @@ RTP timeouts.
 
 ```bash title="rtpengine:teardown usage"
 ...
-$ opensips-cli -x mi rtpengine:teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
+$ opensips-cli -x mi rtpengine:teardown Y2IwYjQ2YmE2ZDg5MWVkANDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
 ```
 

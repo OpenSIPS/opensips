@@ -108,7 +108,7 @@ them.
 - *callid* / *2* - similar
 to the *param* value, except that instead
 of storing in the Request URI the dialog id of the call to
-be transfered, the actual callid is used as identifier.
+be transferred, the actual callid is used as identifier.
 
 
 *Default value is "0 (auto mode using parameters)".*

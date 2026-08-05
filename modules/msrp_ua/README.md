@@ -26,7 +26,7 @@ for the SIP UAC/UAS functionalities.
 ### Usage from Script and External API
 
 
-In order to start a SIP call carying MSRP from OpenSIPS you can use the
+In order to start a SIP call carrying MSRP from OpenSIPS you can use the
 [mi start session](#mi_start_session) MI function. Alternatively, to
 answer a SIP session with MSRP you can use the
 [msrp ua answer](#func_msrp_ua_answer) script function.
@@ -136,10 +136,10 @@ offer provided to peers when setting up a session and should match one
 of the MSRP listeners defined in the script.
 
 
-The *session-id* part of the URI should be ommited.
+The *session-id* part of the URI should be omitted.
 
 
-If the port is not set explicitly, the default value of 2855 wil
+If the port is not set explicitly, the default value of 2855 will
 be assumed
 
 
@@ -259,7 +259,7 @@ values are *yes*, *no* or
 *partial*, as specified in MSRP.
 If the parameter is missing or is set to "yes" the SEND request
 will not include a Failure-Report header. Note that if the header
-field is not present, the receving MSRP endpoint must treat it the
+field is not present, the receiving MSRP endpoint must treat it the
 same as a Failure-Report header with a value of "yes".
 
 
@@ -399,7 +399,7 @@ by the peer in the *accept-types* SDP attribute.
 #### E_MSRP_SESSION_END
 
 
-This event is triggered when an ongoing MSRP session is terminted (session
+This event is triggered when an ongoing MSRP session is terminated (session
 expires or BYE is received; terminating a session via the
 *msrp_ua:end_session* MI function is not included).
 
@@ -435,7 +435,7 @@ This event is triggered when:
 
 - a MSRP REPORT request is received
 - a failure transaction response is received
-- a local timeout for a SEND request occured.
+- a local timeout for a SEND request occurred.
 
 
 Parameters:
@@ -456,7 +456,7 @@ field.
 ### Overview
 
 
-In order to answer a SIP session carying MSRP the [init uas](#dev_init_uas)
+In order to answer a SIP session carrying MSRP the [init uas](#dev_init_uas)
 function should be used. Conversely for starting a MSRP call as a UAC, one
 can use the [init uac](#dev_init_uac) function.
 
@@ -484,7 +484,7 @@ signaled via the *msrp_ua_req_cb_f* and
 #### init_uas(msg, accept_types, hdl)
 
 
-This function will intialize a MSRP UA session based on a received SIP
+This function will initialize a MSRP UA session based on a received SIP
 INVITE.
 
 
@@ -507,9 +507,9 @@ struct msrp_ua_handler {
 	void *param;
 	/* callback for SIP level notifications */
 	msrp_ua_notify_cb_f notify_cb;
-	/* callback for receving MSRP requests */
+	/* callback for receiving MSRP requests */
 	msrp_ua_req_cb_f msrp_req_cb;
-	/* callback for receving MSRP responses */
+	/* callback for receiving MSRP responses */
 	msrp_ua_rpl_cb_f msrp_rpl_cb;
 };
 ```
@@ -562,7 +562,7 @@ typedef int (*msrp_ua_rpl_cb_f)(struct msrp_msg *rpl, void *hdl_param);
 #### init_uac(accept_types, from_uri, to_uri, ruri, hdl)
 
 
-This function will intialize a MSRP UA session by sending a SIP INVITE to
+This function will initialize a MSRP UA session by sending a SIP INVITE to
 a destination.
 
 

@@ -46,7 +46,7 @@ Alternatively, these sockets can be incorporated into other sets by using the
 #### rtpproxy_args(string)
 
 
-Command-line parameteres passed down to the embedded RTPProxy
+Command-line parameters passed down to the embedded RTPProxy
 module upon initialization.  Refer to the RTPProxy
 documentation for the full list.
 

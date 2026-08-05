@@ -52,7 +52,7 @@ destination SCTP URI has no explicit port).
 
 
 If you want to change only the listening port for STP, use the port
-option in the SIP listener defintion.
+option in the SIP socket definition.
 
 
 *Default value is 5060.*

@@ -141,7 +141,7 @@ are used for managing the Prepare Statements when comes to the
 
 If the size is exceeded (when trying to build the PS query ID),
 the PS support will be dropped for the query. If set to 0, the PS
-support will be completly disabled.
+support will be completely disabled.
 
 
 *Default value is 1024.*
@@ -342,8 +342,8 @@ the query results in a multi row result, only the first row
 will be returned to script.
 - *return variables are not limited to AVPs* -
 the variables for returning the query result may any kind
-of variable, of course, as time as it is writeable. NOTE that
-the number of return vairable MUST match (as number) the number
+of variable, of course, as time as it is writable. NOTE that
+the number of return variable MUST match (as number) the number
 of returned columns. If less variables are provided, the query
 will fail.
 - *NULL is returned* - any a DB NULL
@@ -381,7 +381,7 @@ into a set of AVPs (one to one matching the selected columns).
 
 
 > [!WARNING]
-> If using varibales in constructing the query, you must 
+> If using variables in constructing the query, you must 
 > manually escape their values in order to prevent SQL injection 
 > attacks. You can use the existing transformations
 > *escape.common* and
@@ -401,14 +401,14 @@ The meaning and usage of the parameters:
 
 
 - *columns (string,optional)* - JSON
-formated string holding an array of columns to be returned by
+formatted string holding an array of columns to be returned by
 the select. Ex: "["col1","col2"]".
 If missing, a "*" (all columns) select will be
 performed.
 - *table (string, mandatory)* - the 
 name of the table to be queried.
 - *filter (string, optional)* - JSON 
-formated string holding the "where" filter of the query. This 
+formatted string holding the "where" filter of the query. This 
 must be  an array of (column, operator,value) pairs. The 
 exact JSON syntax of such a pair is 
 "{"column":{"operator":"value"}}".; operators
@@ -417,7 +417,7 @@ may be string, integer or `null`. To simplify the usage with
 the `=` operator, you can use "{"column":"value"}"
 If missing, all rows will be selected.
 - *order (string, optional)* - the 
-name of the column to oder by (only ascending).
+name of the column to order by (only ascending).
 - *res_col_avps (string, optional, no expand)* - a list with AVP names where
 to store the result. The format is
 "$avp(name1);$avp(name2);...". If this parameter
@@ -460,8 +460,8 @@ the query results in a multi row result, only the first row
 will be returned to script.
 - *return variables are not limited to AVPs* -
 the variables for returning the query result may any kind
-of variable, of course, as time as it is writeable. NOTE that
-the number of return vairable MUST match (as number) the number
+of variable, of course, as time as it is writable. NOTE that
+the number of return variable MUST match (as number) the number
 of returned columns. If less variables are provided, the query
 will fail.
 - *NULL is returned* - any a DB NULL
@@ -500,13 +500,13 @@ The meaning and usage of the parameters:
 
 
 - *columns (string,mandatory)* - JSON
-formated string holding an array of (column,value) pairs to 
+formatted string holding an array of (column,value) pairs to 
 be updated by the query.
 Ex: "[{"col1":"val1"},{"col2":"val1"}]".
 - *table (string, mandatory)* - the 
 name of the table to be queried.
 - *filter (string, optional)* - JSON 
-formated string holding the "where" filter of the query. This 
+formatted string holding the "where" filter of the query. This 
 must be  an array of (column, operator,value) pairs. The 
 exact JSON syntax of such a pair is 
 "{"column":{"operator":"value"}}".; operators
@@ -549,7 +549,7 @@ The meaning and usage of the parameters:
 - *table (string, mandatory)* - the 
 name of the table to be queried.
 - *columns (string,mandatory)* - JSON
-formated string holding an array of (column,value) pairs to 
+formatted string holding an array of (column,value) pairs to 
 be inserted.
 Ex: "[{"col1":"val1"},{"col2":"val1"}]".
 - *db_id (int, optional)* - reference
@@ -586,7 +586,7 @@ The meaning and usage of the parameters:
 - *table (string, mandatory)* - the 
 name of the table to delete from.
 - *filter (string, optional)* - JSON 
-formated string holding the "where" filter of the query. This 
+formatted string holding the "where" filter of the query. This 
 must be  an array of (column, operator,value) pairs. The 
 exact JSON syntax of such a pair is 
 "{"column":{"operator":"value"}}".; operators

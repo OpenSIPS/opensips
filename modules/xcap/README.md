@@ -202,7 +202,7 @@ reference to the storage for the returned document's etag
 ### db_url
 
 
-URL of the database to which the XCAP mdoules witll connect.
+URL of the database to which the XCAP mdoules will connect.
 
 
 ### xcap_table

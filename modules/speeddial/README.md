@@ -159,7 +159,7 @@ modparam("speeddial", "domain_prefix", "tel.")
 #### use_domain (int)
 
 
-The parameter specifies wheter or not to use the domain when searching a
+The parameter specifies whether or not to use the domain when searching a
 speed dial record (0 - no domain, 1 - use domain from From URI,
 2 - use both domains, from From URI and from request URI).
 
@@ -189,7 +189,7 @@ Meaning of the parameters is as follows:
 - *table* (string) - The name of the table storing the
 speed dial records.
 - *owner* (string) - The SIP URI of the owner of
-short dialing codes. If not pressent, URI of From header is used.
+short dialing codes. If not present, URI of From header is used.
 
 
 This function can be used from REQUEST_ROUTE.

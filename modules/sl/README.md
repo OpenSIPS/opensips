@@ -72,7 +72,7 @@ manager. A zero value means disabled.
 
 
 SL module provides statistics about how many replies were sent (
-splitted per code classes) and how many local ACKs were filtered out.
+split per code classes) and how many local ACKs were filtered out.
 
 
 Default value is 1 (enabled).

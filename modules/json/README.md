@@ -397,7 +397,7 @@ xlog("The json no escape is: $json_compact_noescape(obj)\n");
 
 
 This function can be used to link json objects together.
-This will work simillar to setting a value to an object,
+This will work similar to setting a value to an object,
 the only difference is that the second object is not
 copied, only a reference is created.
 
@@ -418,7 +418,7 @@ time (space and speed efficiency).
 You can think of this object exactly as a reference
 in an object-oriented language. Modifying fields
 referenced by the variable will cause modifications
-in all the objects, BUT modifying the variable itsef
+in all the objects, BUT modifying the variable itself
 will not cause any changes to other objects.
 
 

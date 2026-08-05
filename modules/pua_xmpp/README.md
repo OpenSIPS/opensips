@@ -13,7 +13,7 @@ This module is a gateway for presence between SIP and XMPP.
 
 
 It translates one format into another and uses xmpp, pua and presence
-modules to manage the transmition of presence state information.
+modules to manage the transmission of presence state information.
 
 
 ### Dependencies

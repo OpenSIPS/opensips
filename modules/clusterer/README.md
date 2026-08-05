@@ -19,7 +19,7 @@ The topology established by the *clusterer* module is an overlay of nodes where 
 Note that an OpenSIPS instance can belong to multiple clusters, communicating and establishing the topology separately for each one. In order to provision this in the database or the script, each node has an unique ID at global level, which can be referenced in each cluster.
 
 
-An OpenSIPS instance can dynamically learn all the nodes in the cluster if database provisioning is not desired. It is enough to define at least one neigbour in the script in order to discover all the cluster components.
+An OpenSIPS instance can dynamically learn all the nodes in the cluster if database provisioning is not desired. It is enough to define at least one neighbour in the script in order to discover all the cluster components.
 
 
 ### Capabilities layer
@@ -310,7 +310,7 @@ Node specification similar to the information provided by a row in
 the clusterer DB table corresponding to another instance in the
 cluster. This node will be the entry point in the cluster for the
 local instance in the dynamic node learning process. This parameter
-can be set multiple times to define multiple neigbors to connect to (or
+can be set multiple times to define multiple neighbors to connect to (or
 the same neighbor but in different clusters).
 
 
@@ -408,7 +408,7 @@ modparam("clusterer", "seed_fallback_interval", 10)
 #### sync_timeout
 
 
-The inteval, in seconds, since the last sync data packet received
+The interval, in seconds, since the last sync data packet received
 after which to consider the sync process as failed and revert the
 node to the not synced state.
 
@@ -454,7 +454,7 @@ in high traffic scenarios and should not be disabled.
 
 
 Nevertheless there are cases where the "thundering herd" problem occurs
-which causes abnormaly high CPU loads. Disabling this dispatching
+which causes abnormally high CPU loads. Disabling this dispatching
 mechanism solves such issues.
 
 
@@ -662,7 +662,7 @@ modparam("clusterer", "enable_stats", 0)
 
 
 If packets should be rerouted via another node if a direct route
-to destination is unavailible. Disabling may improve stability in
+to destination is unavailable. Disabling may improve stability in
 two-node topologies.
 Set it to zero to disable or to non-zero to enable it.
 
@@ -691,7 +691,7 @@ Meaning of the parameters is as follows:
 
 
 - *cluster_id* (int) - the cluster ID of the destination node;
-- *dst_id* (int) - the ID of the destiantion node;
+- *dst_id* (int) - the ID of the destination node;
 - *msg* (string) - actual message payload;
 - *tag* (var, optional) - randomly generated communication tag.
 
@@ -700,7 +700,7 @@ The function can return the following values:
 
 
 - *1* - successfully sent message to destination node or a valid next hop
-- *-1* - local node is disabled so sending is impossbile
+- *-1* - local node is disabled so sending is impossible
 - *-2* - destination node is not reachable through any path according to the discovered topology
 - *-3* - destination node or valid next hop appear to be reachable but send failed or other OpenSIPS internal error
 
@@ -728,14 +728,14 @@ route[rpl_resume] {
 #### cluster_send_rpl(cluster_id, dst_id, msg, tag)
 
 
-This function is used to send a generic, reply-like message, containing custom data, to a specific node in a cluster, directly from the script. The message is marked as a "reply" so this function should ony be used for replying to a previously request-like message received. In order for the other node, which initially sent a request, to be able to correlate it with this reply, a communication tag, received along with the request, should be passed to the function.
+This function is used to send a generic, reply-like message, containing custom data, to a specific node in a cluster, directly from the script. The message is marked as a "reply" so this function should only be used for replying to a previously request-like message received. In order for the other node, which initially sent a request, to be able to correlate it with this reply, a communication tag, received along with the request, should be passed to the function.
 
 
 Meaning of the parameters is as follows:
 
 
 - *cluster_id* (int) - the cluster ID of the destination node;
-- *dst_id* (int) - the ID of the destiantion node;
+- *dst_id* (int) - the ID of the destination node;
 - *msg* (string) - actual message payload;
 - *tag* (var) - communication tag.
 
@@ -744,7 +744,7 @@ The function can return the following values:
 
 
 - *1* - successfully sent message to destination node or a valid next hop
-- *-1* - local node is disabled so sending is impossbile
+- *-1* - local node is disabled so sending is impossible
 - *-2* - destination node is not reachable through any path according to the discovered topology
 - *-3* - destination node or valid next hop appear to be reachable but send failed or other OpenSIPS internal error
 
@@ -775,7 +775,7 @@ The function can return the following values:
 
 
 - *1* - successfully sent message to at least one node;
-- *-1* - local node is disabled so sending is impossbile;
+- *-1* - local node is disabled so sending is impossible;
 - *-2* - all nodes in the cluster are unreachable according to the discovered topology;
 - *-3* - send failed for all nodes in the cluster or other OpenSIPS internal error.
 
@@ -951,7 +951,7 @@ Parameters:
 
 - *cluster_id* - indicates the id of the cluster.
 - *node_id* (optional) - indicates the id of the node to be disabled.
-If missing, the local instance will be disalbed.
+If missing, the local instance will be disabled.
 - *status* - indicates the new status(0 - Disabled, 1 - Enabled).
 
 
@@ -1117,7 +1117,7 @@ $ opensips-cli -x mi clusterer:list_cap
 Replaces obsolete MI command: *clusterer_set_cap_status*.
 
 
-Sets the status(Enabled/Disabled) of a capability. If a capability is disabled, the node will not send any replication/sync messages belonging to that capability. Likewise, received messages will be dropped. Also, the cabability will transition to a "not synced" state and the node will no longer be able to be a donor for syncing.
+Sets the status(Enabled/Disabled) of a capability. If a capability is disabled, the node will not send any replication/sync messages belonging to that capability. Likewise, received messages will be dropped. Also, the capability will transition to a "not synced" state and the node will no longer be able to be a donor for syncing.
 
 
 Name: *clusterer:set_cap_status*
@@ -1160,7 +1160,7 @@ Name: *clusterer:shtag_set_active*
 
 
 Parameters: *tag* - the name of
-the tag to be set active and the cluster it belogs to, in the
+the tag to be set active and the cluster it belongs to, in the
 format 'tag/cluster_id'.
 
 
@@ -1589,7 +1589,7 @@ Meaning of the parameters is as follows:
 #### free_nodes(list)
 
 
-This function will free the lits of nodes returned by *get_nodes*.
+This function will free the list of nodes returned by *get_nodes*.
 
 
 Meaning of the parameters is as follows:
@@ -1636,7 +1636,7 @@ This function will return the id of the current node.
 #### send_to(packet, cluster_id, node_id)
 
 
-This functon will send the given BIN packet to the specified node in the cluster. If the direct link is down/probing, it will send the packet to an intermediary node if the destination node is reachable through another path in the cluster topology.
+This function will send the given BIN packet to the specified node in the cluster. If the direct link is down/probing, it will send the packet to an intermediary node if the destination node is reachable through another path in the cluster topology.
 
 
 Meaning of the parameters is as follows:
@@ -1651,7 +1651,7 @@ The function returns one of the following:
 
 
 - *CLUSTERER_SEND_SUCCESS* - successfully sent packet to destination node or a valid next hop
-- *CLUSTERER_CURR_DISABLED* - current node is disabled so sending is impossbile
+- *CLUSTERER_CURR_DISABLED* - current node is disabled so sending is impossible
 - *CLUSTERER_DEST_DOWN* - destination node is not reachable through any path according to the discovered topology
 - *CLUSTERER_SEND_ERR* - destination node or valid next hop appear to be reachable but send failed
 
@@ -1673,7 +1673,7 @@ The function returns one of the following:
 
 
 - *CLUSTERER_SEND_SUCCESS* - successfully sent packet to at least one node
-- *CLUSTERER_CURR_DISABLED* - current node is disabled so sending is impossbile
+- *CLUSTERER_CURR_DISABLED* - current node is disabled so sending is impossible
 - *CLUSTERER_DEST_DOWN* - all nodes in the cluster are unreachable according to the discovered topology
 - *CLUSTERER_SEND_ERR* - send failed for all nodes in the cluster
 
@@ -1730,7 +1730,7 @@ typedef void (*clusterer_cb_f)(enum clusterer_event ev,bin_packet_t *, int packe
 ```
 
 
-Possble values for the event signaled through *ev* parameter of the callback funtion:
+Possible values for the event signaled through *ev* parameter of the callback function:
 
 
 - *CLUSTER_RECV_MSG* - received BIN message

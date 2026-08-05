@@ -16,7 +16,7 @@ firewalls is a problem, or where data encryption is required.
 
 In order to use this module you must have a server that can communicate
 via HTTP or HTTPS with this module that follows exactly the format 
-decribed in the specifications section.
+described in the specifications section.
 
 
 The module can provide SSL, authentication, and all the functionalities
@@ -235,7 +235,7 @@ modparam("db_http", "timeout",5000)
 
 Disables automatic 'Expect: 100-continue' behavior in libcurl for requests over 1024 bytes in size.
 This can help reduce latency by saving a network round-trip for large records.
-For more information on this behavior please seee rfc2616 section 8.2.3.
+For more information on this behavior please see rfc2616 section 8.2.3.
 
 
 *Default value is "0 (off)"*
@@ -267,7 +267,7 @@ All values are URL-encoded.
 
 There are several types of queries and the server can tell
 them apart by the query_type variable. Each type of query uses
-specific variables simillar to those in the opensips db_api.
+specific variables similar to those in the opensips db_api.
 
 
 ```c title="Example query."
@@ -299,7 +299,7 @@ Describes the operators that will
 be used for comparison.Can have multiple values.
 - v=
 Describes the values that columns will be 
-compaired against. Can have multiple values.
+compared against. Can have multiple values.
 - c=
 Describes the columns that will be selected
 from the result.Can have multiple values.
@@ -416,7 +416,7 @@ The server must reply with a delimiter separated list of
 values and columns.
 
 
-Each element in the list must be seperated from the
+Each element in the list must be separated from the
 one before it by a field delimiter that must be the same 
 as the one set as a parameter from the script for the module.
 The last element of each line must not be followed by
@@ -458,7 +458,7 @@ the one set from the script ( by default it is "|" ).
 
 If a value contains a field ,  row  or a quote delimiter
 it must be placed under quotes. A quote delimiter inside a value
-must be preceeded by another quote delimiter.
+must be preceded by another quote delimiter.
 
 
 ``` title="Quoting Example."

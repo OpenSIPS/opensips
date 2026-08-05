@@ -28,7 +28,7 @@ loadmodule("/path/to/perl.so");.
 
 
 For the Perl module to compile, you need a reasonably recent version of perl (tested
-with 5.8.8) linked dynamically. It is strongly advised to use a threaded version.
+with 5.8.8) linked dynamically. It is strongly advised to use a thread version.
 The default binary packages from your favorite Linux distribution should work fine.
 
 
@@ -52,7 +52,7 @@ environment.
 
 The Perl module has two interfaces: The perl side, and the OpenSIPS side. Once a Perl
 function is defined and loaded via the module parameters (see below), it may be
-called in OpenSIPS's configuration at an arbitary point. E.g., you could write
+called in OpenSIPS's configuration at an arbitrary point. E.g., you could write
 a function "ldap_alias" in Perl, and then execute
 
 
@@ -86,7 +86,7 @@ to the Perl interface and the full reference documentation can be found below.
 The following modules must be loaded before this module:
 
 
-- The "sl" module is needed for sending replies uppon fatal errors. All other modules
+- The "sl" module is needed for sending replies upon fatal errors. All other modules
 can be accessed from the Perl module, though.
 
 
@@ -144,7 +144,7 @@ is available on CPAN. It creates RPM files from CPAN.
 #### filename (string)
 
 
-This is the file name of your script. This may be set once only, but it may include an arbitary
+This is the file name of your script. This may be set once only, but it may include an arbitrary
 number of functions and "use" as many Perl module as necessary.
 
 
@@ -191,7 +191,7 @@ An arbitrary string may optionally be passed as a parameter.
 
 
 The function returns *1* if the perl function was successfully called
-or *-1* if an internal error occured. Note that it does not propagate
+or *-1* if an internal error occurred. Note that it does not propagate
 the return value of the perl function.
 
 
@@ -221,7 +221,7 @@ An arbitrary string may be passed as a parameter.
 
 The function returns back to the OpenSIPS script the value returned by the perl function.
 Note that if this value is *0* the script execution
-will be stoped, similarly to calling *exit*.
+will be stopped, similarly to calling *exit*.
 
 
 This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE and BRANCH_ROUTE.
@@ -816,7 +816,7 @@ $number    = $phonenumbers->dialNumber("+497612034567");
 
 
 A telphone number starting with a plus sign and containing all dial
-prefixes is in canonical form. This is usally not the number to dial
+prefixes is in canonical form. This is usually not the number to dial
 at any location, so the dialing number depends on the context of the
 user/system.
 
@@ -837,7 +837,7 @@ number 04514829 in context pyramid, we remove the publicAccessPrefix
 (area) 4514 (pbx) and 829, the number itself => +497614514829
 
 
-To get the dialing number from a canonical phone number, we substract
+To get the dialing number from a canonical phone number, we subtract
 all general prefixes until we have something
 
 
@@ -903,10 +903,10 @@ my $conf = new OpenSIPS::LDAPUtils::LDAPConf();
 
 This module may be used to retrieve the global LDAP configuration as
 used by other LDAP software, such as `nsswitch.ldap` and `pam-ldap`. The configuration is
-usualy stored in `/etc/openldap/ldap.conf`
+usually stored in `/etc/openldap/ldap.conf`
 
 
-When used from an account with sufficient privilegs (e.g. root), the
+When used from an account with sufficient privileges (e.g. root), the
 ldap manager passwort is also retrieved.
 
 
@@ -939,7 +939,7 @@ Returns the ldap servers port.
 
 
 Returns an uri to contact the ldap server. When there is no
-ldap_uri in the configuration file, an `ldap:` uri is constucted from host
+ldap_uri in the configuration file, an `ldap:` uri is constructed from host
 and port.
 
 
@@ -950,7 +950,7 @@ Returns the ldap "root" password.
 
 
 Note that the `rootbindpw`
-is only available when the current account has sufficient privilegs
+is only available when the current account has sufficient privileges
 to access `/etc/openldap/ldap.secret`.
 
 
@@ -1034,7 +1034,7 @@ returned, otherwise the result is `undef`.
 
 perform an ldap search, return the dn of the first matching
 directory entry, unless a specific attribute has been requested, in
-wich case the values(s) fot this attribute are returned.
+in which case the values(s) for this attribute are returned.
 
 
 When the first argument (conf) is a `OpenSIPS::LDAPUtils::LDAPConnection`,
@@ -1087,7 +1087,7 @@ the dn of all matching entries in the LDAP directory.
 
 
 When some `requested_attributes` are given,
-return an array with those attibutes. When multiple entries match
+return an array with those attributes. When multiple entries match
 the query, the attribute lists are concatenated.
 
 
@@ -1211,7 +1211,7 @@ Returns or sets the current key.
 
 This package handles virtual tables and is used by the OpenSIPS::VDB
 class to store information about valid tables. The package is not
-inteded for end user access.
+intended for end user access.
 
 
 #### new()
@@ -1487,7 +1487,7 @@ reflected in this dump.
 
 When processing SIP messages, you may want to use persistent data across multiple calls to your
 Perl functions. Your first option is to use global variables in your script. Unfortunately,
-these globals are not visible from the mulitple instances of OpenSIPS. You may want to use a
+these globals are not visible from the multiple instances of OpenSIPS. You may want to use a
 mechanism such as the IPC::Shareable shared memory access package to correct this.
 
 

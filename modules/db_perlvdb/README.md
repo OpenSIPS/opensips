@@ -157,7 +157,7 @@ my $pair = new OpenSIPS::VDB::Pair("foo", DB_STRING, "bar");
 
 
 where foo is the key and bar is the value.
-Additonally to the methods of the Value class, it contains a key() method to
+Additionally to the methods of the Value class, it contains a key() method to
 get or set the key attribute.
 
 
@@ -165,7 +165,7 @@ get or set the key attribute.
 
 
 The ReqCond class is used for select condition and is derived from the Pair
-class. It contains an addtional operator attribute.
+class. It contains an additional operator attribute.
 A new variable may be created with
 
 
@@ -175,7 +175,7 @@ my $cond = new OpenSIPS::VDB::ReqCond("foo", ">", DB_INT, 5);
 
 
 where foo is the key, "greater" is the operator and 5 is the value to compare.
-Additonally to the methods of the Pair class, it contains an op() method to
+Additionally to the methods of the Pair class, it contains an op() method to
 get or set the operator attribute.
 
 
@@ -280,7 +280,7 @@ in the main namespace.
 - *Package/class*. The defined class needs
 to have an init() function. It will be called during the first call of that
 VTab.
-Addtionally, the package has
+Additionally, the package has
 to define the necessary functions insert, replace, update, delete and/or query.
 These functions will be called in a function context (first parameter is the
 class name).

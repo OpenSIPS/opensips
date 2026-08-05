@@ -32,7 +32,7 @@ as well the RabbitMQ extensions.
 ### RabbitMQ events syntax
 
 
-The event payload is formated as a JSON-RPC notification, with the event
+The event payload is formatted as a JSON-RPC notification, with the event
 name as the *method* field and the event parameters as
 the *params* field.
 
@@ -355,7 +355,7 @@ rabbitmq:127.0.0.1/tls_domain=rmq?pike
 ## Frequently Asked Questions
 
 
-**Q: What is the maximum lenght of a AMQP message?**
+**Q: What is the maximum length of an AMQP message?**
 
 
 The maximum length of a datagram event is 16384 bytes.

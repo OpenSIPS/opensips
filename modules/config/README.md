@@ -158,7 +158,7 @@ Name of the column storing variable descriptions.
 *Default value is "description".*
 
 
-```opensips title="Set 'desctiption_column' parameter"
+```opensips title="Set 'description_column' parameter"
 ...
 modparam("config", "description_column", "desc")
 ...
@@ -300,7 +300,7 @@ Expected parameters are:
 - *value* – (string) the value of the variable
 - *description* – (string, optional) the
 description of the variable; if missing the description is
-inheritted, or a null value is used if the variable is new.
+inherited, or a null value is used if the variable is new.
 
 
 MI FIFO Command Format:

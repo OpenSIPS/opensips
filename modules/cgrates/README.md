@@ -221,7 +221,7 @@ modparam("cgrates", "cgrates_engine", "127.0.0.1:2013")
 
 IP used to bind the socket that communicates with the
 CGRateS engines. This is useful to set when the engine
-is runing in a local, secure LAN, and you want to use
+is running in a local, secure LAN, and you want to use
 that network to communicate with your servers.
 The parameter is optional.
 
@@ -309,7 +309,7 @@ OK message is received).
 When called in *REQUEST_ROUTE* or
 *FAILURE_ROUTE*, accounting for this session is done
 for all the branches created. When called in *BRANCH_ROUTE*
-or *ONREPLY_ROUTE*, acccounting is done only if that
+or *ONREPLY_ROUTE*, accounting is done only if that
 branch is successful (terminates with a 2xx reply code).
 
 
@@ -343,7 +343,7 @@ should be considered. If missing, the default set is used.
 The function can return the following values:
 
 
-- *1* - successful call - the CGRateS accouting
+- *1* - successful call - the CGRateS accounting
 was successfully setup for the call.
 - *-1* - OpenSIPS returned an internal error
 (i.e. the dialog cannot be created, or the server is out of memory).
@@ -517,10 +517,10 @@ Therefore the values will be accessible along the dialog's
 lifetime.
 
 
-This variable consists of serveral sets of name-value pairs.
+This variable consists of several sets of name-value pairs.
 Each set corresponds to a session. The variable can be
 indexed by a *session tag*. The sets
-are completely indepdendent from one another. if the
+are completely independent from one another. if the
 *session tag* does not exist, the default
 (no name) one is used.
 

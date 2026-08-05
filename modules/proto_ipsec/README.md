@@ -241,7 +241,7 @@ Currently supported algorithms are:
 	- aes-gmac
 	- null - must only be used with aes-gcm encryption
 - Encryption algorithms:
-	- des-ede3-cbc - not recommended
+	- des-edge3-cbc - not recommended
 	- aes-cbc - not recommended by TS 33.203 V17
 	- aes-gcm
 	- null - no encryption
@@ -269,7 +269,7 @@ following algorithms:
 
 
 - *hmac-md5-96* and *hmac-sha-1-96* authentication algorithms
-- *des-ede3-cbc* and *aes-cbc* encryption algorithms
+- *des-edge3-cbc* and *aes-cbc* encryption algorithms
 
 
 *Default value is false - all algorithms can be used.*

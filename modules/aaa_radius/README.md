@@ -350,7 +350,7 @@ xlog(" accounting finished\n");
 You can download the last freeRADIUS Client Library sources from
 [here](ftp://ftp.freeradius.org/pub/freeradius/freeradius-client-1.1.7.tar.gz).
 So the first step would be to download these sources in any folder you want.
-In this exaple we will consider this folder generically called
+In this example we will consider this folder generically called
 *freeRADIUS-client*. After you download the sources,
 extract the contents of the archive.
 

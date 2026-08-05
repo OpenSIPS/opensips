@@ -44,7 +44,7 @@ the force_single_dialog module parameter.
 
 
 To get better understanding how all the module works together please take a
-look at the follwing figure:
+look at the following figure:
 
 
 ```c
@@ -91,7 +91,7 @@ pua module to send the PUBLISH. (pua module itself uses tm module
 to send the PUBLISH stateful)
 - PUBLISH is received and handled by presence module. Presence
 module updates the "presentity". Presence module checks for active watchers
-of the presentity. It gives all the XML dcouments to presence_dialoginfo
+of the presentity. It gives all the XML documents to presence_dialoginfo
 module to aggregate them into a single XML document. Then it sends the 
 NOTIFY with the aggregated XML document to all active watchers.
 
@@ -175,8 +175,8 @@ based onf the following order of priority (least important first):
 terminated, trying, proceeding, confirmed, early.
 
 > [!NOTE]
-> I consider the "early" state more intersting than confirmed as often you might
-> want to pickup a call if the originall callee is already busy in a 
+> I consider the "early" state more interesting than confirmed as often you might
+> want to pickup a call if the original callee is already busy in a 
 > call.
 
 

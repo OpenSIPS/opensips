@@ -378,7 +378,7 @@ can be changed by explicitly setting the
 *nohold* parameter
 - *instance* (string, optional) - should only be
 used when terminating a forking instance, and represents the
-instance to terminate. It must be ommitted when terminating an
+instance to terminate. It must be omitted when terminating an
 streaming session. However, for fallback compatibility, if the
 parameter is missing, and no streaming session is found, the
 command terminates the *default* forking
@@ -536,7 +536,7 @@ MI FIFO Command Format:
 
 
 ```bash
-# start playing back an annoucement to caller
+# start playing back an announcement to caller
 opensips-cli -x mi media_exchange:from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	uri=sip:announcement@127.0.0.1:5080 \
@@ -587,7 +587,7 @@ is not put on hold if the other participant still has an
 ongoing media session.
 - *instance* (string, optional) - should only be
 used when terminating a forking instance, and represents the
-instance to terminate. It must be ommitted when terminating an
+instance to terminate. It must be omitted when terminating an
 streaming session. However, for fallback compatibility, if the
 parameter is missing, and no streaming session is found, the
 command terminates the *default* forking

@@ -312,7 +312,7 @@ Replaces obsolete MI command: *httpd_list_root_path*.
 
 
 Lists all the registered http root paths into the httpd module.
-When a request comes in, if the root parth is in the list,
+When a request comes in, if the root path is in the list,
 the request will be sent to the module that register it.
 
 
@@ -343,13 +343,13 @@ No function exported to be used from configuration file.
 Due to the fact that OpenSIPS is a multiprocess application,
 the microhttpd library is used in "external select" mode.
 This ensures that the library is not running in
-multithread mode and the library is entirely controled
+multithread mode and the library is entirely controlled
 by OpenSIPS.  Due to this particular mode of operations,
 for now, the entire http response is built in a pre-allocated
 buffer (see buf_size parameter).
 
 
-Future realeases of this module will address this issue.
+Future releases of this module will address this issue.
 
 
 Running the http daemon as non root on ports below 1024 is
@@ -371,7 +371,7 @@ setcap 'cap_net_bind_service=+ep' /usr/local/sbin/opensips
 ### Available Functions
 
 
-#### register_httpdcb (module, root_path, httpd_acces_handler_cb, httpd_flush_data_cb, httpd_init_proc_cb)
+#### register_httpdcb (module, root_path, httpd_access_handler_cb, httpd_flush_data_cb, httpd_init_proc_cb)
 
 
 Register a new http root with it's associated callbacks into the httpd module.
@@ -384,7 +384,7 @@ Meaning of the parameters is as follows:
 			- name of the module that register an http root path to be handled;
 - *str *root_path*
 			- the registered root path;
-- *httpd_acces_handler_cb f1*
+- *httpd_access_handler_cb f1*
 			- handler to the callback method to be called on root path match;
 - *httpd_flush_data_cb f2*
 			- handler to the callback method to be called for sending extra data (at a later time);

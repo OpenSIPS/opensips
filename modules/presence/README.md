@@ -354,7 +354,7 @@ modparam("presence", "enable_sphere_check", 1)
 The number of days to keep the record of a subscription in server
 database if the subscription is in pending or waiting state 
 (no authorization policy was defined for it or the target user 
-did not register sice the subscription and was not informed about
+did not register since the subscription and was not informed about
 it).
 
 
@@ -824,7 +824,7 @@ opensips-cli -x mi presence:subs_phtable_list sip:222@domain2.com sip:user_1@exa
 Replaces obsolete MI command: *pres_expose*.
 
 
-Exposes in the script, by rasing an
+Exposes in the script, by raising an
 *E_PRESENCE_EXPOSED* event, all the
 presentities of a specific event that match a specified
 filter.
@@ -940,7 +940,7 @@ typedef struct presence_api {
 	/* function to extract dialog information from a
 	SUBSCRIBE message */
 	extract_sdialog_info_t extract_sdialog_info;
-	/* function to request sphere defition for a presentity */
+	/* function to request sphere definition for a presentity */
 	pres_get_sphere_t get_sphere;
 	pres_contains_presence_t contains_presence;
 }presence_api_t;

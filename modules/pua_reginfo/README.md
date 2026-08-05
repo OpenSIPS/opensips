@@ -145,7 +145,7 @@ modparam("pua_reginfo", "ul_domain", "location")
 #### ul_identities_key(str)
 
 
-The Key, which may be used for retrieving multiple public identies
+The Key, which may be used for retrieving multiple public identities
 for a user.
 
 

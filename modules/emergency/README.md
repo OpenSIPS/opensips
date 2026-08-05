@@ -36,7 +36,7 @@ The OpenSIPS will leave the call, and all the request of this dialog received by
 
 1.4.Scenario III: The VSP requests routing information for the Redirect Server
 
-The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it requests routing information to Redirect Server. The Redirect has interface with the VPC and return to VSP's Call Server response whith routing informations on Contact header.		
+The emergency module through emergency_call() command  will check if the INVITE received is an emergency call. In this case, it requests routing information to Redirect Server. The Redirect has interface with the VPC and return to VSP's Call Server response with routing information on Contact header.		
 The Call Server uses this information to treat the call. When the emergency call ends, it must notify the Redirect Server that inform to VPC to release the resources.
 
 
@@ -49,7 +49,7 @@ The Call Server uses this information to treat the call. When the emergency call
 The following modules must be loaded before this module:
 
 
-- *Dialog - Dialoge module.*.
+- *Dialog - Dialogue module.*.
 - *TM - Transaction module.*.
 - *RR - Record-Route module.*.
 
@@ -212,7 +212,7 @@ modparam("emergency", "emergency_codes", “911-us emegency code”)
 ```
 
 
-#### timer_interval (interger)
+#### timer_interval (integer)
 
 
 Sets the time interval polling to make the copy in memory of the 
@@ -252,7 +252,7 @@ modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 
 
 The emergency_call_server is the url of the Routing Proxy/Redirect Server
-that will handle  the emergency call in cenario II. Its is mandatory if Opensips 
+that will handle  the emergency call in scenario II. Its is mandatory if Opensips 
 act as Call Server in scenario II (proxy_role = 1 and flag_third_enterprise = 0) 
 or Call Server in scenario III (proxy_role = 2).
 

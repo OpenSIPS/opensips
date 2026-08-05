@@ -343,7 +343,7 @@ abort();
 Debugging function that dumps the status for the private (PKG) memory.
 This information is logged to the default log facility, depending on
 the general log level and the memlog setting. You need to compile
-the server with activated memory debugging to get detailed informations.
+the server with activated memory debugging to get detailed information.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
@@ -364,7 +364,7 @@ pkg_status();
 Debugging function that dumps the status for the shared (SHM) memory.
 This information is logged to the default log facility, depending on
 the general log level and the memlog setting. You need to compile
-the server with activated memory debugging to get detailed informations.
+the server with activated memory debugging to get detailed information.
 
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
@@ -478,7 +478,7 @@ the order in which they are given is: "timezone | dtstart | dtend | duration | f
 | until | interval | byday | bymday | byyday | byweekno | bymonth".
 None of the fields following "freq" is used unless
 "freq" is defined.  If the string ends in multiple null fields,
-they can all be ommited.
+they can all be omitted.
 The "timezone" field is optional.  It represents the timezone in
 which to interpret the time recurrence elements (e.g. dtstart,
 dtend, until).  By default, the system time zone is used.
@@ -862,7 +862,7 @@ $ opensips-cli -x mi cfgutils:rand_set_prob 10
 #### cfgutils:rand_reset_prob
 
 
-Reset the probability value to the inital start value.
+Reset the probability value to the initial start value.
 
 
 This command don't need a parameter.

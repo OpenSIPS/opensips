@@ -149,7 +149,7 @@ modparam("regex", "pcre_multiline", 1)
 #### pcre_dotall (int)
 
 
-If this option is set, a dot metacharater in the pattern matches all characters,
+If this option is set, a dot metacharacter in the pattern matches all characters,
 including those that indicate newline. Without it, a dot does not match when
 the current position is at a newline. This option is equivalent to Perl's /s
 option, and it can be changed within a pattern by a (?s) or (?-s) option setting.
@@ -237,7 +237,7 @@ if (pcre_match($rU, "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 #### pcre_match_group (string [, group])
 
 
-It uses the groups readed from the text file
+It uses the groups read from the text file
 (see [file format id](#file_format)) to match the given string
 parameter against the compiled regular expression in group number group.
 Returns TRUE if it matches, FALSE otherwise.
@@ -375,7 +375,7 @@ opensips-cli -x mi regex:match string="1234" pcre_regex="^1235$"
 Replaces obsolete MI command: *regex_match_group*.
 
 
-It uses the groups readed from the text file to match the given string parameter against the compiled
+It uses the groups read from the text file to match the given string parameter against the compiled
 regular expression in group number group. Returns "Match" if it matches, "Not Match" otherwise.
 
 
@@ -412,7 +412,7 @@ The file contains regular expressions categorized in groups. Each
 group starts with "[number]" line. Lines starting by space, tab,
 CR, LF or # (comments) are ignored. Each regular expression must
 take up just one line, this means that a regular expression can't
-be splitted in various lines.
+be split in various lines.
 
 
 An example of the file format would be the following:

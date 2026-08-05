@@ -50,7 +50,7 @@ include the Call-ID of the current SIP message as key.
 ### Kafka events syntax
 
 
-The event payload is formated as a JSON-RPC notification, with the event
+The event payload is formatted as a JSON-RPC notification, with the event
 name as the *method* field and the event parameters as
 the *params* field.
 
@@ -130,7 +130,7 @@ send operation is done in an asynchronous manner, a report route
 may be provided in order to check the message delivery status.
 
 
-Returns *1* if the message was succesfully queued
+Returns *1* if the message was successfully queued
 for sending or *-1* otherwise.
 
 
@@ -153,7 +153,7 @@ name of a script route to be executed when the message delivery
 status is available. Information about the message publishing will
 be available in this route through the following AVP variables:
 	* *$avp(kafka_id)* - broker ID
-	* *$avp(kafka_status)* - delivery status, 0 if succesfull, -1 othewise
+	* *$avp(kafka_status)* - delivery status, 0 if successful, -1 otherwise
 	* *$avp(kafka_key)* - message key
 	* *$avp(kafka_msg)* - message payload
 

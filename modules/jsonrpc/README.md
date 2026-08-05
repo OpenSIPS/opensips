@@ -121,9 +121,9 @@ JSON-RPC server. The format needs to be
 the RPC request.
 - *params* (string) - these are the parameters
 sent to the RPC method. This parameter needs to be
-a properly formated JSON array, or JSON object,
+a properly formatted JSON array, or JSON object,
 according the the JSON-RPC specifications.
-- *ret_var* a writeable variable
+- *ret_var* a writable variable
 used to store the result of the JSON-RPC command. If
 the command returns an error, the variable will be
 populated with the error JSON, otherwise, with the

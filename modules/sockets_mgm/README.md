@@ -84,7 +84,7 @@ pre-allocated at startup. This means that the number of dynamic
 sockets used at runtime have to be limited by a static value,
 defined at startup. This is why it is recommended to use a fairly
 high value for the sockets in the [max sockets](#param_max_sockets)
-parameter - we're defaulting a confortable 100 sockets.
+parameter - we're defaulting a comfortable 100 sockets.
 - The sockets defined in the  [max sockets](#param_max_sockets) are
 being rotated in a FIFO manner - this way we are trying to avoid
 overlapping sockets in a short period of time.

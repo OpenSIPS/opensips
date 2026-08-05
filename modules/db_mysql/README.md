@@ -193,7 +193,7 @@ No function exported to be used from configuration file.
 ### Installation
 
 
-Because it dependes on an external library, the mysql module is not
+Because it depends on an external library, the mysql module is not
 compiled and installed by default. You can use one of the next options.
 
 

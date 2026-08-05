@@ -131,7 +131,7 @@ configured size of the httpd buffer is to small (or if there
 isn't enough pkg memory configured).
 
 
-Future realeases of the httpd module will address this issue.
+Future releases of the httpd module will address this issue.
 
 
 ### Examples

@@ -1,6 +1,6 @@
 ---
 title: "tls_wolfssl Module"
-description: "This module implements TLS operations using the [wolfSSL](https://www.wolfssl.com/) libarary."
+description: "This module implements TLS operations using the [wolfSSL](https://www.wolfssl.com/) library."
 ---
 
 ## Admin Guide
@@ -10,7 +10,7 @@ description: "This module implements TLS operations using the [wolfSSL](https://
 
 
 This module implements TLS operations using the
-[wolfSSL](https://www.wolfssl.com/) libarary. It provides the primitives
+[wolfSSL](https://www.wolfssl.com/) library. It provides the primitives
 required by the *tls_mgm* module in order to expose a
 higher-level API used by TLS-based protocol modules like
 *proto_tls* or *proto_wss*.

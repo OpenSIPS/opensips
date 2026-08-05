@@ -110,7 +110,7 @@ attrs_avp. Use the partition parameter to create and alter
 other partitions.
 
 
-*Default value is "null" - don't provide ATTRIBUTEs.*
+*Default value is "null" - don't provide ATTRIBUTEEs.*
 
 
 ```opensips title="Set the 'default' partition's 'attrs_avp' parameter"
@@ -130,7 +130,7 @@ OpenSIPS point of view) : it is provided via the ds_push_script_attrs
 MI or SCRIPT function.
 
 
-*Default value is "null" - don't provide SCRIPT ATTRIBUTEs.*
+*Default value is "null" - don't provide SCRIPT ATTRIBUTEEs.*
 
 
 ```opensips title="Set the 'default' partition's 'script_attrs_avp' parameter"
@@ -162,7 +162,7 @@ If the returned value from the algo route is negative, the current dispatcher en
 modparam("dispatcher", "algo_route", "my_dispatcher_logic)")
 ...
 route[my_dispatcher_logic] {
-        $var(curent_score) = 0;
+        $var(current_score) = 0;
         xlog("DISPATCHER - Running logic for $param(dst_uri) with attrs $param(attrs) and script attrs $param(script_attrs) \n");
 
 	# decide to penalize current dispatcher entry, based on your logic
@@ -568,7 +568,7 @@ used in dispatcher module for two purposes: for sharing the status
 of the destinations and for controlling the pinging to destinations.
 
 
-If clustering enbled, the module will automatically share changes
+If clustering enabled, the module will automatically share changes
 over the status of the destinations with the other 
 OpenSIPS instances that are part of a cluster. Whenever such a status 
 changes (following an MI command, a probing result, a script command),
@@ -642,7 +642,7 @@ modparam("dispatcher", "cluster_sharing_tag", "vip")
 #### cluster_probing_mode (string)
 
 
-This paramter controls how the probing/pinging should be done when
+This parameter controls how the probing/pinging should be done when
 using the clustering support. It is about which node in the cluster
 pings which gateway/destination.
 
@@ -655,13 +655,13 @@ The supported probing modes are:
 
 
 - **"all"** - all the nodes in the
-cluster will independetly ping all the defined destinations,
+cluster will independently ping all the defined destinations,
 an "all" pings "all" mode.
 - **"by-shtag"** - all the destinations
 are pinged by only one node in the cluster, the node having the
 [cluster sharing tag](#param_cluster_sharing_tag) active. By 
 activating the sharing tag on a different node, the pinging
-duty will be transfered to another node in the cluster.
+duty will be transferred to another node in the cluster.
 - **"distributed"** - the pinging
 effort is distributed across all the nodes in the cluster, so each
 node will ping a sub-set of the overall set of destinations. Still
@@ -669,7 +669,7 @@ all the destinations will get pinged (and only once per pinging
 cycle).
 The re-partitioning of the pinging effort over the available nodes
 in the cluster is automatically done when new nodes are joining or
-nodes are dropping out. Still there is no guaratee on which node
+nodes are dropping out. Still there is no guarantee on which node
 will be responsible for pinging which destination.
 
 
@@ -1587,7 +1587,7 @@ to the next destination.
 The  *priority* field is used at ordering the
 destinations from a set. It does not affect the overall probability
 of a destination to be chosen.  It is reflected when listing the
-destination, the field can definetly be used in further selecting algorithms.
+destination, the field can definitely be used in further selecting algorithms.
 
 
 **Q: What happened with the *list_file*

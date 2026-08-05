@@ -219,7 +219,7 @@ Return true if a header field is present in message.
 
 > [!NOTE]
 > The function is also able to distinguish the compact names. For
-exmaple "From" will match with "f"
+example "From" will match with "f"
 
 
 Meaning of the parameters is as follows:
@@ -313,7 +313,7 @@ if(is_method("INVITE"))
 }
 if(is_method("OPTION|UPDATE"))
 {
-    # process OPTIONs and UPDATEs here
+    # process OPTIONNs and UPDATEEs here
 }
 ...
 ```
@@ -426,7 +426,7 @@ if (has_totag()) {
 
 
 Find if Request URI has a given parameter. If no value is given,
-the function will look for the paramter with no value, oherwise it
+the function will look for the parameter with no value, otherwise it
 will search for the parameter with the matching value.
 
 
@@ -453,7 +453,7 @@ if (ruri_has_param("user","phone")) {
 #### ruri_add_param(param)
 
 
-Add to RURI an URI parameter formated as "name=value".
+Add to RURI an URI parameter formatted as "name=value".
 
 
 Meaning of the parameters is as follows:
@@ -648,7 +648,7 @@ Meaning of the parameters is as follows:
 
 - *mime (string, optional)* - MIME type to
 be checked against the body parts; If not given, all parts
-are to remvoed;
+are to removed;
 - *revert (string, optional)* - useful only
 if a MIME was specified. If "revert" string is given here, the
 function will delete all body parts but the ones with the given MIME.
@@ -706,7 +706,7 @@ add_body_part("Hello World!", "text/plain");
 
 This function returns into a variable the regenerated body part,
 meaning the body part updated with all the changes done so far by 
-OpenSIPS. This is helpful if you want to do a sequance of operations
+OpenSIPS. This is helpful if you want to do a sequence of operations
 over the body parts and some operations require to have all the
 previous changes applied (like first doing some codec related changes
 and later to rtpengine insertion).
@@ -1101,7 +1101,7 @@ codec_move_up("speex");
 
 
 Intercept a SIP reply (in any onreply_route) and change its status code
-and reason phrase prior to propogating it.
+and reason phrase prior to propagating it.
 
 
 Meaning of the parameters is as follows:
@@ -1194,7 +1194,7 @@ stream_delete("video");
 
 
 Checks and returns true if the given option/token is listed in the
-body of the given header. The header must have its body formated as a
+body of the given header. The header must have its body formatted as a
 CSV list of tokens/option (like the Supported, Require,
 Content-Dispsition headers)
 body format
@@ -1230,7 +1230,7 @@ if (list_hdr_has_option("Supported", "100rel"))
 
 
 Add a new option/token at the end of the list in the body of the given
-header. The header must have its body formated as a
+header. The header must have its body formatted as a
 CSV list of tokens/option (like the Supported, Require,
 Content-Disposition headers) body format
 
@@ -1270,7 +1270,7 @@ if (!list_hdr_has_option("Supported", "100rel"))
 
 
 Removes an option/token from the list inside the body of the given
-header. The header must have its body formated as a
+header. The header must have its body formatted as a
 CSV list of tokens/option (like the Supported, Require,
 Content-Dispsition headers)
 body format
@@ -1294,7 +1294,7 @@ whole header will be removed.
 
 
 The function returns true if the options was successfully removed from
-at least one heaer instance. If no header was found or if the
+at least one header instance. If no header was found or if the
 token was not found or if there was a parsing or runtime error, false
 will be returned.
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

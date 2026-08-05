@@ -73,13 +73,13 @@ modparam("db_sqlite", "alloc_limit", 25)
 #### load_extension (string)
 
 
-This parameter enables extension loading, similiar to ".load" functionality in sqlite3,
-extenions like sqlite3-pcre which enables REGEX function. In order to use this functionality
+This parameter enables extension loading, similar to ".load" functionality in sqlite3,
+extensions like sqlite3-pcre which enables REGEX function. In order to use this functionality
 you must specify the library path (.so file) and the entry point which represents the function
 to be called by the sqlite library (read more at sqlite
 [load_extension](https://www.sqlite.org/capi3ref.html#sqlite3_load_extension)
-official documentation), separated by   ";"   delimiter. The entry point paramter
-can miss, so you won't need to use the delimitier in this case.
+official documentation), separated by   ";"   delimiter. The entry point parameter
+can miss, so you won't need to use the delimiter in this case.
 
 
 *By default, no extension is loaded.*
@@ -147,7 +147,7 @@ No function exported to be used from configuration file.
 ### Installation
 
 
-Because it dependes on an external library, the sqlite module is not
+Because it depends on an external library, the sqlite module is not
 compiled and installed by default. You can use one of the next options.
 
 

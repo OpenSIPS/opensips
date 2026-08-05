@@ -31,7 +31,7 @@ The stun server will use 4 sockets:
 
 
 where *ip1* / *port1*
-represent an UDP SIP listener and *ip2* /
+represent an UDP SIP socket and *ip2* /
 *port2* are configured via the
 [alternate ip](#param_alternate_ip) and
 [alternate port](#param_alternate_port)
@@ -41,13 +41,13 @@ parameters.
 The sockets come from existing SIP sockets or are created.
 
 
-Socket1 must allways be a SIP UDP listener from OpenSIPS.
+Socket1 must always be a SIP UDP socket from OpenSIPS.
 
 
 If [use listeners as primary](#param_use_listeners_as_primary) is enabled
 the STUN server will actually use multiple sets of sockets obtained
 from the IP/port combinations described above, each set corresponding
-to a SIP UDP listener from OpenSIPS.
+to a SIP UDP socket from OpenSIPS.
 
 
 The server will create a separate process.
@@ -113,7 +113,7 @@ running OpenSIPS with this module loaded:
 #### primary_ip (str)
 
 
-The IP of an interface which is configured as an UDP SIP listener
+The IP of an interface which is configured as an UDP SIP socket
 in OpenSIPS. This is a mandatory parameter, unless
 [use listeners as primary](#param_use_listeners_as_primary) is enabled.
 
@@ -173,9 +173,9 @@ If [use listeners as primary](#param_use_listeners_as_primary) is enabled, the
 alternate IP must be either:
 
 
-- an IP from an existing UDP SIP listener configured in OpenSIPS,
-but one that is different from all the other UPD listeners;
-- an IP that is different from the UDP SIP listeners configured in OpenSIPS.
+- an IP from an existing UDP SIP socket configured in OpenSIPS,
+but one that is different from all the other UDP sockets;
+- an IP that is different from the UDP SIP sockets configured in OpenSIPS.
 
 
 Syntax: "ip [/ advertised_ip]
@@ -208,9 +208,9 @@ If [use listeners as primary](#param_use_listeners_as_primary) is enabled, the
 alternate port must be either:
 
 
-- a port from an existing UDP SIP listener configured in OpenSIPS,
-but one that is different from all the other UPD listeners;
-- a port that is different from the UDP SIP listeners configured in OpenSIPS.
+- a port from an existing UDP SIP socket configured in OpenSIPS,
+but one that is different from all the other UDP sockets;
+- a port that is different from the UDP SIP sockets configured in OpenSIPS.
 
 
 Syntax: "port [/ advertised_port]
@@ -236,7 +236,7 @@ modparam("stun", "alternate_port", "5060 / 5062")
 
 
 Setting this parameter to *1* will allow all
-configured UDP SIP listeners to be automatically used as "primary"
+configured UDP SIP sockets to be automatically used as "primary"
 STUN sockets.
 
 

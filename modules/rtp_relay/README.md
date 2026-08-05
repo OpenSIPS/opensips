@@ -143,7 +143,7 @@ on - if engaged in the main branch, *-1* is used.
 - *body* - optional, if an explicit body is being used,
 otherwise the message's body should be considered.
 - *set* - the rtp relay set being used for the call.
-- *node* - optional, an node Engine idenfifier - this
+- *node* - optional, an node Engine identifier - this
 is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
@@ -210,7 +210,7 @@ on - if engaged in the main branch, *-1* is used.
 - *body* - optional, if an explicit body is being used,
 otherwise the message's body should be considered.
 - *set* - the rtp relay set being used for the call.
-- *node* - optional, an node Engine idenfifier - this
+- *node* - optional, an node Engine identifier - this
 is a user populated value returned after running a
 *route_offer* route.
 - *ip* - optional, the IP being specified in the
@@ -273,7 +273,7 @@ on - if engaged in the main branch, *-1* is used.
 - *body* - optional, if an explicit body is being used,
 otherwise the message's body should be considered.
 - *set* - the rtp relay set being used for the call.
-- *node* - optional, an node Engine idenfifier - this
+- *node* - optional, an node Engine identifier - this
 is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
@@ -320,7 +320,7 @@ being populated:
 - *branch* - the branch that RTP relay is being engaed
 on - if engaged in the main branch, *-1* is used.
 - *set* - the rtp relay set being used for the call.
-- *node* - optional, an node Engine idenfifier - this
+- *node* - optional, an node Engine identifier - this
 is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
@@ -377,7 +377,7 @@ on - if engaged in the main branch, *-1* is used.
 - *body* - optional, if an explicit body is being used,
 otherwise the message's body should be considered.
 - *set* - the rtp relay set being used for the call.
-- *node* - optional, an node Engine idenfifier - this
+- *node* - optional, an node Engine identifier - this
 is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
@@ -426,7 +426,7 @@ on - if engaged in the main branch, *-1* is used.
 - *body* - optional, if an explicit body is being used,
 otherwise the message's body should be considered.
 - *set* - the rtp relay set being used for the call.
-- *node* - optional, an node Engine idenfifier - this
+- *node* - optional, an node Engine identifier - this
 is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
@@ -591,7 +591,7 @@ the updated SDP.
 > [!NOTE]
 > When enforcing a new node,
 > it is not guaranteed to be used - if the node is not
-> avaialble, but a different one is, the active one will
+> available, but a different one is, the active one will
 > be chosen.
 
 
@@ -664,10 +664,10 @@ for.
 relay node to be used. If not specified, the first
 available node is used.
 - *flags* - (optional) a JSON
-contining the *caller* and/or
+containing the *caller* and/or
 *callee* nodes, which contain
 new flags that should be used for the session. Only
-explicitely specified flags will be overwritten.
+explicitly specified flags will be overwritten.
 
 
 ```bash title="rtp_relay:update_callid usage"

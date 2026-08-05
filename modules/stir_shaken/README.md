@@ -304,7 +304,7 @@ verification process.
 store the SIP response reason phrase associated with an eventual error of the
 verification process.
 - *orig (string, optional)* - telephone number to
-be used as the originating identity in the verification prcess. If missing,
+be used as the originating identity in the verification process. If missing,
 this value will be derived from the SIP message.
 - *dest (string, optional)* - telephone number to
 be used as the destination identity in the verification process. If missing,
@@ -346,7 +346,7 @@ if ($var(rc) < -1) {
 
 This function checks the Identity header in order to validate the
 STIR/SHAKEN information in terms of format. It detects issues such as:
-missing or badly formated PASSporT claims, unsupported extensions etc.
+missing or badly formatted PASSporT claims, unsupported extensions etc.
 
 
 The function returns the following values:

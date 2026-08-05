@@ -11,7 +11,7 @@ description: "This module implements support for the [Launch Darkly](https://lau
 
 This module implements support for the
 [Launch Darkly](https://launchdarkly.com/) feature
-management cloud. The module provide the conectivity to the cloud and
+management cloud. The module provide the connectivity to the cloud and
 the ability to query for feature flags.
 
 
@@ -108,12 +108,12 @@ modparam("launch_darkly", "ld_log_level", "LD_LOG_CRITICAL")
 #### connect_wait (integer)
 
 
-The time to wait (in miliseconds) when connecting to the LD service.
+The time to wait (in milliseconds) when connecting to the LD service.
 An initial failure in connecting to the LD service may be addressed 
 by increasing this wait value.
 
 
-The default value is 500 miliseconds.
+The default value is 500 milliseconds.
 
 
 ```opensips title="Set connect_wait parameter"
@@ -129,9 +129,9 @@ modparam("launch_darkly", "connect_wait", 100)
 The minimum time interval (in seconds) to try again to init 
 the LD client in the situation when the module was not able to init 
 the LC connection at startup. In case of such failure, the module will 
-automatically re-try to init its LD client on-demand, whnever the 
+automatically re-try to init its LD client on-demand, whenever the 
 feature flag is checked from script, but not sooner than
-`re_init_interval`. Note: if there are no flag checkings to be
+`re_init_interval`. Note: if there are no flag checks to be
 performed, the re-init may be attempted longer than `re_init_interval`.
 
 

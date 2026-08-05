@@ -62,7 +62,7 @@ as the dialog module does not support multiple dialogs created by a single
 transaction, the pua_dialoginfo module sets the id parameter to the same 
 value as the call-id parameter. The "local-tag" indicates the local tag of the
 entity. The remote-tag indicates the tag of the remote party. The "direction"
-indicates if the entity was the initator of the dialog or the recepient (aka
+indicates if the entity was the initiator of the dialog or the recipient (aka
 if the entity sent or received the first INVITE).
 
 
@@ -251,7 +251,7 @@ will be "early -> confirmed". On some phones the function LED
 will start blinking if the state is early, regardless if is is the
 caller or the callee (indicated with the "direction" parameter).
 To avoid blinking LEDs for the caller, you can enable this parameter.
-Then the state of the caller will be singaled as "confirmed" even
+Then the state of the caller will be signaled as "confirmed" even
 in "early" state. This is a workaround for the buggy Linksys SPA962
 phones. SNOM phones work well with the default setting.
 
@@ -484,7 +484,7 @@ be published.
 
 This function is to be used only from a branch route for setting 
 a per-branch callee/peer specification. This peer value will be used
-onyl for the dialoginfo record created for that particular branch.
+only for the dialoginfo record created for that particular branch.
 
 
 This function makes sense only in call forking (serial / parallel)
@@ -495,7 +495,7 @@ callees.
 Meaning of the parameters:
 
 
-- *callee* (string) - a SIP nams addr description of
+- *callee* (string) - a SIP names addr description of
 the callee (the name_addr format is '[display] <uri>' or 
 'uri', as in the To or From headers)
 

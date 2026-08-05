@@ -46,7 +46,7 @@ nodes of the same cluster, or any other combination.
 For each set (or new virtual DB URL), the capabilities are
 automatically calculated based on the capabilities provided by the
 real DB URLs from the set. A logical AND is done for each
-cabability over all the URLs in the set. Shortly, in order for the
+capability over all the URLs in the set. Shortly, in order for the
 virtual URL to provide a certain capability, ALL its real URLs 
 must provide that capability.
 
@@ -76,7 +76,7 @@ foreach virtual db_url
 
 Later each process:
 	if local CAN down and global CAN up
-		if db_max_consec_retrys *
+		if db_max_consec_retries *
 			try to connect
 	if ok
 		local CAN up
@@ -161,7 +161,7 @@ modparam("db_virtual", "db_probe_time", 20)
 ```
 
 
-#### db_max_consec_retrys (integer)
+#### db_max_consec_retries (integer)
 
 
 After the timer process has reported that it can connect to the real db,
@@ -174,9 +174,9 @@ This value is reset and suppressed by a MI function (db_virtual:set).
 *Default value is 10 (10 consecutive times).*
 
 
-```opensips title="Set db_max_consec_retrys parameter"
+```opensips title="Set db_max_consec_retries parameter"
 ...
-modparam("db_virtual", "db_max_consec_retrys", 20)
+modparam("db_virtual", "db_max_consec_retries", 20)
 ...
 
 ```
@@ -244,7 +244,7 @@ db_virtual:set 3 2 0 1 means:
 - 3 - the fourth set (must exist)
 - 2 - the third URL in the fourth set(must exist)
 - 0 - processes are not allowed to use that URL
-- 1 - reset and suppress db_max_consec_retrys
+- 1 - reset and suppress db_max_consec_retries
 
 
 MI FIFO Command Format:

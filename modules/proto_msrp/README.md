@@ -128,7 +128,7 @@ SSL certificate as the one set for the current signaling operation.
 
 This checking is done only when comes to send SIP traffic via TLS and
 it is applied only against connections that were created / initiated 
-by OpenSIPS (as TLS client). Any accepte connection (as TLS server)
+by OpenSIPS (as TLS client). Any accept connection (as TLS server)
 will automatically match (the extra test will be skipped).
 
 
@@ -209,7 +209,7 @@ on at the time this connection is opened.
 
 > [!WARNING]
 > If [trace on](#param_trace_on) is
-> set to 0 or tracing is deactived via the mi command [msrp trace](#msrp-trace)
+> set to 0 or tracing is deactivated via the mi command [msrp trace](#msrp-trace)
 > this route won't be called.
 
 

@@ -47,7 +47,7 @@ The following modules must be loaded before this module:
 
 Specifies the root path for the HTTP requests.
 The link to the mi web interface must be constructed
-using the following patern:
+using the following pattern:
 http://[opensips_IP]:[opensips_mi_port]/[root]
 
 
@@ -161,7 +161,7 @@ configured size of the httpd buffer is to small (or if there isn't
 enough pkg memory configured).
 
 
-Future realeases of the httpd module will address this issue.
+Future releases of the httpd module will address this issue.
 <!-- CONTRIBUTORS -->
 
 ### License

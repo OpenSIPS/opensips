@@ -188,7 +188,7 @@ set of database command types.
 Features to be added in the future:
 
 
-- full subscriber provisionning with automatic ha1/ha1b fields.
+- full subscriber provisioning with automatic ha1/ha1b fields.
 
 
 ### Dependencies
@@ -211,7 +211,7 @@ The following modules must be loaded before this module:
 
 Specifies the root path for pi HTTP requests.
 The link to the OpenSIPS provisioning web interface must be constructed
-using the following patern:
+using the following pattern:
 http://[opensips_IP]:[opensips_mi_port]/[pi_http_root]
 
 

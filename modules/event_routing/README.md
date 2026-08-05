@@ -340,7 +340,7 @@ route[handle_pickup]
 {
     xlog("call picked by $avp(picker), fetching its contacts\n");
     if (lookup("location","", $avp(picker))) {
-        # take the contacts retured by lookup() (for Charlie)
+        # take the contacts returned by lookup() (for Charlie)
         # and inject them into the original call, but also cancel
         # any existing ongoing branch (ringing to Bob)
         t_inject_branches("msg","cancel");

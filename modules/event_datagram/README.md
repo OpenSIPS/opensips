@@ -16,7 +16,7 @@ implementation for the Event Interface.
 ### DATAGRAM events syntax
 
 
-The event payload is formated as a JSON-RPC notification, with the event
+The event payload is formatted as a JSON-RPC notification, with the event
 name as the *method* field and the event parameters as
 the *params* field.
 
@@ -105,7 +105,7 @@ used to notify the events?**
 Yes, you can use the both types.
 
 
-**Q: What is the maximum lenght of a datagram event?**
+**Q: What is the maximum length of a datagram event?**
 
 
 The maximum length of a datagram event is 65457 bytes.

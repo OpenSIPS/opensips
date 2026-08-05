@@ -21,7 +21,7 @@ room is created, users can send commands directly to conferece's URI.
 
 
 To ease the integration in the configuration file, the interpreter of
-the IMC commands are embeded in the module, from configuration poin of
+the IMC commands are embedded in the module, from configuration point of
 view, there is only one function which has to be executed for both
 messages and commands.
 

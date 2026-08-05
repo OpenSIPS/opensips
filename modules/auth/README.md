@@ -14,7 +14,7 @@ other authentication related modules. Also, it can perform
 authentication taking username and password from pseudo-variables.
 
 
-#### RFC 8760 Support (Strenghtened Authentication)
+#### RFC 8760 Support (Strengthened Authentication)
 
 
 Starting with OpenSIPS 3.2, the [auth](../auth),

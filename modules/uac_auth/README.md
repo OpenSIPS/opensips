@@ -13,16 +13,16 @@ UAC AUTH (User Agent Client Authentication) module provides a
 common API for building authentication headers.
 
 
-It also provides a common set of authentication credetials to
+It also provides a common set of authentication credentials to
 be used by other modules.
 
 
 Note that authentication provided by this module supports both
 qop "auth" and qop "auth-int" but if both values are presented
-by the server, "auth" will be prefered.
+by the server, "auth" will be preferred.
 
 
-#### RFC 8760 Support (Strenghtened Authentication)
+#### RFC 8760 Support (Strengthened Authentication)
 
 
 Starting with OpenSIPS 3.2, the [auth](../auth),

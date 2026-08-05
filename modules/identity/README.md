@@ -301,7 +301,7 @@ exit;
 - Certificates are not downloaded. They have to be stored locally.
 - Call-IDs of valid requests containing an Identity header are not recorded. 
 Hence the verifier does not provide full replay protection.
-- Authentication service and verifier use the original request. Changes resulting from message processing in OpenSER script are ignored.
+- Authentication service and verifier use the original request. Changes resulting from message processing in OpenSET script are ignored.
 <!-- CONTRIBUTORS -->
 
 ### License

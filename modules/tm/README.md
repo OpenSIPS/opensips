@@ -178,9 +178,9 @@ Doing a load balancing scenario using
 [Anycast IPs](https://en.wikipedia.org/wiki/Anycast),
 one might run into an issue where a transaction request comes on
 one instance, and the reply (or replies) comes on different ones.
-This would normaly break the transaction state, because the local
+This would normally break the transaction state, because the local
 transaction will start re-transmissios and would eventually timeout.
-Moreover, from UA's perspective, the reply whould have been sent,
+Moreover, from UA's perspective, the reply would have been sent,
 but since it reaches a proxy that is not aware of that transaction,
 it will not be forwarded (nor ACKed in case of INVITES). And from
 this point things can escalade quickly.
@@ -195,7 +195,7 @@ transaction, it replicates it to be handled by the instance that
 
 
 Setting up an anycast scenario is very simple: all the instances
-that are part of an anycast secnario must be set up in a cluster
+that are part of an anycast scenario must be set up in a cluster
 (more info at the [tm replication cluster](#param_tm_replication_cluster) param).
 When a transaction is created, a special identifier is appended to
 the branch parameter, namely the instance that created the
@@ -227,7 +227,7 @@ called on SIP request messages where a transaction can be created, or
 in routes that are transaction aware, such as
 *branch_route[name]*,
 *failure_route[name]* or
-*onreply_route[name]*. Using TM functtions or
+*onreply_route[name]*. Using TM functions or
 variables in a route that is not transaction aware, such as
 the generic *onreply_route*,
 *error_route* or
@@ -599,7 +599,7 @@ A branch flag index to be used in script to mark the minor branches
 
 
 A minor branch is a branch OpenSIPS will not wait to complete during
-parallel forking. So, if the rest of the branches are negativly replied
+parallel forking. So, if the rest of the branches are negatively replied
 OpenSIPS will not wait for a final answer from the minor branch, but
 it will simply cancel it.
 
@@ -629,7 +629,7 @@ under heavly load by handling timer events in parallel, rather than
 all serial.
 
 
-Recomanded range for timer partitions is max 16 (soft limit).
+Recommended range for timer partitions is max 16 (soft limit).
 
 
 *Default value is 1 (disabled).*
@@ -691,7 +691,7 @@ modparam("tm", "tm_replication_cluster", 1)
 
 
 This parameter should be used in an anycast setup, and specifies
-the name of the parameter used in the VIA branch param to specifiy
+the name of the parameter used in the VIA branch param to specify
 the instance id that created the transaction.
 
 
@@ -830,7 +830,7 @@ may still want to send a negative reply upstream statelessly not to
 leave upstream UAC in lurch.
 
 
-The coresponding transaction may or may not be already created. If not
+The corresponding transaction may or may not be already created. If not
 yet created, the function will automatically create it.
 
 
@@ -1044,7 +1044,7 @@ if ( is_method("CANCEL") ) {
 #### t_check_status(re)
 
 
-Returns true if the regualr expression "re" match the 
+Returns true if the regular expression "re" match the 
 reply code of the response message as follows:
 
 
@@ -1095,7 +1095,7 @@ if (t_local_replied("all")) {
 #### t_was_cancelled()
 
 
-Retuns true if called for an INVITE transaction that was explicitly
+Returns true if called for an INVITE transaction that was explicitly
 cancelled by UAC side via a CANCEL request.
 
 
@@ -1151,7 +1151,7 @@ onreply_route[3] {
 
 
 This function generates and sends out a new SIP request (in a stateful way).
-The new request is completly unrelated to the currently processed SIP message.
+The new request is completely unrelated to the currently processed SIP message.
 
 
 Meaning of the parameters is as follows (all do accept variables):
@@ -1165,7 +1165,7 @@ will be sent out to this destination)
 - *to (string)* - the SIP To hdr information as
 "[display ]URI"
 - *body (string, optional)* - the SIP body content
-starting with the content type string: "conten_type body"
+starting with the content type string: "content_type body"
 - *ctx (string, optional)* - a context string that will
 be added to the new transaction as an AVP with name "uac_ctx" (it may be visible
 in local route)
@@ -1252,8 +1252,8 @@ to that particular branch. Of course, from branch route, you can set
 different reply routes for each branch.
 
 
-When called from a non-branc route, the reply route will be globally 
-set for tha current transaction - it will be called for all replies 
+When called from a non-branch route, the reply route will be globally 
+set for the current transaction - it will be called for all replies 
 belonging to that transaction. NOTE that only 
 *one>* onreply_route can be armed for a transaction.
 If you use many times t_on_reply(), only the last one has effect.
@@ -1462,7 +1462,7 @@ used for a transaction that is waiting for dynamic branches, via the
 Usage scenario: your transaction is waiting for dynamic new branches
 (as a reusult of Push Notification). To a point, on an ongoing
 branch you receive a final reply - and the fact that the branch fails
-translates into stop waiting for any more branche (this is an example
+translates into stop waiting for any more branches (this is an example
 of a logic on deciding how long to wait for more branches, depending 
 on the answers you get from various devices, fix or mobile).
 
@@ -1503,7 +1503,7 @@ This function is used to enforce from the script level a custom
 inherited form the received CANCEL (note that CANCEL propagates in a
 hop-by-hop manner - it is re-generated at each hop), but this function
 can overwrite it. It must be called before relaying the CANCEL request
-and its input must be a fully formated Reason header with name, body 
+and its input must be a fully formatted Reason header with name, body 
 and CRLF.
 
 
@@ -1640,7 +1640,7 @@ and later we need to handle CANCEL or BYE for it and send
 
 
 The callid and cseq used to identify the transaction
-will be obtained from the current messsage being processed.
+will be obtained from the current message being processed.
 But they can be passed explicitly so that for example we can
 handle a BYE where the cseq must be the cseq
 of the INVITE minus one.
@@ -1725,7 +1725,7 @@ Exported variables are listed in the next sections.
 
 
 *$T_branch_idx* - the index (starting with 0
-for the first branch) of the currently proccessed branch. This
+for the first branch) of the currently processed branch. This
 index makes sense only in BRANCH and REPLY routes (where the
 processing is per branch) and in FAILURE route (where it points
 to the branch with the last final reply on the transaction). In all
@@ -1835,7 +1835,7 @@ from 0, but it is relative to the last set of branches -
 the parallel branches created by the last "t_relay()"-ing.
 - */all* - similar to "no suffix" case, 
 meaning it is an absolute index, covering all the 
-branches of the trasactions (resulted from all "t_relay()"s
+branches of the transactions (resulted from all "t_relay()"s
 performed over the transaction).
 
 
@@ -1866,7 +1866,7 @@ The variable can be used in BRANCH, ONREPLY and FAILURE routes.
 
 
 *$tm.branch.duri* - 100% similar to
-**[tm branch uri](#pv_tm_branch_uri)**, but returning the Detination-URI value of the branch.
+**[tm branch uri](#pv_tm_branch_uri)**, but returning the Destination-URI value of the branch.
 
 
 #### $tm.branch.path[]
@@ -1906,7 +1906,7 @@ branch out.
 **[tm branch uri](#pv_tm_branch_uri)**, but gives read/write access to a single branch flag (by its name).
 
 
-The accepted values are 0 for FALSE, pozitive non-zero for
+The accepted values are 0 for FALSE, positive non-zero for
 TRUE. The returned values are 0 for FALSE and 1 for TRUE.
 
 
@@ -2216,7 +2216,7 @@ modules/tm/tm_load.h
 
 
 The function was replace (as functionality) by cancel_branch("a") -
-cancel all braches.
+cancel all branches.
 
 
 **Q: How can I report a bug?**

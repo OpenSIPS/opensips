@@ -17,7 +17,7 @@ authentication information like subscriber usernames and passwords. If
 you want to use radius authentication, then use auth_radius instead.
 
 
-#### RFC 8760 Support (Strenghtened Authentication)
+#### RFC 8760 Support (Strengthened Authentication)
 
 
 Starting with OpenSIPS 3.2, the [auth](../auth),
@@ -80,7 +80,7 @@ modparam("auth_db", "db_url", "dbdriver://username:password@dbhost/dbname")
 
 
 This parameter tells the server whether it should considered the
-loaded password (for authentification) as plaintext passwords or
+loaded password (for authentication) as plaintext passwords or
 a pre-calculated HA1 string.
 
 
@@ -140,7 +140,7 @@ modparam("auth_db", "use_domain", true)
 
 This parameter specifies credentials to be fetched from database when
 the authentication is performed. The loaded credentials will be stored
-in AVPs. If the AVP name is not specificaly given, it will be used a
+in AVPs. If the AVP name is not specifically given, it will be used a
 NAME AVP with the same name as the column name.
 
 

@@ -463,7 +463,7 @@ Name of address table column containing a string
 that is added as value to a pvar given as argument
 to `check_address`
 or `check_source_address` in
-case the function succedes.
+case the function succeeds.
 
 
 *Default value is "context_info".*
@@ -513,13 +513,13 @@ This argument represents the protocol used for transport;
 Transport protocol is either "ANY" or any
 valid transport protocol value: "UDP, "TCP", "TLS", and "SCTP".
 - context_info (var, optional)
-This argument represents the variable in wich the context_info field
+This argument represents the variable in which the context_info field
 from the cached address table will be stored in case of match.
 - pattern (string, optional)
 This argument is a string to be matched against the wildcard
 pattern field from the address table.
 - partition (string, optional)
-An optional parition name for the group id. If no partition
+An optional partition name for the group id. If no partition
 specified, the "default" one will be used.
 
 

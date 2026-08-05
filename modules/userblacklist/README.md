@@ -128,10 +128,10 @@ Parameters:
 
 - *user* (string) - description
 - *domain* (string) - description
-- *number* (string, optional) - If ommited,
-the defalut is used.
-- *table* (string, optional) - If ommited,
-the defalut is used.
+- *number* (string, optional) - If omitted,
+the default is used.
+- *table* (string, optional) - If omitted,
+the default is used.
 
 
 ```opensips title="check_user_blacklist usage"

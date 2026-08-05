@@ -149,7 +149,7 @@ configured size of the httpd buffer is to small (or if there
 isn't enough pkg memory configured).
 
 
-Future realeases of the httpd and mi_xmlrpc modules
+Future releases of the httpd and mi_xmlrpc modules
 will address this issue.
 
 
@@ -157,7 +157,7 @@ will address this issue.
 
 
 This is an example showing the xmlrpc format for the
-"get_statistics net: shmem:" MI commad:
+"get_statistics net: shmem:" MI command:
 response.
 
 

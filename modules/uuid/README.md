@@ -106,7 +106,7 @@ UUID version 3 and 5.
 
 If UUID version 1 is used, the function will return the value
 *2* if the UUID was generated in an unsafe
-manner. This refers to the posibility of two concurrently
+manner. This refers to the possibility of two concurrently
 running processes generating the same UUID, in cases where
 synchronization mechanisms are not available (more details
 can be found in the *uuid_generate* man pages

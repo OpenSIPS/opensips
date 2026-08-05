@@ -18,7 +18,7 @@ Works simultaneous for IPv4 and IPv6 addresses.
 
 The module does not implement any actions on blocking - it just simply
 reports that there is a high traffic from an IP; what to do, is
-the administator decision (via scripting).
+the administrator decision (via scripting).
 
 
 ### How to use
@@ -148,7 +148,7 @@ The name of the script route to be triggers (in automatic way) when a
 package is received from the network. If you do a "drop" in this route,
 it will indicate to the module that the source IP of the package does
 not need to be monitored. Otherwise, the source IP will be
-automatically monitered.
+automatically monitored.
 
 
 By defining this parameter, the automatic checking mode is enabled.
@@ -296,7 +296,7 @@ The module provides the "pike" Status/Report group, only with
 the "main"/default SR identifier.
 
 
-There is no usefull status published by the module.
+There is no useful status published by the module.
 
 
 In terms of reports/logs, the following events will be reported:
@@ -313,7 +313,7 @@ For how to access and use the Status/Report information, please see
 
 
 One single tree (for both IPv4 and IPv6) is used. Each node contains a byte, the IP
-addresses stretching from root to the leafs.
+addresses stretching from root to the leaves.
 
 
 ```c title="Tree of IP addresses"
@@ -324,7 +324,7 @@ tree root /                  \ 142
 ```
 
 
-To detect the whole address, step by step, from the root to the leafs, the nodes corresponding
+To detect the whole address, step by step, from the root to the leaves, the nodes corresponding
 to each byte of the ip address are expanded. In order to be expended a node has to be hit
 for a given number of times (possible by different addresses; in the previous example, the
 node "37" was expended by the 195.37.78.163 and 195.37.79.134 hits).

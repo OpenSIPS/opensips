@@ -10,7 +10,7 @@ description: "This is a module to help with SDP mangling."
 
 
 This is a module to help with SDP mangling.
-Note: This module is obselete and will be removed for the 1.5.0 release.
+Note: This module is obsolete and will be removed for the 1.5.0 release.
 
 
 ### Dependencies

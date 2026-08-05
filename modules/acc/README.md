@@ -187,7 +187,7 @@ example user A calls user B which forwards the call to user C.
 There is only one SIP call but with 2 legs ( A to B and B to C).
 Accounting the legs of a call is required for proper billing of
 the calls (if C is a PSTN number and the call is billed, user B
-must pay for the call - as last party modifing the call
+must pay for the call - as last party modifying the call
 destination-, and not A - as initiator of the call. Call
 forwarding on server is only one example which shows the
 necessity of the having an accounting engine with multiple legs
@@ -234,7 +234,7 @@ records will be written, the difference between them being
 only the fields corresponding to the call-leg info.
 
 > [!NOTE]
-> You will need to add in your DB (all acc related tables) the colums
+> You will need to add in your DB (all acc related tables) the columns
 > for call-leg info (a column for each leg value of the set).
 
 - *AAA* -- all sets will be added
@@ -449,7 +449,7 @@ modparam("acc", "log_level", 2)   # Set log_level to 2
 
 
 Log facility to which accounting messages are issued to syslog.
-This allows to easily seperate the accounting specific logging
+This allows to easily separate the accounting specific logging
 from the other log messages.
 
 
@@ -647,7 +647,7 @@ modparam("acc", "acc_time_column", "time")
 #### $acc_extra(tag_name)
 
 
-This variable can addresed with the tag names defined
+This variable can addressed with the tag names defined
 using [extra fields](#param_extra_fields). If
 [do accounting](#func_do_accounting) isn't called, this
 variable is visible during the whole processing of one message,
@@ -780,7 +780,7 @@ be used:
   - *db* - stop database accounting;
   - *aaa* - stop aaa specific accounting;
   - *evi* - stop Event Interface accounting;
-- *flags (string, optional)* - flags to be reset for the accouting type you have
+- *flags (string, optional)* - flags to be reset for the accounting type you have
 selected. All the types have to be separated by '|'. The following
 parameters can be used:
   - *cdr* - stop CDR accounting;
@@ -987,7 +987,7 @@ This function can be used from any type of route.
 if ( load_dialog_ctx("$var(callid)") ) {
 	# we now have the dialog context of the new dialog
 	acc_load_ctx_from_dlg();
-	# we have now also the accouting context of that dialog
+	# we have now also the accounting context of that dialog
 	xlog("The accounting caller of call '$var(callid)' "
 		"is '$acc_extra(caller)'\n");
 	acc_unload_ctx_from_dlg();
@@ -1001,7 +1001,7 @@ if ( load_dialog_ctx("$var(callid)") ) {
 #### acc_unload_ctx_from_dlg()
 
 
-The function off-loads a previosuly loaded accounting context, exposing
+The function off-loads a previously loaded accounting context, exposing
 whatever accounting context was present before doing the load.
 
 
@@ -1109,9 +1109,9 @@ the *multi_leg_info* parameter
 
 
 The parameter is considered obsolete. It was removed as acc
-module is doing SIP transaction based accouting and according
+module is doing SIP transaction based accounting and according
 to SIP RFC, end2end ACKs are a different transaction (still part
-of the same dialog). ACKs can be individually accouted as any
+of the same dialog). ACKs can be individually accounted as any
 other sequential (in-dialog) request.
 
 
@@ -1120,7 +1120,7 @@ other sequential (in-dialog) request.
 
 The parameter became obsolete with the restructure of the data
 logged by ACC module (refer to the Overview chapter). For similar
-behaviour you can use the extra accouting (see the corresponding
+behaviour you can use the extra accounting (see the corresponding
 chapter).
 
 
@@ -1128,7 +1128,7 @@ chapter).
 
 
 The parameter became obsolete by the addition of the new
-multi_leg_info parameter. The multi-leg accouting is automatically
+multi_leg_info parameter. The multi-leg accounting is automatically
 enabled when multi_leg_info is defined.
 
 

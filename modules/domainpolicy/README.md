@@ -208,7 +208,7 @@ Name of the AVP which contains a send_socket. The format of the
 send socket (the payload of this AVP) must be in the format
 [proto:]ip_address[:port]. The function dp_apply_policy will 
 look for this AVP and if defined, it will force the send socket
-to its value (smilar to the force_send_socket core function).
+to its value (similar to the force_send_socket core function).
 
 
 *Default value is "sendsocket".*
@@ -262,8 +262,8 @@ the database lookup searched for type = 'std', though.
 
 
 The dp_col_att column specifies the AVP's name. If the AVP start with "s:" or "i:", the 
-corresponding AVP type (string named or integer named) will be generated. If the excat specifier 
-is omited, the AVP type will be guessed.
+corresponding AVP type (string named or integer named) will be generated. If the exact specifier 
+is omitted, the AVP type will be guessed.
 
 
 The dp_col_val column will always be interpreted as string. Thus, the AVP's value
@@ -348,7 +348,7 @@ sets *domain_replacement_avp* to the new domain.
 in the destination URI will be prefixed with this "subdomain".  
 E.g. if the domain in the request URI is 
 "example.com" and the domain_prefix_avp contains "inbound", the domain 
-in the destinaton URI is set to "inbound.example.com".
+in the destination URI is set to "inbound.example.com".
 - *domain_suffix_avp*: If this AVP is set, the domain
 in the destination URI will have the content of the AVP appended to it.
 E.g. if the domain in the request URI is 
@@ -416,7 +416,7 @@ dedicate a TCP port for this federation.
    tls_ca_list       = "/path/to/tlsfed/ca.pem"
    tls_method        = tlsv1
    tls_verify_client = 1
-   tls_require_cleint_certificate = 1
+   tls_require_client_certificate = 1
   }
   		
   ```
@@ -520,7 +520,7 @@ federation.
   ```
 - *Outgoing SIP configuration*
 The domainpolicy table just needs to link the federation identifier
-to the agreed apon prefix:
+to the agreed upon prefix:
 
   ```
   mysql> select * from domainpolicy;

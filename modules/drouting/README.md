@@ -175,7 +175,7 @@ They are all the time referred by their ID.
 
 
 These are the actual rules which control the routing. Using
-different criterias (prefix, time, priority, etc), they will decide
+different criteria (prefix, time, priority, etc), they will decide
 to which gateways the call will be sent.
 
 
@@ -408,7 +408,7 @@ modparam("drouting", "drc_table", "my_dr_carriers")
 
 
 The name of the avp for storing Request URIs to be later used
-(alternative destiantions for the current one).
+(alternative destinations for the current one).
 
 
 *Default value is "$avp(___dr_ruri__)" if `use_partitions` parameter is 0
@@ -706,7 +706,7 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 #### probing_reply_codes (string)
 
 
-A comma separted list of SIP reply codes. The codes defined here
+A comma separated list of SIP reply codes. The codes defined here
 will be considered as valid reply codes for probing messages,
 apart for 200.
 
@@ -732,7 +732,7 @@ A socket description [proto:]host[:port] of the local socket
 For probing gateway the highest priority has socket from gateway
 configuration in dr_gateways table. Then socket from global
 `probing_socket` parameter and the lowest
-priority is default behaviour with auto selected socket wich
+priority is default behaviour with auto selected socket which
 OpenSIPS listens on.
 
 
@@ -796,7 +796,7 @@ used in drouting module for two purposes: for sharing the status of
 the gateways/carriers and for controlling the pinging to gateways.
 
 
-If clustering enbled, the module will automatically share changes
+If clustering enabled, the module will automatically share changes
 over the status of the gateways/destinations/carriers with the other 
 OpenSIPS instances that are part of a cluster. Whenever such a status 
 changes (following an MI command, a probing result, a script command),
@@ -870,7 +870,7 @@ modparam("drouting", "cluster_sharing_tag", "vip")
 #### cluster_probing_mode (string)
 
 
-This paramter controls how the probing/pinging should be done when
+This parameter controls how the probing/pinging should be done when
 using the clustering support. It is about which node in the cluster
 pings which gateway/destination.
 
@@ -883,20 +883,20 @@ The supported probing modes are:
 
 
 - **"all"** - all the nodes in the
-cluster will independetly ping all the defined gateways,
+cluster will independently ping all the defined gateways,
 an "all" pings "all" mode.
 - **"by-shtag"** - all the gateways
 are pinged by only one node in the cluster, the node having the
 [cluster sharing tag](#param_cluster_sharing_tag) active. By 
 activating the sharing tag on a different node, the pinging
-duty will be transfered to another node in the cluster.
+duty will be transferred to another node in the cluster.
 - **"distributed"** - the pinging
 effort is distributed across all the nodes in the cluster, so each
 node will ping a sub-set of the overall set of gateway. Still all
 the gateways will get pinged (and only once per pinging cycle).
 The re-partitioning of the pinging effort over the available nodes
 in the cluster is automatically done when new nodes are joining or
-nodes are dropping out. Still there is no guaratee on which node
+nodes are dropping out. Still there is no guarantee on which node
 will be responsible for pinging which gateway.
 
 
@@ -1045,7 +1045,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 
 
 Variable which will store the name of the name partition when
-*wildcard(*)* operatior is used.
+*wildcard(*)* operator is used.
 *Use_partitions* must be set in order to
 use this parameter.
 
@@ -1233,7 +1233,7 @@ populated with the attributes of the matched carrier.
 - **partition** (string, optional) - the name
 of the DR partition to be used. This parameter is to be defined
 ONLY if the "use_partition" module parameter is turned on.
-Besides specifing the name of one partition, you can use the "*" 
+Besides specifying the name of one partition, you can use the "*" 
 wildcard sign to force routing over all partitions.
 
 
@@ -1403,7 +1403,7 @@ with the attributes of the matched gateway.
 - **carrier_attrs_pvar** (var, optional) 
 					- an output writable variable which will be populated
 with the attributes of the matched carrier.
-- **partition** (optinal, string) -
+- **partition** (optional, string) -
 the name of the DR partition to be used. This parameter is
 to be defined ONLY if the "use_partition" module parameter
 is turned on. Wildcard sign is not accepted by the 

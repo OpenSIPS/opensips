@@ -99,7 +99,7 @@ match.
 - *extra_headers* (optional)
 					- Extra headers added to PUBLISH
 request.
-- *body* (optioanl)
+- *body* (optional)
 					- The body of the publish
 request containing published information or missing if
 no published information.

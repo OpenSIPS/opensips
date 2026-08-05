@@ -15,7 +15,7 @@ monitoring system, allowing it to fetch different
 statistics from OpenSIPS.
 
 
-In order to use it, you have to explicitely define the
+In order to use it, you have to explicitly define the
 statistics you want to provide by listing them in the
 [statistics](#param_statistics) parameter.
 
@@ -23,7 +23,7 @@ statistics you want to provide by listing them in the
 Currently only *counter* and *gauge*
 metrics types are supported by the module, and whether to choose
 one or the other for a specific statistic is dictated by the way that
-statistic was defined either internally, or explicitely through the
+statistic was defined either internally, or explicitly through the
 *variable* parameter of the *statistics*
 module.
 
@@ -208,7 +208,7 @@ and labels.
 The *regex* format is
 */matching_expression/substitution_expression/flags*.
 The *substitution_expression* resulted after
-the substituion should result in a string with the following
+the substitution should result in a string with the following
 format: *name:labels*, where
 *name* represents the name of the statistic
 as it will be pushed towards Prometheus, and *labels*
@@ -352,7 +352,7 @@ Parameters
 *label_name* (string, optional) - used to define
 labels for the pushed statistic. If the *label_value*
 parameter is missing, this parameter is appended to the name of the
-statisic - this means that it should contain the whole set of labels
+statistic - this means that it should contain the whole set of labels
 for the value (including curly brackets). If the
 *label_value* is provided as well, then the parameter
 should only contain one label's name.

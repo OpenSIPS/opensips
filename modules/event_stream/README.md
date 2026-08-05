@@ -145,7 +145,7 @@ the event will be the first parameter in the JSON-RPC command.
 
 ```opensips title="Set timeout parameter"
 ...
-# only wait for 200 milliseonds for a reply
+# only wait for 200 milliseconds for a reply
 modparam("event_stream", "timeout", 200)
 ...
 ```
@@ -272,7 +272,7 @@ event from the script using the
 
 
 Note that we are only populating values for the
-event, we are not assinging names to those values.
+event, we are not assigning names to those values.
 Therefore, the parameters will be sent as an array.
 
 

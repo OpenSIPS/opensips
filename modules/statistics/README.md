@@ -58,7 +58,7 @@ types a statistic series can be used, depending on the provisioned algorithm:
 
 
 - *accumulate* - accumulates the specified values in a
-counter; works similar to clasical statistics, except that they reset
+counter; works similar to classical statistics, except that they reset
 after the specified timeframe
 - *average* - returns an average of all the data fed
 within the timeframe; can be useful when computing PDD, AST, ACD stats.
@@ -141,7 +141,7 @@ paragraph (default is *accumulate*)
 a hash map attached to the profile; this setting tunes the size of the hash
 (default is: 8)
 - *group* - indicates the group where the statistics
-beloging to this profile are grouped (as described in
+belonging to this profile are grouped (as described in
 **[stat groups](#param_stat_groups)**
 (default is to use the same group as the profile)
 - *window* - the number of seconds a timeframe has;

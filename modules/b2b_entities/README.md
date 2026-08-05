@@ -30,7 +30,7 @@ The name corresponds to the behavior in the first transaction - if UAS - server 
 This module does not implement a B2BUA alone, but needs a B2B logic implementing module.
 
 
-The module is able to respond to authentication challanges if the
+The module is able to respond to authentication challenges if the
 uac_auth module is loaded first.  The list of credentials for
 b2b authentication is also provided by the uac_auth module.
 
@@ -359,12 +359,12 @@ will be sent and the session will be deleted. If this
 is not set, the default timeout, configured with
 [ua default timeout](#param_ua_default_timeout) will be used.
 Example: *t3600*
-  - *a* - report the receving of ACK requests
+  - *a* - report the receiving of ACK requests
 via the [E UA SESSION](#event_e_ua_session) event.
-  - *r* - report the receving of replies via
+  - *r* - report the receiving of replies via
 the [E UA SESSION](#event_e_ua_session) event.
   - *d* - disable the automatic sending of ACK
-upon receving a 200 OK reply for INVITE (in case of UAC session)
+upon receiving a 200 OK reply for INVITE (in case of UAC session)
 or re-INVITE.
   - *h* - provide the headers of the SIP request/reply
 in the [E UA SESSION](#event_e_ua_session) event.
@@ -549,7 +549,7 @@ header to use. If missing and a body is provided,
 "Content-Type: application/sdp" will be used.
 - *extra_headers (optional)* - extra headers
 - *flags (optional)* - flags with the same meaning
-as for the *flags* paramater of
+as for the *flags* parameter of
 [ua session server init](#func_ua_session_server_init).
 - *socket (optional)* - OpenSIPS sending socket
 
@@ -862,7 +862,7 @@ typedef int (*b2b_send_request_t)(enum b2b_entity_type ,str* b2b_key, str* metho
 This function asks the b2b_entities modules to send a request inside a b2b dialog
 identified by b2b_key. The first parameter is the entity type and can have two values:
 B2B_SERVER and B2B_CLIENT. The second is the identifier returned by the create 
-function(server_new or client_new) and the next are the informations needed for
+function(server_new or client_new) and the next are the information needed for
 the new request: method, extra_headers, body.
 The last parameter contains the dialog information - callid, to tag, from tag. These
 are needed to make a perfect match to of b2b_entities record for which a new request
@@ -889,7 +889,7 @@ typedef int (*b2b_send_reply_t)(enum b2b_entity_type et, str* b2b_key, int code,
 This function asks the b2b_entities modules to send a reply inside a b2b dialog
 identified by b2b_key. The first parameter is the entity type and can have two values:
 B2B_SERVER and B2B_CLIENT. The second is the identifier returned by the create 
-function(server_new or client_new) and the next are the informations needed for
+function(server_new or client_new) and the next are the information needed for
 the new reply: code, text, body, extra_headers. The last parameter contains the
 dialog information used for matching the right record.
 

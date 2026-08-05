@@ -42,7 +42,7 @@ OpenSIPS with this module loaded:
 
 
 The auto-reload will close and reopen a Berkeley DB when the
-files inode has changed. The operation occurs only duing a query. 
+files inode has changed. The operation occurs only during a query. 
 Other operations such as insert or delete, do not invoke auto_reload.
 
 
@@ -131,7 +131,7 @@ Parameters:
 
 
 - *table_path* - to reload a particular table
-provide the tablename as the arguement; to reload
+provide the tablename as the argument; to reload
 all tables provide the db_path to the db files. The path can be found
 in opensipsc-cli config variable.
 
@@ -160,7 +160,7 @@ to compile in extra debug logs. However, it is not a recommended
 deployment to production servers.
 
 
-Because the module dependes on an external library, the db_berkeley module is not
+Because the module depends on an external library, the db_berkeley module is not
 compiled and installed by default. You can use one of the next options.
 
 
@@ -234,12 +234,12 @@ attempt to write a journal entry may fail.
 
 Note on use_domain-
 The db_berkeley module will attempt natural joins when performing a query.
-This is basically a lexigraphical string compare using the keys provided.
+This is basically a lexicographical string compare using the keys provided.
 In most places in the db_berkeley dbschema (unless you customize), the domainname 
 is identified as a natural key. 
 Consider an example where use_domain = 0. In table subscriber, the db will be keying on 
 'username|NULL' because the default value will be used when that key column is not provided.
-This effectivly means that later queries must consistently use the username (w.o domain)
+This effectively means that later queries must consistently use the username (w.o domain)
 in order to find a result to that particular subscriber query.
 The main point is 'use_domain' can not be changed once the db_berkeley is setup.
 
@@ -465,7 +465,7 @@ usage: ./bdb_recover -s schemadir [-h home] [-R lastN]
 ### Known Limitations
 
 
-The Berkeley DB does not nativly support an autoincrement (or sequence) mechanism.
+The Berkeley DB does not natively support an autoincrement (or sequence) mechanism.
 Consequently, this version does not support surragate keys in dbschema. These
 are the id columns in the tables.
 <!-- CONTRIBUTORS -->

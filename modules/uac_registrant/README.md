@@ -20,7 +20,7 @@ The hash index is computed over the AOR field.
 The timer interval for checking records in a hash bucket is computed
 by dividing the timer_interval module param by the number of hash buckets.
 When the timer fires for the first time, the first hash bucket will be checked and
-REGISTERs will be sent out for each record that is found.
+REGISTERRs will be sent out for each record that is found.
 On the next timeout fire, the second hash bucket will be checked and so on.
 If the configured timer_interval module param is lower then the number of buckets,
 the module will fail to start.
@@ -150,8 +150,8 @@ This parameter enables the clustering support in the module. This is
 used to share this registration between all the nodes in the cluster.
 When using this option, you should define (for each registrant record)
 a sharing tag - this sharing tag will control at the cluster level
-which node is entitled to perform the registation (only the node having
-that tag as active will do the registation, the onther nodes being
+which node is entitled to perform the registration (only the node having
+that tag as active will do the registration, the onther nodes being
 idle).
 
 
@@ -295,7 +295,7 @@ modparam("uac_registrant", "username_column", "auth_username")
 
 
 The column's name in the database storing the
-password for authentication (mandatory if the registrar requires authntication).
+password for authentication (mandatory if the registrar requires authentication).
 
 
 *Default value is "password".*
@@ -303,7 +303,7 @@ password for authentication (mandatory if the registrar requires authntication).
 
 ```opensips title="Set 'password_column' parameter"
 ...
-modparam("uac_registrant", "password_column", "auth_passowrd")
+modparam("uac_registrant", "password_column", "auth_password")
 ...
 ```
 
@@ -387,7 +387,7 @@ modparam("uac_registrant", "expiry_column", "registration_timeout")
 The column's name in the database storing the
 socket for sending the REGISTER (not mandatory).
 If a forced socket is provided, the socket MUST be
-explicitely set as a global listening socket in the config
+explicitly set as a global listening socket in the config
 (see "socket" core parameter).
 
 
@@ -425,7 +425,7 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 
 The column's name in the database storing the current state of the
 registrant. When a registrant is disabled, OpenSIPS will no longer send
-REGISTERs for it. A value of *0* for this column means
+REGISTERRs for it. A value of *0* for this column means
 enabled and *1* disabled.
 
 
@@ -619,7 +619,7 @@ opensips-cli -x mi uac_registrant:disable sip:alice@opensips.org  sip:alice@127.
 Replaces obsolete MI command: *reg_force_register*.
 
 
-Forces the re-registration (or registation) of a specific 
+Forces the re-registration (or registration) of a specific 
 registrant (depending on its state). Note that the registrant must be
 enabled.
 
@@ -779,7 +779,7 @@ Parameters:
 #### E_REGISTRANT_INTERNAL_ERROR
 
 
-This event is raised when a REGISTER procesing was stopped due to an internal OpenSIPS error.
+This event is raised when a REGISTER processing was stopped due to an internal OpenSIPS error.
 
 
 Parameters:
