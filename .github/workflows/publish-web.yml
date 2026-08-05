@@ -23,7 +23,7 @@ on:
       module:
         description: Module(s) to publish when component is modules (space-separated)
         required: false
-        default: all
+        default: ''
         type: string
 
 permissions:
@@ -56,6 +56,7 @@ jobs:
           COMPONENT: ${{ inputs.component }}
           MODULE: ${{ inputs.module }}
         run: |
+          all_modules=false
           if [[ "$EVENT_NAME" != "push" ]]; then
             case "$COMPONENT" in
               samples)
@@ -65,9 +66,10 @@ jobs:
                 changed_files='docs/manual/'
                 ;;
               modules)
-                modules_input="${MODULE:-all}"
-                if [[ "$modules_input" == "all" ]]; then
-                  changed_files='modules/all/README.md'
+                modules_input="$MODULE"
+                if [[ -z "$modules_input" || "$modules_input" == "all" ]]; then
+                  all_modules=true
+                  changed_files=''
                 else
                   changed_files=''
                   modules_input="${modules_input//,/ }"
@@ -107,7 +109,7 @@ jobs:
           done
           IFS=$'\n' read -r -d '' -a modules < <(printf '%s\n' "${modules[@]}" | sort && printf '\0') || true
 
-          if [[ ${#components[@]} -eq 0 && ${#modules[@]} -eq 0 ]]; then
+          if [[ ${#components[@]} -eq 0 && ${#modules[@]} -eq 0 && "$all_modules" != true ]]; then
             echo 'has-components=false' >> "$GITHUB_OUTPUT"
             echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
             exit 0
@@ -115,7 +117,11 @@ jobs:
 
           components_json="$(printf '%s\n' "${components[@]}" | jq -R -s 'split("\n") | map(select(length > 0) | {component: .})')"
           modules_json="$(printf '%s\n' "${modules[@]}" | jq -R -s 'split("\n") | map(select(length > 0) | {component: "modules", module: .})')"
-          matrix="$(jq -cn --argjson components "$components_json" --argjson modules "$modules_json" '{include: ($components + $modules)}')"
+          all_modules_json='[]'
+          if [[ "$all_modules" == true ]]; then
+            all_modules_json='[{"component":"modules","all":true}]'
+          fi
+          matrix="$(jq -cn --argjson components "$components_json" --argjson modules "$modules_json" --argjson all_modules "$all_modules_json" '{include: ($components + $modules + $all_modules)}')"
           echo "has-components=true" >> "$GITHUB_OUTPUT"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
@@ -173,11 +179,12 @@ jobs:
           inputs: '{"component": "${{ matrix.component }}", "version": "${{ github.ref_name }}"}'
 
       - name: Trigger modules publication
-        if: ${{ matrix.module != '' }}
+        if: ${{ matrix.component == 'modules' }}
         uses: step-security/workflow-dispatch@v1
         with:
           token: ${{ steps.app-token.outputs.token }}
           repo: ${{ secrets.OPENSIPS_WEB_REPO }}
           workflow: publish.yml
           ref: main
-          inputs: '{"component": "modules", "module": "${{ matrix.module }}", "version": "${{ github.ref_name }}"}'
+          inputs: >-
+            ${{ matrix.all == true && format('{{"component": "modules", "version": "{0}"}}', github.ref_name) || format('{{"component": "modules", "module": "{0}", "version": "{1}"}}', matrix.module, github.ref_name) }}
