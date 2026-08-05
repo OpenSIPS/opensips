@@ -5,6 +5,7 @@ on:
     paths:
       - 'examples/**'
       - 'modules/*/samples/**'
+      - 'net/*/samples/**'
       - 'docs/manual/**'
       - 'net/*/README.md'
       - 'modules/*/README.md'
@@ -91,9 +92,11 @@ jobs:
           declare -A module_names=()
 
           while IFS= read -r path; do
-            [[ "$path" =~ ^examples/ || "$path" =~ ^modules/[^/]+/samples/ ]] && components+=(samples)
+            [[ "$path" =~ ^examples/ ]] && components+=(samples)
             [[ "$path" =~ ^docs/manual/ ]] && components+=(manual)
             if [[ "$path" =~ ^(net|modules)/([^/]+)/README\.md$ ]]; then
+              module_names["${BASH_REMATCH[2]}"]=1
+            elif [[ "$path" =~ ^(modules|net)/([^/]+)/samples/ ]]; then
               module_names["${BASH_REMATCH[2]}"]=1
             fi
           done <<< "$changed_files"
