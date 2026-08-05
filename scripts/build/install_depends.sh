@@ -26,12 +26,17 @@ then
 	${PRE_INSTALL_CMD}
 fi
 
-${SUDO} apt-get update -y
-${SUDO} apt-get -y remove libmemcached11 libpq5
-${SUDO} apt-get -y autoremove
+# Keep transient repository/network problems from failing the whole build.
+# These options are deliberately configured here rather than only in the
+# workflows, since this script is also used from Docker builds.
+APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::http::Pipeline-Depth=0"
+
+${SUDO} apt-get ${APT_OPTS} update -y
+${SUDO} apt-get ${APT_OPTS} -y remove libmemcached11 libpq5
+${SUDO} apt-get ${APT_OPTS} -y autoremove
 
 PKGS="$PKGS $(. "$(dirname $0)/apt_requirements_postupdate.sh")"
-${SUDO} env DEBIAN_FRONTEND=noninteractive apt-get -y --allow-downgrades install ${PKGS}
+${SUDO} env DEBIAN_FRONTEND=noninteractive apt-get ${APT_OPTS} -y --allow-downgrades install ${PKGS}
 
 if [ ! -z "${POST_INSTALL_CMD}" ]
 then

@@ -34,8 +34,9 @@ jobs:
     steps:
       - name: Install git
         run: |
-          apt-get update
-          apt-get install -y git lsb-release gnupg2 wget
+          APT_OPTS='-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::http::Pipeline-Depth=0'
+          apt-get ${APT_OPTS} update
+          apt-get ${APT_OPTS} install -y git lsb-release gnupg2 wget
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v5
