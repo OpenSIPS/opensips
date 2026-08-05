@@ -116,7 +116,12 @@ jobs:
           fi
 
           components_json="$(printf '%s\n' "${components[@]}" | jq -R -s 'split("\n") | map(select(length > 0) | {component: .})')"
-          modules_json="$(printf '%s\n' "${modules[@]}" | jq -R -s 'split("\n") | map(select(length > 0) | {component: "modules", module: .})')"
+          modules_json='[]'
+          if [[ ${#modules[@]} -gt 0 ]]; then
+            modules_input="$(printf '%s ' "${modules[@]}")"
+            modules_input="${modules_input% }"
+            modules_json="$(jq -cn --arg modules "$modules_input" '[{component: "modules", module: $modules}]')"
+          fi
           all_modules_json='[]'
           if [[ "$all_modules" == true ]]; then
             all_modules_json='[{"component":"modules","all":true}]'
