@@ -12,8 +12,9 @@ fi
 
 if ! docker -v 2>/dev/null
 then
-  ${SUDO} apt-get update
-  ${SUDO} apt-get install -y docker.io
+  APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::http::Pipeline-Depth=0"
+  ${SUDO} apt-get ${APT_OPTS} update
+  ${SUDO} apt-get ${APT_OPTS} install -y docker.io
 fi
 docker run --rm --privileged tonistiigi/binfmt:latest -install all
 docker run --privileged --rm tonistiigi/binfmt --version
