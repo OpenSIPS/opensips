@@ -116,18 +116,18 @@ jobs:
           echo "has-components=true" >> "$GITHUB_OUTPUT"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-      - name: Show publication matrix
+      - name: Show changed components
         env:
           MATRIX: ${{ steps.components.outputs.matrix }}
         run: |
-          echo 'Publication matrix:'
-          echo "$MATRIX" | jq .
           {
-            echo '### Documentation publication matrix'
+            echo '### Changed documentation components'
             echo
-            echo '```json'
-            echo "$MATRIX" | jq .
-            echo '```'
+            if [[ "$(echo "$MATRIX" | jq '.include | length')" -eq 0 ]]; then
+              echo '- None'
+            else
+              echo "$MATRIX" | jq -r '.include[] | if .module then "- \(.component): \(.module)" else "- \(.component)" end'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
   dispatch:
