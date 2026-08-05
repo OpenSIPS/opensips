@@ -139,7 +139,7 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 		return NULL;
 	} else {
 		cur_total = hg_cell_total_size(cls);
-		need_total = ((size + ROUNDTO - 1) / ROUNDTO) * ROUNDTO + HG_CELL_HDR;
+		need_total = ((size + HG_ROUNDTO - 1) / HG_ROUNDTO) * HG_ROUNDTO + HG_CELL_HDR;
 		if (need_total <= cur_total)
 			return p;
 	}

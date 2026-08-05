@@ -118,9 +118,9 @@ static unsigned long hg_hps(void)
  * all go through this one macro rather than repeating the expression. */
 #define HG_HPS_ROUND(s) (((s) + HG_HPS - 1) & ~(HG_HPS - 1))
 
-/* ROUNDTO=2^k so the following works (same trick as f_malloc.c) */
-#define ROUNDTO_MASK   (~((unsigned long)ROUNDTO-1))
-#define ROUNDUP_TO(s)  (((s)+(ROUNDTO-1))&ROUNDTO_MASK)
+/* HG_ROUNDTO=2^k so the following works (same trick as f_malloc.c) */
+#define ROUNDTO_MASK   (~((unsigned long)HG_ROUNDTO-1))
+#define ROUNDUP_TO(s)  (((s)+(HG_ROUNDTO-1))&ROUNDTO_MASK)
 
 /*
  * Tier ladder + verification, ported near-verbatim from cachedb_perf's
@@ -494,14 +494,14 @@ static void hg_dbg_dump_cb(void *payload, void *ctx)
 	 * is gated on DBG_MALLOC alone, so it must not depend on
 	 * SHM_EXTRA_STATS also being on.
 	 */
-	file = *(const char **)(tag + ROUNDTO);
+	file = *(const char **)(tag + HG_ROUNDTO);
 	if (!file)
 		return;   /* stamped before any hg_malloc_dbg() call ever ran
 		           * on this cell (e.g. still on its very first carve
 		           * without having been freed+realloc'd) - matches
 		           * fm_status_dbg's own "if (f->file)" guard */
-	func = *(const char **)(tag + ROUNDTO * 2);
-	line = *(unsigned long *)(tag + ROUNDTO * 3);
+	func = *(const char **)(tag + HG_ROUNDTO * 2);
+	line = *(unsigned long *)(tag + HG_ROUNDTO * 3);
 
 	if (dbg_ht_update(*c->allocd, file, func, line, hg_frag_size(payload)) < 0)
 		LM_ERR("unable to update the %s allocation summary\n", "HG_MALLOC");

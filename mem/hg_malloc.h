@@ -32,12 +32,12 @@
  * cross-compiler. */
 #include "../globals.h"
 
-#undef ROUNDTO
+#undef HG_ROUNDTO
 
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
-	#define ROUNDTO		sizeof(long long)
+	#define HG_ROUNDTO		sizeof(long long)
 #else
-	#define ROUNDTO		sizeof(void *)
+	#define HG_ROUNDTO		sizeof(void *)
 #endif
 
 #define HG_NCLASSES  21
@@ -68,26 +68,26 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
  *
  *   offset 0                          : class id (immutable, stamped at
  *                                        chunk-carve time)
- *   offset ROUNDTO           (DBG)    : file
- *   offset ROUNDTO*2         (DBG)    : func
- *   offset ROUNDTO*3         (DBG)    : line
- *   offset ROUNDTO+HG_CELL_HDR_DBG
+ *   offset HG_ROUNDTO           (DBG)    : file
+ *   offset HG_ROUNDTO*2         (DBG)    : func
+ *   offset HG_ROUNDTO*3         (DBG)    : line
+ *   offset HG_ROUNDTO+HG_CELL_HDR_DBG
  *          (SHM_EXTRA_STATS)          : statistic_index (mem-group index)
  *   offset HG_CELL_HDR                : payload starts here; while a cell
- *                                        is FREE, the first ROUNDTO*2 bytes
+ *                                        is FREE, the first HG_ROUNDTO*2 bytes
  *                                        of payload double as the free-list
  *                                        link (cell_next()/cell_set_next()
  *                                        in hg_arena.c) - safe, since
  *                                        nobody reads payload of a free cell.
  */
 #ifdef DBG_MALLOC
-#define HG_CELL_HDR_DBG (ROUNDTO * 3)  /* file ptr + func ptr + line */
+#define HG_CELL_HDR_DBG (HG_ROUNDTO * 3)  /* file ptr + func ptr + line */
 #else
 #define HG_CELL_HDR_DBG 0
 #endif
 
 #ifdef SHM_EXTRA_STATS
-#define HG_CELL_HDR_STATS (ROUNDTO)    /* statistic_index */
+#define HG_CELL_HDR_STATS (HG_ROUNDTO)    /* statistic_index */
 #else
 #define HG_CELL_HDR_STATS 0
 #endif
@@ -95,7 +95,7 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
 /*
  * Payloads must be aligned for the widest scalar a caller may store in
  * them; 8 covers uint64_t/double everywhere we build. This is NOT implied
- * by ROUNDTO: on 32-bit ARM ROUNDTO is 4, so the raw header below would be
+ * by HG_ROUNDTO: on 32-bit ARM HG_ROUNDTO is 4, so the raw header below would be
  * 4 bytes in a plain build, and since cells always start 32-byte aligned
  * EVERY payload would land at 4 mod 8 - misaligned for any 64-bit field,
  * and an outright fault for the LDREXD/STREXD that gen_lock_t and the
@@ -106,13 +106,13 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
  * stays exactly where it was and only the header's total size grows.
  */
 #define HG_PAYLOAD_ALIGN 8
-#define HG_CELL_HDR_RAW  (ROUNDTO + HG_CELL_HDR_DBG + HG_CELL_HDR_STATS)
+#define HG_CELL_HDR_RAW  (HG_ROUNDTO + HG_CELL_HDR_DBG + HG_CELL_HDR_STATS)
 #define HG_CELL_HDR \
 	(((HG_CELL_HDR_RAW + HG_PAYLOAD_ALIGN - 1) / HG_PAYLOAD_ALIGN) \
 	 * HG_PAYLOAD_ALIGN)
 
 /* offset of the statistic_index field, valid only when SHM_EXTRA_STATS */
-#define HG_CELL_STATS_OFF (ROUNDTO + HG_CELL_HDR_DBG)
+#define HG_CELL_STATS_OFF (HG_ROUNDTO + HG_CELL_HDR_DBG)
 
 #define HG_HDR(p)   ((char *)(p) - HG_CELL_HDR)
 #define HG_CLASS(p) (*(unsigned char *)HG_HDR(p))
@@ -138,7 +138,7 @@ struct hg_lfrag;         /* opaque here, defined in hg_large.h */
  * sizeof() on it) to locate a large frag's header from a payload pointer.
  * hg_large.c static_asserts this matches the real struct, so any future
  * field change there fails the build here instead of drifting silently. */
-#define HG_LFRAG_HDR_SIZE (4 * ROUNDTO)
+#define HG_LFRAG_HDR_SIZE (4 * HG_ROUNDTO)
 
 struct hg_chunk {
 	struct hg_chunk *next;    /* global registry, append-only */
@@ -236,8 +236,8 @@ struct hg_block {
 	enum hg_mem_tier      tier;
 	unsigned long         locked_mb;
 
-	unsigned char size2class[(HG_CELL_MAX / ROUNDTO) + 1];
-} __attribute__ ((aligned (ROUNDTO)));
+	unsigned char size2class[(HG_CELL_MAX / HG_ROUNDTO) + 1];
+} __attribute__ ((aligned (HG_ROUNDTO)));
 
 /*
  * Reserves its own huge-page-backed (or gracefully degraded) region of
@@ -334,15 +334,15 @@ void hg_stats_set_index(void *ptr, unsigned long idx);
 #ifdef DBG_MALLOC
 static inline const char *hg_frag_file(void *p)
 {
-	return *(const char **)(HG_HDR(p) + ROUNDTO);
+	return *(const char **)(HG_HDR(p) + HG_ROUNDTO);
 }
 static inline const char *hg_frag_func(void *p)
 {
-	return *(const char **)(HG_HDR(p) + ROUNDTO * 2);
+	return *(const char **)(HG_HDR(p) + HG_ROUNDTO * 2);
 }
 static inline unsigned long hg_frag_line(void *p)
 {
-	return *(unsigned long *)(HG_HDR(p) + ROUNDTO * 3);
+	return *(unsigned long *)(HG_HDR(p) + HG_ROUNDTO * 3);
 }
 #else
 static inline const char *hg_frag_file(void *p) { return NULL; }

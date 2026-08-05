@@ -31,7 +31,7 @@
 #include "../dprint.h"
 #include "../globals.h"
 
-/* ~x1.5 ladder, all multiples of 32 so cells stay ROUNDTO-aligned; ported
+/* ~x1.5 ladder, all multiples of 32 so cells stay HG_ROUNDTO-aligned; ported
  * unchanged from cachedb_perf's pcache_arena.c cell_sizes[] - these are
  * TOTAL slot sizes (header + payload), same convention as there */
 static const unsigned int cell_sizes[HG_NCLASSES] = {
@@ -227,8 +227,8 @@ int hg_arena_init(struct hg_block *hb, unsigned long hdr_size)
 		hb->chunk_max = HG_CHUNK_MIN;
 
 	/* size -> class LUT: needed = requested payload + hidden header */
-	for (idx = 0; idx <= HG_CELL_MAX / ROUNDTO; idx++) {
-		needed = idx * ROUNDTO + HG_CELL_HDR;
+	for (idx = 0; idx <= HG_CELL_MAX / HG_ROUNDTO; idx++) {
+		needed = idx * HG_ROUNDTO + HG_CELL_HDR;
 		for (c = 0; c < HG_NCLASSES; c++)
 			if (cell_sizes[c] >= needed)
 				break;
@@ -336,7 +336,7 @@ void *hg_cell_alloc(struct hg_block *hb, unsigned long size)
 		return hg_large_alloc(hb, size);
 #endif
 	}
-	c = hb->size2class[(size + ROUNDTO - 1) / ROUNDTO];
+	c = hb->size2class[(size + HG_ROUNDTO - 1) / HG_ROUNDTO];
 	if (c >= HG_NCLASSES)
 		return NULL;
 
@@ -388,9 +388,9 @@ found:
 	payload = cell_start + HG_CELL_HDR;
 #ifdef DBG_MALLOC
 	{
-		const char **hfile = (const char **)(cell_start + ROUNDTO);
-		const char **hfunc = (const char **)(cell_start + ROUNDTO * 2);
-		unsigned long *hline = (unsigned long *)(cell_start + ROUNDTO * 3);
+		const char **hfile = (const char **)(cell_start + HG_ROUNDTO);
+		const char **hfunc = (const char **)(cell_start + HG_ROUNDTO * 2);
+		unsigned long *hline = (unsigned long *)(cell_start + HG_ROUNDTO * 3);
 		*hfile = file;
 		*hfunc = func;
 		*hline = line;

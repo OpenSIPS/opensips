@@ -27,7 +27,7 @@
 #include "hg_arena.h"
 #include "../dprint.h"
 
-#define HG_LARGE_MIN_FRAG    ROUNDTO
+#define HG_LARGE_MIN_FRAG    HG_ROUNDTO
 #define HG_LARGE_DEFAULT_CHUNK (1UL << 20)  /* 1 MB - amortizes future churn */
 
 struct hg_large_chunk {
@@ -75,7 +75,7 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 	struct hg_large_chunk *ch;
 	char *base, *tag;
 
-	/* round to HG_PAYLOAD_ALIGN, not ROUNDTO: a frag's size is what
+	/* round to HG_PAYLOAD_ALIGN, not HG_ROUNDTO: a frag's size is what
 	 * places the NEXT frag (HG_LFRAG_NEXT), so rounding to 4 on 32-bit
 	 * ARM would walk every subsequent frag - and its payload - off the
 	 * 8-byte boundary the first one started on */
@@ -178,9 +178,9 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 	*(unsigned char *)tag = HG_LARGE_MARKER;
 #ifdef DBG_MALLOC
 	{
-		const char **hfile = (const char **)(tag + ROUNDTO);
-		const char **hfunc = (const char **)(tag + ROUNDTO * 2);
-		unsigned long *hline = (unsigned long *)(tag + ROUNDTO * 3);
+		const char **hfile = (const char **)(tag + HG_ROUNDTO);
+		const char **hfunc = (const char **)(tag + HG_ROUNDTO * 2);
+		unsigned long *hline = (unsigned long *)(tag + HG_ROUNDTO * 3);
 		*hfile = file;
 		*hfunc = func;
 		*hline = line;
