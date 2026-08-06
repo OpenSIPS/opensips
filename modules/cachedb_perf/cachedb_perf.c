@@ -311,6 +311,16 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	 * running system on the trend between two polls, not on one reading. */
 	if (!reads)
 		note = "no lookups yet";
+	else if (!t.stores)
+		/* Every read has been a miss, but nothing has ever been stored
+		 * either - there is no state to have been "lost" or "expired",
+		 * this collection has simply never been written to (e.g. it
+		 * loaded 0 entries from persistence at startup). A low rate
+		 * here points at nothing reaching this collection at all, not
+		 * at eviction/TTL tuning. */
+		note = "no state has ever been stored in this collection - a miss "
+		       "here is not loss or expiry, check whether writes reach "
+		       "this collection and whether persistence loaded any rows";
 	else if (rate >= 80.0)
 		note = "healthy: the large majority of lookups hit";
 	else if (rate >= 40.0)
