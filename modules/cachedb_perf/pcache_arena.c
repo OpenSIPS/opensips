@@ -345,9 +345,18 @@ void pcache_arena_child_init(void)
 	 * The leftover cells belong to the parent.  The child simply discards
 	 * its inherited copy and starts empty, carving its own chunk on first
 	 * use.  The parent keeps its own small hoard.
+	 *
+	 * This function's own comment above already said "discards" - but the
+	 * code called pkg_free(pl) anyway.  pl is COW-shared with the parent
+	 * (every sibling child inherited the identical pointer), so freeing it
+	 * is a WRITE into that shared page (the allocator links a freed cell
+	 * into a free list).  Under a hugepage-backed pkg arena that write-
+	 * triggered COW fault can SIGBUS instead of transparently duplicating
+	 * the page, reproducibly, on every single child fork.  Fix: just drop
+	 * the reference, exactly as documented - no free, no donation,
+	 * nothing.  pl's memory is reclaimed for free when the child exits.
 	 */
 	my_palloc = NULL;
-	pkg_free(pl);
 }
 
 void *pcache_cell_alloc(unsigned int size)
