@@ -173,6 +173,8 @@ struct hostent* sip_resolvehost(str* name, unsigned short* port,
 
 struct hostent* resolvehost(char* name, int no_ip_test);
 
+struct hostent* resolvehost_af(char* name, int no_ip_test, int af);
+
 struct hostent* rev_resolvehost(struct ip_addr *ip);
 
 /*! \brief free the DNS resolver state machine */

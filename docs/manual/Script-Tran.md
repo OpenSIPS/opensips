@@ -804,6 +804,24 @@ Example:
 
 ```
 
+### {ip.resolve4}
+Returns the resolved IPv4 address corresponding to the string domain provided. Transformation has no effect if a string IP is provided.
+Example:
+```opensips
+
+"opensips.org" {ip.resolve4} = "78.46.64.50"
+
+```
+
+### {ip.resolve6}
+Returns the resolved IPv6 address corresponding to the string domain provided. Transformation has no effect if a string IP is provided.
+Example:
+```opensips
+
+"opensips.org" {ip.resolve6} = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+
+```
+
 ### {ip.matches}
 Checks if the input IP address matches a net mask given as IP/masklen (short format). It returns 1 if matches, 0 if not. NULL is returned on error (invalid input, invalid parameter, AF mismatch). Variables are supported for the parameter.
 Example:
