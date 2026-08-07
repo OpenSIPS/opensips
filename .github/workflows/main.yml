@@ -27,7 +27,7 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/ubuntu-ci:${{ matrix.os }}
+      image: ghcr.io/opensips/ubuntu-ci:${{ matrix.os }}
     env:
       COMPILER: ${{ matrix.compiler }}
       BUILD_OS: ubuntu:${{ matrix.os }}
