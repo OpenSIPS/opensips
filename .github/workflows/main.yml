@@ -80,6 +80,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install dependencies
+        run: sh -x scripts/build/install_depends.sh
+
       - name: Build
         run: sh -x scripts/build/do_build.sh
 
