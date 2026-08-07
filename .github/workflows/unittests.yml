@@ -100,9 +100,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install dependencies
-        run: sh -x scripts/build/install_depends.sh
-
       - name: Cache the compiler cache
         uses: actions/cache@v5
         if: endsWith(matrix.compiler, '-qemu-cross')
@@ -115,6 +112,9 @@ jobs:
       - name: Start Docker container
         if: endsWith(matrix.compiler, '-cross')
         run: sh -x scripts/build/start_container.sh
+
+      - name: Install dependencies
+        run: sh -x scripts/build/install_depends.sh
 
       - name: Get libtap
         run: git clone https://github.com/zorgnax/libtap.git lib/libtap
