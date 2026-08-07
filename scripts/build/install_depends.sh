@@ -28,6 +28,13 @@ then
 	PKGS="$(exclude_pkgs libfreediameter-dev)"
 fi
 
+# OpenTelemetry is built on Ubuntu 26.04, where its development package is
+# available.  Keep it out of older releases where the package is unavailable.
+if [ "${BUILD_OS}" = "ubuntu:26.04" ]
+then
+	PKGS="${PKGS} opentelemetry-cpp-dev"
+fi
+
 # CI images contain all compiler variants for their Ubuntu release.  Keep the
 # normal compiler selection above for regular builds, while allowing the
 # image builder to add its complete compiler package set through the existing
