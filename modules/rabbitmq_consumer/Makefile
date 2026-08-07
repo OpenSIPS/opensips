@@ -19,6 +19,11 @@ ifeq ($(RABBITMQ_BUILDER),)
 else
 	DEFS += $(shell $(RABBITMQ_BUILDER) --cflags)
 	LIBS += $(shell $(RABBITMQ_BUILDER) --libs)
+	RABBITMQ_VERSION := $(shell $(RABBITMQ_BUILDER) --modversion)
+	RABBITMQ_HEADER_VERSION := $(shell printf '%s\n' '0.12.0' '$(RABBITMQ_VERSION)' | sort -V | head -n1)
+	ifeq ($(RABBITMQ_HEADER_VERSION),0.12.0)
+		DEFS += -DRABBITMQ_MODERN_HDRS
+	endif
 endif
 
 # make sure travis does not fail this module for older RabbitMQ versions
@@ -37,4 +42,3 @@ DEFS += -Wno-error
 endif
 
 include ../../Makefile.modules
-
