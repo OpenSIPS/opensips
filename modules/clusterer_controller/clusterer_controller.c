@@ -2324,7 +2324,24 @@ static int cl_ctr_setup_socket(cl_ctr_cluster_t *cl)
 
     memset(&mreq, 0, sizeof(mreq));
     mreq.imr_multiaddr.s_addr = inet_addr(cl->multicast_address);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    /* Bind the join to our OWN resolved interface (my_ip, set by
+     * cl_ctr_resolve_local_identity() before this runs), not
+     * INADDR_ANY. INADDR_ANY leaves the actual interface choice to
+     * the kernel's default-route selection, which is NOT necessarily
+     * the interface this cluster was configured for - on a host whose
+     * default route goes out a different (e.g. external-facing)
+     * interface than the one named by the "interface" modparam, the
+     * join silently lands on the wrong interface: setsockopt still
+     * succeeds (no error logged), but peers on the intended interface
+     * never see it, so every node times out waiting for a master that
+     * was never reachable and self-elects instead. Found live: two
+     * production nodes each joined on their external interface
+     * (matching their default route) instead of the internal one the
+     * cluster was actually meant to run on, and neither ever saw the
+     * other. The send side already pins to my_ip a few lines below
+     * (local_if.s_addr = inet_addr(my_ip)) - this makes the join side
+     * consistent with it. */
+    mreq.imr_interface.s_addr = inet_addr(my_ip);
 
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                    &mreq, sizeof(mreq)) < 0) {
