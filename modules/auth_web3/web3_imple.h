@@ -71,7 +71,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
  * @return Number of bytes processed
  */
 size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
-                          struct Web3ResponseData *data);
+                          void *data);
 
 // ENS validation functions
 int web3_ens_validate(const char *username, dig_cred_t *cred, str *method);
