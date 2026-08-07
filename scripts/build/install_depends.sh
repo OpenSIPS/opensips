@@ -31,8 +31,43 @@ fi
 # workflows, since this script is also used from Docker builds.
 APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::http::Pipeline-Depth=0"
 
-${SUDO} apt-get ${APT_OPTS} update -y
-${SUDO} apt-get ${APT_OPTS} -y remove libmemcached11 libpq5
+# APT can return success after updating only some repositories.  That leaves
+# an incomplete package index and causes packages which do exist to be
+# reported as unavailable.  Error-Mode=any makes the update transactional
+# from the build's point of view; retry the complete update, not just failed
+# individual downloads.
+APT_UPDATE_OPTS="${APT_OPTS} -o APT::Update::Error-Mode=any"
+
+apt_update()
+{
+	i=1
+	while [ "$i" -le 3 ]
+	do
+		if ${SUDO} apt-get ${APT_UPDATE_OPTS} update
+		then
+			return 0
+		fi
+		echo "APT update attempt ${i}/3 failed; retrying" >&2
+		i=$((i + 1))
+		sleep 5
+	done
+	return 1
+}
+
+apt_update
+
+REMOVE_PKGS=""
+for pkg in libmemcached11 libpq5
+do
+	if dpkg-query -W -f='${db:Status-Abbrev}' "${pkg}" 2>/dev/null | grep -q '^ii '
+	then
+		REMOVE_PKGS="${REMOVE_PKGS} ${pkg}"
+	fi
+done
+if [ -n "${REMOVE_PKGS}" ]
+then
+		${SUDO} apt-get ${APT_OPTS} -y remove ${REMOVE_PKGS}
+fi
 ${SUDO} apt-get ${APT_OPTS} -y autoremove
 
 PKGS="$PKGS $(. "$(dirname $0)/apt_requirements_postupdate.sh")"
