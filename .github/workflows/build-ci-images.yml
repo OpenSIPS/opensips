@@ -61,7 +61,7 @@ jobs:
             UBUNTU_VERSION=${{ matrix.os }}
             COMPILER_PACKAGES=${{ matrix.compiler_packages }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/ubuntu-ci:${{ matrix.os }}
+            ghcr.io/opensips/ubuntu-ci:${{ matrix.os }}
           push: true
           cache-from: type=gha,scope=ubuntu-ci-${{ matrix.os }}
           cache-to: type=gha,mode=max,scope=ubuntu-ci-${{ matrix.os }}
