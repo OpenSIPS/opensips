@@ -19,6 +19,7 @@
  */
 
 #include <freeDiameter/extension.h>
+#include <stdint.h>
 
 #include "../../sr_module.h"
 #include "../../lib/list.h"
@@ -425,7 +426,8 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
 		reverse_hex2int64(res.rs.s, res.rs.len, 1, &fd_req);
 	}
 
-	dmsg = _dm_create_message(NULL, AAA_CUSTOM_RPL, appid, cmdcode, (void *)fd_req);
+	dmsg = _dm_create_message(NULL, AAA_CUSTOM_RPL, appid, cmdcode,
+		(void *)(uintptr_t)fd_req);
 	if (!dmsg) {
 		LM_ERR("oom\n");
 		goto error;
