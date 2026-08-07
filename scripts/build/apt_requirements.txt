@@ -1,9 +1,12 @@
 bison
+cmake
 flex
 libconfuse-dev
 libcurl4-openssl-dev
 libdb-dev
+libevent-dev
 libexpat1-dev
+libfreediameter-dev
 libgeoip-dev
 libhiredis-dev
 libjson-c-dev
