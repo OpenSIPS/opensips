@@ -43,7 +43,10 @@ jobs:
               clang-19 llvm-19-dev
           - os: '26.04'
             compiler_packages: >-
-              gcc g++ clang llvm-dev
+              gcc g++ clang gcc-14 g++-14
+              clang-18 llvm-18-dev
+              clang-19 llvm-19-dev
+              clang-20 llvm-20-dev
     steps:
       - uses: actions/checkout@v5
 
