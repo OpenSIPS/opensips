@@ -104,7 +104,8 @@ static int hex_to_bytes(const char *hex_str, unsigned char *bytes, int max_bytes
  * Curl callback function for Web3 RPC responses
  */
 size_t web3_curl_callback(void *contents, size_t size, size_t nmemb,
-                          struct Web3ResponseData *data) {
+                          void *userdata) {
+  struct Web3ResponseData *data = userdata;
   size_t realsize = size * nmemb;
   char *ptr = pkg_realloc(data->memory, data->size + realsize + 1);
   if (!ptr)
