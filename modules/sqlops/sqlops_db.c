@@ -713,7 +713,7 @@ int sql_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	db_op_t *ops;
 	db_val_t *vals;
 	int nk, nc;
-	str *id;
+	str *id = NULL;
 	db_ps_t *my_ps;
 
 	/* convert JSON to COLs */
