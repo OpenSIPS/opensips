@@ -27,12 +27,22 @@
 #ifndef _EV_RMQ_H_
 #define _EV_RMQ_H_
 
+#ifdef RABBITMQ_MODERN_HDRS
+#include <rabbitmq-c/amqp.h>
+#include <rabbitmq-c/framing.h>
+#else
 #include <amqp.h>
 #include <amqp_framing.h>
+#endif
 #if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
   #define AMQP_VERSION_v04
+#ifdef RABBITMQ_MODERN_HDRS
+#include <rabbitmq-c/tcp_socket.h>
+#include <rabbitmq-c/ssl_socket.h>
+#else
 #include <amqp_tcp_socket.h>
 #include <amqp_ssl_socket.h>
+#endif
 #endif
 
 #include "../tls_mgm/api.h"
@@ -84,4 +94,3 @@ int amqp_check_status(rmq_connection_t *conn, int r, int* retry, str cid);
 
 #endif
 #endif
-

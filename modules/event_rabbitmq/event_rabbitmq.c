@@ -241,7 +241,9 @@ static int mod_init(void)
 		}
 		#endif
 
+		#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 		amqp_set_initialize_ssl_library(0);
+		#endif
 	}
 
 	return 0;
