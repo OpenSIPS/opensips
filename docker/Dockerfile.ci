@@ -9,12 +9,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 COPY scripts/build /tmp/opensips-build
 
 RUN set -eux; \
-    if [ "${UBUNTU_VERSION}" = "20.04" ]; then \
-      sed -i \
-        -e 's|archive.ubuntu.com/ubuntu|old-releases.ubuntu.com/ubuntu|g' \
-        -e 's|security.ubuntu.com/ubuntu|old-releases.ubuntu.com/ubuntu|g' \
-        /etc/apt/sources.list; \
-    fi; \
     COMPILER=gcc \
       BUILD_OS="ubuntu:${UBUNTU_VERSION}" \
       CI_COMPILER_PACKAGES="${COMPILER_PACKAGES} ca-certificates ccache docker.io git gnupg2 lsb-release wget" \

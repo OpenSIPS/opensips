@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [20.04, 22.04, 24.04]
+        os: [20.04, 22.04, 24.04, 26.04]
         compiler: ['gcc', 'clang']
         include:
           - os: 20.04
