@@ -23,12 +23,12 @@ jobs:
         include:
           - os: '20.04'
             compiler_packages: >-
-              gcc g++ clang gcc-9 g++-9 gcc-10 g++-10
+              gcc g++ clang llvm-dev gcc-9 g++-9 gcc-10 g++-10
               clang-9 llvm-9-dev
               clang-10 llvm-10-dev
           - os: '22.04'
             compiler_packages: >-
-              gcc g++ clang gcc-11 g++-11 gcc-12 g++-12
+              gcc g++ clang llvm-dev gcc-11 g++-11 gcc-12 g++-12
               clang-11 llvm-11-dev
               clang-12 llvm-12-dev
               clang-13 llvm-13-dev
@@ -36,14 +36,14 @@ jobs:
               clang-15 llvm-15-dev
           - os: '24.04'
             compiler_packages: >-
-              gcc g++ clang gcc-13 g++-13 gcc-14 g++-14
+              gcc g++ clang llvm-dev gcc-13 g++-13 gcc-14 g++-14
               clang-16 llvm-16-dev
               clang-17 llvm-17-dev
               clang-18 llvm-18-dev
               clang-19 llvm-19-dev
           - os: '26.04'
             compiler_packages: >-
-              gcc g++ clang gcc-14 g++-14
+              gcc g++ clang llvm-dev gcc-14 g++-14
               clang-18 llvm-18-dev
               clang-19 llvm-19-dev
               clang-20 llvm-20-dev
