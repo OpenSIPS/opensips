@@ -1,0 +1,67 @@
+name: Build CI images
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-ci-images.yml'
+      - 'docker/Dockerfile.ci'
+      - 'scripts/build/apt_requirements.txt'
+
+jobs:
+  build:
+    name: Ubuntu ${{ matrix.os }} CI image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: '20.04'
+            compiler_packages: >-
+              gcc g++ clang gcc-9 g++-9 gcc-10 g++-10
+              clang-9 llvm-9-dev libc++-9-dev libc++abi-9-dev
+              clang-10 llvm-10-dev libc++-10-dev libc++abi-10-dev
+          - os: '22.04'
+            compiler_packages: >-
+              gcc g++ clang gcc-11 g++-11 gcc-12 g++-12
+              clang-11 llvm-11-dev libc++-11-dev libc++abi-11-dev
+              clang-12 llvm-12-dev libc++-12-dev libc++abi-12-dev
+              clang-13 llvm-13-dev libc++-13-dev libc++abi-13-dev
+              clang-14 llvm-14-dev libc++-14-dev libc++abi-14-dev
+              clang-15 llvm-15-dev libc++-15-dev libc++abi-15-dev
+          - os: '24.04'
+            compiler_packages: >-
+              gcc g++ clang gcc-13 g++-13 gcc-14 g++-14
+              clang-16 llvm-16-dev libc++-16-dev libc++abi-16-dev
+              clang-17 llvm-17-dev libc++-17-dev libc++abi-17-dev
+              clang-18 llvm-18-dev libc++-18-dev libc++abi-18-dev
+              clang-19 llvm-19-dev libc++-19-dev libc++abi-19-dev
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build and publish
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.ci
+          build-args: |
+            UBUNTU_VERSION=${{ matrix.os }}
+            COMPILER_PACKAGES=${{ matrix.compiler_packages }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/ubuntu-ci:${{ matrix.os }}
+          push: true
+          cache-from: type=gha,scope=ubuntu-ci-${{ matrix.os }}
+          cache-to: type=gha,mode=max,scope=ubuntu-ci-${{ matrix.os }}

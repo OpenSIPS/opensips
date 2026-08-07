@@ -8,6 +8,10 @@ then
   RELEASE="jammy"
 fi
 URL="https://archive.ubuntu.com/ubuntu"
+if [ "${RELEASE}" = "focal" ]
+then
+  URL="https://old-releases.ubuntu.com/ubuntu"
+fi
 
 echo "deb $URL $RELEASE main universe
 deb $URL $RELEASE-updates main universe

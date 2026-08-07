@@ -21,6 +21,15 @@ do
 done
 PKGS="${_PKGS}"
 
+# CI images contain all compiler variants for their Ubuntu release.  Keep the
+# normal compiler selection above for regular builds, while allowing the
+# image builder to add its complete compiler package set through the existing
+# dependency installation path.
+if [ -n "${CI_COMPILER_PACKAGES}" ]
+then
+	PKGS="${PKGS} ${CI_COMPILER_PACKAGES}"
+fi
+
 if [ ! -z "${PRE_INSTALL_CMD}" ]
 then
 	${PRE_INSTALL_CMD}
