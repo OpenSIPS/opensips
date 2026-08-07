@@ -1,4 +1,5 @@
 bison
+ccache
 cmake
 flex
 libconfuse-dev
