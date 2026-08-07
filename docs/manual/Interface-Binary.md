@@ -9,7 +9,7 @@ The **Binary Internal Interface** is an OpenSIPS core interface which offers an 
 
 ## Configuring the Binary Internal Interface listeners
 
-In order to listen for incoming Binary Packets, a **bin:** interface must be specified.  Its number of listener processes can be tuned with *[tcp_workers](https://docs.opensips.org/manual/devel/script-coreparameters#tcp_workers)* core parameter.
+In order to listen for incoming Binary Packets, a **bin:** interface must be specified.  Its number of listener processes can be tuned with *[tcp_workers](./Script-CoreParameters.md#tcp_workers)* core parameter.
 
 ```opensips
 
@@ -30,7 +30,7 @@ Examples of cluster-enabled modules which use the binary interface are **dialog*
 
 ```
 
-More details can be found in the [dialog](../../modules/dialog/README.md#dialog_clustering) and [usrloc](../../modules/usrloc/README.md#distributed_sip_user_location) documentation pages.
+More details can be found in the [dialog](../../modules/dialog/README.md#dialog-clustering) and [usrloc](../../modules/usrloc/README.md#distributed-sip-user-location) documentation pages.
 
 ---
 
@@ -42,7 +42,7 @@ In order to **send packets**, the interface provides the following primitives:
 * *int bin_init(str *mod_name, int packet_type)* - begins the construction of a new Binary Packet
 * *int bin_push_str(const str *info)* - add a string to the Binary Packet that is currently being built
 * *int bin_push_int(int info)* - add an integer to the Binary Packet that is currently being built
-* *int bin_send(union sockaddr_union *de*[tcp_workers](https://docs.opensips.org/manual/devel/script-coreparameters#tcp_workers) *core parameter.st)* - sends the Binary Packet to a given destination over UDP
+* *int bin_send(union sockaddr_union *dest)* - sends the Binary Packet to a given destination over UDP
 
   
 
