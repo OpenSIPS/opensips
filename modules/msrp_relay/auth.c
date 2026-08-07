@@ -262,7 +262,7 @@ static int authorize(struct msrp_msg *req, str *realm, unsigned int *expires,
 	struct nonce_params np;
 	HASHHEX ha1;
 	const struct digest_auth_calc *digest_calc;
-	str _;
+	str _ = {NULL, 0};
 	const str method = str_init(AUTH_STR);
 	struct msrp_url *to;
 	str tmp;
