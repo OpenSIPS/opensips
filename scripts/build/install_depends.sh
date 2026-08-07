@@ -21,6 +21,13 @@ do
 done
 PKGS="${_PKGS}"
 
+# freeDiameter is not available in Ubuntu 18.04.  The corresponding module is
+# excluded from the build for that release as well.
+if [ "${BUILD_OS}" = "ubuntu:18.04" ]
+then
+	PKGS="$(exclude_pkgs libfreediameter-dev)"
+fi
+
 # CI images contain all compiler variants for their Ubuntu release.  Keep the
 # normal compiler selection above for regular builds, while allowing the
 # image builder to add its complete compiler package set through the existing

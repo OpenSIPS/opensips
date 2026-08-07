@@ -12,6 +12,10 @@ if [ "${BUILD_OS}" != "ubuntu:26.04" ]
 then
   EXCLUDE_MODULES="${EXCLUDE_MODULES} opentelemetry"
 fi
+if [ "${BUILD_OS}" = "ubuntu:18.04" ]
+then
+  EXCLUDE_MODULES="${EXCLUDE_MODULES} aaa_diameter"
+fi
 if [ ! -z "${EXCLUDE_MODULES_ADD}" ]
 then
   EXCLUDE_MODULES="${EXCLUDE_MODULES} ${EXCLUDE_MODULES_ADD}"
