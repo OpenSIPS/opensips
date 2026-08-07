@@ -35,6 +35,9 @@ lib/nghttp2/configure:
 lib/nghttp2/Makefile: lib/nghttp2/configure
 	$(Q)cd ./lib/nghttp2 && \
 		CFLAGS=-fPIC \
+		LDFLAGS= \
+		LIBS= \
+		INSTALL=$(shell command -v install) \
 		./configure \
 			--enable-lib-only \
 			--enable-shared=$(HTTP2D_USE_SHARED) \
@@ -45,6 +48,8 @@ lib/nghttp2/Makefile: lib/nghttp2/configure
 
 lib/lib/libnghttp2.a: lib/nghttp2/Makefile
 	$(Q)$(MAKE) -C ./lib/nghttp2 install
+
+lib/include/nghttp2/nghttp2.h lib/include/nghttp2/nghttp2ver.h: lib/lib/libnghttp2.a
 
 clean:	http2d-wolfssl-lib
 
