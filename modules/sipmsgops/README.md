@@ -555,7 +555,7 @@ The function returns *true* if the SIP message has any body part with the given 
 
 > [!NOTE]
 > If the `mime` is not recognized/known by OpenSIPS, the function will always return true. So take care here !!
-> As an alternative you can use the [`$cT`](/manual/devel/script-corevar/#cT) variable, which allows a pure string matching for the mime - so it works for **any** mime.
+> As an alternative you can use the [`$cT`](../../docs/manual/Script-CoreVar.md#content-type---ct) variable, which allows a pure string matching for the mime - so it works for **any** mime.
 
 This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
