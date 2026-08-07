@@ -27,7 +27,7 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:${{ matrix.os }}
+      image: ghcr.io/${{ github.repository_owner }}/ubuntu-ci:${{ matrix.os }}
       options: >-
         -v sources:/__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
     env:
@@ -71,12 +71,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Install git
-        run: |
-          APT_OPTS='-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::http::Pipeline-Depth=0'
-          apt-get ${APT_OPTS} update
-          apt-get ${APT_OPTS} install -y git lsb-release gnupg2 wget
-
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v5
         with:
@@ -94,11 +88,6 @@ jobs:
       - name: Start Docker container
         if: endsWith(matrix.compiler, '-cross')
         run: sh -x scripts/build/start_container.sh
-
-      - name: Install dependencies
-        run: |
-          sh -x scripts/build/reset_sources.sh
-          sh -x scripts/build/install_depends.sh
 
       - name: Get libtap
         run: git clone https://github.com/zorgnax/libtap.git lib/libtap
