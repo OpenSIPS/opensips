@@ -40,7 +40,11 @@
 
 #include "../tls_openssl/openssl_api.h"
 #include "../tls_mgm/api.h"
+#ifdef RABBITMQ_MODERN_HDRS
+#include <rabbitmq-c/amqp.h>
+#else
 #include <amqp.h>
+#endif
 #include "../../lib/list.h"
 
 #if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
@@ -54,8 +58,13 @@ extern gen_lock_t *ssl_lock;
  * as old and inneficient */
 #if defined AMQP_VERSION && AMQP_VERSION >= AMQP_VERSION_CODE(0, 4, 0, 0)
   #define AMQP_VERSION_v04
+#ifdef RABBITMQ_MODERN_HDRS
+#include <rabbitmq-c/tcp_socket.h>
+#include <rabbitmq-c/ssl_socket.h>
+#else
 #include <amqp_tcp_socket.h>
 #include <amqp_ssl_socket.h>
+#endif
 #define rmq_uri struct amqp_connection_info
 #define RMQ_EMPTY amqp_empty_bytes
 #else

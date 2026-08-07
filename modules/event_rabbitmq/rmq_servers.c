@@ -33,8 +33,6 @@
 
 #include "rmq_servers.h"
 #include "rabbitmq_send.h"
-#include <amqp_framing.h>
-
 #ifdef AMQP_VERSION_v04
 #define rmq_parse_rm amqp_parse_url
 #else

@@ -15,6 +15,11 @@ RABBITMQ_BUILDER := $(shell \
 ifneq ($(RABBITMQ_BUILDER),)
 	DEFS += $(shell $(RABBITMQ_BUILDER) --cflags)
 	LIBS += $(shell $(RABBITMQ_BUILDER) --libs)
+	RABBITMQ_VERSION := $(shell $(RABBITMQ_BUILDER) --modversion)
+	RABBITMQ_HEADER_VERSION := $(shell printf '%s\n' '0.12.0' '$(RABBITMQ_VERSION)' | sort -V | head -n1)
+	ifeq ($(RABBITMQ_HEADER_VERSION),0.12.0)
+		DEFS += -DRABBITMQ_MODERN_HDRS
+	endif
 endif
 else
 	DEFS += -I$(LOCALBASE)/include
@@ -22,4 +27,3 @@ else
 endif
 
 include ../../Makefile.modules
-
