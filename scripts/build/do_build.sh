@@ -7,7 +7,11 @@ set -e
 
 EXCLUDE_MODULES="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase \
   cachedb_mongodb auth_jwt event_kafka launch_darkly \
-  snmpstats cachedb_dynamodb event_sqs rtp.io opentelemetry"
+  snmpstats cachedb_dynamodb event_sqs rtp.io"
+if [ "${BUILD_OS}" != "ubuntu:26.04" ]
+then
+  EXCLUDE_MODULES="${EXCLUDE_MODULES} opentelemetry"
+fi
 if [ ! -z "${EXCLUDE_MODULES_ADD}" ]
 then
   EXCLUDE_MODULES="${EXCLUDE_MODULES} ${EXCLUDE_MODULES_ADD}"
