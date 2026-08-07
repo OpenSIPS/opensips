@@ -1400,10 +1400,23 @@ static decoded_info_buffer_t decode_info_buffer(str *info, const thinfo_options_
     if (host.len > 0 && host.s != NULL) {
 		decoded_buffer.sock = grep_sock_info(&host, port, proto);
 
-		if (!decoded_buffer.sock && th_internal_trusted_tag.len > 0) {
-			decoded_buffer.sock = grep_internal_sock_info(&th_internal_trusted_tag, 0, proto);
-		} else if (decoded_buffer.sock && th_internal_trusted_tag.len == 0) {
-			LM_WARN("non-local socket <%.*s:%d>...ignoring\n", host.len, host.s, port);
+		/* th_internal_trusted_tag governs one-way-hiding on trusted
+		 * internal sockets - it is not a fallback for resolving a
+		 * foreign encoded socket. th_external_socket_tag is the tag
+		 * documented for exactly that (see th_external_socket_tag doc
+		 * and the identical pattern in topo_no_dlg_match_uri() above). */
+		if (!decoded_buffer.sock && th_external_socket_tag.len > 0) {
+			decoded_buffer.sock = grep_internal_sock_info(&th_external_socket_tag, 0, proto);
+		}
+
+		if (!decoded_buffer.sock) {
+			/* Routine whenever topology hiding state reaches a node
+			 * other than the one that created it (e.g. an anycast or
+			 * load-balanced tier) and no external socket tag resolved
+			 * it either - DBG, not WARN, so it doesn't fire on every
+			 * sequential request of every such call. */
+			LM_DBG("non-local socket <%.*s:%d> - leaving the send socket "
+				"to the caller\n", host.len, host.s, port);
 		}
 
 		if (decoded_buffer.sock) {
@@ -1499,10 +1512,25 @@ static decoded_info_buffer_t decode_info_buffer_legacy(str *info, const thinfo_o
             LM_ERR("bad socket <%.*s>\n", bind_buf.len, bind_buf.s);
         } else {
             decoded_buffer.sock = grep_sock_info(&host, (unsigned short) port, proto);
-            if (!decoded_buffer.sock && th_internal_trusted_tag.len > 0) {
-				decoded_buffer.sock = grep_internal_sock_info(&th_internal_trusted_tag, 0, proto);
-            } else {
-				LM_WARN("non-local socket <%.*s>...ignoring\n", bind_buf.len, bind_buf.s);
+
+			/* th_internal_trusted_tag governs one-way-hiding on trusted
+			 * internal sockets - it is not a fallback for resolving a
+			 * foreign encoded socket. th_external_socket_tag is the tag
+			 * documented for exactly that (see topo_no_dlg_match_uri()). */
+            if (!decoded_buffer.sock && th_external_socket_tag.len > 0) {
+				decoded_buffer.sock = grep_internal_sock_info(&th_external_socket_tag, 0, proto);
+            }
+
+			if (!decoded_buffer.sock) {
+				/* Routine whenever topology hiding state reaches a node
+				 * other than the one that created it (e.g. an anycast or
+				 * load-balanced tier) and no external socket tag resolved
+				 * it either - DBG, not WARN, so it doesn't fire on every
+				 * sequential request of every such call. Note this is
+				 * only the send socket; the R-URI has already been
+				 * restored, so the request still routes. */
+				LM_DBG("non-local socket <%.*s> - leaving the send socket "
+					"to the caller\n", bind_buf.len, bind_buf.s);
 			}
         }
     }
