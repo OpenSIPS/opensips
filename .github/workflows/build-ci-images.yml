@@ -5,6 +5,8 @@ on:
     - cron: '0 3 * * 0'
   workflow_dispatch:
   push:
+    branches:
+      - master
     paths:
       - '.github/workflows/build-ci-images.yml'
       - 'docker/Dockerfile.ci'
@@ -12,6 +14,7 @@ on:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/master'
     name: Ubuntu ${{ matrix.os }} CI image
     runs-on: ubuntu-latest
     permissions:
