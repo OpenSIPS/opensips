@@ -326,7 +326,8 @@ MHD_RET getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 	struct post_request *pr = (struct post_request*)cls;
 	str content_length;
 	unsigned int len;
-	char *p, bk;
+	const char *p;
+	size_t value_len;
 
 	if (cls == NULL) {
 		LM_ERR("Unable to store return data\n");
@@ -350,24 +351,29 @@ MHD_RET getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 	if (strcasecmp("Content-Type", key) == 0) {
 		LM_DBG("Content-Type=%s\n", value);
 		/* extract only the mime */
+		value_len = strlen(value);
 		if ( (p=strchr(value, ';'))!=NULL ) {
-			while( p>value && (*(p-1)==' ' || *(p-1)=='\t') ) p--;
-			bk = *p;
-			*p = 0;
+			value_len = p - value;
+			while (value_len &&
+					(value[value_len - 1] == ' ' ||
+					 value[value_len - 1] == '\t'))
+				value_len--;
 		}
-		if (strcasecmp("text/xml", value) == 0)
+		if (value_len == 8 && strncasecmp("text/xml", value, value_len) == 0)
 			pr->content_type = HTTPD_TEXT_XML_CNT_TYPE;
-		else if (strncasecmp("application/json", value, 16) == 0)
+		else if (value_len >= 16 &&
+				strncasecmp("application/json", value, 16) == 0)
 			pr->content_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
-		else if (strncasecmp("text/html", value, 9) == 0)
+		else if (value_len >= 9 &&
+				strncasecmp("text/html", value, 9) == 0)
 			pr->content_type = HTTPD_TEXT_HTML_TYPE;
-		else if (strncasecmp("text/plain", value, 10) == 0)
+		else if (value_len >= 10 &&
+				strncasecmp("text/plain", value, 10) == 0)
 			pr->content_type = HTTPD_TEXT_PLAIN_TYPE;
 		else {
 			pr->content_type = HTTPD_UNKNOWN_CNT_TYPE;
 			LM_ERR("Unexpected Content-Type=[%s]\n", value);
 		}
-		if (p) *p = bk;
 		goto done;
 	}
 	if (strcasecmp("Content-Length", key) == 0) {
