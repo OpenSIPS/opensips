@@ -66,6 +66,10 @@ jobs:
             compiler: 'clang-18'
           - os: 24.04
             compiler: 'clang-19'
+          - os: 26.04
+            compiler: 'gcc'
+          - os: 26.04
+            compiler: 'clang'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
