@@ -1926,7 +1926,9 @@ static int cl_ctr_cs_encrypt(cl_ctr_cipherstate_t *cs, const unsigned char *ad, 
                          const unsigned char *pt, size_t pt_len, unsigned char *ct)
 {
     unsigned char nonce[12]; unsigned long long clen = 0;
-    if (!cs->has_key) { memcpy(ct, pt, pt_len); return (int)pt_len; }
+    /* pt may legitimately be NULL for an empty payload (Noise msg 1 sends
+     * one); memcpy() is nonnull even for a zero length, so guard it. */
+    if (!cs->has_key) { if (pt_len) memcpy(ct, pt, pt_len); return (int)pt_len; }
     cl_ctr_cs_nonce(cs->n, nonce);
     crypto_aead_chacha20poly1305_ietf_encrypt(ct, &clen, pt, pt_len,
                                               ad, ad_len, NULL, nonce, cs->k);
@@ -1937,7 +1939,7 @@ static int cl_ctr_cs_decrypt(cl_ctr_cipherstate_t *cs, const unsigned char *ad, 
                          const unsigned char *ct, size_t ct_len, unsigned char *pt)
 {
     unsigned char nonce[12]; unsigned long long plen = 0;
-    if (!cs->has_key) { memcpy(pt, ct, ct_len); return (int)ct_len; }
+    if (!cs->has_key) { if (ct_len) memcpy(pt, ct, ct_len); return (int)ct_len; }
     cl_ctr_cs_nonce(cs->n, nonce);
     if (crypto_aead_chacha20poly1305_ietf_decrypt(pt, &plen, NULL, ct, ct_len,
                                                   ad, ad_len, nonce, cs->k) != 0)
