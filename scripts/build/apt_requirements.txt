@@ -21,6 +21,7 @@ librabbitmq-dev
 libradcli-dev
 libsctp-dev
 libsnmp-dev
+libsodium-dev
 libsqlite3-dev
 libwolfssl-dev
 libxml2-dev
