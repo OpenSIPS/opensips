@@ -4569,7 +4569,8 @@ static void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t
  * Payload: [node_id 2B BE][ip NUL][bin_count 1B][sock1 NUL]...[sockN NUL]
  *
  * All nodes (including master via loopback) apply the assignment:
- *   - Upsert the peer entry if not already present.
+ *   - Learn the peer entry if not already present, WITHOUT claiming liveness
+ *     (see the note at the call site - the loopback made this a self-refresh).
  *   - Store node_id and BIN sockets.
  *   - If ip == my_ip: record my_node_id.
  */
@@ -4615,7 +4616,19 @@ static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
     }
 
     lock_start_write(cl->peers->lock);
-    cl_ctr_upsert_peer_locked(ip, cl);
+    /* Membership, not liveness - the same distinction cl_ctr_learn_peer_locked()
+     * exists for on the MEMBER_LIST path.  'ip' here comes from the PAYLOAD (the
+     * node being assigned), not from sender_ip, so it is not evidence that that
+     * node is reachable - only that the master still lists it.
+     *
+     * Upserting here was strictly worse than the member-list case, because it is
+     * a SELF-loop rather than a peer-to-peer echo: IP_MULTICAST_LOOP means the
+     * master receives its own NODE_ASSIGN, so every roster announcement refreshed
+     * last_seen for every node it named, including a dead one.  The master is the
+     * node that must prune, so cl_ctr_prune_stale() could never fire and the
+     * corpse was immortal - measured on a 3-node staging cluster: a node isolated
+     * for 4 minutes against a 30 s deadline was still a member on every survivor. */
+    cl_ctr_learn_peer_locked(ip, cl);
     cl_ctr_update_peer_bin_locked(ip, node_id, bin_cnt,
                                (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])bin_socks,
                                cl);
