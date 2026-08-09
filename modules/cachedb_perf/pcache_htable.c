@@ -97,11 +97,11 @@ static inline unsigned char tag_of(unsigned int h)
 }
 
 static inline unsigned int route_idx(pcache_htable_t *ht, unsigned int h,
-		unsigned long *route_out)
+		uint64_t *route_out)
 {
 	/* acquire pairs with the release-publish in pcache_ht_split: seeing a
 	 * new routing word implies the partner bucket's slots are visible */
-	unsigned long r = __atomic_load_n(&ht->route, __ATOMIC_ACQUIRE);
+	uint64_t r = __atomic_load_n(&ht->route, __ATOMIC_ACQUIRE);
 	unsigned int level = (unsigned int)(r >> 32);
 	unsigned int split = (unsigned int)r;
 	unsigned int idx = h & ((1U << level) - 1);
@@ -148,14 +148,18 @@ static inline void hint_update(pcache_htable_t *ht, unsigned int idx,
 /* one 8-byte load of tags[6]+meta; 0x80 at byte i = tags[i] matches.
  * The SWAR borrow can produce a false positive after a true match byte -
  * filtered by the key compare, never a false negative. */
-static inline unsigned long tag_matches(const pcache_bucket_t *b,
+static inline uint64_t tag_matches(const pcache_bucket_t *b,
 		unsigned char tag)
 {
-	unsigned long w, x;
+	/* uint64_t, not unsigned long: this word IS the 8 tag bytes, and the
+	 * masks below are 64-bit constants.  On an ILP32 target unsigned long
+	 * is 4 bytes, so the memcpy would overflow and every constant would be
+	 * truncated - the filter would return garbage rather than fail loudly. */
+	uint64_t w, x;
 
 	memcpy(&w, b->tags, 8);
-	x = w ^ (0x0101010101010101UL * tag);
-	return (x - 0x0101010101010101UL) & ~x & 0x0000808080808080UL;
+	x = w ^ (0x0101010101010101ULL * tag);
+	return (x - 0x0101010101010101ULL) & ~x & 0x0000808080808080ULL;
 }
 
 /* meta helpers - writers only, under the bucket lock */
@@ -304,7 +308,7 @@ static int _pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key,
 		unsigned int now, unsigned int *exp_out, long long *ll_out)
 {
 	pcache_bucket_t *b;
-	unsigned long route;
+	uint64_t route;
 	unsigned int hash, idx, v1, v2, vlen = 0, exp = 0, tries;
 	unsigned char tag, fl = 0;
 	long long ll;
@@ -564,7 +568,7 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 	pcache_bucket_t *b;
 	pcache_rec_t *nr, *old = NULL;
 	struct povf *node = NULL, *on;
-	unsigned long route;
+	uint64_t route;
 	unsigned int hash, idx, used;
 	unsigned char tag;
 	int i, inserted = 0;
@@ -729,7 +733,7 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 	pcache_bucket_t *b;
 	pcache_rec_t *nr, *r, *old = NULL;
 	struct povf *node = NULL, *on;
-	unsigned long route;
+	uint64_t route;
 	unsigned int hash, idx, used;
 	unsigned char tag;
 	long long cur;
@@ -897,7 +901,7 @@ int pcache_ht_touch(pcache_htable_t *ht, const str *key, unsigned int expires)
 	pcache_bucket_t *b;
 	pcache_rec_t *r;
 	struct povf *on;
-	unsigned long route;
+	uint64_t route;
 	unsigned int hash, idx;
 	unsigned char tag;
 	int i, rc = 0;
@@ -952,7 +956,7 @@ int pcache_ht_remove(pcache_htable_t *ht, const str *key)
 	pcache_bucket_t *b;
 	pcache_rec_t *dead = NULL;
 	struct povf *on = NULL, **prev;
-	unsigned long route;
+	uint64_t route;
 	unsigned int hash, idx, used;
 	unsigned char tag;
 	int i;
@@ -1447,7 +1451,7 @@ static int ensure_segment(pcache_htable_t *ht, unsigned int idx)
  */
 static int pcache_ht_split(pcache_htable_t *ht)
 {
-	unsigned long r = ht->route, nr;
+	uint64_t r = ht->route, nr;
 	unsigned int level = (unsigned int)(r >> 32);
 	unsigned int split = (unsigned int)r;
 	unsigned int sidx = split, pidx = split + (1U << level);
@@ -1504,9 +1508,9 @@ static int pcache_ht_split(pcache_htable_t *ht)
 	 * moved key is guaranteed to see the new route on its 3.4 re-read
 	 * and re-route to the partner - no false-miss window. */
 	if (split + 1 == (1U << level))
-		nr = (unsigned long)(level + 1) << 32;     /* level up, split 0 */
+		nr = (uint64_t)(level + 1) << 32;     /* level up, split 0 */
 	else
-		nr = ((unsigned long)level << 32) | (split + 1);
+		nr = ((uint64_t)level << 32) | (split + 1);
 	__atomic_store_n(&ht->route, nr, __ATOMIC_RELEASE);
 	ht->nbuckets++;
 
@@ -1596,7 +1600,7 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 		return NULL;
 
 	ht->nbuckets = nbuckets;
-	ht->route = (unsigned long)size_log2 << 32;
+	ht->route = (uint64_t)size_log2 << 32;
 
 	LM_DBG("table ready: %u buckets in %u segments\n", nbuckets, s);
 	return ht;
@@ -1645,7 +1649,7 @@ static int st_walk_cb(const str *key, const str *val, unsigned int exp,
 
 static pcache_rec_t *st_slot_of(pcache_htable_t *ht, const str *key)
 {
-	unsigned long route;
+	uint64_t route;
 	unsigned int hash = core_hash((str *)key, NULL, 0);
 	pcache_bucket_t *b = bucket_at(ht, route_idx(ht, hash, &route));
 	int i = find_slot(b, key, hash, tag_of(hash));
@@ -1659,7 +1663,7 @@ int pcache_htable_selftest(void)
 	pcache_rec_t *r0, *r1;
 	pcache_bucket_t *b;
 	str k, v, out;
-	unsigned long route;
+	uint64_t route;
 	unsigned int i, ver0, ver1, nb_used;
 	char kb[32], vb[512];
 	int rc;

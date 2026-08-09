@@ -23,6 +23,7 @@
 #ifndef _PCACHE_HTABLE_H_
 #define _PCACHE_HTABLE_H_
 
+#include <stdint.h>
 #include <stddef.h>
 
 #include "../../str.h"
@@ -135,7 +136,10 @@ typedef struct pcache_ht_totals {
 typedef struct pcache_htable {
 	/* the 3.4 routing word: (level << 32) | split, published whole.
 	 * On its own line - everything else here mutates */
-	volatile unsigned long  route;
+	/* (level << 32) | split - genuinely 64 bits, so NOT unsigned long:
+	 * that is 32 bits on every ILP32 target (arm32, i386) and the packing
+	 * would collapse silently. */
+	volatile uint64_t       route;
 	char                    _pad0[56];
 
 	unsigned int            nbuckets;
