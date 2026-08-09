@@ -246,6 +246,14 @@ static unsigned int *pull_next_id;     /* shm: ids must be unique per node  */
  * is one shared line, which the module forbids on the hot path (CP-06); a
  * cross-node miss is not the hot path. */
 static unsigned int *pull_stats;       /* PULL_ST_* counters */
+/* Rate-limit state for the send-failure warning (pull_send_failed()).  In shm
+ * rather than a plain static because a pull reply goes out from whichever
+ * worker happened to receive the request: a per-process limiter would let all
+ * ~30 SIP workers warn once per interval each. */
+static struct pcache_send_warn {
+	unsigned int last;        /* get_ticks() when we last warned */
+	unsigned int suppressed;  /* failures folded into the next warning */
+} *pull_send_warn;
 
 /* Negative cache (R4).  A key that is genuinely nowhere costs a full
  * round of questions, and SIP retransmits ask again a few hundred
@@ -279,7 +287,11 @@ static int pull_on_miss;               /* modparam; read repair on the get path 
 /* slots the reaper had to release because the caller never collected them -
  * distinct from a timeout, which the caller DID collect */
 #define PULL_ST_ABANDONED 6
-#define PULL_ST_MAX       7
+/* A pull datagram the transport refused to send.  Distinct from a TIMEOUT:
+ * the request never left this node, so no peer was ever given the chance to
+ * answer it. */
+#define PULL_ST_SEND_FAIL 7
+#define PULL_ST_MAX       8
 /* Two different readinesses, deliberately kept apart:
  *   cluster_ready - the clusterer is bound, the capability is registered and
  *                   membership is being tracked.  Everything cross-node needs
@@ -565,6 +577,58 @@ static unsigned long pull_stat(int which)
 #define PULLSTATF(_fn, _which) \
 	static unsigned long _fn(void *ctx) { return pull_stat(_which); }
 
+/* Complain about a pull datagram that never left, at most once every
+ * PCACHE_PULL_SEND_WARN_IVL seconds.
+ *
+ * This used to be LM_DBG, which made it unreachable on every deployed node:
+ * log_level 3 is INFO and L_DBG is 4.  That is the wrong level for it - a send
+ * that fails is invisible at the far end, so the requester simply times out,
+ * and this line is the only direct evidence of why.  It is the actual cause
+ * behind a class of "cross-node pull is slow / does not converge" reports.
+ *
+ * It cannot be an unconditional LM_WARN either: a partitioned or overloaded
+ * peer fails every send, and an unbounded warn is its own incident.  So warn
+ * on the first failure, then at most once per interval, carrying the count it
+ * stands for.  The exact total is always available as pulls_send_failed.
+ *
+ * Two workers can pass the interval check at once and both warn.  That is
+ * deliberate - it costs an occasional duplicate line and saves taking a lock
+ * on a failure path. */
+#define PCACHE_PULL_SEND_WARN_IVL 30
+
+static void pull_send_failed(const char *what, int dst_node)
+{
+	unsigned int now = get_ticks(), held;
+	char tgt[32];
+
+	if (pull_stats)
+		__sync_fetch_and_add(&pull_stats[PULL_ST_SEND_FAIL], 1);
+	if (!pull_send_warn)
+		return;
+
+	if (pull_send_warn->last != 0 &&
+	    now - pull_send_warn->last < PCACHE_PULL_SEND_WARN_IVL) {
+		__sync_fetch_and_add(&pull_send_warn->suppressed, 1);
+		return;
+	}
+	pull_send_warn->last = now;
+	held = __sync_lock_test_and_set(&pull_send_warn->suppressed, 0);
+
+	if (dst_node > 0)
+		snprintf(tgt, sizeof tgt, "node %d", dst_node);
+	else
+		snprintf(tgt, sizeof tgt, "the cluster");
+
+	if (held)
+		LM_WARN("cross-node pull: %s [%s], and %u more in the last %ds - "
+			"whoever asked is timing out; see the pulls_send_failed "
+			"statistic for the running total\n",
+			what, tgt, held, PCACHE_PULL_SEND_WARN_IVL);
+	else
+		LM_WARN("cross-node pull: %s [%s] - whoever asked is timing out\n",
+			what, tgt);
+}
+
 PULLSTATF(smf_pulls_requested,  PULL_ST_REQUESTED)
 PULLSTATF(smf_pulls_served,     PULL_ST_SERVED)
 PULLSTATF(smf_pulls_received,   PULL_ST_RECEIVED)
@@ -572,6 +636,7 @@ PULLSTATF(smf_pulls_timeout,    PULL_ST_TIMEOUT)
 PULLSTATF(smf_pulls_stored,     PULL_ST_STORED)
 PULLSTATF(smf_pulls_suppressed, PULL_ST_SUPPRESSED)
 PULLSTATF(smf_pulls_abandoned,  PULL_ST_ABANDONED)
+PULLSTATF(smf_pulls_send_failed, PULL_ST_SEND_FAIL)
 
 /* A GAUGE, unlike every other pull stat: it should read 0 whenever nothing is
  * being asked.  Anything parked here means slots are taken and not released,
@@ -733,6 +798,7 @@ static const stat_export_t mod_stats[] = {
 	{"pulls_stored",     STAT_IS_FUNC, (stat_var **)smf_pulls_stored},
 	{"pulls_suppressed", STAT_IS_FUNC, (stat_var **)smf_pulls_suppressed},
 	{"pulls_abandoned",  STAT_IS_FUNC, (stat_var **)smf_pulls_abandoned},
+	{"pulls_send_failed", STAT_IS_FUNC, (stat_var **)smf_pulls_send_failed},
 	{"pulls_in_flight",  STAT_IS_FUNC, (stat_var **)smf_pulls_in_flight},
 	{0,0,0}
 };
@@ -944,6 +1010,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 		        pull_stats[PULL_ST_STORED]) < 0 ||
 		     add_mi_number(clobj, MI_SSTR("pulls_suppressed"),
 		        pull_stats[PULL_ST_SUPPRESSED]) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_send_failed"),
+		        pull_stats[PULL_ST_SEND_FAIL]) < 0 ||
 		     add_mi_number(clobj, MI_SSTR("pulls_abandoned"),
 		        pull_stats[PULL_ST_ABANDONED]) < 0))
 			goto err;
@@ -1816,7 +1884,7 @@ static void pcache_pull_send_rpl(int dst_node, unsigned int id, const str *key,
 		pl.len = n;
 		if (clctr_api.send_ucast(sync_cluster_id, dst_node, &pull_channel,
 		        &pl, 0) < 0)
-			LM_DBG("pull reply to node %d did not get through\n", dst_node);
+			pull_send_failed("a reply did not get through", dst_node);
 		else if (found == PCACHE_FOUND_YES)
 			__sync_fetch_and_add(&pull_stats[PULL_ST_SERVED], 1);
 		return;
@@ -1841,7 +1909,7 @@ static void pcache_pull_send_rpl(int dst_node, unsigned int id, const str *key,
 		}
 		if (clusterer_api.send_to(&out, sync_cluster_id, dst_node) !=
 		        CLUSTERER_SEND_SUCCESS)
-			LM_DBG("pull reply to node %d did not get through\n", dst_node);
+			pull_send_failed("a reply did not get through", dst_node);
 		else if (found == PCACHE_FOUND_YES)
 			__sync_fetch_and_add(&pull_stats[PULL_ST_SERVED], 1);
 		bin_free_packet(&out);
@@ -2310,7 +2378,7 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		              &pull_channel, &pl, 0) < 0
 		        : clctr_api.send_mcast(sync_cluster_id, &pull_channel,
 		              &pl, 0) < 0)
-			LM_DBG("pull request could not be sent\n");
+			pull_send_failed("a request could not be sent", hint_node);
 	} else
 #endif
 	{
@@ -2327,7 +2395,8 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		        ? clusterer_api.send_to(&packet, sync_cluster_id, hint_node)
 		        : clusterer_api.send_all(&packet, sync_cluster_id)) !=
 		        CLUSTERER_SEND_SUCCESS)
-			LM_DBG("pull request reached no or only some nodes\n");
+			pull_send_failed("a request reached no or only some nodes",
+				hint_node);
 		bin_free_packet(&packet);
 	}
 
@@ -4233,9 +4302,11 @@ static int mod_init(void)
 			pull_slots = shm_malloc((size_t)PCACHE_PULL_SLOTS * pull_slot_sz);
 			pull_next_id = shm_malloc(sizeof *pull_next_id);
 			pull_stats = shm_malloc(PULL_ST_MAX * sizeof *pull_stats);
+			pull_send_warn = shm_malloc(sizeof *pull_send_warn);
 			peer_stats = shm_malloc((CL_MAX_NODE_ID + 1) * sizeof *peer_stats);
 			pull_lock = lock_alloc();
 			if (!pull_slots || !pull_next_id || !pull_stats || !peer_stats ||
+			        !pull_send_warn ||
 			        !pull_lock || !lock_init(pull_lock)) {
 				LM_ERR("no shm for the cross-node pull state\n");
 				return -1;
@@ -4259,6 +4330,7 @@ static int mod_init(void)
 			}
 			*pull_next_id = 0;
 			memset(pull_stats, 0, PULL_ST_MAX * sizeof *pull_stats);
+			memset(pull_send_warn, 0, sizeof *pull_send_warn);
 			if (pull_negative_ms < 0 || pull_negative_ms > 2000) {
 				LM_ERR("pull_negative_ms must be within 0..2000 (0 = off) "
 					"- a negative that outlives a retransmit turns a "
@@ -4518,6 +4590,10 @@ static void mod_destroy(void)
 	if (pull_stats) {
 		shm_free(pull_stats);
 		pull_stats = NULL;
+	}
+	if (pull_send_warn) {
+		shm_free(pull_send_warn);
+		pull_send_warn = NULL;
 	}
 	if (peer_stats) {
 		shm_free(peer_stats);
