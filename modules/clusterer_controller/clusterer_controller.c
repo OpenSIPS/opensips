@@ -1939,6 +1939,41 @@ static cl_ctr_peer_t *cl_ctr_peer_by_ip_locked(cl_ctr_cluster_t *cl, const char 
     return NULL;
 }
 
+static void cl_ctr_upsert_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl);
+
+/**
+ * cl_ctr_learn_peer_locked() - membership WITHOUT a liveness claim.
+ *
+ * A MEMBER_LIST says who BELONGS to the cluster, not who is reachable now: the
+ * master lists a node until it prunes it, whether that node is up or not.
+ * Refreshing last_seen from such a list - which is what upsert does - makes
+ * every receiver believe it has just heard from peers it has never heard from.
+ *
+ * That is not cosmetic. cl_ctr_alive_bitmap() is built from last_seen, so a
+ * backup holding refreshed timestamps for a dead node asserts that node is
+ * alive to the entire cluster the moment it becomes master - and then nobody
+ * can age it out. A node survived in a live cluster for about a day that way,
+ * across a master change, while every TCP connect to it was refused.
+ *
+ * So: insert what we did not already know about, and leave last_seen of
+ * anything we do track to direct evidence only - cl_ctr_upsert_peer_locked()
+ * from a packet actually sent BY that peer, or the master's alive bitmap,
+ * which the master derives from its own direct evidence.
+ *
+ * A newly learned peer is still seeded with last_seen = now, deliberately: it
+ * gets one purge window to prove itself rather than being pruned on the next
+ * tick. This terminates - once the master prunes a dead node it stops listing
+ * it, and every receiver ages it out one window later.
+ *
+ * Must be called with cl->peers->lock held for write.
+ */
+static void cl_ctr_learn_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl)
+{
+    if (cl_ctr_peer_by_ip_locked(cl, src_ip))
+        return;                 /* already known - membership adds nothing */
+    cl_ctr_upsert_peer_locked(src_ip, cl);
+}
+
 /**
  * cl_ctr_upsert_peer_locked() - insert or refresh a peer entry.
  * Does NOT call cl_ctr_elect_master(cl); callers do that explicitly.
@@ -4251,7 +4286,8 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 	ip_buf[CL_CTR_MAX_IP_LEN] = '\0';
 	if (ip_buf[0] == '\0')
 	    continue;
-	cl_ctr_upsert_peer_locked(ip_buf, cl);
+	/* membership, not liveness - see cl_ctr_learn_peer_locked() */
+	cl_ctr_learn_peer_locked(ip_buf, cl);
 	for (_j = 0; _j < cl->peers->count; _j++) {
 	    if (strcmp(cl->peers->entries[_j].ip, ip_buf) == 0) {
 		cl->peers->entries[_j].last_seq = 0;
