@@ -188,6 +188,7 @@
 #include <fcntl.h>          /* O_NONBLOCK, fcntl()                            */
 #include <ifaddrs.h>        /* getifaddrs(), freeifaddrs()                    */
 #include <net/if.h>         /* IF_NAMESIZE, struct ifreq, SO_BINDTODEVICE     */
+#include <sys/ioctl.h>      /* ioctl, SIOCGIFMTU                              */
 
 #include "../../sr_module.h"    /* module_exports, MODULE_VERSION, proc_export_t,
                                    PROC_FLAG_*, dep_export_t, DEP_ABORT,
@@ -202,6 +203,7 @@
 #include "../../net/api_proto.h" /* protos[] array                            */
 #include "../../globals.h"      /* process_no - this process's index          */
 #include "../../ipc.h"          /* ipc_send_rpc() - cross-process job dispatch */
+#include "api.h"                 /* consumer messaging API contract */
 #include "../../pvar.h"         /* pv_export_t - read-only $cl_ctr_* variables */
 
 #include "../clusterer/clusterer_ctrl.h"  /* set_my_identity, add_node, remove_node */
@@ -230,6 +232,14 @@
 #define CL_CTR_MAGIC_SZ          2
 static const unsigned char CL_CTR_PACKET_MAGIC[CL_CTR_MAGIC_SZ]    = { 0xCC, 0x00 };
 static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x01 };
+/* Consumer traffic carries its own magic.  It is encrypted with the same
+ * session key as everything else - the distinction exists purely so the
+ * rate limiter, which runs BEFORE decryption and therefore cannot see a
+ * packet's type, can charge consumer data against its own budget instead
+ * of the control plane's.  Without this, a consumer sending faster than
+ * the control-plane limit is silently throttled, and control packets and
+ * data compete for one allowance. */
+static const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ]  = { 0xCC, 0x02 };
 
 /* Packet type bytes */
 #define CL_CTR_PKT_ALIVE            0x01
@@ -243,6 +253,22 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
 #define CL_CTR_PKT_JOIN_REJECT      0x09  /* master -> joiner: authentication rejected     */
 #define CL_CTR_PKT_ACK              0x0B  /* receiver -> sender: ack of a 1:1 handshake pkt */
 #define CL_CTR_PKT_RESYNC           0x0C  /* member -> master: my view differs, resend state */
+#define CL_CTR_PKT_CONSUMER         0x0D  /* consumer API message: [src_id][chan][data] */
+/* Same payload, but the receiver acknowledges it and the sender retransmits
+ * until it does.  A separate type rather than a flag in the payload so the
+ * receive path can tell them apart before it parses anything, and so an old
+ * build simply does not recognise it instead of half-understanding it. */
+#define CL_CTR_PKT_CONSUMER_REL     0x0E
+
+/* Consumer messaging (api.h): plaintext payload layout after type+seq is
+ * [src_node_id u16 BE][chan_len u8][channel bytes][consumer payload].
+ * Bounded to one comfortably-under-MTU datagram; bulk data is the
+ * consumer's problem (the API contract says fall back to BIN for bulk). */
+#define CL_CTR_MAX_CHANNELS         8
+#define CL_CTR_CONSUMER_HDR_SZ      (CL_CTR_NODE_ID_SZ + 1)
+#define CL_CTR_CONSUMER_PKT_MAX     (CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ \
+                                     + CL_CTR_CONSUMER_HDR_SZ + CLCTR_MAX_CHAN_LEN \
+                                     + CLCTR_MAX_PAYLOAD + CL_CTR_TAG_SZ)
 #define CL_CTR_PKT_MASTER_BEACON    0x0A  /* master-only announce (BOOTSTRAP key) so
                                        * masters with divergent session keys can
                                        * still discover each other and merge a
@@ -371,11 +397,26 @@ static const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { 0xCC, 0x0
  * Tracks up to CL_CTR_RATE_TBL_SZ source IPs with a 1-second sliding window. */
 #define CL_CTR_RATE_TBL_SZ  256    /* one slot per peer; matches max cluster size */
 #define CL_CTR_RATE_LIMIT    20    /* max packets per second per source IP        */
+/* Consumer data is bulk by nature - one pull is a packet each way - so it
+ * gets a far larger allowance than the handful of control packets a peer
+ * sends per second.  Separate counters, so neither can starve the other:
+ * a flood of consumer traffic can never crowd out JOIN/ALIVE, and a busy
+ * consumer is not throttled at the control plane's rate. */
+#define CL_CTR_CONSUMER_RATE_DEFAULT 1000
+/* Reliable consumer delivery: how many times an unacknowledged message is
+ * sent again, and how long to wait between attempts.  Deliberately modest -
+ * a consumer that needs more than this wants a different design, not a
+ * longer queue.  Both are per-cluster overridable. */
+#define CL_CTR_CONSUMER_RETRIES_DEFAULT   2
+#define CL_CTR_CONSUMER_RETRY_MS_DEFAULT 40
 
 typedef struct {
     uint32_t ip;           /* network byte order; 0 = empty slot */
     time_t   window_start;
     int      count;
+    /* consumer traffic is counted apart from control traffic, against its
+     * own budget, so neither class can exhaust the other's allowance */
+    int      consumer_count;
 } cl_ctr_rate_entry_t;
 
 /* Max packet sizes: wire(20) = magic(8) + nonce(12); plain(5) = type(1) + seq(4)
@@ -524,6 +565,25 @@ typedef struct {
     struct sockaddr_storage dest;         /* unicast destination                  */
     socklen_t               destlen;
     int                     pkt_len;      /* sealed length                        */
+    /* A broadcast that asked to be acknowledged is one entry, not one per
+     * member: the message goes out once as a multicast - which is the whole
+     * point of having a multicast - and only the nodes that fail to answer
+     * are repaired individually.  Sending N unicasts up front would be about
+     * twice the packets for the same delivery, and at two hundred and fifty
+     * nodes that is the difference between a message and an event.
+     *
+     * Who still owes an ACK is a bitmap by node id.  The addresses to repair
+     * to are not stored: they are looked up from current membership when the
+     * repair runs, so a node that left in the meantime is simply not chased,
+     * and one that joined is not expected to answer for something sent
+     * before it arrived. */
+    int                     is_bcast;
+    uint8_t                 retries_cfg;  /* the budget this started with,
+                                           * so a report can say how much of
+                                           * it was actually spent          */
+    uint16_t                expect_n;     /* members at send time            */
+    uint16_t                acked_n;
+    unsigned char           acked_map[(CL_CTR_MAX_PEERS + 7) / 8];
     unsigned char           pkt[CL_CTR_NODE_ASSIGN_MAX_SZ]; /* cached sealed bytes */
 } cl_ctr_retx_entry_t;
 
@@ -540,6 +600,13 @@ typedef struct cl_ctr_cluster_ {
     unsigned char  key[32];         /* bootstrap key = SHA256(password); JOIN only */
     unsigned char  session_key[32]; /* group key = HKDF(password, master_salt)     */
     int            manage_shtags; /* per-cluster override; defaults to global manage_shtags */
+    /* Consumer-plane policy, per cluster: a fleet may run one cluster over a
+     * quiet management VLAN and another across a link where retries matter,
+     * and one global number cannot be right for both.  -1 means "not set
+     * here", resolved to the global default in mod_init. */
+    int            consumer_retries;    /* extra sends of an unacked message */
+    int            consumer_retry_ms;   /* gap between those sends           */
+    int            consumer_rate;       /* per-source packets/s for consumers */
     int            master_stickiness; /* per-cluster override; -1 = inherit global */
     cl_ctr_peers_t    *peers;        /* per-cluster peer table in shm     */
     /* BIN socket resolved at mod_init - advertised in JOIN_REQ/NODE_ASSIGN */
@@ -693,16 +760,80 @@ static int   on_config_mismatch   = CL_CTR_CFGMISMATCH_REJECT; /* resolved; defa
 
 /* Resolved at mod_init time - always valid after cl_ctr_resolve_local_identity() */
 static char my_ip_buf[INET_ADDRSTRLEN];
+/* which of the three resolution paths produced my_ip - reported through
+ * clctr_api.get_my_ip() so a consumer can show it without guessing */
+static const char *my_ip_src = "unresolved";
 static char my_interface_buf[IF_NAMESIZE];
+
+/* Maximum consumer payload in bytes, derived from the interface MTU at
+ * mod_init time.  Replaces the compile-time CLCTR_MAX_PAYLOAD constant so
+ * jumbo-frame interfaces (MTU 9000) are not artificially limited to 1300 B.
+ * Read-only after mod_init; safe to access from any process. */
+int cc_max_payload = CLCTR_MAX_PAYLOAD;
 
 
 /* Local node identity - populated at mod_init by scanning the config file */
 static uint16_t my_node_id                              = 0;
 
+/* ---- consumer messaging API (api.h) ----------------------------------- */
+
+/* Channel registry: filled PRE-FORK by consumers' mod_init, inherited
+ * read-only by every process afterwards - no lock needed. */
+struct cl_ctr_channel {
+    char            name[CLCTR_MAX_CHAN_LEN + 1];
+    int             len;
+    clctr_msg_cb_f  cb;
+};
+static struct cl_ctr_channel cl_ctr_channels[CL_CTR_MAX_CHANNELS];
+static int cl_ctr_nchannels;
+
+/* A send marshalled to the cluster worker over IPC.  Routing every send
+ * through the worker keeps the anti-replay sequence space single-writer
+ * (cl_ctr_check_and_update_seq is strictly monotonic per sender IP, so
+ * concurrent senders in different processes would trip it) and reuses
+ * the worker's socket and session key, which are worker-local state. */
+struct cl_ctr_consumer_job {
+    cl_ctr_cluster_t *cl;
+    uint16_t          dst_node_id;   /* 0 = multicast */
+    int               flags;
+    int               chan_len;
+    int               payload_len;
+    char              chan[CLCTR_MAX_CHAN_LEN];
+    unsigned char     payload[];
+};
+
+static void cl_ctr_consumer_dispatch(cl_ctr_cluster_t *cl, int src_node_id,
+        const char *chan, int chan_len, const char *payload, int payload_len);
+static void cl_ctr_handle_consumer(const char *payload, int payload_len,
+        const char *src_ip, cl_ctr_cluster_t *cl);
+static void cl_ctr_rpc_consumer_send(int sender, void *param);
+static int clctr_register_channel(str *channel, clctr_msg_cb_f cb);
+static int cl_ctr_script_init(void);
+static int cmd_cl_ctr_broadcast_req(struct sip_msg *msg, int *cluster_id,
+		str *gen_msg, str *tag, int *reliable);
+static int cmd_cl_ctr_send_req(struct sip_msg *msg, int *cluster_id,
+		int *node_id, str *gen_msg, str *tag, int *reliable);
+static int cmd_cl_ctr_send_rpl(struct sip_msg *msg, int *cluster_id,
+		int *node_id, str *gen_msg, str *tag);
+static int cmd_cl_ctr_send_req_list(struct sip_msg *msg, int *cluster_id,
+		pv_spec_t *nodes, str *gen_msg, str *tag, pv_spec_t *out);
+static int clctr_send_mcast(int cluster_id, str *channel, str *payload,
+        int flags);
+static int clctr_send_ucast(int cluster_id, int node_id, str *channel,
+        str *payload, int flags);
+static int clctr_send_list(int cluster_id, const int *node_ids, int n,
+                           str *channel, str *payload, int flags,
+                           int *unknown);
+static int clctr_get_my_node_id(int cluster_id);
+int cl_ctr_get_my_ip(const char **ip, const char **iface, const char **src);
+int load_clctr(clctr_api_t *api);
+
 /* clusterer integration - loaded at mod_init if clusterer use_controller=1 */
 static clusterer_ctrl_binds_t clctl;
 static int                    clctl_loaded  = 0;
 static int                    manage_shtags = 1;
+static int                    consumer_retries = CL_CTR_CONSUMER_RETRIES_DEFAULT;
+static int                    consumer_retry_ms = CL_CTR_CONSUMER_RETRY_MS_DEFAULT;
 /* master_stickiness (global default; per-cluster override via "cluster" string):
  *   1 (default) = the master is "sticky": a live master keeps the role and is
  *                 NOT displaced when a higher-IP node joins.  The highest-IP
@@ -712,6 +843,34 @@ static int                    manage_shtags = 1;
  *   0           = not sticky - pure highest-IP election, so a higher-IP node
  *                 takes over as master as soon as it appears (more handovers). */
 static int                    master_stickiness = 1;
+static int      consumer_rate_limit = CL_CTR_CONSUMER_RATE_DEFAULT;
+
+/* ---- the script's own channel (S2c-API, second tier) -------------------
+ *
+ * The messaging API's other half: a channel the module registers for
+ * itself, so a script can exchange messages with its peers without a
+ * module in between.  It mirrors clusterer's generic messaging exactly -
+ * same three functions, same two events, same parameters - so a script
+ * moves between them by renaming, and the reason to move is what the
+ * transport underneath does: one multicast packet rather than a send per
+ * peer, over an encrypted channel rather than a plaintext one.
+ *
+ * Wire: [u8 kind][u8 tag_len][tag][message].
+ */
+#define CL_CTR_SCRIPT_REQ  1
+#define CL_CTR_SCRIPT_RPL  2
+
+static str  cl_ctr_script_chan = str_init("_script");
+static str  ei_req_name = str_init("E_CL_CTR_REQ_RECEIVED");
+static str  ei_rpl_name = str_init("E_CL_CTR_RPL_RECEIVED");
+static event_id_t ei_req_id = EVI_ERROR;
+static event_id_t ei_rpl_id = EVI_ERROR;
+static evi_params_p ei_params;
+static evi_param_p  ei_clid_p, ei_srcid_p, ei_msg_p, ei_tag_p;
+static str ei_clid_pname  = str_init("cluster_id");
+static str ei_srcid_pname = str_init("src_id");
+static str ei_msg_pname   = str_init("msg");
+static str ei_tag_pname   = str_init("tag");
 static char     my_bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
 static int      my_bin_count                            = 0;
 
@@ -746,6 +905,9 @@ static const param_export_t params[] = {
     {"interface",  STR_PARAM, &my_interface},
     {"query_time", INT_PARAM, &query_time},
     {"password",      STR_PARAM, &password},
+    {"consumer_rate_limit", INT_PARAM, &consumer_rate_limit},
+    {"consumer_retries",    INT_PARAM, &consumer_retries},
+    {"consumer_retry_ms",   INT_PARAM, &consumer_retry_ms},
     {"manage_shtags", INT_PARAM, &manage_shtags},
     {"master_stickiness", INT_PARAM, &master_stickiness},
     {"on_config_mismatch", STR_PARAM, &on_config_mismatch_s},
@@ -769,6 +931,13 @@ typedef struct cl_ctr_peer_ {
     unsigned char pubkey[CL_CTR_PUBKEY_SZ];           /* long-lived X25519 pubkey (from ALIVE);
                                                      zero if unknown; used for KEY_HANDOFF */
     uint32_t      last_seq;                        /* highest seq accepted from this peer */
+    /* Consumer traffic is counted separately from the control plane.  They
+     * share a session key and a socket but not a sequence space: a consumer
+     * may send thousands of packets a second where the control plane sends a
+     * handful, and one counter for both means a reordered consumer packet can
+     * make a MASTER_ALIVE arriving behind it look like a replay - which is a
+     * missed liveness beacon, not a dropped cache reply. */
+    uint32_t      last_consumer_seq;
     /* Peer's advertised consistency-critical config (from ALIVE), used to warn
      * on accidental per-node config drift.  cfg_known=0 until first advertised;
      * cfg_warned deduplicates the mismatch warning. */
@@ -796,6 +965,7 @@ struct cl_ctr_peers_ {
      * GOODBYE without needing the worker's private state.  Reset to 0 on
      * every session key rotation so last_seq counters reset cleanly.   */
     uint32_t        my_seq;
+    uint32_t        my_consumer_seq;   /* the consumer plane's own counter */
     /* Sharing-tag override: 0 = automatic (master-driven) allocation; nonzero =
      * an operator has forced this node_id to be the active shtag holder for the
      * cluster (cl_ctr_shtag_force MI), suspending automatic allocation until
@@ -849,6 +1019,16 @@ static void mod_destroy(void);
 static void cl_ctr_worker(int rank);
 static int  cl_ctr_on_sock(int fd, void *param, int was_timeout);
 static void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
+static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq,
+                            unsigned char type, const unsigned char *pkt,
+                            int pkt_len, const struct sockaddr *dest,
+                            socklen_t destlen);
+static void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
+                            const unsigned char *pkt, int pkt_len);
+static void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
+                            unsigned char type, const unsigned char *pkt,
+                            int pkt_len, const struct sockaddr *dest,
+                            socklen_t destlen);
 static int  cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout);
 static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint64_t *hash);
 static void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
@@ -897,8 +1077,12 @@ static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
  * ========================================================================= */
 
 static proc_export_t procs[] = {
+    /* NEEDS_SCRIPT because a message arriving for the script's channel
+     * raises an event here, and an event route is script: without it the
+     * route structures are not set up in this process and running one
+     * crashes. */
     {"clusterer_controller worker", 0, 0, cl_ctr_worker, 1,
-        PROC_FLAG_INITCHILD | PROC_FLAG_HAS_IPC},
+        PROC_FLAG_INITCHILD | PROC_FLAG_HAS_IPC | PROC_FLAG_NEEDS_SCRIPT},
     {0, 0, 0, 0, 0, 0}
 };
 
@@ -1241,6 +1425,20 @@ CL_CTR_PV_WRAP(cl_ctr_pv_is_master,   CL_CTR_PV_IS_MASTER)
 CL_CTR_PV_WRAP(cl_ctr_pv_master_ip,   CL_CTR_PV_MASTER_IP)
 CL_CTR_PV_WRAP(cl_ctr_pv_backup_ip,   CL_CTR_PV_BACKUP_IP)
 CL_CTR_PV_WRAP(cl_ctr_pv_node_id,     CL_CTR_PV_NODE_ID)
+/* clctr_api.get_my_ip - see api.h */
+int cl_ctr_get_my_ip(const char **ip, const char **iface, const char **src)
+{
+	if (!my_ip)
+		return -1;              /* mod_init has not resolved it yet */
+	if (ip)
+		*ip = my_ip;
+	if (iface)
+		*iface = my_interface_buf[0] ? my_interface_buf : "(unknown)";
+	if (src)
+		*src = my_ip_src;
+	return 0;
+}
+
 CL_CTR_PV_WRAP(cl_ctr_pv_my_ip,       CL_CTR_PV_MY_IP)
 CL_CTR_PV_WRAP(cl_ctr_pv_members,     CL_CTR_PV_MEMBERS)
 CL_CTR_PV_WRAP(cl_ctr_pv_shtag_mode,  CL_CTR_PV_SHTAG_MODE)
@@ -1278,6 +1476,32 @@ static const cmd_export_t cl_ctr_cmds[] = {
 	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
     {"cl_ctr_get_node_ip", (cmd_function)w_cl_ctr_get_node_ip, {
 	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+    {"cl_ctr_broadcast_req", (cmd_function)cmd_cl_ctr_broadcast_req, {
+	{CMD_PARAM_INT,0,0},
+	{CMD_PARAM_STR,0,0},
+	{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+	{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+	ALL_ROUTES},
+    {"cl_ctr_send_req", (cmd_function)cmd_cl_ctr_send_req, {
+	{CMD_PARAM_INT,0,0},
+	{CMD_PARAM_INT,0,0},
+	{CMD_PARAM_STR,0,0},
+	{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+	{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+	ALL_ROUTES},
+    {"cl_ctr_send_req_list", (cmd_function)cmd_cl_ctr_send_req_list, {
+	{CMD_PARAM_INT, 0, 0},
+	{CMD_PARAM_VAR, 0, 0},
+	{CMD_PARAM_STR, 0, 0},
+	{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+	{CMD_PARAM_VAR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+    {"cl_ctr_send_rpl", (cmd_function)cmd_cl_ctr_send_rpl, {
+	{CMD_PARAM_INT,0,0},
+	{CMD_PARAM_INT,0,0},
+	{CMD_PARAM_STR,0,0},
+	{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+	ALL_ROUTES},
+    {"load_clctr", (cmd_function)load_clctr, {{0, 0, 0}}, 0},
     {0, 0, {{0, 0, 0}}, 0}
 };
 
@@ -2070,8 +2294,11 @@ static int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl)
     /* Reset sequence counters: old packets encrypted with the previous key
      * fail AEAD authentication, so starting from 0 is safe. */
     cl->peers->my_seq = 0;
-    for (i = 0; i < cl->peers->count; i++)
+    cl->peers->my_consumer_seq = 0;
+    for (i = 0; i < cl->peers->count; i++) {
         cl->peers->entries[i].last_seq = 0;
+        cl->peers->entries[i].last_consumer_seq = 0;
+    }
     cl->have_session_key = 1;   /* a valid group key now exists */
     /* The salt (and my_seq) just changed, so any queued retransmit is now stale. */
     cl_ctr_retx_flush(cl);
@@ -2261,17 +2488,30 @@ static int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
  * @return 0 to accept, -1 to drop.
  */
 static int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
-                                   cl_ctr_cluster_t *cl)
+                                   cl_ctr_cluster_t *cl, int is_consumer)
 {
     int i;
     for (i = 0; i < cl->peers->count; i++) {
         if (strcmp(cl->peers->entries[i].ip, sender_ip) == 0) {
-            if (pkt_seq <= cl->peers->entries[i].last_seq) {
-                LM_WARN("clusterer_controller: replay from %s seq=%u last=%u, dropping\n",
-                        sender_ip, pkt_seq, cl->peers->entries[i].last_seq);
+            uint32_t *last = is_consumer
+                             ? &cl->peers->entries[i].last_consumer_seq
+                             : &cl->peers->entries[i].last_seq;
+
+            if (pkt_seq <= *last) {
+                /* Debug for consumer traffic, warning for the control plane.
+                 * A consumer sending at rate will reorder on any network with
+                 * more than one path, and a warning per reordered packet says
+                 * "attack" about something entirely ordinary. */
+                if (is_consumer)
+                    LM_DBG("clusterer_controller: consumer packet from %s out "
+                           "of order seq=%u last=%u, dropping\n",
+                           sender_ip, pkt_seq, *last);
+                else
+                    LM_WARN("clusterer_controller: replay from %s seq=%u "
+                            "last=%u, dropping\n", sender_ip, pkt_seq, *last);
                 return -1;
             }
-            cl->peers->entries[i].last_seq = pkt_seq;
+            *last = pkt_seq;
             return 0;
         }
     }
@@ -2517,6 +2757,86 @@ static void cl_ctr_retx_flush(cl_ctr_cluster_t *cl)
  * retransmit until ACKed.  Best-effort: if the queue is full the packet still
  * went out once and the joiner's JOIN_REQ retry remains the backstop.
  */
+/* Track a reliable broadcast: one entry, the members we expect to hear from,
+ * and the sealed bytes to repair with.  The expected count is a snapshot - a
+ * node that joins a moment later never saw the message and is not owed one. */
+static void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
+                            const unsigned char *pkt, int pkt_len)
+{
+    cl_ctr_retx_entry_t *e = NULL;
+    int i, n = 0;
+
+    if (pkt_len <= 0 || pkt_len > (int)sizeof(cl->retx_q[0].pkt))
+        return;
+
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++)
+        if (cl->peers->entries[i].node_id > 0 &&
+            cl->peers->entries[i].node_id <= CL_CTR_MAX_PEERS)
+            n++;
+    lock_stop_read(cl->peers->lock);
+
+    if (n == 0) {
+        LM_DBG("clusterer_controller: [cluster %d] reliable broadcast with no "
+               "peers to acknowledge it - nothing to wait for\n",
+               cl->cluster_id);
+        return;
+    }
+
+    for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++)
+        if (!cl->retx_q[i].used) { e = &cl->retx_q[i]; break; }
+    if (!e) {
+        LM_DBG("clusterer_controller: [cluster %d] retransmit queue full - the "
+               "broadcast went out once, unacknowledged\n", cl->cluster_id);
+        return;
+    }
+
+    memset(e, 0, sizeof(*e));
+    e->used         = 1;
+    e->seq          = seq;
+    e->type         = CL_CTR_PKT_CONSUMER_REL;
+    e->is_bcast     = 1;
+    e->expect_n     = (uint16_t)n;
+    e->retries_left = cl->consumer_retries;
+    e->retries_cfg  = (uint8_t)cl->consumer_retries;
+    e->next_due_us  = get_uticks() + (utime_t)cl->consumer_retry_ms * 1000;
+    e->pkt_len      = pkt_len;
+    memcpy(e->pkt, pkt, pkt_len);
+    cl->retx_count++;
+    /* First argument is the delay, and zero there means disarm - the value
+     * this once passed, which switched the retransmit timer off instead of
+     * on and left every reliable broadcast waiting for a repair that could
+     * never run. */
+    cl_ctr_arm_tfd_us(cl->retx_tfd,
+                      (utime_t)cl->consumer_retry_ms * 1000, 0);
+}
+
+/* The consumer plane retransmits on its own schedule: the join handshake's
+ * budget is pinned to the JOIN_REQ retry interval, which has nothing to say
+ * about how long a consumer should wait.  Both are per-cluster, because one
+ * cluster may cross a link where another does not. */
+static void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
+                            unsigned char type, const unsigned char *pkt,
+                            int pkt_len, const struct sockaddr *dest,
+                            socklen_t destlen)
+{
+    int i;
+
+    cl_ctr_retx_enqueue(cl, seq, type, pkt, pkt_len, dest, destlen);
+    /* Re-arm the entry we just made with this cluster's consumer budget.
+     * Enqueue does not take them as arguments because every other caller
+     * wants the handshake numbers. */
+    for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++)
+        if (cl->retx_q[i].used && cl->retx_q[i].seq == seq &&
+            cl->retx_q[i].type == type) {
+            cl->retx_q[i].retries_left = cl->consumer_retries;
+            cl->retx_q[i].retries_cfg  = (uint8_t)cl->consumer_retries;
+            cl->retx_q[i].next_due_us  = get_uticks()
+                                       + (utime_t)cl->consumer_retry_ms * 1000;
+            break;
+        }
+}
+
 static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned char type,
                             const unsigned char *pkt, int pkt_len,
                             const struct sockaddr *dest, socklen_t destlen)
@@ -2554,7 +2874,8 @@ static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned cha
 }
 
 /* An ACK arrived: drop the queued packet whose seq it echoes. */
-static void cl_ctr_handle_ack(const char *payload, int payload_len, cl_ctr_cluster_t *cl)
+static void cl_ctr_handle_ack(const char *payload, int payload_len,
+                              cl_ctr_cluster_t *cl, const char *sender_ip)
 {
     uint32_t acked_be, acked;
     int i;
@@ -2568,10 +2889,46 @@ static void cl_ctr_handle_ack(const char *payload, int payload_len, cl_ctr_clust
         cl_ctr_retx_entry_t *e = &cl->retx_q[i];
         if (!e->used || e->seq != acked)
             continue;
-        /* seq is unique within a key epoch (a rekey flushes the queue), so this
-         * is the acknowledged packet; drop it. */
-        LM_DBG("clusterer_controller: [cluster %d] ACK for 0x%02x seq %u\n",
-               cl->cluster_id, e->type, acked);
+
+        if (e->is_bcast) {
+            /* Every member acknowledges the same sequence number, so this
+             * entry lives until they all have (or the budget runs out). */
+            uint16_t nid = 0;
+
+            lock_start_read(cl->peers->lock);
+            {
+                cl_ctr_peer_t *p = cl_ctr_peer_by_ip_locked(cl, sender_ip);
+                if (p)
+                    nid = p->node_id;
+            }
+            lock_stop_read(cl->peers->lock);
+
+            if (nid > 0 && nid <= CL_CTR_MAX_PEERS) {
+                int byte = (nid - 1) / 8, bit = 1 << ((nid - 1) % 8);
+
+                if (!(e->acked_map[byte] & bit)) {
+                    e->acked_map[byte] |= bit;
+                    e->acked_n++;
+                }
+            }
+            if (e->acked_n < e->expect_n) {
+                LM_DBG("clusterer_controller: [cluster %d] broadcast seq %u "
+                       "acknowledged by %u of %u\n", cl->cluster_id, acked,
+                       e->acked_n, e->expect_n);
+                break;                       /* still waiting on others */
+            }
+            LM_DBG("clusterer_controller: [cluster %d] broadcast seq %u "
+                   "acknowledged by all %u member(s) after %u of the %u "
+                   "retries configured for this cluster\n", cl->cluster_id,
+                   acked, e->expect_n,
+                   (unsigned)(e->retries_cfg - e->retries_left),
+                   (unsigned)e->retries_cfg);
+        } else {
+            /* seq is unique within a key epoch (a rekey flushes the queue), so
+             * this is the acknowledged packet; drop it. */
+            LM_DBG("clusterer_controller: [cluster %d] ACK for 0x%02x seq %u\n",
+                   cl->cluster_id, e->type, acked);
+        }
         e->used = 0;
         cl->retx_count--;
         break;
@@ -2599,16 +2956,63 @@ static int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout)
         if (!e->used || now < e->next_due_us)
             continue;
 
-        if (sendto(cl->sock, e->pkt, e->pkt_len, 0,
+        if (e->is_bcast) {
+            /* Repair, not rebroadcast.  Sending the multicast again would
+             * reach the members that already have it, and - because a
+             * duplicate that asked to be acknowledged is acknowledged again -
+             * every one of them would answer a second time.  On a large
+             * cluster the repair for two missing nodes would cost a packet to
+             * everyone and an ACK back from everyone.  So the repair is
+             * unicast, to exactly the nodes that still owe an answer. */
+            int j, repaired = 0;
+
+            lock_start_read(cl->peers->lock);
+            for (j = 0; j < cl->peers->count; j++) {
+                cl_ctr_peer_t     *p = &cl->peers->entries[j];
+                struct sockaddr_in d;
+                int byte, bit;
+
+                if (p->node_id == 0 || p->node_id > CL_CTR_MAX_PEERS)
+                    continue;
+                byte = (p->node_id - 1) / 8;
+                bit  = 1 << ((p->node_id - 1) % 8);
+                if (e->acked_map[byte] & bit)
+                    continue;                    /* this one answered */
+
+                memset(&d, 0, sizeof d);
+                d.sin_family = AF_INET;
+                d.sin_port   = cl->mcast_dest.sin_port;
+                if (inet_pton(AF_INET, p->ip, &d.sin_addr) != 1)
+                    continue;
+                if (sendto(cl->sock, e->pkt, e->pkt_len, 0,
+                           (struct sockaddr *)&d, sizeof d) >= 0)
+                    repaired++;
+            }
+            lock_stop_read(cl->peers->lock);
+            LM_DBG("clusterer_controller: [cluster %d] broadcast seq %u: "
+                   "repairing %d node(s) that have not acknowledged\n",
+                   cl->cluster_id, e->seq, repaired);
+
+        } else if (sendto(cl->sock, e->pkt, e->pkt_len, 0,
                    (struct sockaddr *)&e->dest, e->destlen) < 0 &&
-            errno != EAGAIN && errno != EWOULDBLOCK)
+            errno != EAGAIN && errno != EWOULDBLOCK) {
             LM_DBG("clusterer_controller: [cluster %d] retransmit 0x%02x: %s\n",
                    cl->cluster_id, e->type, strerror(errno));
+        }
 
         if (--e->retries_left <= 0) {
-            LM_DBG("clusterer_controller: [cluster %d] 0x%02x (seq %u) unacked "
-                   "after %d retransmits, giving up - joiner will re-JOIN_REQ\n",
-                   cl->cluster_id, e->type, e->seq, CL_CTR_RETX_MAX_RETRIES);
+            if (e->is_bcast)
+                LM_INFO("clusterer_controller: [cluster %d] broadcast seq %u "
+                        "reached %u of %u member(s), giving up after %u of the "
+                        "%u retries configured for this cluster\n",
+                        cl->cluster_id, e->seq, e->acked_n, e->expect_n,
+                        (unsigned)e->retries_cfg, (unsigned)e->retries_cfg);
+            else
+                LM_DBG("clusterer_controller: [cluster %d] 0x%02x (seq %u) unacked "
+                   "after %u retransmits, giving up - joiner will re-JOIN_REQ\n",
+                   cl->cluster_id, e->type, e->seq,
+                   (unsigned)(e->retries_cfg ? e->retries_cfg
+                                             : CL_CTR_RETX_MAX_RETRIES));
             e->used = 0;
             cl->retx_count--;
         } else {
@@ -3662,8 +4066,10 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
      * ALIVE, not here - the JOIN_REQ now carries only an ephemeral Noise key. */
     {
 	cl_ctr_peer_t *e = cl_ctr_peer_by_ip_locked(cl, src_ip);
-	if (e)
+	if (e) {
 	    e->last_seq = 0;
+	    e->last_consumer_seq = 0;
+	}
     }
 
     lock_stop_write(cl->peers->lock);
@@ -3849,6 +4255,7 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 	for (_j = 0; _j < cl->peers->count; _j++) {
 	    if (strcmp(cl->peers->entries[_j].ip, ip_buf) == 0) {
 		cl->peers->entries[_j].last_seq = 0;
+		cl->peers->entries[_j].last_consumer_seq = 0;
 		break;
 	    }
 	}
@@ -4491,26 +4898,84 @@ static void cl_ctr_handle_key_handoff(const char *payload, int payload_len,
  * Finds or creates a 1-second sliding-window counter for src_ip.
  * @return 0 if within CL_CTR_RATE_LIMIT packets/s, -1 to drop.
  */
-static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip)
+/**
+ * cl_ctr_consumer_src_known() - is this address one of our cluster members?
+ *
+ * Consumer traffic only ever passes between nodes that have already joined:
+ * a module registers a channel and talks to its peers, and nothing legitimate
+ * sends consumer packets before it is a member.  Control traffic is different
+ * - a JOIN_REQ necessarily comes from a stranger - so this filter is applied
+ * to consumer packets only.
+ *
+ * It runs before the rate limiter and therefore before any crypto, which is
+ * the point: a flood from an address we have never heard of costs one scan of
+ * a table bounded by the cluster size, and does not reach the AEAD, does not
+ * consume a rate-table slot, and cannot evict a real peer's counter from it.
+ * Our own address passes, because multicast comes back to its sender.
+ *
+ * A spoofed source that copies a member's address still gets through - this
+ * filter cannot fix address spoofing, and does not claim to.  What it removes
+ * is the much easier attack of pointing a flood at the port from anywhere.
+ */
+static int cl_ctr_consumer_src_known(cl_ctr_cluster_t *cl, uint32_t src_ip)
+{
+    static uint32_t mine;        /* my_ip in host order, resolved once */
+    uint32_t        src_num = ntohl(src_ip);   /* peers keep host order */
+    int             i, known = 0;
+
+    if (!mine && my_ip)
+	mine = ip_to_num(my_ip);
+    if (src_num == mine)
+	return 1;
+
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++)
+	if (cl->peers->entries[i].ip_num == src_num) {
+	    known = 1;
+	    break;
+	}
+    lock_stop_read(cl->peers->lock);
+
+    return known;
+}
+
+static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip,
+                             int is_consumer)
 {
     time_t            now     = time(NULL);
     cl_ctr_rate_entry_t  *oldest  = NULL;
+    int               limit   = is_consumer ? cl->consumer_rate
+                                            : CL_CTR_RATE_LIMIT;
     int               i;
 
     for (i = 0; i < CL_CTR_RATE_TBL_SZ; i++) {
         cl_ctr_rate_entry_t *e = &cl->rate_tbl[i];
+        int *cnt;
+
         if (e->ip == 0) {
             if (!oldest) oldest = e;             /* prefer empty slot  */
             continue;
         }
         if (e->ip == src_ip) {
+            cnt = is_consumer ? &e->consumer_count : &e->count;
             if (now > e->window_start) {         /* new second         */
-                e->window_start = now;
-                e->count        = 1;
+                e->window_start   = now;
+                e->count          = 0;
+                e->consumer_count = 0;
+                *cnt              = 1;
                 return 0;
             }
-            if (++e->count > CL_CTR_RATE_LIMIT)
+            if (++(*cnt) > limit) {
+                /* Say so, once per window per source: a silent drop here
+                 * looks exactly like packet loss to whatever was sending,
+                 * which is a miserable thing to debug. */
+                if (*cnt == limit + 1)
+                    LM_WARN("clusterer_controller: [cluster %d] %s rate "
+                        "limit of %d/s exceeded by a peer - dropping\n",
+                        cl->cluster_id,
+                        is_consumer ? "consumer" : "control", limit);
                 return -1;
+            }
             return 0;
         }
         /* track oldest entry for eviction when table is full */
@@ -4519,9 +4984,14 @@ static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip)
     }
 
     /* new source IP - claim oldest/empty slot */
-    oldest->ip           = src_ip;
-    oldest->window_start = now;
-    oldest->count        = 1;
+    oldest->ip             = src_ip;
+    oldest->window_start   = now;
+    oldest->count          = 0;
+    oldest->consumer_count = 0;
+    if (is_consumer)
+        oldest->consumer_count = 1;
+    else
+        oldest->count = 1;
     return 0;
 }
 
@@ -4709,7 +5179,8 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
     }
 
     if (memcmp(buf, CL_CTR_PACKET_MAGIC,   CL_CTR_MAGIC_SZ) != 0 &&
-        memcmp(buf, CL_CTR_BOOTSTRAP_MAGIC, CL_CTR_MAGIC_SZ) != 0) {
+        memcmp(buf, CL_CTR_BOOTSTRAP_MAGIC, CL_CTR_MAGIC_SZ) != 0 &&
+        memcmp(buf, CL_CTR_CONSUMER_MAGIC,  CL_CTR_MAGIC_SZ) != 0) {
 	LM_DBG("clusterer_controller: bad magic, dropping\n");
 	return;
     }
@@ -4737,9 +5208,24 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	}
     }
 
-    /* Rate-limit before any crypto work to shed floods cheaply. */
-    if (cl_ctr_rate_check(cl, src_addr.sin_addr.s_addr) < 0)
-	return;
+    /* Rate-limit before any crypto work to shed floods cheaply.  Consumer
+     * traffic from an address that is not a member is dropped one step
+     * earlier still - it cannot be legitimate, and dropping it here keeps it
+     * out of the rate table as well as out of the cipher. */
+    {
+	int is_consumer = (memcmp(buf, CL_CTR_CONSUMER_MAGIC,
+	                          CL_CTR_MAGIC_SZ) == 0);
+
+	if (is_consumer && !cl_ctr_consumer_src_known(cl,
+	                       src_addr.sin_addr.s_addr)) {
+	    if (cl->peers->count > 0)      /* quiet while still forming */
+		LM_DBG("clusterer_controller: [cluster %d] consumer packet "
+		       "from a non-member, dropping\n", cl->cluster_id);
+	    return;
+	}
+	if (cl_ctr_rate_check(cl, src_addr.sin_addr.s_addr, is_consumer) < 0)
+	    return;
+    }
 
     /* Resolve sender IP once - used for HMAC warning and MEMBER_LIST dispatch */
     {
@@ -4753,6 +5239,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	 *   CL_CTR_PACKET_MAGIC    -> session key   (all normal traffic)
 	 * If session key decryption fails, schedule a re-JOIN to refresh it. */
 	int is_bootstrap = (memcmp(buf, CL_CTR_BOOTSTRAP_MAGIC, CL_CTR_MAGIC_SZ) == 0);
+	uint32_t pkt_seq = 0;   /* needed again below, to acknowledge by seq */
 	dec_key = is_bootstrap ? cl->key : cl->session_key;
 
 	if (cl_ctr_decrypt_pkt(buf, n, sender_ip_buf, dec_key, is_bootstrap) < 0) {
@@ -4822,11 +5309,31 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	 * without any special-casing.
 	 * Bootstrap packets (CL_CTR_BOOTSTRAP_MAGIC) use join_nonce instead. */
 	if (!is_bootstrap) {
-	    uint32_t pkt_seq;
+	    /* The type byte, not the cleartext magic: this runs after the AEAD,
+	     * so the byte is authenticated and the magic is only the hint the
+	     * rate limiter needed before there was anything to trust. */
+	    /* Both flavours belong to the consumer plane - the reliable one is
+	     * still consumer traffic, and counting it against the control plane
+	     * would put back exactly the mixing the split removed. */
+	    unsigned char _t = (unsigned char)buf[CL_CTR_WIRE_HDR_SZ];
+	    int is_consumer_pkt = (_t == CL_CTR_PKT_CONSUMER ||
+	                           _t == CL_CTR_PKT_CONSUMER_REL);
+
 	    memcpy(&pkt_seq, buf + CL_CTR_WIRE_HDR_SZ + 1, CL_CTR_SEQ_SZ);
 	    pkt_seq = ntohl(pkt_seq);
-	    if (cl_ctr_check_and_update_seq(sender_ip_buf, pkt_seq, cl) < 0)
+	    if (cl_ctr_check_and_update_seq(sender_ip_buf, pkt_seq, cl,
+	                                    is_consumer_pkt) < 0) {
+		/* A duplicate of a message that asked to be acknowledged means
+		 * our acknowledgement did not arrive: say it again.  Without
+		 * this the sender spends its whole retransmit budget against a
+		 * receiver that has had the message all along and is dropping
+		 * every copy in silence. */
+		if ((unsigned char)buf[CL_CTR_WIRE_HDR_SZ]
+		        == CL_CTR_PKT_CONSUMER_REL)
+		    cl_ctr_send_ack(cl->sock, cl, pkt_seq, 0,
+		                    (const struct sockaddr *)&src_addr, src_len);
 		return;
+	    }
 	}
 
 	pkt_type    = (unsigned char)buf[CL_CTR_WIRE_HDR_SZ];
@@ -4860,6 +5367,24 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    cl_ctr_handle_alive(ip_buf, pubkey, cfg_present, p_manage, p_stick, p_qt, cl);
 	    break;
 	}
+
+	case CL_CTR_PKT_CONSUMER_REL:
+	    /* Acknowledge first, deliver second: the sender is holding a
+	     * retransmit slot on this, and delivery cannot fail in a way the
+	     * acknowledgement should report - the consumer's own callback owns
+	     * what happens next. */
+	    cl_ctr_send_ack(cl->sock, cl, pkt_seq, 0/*session key*/,
+	                    (const struct sockaddr *)&src_addr, src_len);
+	    cl_ctr_handle_consumer(payload, payload_len, sender_ip_buf, cl);
+	    break;
+
+	case CL_CTR_PKT_CONSUMER:
+	    /* session-key only: a consumer message under the bootstrap key
+	     * would come from a node that has not even joined - drop it */
+	    if (is_bootstrap)
+		break;
+	    cl_ctr_handle_consumer(payload, payload_len, sender_ip_buf, cl);
+	    break;
 
 	case CL_CTR_PKT_JOIN_REQ:
 	    cl_ctr_handle_join_req(sock, payload, payload_len, cl,
@@ -4902,7 +5427,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	}
 
 	case CL_CTR_PKT_ACK:
-	    cl_ctr_handle_ack(payload, payload_len, cl);
+	    cl_ctr_handle_ack(payload, payload_len, cl, sender_ip_buf);
 	    break;
 
 	case CL_CTR_PKT_KEY_HANDOFF:
@@ -4972,8 +5497,18 @@ static void cl_ctr_maybe_forward(const char *buf, int n,
 
     /* Shed floods before allocating: charge the source against our own limiter
      * (the target re-checks after it receives the forward). */
-    if (cl_ctr_rate_check(from, src->sin_addr.s_addr) < 0)
-	return;
+    {
+	int is_consumer = (memcmp(buf, CL_CTR_CONSUMER_MAGIC,
+	                          CL_CTR_MAGIC_SZ) == 0);
+
+	/* Judged against the target cluster's membership, not ours - the
+	 * packet is about to be handed to that cluster's worker. */
+	if (is_consumer && !cl_ctr_consumer_src_known(target,
+	                       src->sin_addr.s_addr))
+	    return;
+	if (cl_ctr_rate_check(from, src->sin_addr.s_addr, is_consumer) < 0)
+	    return;
+    }
 
     /* worker_proc_no is written once at worker fork and stable thereafter. */
     proc_no = target->peers ? target->peers->worker_proc_no : -1;
@@ -5942,6 +6477,9 @@ static int cl_ctr_parse_cluster_str(const char *str, cl_ctr_cluster_t *cl)
     strncpy(cl->password, password, sizeof(cl->password) - 1);
     cl->password[sizeof(cl->password) - 1] = '\0';
     cl->manage_shtags = -1; /* sentinel: inherit global default in mod_init */
+    cl->consumer_retries = -1;
+    cl->consumer_retry_ms = -1;
+    cl->consumer_rate = -1;
     cl->master_stickiness = -1; /* sentinel: inherit global default in mod_init */
 
     for (tok = strtok_r(buf, ",", &p); tok; tok = strtok_r(NULL, ",", &p)) {
@@ -5994,6 +6532,30 @@ static int cl_ctr_parse_cluster_str(const char *str, cl_ctr_cluster_t *cl)
 	    }
 	    strncpy(cl->bin_socket, val, CL_CTR_MAX_BIN_SOCK_LEN - 1);
 	    cl->bin_socket[CL_CTR_MAX_BIN_SOCK_LEN - 1] = '\0';
+
+	} else if (strcmp(key, "consumer_retries") == 0) {
+	    cl->consumer_retries = atoi(val);
+	    if (cl->consumer_retries < 0 || cl->consumer_retries > 10) {
+		LM_ERR("clusterer_controller: consumer_retries must be 0..10 "
+		       "in '%s'\n", str);
+		return -1;
+	    }
+
+	} else if (strcmp(key, "consumer_retry_ms") == 0) {
+	    cl->consumer_retry_ms = atoi(val);
+	    if (cl->consumer_retry_ms < 5 || cl->consumer_retry_ms > 5000) {
+		LM_ERR("clusterer_controller: consumer_retry_ms must be "
+		       "5..5000 in '%s'\n", str);
+		return -1;
+	    }
+
+	} else if (strcmp(key, "consumer_rate_limit") == 0) {
+	    cl->consumer_rate = atoi(val);
+	    if (cl->consumer_rate < 1) {
+		LM_ERR("clusterer_controller: consumer_rate_limit must be "
+		       "positive in '%s'\n", str);
+		return -1;
+	    }
 
 	} else if (strcmp(key, "manage_shtags") == 0) {
 	    cl->manage_shtags = atoi(val) ? 1 : 0;
@@ -6051,6 +6613,7 @@ static int cl_ctr_resolve_local_identity(void)
 	    freeifaddrs(ifap);
 	    return -1;
 	}
+	my_ip_src = "my_ip modparam (explicit)";
 	LM_INFO("clusterer_controller: using IP %s on interface %s\n",
 	        my_ip, my_interface_buf);
 
@@ -6089,6 +6652,7 @@ static int cl_ctr_resolve_local_identity(void)
 	else
 	    LM_INFO("clusterer_controller: using IP %s on interface %s\n",
 	            my_ip, my_interface_buf);
+	my_ip_src = "interface modparam (IPv4 of that interface)";
 
     } else {
 	/* ---- Mode 3: neither - auto-detect via kernel routing table ---- */
@@ -6127,6 +6691,7 @@ static int cl_ctr_resolve_local_identity(void)
 
 	inet_ntop(AF_INET, &local.sin_addr, my_ip_buf, sizeof(my_ip_buf));
 	my_ip = my_ip_buf;
+	my_ip_src = "auto-detected via default route to the multicast group";
 
 	/* Reverse-look up the interface name */
 	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
@@ -6219,6 +6784,13 @@ static int mod_init(void)
 {
     struct in_addr addr;
     int            i, j;
+    /* the script's messaging channel and its two events; done here so the
+     * reserved name is claimed before any consumer module registers */
+    if (cl_ctr_script_init() < 0) {
+        LM_ERR("clusterer_controller: cannot set up script messaging\n");
+        return -1;
+    }
+
 
     LM_INFO("clusterer_controller: initialising\n");
 
@@ -6320,6 +6892,36 @@ static int mod_init(void)
     if (cl_ctr_resolve_local_identity() < 0)
 	return -1;
 
+    /* Derive max consumer payload from the interface MTU so jumbo-frame
+     * links (e.g. MTU 9000) are not capped at the 1500-byte default.
+     * Overhead per consumer datagram:
+     *   IP(20) + UDP(8) + wire_hdr(28) + plain_hdr(5) +
+     *   consumer_hdr(3) + max_chan(31) + poly1305_tag(16) = 111 bytes. */
+    if (my_interface_buf[0] != '\0') {
+	struct ifreq _mtu_ifr;
+	int _mtu_sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (_mtu_sock >= 0) {
+	    memset(&_mtu_ifr, 0, sizeof(_mtu_ifr));
+	    memcpy(_mtu_ifr.ifr_name, my_interface_buf, strnlen(my_interface_buf, IF_NAMESIZE - 1));
+	    if (ioctl(_mtu_sock, SIOCGIFMTU, &_mtu_ifr) == 0) {
+		int _mtu = _mtu_ifr.ifr_mtu;
+		int _overhead = 20 + 8 + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
+		                + CL_CTR_CONSUMER_HDR_SZ + CLCTR_MAX_CHAN_LEN + CL_CTR_TAG_SZ;
+		cc_max_payload = _mtu - _overhead;
+		if (cc_max_payload < CLCTR_MAX_PAYLOAD)
+		    cc_max_payload = CLCTR_MAX_PAYLOAD;
+		LM_INFO("clusterer_controller: interface %s MTU=%d, "
+		        "max consumer payload=%d bytes\n",
+		        my_interface_buf, _mtu, cc_max_payload);
+	    } else {
+		LM_WARN("clusterer_controller: SIOCGIFMTU on %s failed: %s - "
+		        "using default max payload %d\n",
+		        my_interface_buf, strerror(errno), cc_max_payload);
+	    }
+	    close(_mtu_sock);
+	}
+    }
+
     if (cl_ctr_discover_bin_sockets() < 0)
 	return -1;
 
@@ -6360,6 +6962,12 @@ static int mod_init(void)
 	    cl->master_stickiness = master_stickiness ? 1 : 0;
 	if (cl->manage_shtags == -1)
 	    cl->manage_shtags = manage_shtags ? 1 : 0;
+	if (cl->consumer_retries == -1)
+	    cl->consumer_retries = consumer_retries;
+	if (cl->consumer_retry_ms == -1)
+	    cl->consumer_retry_ms = consumer_retry_ms;
+	if (cl->consumer_rate == -1)
+	    cl->consumer_rate = consumer_rate_limit;
 
 	/* Resolve which BIN socket to use for this cluster.
 	 * Priority: explicit bin_socket= in cluster string >
@@ -6606,4 +7214,583 @@ cleanup:
 	cl->peers = NULL;
     }
     LM_INFO("clusterer_controller: shut down\n");
+}
+
+/* =========================================================================
+ * Consumer messaging API (api.h)
+ *
+ * Other modules ride the controller's encrypted UDP plane: named
+ * channels, multicast or per-node unicast, delivered to the registered
+ * callback in the cluster worker.  See api.h for the delivery contract.
+ * ========================================================================= */
+
+static cl_ctr_cluster_t *cl_ctr_cluster_by_id(int cluster_id)
+{
+    int i;
+
+    for (i = 0; i < cl_ctr_cluster_count; i++)
+        if (cl_ctr_clusters[i].cluster_id == cluster_id)
+            return &cl_ctr_clusters[i];
+    return NULL;
+}
+
+/* Invoke the registered callback for @chan, if any.  Runs in whichever
+ * process called it - for wire packets and IPC'd sends that is the
+ * cluster worker, which is the documented delivery context. */
+static void cl_ctr_consumer_dispatch(cl_ctr_cluster_t *cl, int src_node_id,
+        const char *chan, int chan_len, const char *payload, int payload_len)
+{
+    str ch, pl;
+    int i;
+
+    for (i = 0; i < cl_ctr_nchannels; i++) {
+        if (cl_ctr_channels[i].len == chan_len &&
+                memcmp(cl_ctr_channels[i].name, chan, chan_len) == 0) {
+            ch.s = (char *)chan;      ch.len = chan_len;
+            pl.s = (char *)payload;   pl.len = payload_len;
+            cl_ctr_channels[i].cb(cl->cluster_id, src_node_id, &ch, &pl);
+            return;
+        }
+    }
+    /* unknown channel: a mixed-version cluster is normal, drop quietly */
+    LM_DBG("clusterer_controller: [cluster %d] no consumer for channel "
+           "'%.*s'\n", cl->cluster_id, chan_len, chan);
+}
+
+/* Receive path (worker, via cl_ctr_recv_one): already through the magic
+ * gate, cluster_id filter, rate limiter, decrypt and seq check. */
+static void cl_ctr_handle_consumer(const char *payload, int payload_len,
+        const char *src_ip, cl_ctr_cluster_t *cl)
+{
+    uint16_t src_id_be;
+    int      chan_len;
+
+    /* our own multicast looped back: self-delivery, when asked for, was
+     * already done locally at send time - never accept it off the wire */
+    if (strcmp(src_ip, my_ip) == 0)
+        return;
+
+    if (payload_len < CL_CTR_CONSUMER_HDR_SZ) {
+        LM_DBG("clusterer_controller: [cluster %d] short consumer packet "
+               "(%d)\n", cl->cluster_id, payload_len);
+        return;
+    }
+    memcpy(&src_id_be, payload, CL_CTR_NODE_ID_SZ);
+    chan_len = (unsigned char)payload[CL_CTR_NODE_ID_SZ];
+    if (chan_len == 0 || chan_len > CLCTR_MAX_CHAN_LEN ||
+            payload_len < CL_CTR_CONSUMER_HDR_SZ + chan_len) {
+        LM_DBG("clusterer_controller: [cluster %d] bad consumer channel "
+               "length %d (payload %d)\n", cl->cluster_id, chan_len,
+               payload_len);
+        return;
+    }
+
+    cl_ctr_consumer_dispatch(cl, ntohs(src_id_be),
+            payload + CL_CTR_CONSUMER_HDR_SZ, chan_len,
+            payload + CL_CTR_CONSUMER_HDR_SZ + chan_len,
+            payload_len - CL_CTR_CONSUMER_HDR_SZ - chan_len);
+}
+
+/* Runs in the cluster worker.  Builds, seals and sends the consumer
+ * packet - and/or dispatches locally for the self-delivery cases. */
+static void cl_ctr_rpc_consumer_send(int sender, void *param)
+{
+    struct cl_ctr_consumer_job *job = (struct cl_ctr_consumer_job *)param;
+    cl_ctr_cluster_t *cl = job->cl;
+    char      pkt[CL_CTR_CONSUMER_PKT_MAX];
+    char      dst_ip[CL_CTR_MAX_IP_LEN + 1];
+    uint32_t  seq;
+    uint16_t  id_be;
+    int       plain_len, i, to_self = 0, on_wire = 1, reliable = 0;
+
+    /* unicast to our own id never touches the wire; multicast with
+     * CLCTR_SEND_TO_SELF touches it AND dispatches locally */
+    if (job->dst_node_id != 0 && job->dst_node_id == my_node_id) {
+        to_self = 1;
+        on_wire = 0;
+    } else if (job->flags & CLCTR_SEND_TO_SELF) {
+        to_self = 1;
+    }
+
+    /* Reliability is per-recipient: it needs an address to retransmit to and
+     * an acknowledgement to stop on.  A multicast has neither, and ACKing one
+     * from every member is the implosion the join handshake already refuses -
+     * so a reliable send to everyone is N unicasts, which is what send_list
+     * and the broadcast helper do before they get here. */
+    reliable = (job->flags & CLCTR_SEND_RELIABLE) != 0;
+
+    if (on_wire) {
+        if (!cl->have_session_key) {
+            LM_DBG("clusterer_controller: [cluster %d] consumer send before "
+                   "session key - dropped\n", cl->cluster_id);
+            on_wire = 0;
+        }
+    }
+
+    if (on_wire) {
+        seq   = htonl(++cl->peers->my_consumer_seq);
+        id_be = htons(my_node_id);
+
+        /* the consumer tag, so the receiver's pre-decrypt rate limiter
+         * charges this against the consumer budget rather than the much
+         * smaller control-plane one.  Same session key either way - the
+         * tag is a routing hint, not a key selector here. */
+        memcpy(pkt, CL_CTR_CONSUMER_MAGIC, CL_CTR_MAGIC_SZ);
+        pkt[CL_CTR_WIRE_HDR_SZ] = (char)(reliable ? CL_CTR_PKT_CONSUMER_REL
+                                                  : CL_CTR_PKT_CONSUMER);
+        memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
+        memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ, &id_be,
+               CL_CTR_NODE_ID_SZ);
+        pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_NODE_ID_SZ] =
+               (char)job->chan_len;
+        memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
+               + CL_CTR_CONSUMER_HDR_SZ, job->chan, job->chan_len);
+        memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
+               + CL_CTR_CONSUMER_HDR_SZ + job->chan_len, job->payload,
+               job->payload_len);
+        plain_len = CL_CTR_PLAIN_HDR_SZ + CL_CTR_CONSUMER_HDR_SZ
+                    + job->chan_len + job->payload_len;
+
+        if (job->dst_node_id == 0) {
+            cl_ctr_seal_and_send(cl->sock, cl, pkt, plain_len,
+                    cl->session_key,
+                    reliable ? CL_CTR_PKT_CONSUMER_REL : CL_CTR_PKT_CONSUMER);
+            if (reliable)
+                /* pkt is a char[] because cl_ctr_seal_and_send() writes
+                 * into it in place; the retx queue takes it read-only as
+                 * unsigned char, which is the natural type for wire bytes.
+                 * The cast is the sign difference only - same address, same
+                 * bytes - and silences -Wpointer-sign without retyping the
+                 * buffer, which would only move the warning to the
+                 * seal_and_send() calls that legitimately need char *. */
+                cl_ctr_retx_enqueue_bcast(cl, ntohl(seq),
+                        (const unsigned char *)pkt, plain_len);
+        } else {
+            struct sockaddr_in d;
+
+            dst_ip[0] = '\0';
+            lock_start_read(cl->peers->lock);
+            for (i = 0; i < cl->peers->count; i++) {
+                if (cl->peers->entries[i].node_id == job->dst_node_id) {
+                    strcpy(dst_ip, cl->peers->entries[i].ip);
+                    break;
+                }
+            }
+            lock_stop_read(cl->peers->lock);
+
+            if (!dst_ip[0]) {
+                LM_DBG("clusterer_controller: [cluster %d] consumer send to "
+                       "unknown node %u - dropped\n", cl->cluster_id,
+                       job->dst_node_id);
+            } else {
+                memset(&d, 0, sizeof d);
+                d.sin_family = AF_INET;
+                d.sin_port   = cl->mcast_dest.sin_port;
+                if (inet_pton(AF_INET, dst_ip, &d.sin_addr) != 1) {
+                    LM_ERR("clusterer_controller: [cluster %d] bad peer ip "
+                           "'%s'\n", cl->cluster_id, dst_ip);
+                } else {
+                    cl_ctr_seal_and_send_to(cl->sock, cl, pkt, plain_len,
+                            cl->session_key,
+                            reliable ? CL_CTR_PKT_CONSUMER_REL
+                                     : CL_CTR_PKT_CONSUMER,
+                            (const struct sockaddr *)&d, sizeof d);
+                    if (reliable)
+                        /* same sign-only cast as the broadcast path above */
+                        cl_ctr_retx_enqueue_consumer(cl, ntohl(seq),
+                                CL_CTR_PKT_CONSUMER_REL,
+                                (const unsigned char *)pkt, plain_len,
+                                (const struct sockaddr *)&d, sizeof d);
+                }
+            }
+        }
+    }
+
+    if (to_self)
+        cl_ctr_consumer_dispatch(cl, my_node_id, job->chan, job->chan_len,
+                (const char *)job->payload, job->payload_len);
+
+    shm_free(job);
+}
+
+static int clctr_register_channel(str *channel, clctr_msg_cb_f cb)
+{
+    int i;
+
+    if (!channel || !channel->s || channel->len <= 0 ||
+            channel->len > CLCTR_MAX_CHAN_LEN || !cb) {
+        LM_ERR("bad consumer channel registration\n");
+        return -1;
+    }
+    for (i = 0; i < cl_ctr_nchannels; i++) {
+        if (cl_ctr_channels[i].len == channel->len &&
+                memcmp(cl_ctr_channels[i].name, channel->s, channel->len) == 0) {
+            LM_ERR("consumer channel '%.*s' already registered\n",
+                   channel->len, channel->s);
+            return -1;
+        }
+    }
+    if (cl_ctr_nchannels == CL_CTR_MAX_CHANNELS) {
+        LM_ERR("consumer channel table full (%d)\n", CL_CTR_MAX_CHANNELS);
+        return -1;
+    }
+    memcpy(cl_ctr_channels[cl_ctr_nchannels].name, channel->s, channel->len);
+    cl_ctr_channels[cl_ctr_nchannels].name[channel->len] = '\0';
+    cl_ctr_channels[cl_ctr_nchannels].len = channel->len;
+    cl_ctr_channels[cl_ctr_nchannels].cb  = cb;
+    cl_ctr_nchannels++;
+    LM_DBG("consumer channel '%.*s' registered\n", channel->len, channel->s);
+    return 0;
+}
+
+/* Common caller side: validate, marshal into shm, hand to the worker. */
+static int cl_ctr_consumer_submit(int cluster_id, int dst_node_id,
+        str *channel, str *payload, int flags)
+{
+    struct cl_ctr_consumer_job *job;
+    cl_ctr_cluster_t *cl;
+    int payload_len = payload ? payload->len : 0;
+    int proc_no;
+
+    if (!channel || !channel->s || channel->len <= 0 ||
+            channel->len > CLCTR_MAX_CHAN_LEN)
+        return -1;
+    if (payload_len < 0 || payload_len > cc_max_payload) {
+        LM_ERR("consumer payload of %d exceeds the %d-byte datagram bound - "
+               "use BIN for bulk data\n", payload_len, cc_max_payload);
+        return -1;
+    }
+    cl = cl_ctr_cluster_by_id(cluster_id);
+    if (!cl) {
+        LM_ERR("consumer send to unknown cluster %d\n", cluster_id);
+        return -1;
+    }
+    /* worker_proc_no is written once at worker fork and stable thereafter */
+    proc_no = cl->peers ? cl->peers->worker_proc_no : -1;
+    if (proc_no < 0)
+        return -2;
+
+    job = shm_malloc(sizeof *job + payload_len);
+    if (!job) {
+        LM_ERR("no shm for a consumer send\n");
+        return -1;
+    }
+    job->cl          = cl;
+    job->dst_node_id = (uint16_t)dst_node_id;
+    job->flags       = flags;
+    job->chan_len    = channel->len;
+    job->payload_len = payload_len;
+    memcpy(job->chan, channel->s, channel->len);
+    if (payload_len)
+        memcpy(job->payload, payload->s, payload_len);
+
+    if (ipc_send_rpc(proc_no, cl_ctr_rpc_consumer_send, job) < 0) {
+        LM_ERR("cannot dispatch consumer send to the cluster %d worker\n",
+               cluster_id);
+        shm_free(job);
+        return -2;
+    }
+    return 0;
+}
+
+static int clctr_send_mcast(int cluster_id, str *channel, str *payload,
+        int flags)
+{
+    return cl_ctr_consumer_submit(cluster_id, 0, channel, payload, flags);
+}
+
+static int clctr_send_list(int cluster_id, const int *node_ids, int n,
+                           str *channel, str *payload, int flags, int *unknown)
+{
+    int i, sent = 0, missing = 0;
+
+    if (!node_ids || n <= 0)
+        return -1;
+
+    /* One unicast per target rather than a multicast the receivers filter:
+     * a multicast is decrypted by every member, so "addressed to three of
+     * you" would still put the payload in front of all of them.  The cost is
+     * linear in the list, which is the honest price of addressing a subset. */
+    for (i = 0; i < n; i++) {
+        if (node_ids[i] <= 0) {
+            missing++;
+            continue;
+        }
+        if (clctr_send_ucast(cluster_id, node_ids[i], channel, payload,
+                             flags) < 0)
+            missing++;
+        else
+            sent++;
+    }
+    if (unknown)
+        *unknown = missing;
+    if (missing)
+        LM_DBG("clusterer_controller: [cluster %d] list send reached %d of "
+               "%d node(s)\n", cluster_id, sent, n);
+    return sent;
+}
+
+static int clctr_send_ucast(int cluster_id, int node_id, str *channel,
+        str *payload, int flags)
+{
+    if (node_id <= 0 || node_id > CL_CTR_MAX_PEERS)
+        return -1;
+    return cl_ctr_consumer_submit(cluster_id, node_id, channel, payload,
+            flags);
+}
+
+/* Readable from ANY process: the worker-local my_node_id global is only
+ * authoritative inside the worker, so read our own entry from the shm
+ * peer table instead. */
+static int clctr_get_my_node_id(int cluster_id)
+{
+    cl_ctr_cluster_t *cl = cl_ctr_cluster_by_id(cluster_id);
+    int i, id = 0;
+
+    if (!cl || !cl->peers)
+        return 0;
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        if (strcmp(cl->peers->entries[i].ip, my_ip) == 0) {
+            id = cl->peers->entries[i].node_id;
+            break;
+        }
+    }
+    lock_stop_read(cl->peers->lock);
+    return id;
+}
+
+/* ---- script tier: receive ---------------------------------------------- */
+
+static void cl_ctr_script_recv(int cluster_id, int src_node_id, str *channel,
+		str *payload)
+{
+	str msg, tag;
+	unsigned char kind;
+	int taglen;
+
+	if (payload->len < 2)
+		goto bad;
+	kind = (unsigned char)payload->s[0];
+	taglen = (unsigned char)payload->s[1];
+	if (payload->len < 2 + taglen)
+		goto bad;
+	tag.s = payload->s + 2;
+	tag.len = taglen;
+	msg.s = payload->s + 2 + taglen;
+	msg.len = payload->len - 2 - taglen;
+
+	/* free when nobody is listening - the same gate the module's other
+	 * events use */
+	if (!evi_probe_event(kind == CL_CTR_SCRIPT_RPL ? ei_rpl_id : ei_req_id))
+		return;
+
+	if (evi_param_set_int(ei_clid_p, &cluster_id) < 0 ||
+	    evi_param_set_int(ei_srcid_p, &src_node_id) < 0 ||
+	    evi_param_set_str(ei_msg_p, &msg) < 0 ||
+	    evi_param_set_str(ei_tag_p, &tag) < 0) {
+		LM_ERR("clusterer_controller: cannot fill the message event\n");
+		return;
+	}
+	if (evi_raise_event(kind == CL_CTR_SCRIPT_RPL ? ei_rpl_id : ei_req_id,
+	        ei_params) < 0)
+		LM_ERR("clusterer_controller: cannot raise the message event\n");
+	return;
+bad:
+	LM_ERR("clusterer_controller: malformed script message from node %d\n",
+		src_node_id);
+}
+
+/* ---- script tier: send -------------------------------------------------- */
+
+static int cl_ctr_script_send(int cluster_id, int node_id, str *gen_msg,
+		str *tag, unsigned char kind, int flags)
+{
+	char buf[CLCTR_MAX_PAYLOAD];
+	str pl;
+	int taglen = tag ? tag->len : 0;
+
+	if (!gen_msg || gen_msg->len <= 0)
+		return -1;
+	if (taglen > 255)
+		taglen = 255;
+	if (2 + taglen + gen_msg->len > cc_max_payload) {
+		LM_ERR("clusterer_controller: message of %d bytes is more than the "
+			"%d a datagram carries\n", gen_msg->len, cc_max_payload);
+		return -1;
+	}
+	buf[0] = (char)kind;
+	buf[1] = (char)taglen;
+	if (taglen)
+		memcpy(buf + 2, tag->s, taglen);
+	memcpy(buf + 2 + taglen, gen_msg->s, gen_msg->len);
+	pl.s = buf;
+	pl.len = 2 + taglen + gen_msg->len;
+
+	if (node_id > 0)
+		return clctr_send_ucast(cluster_id, node_id, &cl_ctr_script_chan,
+			&pl, flags) < 0 ? -1 : 1;
+	return clctr_send_mcast(cluster_id, &cl_ctr_script_chan, &pl, flags) < 0
+		? -1 : 1;
+}
+
+static int cmd_cl_ctr_broadcast_req(struct sip_msg *msg, int *cluster_id,
+		str *gen_msg, str *tag, int *reliable)
+{
+	/* Reliability is asked for per send rather than per channel: most
+	 * messages are better off cheap, and the ones that are not know it. */
+	return cl_ctr_script_send(*cluster_id, 0, gen_msg, tag,
+		CL_CTR_SCRIPT_REQ,
+		(reliable && *reliable) ? CLCTR_SEND_RELIABLE : 0);
+}
+
+static int cmd_cl_ctr_send_req(struct sip_msg *msg, int *cluster_id,
+		int *node_id, str *gen_msg, str *tag, int *reliable)
+{
+	return cl_ctr_script_send(*cluster_id, *node_id, gen_msg, tag,
+		CL_CTR_SCRIPT_REQ,
+		(reliable && *reliable) ? CLCTR_SEND_RELIABLE : 0);
+}
+
+/**
+ * cl_ctr_send_req_list() - send one request to the nodes named in an AVP.
+ *
+ * The AVP is read as a list of node ids, in the order the script built it.
+ * Every target gets its own unicast: a multicast is decrypted by every
+ * member, so addressing a subset over one would still hand the payload to
+ * the nodes that were not addressed.
+ *
+ * Returns the number of nodes the message went to, so a script can compare
+ * it against the size of its own list; entries that name a node which is
+ * not a current member are skipped rather than failing the whole send.
+ */
+static int cmd_cl_ctr_send_req_list(struct sip_msg *msg, int *cluster_id,
+		pv_spec_t *nodes, str *gen_msg, str *tag, pv_spec_t *out)
+{
+	int  ids[CL_CTR_MAX_PEERS];
+	int  n = 0, sent, unknown = 0;
+	struct usr_avp *avp = NULL;
+	int_str val;
+
+	if (!cluster_id || !nodes || !gen_msg)
+		return -1;
+	if (nodes->type != PVT_AVP) {
+		LM_ERR("clusterer_controller: the node list must be an AVP\n");
+		return -1;
+	}
+
+	/* search_first_avp/search_next walk newest-first; the script's own
+	 * order is not preserved and does not need to be - every named node
+	 * gets the same message. */
+	avp = search_first_avp(nodes->pvp.pvn.u.isname.type,
+	                       nodes->pvp.pvn.u.isname.name.n, &val, NULL);
+	while (avp && n < CL_CTR_MAX_PEERS) {
+		if (!(avp->flags & AVP_VAL_STR))
+			ids[n++] = (int)val.n;
+		else
+			LM_DBG("clusterer_controller: skipping a non-numeric "
+			       "entry in the node list\n");
+		avp = search_next_avp(avp, &val);
+	}
+	if (n == 0) {
+		LM_WARN("clusterer_controller: the node list is empty - "
+			"nothing sent\n");
+		return -1;
+	}
+	if (avp)
+		LM_WARN("clusterer_controller: node list longer than the %d a "
+			"cluster can hold - the rest is ignored\n",
+			CL_CTR_MAX_PEERS);
+
+	{
+		char  buf[CLCTR_MAX_PAYLOAD];
+		str   pl;
+		int   tlen = tag ? tag->len : 0;
+
+		if (tlen > 255)
+			tlen = 255;
+		if (2 + tlen + gen_msg->len > (int)sizeof(buf)) {
+			LM_ERR("clusterer_controller: message too large for the "
+			       "cluster plane (%d bytes)\n", gen_msg->len);
+			return -1;
+		}
+		buf[0] = (char)CL_CTR_SCRIPT_REQ;
+		buf[1] = (char)tlen;
+		if (tlen)
+			memcpy(buf + 2, tag->s, tlen);
+		memcpy(buf + 2 + tlen, gen_msg->s, gen_msg->len);
+		pl.s   = buf;
+		pl.len = 2 + tlen + gen_msg->len;
+
+		sent = clctr_send_list(*cluster_id, ids, n, &cl_ctr_script_chan,
+		                       &pl, 0, &unknown);
+	}
+	/* How many nodes it reached goes out through a variable, never through
+	 * the return value: the core stops the script when an action returns
+	 * zero, and "reached nobody" is a real answer a script must be able to
+	 * see rather than a reason to stop.  The return value is therefore only
+	 * whether the send could be attempted. */
+	if (out) {
+		pv_value_t v;
+
+		memset(&v, 0, sizeof v);
+		v.flags = PV_TYPE_INT | PV_VAL_INT;
+		v.ri    = sent < 0 ? 0 : sent;
+		if (pv_set_value(msg, out, 0, &v) < 0)
+			LM_ERR("clusterer_controller: cannot write the delivery "
+			       "count to the output variable\n");
+	}
+	if (sent <= 0)
+		return -1;
+	if (unknown)
+		LM_DBG("clusterer_controller: [cluster %d] %d of %d target(s) "
+		       "were not reachable members\n", *cluster_id, unknown, n);
+	return 1;
+}
+
+static int cmd_cl_ctr_send_rpl(struct sip_msg *msg, int *cluster_id,
+		int *node_id, str *gen_msg, str *tag)
+{
+	return cl_ctr_script_send(*cluster_id, *node_id, gen_msg, tag,
+		CL_CTR_SCRIPT_RPL, 0);
+}
+
+/* Publish the two events and claim the script's channel.  Called from
+ * mod_init, before any consumer registers, so the reserved name cannot be
+ * taken by a module. */
+static int cl_ctr_script_init(void)
+{
+	ei_req_id = evi_publish_event(ei_req_name);
+	ei_rpl_id = evi_publish_event(ei_rpl_name);
+	if (ei_req_id == EVI_ERROR || ei_rpl_id == EVI_ERROR) {
+		LM_ERR("clusterer_controller: cannot publish the message events\n");
+		return -1;
+	}
+	ei_params = pkg_malloc(sizeof *ei_params);
+	if (!ei_params) {
+		LM_ERR("clusterer_controller: no pkg for the event parameters\n");
+		return -1;
+	}
+	memset(ei_params, 0, sizeof *ei_params);
+	if (!(ei_clid_p  = evi_param_create(ei_params, &ei_clid_pname))  ||
+	    !(ei_srcid_p = evi_param_create(ei_params, &ei_srcid_pname)) ||
+	    !(ei_msg_p   = evi_param_create(ei_params, &ei_msg_pname))   ||
+	    !(ei_tag_p   = evi_param_create(ei_params, &ei_tag_pname))) {
+		LM_ERR("clusterer_controller: cannot create the event parameters\n");
+		return -1;
+	}
+	return clctr_register_channel(&cl_ctr_script_chan, cl_ctr_script_recv);
+}
+
+int load_clctr(clctr_api_t *api)
+{
+    if (!api)
+        return -1;
+    api->register_channel = clctr_register_channel;
+    api->send_mcast       = clctr_send_mcast;
+    api->send_ucast       = clctr_send_ucast;
+    api->send_list        = clctr_send_list;
+    api->get_my_node_id   = clctr_get_my_node_id;
+    api->get_my_ip        = cl_ctr_get_my_ip;
+    return 0;
 }

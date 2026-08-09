@@ -1193,6 +1193,75 @@ modparam("clusterer_controller", "on_config_mismatch", "reject")
 
     </section><!-- exported_parameters -->
 
+	<section id="param_consumer_rate_limit" xreflabel="consumer_rate_limit">
+		<title><varname>consumer_rate_limit</varname> (int)</title>
+		<para>
+			How many packets a second this node accepts from any one
+			source address on the messaging API described in
+			<xref linkend="messaging"/>, before it starts dropping them.
+			Separate from the control plane's own much smaller budget,
+			which a busy consumer would otherwise exhaust: the two are
+			counted apart so neither can starve the other.
+		</para>
+		<para>
+			Set it per cluster in the <varname>cluster</varname> string
+			to override this default for that cluster alone.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1000</quote>.</emphasis>
+		</para>
+	</section>
+
+	<section id="param_consumer_retries" xreflabel="consumer_retries">
+		<title><varname>consumer_retries</varname> (int)</title>
+		<para>
+			How many times a message sent with acknowledgement
+			(<xref linkend="messaging_reliable"/>) is sent again while it
+			has not been acknowledged. Zero disables retransmission and
+			leaves only the acknowledgement itself, which is still worth
+			having: it is how the sender learns the message arrived.
+		</para>
+		<para>
+			Set it per cluster in the <varname>cluster</varname> string.
+			A node can belong to several clusters and they are not alike -
+			one may run over a quiet management network where a lost packet
+			is a curiosity, another across a link where it is routine - so
+			one number for all of them is rarely right.
+		</para>
+		<para>
+			When a reliable send finishes, the log says how much of this
+			budget it actually needed, so the configured value can be
+			judged against what the network does:
+		</para>
+		<programlisting format="linespecific">
+broadcast seq 41 acknowledged by all 3 member(s) after 0 of the 2 retries
+configured for this cluster
+		</programlisting>
+		<para>
+			and when it gives up, how far it got:
+		</para>
+		<programlisting format="linespecific">
+broadcast seq 44 reached 2 of 3 member(s), giving up after 2 of the 2 retries
+configured for this cluster
+		</programlisting>
+		<para>
+			<emphasis>Default value is <quote>2</quote>.</emphasis>
+		</para>
+	</section>
+
+	<section id="param_consumer_retry_ms" xreflabel="consumer_retry_ms">
+		<title><varname>consumer_retry_ms</varname> (int)</title>
+		<para>
+			Milliseconds between those attempts. Accepted range is 5 to
+			5000. Set it per cluster in the <varname>cluster</varname>
+			string, for the same reason as
+			<xref linkend="param_consumer_retries"/>.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>40</quote>.</emphasis>
+		</para>
+	</section>
+
     <section id="exported_mi" xreflabel="Exported MI Functions">
     <title>Exported MI Functions</title>
 
@@ -1477,6 +1546,169 @@ if (cl_ctr_node_present(1, 3) &amp;&amp; cl_ctr_node_is_master(1, 3)) {
 }
 	</programlisting>
     </example>
+    </section>
+
+    <section id="messaging" xreflabel="Messaging Between Nodes">
+    <title>Messaging Between Nodes</title>
+    <para>
+	The channel the controller keeps for its own membership traffic is also
+	available to carry other people's messages: a script can talk to its
+	peers, and so can another module. The surface deliberately mirrors the
+	generic messaging the <emphasis>clusterer</emphasis> module offers -
+	the same shapes, the same event parameters - so moving between them is
+	familiar. What differs is underneath, and it differs in both directions:
+	one multicast packet instead of a send per peer, over an encrypted
+	channel rather than a plaintext one, but by datagram rather than over a
+	stream, which is the subject of
+	<xref linkend="messaging_reliable"/> below.
+    </para>
+    <para>
+	Messages are limited to 1300 bytes so they fit a datagram, and a channel
+	name to 31 characters. The module reserves the channel it uses for
+	script traffic during startup, before any consumer can register, so a
+	module cannot claim it by accident.
+    </para>
+
+    <section id="messaging_script" xreflabel="From the script">
+    <title>From the script</title>
+    <itemizedlist>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_broadcast_req(cluster_id, message
+	    [, tag [, reliable]])</emphasis> — send a request to every member of
+	    the cluster, as one multicast packet. The sender does not receive
+	    its own broadcast. The <emphasis>tag</emphasis> is carried through
+	    to the receiving event route. Pass 1 for
+	    <emphasis>reliable</emphasis> to ask for acknowledgement.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_send_req(cluster_id, node_id, message
+	    [, tag [, reliable]])</emphasis> — send a request to one node.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_send_req_list(cluster_id, nodes_avp,
+	    message [, tag [, out_var]])</emphasis> — send to the nodes named in
+	    an AVP, one unicast each. <emphasis>out_var</emphasis> receives how
+	    many nodes it was <emphasis>sent to</emphasis>; entries naming a node
+	    that is no longer a member are skipped rather than failing the send
+	    for the rest.
+	</para></listitem>
+	<listitem><para>
+	    <emphasis role="bold">cl_ctr_send_rpl(cluster_id, node_id, message
+	    [, tag])</emphasis> — send a reply, normally from inside the request
+	    event route, back to <varname>$param(src_id)</varname>.
+	</para></listitem>
+    </itemizedlist>
+    <para>
+	Arriving messages are delivered as events:
+	<emphasis>E_CL_CTR_REQ_RECEIVED</emphasis> for requests and
+	<emphasis>E_CL_CTR_RPL_RECEIVED</emphasis> for replies, each carrying
+	<varname>cluster_id</varname>, <varname>src_id</varname>,
+	<varname>msg</varname> and <varname>tag</varname>.
+    </para>
+    <example>
+	<title>Talking to the other nodes</title>
+	<programlisting format="linespecific">
+event_route[E_CL_CTR_REQ_RECEIVED] {
+    xlog("node $param(src_id) says: $param(msg)\n");
+    cl_ctr_send_rpl($param(cluster_id), $param(src_id), "ack", $param(tag));
+}
+
+# to everyone, cheaply
+cl_ctr_broadcast_req(1, "cache flushed");
+
+# to everyone, with a tag, and ask to be told it arrived
+cl_ctr_broadcast_req(1, "config changed", "cfg", 1);
+
+# to a few named nodes.  Assigning to the same AVP again adds a value
+# rather than replacing one, so this names two nodes - but note that the
+# values are stored newest first, so they are read back 5 then 2.  It
+# makes no difference here, since every named node gets the same message.
+$avp(nodes) = 2;
+$avp(nodes) = 5;
+if (cl_ctr_send_req_list(1, $avp(nodes), "just for you", "mytag", $var(sent)))
+    xlog("sent to $var(sent) node(s)\n");
+	</programlisting>
+    </example>
+    <para>
+	Note where the count comes back. It is written into a variable, and the
+	function itself is simply true or false, which is why the call sits
+	inside the <emphasis>if</emphasis> above rather than being followed by a
+	test of its return code. It has to be that way round: &osips; stops
+	running the script when a function returns zero, so a function that
+	returned a count would halt the route on the day it reached nobody -
+	which is a real answer a script must be able to see, not a reason to
+	stop.
+    </para>
+    <para>
+	Note also what that count is, and is not. It is how many nodes the
+	message was <emphasis>sent to</emphasis>, which is known immediately.
+	How many <emphasis>acknowledged</emphasis> it is not knowable at that
+	point - the answers arrive afterwards - so for a reliable send that
+	result is reported to the log as it completes
+	(<xref linkend="param_consumer_retries"/>) rather than handed back to
+	the script. Surfacing it to the script as an event is planned.
+    </para>
+    </section>
+
+    <section id="messaging_module" xreflabel="From another module">
+    <title>From another module</title>
+    <para>
+	A module binds the API with <function>load_clctr()</function> and gets
+	<function>register_channel()</function> to claim a name and receive what
+	arrives on it, <function>send_mcast()</function> to reach every member,
+	<function>send_ucast()</function> to reach one,
+	<function>send_list()</function> to reach a named set, and
+	<function>get_my_node_id()</function>. Sends are handed to the
+	controller's worker, so any process may call them.
+    </para>
+    <para>
+	Two flags. <emphasis>CLCTR_SEND_TO_SELF</emphasis> also delivers the
+	message to this node, without putting a packet on the wire, so a
+	consumer can treat itself the same as its peers.
+	<emphasis>CLCTR_SEND_RELIABLE</emphasis> is described next.
+    </para>
+    </section>
+
+    <section id="messaging_reliable" xreflabel="What delivery guarantees">
+    <title>What delivery guarantees</title>
+    <para>
+	By default: best effort, unordered, and at most once. A message is sent
+	and not spoken of again. That suits anything the sender can afford to
+	repeat - a cache that will be asked a second time, a hint that is worth
+	having and not worth waiting for - and it is the cheapest thing the
+	network can do.
+    </para>
+    <para>
+	It is also weaker than what <emphasis>clusterer</emphasis> gives you
+	over a stream, and that is worth saying plainly rather than leaving to
+	be discovered: a script moved across without further thought has quietly
+	traded reliable, ordered delivery for neither.
+    </para>
+    <para>
+	<emphasis>CLCTR_SEND_RELIABLE</emphasis>, or a 1 in the last argument of
+	<function>cl_ctr_broadcast_req()</function>, asks for the message to be
+	acknowledged and sent again while it is not, up to
+	<xref linkend="param_consumer_retries"/> times at
+	<xref linkend="param_consumer_retry_ms"/> intervals. It is chosen per
+	send rather than per channel, because most messages are better off cheap
+	and the ones that are not know who they are.
+    </para>
+    <para>
+	The cost is one acknowledgement per recipient. On a large cluster a
+	reliable broadcast is therefore one packet out and one back from every
+	member, where an ordinary one is a single packet and no answer at all.
+	It remains a multicast - sending it as one unicast per member would be
+	roughly twice the packets for the same delivery - and only the members
+	that fail to answer are then repaired individually.
+    </para>
+    <para>
+	Addressing a set of nodes is the other way round: those go out as one
+	unicast each, because a multicast is decrypted by every member, so a
+	message <quote>addressed</quote> to three of them over a multicast would
+	still be handed to all the others. Filtering after decryption is not
+	addressing.
+    </para>
+    </section>
     </section>
 
     <section id="multiple_clusters" xreflabel="Multiple Clusters">
