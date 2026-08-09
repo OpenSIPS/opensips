@@ -520,6 +520,9 @@ typedef enum {
  * ========================================================================= */
 
 #define CL_CTR_MAX_CLUSTERS  16  /* max cluster= entries */
+/* Minimum seconds between the shared-port misdelivery warnings; the drop
+ * they report can otherwise recur per packet. */
+#define CL_CTR_FWD_WARN_IVL  30
 
 /* Forward-declared so cl_ctr_cluster_t can embed a pointer */
 typedef struct cl_ctr_peers_ cl_ctr_peers_t;
@@ -2591,6 +2594,47 @@ static int cl_ctr_setup_socket(cl_ctr_cluster_t *cl)
     local.sin_family      = AF_INET;
     local.sin_port        = htons((uint16_t)cl->multicast_port);
     local.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    /* Is somebody else already on this ip:port?
+     *
+     * We bind INADDR_ANY:multicast_port with SO_REUSEADDR because that is what
+     * multicast reception needs, and it is also what lets a SECOND process take
+     * the same port without any error.  That second process is not harmless:
+     * the kernel fans multicast out to every co-bound socket, but delivers a
+     * UNICAST datagram to exactly ONE of them, chosen without reference to the
+     * destination address.  Every 1:1 leg of the protocol - KEY_GRANT during
+     * the join, consumer replies, ACKs - can therefore land in the wrong
+     * process.  The symptom is deeply misleading: the joiner never sees its
+     * KEY_GRANT and dies with "cannot authenticate ... wrong password", sending
+     * the operator after a credential problem that does not exist.
+     *
+     * Detect it by probing the port WITHOUT SO_REUSEADDR: that bind fails with
+     * EADDRINUSE precisely when someone already holds it, and succeeds when the
+     * port is free.  (A probe WITH SO_REUSEADDR would succeed either way, which
+     * is why the real bind below cannot tell the difference.)
+     *
+     * Advisory only - never fatal.  A restart can briefly race the outgoing
+     * process, and one spurious warning is a far smaller cost than refusing to
+     * start.  cl_ctr_maybe_forward() still recovers the in-process case, where
+     * several clusters in THIS process share a port. */
+    {
+	int probe = socket(AF_INET, SOCK_DGRAM, 0);
+
+	if (probe >= 0) {
+	    if (bind(probe, (struct sockaddr *)&local, sizeof(local)) < 0 &&
+	        errno == EADDRINUSE)
+		LM_WARN("clusterer_controller: [cluster %d] another process is "
+			"already bound to port %d - multicast will reach both, "
+			"but every unicast leg (KEY_GRANT, consumer replies) "
+			"goes to only ONE of them, chosen by the kernel and not "
+			"by address.  A node that cannot join, or a consumer "
+			"that never gets replies, is explained by this and not "
+			"by a bad password.  One controller instance per host "
+			"per port is what is supported.\n",
+			cl->cluster_id, cl->multicast_port);
+	    close(probe);
+	}
+    }
 
     if (bind(sock, (struct sockaddr *)&local, sizeof(local)) < 0) {
 	LM_ERR("clusterer_controller: bind() port %d: %s\n",
@@ -5526,8 +5570,38 @@ static void cl_ctr_maybe_forward(const char *buf, int n,
 	}
     }
     if (!target) {
-	LM_DBG("clusterer_controller: [cluster %d] no local cluster %u for "
-	       "packet on shared port, dropping\n", from->cluster_id, pkt_cid);
+	/* Nothing in THIS process owns that cluster_id, so the datagram is
+	 * unrecoverable here - it was almost certainly meant for a different
+	 * process co-bound to the same port (see the probe in
+	 * cl_ctr_setup_socket).  This used to be LM_DBG, which meant it was
+	 * invisible at every log_level anyone actually runs, and a whole class
+	 * of "the cluster just does not converge" reports had no trace at all.
+	 *
+	 * Rate-limited because a misdelivering peer can produce one of these
+	 * per packet, and a warning that can fire at line rate is its own
+	 * outage.  First occurrence prints immediately; after that at most one
+	 * per CL_CTR_FWD_WARN_IVL seconds, carrying the count it stands for. */
+	static time_t last_warn;
+	static unsigned long suppressed;
+	time_t now = time(NULL);
+
+	if (last_warn == 0 || now - last_warn >= CL_CTR_FWD_WARN_IVL) {
+	    if (suppressed)
+		LM_WARN("clusterer_controller: [cluster %d] no local cluster %u "
+			"for packet on shared port, dropping (%lu more in the "
+			"last %lds - another process is probably bound to this "
+			"port)\n", from->cluster_id, pkt_cid, suppressed,
+			(long)(now - last_warn));
+	    else
+		LM_WARN("clusterer_controller: [cluster %d] no local cluster %u "
+			"for packet on shared port, dropping - another process "
+			"is probably bound to this port\n",
+			from->cluster_id, pkt_cid);
+	    last_warn  = now;
+	    suppressed = 0;
+	} else {
+	    suppressed++;
+	}
 	return;
     }
 
