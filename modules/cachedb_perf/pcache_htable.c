@@ -247,6 +247,12 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		*vlen_out = vlen;
 		*exp_out = r->expires;
 		*fl_out = r->rflags;
+		/* probe: the caller wants existence, length and expiry, not the
+		 * bytes.  The metadata above is already published, so a probe
+		 * validates exactly what a read would - it just stops here,
+		 * before the copy (and without touching the record's payload). */
+		if (!dst)
+			return 0;
 		if (vlen > dstlen)
 			return PCACHE_E_TOOSMALL;   /* nothing copied */
 		memcpy(dst, r->data + klen, vlen);
@@ -312,10 +318,11 @@ static int _pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key,
 	if (exp_out)
 		*exp_out = 0;
 
-	/* the destination now comes from outside the module on one of the two
-	 * paths, so a bad one is an API misuse to reject, not an invariant to
-	 * assume */
-	if (!ht || !key || !dst)
+	/* the destination now comes from outside the module on one of the
+	 * entry points, so a bad one is an API misuse to reject, not an
+	 * invariant to assume.  dst == NULL with dstlen == 0 is the probe:
+	 * existence and metadata, no copy (see pcache_ht_probe). */
+	if (!ht || !key || (!dst && dstlen))
 		return -1;
 
 	hash = core_hash(key, NULL, 0);
@@ -379,7 +386,11 @@ settled:
 
 	if ((fl & PCACHE_F_INT) && vlen == 8) {
 		/* native counter: the 8 raw bytes are meaningless to the caller,
-		 * so hand back the integer and let the entry point format it */
+		 * so hand back the integer and let the entry point format it.
+		 * A probe copied nothing, so there is no integer to read - it
+		 * reports the hit and its metadata like any other record. */
+		if (!dst)
+			return 1;
 		if (!ll_out)
 			return -1;
 		memcpy(&ll, dst, 8);
@@ -443,6 +454,39 @@ int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
 		unsigned int *expires)
 {
 	return _pcache_ht_fetch(ht, key, val, get_ticks(), expires);
+}
+
+/* existence probe - see the contract in pcache_htable.h.  Shares the whole
+ * read path with the fetches (optimistic loop, lock fallback, re-route
+ * retry, overflow leg, expiry), stopping before the copy-out, so a probe
+ * can never disagree with a read about whether a key is there. */
+int pcache_ht_probe(pcache_htable_t *ht, const str *key, unsigned int *vlen,
+		unsigned int *expires, int *is_counter)
+{
+	unsigned int len = 0, exp = 0;
+	int rc;
+
+	if (vlen)
+		*vlen = 0;
+	if (expires)
+		*expires = 0;
+	if (is_counter)
+		*is_counter = 0;
+
+	rc = _pcache_ht_fetch_buf(ht, key, NULL, 0, &len, get_ticks(),
+		&exp, NULL);
+	if (rc < 0)
+		return rc;                 /* -2 = absent or expired */
+	if (vlen)
+		*vlen = len;
+	if (expires)
+		*expires = exp;
+	/* the shared core reports a native counter as 1; a probe has nothing
+	 * to hand back for one, but a caller may need to know it is not a
+	 * plain value (a counter's meaning is local to the node holding it) */
+	if (is_counter)
+		*is_counter = (rc == 1);
+	return 0;
 }
 
 /* allocation-free entry point - see the contract in pcache_htable.h */

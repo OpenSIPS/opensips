@@ -44,12 +44,21 @@ typedef struct pcache_col {
 	struct pcache_htable *htable;
 	int raise_expired;              /* CP-11: emit E_CACHEDB_PERF_EXPIRED */
 	int persist;                    /* CP-19: load-on-start / save-on-stop */
+	int replicate;                  /* CP-15: may be pulled across nodes    */
 	/* cluster-sync observability (shm: written by whichever process runs
 	 * the sync, read by perf_stats).  These record when this node last
 	 * pushed or pulled - NOT that the caches currently match. */
 	unsigned int last_sync_out;     /* ticks: last save-and-broadcast here */
 	unsigned int last_sync_in;      /* ticks: last reload asked for by a peer */
 	int last_sync_src;              /* node id that asked for that reload */
+	/* CP-15 convergence, PER COLLECTION.  The pull_stats[] counters are
+	 * module-wide, so with more than one collection they cannot show WHICH
+	 * one is converging - and last_sync_out/in stay -1 forever unless
+	 * perf_sync is explicitly invoked, which says nothing about pull-based
+	 * convergence.  These two do.  shm, written by any worker, so both are
+	 * touched only with __sync_fetch_and_add. */
+	unsigned long pulled_in;        /* values fetched from a peer AND stored */
+	unsigned long served_out;       /* times we answered a peer WITH a value */
 	struct pcache_col *next;
 } pcache_col_t;
 

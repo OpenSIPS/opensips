@@ -249,7 +249,7 @@ int pcache_arena_init(void)
 		} else {
 			arena->lo = (unsigned long)arena->hbase;
 			arena->hi = (unsigned long)arena->hbase + arena->hsize;
-			LM_NOTICE("huge-page arena: %d MB on %s, %lu MB pinned\n",
+			LM_NOTICE("huge-page arena: %d MB on %s, %lu MB pinned from swapping\n",
 				pcache_arena_hugepage_mb,
 				pcache_mem_tier_str(arena->htier), arena->hlocked_mb);
 		}
@@ -346,15 +346,20 @@ void pcache_arena_child_init(void)
 	 * its inherited copy and starts empty, carving its own chunk on first
 	 * use.  The parent keeps its own small hoard.
 	 *
-	 * This function's own comment above already said "discards" - but the
-	 * code called pkg_free(pl) anyway.  pl is COW-shared with the parent
-	 * (every sibling child inherited the identical pointer), so freeing it
-	 * is a WRITE into that shared page (the allocator links a freed cell
-	 * into a free list).  Under a hugepage-backed pkg arena that write-
-	 * triggered COW fault can SIGBUS instead of transparently duplicating
-	 * the page, reproducibly, on every single child fork.  Fix: just drop
-	 * the reference, exactly as documented - no free, no donation,
-	 * nothing.  pl's memory is reclaimed for free when the child exits.
+	 * Bug fixed here (2026-08-07): this function's OWN comment already
+	 * said "discards", but the code called pkg_free(pl) anyway - freeing
+	 * pl (the pcache_palloc struct itself) is exactly the same class of
+	 * mistake the comment warns about for its internal free-list cells:
+	 * pl is COW-shared with the parent and every sibling child inherited
+	 * the identical pointer, so pkg_free() is a WRITE into that shared
+	 * page (hg_cell_free()/cell_set_next() links it into a free list).
+	 * Under HG_MALLOC's hugepage-backed pkg arena this write-triggered
+	 * COW fault reproducibly SIGBUSed (mem/hg_arena.c:98, always via
+	 * cachedb_perf.c child_init -> here), first surfaced when a TCP-based
+	 * protocol (proto_bin, for clusterer_controller) made this fork/free
+	 * path run under HG_MALLOC for the first time. Fix: just drop the
+	 * reference, exactly as documented - no free, no donation, nothing.
+	 * pl's memory is reclaimed for free when the child process exits.
 	 */
 	my_palloc = NULL;
 }
@@ -499,11 +504,45 @@ void pcache_arena_stats(unsigned int *nchunks, unsigned long *bytes)
 
 /* the tier the huge-page reservation actually got (CP-11 MEM_DEGRADED) -
  * distinct from pcache_mem.tier, which is the optimistic probe; with no
- * reservation (arena_hugepage_mb=0 or a failed reserve) the arena is plain
- * shm, reported as 4K */
+ * reservation (arena_hugepage_mb=0 or a failed reserve) there is no arena
+ * to have a tier, reported as PCACHE_MEM_NO_ARENA */
 int pcache_arena_tier(void)
 {
-	return arena->hbase ? (int)arena->htier : PCACHE_MEM_4K;
+	/* No reservation is NOT the same as "backed by 4K pages": with no
+	 * dedicated arena everything goes through the core's shm_malloc(), so
+	 * the real backing is the CORE allocator's - 2M hugepages under
+	 * HG_MALLOC.  Returning PCACHE_MEM_4K here reported a property of an
+	 * arena that does not exist, and was read live as "the cache is on
+	 * small pages" while it was actually on hugepages. */
+	return arena->hbase ? (int)arena->htier : PCACHE_MEM_NO_ARENA;
+}
+
+/*
+ * Capacity of the DEDICATED arena_hugepage_mb reservation specifically -
+ * distinct from pcache_arena_stats()'s bytes/nchunks, which count total
+ * cachedb_perf usage regardless of backing (dedicated reservation OR the
+ * shm_malloc fallback, whichever actually served each allocation).
+ *
+ * @active is 0 whenever arena_hugepage_mb was never set (or the reserve
+ * failed) - callers MUST check it before trusting total/used/free, since
+ * 0/0/0 alone cannot distinguish "no dedicated reservation exists" from
+ * "a reservation exists and happens to be still empty".
+ */
+void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
+		unsigned long *used, unsigned long *free)
+{
+	if (!arena->hbase) {
+		*active = 0;
+		*total = 0;
+		*used = 0;
+		*free = 0;
+		return;
+	}
+
+	*active = 1;
+	*total = arena->hsize;
+	*used = arena->hoff;
+	*free = arena->hsize - arena->hoff;
 }
 
 

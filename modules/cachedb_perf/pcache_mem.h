@@ -29,6 +29,13 @@ enum pcache_mem_tier {
 	PCACHE_MEM_THP_ADVISE,    /* shmem THP via MADV_HUGEPAGE, huge at fault */
 	PCACHE_MEM_THP_COLLAPSE,  /* shmem THP via MADV_COLLAPSE, post-fill */
 	PCACHE_MEM_4K,            /* plain pages - always works */
+	/* Not a backing tier at all: there is no dedicated reservation, so
+	 * every allocation goes through the core's shm_malloc() and the real
+	 * page backing is whatever the CORE allocator uses (under HG_MALLOC
+	 * that is 2M hugepages).  Reporting 4K here was wrong - it named a
+	 * property of an arena that does not exist and read as "your cache
+	 * is on small pages" when it may well not be. */
+	PCACHE_MEM_NO_ARENA = 99,
 };
 
 struct pcache_mem_info {

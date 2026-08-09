@@ -84,6 +84,11 @@ void pcache_arena_stats(unsigned int *nchunks, unsigned long *bytes);
  * 4 plain 4K), as opposed to the pcache_mem.tier probe - CP-11 */
 int pcache_arena_tier(void);
 
+/* see the implementation comment in pcache_arena.c - @active must be
+ * checked before trusting total/used/free */
+void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
+		unsigned long *used, unsigned long *free);
+
 /* modparam-triggered startup selftest; returns -1 on any mismatch */
 int pcache_arena_selftest(void);
 

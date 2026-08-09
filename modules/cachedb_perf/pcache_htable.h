@@ -212,6 +212,24 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
  * *needed holds the required size.  *vlen and *needed are zeroed first.
  * @needed may be NULL.
  */
+/* Existence probe: is @key present and live, how long is its value and
+ * when does it expire - without copying the value anywhere.  Shares the
+ * whole read path with the fetches, stopping before the copy-out, so it
+ * can never disagree with a read about whether a key is there.
+ *
+ * Cheaper than any fetch by construction: no pkg_malloc (the ~70 ns the
+ * profile attributes to the allocator), no copy, and the record's payload
+ * is never touched - a miss is usually settled on the bucket's tag word
+ * alone.  Intended for answering "do I have this key?" - a cross-node
+ * lookup asking peers, or a script/MI existence test.
+ *
+ * @vlen, @expires and @is_counter are optional; @expires is absolute ticks
+ * (0 = never); @is_counter reports a native counter, whose value is a
+ * per-node quantity rather than a portable one.
+ * @return 0 = present and live, -2 = absent or expired, -1 = bad args. */
+int pcache_ht_probe(pcache_htable_t *ht, const str *key, unsigned int *vlen,
+		unsigned int *expires, int *is_counter);
+
 int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
 		unsigned int buflen, unsigned int *vlen, unsigned int *needed);
 
