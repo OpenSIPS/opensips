@@ -36,33 +36,36 @@ cachedb_perf Module
 
         1.4. DB persistence
         1.5. Cluster sync
-        1.6. Exported Statistics
-        1.7. Exported MI Functions
+        1.6. Degraded operation: what each surface does without
+                its modules
 
-              1.7.1. perf_stats
-              1.7.2. perf_stats_reset
-              1.7.3. Key introspection: perf_keys / perf_scan /
+        1.7. Exported Statistics
+        1.8. Exported MI Functions
+
+              1.8.1. perf_stats
+              1.8.2. perf_stats_reset
+              1.8.3. Key introspection: perf_keys / perf_scan /
                       perf_dump / perf_get / perf_probe /
                       perf_pull / perf_set / perf_ttl / perf_del
 
-              1.7.4. perf_save / perf_load
-              1.7.5. perf_sync
+              1.8.4. perf_save / perf_load
+              1.8.5. perf_sync
 
-        1.8. Exported Events
+        1.9. Exported Events
 
-              1.8.1. E_CACHEDB_PERF_EXPIRED
-              1.8.2. E_CACHEDB_PERF_NOMEM
-              1.8.3. E_CACHEDB_PERF_GROWN
-              1.8.4. E_CACHEDB_PERF_MEM_DEGRADED
-              1.8.5. E_CACHEDB_PERF_SYNCED
+              1.9.1. E_CACHEDB_PERF_EXPIRED
+              1.9.2. E_CACHEDB_PERF_NOMEM
+              1.9.3. E_CACHEDB_PERF_GROWN
+              1.9.4. E_CACHEDB_PERF_MEM_DEGRADED
+              1.9.5. E_CACHEDB_PERF_SYNCED
 
-        1.9. Exported Functions
+        1.10. Exported Functions
 
-              1.9.1. perf_del(glob[, collection])
-              1.9.2. perf_mget(glob, keys_avp, vals_avp[,
+              1.10.1. perf_del(glob[, collection])
+              1.10.2. perf_mget(glob, keys_avp, vals_avp[,
                       collection[, limit]])
 
-              1.9.3. perf_mget_json(glob, dst_var[, collection[,
+              1.10.3. perf_mget_json(glob, dst_var[, collection[,
                       limit]])
 
    List of Examples
@@ -137,7 +140,15 @@ Warning
 
 1.2.1. OpenSIPS Modules
 
-   None.
+   None required. Two are optional:
+     * clusterer - enables the cluster features: cross-node pull
+       over its BIN links, the perf_sync peer signal and the
+       sync_shtag failover hook. Without it the module runs purely
+       node-local (see Degraded operation).
+     * clusterer_controller - enables the optional clctr pull
+       transport (encrypted multicast). Optional at build time
+       too: a tree built without it simply has no clctr transport,
+       and everything runs over the clusterer's BIN links.
 
 1.2.2. External Libraries or Applications
 
@@ -408,10 +419,17 @@ modparam("cachedb_perf", "replicate_collections", "th")
 1.3.17. pull_transport (string)
 
    How cross-node pulls travel: bin (default) uses the clusterer's
-   BIN links. clctr is reserved for the clusterer_controller
-   multicast plane and is not implemented yet - configuring it
-   fails at startup rather than quietly falling back, since the
-   choice is deliberate.
+   BIN links. clctr rides the clusterer_controller module's
+   encrypted multicast plane instead: one datagram reaches every
+   peer, and the payload is encrypted, which the BIN links are
+   not.
+
+   The controller is optional, at build time and at run time. When
+   this build does not include clusterer_controller, or the module
+   is not loaded, clctr logs a warning and degrades to bin; if the
+   clusterer module is unavailable too, cross-node pull and sync
+   are disabled and the cache runs purely node-local. Missing
+   cluster infrastructure never stops the module from starting.
 
    Default value is “bin”.
 
@@ -569,7 +587,101 @@ event_route[E_CACHEDB_PERF_SYNCED] {
 node)\n");
 }
 
-1.6. Exported Statistics
+1.6. Degraded operation: what each surface does without its modules
+
+   The cache itself never depends on the cluster plane. Whatever
+   is missing, the module starts, serves node-local traffic, and
+   says at startup exactly what it turned off. There are two
+   degraded modes worth knowing precisely; every output below is
+   captured from a live instance, not paraphrased.
+
+   Mode 1 - clusterer loaded, clusterer_controller absent. The
+   only thing lost is the clctr transport; pull and sync are fully
+   functional over the clusterer's BIN links. One warning at
+   startup, worded for the reason the controller is missing:
+# controller not in this build:
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but this
+    build carries no clusterer_controller support - falling
+    back to 'bin'
+# controller in the build but not loaded:
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but
+    clusterer_controller is not loaded - falling back to 'bin'
+
+   Mode 2 - neither module available. Pull and sync are disabled
+   entirely; the cache runs purely node-local. Three warnings at
+   startup:
+WARNING:cachedb_perf:mod_init: clusterer module not available -
+    the cluster features are disabled; load clusterer before
+    cachedb_perf
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but this
+    build carries no clusterer_controller support - falling
+    back to 'bin'
+WARNING:cachedb_perf:mod_init: replicate_collections is set but
+    the cluster is not available (needs sync_cluster_id +
+    clusterer) - cross-node pull disabled
+
+   Unaffected in both modes: every local surface. The cachedb
+   script API (cache_store / cache_fetch / cache_add / cache_sub /
+   cache_remove on "perf"), the glob functions (perf_del,
+   perf_mget, perf_mget_json), the local MI set (perf_get /
+   perf_set / perf_probe / perf_keys / perf_scan / perf_dump /
+   perf_ttl / perf_del / perf_stats / perf_stats_reset), DB
+   persistence (perf_save / perf_load, db_mode), and the four
+   local events (E_CACHEDB_PERF_EXPIRED / NOMEM / GROWN /
+   MEM_DEGRADED).
+
+   perf_pull - in mode 1 the pull runs over bin; on a single node
+   (or when no peer holds the key) it reports where the answer did
+   not come from. In mode 2 it refuses:
+# mode 1:
+{ "source": "no-answer" }
+
+# mode 2:
+{ "code": 500,
+  "message": "cross-node pull not active
+              (replicate_collections)" }
+
+   perf_cluster_probe - mode 1 probes over bin (on a lone node:
+   error 500, "could not start the probe - no peers, or no free
+   pull slot"); mode 2 answers error 400, "cross-node pull is not
+   active for this collection (replicate_collections)".
+
+   perf_sync (MI and script function) - never fails for cluster
+   reasons. Mode 1 saves and signals the peers; mode 2 degrades to
+   the DB save alone and says so:
+# mode 1:
+{ "collections": 2, "saved": 1, "broadcast": 2 }
+
+# mode 2:
+{ "collections": 2, "saved": 1, "broadcast": 0,
+  "note": "cluster sync inactive (no clusterer /
+           cluster_id 0) - saved to the DB only" }
+
+   perf_stats - the per-collection and memory sections are
+   identical in both modes (including the pulled_from_cluster /
+   served_to_cluster counters, which simply stay 0). The
+   difference is the cluster object: present in mode 1 (ids,
+   membership, the pull counters and slot count, and a topology
+   array), absent in mode 2.
+# mode 1 only:
+"cluster": {
+    "cluster_id": 1, "my_node_id": 1, "peers_up": 0,
+    ...
+    "pull_slots": 64,
+    "topology": [ { "node_id": 1, "role": "self", "membership": "up" } ]
+}
+
+   cache_fetch with pull_on_miss=1 - mode 1: a miss on an opted-in
+   collection blocks up to pull_timeout_ms asking the cluster,
+   exactly as documented under pull_on_miss. Mode 2: no pull
+   exists, so a miss is a plain immediate miss - no blocking, no
+   timeout, no negative cache.
+
+   E_CACHEDB_PERF_SYNCED - only ever raised when a peer's sync
+   signal arrives, so it keeps firing in mode 1 and can never fire
+   in mode 2. Subscribing to it costs nothing either way.
+
+1.7. Exported Statistics
 
    All counters are aggregated per-process and summed only when
    read, so instrumentation never touches a shared cache line on
@@ -605,9 +717,9 @@ node)\n");
    before it is used. The same guidance rides inline in the
    hit_rate_note field.
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. perf_stats
+1.8.1. perf_stats
 
    Reports per-collection statistics (entries, buckets, overflow,
    hits/misses/stores/removes, load factor, seqlock retries and
@@ -621,7 +733,7 @@ node)\n");
 opensips-cli -x mi cachedb_perf:perf_stats
 opensips-cli -x mi cachedb_perf:perf_stats th
 
-1.7.2. perf_stats_reset
+1.8.2. perf_stats_reset
 
    The counters behind perf_stats - hits, misses, stores, removes,
    expired, destroyed, retries - are running totals since startup,
@@ -649,7 +761,7 @@ opensips-cli -x mi cachedb_perf:perf_stats th
 opensips-cli -x mi cachedb_perf:perf_stats_reset
 opensips-cli -x mi cachedb_perf:perf_stats_reset th
 
-1.7.3. Key introspection: perf_keys / perf_scan / perf_dump /
+1.8.3. Key introspection: perf_keys / perf_scan / perf_dump /
 perf_get / perf_probe / perf_pull / perf_set / perf_ttl / perf_del
 
    These give an operator the visibility that cachedb_local lacks.
@@ -714,7 +826,7 @@ opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
 opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
 opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
 
-1.7.4. perf_save / perf_load
+1.8.4. perf_save / perf_load
 
    Persist a collection to, or restore it from, the db_url backend
    (see DB persistence). With no argument they operate on every
@@ -727,7 +839,7 @@ opensips-cli -x mi cachedb_perf:perf_save
 opensips-cli -x mi cachedb_perf:perf_save sessions
 opensips-cli -x mi cachedb_perf:perf_load sessions
 
-1.7.5. perf_sync
+1.8.5. perf_sync
 
    Save a collection to the DB and signal the cluster to reload it
    (see Cluster sync); all declared collections if none is named.
@@ -736,20 +848,20 @@ opensips-cli -x mi cachedb_perf:perf_load sessions
    Example 1.21. perf_sync usage
 opensips-cli -x mi cachedb_perf:perf_sync sessions
 
-1.8. Exported Events
+1.9. Exported Events
 
    Every event is gated by evi_probe_event(), so with no
    subscriber it costs a single shared read and nothing more; none
    of them sit on the lock-free get/set path.
 
-1.8.1. E_CACHEDB_PERF_EXPIRED
+1.9.1. E_CACHEDB_PERF_EXPIRED
 
    Raised by the sweep for each expired record it reclaims, but
    only for the collections named in event_expired_collections
    (opt-in, since a high-churn collection reaps in bulk and
    delivery is synchronous). Parameters: collection, key.
 
-1.8.2. E_CACHEDB_PERF_NOMEM
+1.9.2. E_CACHEDB_PERF_NOMEM
 
    Raised when a write is dropped because the arena is full - the
    cache is out of memory and rejecting stores. One event per
@@ -757,13 +869,13 @@ opensips-cli -x mi cachedb_perf:perf_sync sessions
    pressure). Parameters: collection, key, size (the value's byte
    length).
 
-1.8.3. E_CACHEDB_PERF_GROWN
+1.9.3. E_CACHEDB_PERF_GROWN
 
    Raised by the maintenance timer after it grows a collection's
    table. Parameters: collection, prev_buckets, buckets, splits,
    entries.
 
-1.8.4. E_CACHEDB_PERF_MEM_DEGRADED
+1.9.4. E_CACHEDB_PERF_MEM_DEGRADED
 
    Raised once at startup when arena_hugepage_mb was set but the
    arena settled on a tier below hugetlb (missing
@@ -771,14 +883,14 @@ opensips-cli -x mi cachedb_perf:perf_sync sessions
    slower than intended. Parameters: requested_mb, tier (1 hugetlb
    .. 4 plain 4K), backing (its description), overcommit_pages.
 
-1.8.5. E_CACHEDB_PERF_SYNCED
+1.9.5. E_CACHEDB_PERF_SYNCED
 
    Raised on a node that reloaded a collection from the DB because
    a peer issued perf_sync (see Cluster sync). Parameters:
    collection, source_node (the cluster id of the node that issued
    the sync).
 
-1.9. Exported Functions
+1.10. Exported Functions
 
    Single-key operations go through the core cache functions
    (cache_store(), cache_fetch(), ...) with the “perf” backend.
@@ -793,7 +905,7 @@ opensips-cli -x mi cachedb_perf:perf_sync sessions
    collection of the default (groupless) cachedb_url - exactly
    where cache_store("perf", ...) writes.
 
-1.9.1. perf_del(glob[, collection])
+1.10.1. perf_del(glob[, collection])
 
    Deletes every key matching the glob (expired entries included).
    Returns the number of keys removed, or -1 (false) if none
@@ -805,7 +917,7 @@ perf_del("session-*");
 perf_del("th-*", "th");
 ...
 
-1.9.2. perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])
+1.10.2. perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])
 
    Returns every live key/value pair matching the glob into two
    writable variables (use AVPs - each match adds one value to
@@ -821,7 +933,7 @@ if (perf_mget("user-*", $avp(k), $avp(v))) {
 }
 ...
 
-1.9.3. perf_mget_json(glob, dst_var[, collection[, limit]])
+1.10.3. perf_mget_json(glob, dst_var[, collection[, limit]])
 
    Like perf_mget(), but returns all matches as one JSON object
    {"key":"value",...} in a single writable variable ({} when

@@ -55,8 +55,23 @@
 	<section>
 		<title>&osips; Modules</title>
 		<para>
-		None.
+		None required.  Two are optional:
 		</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>clusterer</emphasis> - enables the cluster features:
+		cross-node pull over its BIN links, the perf_sync peer signal and
+		the sync_shtag failover hook.  Without it the module runs purely
+		node-local (see <xref linkend="degraded_operation"/>).
+		</para></listitem>
+		<listitem><para>
+		<emphasis>clusterer_controller</emphasis> - enables the optional
+		<emphasis>clctr</emphasis> pull transport (encrypted multicast).
+		Optional at build time too: a tree built without it simply has no
+		clctr transport, and everything runs over the clusterer's BIN
+		links.
+		</para></listitem>
+		</itemizedlist>
 	</section>
 	<section>
 		<title>External Libraries or Applications</title>
@@ -663,6 +678,121 @@ event_route[E_CACHEDB_PERF_SYNCED] {
 }
 </programlisting>
 	</example>
+	</section>
+
+	<section id="degraded_operation" xreflabel="Degraded operation">
+	<title>Degraded operation: what each surface does without its modules</title>
+	<para>
+	The cache itself never depends on the cluster plane.  Whatever is
+	missing, the module starts, serves node-local traffic, and says at
+	startup exactly what it turned off.  There are two degraded modes worth
+	knowing precisely; every output below is captured from a live instance,
+	not paraphrased.
+	</para>
+	<para>
+	<emphasis>Mode 1 - clusterer loaded, clusterer_controller absent.</emphasis>
+	The only thing lost is the clctr transport; pull and sync are fully
+	functional over the clusterer's BIN links.  One warning at startup,
+	worded for the reason the controller is missing:
+	</para>
+	<programlisting format="linespecific">
+# controller not in this build:
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but this
+    build carries no clusterer_controller support - falling
+    back to 'bin'
+# controller in the build but not loaded:
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but
+    clusterer_controller is not loaded - falling back to 'bin'
+</programlisting>
+	<para>
+	<emphasis>Mode 2 - neither module available.</emphasis>  Pull and sync
+	are disabled entirely; the cache runs purely node-local.  Three
+	warnings at startup:
+	</para>
+	<programlisting format="linespecific">
+WARNING:cachedb_perf:mod_init: clusterer module not available -
+    the cluster features are disabled; load clusterer before
+    cachedb_perf
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but this
+    build carries no clusterer_controller support - falling
+    back to 'bin'
+WARNING:cachedb_perf:mod_init: replicate_collections is set but
+    the cluster is not available (needs sync_cluster_id +
+    clusterer) - cross-node pull disabled
+</programlisting>
+	<para>
+	<emphasis>Unaffected in both modes</emphasis>: every local surface.
+	The cachedb script API (cache_store / cache_fetch / cache_add /
+	cache_sub / cache_remove on "perf"), the glob functions (perf_del,
+	perf_mget, perf_mget_json), the local MI set (perf_get / perf_set /
+	perf_probe / perf_keys / perf_scan / perf_dump / perf_ttl / perf_del /
+	perf_stats / perf_stats_reset), DB persistence (perf_save / perf_load,
+	db_mode), and the four local events (E_CACHEDB_PERF_EXPIRED / NOMEM /
+	GROWN / MEM_DEGRADED).
+	</para>
+	<para>
+	<emphasis>perf_pull</emphasis> - in mode 1 the pull runs over bin; on a
+	single node (or when no peer holds the key) it reports where the answer
+	did not come from.  In mode 2 it refuses:
+	</para>
+	<programlisting format="linespecific">
+# mode 1:
+{ "source": "no-answer" }
+
+# mode 2:
+{ "code": 500,
+  "message": "cross-node pull not active
+              (replicate_collections)" }
+</programlisting>
+	<para>
+	<emphasis>perf_cluster_probe</emphasis> - mode 1 probes over bin (on a
+	lone node: error 500, "could not start the probe - no peers, or no free
+	pull slot"); mode 2 answers error 400, "cross-node pull is not active
+	for this collection (replicate_collections)".
+	</para>
+	<para>
+	<emphasis>perf_sync</emphasis> (MI and script function) - never fails
+	for cluster reasons.  Mode 1 saves and signals the peers; mode 2
+	degrades to the DB save alone and says so:
+	</para>
+	<programlisting format="linespecific">
+# mode 1:
+{ "collections": 2, "saved": 1, "broadcast": 2 }
+
+# mode 2:
+{ "collections": 2, "saved": 1, "broadcast": 0,
+  "note": "cluster sync inactive (no clusterer /
+           cluster_id 0) - saved to the DB only" }
+</programlisting>
+	<para>
+	<emphasis>perf_stats</emphasis> - the per-collection and memory
+	sections are identical in both modes (including the
+	pulled_from_cluster / served_to_cluster counters, which simply stay 0).
+	The difference is the <emphasis>cluster</emphasis> object: present in
+	mode 1 (ids, membership, the pull counters and slot count, and a
+	topology array), absent in mode 2.
+	</para>
+	<programlisting format="linespecific">
+# mode 1 only:
+"cluster": {
+    "cluster_id": 1, "my_node_id": 1, "peers_up": 0,
+    ...
+    "pull_slots": 64,
+    "topology": [ { "node_id": 1, "role": "self", "membership": "up" } ]
+}
+</programlisting>
+	<para>
+	<emphasis>cache_fetch with pull_on_miss=1</emphasis> - mode 1: a miss
+	on an opted-in collection blocks up to pull_timeout_ms asking the
+	cluster, exactly as documented under <xref linkend="param_pull_on_miss"/>.
+	Mode 2: no pull exists, so a miss is a plain immediate miss - no
+	blocking, no timeout, no negative cache.
+	</para>
+	<para>
+	<emphasis>E_CACHEDB_PERF_SYNCED</emphasis> - only ever raised when a
+	peer's sync signal arrives, so it keeps firing in mode 1 and can never
+	fire in mode 2.  Subscribing to it costs nothing either way.
+	</para>
 	</section>
 
 	<section id="exported_statistics" xreflabel="Exported Statistics">
