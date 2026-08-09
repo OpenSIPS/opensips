@@ -88,6 +88,11 @@ typedef struct clusterer_ctrl_binds {
      * @return 0 on success, -1 if cluster or node not found
      */
     int (*remove_node)(int cluster_id, int node_id);
+
+    /* Close a node's BIN connection while leaving it in the topology.
+     * remove_node() already does this for you; use this only to drop the
+     * transport on its own.  Returns -1 if the node is unknown. */
+    int (*close_node_conn)(int cluster_id, int node_id);
     /**
      * update_identity() — correct this node's node_id after master assignment.
      *
