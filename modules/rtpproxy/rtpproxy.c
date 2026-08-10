@@ -5282,7 +5282,14 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess,
 
 	args.set = rset;
 	args.offer = 1;
-	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
+	msg = sess->msg;
+	if (!msg) {
+		msg = get_dummy_sip_msg();
+		if (!msg) {
+			LM_ERR("failed to create dummy SIP message\n");
+			goto exit;
+		}
+	}
 
 	val.rs.len = 0;
 	val.rs.s = "";
