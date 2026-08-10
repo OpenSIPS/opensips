@@ -4330,8 +4330,16 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 	ip_buf[CL_CTR_MAX_IP_LEN] = '\0';
 	if (ip_buf[0] == '\0')
 	    continue;
-	/* membership, not liveness - see cl_ctr_learn_peer_locked() */
-	cl_ctr_learn_peer_locked(ip_buf, cl);
+	/* Membership, not liveness - see cl_ctr_learn_peer_locked().  And never
+	 * from our OWN echo: IP_MULTICAST_LOOP delivers the master's list back
+	 * to the master, and learning from it re-inserts a peer the master just
+	 * purged.  That closed a loop: the re-seeded copy kept the roster
+	 * naming the dead node, every receiver re-learned it each window, and
+	 * the purge could never converge (observed live as 'new peer' every
+	 * 35 s for a node whose control plane was provably blocked).  The
+	 * packet was built FROM this table; it cannot teach us anything. */
+	if (strcmp(sender_ip, my_ip) != 0)
+	    cl_ctr_learn_peer_locked(ip_buf, cl);
 	for (_j = 0; _j < cl->peers->count; _j++) {
 	    if (strcmp(cl->peers->entries[_j].ip, ip_buf) == 0) {
 		cl->peers->entries[_j].last_seq = 0;
@@ -4628,7 +4636,11 @@ static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
      * node that must prune, so cl_ctr_prune_stale() could never fire and the
      * corpse was immortal - measured on a 3-node staging cluster: a node isolated
      * for 4 minutes against a 30 s deadline was still a member on every survivor. */
-    cl_ctr_learn_peer_locked(ip, cl);
+    /* Same self-echo rule as the member-list path: the master must not
+     * re-learn a peer from its own looped-back announcement. Receivers other
+     * than the author still learn membership here as before. */
+    if (strcmp(sender_ip, my_ip) != 0)
+	cl_ctr_learn_peer_locked(ip, cl);
     cl_ctr_update_peer_bin_locked(ip, node_id, bin_cnt,
                                (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])bin_socks,
                                cl);
