@@ -23,7 +23,6 @@ jobs:
         with:
           ref: master
           fetch-depth: 0
-          submodules: recursive
           token: ${{ secrets.COVERITY_SYNC_TOKEN }}
 
       - name: Merge master into coverity_scan
