@@ -160,6 +160,19 @@ static int   pull_max_key    = PCACHE_PULL_MAX_KEY_DEF;
  * value buffers are no longer fixed members, so slots are sized at init */
 static int   pull_slot_sz;
 static int   pull_timeout_ms = 50;     /* how long a miss waits for peers    */
+/* Optional extra bound on how late an answer may be and still be stored.
+ *
+ * 0 (default) = no time bound: what makes a late answer valid is that the
+ * VALUE is still valid, and the value carries its own expiry.  A peer reports
+ * ttl_left in RELATIVE seconds and we add it to our own clock, so nothing
+ * here needs the cluster's clocks to agree.  The practical ceiling is the
+ * slot's own life, PCACHE_PULL_ABANDON_US.
+ *
+ * Set it non-zero only where the script DELETES keys from a replicated
+ * collection: store-if-absent cannot tell "never had it" from "deleted a
+ * moment ago", so a peer's copy could resurrect a key the script removed.
+ * A deployment that only writes and lets TTLs expire cannot hit that. */
+static int   pull_linger_ms = 0;
 static char *replicate_collections;    /* CSV opt-in; nothing pulls by default */
 static int   pull_ready;               /* transport up AND a collection opted in */
 
@@ -217,6 +230,14 @@ struct pcache_pull_slot {
 	int          oversize;           /* a peer HAS it but could not send  */
 	int          hinted;             /* asked one node, not the cluster   */
 	int          partial;            /* more peers than the snapshot held */
+	/* The waiter left without a value and handed this slot to the protocol
+	 * rather than the pool: an answer may still be in flight, and the slot
+	 * holds the only record of which collection and key it belongs to (the
+	 * reply carries neither).  A late answer that lands here is stored by
+	 * pcache_pull_do_reply() instead of being dropped.  Reclaimed by the
+	 * reaper at deadline + PCACHE_PULL_ABANDON_US, or stolen sooner if the
+	 * pool runs dry. */
+	int          orphan;
 	unsigned int expires;            /* ABSOLUTE, as the owner holds it   */
 	unsigned int vlen;
 	int          klen;
@@ -291,7 +312,21 @@ static int pull_on_miss;               /* modparam; read repair on the get path 
  * the request never left this node, so no peer was ever given the chance to
  * answer it. */
 #define PULL_ST_SEND_FAIL 7
-#define PULL_ST_MAX       8
+/* a waiter left without a value and the slot was kept for a late answer */
+#define PULL_ST_ORPHANED  8
+/* that late answer arrived and was stored - convergence the old code lost */
+#define PULL_ST_LATE_STORED 9
+/* an orphan's slot was reclaimed early because the pool ran dry */
+#define PULL_ST_ORPHAN_EVICTED 10
+/* a late answer arrived but a local write had already filled the key */
+#define PULL_ST_LATE_SUPERSEDED 11
+/* a late answer landed after pull_linger_ms and was refused as too stale */
+#define PULL_ST_LATE_EXPIRED 12
+/* an orphan reached the end of its life with no late answer - the ordinary
+ * outcome of a timeout, and explicitly NOT an abandoned slot: its caller DID
+ * collect it, which is the distinction PULL_ST_ABANDONED exists to make */
+#define PULL_ST_ORPHAN_EXPIRED 13
+#define PULL_ST_MAX       14
 /* Two different readinesses, deliberately kept apart:
  *   cluster_ready - the clusterer is bound, the capability is registered and
  *                   membership is being tracked.  Everything cross-node needs
@@ -499,6 +534,7 @@ static const param_export_t params[] = {
 	{ "sync_shtag",          STR_PARAM, &sync_shtag_str },
 	{ "pull_transport",      STR_PARAM, &pull_transport_str },
 	{ "pull_timeout_ms",     INT_PARAM, &pull_timeout_ms },
+	{ "pull_linger_ms",      INT_PARAM, &pull_linger_ms },
 	{ "pull_negative_ms",    INT_PARAM, &pull_negative_ms },
 	{ "pull_on_miss",        INT_PARAM, &pull_on_miss },
 	{ "pull_max_value",      INT_PARAM, &pull_max_value },
@@ -637,6 +673,12 @@ PULLSTATF(smf_pulls_stored,     PULL_ST_STORED)
 PULLSTATF(smf_pulls_suppressed, PULL_ST_SUPPRESSED)
 PULLSTATF(smf_pulls_abandoned,  PULL_ST_ABANDONED)
 PULLSTATF(smf_pulls_send_failed, PULL_ST_SEND_FAIL)
+PULLSTATF(smf_pulls_orphaned,   PULL_ST_ORPHANED)
+PULLSTATF(smf_pulls_late_stored, PULL_ST_LATE_STORED)
+PULLSTATF(smf_pulls_orphan_evicted, PULL_ST_ORPHAN_EVICTED)
+PULLSTATF(smf_pulls_late_superseded, PULL_ST_LATE_SUPERSEDED)
+PULLSTATF(smf_pulls_late_expired, PULL_ST_LATE_EXPIRED)
+PULLSTATF(smf_pulls_orphan_expired, PULL_ST_ORPHAN_EXPIRED)
 
 /* A GAUGE, unlike every other pull stat: it should read 0 whenever nothing is
  * being asked.  Anything parked here means slots are taken and not released,
@@ -651,7 +693,11 @@ static unsigned long smf_pulls_in_flight(void *ctx)
 		return 0;
 	lock_get(pull_lock);
 	for (k = 0; k < PCACHE_PULL_SLOTS; k++)
-		if (pull_slot_at(k)->id)
+		/* an orphan is not a pull in flight - nobody is waiting on it.
+		 * This gauge is documented as the one that should sit at 0, so
+		 * counting orphans would fire the leak alarm on the ordinary
+		 * outcome of a timeout. */
+		if (pull_slot_at(k)->id && !pull_slot_at(k)->orphan)
 			busy++;
 	lock_release(pull_lock);
 	return busy;
@@ -799,6 +845,16 @@ static const stat_export_t mod_stats[] = {
 	{"pulls_suppressed", STAT_IS_FUNC, (stat_var **)smf_pulls_suppressed},
 	{"pulls_abandoned",  STAT_IS_FUNC, (stat_var **)smf_pulls_abandoned},
 	{"pulls_send_failed", STAT_IS_FUNC, (stat_var **)smf_pulls_send_failed},
+	{"pulls_orphaned",   STAT_IS_FUNC, (stat_var **)smf_pulls_orphaned},
+	{"pulls_late_stored", STAT_IS_FUNC, (stat_var **)smf_pulls_late_stored},
+	{"pulls_orphan_evicted", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_orphan_evicted},
+	{"pulls_late_superseded", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_late_superseded},
+	{"pulls_late_expired", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_late_expired},
+	{"pulls_orphan_expired", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_orphan_expired},
 	{"pulls_in_flight",  STAT_IS_FUNC, (stat_var **)smf_pulls_in_flight},
 	{0,0,0}
 };
@@ -2033,6 +2089,11 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		int found, int ttl_left, str *val)
 {
 	struct pcache_pull_slot *sl;
+	/* copied out under the lock, used once it is released */
+	char         late_key[PCACHE_PULL_MAX_KEY], late_col[64];
+	char         late_val[PCACHE_PULL_MAX_VAL];
+	unsigned int late_len = 0, late_exp = 0;
+	int          late_kl = 0, late_cl = 0, store_late = 0, late_after_linger = 0;
 
 	lock_get(pull_lock);
 	sl = pull_slot_get(id);
@@ -2088,18 +2149,86 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		sl->done = 1;
 		__sync_fetch_and_add(&pull_stats[PULL_ST_RECEIVED], 1);
 	}
-	/* Wake whoever is waiting on this slot.  The reply almost never lands
-	 * in the process that asked, so this is the only way back to it: the
-	 * fd was created before the fork, which is what lets a sibling write
-	 * to it at all. */
-	if (sl->efd >= 0 &&
+	/* Nobody is waiting on an orphan - its caller timed out and left.  We
+	 * are the last chance this value has to reach the cache, so copy what
+	 * we need out of the slot, hand the slot back, and store after the
+	 * lock is dropped.  Storing here under pull_lock would nest it outside
+	 * the bucket locks; see the note in pcache_pull_finish(). */
+	if (sl->orphan && sl->done) {
+		late_len = sl->vlen;
+		late_exp = sl->expires;
+		late_kl  = sl->klen;
+		late_cl  = sl->collen;
+		memcpy(late_key, pull_slot_key(sl), late_kl);
+		memcpy(late_col, sl->col, late_cl);
+		memcpy(late_val, pull_slot_val(sl), late_len);
+		/* No in-flight TTL correction, deliberately.  The peer computes
+		 * ttl_left immediately before sending (see the serve path: it reads
+		 * get_ticks() and hands the value straight to send_rpl), so a peer
+		 * that was busy for seconds still reports a CURRENT remaining TTL.
+		 * The only unaccounted time is the transit back to us.  Charging the
+		 * requester's elapsed time here would subtract the peer's own delay
+		 * from a figure that never included it - expiring late answers early
+		 * for precisely the reason they were late. */
+		late_after_linger = pull_linger_ms > 0 &&
+			get_uticks() > sl->deadline + (utime_t)pull_linger_ms * 1000;
+		sl->id     = 0;              /* back to the pool, job finished */
+		sl->orphan = 0;
+		store_late = 1;
+	} else if (sl->efd >= 0 &&
 	        (sl->done || sl->oversize || sl->negative >= sl->expect)) {
+		/* Wake whoever is waiting on this slot.  The reply almost never
+		 * lands in the process that asked, so this is the only way back
+		 * to it: the fd was created before the fork, which is what lets
+		 * a sibling write to it at all. */
 		uint64_t one = 1;
 
 		if (write(sl->efd, &one, sizeof one) != sizeof one)
 			LM_DBG("could not signal the pull waiter\n");
 	}
 	lock_release(pull_lock);
+
+	if (store_late) {
+		pcache_col_t *lcol;
+		str lk, lv, cn;
+
+		lk.s = late_key;  lk.len = late_kl;
+		lv.s = late_val;  lv.len = late_len;
+		cn.s = late_col;  cn.len = late_cl;
+		lcol = col_by_name(&cn);
+		if (!lcol || !lcol->htable) {
+			LM_DBG("late pull answer for a collection that went away\n");
+		} else if (late_after_linger) {
+			__sync_fetch_and_add(&pull_stats[PULL_ST_LATE_EXPIRED], 1);
+			LM_DBG("pull answer for <%.*s> arrived %d ms past the linger "
+				"window - not stored\n", lk.len, lk.s, pull_linger_ms);
+		} else if (late_exp && late_exp <= get_ticks()) {
+			LM_DBG("late pull answer for <%.*s> had already expired\n",
+				lk.len, lk.s);
+		} else if (pcache_ht_probe(lcol->htable, &lk, NULL, NULL, NULL) == 0) {
+			/* Something live is already here.  This is read REPAIR: fill what
+			 * is missing, never overwrite what is present.  Seconds may have
+			 * passed since the request went out, and a local write in that
+			 * window is by definition fresher than a peer's copy of what we
+			 * asked for.  probe() is allocation-free and returns exactly 0
+			 * for a present, live key - NOT `!= -2`, which would read a pkg
+			 * failure (-1) as "present" and silently stop repairing under the
+			 * very memory pressure that matters, while miscounting it here. */
+			__sync_fetch_and_add(&pull_stats[PULL_ST_LATE_SUPERSEDED], 1);
+			LM_DBG("late pull answer for <%.*s> superseded by a local "
+				"write - not stored\n", lk.len, lk.s);
+		} else if (pcache_ht_store(lcol->htable, &lk, &lv, late_exp) < 0) {
+			LM_ERR("could not store the late pulled value for <%.*s>\n",
+				lk.len, lk.s);
+		} else {
+			__sync_fetch_and_add(&pull_stats[PULL_ST_STORED], 1);
+			__sync_fetch_and_add(&pull_stats[PULL_ST_LATE_STORED], 1);
+			__sync_fetch_and_add(&lcol->pulled_in, 1);
+			pcache_neg_clear(lcol, &lk);
+			LM_DBG("stored a pull answer that arrived after its caller "
+				"gave up: <%.*s>\n", lk.len, lk.s);
+		}
+	}
 }
 
 /* Reclaim pulls that never got a conclusive answer.
@@ -2132,7 +2261,7 @@ static void pcache_pull_reap(utime_t ticks, void *param)
 {
 	utime_t now = get_uticks();
 	uint64_t one = 1;
-	int i, woke = 0, dropped = 0;
+	int i, woke = 0, dropped = 0, expired = 0;
 
 	if (!pull_slots || !pull_lock)
 		return;
@@ -2146,20 +2275,34 @@ static void pcache_pull_reap(utime_t ticks, void *param)
 
 		if (!sl->reaped) {
 			sl->reaped = 1;
+			/* An orphan's caller already finished and left - there is
+			 * nobody on the eventfd, and arming it would leave a count
+			 * for whoever inherits this slot to drain. */
+			if (sl->orphan)
+				continue;
 			if (sl->efd >= 0 &&
 			        write(sl->efd, &one, sizeof one) != sizeof one)
 				LM_DBG("could not wake the pull waiter on reap\n");
 			woke++;
 		} else if (now > sl->deadline + PCACHE_PULL_ABANDON_US) {
-			/* nobody came back for it */
-			sl->id = 0;
-			dropped++;
+			/* An orphan reaching here is the ordinary end of a timeout
+			 * whose answer never came.  Only a slot whose caller never
+			 * came back is genuinely abandoned - that distinction is the
+			 * whole point of PULL_ST_ABANDONED and its warning. */
+			if (sl->orphan)
+				expired++;
+			else
+				dropped++;
+			sl->id     = 0;
+			sl->orphan = 0;
 		}
 	}
 	lock_release(pull_lock);
 
 	if (woke)
 		LM_DBG("reaped %d pull(s) past their deadline\n", woke);
+	if (expired)
+		__sync_fetch_and_add(&pull_stats[PULL_ST_ORPHAN_EXPIRED], expired);
 	if (dropped) {
 		__sync_fetch_and_add(&pull_stats[PULL_ST_ABANDONED], dropped);
 		LM_WARN("released %d pull slot(s) whose caller never collected "
@@ -2310,6 +2453,26 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 			break;
 		}
 	if (!sl) {
+		/* Nothing free.  An orphan is only holding its slot on the chance
+		 * that a late answer still arrives, which is worth strictly less
+		 * than the request in front of us - take the one whose deadline
+		 * passed longest ago.  A live pull is never stolen. */
+		struct pcache_pull_slot *victim = NULL;
+		int v;
+
+		for (v = 0; v < PCACHE_PULL_SLOTS; v++) {
+			struct pcache_pull_slot *c = pull_slot_at(v);
+
+			if (c->id && c->orphan &&
+			    (!victim || c->deadline < victim->deadline))
+				victim = c;
+		}
+		if (victim) {
+			sl = victim;
+			__sync_fetch_and_add(&pull_stats[PULL_ST_ORPHAN_EVICTED], 1);
+		}
+	}
+	if (!sl) {
 		lock_release(pull_lock);
 		LM_WARN("all %d pull slots busy - dropping the request\n",
 			PCACHE_PULL_SLOTS);
@@ -2458,7 +2621,17 @@ static int pcache_pull_finish(pcache_col_t *col, const str *key,
 			"absence\n");
 		rc = -1;
 	}
-	sl->id = 0;                          /* the slot is reusable from here */
+	/* Hand the slot to the protocol rather than the pool when we leave
+	 * empty-handed: the answer may simply be late, and this slot holds the
+	 * only copy of the collection and key it belongs to.  rc == 1 is already
+	 * stored below; an oversize holder and a settled absence are final
+	 * answers - none of those wants a late reply. */
+	if (rc == 1 || sl->oversize || sl->negative >= sl->expect) {
+		sl->id = 0;                  /* the slot is reusable from here */
+	} else {
+		sl->orphan = 1;
+		__sync_fetch_and_add(&pull_stats[PULL_ST_ORPHANED], 1);
+	}
 	lock_release(pull_lock);
 
 	/* Everything below runs OUTSIDE the pull lock, on the copy taken above.

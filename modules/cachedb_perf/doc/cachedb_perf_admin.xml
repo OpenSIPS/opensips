@@ -496,6 +496,42 @@ modparam("cachedb_perf", "replicate_collections", "th")
 		</emphasis>
 		</para>
 	</section>
+	<section id="param_pull_linger_ms" xreflabel="pull_linger_ms">
+		<title><varname>pull_linger_ms</varname> (integer)</title>
+		<para>
+		A pull whose answer arrives after
+		<varname>pull_timeout_ms</varname> is no longer anyone's answer -
+		the caller has moved on - but it is still a perfectly good value.
+		The module keeps the request slot around and stores such a late
+		answer into the cache, so the next lookup hits locally instead of
+		asking the cluster again.  Without this, the cache never converges
+		on exactly the keys that are hardest to fetch.
+		</para>
+		<para>
+		This parameter is an <emphasis>optional</emphasis> extra bound on
+		how late is too late, in milliseconds past the pull timeout.  The
+		default of <quote>0</quote> means no time bound: what makes a late
+		answer valid is that the <emphasis>value</emphasis> is still
+		valid, and the value carries its own expiry, computed against
+		this node's clock.  The practical ceiling is the request slot's
+		own lifetime.
+		</para>
+		<para>
+		Set it non-zero only where the script <emphasis>deletes</emphasis>
+		keys from a replicated collection: a late store cannot tell
+		<quote>never had it</quote> from <quote>deleted a moment
+		ago</quote>, so a peer's copy could resurrect a key the script
+		removed.  A deployment that only writes and lets TTLs expire
+		cannot hit that.  A late answer never overwrites a live local
+		entry in any case - it fills gaps, it does not compete with
+		fresher writes.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (no extra bound).
+		</emphasis>
+		</para>
+	</section>
 	<section id="param_pull_negative_ms" xreflabel="pull_negative_ms">
 		<title><varname>pull_negative_ms</varname> (integer)</title>
 		<para>
