@@ -1416,17 +1416,17 @@ static int add_carrier(str *carrier,int safe)
 	memcpy(carr_cell->carrierid.s,carrier->s,carrier->len);
 	/* Malloc & zero out the arrays for each ratetable property inside the new cell */
 	carr_cell->rateid = (unsigned int *)shm_malloc(carr_max_rates * sizeof(unsigned int));
-	memset(carr_cell->rateid,0,sizeof(carr_max_rates * sizeof(unsigned int)));
+	memset(carr_cell->rateid,0,carr_max_rates * sizeof(*carr_cell->rateid));
 
 	carr_cell->rate_table = (str *)shm_malloc(carr_max_rates * sizeof(str));
-	memset(carr_cell->rate_table,0,sizeof(carr_max_rates * sizeof(str)));
+	memset(carr_cell->rate_table,0,carr_max_rates * sizeof(*carr_cell->rate_table));
 
 	carr_cell->rate_currency = (str *)shm_malloc(carr_max_rates * sizeof(str));
-	memset(carr_cell->rate_currency,0,sizeof(carr_max_rates * sizeof(str)));
+	memset(carr_cell->rate_currency,0,carr_max_rates * sizeof(*carr_cell->rate_currency));
 
 
-	carr_cell->trie = shm_malloc(carr_max_rates * sizeof(ptree_t));
-	memset(carr_cell->trie,0,sizeof(carr_max_rates * sizeof(ptree_t)));
+	carr_cell->trie = shm_malloc(carr_max_rates * sizeof(*carr_cell->trie));
+	memset(carr_cell->trie,0,carr_max_rates * sizeof(*carr_cell->trie));
 
 	for (i=0; i < carr_max_rates; i++) {
 	  ptree_t* new_trie;
