@@ -2586,6 +2586,8 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags |= (val->rs.len) ? 0 : PV_VAL_NULL;
 			break;
 		case TR_NA_PARAM:
+			if (!tp)
+				goto error;
 			if(tp->type != TR_PARAM_STRING)
 			{
 				LM_ERR("Wrong type for parameter, it must string\n");
