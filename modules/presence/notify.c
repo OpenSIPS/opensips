@@ -2082,8 +2082,13 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 						}
 						if(final_body)
 						{
-							free_fct(notify_body->s);
-							pkg_free(notify_body);
+							if (notify_body != n_body) {
+								if (free_fct)
+									free_fct(notify_body->s);
+								else
+									subs->event->free_body(notify_body->s);
+								pkg_free(notify_body);
+							}
 							notify_body= final_body;
 						}
 					}
