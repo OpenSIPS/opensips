@@ -1411,12 +1411,18 @@ static decoded_info_buffer_t decode_info_buffer(str *info, const thinfo_options_
 		}
     }
 
-	if (decoded_uris[0].s != NULL && decoded_uris[0].len > 0) {
-		decoded_buffer.contact = (str) { .s = decoded_uris[0].s, .len = decoded_uris[0].len };
-		decoded_buffer.state |= HAS_CONTACT;
+	if (decoded_uris[0].s == NULL || decoded_uris[0].len <= 2) {
+		LM_ERR("Decoded contact URI is malformed\n");
+		goto error;
 	}
+	decoded_buffer.contact = (str) { .s = decoded_uris[0].s, .len = decoded_uris[0].len };
+	decoded_buffer.state |= HAS_CONTACT;
     
-    if (uri_count > 1) {
+	if (uri_count > 1) {
+		if (decoded_uri_buf_len < decoded_buffer.contact.len + 1) {
+			LM_ERR("Decoded routes are malformed\n");
+			goto error;
+		}
 		decoded_buffer.routes = (str) { .s = decoded_uris[1].s, .len = decoded_uri_buf_len - decoded_buffer.contact.len - 1 };
 		decoded_buffer.state |= HAS_ROUTES;
     }
@@ -1733,7 +1739,7 @@ static struct lump* th_no_dlg_add_auto_record_route(struct sip_msg* msg, uint16_
     int prefix_len, suffix_len, rpl_route_hdr_len, thinfo_len;
 	int prefix_counter = 0, suffix_counter = 0;
     str *rpl_rrs = NULL;
-    unsigned int rpl_rr_count = 0;
+    int rpl_rr_count = 0;
     int is_reply = msg->first_line.type == SIP_REPLY;
 	int i;
 
