@@ -932,7 +932,7 @@ static mi_response_t *mi_config_flush(const mi_params_t *params,
 		e = hash_entry(*config_hash, name);
 		hash_lock(*config_hash, e);
 		config_val_p *_cv = (config_val_p *)hash_find(*config_hash, e, name);
-		if (*_cv && _cv)
+		if (_cv && *_cv)
 			config_val_flush_hash_it(&count, name, *_cv);
 		hash_unlock(*config_hash, e);
 	} else {
