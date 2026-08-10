@@ -753,10 +753,17 @@ send_bytes:
 
 		/* read phase */
 		for (;;) {
+			if (cfgsz > INT_MAX - 1024) {
+				LM_ERR("preprocessor output is too large\n");
+				goto out_err;
+			}
 			if (cfgsz + 1024 > cfgbufsz) {
 				if (cfgbufsz == 0)
 					cfgbufsz = 4096;
-				else
+				else if (cfgbufsz > INT_MAX / 2) {
+					LM_ERR("preprocessor output is too large\n");
+					goto out_err;
+				} else
 					cfgbufsz *= 2;
 
 				cfgbuf = realloc(cfgbuf, cfgbufsz);
