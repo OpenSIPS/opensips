@@ -146,7 +146,11 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 	/* hosts[/database][?params] */
 	hosts_db = __parse_csv_record(&st, 0, '?');
+	if (!hosts_db)
+		goto out_err;
 	hosts_chunk = __parse_csv_record(&hosts_db->s, 0, '/');
+	if (!hosts_chunk)
+		goto out_err;
 
 	if (!hosts_chunk->s.s || hosts_chunk->s.len <= 0) {
 		LM_ERR("empty/missing \"host\" part in URL %.*s\n", in->len, in->s);
@@ -155,6 +159,8 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 
 	/* host1[:port1][,host2[:port2]...]] */
 	hosts = parse_csv_record(&hosts_chunk->s);
+	if (!hosts)
+		goto out_err;
 	if (hosts->next && !(opts & URL_ALLOW_EXTRA_HOSTS)) {
 		LM_ERR("multiple hosts not allowed in URL %.*s\n", in->len, in->s);
 		goto out_err;
