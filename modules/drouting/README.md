@@ -2039,7 +2039,7 @@ discarding the old ones.
 
 
 For how to access and use the Status/Report information, please see
-[https://docs.opensips.org/manual/3-6/interface-statusreport/](>https://docs.opensips.org/manual/3-6/interface-statusreport/).
+[Status/Report Interface](../../docs/manual/Interface-StatusReport.md).
 
 
 ### Installation
