@@ -192,8 +192,9 @@ void *sr_register_group( char* name_s, int name_len, int is_public)
 		if ( srg==NULL ) {
 			LM_ERR("failed to register group [%.*s]\n",
 				name.len, name.s);
+		} else {
+			srg->is_public = is_public;
 		}
-		srg->is_public = is_public;
 	}
 
 	lock_stop_write( sr_lock );
@@ -323,7 +324,7 @@ void* sr_register_group_with_identifier( char *group_s, int group_len,
 {
 	void *srg;
 
-	if ( (srg=sr_register_group( group_s, group_len, grp_is_public))<0 ) {
+	if ( (srg=sr_register_group( group_s, group_len, grp_is_public))==NULL ) {
 		LM_ERR("failed to register 'status_report' group [%.*s]\n",
 			group_len, group_s);
 		return NULL;
