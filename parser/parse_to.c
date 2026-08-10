@@ -540,6 +540,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 					case URI_OR_TOKEN:
 						end_mark = tmp;
 						status = MAYBE_URI_END;
+						/* fall through */
 					case MAYBE_URI_END:
 					case DISPLAY_TOKEN:
 					case DISPLAY_TOKEN2:
