@@ -80,7 +80,7 @@ struct {
 struct stat_series_profile {
 	str name;
 	gen_hash_t *hash;
-	unsigned int slot_size;
+	unsigned long long slot_size;
 	struct list_head list;
 
 	/* these can be customized */
@@ -404,8 +404,8 @@ static int reg_stat_series_profile( modparam_t type, void* val)
 	}
 	if (!sp->group.len)
 		sp->group = sp->name;
-	sp->slot_size = sp->window * 1000 / sp->slots;
-	LM_DBG("stat series profile %.*s has a window of %us of %u slots of %ums algorithm(%s)\n",
+	sp->slot_size = (unsigned long long)sp->window * 1000ULL / sp->slots;
+	LM_DBG("stat series profile %.*s has a window of %us of %u slots of %llums algorithm(%s)\n",
 			name.len, name.s, sp->window, sp->slots, sp->slot_size, stat_series_alg_name(sp->algorithm));
 
 	list_add(&sp->list, &series_profiles);
@@ -906,7 +906,8 @@ int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 }
 
 #define get_stat_series_slot(_ss, _ts) \
-	(((_ts) % ((_ss)->profile->window * 1000)) / (_ss)->profile->slot_size)
+	(((_ts) % ((unsigned long long)(_ss)->profile->window * 1000ULL)) / \
+		(_ss)->profile->slot_size)
 
 inline static void reset_stat_series_slot(struct stat_series *ss, union stat_series_slot *slot)
 {
@@ -935,7 +936,7 @@ static int reset_stat_series(struct stat_series *ss, unsigned long long t)
 	int new_slot, slot;
 
 	new_slot = get_stat_series_slot(ss, t);
-	if (t - ss->last_ts >= ss->profile->window * 1000) {
+	if (t - ss->last_ts >= (unsigned long long)ss->profile->window * 1000ULL) {
 		memset(ss->slots, 0, ss->profile->slots * sizeof *ss->slots);
 		memset(&ss->cache, 0, sizeof ss->cache);
 		return new_slot;
@@ -971,7 +972,7 @@ static unsigned long get_stat_series(struct stat_series *ss)
 		goto end;
 
 	now = get_stat_now();
-	if (now - ss->last_ts >= ss->profile->window *1000)
+	if (now - ss->last_ts >= (unsigned long long)ss->profile->window * 1000ULL)
 		goto end;
 	new_slot = reset_stat_series(ss, now);
 
