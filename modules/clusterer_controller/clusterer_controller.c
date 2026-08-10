@@ -1050,6 +1050,8 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
                                cl_ctr_cluster_t *cl,
                                const struct sockaddr *src, socklen_t src_len);
+static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl,
+                                      const char *superior_ip, const char *via);
 static void cl_ctr_handle_node_assign(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
 static void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl);
@@ -4701,9 +4703,10 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
 
     if (i_am_master) {
         if (!from_self && ip_to_num(sender_ip) > ip_to_num(my_ip)) {
-            /* Split-brain: a higher-IP node also claims mastership - yield. */
-            cl_ctr_upsert_peer_locked(sender_ip, cl);
-            cl_ctr_apply_master_from_list_locked(sender_ip, cl);
+            /* Split-brain: a higher-IP node also claims mastership - yield.
+             * The actual demotion happens below, OUTSIDE the lock, through
+             * cl_ctr_rejoin_superior_master(), which must not be called with
+             * the peers lock held. */
             yielded = 1;
         }
         /* else: my own loopback, or a lower-IP claimant that will yield to us */
@@ -4720,7 +4723,16 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
         LM_INFO("clusterer_controller: [cluster %d] yielding mastership to "
                 "higher-IP master %s (split-brain resolution)\n",
                 cl->cluster_id, sender_ip);
-        cl_ctr_arm_master_timers(cl, 0);   /* stop MASTER_ALIVE, arm dead watchdog */
+        /* Yielding alone is NOT a merge.  The winner learned us only from this
+         * packet's sender-upsert, i.e. as a peer with node_id 0, and the ONLY
+         * place a node_id is ever assigned is its handle_join_req().  Without
+         * a JOIN_REQ we would sit in its table as id 0 forever: never named in
+         * a NODE_ASSIGN, so never added to clusterer anywhere, while our
+         * membership digest never matches its MASTER_ALIVE - a RESYNC-per-
+         * second livelock, observed live on the 3-node staging cluster after
+         * a partition heal.  So re-join properly, exactly as the beacon merge
+         * path does; rejoin also demotes us and arms the dead watchdog. */
+        cl_ctr_rejoin_superior_master(cl, sender_ip, "MASTER_ALIVE");
     }
 
     /* Non-masters (including a node that just yielded) watch the keepalive. */
@@ -4772,7 +4784,8 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
  * lands we can decrypt the superior partition's session traffic and are fully
  * merged.  Call WITHOUT cl->peers->lock held.
  */
-static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *superior_ip)
+static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *superior_ip,
+                                      const char *via)
 {
     int was_master;
 
@@ -4785,12 +4798,12 @@ static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *supe
 
     if (was_master) {
         LM_INFO("clusterer_controller: [cluster %d] superior master %s found via "
-                "beacon - demoting and merging (split-brain resolution)\n",
-                cl->cluster_id, superior_ip);
+                "%s - demoting and merging (split-brain resolution)\n",
+                cl->cluster_id, superior_ip, via);
         cl_ctr_arm_master_timers(cl, 0);   /* stop MASTER_ALIVE, arm dead watchdog */
     } else {
         LM_INFO("clusterer_controller: [cluster %d] moving to superior master %s "
-                "via beacon (split-brain merge)\n", cl->cluster_id, superior_ip);
+                "via %s (split-brain merge)\n", cl->cluster_id, superior_ip, via);
     }
 
     /* Drop any locally-held active shtag now that we are no longer master. */
@@ -4856,7 +4869,7 @@ static void cl_ctr_handle_master_beacon(const char *sender_ip, uint16_t sender_c
     if (!superior)
         return;   /* we outrank the sender; it will yield to us on our beacon */
 
-    cl_ctr_rejoin_superior_master(cl, sender_ip);
+    cl_ctr_rejoin_superior_master(cl, sender_ip, "beacon");
 }
 
 /**
