@@ -414,7 +414,7 @@ In terms of reports/logs, the following events will be reported:
 
 
 For how to access and use the Status/Report information, please see
-[https://docs.opensips.org/manual/3-6/interface-statusreport/](>https://docs.opensips.org/manual/3-6/interface-statusreport/).
+[Status/Report Interface](../../docs/manual/Interface-StatusReport.md).
 <!-- CONTRIBUTORS -->
 
 ### License

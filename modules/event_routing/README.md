@@ -1,6 +1,6 @@
 ---
 title: "Event (based) Routing Module"
-description: "The Event (based) Routing module, or shortly the EBR module, provides a mechanism that allows different SIP processings (of messages in script) to communicate and synchronize between through OpenSIPS Events (see https://docs.opensips.org/manual/3-6/interface-events/)."
+description: "The Event (based) Routing module, or shortly the EBR module, provides a mechanism that allows different SIP processings (of messages in script) to communicate and synchronize between through OpenSIPS Events."
 ---
 
 ## Admin Guide
@@ -12,7 +12,7 @@ description: "The Event (based) Routing module, or shortly the EBR module, provi
 The Event (based) Routing module, or shortly the EBR module, provides a 
 mechanism that allows different SIP processings (of messages in script) to
 communicate and synchronize between through OpenSIPS Events 
-(see https://docs.opensips.org/manual/3-6/interface-events/).
+(see [Event Interface](../../docs/manual/Interface-Events.md)).
 
 
 This mechanism is based on the Subscribe-Notify concept. Any SIP processing
@@ -26,7 +26,7 @@ subscriber processing.
 Also, the Events are generated either internally by OpenSIPS (predefined 
 Events), either from the script level (custom Events). Please refer to the
 Event Interface documentation for more on how the Events are generated 
-(https://docs.opensips.org/manual/3-6/interface-events/).
+([Event Interface](../../docs/manual/Interface-Events.md)).
 
 
 Depending on how the notification is handled by the subscribing processing,

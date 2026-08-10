@@ -24,23 +24,23 @@ I most of the cases, the status and reports of an identifier are internally prod
 
 ## Scripting functions
 
-The SR Interface provides a script function to check the readiness status of an identifier (or of an entire group), see the [sr_check_status( group, \[identifier\])](https://docs.opensips.org/manual/3-6/script-corefunctions#sr_check_status) function.
+The SR Interface provides a script function to check the readiness status of an identifier (or of an entire group), see the [sr_check_status( group, \[identifier\])](./Script-CoreFunctions.md#sr_check_status-group-identifier) function.
 
 ---
 
 ## MI functions
 
 The SR Interface provides multiple functions to check/list the status of one/multiple identifiers and to list their reports:
-* [sr_get_status](https://docs.opensips.org/manual/3-6/interface-coremi#sr_get_status)
-* [sr_list_status](https://docs.opensips.org/manual/3-6/interface-coremi#sr_list_status)
-* [sr_list_reports](https://docs.opensips.org/manual/3-6/interface-coremi#sr_list_reports)
-* [sr_list_identifiers](https://docs.opensips.org/manual/3-6/interface-coremi#sr_list_identifiers)
+* [sr_get_status](./Interface-CoreMI.md#sr_get_status)
+* [sr_list_status](./Interface-CoreMI.md#sr_list_status)
+* [sr_list_reports](./Interface-CoreMI.md#sr_list_reports)
+* [sr_list_identifiers](./Interface-CoreMI.md#sr_list_identifiers)
 
 ---
 
 ## Events
 
-The SR framework raises an event each time the status of a Status/Report identifier changes. See the [E_CORE_SR_STATUS_CHANGED event](https://docs.opensips.org/manual/3-6/interface-coreevents#E_CORE_SR_STATUS_CHANGED) for more details.
+The SR framework raises an event each time the status of a Status/Report identifier changes. See the [E_CORE_SR_STATUS_CHANGED event](./Interface-CoreEvents.md#e_core_sr_status_changed) for more details.
 
 ---
 
