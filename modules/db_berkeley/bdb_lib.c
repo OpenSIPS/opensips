@@ -230,6 +230,8 @@ int bdblib_reopen(char* _n)
 						{	_env->err(_env, rc, "db_create");
 							LM_CRIT("error in db_create, db error: %s.\n",db_strerror(rc));
 							bdblib_recover(_tbc->dtp, rc);
+							lock_release(&_tbc->dtp->sem);
+							return rc;
 						}
 					}
 
@@ -268,6 +270,8 @@ int bdblib_reopen(char* _n)
 						{	_env->err(_env, rc, "db_create");
 							LM_CRIT("error in db_create, db error: %s.\n",db_strerror(rc));
 							bdblib_recover(_tbc->dtp, rc);
+							lock_release(&_tbc->dtp->sem);
+							return rc;
 						}
 					}
 
