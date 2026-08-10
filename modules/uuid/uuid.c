@@ -145,6 +145,7 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 	#else
 		LM_WARN("UUID version 7 not supported! Using algorithm 0\n");
 	#endif
+		/* fallback */
 	case UUID_VERS_0:
 		uuid_generate(uuid);
 		break;
