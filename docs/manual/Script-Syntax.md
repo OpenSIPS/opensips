@@ -88,16 +88,16 @@ The OpenSIPS scripting language supports the following data types:
   * Max value: +2,147,483,647 == 2 ^ 31 - 1
   * Min value: -2,147,483,648 == - 2 ^ 31
 * *string* (unlimited size)
-  * note that some functions which use strings may have internal buffers which limit the maximum size of the strings (e.g. the [xlog()](https://docs.opensips.org/manual/4-0/script-corefunctions#socket_belongs_to_bond) function's output buffer is configurable via [xlog_buf_size](https://docs.opensips.org/manual/4-0/script-coreparameters#udp_workers))
+  * note that some functions which use strings may have internal buffers which limit the maximum size of the strings (e.g. the [xlog()](./Script-CoreFunctions.md#xloglog_level-format_string) function's output buffer is configurable via [xlog_buf_size](./Script-CoreParameters.md#xlog_buf_size))
 * *double* (packed as string), through the **[mathops](../../modules/mathops/README.md)** module
 
 ### Complex
 
-* *list* via the **[`$avp` variable](https://docs.opensips.org/manual/4-0/script-corevar#avp_variables)**
-* *map* via the **[`$json`](../../modules/json/README.md#pv_json)** and **[`$xml`](../../modules/xml/README.md#pv_xml)** variables
+* *list* via the **[`$avp` variable](./Script-CoreVar.md#avp-variables)**
+* *map* via the **[`$json`](../../modules/json/README.md#jsonid)** and **[`$xml`](../../modules/xml/README.md#xmlpath)** variables
 
 ## Function Calling Conventions
-All OpenSIPS [core](https://docs.opensips.org/manual/4-0/script-corefunctions) and [module](https://docs.opensips.org/manual/4-0/function-index) functions internally share the same function interface, such that they benefit from the following calling convention:
+All OpenSIPS [core](./Script-CoreFunctions.md) and [module](./Function-Index.md) functions internally share the same function interface, such that they benefit from the following calling convention:
 
   
 

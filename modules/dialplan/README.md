@@ -92,7 +92,7 @@ to do with the module, you need to populate the appropriate DB records.
 
 
 The definition of the tables used by the dialplan module can be found
-at [dialplan table documentation](https://docs.opensips.org/manual/4-0/install-dbschema/#table-dialplan)
+at [dialplan table documentation](../../docs/manual/Install-DBSchema.md#table-dialplan)
 
 
 #### What to place in table
@@ -689,7 +689,7 @@ In terms of reports/logs, the following events will be reported:
 
 
 For how to access and use the Status/Report information, please see
-[Status/Report Interface documentation](https://docs.opensips.org/manual/4-0/interface-statusreport/).
+[Status/Report Interface](../../docs/manual/Interface-StatusReport.md).
 
 
 ### Installation
