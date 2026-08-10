@@ -961,8 +961,10 @@ int set_msg_branch_attr(unsigned int b_idx, int name_id,
 	if ( (avp=search_first_avp( 0, name_id, NULL, 0))!=NULL )
 		destroy_avp(avp);
 
-	if ( !(flags&AVP_VAL_NULL) )
-		add_avp( flags, name_id, val);
+	if ( !(flags&AVP_VAL_NULL) && add_avp(flags, name_id, val) < 0) {
+		set_avp_list(old_list);
+		return -1;
+	}
 
 	set_avp_list( old_list );
 
