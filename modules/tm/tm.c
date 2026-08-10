@@ -2674,7 +2674,7 @@ static inline int _pv_get_tm_branch_field(struct sip_msg *msg,
 			break;
 		case BR_TYPE_ID: /* return TYPE */
 			res->flags = PV_VAL_STR;
-			if (TM_BRANCH(t,idx).flags | T_UAC_IS_PHONY) {
+			if (TM_BRANCH(t,idx).flags & T_UAC_IS_PHONY) {
 				res->rs.s = "phony";
 				res->rs.len = 5;
 			} else {
