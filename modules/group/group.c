@@ -102,9 +102,6 @@ int get_username_domain(struct sip_msg *msg, str *hf_s,
 	}
 
 	if ( c==NULL ) {
-		/* coverity[var_deref_op: FALSE] - when c==NULL
-		 * then hf_type(hf_s) != 4, so turi != NULL
-		 */
 		*username = turi->user;
 		*domain = turi->host;
 	} else {
@@ -374,4 +371,3 @@ int aaa_is_user_in(struct sip_msg* _m, void* _hf, str* grp)
 		return -12;
 	}
 }
-
