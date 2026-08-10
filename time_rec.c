@@ -1942,10 +1942,10 @@ tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type)
 	str aux;
 	int rc;
 
-	LM_DBG("checking: %s\n", trx);
-
 	if (!trx)
 		return NULL;
+
+	LM_DBG("checking: %s\n", trx);
 
 	malloc_f = (alloc_type & PKG_ALLOC ?
 	                osips_pkg_malloc : osips_shm_malloc);
