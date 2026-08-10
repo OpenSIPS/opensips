@@ -111,6 +111,7 @@ xmlDocPtr xmlParseFile(const char *filename)
 	if (!input || fread(input, 1, (size_t)size, file) != (size_t)size)
 		goto error;
 	fclose(file);
+	file = NULL;
 
 	doc = calloc(1, sizeof(*doc));
 	if (!doc) goto error;
