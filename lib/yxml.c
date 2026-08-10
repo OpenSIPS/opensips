@@ -313,7 +313,8 @@ static yxml_ret_t yxml_refend(yxml_t *x, yxml_ret_t ret) {
 	}
 
 	/* Codepoints not allowed in the XML 1.1 definition of a Char */
-	if(!ch || ch > 0x10FFFF || ch == 0xFFFE || ch == 0xFFFF || (ch-0xDFFF) < 0x7FF)
+	if(!ch || ch > 0x10FFFF || ch == 0xFFFE || ch == 0xFFFF ||
+			(ch-0xD800) < 0x800)
 		return YXML_EREF;
 	yxml_setutf8(x->data, ch);
 	return ret;
@@ -1061,4 +1062,3 @@ yxml_ret_t yxml_eof(yxml_t *x) {
 
 
 /* vim: set noet sw=4 ts=4: */
-

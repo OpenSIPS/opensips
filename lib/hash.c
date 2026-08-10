@@ -47,15 +47,20 @@ gen_hash_t *hash_init_flags(unsigned int size, unsigned int flags)
 	unsigned int n;
 	gen_hash_t *h;
 
+	if (size == 0) {
+		LM_ERR("hash size must be greater than zero\n");
+		return NULL;
+	}
+
 	/* initialized the hash table */
 	for (n=0 ; n<(8*sizeof(n) - 1) ; n++) {
-		if (size==(1<<n))
+		if (size==(1U<<n))
 			break;
-		if (size<(1<<n)) {
+		if (size<(1U<<n)) {
 			LM_WARN("hash_size is not a power "
 				"of 2 as it should be -> rounding from %d to %d\n",
-				size, 1<<(n-1));
-			size = 1<<(n-1);
+				size, 1U<<(n-1));
+			size = 1U<<(n-1);
 			break;
 		}
 	}

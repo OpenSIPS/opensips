@@ -65,6 +65,8 @@ mutex_error:
 
 void cond_destroy(gen_cond_t *cond)
 {
-	pthread_cond_destroy(&cond->c);
-	pthread_mutex_destroy(&cond->m);
+	if (pthread_cond_destroy(&cond->c) != 0)
+		LM_ERR("could not destroy condition variable\n");
+	if (pthread_mutex_destroy(&cond->m) != 0)
+		LM_ERR("could not destroy mutex\n");
 }
