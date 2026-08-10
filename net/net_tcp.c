@@ -1112,9 +1112,12 @@ struct tcp_connection* tcp_conn_create(const union sockaddr_union* su,
 		int state)
 {
 	struct tcp_connection *c;
+	struct tcp_conn_profile default_prof;
 
-	if (!prof)
-		tcp_con_get_profile(su, &si->su, si->proto, prof);
+	if (!prof) {
+		tcp_con_get_profile(su, &si->su, si->proto, &default_prof);
+		prof = &default_prof;
+	}
 
 	/* create the connection structure */
 	c = tcpconn_new(-1, su, si, prof, state, 0);
@@ -1282,8 +1285,8 @@ static void *tcp_thread_routine(void *arg)
 			if (!job) {
 				LM_ERR("oom while building shared TCP write job\n");
 				conn->flags &= ~F_CONN_WRITE_QUEUED;
-				tcpconn_put(conn);
 				cond_unlock(&tcp_write_queue->cond);
+				tcpconn_put(conn);
 				continue;
 			}
 			job->conn = conn;
@@ -1863,10 +1866,15 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			/* now that we completed the async connection, we also need to
 			 * listen for READ events, otherwise these will get lost */
 			if (tcpconn->flags & F_CONN_REMOVED_READ) {
-					reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+				if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
+						tcpconn) < 0) {
+					LM_ERR("failed to re-arm TCP conn %p for read events\n",
 						tcpconn);
-					tcpconn->flags &= ~F_CONN_REMOVED_READ;
+					tcp_fail_conn(tcpconn, "Failed to re-arm read", 0);
+					return 0;
 				}
+				tcpconn->flags &= ~F_CONN_REMOVED_READ;
+			}
 
 			goto async_write;
 		} else {
