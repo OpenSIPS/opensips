@@ -530,8 +530,9 @@ inline static int pathmax(void)
 	static int pathmax=0;
 #endif
 	if (pathmax==0) { /* init */
-		pathmax=pathconf("/", _PC_PATH_MAX);
-		pathmax=(pathmax<=0)?PATH_MAX_GUESS:pathmax+1;
+		long max_path = pathconf("/", _PC_PATH_MAX);
+		pathmax=(max_path<=0 || max_path >= INT_MAX) ?
+			PATH_MAX_GUESS : (int)max_path+1;
 	}
 	return pathmax;
 }
