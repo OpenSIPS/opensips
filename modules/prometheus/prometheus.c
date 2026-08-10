@@ -882,7 +882,7 @@ end:
 		prometheus_route_page_max = 0;
 		prometheus_route_page_stat.s = NULL;
 
-		memset(&val, 0, sizeof(int_str));
+		memset(&val, 0, sizeof(val));
 		if ((script_return_get(&val, 0) >= 1) && (val.flags & PV_VAL_STR)) {
 			if (process_extra_prometheus(val.rs.s,val.rs.len,page,buffer->len) < 0)
 				LM_ERR("Failed to add custom prometheus stats \n");
