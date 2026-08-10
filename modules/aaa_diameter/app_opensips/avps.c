@@ -36,6 +36,8 @@
 #include <freeDiameter/extension.h>
 
 #include "ctype.h"
+#include <errno.h>
+#include <limits.h>
 
 #include "avps.h"
 
@@ -46,6 +48,22 @@
 #else
 extern int dm_store_enumval(const char *name, int value);
 #endif
+
+static int parse_uint(char *p, char **newp, unsigned int *value)
+{
+	unsigned long parsed;
+
+	if (*p == '-')
+		return -1;
+
+	errno = 0;
+	parsed = strtoul(p, newp, 10);
+	if (*newp == p || errno == ERANGE || parsed > UINT_MAX)
+		return -1;
+
+	*value = (unsigned int)parsed;
+	return 0;
+}
 
 #ifdef PKG_MALLOC
 #include "../../../dprint.h"
@@ -639,8 +657,7 @@ int parse_attr_def(char *line, FILE *fp)
 	while (len > 0 && !isspace(*p)) { p++; len--; }
 
 	if (len > 0 && *p != '\r' && *p != '\n') {
-		vendor_id = strtol(p, &newp, 10);
-		if (vendor_id < 0)
+		if (parse_uint(p, &newp, &vendor_id) < 0)
 			goto error;
 
 		len -= newp - p;
@@ -751,8 +768,7 @@ int parse_app_vendor(char *line, FILE *fp)
 
 	while (isspace(*p)) { p++; len--; }
 
-	vendor_id = (unsigned int)strtoul(p, &newp, 10);
-	if (vendor_id < 0) {
+	if (parse_uint(p, &newp, &vendor_id) < 0) {
 		LOG_ERROR("bad Vendor ID: '... | %s'\n", p);
 		return -1;
 	}
@@ -819,8 +835,7 @@ int parse_app_def(char *line, FILE *fp)
 		while (isspace(*p)) { p++; len--; }
 	}
 
-	app_id = (unsigned int)strtoul(p, &newp, 10);
-	if (app_id < 0) {
+	if (parse_uint(p, &newp, &app_id) < 0) {
 		LOG_ERROR("bad Application ID: '... | %s'\n", p);
 		return -1;
 	}
@@ -836,8 +851,7 @@ int parse_app_def(char *line, FILE *fp)
 		len--;
 		while (isspace(*p)) { p++; len--; }
 
-		vendor_id = (unsigned int)strtoul(p, &newp, 10);
-		if (vendor_id < 0) {
+		if (parse_uint(p, &newp, &vendor_id) < 0) {
 			LOG_ERROR("bad Vendor ID: '... | %s'\n", p);
 			return -1;
 		}
@@ -910,8 +924,7 @@ int parse_command_def(char *line, FILE *fp, int cmd_type)
 		break;
 	}
 
-	cmd_code = (unsigned int)strtoul(p, &newp, 10);
-	if (cmd_code < 0) {
+	if (parse_uint(p, &newp, &cmd_code) < 0) {
 		LOG_ERROR("bad AVP cmd code: '... | %s'\n", p);
 		return -1;
 	}
