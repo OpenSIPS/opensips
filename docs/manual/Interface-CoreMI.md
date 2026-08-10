@@ -349,7 +349,7 @@ Adds a rule to a non-readonly blacklist.
 
 **Arguments**:
 * *name*- the name of the blacklist to add to
-* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](https://docs.opensips.org/manual/3-6/script-coreparameters#dst_blacklist) parameter
+* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](./Script-CoreParameters.md#dst_blacklist) parameter
 * *expire* (optional) - indicates the number of seconds the rule should expire
 **Output**: success or failed object.
 
@@ -366,7 +366,7 @@ Removes a rule from a non-readonly blacklist.
 
 **Arguments**:
 * *name* - the name of the blacklist to remove from
-* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](https://docs.opensips.org/manual/3-6/script-coreparameters#dst_blacklist) parameter
+* *rule* - a string containing a blacklist rule, according to [**dst_blacklist**](./Script-CoreParameters.md#dst_blacklist) parameter
 **Output**: success or failed object.
 
 Examples of usage:
@@ -395,10 +395,10 @@ Examples of usage:
 ## Status Report
 
 ### sr_get_status
-The MI equivalent of the [sr_check_status() script function](https://docs.opensips.org/manual/3-6/script-corefunctions#sr_check_status) - to get the status of an 'status/report' identifier/group.
+The MI equivalent of the [sr_check_status() script function](./Script-CoreFunctions.md#sr_check_status-group-identifier) - to get the status of an 'status/report' identifier/group.
 
-**Arguments**: a mandatory *group* and optional *identifier*, see the parameters of the [sr_check_status() script function](https://docs.opensips.org/manual/3-6/script-corefunctions#sr_check_status).
-**Output**: the readiness, the status and details of the identifier/group (see the aggregation note for the return code of the [sr_check_status() script function](https://docs.opensips.org/manual/3-6/script-corefunctions#sr_check_status)
+**Arguments**: a mandatory *group* and optional *identifier*, see the parameters of the [sr_check_status() script function](./Script-CoreFunctions.md#sr_check_status-group-identifier).
+**Output**: the readiness, the status and details of the identifier/group (see the aggregation note for the return code of the [sr_check_status() script function](./Script-CoreFunctions.md#sr_check_status-group-identifier)
 
 Examples of usage:
 ```bash
@@ -422,7 +422,7 @@ $ opensips-cli -x mi sr_get_status drouting all
 ### sr_list_status
 Command to list the status of the identifiers within one or all 'status/report' groups.
 
-**Arguments**: an optional 'status/report'  *group*, see the [sr_check_status() script function](https://docs.opensips.org/manual/3-6/script-corefunctions#sr_check_status) for more details.
+**Arguments**: an optional 'status/report'  *group*, see the [sr_check_status() script function](./Script-CoreFunctions.md#sr_check_status-group-identifier) for more details.
 **Output**: the readiness, the status and details for all the identifiers within the requested group, or within all defined/registered groups.
 
 Examples of usage:
@@ -470,7 +470,7 @@ $ opensips-cli -x mi sr_list_status
 Command to list the full set of reports (logs) collected by 'status/report' identifiers.
 
 **Arguments**:
-* an optional 'status/report'  *group*, see the [sr_check_status() script function](https://docs.opensips.org/manual/3-6/script-corefunctions#sr_check_status) for more details. If missing, all the groups will be listed.
+* an optional 'status/report'  *group*, see the [sr_check_status() script function](./Script-CoreFunctions.md#sr_check_status-group-identifier) for more details. If missing, all the groups will be listed.
 * an optional 'identifier'. If missing, all the identifiers within the group will be listed.
 **Output**: the reports/logs for the requested identifiers, or for all identifiers within the groups.
 
@@ -541,7 +541,7 @@ $ bin/opensips-cli -x mi sr_list_reports
 Command to list all the existing identifiers in OpenSIPS or only from a certain group.
 
 **Arguments**:
-* an optional 'status/report'  *group*, see the [sr_check_status() script function](https://docs.opensips.org/manual/3-3/script-corefunctions#sr_check_status) for more details. If missing, the identifiers from all the groups will be listed.
+* an optional 'status/report'  *group*, see the [sr_check_status() script function](./Script-CoreFunctions.md#sr_check_status-group-identifier) for more details. If missing, the identifiers from all the groups will be listed.
 **Output**: an array of groups, each group being an array of identifiers .
 
 Examples of usage:

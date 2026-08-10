@@ -46,7 +46,7 @@ provisioning purposes - the *cc_flows* and
 [DB schema](https://docs.opensips.org/manual/3-6/install-dbschema/).
 Data is loaded at startup and cached into memory ; runtime reload is 
 possible via the MI commands (see the *cc_reload* 
-command in [exported mi functions](#exported_mi_functions)).
+command in [exported mi functions](#exported-mi-functions)).
 
 
 Additionally there is a table *cc_cdrs* for writing 

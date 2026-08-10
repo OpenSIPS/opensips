@@ -53,7 +53,7 @@ Parameters:
 
 Process Auto-Scaling (upscale and downscale).
 
-This event is triggered whenever a new process is created (forked) or a process is terminated due the auto-scaling logic. In order to have this event trigger, the [auto-scaling](https://docs.opensips.org/manual/3-6/script-coreparameters#auto_scaling_profile) must be enabled in your configuration.
+This event is triggered whenever a new process is created (forked) or a process is terminated due the auto-scaling logic. In order to have this event trigger, the [auto-scaling](./Script-CoreParameters.md#auto_scaling_profile) must be enabled in your configuration.
 
 Parameters:
 * **group_type**: the type/name of the scaling group (UDP/TCP/TIMER).
@@ -93,7 +93,7 @@ Parameters:
 
 Log message produced.
 
-This event is triggered whenever a log message is produced by OpenSIPS. In order to have this event trigger, the [log_event_enabled](https://docs.opensips.org/manual/3-4/script-coreparameters#log_event_enabled) must be enabled in your configuration.
+This event is triggered whenever a log message is produced by OpenSIPS. In order to have this event trigger, the [log_event_enabled](./Script-CoreParameters.md#log_event_enabled) must be enabled in your configuration.
 
 Parameters:
 * **time**: time when the log message was produced
@@ -101,5 +101,5 @@ Parameters:
 * **level**: the log level of this message ("DBG", "INFO" etc.)
 * **module**: module that produced this log message; absent for logs triggered from the script by the **xlog()** function
 * **function**: internal function that produced this log message; absent for logs triggered from the script by the **xlog()** function
-* **prefix**: logging prefix, configured via the [log_prefix](https://docs.opensips.org/manual/3-4/script-coreparameters#log_prefix) parameter. This parameter is absent if the parameter is not configured.
+* **prefix**: logging prefix, configured via the [log_prefix](./Script-CoreParameters.md#log_prefix) parameter. This parameter is absent if the parameter is not configured.
 * **message**: the actual log message content

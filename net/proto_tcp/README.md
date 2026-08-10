@@ -373,7 +373,7 @@ MI FIFO Command Format:
 **Q: After switching to OpenSIPS 2.1, I'm getting this error: "listeners found for protocol tcp, but no module can handle it"**
 
 
-You need to load the "proto_tcp" module. In your script, make sure you do a **loadmodule "proto_tcp.so"** after setting the **[mpath](https://docs.opensips.org/manual/3-6/script-coreparameters#mpath)**.
+You need to load the "proto_tcp" module. In your script, make sure you do a **loadmodule "proto_tcp.so"** after setting the **[mpath](../../docs/manual/Script-CoreParameters.md#mpath)**.
 
 
 **Q: I cannot locate "proto_tcp.so". Where is it?**
