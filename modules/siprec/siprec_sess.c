@@ -391,7 +391,7 @@ static int srec_pop_ctx(struct dlg_cell *dlg, bin_packet_t *packet)
 		SIPREC_BIN_POP(str, &group);
 
 		SIPREC_BIN_POP(str, &group_custom_extension);
-		if (group_custom_extension.s)
+		if (session_custom_extension.s)
 			LM_DBG("group custom extension: <%.*s>\n", group_custom_extension.len, group_custom_extension.s);
 
 		SIPREC_BIN_POP(str, &session_custom_extension);
