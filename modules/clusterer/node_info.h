@@ -222,8 +222,25 @@ static inline int cl_db_mode(const struct cluster_info *cl)
 {
 	return (cl && cl->controller_managed) ? 0 : db_mode;
 }
+
+/* Membership authority.  A controller-managed cluster must never ADD a node
+ * because of something that arrived on the wire - an unknown node's
+ * NODE_DESCRIPTION, or a neighbour's topology update naming a node we do not
+ * have.  Wire self-discovery is the zero-config mode's mechanism; in a
+ * controller-managed cluster the ONLY way in is the controller's own JOIN
+ * handshake, after which the controller calls clctl.add_node().  Without this
+ * a node the controller had expelled talked its way straight back in:
+ * PING -> UNKNOWN_ID -> NODE_DESCRIPTION -> add_node().  (cl_db_mode() cannot
+ * express this: it deliberately reads 0 for controller-managed clusters so the
+ * controller's runtime add/remove works, which is exactly what put these
+ * clusters on the self-discovery paths.) */
+static inline int cl_ctr_owns_membership(const struct cluster_info *cl)
+{
+	return cl && cl->controller_managed;
+}
 #else
 #define cl_db_mode(cl)  (db_mode)
+#define cl_ctr_owns_membership(cl)  0
 #endif
 
 int update_db_state(int cluster_id, int node_id, int state);

@@ -1058,7 +1058,8 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		top_node = get_node_by_id(source->cluster, top_node_id[i]);
 
 		if (!skip && !top_node) {
-			if (cl_db_mode(source->cluster)) {
+			if (cl_db_mode(source->cluster) ||
+			        cl_ctr_owns_membership(source->cluster)) {
 				skip = 1;
 			} else if (!top_node_info[i][0]) {
 				LM_WARN("Unknown node id [%d] in topology update with "
@@ -1101,7 +1102,8 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		for (j = 0; j < top_node_info[i][3]; j++) {
 			top_neigh = get_node_by_id(source->cluster, top_node_info[i][j+4]);
 			if (!top_neigh && top_node_info[i][j+4] != cluster_self_id(source->cluster)) {
-				if (cl_db_mode(source->cluster))
+				if (cl_db_mode(source->cluster) ||
+				        cl_ctr_owns_membership(source->cluster))
 					continue;
 				for (n_idx = 0;
 					 n_idx < no_nodes && top_node_info[i][j+4] != top_node_id[n_idx];
@@ -1206,9 +1208,28 @@ void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
 		bin_pop_str(received, &str_vals[STR_VALS_SIP_ADDR_COL]);
 		bin_pop_int(received, &int_vals[INT_VALS_PRIORITY_COL]);
 		bin_pop_int(received, &int_vals[INT_VALS_NO_PING_RETRIES_COL]);
-		add_node(received, cl, src_node_id, str_vals, int_vals);
+		if (!cl_ctr_owns_membership(cl)) {
+			add_node(received, cl, src_node_id, str_vals, int_vals);
 
-		flood_message(received, cl, src_node_id, 0);
+			flood_message(received, cl, src_node_id, 0);
+		} else {
+			/* Membership is the controller's; an expelled-but-alive node
+			 * announcing itself over BIN does not get back in this way,
+			 * and we do not gossip its description onward either.  It
+			 * must (re)JOIN through the controller, which will then
+			 * clctl.add_node() it everywhere.  Rate-limited: a live
+			 * node in this state re-announces on every ping cycle. */
+			static time_t desc_note;
+			time_t now_ts = time(NULL);
+
+			if (now_ts - desc_note >= 30) {
+				desc_note = now_ts;
+				LM_INFO("Ignoring node description from node [%d]: "
+					"cluster %d membership is controller-managed - "
+					"the node must (re)join via the controller\n",
+					src_node_id, cl->cluster_id);
+			}
+		}
 		break;
 	default:
 		LM_DBG("Ignoring message, type: %d from unknown source, id [%d]\n",
