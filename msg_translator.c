@@ -1268,7 +1268,7 @@ unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 	orig_offs = (msg->body && msg->body->body.s) ?
 		msg->body->body.s-msg->buf : msg->len ;
 
-	if (msg->body->updated_part_count==0) {
+	if (!msg->body || msg->body->updated_part_count==0) {
 
 		/* no body to be placed in the new msg !
 		 * simply skip the entire body */
