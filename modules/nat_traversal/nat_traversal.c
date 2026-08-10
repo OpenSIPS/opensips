@@ -905,7 +905,10 @@ static char*
 get_source_uri(struct sip_msg *msg)
 {
     static char uri[64];
-    snprintf(uri, 64, "sip:%s:%d", ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
+    if (msg->rcv.src_ip.af == AF_INET6)
+        snprintf(uri, 64, "sip:[%s]:%d", ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
+    else
+        snprintf(uri, 64, "sip:%s:%d", ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
     return uri;
 }
 
@@ -1542,7 +1545,7 @@ send_keepalive(NAT_Contact *contact)
 {
 #define MAX_BRANCHID 9999999
 #define MIN_BRANCHID 1000000
-    char buffer[8192], *from_uri, *ptr;
+    char buffer[8192], *from_uri;
     static char from[64] = FROM_PREFIX;
     static char *from_ip = from + sizeof(FROM_PREFIX) - 1;
     static const struct socket_info *last_socket = NULL;
@@ -1550,6 +1553,8 @@ send_keepalive(NAT_Contact *contact)
     union sockaddr_union to;
     int nat_port, len, tolen;
     str nat_ip;
+    str contact_uri;
+    struct sip_uri parsed_uri;
 
     if (keepalive_params.from == NULL) {
         if (contact->socket != last_socket) {
@@ -1589,12 +1594,22 @@ send_keepalive(NAT_Contact *contact)
         return;
     }
 
-    //nat_ip.s = strchr(contact->uri, ':') + 1;
-    nat_ip.s = &contact->uri[4]; // skip over "sip:"
-    ptr = strchr(nat_ip.s, ':');
-    nat_ip.len = ptr - nat_ip.s;
-    nat_port = strtol(ptr+1, NULL, 10);
+    contact_uri.s = contact->uri;
+    contact_uri.len = strlen(contact->uri);
+    if (parse_uri(contact_uri.s, contact_uri.len, &parsed_uri) < 0 ||
+            parsed_uri.host.len == 0 || parsed_uri.port_no == 0) {
+        LM_ERR("invalid keepalive contact URI <%.*s>\n",
+                contact_uri.len, contact_uri.s);
+        return;
+    }
+    nat_ip = parsed_uri.host;
+    nat_port = parsed_uri.port_no;
     hostent = sip_resolvehost(&nat_ip, NULL, NULL, False, NULL);
+    if (hostent == NULL) {
+        LM_ERR("failed to resolve keepalive contact <%.*s>\n",
+                nat_ip.len, nat_ip.s);
+        return;
+    }
     hostent2su(&to, hostent, 0, nat_port);
     tolen=sockaddru_len(to);
 
@@ -2124,5 +2139,3 @@ pv_set_track_dialog(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *
 
     return 0;
 }
-
-
