@@ -261,6 +261,10 @@ int init_global(void){//str *info_set_mapping){
             if(strncmp("define", s, strlen("define")) == 0){
                 s += strlen("define")+1;
                 p = strchr(s, ' ');
+                if (!p) {
+                    LM_ERR("invalid DB set definition: %s\n", s);
+                    return -1;
+                }
                 /* set1=FAILOVER */
                 *p = 0;
                 p++;
