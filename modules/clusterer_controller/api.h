@@ -60,11 +60,36 @@
 #define CLCTR_SEND_TO_SELF   (1 << 0)
 /* Ask for the message to be acknowledged, and resent while it is not.
  *
- * Costs one ACK per recipient, so a reliable send to the whole cluster is
- * N-1 packets back where a plain one was nothing - deliberately opt-in, and
- * deliberately per send rather than per channel: most consumer traffic is
- * better served by being idempotent and retried by its own logic, which is
- * how the cross-node cache fetch works and why it asks for nothing here. */
+ * ONLY USE THIS ON A CHANNEL WHERE ONE MESSAGE PER PEER IS IN FLIGHT AT A
+ * TIME.  It is not a general-purpose reliability option, and on a channel
+ * with concurrent traffic it does not merely cost extra packets - it does
+ * not work, and it fails silently.
+ *
+ * Why: every packet carries a sequence number, and a receiver drops anything
+ * whose seq is not strictly greater than the last it accepted from that peer
+ * (cl_ctr_check_and_update_seq(), the anti-replay guard).  A retransmit
+ * re-sends the cached bytes, so it carries its ORIGINAL seq.  On a serialised
+ * 1:1 exchange - the join handshake this was built for - nothing else is in
+ * flight from that peer, so the retransmit is still the highest seq and is
+ * accepted.  As soon as a second message can overtake it, the retransmit
+ * arrives behind a higher seq and is discarded as out of order.  The receive
+ * path then re-ACKs it, deliberately, so the sender stops retransmitting and
+ * believes it delivered.  Nothing is logged above debug level at either end.
+ *
+ * Measured, rather than reasoned about: applying this flag to the
+ * cross-node cache pull channel (concurrent by nature) made the delivery rate
+ * WORSE - 61% -> 49% under 40% reply loss, at two to three times the packet
+ * count - and not one retransmitted payload was ever delivered.  See the
+ * clusterer_controller notes for the harness.
+ *
+ * So most consumer traffic is better served by being idempotent and retried
+ * by its own logic, which is how the cross-node cache fetch works and why it
+ * asks for nothing here.  That was always the recommendation; the point of
+ * this note is that for a concurrent channel it is the only thing that works.
+ *
+ * The cost, where it IS applicable: one ACK per recipient, so a reliable send
+ * to the whole cluster is N-1 packets back where a plain one was nothing -
+ * hence opt-in, and per send rather than per channel. */
 #define CLCTR_SEND_RELIABLE  (1 << 1)
 
 /* limits a consumer can rely on */
