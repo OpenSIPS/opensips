@@ -689,7 +689,7 @@ In terms of reports/logs, the following events will be reported:
 
 
 For how to access and use the Status/Report information, please see
-[Status/Report Interface documentation](https://docs.opensips.org/manual/4-0/interface-statusreport/).
+[Status/Report Interface](../../docs/manual/Interface-StatusReport.md).
 
 
 ### Installation

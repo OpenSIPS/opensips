@@ -86,7 +86,7 @@ The left-hand side of the assignment must be an attribute name known by the RADI
 
 
 The right-hand side of the assignment must be a script pseudo variable or
-a script AVP. For more information about them see [CookBooks - Scripting Variables](https://docs.opensips.org/manual/4-0/script-corevar/).
+a script AVP. For more information about them see [CookBooks - Scripting Variables](../../docs/manual/Script-CoreVar.md).
 
 
 ```opensips title="Set sets parameter"
