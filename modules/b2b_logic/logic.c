@@ -3757,13 +3757,13 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 		if (!param_list) {
 			LM_ERR("Failed to parse CSV record for Params: %.*s\n", params->len, params->s);
 			rc = -1;
-			goto end;
+			goto error;
 		}
 		s = &param_list->s;
 		if (!s->s || !s->len) {
 			LM_ERR("Failed to parse CSV record for params: %.*s - no first parameter\n", params->len, params->s);
 			rc = -1;
-			goto end;
+			goto error;
 		}
 		if (s->s[0] == 'n') {
 			tuple->bridge_flags = B2BL_BR_FLAG_NOTIFY | B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR;
@@ -3795,7 +3795,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 				tuple->bridge_flags = 0;
 			} else {
 				/* extract the entity and delete the tuple */
-				B2BL_LOCK_GET(remote_tuple_hash_index);
+				B2BL_LOCK_GET_AUX(remote_tuple_hash_index);
 
 				cur_tuple = b2bl_search_tuple_safe(remote_tuple_hash_index, local_index);
 				if(cur_tuple == NULL)
@@ -3817,10 +3817,10 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 						send_bridge_notify(cur_tuple->bridge_entities[remote_tuple_party], remote_tuple_hash_index, NULL, tuple->refer_id);
 					}
 				}
-				B2BL_LOCK_RELEASE(remote_tuple_hash_index);
+				B2BL_LOCK_RELEASE_AUX(remote_tuple_hash_index);
 			}
 		} else {
-			B2BL_LOCK_GET(cur_route_ctx.hash_index);
+			B2BL_LOCK_GET_AUX(cur_route_ctx.hash_index);
 			cur_tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
 				cur_route_ctx.local_index);
 			if(cur_tuple == NULL) {
@@ -3836,7 +3836,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 					send_bridge_notify(entity, cur_route_ctx.hash_index, NULL, tuple->refer_id);
 				}
 			}
-			B2BL_LOCK_RELEASE(cur_route_ctx.hash_index);
+			B2BL_LOCK_RELEASE_AUX(cur_route_ctx.hash_index);
 		}
 	}
 	LM_DBG("Flags: %u (NOTIFY: %u)\n", tuple->bridge_flags, B2BL_BR_FLAG_NOTIFY);
