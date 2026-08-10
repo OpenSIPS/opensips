@@ -156,6 +156,8 @@ int clusterer_ctrl_add_node(int cluster_id, int node_id, str *bin_url)
 /* Longest BIN url we will copy out of a node before it is freed.
  * "bins:[<ipv6>]:<port>" fits comfortably. */
 #define CL_CTRL_URL_BUF  128
+/* paranoia bound on the close loop below */
+#define CL_CTRL_MAX_CONN_CLOSE 16
 
 /**
  * close_node_bin_conn() - drop the BIN connection to a node's url.
@@ -178,17 +180,43 @@ int clusterer_ctrl_add_node(int cluster_id, int node_id, str *bin_url)
  */
 static void close_node_bin_conn(int cluster_id, str *url)
 {
+    int closed = 0, rc = 0;
+
     if (!url || !url->len)
         return;
 
-    LM_INFO("clusterer: [cluster %d] dropping BIN connection to %.*s\n",
-            cluster_id, url->len, url->s);
+    /* There is usually MORE THAN ONE connection to a peer: the one we dialled
+     * out to its BIN port, and the one it dialled in to ours.  Both are found
+     * by this address, because the core registers an alias for the peer's
+     * advertised port on an accepted connection too - that is how an inbound
+     * connection gets reused for outbound sends.
+     *
+     * tcp_close_connection() closes exactly ONE per call, and sets
+     * F_CONN_FORCE_CLOSED on it, which makes the next lookup skip it.  So loop
+     * until it reports nothing left.  This terminates: every pass takes one
+     * connection out of the candidate set.  The cap is pure paranoia against a
+     * core change that stopped setting that flag.
+     *
+     * Return values are 1 = found and closed, 0 = nothing (left) to close,
+     * -1 = bad address or the close could not be dispatched. */
+    while ((rc = tcp_close_connection(url)) == 1)
+        if (++closed >= CL_CTRL_MAX_CONN_CLOSE) {
+            LM_WARN("clusterer: [cluster %d] stopped after closing %d BIN "
+                    "connections to %.*s - more may remain\n",
+                    cluster_id, closed, url->len, url->s);
+            return;
+        }
 
-    /* 0 is also returned when there is simply no open connection, which is a
-     * perfectly normal state - only a parse/lookup failure is worth a word. */
-    if (tcp_close_connection(url) < 0)
-        LM_DBG("clusterer: [cluster %d] could not close BIN connection to "
-               "%.*s\n", cluster_id, url->len, url->s);
+    if (rc < 0)
+        LM_ERR("clusterer: [cluster %d] failed to close a BIN connection to "
+               "%.*s (closed %d before the failure)\n",
+               cluster_id, url->len, url->s, closed);
+    else if (closed)
+        LM_INFO("clusterer: [cluster %d] closed %d BIN connection(s) to %.*s\n",
+                cluster_id, closed, url->len, url->s);
+    else
+        LM_DBG("clusterer: [cluster %d] no open BIN connection to %.*s\n",
+               cluster_id, url->len, url->s);
 }
 
 /**
