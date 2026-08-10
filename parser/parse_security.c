@@ -335,6 +335,7 @@ sec_agree_body_t *parse_sec_agree_body(str *body)
 			case '"':
 				state = SEC_AGREE_STATE_PARAM_VALUE_ENC;
 				s = p + 1;
+				break;
 			default:
 				state = SEC_AGREE_STATE_PARAM_VALUE;
 				s = p;
