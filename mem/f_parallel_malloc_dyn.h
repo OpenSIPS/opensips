@@ -540,11 +540,12 @@ void parallel_status(struct parallel_block *fm)
 #endif
 
 	for (bucket=0;bucket<TOTAL_F_PARALLEL_POOLS;bucket++) {
-		fm = shm_blocks[bucket]; 
+		fm = shm_blocks[bucket];
+		if (!fm)
+			continue;
 		lock_get(hash_locks[fm->idx]);
 
 		LM_GEN1(memdump, "fm_status (%p):\n", fm);
-		if (!fm) return;
 
 		LM_GEN1(memdump, " heap size= %ld\n", fm->size);
 #if defined(DBG_MALLOC) || defined(STATISTICS)
@@ -613,4 +614,3 @@ void parallel_status(struct parallel_block *fm)
 }
 
 #define F_PARALLEL_MALLOC_DYN
-
