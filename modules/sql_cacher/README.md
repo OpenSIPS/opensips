@@ -63,7 +63,7 @@ distinguishes those different entries by an "id" string.
 
 The caching entry is specified via this parameter that has it's own
 subparameters. Each of those parameters are separated by a
-delimiter configured by [spec delimiter](#param_spec_delimiter)
+delimiter configured by [spec delimiter](#spec_delimiter-string)
 and have the following format:
 *param_name=param_value*
 The parameters are:
@@ -81,7 +81,7 @@ The parameters are:
 	*If not present, default value is "string".*
 - *columns* : names of the columns to be cached from the
 SQL database, separated by a delimiter configured by
-[columns delimiter](#param_columns_delimiter).
+[columns delimiter](#columns_delimiter-string).
 If not present, all the columns from the table will be cached
 - *on_demand* : specifies the type of caching:
 	- 0 : full caching
@@ -313,7 +313,7 @@ is the following:
 
 
 - *sep* : separator configured by
-[pvar delimiter](#param_pvar_delimiter)
+[pvar delimiter](#pvar_delimiter-string)
 - *id*  : cache entry id
 - *col* : name of the required column
 - *key* : value of the "key" column

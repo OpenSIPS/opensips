@@ -37,13 +37,13 @@ Since LDAP server implementations are optimized for fast read access they are a 
 #### Usage Basics
 
 
-First so called LDAP sessions have to be specified in an external configuration file (as described in [ldap config](#ldap_configuration_file)). Each LDAP session includes LDAP server access parameters like server hostname or connection timeouts. Normally only a single LDAP session will be used unless there is a need to access more than one LDAP server. The LDAP session name will then be used in the OpenSIPS configuration script to refer to a specific LDAP session.
+First so called LDAP sessions have to be specified in an external configuration file (as described in [ldap config](#ldap-configuration-file)). Each LDAP session includes LDAP server access parameters like server hostname or connection timeouts. Normally only a single LDAP session will be used unless there is a need to access more than one LDAP server. The LDAP session name will then be used in the OpenSIPS configuration script to refer to a specific LDAP session.
 
 
-The `ldap_search` function ([ldap search fn](#func_ldap_search)) performs an LDAP search operation. It expects an LDAP URL as input which includes the LDAP session name and search parameters. [ldap urls](#ldap_urls)  provides a quick overview on LDAP URLs.
+The `ldap_search` function ([ldap search fn](#ldap_searchldap_url)) performs an LDAP search operation. It expects an LDAP URL as input which includes the LDAP session name and search parameters. [ldap urls](#ldap-urls)  provides a quick overview on LDAP URLs.
 
 
-The result of an LDAP search is stored internally and can be accessed with one of the `ldap_result*` functions. `ldap_result` ([ldap result fn](#func_ldap_result)) stores resulting LDAP attribute value as AVPs. `ldap_result_check` ([ldap result check fn](#func_ldap_result_check)) is a convenience function to compare a string with LDAP attribute values using regular expression matching. Finally, `ldap_result_next` ([ldap result next fn](#func_ldap_result_next)) allows to handle LDAP search queries that return more than one LDAP entry.
+The result of an LDAP search is stored internally and can be accessed with one of the `ldap_result*` functions. `ldap_result` ([ldap result fn](#ldap_resultldap_attr_name-avp_spec-avp_type-regex_subst)) stores resulting LDAP attribute value as AVPs. `ldap_result_check` ([ldap result check fn](#ldap_result_checkldap_attr_name-string_to_match--regex_subst)) is a convenience function to compare a string with LDAP attribute values using regular expression matching. Finally, `ldap_result_next` ([ldap result next fn](#ldap_result_next)) allows to handle LDAP search queries that return more than one LDAP entry.
 
 
 All `ldap_result*` functions do always access the LDAP result set from the last `ldap_search` call. This should be kept in mind when calling `ldap_search` more than once in the OpenSIPS configuration script.
@@ -55,7 +55,7 @@ All `ldap_result*` functions do always access the LDAP result set from the last 
 `ldap_search` expects an LDAP URL as argument. This section describes the format and semantics of an LDAP URL.
 
 
-RFC 4516 [RFC4516](#RFC4516) describes the format of an LDAP Uniform Resource Locator (URL). An LDAP URL represents an LDAP search operation in a compact format. The LDAP URL format is defined as follows (slightly modified, refer to section 2 of [RFC4516](#RFC4516) for ABNF notation):
+RFC 4516 [RFC4516](https://tools.ietf.org/html/rfc4516) describes the format of an LDAP Uniform Resource Locator (URL). An LDAP URL represents an LDAP search operation in a compact format. The LDAP URL format is defined as follows (slightly modified, refer to section 2 of [RFC4516](https://tools.ietf.org/html/rfc4516) for ABNF notation):
 
 
 `ldap://[ldap_session_name][/dn?attrs[?scope[?filter]]]]`
@@ -75,7 +75,7 @@ configuration file.
 
 
 Base Distinguished Name (DN) of LDAP search or target of
-non-search operation, as defined in RFC 4514 [RFC4514](#RFC4514)
+non-search operation, as defined in RFC 4514 [RFC4514](https://tools.ietf.org/html/rfc4514)
 
 
 **`attrs`**
@@ -97,7 +97,7 @@ Scope for LDAP search, valid values are
 
 
 LDAP search filter definition following rules of RFC 4515
-[RFC4515](#RFC4515)
+[RFC4515](https://tools.ietf.org/html/rfc4515)
 
 
 > [!NOTE]
@@ -109,7 +109,7 @@ LDAP search filter definition following rules of RFC 4515
 > Non-URL characters in an LDAP URL have to be escaped using
 > percent-encoding (refer to section 2.1 of RFC 4516). In particular
 > this means that any "?" character in an LDAP URL component must be
-> written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#func_ldap_filter_url_encode))
+> written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#ldap_filter_url_encodestring-avp_spec))
 > implements RFC 4515/4516 LDAP search filter and URL escaping
 > rules.
 
@@ -459,7 +459,7 @@ error occurred.
 
 
 An LDAP URL defining the LDAP search operation (refer to
-[ldap urls](#ldap_urls) for a description of the LDAP URL
+[ldap urls](#ldap-urls) for a description of the LDAP URL
 format). The hostport part must be one of the LDAP session names
 declared in the LDAP configuration script.
 
@@ -885,7 +885,7 @@ error occurred.
 
 
 An LDAP URL defining the LDAP search operation (refer to
-[ldap urls](#ldap_urls) for a description of the LDAP URL
+[ldap urls](#ldap-urls) for a description of the LDAP URL
 format). The hostport part must be one of the LDAP session names
 declared in the LDAP configuration script.
 
@@ -1138,7 +1138,7 @@ typedef int (*ldap_url_search_t)(char* _ldap_url,
 **char* _ldap_url**
 
 
-LDAP URL as described in [ldap urls](#ldap_urls).
+LDAP URL as described in [ldap urls](#ldap-urls).
 
 
 **int* _result_count**
@@ -1300,7 +1300,7 @@ LDAP search scope integer.
 #### ldap_rfc4515_escape
 
 
-Applies escaping rules described in [ldap filter url encode fn](#func_ldap_filter_url_encode).
+Applies escaping rules described in [ldap filter url encode fn](#ldap_filter_url_encodestring-avp_spec).
 
 
 ```c

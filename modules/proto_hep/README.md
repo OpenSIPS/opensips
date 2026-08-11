@@ -108,7 +108,7 @@ Specify how the data should be encapsulated in the HEP packet. If set to
 if set to anything different than *0*, the plain text HOMER 5
 format will be used for encapsulation. On the capturing node, this parameter
 affects the behavior of the *report_capture* function from the
-[sipcapture](../sipcapture#func_report_capture)
+[sipcapture](../sipcapture/README.md#report_capturecorrelation_id-table_name-proto_type)
 module.
 
 

@@ -101,10 +101,10 @@ The registrar module includes support for standards-based SIP Push
 Notifications, per
 [RFC 8599](https://tools.ietf.org/html/rfc8599).
 Support for the basic version of the draft can be enabled by switching
-[pn enable](#param_pn_enable) to *true*.  The
+[pn enable](#pn_enable-boolean) to *true*.  The
 module also includes optional support for sending Push Notifications
 during long-lived dialogs ([see RFC section 6](https://tools.ietf.org/html/rfc8599#page-23)),
-through the [pn enable purr](#param_pn_enable_purr) switch.
+through the [pn enable purr](#pn_enable_purr-boolean) switch.
 
 
 Essential mechanics behind the Push Notification (PN) support:
@@ -115,7 +115,7 @@ enabling it does not impose any limitations, as the
 registrar can simultaneously handle both SIP PN compliant
 and standard SIP User Agents
 - OpenSIPS will raise a
-[E_UL_CONTACT_REFRESH](../usrloc#event_E_UL_CONTACT_REFRESH)
+[E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 event any time a Push Notification needs to be sent to a
 PN-enabled contact.  The event includes the PN coordinates of
 the contact -- they may be found in the Contact URI ('uri'
@@ -123,7 +123,7 @@ event parameter) and may be extracted using the {uri.param,name}
 transformation. From here onwards, it is up to the script
 developer to trigger the Push Notification (e.g. possibly by
 sending an HTTP POST with the
-[rest_client](../rest_client) module), thus forcing
+[rest_client](../rest_client/README.md) module), thus forcing
 a re-registration from the device.
 - REGISTER processing is unchanged -- PN-enabled UAs are saved
 just as regular UAs, with the former ones additionally having
@@ -139,10 +139,10 @@ reachable until they re-register!
 Using the event_routing module, OpenSIPS will transparently
 fork a new branch from the current INVITE on each
 re-registration from these contacts within the accepted
-[pn refresh timeout](#param_pn_refresh_timeout)
+[pn refresh timeout](#pn_refresh_timeout-integer)
 - mid-dialog requests: In some cases (e.g. long-lived dialogs),
 a PN may be required before being able to route a mid-dialog
-request to a SIP UA.  The [afunc pn process purr](#afunc_pn_process_purr)
+request to a SIP UA.  The [afunc pn process purr](#pn_process_purrdomain)
 async function will take care of triggering the PN event and
 resuming the script as soon as a re-registration from the
 concerned contact is received.
@@ -165,7 +165,7 @@ The following modules must be loaded before this module:
 - *usrloc - User Location Module*.
 - *signaling - Signaling module*.
 - *event_routing*,
-if [pn enable](#param_pn_enable) is set to *true*.
+if [pn enable](#pn_enable-boolean) is set to *true*.
 
 
 #### External Libraries or Applications
@@ -657,10 +657,10 @@ modparam("registrar", "disable_gruu", 0)
 
 Enable SIP Push Notification support ([RFC 8599](https://tools.ietf.org/html/rfc8599)).
 If enabled, Contact header field URIs which include all
-[pn ct match params](#param_pn_ct_match_params) will be matched against
+[pn ct match params](#pn_ct_match_params-string) will be matched against
 existing bindings using only these parameters.  Otherwise,
 the module will attempt to match them as usual, using the current
-usrloc [matching_mode](../usrloc#param_matching_mode).
+usrloc [matching_mode](../usrloc/README.md#matching_mode-integer).
 
 
 *Default value is **false**.*
@@ -711,7 +711,7 @@ will fall back to performing regular contact matching.
 
 
 After calling *lookup()* or
-[afunc pn process purr](#afunc_pn_process_purr), the above PN-related
+[afunc pn process purr](#pn_process_purrdomain), the above PN-related
 parameters will be automatically stripped from the resulting
 Request and Contact URI event parameter, respectively.
 
@@ -752,14 +752,14 @@ modparam("registrar", "pn_pnsreg_interval", 140)
 
 
 If a binding refresh REGISTER request from a given SIP endpoint does
-not arrive within at least [pn trigger interval](#param_pn_trigger_interval)
+not arrive within at least [pn trigger interval](#pn_trigger_interval-integer)
 seconds prior to expiration (e.g. because the device does not
 support *";+sip.pnsreg"* or because of other
-error conditions), the [E_UL_CONTACT_REFRESH](../usrloc#event_E_UL_CONTACT_REFRESH)
+error conditions), the [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 usrloc event will be triggered.
 
 
-Once [E_UL_CONTACT_REFRESH](../usrloc#event_E_UL_CONTACT_REFRESH)
+Once [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 is triggered, the script writer should use
 the RFC 8599 parameters from the Contact URI in order to generate a
 Push Notification request to the PN provider of the device, in
@@ -801,7 +801,7 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 
 
 This timeout starts counting following a *lookup()* or a
-[afunc pn process purr](#afunc_pn_process_purr) which
+[afunc pn process purr](#pn_process_purrdomain) which
 triggers a Push Notification.  The value represents the maximum
 allowed sum of the duration required for the Push Notification to
 be sent and the duration required for the corresponding
@@ -850,7 +850,7 @@ a mid-dialog request sent by the other party.
 
 
 When enabling this parameter, make sure to also add logic for
-[afunc pn process purr](#afunc_pn_process_purr).
+[afunc pn process purr](#pn_process_purrdomain).
 
 
 *Default value is **false**.*
@@ -951,14 +951,14 @@ flag can be used to set minimum register expiration time.
 Values lower than this minimum will be automatically set
 to the minimum. Value 0 disables the checking.
 This parameter overrides the global
-[min expires](#param_min_expires) module parameter.
+[min expires](#min_expires-integer) module parameter.
   - *'max-expires=[int]'* - (old
 *E* flag) this
 flag can be used to set maximum register expiration time.
 Values higher than this maximum will be automatically set
 to the maximum. Value 0 disables the checking.
 This parameter overrides the global
-[max expires](#param_max_expires) module parameter.
+[max expires](#max_expires-integer) module parameter.
 This parameter is a string composed of a set of flags.
 - *aor (string, optional)* - a custom AOR; if missing,
 the AOR will be taken from the default place - the TO header URI.
@@ -977,7 +977,7 @@ This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
 
 If you plan to use the "save()" function in reply route,
-please refer to [mcontact avp](#param_mcontact_avp) module parameter.
+please refer to [mcontact avp](#mcontact_avp-string) module parameter.
 
 
 ```opensips title="save usage"
@@ -1412,9 +1412,9 @@ Perform mid-dialog request processing, according to RFC 8599.  For
 such requests, search the R-URI and topmost Route header field URI for
 a *";pn-purr"* parameter value that both matches the
 OpenSIPS PURR format and corresponds to an usrloc registration. Once a
-usrloc contact is located, trigger an [E_UL_CONTACT_REFRESH](../usrloc#event_E_UL_CONTACT_REFRESH)
+usrloc contact is located, trigger an [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 event and place the request on async hold for at most
-[pn refresh timeout](#param_pn_refresh_timeout) seconds, until a matching
+[pn refresh timeout](#pn_refresh_timeout-integer) seconds, until a matching
 REGISTER request arrives.
 
 

@@ -196,7 +196,7 @@ exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , $avp(env))
 
 
 Executes an external command. This function does exactly the same as
-[exec](#func_exec) (in terms of input, output and processing),
+[exec](#execcommand-stdin-stdout-stderr-envavp) (in terms of input, output and processing),
 but in an asynchronous way. The script execution is suspended until
 the external script provided all its output. OpenSIPS waits for the
 external script to close its output stream, not necessarily to
@@ -231,7 +231,7 @@ route [resume] {
 
 
 When imposing an execution timeout using
-**[time to kill](#param_time_to_kill)**,
+**[time to kill](#time_to_kill-integer)**,
 make sure your "/bin/sh" is a shell which does not fork when executed,
 case in which the job itself will not be killed, but rather its parent shell,
 while the job is silently inherited by "init" and will continue to run.

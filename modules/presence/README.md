@@ -56,7 +56,7 @@ please refer to this article [https://blog.opensips.org/2018/03/27/clustering-pr
 
 
 As data synchronization at startup is performed when using the
-*full-sharing* [cluster federation mode](#param_cluster_federation_mode),
+*full-sharing* [cluster federation mode](#cluster_federation_mode-str),
 you should define at least one "seed" node in the cluster in this case.
 
 
@@ -137,12 +137,12 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer)
 chapter for more details.
 
 
 For more on presence clustering see the 
-[presence clustering](#presence_clustering) chapter.
+[presence clustering](#presence-clustering) chapter.
 
 
 *Default value is "None".*
@@ -176,7 +176,7 @@ nodes even when there aren't any local subscribers.
 
 
 If you don't want to use a shared database (via
-[fallback2db](#param_fallback2db)), but still want a
+[fallback2db](#fallback2db-int)), but still want a
 complete data set everywhere, you may choose mode *full-sharing*.
 This mode allows you to switch PUBLISH endpoints,
 even for already published Event States, thus allowing
@@ -185,7 +185,7 @@ state.
 
 
 For more on presence clustering see the 
-[presence clustering](#presence_clustering) chapter.
+[presence clustering](#presence-clustering) chapter.
 
 
 *Default value is "disabled".*
@@ -207,7 +207,7 @@ will be broadcasted via the cluster.
 
 
 For more on presence clustering see the 
-[presence clustering](#presence_clustering) chapter.
+[presence clustering](#presence-clustering) chapter.
 
 
 *Default value is "empty" (meaning all).*
@@ -240,7 +240,7 @@ node will be active all the time.
 
 
 For more on presence clustering see the 
-[presence clustering](#presence_clustering) chapter.
+[presence clustering](#presence-clustering) chapter.
 
 
 *Default value is "empty" (not tag define).*
@@ -403,7 +403,7 @@ contact). So we added this parameter that allows defining a custom
 uri to be used as presentity uri for BLA subscribes. You should 
 set this parameter to the name of a pseudovariable and then set 
 this pseudovariable to the desired URI before calling the
-[handle subscribe](#func_handle_subscribe) function.
+[handle subscribe](#handle_subscribeforce_active-sharing_tag) function.
 
 
 *Default value is "NULL".*
@@ -681,7 +681,7 @@ handle_subscribe() function with the integer parameter "1".
 - *sharing_tag* (string, optional) - optional parameter telling
 the owner tag (for the subscription) in clusetering scenarios 
 where the subscription data is shared between multiple 
-servers - see the [presence clustering](#presence_clustering)
+servers - see the [presence clustering](#presence-clustering)
 chapter for more details.
 
 

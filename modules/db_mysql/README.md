@@ -22,7 +22,7 @@ It implements the DB API defined in OpenSIPS.
 The following modules must be loaded before this module:
 
 
-- *If a [use tls](#param_use_tls) is defined, the **tls_mgm** module will need to be loaded as well*.
+- *If a [use tls](#use_tls-integer) is defined, the **tls_mgm** module will need to be loaded as well*.
 
 
 #### External Libraries or Applications

@@ -326,8 +326,8 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 
 
 This controls whether tracing for tls is on or not. You still need to define
-[tls trace destination](#param_trace_destination)in order to work, but this value will be
-controlled using mi function [mi trace](#mi_trace).
+[tls trace destination](#trace_destination-string)in order to work, but this value will be
+controlled using mi function [mi trace](#tlstrace).
 
 
 ```opensips title="Set trace_on parameter"
@@ -346,7 +346,7 @@ information regarding source and destination ips and ports for the current
 connection. To disable tracing for a specific connection the last call in
 this route must be **drop**, any other exit
 mode resulting in tracing the current connection ( of course you still
-have to define a [tls trace destination](#param_trace_destination) and trace must be
+have to define a [tls trace destination](#trace_destination-string) and trace must be
 on at the time this connection is opened.
 
 
@@ -361,7 +361,7 @@ on at the time this connection is opened.
 
 
 > [!WARNING]
-> If [trace on](#param_trace_on) is set to 0 or tracing is deactived via the mi command [mi trace](#mi_trace) this route won't be called.
+> If [trace on](#trace_on-int) is set to 0 or tracing is deactived via the mi command [mi trace](#tlstrace) this route won't be called.
 
 
 ```opensips title="Set trace_filter_route parameter"

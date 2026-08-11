@@ -332,7 +332,7 @@ sql_query("DELETE FROM subscriber", , $avp(id));
 #### sql_query_one(query, [res_col_vars], [db_id])
 
 
-Similar to [sql query](#func_sql_query), it makes a generic raw
+Similar to [sql query](#sql_queryquery-res_col_avps-db_id), it makes a generic raw
 database query and returns the results, but with the following
 differences:
 
@@ -430,7 +430,7 @@ database is *NULL*, the returned avp will
 be a string with the *<null>* value.
 - *db_id (int, optional)* - reference
 to a defined DB URL (a numerical id) - see the
-[db url](#param_db_url) module parameter. It can 
+[db url](#db_url-string) module parameter. It can 
 be either a constant, or a string/int variable.
 
 
@@ -450,7 +450,7 @@ sql_select('["password","ha1"]', 'subscriber',
 #### sql_select_one([columns],table,[filter],[order],[res_col_vars], [db_id])
 
 
-Similar to [sql select](#func_sql_select), it makes a SELECT SQL
+Similar to [sql select](#sql_selectcolumnstablefilterorderres_col_avps-db_id), it makes a SELECT SQL
 query and returns the results, but with the following
 differences:
 
@@ -490,7 +490,7 @@ sql_select_one('["value","type"]', 'usr_preferences',
 
 Function to perform a structured (not raw) SQL UPDATE operation.
 IMPORTANT: please see all the general notes from the 
-[sql select](#func_sql_select) function.
+[sql select](#sql_selectcolumnstablefilterorderres_col_avps-db_id) function.
 
 
 The function returns true if the query was successful.
@@ -516,7 +516,7 @@ the `=` operator, you can use "{"column":"value"}"
 If missing, all rows will be updated.
 - *db_id (int, optional)* - reference
 to a defined DB URL (a numerical id) - see the
-[db url](#param_db_url) module parameter. It can 
+[db url](#db_url-string) module parameter. It can 
 be either a constant, or a string/int variable.
 
 
@@ -537,7 +537,7 @@ sql_update( '[{"password":"my_secret"}]', 'subscriber',
 
 Function to perform a structured (not raw) SQL INSERT operation.
 IMPORTANT: please see all the general notes from the 
-[sql select](#func_sql_select) function.
+[sql select](#sql_selectcolumnstablefilterorderres_col_avps-db_id) function.
 
 
 The function returns true if the query was successful.
@@ -554,7 +554,7 @@ be inserted.
 Ex: "[{"col1":"val1"},{"col2":"val1"}]".
 - *db_id (int, optional)* - reference
 to a defined DB URL (a numerical id) - see the
-[db url](#param_db_url) module parameter. It can 
+[db url](#db_url-string) module parameter. It can 
 be either a constant, or a string/int variable.
 
 
@@ -574,7 +574,7 @@ sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":nu
 
 Function to perform a structured (not raw) SQL DELETE operation.
 IMPORTANT: please see all the general notes from the 
-[sql select](#func_sql_select) function.
+[sql select](#sql_selectcolumnstablefilterorderres_col_avps-db_id) function.
 
 
 The function returns true if the query was successful.
@@ -596,7 +596,7 @@ the `=` operator, you can use "{"column":"value"}"
 If missing, all rows will be updated.
 - *db_id (int, optional)* - reference
 to a defined DB URL (a numerical id) - see the
-[db url](#param_db_url) module parameter. It can 
+[db url](#db_url-string) module parameter. It can 
 be either a constant, or a string/int variable.
 
 
@@ -614,7 +614,7 @@ sql_delete( 'subscriber', '[{"username": "$tu"}]');
 #### sql_replace(table,columns,[db_id])
 
 
-Function very similar to [sql insert](#func_sql_insert) function,
+Function very similar to [sql insert](#sql_inserttablecolumnsdb_id) function,
 but performing an SQL REPLACE operation instead. Note that not all
 SQL backend in OpenSIPS may support a REPLACE operation.
 
@@ -737,7 +737,7 @@ sql_avp_delete("$ru", "$avp(1)", 3);
 
 
 This function takes the same parameters and behaves identically
-to [sql query](#func_sql_query), but asynchronously
+to [sql query](#sql_queryquery-res_col_avps-db_id), but asynchronously
 (after launching the query, the current SIP worker pauses the
 execution of the current SIP message until the result is available
 and attempts to process more SIP traffic).
@@ -775,7 +775,7 @@ route [my_resume_route]
 
 
 This function takes the same parameters and behaves identically
-to [sql query one](#func_sql_query_one), but asynchronously
+to [sql query one](#sql_query_onequery-res_col_vars-db_id), but asynchronously
 (after launching the query, the current SIP worker pauses the
 execution of the current SIP message until the result is available
 and attempts to process more SIP traffic).
