@@ -586,6 +586,7 @@ static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
+				/* fall through */
 			default:
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
@@ -749,6 +750,7 @@ again:
 
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
+				/* fall through */
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
 					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);

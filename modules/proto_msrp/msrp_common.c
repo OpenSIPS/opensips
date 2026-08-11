@@ -149,6 +149,7 @@ void msrp_brief_parse_msg(struct msrp_req *r)
 
 		r->state = MSRP_FIRSTLINE_IDENT;
 		r->tcp.parsed = p;
+		/* fall through */
 
 	case MSRP_FIRSTLINE_IDENT:
 #ifdef MSRP_DEBUG
@@ -177,6 +178,7 @@ void msrp_brief_parse_msg(struct msrp_req *r)
 		r->state = MSRP_FIRSTLINE_METHOD;
 		r->tcp.parsed = p;
 		r->fl.ident = s;
+		/* fall through */
 
 	case MSRP_FIRSTLINE_METHOD:
 #ifdef MSRP_DEBUG

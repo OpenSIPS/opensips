@@ -514,6 +514,7 @@ static int _wolfssl_tls_conn_shutdown(struct tcp_connection *c)
 		case SSL_ERROR_SYSCALL:
 			LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 				strerror(errno), errno);
+			/* fall through */
 		default:
 			LM_ERR("SYSCALL ERROR err=%s(%d)\n",
 				strerror(errno), errno);
@@ -724,15 +725,19 @@ static inline void _wolfssl_enforce_max_version(struct tcp_connection *c)
 	case SSL3_VERSION:
 		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
 			WOLFSSL_OP_NO_TLSv1);
+		/* fall through */
 	case TLS1_VERSION:
 		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
 			WOLFSSL_OP_NO_TLSv1_1);
+		/* fall through */
 	case TLS1_1_VERSION:
 		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
 			WOLFSSL_OP_NO_TLSv1_2);
+		/* fall through */
 	case TLS1_2_VERSION:
 		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
 			WOLFSSL_OP_NO_TLSv1_3);
+		/* fall through */
 	case TLS1_3_VERSION:
 		break;
 	}
@@ -864,6 +869,7 @@ again:
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
+				/* fall through */
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
 					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
@@ -1054,6 +1060,7 @@ static int _wolfssl_tls_accept(struct tcp_connection *c, short *poll_events)
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
+				/* fall through */
 			default:
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
