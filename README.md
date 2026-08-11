@@ -26,8 +26,8 @@ by a team including core and main developers of SER project.
 For information regarding the OpenSIPS installation, please see the [INSTALL](INSTALL)
 file.
 
-For current developers/contributors of this project, see the [CREDITS](CREDITS) and
-[AUTHORS](AUTHORS) file. For complete license information, please see the [COPYING](COPYING) file.
+For current developers/contributors of this project, see the [AUTHORS](AUTHORS) file.
+For complete license information, please see the [COPYING](COPYING) file.
 For an overview of OpenSIPS modules, a [modules listing](https://www.opensips.org/Documentation/Modules)
 is available on the opensips.org website.
 
