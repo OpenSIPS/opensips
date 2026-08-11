@@ -1200,7 +1200,7 @@ Example of usage:
 
 ### tcp_workers
 
-Number of worker processes created for reading from TCP connections. These workers handle traffic over any TCP-based protocol, such as SIP-TCP, SIP-TLS, SIP-WS, SIP-WSS, BIN or HEP.
+Number of worker processes used for parsing and processing messages received over TCP connections. The socket read/write I/O is handled separately by the TCP thread pool, configured through [tcp_threads](#tcp_threads). These workers handle traffic over any TCP-based protocol, such as SIP-TCP, SIP-TLS, SIP-WS, SIP-WSS, BIN or HEP.
 
 Default value is `8`.
 
