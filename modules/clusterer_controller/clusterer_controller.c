@@ -266,9 +266,19 @@ static const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ]  = { 0xCC, 0x0
  * consumer's problem (the API contract says fall back to BIN for bulk). */
 #define CL_CTR_MAX_CHANNELS         8
 #define CL_CTR_CONSUMER_HDR_SZ      (CL_CTR_NODE_ID_SZ + 1)
-#define CL_CTR_CONSUMER_PKT_MAX     (CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ \
+/* Everything a consumer datagram carries BESIDES the payload. Split out from
+ * the old CL_CTR_CONSUMER_PKT_MAX because the packet buffer is now sized at
+ * runtime from cc_max_payload: a jumbo-frame link is meant to carry a bigger
+ * payload, and a buffer fixed at CLCTR_MAX_PAYLOAD could not - it just let the
+ * MTU-derived bound run off the end of it. */
+#define CL_CTR_PKT_OVERHEAD         (CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ \
                                      + CL_CTR_CONSUMER_HDR_SZ + CLCTR_MAX_CHAN_LEN \
-                                     + CLCTR_MAX_PAYLOAD + CL_CTR_TAG_SZ)
+                                     + CL_CTR_TAG_SZ)
+#define CL_CTR_CONSUMER_PKT_MAX     (CL_CTR_PKT_OVERHEAD + CLCTR_MAX_PAYLOAD)
+/* A datagram cannot exceed the UDP payload maximum no matter what the MTU
+ * says - loopback reports 65536, which would otherwise compute a payload one
+ * byte past what sendto() can accept. */
+#define CL_CTR_UDP_PAYLOAD_MAX      65507
 #define CL_CTR_PKT_MASTER_BEACON    0x0A  /* master-only announce (BOOTSTRAP key) so
                                        * masters with divergent session keys can
                                        * still discover each other and merge a
@@ -773,6 +783,27 @@ static char my_interface_buf[IF_NAMESIZE];
  * jumbo-frame interfaces (MTU 9000) are not artificially limited to 1300 B.
  * Read-only after mod_init; safe to access from any process. */
 int cc_max_payload = CLCTR_MAX_PAYLOAD;
+
+/* The two transmit buffers, sized from cc_max_payload once the MTU is known.
+ *
+ * They were `char buf[CLCTR_MAX_PAYLOAD]` and `char pkt[CL_CTR_CONSUMER_PKT_MAX]`
+ * on the stack, while the length gates in front of them tested against the
+ * MTU-derived cc_max_payload - so on any link above MTU 1411 a caller could
+ * pass the gate and write past the end. A production gateway logs
+ * "interface ens18 MTU=1500, max consumer payload=1389" against a 1300-byte
+ * buffer: an 89-byte stack overrun with caller-supplied bytes.
+ *
+ * pkg, allocated in mod_init, which runs PRE-FORK: every worker inherits its
+ * own copy-on-write copy, so there is no sharing between processes and no
+ * per-call allocation on the send path (cachedb_perf's pull replies go through
+ * the consumer one for every message). Each is written only by the process
+ * that owns it, and neither send function can re-enter itself - script
+ * functions run to completion inside one route execution, and the consumer
+ * send runs in the cluster worker's own loop. */
+static char *cl_ctr_script_buf;
+static int   cl_ctr_script_buf_sz;
+static char *cl_ctr_consumer_pkt;
+static int   cl_ctr_consumer_pkt_sz;
 
 
 /* Local node identity - populated at mod_init by scanning the config file */
@@ -7058,6 +7089,11 @@ static int mod_init(void)
 		cc_max_payload = _mtu - _overhead;
 		if (cc_max_payload < CLCTR_MAX_PAYLOAD)
 		    cc_max_payload = CLCTR_MAX_PAYLOAD;
+		/* However large the MTU claims to be, one datagram still has
+		 * to fit a UDP payload. Loopback reports 65536, which lands a
+		 * byte past what sendto() accepts. */
+		if (cc_max_payload > CL_CTR_UDP_PAYLOAD_MAX - CL_CTR_PKT_OVERHEAD)
+		    cc_max_payload = CL_CTR_UDP_PAYLOAD_MAX - CL_CTR_PKT_OVERHEAD;
 		LM_INFO("clusterer_controller: interface %s MTU=%d, "
 		        "max consumer payload=%d bytes\n",
 		        my_interface_buf, _mtu, cc_max_payload);
@@ -7068,6 +7104,22 @@ static int mod_init(void)
 	    }
 	    close(_mtu_sock);
 	}
+    }
+
+    /* Size the transmit buffers from the bound that gates them, now that the
+     * MTU probe above has settled cc_max_payload. Doing it here rather than at
+     * compile time is the whole point: a jumbo-frame link raises
+     * cc_max_payload, and a CLCTR_MAX_PAYLOAD-sized buffer could not hold what
+     * that bound then admits. */
+    cl_ctr_script_buf_sz  = cc_max_payload;
+    cl_ctr_consumer_pkt_sz = CL_CTR_PKT_OVERHEAD + cc_max_payload;
+    cl_ctr_script_buf  = pkg_malloc(cl_ctr_script_buf_sz);
+    cl_ctr_consumer_pkt = pkg_malloc(cl_ctr_consumer_pkt_sz);
+    if (!cl_ctr_script_buf || !cl_ctr_consumer_pkt) {
+	LM_ERR("clusterer_controller: no pkg memory for the %d/%d byte "
+	       "transmit buffers\n", cl_ctr_script_buf_sz,
+	       cl_ctr_consumer_pkt_sz);
+	return -1;
     }
 
     if (cl_ctr_discover_bin_sockets() < 0)
@@ -7445,11 +7497,27 @@ static void cl_ctr_rpc_consumer_send(int sender, void *param)
 {
     struct cl_ctr_consumer_job *job = (struct cl_ctr_consumer_job *)param;
     cl_ctr_cluster_t *cl = job->cl;
-    char      pkt[CL_CTR_CONSUMER_PKT_MAX];
+    /* the per-process buffer sized from cc_max_payload at mod_init;
+     * a CL_CTR_CONSUMER_PKT_MAX-sized stack array could not hold what
+     * the MTU-derived bound in cl_ctr_consumer_submit() admits */
+    char     *pkt = cl_ctr_consumer_pkt;
     char      dst_ip[CL_CTR_MAX_IP_LEN + 1];
     uint32_t  seq;
     uint16_t  id_be;
     int       plain_len, i, to_self = 0, on_wire = 1, reliable = 0;
+
+    /* Defence in depth against the two bounds drifting apart again. The
+     * admission gate in cl_ctr_consumer_submit() and the buffer allocated in
+     * mod_init are both derived from cc_max_payload, so this cannot fire
+     * today - which is exactly what was true of the old pair right up until
+     * the MTU probe was added and made them disagree. */
+    if (!pkt || CL_CTR_PKT_OVERHEAD + job->payload_len > cl_ctr_consumer_pkt_sz) {
+        LM_ERR("clusterer_controller: consumer packet of %d bytes does not fit "
+               "the %d-byte transmit buffer - dropping\n",
+               CL_CTR_PKT_OVERHEAD + job->payload_len, cl_ctr_consumer_pkt_sz);
+        shm_free(job);
+        return;
+    }
 
     /* unicast to our own id never touches the wire; multicast with
      * CLCTR_SEND_TO_SELF touches it AND dispatches locally */
@@ -7754,7 +7822,7 @@ bad:
 static int cl_ctr_script_send(int cluster_id, int node_id, str *gen_msg,
 		str *tag, unsigned char kind, int flags)
 {
-	char buf[CLCTR_MAX_PAYLOAD];
+	char *buf = cl_ctr_script_buf;
 	str pl;
 	int taglen = tag ? tag->len : 0;
 
@@ -7762,9 +7830,18 @@ static int cl_ctr_script_send(int cluster_id, int node_id, str *gen_msg,
 		return -1;
 	if (taglen > 255)
 		taglen = 255;
-	if (2 + taglen + gen_msg->len > cc_max_payload) {
+	/* Bound against the BUFFER, not only against cc_max_payload. They are
+	 * derived from one another at mod_init now, but this function writes
+	 * into buf[] and buf[] is what it must answer to - the sibling
+	 * cmd_cl_ctr_send_req_list() has always guarded with sizeof(buf), and
+	 * the gap between the two forms is exactly how a 1500-MTU link turned a
+	 * 1350-byte script message into an 89-byte stack overrun. */
+	if (!buf || 2 + taglen + gen_msg->len > cl_ctr_script_buf_sz ||
+	    2 + taglen + gen_msg->len > cc_max_payload) {
 		LM_ERR("clusterer_controller: message of %d bytes is more than the "
-			"%d a datagram carries\n", gen_msg->len, cc_max_payload);
+			"%d a datagram carries\n", gen_msg->len,
+			cc_max_payload < cl_ctr_script_buf_sz ? cc_max_payload
+			                                      : cl_ctr_script_buf_sz);
 		return -1;
 	}
 	buf[0] = (char)kind;
