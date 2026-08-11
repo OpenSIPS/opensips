@@ -469,6 +469,8 @@ static void media_exchange_event_received_update(struct dlg_cell *dlg,
 
 	if (msl && msl->type != MEDIA_SESSION_TYPE_FORK)
 		return;
+	if (!msl)
+		return;
 	if (msl)
 		mf = msl->params;
 

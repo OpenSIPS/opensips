@@ -1498,7 +1498,10 @@ static int b2b_media_notify(struct sip_msg *msg, str *key, int type,
 							msg->REPLY_STATUS, msl->ms->dlg->callid.len, msl->ms->dlg->callid.s);
 					goto terminate;
 				}
-				media_session_req(msl, ACK, NULL);
+				if (media_session_req(msl, ACK, NULL) < 0) {
+					LM_ERR("could not send media ACK\n");
+					goto terminate;
+				}
 				if (handle_media_session_reply(msl, msg) < 0) {
 					LM_ERR("could not establish media exchange (callid=%.*s)!\n",
 							msl->ms->dlg->callid.len, msl->ms->dlg->callid.s);
