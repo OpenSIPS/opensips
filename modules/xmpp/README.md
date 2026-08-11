@@ -28,7 +28,7 @@ After you have a running XMPP server, what you need to do is set the following p
 
 
 - xmpp_domain and xmpp_host, which are explained in the
-[exported parameters](#exported_parameters) section;
+[exported parameters](#exported-parameters) section;
 - socket= your ip;
 - alias=opensips domain and 
 alias=gateway domain;
@@ -48,7 +48,7 @@ In the server mode, the xmpp module is a minimal jabber server, thus you do not 
 
 If you want to change to server-mode, you have to change the
 "backend" parameter, as shown in the
-[exported parameters](#exported_parameters) section, from component to server.
+[exported parameters](#exported-parameters) section, from component to server.
 
 
 A use case, for the server-mode, would look like this:

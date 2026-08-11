@@ -33,8 +33,8 @@ The stun server will use 4 sockets:
 where *ip1* / *port1*
 represent an UDP SIP listener and *ip2* /
 *port2* are configured via the
-[alternate ip](#param_alternate_ip) and
-[alternate port](#param_alternate_port)
+[alternate ip](#alternate_ip-str) and
+[alternate port](#alternate_port-str)
 parameters.
 
 
@@ -44,7 +44,7 @@ The sockets come from existing SIP sockets or are created.
 Socket1 must allways be a SIP UDP listener from OpenSIPS.
 
 
-If [use listeners as primary](#param_use_listeners_as_primary) is enabled
+If [use listeners as primary](#use_listeners_as_primary-int) is enabled
 the STUN server will actually use multiple sets of sockets obtained
 from the IP/port combinations described above, each set corresponding
 to a SIP UDP listener from OpenSIPS.
@@ -115,7 +115,7 @@ running OpenSIPS with this module loaded:
 
 The IP of an interface which is configured as an UDP SIP listener
 in OpenSIPS. This is a mandatory parameter, unless
-[use listeners as primary](#param_use_listeners_as_primary) is enabled.
+[use listeners as primary](#use_listeners_as_primary-int) is enabled.
 
 
 Syntax: "ip [/ advertised_ip]
@@ -169,7 +169,7 @@ modparam("stun", "primary_port", "5060 / 5062")
 Another IP from another interface. This is a mandatory parameter.
 
 
-If [use listeners as primary](#param_use_listeners_as_primary) is enabled, the
+If [use listeners as primary](#use_listeners_as_primary-int) is enabled, the
 alternate IP must be either:
 
 
@@ -204,7 +204,7 @@ The port used by the STUN server for the second interface.
 The default value is 3478 (default STUN port).
 
 
-If [use listeners as primary](#param_use_listeners_as_primary) is enabled, the
+If [use listeners as primary](#use_listeners_as_primary-int) is enabled, the
 alternate port must be either:
 
 
@@ -240,8 +240,8 @@ configured UDP SIP listeners to be automatically used as "primary"
 STUN sockets.
 
 
-The [primary ip](#param_primary_ip) and
-[primary port](#param_primary_port)
+The [primary ip](#primary_ip-str) and
+[primary port](#primary_port-str)
 parameters will be ignored when this behavior is enabled.
 
 

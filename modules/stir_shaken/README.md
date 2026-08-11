@@ -46,7 +46,7 @@ can be older than the current time.
 
 
 This parameter is only relevant
-for the [stir shaken auth](#func_stir_shaken_auth) function.
+for the [stir shaken auth](#stir_shaken_authattest-origid-cert-pkey-x5u-orig-dest-out) function.
 
 
 The default value is *60*.
@@ -69,13 +69,13 @@ permitted interval, it will be used in the verification process (for the
 reconstructed PASSporT) instead of the Date value.
 
 
-If the [require date hdr](#param_require_date_hdr) parameter is set to not
+If the [require date hdr](#require_date_hdr-integer) parameter is set to not
 required and the Date header is missing, the *iat* value
 will be used for this check instead.
 
 
 This parameter is only relevant for the
-[stir shaken verify](#func_stir_shaken_verify) function.
+[stir shaken verify](#stir_shaken_verifycert-err_code-err_reason-orig-dest) function.
 
 
 The default value is *60*.
@@ -191,7 +191,7 @@ modparam("stir_shaken", "e164_max_length", 16)
 
 
 Specifies whether the Date header is mandatory when doing verification
-with the [stir shaken verify](#func_stir_shaken_verify) function.
+with the [stir shaken verify](#stir_shaken_verifycert-err_code-err_reason-orig-dest) function.
 
 
 A value of *1* means required and *0*
@@ -200,7 +200,7 @@ not required.
 
 If the parameter is set to "not required" but the Date header is present in the
 message, the header value will be used as normally to check the freshness (as
-configured in the [verify date freshness](#param_verify_date_freshness)
+configured in the [verify date freshness](#verify_date_freshness-integer)
 parameter). If the Date header is indeed missing, the value of the
 *iat* claim in the PASSporT will be used instead.
 

@@ -34,13 +34,13 @@ the create_dialog() function, with or without parameter.
 The dialog is automatically terminated when a "BYE" is
 received. In case of no "BYE", the dialog lifetime is
 controlled via the default timeout (see "default_timeout"
-	- [default timeout](#param_default_timeout)) and custom timeout (see
-"$DLG_timeout" - [DLG timeout](#pv_DLG_timeout)).
+	- [default timeout](#default_timeout-integer)) and custom timeout (see
+"$DLG_timeout" - [DLG timeout](#dlg_timeout)).
 
 
 Once terminated, the in-memory dialog may be destroyed right away or, 
 depending on the "delete_delay"
-	- [delete delay](#param_delete_delay)) setting, it may be kept for a
+	- [delete delay](#delete_delay-integer)) setting, it may be kept for a
 while in memory, in a read-only state (no action, no changes, nothing).
 This delaying may be used to help with the routing of late in-dialog
 request that may be received after the dialog terminted (like late BYE's
@@ -131,7 +131,7 @@ In addition to the event-driven replication, an OpenSIPS instance will first
 try to learn all the dialog information from antoher node in the cluster at startup.
 The data synchronization mechanism requires defining one of the nodes in the cluster
 as a "**seed**" node.
-See the [clusterer](../clusterer#capabilities) 
+See the [clusterer](../clusterer#capabilities-layer) 
 module for details on how to do this and why is it needed.
 
 
@@ -348,7 +348,7 @@ still be able to match and route late in-dialog requests.
 
 
 This global value may be per-call changed via the DLG_del_delay
-"$DLG_del_delay" ([DLG del delay](#pv_DLG_del_delay))
+"$DLG_del_delay" ([DLG del delay](#dlg_del_delay))
 script variable.
 
 
@@ -1047,7 +1047,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer#capabilities-layer)
 chapter for more details.
 
 
@@ -1245,7 +1245,7 @@ to an ongoing dialog.
 
 
 By default, dialog matching is performed according to the
-[dlg match mode](#param_dlg_match_mode) module parameter. A specific
+[dlg match mode](#dlg_match_mode-integer) module parameter. A specific
 matching mode may be enforced by specifying the optional
 "dlg_match_mode" parameter. Possible values for this parameter are
 "DID_ONLY", "DID_FALLBACK" and "DID_NONE".
@@ -1593,7 +1593,7 @@ whatever dialog context was present before doing the load.
 This function can be used from any type of route.
 
 
-For usage example, see the [load dialog ctx](#func_load_dialog_ctx)
+For usage example, see the [load dialog ctx](#load_dialog_ctx-dialog--id_type)
 
 
 #### set_dlg_profile(profile, [value], [clear_values])
@@ -1965,7 +1965,7 @@ will depend on the tag state(no action in "backup" state, normal operation
 in "active" state).
 
 
-For more details see the [dialog clustering](#dialog_clustering) chapter.
+For more details see the [dialog clustering](#dialog-clustering) chapter.
 
 
 Parameters:
@@ -2123,7 +2123,7 @@ Used to send an in-dialog request towards one if the dialog's legs.
 The function assumes that is runs inside a dialog context - if you
 are running it from a different context (such as an event_route),
 make sure you first load the dialog context using the
-[load dialog ctx](#func_load_dialog_ctx) function.
+[load dialog ctx](#load_dialog_ctx-dialog--id_type) function.
 
 
 Parameters:
@@ -2500,7 +2500,7 @@ opensips-cli -x mi profile_get_values inboundCalls
 
 
 Terminate all ongoing dialogs from a specified profile, on a single dialog it
-performs the same operations as the command **[mi dlg end dlg](#mi_dlg_end_dlg)**
+performs the same operations as the command **[mi dlg end dlg](#dlg_end_dlg)**
 
 
 Name: *profile_end_dlgs*
@@ -2552,7 +2552,7 @@ This command will only take effect if dialog replication is enabled.
 
 
 Fully synchronize the dialog information in memory from a suitable donor
-node within the [dialog replication cluster](#param_dialog_replication_cluster). Dialogs
+node within the [dialog replication cluster](#dialog_replication_cluster-int). Dialogs
 that already exist in memory which are not reconfirmed through syncing will
 be discarded. A sharing tag can be specified in order to sync only dialogs
 marked with that sharing tag.
@@ -2928,7 +2928,7 @@ Used to set the dialog deletion delay (in seconds) for the
 current dialog (in a per-call manner). When read, the variable
 returns the number of seconds that were set for the call or
 the default value ( see the
-"delete_delay" - [delete delay](#param_delete_delay))
+"delete_delay" - [delete delay](#delete_delay-integer))
 module param) for the delete delaying.
 
 

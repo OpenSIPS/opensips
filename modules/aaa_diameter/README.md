@@ -31,7 +31,7 @@ In addition to the RADIUS client's auth and accounting features, the
 Diameter client includes support for sending *arbitrary*
 Diameter requests, further opening up the scope of applications which
 can be achieved through OpenSIPS scripting.  Such Diameter requests can
-be sent using the [dm send request](#func_dm_send_request) function.
+be sent using the [dm send request](#dm_send_requestapp_id-cmd_code-avps_json-rpl_avps_pv) function.
 
 
 ### Diameter Server
@@ -42,13 +42,13 @@ module includes *server-side* support as well.
 
 
 First, the [event_route](../event_route) module must be loaded in
-order to be able to process [dm request](#event_e_dm_request) events in
+order to be able to process [dm request](#e_dm_request) events in
 the OpenSIPS configuration file.  These events will contain all necessary
 information on the incoming Diameter request.
 
 
 Finally, once the request information is processed and the answer AVPs
-are prepared, script writers should use the [dm send answer](#func_dm_send_answer)
+are prepared, script writers should use the [dm send answer](#dm_send_answeravps_json-is_error)
 function in order to reply with a Diameter answer message.
 
 
@@ -165,7 +165,7 @@ modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf;extra-avp
 #### answer_timeout (integer)
 
 
-Time, in milliseconds, after which a [dm send request](#func_dm_send_request)
+Time, in milliseconds, after which a [dm send request](#dm_send_requestapp_id-cmd_code-avps_json-rpl_avps_pv)
 function call with no received reply will time out and return a
 **-2** code.
 
@@ -212,7 +212,7 @@ variable could be used to iterate this array.
 - **1** - Success
 - **-1** - Internal Error
 - **-2** - Request timeout
-(the [answer timeout](#param_answer_timeout) was exceeded
+(the [answer timeout](#answer_timeout-integer) was exceeded
 before an Answer could be processed)
 
 
@@ -380,11 +380,11 @@ event_route [E_DM_REQUEST] {
 #### dm_send_request(app_id, cmd_code, avps_json, [rpl_avps_pv])
 
 
-Similar to [dm send request](#func_dm_send_request) but performs an asynchronous Diameter request.
+Similar to [dm send request](#dm_send_requestapp_id-cmd_code-avps_json-rpl_avps_pv) but performs an asynchronous Diameter request.
 
 
 Uses the same parameters and return codes as
-[dm send request](#func_dm_send_request).
+[dm send request](#dm_send_requestapp_id-cmd_code-avps_json-rpl_avps_pv).
 
 
 ```opensips title="dm_send_request asynchronous usage"
@@ -439,7 +439,7 @@ Parameters:
 
 
 Note that this event is currently designed to be mainly consumed by an *event_route*,
-since that is the only way to gain access to the [dm send answer](#func_dm_send_answer)
+since that is the only way to gain access to the [dm send answer](#dm_send_answeravps_json-is_error)
 function in order to build custom answer messages.  On the other hand,
 if the application does not mind the answer being always a 3001 (DIAMETER_COMMAND_UNSUPPORTED) error,
 this event can be successfully consumed through any other EVI-compatible delivery channel ☺️

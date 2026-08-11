@@ -54,7 +54,7 @@ running OpenSIPS with this module loaded:
 The maximum allowed time for any HTTP(S) transfer to complete.  This
 interval is inclusive of the initial connect time window, hence the value
 of this parameter must be greater than or equal to
-[connection timeout](#param_connection_timeout).
+[connection timeout](#connection_timeout-integer).
 
 
 *Default value is "20" seconds.*
@@ -89,7 +89,7 @@ modparam("rest_client", "connection_timeout", 4)
 Only relevant with async requests.  Allows complete control over how
 quickly we want to detect libcurl's completed blocking TCP/TLS handshakes,
 so the async transfers can be put in the background.  A lower
-[connect poll interval](#param_connect_poll_interval) may speed up all async
+[connect poll interval](#connect_poll_interval-integer) may speed up all async
 HTTP transfers, but will also increase CPU usage.
 
 
@@ -276,7 +276,7 @@ modparam("rest_client", "no_concurrent_connects", true)
 #### curl_conn_lifetime (integer)
 
 
-Only relevant when [no concurrent connects](#param_no_concurrent_connects) is enabled.
+Only relevant when [no concurrent connects](#no_concurrent_connects-boolean) is enabled.
 By setting this parameter, script developers can leverage the connection
 reusage capabilities of libcURL and entirely skip the "no concurrent transfers"
 logic on a given SIP worker, should that worker already be known to have a TCP
@@ -331,10 +331,10 @@ reply arrived at all.
 - **1** - Success
 - **-1** - Connection Refused.
 - **-2** - Connection Timeout
-(the [connection timeout](#param_connection_timeout) was exceeded
+(the [connection timeout](#connection_timeout-integer) was exceeded
 before a TCP connection could be established)
 - **-3** - Transfer Timeout
-(the [curl timeout](#param_curl_timeout) was exceeded before the
+(the [curl timeout](#curl_timeout-integer) was exceeded before the
 last byte was received). The *retcode_pv* may
 be set to 200 or 0, depending whether a 200 OK was received or not.
 If it was, the *body_pv* will contain partially
@@ -342,7 +342,7 @@ downloaded data, use at your own risk! (we recommend you only use
 this data for logging / debugging purposes)
 - **-4** - Already Connecting
 (another OpenSIPS worker is already connecting to this URL hostname.
-Consult [no concurrent connects](#param_no_concurrent_connects) for more info).
+Consult [no concurrent connects](#no_concurrent_connects-boolean) for more info).
 - **-10** - Internal Error (out of
 memory, unexpected libcurl error, etc.)
 
@@ -409,10 +409,10 @@ reply arrived at all.
 - **1** - Success
 - **-1** - Connection Refused.
 - **-2** - Connection Timeout
-(the [connection timeout](#param_connection_timeout) was exceeded
+(the [connection timeout](#connection_timeout-integer) was exceeded
 before a TCP connection could be established)
 - **-3** - Transfer Timeout
-(the [curl timeout](#param_curl_timeout) was exceeded before the
+(the [curl timeout](#curl_timeout-integer) was exceeded before the
 last byte was received). The *retcode_pv* may
 be set to 200 or 0, depending whether a 200 OK was received or not.
 If it was, the *body_pv* will contain partially
@@ -420,7 +420,7 @@ downloaded data, use at your own risk! (we recommend you only use
 this data for logging / debugging purposes)
 - **-4** - Already Connecting
 (another OpenSIPS worker is already connecting to this URL hostname.
-Consult [no concurrent connects](#param_no_concurrent_connects) for more info).
+Consult [no concurrent connects](#no_concurrent_connects-boolean) for more info).
 - **-10** - Internal Error (out of
 memory, unexpected libcurl error, etc.)
 
@@ -454,7 +454,7 @@ if ($var(rcode) != 200) {
 Perform a blocking HTTP PUT on the given *url*.
 
 
-Similar to [rest post](#func_rest_post), the *send_body_pv*
+Similar to [rest post](#rest_posturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv), the *send_body_pv*
 parameter can also accept a format-string but it cannot be larger than 1024 bytes. For
 larger messages, you must build them in a pseudo-variable and pass it to the function.
 
@@ -483,10 +483,10 @@ reply arrived at all.
 - **1** - Success
 - **-1** - Connection Refused.
 - **-2** - Connection Timeout
-(the [connection timeout](#param_connection_timeout) was exceeded
+(the [connection timeout](#connection_timeout-integer) was exceeded
 before a TCP connection could be established)
 - **-3** - Transfer Timeout
-(the [curl timeout](#param_curl_timeout) was exceeded before the
+(the [curl timeout](#curl_timeout-integer) was exceeded before the
 last byte was received). The *retcode_pv* may
 be set to 200 or 0, depending whether a 200 OK was received or not.
 If it was, the *body_pv* will contain partially
@@ -494,7 +494,7 @@ downloaded data, use at your own risk! (we recommend you only use
 this data for logging / debugging purposes)
 - **-4** - Already Connecting
 (another OpenSIPS worker is already connecting to this URL hostname.
-Consult [no concurrent connects](#param_no_concurrent_connects) for more info).
+Consult [no concurrent connects](#no_concurrent_connects-boolean) for more info).
 - **-10** - Internal Error (out of
 memory, unexpected libcurl error, etc.)
 
@@ -592,7 +592,7 @@ if (!rest_get("https://example.com"))
 
 
 Perform an asynchronous HTTP GET.  This function behaves exactly the same as
-**[rest get](#func_rest_get)**
+**[rest get](#rest_geturl-body_pv-ctype_pv-retcode_pv)**
 (in terms of input, output and processing),
 but in a non-blocking manner.  Script execution is suspended until the
 entire content of the HTTP response is available.
@@ -628,7 +628,7 @@ route [resume] {
 
 
 Perform an asynchronous HTTP POST.  This function behaves exactly the same as
-**[rest post](#func_rest_post)** (in
+**[rest post](#rest_posturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv)** (in
 terms of input, output and processing), but in a non-blocking manner.
 Script execution is suspended until the entire content of the HTTP
 response is available.
@@ -663,7 +663,7 @@ route [resume] {
 
 
 Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
-**[rest put](#func_rest_put)** (in
+**[rest put](#rest_puturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv)** (in
 terms of input, output and processing), but in a non-blocking manner.
 Script execution is suspended until the entire content of the HTTP
 response is available.

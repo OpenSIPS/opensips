@@ -302,7 +302,7 @@ the given "uri" belongs to at least one group.
 
 
 All matching group IDs
-shall be returned in "output_avp" if [multiple gid](#param_multiple_gid)
+shall be returned in "output_avp" if [multiple gid](#multiple_gid-integer)
 is enabled, otherwise only the first one to match (the records are
 attempted in reversed order of the results returned by the RDBMS).
 

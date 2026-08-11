@@ -30,7 +30,7 @@ by triggering events through the OpenSIPS Event Interface.
 The following modules must be loaded before this module:
 
 
-- *tls_mgm* if [use tls](#param_use_tls) is enabled.
+- *tls_mgm* if [use tls](#use_tls-integer) is enabled.
 
 
 #### External Libraries or Applications
@@ -97,7 +97,7 @@ to send heartbeat messages. Default is disabled.
 - *tls_domain* - indicates which TLS domain (as
 defined using the *tls_mgm* module) to use for
 this connection. This must be an *amqps* URI and
-the [use tls](#param_use_tls) module parameter must be enabled.
+the [use tls](#use_tls-integer) module parameter must be enabled.
 
 
 ```opensips title="Set connection_id parameter"
@@ -159,7 +159,7 @@ modparam("rabbitmq_consumer", "retry_timeout", 10000)
 Setting this parameter will allow you to use TLS for broker connections.
 In order to enable TLS for a specific connection, you can use the
 "tls_domain=*dom_name*" parameter in the configuration
-specified through the [connection id](#param_connection_id) module parameter.
+specified through the [connection id](#connection_id-string) module parameter.
 
 
 When using this parameter, you must also ensure that
@@ -192,7 +192,7 @@ The module does not export any script functions.
 
 
 An event with a custom name, as set in the *event*
-field of the [connection id](#param_connection_id) parameter,
+field of the [connection id](#connection_id-string) parameter,
 will be raised for each AMQP message received.
 
 

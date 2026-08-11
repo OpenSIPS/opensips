@@ -35,7 +35,7 @@ cluster, a "seed" node should be defined. This is done by setting the value
 column in the clusterer table(or the property with the same name in the
 *my_node_info* parameter). The seed node will simply
 fall back to a "synced" state after a configurable interval(
-[seed fallback interval](#param_seed_fallback_interval) parameter). Note that
+[seed fallback interval](#seed_fallback_interval) parameter). Note that
 this mechanism is required only for capabilities that synchronize data
 at startup, so check the corresponding modules documentation.
 
@@ -52,7 +52,7 @@ The clusterer module transparently exposes the *sip_addr* column from the cluste
 The following modules must be loaded before this module:
 
 
-- *a database module* - if [db mode](#param_db_mode)
+- *a database module* - if [db mode](#db_mode)
 is *1*.
 - *proto_bin module*.
 
@@ -93,8 +93,8 @@ modparam("clusterer", "my_node_id", 1)
 
 Specifies whether the node information for the local instance,
 as well as other instances in the cluster, should be loaded from
-the database or configured in the script(see [my node info](#param_my_node_info)
-and [neighbor node info](#param_neighbor_node_info)). A value of "0"
+the database or configured in the script(see [my node info](#my_node_info)
+and [neighbor node info](#neighbor_node_info)). A value of "0"
 means that DB is not used and the cluster topology in terms of node
 information will be discovered dynamically at runtime.
 
@@ -192,7 +192,7 @@ properties is the same as the DB column names. At least the
 properties must be defined.
 
 
-This parameter is required if [db mode](#param_db_mode) is set
+This parameter is required if [db mode](#db_mode) is set
 to "0" in order to properly advertise information about
 the local instance in the dynamic node learning process.
 
@@ -224,7 +224,7 @@ and *url* properties must be defined.
 
 
 This parameter should be set at least once if
-[db mode](#param_db_mode) is set to *0* in order
+[db mode](#db_mode) is set to *0* in order
 to properly learn the cluster topology. If not set, the only way to learn
 the node topology is by other nodes connecting to the local instance.
 
@@ -863,10 +863,10 @@ Removes a node from the cluster's topology. It is enough to run the function
 on a single node in order to remove the target node from all the other
 nodes in the cluster. If the node to be removed is running when triggering
 this function, it will be automatically disabled (equivalent to running
-[mi clusterer set status](#mi_clusterer_set_status) on that specific node).
+[mi clusterer set status](#clusterer_set_status) on that specific node).
 
 
-This function can only be used when [db mode](#param_db_mode) is set to
+This function can only be used when [db mode](#db_mode) is set to
 *0* (disabled).
 
 
@@ -999,7 +999,7 @@ Parameters:
 
 - *cluster_id* - the id of the cluster
 - *capability* - name of the capability, as listed by
-[mi clusterer list cap](#mi_clusterer_list_cap)
+[mi clusterer list cap](#clusterer_list_cap)
 - *status* - indicates the new status(0 - Disabled, 1 - Enabled).
 
 

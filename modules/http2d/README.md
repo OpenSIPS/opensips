@@ -21,7 +21,7 @@ reducing the amount of TCP and/or TLS handshakes performed when loading a given 
 
 The OpenSIPS **http2d** server includes support for both "h2" (TLS secured)
 and "h2c" (cleartext) HTTP/2 connections.  The requests arrive at
-*opensips.cfg* level using the [http2 request](#event_e_http2_request) event,
+*opensips.cfg* level using the [http2 request](#e_http2_request) event,
 where script writers may process the data and respond accordingly.
 
 
@@ -225,7 +225,7 @@ this parameter will hold its contents
 
 
 Note that this event is currently designed to be mainly consumed by an *event_route*,
-since that is the only way to gain access to the [http2 send response](#func_http2_send_response)
+since that is the only way to gain access to the [http2 send response](#http2_send_responsecode-headers_json-data)
 function in order to build custom response messages.  On the other hand,
 if the application does not mind the answer being always a 200 with no payload,
 this event can be successfully consumed through any other EVI-compatible delivery channel ☺️

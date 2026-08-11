@@ -32,7 +32,7 @@ module parameters (script level) and via an SQL table.
 
 
 A script example which details this module's usage can be found in
-[tls example](#opensips_with_tls_script_example).
+[tls example](#opensips-with-tls---script-example).
 
 
 ### TLS libraries
@@ -49,7 +49,7 @@ to the higher-level OpenSIPS transport modules.
 
 
 The TLS library selection ca be configured through the
-[tls library](#param_tls_library) module parameter.
+[tls library](#tls_library-string) module parameter.
 
 
 ### TLS domains
@@ -129,7 +129,7 @@ The following modules must be loaded before this module:
 
 
 - *tls_openssl* or *tls_wolfssl*,
-unless [tls library](#param_tls_library) is set to 'none'.
+unless [tls library](#tls_library-string) is set to 'none'.
 
 
 #### Dependencies of external libraries
@@ -514,7 +514,7 @@ modparam("tls_mgm", "verify_cert", "[dom]0")
 Activates SSL_VERIFY_FAIL_IF_NO_PEER_CERT in the ssl_context. For a
 detailed explanation, check the *openssl*
 documentation. This parameter only makes sense for server domains
-and if the [verify cert](#param_verify_cert) parameter is also set.
+and if the [verify cert](#verify_cert-domainstring) parameter is also set.
 
 
 The domain part represents the name of the TLS domain.
@@ -580,7 +580,7 @@ domain matching process.
 > variables are set, the first one takes precedence.
 
 
-For the AVP usage example, refer to  [domains param](#param_server_domain_client_domain).
+For the AVP usage example, refer to  [domains param](#server_domain-client_domain-string).
 
 
 *No default value.*
@@ -863,7 +863,7 @@ The SIP domains used to match a TLS connection with a
 virtual TLS domain. For TLS server domains, these values will be
 matched against the hostname provided in the TLS Servername extension(SNI).
 For TLS client domains, the values will be compared with the value of
-the [client sip domain avp](#param_client_sip_domain_avp) AVP.
+the [client sip domain avp](#client_sip_domain_avp-string) AVP.
 
 
 The parameter accepts a list of FQDNs or the special values:

@@ -246,8 +246,8 @@ modparam("proto_bins", "trace_destination", "hep_dest")
 
 
 This controls whether tracing for tls is on or not. You still need to define
-[trace destination](#param_trace_destination)in order to work, but this value will be
-controlled using mi function [mi bins trace](#mi_bins_trace).
+[trace destination](#trace_destination-string)in order to work, but this value will be
+controlled using mi function [mi bins trace](#bins_trace).
 
 
 ```opensips title="Set trace_on parameter"

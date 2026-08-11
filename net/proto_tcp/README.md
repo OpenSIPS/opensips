@@ -277,7 +277,7 @@ modparam("proto_tcp", "trace_destination", "hep_dest")
 
 
 This controls whether tracing for tcp is on or not. You still need to define
-[trace destination](#param_trace_destination) in order to work, but this value will be controlled using mi function [tcp trace](#mi_tcp_trace).
+[trace destination](#trace_destination-string) in order to work, but this value will be controlled using mi function [tcp trace](#tcp_trace).
 
 
 ```opensips title="Set trace_on parameter"
@@ -296,7 +296,7 @@ information regarding source and destination ips and ports for the current
 connection. To disable tracing for a specific connection the last call in
 this route must be **drop**, any other exit
 mode resulting in tracing the current connection ( of course you still
-have to define a [trace destination](#param_trace_destination) and trace must be
+have to define a [trace destination](#trace_destination-string) and trace must be
 on at the time this connection is opened.
 
 
@@ -311,8 +311,8 @@ on at the time this connection is opened.
 
 
 > [!WARNING] 
-> If [trace on](#param_trace_on) is
-> set to 0 or tracing is deactived via the mi command [tcp trace](#mi_tcp_trace)
+> If [trace on](#trace_on-int) is
+> set to 0 or tracing is deactived via the mi command [tcp trace](#tcp_trace)
 > this route won't be called.
 
 

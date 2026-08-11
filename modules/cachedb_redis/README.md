@@ -64,7 +64,7 @@ the appropriate messages.
 The following modules must be loaded before this module:
 
 
-- *If a [use tls](#param_use_tls) is defined, the **tls_mgm** module will need to be loaded as well*.
+- *If a [use tls](#use_tls-integer) is defined, the **tls_mgm** module will need to be loaded as well*.
 
 
 #### External Libraries or Applications
@@ -81,7 +81,7 @@ by running 'apt-get install libhiredis-dev'
 Alternatively, if hiredis is not available on your OS repos,
 hiredis can be downloaded from: https://github.com/antirez/hiredis .
 Download the archive, extract sources, run make,sudo make install.
-If TLS connections are enabled via the [use tls](#param_use_tls) modparam,
+If TLS connections are enabled via the [use tls](#use_tls-integer) modparam,
 *hiredis* needs to be compiled with TLS support.
 
 

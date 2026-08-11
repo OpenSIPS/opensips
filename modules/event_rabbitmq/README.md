@@ -62,7 +62,7 @@ default value is '5672'.
 	The default value is ''.
 	* *tls_domain* - indicates which TLS domain (as
 	defined using the *tls_mgm* module) to use for
-	this connection. The [use tls](#param_use_tls) module parameter
+	this connection. The [use tls](#use_tls-integer) module parameter
 	must be enabled.
 	* *persistent* - indicates that the message should be
 	published as persistent *delivery_mode=2*. This
@@ -85,7 +85,7 @@ where the event should be sent.
 The following modules must be loaded before this module:
 
 
-- *tls_mgm* if [use tls](#param_use_tls) is enabled.
+- *tls_mgm* if [use tls](#use_tls-integer) is enabled.
 
 
 #### External Libraries or Applications
@@ -146,7 +146,7 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
 Setting this parameter will allow you to use TLS for broker connections.
 In order to enable TLS for a specific connection, you can use the
 "tls_domain=*dom_name*" parameter in the configuration
-specified through the [socket syntax](#rabbitmq_socket_syntax).
+specified through the [socket syntax](#rabbitmq-socket-syntax).
 
 
 When using this parameter, you must also ensure that
@@ -242,7 +242,7 @@ server restarts. Optional parameter, default is persistent.
 - *tls_domain* - indicates which TLS domain (as
 defined using the *tls_mgm* module) to use for
 this connection. This must be an *amqps* URI and the
-[use tls](#param_use_tls) module parameter must be enabled.
+[use tls](#use_tls-integer) module parameter must be enabled.
 
 
 ```opensips title="Set server_id parameter"
