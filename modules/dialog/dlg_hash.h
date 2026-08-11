@@ -92,6 +92,7 @@ struct dlg_leg_cseq_map {
 
 struct dlg_leg {
 	int id;
+	int branch_id;
 	str tag;
 	str r_cseq;		/* last cseq received targeting this leg */
 	str prev_cseq;	/* prev cseq received targeting this leg */
