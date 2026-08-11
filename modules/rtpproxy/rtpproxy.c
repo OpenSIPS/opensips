@@ -914,7 +914,8 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 	int enable;
 	struct rtpp_set * rtpp_list;
 	struct rtpp_node * crt_rtpp;
-	int found, disabled, prev_disabled, recheck_ticks;
+	int found, disabled, prev_disabled;
+	int recheck_ticks;
 
 	found = 0;
 
@@ -2397,7 +2398,9 @@ int rtpp_check_reload_ver(struct rtpp_set *set)
 	void **set_version;
 	str sid;
 
-	if (!set && my_version != *list_version) {
+	if (!set) {
+		if (my_version == *list_version)
+			return 0;
 		int rc = update_rtpp_proxies(NULL);
 
 		if (rc == 0)
@@ -5294,7 +5297,10 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess,
 	val.rs.len = 0;
 	val.rs.s = "";
 	val.flags = PV_VAL_STR;
-	pv_set_value(msg, &media_pvar, (int)EQ_T, &val);
+	if (pv_set_value(msg, &media_pvar, (int)EQ_T, &val) < 0) {
+		LM_ERR("failed to initialize media pseudo-variable\n");
+		goto exit;
+	}
 
 	ret = rtpproxy_offer_answer(msg, &args, &media_pvar, NULL, body, NULL);
 	if (nh_lock && unlock)
