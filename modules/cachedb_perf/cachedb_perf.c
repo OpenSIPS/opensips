@@ -274,7 +274,7 @@ static unsigned int *pull_stats;       /* PULL_ST_* counters */
 static struct pcache_send_warn {
 	unsigned int last;        /* get_ticks() when we last warned */
 	unsigned int suppressed;  /* failures folded into the next warning */
-} *pull_send_warn;
+} *pull_send_warn, *pull_xcluster_warn;
 
 /* Negative cache (R4).  A key that is genuinely nowhere costs a full
  * round of questions, and SIP retransmits ask again a few hundred
@@ -326,7 +326,12 @@ static int pull_on_miss;               /* modparam; read repair on the get path 
  * outcome of a timeout, and explicitly NOT an abandoned slot: its caller DID
  * collect it, which is the distinction PULL_ST_ABANDONED exists to make */
 #define PULL_ST_ORPHAN_EXPIRED 13
-#define PULL_ST_MAX       14
+/* a pull message arrived on a controller cluster this module does not sync on
+ * and was refused. Non-zero means either a genuine multi-cluster node doing
+ * the right thing, or sync_cluster_id naming a cluster the controller does not
+ * manage - the accompanying warning tells the two apart. */
+#define PULL_ST_FOREIGN_CLUSTER 14
+#define PULL_ST_MAX       15
 /* Two different readinesses, deliberately kept apart:
  *   cluster_ready - the clusterer is bound, the capability is registered and
  *                   membership is being tracked.  Everything cross-node needs
@@ -679,6 +684,7 @@ PULLSTATF(smf_pulls_orphan_evicted, PULL_ST_ORPHAN_EVICTED)
 PULLSTATF(smf_pulls_late_superseded, PULL_ST_LATE_SUPERSEDED)
 PULLSTATF(smf_pulls_late_expired, PULL_ST_LATE_EXPIRED)
 PULLSTATF(smf_pulls_orphan_expired, PULL_ST_ORPHAN_EXPIRED)
+PULLSTATF(smf_pulls_foreign_cluster, PULL_ST_FOREIGN_CLUSTER)
 
 /* A GAUGE, unlike every other pull stat: it should read 0 whenever nothing is
  * being asked.  Anything parked here means slots are taken and not released,
@@ -856,6 +862,8 @@ static const stat_export_t mod_stats[] = {
 	{"pulls_orphan_expired", STAT_IS_FUNC,
 		(stat_var **)smf_pulls_orphan_expired},
 	{"pulls_in_flight",  STAT_IS_FUNC, (stat_var **)smf_pulls_in_flight},
+	{"pulls_foreign_cluster", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_foreign_cluster},
 	{0,0,0}
 };
 
@@ -2330,6 +2338,64 @@ static void pcache_pull_reply(bin_packet_t *in)
 #ifdef CLUSTERER_CTRL_SUPPORT
 /* Controller-plane framing -> the shared paths.  Runs in the controller's
  * receiving process; the cache is in shm, so serving from here is fine. */
+/* A pull message that arrived on a cluster this module does not sync on.
+ *
+ * Rate-limited on the same reasoning as pull_send_failed(): the condition is
+ * either permanent (a misconfigured sync_cluster_id, in which case EVERY
+ * message trips it) or routine (a multi-cluster node seeing its other
+ * clusters' traffic), and an unbounded warn on either is its own incident.
+ * First occurrence warns, then at most once per interval carrying the count
+ * it stands for.
+ *
+ * It is a WARN and not a DBG because the two causes are indistinguishable
+ * from the outside and one of them is a silent, total failure of cross-node
+ * pull: if sync_cluster_id names a cluster the controller does not manage,
+ * this filter discards everything and the only symptom is that pull never
+ * converges. There is no way to detect that at startup - the controller's
+ * get_my_node_id() returns 0 both for "unknown cluster" and for "not joined
+ * yet" (clusterer_controller.c:7693-7699), and mod_init runs pre-fork, long
+ * before any cluster is joined. So the check has to live here, and it has to
+ * say enough to tell the two apart. */
+#define PCACHE_PULL_XCLUSTER_WARN_IVL 60
+
+static void pull_foreign_cluster(int cluster_id)
+{
+	unsigned int now = get_ticks(), held;
+
+	if (pull_stats)
+		__sync_fetch_and_add(&pull_stats[PULL_ST_FOREIGN_CLUSTER], 1);
+	if (!pull_xcluster_warn)
+		return;
+
+	if (pull_xcluster_warn->last != 0 &&
+	    now - pull_xcluster_warn->last < PCACHE_PULL_XCLUSTER_WARN_IVL) {
+		__sync_fetch_and_add(&pull_xcluster_warn->suppressed, 1);
+		return;
+	}
+	pull_xcluster_warn->last = now;
+	held = __sync_lock_test_and_set(&pull_xcluster_warn->suppressed, 0);
+
+	if (held)
+		LM_WARN("cross-node pull: dropped a message that arrived on "
+			"cluster %d but this cache syncs on cluster %d, and %u more "
+			"in the last %ds - expected on a node that belongs to "
+			"several controller clusters; if it is EVERY message then "
+			"sync_cluster_id names a cluster the controller does not "
+			"manage and pull will never converge (running total: the "
+			"pulls_foreign_cluster statistic)\n",
+			cluster_id, sync_cluster_id, held,
+			PCACHE_PULL_XCLUSTER_WARN_IVL);
+	else
+		LM_WARN("cross-node pull: dropped a message that arrived on "
+			"cluster %d but this cache syncs on cluster %d - expected "
+			"on a node that belongs to several controller clusters; if "
+			"it is EVERY message then sync_cluster_id names a cluster "
+			"the controller does not manage and pull will never "
+			"converge (running total: the pulls_foreign_cluster "
+			"statistic)\n",
+			cluster_id, sync_cluster_id);
+}
+
 static void pcache_clctr_recv(int cluster_id, int src_node_id, str *channel,
 		str *payload)
 {
@@ -2340,6 +2406,34 @@ static void pcache_clctr_recv(int cluster_id, int src_node_id, str *channel,
 	str coll, key, val;
 	unsigned char type;
 	int found;
+
+	/* Honour the cluster the message arrived on. This is the ONLY place the
+	 * controller plane can be scoped: register_channel() takes a name and a
+	 * callback and nothing else (clusterer_controller/api.h), cl_ctr_channels[]
+	 * is one global table, and cl_ctr_consumer_dispatch() matches on channel
+	 * NAME alone before passing cl->cluster_id here
+	 * (clusterer_controller.c:7388-7402). The channel name is the fixed
+	 * literal "cdbperf-pull", so every cachedb_perf in every cluster shares
+	 * it.
+	 *
+	 * Serving a foreign cluster's request is wrong twice over: the value
+	 * comes out of THIS cache, which is not the one that cluster is
+	 * converging, and the reply is unicast with send_ucast(sync_cluster_id,
+	 * src_node_id) - a node id from the sender's cluster used to address
+	 * sync_cluster_id's members, where the same number is a different
+	 * machine. Symmetrically an inbound reply could satisfy a pending local
+	 * pull with another cluster's value and credit another cluster's node in
+	 * peer_stats.
+	 *
+	 * This is configuration, not misuse: CL_CTR_MAX_CLUSTERS is 16, and the
+	 * documented hybrid topology has native and controller-managed clusters
+	 * side by side on one node with distinct ids. The BIN transport never had
+	 * the hole - clusterer_api.register_capability() binds delivery to
+	 * sync_cluster_id, so scoping happens before the callback. */
+	if (cluster_id != sync_cluster_id) {
+		pull_foreign_cluster(cluster_id);
+		return;
+	}
 
 	if (left < 6)
 		goto bad;
@@ -4476,10 +4570,11 @@ static int mod_init(void)
 			pull_next_id = shm_malloc(sizeof *pull_next_id);
 			pull_stats = shm_malloc(PULL_ST_MAX * sizeof *pull_stats);
 			pull_send_warn = shm_malloc(sizeof *pull_send_warn);
+			pull_xcluster_warn = shm_malloc(sizeof *pull_xcluster_warn);
 			peer_stats = shm_malloc((CL_MAX_NODE_ID + 1) * sizeof *peer_stats);
 			pull_lock = lock_alloc();
 			if (!pull_slots || !pull_next_id || !pull_stats || !peer_stats ||
-			        !pull_send_warn ||
+			        !pull_send_warn || !pull_xcluster_warn ||
 			        !pull_lock || !lock_init(pull_lock)) {
 				LM_ERR("no shm for the cross-node pull state\n");
 				return -1;
@@ -4504,6 +4599,7 @@ static int mod_init(void)
 			*pull_next_id = 0;
 			memset(pull_stats, 0, PULL_ST_MAX * sizeof *pull_stats);
 			memset(pull_send_warn, 0, sizeof *pull_send_warn);
+			memset(pull_xcluster_warn, 0, sizeof *pull_xcluster_warn);
 			if (pull_negative_ms < 0 || pull_negative_ms > 2000) {
 				LM_ERR("pull_negative_ms must be within 0..2000 (0 = off) "
 					"- a negative that outlives a retransmit turns a "
