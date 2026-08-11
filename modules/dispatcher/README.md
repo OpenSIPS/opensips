@@ -576,7 +576,7 @@ chapter for more details.
 
 
 For more info on how to define and populate a cluster (with OpenSIPS 
-nodes) see the [clusterer](../clusterer) module.
+nodes) see the [clusterer](../clusterer/README.md) module.
 
 
 *Default value is "0 (none)".*
