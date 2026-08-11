@@ -414,8 +414,7 @@ msg_set_pseudoVar(msgobject *self, PyObject *args)
 {
     str hmodel;
     pv_spec_t model;
-    int retval;
-    pv_value_t val;
+	pv_value_t val;
  
     if (self->msg == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
@@ -440,16 +439,9 @@ msg_set_pseudoVar(msgobject *self, PyObject *args)
         return Py_None;
     }
     val.flags = PV_VAL_STR;
-    retval = pv_set_value(self->msg, &model, EQ_T, &val);
-    if (retval >= 0){
-        Py_INCREF(Py_None);
-        return Py_None;
-    }else{
-        Py_INCREF(Py_None);
-        return Py_None;
-    }
-    Py_INCREF(Py_None);
-    return Py_None;
+	pv_set_value(self->msg, &model, EQ_T, &val);
+	Py_INCREF(Py_None);
+	return Py_None;
 
 }
 
