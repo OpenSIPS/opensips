@@ -54,6 +54,7 @@ jobs:
           echo "$GITHUB_WORKSPACE/coverity-tools/bin" >> "$GITHUB_PATH"
 
       - name: Build all supported OpenSIPS modules
+        id: build
         env:
           COMPILER: gcc
           BUILD_OS: ubuntu-22.04
@@ -72,6 +73,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Submit Coverity analysis
+        id: submit
         env:
           COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
           COVERITY_EMAIL: ${{ secrets.COVERITY_EMAIL }}
@@ -87,3 +89,25 @@ jobs:
             --form "version=$VERSION" \
             --form "description=GitHub Actions master $GITHUB_SHA" \
             "https://scan.coverity.com/builds?project=OpenSIPS%2Fopensips"
+
+      - name: Publish build summary
+        if: always()
+        run: |
+          {
+            echo "## Coverity build summary"
+            echo
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Build: \`${{ steps.build.outcome }}\`"
+            echo "- Coverity submission: \`${{ steps.submit.outcome }}\`"
+            if [ -x ./opensips ]; then
+              echo
+              echo '```'
+              ./opensips -V 2>&1
+              echo '```'
+            else
+              echo "- OpenSIPS binary: not produced"
+            fi
+            if [ -d cov-int ]; then
+              echo "- Coverity intermediate data: \`$(du -sh cov-int | awk '{print $1}')\`"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
