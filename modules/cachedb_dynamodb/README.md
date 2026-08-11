@@ -65,7 +65,7 @@ cachedb_url: *modparam("cachedb_dynamodb", "cachedb_url",
 
 
 For additional examples of how cachedb_url should be formatted, refer to the 
-[cachedb_url (string)](#param_cachedb_url) section.
+[cachedb_url (string)](#cachedb_url-string) section.
 
 
 To enable TTL (Time to Live) for the table, which can be used with operations like set,

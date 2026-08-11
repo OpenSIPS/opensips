@@ -11,8 +11,8 @@ description: "This module provides a way to generate universally unique identifi
 
 This module provides a way to generate universally unique identifiers
 (UUID) as specified in RFC 4122. The UUID is provided as a string
-representation by reading the [uuid](#pv_uuid)
-pseudo-variable or calling the [uuid](#func_uuid)
+representation by reading the [uuid](#uuid)
+pseudo-variable or calling the [uuid](#uuidout_var-version-namespace-name)
 script function.
 
 

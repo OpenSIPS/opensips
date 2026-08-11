@@ -22,7 +22,7 @@ For example, contacts may only be directly manipulated in memory in
 order to guarantee fast interactions while being asynchronously
 synchronized to an SQL database. The latter helps achieve restart
 persistency. Consult the
-**[working mode preset](#param_working_mode_preset)**
+**[working mode preset](#working_mode_preset-string)**
 parameter for more details on all possible runtime behaviors of the
 module.
 
@@ -154,7 +154,7 @@ which makes all nodes aware of each others' presence. Thus, the
 distributed user location node topologies are able to collectively
 partition the pinging workload and spread it evenly across the current
 number of cluster nodes, at any given point in time.  The
-[pinging mode](#param_pinging_mode) module parameter describes the
+[pinging mode](#pinging_mode-string) module parameter describes the
 built-in pinging heuristics in more detail.
 
 
@@ -190,7 +190,7 @@ this case.
 
 For more details on how to control/select the contact matching algorithm,
 please go to
-**[matching mode](#param_matching_mode)**.
+**[matching mode](#matching_mode-integer)**.
 
 
 ### Dependencies
@@ -204,7 +204,7 @@ The following modules must be loaded before this module:
 
 - *Optionally an SQL database module*.
 - *Optionally a NoSQL database module*.
-- *clusterer, if [cluster mode](#param_cluster_mode)
+- *clusterer, if [cluster mode](#cluster_mode-string)
 is different than "none".*
 
 
@@ -611,7 +611,7 @@ modparam("usrloc", "db_url", "dbdriver://username:password@dbhost/dbname")
 
 URL of a NoSQL database to be used. Only required in a
 cachedb-enabled
-**[cluster mode](#param_cluster_mode)**.
+**[cluster mode](#cluster_mode-string)**.
 
 
 *Default value is "none".*
@@ -628,10 +628,10 @@ modparam("usrloc", "cachedb_url", "mongodb://10.0.0.4:27017/opensipsDB.userlocat
 
 
 This parameter has been kept for backwards compatibility.  It acts as a
-[working mode preset](#param_working_mode_preset) (which it also conflicts with),
-overriding any [cluster mode](#param_cluster_mode),
-[restart persistency](#param_restart_persistency) and
-[sql write mode](#param_sql_write_mode) settings.  Possible values are:
+[working mode preset](#working_mode_preset-string) (which it also conflicts with),
+overriding any [cluster mode](#cluster_mode-string),
+[restart persistency](#restart_persistency-string) and
+[sql write mode](#sql_write_mode-string) settings.  Possible values are:
 
 
 - 0, corresponding to "single-instance-no-db" (see below)
@@ -654,9 +654,9 @@ modparam("usrloc", "db_mode", 2)
 
 
 A pre-defined working mode for the usrloc module.  Setting this
-parameter will override any [cluster mode](#param_cluster_mode),
-[restart persistency](#param_restart_persistency) and
-[sql write mode](#param_sql_write_mode) settings.
+parameter will override any [cluster mode](#cluster_mode-string),
+[restart persistency](#restart_persistency-string) and
+[sql write mode](#sql_write_mode-string) settings.
 
 
 - **"single-instance-no-db"** - This
@@ -693,26 +693,26 @@ all nated contact are loaded from the DB; The lack of memory
 caching also disable the statistics exports.
 - **"federation-cachedb-cluster"** -
 OpenSIPS will run with a "federation-cachedb"
-[cluster mode](#param_cluster_mode) and
-"sync-from-cluster" [restart persistency](#param_restart_persistency).
+[cluster mode](#cluster_mode-string) and
+"sync-from-cluster" [restart persistency](#restart_persistency-string).
 This will require the configuration of multiple "seed" nodes in
 the cluster. Refer to the [federated user location tutorial](https://docs.opensips.org/tutorials/distributed-user-location-federation/) for more
 details.
 - **"full-sharing-cluster"** -
 OpenSIPS will run with a "full-sharing"
-[cluster mode](#param_cluster_mode) and
-"sync-from-cluster" [restart persistency](#param_restart_persistency).
+[cluster mode](#cluster_mode-string) and
+"sync-from-cluster" [restart persistency](#restart_persistency-string).
 This will require the configuration of one of the nodes in the cluster
 as a "seed" node in order to bootstrap the syncing process.
 - **"full-sharing-cachedb-cluster"** -
 OpenSIPS will run with a "full-sharing-cachedb"
-[cluster mode](#param_cluster_mode), where all location data strictly
+[cluster mode](#cluster_mode-string), where all location data strictly
 resides in a NoSQL database, thus it will have natural restart
 persistency.
 
 
 Refer to section
-[distributed sip user location](#distributed_sip_user_location) for details
+[distributed sip user location](#distributed-sip-user-location) for details
 regarding the clustering topologies and their behavior.
 
 
@@ -730,12 +730,12 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 
 
 **This parameter will get overridden if either
-[working mode preset](#param_working_mode_preset) or
-[db mode](#param_db_mode) is set.**
+[working mode preset](#working_mode_preset-string) or
+[db mode](#db_mode-integer-deprecated) is set.**
 
 
 The behavior of the global OpenSIPS user location cluster. Refer to
-section [distributed sip user location](#distributed_sip_user_location) for details.
+section [distributed sip user location](#distributed-sip-user-location) for details.
 
 
 This parameter may take the following values:
@@ -746,24 +746,24 @@ This parameter may take the following values:
 federation-based data sharing. Local AoR metadata is published
 inside a NoSQL database, so other cluster nodes can fork SIP
 traffic over to the current node. Consequently, the
-[location cluster](#param_location_cluster) and
-[cachedb url](#param_cachedb_url) parameters are mandatory.
+[location cluster](#location_cluster-integer) and
+[cachedb url](#cachedb_url-string) parameters are mandatory.
 - *"full-sharing"* -
 Broadcast contact updates (full-mesh mirroring) to all other
 OpenSIPS cluster participants.  Each node will hold the entire
 user location dataset.  Consequently, the
-[location cluster](#param_location_cluster) parameter is mandatory.
+[location cluster](#location_cluster-integer) parameter is mandatory.
 - *"full-sharing-cachedb"* -
 Full contact data management through the use of a NoSQL
 database (somewhat resembling the "sql-only" preset).
 The cluster layer is still required in order to
 be able to partition and spread the pinging workload evenly
 among participating OpenSIPS nodes. Consequently, the
-[location cluster](#param_location_cluster) and
-[cachedb url](#param_cachedb_url) parameters are mandatory.
+[location cluster](#location_cluster-integer) and
+[cachedb url](#cachedb_url-string) parameters are mandatory.
 - *"sql-only"* -
 Multiple OpenSIPS boxes using a common
-[db url](#param_db_url) without necessarily being aware
+[db url](#db_url-string) without necessarily being aware
 of each other.
 
 
@@ -781,8 +781,8 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 
 
 **This parameter will get overridden if either
-[working mode preset](#param_working_mode_preset) or
-[db mode](#param_db_mode) are set.**
+[working mode preset](#working_mode_preset-string) or
+[db mode](#db_mode-integer-deprecated) are set.**
 
 
 Controls the behavior of the OpenSIPS user location following a
@@ -800,9 +800,9 @@ SQL-based restart persistency. This causes all runtime
 in-memory writes (i.e. new registrations, re-registrations or
 de-registrations) to also propagate to an SQL database, from
 which all data will be imported following a restart.
-Choosing this value will make the [db url](#param_db_url)
+Choosing this value will make the [db url](#db_url-string)
 parameter mandatory, as well as cause
-[sql write mode](#param_sql_write_mode) to default to "write-back"
+[sql write mode](#sql_write_mode-string) to default to "write-back"
 instead of "none".
 - *"sync-from-cluster"* - enable
 cluster-based restart persistency. Following a restart,
@@ -812,7 +812,7 @@ direct cluster sync (TCP-based, binary-encoded data transfer).
 Depending on the clustering mode and cluster topology, this will
 require the configuration of one or multiple "seed" nodes in the cluster.
 Choosing this value will make the
-[location cluster](#param_location_cluster) parameter mandatory.
+[location cluster](#location_cluster-integer) parameter mandatory.
 
 
 *Default value is
@@ -830,11 +830,11 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 
 
 **This parameter will get overridden if either
-[working mode preset](#param_working_mode_preset) or
-[db mode](#param_db_mode) are set.**
+[working mode preset](#working_mode_preset-string) or
+[db mode](#db_mode-integer-deprecated) are set.**
 
 
-Only valid if [restart persistency](#param_restart_persistency) is enabled.
+Only valid if [restart persistency](#restart_persistency-string) is enabled.
 Controls the runtime behavior of OpenSIPS writes to the SQL database.
 
 
@@ -857,7 +857,7 @@ database, thanks to a separate timer routine. This dramatically
 speeds up registrations, but also introduces the
 possibility of crashing before the latest contact changes are
 propagated to the database. See the
-[timer interval](#param_timer_interval) for additional configuration.
+[timer interval](#timer_interval-integer) for additional configuration.
 
 
 *Default value is *"none" (no added SQL writes)*.*
@@ -874,7 +874,7 @@ modparam("usrloc", "sql_write_mode", "write-back")
 
 
 What contact matching algorithm to be used. Refer to section
-[contact matching](#contact_matching) for the description of the
+[contact matching](#contact-matching) for the description of the
 algorithms.
 
 
@@ -937,7 +937,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer)
 chapter for more details.
 
 
@@ -945,7 +945,7 @@ Default value is 0 (replication disabled).
 
 
 More details on the user location distribution mechanisms are
-available under [distributed sip user location](#distributed_sip_user_location).
+available under [distributed sip user location](#distributed-sip-user-location).
 
 
 ```opensips title="Setting the location_cluster parameter"
@@ -959,7 +959,7 @@ modparam("usrloc", "location_cluster", 1)
 
 
 Only relevant in **"federation-cachedb"**
-[cluster mode](#param_cluster_mode).  Denotes the HA cluster ID to use in
+[cluster mode](#cluster_mode-string).  Denotes the HA cluster ID to use in
 order to establish the active node within the HA pair, such that only
 that node performs WRITE operations to CacheDB.
 
@@ -978,7 +978,7 @@ modparam("usrloc", "ha_cluster", 4)
 
 
 Only relevant in **"federation-cachedb"**
-[cluster mode](#param_cluster_mode).  Denotes the HA cluster sharing tag to
+[cluster mode](#cluster_mode-string).  Denotes the HA cluster sharing tag to
 use in order to establish the active node within the HA pair, such that
 only that node performs WRITE operations to CacheDB.
 
@@ -1006,7 +1006,7 @@ events, DB queries may be freely performed)
 
 
 More details on the user location replication mechanism are available
-in [distributed sip user location](#distributed_sip_user_location)
+in [distributed sip user location](#distributed-sip-user-location)
 
 
 ```opensips title="Setting the skip_replicated_db_ops parameter"
@@ -1084,8 +1084,8 @@ which contact pinging latency update events will get raised. By
 default, an event is raised for each ping reply (i.e. latency update).
 
 
-If both [latency event min us](#param_latency_event_min_us) and
-[latency event min us delta](#param_latency_event_min_us_delta) are set, the event
+If both [latency event min us](#latency_event_min_us-integer) and
+[latency event min us delta](#latency_event_min_us_delta-integer) are set, the event
 will get raised if either of them is true.
 
 
@@ -1110,8 +1110,8 @@ contact pinging replies. By default, an event is raised for each ping
 reply (i.e. latency update).
 
 
-If both [latency event min us](#param_latency_event_min_us) and
-[latency event min us delta](#param_latency_event_min_us_delta) are set, the event
+If both [latency event min us](#latency_event_min_us-integer) and
+[latency event min us delta](#latency_event_min_us_delta-integer) are set, the event
 will get raised if either of them is true.
 
 
@@ -1129,7 +1129,7 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 #### pinging_mode (string)
 
 
-Depending on the [cluster mode](#param_cluster_mode), the module
+Depending on the [cluster mode](#cluster_mode-string), the module
 can perform contact pinging using one of two possible heuristics:
 
 
@@ -1159,8 +1159,8 @@ depending on the current "cluster_mode"**
 
 |  |  |  |  |  |  |
 | --- | --- | --- | --- | --- | --- |
-| [cluster mode](#param_cluster_mode) | none | federation-cachedb | full-sharing | full-sharing-cachedb | sql-only |
-| [pinging mode](#param_pinging_mode) | **ownership** | **ownership** | **cooperation** / ownership | **cooperation** | *unmaintained* |
+| [cluster mode](#cluster_mode-string) | none | federation-cachedb | full-sharing | full-sharing-cachedb | sql-only |
+| [pinging mode](#pinging_mode-string) | **ownership** | **ownership** | **cooperation** / ownership | **cooperation** | *unmaintained* |
 
 
 Notice that only the **"full-sharing"**
@@ -1202,7 +1202,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
 
 Enable a timer which will periodically scan a sorted list of contacts
-and raise the [E UL CONTACT REFRESH](#event_e_ul_contact_refresh) for any of
+and raise the [E UL CONTACT REFRESH](#e_ul_contact_refresh) for any of
 them which are past their re-registration time interval limit.  This
 limit may given by registrar's *pn_trigger_interval*
 module parameter, for example.
@@ -1373,7 +1373,7 @@ done (only AOR and contacts, with no other details)
 
 Force a flush of all pending usrloc cache changes to the database.
 Normally, this routine runs every
-[timer interval](#param_timer_interval) seconds.
+[timer interval](#timer_interval-integer) seconds.
 
 
 #### ul_add
@@ -1440,7 +1440,7 @@ resides (Ex: location).
 - *AOR (optional)* - only delete/sync this
 user AOR, not the whole table.  Format: "username[@domain]"
 (*domain* is required only if
-[use domain](#param_use_domain) option is on).
+[use domain](#use_domain-integer) option is on).
 
 
 #### ul_cluster_sync
@@ -1448,15 +1448,15 @@ user AOR, not the whole table.  Format: "username[@domain]"
 
 This command will only take effect if the target OpenSIPS instance is
 paired with a hot backup instance, while running under a
-cluster-enabled [working mode preset](#param_working_mode_preset).
+cluster-enabled [working mode preset](#working_mode_preset-string).
 
 
 The current node will locate a healthy donor node within the
-[location cluster](#param_location_cluster) and issue a sync request to
+[location cluster](#location_cluster-integer) and issue a sync request to
 it. The donor node will then proceed to push all of its user location
 data over to the current node, via the binary interface. The received
 data will be merged with existing data. Conflicting contacts (matched
-according to [matching mode](#param_matching_mode)) are overwritten
+according to [matching mode](#matching_mode-integer)) are overwritten
 only if the sync data is newer than the current data.
 
 
@@ -1592,7 +1592,7 @@ E_UL_CONTACT_DELETE events will be raised.
 
 
 Parameters: same as the
-[E UL CONTACT INSERT](#event_e_ul_contact_insert) event
+[E UL CONTACT INSERT](#e_ul_contact_insert) event
 
 
 #### E_UL_CONTACT_UPDATE
@@ -1603,7 +1603,7 @@ another registration message.
 
 
 Parameters: same as the
-[E UL CONTACT INSERT](#event_e_ul_contact_insert) event
+[E UL CONTACT INSERT](#e_ul_contact_insert) event
 
 
 #### E_UL_CONTACT_REFRESH
@@ -1613,7 +1613,7 @@ This event may only be raised for RFC 8599 (Push Notification)
 enabled contacts.
 
 
-Set [contact refresh timer](#param_contact_refresh_timer) to
+Set [contact refresh timer](#contact_refresh_timer-boolean) to
 *true* in order to enable this event.  The event is
 raised within reasonable time before an RFC 8599 enabled contact
 will expire, such that the script writer can take action,
@@ -1666,8 +1666,8 @@ dialed number, etc.).
 Using the *req_callid*, if a dialog has been
 created for the pending request, this dialog may be temporarily
 loaded inside the event_route using the
-[load_dialog_ctx()](../dialog#func_load_dialog_ctx) and
-[unload_dialog_ctx()](../dialog#func_unload_dialog_ctx)
+[load_dialog_ctx()](../dialog/README.md#load_dialog_ctx-dialog--id_type) and
+[unload_dialog_ctx()](../dialog/README.md#unload_dialog_ctx)
 functions of the dialog module.
 
 
@@ -1675,14 +1675,14 @@ functions of the dialog module.
 
 
 This event is raised when a contact pinging latency matches either
-of the [latency event min us](#param_latency_event_min_us) or
-[latency event min us delta](#param_latency_event_min_us_delta) filters. If none of
+of the [latency event min us](#latency_event_min_us-integer) or
+[latency event min us delta](#latency_event_min_us_delta-integer) filters. If none of
 these filters is set, this event will get raised for each successful
 contact ping operation.
 
 
 Parameters: same as the
-[E UL CONTACT INSERT](#event_e_ul_contact_insert) event
+[E UL CONTACT INSERT](#e_ul_contact_insert) event
 
 
 ## Developer Guide

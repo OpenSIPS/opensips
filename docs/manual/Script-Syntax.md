@@ -76,7 +76,7 @@ There are different types of routes :
 What are the existing **top routes**, when they are triggered, what kind of SIP messages is handled, what SIP operations are allowed and other are documented in the [types of routes section](Script-Routes.md).  
 \
 The **sub-routes** have names and they are to be called from any other route (top or sub) in the script via their names. The **sub-routes** may take parameters (when called) or return a numerical code (avoid returning 0 value as this will terminate your whole script. The **sub-routes** are similar to functions / procedure in any programing language.
-See the [description of the *route*](Script-CoreFunctions.md#setuser) directive.
+See the [description of the *route*](Script-CoreFunctions.md#setuseruser) directive.
 
 ## Data Types
 
@@ -97,7 +97,7 @@ The OpenSIPS scripting language supports the following data types:
 * *map* via the **[`$json`](../../modules/json/README.md#jsonid)** and **[`$xml`](../../modules/xml/README.md#xmlpath)** variables
 
 ## Function Calling Conventions
-All OpenSIPS [core](./Script-CoreFunctions.md) and [module](./Function-Index.md) functions internally share the same function interface, such that they benefit from the following calling convention:
+All OpenSIPS [core](./Script-CoreFunctions.md) and module functions internally share the same function interface, such that they benefit from the following calling convention:
 
   
 

@@ -14,7 +14,7 @@ ongoing calls. It can be used to trigger a call (either blind or attended)
 transfer, or put a call on hold from the proxy side, rather than the
 end-device side.
 The module binds on top of the [OpenSIPS Dialog
-module](../dialog) to get information about the ongoing calls, as well as
+module](../dialog/README.md) to get information about the ongoing calls, as well as
 storing information about new calls that will be started.
 
 
@@ -28,7 +28,7 @@ One of the biggest challenge when doing Call Transfer scenarios is linking
 new calls to the old calls being transferred, especially in blind call
 transfer scenarios. In order to solve this challenge, the module can be
 configured to refer old legs in two different modes, changeable using the
-[mode](#param_mode) parameter:
+[mode](#mode-stringinteger) parameter:
 
 
 - Automatically (default mode), by adding a special parameter to the
@@ -38,7 +38,7 @@ new call. The module will find it, link the new call to the old call,
 and remove the parameter from the URI.
 - Manually, by using custom/external logic (such as a database, or
 local storage), to match the old call. In this mode, the user has to
-explicitly call the [call blind replace](#func_call_blind_replace)
+explicitly call the [call blind replace](#call_blind_replacecallid-leg)
 function to link the two calls together.
 
 
@@ -46,7 +46,7 @@ The module can also be used to catch *Notify refer* events
 and reply to them from the OpenSIPS level. However, note that in *auto* mode even if the NOTIFY is handled when the dialog is matched,
 the request will still continue its execution of the script, unlike when
 *manual* mode is used with the
-[call transfer notify](#func_call_transfer_notify) function. In order to avoid sending
+[call transfer notify](#call_transfer_notify) function. In order to avoid sending
 the NOTIFY to the end-point, you have to drop it, like below:
 
 
@@ -99,11 +99,11 @@ the dialog that is being replaced. this parameter will be
 automatically removed when the new call is received.
 - *manual* / *1* - the user
 will create its own logic to match the new calls, and will
-call the [call blind replace](#func_call_blind_replace) function
+call the [call blind replace](#call_blind_replacecallid-leg) function
 to make OpenSIPS aware of the pair. Note that this mode does
 not handle automatically the *Notify refer*
 either, so you also have to use the
-[call transfer notify](#func_call_transfer_notify) function to handle
+[call transfer notify](#call_transfer_notify) function to handle
 them.
 - *callid* / *2* - similar
 to the *param* value, except that instead
@@ -386,7 +386,7 @@ opensips-cli -x mi call_hold \
 
 
 MI command to resume a call from an onhold state put by the
-[mi call hold](#mi_call_hold) call.
+[mi call hold](#call_hold) call.
 
 
 Command returns *OK* if any of the legs

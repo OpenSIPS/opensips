@@ -95,7 +95,7 @@ modparam("event_flatstore", "delimiter", ";")
 
 
 Optional replacement sequence that will be written *instead
-of* the [`delimiter`](#param_delimiter)
+of* the [`delimiter`](#delimiter-string)
 whenever this character (or sequence) occurs inside a string
 parameter.
 This allows you to keep the log file parse-friendly even when user

@@ -53,7 +53,7 @@ With the help of the EBR support, more advanced routing scenarios are
 possible now, scenarios where you need to handle and put together different
 processing as type and time, like the handling of various calls with the 
 handling of registrations or with the DTMF extraction. For more, see
-the [Examples](#usage_examples) section.
+the [Examples](#usage-examples) section.
 
 
 ### Dependencies

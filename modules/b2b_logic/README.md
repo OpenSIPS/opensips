@@ -34,7 +34,7 @@ end points in a session(Third Party Call Control).
 
 High Availability for B2B sessions can be achieved by enabling the clustering support
 offered by the the lower *b2b_entities* module (by setting the
-[cluster_id](../b2b_entities#param_cluster_id) modparam from *b2b_entities*).
+[cluster_id](../b2b_entities/README.md#cluster_id-int) modparam from *b2b_entities*).
 
 
 ### Scenario Logic
@@ -44,9 +44,9 @@ After initializing a B2B session, the call legs will be handled by the b2b_logic
 module and the first step will be to put the two initial entities in contact.
 Requests and replies belonging to these dialogs will not enter the script through
 the standard OpenSIPS routes but instead will be handled in b2b_logic dedicated routes
-(defined through the [script req route](#param_script_req_route) and
-[script reply route](#param_script_reply_route) modparams or, the custom routes given as
-parameters to [b2b init request](#func_b2b_init_request)).
+(defined through the [script req route](#script_req_route-str) and
+[script reply route](#script_reply_route-str) modparams or, the custom routes given as
+parameters to [b2b init request](#b2b_init_requestid-flags-req_route-reply_route)).
 The further steps of the scenario can be implemented in these routes, by calling
 dedicated b2b_logic script functions in order to perform various actions. Normal
 "proxy-like" OpenSIPS functions should not be executed in the b2b_logic routes.
@@ -56,7 +56,7 @@ Some messages will be handled automatically by the module and will not enter the
 b2b_logic routes at all (BYE requests received while in the process of bridging two
 entities, ACKs/BYEs/replies for disconnected entities). Also, if no dedicated b2b_logic
 reply route is defined, replies will be handled internally by the module, with the
-same effects as calling [b2b handle reply](#func_b2b_handle_reply) from such a route if it were defined.
+same effects as calling [b2b handle reply](#b2b_handle_replyflags) from such a route if it were defined.
 
 
 ### Dependencies
@@ -501,8 +501,8 @@ modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2 seconds
 
 This function initializes a new B2B session based on an initial INVITE.
 A new server entity and a new client entity must be created before running
-this function, with [b2b server new](#func_b2b_server_new) and
-[b2b client new](#func_b2b_client_new), respectively. These are the initial
+this function, with [b2b server new](#b2b_server_newid-adv_contact-extra_hdrs-extra_hdr_bodies) and
+[b2b client new](#b2b_client_newid-dest_uri-proxy-from_dname-adv_contact-extra_hdrs-extra_hdr_bodies), respectively. These are the initial
 entities to be connected and further scenario logic can be implemented in
 the b2b_logic dedicated routes.
 
@@ -521,11 +521,11 @@ scripting or dedicated routes are required.
    - *preserve-to* - Preserve To: header.
 - *req_route (string, optional)* - name of the script route
 to be called when requests belonging to this B2B session are received. This
-parameter will override the global [script req route](#param_script_req_route)
+parameter will override the global [script req route](#script_req_route-str)
 modparam for this particular B2B session.
 - *reply_route (string, optional)* - name of the script route
 to be called when replies belonging to this B2B session are received. This
-parameter will override the global [script reply route](#param_script_reply_route)
+parameter will override the global [script reply route](#script_reply_route-str)
 modparam for this particular B2B session.
 
 
@@ -561,7 +561,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 
 This function creates a new server entity (dialog where OpenSIPS acts as a UAS)
 to be used for initializing a new B2B session. It should only be
-used for initial INVITES, before calling [b2b init request](#func_b2b_init_request).
+used for initial INVITES, before calling [b2b init request](#b2b_init_requestid-flags-req_route-reply_route).
 
 
 Parameters:
@@ -599,8 +599,8 @@ if(is_method("INVITE") && !has_totag()) {
 
 This function creates a new client entity (dialog where OpenSIPS acts as a UAC)
 to be used for initializing a new B2B session or for a bridge action. The function
-can be used before calling [b2b init request](#func_b2b_init_request) or
-[b2b bridge](#func_b2b_bridge).
+can be used before calling [b2b init request](#b2b_init_requestid-flags-req_route-reply_route) or
+[b2b bridge](#b2b_bridgeentity1-entity2-provmedia_uri-flags).
 
 
 Parameters:
@@ -658,7 +658,7 @@ media server to be connected with the caller while the callee answers.
    - *max_duration=[nn]* - Maximum duration of the B2B
    session. If the lifetime expires, the B2BUA will send BYE messages to both
    ends and delete the record. This per-bridge value takes precedence over the
-   global [max duration](#param_max_duration) module parameter.
+   global [max duration](#max_duration-int) module parameter.
    Example: "max_duration=300".
    - *notify* - Enable rfc3515 NOTIFY to inform the agent
    sending the REFER of the status of the reference.
@@ -696,7 +696,7 @@ route[b2b_logic_request] {
 
 This function can be used to retry a failed bridging action by contacting
 a new destination. A new client entity must be created before running this
-function with [b2b client new](#func_b2b_client_new).
+function with [b2b client new](#b2b_client_newid-dest_uri-proxy-from_dname-adv_contact-extra_hdrs-extra_hdr_bodies).
 
 
 Parameters:
@@ -845,7 +845,7 @@ route[b2b_logic_request] {
 
 This function sends a BYE request to the entity that sent
 the current request. It is not required to also call
-[b2b delete entity](#func_b2b_delete_entity) in order to delete
+[b2b delete entity](#b2b_delete_entity) in order to delete
 the current entity.
 
 

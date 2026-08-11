@@ -69,7 +69,7 @@ just as you would have done with the current alias_db module.
 
 
 The functions you can use are listed in the
-[exported functions](#exported_functions) section below.
+[exported functions](#exported-functions) section below.
 
 
 On the Perl side, there are a number of functions that let you read and modify the

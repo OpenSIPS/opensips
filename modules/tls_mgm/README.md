@@ -32,7 +32,7 @@ module parameters (script level) and via an SQL table.
 
 
 A script example which details this module's usage can be found in
-[tls example](#opensips_with_tls_script_example).
+[tls example](#opensips-with-tls---script-example).
 
 
 ### TLS libraries
@@ -49,7 +49,7 @@ to the higher-level OpenSIPS transport modules.
 
 
 The TLS library selection ca be configured through the
-[tls library](#param_tls_library) module parameter.
+[tls library](#tls_library-string) module parameter.
 
 
 ### TLS domains
@@ -129,7 +129,7 @@ The following modules must be loaded before this module:
 
 
 - *tls_openssl* or *tls_wolfssl*,
-unless [tls library](#param_tls_library) is set to 'none'.
+unless [tls library](#tls_library-string) is set to 'none'.
 
 
 #### Dependencies of external libraries
@@ -305,7 +305,7 @@ modparam("tls_mgm", "tls_method", "[dom]-")              # all supported
 ```
 
 
-#### certificate ([domain](string)
+#### certificate ([domain]\(string\))
 
 
 Public certificate file for OpenSIPS. It will be used as
@@ -325,7 +325,7 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 ```
 
 
-#### private_key ([domain](string)
+#### private_key ([domain]\(string\))
 
 
 Private key of the above certificate. I must be kept in a
@@ -344,7 +344,7 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 ```
 
 
-#### ca_list ([domain](string)
+#### ca_list ([domain]\(string\))
 
 
 List of trusted CAs. The file contains the certificates
@@ -364,7 +364,7 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 ```
 
 
-#### ca_dir ([domain](string)
+#### ca_dir ([domain]\(string\))
 
 
 Directory storing trusted CAs. The certificates in the directory
@@ -385,7 +385,7 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 ```
 
 
-#### crl_dir ([domain](string)
+#### crl_dir ([domain]\(string\))
 
 
 Directory storing certificate revocation lists (CRLs). The domain
@@ -403,7 +403,7 @@ modparam("tls_mgm", "crl_dir", "[dom]/mycerts/crls")
 ```
 
 
-#### crl_check_all ([domain](string)
+#### crl_check_all ([domain]\(string\))
 
 
 Setting this parameter with a non-zero integer value enables CRL
@@ -422,7 +422,7 @@ modparam("tls_mgm", "crl_check_all", "[dom]1")
 ```
 
 
-#### ciphers_list ([domain](string)
+#### ciphers_list ([domain]\(string\))
 
 
 You can specify the list of algorithms for authentication
@@ -449,7 +449,7 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 ```
 
 
-#### dh_params ([domain](string)
+#### dh_params ([domain]\(string\))
 
 
 You can specify a file which contains Diffie-Hellman
@@ -468,7 +468,7 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 ```
 
 
-#### ec_curve ([domain](string)
+#### ec_curve ([domain]\(string\))
 
 
 You can specify an elliptic curve which should be used for
@@ -488,7 +488,7 @@ openssl ecparam -list_curves
 *It defaults to not set a elliptic curve.*
 
 
-#### verify_cert ([domain](string)
+#### verify_cert ([domain]\(string\))
 
 
 Activates SSL_VERIFY_PEER in the ssl_context. For a detailed
@@ -508,13 +508,13 @@ modparam("tls_mgm", "verify_cert", "[dom]0")
 ```
 
 
-#### require_cert ([domain](string)
+#### require_cert ([domain]\(string\))
 
 
 Activates SSL_VERIFY_FAIL_IF_NO_PEER_CERT in the ssl_context. For a
 detailed explanation, check the *openssl*
 documentation. This parameter only makes sense for server domains
-and if the [verify cert](#param_verify_cert) parameter is also set.
+and if the [verify cert](#verify_cert-domainstring) parameter is also set.
 
 
 The domain part represents the name of the TLS domain.
@@ -580,7 +580,7 @@ domain matching process.
 > variables are set, the first one takes precedence.
 
 
-For the AVP usage example, refer to  [domains param](#param_server_domain_client_domain).
+For the AVP usage example, refer to  [domains param](#server_domain-client_domain-string).
 
 
 *No default value.*
@@ -863,7 +863,7 @@ The SIP domains used to match a TLS connection with a
 virtual TLS domain. For TLS server domains, these values will be
 matched against the hostname provided in the TLS Servername extension(SNI).
 For TLS client domains, the values will be compared with the value of
-the [client sip domain avp](#param_client_sip_domain_avp) AVP.
+the [client sip domain avp](#client_sip_domain_avp-string) AVP.
 
 
 The parameter accepts a list of FQDNs or the special values:

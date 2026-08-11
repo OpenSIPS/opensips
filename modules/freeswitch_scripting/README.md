@@ -17,7 +17,7 @@ script.
 It allows the OpenSIPS script writer to subscribe
 to generic FreeSWITCH ESL events as well as to run arbitrary
 FreeSWITCH ESL commands and interpret their results.
-It makes use of the [freeswitch](../freeswitch)
+It makes use of the [freeswitch](../freeswitch/README.md)
 module for the management of ESL connections and event subscriptions.
 
 
@@ -194,7 +194,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 
 Run an arbitrary command on an arbitrary FreeSWITCH ESL socket. The
 socket need not necessarily be defined in the database or through
-**[fs subscribe](#param_fs_subscribe)**.
+**[fs subscribe](#fs_subscribe-string)**.
 However, if this is the case, then the "password" part of the URL
 becomes mandatory.
 
@@ -308,7 +308,7 @@ events with the current data (ESL sockets and their events) found in the
 
 
 * this includes any sockets/events provisioned through
-[fs subscribe](#param_fs_subscribe), MI
+[fs subscribe](#fs_subscribe-string), MI
 [mi fs subscribe](#fs_subscribe) commands or previous DB data set.
 
 

@@ -258,7 +258,7 @@ Meaning of the parameters is as follows:
 
 
 - *suffix (string, optional)* - suffix to be appended to the
-domain name, [domain suffix](#param_domain_suffix) if missing
+domain name, [domain suffix](#domain_suffix-string) if missing
 - *service (string, optional)* - service string to be used in 
 the service field
 - *number (string, optional)* - a specific
@@ -306,7 +306,7 @@ Meaning of the parameters is as follows:
 
 
 - *suffix (string, optional)* - suffix to be appended to the
-domain name, [i enum suffix](#param_i_enum_suffix) if missing
+domain name, [i enum suffix](#i_enum_suffix-string) if missing
 - *service (string, optional)* - service string to be used in 
 the service field
 
@@ -327,7 +327,7 @@ Meaning of the parameters is as follows:
 
 
 - *suffix (string, optional)* - suffix to be appended to the
-domain name, [isn suffix](#param_isn_suffix) if missing
+domain name, [isn suffix](#isn_suffix-string) if missing
 - *service (string, optional)* - service string to be used in 
 the service field
 
@@ -366,7 +366,7 @@ Meaning of the parameters is as follows:
 
 
 - *suffix (string, optional)* - suffix to be appended to the
-domain name, [domain suffix](#param_domain_suffix) if missing
+domain name, [domain suffix](#domain_suffix-string) if missing
 - *service (string, optional)* - service string to be used in 
 the service field
 

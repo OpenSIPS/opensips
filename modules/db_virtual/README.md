@@ -228,7 +228,7 @@ Parameters:
 - set_index [int]
 - db_url_index [int]
 - may_use_db_flag [boolean]
-- ignore_retries[boolean](optional)
+- ignore_retries[boolean]\(optional\)
 
 
 db_set 3 2 0 1 means:

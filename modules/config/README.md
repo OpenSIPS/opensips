@@ -1,6 +1,6 @@
 ---
 title: "Config Module"
-description: "The *config* module enables dynamic, runtime configuration of OpenSIPS parameters by loading them from persistent storage at startup and exposing them to the script level via the [config](#pv_config) pseudo-variable."
+description: "The *config* module enables dynamic, runtime configuration of OpenSIPS parameters by loading them from persistent storage at startup and exposing them to the script level via the [config](#configname) pseudo-variable."
 ---
 
 ## Admin Guide
@@ -12,7 +12,7 @@ description: "The *config* module enables dynamic, runtime configuration of Open
 The *config*
 module enables dynamic, runtime configuration of OpenSIPS
 parameters by loading them from persistent storage at startup and
-exposing them to the script level via the [config](#pv_config)
+exposing them to the script level via the [config](#configname)
 pseudo-variable.
 
 
@@ -22,14 +22,14 @@ performance. The cache can be updated in three ways:
 
 
 - *Script* – Assigning a value to the
-[config](#pv_config) pseudo-variable updates the
+[config](#configname) pseudo-variable updates the
 in-memory cache, but this change is not persisted to the database.
 - *MI Commands* – Using
-[mi config push](#mi_config_push) or
-[mi config push bulk](#mi_config_push_bulk) updates one or more variables
+[mi config push](#config_push) or
+[mi config push bulk](#config_push_bulk) updates one or more variables
 in the runtime cache. These updates are also not saved to the database.
 - *Database* – Manually modifying values in the
-database, then triggering the [mi config reload](#mi_config_reload)
+database, then triggering the [mi config reload](#config_reload)
 command, will refresh the in-memory cache with updated values from
 the database.
 
@@ -43,19 +43,19 @@ persists only during the runtime. Any temporary
 changes made through the script or MI commands
 that are not explicitly flushed to the database
 using the
-[mi config flush](#mi_config_flush)
+[mi config flush](#config_flush)
 command will be lost after a restart.
 
 
 In such cases, restart persistent memory becomes useful. When enabled
-via the [enable rpm](#param_enable_restart_persistency) parameter, OpenSIPS no longer
+via the [enable rpm](#enable_restart_persistency-integer) parameter, OpenSIPS no longer
 loads configuration values from the database on startup. Instead, it
 restores the previously saved in-memory cache, preserving runtime changes
 across restarts.
 
 
 If needed, you can still manually re-initialize the cache from the
-database by running the [mi config reload](#mi_config_reload) MI command.
+database by running the [mi config reload](#config_reload) MI command.
 
 
 ### Dependencies
@@ -88,7 +88,7 @@ OpenSIPS with this module loaded:
 
 Database URL used to load the initial configuration values,
 and flush them at runtime using the
-[mi config flush](#mi_config_flush) MI command.
+[mi config flush](#config_flush) MI command.
 
 
 *Default value is "mysql://opensips:opensipsrw@localhost/opensips".*
@@ -169,7 +169,7 @@ modparam("config", "description_column", "desc")
 
 
 Enables restart persistency. Check the
-[restart persistent memory](#restart_persistent_memory) for more information.
+[restart persistent memory](#restart-persistent-memory) for more information.
 
 
 *Default value is "0 / disabled".*

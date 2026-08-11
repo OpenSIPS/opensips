@@ -608,7 +608,7 @@ Actual values are:
 * `3`: info level
 * `4`: debug level
 
-The value of the `log_level` parameter can also be read and set dynamically using the [log_level](Interface-CoreMI.md#log_level) Core MI function or the [`$log_level`](Script-CoreVar.md#log_level) script variable.
+The value of the `log_level` parameter can also be read and set dynamically using the [log_level](Interface-CoreMI.md#log_level--level-pid) Core MI function or the [`$log_level`](Script-CoreVar.md#opensips-log-level---log_level) script variable.
 
 ### log_msg_buf_size
 

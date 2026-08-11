@@ -333,7 +333,7 @@ given cluster.
 The clustering with sharing tag support may be used to control which 
 node in the cluster will perform the pinging/probing to 
 destinations. See the
-[cluster sharing tag](#param_cluster_sharing_tag) option.
+[cluster sharing tag](#cluster_sharing_tag-string) option.
 
 
 This OpenSIPS cluster exposes the **"load_balancer-status-repl"**
@@ -341,7 +341,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer)
 chapter for more details.
 
 
@@ -371,7 +371,7 @@ If defined, only the node with active status of this tag will
 perform the actions (pinging and sharing status).
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 

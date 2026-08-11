@@ -22,7 +22,7 @@ More detailed information about **OpenSIPS Event Interface** can be found in the
 There are several types of events that can be exported by OpenSIPS:
 * **Core events** - internal events that trigger changes of OpenSIPS core/global behavior. A full list of exported core events can be found [here](Interface-CoreEvents.md).
 * **Modules events** - events triggered by each module, when loaded. Each module can export zero, one or more events. Details can be found in the [documentation page](Modules.md) of each module.
-* **Custom events** - triggered from script using the [raise_event()](Script-CoreFunctions.md#raise_event) command.
+* **Custom events** - triggered from script using the [raise_event()](Script-CoreFunctions.md#raise_eventevent-attrs-vals) command.
 
 ---
 
@@ -46,13 +46,13 @@ An external application can subscribe to any exported event and can be notified 
 
 ## Events Subscription
 
-You can subscribe for an event either at startup (using the [subscribe_event()](Script-CoreFunctions.md#subscribe_event) command in the script) or during runtime, using the [event_subscribe](Interface-CoreMI.md#event_subscribe) MI command.
+You can subscribe for an event either at startup (using the [subscribe_event()](Script-CoreFunctions.md#subscribe_eventstring-string--int) command in the script) or during runtime, using the [event_subscribe](Interface-CoreMI.md#event_subscribe) MI command.
 
 ---
 
 ## Examples
 
-In order to configure a RabbbitMQ server to be notified when a custom event is triggered, first you have to subscribe it to the event, using the [subscribe_event()](Script-CoreFunctions.md#subscribe_event) command:
+In order to configure a RabbbitMQ server to be notified when a custom event is triggered, first you have to subscribe it to the event, using the [subscribe_event()](Script-CoreFunctions.md#subscribe_eventstring-string--int) command:
 
 ```opensips
 
@@ -62,7 +62,7 @@ In order to configure a RabbbitMQ server to be notified when a custom event is t
 
 ```
 
-Then, in order to trigger the event from the script, call the [raise_event()](Script-CoreFunctions.md#raise_event) command when needed:
+Then, in order to trigger the event from the script, call the [raise_event()](Script-CoreFunctions.md#raise_eventevent-attrs-vals) command when needed:
 
 ```opensips
 

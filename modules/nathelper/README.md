@@ -167,17 +167,17 @@ modparam("nathelper", "natping_socket", "192.168.1.1:5006")
 
 The name of the Attribute-Value-Pair (AVP) used to store the URI
 containing the received IP, port and protocol. The URI is created
-by the [fix nated register](#func_fix_nated_register) function and this data
+by the [fix nated register](#fix_nated_register) function and this data
 may then be also picked up by the registrar module, which will attach a
 "Received=" attribute to the registration.  Do not forget to change the
-value of corresponding parameter in the [registrar](../registrar)
+value of corresponding parameter in the [registrar](../registrar/README.md)
 module whenever you change the value of this parameter.
 
 
 > [!NOTE]
-> You must set this parameter if you use [fix nated register](#func_fix_nated_register).
+> You must set this parameter if you use [fix nated register](#fix_nated_register).
 Additionally, if you are using registrar, you must also set its symmetric
-[received_avp](../registrar#received_avp) module parameter
+[received_avp](../registrar/README.md#received_avp-str) module parameter
 to the **same value**.
 
 
@@ -233,7 +233,7 @@ modparam("nathelper", "sipping_bflag", "SIPPING_ENABLE")
 
 
 What branch flag to be used in order to activate usrloc contact removal when
-the [ping threshold](#param_ping_threshold) is exceeded.
+the [ping threshold](#ping_threshold-int) is exceeded.
 
 
 *Default value is NULL (disabled).*
@@ -386,7 +386,7 @@ modparam("nathelper", "oldip_skip", "oc")
 
 If a contact does not respond in *ping_threshold*
 seconds since the ping has been sent, the contact shall be removed
-after [max pings lost](#param_max_pings_lost) unresponded pings.
+after [max pings lost](#max_pings_lost-int) unresponded pings.
 
 
 *Default value is 3 (seconds).*
@@ -428,7 +428,7 @@ is the one responsible for pinging.
 The clustering with sharing tag support may be used to control which 
 node in the cluster will perform the pinging/probing to the
 contacts. See the
-[cluster sharing tag](#param_cluster_sharing_tag) option.
+[cluster sharing tag](#cluster_sharing_tag-string) option.
 
 
 For more info on how to define and populate a cluster (with OpenSIPS 
@@ -456,7 +456,7 @@ If defined, only the node with active status of this tag will
 perform the pinging.
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -611,10 +611,10 @@ add_rcv_param(1); # add the parameter to the Contact URI
 
 
 The function creates a URI consisting of the source IP, port and
-protocol and stores it in the [received avp](#param_received_avp) AVP. The URI will
+protocol and stores it in the [received avp](#received_avp-str) AVP. The URI will
 be appended as "received" parameter to Contact in 200 OK and
 may also be stored in the user location database if the same AVP
-is also configured for the [registrar](../registrar) module.
+is also configured for the [registrar](../registrar/README.md) module.
 
 
 This function can be used from REQUEST_ROUTE.

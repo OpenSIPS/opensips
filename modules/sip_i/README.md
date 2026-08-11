@@ -219,7 +219,7 @@ Addressing at entire parameter level as a hex string and at byte level are suppo
 String aliases are not available for all parameters or parameter subfields. Also, not all the possible values of a parameter or parameter subfield have a string alias defined.
 
 
-For more information on supported subfields and aliases check [subfields aliases](#isup_parameter_subfields_and_string_aliases).
+For more information on supported subfields and aliases check [subfields aliases](#isup-parameter-subfields-and-string-aliases).
 
 
 ```opensips title="isup_param usage"

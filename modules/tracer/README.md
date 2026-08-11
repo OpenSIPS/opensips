@@ -151,7 +151,7 @@ to be able to use them here.
 
 When the uri is a *file*, the path to the file has
 to be specified after the colon. The output is always appended if the file
-exists, or created if it doesn't, using [file mode](#param_file_mode)
+exists, or created if it doesn't, using [file mode](#file_mode-integer)
 permissions.
 
 
@@ -160,8 +160,8 @@ format: *syslog[:FACILITY[:LEVEL]]*. The default
 facility and levels are the ones used by OpenSIPS
 (*syslog_facility* and *log_level*).
 These can be tuned using
-[syslog default facility](#param_syslog_default_facility) and
-[syslog default level](#param_syslog_default_level) parameters.
+[syslog default facility](#syslog_default_facility-string) and
+[syslog default level](#syslog_default_level-integer) parameters.
 
 
 One can declare multiple types of tracing under the same trace

@@ -36,13 +36,13 @@ Usage examples:
 
 Types of variables:
 
-* [**script variables**](#script_variables) - as the name says, these variables are strictly bound to the script routes.
+* [**script variables**](#script-variables) - as the name says, these variables are strictly bound to the script routes.
 
-* [**AVP - Attribute Value Pair**](#avp_variables) - the AVPs are dynamic variables (as name) that can be created and attached to a SIP message or transaction (if stateful processing is used). So, you may see them as transaction level variables.
+* [**AVP - Attribute Value Pair**](#avp-variables) - the AVPs are dynamic variables (as name) that can be created and attached to a SIP message or transaction (if stateful processing is used). So, you may see them as transaction level variables.
 
-* [**reference variables**](#reference_variables) - variables to provide access to information from the current context - the current SIP message, transaction, dialog, or from the current process (non SIP information).
+* [**reference variables**](#reference-variables) - variables to provide access to information from the current context - the current SIP message, transaction, dialog, or from the current process (non SIP information).
 
-* [**escape sequences**](#escape_sequences) - escape sequences used to format the strings; they are actually not variables, but rather formatters.
+* [**escape sequences**](#escape-sequences) - escape sequences used to format the strings; they are actually not variables, but rather formatters.
 
 
 
@@ -439,7 +439,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 
 ### Message branch - $msg.branch
 
-`$msg.branch` - similar to [`$branch`](#branch), this variable is used for creating new message branches by writing into it the value of a SIP URI. By reading this variable, you get the SIP URI of the current/last added branch (or of the RURI branch if no additional branch was added so far).
+`$msg.branch` - this variable is used for creating new message branches by writing into it the value of a SIP URI. By reading this variable, you get the SIP URI of the current/last added branch (or of the RURI branch if no additional branch was added so far).
 ```opensips
 
    # creates a new branch
@@ -451,7 +451,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 
 ### SIP URI of a message branch - $msg.branch.uri
 
-`$msg.branch.uri` -  gives read / write access over the SIP URI (as string) of an existing message branch. The message branches are created via [append_msg_branch()](Script-CoreFunctions.md#append_branch) core function or by various modules (like "registrar" module). The message branches are consumed by the TM "t_relay()" function (they are converted to TM branches).  
+`$msg.branch.uri` -  gives read / write access over the SIP URI (as string) of an existing message branch. The message branches are created via [append_msg_branch()](Script-CoreFunctions.md#append_msg_branchuri-qvalue-flags) core function or by various modules (like "registrar" module). The message branches are consumed by the TM "t_relay()" function (they are converted to TM branches).  
 
 The variable supports indexing - it starts from 0, meaning the RURI (or message) branch. The newly added branches will start from 1. So the branch 0 exists all
 the time, there is no need to create it. If no index is specified, the current/last added branch (or of the RURI branch if no additional branch was added so far) will be considered. Negative values are also accepted, meaning indexing from the last branch ( -1 is the latest/higher branch) to the RURI branch. An ***** / ALL index will return the comma separated list with the values from all branches.  
@@ -470,27 +470,27 @@ The variable can be used in REQUEST and FAILURE routes.
 
 ### Destination URI of a message branch - $msg.branch.duri
 
-`$msg.branch.duri` -  100% similar to [`$msg.branch.uri`](#msg.branch.uri), but operating with the Destination-URI value of the message branch.
+`$msg.branch.duri` -  100% similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating with the Destination-URI value of the message branch.
 
 ### PATH of a message branch - $msg.branch.path
 
-`$msg.branch.path` -  100% similar to [`$msg.branch.uri`](#msg.branch.uri), but operating with the PATH value of the message branch.
+`$msg.branch.path` -  100% similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating with the PATH value of the message branch.
 
 ### Q of a message branch - $msg.branch.q
 
-`$msg.branch.q` -  100% similar to [`$msg.branch.uri`](#msg.branch.uri), but operating with the Q value of the message branch.
+`$msg.branch.q` -  100% similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating with the Q value of the message branch.
 
 ### Flags of a message branch - $msg.branch.flags
 
-`$msg.branch.flags` -  100% similar to [`$msg.branch.uri`](#msg.branch.uri), but operating with list (comma separated) of per-branch flags (which are set for the branch).
+`$msg.branch.flags` -  100% similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating with list (comma separated) of per-branch flags (which are set for the branch).
 
 ### SIP socket of a message branch - $msg.branch.socket
 
-`$msg.branch.socket` -  100% similar to [`$msg.branch.uri`](#msg.branch.uri), but operating with the (forced) socket value of the message branch.
+`$msg.branch.socket` -  100% similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating with the (forced) socket value of the message branch.
 
 ### A flag of a message branch - $msg.branch.flag()
 
-`$msg.branch.flag()` -  similar to [`$msg.branch.uri`](#msg.branch.uri), but operating over a single branch flag (for the current branch).  
+`$msg.branch.flag()` -  similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating over a single branch flag (for the current branch).  
 
 The accepted values are 0 for FALSE, positive non-zero for TRUE. The returned values are 0 for FALSE and 1 for TRUE.  
 
@@ -511,7 +511,7 @@ The accepted values are 0 for FALSE, positive non-zero for TRUE. The returned va
 
 ### An attribute of a message branch - $msg.branch.attr()
 
-`$msg.branch.attr()` -  similar to [`$msg.branch.uri`](#msg.branch.uri), but operating over a single branch attribute (attached to the current branch).  
+`$msg.branch.attr()` -  similar to [`$msg.branch.uri`](#sip-uri-of-a-message-branch---msgbranchuri), but operating over a single branch attribute (attached to the current branch).  
 
 An attribute can have whatever name (no need to be pre-defined) and it can have a single value (at a time), string or integer.  
 
@@ -846,11 +846,11 @@ For more details on the meaning of these sub-fields, please also read about the 
 
 ### Socket outbound - $socket_out / $socket_out(field)
 
-`$socket_out` - read-write variable for reading or changing the outbound socket of the message. Originally (before being written/changed) it will return the same socket description as [`$socket_in`](#socket_in) (the inbound socket will be used as outbound socket also). In addition, it also supports the `forced` sub-field, which returns a socket description only if a socket had been explicitly forced; thus, as opposed to the regular [`$socket_out`](#socket_out), if no socket had explicitly been forced, the variable returns NULL.
+`$socket_out` - read-write variable for reading or changing the outbound socket of the message. Originally (before being written/changed) it will return the same socket description as [`$socket_in`](#socket-inbound---socket_in--socket_infield) (the inbound socket will be used as outbound socket also). In addition, it also supports the `forced` sub-field, which returns a socket description only if a socket had been explicitly forced; thus, as opposed to the regular [`$socket_out`](#socket-outbound---socket_out--socket_outfield), if no socket had explicitly been forced, the variable returns NULL.
 
   
 
-The variable also offers detailed read-only access to various attributes/sub-fields of the socket, as  `$socket_out()`. **It provides the same sub-fields as the [`$socket_in`](#socket_in) variable.**
+The variable also offers detailed read-only access to various attributes/sub-fields of the socket, as  `$socket_out()`. **It provides the same sub-fields as the [`$socket_in`](#socket-inbound---socket_in--socket_infield) variable.**
 
 ```opensips
 
