@@ -23,7 +23,6 @@ description: ""
   * [Scripting flags](Script-Flags.md)
   * [Transformations](Script-Tran.md)
   * [Modules documentation](Modules.md)
-  * [Function Index](Function-Index.md)
 * **OpenSIPS Interfaces**
   * [MI interface](Interface-MI.md)
   * [Core MI commands](Interface-CoreMI.md)
