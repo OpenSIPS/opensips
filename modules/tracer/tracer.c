@@ -3244,9 +3244,17 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 		uri = hep_id->name;
 	}
 	/* default tracing scope is dialog */
-	if (try_get_mi_string_param(params, "scope", &aux.s, &aux.len) < 0 ||
-			((traced_scope = st_parse_flags(&aux)) == 0))
+	if (try_get_mi_string_param(params, "scope", &aux.s, &aux.len) < 0)
 		traced_scope = TRACE_DIALOG;
+	else {
+		traced_scope = st_parse_flags(&aux);
+		if (traced_scope < 0) {
+			LM_ERR("invalid trace scope\n");
+			goto error;
+		}
+		if (traced_scope == 0)
+			traced_scope = TRACE_DIALOG;
+	}
 
 	/* default tracing scope is everything */
 	if (try_get_mi_string_param(params, "type", &aux.s, &aux.len) < 0 ||
