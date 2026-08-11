@@ -82,7 +82,7 @@ int init_tmcb_lists(void)
 
 void destroy_tmcb_lists(void)
 {
-	if (!new_tran_tmcb_hl) {
+	if (new_tran_tmcb_hl) {
 		empty_tmcb_list(new_tran_tmcb_hl);
 		shm_free(new_tran_tmcb_hl);
 	}
@@ -260,5 +260,4 @@ void run_trans_callbacks_locked( int type , struct cell *trans,
 
 	UNLOCK_REPLIES(trans);
 }
-
 
