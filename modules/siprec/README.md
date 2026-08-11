@@ -44,7 +44,7 @@ From SIP signalling perspective, the module does not change the call
 flow between the caller and callee. The call is established just as
 any other calls that are not recorded. But for each call that has
 *SIPREC* engaged, a completely separate SIP session
-is started by the SRC (OpenSIPS) towards the SRS, using the [OpenSIPS Back-2-Back module](../b2b_entities). The
+is started by the SRC (OpenSIPS) towards the SRS, using the [OpenSIPS Back-2-Back module](../b2b_entities/README.md). The
 *INVITE* message sent to the SRS contains a
 multi-part body consisting of two parts:
 
@@ -74,9 +74,9 @@ Since OpenSIPS is a SIP Proxy, it does not have any Media Capabilities
 by itself. Thus we need to rely on a different Media Server to capture
 the RTP traffic and fork it to the SRS. The current implementation
 supports both the [RTPProxy](http://www.rtpproxy.org/)
-(through the [RTPProxy module](../rtpproxy)) and
+(through the [RTPProxy module](../rtpproxy/README.md)) and
 [RTPEngine](https://github.com/sipwise/rtpengine)
-(through the [RTEngine module](../rtpengine)) Media
+(through the [RTEngine module](../rtpengine/README.md)) Media
 Servers.
 
 
