@@ -1110,8 +1110,7 @@ static int fixup_bridge_request_flags(void** param)
 	/* ugly hack to move the flag on its right position (as the
 	   fixup_named_flags() will set it with index 0 (as in the def array))
 	   WARNING: this works only because we have a single flag!!!! */
-	if (param)
-		*param = (void*)(unsigned long)B2BL_BR_FLAG_BR_MSG_LATE_BYE;
+	*param = (void*)(unsigned long)B2BL_BR_FLAG_BR_MSG_LATE_BYE;
 
 	return 0;
 }
