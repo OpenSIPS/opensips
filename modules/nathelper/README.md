@@ -170,7 +170,7 @@ containing the received IP, port and protocol. The URI is created
 by the [fix nated register](#fix_nated_register) function and this data
 may then be also picked up by the registrar module, which will attach a
 "Received=" attribute to the registration.  Do not forget to change the
-value of corresponding parameter in the [registrar](../registrar)
+value of corresponding parameter in the [registrar](../registrar/README.md)
 module whenever you change the value of this parameter.
 
 
@@ -614,7 +614,7 @@ The function creates a URI consisting of the source IP, port and
 protocol and stores it in the [received avp](#received_avp-str) AVP. The URI will
 be appended as "received" parameter to Contact in 200 OK and
 may also be stored in the user location database if the same AVP
-is also configured for the [registrar](../registrar) module.
+is also configured for the [registrar](../registrar/README.md) module.
 
 
 This function can be used from REQUEST_ROUTE.

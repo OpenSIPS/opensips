@@ -17,7 +17,7 @@ script.
 It allows the OpenSIPS script writer to subscribe
 to generic FreeSWITCH ESL events as well as to run arbitrary
 FreeSWITCH ESL commands and interpret their results.
-It makes use of the [freeswitch](../freeswitch)
+It makes use of the [freeswitch](../freeswitch/README.md)
 module for the management of ESL connections and event subscriptions.
 
 

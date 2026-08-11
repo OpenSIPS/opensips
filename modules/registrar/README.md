@@ -123,7 +123,7 @@ event parameter) and may be extracted using the {uri.param,name}
 transformation. From here onwards, it is up to the script
 developer to trigger the Push Notification (e.g. possibly by
 sending an HTTP POST with the
-[rest_client](../rest_client) module), thus forcing
+[rest_client](../rest_client/README.md) module), thus forcing
 a re-registration from the device.
 - REGISTER processing is unchanged -- PN-enabled UAs are saved
 just as regular UAs, with the former ones additionally having

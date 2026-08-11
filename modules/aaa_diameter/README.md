@@ -23,7 +23,7 @@ Any module that wishes to use it has to do the following:
 
 The module implements the core AAA OpenSIPS interface, thus offering
 an alternative client implementation to the
-[aaa_radius](../aaa_radius) module which can be useful,
+[aaa_radius](../aaa_radius/README.md) module which can be useful,
 for example, when performing billing and accounting for the live SIP calls.
 
 
@@ -435,7 +435,7 @@ Parameters:
 - *app_id (integer)* - the Diameter Application Identifier
 - *cmd_code (integer)* - the Diameter Command Code
 - *sess_id (string)* - the value of either the *Session-Id* AVP, *Transaction-Id* AVP or a *NULL* value if neither of these transaction-identifying AVPs is present in the Diameter request.
-- *avps_json (string)* - a JSON Array containing the AVPs of the request.  Use the [json](../json) module's **$json** variable to easily parse and work with it.
+- *avps_json (string)* - a JSON Array containing the AVPs of the request.  Use the [json](../json/README.md) module's **$json** variable to easily parse and work with it.
 
 
 Note that this event is currently designed to be mainly consumed by an *event_route*,
