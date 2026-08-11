@@ -932,7 +932,7 @@ get_ice_candidate_priority(str priority)
     }
     // This will return the priority for the RTP component, the RTCP
     // component is RTP - 1
-    return ((type_pref << 24) + 16777215);
+    return (((unsigned int)type_pref << 24) + 16777215U);
 }
 
 
@@ -2035,5 +2035,4 @@ child_init(int rank)
 
     return 0;
 }
-
 
