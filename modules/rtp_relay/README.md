@@ -24,11 +24,11 @@ Moreover, one can specify various flags that modify the way RTP
 engines use each user agent's SDP - these flags are persistent
 throughout the entire RTP session, and are being used for further
 in-dialog requests. These flags can be specified through the 
-[rtp relay](#pv_rtp_relay) and/or
-[rtp relay peer](#pv_rtp_relay_peer) variables at initial INVITE,
+[rtp relay](#rtp_relay) and/or
+[rtp relay peer](#rtp_relay_peer) variables at initial INVITE,
 or through the absolute
-[rtp relay caller](#pv_rtp_relay_caller) and
-[rtp relay callee](#pv_rtp_relay_callee) variables, and are then
+[rtp relay caller](#rtp_relay_caller) and
+[rtp relay callee](#rtp_relay_callee) variables, and are then
 passed along with the RTP relay context until the end of the call.
 They can also be modified during sequential in-dialog requests.
 
@@ -45,7 +45,7 @@ and implement their specific communication protocol.
 
 The module is able to handle RTP relay for multiple branches, with
 different flags flavors. Each branch can have its flags tuned through
-the [rtp relay](#pv_rtp_relay) variable - if the variable
+the [rtp relay](#rtp_relay) variable - if the variable
 is provisioned in the main route, then the flags are inherited
 by all further branches, unless specifically modified per branch.
 To modify a specific branch, one needs to specify the desired
@@ -91,9 +91,9 @@ routes when an RTP event (such as offer, answer, delete) happens.
 This can be enabled by engaging RTP Relay with the *route*
 engine. If the defined routes are not being defined, then the SDP does not
 change. For more information, please check the
-[route offer](#param_route_offer),
-[route answer](#param_route_answer) and
-[route delete](#param_route_delete) parameters.
+[route offer](#route_offer-string),
+[route answer](#route_answer-string) and
+[route delete](#route_delete-string) parameters.
 
 
 ### Dependencies
@@ -148,15 +148,15 @@ is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
 - *ip* - optional, the IP being specified in the
-[rtp relay](#pv_rtp_relay) variable for the current peer.
+[rtp relay](#rtp_relay) variable for the current peer.
 - *type* - optional, the RTP type being specified in the
-[rtp relay](#pv_rtp_relay) variable for the current peer.
+[rtp relay](#rtp_relay) variable for the current peer.
 - *in-iface* - optional, the inbound interface
 that should be used for this peer.
 - *out-iface* - optional, the outbound interface
 that should be used for this peer.
 - *ctx-flags* - optional, global flags that are
-being specified in the [rtp relay ctx](#pv_rtp_relay_ctx) variable.
+being specified in the [rtp relay ctx](#rtp_relay_ctx) variable.
 - *flags* - optional, flags specified for this peer.
 - *peer* - optional, peer flags specified for
 the corresponding peer;
@@ -214,15 +214,15 @@ otherwise the message's body should be considered.
 is a user populated value returned after running a
 *route_offer* route.
 - *ip* - optional, the IP being specified in the
-[rtp relay](#pv_rtp_relay) variable for the current peer.
+[rtp relay](#rtp_relay) variable for the current peer.
 - *type* - optional, the RTP type being specified in the
-[rtp relay](#pv_rtp_relay) variable for the current peer.
+[rtp relay](#rtp_relay) variable for the current peer.
 - *in-iface* - optional, the inbound interface
 that should be used for this peer.
 - *out-iface* - optional, the outbound interface
 that should be used for this peer.
 - *ctx->flags* - optional, global flags that are
-being specified in the [rtp relay ctx](#pv_rtp_relay_ctx) variable.
+being specified in the [rtp relay ctx](#rtp_relay_ctx) variable.
 - *flags* - optional, flags specified for this peer.
 - *peer* - optional, peer flags specified for
 the corresponding peer;
@@ -278,9 +278,9 @@ is a user populated value returned after running a
 *route_offer* route (see the return values section
 below).
 - *ctx->flags* - optional, global flags that are
-being specified in the [rtp relay ctx](#pv_rtp_relay_ctx) variable.
+being specified in the [rtp relay ctx](#rtp_relay_ctx) variable.
 - *delete* - optional, delete flags specified in the
-[rtp relay ctx](#pv_rtp_relay_ctx) variable.
+[rtp relay ctx](#rtp_relay_ctx) variable.
 
 
 Return values are not needed.
@@ -477,10 +477,10 @@ further media requests.
 
 
 The RTP session modifiers used are the ones provisioned through the
-[rtp relay](#pv_rtp_relay),
-[rtp relay peer](#pv_rtp_relay_peer),
-[rtp relay caller](#pv_rtp_relay_caller) and/or
-[rtp relay callee](#pv_rtp_relay_callee) variables.
+[rtp relay](#rtp_relay),
+[rtp relay peer](#rtp_relay_peer),
+[rtp relay caller](#rtp_relay_caller) and/or
+[rtp relay callee](#rtp_relay_callee) variables.
 
 
 The function can be called from the main request route - in this case
@@ -490,16 +490,16 @@ the branch where it was called, or that has an associated
 *rtp_relay* provisioned.
 
 
-When using the scope-relative [rtp relay](#pv_rtp_relay)
+When using the scope-relative [rtp relay](#rtp_relay)
 variable together with this function, note that its meaning depends
 on where it is used. In the main request route of the initial INVITE,
-[rtp relay](#pv_rtp_relay) refers to the caller and
-[rtp relay peer](#pv_rtp_relay_peer) refers to the callee. In a
-branch route, [rtp relay](#pv_rtp_relay) refers to the callee
-branch and [rtp relay peer](#pv_rtp_relay_peer) refers to the
+[rtp relay](#rtp_relay) refers to the caller and
+[rtp relay peer](#rtp_relay_peer) refers to the callee. In a
+branch route, [rtp relay](#rtp_relay) refers to the callee
+branch and [rtp relay peer](#rtp_relay_peer) refers to the
 caller. To avoid depending on this route scope, use
-[rtp relay caller](#pv_rtp_relay_caller) and
-[rtp relay callee](#pv_rtp_relay_callee) instead.
+[rtp relay caller](#rtp_relay_caller) and
+[rtp relay callee](#rtp_relay_callee) instead.
 
 
 Meaning of the parameters is as follows:
@@ -640,7 +640,7 @@ Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
 
 
 The function basically works in the same manner as
-[mi update](#mi_update), but is to be
+[mi update](#rtp_relayupdate), but is to be
 used to update a specific callid. In addition, one can
 also update the *engine* and
 *flags* used for the particular
@@ -701,8 +701,8 @@ flags used for the UAC that generated the request. When
 used in a reply, the other UAC's flags are provisioned.
 
 
-Use [rtp relay caller](#pv_rtp_relay_caller) and
-[rtp relay callee](#pv_rtp_relay_callee) when the script
+Use [rtp relay caller](#rtp_relay_caller) and
+[rtp relay callee](#rtp_relay_callee) when the script
 needs to address the caller or callee side directly,
 independent of the route scope.
 
@@ -740,7 +740,7 @@ as an integer, it is used to disable RTP relay for this UAC.
 
 
 This variable has the same meaning and parameters as the
-[rtp relay](#pv_rtp_relay) variable, except that it
+[rtp relay](#rtp_relay) variable, except that it
 is used to provision the other UAC's flags, except the
 current one. All other fields are similar.
 
@@ -749,15 +749,15 @@ current one. All other fields are similar.
 
 
 This variable has the same parameters as
-[rtp relay](#pv_rtp_relay), but always provisions
+[rtp relay](#rtp_relay), but always provisions
 the caller side of the RTP relay session, independent of
 the route where it is used.
 
 
 In the main request route of the initial INVITE this is
-equivalent to [rtp relay](#pv_rtp_relay). In a branch
+equivalent to [rtp relay](#rtp_relay). In a branch
 route or in replies of the initial INVITE transaction this
-is equivalent to [rtp relay peer](#pv_rtp_relay_peer).
+is equivalent to [rtp relay peer](#rtp_relay_peer).
 After the dialog is established, it addresses the stored
 caller leg directly.
 
@@ -766,16 +766,16 @@ caller leg directly.
 
 
 This variable has the same parameters as
-[rtp relay](#pv_rtp_relay), but always provisions
+[rtp relay](#rtp_relay), but always provisions
 the callee side of the RTP relay session, independent of
 the route where it is used.
 
 
 In the main request route of the initial INVITE this is
-equivalent to [rtp relay peer](#pv_rtp_relay_peer). In a
+equivalent to [rtp relay peer](#rtp_relay_peer). In a
 branch route or in replies of the initial INVITE
 transaction this is equivalent to
-[rtp relay](#pv_rtp_relay). After the dialog is
+[rtp relay](#rtp_relay). After the dialog is
 established, it addresses the stored callee leg directly.
 
 

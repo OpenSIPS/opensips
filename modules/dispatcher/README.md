@@ -32,7 +32,7 @@ into different partitions. Each partition is described by its own
 module parameters will only alter the "default" partition's properties.
 
 
-In order to create a new partition, the [partition](#param_partition)
+In order to create a new partition, the [partition](#partition-string)
 parameter can be used.  If none of the 8 partition specific parameters
 are defined for the "default" partition, then this partition will not
 be created.  Once the "default" partition is created, any undefined
@@ -579,7 +579,7 @@ given cluster.
 The clustering with sharing tag support may be used to control which 
 node in the cluster will perform the pinging/probing to 
 destinations. See the
-[cluster sharing tag](#param_cluster_sharing_tag) option.
+[cluster sharing tag](#cluster_sharing_tag-string) option.
 
 
 This OpenSIPS cluster exposes the **"dispatcher-status-repl"**
@@ -587,7 +587,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer#capabilities-layer)
 chapter for more details.
 
 
@@ -612,13 +612,13 @@ modparam("dispatcher", "cluster_id", 9)
 The name of the sharing tag (as defined per clusterer modules) to 
 control which node is responsible for perform the self-triggered
 actions in the module. Such actions may be the destination probing
-(see also the [cluster probing mode](#param_cluster_probing_mode) parameter)
+(see also the [cluster probing mode](#cluster_probing_mode-string) parameter)
 or sharing the changes in the destination status.
 If defined, only the node with active status of this tag will 
 perform the actions (pinging and sharing status).
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -647,7 +647,7 @@ using the clustering support. It is about which node in the cluster
 pings which gateway/destination.
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -659,7 +659,7 @@ cluster will independently ping all the defined destinations,
 an "all" pings "all" mode.
 - **"by-shtag"** - all the destinations
 are pinged by only one node in the cluster, the node having the
-[cluster sharing tag](#param_cluster_sharing_tag) active. By 
+[cluster sharing tag](#cluster_sharing_tag-string) active. By 
 activating the sharing tag on a different node, the pinging
 duty will be transferred to another node in the cluster.
 - **"distributed"** - the pinging
@@ -1007,7 +1007,7 @@ which tweak the function's behavior:
   - 'f' (failover support): causes the remaining
 addresses from the destination set to be stored within an
 internally managed AVP.  You may then use
-[ds next dst](#func_ds_next_dst) to switch to the next
+[ds next dst](#ds_next_dstpartition) to switch to the next
 address, thus achieving serial forking to all possible destinations
   - 'u' (user only): will specify that only the URI user part
 will be used for hashing
@@ -1058,12 +1058,12 @@ ds_select_dst($var(setid), $var(alg), $var(flags), $var(part), $var(max_res));
 
 The method selects a destination from addresses set and rewrites the
 hostname and port parts of the Request-URI (*$ru*).
-Its parameters have same meaning as in [ds select dst](#func_ds_select_dst).
+Its parameters have same meaning as in [ds select dst](#ds_select_dstset-alg-flags-partition-max_res).
 
 
 If the "f" (failover support) flag is present, the rest of the
 addresses from the destination set will be stored in an internally
-managed AVP. You may then use [ds next domain](#func_ds_next_domain) to
+managed AVP. You may then use [ds next domain](#ds_next_domainpartition) to
 switch to the next address in the list, thus achieving serial forking
 to all possible destinations.
 
@@ -1102,10 +1102,10 @@ Mark the last used address from partition's destination set as
 inactive ("i"/"I"/"0"), active ("a"/"A"/"1") or probing ("p"/"P"/"2").
 With this function, an automatic detection of failed gateways can be implemented.
 When an address is marked as inactive or probing, it will be ignored by
-[ds select dst](#func_ds_select_dst) and [ds select domain](#func_ds_select_domain).
+[ds select dst](#ds_select_dstset-alg-flags-partition-max_res) and [ds select domain](#ds_select_domainset-alg-flags-partition-max_res).
 If "partition" is omitted, the default partition will be used. This function
-is using the flags set in [ds select dst](#func_ds_select_dst) or
-[ds select domain](#func_ds_select_domain).
+is using the flags set in [ds select dst](#ds_select_dstset-alg-flags-partition-max_res) or
+[ds select domain](#ds_select_domainset-alg-flags-partition-max_res).
 
 
 Possible parameters:

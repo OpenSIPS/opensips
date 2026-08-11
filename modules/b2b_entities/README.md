@@ -267,7 +267,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer#capabilities-layer)
 chapter for more details.
 
 
@@ -304,7 +304,7 @@ modparam("b2b_entities", "passthru_prack", 1)
 
 
 Contact to use in generated messages for UA session started with the
-[b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 ```opensips title="Set advertised_contact parameter"
@@ -319,8 +319,8 @@ modparam("b2b_entities", "advertised_contact", "opensips@10.10.10.10:5060")
 
 
 Default timeout, in seconds, for UA session started with the
-[ua session server init](#func_ua_session_server_init) function or the
-[b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function. After this
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or the
+[b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function. After this
 interval a BYE will be sent and the session will be deleted.
 
 
@@ -343,7 +343,7 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
 
 This function initializes a new UA session by processing an initial INVITE.
 Further requests/replies received belonging to this session will only
-be handled via the [E UA SESSION](#event_e_ua_session) event.
+be handled via the [E UA SESSION](#e_ua_session) event.
 
 
 Parameters:
@@ -357,26 +357,26 @@ for this UA session via the following flags:
 this session in seconds. After this timeout a BYE
 will be sent and the session will be deleted. If this
 is not set, the default timeout, configured with
-[ua default timeout](#param_ua_default_timeout) will be used.
+[ua default timeout](#ua_default_timeout-str) will be used.
 Example: *t3600*
   - *a* - report the receiving of ACK requests
-via the [E UA SESSION](#event_e_ua_session) event.
+via the [E UA SESSION](#e_ua_session) event.
   - *r* - report the receiving of replies via
-the [E UA SESSION](#event_e_ua_session) event.
+the [E UA SESSION](#e_ua_session) event.
   - *d* - disable the automatic sending of ACK
 upon receiving a 200 OK reply for INVITE (in case of UAC session)
 or re-INVITE.
   - *h* - provide the headers of the SIP request/reply
-in the [E UA SESSION](#event_e_ua_session) event.
+in the [E UA SESSION](#e_ua_session) event.
   - *b* - provide the body of the SIP request/reply
-in the [E UA SESSION](#event_e_ua_session) event.
+in the [E UA SESSION](#e_ua_session) event.
   - *n* - do not trigger the
-[E UA SESSION](#event_e_ua_session) event (with event_type
+[E UA SESSION](#e_ua_session) event (with event_type
 *NEW*)  for initial INVITES
 handled with this function.
 - *extra_params (string, optional)* - An arbitrary
 value to be passed to the *extra_params* parameter
-in the [E UA SESSION](#event_e_ua_session) event.
+in the [E UA SESSION](#e_ua_session) event.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -400,8 +400,8 @@ if(is_method("INVITE") && !has_totag()) {
 
 
 Sends a sequential request for a UA session started with the 
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Parameters:
@@ -434,8 +434,8 @@ ua_session_update($var(b2b_key), "OPTIONS");
 
 
 Sends a reply for a UA session started with the 
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Parameters:
@@ -470,8 +470,8 @@ ua_session_reply($var(b2b_key), "INVITE", 180, "Ringing");
 
 
 Terminate a UA session started with the
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Parameters:
@@ -525,7 +525,7 @@ MI FIFO Command Format:
 
 This command starts a new UAC session by sending an initial INVITE.
 Further requests/replies received belonging to this session will only
-be handled via the [E UA SESSION](#event_e_ua_session) event.
+be handled via the [E UA SESSION](#e_ua_session) event.
 
 
 Name: *b2b_entities:ua_session_client_start*
@@ -550,7 +550,7 @@ header to use. If missing and a body is provided,
 - *extra_headers (optional)* - extra headers
 - *flags (optional)* - flags with the same meaning
 as for the *flags* parameter of
-[ua session server init](#func_ua_session_server_init).
+[ua session server init](#ua_session_server_initkey-flags-extra_params).
 - *socket (optional)* - OpenSIPS sending socket
 
 
@@ -567,8 +567,8 @@ to=sip:bob@opensips.org from=sip:alice@opensips.org flags=arhb
 
 
 Sends a sequential request for a UA session started with the
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Name: *b2b_entities:ua_session_update*
@@ -601,8 +601,8 @@ opensips-cli -x mi b2b_entities:ua_session_update key=B2B.436.1925389.1649338095
 
 
 Sends a reply for a UA session started with the
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Name: *b2b_entities:ua_session_reply*
@@ -637,8 +637,8 @@ opensips-cli -x mi b2b_entities:ua_session_reply key=B2B.436.1925389.1649338095 
 
 
 Terminate a UA session started with the
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Name: *b2b_entities:ua_session_terminate*
@@ -664,8 +664,8 @@ opensips-cli -x mi b2b_entities:ua_session_terminate key=B2B.436.1925389.1649338
 
 
 List information about UA sessions started with
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Name: *b2b_entities:ua_session_list*
@@ -695,8 +695,8 @@ MI FIFO Command Format:
 
 This event is triggered for requests/replies belonging to an ongoing UA
 session started with the
-[ua session server init](#func_ua_session_server_init) function or
-the [b2b_entities:ua_session_client_start](#mi_ua_session_client_start) MI function.
+[ua session server init](#ua_session_server_initkey-flags-extra_params) function or
+the [b2b_entities:ua_session_client_start](#b2b_entitiesua_session_client_start) MI function.
 
 
 Note that replies will not be reported at all unless the
@@ -711,7 +711,7 @@ Parameters:
 - *entity_type* - indicates whether this is a
 *UAS* or *UAc* entity.
 - *event_type* - the type of event:
-	- *NEW* - for initial INVITE requests, handled with the [ua session server init](#func_ua_session_server_init) function.
+	- *NEW* - for initial INVITE requests, handled with the [ua session server init](#ua_session_server_initkey-flags-extra_params) function.
 	- *EARLY* - for 1xx provisional responses
 	- *ANSWERED* - for 2xx successful responses
 	- *REJECTED* - for 3xx-6xx failure responses
@@ -726,7 +726,7 @@ a SIP reply
 - *headers* - full list of all SIP headers in the
 message.
 - *extra_params* - an arbitrary value. Currently only
-the [ua session server init](#func_ua_session_server_init) function passes this
+the [ua session server init](#ua_session_server_initkey-flags-extra_params) function passes this
 if the *extra_params* argument is used, and it only
 appears in the *NEW* event_type.
 

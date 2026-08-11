@@ -42,12 +42,12 @@ In addition to the event-driven replication, an OpenSIPS instance will first
 try to learn all the local cache information from another node in the cluster at startup.
 The data synchronization mechanism requires defining one of the nodes in the cluster
 as a "**seed**" node.
-See the [clusterer](../clusterer#capabilities)
+See the [clusterer](../clusterer#capabilities-layer)
 module for details on how to do this and why is it needed.
 
 
 *Note:* You have to explicitly specify which collections
-you want to replicate when you set [cache collections](#param_cache_collections).
+you want to replicate when you set [cache collections](#cache_collections-string).
 
 
 **Limitations:** The clustering operations are not atomic
@@ -63,7 +63,7 @@ and consistency over the cluster nodes is not guaranteed.
 The following modules must be loaded before this module:
 
 
-- *clusterer, if [cluster id](#param_cluster_id)
+- *clusterer, if [cluster id](#cluster_id-int)
 is set.*
 
 
@@ -181,7 +181,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer#capabilities-layer)
 chapter for more details.
 
 

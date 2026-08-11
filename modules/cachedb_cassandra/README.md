@@ -208,7 +208,7 @@ trigger a warning message to the log.
 
 
 This value, if set, only makes sense to be lower than the
-[query timeout](#param_query_timeout) since any query taking longer
+[query timeout](#query_timeout-int) since any query taking longer
 than that value will be dropped anyway.
 
 

@@ -347,7 +347,7 @@ For more information regarding digest authentication see RFC2617,
 RFC3261 and RFC8760.
 
 
-See the paragraph on [www challenge params](#www_challenge_params) for
+See the paragraph on [www challenge params](#www_challengerealm-qop-algorithms) for
 the description of the parameters.
 
 
@@ -439,7 +439,7 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 
 
 This function is the same as 
-[append rpid hf no params](#func_append_rpid_hf). The only difference is
+[append rpid hf no params](#append_rpid_hf). The only difference is
 that it accepts two parameters--prefix and suffix to be added to 
 Remote-Party-ID header field. This function ignores rpid_prefix and 
 rpid_suffix parameters, instead of that allows to set them in every 

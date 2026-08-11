@@ -46,7 +46,7 @@ Currently, the module may be further configured to embed the following
 The following  modules must be loaded before this module:
 
 
-- *dialog* (only if **[use dialog](#param_use_dialog)** is enabled).
+- *dialog* (only if **[use dialog](#use_dialog-integer)** is enabled).
 
 
 #### External Libraries or Applications

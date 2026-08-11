@@ -113,7 +113,7 @@ This variable returns the local To-tag that will be used
 by OpenSIPS for locally sending replies to the current SIP request.
 Yes, this variable should be used only in the context of a SIP
 request and it should be used only in conjunction with the 
-using [send reply](#func_send_reply).
+using [send reply](#send_replycode-reason).
 
 
 Whenever you use it, be sure that the function is used in the same

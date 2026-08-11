@@ -31,7 +31,7 @@ The module is compatible with the
 
 
 In order to convert a SIP message to a SMPP all you need to do
-is to call the [send smpp message](#func_send_smpp_message) function,
+is to call the [send smpp message](#send_smpp_messagesmsc_name-fromtobodyutf-16delivery_receipt) function,
 indicating the SMSc you want to send the message to. The module
 will build the PDU according to the parameters provisioned
 in the database.
@@ -42,7 +42,7 @@ in the database.
 
 When bridging a message received over the SMPP interface,
 OpenSIPS builds a SIP Message and sends it to the outbound
-proxy identified by the [smpp outbound uri](#param_outbound_uri)
+proxy identified by the [smpp outbound uri](#outbound_uri-string)
 module's parameter.
 
 

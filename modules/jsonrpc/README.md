@@ -165,7 +165,7 @@ out more information.
 
 Does a JSON-RPC notification to the JSON-RPC server
 indicated in the *destination*
-parameter, but unlike [jsonrpc request](#func_jsonrpc_request),
+parameter, but unlike [jsonrpc request](#jsonrpc_requestdestination-method-params-ret_var),
 it does not wait for a reply from the JSON-RPC server.
 
 
@@ -173,7 +173,7 @@ This function can be used from any route.
 
 
 The function receives the same parameters as 
-[jsonrpc request](#func_jsonrpc_request), except for the *ret_pvar*. Also, the same values are returned.
+[jsonrpc request](#jsonrpc_requestdestination-method-params-ret_var), except for the *ret_pvar*. Also, the same values are returned.
 
 
 ```opensips title="jsonrpc_notification() function usage"

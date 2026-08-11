@@ -15,7 +15,7 @@ backends such as syslog, SQL, AAA.
 
 To account a transaction and to choose which set of backends to be
 used, the script writer only has to mark the transaction for
-accounting by using the [do accounting](#func_do_accounting) script function.
+accounting by using the [do accounting](#do_accountingtype-flags-table) script function.
 Note that the function is not actually doing the accounting at that
 very time, it is just setting a marker - the actual accounting
 will be done later when the transaction or dialog will be
@@ -29,7 +29,7 @@ spot in special cases via some other script functions.
 The accounting module will log by default a fixed set of attributes
 for the transaction - if you customize your accounting by adding more
 information to be logged, please see the next chapter about extra
-accounting - [ACC extra id](#extra_accounting).
+accounting - [ACC extra id](#extra-accounting).
 
 
 The fixed minimal accounting information is:
@@ -276,7 +276,7 @@ start time and setup time.
 
 In order to have CDRs accounting, first you need to set the
 *cdr* flag when calling
-[do accounting](#func_do_accounting) script function for the
+[do accounting](#do_accountingtype-flags-table) script function for the
 initial INVITE of the dialog.
 
 
@@ -377,7 +377,7 @@ modparam("acc", "detect_direction", 1)
 
 
 Defines the tag-log_value set to be used in extra fields accounting.
-See [ACC extra id](#extra_accounting) for a
+See [ACC extra id](#extra-accounting) for a
 detailed description of the Extra accounting.
 
 
@@ -406,7 +406,7 @@ modparam("acc", "extra_fields","a->2345;b->2346")
 
 
 Defines the tag-log_value set to be used in multi-leg accounting.
-See [multi call legs](#multi_call_legs_accounting) for a
+See [multi call legs](#multi-call-legs-accounting) for a
 detailed description of the Multi Call-Legs accounting.
 
 
@@ -648,11 +648,11 @@ modparam("acc", "acc_time_column", "time")
 
 
 This variable can addressed with the tag names defined
-using [extra fields](#param_extra_fields). If
-[do accounting](#func_do_accounting) isn't called, this
+using [extra fields](#extra_fields-string). If
+[do accounting](#do_accountingtype-flags-table) isn't called, this
 variable is visible during the whole processing of one message,
 enabling calling *acc_XXX_request()*.
-If [do accounting](#func_do_accounting) is called, the variable
+If [do accounting](#do_accountingtype-flags-table) is called, the variable
 will be visible from the first call of this function until the
 actual accounting is being made.
 
@@ -661,9 +661,9 @@ actual accounting is being made.
 
 
 This variable can be addressed with the tag names defined
-using [leg fields](#param_leg_fields) and  a valid leg index
-(<= [acc current leg](#pv_acc_current_leg)). This variable cannot
-be used unless [do accounting](#func_do_accounting) is used. The
+using [leg fields](#leg_fields-string) and  a valid leg index
+(<= [acc current leg](#acc_current_leg-read-only)). This variable cannot
+be used unless [do accounting](#do_accountingtype-flags-table) is used. The
 variable also accepts negative indexes, which start from -1
 (the lastly added leg).
 
@@ -685,7 +685,7 @@ $(acc_leg(caller)[-2])
 
 
 Holds the index of the current leg, starting from 0.  Calling
-[acc new leg](#func_acc_new_leg) will increment this index.
+[acc new leg](#acc_new_leg) will increment this index.
 
 
 ### Exported Functions
@@ -917,7 +917,7 @@ request. The report is packed as an event sent through the OpenSIPS Event
 Interface as *E_ACC_EVENT* if the reply code is a
 positive one (lower than 300), or *E_ACC_MISSED_EVENT*
 for negative or no codes. More information on this in
-[exported events](#exported_events).
+[exported events](#exported-events).
 
 
 Meaning of the parameters is as follows:
@@ -942,7 +942,7 @@ acc_evi_request("403 Destination not allowed");
 #### acc_new_leg()
 
 
-Creates a new leg and increments [acc current leg](#pv_acc_current_leg)
+Creates a new leg and increments [acc current leg](#acc_current_leg-read-only)
 only if multi-leg accounting is used.  All values of the new leg
 will be initialized to null.
 
@@ -1012,7 +1012,7 @@ whatever accounting context was present before doing the load.
 This function can be used from any type of route.
 
 
-For usage example, see the [acc load ctx from dlg](#func_acc_load_ctx_from_dlg).
+For usage example, see the [acc load ctx from dlg](#acc_load_ctx_from_dlg).
 
 
 ### Exported Events
