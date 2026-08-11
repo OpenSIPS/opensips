@@ -350,7 +350,7 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	hash_remove_key(pending_replies, callid);
 	hash_unlock(pending_replies, hentry);
 
-	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
+	fd_msg_search_avp(msg, dm_dict.Error_Message, &a);
 	if (a) {
 		rpl_cond->rpl.is_error = 1;
 		FD_CHECK(fd_msg_avp_hdr(a, &h));
@@ -709,7 +709,7 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 	hash_remove_key(pending_replies, tid);
 	hash_unlock(pending_replies, hentry);
 
-	fd_msg_search_avp(msg, dm_dict.Error_Message, &a);
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
 	if (a) {
 		rpl_cond->rpl.is_error = 1;
 		rc = fd_msg_avp_hdr(a, &h);
@@ -2106,8 +2106,10 @@ int _dm_send_message(aaa_conn *_, aaa_message *msg, struct dm_cond **reply_cond)
 	wait_until.tv_sec = res.tv_sec;
 	wait_until.tv_nsec = res.tv_usec * 1000UL;
 
-	rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
+	do {
+		rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
 				&my_reply_cond->sync.cond.mutex, &wait_until);
+	} while (rc == 0 && my_reply_cond->rpl.rc == 0);
 	pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
 	if (rc != 0) {
 		LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "

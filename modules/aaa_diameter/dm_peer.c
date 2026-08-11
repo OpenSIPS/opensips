@@ -320,7 +320,7 @@ static int dm_send_acct(struct dm_message *msg)
 			if (str_match(&dm_avp->name, _str("Event-Timestamp"))) {
 
 				/* did the upper module pass an UNIX timestamp or NTP bytes? */
-				if (dm_avp->value.os.len >= 0) {
+				if (dm_avp->value_type == AAA_TYPE_OCTETSTRING) {
 					if (dm_avp->value.os.len != 4) {
 						LM_BUG("Event-Timestamp must have 4 octets (%d given)",
 						       (int)dm_avp->value.os.len);
