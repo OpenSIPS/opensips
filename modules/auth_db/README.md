@@ -20,9 +20,9 @@ you want to use radius authentication, then use auth_radius instead.
 #### RFC 8760 Support (Strengthened Authentication)
 
 
-Starting with OpenSIPS 3.2, the [auth](../auth),
-[auth_db](../auth_db) and
-[uac_auth](../uac_auth)
+Starting with OpenSIPS 3.2, the [auth](../auth/README.md),
+auth_db and
+[uac_auth](../uac_auth/README.md)
 modules include support for two new digest authentication algorithms
 ("SHA-256" and "SHA-512-256"), according to the
 [RFC 8760](https://datatracker.ietf.org/doc/html/rfc8760)

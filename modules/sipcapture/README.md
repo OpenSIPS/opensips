@@ -416,7 +416,7 @@ specification.
 > behaviour will change depending on
 > [homer5_on](../proto_hep/README.md#homer5_on-int)
 > parameter from
-> [proto_hep](../proto_hep). Check
+> [proto_hep](../proto_hep/README.md). Check
 > [sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
 > folder from the module to check the fields of the tables for each version.
 
