@@ -446,7 +446,7 @@ node is the one responsible for pinging.
 The clustering with sharing tag support may be used to control which 
 node in the cluster will perform the pinging/probing to the
 contacts. See the
-[cluster sharing tag](#param_cluster_sharing_tag) option.
+[cluster sharing tag](#cluster_sharing_tag-string) option.
 
 
 For more info on how to define and populate a cluster (with OpenSIPS 
@@ -474,7 +474,7 @@ If defined, only the node with active status of this tag will
 perform the pinging.
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 

@@ -16,10 +16,10 @@ an SQL database and can be dynamically changed at runtime.
 
 The module caches the entire table sockets and only adjusts the
 dynamic socket list after a reload using the
-[mi reload](#mi_reload) MI command.
+[mi reload](#sockets_mgmreload) MI command.
 
 
-The [mi list](#mi_list) MI command.
+The [mi list](#sockets_mgmlist) MI command.
 can be used to show all the dynamic sockets OpenSIPS is listening on.
 
 
@@ -43,7 +43,7 @@ dynamically.
 
 All dynamically added UDP sockets are assigned to a group of dedicated
 extra processes. The number of these processes can be adjusted using
-the [processes](#param_processes) parameter. These processes handle
+the [processes](#processes-integer) parameter. These processes handle
 UDP-based socket traffic evenly by balancing requests across the less
 loaded processes. The difference, however, is that static sockets are
 bound to designated processes, while dynamic sockets share the pool of
@@ -69,7 +69,7 @@ dynamic sockets:
 - UDP socket handling does not currently benefit from the
 autoscaling feature for the designated extra
 processes. This means that the number of
-[processes](#param_processes) defined at startup will
+[processes](#processes-integer) defined at startup will
 always be forked, and only these processes will handle all
 traffic associated with dynamically added UDP sockets.
 - As stated earlier, the module only supports SIP based dynamic
@@ -83,9 +83,9 @@ done with an explicit IP.
 pre-allocated at startup. This means that the number of dynamic
 sockets used at runtime have to be limited by a static value,
 defined at startup. This is why it is recommended to use a fairly
-high value for the sockets in the [max sockets](#param_max_sockets)
+high value for the sockets in the [max sockets](#max_sockets-integer)
 parameter - we're defaulting a confortable 100 sockets.
-- The sockets defined in the  [max sockets](#param_max_sockets) are
+- The sockets defined in the  [max sockets](#max_sockets-integer) are
 being rotated in a FIFO manner - this way we are trying to avoid
 overlapping sockets in a short period of time.
 

@@ -96,13 +96,13 @@ repositories.
 
 This parameter specifies the configuration for a Kafka broker
 (or cluster) that can be used to publish messages directly
-from the script, using the [kafka publish](#func_kafka_publish) function.
+from the script, using the [kafka publish](#kafka_publishbroker_id-message-key-report_route) function.
 
 
 The format of the parameter is: *[ID]kafka_socket*,
 where *ID* is an identifier for this broker instance and
 *kafka_socket* is a specification similar to the
-[kafka socket syntax](#kafka_socket_syntax).
+[kafka socket syntax](#kafka-socket-syntax).
 
 
 The *key=callid* property does not have an effect for
@@ -143,7 +143,7 @@ The function has the following parameters:
 - *broker_id* (string) - the ID of the Kafka broker
 (or cluster).
 Must be one of the IDs defined through the
-[broker id](#param_broker_id) modparam.
+[broker id](#broker_id-string) modparam.
 - *message* (string) - the payload of the Kafka
 message to publish.
 - *key* (string, optional) - the key of the Kafka

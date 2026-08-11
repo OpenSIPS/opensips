@@ -136,7 +136,7 @@ Examples of usage:
 ### profiling_proc
 Get or set the profiling level globally or per process. If no **level** is given, the function will list the current profiling level of the specified processes. If **level** is given, it gives the incremental verbosity level - from the lowest to higher level, we have: **0** OFF, **1** SIP level (I/O reactor, SIP stack -TM, dialog, b2b-, scripting), **2** Extra Processes too (like MI, RTPproxy, HTTPD) and **3** TIMER/FULL (timer job execution).
 What are the impacted processes may be controlled via the **ID** (internal ID) or **PID** ids. If none given, all processes will be impacted by the set/get operation.
-Also see the [E_PROFILING_PROC event](Interface-CoreEvents.md#E_PROFILING_PROC) used for reporting the profiling data.
+Also see the [E_PROFILING_PROC event](Interface-CoreEvents.md#e_profiling_proc) used for reporting the profiling data.
 
 **Arguments**:
 * *ID* or *PID* (optional) - processes to work with;

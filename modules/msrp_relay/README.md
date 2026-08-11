@@ -92,7 +92,7 @@ modparam("msrp_relay", "cleanup_interval", 30)
 The name of the script route to be called when authorizing
 MSRP clients (receiving an AUTH request with an Authorization header).
 Here you should provide the appropriate password (or pre-calculated HA1
-string) for the credentials via the [password var](#param_password_var)
+string) for the credentials via the [password var](#password_var-string)
 pseudo-variable, in order for the relay to check the client response.
 
 
@@ -141,7 +141,7 @@ modparam("msrp_relay", "realm_var", "$var(msrp_auth_realm)")
 
 
 This name of the pseudo-variable that should be set in the
-[auth route](#param_auth_route) script route in order to check
+[auth route](#auth_route-str) script route in order to check
 the client response when authenticating. The value to be set can be
 either the plaintext password or pre-calculated HA1 string, based on
 the  parameter.
@@ -159,7 +159,7 @@ modparam("msrp_relay", "password_var", "$var(msrp_auth_password)")
 
 
 This parameter configures whether the value of the
-[password var](#param_password_var) pseudo-variable should be
+[password var](#password_var-string) pseudo-variable should be
 treated as a plaintext password or a pre-calculated HA1 string.
 
 
@@ -189,9 +189,9 @@ request will be exposed:
 `$sP` and `$socket_in`
 variables.
 - *destination URL schema* via the
-[dst schema var](#param_dst_schema_var) variable
+[dst schema var](#dst_schema_var-string) variable
 - *destination URL host* via the
-[dst host var](#param_dst_host_var) variable
+[dst host var](#dst_host_var-string) variable
 
 
 In this route you should optionally set the desired MSRP(S)
@@ -225,7 +225,7 @@ route[msrp_routing] {
 
 This name of the variable to provide the schema ("msrp" or "msrps")
 of the destination URL in the socket route. See more on
-[socket route](#param_socket_route) parameter.
+[socket route](#socket_route-str) parameter.
 
 
 Default value is "$var(dst_schema)".
@@ -236,7 +236,7 @@ Default value is "$var(dst_schema)".
 
 This name of the variable to provide the host of the 
 destination URL in the socket route. See more on 
-[socket route](#param_socket_route) parameter.
+[socket route](#socket_route-str) parameter.
 
 
 Default value is "$var(dst_host)".

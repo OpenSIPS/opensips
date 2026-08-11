@@ -44,7 +44,7 @@ through the Multimedia-Auth-Request and Multimedia-Auth-Answer commands.
 The format of the command, along with the required fields can be found in the
 *example/aka_av_diameter.dictionary* file located in the
 module's source directory, as well as in the
-[example diameter commands](#diameter_commands_file) section.
+[example diameter commands](#diameter-commands-file) section.
 
 
 > [!NOTE]

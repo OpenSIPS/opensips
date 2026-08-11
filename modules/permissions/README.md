@@ -69,7 +69,7 @@ configuration.
 
 Function for registration checking is called `allow_register` and the algorithm is very
 similar to the algorithm described in
-[sec call routing](#call_routing). The only difference is in the way
+[sec call routing](#call-routing). The only difference is in the way
 how pairs are created.
 
 
@@ -84,7 +84,7 @@ Thus, pairs used in matching will look like this: (To, Contact 1),
 
 
 The algorithm of matching is same as described in
-[sec call routing](#call_routing).
+[sec call routing](#call-routing).
 
 
 #### URI Permissions
@@ -329,8 +329,8 @@ modparam("permissions", "address_table", "pbx")
 Specify a new IP-based checking partition (data source).  This
 parameter may be set multiple times.  Each partition may have a
 specific "db_url" and "table_name".  If not specified, these values
-will be inherited from [db url](#param_db_url), db_default_url
-or [address table](#param_address_table), respectively.  The name of
+will be inherited from [db url](#db_url-string), db_default_url
+or [address table](#address_table-string), respectively.  The name of
 the default partition is 'default'.
 
 
@@ -484,7 +484,7 @@ modparam("permissions", "info_col", "info_col")
 
 Returns 1 if group id, IP address, port and protocol given as
 arguments match an IP subnet found in cached address table,
-as described in [sec address permissions](#address_permissions) .
+as described in [sec address permissions](#address-permissions) .
 The function takes 4 mandatory arguments and 3 optional ones.
 
 
@@ -637,7 +637,7 @@ if ( get_source_group( $var(group)) ) {
 #### allow_routing()
 
 
-Returns true if all pairs constructed as described in [sec call routing](#call_routing) have appropriate permissions according to
+Returns true if all pairs constructed as described in [sec call routing](#call-routing) have appropriate permissions according to
 the configuration files. This function uses default configuration
 files specified in `default_allow_file` and
 `default_deny_file`.
@@ -658,7 +658,7 @@ if (allow_routing()) {
 #### allow_routing(basename)
 
 
-Returns true if all pairs constructed as described in [sec call routing](#call_routing) have appropriate permissions according
+Returns true if all pairs constructed as described in [sec call routing](#call-routing) have appropriate permissions according
 to the configuration files given as parameters.
 
 
@@ -689,7 +689,7 @@ if (allow_routing("basename")) {
 #### allow_register(basename)
 
 
-The function returns true if all pairs constructed as described in [sec registration permissions](#registration_permissions) have appropriate permissions
+The function returns true if all pairs constructed as described in [sec registration permissions](#registration-permissions) have appropriate permissions
 according to the configuration files given as parameters.
 
 
@@ -725,7 +725,7 @@ if ($rm=="REGISTER") {
 #### allow_uri(basename, uri)
 
 
-Returns true if the pair constructed as described in [sec uri permissions](#uri_permissions) have appropriate permissions
+Returns true if the pair constructed as described in [sec uri permissions](#uri-permissions) have appropriate permissions
 according to the configuration files specified by the parameter.
 
 

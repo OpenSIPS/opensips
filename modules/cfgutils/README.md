@@ -200,7 +200,7 @@ modparam("cfgutils", "lock_pool_size", 64)
 Generates a random floating point value between 0 - 100 and returns
 true if the value is less or equal to the currently set probability.
 If "probability" parameter is given, it will
-override the global parameter set by [rand set prob](#func_rand_set_prob).
+override the global parameter set by [rand set prob](#rand_set_probprobability).
 
 
 Parameters:
@@ -244,7 +244,7 @@ rand_set_prob(4);
 
 
 Reset the probability back to the
-[initial probability](#param_initial_probability) value.
+[initial probability](#initial_probability-string) value.
 
 
 ```opensips title="rand_reset_prob() usage"
@@ -607,7 +607,7 @@ As a consequence, either two totally separate regions of the script will be
 synchronized (they will not execute in parallel), or a process could end up
 in a deadlock by acquiring two locks in a row on two different (but equally
 hashed) strings. To address the latter issue, use the
-[strings share lock](#func_strings_share_lock) function to test if two
+[strings share lock](#strings_share_lockkey1-key2) function to test if two
 strings hash into the same dynamic lock.
 
 
@@ -679,7 +679,7 @@ lock.
 
 Theoretically, the chance of two strings generating the same hash value 
 decreases proportionally to the increase of the
-[lock pool size](#param_lock_pool_size) parameter. In
+[lock pool size](#lock_pool_size-integer) parameter. In
 other words, the more dynamic locks you configure the module with, the higher
 the chance that all individual protected regions of your script will run in
 parallel, without waiting for each other.
@@ -786,7 +786,7 @@ if(shuffle_avps( $avp(foo) ))
 
 
 Waits a number of seconds. This function does exactly the same as
-[sleep](#func_sleep),
+[sleep](#sleeptime),
 but in an asynchronous way. The script execution is suspended until
 the waiting is done; then OpenSIPS resumes the script execution via 
 the resume route.
@@ -813,7 +813,7 @@ route[after_sleep] {
 
 
 Waits a number of micro-seconds. This function does exactly the same as
-[usleep](#func_usleep),
+[usleep](#usleeptime),
 but in an asynchronous way. The script execution is suspended until
 the waiting is done; then OpenSIPS resumes the script execution via 
 the resume route.

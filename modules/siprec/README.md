@@ -84,11 +84,11 @@ Servers.
 
 
 The *siprec* module supports failover between
-multiple SRS servers - when calling the *[siprec start recording](#func_siprec_start_recording)* function, one
+multiple SRS servers - when calling the *[siprec start recording](#siprec_start_recordingsrs-instance)* function, one
 can provision multiple SRS URIs, separated by comma. In this case, OpenSIPS
 will try to use them in the same order specified, one by one, until
 either one of them responds with a positive reply (200 OK), or the
-response code is one of the codes matched by the *[skip failover codes](#param_skip_failover_codes)* regular expression.
+response code is one of the codes matched by the *[skip failover codes](#skip_failover_codes-string)* regular expression.
 In the latter case the call is not recorded at all.
 
 
@@ -205,7 +205,7 @@ This event is raised when a SIPREC call is terminated.
 
 
 This event exposes the same parameters as the
-[E SIPREC START](#event_e_siprec_start) event.
+[E SIPREC START](#e_siprec_start) event.
 
 
 ### Exported Functions
@@ -241,7 +241,7 @@ Parameters:
 
 - *srs* (string) - a comma-separated list of SRS
 URIs. These URIs are used in the order specified. See
-[siprec srs failover](#srs_failover) for more
+[siprec srs failover](#srs-failover) for more
 information.
 - *instance* (string, optional) - used to
 start a particular SIPREC *instance*.
@@ -430,7 +430,7 @@ instance.
 
 Used to modify/describe different siprec sessions
 parameters that should be taken into account by the
-[siprec start recording](#func_siprec_start_recording) function.
+[siprec start recording](#siprec_start_recordingsrs-instance) function.
 
 
 The variable can be indexed with the *instance*

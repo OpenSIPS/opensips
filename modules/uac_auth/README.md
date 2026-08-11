@@ -90,9 +90,9 @@ to perform authentication.
 
 *If you define it, you also need to define 
 "auth_username_avp" 
-([auth username avp](#param_auth_username_avp)) and 
+([auth username avp](#auth_username_avp-string)) and 
 "auth_password_avp" 
-([auth password avp](#param_auth_password_avp)).*
+([auth password avp](#auth_password_avp-string)).*
 
 
 ```opensips title="Set auth_realm_avp parameter"
@@ -112,9 +112,9 @@ to perform authentication.
 
 *If you define it, you also need to define 
 "auth_realm_avp" 
-([auth realm avp](#param_auth_realm_avp)) and 
+([auth realm avp](#auth_realm_avp-string)) and 
 "auth_password_avp" 
-([auth password avp](#param_auth_password_avp)).*
+([auth password avp](#auth_password_avp-string)).*
 
 
 ```opensips title="Set auth_username_avp parameter"
@@ -137,9 +137,9 @@ text password or as a precalculated HA1 as a hexa (lower case) string
 
 *If you define it, you also need to define 
 "auth_realm_avp" 
-([auth realm avp](#param_auth_realm_avp)) and 
+([auth realm avp](#auth_realm_avp-string)) and 
 "auth_username_avp" 
-([auth username avp](#param_auth_username_avp)).*
+([auth username avp](#auth_username_avp-string)).*
 
 
 ```opensips title="Set auth_password_avp parameter"
