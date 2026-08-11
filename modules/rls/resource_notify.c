@@ -760,7 +760,7 @@ void timer_send_notify(unsigned int ticks,void *param)
 		prev_did= curr_did;
 	}
 
-	if(rlmi_doc)
+	if(rlmi_doc && dialog)
 	{
 		if (send_notify(&rlmi_doc, buf, buf_len, bstr, dialog, hash_code))
 		{
