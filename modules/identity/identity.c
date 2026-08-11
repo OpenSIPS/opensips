@@ -840,7 +840,11 @@ static int addIdentity(char * dateHF, struct sip_msg * msg)
 
 	EVP_SignInit(pctx, EVP_sha1());
 
-	EVP_SignUpdate(pctx, digestString, strlen(digestString));
+	if (EVP_SignUpdate(pctx, digestString, strlen(digestString)) != 1) {
+		EVP_MD_CTX_free(pctx);
+		LM_ERR("error updating signature digest\n");
+		return 0;
+	}
 
 	sig = pkg_malloc(EVP_PKEY_size(privKey_evp));
 	if(!sig)
@@ -1324,7 +1328,12 @@ static int checkSign(X509 * cert, char * identityHF, struct sip_msg * msg)
 	pctx = EVP_MD_CTX_new();
 #endif
 	EVP_VerifyInit(pctx, EVP_sha1());
-	EVP_VerifyUpdate(pctx, digestString, strlen(digestString));
+	if (EVP_VerifyUpdate(pctx, digestString, strlen(digestString)) != 1) {
+		EVP_MD_CTX_free(pctx);
+		pkg_free(sigbuf);
+		LM_ERR("error updating signature digest\n");
+		return 0;
+	}
 
 	pubkey = X509_get_pubkey(cert);
 	if(!pubkey)
