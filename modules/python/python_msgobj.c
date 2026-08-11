@@ -430,7 +430,7 @@ msg_set_pseudoVar(msgobject *self, PyObject *args)
 
     hmodel.len = strlen(hmodel.s);
     val.rs.len = strlen(val.rs.s);
-    if (pv_parse_spec(&hmodel, &model) < 0)
+    if (pv_parse_spec(&hmodel, &model) == NULL)
     {
         Py_INCREF(Py_None);
         return Py_None;
