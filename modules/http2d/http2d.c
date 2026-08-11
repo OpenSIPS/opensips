@@ -142,6 +142,7 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 	if (!h2_response)
 		return -1;
 	r = *h2_response;
+	pthread_mutex_lock(&r->mutex);
 	r->code = -1;
 
 	if (*code < 100 || *code > 599) {
@@ -291,13 +292,11 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 	}
 
 	r->code = *code;
-	pthread_mutex_lock(&r->mutex);
 	pthread_cond_signal(&r->cond);
 	pthread_mutex_unlock(&r->mutex);
 	return 1;
 
 error:
-	pthread_mutex_lock(&r->mutex);
 	pthread_cond_signal(&r->cond);
 	pthread_mutex_unlock(&r->mutex);
 	return -1;

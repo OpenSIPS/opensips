@@ -243,7 +243,14 @@ static http2_session_data *create_http2_session_data(app_context *app_ctx,
 	INIT_LIST_HEAD(&session_data->root);
 
 	session_data->app_ctx = app_ctx;
-	setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, sizeof(val));
+	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+			(char *)&val, sizeof(val)) < 0) {
+		LM_ERR("setsockopt TCP_NODELAY failed: %s\n", strerror(errno));
+		free(session_data);
+		SSL_free(ssl);
+		close(fd);
+		return NULL;
+	}
 	session_data->bev = bufferevent_openssl_socket_new(
 	    app_ctx->evbase, fd, ssl, BUFFEREVENT_SSL_ACCEPTING,
 	    BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
@@ -564,6 +571,7 @@ static int on_request_recv(nghttp2_session *session,
 	}
 
 	pthread_mutex_lock(&ng_h2_response->mutex);
+	ng_h2_response->code = 0;
 
 	H = cJSON_PrintUnformatted(stream_data->hdrs);
 	h2_raise_event_request(stream_data->method, stream_data->path,
@@ -581,8 +589,10 @@ static int on_request_recv(nghttp2_session *session,
 	wait_until.tv_nsec = res.tv_usec * 1000UL;
 
 	clock_gettime(CLOCK_REALTIME, &begin);
-	rc = pthread_cond_timedwait(&ng_h2_response->cond,
-			&ng_h2_response->mutex, &wait_until);
+	rc = 0;
+	while (ng_h2_response->code == 0 && rc == 0)
+		rc = pthread_cond_timedwait(&ng_h2_response->cond,
+				&ng_h2_response->mutex, &wait_until);
 	diff_ns = get_clock_diff(&begin);
 	LM_DBG("waited %llu ns in total\n", diff_ns);
 	if (rc != 0) {
@@ -924,6 +934,8 @@ static void acceptcb(struct evconnlistener *listener, int fd,
 	(void)listener;
 
 	session_data = create_http2_session_data(app_ctx, fd, addr, addrlen);
+	if (!session_data)
+		return;
 
 	bufferevent_setcb(session_data->bev, readcb, writecb, eventcb, session_data);
 }
@@ -989,20 +1001,48 @@ static void run(const char *service, const char *key_file,
 	SSL_CTX_free(ssl_ctx);
 }
 
-static void init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond)
+static int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond)
 {
 	pthread_mutexattr_t mattr;
-	pthread_mutexattr_init(&mattr);
-	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
-	pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
-	pthread_mutex_init(mutex, &mattr);
+	int rc;
+
+	rc = pthread_mutexattr_init(&mattr);
+	if (rc != 0)
+		return -1;
+	rc = pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+	if (rc != 0)
+		goto mutex_attr_error;
+	rc = pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
+	if (rc != 0)
+		goto mutex_attr_error;
+	rc = pthread_mutex_init(mutex, &mattr);
+	if (rc != 0)
+		goto mutex_attr_error;
 	pthread_mutexattr_destroy(&mattr);
 
 	pthread_condattr_t cattr;
-	pthread_condattr_init(&cattr);
-	pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
-	pthread_cond_init(cond, &cattr);
+	rc = pthread_condattr_init(&cattr);
+	if (rc != 0) {
+		pthread_mutex_destroy(mutex);
+		return -1;
+	}
+	rc = pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+	if (rc != 0)
+		goto cond_attr_error;
+	rc = pthread_cond_init(cond, &cattr);
+	if (rc != 0)
+		goto cond_attr_error;
 	pthread_condattr_destroy(&cattr);
+	return 0;
+
+cond_attr_error:
+	pthread_condattr_destroy(&cattr);
+	pthread_mutex_destroy(mutex);
+	return -1;
+
+mutex_attr_error:
+	pthread_mutexattr_destroy(&mattr);
+	return -1;
 }
 
 void h2_response_clean(void)
@@ -1038,7 +1078,12 @@ void http2_server(int rank)
 		return;
 	}
 	memset(ng_h2_response, 0, sizeof *ng_h2_response);
-	init_mutex_cond(&ng_h2_response->mutex, &ng_h2_response->cond);
+	if (init_mutex_cond(&ng_h2_response->mutex, &ng_h2_response->cond) < 0) {
+		LM_ERR("failed to initialize HTTP2 response synchronization\n");
+		shm_free(ng_h2_response);
+		ng_h2_response = NULL;
+		return;
+	}
 	*h2_response = ng_h2_response;
 
 	memset(&act, 0, sizeof act);
