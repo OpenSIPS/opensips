@@ -413,7 +413,7 @@ specification.
 > [!IMPORTANT]
 > Since version 2.3 report_capture function
 > behaviour will change depending on
-> [homer5_on](../proto_hep#homer5_on-int)
+> [homer5_on](../proto_hep/README.md#homer5_on-int)
 > parameter from
 > [proto_hep](../proto_hep). Check
 > [sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
