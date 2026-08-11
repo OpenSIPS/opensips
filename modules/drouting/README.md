@@ -227,7 +227,7 @@ a routing rule specification is a subset of time recurrence attributes.
 	<timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
 ```
 
-, identical to the input of the [check_time_rec()](../cfgutils#check_time_rectime_string-timestamp)
+, identical to the input of the [check_time_rec()](../cfgutils/README.md#check_time_rectime_string-timestamp)
 function of the *cfgutils* module, including the optional
 use of logical operators linking multiple such strings into a larger expression.
 - When an attribute is not specified, the corresponding place must be left
@@ -815,7 +815,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities-layer)
+Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer)
 chapter for more details.
 
 

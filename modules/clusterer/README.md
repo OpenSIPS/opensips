@@ -120,7 +120,7 @@ The module will attempt a single TCP send per node, in failover fashion (always 
 
 
 At the time of writing, the only module using the new bridge replication
-feature is [ratelimit](../ratelimit#bridge_replication-boolean),
+feature is [ratelimit](../ratelimit/README.md#bridge_replication-boolean),
 in order to optimize its "CPS pipes broadcasting" replication mechanism.
 
 
