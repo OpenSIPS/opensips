@@ -65,6 +65,8 @@ the 0 id set will be used.
 > If the set was selected using setid_avp, the avp needs to be
 > set only once before rtpengine_offer() or rtpengine_manage() call.
 
+### Failover
+
 
 The module is able to failover to a new node within a set, if a chosen
 one has communication issues. Moreover, it will also failover if the node
@@ -702,7 +704,7 @@ the module tries to use a new node to handle the affected command.
 
 
 This parameter can be used to extend the list
-(see [failover](#param_failover) of errors the module
+(see [failover](#failover) of errors the module
 implicitely fails over.
 
 
