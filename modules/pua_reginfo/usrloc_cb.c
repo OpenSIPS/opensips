@@ -268,11 +268,6 @@ str *build_reginfo_full(urecord_t *record, ucontact_t *contact, str aor[], unsig
 
 	return body;
 error:
-	if(body) {
-		if(body->s)
-			xmlFree(body->s);
-		pkg_free(body);
-	}
 	if(doc)
 		xmlFreeDoc(doc);
 	return NULL;
