@@ -55,7 +55,7 @@ All `ldap_result*` functions do always access the LDAP result set from the last 
 `ldap_search` expects an LDAP URL as argument. This section describes the format and semantics of an LDAP URL.
 
 
-RFC 4516 [RFC4516](#RFC4516) describes the format of an LDAP Uniform Resource Locator (URL). An LDAP URL represents an LDAP search operation in a compact format. The LDAP URL format is defined as follows (slightly modified, refer to section 2 of [RFC4516](#RFC4516) for ABNF notation):
+RFC 4516 [RFC4516](https://tools.ietf.org/html/rfc4516) describes the format of an LDAP Uniform Resource Locator (URL). An LDAP URL represents an LDAP search operation in a compact format. The LDAP URL format is defined as follows (slightly modified, refer to section 2 of [RFC4516](https://tools.ietf.org/html/rfc4516) for ABNF notation):
 
 
 `ldap://[ldap_session_name][/dn?attrs[?scope[?filter]]]]`
@@ -75,7 +75,7 @@ configuration file.
 
 
 Base Distinguished Name (DN) of LDAP search or target of
-non-search operation, as defined in RFC 4514 [RFC4514](#RFC4514)
+non-search operation, as defined in RFC 4514 [RFC4514](https://tools.ietf.org/html/rfc4514)
 
 
 **`attrs`**
@@ -97,7 +97,7 @@ Scope for LDAP search, valid values are
 
 
 LDAP search filter definition following rules of RFC 4515
-[RFC4515](#RFC4515)
+[RFC4515](https://tools.ietf.org/html/rfc4515)
 
 
 > [!NOTE]
