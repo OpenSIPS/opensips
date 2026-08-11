@@ -131,7 +131,7 @@ In addition to the event-driven replication, an OpenSIPS instance will first
 try to learn all the dialog information from another node in the cluster at startup.
 The data synchronization mechanism requires defining one of the nodes in the cluster
 as a "**seed**" node.
-See the [clusterer](../clusterer#capabilities-layer) 
+See the [clusterer](../clusterer/README.md#capabilities-layer) 
 module for details on how to do this and why is it needed.
 
 
@@ -1053,7 +1053,7 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities-layer)
+Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer)
 chapter for more details.
 
 

@@ -34,7 +34,7 @@ end points in a session(Third Party Call Control).
 
 High Availability for B2B sessions can be achieved by enabling the clustering support
 offered by the the lower *b2b_entities* module (by setting the
-[cluster_id](../b2b_entities#cluster_id-int) modparam from *b2b_entities*).
+[cluster_id](../b2b_entities/README.md#cluster_id-int) modparam from *b2b_entities*).
 
 
 ### Scenario Logic

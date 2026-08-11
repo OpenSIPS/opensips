@@ -177,7 +177,7 @@ module whenever you change the value of this parameter.
 > [!NOTE]
 > You must set this parameter if you use [fix nated register](#fix_nated_register).
 Additionally, if you are using registrar, you must also set its symmetric
-[received_avp](../registrar#received_avp-str) module parameter
+[received_avp](../registrar/README.md#received_avp-str) module parameter
 to the **same value**.
 
 

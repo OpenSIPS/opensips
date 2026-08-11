@@ -115,7 +115,7 @@ enabling it does not impose any limitations, as the
 registrar can simultaneously handle both SIP ON compliant
 and standard SIP User Agents
 - OpenSIPS will raise a
-[E_UL_CONTACT_REFRESH](../usrloc#e_ul_contact_refresh)
+[E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 event any time a Push Notification needs to be sent to a
 ON-enabled contact.  The event includes the ON coordinates of
 the contact -- they may be found in the Contact URI ('uri'
@@ -660,7 +660,7 @@ If enabled, Contact header field URIs which include all
 [on ct match params](#on_ct_match_params-string) will be matched against
 existing bindings using only these parameters.  Otherwise,
 the module will attempt to match them as usual, using the current
-usrloc [matching_mode](../usrloc#matching_mode-integer).
+usrloc [matching_mode](../usrloc/README.md#matching_mode-integer).
 
 
 *Default value is **false**.*
@@ -755,11 +755,11 @@ If a binding refresh REGISTER request from a given SIP endpoint does
 not arrive within at least [on trigger interval](#on_trigger_interval-integer)
 seconds prior to expiration (e.g. because the device does not
 support *";+sip.pnsreg"* or because of other
-error conditions), the [E_UL_CONTACT_REFRESH](../usrloc#e_ul_contact_refresh)
+error conditions), the [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 usrloc event will be triggered.
 
 
-Once [E_UL_CONTACT_REFRESH](../usrloc#e_ul_contact_refresh)
+Once [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 is triggered, the script writer should use
 the RFC 8599 parameters from the Contact URI in order to generate a
 Push Notification request to the ON provider of the device, in
@@ -1412,7 +1412,7 @@ Perform mid-dialog request processing, according to RFC 8599.  For
 such requests, search the R-URI and topmost Route header field URI for
 a *";on-purr"* parameter value that both matches the
 OpenSIPS PURR format and corresponds to an usrloc registration. Once a
-usrloc contact is located, trigger an [E_UL_CONTACT_REFRESH](../usrloc#e_ul_contact_refresh)
+usrloc contact is located, trigger an [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 event and place the request on async hold for at most
 [on refresh timeout](#on_refresh_timeout-integer) seconds, until a matching
 REGISTER request arrives.

@@ -204,7 +204,7 @@ spread across the country or beyond.  In this case, as an improvement
 to the standard, full-mesh replication strategy, you can alternatively
 group them into multiple cluster IDs based on geo-location, then define
 the replication "bridges" between them.  Full details in the
-[cluster-bridge replication](../clusterer#cluster-bridge-replication)
+[cluster-bridge replication](../clusterer/README.md#cluster-bridge-replication)
 chapter of the clusterer module.
 
 
@@ -442,7 +442,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 #### bridge_replication (boolean)
 
 
-Enable the [cluster-bridge replication](../clusterer#cluster-bridge-replication)
+Enable the [cluster-bridge replication](../clusterer/README.md#cluster-bridge-replication)
 feature, if applicable (e.g. the current [pipe replication cluster](#pipe_replication_cluster-integer) has
 at least one bridge definition to a foreign cluster).
 
@@ -462,7 +462,7 @@ modparam("ratelimit", "bridge_replication", true)
 
 Timer in milliseconds, used to specify how often the module
 should replicate its cluster-local counters to remote clusters,
-if [bridged replication](../clusterer#cluster-bridge-replication)
+if [bridged replication](../clusterer/README.md#cluster-bridge-replication)
 is in use, as long as it holds the required sharing tag(s).
 
 
