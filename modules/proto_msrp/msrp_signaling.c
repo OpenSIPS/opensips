@@ -835,7 +835,6 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 		LM_ERR("body without mine :(\n");
 		return -1;
 	}
-
 	switch (method_id) {
 		case MSRP_METHOD_SEND:
 			method.s = "SEND"; method.len = 4;
@@ -979,11 +978,9 @@ redo_ident:
 	/* headers */
 	append_string( p, TO_PATH_PREFIX, TO_PATH_PREFIX_LEN);
 	append_string( p, to->whole.s, to->whole.len);
-	to = to->next;
-	while (to) {
+	for (url = to->next; url; url = url->next) {
 		*(p++) = ' ';
-		append_string( p, to->whole.s, to->whole.len);
-		to = to->next;
+		append_string( p, url->whole.s, url->whole.len);
 	}
 	append_string( p, CRLF, CRLF_LEN);
 
