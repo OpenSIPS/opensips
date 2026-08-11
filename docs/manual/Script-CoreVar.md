@@ -439,7 +439,7 @@ $log_level = NULL; # reset the log level of the current process to its default l
 
 ### Message branch - $msg.branch
 
-`$msg.branch` - similar to [`$branch`](#branch-index---t_branch_idx), this variable is used for creating new message branches by writing into it the value of a SIP URI. By reading this variable, you get the SIP URI of the current/last added branch (or of the RURI branch if no additional branch was added so far).
+`$msg.branch` - this variable is used for creating new message branches by writing into it the value of a SIP URI. By reading this variable, you get the SIP URI of the current/last added branch (or of the RURI branch if no additional branch was added so far).
 ```opensips
 
    # creates a new branch
