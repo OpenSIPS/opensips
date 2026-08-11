@@ -14,7 +14,7 @@ ongoing calls. It can be used to trigger a call (either blind or attended)
 transfer, or put a call on hold from the proxy side, rather than the
 end-device side.
 The module binds on top of the [OpenSIPS Dialog
-module](../dialog) to get information about the ongoing calls, as well as
+module](../dialog/README.md) to get information about the ongoing calls, as well as
 storing information about new calls that will be started.
 
 
