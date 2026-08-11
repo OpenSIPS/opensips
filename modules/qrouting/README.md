@@ -1,6 +1,6 @@
 ---
 title: "Quality-based Routing Module"
-description: "*qrouting* is a module which sits on top of [drouting](../drouting/doc/drouting.html), [dialog](../dialog/doc/dialog.html) and [tm](../tm/doc/tm.html) and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)."
+description: "*qrouting* is a module which sits on top of drouting, dialog and tm and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)."
 ---
 
 ## Admin Guide
@@ -10,9 +10,9 @@ description: "*qrouting* is a module which sits on top of [drouting](../drouting
 
 
 *qrouting* is a module which sits on top of
-[drouting](../drouting/doc/drouting.html),
-[dialog](../dialog/doc/dialog.html) and
-[tm](../tm/doc/tm.html) and performs live
+[drouting](../drouting/README.md),
+[dialog](../dialog/README.md) and
+[tm](../tm/README.md) and performs live
 tracking of a series of essential gateway signaling quality indicators
 (i.e. ASR, CCR, PDD, AST, ACD -- more details below).  Thus, qrouting is
 able to adjust the prefix routing behavior at runtime, by dynamically
