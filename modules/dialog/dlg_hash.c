@@ -377,6 +377,7 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
 		return -1;
 	src_leg = &dlg->legs[cloned_leg_idx];
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
+	leg->branch_id = src_leg->branch_id;
 
 	if (shm_str_dup(&leg->adv_contact, &src_leg->adv_contact) != 0) {
 		LM_ERR("oom contact\n");
