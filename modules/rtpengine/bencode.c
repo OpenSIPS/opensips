@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <limits.h>
 
 
 /* set to 0 for alloc debugging, e.g. through valgrind */
@@ -281,6 +282,8 @@ bencode_item_t *bencode_integer(bencode_buffer_t *buf, long long int i) {
 		rlen = snprintf(ret->__buf, alen, "i%llde", i);
 		if (rlen < alen)
 			break;
+		if (alen > INT_MAX / 2)
+			return NULL;
 		alen <<= 1;
 	}
 

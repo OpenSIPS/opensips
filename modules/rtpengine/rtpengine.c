@@ -1715,7 +1715,10 @@ mod_init(void)
 
 	if (setid_avp_param) {
 		s.s = setid_avp_param; s.len = strlen(s.s);
-		pv_parse_spec(&s, &avp_spec);
+		if (pv_parse_spec(&s, &avp_spec) == NULL) {
+			LM_ERR("malformed AVP definition <%s>\n", setid_avp_param);
+			return -1;
+		}
 		if (avp_spec.type != PVT_AVP) {
 			LM_ERR("malformed or non AVP definition <%s>\n",
 					setid_avp_param);
