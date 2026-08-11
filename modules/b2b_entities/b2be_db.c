@@ -133,19 +133,21 @@ void b2be_initialize(void)
 	qvals[26].type= DB_STR;
 }
 
-void cdb_add_n_pairs(cdb_dict_t *pairs, int idx_start, int idx_end)
+int cdb_add_n_pairs(cdb_dict_t *pairs, int idx_start, int idx_end)
 {
 	int i;
 
 	for (i = idx_start; i <= idx_end; i++)
 		if (qvals[i].nul || (qvals[i].type == DB_STR && !qvals[i].val.str_val.s))
 			cdb_dict_add_null(pairs, qcols[i]->s, qcols[i]->len);
-		else if (qvals[i].type == DB_STR || qvals[i].type == DB_BLOB)
-			cdb_dict_add_str(pairs, qcols[i]->s, qcols[i]->len,
-				&qvals[i].val.str_val);
-		else if (qvals[i].type == DB_INT)
+		else if (qvals[i].type == DB_STR || qvals[i].type == DB_BLOB) {
+			if (cdb_dict_add_str(pairs, qcols[i]->s, qcols[i]->len,
+					&qvals[i].val.str_val) < 0)
+				return -1;
+		} else if (qvals[i].type == DB_INT)
 			cdb_dict_add_int32(pairs, qcols[i]->s, qcols[i]->len,
 				qvals[i].val.int_val);
+	return 0;
 }
 
 static inline str *get_b2be_map_key(int type, str *tag0, str *tag1, str *callid)
@@ -201,13 +203,15 @@ static int b2be_cdb_insert(int type, b2b_dlg_t* dlg, int cols_no)
 		return -1;
 	}
 
-	cdb_add_n_pairs(&cdb_pairs, 0, cols_no - 1);
+	if (cdb_add_n_pairs(&cdb_pairs, 0, cols_no - 1) < 0)
+		goto error;
 
 	if(!dlg->legs) {
 		for(i = cols_no; i < cols_no + 4; i++)
 			qvals[i].nul = 1;
 
-		cdb_add_n_pairs(&cdb_pairs, cols_no, cols_no + 3);
+		if (cdb_add_n_pairs(&cdb_pairs, cols_no, cols_no + 3) < 0)
+			goto error;
 
 		for(i = cols_no; i < cols_no + 4; i++)
 			qvals[i].nul = 0;
@@ -234,6 +238,11 @@ static int b2be_cdb_insert(int type, b2b_dlg_t* dlg, int cols_no)
 	cdb_free_entries(&cdb_pairs, NULL);
 
 	return rc;
+
+error:
+	pkg_free(cdb_key->s);
+	cdb_free_entries(&cdb_pairs, NULL);
+	return -1;
 }
 
 int b2be_db_insert(b2b_dlg_t* dlg, int type)
@@ -350,7 +359,11 @@ static int b2be_cdb_update(int type, b2b_dlg_t* dlg, int cols_no)
 		return -1;
 	}
 
-	cdb_add_n_pairs(&cdb_pairs, n_start_update, cols_no - 1);
+	if (cdb_add_n_pairs(&cdb_pairs, n_start_update, cols_no - 1) < 0) {
+		pkg_free(cdb_key->s);
+		cdb_free_entries(&cdb_pairs, NULL);
+		return -1;
+	}
 
 	if ((rc = b2be_cdbf.map_set(b2be_cdb, cdb_key, NULL, &cdb_pairs)))
 		LM_ERR("cachedb set failed\n");
