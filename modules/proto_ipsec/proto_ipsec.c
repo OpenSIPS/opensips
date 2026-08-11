@@ -1140,7 +1140,7 @@ a P-CSCF for one IMPI at any one time.
 		return SCB_RUN_ALL;
 	}
 	memcpy(is_protected, integrity_protected.s, integrity_protected.len);
-	if (is_protected) {
+	if (is_secure) {
 		memcpy(is_protected + integrity_protected.len, "yes", 3);
 		integrity_protected.len += 3;
 	} else {
