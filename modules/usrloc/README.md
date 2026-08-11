@@ -703,9 +703,8 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 #### cluster_mode (string)
 
 
-**This parameter will get overridden if either
-[working mode preset](#working_mode_preset-string) or
-[db mode](#param_db_mode) is set.**
+**This parameter will get overridden if
+[working mode preset](#working_mode_preset-string) is set.**
 
 
 The behavior of the global OpenSIPS user location cluster. Refer to
@@ -754,9 +753,8 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 #### restart_persistency (string)
 
 
-**This parameter will get overridden if either
-[working mode preset](#working_mode_preset-string) or
-[db mode](#param_db_mode) are set.**
+**This parameter will get overridden if
+[working mode preset](#working_mode_preset-string) is set.**
 
 
 Controls the behavior of the OpenSIPS user location following a
@@ -803,9 +801,8 @@ modparam("usrloc", "restart_persistency", "sync-from-cluster")
 #### sql_write_mode (string)
 
 
-**This parameter will get overridden if either
-[working mode preset](#working_mode_preset-string) or
-[db mode](#param_db_mode) are set.**
+**This parameter will get overridden if
+[working mode preset](#working_mode_preset-string) is set.**
 
 
 Only valid if [restart persistency](#restart_persistency-string) is enabled.
