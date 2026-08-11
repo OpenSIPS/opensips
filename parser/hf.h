@@ -114,7 +114,9 @@ typedef unsigned long long hdr_flags_t;
  * WARNING: HDR_ERROR_T has no corresponding FLAG!
  */
 #define HDR_T2F(type)	\
-		(((type)!=HDR_EOH_T)?((hdr_flags_t)1<<(type)):(~(hdr_flags_t)0))
+		(((type)==HDR_EOH_T)?(~(hdr_flags_t)0):\
+		 (((type)>=0 && (type)<(int)(8*sizeof(hdr_flags_t)))?\
+		 ((hdr_flags_t)1<<(type)):0))
 
 /** helper macro for easy defining and keeping in sync. the flags enum */
 #define HDR_F_DEF(name)		HDR_T2F(HDR_##name##_T)
