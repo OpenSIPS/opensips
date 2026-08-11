@@ -1,6 +1,6 @@
 ---
 title: "Quality-based Routing Module"
-description: "*qrouting* is a module which sits on top of [drouting](../drouting/doc/drouting.html), [dialog](../dialog/doc/dialog.html) and [tm](../tm/doc/tm.html) and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)."
+description: "*qrouting* is a module which sits on top of drouting, dialog and tm and performs live tracking of a series of essential gateway signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD -- more details below)."
 ---
 
 ## Admin Guide
@@ -10,9 +10,9 @@ description: "*qrouting* is a module which sits on top of [drouting](../drouting
 
 
 *qrouting* is a module which sits on top of
-[drouting](../drouting/doc/drouting.html),
-[dialog](../dialog/doc/dialog.html) and
-[tm](../tm/doc/tm.html) and performs live
+[drouting](../drouting/README.md),
+[dialog](../dialog/README.md) and
+[tm](../tm/README.md) and performs live
 tracking of a series of essential gateway signaling quality indicators
 (i.e. ASR, CCR, PDD, AST, ACD -- more details below).  Thus, qrouting is
 able to adjust the prefix routing behavior at runtime, by dynamically
@@ -160,7 +160,7 @@ modparam("qrouting", "history_span", 15)
 
 
 The duration (in seconds) of the statistics sampling window.  Every
-*[sampling interval](#param_sampling_interval)* seconds,
+*[sampling interval](#sampling_interval-integer)* seconds,
 the accumulated statistics during the most recent sampling window get
 added to each gateway, while the oldest sampled interval statistics are
 subtracted (rotated away) from each gateway.
@@ -185,7 +185,7 @@ modparam("qrouting", "sampling_interval", 5)
 A semicolon-separated list of custom statistics to be additionally kept
 and monitored by the module.  In order to gather these statistics, the
 module expects the script writer to call
-[qr set xstat](#func_qr_set_xstat) whenever they want to increment a
+[qr set xstat](#qr_set_xstatrule_id-gw_name-stat_name-inc_by-part-inc_total) whenever they want to increment a
 custom statistic for a (prefix, destination) tuple.
 
 
@@ -315,7 +315,7 @@ modparam("qrouting", "min_samples_acd", 30)
 The minimally accepted quality of a (prefix, destination) combination,
 given as a quoted floating point number in the [0, 1] interval.
 Whenever a (prefix, destination) combination receives a score below
-this threshold, the [E QROUTING BAD DST](#event_e_qrouting_bad_dst) event
+this threshold, the [E QROUTING BAD DST](#e_qrouting_bad_dst) event
 will be triggered.
 
 
@@ -349,7 +349,7 @@ modparam("qrouting", "decimal_digits", 4)
 
 Provide a new sample value for an extra statistic on a given (prefix,
 gateway) combination.  Extra statistics may be defined using the
-[extra stats](#param_extra_stats) module parameter.
+[extra stats](#extra_stats-string) module parameter.
 
 
 Parameters:
@@ -390,7 +390,7 @@ qr_set_xstat($var(rule_id), $var(gw_name), "mos", $var(mos_score));
 
 Within a given routing rule, temporarily remove the given gateway or
 carrier from routing, until they are re-enabled via
-[qr enable dst](#func_qr_enable_dst) or [mi enable dst](#mi_enable_dst).
+[qr enable dst](#qr_enable_dstrule_id-dst_name-part) or [mi enable dst](#qroutingenable_dst).
 The removal effect will be lost on an OpenSIPS restart.
 
 
@@ -470,7 +470,7 @@ Replaces obsolete MI command: *qr_status*.
 
 
 Inspect the signaling quality statistics of the current
-[history span](#param_history_span) for all drouting gateways in all
+[history span](#history_span-integer) for all drouting gateways in all
 partitions, with various levels of filtering.
 
 
@@ -559,7 +559,7 @@ opensips-cli -x mi qrouting:enable_dst pstn 81 MY-GW-3
 
 This event may be raised during routing, asynchronously, whenever the
 score of a (prefix, destination) pair falls below
-[event bad dst threshold](#param_event_bad_dst_threshold).
+[event bad dst threshold](#event_bad_dst_threshold-string).
 
 
 Parameters:

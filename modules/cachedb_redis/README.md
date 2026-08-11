@@ -55,7 +55,7 @@ the appropriate messages.
 When connecting to a Redis Cluster, the module automatically detects
 cluster mode and manages the full slot-to-node topology at runtime.
 No extra configuration is needed beyond the standard
-[cachedb url](#param_cachedb_url) parameter.
+[cachedb url](#cachedb_url-string) parameter.
 
 
 #### Topology Discovery
@@ -88,7 +88,7 @@ and the node cannot be reconnected.
 - A *query targets a slot with no known owner*,
 suggesting the topology is stale.
 - An operator triggers a manual refresh via the
-[cachedb_redis:redis_cluster_refresh](#mi_redis_cluster_refresh) MI command.
+[cachedb_redis:redis_cluster_refresh](#cachedb_redisredis_cluster_refresh) MI command.
 
 
 Automatic refreshes are rate-limited to at most once per second to
@@ -147,7 +147,7 @@ closing brace, the entire key is hashed as usual.
 The following modules must be loaded before this module:
 
 
-- *If a [use tls](#param_use_tls) is defined, the **tls_mgm** and **tls_openssl** modules will need to be loaded as well*.
+- *If a [use tls](#use_tls-integer) is defined, the **tls_mgm** and **tls_openssl** modules will need to be loaded as well*.
 
 
 #### External Libraries or Applications
@@ -164,7 +164,7 @@ by running 'apt-get install libhiredis-dev'
 Alternatively, if hiredis is not available on your OS repos,
 hiredis can be downloaded from: https://github.com/antirez/hiredis .
 Download the archive, extract sources, run make,sudo make install.
-If TLS connections are enabled via the [use tls](#param_use_tls) modparam,
+If TLS connections are enabled via the [use tls](#use_tls-integer) modparam,
 *hiredis* needs to be compiled with TLS support.
 
 
@@ -272,9 +272,9 @@ ignored with a warning if `use_tls` is enabled.
 automatically skipped.
 
 
-The [cachedb_redis:redis_cluster_info](#mi_redis_cluster_info) MI command will display
+The [cachedb_redis:redis_cluster_info](#cachedb_redisredis_cluster_info) MI command will display
 Unix socket connections with `transport=unix` and
-the socket path. The [cachedb_redis:redis_ping_nodes](#mi_redis_ping_nodes) command
+the socket path. The [cachedb_redis:redis_ping_nodes](#cachedb_redisredis_ping_nodes) command
 works normally with Unix socket connections.
 
 
@@ -348,7 +348,7 @@ is restarted.
 
 
 When this parameter is enabled, the
-[shutdown on error](#param_shutdown_on_error) parameter has no effect,
+[shutdown on error](#shutdown_on_error-integer) parameter has no effect,
 since no connection is attempted at startup time.
 
 
@@ -698,7 +698,7 @@ Total number of cluster topology refreshes performed (via
 CLUSTER SHARDS or CLUSTER SLOTS). This counter increments both
 for automatic refreshes (triggered by MOVED responses or
 unreachable nodes) and manual refreshes (triggered via the
-[cachedb_redis:redis_cluster_refresh](#mi_redis_cluster_refresh) MI command).
+[cachedb_redis:redis_cluster_refresh](#cachedb_redisredis_cluster_refresh) MI command).
 
 
 ### Raw Query Syntax

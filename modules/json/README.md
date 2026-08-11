@@ -343,7 +343,7 @@ $json(object/array) := $json(array) ;
 
 
 The `json_pretty` variable has the
-same purpose as the [json](#pv_json) variable,
+same purpose as the [json](#jsonid) variable,
 but prints the JSON object in a pretty format, adding
 spaces and tabs to make the output more readable.
 
@@ -352,7 +352,7 @@ spaces and tabs to make the output more readable.
 
 
 The `json_compact` variable has the
-same purpose as the [json](#pv_json) variable,
+same purpose as the [json](#jsonid) variable,
 but prints the JSON object in a more compact form,
 without formatting spaces.
 
@@ -361,7 +361,7 @@ without formatting spaces.
 
 
 The `json_compact_noescape` variable has the
-same purpose as the [json compact](#pv_json_compact) variable,
+same purpose as the [json compact](#json_compactid) variable,
 printing the JSON object in the compact form, but without
 escaping the slashes.
 
@@ -371,7 +371,7 @@ escaping the slashes.
 > limitations, this variable only skips the slashes escaping
 > starting with version *0.13* - older versions
 > of the library make the variable behave just like the
-> [json compact](#pv_json_compact) variable.
+> [json compact](#json_compactid) variable.
 
 
 ```opensips title="Difference between json_compact and json_compact_noescape"

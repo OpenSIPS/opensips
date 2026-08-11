@@ -21,7 +21,7 @@ media server, to playback, or simply record an existing RTP, as well
 as take the SDP of a new call and inject the SDP into an existing,
 proxied sip call. In order to manipulate the new calls, either generated,
 or terminated, the module behaves as a back-to-back user agent with the
-aim of the [OpenSIPS B2B entities module](../b2b_entities).
+aim of the [OpenSIPS B2B entities module](../b2b_entities/README.md).
 
 
 In terms of the SDP media exchanged, the module can have two different
@@ -47,7 +47,7 @@ This module can provide different functionalities and can be used in various
 use cases, such as:
 
 
-- *Call Recording* - similar to the [OpenSIPS SIPREC](../siprec) module, it can be used to fork the
+- *Call Recording* - similar to the [OpenSIPS SIPREC](../siprec/README.md) module, it can be used to fork the
 RTP media to a new SIP destination, but without the SIPREC payload.
 - *Call Listening* - one might want to call into
 OpenSIPS and start listening an existing call.
@@ -456,7 +456,7 @@ Replaces obsolete MI command: *media_fork_from_call_to_uri*.
 
 
 MI command that has the same behavior as
-[media fork to uri](#func_media_fork_to_uri), only that the triggering
+[media fork to uri](#media_fork_to_uriuri-leg-headers-medianum-instance), only that the triggering
 is not script driven, but exterior driven. Useful for starting
 listening a call.
 
@@ -506,7 +506,7 @@ Replaces obsolete MI command: *media_exchange_from_call_to_uri*.
 
 
 MI command that has the same behavior as
-[media exchange from uri](#func_media_exchange_from_uri), only that the triggering
+[media exchange from uri](#media_exchange_from_uriuri-leg-body-headers-nohold), only that the triggering
 is not script driven, but exterior driven. Useful for injecting media
 announcements during a call.
 
@@ -552,11 +552,11 @@ Replaces obsolete MI command: *media_exchange_from_call_to_uri_body*.
 
 
 MI command that does the same thing as the
-[mi from call to uri](#mi_from_call_to_uri) MI function, but
+[mi from call to uri](#media_exchangefrom_call_to_uri) MI function, but
 also allows you to specify a custom body in the outgoing request.
 The body has to be specified in the mandatory *body*
 parameter, all the other parameters being the same as the ones of
-[mi from call to uri](#mi_from_call_to_uri).
+[mi from call to uri](#media_exchangefrom_call_to_uri).
 
 
 #### media_exchange:terminate

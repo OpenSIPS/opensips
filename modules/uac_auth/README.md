@@ -25,9 +25,9 @@ by the server, "auth" will be preferred.
 #### RFC 8760 Support (Strengthened Authentication)
 
 
-Starting with OpenSIPS 3.2, the [auth](../auth),
-[auth_db](../auth_db) and
-[uac_auth](../uac_auth)
+Starting with OpenSIPS 3.2, the [auth](../auth/README.md),
+[auth_db](../auth_db/README.md) and
+uac_auth
 modules include support for two new digest authentication algorithms
 ("SHA-256" and "SHA-512-256"), according to the
 [RFC 8760](https://datatracker.ietf.org/doc/html/rfc8760)
@@ -90,9 +90,9 @@ to perform authentication.
 
 *If you define it, you also need to define 
 "auth_username_avp" 
-([auth username avp](#param_auth_username_avp)) and 
+([auth username avp](#auth_username_avp-string)) and 
 "auth_password_avp" 
-([auth password avp](#param_auth_password_avp)).*
+([auth password avp](#auth_password_avp-string)).*
 
 
 ```opensips title="Set auth_realm_avp parameter"
@@ -112,9 +112,9 @@ to perform authentication.
 
 *If you define it, you also need to define 
 "auth_realm_avp" 
-([auth realm avp](#param_auth_realm_avp)) and 
+([auth realm avp](#auth_realm_avp-string)) and 
 "auth_password_avp" 
-([auth password avp](#param_auth_password_avp)).*
+([auth password avp](#auth_password_avp-string)).*
 
 
 ```opensips title="Set auth_username_avp parameter"
@@ -137,9 +137,9 @@ text password or as a precalculated HA1 as a hexa (lower case) string
 
 *If you define it, you also need to define 
 "auth_realm_avp" 
-([auth realm avp](#param_auth_realm_avp)) and 
+([auth realm avp](#auth_realm_avp-string)) and 
 "auth_username_avp" 
-([auth username avp](#param_auth_username_avp)).*
+([auth username avp](#auth_username_avp-string)).*
 
 
 ```opensips title="Set auth_password_avp parameter"

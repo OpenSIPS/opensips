@@ -320,7 +320,7 @@ if (!aka_www_authorize("diameter", "siphub.com"))
 #### aka_proxy_authorize([realm]])
 
 
-The function behaves the same as [aka www authorize](#func_aka_www_authorize),
+The function behaves the same as [aka www authorize](#aka_www_authorizerealm),
 but it authenticates the user from a proxy perspective. It receives the same
 parameters, with the same meaning, and returns the same values.
 
@@ -358,7 +358,7 @@ Meaning of the parameters is as follows:
 - *av_mgm* (string, optional) - the AV Manager
 to be used for this challenge, in case an AV is not already available
 for the challenged user identity. In case it is missing the value of the
-[default av mgm](#param_default_av_mgm) is being used.
+[default av mgm](#default_av_mgm-string) is being used.
 *realm* (string) - Realm is an opaque string that
 the user agent should present to the user so it can decide what
 username and password to use. Usually this is domain of the host
@@ -372,7 +372,7 @@ is recommended to use the qop parameter, however there are still some
 user agents that cannot handle qop properly so we made this optional.
 On the other hand there are still some user agents that cannot handle
 request without a qop parameter too. If missing, the value of the
-[default qop](#param_default_qop) is being used.
+[default qop](#default_qop-string) is being used.
 - *algorithms* (string, optional) - Value of this
 parameter is a comma-separated list of digest algorithms to be offered for
 the UAC to use for authentication. Possible values are:
@@ -390,7 +390,7 @@ the UAC to use for authentication. Possible values are:
   - AKAv2-SHA-512-256
   - AKAv2-SHA-512-256-sess
 When the value is empty or not set, the only offered digest
-the value of the [default algorithm](#param_default_algorithm) is being used.
+the value of the [default algorithm](#default_algorithm-string) is being used.
 
 
 Possible return codes:
@@ -423,7 +423,7 @@ if (!aka_www_authorize("siphub.com")) {
 #### aka_proxy_challenge([realm]])
 
 
-The function behaves the same as [aka www challenge](#func_aka_www_challenge),
+The function behaves the same as [aka www challenge](#aka_www_challengeav_mgm-realm-qop-alg),
 but it challenges the user from a proxy perspective. It receives the same
 parameters, with the same meaning, the only difference being that in case of
 the *realm* is missing, then it is taken from the

@@ -238,7 +238,7 @@ if (pcre_match($rU, "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 
 
 It uses the groups read from the text file
-(see [file format id](#file_format)) to match the given string
+(see [file format id](#file-format)) to match the given string
 parameter against the compiled regular expression in group number group.
 Returns TRUE if it matches, FALSE otherwise.
 

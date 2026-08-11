@@ -27,7 +27,7 @@ replies aggregated back to the caller. The other side
 in-dialog requests are forwarded to the caller as if only
 their stream had changed. When a call is terminated from 
 the client side, the module can have different behaviors,
-according to the [client bye mode](#param_client_bye_mode)
+according to the [client bye mode](#client_bye_mode-string)
 parameter.
 
 

@@ -27,16 +27,16 @@ for the SIP UAC/UAS functionalities.
 
 
 In order to start a SIP call carrying MSRP from OpenSIPS you can use the
-[mi start session](#mi_start_session) MI function. Alternatively, to
+[mi start session](#msrp_uastart_session) MI function. Alternatively, to
 answer a SIP session with MSRP you can use the
-[msrp ua answer](#func_msrp_ua_answer) script function.
+[msrp ua answer](#msrp_ua_answercontent_types) script function.
 
 
 When a UAC or UAS session is successfully established(ACK sent/received) the
-[E MSRP SESSION NEW](#event_e_msrp_session_new) event is triggered. After this point,
+[E MSRP SESSION NEW](#e_msrp_session_new) event is triggered. After this point,
 you may receive MSRP messages or Reports, signaled by the
-[E MSRP MSG RECEIVED](#event_e_msrp_msg_received) and
-[E MSRP REPORT RECEIVED](#event_e_msrp_report_received) events.
+[E MSRP MSG RECEIVED](#e_msrp_msg_received) and
+[E MSRP REPORT RECEIVED](#e_msrp_report_received) events.
 
 
 Note that the *E_MSRP_REPORT_RECEIVED* event covers both actual MSRP
@@ -46,7 +46,7 @@ response).
 
 
 You can send MSRP messages to the peer with the
-[mi send message](#mi_send_message) MI function.
+[mi send message](#msrp_uasend_message) MI function.
 
 
 ### Dependencies
@@ -159,7 +159,7 @@ socket where the initiating request was received.
 
 
 This parameter is mandatory when using the
-[mi start session](#mi_start_session) MI function.
+[mi start session](#msrp_uastart_session) MI function.
 
 
 ```opensips title="advertised_contact parameter usage"
@@ -283,7 +283,7 @@ Replaces obsolete MI command: *msrp_ua_start_session*.
 Starts a MSRP session.
 
 
-The [advertised contact](#param_advertised_contact) is mandatory if this
+The [advertised contact](#advertised_contact-string) is mandatory if this
 function is used.
 
 
@@ -456,9 +456,9 @@ field.
 ### Overview
 
 
-In order to answer a SIP session carrying MSRP the [init uas](#dev_init_uas)
+In order to answer a SIP session carrying MSRP the [init uas](#init_uasmsg-accept_types-hdl)
 function should be used. Conversely for starting a MSRP call as a UAC, one
-can use the [init uac](#dev_init_uac) function.
+can use the [init uac](#init_uacaccept_types-from_uri-to_uri-ruri-hdl) function.
 
 
 After initializing the session with either of the above functions, the SIP call
@@ -467,7 +467,7 @@ level events and received MSRP requests and responses will be delivered via
 registering callback functions.
 
 
-MSRP SEND requests can be sent with the [send message](#dev_send_message) function
+MSRP SEND requests can be sent with the [send message](#send_messagesession_id-mime-body-failure_report-success_report) function
 after the sessions is established, which will be signaled by the
 *msrp_ua_notify_cb_f* callback with the
 *MSRP_UA_SESS_ESTABLISHED* event.

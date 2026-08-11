@@ -227,7 +227,7 @@ a routing rule specification is a subset of time recurrence attributes.
 	<timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
 ```
 
-, identical to the input of the [check_time_rec()](../cfgutils#func_check_time_rec)
+, identical to the input of the [check_time_rec()](../cfgutils/README.md#check_time_rectime_string-timestamp)
 function of the *cfgutils* module, including the optional
 use of logical operators linking multiple such strings into a larger expression.
 - When an attribute is not specified, the corresponding place must be left
@@ -807,7 +807,7 @@ given cluster.
 The clustering with sharing tag support may be used to control which 
 node in the cluster will perform the pinging/probing to 
 gateways. See the
-[cluster sharing tag](#param_cluster_sharing_tag) option.
+[cluster sharing tag](#cluster_sharing_tag-string) option.
 
 
 This OpenSIPS cluster exposes the **"drouting-status-repl"**
@@ -815,12 +815,12 @@ capability in order to mark nodes as eligible for becoming data donors during an
 arbitrary sync request. Consequently, the cluster must have *at least
 one node* marked with the **"seed"** value
 as the *clusterer.flags* column/property in order to be fully functional.
-Consult the [clusterer - Capabilities](../clusterer#capabilities)
+Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer)
 chapter for more details.
 
 
 For more info on how to define and populate a cluster (with OpenSIPS 
-nodes) see the [clusterer](../clusterer) module.
+nodes) see the [clusterer](../clusterer/README.md) module.
 
 
 *Default value is "0 (none)".*
@@ -840,13 +840,13 @@ modparam("drouting", "cluster_id", 9)
 The name of the sharing tag (as defined per clusterer modules) to 
 control which node is responsible for perform the self-triggered
 actions in the module. Such actions may be the gateway probing (see
-also the [cluster probing mode](#param_cluster_probing_mode) parameter)  or
+also the [cluster probing mode](#cluster_probing_mode-string) parameter)  or
 sharing the gateway/carrier status changes.
 If defined, only the node with active status of this tag will 
 perform the actions (pinging and sharing status).
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -875,7 +875,7 @@ using the clustering support. It is about which node in the cluster
 pings which gateway/destination.
 
 
-The [cluster id](#param_cluster_id) must be defined for this option
+The [cluster id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -887,7 +887,7 @@ cluster will independently ping all the defined gateways,
 an "all" pings "all" mode.
 - **"by-shtag"** - all the gateways
 are pinged by only one node in the cluster, the node having the
-[cluster sharing tag](#param_cluster_sharing_tag) active. By 
+[cluster sharing tag](#cluster_sharing_tag-string) active. By 
 activating the sharing tag on a different node, the pinging
 duty will be transferred to another node in the cluster.
 - **"distributed"** - the pinging

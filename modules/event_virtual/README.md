@@ -18,7 +18,7 @@ module provides the possibility to have multiple external applications, using di
 notify the subscribers, in the order in which they are given,
 until the first successful notification. A failed subscriber is
 skipped for further notifications until the
-[failover timeout](#param_failover_timeout) passes.
+[failover timeout](#failover_timeout-integer) passes.
 - *ROUND-ROBIN* - for every event raised, notify the subscribers alternatively, in the order in which they are given (for each raised event notify a different subscriber)
 
 

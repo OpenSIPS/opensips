@@ -17,7 +17,7 @@ statistics from OpenSIPS.
 
 In order to use it, you have to explicitly define the
 statistics you want to provide by listing them in the
-[statistics](#param_statistics) parameter.
+[statistics](#statisticsstring) parameter.
 
 
 Currently only *counter* and *gauge*
@@ -292,7 +292,7 @@ route[my_custom_prometheus_route] {
 
 > [!NOTE]
 > This function can only be used in the
-> route declared in the [script route](#param_script_route) parameter.
+> route declared in the [script route](#script_routestring) parameter.
 
 
 Declares a custom statistic exported to Prometheus server. It specifies
@@ -311,7 +311,7 @@ used to describe the statistic meaning. If missing, it is not used.
 
 
 This function can only be used in the request
-route declared in the [script route](#param_script_route) parameter.
+route declared in the [script route](#script_routestring) parameter.
 
 
 ```opensips title="prometheus_declare_stat usage"
@@ -332,7 +332,7 @@ route[my_custom_prometheus_route] {
 
 > [!NOTE]
 > This function can only be used in the
-> route declared in the [script route](#param_script_route) parameter.
+> route declared in the [script route](#script_routestring) parameter.
 
 
 Pushes a custom statistic value and optionally a set of labels
@@ -342,7 +342,7 @@ to the Prometheus server.
 > [!NOTE]
 > A statistic's value should only be pushed
 > after it had been declared using the
-> [prometheus declare stat](#func_prometheus_declare_stat) function.
+> [prometheus declare stat](#prometheus_declare_statname-type-help) function.
 
 
 Parameters
@@ -361,7 +361,7 @@ should be used for the *label_name* parameter label.
 
 
 This function can only be used in the request
-route declared in the [script route](#param_script_route) parameter.
+route declared in the [script route](#script_routestring) parameter.
 
 
 ```opensips title="prometheus_push_stat usage"

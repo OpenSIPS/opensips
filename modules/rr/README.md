@@ -47,9 +47,9 @@ RFC 3261 (see 12.1.1 UAS behavior).
 For this purpose, the modules offers the following functions:
 
 
-- add_rr_param() - see [add rr param](#func_add_rr_param)
+- add_rr_param() - see [add rr param](#add_rr_paramparam)
 - check_route_param() - see 
-[check route param](#func_check_route_param)
+[check route param](#check_route_paramre)
 
 
 ```c title="Dialog support in RR module"
@@ -299,7 +299,7 @@ record_route_preset("1.2.3.4:5090");
 Adds a parameter to the Record-Route URI (param must be in 
 ";name=value" format. The function may be called also 
 before or after the record_route() call 
-(see [record route](#func_record_route)).
+(see [record route](#record_route-and-record_routestring)).
 
 
 Meaning of the parameters is as follows:
@@ -326,7 +326,7 @@ add_rr_param(";nat=yes");
 The function checks if the URI parameters of the local Route 
 header (corresponding to the local server) matches the given regular 
 expression. It must be call after loose_route() 
-(see [loose route](#func_loose_route)).
+(see [loose route](#loose_route)).
 
 
 Meaning of the parameters is as follows:
@@ -353,9 +353,9 @@ if (check_route_param("nat=yes")) {
 
 The function checks the flow direction of the request.
 As for checking it's used the "ftag" Route header 
-parameter, the append_fromtag (see [append fromtag](#param_append_fromtag) 
+parameter, the append_fromtag (see [append fromtag](#append_fromtag-integer) 
 module parameter must be enabled. Also this must be called only after 
-loose_route() (see [loose route](#func_loose_route)).
+loose_route() (see [loose route](#loose_route)).
 
 
 The function returns true if the "dir" is the same with
@@ -405,7 +405,7 @@ parameters - this is available only after calling loose_route()
 The RR module provides an internal API to be used by 
 other OpenSIPS modules. The API offers support for
 SIP dialog based functionalities - for more about the dialog support
-offered by RR module, see [RR dialog id](#dialog_support).
+offered by RR module, see [RR dialog id](#dialog-support).
 
 
 For internal(non-script) usage, the RR module offers to other module the
@@ -465,7 +465,7 @@ expression to be checked against the Route header parameters.
 The function checks the flow direction of the request 
 "msg". As for checking it's used the "ftag" 
 Route header parameter, the append_fromtag (see 
-[append fromtag](#param_append_fromtag) module parameter 
+[append fromtag](#append_fromtag-integer) module parameter 
 must be enables. Also this must be call only after the loose_route is 
 done.
 

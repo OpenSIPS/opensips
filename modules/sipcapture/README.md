@@ -20,7 +20,7 @@ OpenSIPs can capture SIP messages in three mode
 - Homer encapsulation protocol mode (HEP v1/2/3). With version 2.2
 comes the new HEPv3 support using the proto _hep module. Also
 header manipulation support for HEPv3 has been added. See
-[hep set](#func_hep_set) for more details. If you want more
+[hep set](#hep_setchunk_id-chunk_data-data_type-vendor_id) for more details. If you want more
 information about hep protocol check this
 [link](https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf).
 
@@ -414,9 +414,9 @@ specification.
 > [!IMPORTANT]
 > Since version 2.3 report_capture function
 > behaviour will change depending on
-> [homer5_on](../proto_hep#idp154080)
+> [homer5_on](../proto_hep/README.md#homer5_on-int)
 > parameter from
-> [proto_hep](../proto_hep). Check
+> [proto_hep](../proto_hep/README.md). Check
 > [sql](https://github.com/OpenSIPS/opensips/tree/master/modules/sipcapture/sql)
 > folder from the module to check the fields of the tables for each version.
 
@@ -545,17 +545,17 @@ Meaning of the parameters is as follows:
 
 
 - *chunk_id (string)* - same meaning as in
-[hep set](#func_hep_set)
+[hep set](#hep_setchunk_id-chunk_data-data_type-vendor_id)
 - *data_type (string)* - same meaning as in
-[hep set](#func_hep_set); can miss if it's a generic chunk
+[hep set](#hep_setchunk_id-chunk_data-data_type-vendor_id); can miss if it's a generic chunk
 - *chunk_data_pv (writable var, optional)* - will hold the data inside the
 chunk; some of the generic chunk data come in specific format, as following:
 
   - 0x0001 - proto_family(string) - AF_INET/AF_INET6
-  - 0x0002  proto_id(string) - see [hep set](#func_hep_set) for possible values
+  - 0x0002  proto_id(string) - see [hep set](#hep_setchunk_id-chunk_data-data_type-vendor_id) for possible values
   - 0x0003/0x0004/0x0005/0x0006  src/dst_ip(string) - ip addresses in human readable format
   - 0x0009  timestamp(string) - time and date in human readable format
-  - 0x000B  proto_type(string) - see [hep set](#func_hep_set) for possible values
+  - 0x000B  proto_type(string) - see [hep set](#hep_setchunk_id-chunk_data-data_type-vendor_id) for possible values
 - *vendor_id_pv (writable var, optional)* - will hold the vendor id(int value)
 of the chunk
 
@@ -585,7 +585,7 @@ Meaning of the parameters is as follows:
 
 
 - *chunk_id (string)* - same meaning as the *chunk_id* in
-[hep set](#func_hep_set).
+[hep set](#hep_setchunk_id-chunk_data-data_type-vendor_id).
 
 
 ```opensips title="hep_set usage"

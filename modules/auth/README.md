@@ -17,9 +17,9 @@ authentication taking username and password from pseudo-variables.
 #### RFC 8760 Support (Strengthened Authentication)
 
 
-Starting with OpenSIPS 3.2, the [auth](../auth),
-[auth_db](../auth_db) and
-[uac_auth](../uac_auth)
+Starting with OpenSIPS 3.2, the auth,
+[auth_db](../auth_db/README.md) and
+[uac_auth](../uac_auth/README.md)
 modules include support for two new digest authentication algorithms
 ("SHA-256" and "SHA-512-256"), according to the
 [RFC 8760](https://datatracker.ietf.org/doc/html/rfc8760)
@@ -347,7 +347,7 @@ For more information regarding digest authentication see RFC2617,
 RFC3261 and RFC8760.
 
 
-See the paragraph on [www challenge params](#www_challenge_params) for
+See the paragraph on [www challenge params](#www_challengerealm-qop-algorithms) for
 the description of the parameters.
 
 
@@ -439,7 +439,7 @@ append_rpid_hf();  # Append Remote-Party-ID header field
 
 
 This function is the same as 
-[append rpid hf no params](#func_append_rpid_hf). The only difference is
+[append rpid hf no params](#append_rpid_hf). The only difference is
 that it accepts two parameters--prefix and suffix to be added to 
 Remote-Party-ID header field. This function ignores rpid_prefix and 
 rpid_suffix parameters, instead of that allows to set them in every 

@@ -70,7 +70,7 @@ with that presentity.
 > via DB (the clustering layer is used for notifications only), it is
 > important to set a very low update interval for the DB (for data being
 > flushed from memoryc cache into DB), to get the DB content updated as 
-> realtime as possible. See the the [update period](#param_update_period),
+> realtime as possible. See the the [update period](#update_period-int),
 > module parameter, with recommended values like 2-5 seconds.
 
 
@@ -223,7 +223,7 @@ In order to understand the concept of a cluster ID, please see the
 
 
 For more on PUA clustering see the 
-[pua clustering](#pua_clustering) chapter.
+[pua clustering](#pua-clustering) chapter.
 
 
 *Default value is "None".*
@@ -249,7 +249,7 @@ In order to understand the concept of sharing TAG, please see the
 
 
 For more on PUA clustering see the 
-[pua clustering](#pua_clustering) chapter.
+[pua clustering](#pua-clustering) chapter.
 
 
 *Default value is "NULL".*
