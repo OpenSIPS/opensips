@@ -1,8 +1,6 @@
 name: CIFuzz
 on:
   push:
-    branches-ignore:
-      - coverity_scan
     paths:
       - '**/Makefile*'
       - '**/*.c'

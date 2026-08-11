@@ -6,8 +6,6 @@ name: Multi-Architecture Build
 on:
   # Triggers the workflow on all push or pull request events
   push:
-    branches-ignore:
-      - coverity_scan
     paths:
       - '**/Makefile*'
       - '**/*.c'

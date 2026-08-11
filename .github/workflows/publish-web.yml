@@ -2,8 +2,6 @@ name: Publish opensips.org documentation
 
 on:
   push:
-    branches-ignore:
-      - coverity_scan
     paths:
       - 'examples/**'
       - 'modules/*/samples/**'

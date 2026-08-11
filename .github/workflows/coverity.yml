@@ -1,9 +1,9 @@
 name: Coverity Scan
 
 on:
-  push:
-    branches:
-      - coverity_scan
+  schedule:
+    # 18:00 UTC every Sunday (20:00 CET / 21:00 CEST).
+    - cron: '0 18 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -18,6 +18,7 @@ env:
 
 jobs:
   coverity:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-22.04
 
     steps:
@@ -84,5 +85,5 @@ jobs:
             --form "email=$COVERITY_EMAIL" \
             --form "file=@cov-int.tar.gz" \
             --form "version=$VERSION" \
-            --form "description=GitHub Actions coverity_scan $GITHUB_SHA" \
+            --form "description=GitHub Actions master $GITHUB_SHA" \
             "https://scan.coverity.com/builds?project=OpenSIPS%2Fopensips"
