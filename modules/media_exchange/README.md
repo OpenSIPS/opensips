@@ -21,7 +21,7 @@ media server, to playback, or simply record an existing RTP, as well
 as take the SDP of a new call and inject the SDP into an existing,
 proxied sip call. In order to manipulate the new calls, either generated,
 or terminated, the module behaves as a back-to-back user agent with the
-aim of the [OpenSIPS B2B entities module](../b2b_entities).
+aim of the [OpenSIPS B2B entities module](../b2b_entities/README.md).
 
 
 In terms of the SDP media exchanged, the module can have two different
@@ -47,7 +47,7 @@ This module can provide different functionalities and can be used in various
 use cases, such as:
 
 
-- *Call Recording* - similar to the [OpenSIPS SIPREC](../siprec) module, it can be used to fork the
+- *Call Recording* - similar to the [OpenSIPS SIPREC](../siprec/README.md) module, it can be used to fork the
 RTP media to a new SIP destination, but without the SIPREC payload.
 - *Call Listening* - one might want to call into
 OpenSIPS and start listening an existing call.
