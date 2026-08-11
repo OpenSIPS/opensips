@@ -367,7 +367,6 @@ static int proto_ipsec_init(struct proto_info *pi)
 
 static int proto_ipsec_init_listener(struct socket_info *si)
 {
-	return 0;
 	int ret;
 	/* force reuse port for all connections */
 	si->flags |= SI_REUSEPORT;
