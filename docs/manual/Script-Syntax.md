@@ -97,7 +97,7 @@ The OpenSIPS scripting language supports the following data types:
 * *map* via the **[`$json`](../../modules/json/README.md#jsonid)** and **[`$xml`](../../modules/xml/README.md#xmlpath)** variables
 
 ## Function Calling Conventions
-All OpenSIPS [core](./Script-CoreFunctions.md) and [module](./Function-Index.md) functions internally share the same function interface, such that they benefit from the following calling convention:
+All OpenSIPS [core](./Script-CoreFunctions.md) and module functions internally share the same function interface, such that they benefit from the following calling convention:
 
   
 
