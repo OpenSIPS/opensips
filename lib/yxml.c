@@ -98,9 +98,11 @@ typedef enum {
 #define yxml_isChar(c) 1
 /* 0xd should be part of SP, too, but yxml_parse() already normalizes that into 0xa */
 #define yxml_isSP(c) (c == 0x20 || c == 0x09 || c == 0x0a)
-#define yxml_isAlpha(c) ((c|32)-'a' < 26)
-#define yxml_isNum(c) (c-'0' < 10)
-#define yxml_isHex(c) (yxml_isNum(c) || (c|32)-'a' < 6)
+#define yxml_isAlpha(c) (((c) >= 'a' && (c) <= 'z') || \
+	((c) >= 'A' && (c) <= 'Z'))
+#define yxml_isNum(c) ((c) >= '0' && (c) <= '9')
+#define yxml_isHex(c) (yxml_isNum(c) || \
+	(((c) >= 'a' && (c) <= 'f') || ((c) >= 'A' && (c) <= 'F')))
 #define yxml_isEncName(c) (yxml_isAlpha(c) || yxml_isNum(c) || c == '.' || c == '_' || c == '-')
 #define yxml_isNameStart(c) (yxml_isAlpha(c) || c == ':' || c == '_' || c >= 128)
 #define yxml_isName(c) (yxml_isNameStart(c) || yxml_isNum(c) || c == '-' || c == '.')
