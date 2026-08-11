@@ -41,8 +41,8 @@ Starting with OpenSIPS **3.5**, the Diameter
 module includes *server-side* support as well.
 
 
-First, the [event_route](../event_route) module must be loaded in
-order to be able to process [dm request](#e_dm_request) events in
+First, you need to create an [event_route](../../docs/manual/Script-Routes.md#event_route)
+to process [dm request](#e_dm_request) events in
 the OpenSIPS configuration file.  These events will contain all necessary
 information on the incoming Diameter request.
 
