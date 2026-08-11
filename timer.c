@@ -686,7 +686,7 @@ static void run_timer_process_jif(void)
 				*(ijiffies_drift) = (drift / ITIMER_TICK) * ITIMER_TICK;
 
 				ucnt += drift / ITIMER_TICK;
-				*(ujiffies) += (ucnt / umultiple) * (UTIMER_TICK);
+				*(ujiffies) += (utime_t)(ucnt / umultiple) * (UTIMER_TICK);
 				ucnt = ucnt % umultiple;
 
 				cnt += (unsigned int)(drift / (UTIMER_TICK));
