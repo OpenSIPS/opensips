@@ -102,7 +102,7 @@ modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
 Specify how the data should be encapsulated, as plain text
 (HOMER5 - anything different than 0) or JSON based (HOMER 6 - 0).
 As concerns capturing, this affects report_capture function behaviour from
-[sipcapture](../sipcapture)
+[sipcapture](../sipcapture/README.md)
 module.
 
 
