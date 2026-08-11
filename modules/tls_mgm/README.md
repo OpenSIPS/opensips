@@ -239,7 +239,7 @@ modparam("tls_mgm", "tls_library", "none")
 ```
 
 
-#### tls_method ([domain]string)
+#### tls_method ([domain]\(string\))
 
 
 Sets the TLS protocol. The domain part represents the name of
