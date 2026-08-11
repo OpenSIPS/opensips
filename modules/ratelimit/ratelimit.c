@@ -303,6 +303,10 @@ int get_cpuload(void)
 					(n_sirq	- o_sirq)	+
 					(n_stl	- o_stl);
 		long long d_idle =	(n_idle - o_idle);
+		if (d_total <= 0) {
+			LM_ERR("invalid CPU time delta %lld\n", d_total);
+			return -1;
+		}
 
 		*rl_load_value = 1.0 - ((double)d_idle) / (double)d_total;
 	}
