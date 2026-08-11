@@ -664,11 +664,21 @@ static inline void push_reply_in_dialog(struct sip_msg *req, struct sip_msg *rpl
 		}
 	}
 
-	leg = d_tmb.get_branch_index() + 1;
-
+	leg = DLG_FIRST_CALLEE_LEG;
+	/* find the first leg belonging to this transaction branch */
+	while (leg<dlg->legs_no[DLG_LEGS_USED] &&
+			dlg->legs[leg].branch_id != d_tmb.get_branch_index() + 1)
+		leg++;
+	if (leg >= dlg->legs_no[DLG_LEGS_USED]) {
+		LM_BUG("dialog leg %d[%.*s] without tm %d branch\n",
+				leg, tag.len, tag.s, d_tmb.get_branch_index() + 1);
+		if (ensure_leg_array(leg + 1, dlg) != 0)
+			goto out;
+		leg = dlg->legs_no[DLG_LEGS_USED]++;
+		dlg->legs[leg].branch_id = d_tmb.get_branch_index() + 1;
+	} else if (leg_is_answered(&dlg->legs[leg])) {
 	/* has the downstream element forked an extra branch starting from ours?
 	 * Treat these extra branches exactly the same (a callee leg) */
-	if (leg_is_answered(&dlg->legs[leg])) {
 		leg = dlg_clone_callee_leg(dlg, leg);
 		if (leg < 0) {
 			LM_ERR("failed to add callee leg!\n");
@@ -1566,19 +1576,15 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	 */
 	dlg_lock_dlg(dlg);
 
-	callee_leg = d_tmb.get_branch_index() + 1;
-	LM_DBG("pushing new leg %d/%d\n",
-				callee_leg, dlg->legs_no[DLG_LEGS_USED]);
+	callee_leg = dlg->legs_no[DLG_LEGS_USED];
+	LM_DBG("pushing new leg %d\n", callee_leg);
 	if (ensure_leg_array(callee_leg + 1, dlg) != 0)
 		goto out_free;
 
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
 	leg = &dlg->legs[callee_leg];
-	if (callee_leg >= dlg->legs_no[DLG_LEGS_USED])
-		dlg->legs_no[DLG_LEGS_USED] = callee_leg + 1;
-	else
-		LM_BUG("wrongfully increasing callee_leg %d/%d\n",
-				callee_leg, dlg->legs_no[DLG_LEGS_USED]);
+	leg->branch_id = d_tmb.get_branch_index() + 1;
+	dlg->legs_no[DLG_LEGS_USED] = callee_leg + 1;
 
 	dlg_unlock_dlg(dlg);
 
