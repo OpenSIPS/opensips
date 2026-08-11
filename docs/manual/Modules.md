@@ -176,7 +176,6 @@ description: ""
 * [**EVENT_DATAGRAM**](../../modules/event_datagram/README.md) - Publish JSON-RPC notifications using UDP, 🟢 **stable**
 * [**EVENT_FLATSTORE**](../../modules/event_flatstore/README.md) - Text/File backend for events, 🟢 **stable**
 * [**EVENT_KAFKA**](../../modules/event_kafka/README.md) - Publish JSON-RPC notifications/generic messages to Apache Kafka , 🟢 **stable**
-* [**EVENT_ROUTE**](../../modules/event_route/README.md) - Route triggering based on events, 🟢 **stable**
 * [**EVENT_ROUTING**](../../modules/event_routing/README.md) - Event-based routing, 🟢 **stable**
 * [**EVENT_RABBITMQ**](../../modules/event_rabbitmq/README.md) - Publish JSON-RPC notifications using AMQP over TCP , 🟢 **stable**
 * [**EVENT_STREAM**](../../modules/event_stream/README.md) - Publish JSON-RPC notifications using TCP, 🟢 **stable**
@@ -191,7 +190,6 @@ description: ""
 * [**MI_XMLRPC_NG**](../../modules/mi_xmlrpc_ng/README.md) - XMLRPC support for Management Interface , 🟢 **stable**
 * [**HTTPD**](../../modules/httpd/README.md) - Embedded HTTP server , 🟢 **stable**
 * [**PI_HTTP**](../../modules/pi_http/README.md) - Provisioning Interface module , 🟢 **stable**
-* [**RABBITMQ**](../../modules/rabbitmq/README.md) - Connector to a RabbitMQ message broker, 🟢 **stable**
 * [**RABBITMQ_CONSUMER**](../../modules/rabbitmq_consumer/README.md) - Connect to RabbitMQ and receive events, 🟢 **stable**
 * [**STATISTICS**](../../modules/statistics/README.md) - Script statistics support , 🟢 **stable**
 * [**STATUS_REPORT**](../../modules/status_report/README.md) - Script Status/Report identifiers support , 🟢 **stable**
@@ -217,7 +215,6 @@ description: ""
 * [**LDAP**](../../modules/ldap/README.md) - LDAP connector , 🟢 **stable**
 * [**PROMETHEUS**](../../modules/prometheus/README.md) - export statistics to a [Prometheus](http://prometheus.io/) server, 🟢 **stable**
 * [**REST_CLIENT**](../../modules/rest_client/README.md) - Implementation of an HTTP client , 🟢 **stable**
-* [**SEAS**](../../modules/seas/README.md) - Sip Express Application Server (interface module) , 🟢 **stable**
 * [**SIPCAPTURE**](../../modules/sipcapture/README.md) - SipCapture module , 🟢 **stable**
 * [**SIPREC**](../../modules/siprec/README.md) - SIP Recording module , 🟢 **stable**
 * [**TRACER**](../../modules/tracer/README.md) - Collects SIP, logs, DNS or REST queries and ships them to various backends , 🟢 **stable**
@@ -240,9 +237,9 @@ description: ""
 * [**PROTO_IPSEC**](../../modules/proto_ipsec/README.md) - implements IMS IPSec protocol according to TS 33.203 specs, beta
 * [**PROTO_MSRP**](../../modules/proto_msrp/README.md) - implements MSRP protocol stack, 🟢 **stable**
 * [**PROTO_SCTP**](../../modules/proto_sctp/README.md) - SCTP protocol module - implements SCTP transport for SIP , 🟢 **stable**
-* [**PROTO_TCP**](../../modules/proto_tcp/README.md) - TCP protocol module - implements TCP-plain transport for SIP , 🟢 **stable**
+* [**PROTO_TCP**](../../net/proto_tcp/README.md) - TCP protocol module - implements TCP-plain transport for SIP , 🟢 **stable**
 * [**PROTO_TLS**](../../modules/proto_tls/README.md) - TLS protocol module - implements TLS transport for SIP , 🟢 **stable**
-* [**PROTO_UDP**](../../modules/proto_udp/README.md) - UDP protocol module - implements UDP-plain transport for SIP , 🟢 **stable**
+* [**PROTO_UDP**](../../net/proto_udp/README.md) - UDP protocol module - implements UDP-plain transport for SIP , 🟢 **stable**
 * [**PROTO_WS**](../../modules/proto_ws/README.md) - WebSocket protocol module - implements WS transport for SIP , 🟢 **stable**
 * [**PROTO_WSS**](../../modules/proto_wss/README.md) - WebSocket Secure protocol module - implements WSS transport for SIP , 🟢 **stable**
 * [**PROTO_SMPP**](../../modules/proto_smpp/README.md) - SMPP (Short Message Peer-to-Peer) protocol module - implements transport for SMPP messages, 🟢 **stable**
