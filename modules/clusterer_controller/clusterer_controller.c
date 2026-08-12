@@ -275,6 +275,8 @@ static const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ]  = { 0xCC, 0x0
                                      + CL_CTR_CONSUMER_HDR_SZ + CLCTR_MAX_CHAN_LEN \
                                      + CL_CTR_TAG_SZ)
 #define CL_CTR_CONSUMER_PKT_MAX     (CL_CTR_PKT_OVERHEAD + CLCTR_MAX_PAYLOAD)
+/* how often one process may repeat the reliable-send refusal */
+#define CL_CTR_RELIABLE_WARN_IVL    60
 /* A datagram cannot exceed the UDP payload maximum no matter what the MTU
  * says - loopback reports 65536, which would otherwise compute a payload one
  * byte past what sendto() can accept. */
@@ -868,6 +870,32 @@ static int                    clctl_loaded  = 0;
 static int                    manage_shtags = 1;
 static int                    consumer_retries = CL_CTR_CONSUMER_RETRIES_DEFAULT;
 static int                    consumer_retry_ms = CL_CTR_CONSUMER_RETRY_MS_DEFAULT;
+/*
+ * CLCTR_SEND_RELIABLE is OFF unless the admin turns it on, because it does not
+ * work on a channel that carries concurrent messages and fails SILENTLY when
+ * it does not.
+ *
+ * cl_ctr_check_and_update_seq() requires pkt_seq > last_seq, and a retransmit
+ * reuses its original seq. On a serialised 1:1 exchange - the join handshake
+ * this was built for - nothing else from that peer is in flight, so the
+ * retransmit still carries the highest seq and is accepted. On a concurrent
+ * channel, later messages have already advanced last_consumer_seq by the time
+ * the retransmit arrives, so it is dropped as out-of-order AND re-ACKed, which
+ * stops the sender retransmitting and leaves it believing it delivered.
+ *
+ * Measured on the cross-node cache pull channel under 40% reply loss, three
+ * runs each: plain 61.2% delivered, RELIABLE 49.4% - worse, at two to three
+ * times the packets, with not one retransmitted payload ever delivered. So
+ * refusing the flag is an IMPROVEMENT, not a degradation, which is why the
+ * default drops it rather than failing the send.
+ *
+ * The only callers that can reach the flag today are the script functions,
+ * and they all share one channel (cl_ctr_script_chan) - concurrent by
+ * definition if two routes fire at once. Whether that happens is a property of
+ * the admin's own routes, which is exactly why this is a modparam: the admin
+ * can answer the question, and a module author cannot be asked via config.
+ */
+static int                    enable_reliable_send = 0;
 /* master_stickiness (global default; per-cluster override via "cluster" string):
  *   1 (default) = the master is "sticky": a live master keeps the role and is
  *                 NOT displaced when a higher-IP node joins.  The highest-IP
@@ -942,6 +970,7 @@ static const param_export_t params[] = {
     {"consumer_rate_limit", INT_PARAM, &consumer_rate_limit},
     {"consumer_retries",    INT_PARAM, &consumer_retries},
     {"consumer_retry_ms",   INT_PARAM, &consumer_retry_ms},
+    {"enable_reliable_send", INT_PARAM, &enable_reliable_send},
     {"manage_shtags", INT_PARAM, &manage_shtags},
     {"master_stickiness", INT_PARAM, &master_stickiness},
     {"on_config_mismatch", STR_PARAM, &on_config_mismatch_s},
@@ -7676,6 +7705,35 @@ static int cl_ctr_consumer_submit(int cluster_id, int dst_node_id,
                "use BIN for bulk data\n", payload_len, cc_max_payload);
         return -1;
     }
+
+    /* Single gate for every sender - the script functions and the consumer API
+     * both funnel through here, so the flag cannot survive by another route.
+     * Dropped rather than refused: a plain send measurably OUT-DELIVERS a
+     * reliable one on a concurrent channel (61.2% vs 49.4% under 40% loss), so
+     * ignoring the request is the better outcome, not a consolation prize. See
+     * the enable_reliable_send comment above for why it fails.
+     *
+     * The warning is process-local and rate-limited: several workers may each
+     * emit one per interval, which is the same trade pull_send_failed() makes -
+     * an occasional duplicate line costs less than a lock on a send path. */
+    if ((flags & CLCTR_SEND_RELIABLE) && !enable_reliable_send) {
+        static unsigned int last_warn;   /* per process, deliberately */
+        unsigned int now = get_ticks();
+
+        flags &= ~CLCTR_SEND_RELIABLE;
+        if (last_warn == 0 || now - last_warn >= CL_CTR_RELIABLE_WARN_IVL) {
+            last_warn = now;
+            LM_WARN("clusterer_controller: reliable delivery was requested on "
+                    "channel '%.*s' but enable_reliable_send is 0 - sending "
+                    "plain. That is deliberate: a retransmit reuses its seq, "
+                    "so on a channel carrying concurrent messages it is "
+                    "dropped as out-of-order AND re-ACKed, which silently "
+                    "stops the sender retransmitting. Enable it only if this "
+                    "channel never has two messages in flight to the same peer "
+                    "at once.\n", channel->len, channel->s);
+        }
+    }
+
     cl = cl_ctr_cluster_by_id(cluster_id);
     if (!cl) {
         LM_ERR("consumer send to unknown cluster %d\n", cluster_id);

@@ -89,7 +89,19 @@
  *
  * The cost, where it IS applicable: one ACK per recipient, so a reliable send
  * to the whole cluster is N-1 packets back where a plain one was nothing -
- * hence opt-in, and per send rather than per channel. */
+ * hence opt-in, and per send rather than per channel.
+ *
+ * GATED. Because of the above, the flag is IGNORED unless the deployment sets
+ *     modparam("clusterer_controller", "enable_reliable_send", 1)
+ * A send that asks for it without that gets a plain send and one rate-limited
+ * warning - which is the better outcome, not a fallback: plain measurably
+ * out-delivers reliable on a concurrent channel. The gate is a modparam
+ * because the only callers that can reach the flag today are the script
+ * functions, which all share one channel, and whether two of their messages
+ * are ever in flight to the same peer at once is a property of the
+ * deployment's own routes - a question the admin can answer and this module
+ * cannot. A consumer module that genuinely has a serialised 1:1 exchange still
+ * needs the admin to enable it. */
 #define CLCTR_SEND_RELIABLE  (1 << 1)
 
 /* limits a consumer can rely on */
