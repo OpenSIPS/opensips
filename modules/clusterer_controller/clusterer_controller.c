@@ -1046,16 +1046,37 @@ static const param_export_t params[] = {
  *
  * Cost is 128 bytes per peer per plane: 64 KB of shm for a full 256-peer table.
  *
- * NOT addressed here, and unchanged from the bare counter this replaces: the
- * comparison is plain unsigned, so if a sender's 32-bit counter ever wraps
- * inside one key epoch the receiver rejects everything after the wrap until
- * the next rotation resets both sides.  Fail-closed, but silent.  Left alone
- * deliberately - widening the accept test to serial-number arithmetic would
- * quietly enlarge what counts as a replay, which is not a change to make in
- * the same commit as a delivery fix.  Task #89.
+ * WRAP.  The comparison is serial-number arithmetic - (int32_t)(seq - last) -
+ * not plain unsigned, because the 32-bit counters do wrap inside one key
+ * epoch and a plain comparison rejects everything after the wrap until the
+ * next rotation.  That is fail-closed but silent, and the rotation it waits
+ * for may never come: a fresh master_salt is generated only in
+ * cl_ctr_on_became_master(), so a cluster with a stable master never rekeys
+ * on its own.  Nor is the wrap far off - every ACK bumps my_seq, so the
+ * control plane advances at the rate of the CONSUMER traffic it acknowledges,
+ * and at the window's own 12,800 msg/s ceiling 2^32 is under four days.
+ *
+ * Serial arithmetic alone would trade that outage for something worse: a
+ * packet captured 2^31 or more messages ago has a difference that reads back
+ * as a large POSITIVE, so it would be accepted as fresh.  Hence the forward
+ * jump is bounded as well - a step of CL_CTR_REPLAY_MAX_JUMP or more is
+ * refused as implausible rather than believed.  Real gaps stay far below it
+ * (it is 16.7M messages, ~22 minutes of one peer's output at that ceiling),
+ * and a peer that somehow exceeds it is recovered by the window reset that
+ * already runs when it re-joins or reappears in a MEMBER_LIST.
+ *
+ * What remains, and is inherent to a 32-bit counter: a packet held across a
+ * FULL 2^32 cycle lands back inside the window and is accepted. That needs
+ * 2^32 messages in one key epoch with the attacker holding the packet
+ * throughout.
  */
 #define CL_CTR_REPLAY_WIN_BITS   1024
 #define CL_CTR_REPLAY_WIN_WORDS  (CL_CTR_REPLAY_WIN_BITS / 64)
+/* Largest forward step believed to be a real gap rather than a wrapped-around
+ * replay.  Must sit well above any credible burst of loss from one peer and
+ * well below 2^31, where serial arithmetic stops being able to tell the two
+ * apart. */
+#define CL_CTR_REPLAY_MAX_JUMP   (1u << 24)
 
 typedef struct {
     uint32_t last;                            /* highest seq accepted so far  */
@@ -1073,6 +1094,9 @@ typedef struct {
 #define CL_CTR_SEQ_DUP  (-1)  /* inside the window, bit already set: drop     */
 #define CL_CTR_SEQ_OLD  (-2)  /* below the window: drop, and we cannot know   */
                               /* whether we ever had it                       */
+#define CL_CTR_SEQ_JUMP (-3)  /* implausibly far ahead: a wrapped-around      */
+                              /* replay, or a peer we have lost far too much  */
+                              /* of - refuse either way                       */
 
 static inline void cl_ctr_replay_reset(cl_ctr_replay_t *r)
 {
@@ -1086,10 +1110,13 @@ static inline void cl_ctr_replay_reset(cl_ctr_replay_t *r)
  */
 static inline int cl_ctr_replay_check(cl_ctr_replay_t *r, uint32_t seq)
 {
+    int32_t  fwd = (int32_t)(seq - r->last);   /* serial-number difference */
     uint32_t d, s;
 
-    if (seq > r->last) {                 /* forward: the common case          */
-        d = seq - r->last;
+    if (fwd > 0) {                       /* forward: the common case          */
+        d = (uint32_t)fwd;
+        if (d >= CL_CTR_REPLAY_MAX_JUMP)
+            return CL_CTR_SEQ_JUMP;
         if (d >= CL_CTR_REPLAY_WIN_BITS) {
             memset(r->win, 0, sizeof r->win);
         } else {
@@ -1105,10 +1132,11 @@ static inline int cl_ctr_replay_check(cl_ctr_replay_t *r, uint32_t seq)
         return CL_CTR_SEQ_OK;
     }
 
-    /* At or below the mark.  Note seq == last == 0 with an empty window is the
-     * untouched state, and falls out here as a legitimate first accept - it
-     * costs nothing to allow, and every sender in fact starts at 1
-     * (++my_seq). */
+    /* At or below the mark.  Unsigned subtraction gives the exact backward
+     * distance even across a wrap, and avoids negating INT32_MIN.  Note
+     * seq == last == 0 with an empty window is the untouched state and falls
+     * out here as a legitimate first accept - it costs nothing to allow, and
+     * every sender in fact starts at 1 (++my_seq). */
     d = r->last - seq;
     if (d >= CL_CTR_REPLAY_WIN_BITS)
         return CL_CTR_SEQ_OLD;
@@ -2728,6 +2756,7 @@ static int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
 static int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
                                    cl_ctr_cluster_t *cl, int is_consumer)
 {
+    const char *why;
     int i, rc;
     for (i = 0; i < cl->peers->count; i++) {
         if (strcmp(cl->peers->entries[i].ip, sender_ip) == 0) {
@@ -2745,17 +2774,18 @@ static int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
              * ordinary.  Reordering no longer reaches here at all - the window
              * accepts it - so what is left really is a repeat or something
              * older than the window can vouch for. */
+            why = rc == CL_CTR_SEQ_DUP  ? "already accepted"
+                : rc == CL_CTR_SEQ_JUMP ? "implausibly far ahead - a wrapped "
+                                          "replay, or this peer's traffic has "
+                                          "been lost wholesale"
+                                        : "older than the replay window";
             if (is_consumer)
                 LM_DBG("clusterer_controller: consumer packet from %s seq=%u "
                        "last=%u %s, dropping\n", sender_ip, pkt_seq, r->last,
-                       rc == CL_CTR_SEQ_DUP ? "already accepted"
-                                            : "older than the replay window");
+                       why);
             else
-                LM_WARN("clusterer_controller: %s from %s seq=%u last=%u, "
-                        "dropping\n",
-                        rc == CL_CTR_SEQ_DUP ? "replay"
-                                             : "packet older than the replay window",
-                        sender_ip, pkt_seq, r->last);
+                LM_WARN("clusterer_controller: packet from %s seq=%u last=%u "
+                        "%s, dropping\n", sender_ip, pkt_seq, r->last, why);
             return rc;
         }
     }
@@ -5789,17 +5819,27 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 			if (last_old_warn == 0 ||
 			    now_t - last_old_warn >= CL_CTR_RELIABLE_WARN_IVL) {
 			    last_old_warn = now_t;
-			    LM_WARN("clusterer_controller: reliable message from "
-			            "%s seq=%u fell more than %d messages behind "
-			            "the replay window and cannot be confirmed - "
-			            "NOT acknowledging. The sender is offering "
-			            "more than the window spans within its "
-			            "retransmit horizon (consumer_retries x "
-			            "consumer_retry_ms = %d ms); lower that "
-			            "horizon or expect losses.\n",
-			            sender_ip_buf, pkt_seq,
-			            CL_CTR_REPLAY_WIN_BITS,
-			            cl->consumer_retries * cl->consumer_retry_ms);
+			    if (_seq_rc == CL_CTR_SEQ_JUMP)
+				LM_WARN("clusterer_controller: reliable message "
+				        "from %s seq=%u is implausibly far ahead "
+				        "of that peer's last accepted sequence - "
+				        "refused and NOT acknowledged. Either a "
+				        "replay of a very old packet, or this "
+				        "peer's traffic has been lost wholesale; "
+				        "membership will reset the window when it "
+				        "rejoins.\n", sender_ip_buf, pkt_seq);
+			    else
+				LM_WARN("clusterer_controller: reliable message "
+				        "from %s seq=%u fell more than %d messages "
+				        "behind the replay window and cannot be "
+				        "confirmed - NOT acknowledging. The sender "
+				        "is offering more than the window spans "
+				        "within its retransmit horizon "
+				        "(consumer_retries x consumer_retry_ms = "
+				        "%d ms); lower that horizon or expect "
+				        "losses.\n", sender_ip_buf, pkt_seq,
+				        CL_CTR_REPLAY_WIN_BITS,
+				        cl->consumer_retries * cl->consumer_retry_ms);
 			}
 		    }
 		}
