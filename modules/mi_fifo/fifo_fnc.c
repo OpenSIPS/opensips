@@ -597,7 +597,12 @@ static void fifo_close_async(mi_response_t *resp, struct mi_handler *hdl, int do
 
 	if (resp || done) {
 		if (resp!=0) {
-			rc = mi_fifo_reply(NULL, p->file, &buf, resp, p->id, NULL);
+			if (p->file)
+				rc = mi_fifo_reply(NULL, p->file, &buf, resp, p->id, NULL);
+			else {
+				free_mi_response(resp);
+				rc = MI_NO_RPL;
+			}
 			if (rc == MI_NO_RPL) {
 				LM_DBG("No reply for jsonrpc notification\n");
 			} else if (rc < 0) {
@@ -632,15 +637,16 @@ static inline struct mi_handler* build_async_handler(char *name, int len, mi_ite
 		char file[0];
 	} *buf;
 
-	buf = shm_malloc(sizeof(*buf) + len + 1);
+	buf = shm_malloc(sizeof(*buf) + (name ? len + 1 : 0));
 	if (buf == NULL) {
 		LM_ERR("no more shared memory\n");
 		return 0;
 	}
-	buf->p.file = buf->file;
+	buf->p.file = name ? buf->file : NULL;
 	buf->p.id = shm_clone_mi_item(id);
 
-	memcpy(buf->file, name, len+1 );
+	if (name)
+		memcpy(buf->file, name, len+1);
 
 	buf->hdl.handler_f = fifo_close_async;
 	buf->hdl.param = &buf->p;
@@ -753,7 +759,7 @@ retry:
 		cmd = lookup_mi_cmd(req_method, strlen(req_method));
 	/* if asyncron cmd, build the async handler */
 	if (cmd && cmd->flags&MI_ASYNC_RPL_FLAG) {
-		hdl = build_async_handler(file, strlen(file), request.id);
+		hdl = build_async_handler(file, file ? strlen(file) : 0, request.id);
 		if (hdl==0) {
 			LM_ERR("failed to build async handler\n");
 
