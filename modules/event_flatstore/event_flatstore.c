@@ -970,7 +970,7 @@ static void flat_free(evi_reply_sock *sock) {
 		for (it = *list_sockets; it->next && fs != it->next; it = it->next) ;
 		if (it->next) {
 			it->next = it->next->next;
-			shm_free(it->next);
+			shm_free(fs);
 		}
 	}
 
