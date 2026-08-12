@@ -358,20 +358,28 @@ static void call_transfer_dlg_unref(void *p)
 static inline void call_transfer_raise(struct dlg_cell *dlg, str *callid, str *ruri,
 		str *state, str *status)
 {
-	/* XXX: old leg is caller or callee, so it should be safe to use a buffer
-	 * of 6 bytes */
-	char buf[sizeof("caller")];
 	int_str old_leg;
 	int val_type;
+	int fetched = 0;
 
-	old_leg.s = str_init(buf);
+	old_leg.s = STR_NULL;
 
 	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &val_type,
-		&old_leg, 1) < 0)
+		&old_leg, 1) >= 0) {
+		if (val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("invalid call transfer leg value type %d\n", val_type);
+			old_leg.s = empty_str;
+		} else {
+			fetched = 1;
+		}
+	} else {
 		init_str(&old_leg.s, "unknown");
+	}
 
 	RAISE_CALL_EVENT(TRANSFER, &dlg->callid, &old_leg.s,
 			callid, ruri, state, status, NULL);
+	if (fetched)
+		pkg_free(old_leg.s.s);
 }
 
 static void call_transfer_reply(struct cell *t, int type, struct tmcb_params *ps)
