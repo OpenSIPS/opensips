@@ -219,7 +219,7 @@ before an Answer could be processed)
 This function can be used from any route.
 
 
-``` title="dictionary.opensips extended syntax"
+```
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
 
