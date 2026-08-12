@@ -8231,10 +8231,10 @@ static int cl_ctr_script_send(int cluster_id, int node_id, str *gen_msg,
 		taglen = 255;
 	/* Bound against the BUFFER, not only against cc_max_payload. They are
 	 * derived from one another at mod_init now, but this function writes
-	 * into buf[] and buf[] is what it must answer to - the sibling
-	 * cmd_cl_ctr_send_req_list() has always guarded with sizeof(buf), and
-	 * the gap between the two forms is exactly how a 1500-MTU link turned a
-	 * 1350-byte script message into an 89-byte stack overrun. */
+	 * into buf[] and buf[] is what it must answer to - the gap between the
+	 * two forms is exactly how a 1500-MTU link turned a 1350-byte script
+	 * message into an 89-byte stack overrun. cmd_cl_ctr_send_req_list()
+	 * now shares this buffer and this guard. */
 	if (!buf || 2 + taglen + gen_msg->len > cl_ctr_script_buf_sz ||
 	    2 + taglen + gen_msg->len > cc_max_payload) {
 		LM_ERR("clusterer_controller: message of %d bytes is more than the "
@@ -8327,15 +8327,25 @@ static int cmd_cl_ctr_send_req_list(struct sip_msg *msg, int *cluster_id,
 			CL_CTR_MAX_PEERS);
 
 	{
-		char  buf[CLCTR_MAX_PAYLOAD];
+		/* The same MTU-derived buffer its two siblings use, not a
+		 * CLCTR_MAX_PAYLOAD stack array.  A compile-time 1300 here meant
+		 * that on a jumbo link a script could broadcast an 8 KB message
+		 * but could not send the same message to a LIST of nodes - the
+		 * list form silently stopped at a seventh of what the other two
+		 * carried, with an error that blamed "the cluster plane" rather
+		 * than the buffer. */
+		char *buf  = cl_ctr_script_buf;
 		str   pl;
 		int   tlen = tag ? tag->len : 0;
 
 		if (tlen > 255)
 			tlen = 255;
-		if (2 + tlen + gen_msg->len > (int)sizeof(buf)) {
-			LM_ERR("clusterer_controller: message too large for the "
-			       "cluster plane (%d bytes)\n", gen_msg->len);
+		if (!buf || 2 + tlen + gen_msg->len > cl_ctr_script_buf_sz ||
+		    2 + tlen + gen_msg->len > cc_max_payload) {
+			LM_ERR("clusterer_controller: message of %d bytes is more "
+			       "than the %d a datagram carries\n", gen_msg->len,
+			       cc_max_payload < cl_ctr_script_buf_sz
+			           ? cc_max_payload : cl_ctr_script_buf_sz);
 			return -1;
 		}
 		buf[0] = (char)CL_CTR_SCRIPT_REQ;
