@@ -662,8 +662,10 @@ static void virtual_free(evi_reply_sock *sock) {
 	sub_list = vsock->list_sockets;
 	while (sub_list) {
 		/* call the free function of the subscriber */
-		if (sub_list->trans_mod) {
+		if (sub_list->trans_mod && sub_list->trans_mod->free) {
 			sub_list->trans_mod->free(sub_list->sock);
+		} else if (sub_list->sock) {
+			shm_free(sub_list->sock);
 		}
 		tmp_s = sub_list;
 		sub_list = sub_list->next;
