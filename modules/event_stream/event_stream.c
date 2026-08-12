@@ -153,8 +153,8 @@ static int stream_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 	}
 	if (!sock1->params)
 		return 1;
-	m1 = (str *)&sock1->params;
-	m2 = (str *)&sock2->params;
+	m1 = (str *)sock1->params;
+	m2 = (str *)sock2->params;
 	if (m1->len != m2->len || memcmp(m1->s, m2->s, m1->len))
 		return 0;
 	return 1;
