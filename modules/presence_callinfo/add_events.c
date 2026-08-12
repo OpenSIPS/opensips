@@ -314,7 +314,7 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 		/* new SUBSCRIBE */
 		if (sca->seize_state!=0) {
 			/* already in seizing from a different subscrine */
-			if (sca->seize_expires < get_ticks()) {
+			if (sca->seize_expires > get_ticks()) {
 				/* old seizing still valid -> reject it */
 				*reply_code = 480;
 				reply_reason->s = "Temporarily Unavailable";
