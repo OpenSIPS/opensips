@@ -899,9 +899,7 @@ static int                    manage_shtags = 1;
 static int                    consumer_retries = CL_CTR_CONSUMER_RETRIES_DEFAULT;
 static int                    consumer_retry_ms = CL_CTR_CONSUMER_RETRY_MS_DEFAULT;
 /*
- * CLCTR_SEND_RELIABLE is OFF unless the admin turns it on, because it does not
- * work on a channel that carries concurrent messages and fails SILENTLY when
- * it does not.
+ * enable_reliable_send - kill switch for the consumer ARQ (ACK + retransmit).
  *
  * ON by default, which it was NOT when it was first added hours earlier: the
  * flag then could not work on a channel carrying concurrent messages, and
@@ -918,13 +916,13 @@ static int                    consumer_retry_ms = CL_CTR_CONSUMER_RETRY_MS_DEFAU
  * whose bit is set is a true duplicate and is re-ACKed without being delivered
  * twice. The flag now does what it says on any channel.
  *
- * The only callers that can reach the flag today are the script functions,
- * and they all share one channel (cl_ctr_script_chan) - concurrent by
- * definition if two routes fire at once. Whether that happens is a property of
- * the admin's own routes, which is exactly why this is a modparam: the admin
- * can answer the question, and a module author cannot be asked via config.
+ * The switch survives the fix rather than being deleted with it, because ARQ
+ * still has a cost the operator may not want on a given fleet: a reliable
+ * broadcast draws one ACK per member, so on a large cluster a single message
+ * becomes an event. Turning this off degrades every reliable send to a plain
+ * one - lossy, but cheap and never silent about it.
  */
-static int                    enable_reliable_send = 0;
+static int                    enable_reliable_send = 1;
 /* master_stickiness (global default; per-cluster override via "cluster" string):
  *   1 (default) = the master is "sticky": a live master keeps the role and is
  *                 NOT displaced when a higher-IP node joins.  The highest-IP
@@ -8049,14 +8047,12 @@ static int cl_ctr_consumer_submit(int cluster_id, int dst_node_id,
 
     /* Single gate for every sender - the script functions and the consumer API
      * both funnel through here, so the flag cannot survive by another route.
-     * Dropped rather than refused: a plain send measurably OUT-DELIVERS a
-     * reliable one on a concurrent channel (61.2% vs 49.4% under 40% loss), so
-     * ignoring the request is the better outcome, not a consolation prize. See
-     * the enable_reliable_send comment above for why it fails.
      *
-     * The warning is process-local and rate-limited: several workers may each
-     * emit one per interval, which is the same trade pull_send_failed() makes -
-     * an occasional duplicate line costs less than a lock on a send path. */
+     * enable_reliable_send=0 degrades a reliable send to a plain one rather
+     * than failing it: the payload still goes out, it just is not chased. The
+     * warning is process-local and rate-limited - several workers may each emit
+     * one per interval, the same trade pull_send_failed() makes, because an
+     * occasional duplicate line costs less than a lock on a send path. */
     if ((flags & CLCTR_SEND_RELIABLE) && !enable_reliable_send) {
         static unsigned int last_warn;   /* per process, deliberately */
         unsigned int now = get_ticks();
@@ -8066,12 +8062,9 @@ static int cl_ctr_consumer_submit(int cluster_id, int dst_node_id,
             last_warn = now;
             LM_WARN("clusterer_controller: reliable delivery was requested on "
                     "channel '%.*s' but enable_reliable_send is 0 - sending "
-                    "plain. That is deliberate: a retransmit reuses its seq, "
-                    "so on a channel carrying concurrent messages it is "
-                    "dropped as out-of-order AND re-ACKed, which silently "
-                    "stops the sender retransmitting. Enable it only if this "
-                    "channel never has two messages in flight to the same peer "
-                    "at once.\n", channel->len, channel->s);
+                    "plain, so this message is not acknowledged and not "
+                    "retransmitted if it is lost.\n",
+                    channel->len, channel->s);
         }
     }
 

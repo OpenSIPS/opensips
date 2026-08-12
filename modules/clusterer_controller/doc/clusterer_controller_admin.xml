@@ -1262,6 +1262,29 @@ configured for this cluster
 		</para>
 	</section>
 
+	<section id="param_enable_reliable_send" xreflabel="enable_reliable_send">
+		<title><varname>enable_reliable_send</varname> (int)</title>
+		<para>
+			Whether the <emphasis>CLCTR_SEND_RELIABLE</emphasis> flag is
+			honoured. On by default. Set it to 0 to turn the
+			acknowledge-and-retransmit machinery off fleet-wide: a send that
+			asks for reliability then gets an ordinary best-effort one - the
+			payload still goes out, it is simply not acknowledged and not
+			repeated if it is lost - and the module logs one rate-limited
+			warning.
+		</para>
+		<para>
+			The reason to want that is cost rather than doubt. A reliable
+			broadcast draws one acknowledgement back from every member, so
+			on a large cluster one message becomes an event; a fleet that
+			would rather not pay for it can decline here without editing the
+			consumers that ask.
+		</para>
+		<para>
+			<emphasis>Default value is <quote>1</quote>.</emphasis>
+		</para>
+	</section>
+
     <section id="exported_mi" xreflabel="Exported MI Functions">
     <title>Exported MI Functions</title>
 
@@ -1692,6 +1715,27 @@ if (cl_ctr_send_req_list(1, $avp(nodes), "just for you", "mytag", $var(sent)))
 	<xref linkend="param_consumer_retry_ms"/> intervals. It is chosen per
 	send rather than per channel, because most messages are better off cheap
 	and the ones that are not know who they are.
+    </para>
+    <para>
+	What that buys is at-most-once delivery, on any channel - including one
+	carrying several messages to the same peer at the same time. The receiver
+	accepts each sequence number exactly once and keeps a window of the recent
+	ones, so it can tell a repair (never delivered: accept it, acknowledge it)
+	from a duplicate (already delivered: acknowledge again, because our first
+	answer evidently went missing, but do not hand the payload up twice).
+	Consumers are not asked to deduplicate.
+    </para>
+    <para>
+	The window spans a fixed number of messages rather than a fixed time, so a
+	peer sending faster than that window divided by its retransmit horizon -
+	<xref linkend="param_consumer_retries"/> multiplied by
+	<xref linkend="param_consumer_retry_ms"/> - can outrun it. A repair that
+	arrives that late is dropped and deliberately <emphasis>not</emphasis>
+	acknowledged, because at that point the receiver genuinely cannot say
+	whether it ever had the message, and an acknowledgement it cannot justify
+	is worse than none. Both ends log it. With the default timings the ceiling
+	is around 12,800 messages a second from any one peer, and the module
+	reports the figure in force at startup.
     </para>
     <para>
 	The cost is one acknowledgement per recipient. On a large cluster a

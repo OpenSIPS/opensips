@@ -60,48 +60,39 @@
 #define CLCTR_SEND_TO_SELF   (1 << 0)
 /* Ask for the message to be acknowledged, and resent while it is not.
  *
- * ONLY USE THIS ON A CHANNEL WHERE ONE MESSAGE PER PEER IS IN FLIGHT AT A
- * TIME.  It is not a general-purpose reliability option, and on a channel
- * with concurrent traffic it does not merely cost extra packets - it does
- * not work, and it fails silently.
+ * Valid on any channel, including one carrying concurrent messages.  That was
+ * NOT true before the receiver grew a replay window, and code or notes
+ * predating it may still say the flag is for serialised 1:1 exchanges only.
  *
- * Why: every packet carries a sequence number, and a receiver drops anything
- * whose seq is not strictly greater than the last it accepted from that peer
- * (cl_ctr_check_and_update_seq(), the anti-replay guard).  A retransmit
- * re-sends the cached bytes, so it carries its ORIGINAL seq.  On a serialised
- * 1:1 exchange - the join handshake this was built for - nothing else is in
- * flight from that peer, so the retransmit is still the highest seq and is
- * accepted.  As soon as a second message can overtake it, the retransmit
- * arrives behind a higher seq and is discarded as out of order.  The receive
- * path then re-ACKs it, deliberately, so the sender stops retransmitting and
- * believes it delivered.  Nothing is logged above debug level at either end.
+ * How it behaves.  Every packet carries a sequence number and the receiver
+ * accepts each one exactly once.  A retransmit re-sends the cached bytes, so
+ * it carries its ORIGINAL seq; the receiver looks that seq up in a window of
+ * the last CL_CTR_REPLAY_WIN_BITS it has seen from that peer and can tell the
+ * two cases apart - never delivered (accept it now, ACK) versus already
+ * delivered (do not deliver twice, but re-ACK, because a duplicate means our
+ * previous ACK was lost).  Delivery is therefore at-most-once, and the sender
+ * retransmits until acknowledged or its budget runs out.
  *
- * Measured, rather than reasoned about: applying this flag to the
- * cross-node cache pull channel (concurrent by nature) made the delivery rate
- * WORSE - 61% -> 49% under 40% reply loss, at two to three times the packet
- * count - and not one retransmitted payload was ever delivered.  See the
- * clusterer_controller notes for the harness.
+ * The one limit worth knowing: the window spans a number of MESSAGES, so a
+ * peer sending faster than the window divided by the retransmit horizon
+ * (consumer_retries x consumer_retry_ms) can outrun it.  A repair arriving
+ * that late is dropped and deliberately NOT acknowledged - the sender is told,
+ * by silence, that delivery is unconfirmed, and the receiver logs it.  With
+ * the defaults that ceiling is ~12,800 msg/s from one peer; mod_init logs the
+ * value in force.
  *
- * So most consumer traffic is better served by being idempotent and retried
- * by its own logic, which is how the cross-node cache fetch works and why it
- * asks for nothing here.  That was always the recommendation; the point of
- * this note is that for a concurrent channel it is the only thing that works.
+ * The cost: one ACK per recipient, so a reliable send to the whole cluster is
+ * N-1 packets back where a plain one was nothing - hence opt-in, and per send
+ * rather than per channel.  Traffic that can simply be made idempotent and
+ * retried by its own logic should still prefer that, which is what the
+ * cross-node cache fetch does and why it asks for nothing here.
  *
- * The cost, where it IS applicable: one ACK per recipient, so a reliable send
- * to the whole cluster is N-1 packets back where a plain one was nothing -
- * hence opt-in, and per send rather than per channel.
- *
- * GATED. Because of the above, the flag is IGNORED unless the deployment sets
- *     modparam("clusterer_controller", "enable_reliable_send", 1)
- * A send that asks for it without that gets a plain send and one rate-limited
- * warning - which is the better outcome, not a fallback: plain measurably
- * out-delivers reliable on a concurrent channel. The gate is a modparam
- * because the only callers that can reach the flag today are the script
- * functions, which all share one channel, and whether two of their messages
- * are ever in flight to the same peer at once is a property of the
- * deployment's own routes - a question the admin can answer and this module
- * cannot. A consumer module that genuinely has a serialised 1:1 exchange still
- * needs the admin to enable it. */
+ * KILL SWITCH.  The flag is honoured unless the deployment sets
+ *     modparam("clusterer_controller", "enable_reliable_send", 0)
+ * which degrades every reliable send to a plain one - the payload still goes
+ * out, it is simply neither acknowledged nor retransmitted - and logs one
+ * rate-limited warning.  That exists for fleets that would rather not pay the
+ * ACK traffic, not because the mechanism is in doubt. */
 #define CLCTR_SEND_RELIABLE  (1 << 1)
 
 /* limits a consumer can rely on */
