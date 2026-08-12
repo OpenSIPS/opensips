@@ -567,9 +567,11 @@ static inline const char *cl_ctr_role_name(int r)
 /*
  * One outstanding 1:1 handshake packet awaiting an ACK.  The full sealed bytes
  * are cached so a retransmit is a single sendto() with no re-encryption: the
- * same seq/nonce is resent, which a peer that already got it (and ACKed) will
- * not see again, while one that lost it still has an older last_seq and accepts
- * it.  Worker-local (only the controller worker touches the queue), so no lock.
+ * same seq/nonce is resent, and the receiver's replay window sorts out which
+ * is which - a peer that already got it (and ACKed) finds the bit set and only
+ * re-ACKs, while one that lost it finds the bit clear and accepts it, however
+ * many of its peer's later messages arrived in between.  Worker-local (only
+ * the controller worker touches the queue), so no lock.
  */
 typedef struct {
     int                     used;
@@ -875,19 +877,20 @@ static int                    consumer_retry_ms = CL_CTR_CONSUMER_RETRY_MS_DEFAU
  * work on a channel that carries concurrent messages and fails SILENTLY when
  * it does not.
  *
- * cl_ctr_check_and_update_seq() requires pkt_seq > last_seq, and a retransmit
- * reuses its original seq. On a serialised 1:1 exchange - the join handshake
- * this was built for - nothing else from that peer is in flight, so the
- * retransmit still carries the highest seq and is accepted. On a concurrent
- * channel, later messages have already advanced last_consumer_seq by the time
- * the retransmit arrives, so it is dropped as out-of-order AND re-ACKed, which
- * stops the sender retransmitting and leaves it believing it delivered.
+ * ON by default, which it was NOT when it was first added hours earlier: the
+ * flag then could not work on a channel carrying concurrent messages, and
+ * failed silently when it did not. A retransmit reuses its original seq, and
+ * the receiver's anti-replay guard was a bare high-water mark, so once any
+ * later message had been accepted the repair copy was rejected as
+ * out-of-order AND re-ACKed - which stopped the sender retransmitting and left
+ * it believing it had delivered. Measured on the cross-node cache pull channel
+ * under 40% reply loss: plain 61.2% delivered, RELIABLE 49.4%, at two to three
+ * times the packets, with not one retransmitted payload ever delivered.
  *
- * Measured on the cross-node cache pull channel under 40% reply loss, three
- * runs each: plain 61.2% delivered, RELIABLE 49.4% - worse, at two to three
- * times the packets, with not one retransmitted payload ever delivered. So
- * refusing the flag is an IMPROVEMENT, not a degradation, which is why the
- * default drops it rather than failing the send.
+ * The replay window (cl_ctr_replay_t) removes that: a seq below the mark whose
+ * bit is clear was never delivered, so its retransmit is accepted, while a seq
+ * whose bit is set is a true duplicate and is re-ACKed without being delivered
+ * twice. The flag now does what it says on any channel.
  *
  * The only callers that can reach the flag today are the script functions,
  * and they all share one channel (cl_ctr_script_chan) - concurrent by
@@ -981,6 +984,117 @@ static const param_export_t params[] = {
  * Peer table (shared memory)
  * ========================================================================= */
 
+/*
+ * Anti-replay window - a high-water mark PLUS a bitmap of what has already
+ * been accepted at or below it, which is the standard construction (IPsec
+ * RFC 4303 A.2, DTLS RFC 6347 4.1.2.6).
+ *
+ * A bare high-water mark cannot tell "already delivered" from "delivered out
+ * of order", so it has to reject both, and that breaks two things at once:
+ *
+ *   - a retransmit carries its ORIGINAL seq, so once any later message has
+ *     been accepted the repair copy is discarded - the reliable-send defect;
+ *   - ordinary reordering, which any multipath network produces, silently
+ *     drops consumer payloads that were never duplicated at all.
+ *
+ * The bitmap separates the two.  A seq below the mark is accepted exactly
+ * once: the first copy is delivered and its bit set, and every later copy of
+ * that same seq finds the bit set and is a genuine duplicate.  Replay
+ * protection is unchanged - no seq is ever accepted twice - while loss repair
+ * and reordering now work.
+ *
+ * The bitmap is circular: the slot for seq s is s % CL_CTR_REPLAY_WIN_BITS,
+ * so advancing the mark clears only the slots the window moved onto (one, in
+ * the in-order case) instead of shifting 128 bytes per packet.
+ *
+ * SIZING.  The window has to span the longest interval over which a repair for
+ * seq s can still arrive, expressed in messages from that peer on that plane:
+ *
+ *     window > peak per-peer send rate x retransmit horizon
+ *
+ * The consumer horizon is consumer_retries x consumer_retry_ms = 80 ms with
+ * the defaults, so 1024 slots hold out to ~12,800 msg/s from a single peer -
+ * two orders above anything this plane carries (the cross-node cache pull
+ * channel measures ~0.3/s).  The control plane's horizon is longer, 3 x 250 ms,
+ * but it sends a handful of packets a second.  mod_init logs the derived
+ * ceiling because both horizon terms are admin-settable and a config that
+ * narrows it should say so rather than wait to be discovered as loss.
+ *
+ * Cost is 128 bytes per peer per plane: 64 KB of shm for a full 256-peer table.
+ *
+ * NOT addressed here, and unchanged from the bare counter this replaces: the
+ * comparison is plain unsigned, so if a sender's 32-bit counter ever wraps
+ * inside one key epoch the receiver rejects everything after the wrap until
+ * the next rotation resets both sides.  Fail-closed, but silent.  Left alone
+ * deliberately - widening the accept test to serial-number arithmetic would
+ * quietly enlarge what counts as a replay, which is not a change to make in
+ * the same commit as a delivery fix.  Task #89.
+ */
+#define CL_CTR_REPLAY_WIN_BITS   1024
+#define CL_CTR_REPLAY_WIN_WORDS  (CL_CTR_REPLAY_WIN_BITS / 64)
+
+typedef struct {
+    uint32_t last;                            /* highest seq accepted so far  */
+    uint64_t win[CL_CTR_REPLAY_WIN_WORDS];    /* circular, slot = seq % BITS  */
+} cl_ctr_replay_t;
+
+#define CL_CTR_RP_WORD(s)  ((((uint32_t)(s)) % CL_CTR_REPLAY_WIN_BITS) / 64)
+#define CL_CTR_RP_MASK(s)  (1ULL << ((((uint32_t)(s)) % CL_CTR_REPLAY_WIN_BITS) % 64))
+
+/* Verdicts from cl_ctr_check_and_update_seq().  Three, not two: "seen this
+ * exact packet before" and "too old to have an opinion about" call for
+ * opposite handling on the reliable path - one must be re-ACKed, the other
+ * must not be. */
+#define CL_CTR_SEQ_OK     0   /* fresh: accept and deliver                    */
+#define CL_CTR_SEQ_DUP  (-1)  /* inside the window, bit already set: drop     */
+#define CL_CTR_SEQ_OLD  (-2)  /* below the window: drop, and we cannot know   */
+                              /* whether we ever had it                       */
+
+static inline void cl_ctr_replay_reset(cl_ctr_replay_t *r)
+{
+    r->last = 0;
+    memset(r->win, 0, sizeof r->win);
+}
+
+/*
+ * Accept @seq at most once.  Not thread-safe by design: the only caller is the
+ * cluster's single worker reactor, same as the counter it replaces.
+ */
+static inline int cl_ctr_replay_check(cl_ctr_replay_t *r, uint32_t seq)
+{
+    uint32_t d, s;
+
+    if (seq > r->last) {                 /* forward: the common case          */
+        d = seq - r->last;
+        if (d >= CL_CTR_REPLAY_WIN_BITS) {
+            memset(r->win, 0, sizeof r->win);
+        } else {
+            /* Clear the slots the window has just moved onto.  These hold
+             * bits for seqs a full window older, which must not be mistaken
+             * for the fresh ones now mapping to the same slots. */
+            for (s = r->last + 1; s != seq; s++)
+                r->win[CL_CTR_RP_WORD(s)] &= ~CL_CTR_RP_MASK(s);
+            r->win[CL_CTR_RP_WORD(seq)] &= ~CL_CTR_RP_MASK(seq);
+        }
+        r->last = seq;
+        r->win[CL_CTR_RP_WORD(seq)] |= CL_CTR_RP_MASK(seq);
+        return CL_CTR_SEQ_OK;
+    }
+
+    /* At or below the mark.  Note seq == last == 0 with an empty window is the
+     * untouched state, and falls out here as a legitimate first accept - it
+     * costs nothing to allow, and every sender in fact starts at 1
+     * (++my_seq). */
+    d = r->last - seq;
+    if (d >= CL_CTR_REPLAY_WIN_BITS)
+        return CL_CTR_SEQ_OLD;
+    if (r->win[CL_CTR_RP_WORD(seq)] & CL_CTR_RP_MASK(seq))
+        return CL_CTR_SEQ_DUP;
+
+    r->win[CL_CTR_RP_WORD(seq)] |= CL_CTR_RP_MASK(seq);
+    return CL_CTR_SEQ_OK;
+}
+
 typedef struct cl_ctr_peer_ {
     char         ip[CL_CTR_MAX_IP_LEN + 1];
     unsigned int ip_num;
@@ -993,14 +1107,14 @@ typedef struct cl_ctr_peer_ {
     char         bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
     unsigned char pubkey[CL_CTR_PUBKEY_SZ];           /* long-lived X25519 pubkey (from ALIVE);
                                                      zero if unknown; used for KEY_HANDOFF */
-    uint32_t      last_seq;                        /* highest seq accepted from this peer */
+    cl_ctr_replay_t replay;                        /* control-plane anti-replay */
     /* Consumer traffic is counted separately from the control plane.  They
      * share a session key and a socket but not a sequence space: a consumer
      * may send thousands of packets a second where the control plane sends a
      * handful, and one counter for both means a reordered consumer packet can
      * make a MASTER_ALIVE arriving behind it look like a replay - which is a
      * missed liveness beacon, not a dropped cache reply. */
-    uint32_t      last_consumer_seq;
+    cl_ctr_replay_t replay_consumer;
     /* Peer's advertised consistency-critical config (from ALIVE), used to warn
      * on accidental per-node config drift.  cfg_known=0 until first advertised;
      * cfg_warned deduplicates the mismatch warning. */
@@ -1026,7 +1140,7 @@ struct cl_ctr_peers_ {
     unsigned char   master_salt[CL_CTR_MASTER_SALT_SZ];
     /* my_seq: monotonic send counter; in shm so mod_destroy can use it for
      * GOODBYE without needing the worker's private state.  Reset to 0 on
-     * every session key rotation so last_seq counters reset cleanly.   */
+     * every session key rotation so peers' replay windows reset cleanly. */
     uint32_t        my_seq;
     uint32_t        my_consumer_seq;   /* the consumer plane's own counter */
     /* Sharing-tag override: 0 = automatic (master-driven) allocation; nonzero =
@@ -2396,8 +2510,8 @@ static int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl)
     cl->peers->my_seq = 0;
     cl->peers->my_consumer_seq = 0;
     for (i = 0; i < cl->peers->count; i++) {
-        cl->peers->entries[i].last_seq = 0;
-        cl->peers->entries[i].last_consumer_seq = 0;
+        cl_ctr_replay_reset(&cl->peers->entries[i].replay);
+        cl_ctr_replay_reset(&cl->peers->entries[i].replay_consumer);
     }
     cl->have_session_key = 1;   /* a valid group key now exists */
     /* The salt (and my_seq) just changed, so any queued retransmit is now stale. */
@@ -2578,44 +2692,50 @@ static int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
 }
 
 /**
- * cl_ctr_check_and_update_seq() - reject replayed or reordered packets.
- * Looks up sender_ip in the peer table; requires pkt_seq > last_seq.
- * Updates last_seq on accept.  Unknown senders (new nodes not yet in
- * the peer table) are accepted so their first packet (ALIVE/JOIN_REQ)
- * can populate the table.
+ * cl_ctr_check_and_update_seq() - accept each sequence number exactly once.
+ * Looks up sender_ip in the peer table and runs @pkt_seq through that peer's
+ * replay window for the requested plane.  Unknown senders (new nodes not yet
+ * in the peer table) are accepted so their first packet (ALIVE/JOIN_REQ) can
+ * populate the table.
  * Only called for CL_CTR_PACKET_MAGIC packets; bootstrap packets use join_nonce.
  * Single-threaded caller (cl_ctr_worker reactor); no lock needed for the check.
- * @return 0 to accept, -1 to drop.
+ * @return CL_CTR_SEQ_OK to accept, CL_CTR_SEQ_DUP / CL_CTR_SEQ_OLD to drop.
  */
 static int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
                                    cl_ctr_cluster_t *cl, int is_consumer)
 {
-    int i;
+    int i, rc;
     for (i = 0; i < cl->peers->count; i++) {
         if (strcmp(cl->peers->entries[i].ip, sender_ip) == 0) {
-            uint32_t *last = is_consumer
-                             ? &cl->peers->entries[i].last_consumer_seq
-                             : &cl->peers->entries[i].last_seq;
+            cl_ctr_replay_t *r = is_consumer
+                                 ? &cl->peers->entries[i].replay_consumer
+                                 : &cl->peers->entries[i].replay;
 
-            if (pkt_seq <= *last) {
-                /* Debug for consumer traffic, warning for the control plane.
-                 * A consumer sending at rate will reorder on any network with
-                 * more than one path, and a warning per reordered packet says
-                 * "attack" about something entirely ordinary. */
-                if (is_consumer)
-                    LM_DBG("clusterer_controller: consumer packet from %s out "
-                           "of order seq=%u last=%u, dropping\n",
-                           sender_ip, pkt_seq, *last);
-                else
-                    LM_WARN("clusterer_controller: replay from %s seq=%u "
-                            "last=%u, dropping\n", sender_ip, pkt_seq, *last);
-                return -1;
-            }
-            *last = pkt_seq;
-            return 0;
+            rc = cl_ctr_replay_check(r, pkt_seq);
+            if (rc == CL_CTR_SEQ_OK)
+                return rc;
+
+            /* Debug for consumer traffic, warning for the control plane.  A
+             * consumer sending at rate will duplicate on any path that retries,
+             * and a warning per copy says "attack" about something entirely
+             * ordinary.  Reordering no longer reaches here at all - the window
+             * accepts it - so what is left really is a repeat or something
+             * older than the window can vouch for. */
+            if (is_consumer)
+                LM_DBG("clusterer_controller: consumer packet from %s seq=%u "
+                       "last=%u %s, dropping\n", sender_ip, pkt_seq, r->last,
+                       rc == CL_CTR_SEQ_DUP ? "already accepted"
+                                            : "older than the replay window");
+            else
+                LM_WARN("clusterer_controller: %s from %s seq=%u last=%u, "
+                        "dropping\n",
+                        rc == CL_CTR_SEQ_DUP ? "replay"
+                                             : "packet older than the replay window",
+                        sender_ip, pkt_seq, r->last);
+            return rc;
         }
     }
-    return 0;   /* unknown sender: accept, handler will upsert into peer table */
+    return CL_CTR_SEQ_OK;   /* unknown sender: accept, handler will upsert into peer table */
 }
 
 /* =========================================================================
@@ -4200,16 +4320,17 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
                                (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])bin_socks,
                                cl);
 
-    /* Reset last_seq in the peer table.  Essential: a restarted node begins its
-     * seq counter from 0, and without this reset peers would permanently reject
-     * its new packets (old last_seq > new seq) until the next key rotation.  The
+    /* Reset the replay window in the peer table.  Essential: a restarted node
+     * begins its seq counter from 0, and without this reset peers would
+     * permanently reject its new packets (old high-water mark far above the new
+     * low seq) until the next key rotation.  The
      * joiner's long-lived pubkey (for a future KEY_HANDOFF) is learned from its
      * ALIVE, not here - the JOIN_REQ now carries only an ephemeral Noise key. */
     {
 	cl_ctr_peer_t *e = cl_ctr_peer_by_ip_locked(cl, src_ip);
 	if (e) {
-	    e->last_seq = 0;
-	    e->last_consumer_seq = 0;
+	    cl_ctr_replay_reset(&e->replay);
+	    cl_ctr_replay_reset(&e->replay_consumer);
 	}
     }
 
@@ -4380,11 +4501,11 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 
     lock_start_write(cl->peers->lock);
 
-    /* Second pass: upsert all peers and reset their last_seq.
-     * Resetting last_seq here covers the case where a peer restarted and
+    /* Second pass: upsert all peers and reset their replay windows.
+     * Resetting them here covers the case where a peer restarted and
      * sent JOIN_REQ: the MEMBER_LIST is the broadcast announcement that a
      * join event occurred.  Without the reset, non-master peers would reject
-     * the restarted node's new packets (old last_seq > new low seq). */
+     * the restarted node's new packets (old mark > new low seq). */
     for (i = 0; i < (int)count; i++, p += CL_CTR_IP_ENTRY_SZ) {
 	char ip_buf[CL_CTR_MAX_IP_LEN + 1];
 	int  _j;
@@ -4404,8 +4525,8 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 	    cl_ctr_learn_peer_locked(ip_buf, cl);
 	for (_j = 0; _j < cl->peers->count; _j++) {
 	    if (strcmp(cl->peers->entries[_j].ip, ip_buf) == 0) {
-		cl->peers->entries[_j].last_seq = 0;
-		cl->peers->entries[_j].last_consumer_seq = 0;
+		cl_ctr_replay_reset(&cl->peers->entries[_j].replay);
+		cl_ctr_replay_reset(&cl->peers->entries[_j].replay_consumer);
 		break;
 	    }
 	}
@@ -5496,20 +5617,57 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    unsigned char _t = (unsigned char)buf[CL_CTR_WIRE_HDR_SZ];
 	    int is_consumer_pkt = (_t == CL_CTR_PKT_CONSUMER ||
 	                           _t == CL_CTR_PKT_CONSUMER_REL);
+	    int _seq_rc;
 
 	    memcpy(&pkt_seq, buf + CL_CTR_WIRE_HDR_SZ + 1, CL_CTR_SEQ_SZ);
 	    pkt_seq = ntohl(pkt_seq);
-	    if (cl_ctr_check_and_update_seq(sender_ip_buf, pkt_seq, cl,
-	                                    is_consumer_pkt) < 0) {
-		/* A duplicate of a message that asked to be acknowledged means
-		 * our acknowledgement did not arrive: say it again.  Without
-		 * this the sender spends its whole retransmit budget against a
-		 * receiver that has had the message all along and is dropping
-		 * every copy in silence. */
-		if ((unsigned char)buf[CL_CTR_WIRE_HDR_SZ]
-		        == CL_CTR_PKT_CONSUMER_REL)
-		    cl_ctr_send_ack(cl->sock, cl, pkt_seq, 0,
-		                    (const struct sockaddr *)&src_addr, src_len);
+	    _seq_rc = cl_ctr_check_and_update_seq(sender_ip_buf, pkt_seq, cl,
+	                                          is_consumer_pkt);
+	    if (_seq_rc != CL_CTR_SEQ_OK) {
+		if (_t == CL_CTR_PKT_CONSUMER_REL) {
+		    if (_seq_rc == CL_CTR_SEQ_DUP) {
+			/* A duplicate of a message that asked to be
+			 * acknowledged means our acknowledgement did not
+			 * arrive: say it again.  Without this the sender spends
+			 * its whole retransmit budget against a receiver that
+			 * has had the message all along and is dropping every
+			 * copy in silence. */
+			cl_ctr_send_ack(cl->sock, cl, pkt_seq, 0,
+			                (const struct sockaddr *)&src_addr,
+			                src_len);
+		    } else {
+			/* Below the window.  We genuinely do not know whether
+			 * this payload was ever delivered, so we must not claim
+			 * it was - an ACK here is exactly the silent lie that
+			 * made reliable delivery unreliable before the window
+			 * existed.  Withholding it costs the sender the rest of
+			 * its budget and one honest "unacked" line.
+			 *
+			 * Reaching this at all means the window is too small
+			 * for the offered rate, which is a sizing problem the
+			 * operator can act on - hence a warning, not a debug
+			 * line, rate limited per process because a burst that
+			 * outruns the window outruns it for many packets. */
+			static unsigned int last_old_warn;
+			unsigned int now_t = get_ticks();
+
+			if (last_old_warn == 0 ||
+			    now_t - last_old_warn >= CL_CTR_RELIABLE_WARN_IVL) {
+			    last_old_warn = now_t;
+			    LM_WARN("clusterer_controller: reliable message from "
+			            "%s seq=%u fell more than %d messages behind "
+			            "the replay window and cannot be confirmed - "
+			            "NOT acknowledging. The sender is offering "
+			            "more than the window spans within its "
+			            "retransmit horizon (consumer_retries x "
+			            "consumer_retry_ms = %d ms); lower that "
+			            "horizon or expect losses.\n",
+			            sender_ip_buf, pkt_seq,
+			            CL_CTR_REPLAY_WIN_BITS,
+			            cl->consumer_retries * cl->consumer_retry_ms);
+			}
+		    }
+		}
 		return;
 	    }
 	}
@@ -7197,6 +7355,33 @@ static int mod_init(void)
 	    cl->consumer_retry_ms = consumer_retry_ms;
 	if (cl->consumer_rate == -1)
 	    cl->consumer_rate = consumer_rate_limit;
+
+	/* The replay window is a fixed number of MESSAGES, but what it has to
+	 * span is a fixed amount of TIME - the retransmit horizon, which is
+	 * configurable and can legally be set as high as 10 x 5000 ms.  Report
+	 * the resulting per-peer rate ceiling rather than leaving an operator
+	 * to meet it as unexplained loss.  Above the ceiling, a repair copy can
+	 * arrive after its slot has been reused and is refused (and, on the
+	 * reliable path, deliberately not acknowledged). */
+	{
+	    int horizon_ms = cl->consumer_retries * cl->consumer_retry_ms;
+	    int ceiling = horizon_ms > 0
+	                  ? (CL_CTR_REPLAY_WIN_BITS * 1000) / horizon_ms : 0;
+
+	    if (horizon_ms > 0 && ceiling < 1000)
+		LM_WARN("clusterer_controller: [cluster %d] consumer retransmit "
+		        "horizon is %d ms (%d retries x %d ms), so the %d-slot "
+		        "replay window only spans ~%d consumer messages/s from "
+		        "any one peer; above that, retransmits arrive too late "
+		        "to be judged and are dropped\n", cl->cluster_id,
+		        horizon_ms, cl->consumer_retries, cl->consumer_retry_ms,
+		        CL_CTR_REPLAY_WIN_BITS, ceiling);
+	    else
+		LM_DBG("clusterer_controller: [cluster %d] replay window spans "
+		       "%d messages, ~%d msg/s per peer at a %d ms retransmit "
+		       "horizon\n", cl->cluster_id, CL_CTR_REPLAY_WIN_BITS,
+		       ceiling, horizon_ms);
+	}
 
 	/* Resolve which BIN socket to use for this cluster.
 	 * Priority: explicit bin_socket= in cluster string >
