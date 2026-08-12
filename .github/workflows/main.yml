@@ -9,6 +9,7 @@ on:
     paths:
       - '**/Makefile*'
       - '**/*.c'
+      - '**/*.cpp'
       - '**/*.h'
       - 'cfg.y'
       - 'cfg.lex'
@@ -17,6 +18,7 @@ on:
     paths:
       - '**/Makefile*'
       - '**/*.c'
+      - '**/*.cpp'
       - '**/*.h'
       - 'cfg.y'
       - 'cfg.lex'
