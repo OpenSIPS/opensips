@@ -1104,7 +1104,7 @@ static int tr_pcre_parse(str *in, trans_t *t)
 			goto error;
 		}
 		p++;
-		if (tr_parse_sparam(p, in, &tp, 1) == NULL)
+		if (tr_parse_sparam(p, in, &tp, TR_PARSE_SPARAM_WS) == NULL)
 			goto error;
 		t->params = tp;
 		return 0;

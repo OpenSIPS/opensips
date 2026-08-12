@@ -118,8 +118,15 @@ void free_transformation(trans_t *t);
 void free_tr_param(tr_param_t *tp);
 
 /* transformation parameter parsing helper functions */
+	enum tr_parse_sparam_mode {
+	TR_PARSE_SPARAM_NO_WS = 0,
+	TR_PARSE_SPARAM_WS,
+	TR_PARSE_SPARAM_WS_RBRACKET
+	};
+
 char *tr_parse_nparam(char *p, str *in, tr_param_t **tp);
-char *tr_parse_sparam(char *p, str *in, tr_param_t **tp, int skip_param_ws);
+char *tr_parse_sparam(char *p, str *in, tr_param_t **tp,
+		enum tr_parse_sparam_mode mode);
 
 /* core transformations */
 int tr_parse_string(str* in, trans_t *t);
@@ -159,4 +166,3 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val);
 
 #endif
-
