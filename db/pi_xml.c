@@ -91,7 +91,7 @@ static int pi_xml_add_attr(xmlNodePtr node, const char *name,
 	return 0;
 }
 
-xmlDocPtr xmlParseFile(const char *filename)
+xmlDocPtr pi_xml_parse_file(const char *filename)
 {
 	FILE *file;
 	long size;
@@ -179,7 +179,7 @@ error:
 	return NULL;
 }
 
-char *xmlNodeGetContent(xmlNodePtr node)
+char *pi_xml_node_get_content(xmlNodePtr node)
 {
 	xmlNodePtr child;
 	size_t len = 0;
@@ -198,7 +198,7 @@ char *xmlNodeGetContent(xmlNodePtr node)
 	return content;
 }
 
-void xmlFree(void *ptr)
+void pi_xml_free(void *ptr)
 {
 	xmlDocPtr doc = ptr;
 	if (!ptr) return;
@@ -208,7 +208,7 @@ void xmlFree(void *ptr)
 	} else free(ptr);
 }
 
-int xmlStrcasecmp(const xmlChar *a, const xmlChar *b)
+int pi_xml_strcasecmp(const xmlChar *a, const xmlChar *b)
 {
 	return strcasecmp(a, b);
 }

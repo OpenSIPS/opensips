@@ -12,6 +12,7 @@
 #include "../sr_module.h"
 #include "pi_xml.h"
 #include "pi_framework.h"
+
 #include "pi_framework_db.h"
 
 #define PI_XML_FRAMEWORK_NODE "framework"
@@ -41,39 +42,39 @@
 pi_framework_t *pi_framework_data = NULL;
 
 
-xmlAttrPtr pi_xmlNodeGetAttrByName(xmlNodePtr node, const char *name)
+xmlAttrPtr pi_xml_node_get_attr_by_name(xmlNodePtr node, const char *name)
 {
 	xmlAttrPtr attr = node->properties;
 	while (attr) {
-		if(xmlStrcasecmp(attr->name, (const xmlChar*)name)==0)
+		if(pi_xml_strcasecmp(attr->name, (const xmlChar*)name)==0)
 			return attr;
 		attr = attr->next;
 	}
 	return NULL;
 }
 
-char *pi_xmlNodeGetAttrContentByName(xmlNodePtr node, const char *name)
+char *pi_xml_node_get_attr_content_by_name(xmlNodePtr node, const char *name)
 {
-	xmlAttrPtr attr = pi_xmlNodeGetAttrByName(node, name);
-	if (attr) return (char*)xmlNodeGetContent(attr->children);
+	xmlAttrPtr attr = pi_xml_node_get_attr_by_name(node, name);
+	if (attr) return (char*)pi_xml_node_get_content(attr->children);
 	else return NULL;
 }
 
-xmlNodePtr pi_xmlNodeGetNodeByName(xmlNodePtr node, const char *name)
+xmlNodePtr pi_xml_node_get_node_by_name(xmlNodePtr node, const char *name)
 {
 	xmlNodePtr cur = node;
 	while (cur) {
-		if(xmlStrcasecmp(cur->name, (const xmlChar*)name)==0)
+		if(pi_xml_strcasecmp(cur->name, (const xmlChar*)name)==0)
 			return cur;
 		cur = cur->next;
 	}
 	return NULL;
 }
 
-char *pi_xmlNodeGetNodeContentByName(xmlNodePtr node, const char *name)
+char *pi_xml_node_get_node_content_by_name(xmlNodePtr node, const char *name)
 {
-	xmlNodePtr node1 = pi_xmlNodeGetNodeByName(node, name);
-	if (node1) return (char*)xmlNodeGetContent(node1);
+	xmlNodePtr node1 = pi_xml_node_get_node_by_name(node, name);
+	if (node1) return (char*)pi_xml_node_get_content(node1);
 	else return NULL;
 }
 
@@ -88,7 +89,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 
 	//_pi_framework_data->pi_db_urls_size=0;
 	for(node=framework_node->children;node;node=node->next){
-		if (xmlStrcasecmp(node->name,
+		if (pi_xml_strcasecmp(node->name,
 			(const xmlChar*)PI_XML_DB_URL_NODE) == 0) {
 			if(_pi_framework_data->pi_db_urls_size)
 				db_urls = (pi_db_url_t*)
@@ -105,7 +106,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 			db_urls = &pi_db_urls[_pi_framework_data->pi_db_urls_size];
 			memset(db_urls, 0, sizeof(pi_db_url_t));
 
-			id.s = pi_xmlNodeGetAttrContentByName(node,
+			id.s = pi_xml_node_get_attr_content_by_name(node,
 						PI_XML_ID_ATTR);
 			if(id.s==NULL){
 				LM_ERR("No attribute for node %d [%s]\n",
@@ -121,9 +122,9 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 				return -1;
 			}
 			if(shm_str_dup(&db_urls->id, &id)!=0) return -1;
-			xmlFree(id.s);id.s=NULL;id.len=0;
+			pi_xml_free(id.s);id.s=NULL;id.len=0;
 
-			db_url.s = (char*)xmlNodeGetContent(node);
+			db_url.s = (char*)pi_xml_node_get_content(node);
 			if(db_url.s==NULL){
 				LM_ERR("No content for node [%.*s][%s]\n",
 					db_urls->id.len, db_urls->id.s, node->name);
@@ -136,7 +137,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 				return -1;
 			}
 			if(shm_str_dup(&db_urls->db_url, &db_url)!=0) return -1;
-			xmlFree(db_url.s);db_url.s=NULL;db_url.len=0;
+			pi_xml_free(db_url.s);db_url.s=NULL;db_url.len=0;
 
 			for(i=0;i<_pi_framework_data->pi_db_urls_size;i++){
 				if(db_urls->id.len==pi_db_urls[i].id.len &&
@@ -196,7 +197,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 	str field;
 
 	for(node=table_node->children,db_tables->cols_size=0;node;node=node->next){
-		if (xmlStrcasecmp(node->name,
+		if (pi_xml_strcasecmp(node->name,
 			(const xmlChar*)PI_XML_COLUMN_NODE) == 0) {
 			if(db_tables->cols_size)
 				cols = (pi_table_col_t*)shm_realloc(db_tables->cols,
@@ -212,7 +213,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 			cols->type=(db_type_t)-1;
 			/* Populate the field */
 			field.s =
-				pi_xmlNodeGetNodeContentByName(node->children,
+				pi_xml_node_get_node_content_by_name(node->children,
 							PI_XML_FIELD_NODE);
 			if(field.s==NULL){
 				LM_ERR("missing node %s [%.*s] %s %s\n",
@@ -230,7 +231,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 				return -1;
 			}
 			if(shm_str_dup(&cols->field, &field)!=0) return -1;
-			xmlFree(field.s);field.s=NULL;field.len=0;
+			pi_xml_free(field.s);field.s=NULL;field.len=0;
 			/* Each field MUST be unique */
 			for(i=0;i<db_tables->cols_size;i++){
 				if(cols->field.len==db_tables->cols[i].field.len &&
@@ -246,7 +247,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 				}
 			}
 			/* Populate the validation */
-			val = pi_xmlNodeGetNodeContentByName(node->children,
+			val = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_VALIDATE_NODE);
 			if(val){
 				val_len = strlen(val);
@@ -273,13 +274,13 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 						"%s %s %s\n",
 						val, table_node->name, node->name,
 						PI_XML_VALIDATE_NODE);
-					xmlFree(val);
+					pi_xml_free(val);
 					return -1;
 				}
-				xmlFree(val);
+				pi_xml_free(val);
 			}
 			/* Populate the type */
-			val = pi_xmlNodeGetNodeContentByName(node->children,
+			val = pi_xml_node_get_node_content_by_name(node->children,
 							PI_XML_TYPE_NODE);
 			if(val==NULL){
 				LM_ERR("missing node %s %s %s\n",
@@ -292,7 +293,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 				LM_ERR("empty node %s %s %s\n",
 					table_node->name, node->name,
 					PI_XML_TYPE_NODE);
-				xmlFree(val);
+				pi_xml_free(val);
 				return -1;
 			}else if(val_len==6){
 				if(strncmp("DB_INT",val,6)==0)
@@ -319,10 +320,10 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 				LM_ERR("unexpected type [%s] for %s %s %s\n",
 					val, table_node->name, node->name,
 					PI_XML_TYPE_NODE);
-				xmlFree(val);
+				pi_xml_free(val);
 				return -1;
 			}
-			xmlFree(val);
+			pi_xml_free(val);
 			/* */
 			LM_DBG("got node %s [%d][%.*s][%d]\n",
 				PI_XML_COLUMN_NODE,
@@ -355,7 +356,7 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 
 	//_pi_framework_data->pi_db_tables_size=0;
 	for(node=framework_node->children;node;node=node->next){
-		if (xmlStrcasecmp(node->name,
+		if (pi_xml_strcasecmp(node->name,
 			(const xmlChar*)PI_XML_DB_TABLE_NODE) == 0) {
 			if(_pi_framework_data->pi_db_tables_size)
 				db_tables = (pi_db_table_t*)
@@ -373,7 +374,7 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 			memset(db_tables, 0, sizeof(pi_db_table_t));
 
 			/* Populate table ids */
-			id.s = pi_xmlNodeGetAttrContentByName(node,
+			id.s = pi_xml_node_get_attr_content_by_name(node,
 						PI_XML_ID_ATTR);
 			if(id.s==NULL){
 				LM_ERR("No attribute for node %d [%s]\n",
@@ -389,10 +390,10 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 				return -1;
 			}
 			if(shm_str_dup(&db_tables->id, &id)!=0) return -1;
-			xmlFree(id.s);id.s=NULL;id.len=0;
+			pi_xml_free(id.s);id.s=NULL;id.len=0;
 			/* Populate table name */
 			name.s =
-				pi_xmlNodeGetNodeContentByName(node->children,
+				pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_TABLE_NAME_NODE);
 			if(name.s==NULL){
 				LM_ERR("No content for node [%.*s][%s]\n",
@@ -408,7 +409,7 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 				return -1;
 			}
 			if(shm_str_dup(&db_tables->name, &name)!=0) return -1;
-			xmlFree(name.s);name.s=NULL;name.len=0;
+			pi_xml_free(name.s);name.s=NULL;name.len=0;
 			/* Each table_id MUST be unique */
 			for(i=0;i<_pi_framework_data->pi_db_tables_size;i++){
 				if(db_tables->id.len==pi_db_tables[i].id.len &&
@@ -424,7 +425,7 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 			}
 			/* Populate the optional db_url index.  If omitted, the
 			 * owning module's db_url will be used during finalization. */
-			val = pi_xmlNodeGetNodeContentByName(node->children,
+			val = pi_xml_node_get_node_content_by_name(node->children,
 							PI_XML_DB_URL_ID_NODE);
 			if(val!=NULL)
 				val_len = strlen(val);
@@ -439,7 +440,7 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 				str db_url_id = {val, val_len};
 				if (shm_str_dup(&db_tables->db_url_id, &db_url_id) != 0)
 					return -1;
-				xmlFree(val);
+				pi_xml_free(val);
 			}
 
 			if(pi_getDbTableCols(_pi_framework_data->pi_db_urls,
@@ -490,7 +491,7 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 	str val;
 
 	for(node=col_node->children;node;node=node->next){
-		if (xmlStrcasecmp(node->name,
+		if (pi_xml_strcasecmp(node->name,
 			(const xmlChar*)PI_XML_VALUE_NODE) == 0) {
 			if(size){
 				vals = (str*)shm_realloc(col_vals,
@@ -506,7 +507,7 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 			vals = &col_vals[size]; ids = &col_ids[size];
 			memset(vals, 0, sizeof *vals); memset(ids, 0, sizeof *ids);
 			/* Retrieve the node attribute */
-			attr.s = pi_xmlNodeGetAttrContentByName(node,
+			attr.s = pi_xml_node_get_attr_content_by_name(node,
 							PI_XML_ID_ATTR);
 			if(attr.s==NULL){
 				LM_ERR("No attribute for node\n");
@@ -518,9 +519,9 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 				return -1;
 			}
 			if(shm_str_dup(ids, &attr)!=0) return -1;
-			xmlFree(attr.s); attr.s = NULL; attr.len = 0;
+			pi_xml_free(attr.s); attr.s = NULL; attr.len = 0;
 			/* Retrieve the node value */
-			val.s = (char*)xmlNodeGetContent(node);
+			val.s = (char*)pi_xml_node_get_content(node);
 			if(val.s==NULL){
 				LM_ERR("No content for node\n");
 				return -1;
@@ -531,7 +532,7 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 				return -1;
 			}
 			if(shm_str_dup(vals, &val)!=0) return -1;
-			xmlFree(val.s); val.s = NULL; val.len = 0;
+			pi_xml_free(val.s); val.s = NULL; val.len = 0;
 			/*
 			LM_DBG(">  > [%d] [%p]->[%s] [%p]->[%s]\n",
 					size, ids, ids->s, vals, vals->s);
@@ -583,7 +584,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 	pi_table_col_t *table_cols;
 
 	for(node=cmd_node->children;node;node=node->next){
-		if (xmlStrcasecmp(node->name,
+		if (pi_xml_strcasecmp(node->name,
 			(const xmlChar*)PI_XML_COL_NODE) == 0) {
 			if(size)
 				keys = (db_key_t*)shm_realloc(cmd_keys,
@@ -597,7 +598,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 			key = (str*)shm_malloc(sizeof(str));
 			if (key==NULL) {LM_ERR("oom\n");return -1;}
 			/* get the col field */
-			field.s = pi_xmlNodeGetNodeContentByName(node->children,
+			field.s = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_FIELD_NODE);
 			if(field.s==NULL){
 				LM_ERR("no %s in %s [%.*s] %s [%.*s] %s %s\n",
@@ -644,7 +645,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 			}
 			if(shm_str_dup(key, &field)) return -1;
 			*keys = key;
-			xmlFree(field.s); field.s = NULL; field.len = 0;
+			pi_xml_free(field.s); field.s = NULL; field.len = 0;
 			LM_DBG("cmd_keys=[%p] keys=[%p]->[%p]->[%.*s]\n",
 						cmd_keys, keys, *keys,
 						(*keys)->len, (*keys)->s);
@@ -675,7 +676,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 				memset(ops, 0, sizeof(db_op_t));
 				/* Retrieve the col op */
 				operator =
-					pi_xmlNodeGetNodeContentByName(node->children,
+					pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_OPERATOR_NODE);
 				if(operator==NULL){
 					LM_ERR("no %s in %s [%.*s] %s [%.*s] %s %s\n",
@@ -730,7 +731,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 				if(_operator==NULL){LM_ERR("oom\n"); return -1;}
 				memcpy(_operator, operator, op_len);
 				*ops = _operator;
-				xmlFree(operator); operator = NULL; op_len = 0;
+				pi_xml_free(operator); operator = NULL; op_len = 0;
 				LM_DBG("%s [%p]=>[%p]=>[%.*s] %s [%.*s] %s %s [%.*s][%s]\n",
 					cmd_node->parent->parent->name, module,
 					module->module.s,
@@ -776,7 +777,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 				linkCmd = &cmd_linkCmd[size];
 				memset(linkCmd, 0, sizeof(str));
 				/* get the link_cmd */
-				link_cmd.s = pi_xmlNodeGetNodeContentByName(node->children,
+				link_cmd.s = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_LINK_CMD_NODE);
 				if(link_cmd.s!=NULL){
 					link_cmd.len = strlen(link_cmd.s);
@@ -791,7 +792,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 							cmd_node->name, node->name);
 						if(shm_str_dup(linkCmd, &link_cmd)) return -1;
 					}
-					xmlFree(link_cmd.s); link_cmd.s = NULL; link_cmd.len = 0;
+					pi_xml_free(link_cmd.s); link_cmd.s = NULL; link_cmd.len = 0;
 				}
 			}
 			size++;
@@ -851,7 +852,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 	str name;
 
 	for(node=mod_node->children,modules->cmds_size=0;node;node=node->next){
-		if (xmlStrcasecmp(node->name,
+		if (pi_xml_strcasecmp(node->name,
 			(const xmlChar*)PI_XML_CMD_NODE) == 0) {
 			if(modules->cmds_size)
 				cmds = (pi_cmd_t*)shm_realloc(modules->cmds,
@@ -865,7 +866,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 			cmds->type = -1;
 			/* Populate the cmd name */
 			name.s =
-				pi_xmlNodeGetNodeContentByName(node->children,
+				pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_CMD_NAME_NODE);
 			if(name.s==NULL){
 				LM_ERR("no %s for %s [%.*s]\n",
@@ -883,7 +884,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 				return -1;
 			}
 			if(shm_str_dup(&cmds->name, &name)!=0) return -1;
-			xmlFree(name.s);name.s=NULL;name.len=0;
+			pi_xml_free(name.s);name.s=NULL;name.len=0;
 			/* Each cmd name MUST be unique */
 			for(i=0;i<modules->cmds_size;i++){
 				if(cmds->name.len==modules->cmds[i].name.len &&
@@ -898,7 +899,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 				}
 			}
 			/* Populate the db_table_index */
-			val = pi_xmlNodeGetNodeContentByName(node->children,
+			val = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_DB_TABLE_ID_NODE);
 			if(val==NULL){
 				LM_ERR("no %s for %s [%.*s] %s [%.*s]\n",
@@ -917,7 +918,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					modules->module.len, modules->module.s,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
-				xmlFree(val);
+				pi_xml_free(val);
 				return -1;
 			}
 			/* Get db_table */
@@ -936,12 +937,12 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					modules->module.len, modules->module.s,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
-				xmlFree(val);
+				pi_xml_free(val);
 				return -1;
 			}
-			xmlFree(val);
+			pi_xml_free(val);
 			/* Get cmd_type */
-			val = pi_xmlNodeGetNodeContentByName(node->children,
+			val = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_CMD_TYPE_NODE);
 			if(val==NULL){
 				LM_ERR("no %s for %s [%.*s] %s [%.*s]\n",
@@ -960,13 +961,13 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					modules->module.len, modules->module.s,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
-				xmlFree(val);
+				pi_xml_free(val);
 				return -1;
 			}else if(val_len==8){
 				if(strncmp("DB_QUERY",val,8)==0){
 					cmds->type = DB_CAP_QUERY;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_CLAUSE_COLS_NODE);
 					if(cmd_cols!=NULL)
 						if (pi_getCols( modules,
@@ -980,7 +981,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								cmd_cols)!=0)
 							return -1;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_QUERY_COLS_NODE);
 					if(cmd_cols!=NULL){
 						if (pi_getCols( modules,
@@ -1005,7 +1006,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 						return -1;
 					}
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_ORDER_BY_COLS_NODE);
 					if(cmd_cols!=NULL){
 						if (pi_getCols( modules,
@@ -1024,7 +1025,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 				if(strncmp("DB_INSERT",val,9)==0){
 					cmds->type = DB_CAP_INSERT;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_QUERY_COLS_NODE);
 					if(cmd_cols!=NULL){
 						if (pi_getCols( modules,
@@ -1051,7 +1052,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 				}else if(strncmp("DB_DELETE",val,9)==0){
 					cmds->type = DB_CAP_DELETE;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_CLAUSE_COLS_NODE);
 					if(cmd_cols!=NULL){
 						if (pi_getCols( modules,
@@ -1079,7 +1080,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 				}else if(strncmp("DB_UPDATE",val,9)==0){
 					cmds->type = DB_CAP_UPDATE;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_CLAUSE_COLS_NODE);
 					if(cmd_cols!=NULL)
 						if (pi_getCols( modules,
@@ -1093,7 +1094,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								cmd_cols)!=0)
 							return -1;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_QUERY_COLS_NODE);
 					if(cmd_cols!=NULL){
 						if (pi_getCols( modules,
@@ -1122,7 +1123,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 				if(strncmp("DB_REPLACE",val,10)==0){
 					cmds->type = DB_CAP_REPLACE;
 					cmd_cols =
-					pi_xmlNodeGetNodeByName(node->children,
+					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_QUERY_COLS_NODE);
 					if(cmd_cols!=NULL){
 						if (pi_getCols( modules,
@@ -1155,10 +1156,10 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					modules->module.s,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
-				xmlFree(val);
+				pi_xml_free(val);
 				return -1;
 			}
-			xmlFree(val);
+			pi_xml_free(val);
 			/**/
 			LM_DBG("got node %s %s %s [%.*s] [%p]=>[%.*s]\n",
 					mod_node->name, node->name,
@@ -1226,7 +1227,7 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 	/* Build pi commands skeleton */
 	for(mod_node=framework_node->children,_pi_framework_data->pi_modules_size=0;
 					mod_node;mod_node=mod_node->next){
-		if (xmlStrcasecmp(mod_node->name,
+		if (pi_xml_strcasecmp(mod_node->name,
 			(const xmlChar*)PI_XML_MOD_NODE) == 0) {
 			if(_pi_framework_data->pi_modules_size)
 				modules = (pi_mod_t*)shm_realloc(_pi_framework_data->pi_modules,
@@ -1245,7 +1246,7 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 
 			/* Populate module name */
 			module.s =
-				pi_xmlNodeGetNodeContentByName(mod_node->children,
+				pi_xml_node_get_node_content_by_name(mod_node->children,
 							PI_XML_MOD_NAME_NODE);
 			if(module.s==NULL){
 				LM_ERR("no %s for node %s\n",
@@ -1261,7 +1262,7 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 				return -1;
 			}
 			if(shm_str_dup(&modules->module, &module)!=0) return -1;
-			xmlFree(module.s);module.s=NULL;module.len=0;
+			pi_xml_free(module.s);module.s=NULL;module.len=0;
 			/* Each mod name MUST be unique */
 			for(i=0;i<_pi_framework_data->pi_modules_size;i++){
 				if(modules->module.len==pi_modules[i].module.len &&
@@ -1497,14 +1498,14 @@ int pi_init_cmds(pi_framework_t **framework_data, const char* filename)
 	int _pi_modules_size;
 
 	if(filename==NULL) {LM_ERR("NULL filename\n");return -1;}
-	doc = xmlParseFile(filename);
+	doc = pi_xml_parse_file(filename);
 	if(doc==NULL){
 		LM_ERR("Failed to parse xml file: %s\n", filename);
 		return -1;
 	}
 
 	/* Extract the framework node */
-	framework_node = pi_xmlNodeGetNodeByName(doc->children,
+	framework_node = pi_xml_node_get_node_by_name(doc->children,
 						PI_XML_FRAMEWORK_NODE);
 	if (framework_node==NULL) {
 		LM_ERR("missing node %s\n", PI_XML_FRAMEWORK_NODE);
@@ -1530,7 +1531,7 @@ int pi_init_cmds(pi_framework_t **framework_data, const char* filename)
 		if(pi_getMods(_framework_data, framework_node)!=0)
 			goto xml_error;
 
-		if(doc)xmlFree(doc);
+		if(doc)pi_xml_free(doc);
 		doc=NULL;
 		*framework_data = _framework_data;
 	}else{ /* This is a reload */
@@ -1551,7 +1552,7 @@ int pi_init_cmds(pi_framework_t **framework_data, const char* filename)
 		if(pi_getMods(_framework_data, framework_node)!=0)
 			goto xml_reload_error;
 
-		if(doc)xmlFree(doc);
+		if(doc)pi_xml_free(doc);
 		doc=NULL;
 		*framework_data = _framework_data;
 
@@ -1560,7 +1561,7 @@ int pi_init_cmds(pi_framework_t **framework_data, const char* filename)
 xml_error:
 	/* FIXME: free thw whole structure */
 	if(_framework_data){shm_free(_framework_data);}
-	if(doc)xmlFree(doc);
+	if(doc)pi_xml_free(doc);
 	doc=NULL;
 	return -1;
 xml_reload_error:
@@ -1572,7 +1573,7 @@ xml_reload_error:
 	_framework_data->pi_db_tables_size = _pi_db_tables_size;
 	_framework_data->pi_modules = _pi_modules;
 	_framework_data->pi_modules_size = _pi_modules_size;
-	if(doc)xmlFree(doc);
+	if(doc)pi_xml_free(doc);
 	doc=NULL;
 	return -1;
 }

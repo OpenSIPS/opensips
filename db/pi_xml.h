@@ -28,9 +28,9 @@ struct pi_xml_doc {
 	xmlNodePtr children;
 };
 
-xmlDocPtr xmlParseFile(const char *filename);
-char *xmlNodeGetContent(xmlNodePtr node);
-void xmlFree(void *ptr);
-int xmlStrcasecmp(const xmlChar *a, const xmlChar *b);
+xmlDocPtr pi_xml_parse_file(const char *filename);
+char *pi_xml_node_get_content(xmlNodePtr node);
+void pi_xml_free(void *ptr);
+int pi_xml_strcasecmp(const xmlChar *a, const xmlChar *b);
 
 #endif
