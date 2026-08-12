@@ -1450,7 +1450,7 @@ static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
 	if(tmb.register_tmcb( NULL, t, TMCB_MSG_SENT_OUT,
 	trace_tm_out, info, unref_trace_info) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
-		trace_info_unref(info, 2);
+		trace_info_unref(info, 1);
 		return -1;
 	}
 
@@ -1513,7 +1513,7 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverse
 	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT,
 	reverse_dir?trace_tm_out_rev:trace_tm_out, info, free_trace_info_tm) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
-		trace_info_unref(info, 2);
+		trace_info_unref(info, 1);
 		return -1;
 	}
 
