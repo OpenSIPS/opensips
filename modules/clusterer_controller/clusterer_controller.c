@@ -4424,10 +4424,12 @@ static void cl_ctr_handle_alive(const char *src_ip,
                             const unsigned char *pubkey, /* may be NULL */
                             int cfg_present, int peer_manage,
                             int peer_stick, int peer_qt,
+                            int peer_mtu,
                             cl_ctr_cluster_t *cl)
 {
     int  prev_master, now_master;
     int  warn = 0, adopt = 0, is_active = 0, ent = -1;
+    int  mtu_warn = 0, mtu_seen = 0;
     char warn_ip[CL_CTR_MAX_IP_LEN + 1] = "";
     int  loc_manage = cl->manage_shtags ? 1 : 0;
     int  loc_stick  = cl->master_stickiness ? 1 : 0;
@@ -4459,6 +4461,21 @@ static void cl_ctr_handle_alive(const char *src_ip,
                 e->cfg_manage_shtags     = peer_manage;
                 e->cfg_master_stickiness = peer_stick;
                 e->cfg_query_time        = peer_qt;
+            }
+            /* A peer whose MTU no longer matches ours: WARN ONLY, never act.
+             * That peer's own drift poll will notice and remove itself, which
+             * is the node terminating on its OWN condition.  Terminating here
+             * instead would mean one `ip link set mtu` on any single host
+             * taking down every other node that heard about it. */
+            if (peer_mtu > 0) {
+                if (cc_mtu > 0 && peer_mtu != cc_mtu && !e->mtu_warned) {
+                    e->mtu_warned = 1;
+                    mtu_warn      = 1;
+                    mtu_seen      = peer_mtu;
+                } else if (cc_mtu > 0 && peer_mtu == cc_mtu) {
+                    e->mtu_warned = 0;   /* re-arm once it agrees again */
+                }
+                e->mtu = peer_mtu;
             }
             break;
         }
@@ -4499,6 +4516,14 @@ static void cl_ctr_handle_alive(const char *src_ip,
                 "values cause inconsistent failover/sharing-tag behaviour (%s)\n",
                 cl->cluster_id, warn_ip, diff);
     }
+    if (mtu_warn)
+        LM_WARN("clusterer_controller: [cluster %d] peer %s now advertises MTU %d "
+                "but this cluster runs at %d. Traffic larger than the smaller of "
+                "the two is dropped silently in that direction. NOT acting on it "
+                "here - that peer detects its own change and removes itself; "
+                "terminating on someone else's reading would turn one `ip link` "
+                "command into a fleet outage\n",
+                cl->cluster_id, src_ip, mtu_seen, cc_mtu);
     if (adopt)
         cl_ctr_adopt_config(cl, peer_manage, peer_stick, peer_qt, is_active);
     /* Defer acting as master until we hold the cluster key.  In normal
@@ -6162,6 +6187,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    int            ip_len = (int)strnlen(payload, CL_CTR_MAX_IP_LEN);
 	    const unsigned char *pubkey = NULL;
 	    int            cfg_present = 0, p_manage = 0, p_stick = 0, p_qt = 0;
+	    int            p_mtu = 0;
 	    memcpy(ip_buf, payload, ip_len);
 	    ip_buf[ip_len] = '\0';
 	    /* Pubkey appended after NUL-terminated IP */
@@ -6177,7 +6203,16 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 		p_qt        = ntohs(qt_be);
 		cfg_present = 1;
 	    }
-	    cl_ctr_handle_alive(ip_buf, pubkey, cfg_present, p_manage, p_stick, p_qt, cl);
+	    /* MTU appended after the config block (optional - older builds) */
+	    if (payload_len >= ip_len + 1 + (int)CL_CTR_PUBKEY_SZ
+	                       + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ) {
+		uint16_t m_be;
+		memcpy(&m_be, payload + ip_len + 1 + CL_CTR_PUBKEY_SZ
+		              + CL_CTR_CONFIG_SZ, CL_CTR_MTU_SZ);
+		p_mtu = ntohs(m_be);
+	    }
+	    cl_ctr_handle_alive(ip_buf, pubkey, cfg_present, p_manage, p_stick, p_qt,
+	                        p_mtu, cl);
 	    break;
 	}
 
@@ -6408,6 +6443,58 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     int prev_master, now_master;
     cl_ctr_drain_tfd(fd);
+
+    /* --- Has our OWN link changed under us? ---------------------------------
+     * Nothing notifies this module: cc_mtu is read once at mod_init.  Poll it
+     * here rather than subscribing to netlink RTM_NEWLINK, because netlink
+     * DROPS events on ENOBUFS - so a reconcile poll would have to exist anyway,
+     * and a missed MTU change is exactly the silent failure this is meant to
+     * remove.  One ioctl per query_time is free.
+     *
+     * Terminate rather than warn, because SHRINKING an MTU breaks RECEIVE, not
+     * send: the kernel still fragments on egress, so this node keeps emitting
+     * ALIVEs and looks perfectly healthy to everyone while silently no longer
+     * receiving anything larger than its new MTU.  CL_CTR_LIST_PKT_MAX_SZ
+     * scales with CL_CTR_MAX_PEERS, so MEMBER_LIST on a real cluster is well
+     * over 1500 - the node would sit on stale membership and an incomplete BIN
+     * mesh, invisible to its peers, while the LB kept handing it calls.
+     *
+     * This is the node acting on its OWN condition, which is what makes it safe
+     * to act at all - it reads its own interface, and a switch-side change does
+     * not move /sys/class/net/X/mtu; only a host-local action does. */
+    if (cc_mtu > 0) {
+        int now_mtu = cl_ctr_read_iface_mtu();
+        if (now_mtu > 0)
+            cc_mtu_now = now_mtu;   /* what we advertise: the live reading */
+        if (now_mtu > 0 && now_mtu != cc_mtu) {
+            if (++cc_mtu_drift_strikes >= CL_CTR_MTU_DRIFT_STRIKES) {
+                LM_CRIT("clusterer_controller: [cluster %d] the MTU of %s changed "
+                        "from %d to %d and stayed there for %d checks. This node "
+                        "joined at %d and every other member still uses it, so it "
+                        "can no longer RECEIVE full-size cluster traffic - it would "
+                        "keep sending heartbeats and look healthy while silently "
+                        "missing membership updates. Shutting down; restore the MTU "
+                        "to %d and restart\n",
+                        cl->cluster_id,
+                        my_interface_buf[0] ? my_interface_buf : "(unknown)",
+                        cc_mtu, now_mtu, cc_mtu_drift_strikes, cc_mtu, cc_mtu);
+                exit(-1);
+            }
+            LM_WARN("clusterer_controller: [cluster %d] MTU of %s reads %d, this "
+                    "node joined at %d (%d/%d consecutive) - confirming before "
+                    "acting, since a bond failover or driver reset can report a "
+                    "transient value\n",
+                    cl->cluster_id,
+                    my_interface_buf[0] ? my_interface_buf : "(unknown)",
+                    now_mtu, cc_mtu, cc_mtu_drift_strikes,
+                    CL_CTR_MTU_DRIFT_STRIKES);
+        } else if (cc_mtu_drift_strikes) {
+            LM_INFO("clusterer_controller: [cluster %d] MTU of %s is back to %d - "
+                    "the earlier reading was a transient\n", cl->cluster_id,
+                    my_interface_buf[0] ? my_interface_buf : "(unknown)", cc_mtu);
+            cc_mtu_drift_strikes = 0;
+        }
+    }
     /* ALIVE transport: a settled non-master unicasts its heartbeat to the master,
      * which relays liveness to the whole group via the MASTER_ALIVE bitmap - so
      * the old all-to-all O(N^2) becomes O(N).  During formation (no settled master
