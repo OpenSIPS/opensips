@@ -52,6 +52,7 @@ struct dlg_auto_prack_ctx {
 	unsigned int invite_label;
 	str invite_tid;
 	str invite_totag;
+	int *owner;
 };
 
 static void dlg_auto_prack_free(void *ctx)
@@ -178,6 +179,11 @@ static void dlg_auto_prack_t_created(struct cell *t, void *param)
 			dlg_auto_prack_tmcb, ctx, dlg_auto_prack_free) < 0) {
 		LM_ERR("failed to register TM callbacks for auto PRACK local transaction [%u:%u]\n",
 			t->hash_index, t->label);
+		*ctx->owner = 1;
+		dlg_auto_prack_free(ctx);
+	} else {
+		/* The transaction now owns the context through the TM callback. */
+		*ctx->owner = 1;
 	}
 }
 
@@ -1425,6 +1431,7 @@ int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
 	str extra_headers = STR_NULL;
 	struct dlg_indialog_req_param *p = NULL;
 	struct dlg_auto_prack_ctx *auto_prack_ctx = NULL;
+	int auto_prack_ctx_owned = 0;
 	context_p old_ctx;
 	context_p *new_ctx;
 	dlg_t *dialog_info = NULL;
@@ -1467,6 +1474,7 @@ int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
 	if (!auto_prack_ctx)
 		LM_ERR("failed to build internal auto PRACK correlation context\n");
 	else {
+		auto_prack_ctx->owner = &auto_prack_ctx_owned;
 		LM_DBG("built internal auto PRACK correlation context for INVITE tid <%.*s>, to-tag <%.*s>\n",
 			auto_prack_ctx->invite_tid.len, auto_prack_ctx->invite_tid.s,
 			auto_prack_ctx->invite_totag.len, auto_prack_ctx->invite_totag.s);
@@ -1478,7 +1486,7 @@ int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
 		pkg_free(extra_headers.s);
 		free_tm_dlg(dialog_info);
 		shm_free(p);
-		if (auto_prack_ctx)
+		if (auto_prack_ctx && !auto_prack_ctx_owned)
 			shm_free(auto_prack_ctx);
 		return -1;
 	}
@@ -1498,6 +1506,8 @@ int send_prack_indialog_request(struct dlg_cell *dlg, struct sip_msg *rpl,
 
 	pkg_free(extra_headers.s);
 	free_tm_dlg(dialog_info);
+	if (auto_prack_ctx_owned)
+		auto_prack_ctx = NULL;
 
 	if (dialog_repl_cluster)
 		replicate_dialog_cseq_updated(dlg, dstleg);
