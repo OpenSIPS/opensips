@@ -375,6 +375,20 @@ static const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ]  = { 0xCC, 0x0
 #define CL_CTR_RETX_INTERVAL_US  (CL_CTR_JOIN_REQ_MIN_US / 2)  /* 250 ms          */
 #define CL_CTR_RETX_MAX_RETRIES  3                             /* then give up     */
 #define CL_CTR_RETX_QUEUE_SZ     128  /* max outstanding unacked 1:1 packets      */
+/* The cached packet is either a control-plane handshake packet, whose largest
+ * is NODE_ASSIGN, or a consumer message, whose largest is set by the MTU at
+ * mod_init.  So the bound is a RUNTIME value (cl_ctr_retx_pkt_max), not a
+ * constant: a fixed cache would either be sized for NODE_ASSIGN (~580 B, which
+ * silently excluded any reliable consumer send above ~540 B) or for the
+ * compile-time CLCTR_MAX_PAYLOAD (1300), which on a jumbo-frame link would cap
+ * repair at a seventh of what the link and cc_max_payload happily carry. Same
+ * trap the transmit buffers had before they were sized from cc_max_payload.
+ *
+ * Each entry's buffer is allocated for the packet actually being held and
+ * freed when the entry is released, so the cost tracks outstanding reliable
+ * messages rather than reserving queue x MTU up front - which at a 9000 MTU
+ * would be 1.1 MB per cluster sitting idle, and far more on a link that
+ * reports more. */
 #if (CL_CTR_RETX_MAX_RETRIES * CL_CTR_RETX_INTERVAL_US) >= (CL_CTR_JOIN_DEFER_SECS * 1000000)
 #error "retransmit budget must stay shorter than the JOIN_REQ retry interval"
 #endif
@@ -608,7 +622,8 @@ typedef struct {
     uint16_t                expect_n;     /* members at send time            */
     uint16_t                acked_n;
     unsigned char           acked_map[(CL_CTR_MAX_PEERS + 7) / 8];
-    unsigned char           pkt[CL_CTR_NODE_ASSIGN_MAX_SZ]; /* cached sealed bytes */
+    unsigned char          *pkt;         /* cached sealed bytes, pkg, owned by
+                                          * the entry; NULL when released    */
 } cl_ctr_retx_entry_t;
 
 /**
@@ -794,6 +809,10 @@ static char my_interface_buf[IF_NAMESIZE];
  * jumbo-frame interfaces (MTU 9000) are not artificially limited to 1300 B.
  * Read-only after mod_init; safe to access from any process. */
 int cc_max_payload = CLCTR_MAX_PAYLOAD;
+/* Largest packet the retransmit cache will hold, raised in mod_init once the
+ * MTU is known.  Provisional value covers the control plane, which is all that
+ * can be sent before then anyway. */
+static int cl_ctr_retx_pkt_max = CL_CTR_NODE_ASSIGN_MAX_SZ;
 
 /* The two transmit buffers, sized from cc_max_payload once the MTU is known.
  *
@@ -3003,6 +3022,46 @@ static void cl_ctr_arm_tfd_us(int tfd, uint64_t usec_value, uint64_t usec_interv
 }
 
 /*
+ * Release an entry and give its packet buffer back.  Every path that clears
+ * `used` goes through here - an entry cleared without freeing would leak the
+ * buffer, and the next enqueue into that slot memsets the pointer away.
+ */
+static void cl_ctr_retx_release(cl_ctr_cluster_t *cl, cl_ctr_retx_entry_t *e)
+{
+    if (e->pkt) {
+        pkg_free(e->pkt);
+        e->pkt = NULL;
+    }
+    if (e->used) {
+        e->used = 0;
+        if (cl->retx_count > 0)
+            cl->retx_count--;
+    }
+}
+
+/*
+ * A reliable send too large to cache goes out once and is never repaired.
+ * That is a downgrade of the guarantee the caller asked for, so it is a
+ * warning rather than the debug line it used to be - rate limited per process,
+ * because whatever is oversized will be oversized every time.
+ */
+static void cl_ctr_retx_too_big(cl_ctr_cluster_t *cl, int pkt_len)
+{
+    static unsigned int last_warn;
+    unsigned int now = get_ticks();
+
+    if (last_warn == 0 || now - last_warn >= CL_CTR_RELIABLE_WARN_IVL) {
+        last_warn = now;
+        LM_WARN("clusterer_controller: [cluster %d] a %d-byte packet asked for "
+                "reliable delivery but the retransmit cache holds %d - it was "
+                "sent once, best-effort, and will not be repaired. The bound "
+                "follows this interface's MTU, so a payload within "
+                "cc_max_payload (%d) always fits.\n",
+                cl->cluster_id, pkt_len, cl_ctr_retx_pkt_max, cc_max_payload);
+    }
+}
+
+/*
  * Arm the shared retransmit timer for the EARLIEST deadline in the queue, or
  * disarm it when the queue is empty.
  *
@@ -3060,6 +3119,12 @@ static void cl_ctr_retx_flush(cl_ctr_cluster_t *cl)
         return;
     LM_DBG("clusterer_controller: [cluster %d] flushing %d pending retransmit(s)\n",
            cl->cluster_id, cl->retx_count);
+    {   /* release each, then clear: a bare memset over the array would drop
+         * every entry's packet pointer on the floor. */
+        int _i;
+        for (_i = 0; _i < CL_CTR_RETX_QUEUE_SZ; _i++)
+            cl_ctr_retx_release(cl, &cl->retx_q[_i]);
+    }
     memset(cl->retx_q, 0, sizeof(cl->retx_q));
     cl->retx_count = 0;
     cl_ctr_arm_tfd_us(cl->retx_tfd, 0, 0);   /* disarm */
@@ -3079,8 +3144,10 @@ static void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
     cl_ctr_retx_entry_t *e = NULL;
     int i, n = 0;
 
-    if (pkt_len <= 0 || pkt_len > (int)sizeof(cl->retx_q[0].pkt))
+    if (pkt_len <= 0 || pkt_len > cl_ctr_retx_pkt_max) {
+        cl_ctr_retx_too_big(cl, pkt_len);
         return;
+    }
 
     lock_start_read(cl->peers->lock);
     for (i = 0; i < cl->peers->count; i++)
@@ -3104,7 +3171,14 @@ static void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
         return;
     }
 
-    memset(e, 0, sizeof(*e));
+    memset(e, 0, sizeof(*e));   /* pkt was NULLed by the release that freed it */
+    e->pkt = pkg_malloc(pkt_len);
+    if (!e->pkt) {
+        LM_ERR("clusterer_controller: [cluster %d] no pkg for a %d-byte "
+               "retransmit cache entry - broadcast sent once, best-effort\n",
+               cl->cluster_id, pkt_len);
+        return;
+    }
     e->used         = 1;
     e->seq          = seq;
     e->type         = CL_CTR_PKT_CONSUMER_REL;
@@ -3160,9 +3234,12 @@ static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned cha
     cl_ctr_retx_entry_t *e;
     int i, slot = -1;
 
-    if (pkt_len <= 0 || pkt_len > (int)sizeof(cl->retx_q[0].pkt) ||
-        destlen == 0 || destlen > (socklen_t)sizeof(cl->retx_q[0].dest))
+    if (pkt_len <= 0 || pkt_len > cl_ctr_retx_pkt_max ||
+        destlen == 0 || destlen > (socklen_t)sizeof(cl->retx_q[0].dest)) {
+        if (pkt_len > cl_ctr_retx_pkt_max)
+            cl_ctr_retx_too_big(cl, pkt_len);
         return;
+    }
 
     for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++)
         if (!cl->retx_q[i].used) { slot = i; break; }
@@ -3173,7 +3250,14 @@ static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned cha
     }
 
     e = &cl->retx_q[slot];
-    memset(e, 0, sizeof(*e));
+    memset(e, 0, sizeof(*e));   /* pkt was NULLed by the release that freed it */
+    e->pkt = pkg_malloc(pkt_len);
+    if (!e->pkt) {
+        LM_ERR("clusterer_controller: [cluster %d] no pkg for a %d-byte "
+               "retransmit cache entry - 0x%02x sent once, best-effort\n",
+               cl->cluster_id, pkt_len, type);
+        return;
+    }
     e->used         = 1;
     e->seq          = seq;
     e->type         = type;
@@ -3244,8 +3328,7 @@ static void cl_ctr_handle_ack(const char *payload, int payload_len,
             LM_DBG("clusterer_controller: [cluster %d] ACK for 0x%02x seq %u\n",
                    cl->cluster_id, e->type, acked);
         }
-        e->used = 0;
-        cl->retx_count--;
+        cl_ctr_retx_release(cl, e);
         break;
     }
     /* Dropping an entry can make a LATER one the earliest, so re-arm rather
@@ -3329,8 +3412,7 @@ static int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout)
                    cl->cluster_id, e->type, e->seq,
                    (unsigned)(e->retries_cfg ? e->retries_cfg
                                              : CL_CTR_RETX_MAX_RETRIES));
-            e->used = 0;
-            cl->retx_count--;
+            cl_ctr_retx_release(cl, e);
         } else {
             e->next_due_us = now + (e->retry_ivl_us ? e->retry_ivl_us
                                                     : CL_CTR_RETX_INTERVAL_US);
@@ -7355,6 +7437,13 @@ static int mod_init(void)
      * that bound then admits. */
     cl_ctr_script_buf_sz  = cc_max_payload;
     cl_ctr_consumer_pkt_sz = CL_CTR_PKT_OVERHEAD + cc_max_payload;
+    /* The retransmit cache follows the same bound, for the same reason: a
+     * reliable send that the transmit buffer accepts must also be one the
+     * repair path can hold, or reliability quietly stops at a size the API
+     * never mentions.  Whichever is larger - the control plane's biggest
+     * handshake packet, or a full-MTU consumer message. */
+    cl_ctr_retx_pkt_max = cl_ctr_consumer_pkt_sz > CL_CTR_NODE_ASSIGN_MAX_SZ
+                          ? cl_ctr_consumer_pkt_sz : CL_CTR_NODE_ASSIGN_MAX_SZ;
     cl_ctr_script_buf  = pkg_malloc(cl_ctr_script_buf_sz);
     cl_ctr_consumer_pkt = pkg_malloc(cl_ctr_consumer_pkt_sz);
     if (!cl_ctr_script_buf || !cl_ctr_consumer_pkt) {
