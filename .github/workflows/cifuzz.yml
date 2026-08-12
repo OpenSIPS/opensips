@@ -4,11 +4,20 @@ on:
     paths:
       - '**/Makefile*'
       - '**/*.c'
+      - '**/*.cpp'
       - '**/*.h'
       - 'cfg.y'
       - 'cfg.lex'
       - 'scripts/**'
   pull_request:
+    paths:
+      - '**/Makefile*'
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
+      - 'cfg.y'
+      - 'cfg.lex'
+      - 'scripts/**'
 jobs:
   Fuzzing:
     runs-on: ubuntu-latest

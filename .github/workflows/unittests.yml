@@ -4,16 +4,25 @@ name: Unit Tests
 
 # Controls when the action will run. 
 on:
-  # Triggers the workflow on all push or pull request events
+  # Triggers the workflow on push or pull request events touching source
   push:
     paths:
       - '**/Makefile*'
       - '**/*.c'
+      - '**/*.cpp'
       - '**/*.h'
       - 'cfg.y'
       - 'cfg.lex'
       - 'scripts/**'
   pull_request:
+    paths:
+      - '**/Makefile*'
+      - '**/*.c'
+      - '**/*.cpp'
+      - '**/*.h'
+      - 'cfg.y'
+      - 'cfg.lex'
+      - 'scripts/**'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
