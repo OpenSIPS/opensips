@@ -331,7 +331,21 @@ static int pull_on_miss;               /* modparam; read repair on the get path 
  * the right thing, or sync_cluster_id naming a cluster the controller does not
  * manage - the accompanying warning tells the two apart. */
 #define PULL_ST_FOREIGN_CLUSTER 14
-#define PULL_ST_MAX       15
+/* A peer answered "I do not have it".  Counted per REPLY, so on a cluster
+ * larger than two a single request can raise this more than once - the
+ * requested/answered identity below is exact only for a 2-node cluster.
+ * Distinct from PULL_ST_SUPPRESSED, which counts the SECOND and later asks
+ * absorbed by an already-cached negative (pull_negative_ms): without this
+ * counter the FIRST negative was invisible, and
+ * `pulls_requested - pulls_received` could not be explained from statistics
+ * at all - "the peer genuinely did not have it" looked identical to "the
+ * request was swallowed". */
+#define PULL_ST_NEGATIVE  15
+/* A peer HAS the key but it is too big for the cluster transport.  Also not a
+ * value and also not an absence, so it needs its own counter for the same
+ * reason. */
+#define PULL_ST_OVERSIZE  16
+#define PULL_ST_MAX       17
 /* Two different readinesses, deliberately kept apart:
  *   cluster_ready - the clusterer is bound, the capability is registered and
  *                   membership is being tracked.  Everything cross-node needs
@@ -685,6 +699,8 @@ PULLSTATF(smf_pulls_late_superseded, PULL_ST_LATE_SUPERSEDED)
 PULLSTATF(smf_pulls_late_expired, PULL_ST_LATE_EXPIRED)
 PULLSTATF(smf_pulls_orphan_expired, PULL_ST_ORPHAN_EXPIRED)
 PULLSTATF(smf_pulls_foreign_cluster, PULL_ST_FOREIGN_CLUSTER)
+PULLSTATF(smf_pulls_negative,   PULL_ST_NEGATIVE)
+PULLSTATF(smf_pulls_oversize,   PULL_ST_OVERSIZE)
 
 /* A GAUGE, unlike every other pull stat: it should read 0 whenever nothing is
  * being asked.  Anything parked here means slots are taken and not released,
@@ -861,6 +877,8 @@ static const stat_export_t mod_stats[] = {
 		(stat_var **)smf_pulls_late_expired},
 	{"pulls_orphan_expired", STAT_IS_FUNC,
 		(stat_var **)smf_pulls_orphan_expired},
+	{"pulls_negative",   STAT_IS_FUNC, (stat_var **)smf_pulls_negative},
+	{"pulls_oversize",   STAT_IS_FUNC, (stat_var **)smf_pulls_oversize},
 	{"pulls_in_flight",  STAT_IS_FUNC, (stat_var **)smf_pulls_in_flight},
 	{"pulls_foreign_cluster", STAT_IS_FUNC,
 		(stat_var **)smf_pulls_foreign_cluster},
@@ -1076,6 +1094,10 @@ static mi_response_t *mi_perf_stats(str *col_s)
 		        pull_stats[PULL_ST_SUPPRESSED]) < 0 ||
 		     add_mi_number(clobj, MI_SSTR("pulls_send_failed"),
 		        pull_stats[PULL_ST_SEND_FAIL]) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_negative"),
+		        pull_stats[PULL_ST_NEGATIVE]) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_oversize"),
+		        pull_stats[PULL_ST_OVERSIZE]) < 0 ||
 		     add_mi_number(clobj, MI_SSTR("pulls_abandoned"),
 		        pull_stats[PULL_ST_ABANDONED]) < 0))
 			goto err;
@@ -2145,7 +2167,9 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 
 	if (found == PCACHE_FOUND_NO) {
 		sl->negative++;
+		__sync_fetch_and_add(&pull_stats[PULL_ST_NEGATIVE], 1);
 	} else if (found == PCACHE_FOUND_OVERSIZE) {
+		__sync_fetch_and_add(&pull_stats[PULL_ST_OVERSIZE], 1);
 		/* someone HAS it - so the key is not absent, whatever the rest of
 		 * the cluster says.  Not a negative, and not a value either. */
 		sl->oversize = 1;
