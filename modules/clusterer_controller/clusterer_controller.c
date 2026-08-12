@@ -579,6 +579,13 @@ typedef struct {
     unsigned char           type;         /* packet type, for logging             */
     int                     retries_left;
     utime_t                 next_due_us;   /* get_uticks() deadline for next send  */
+    /* Gap to the NEXT send after this one.  Per entry, not a constant, because
+     * the control plane and the consumer plane share this queue and want
+     * different cadences - the handshake's is pinned to the JOIN_REQ retry,
+     * the consumer's is the per-cluster consumer_retry_ms.  Holding it here is
+     * what lets one sweep serve both without either inheriting the other's
+     * timing. */
+    utime_t                 retry_ivl_us;
     struct sockaddr_storage dest;         /* unicast destination                  */
     socklen_t               destlen;
     int                     pkt_len;      /* sealed length                        */
@@ -2996,6 +3003,51 @@ static void cl_ctr_arm_tfd_us(int tfd, uint64_t usec_value, uint64_t usec_interv
 }
 
 /*
+ * Arm the shared retransmit timer for the EARLIEST deadline in the queue, or
+ * disarm it when the queue is empty.
+ *
+ * Every arm has to go through here.  Arming it directly to "now + one
+ * interval" on each enqueue - which is what the broadcast path used to do -
+ * makes a steady stream of reliable sends push the deadline forward faster
+ * than it can arrive: at fifty messages a second and a 40 ms retry gap, the
+ * timer was re-armed every 20 ms to fire 40 ms later and therefore never fired
+ * at all while traffic continued.  Measured on the two-node rig: 45 lost
+ * messages produced 2 retransmits.  A reliable send is at its least reliable
+ * exactly when the channel is busy, which is the opposite of what it promises.
+ *
+ * Deadline-driven rather than fixed-interval for the second reason too: with a
+ * flat 250 ms sweep an entry due in 40 ms waited 250, so a consumer budget of
+ * 2 x 40 ms was spent as 2 x 250 ms and every repair landed long after the
+ * consumer had given up on it.
+ */
+static void cl_ctr_retx_rearm(cl_ctr_cluster_t *cl)
+{
+    utime_t now, first = 0;
+    int i;
+
+    if (cl->retx_count == 0) {
+        cl_ctr_arm_tfd_us(cl->retx_tfd, 0, 0);      /* nothing pending */
+        return;
+    }
+
+    for (i = 0; i < CL_CTR_RETX_QUEUE_SZ; i++)
+        if (cl->retx_q[i].used &&
+            (first == 0 || cl->retx_q[i].next_due_us < first))
+            first = cl->retx_q[i].next_due_us;
+
+    if (first == 0) {                                /* count/queue disagree */
+        cl_ctr_arm_tfd_us(cl->retx_tfd, 0, 0);
+        return;
+    }
+
+    now = get_uticks();
+    /* Never 0 microseconds: that is timerfd's disarm, not "fire immediately",
+     * and an already-due entry would then wait for the next enqueue to be
+     * noticed at all. */
+    cl_ctr_arm_tfd_us(cl->retx_tfd, first > now ? (uint64_t)(first - now) : 1, 0);
+}
+
+/*
  * Drop every outstanding retransmit.  Called on loss of mastership and on
  * session-key rotation, so a demoted or re-keyed node never keeps delivering a
  * stale master-keyed KEY_GRANT/NODE_ASSIGN that would push a joiner onto a dead
@@ -3060,16 +3112,15 @@ static void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
     e->expect_n     = (uint16_t)n;
     e->retries_left = cl->consumer_retries;
     e->retries_cfg  = (uint8_t)cl->consumer_retries;
-    e->next_due_us  = get_uticks() + (utime_t)cl->consumer_retry_ms * 1000;
+    e->retry_ivl_us = (utime_t)cl->consumer_retry_ms * 1000;
+    e->next_due_us  = get_uticks() + e->retry_ivl_us;
     e->pkt_len      = pkt_len;
     memcpy(e->pkt, pkt, pkt_len);
     cl->retx_count++;
-    /* First argument is the delay, and zero there means disarm - the value
-     * this once passed, which switched the retransmit timer off instead of
-     * on and left every reliable broadcast waiting for a repair that could
-     * never run. */
-    cl_ctr_arm_tfd_us(cl->retx_tfd,
-                      (utime_t)cl->consumer_retry_ms * 1000, 0);
+    /* Through the helper, never straight at the timer: this used to arm it
+     * unconditionally to now + one interval, which under continuous broadcasts
+     * pushed the sweep past every deadline it was meant to serve. */
+    cl_ctr_retx_rearm(cl);
 }
 
 /* The consumer plane retransmits on its own schedule: the join handshake's
@@ -3092,10 +3143,14 @@ static void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
             cl->retx_q[i].type == type) {
             cl->retx_q[i].retries_left = cl->consumer_retries;
             cl->retx_q[i].retries_cfg  = (uint8_t)cl->consumer_retries;
+            cl->retx_q[i].retry_ivl_us = (utime_t)cl->consumer_retry_ms * 1000;
             cl->retx_q[i].next_due_us  = get_uticks()
-                                       + (utime_t)cl->consumer_retry_ms * 1000;
+                                       + cl->retx_q[i].retry_ivl_us;
             break;
         }
+    /* The deadline just moved in (consumer gaps are shorter than the
+     * handshake's), so the timer enqueue armed has to be pulled forward. */
+    cl_ctr_retx_rearm(cl);
 }
 
 static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned char type,
@@ -3103,7 +3158,7 @@ static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned cha
                             const struct sockaddr *dest, socklen_t destlen)
 {
     cl_ctr_retx_entry_t *e;
-    int i, slot = -1, was_empty;
+    int i, slot = -1;
 
     if (pkt_len <= 0 || pkt_len > (int)sizeof(cl->retx_q[0].pkt) ||
         destlen == 0 || destlen > (socklen_t)sizeof(cl->retx_q[0].dest))
@@ -3117,21 +3172,20 @@ static void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned cha
         return;
     }
 
-    was_empty = (cl->retx_count == 0);
     e = &cl->retx_q[slot];
     memset(e, 0, sizeof(*e));
     e->used         = 1;
     e->seq          = seq;
     e->type         = type;
     e->retries_left = CL_CTR_RETX_MAX_RETRIES;
-    e->next_due_us  = get_uticks() + CL_CTR_RETX_INTERVAL_US;
+    e->retry_ivl_us = CL_CTR_RETX_INTERVAL_US;
+    e->next_due_us  = get_uticks() + e->retry_ivl_us;
     memcpy(&e->dest, dest, destlen);
     e->destlen      = destlen;
     memcpy(e->pkt, pkt, pkt_len);
     e->pkt_len      = pkt_len;
     cl->retx_count++;
-    if (was_empty)
-        cl_ctr_arm_tfd_us(cl->retx_tfd, CL_CTR_RETX_INTERVAL_US, 0);
+    cl_ctr_retx_rearm(cl);
 }
 
 /* An ACK arrived: drop the queued packet whose seq it echoes. */
@@ -3194,8 +3248,9 @@ static void cl_ctr_handle_ack(const char *payload, int payload_len,
         cl->retx_count--;
         break;
     }
-    if (cl->retx_count == 0)
-        cl_ctr_arm_tfd_us(cl->retx_tfd, 0, 0);   /* nothing pending - disarm */
+    /* Dropping an entry can make a LATER one the earliest, so re-arm rather
+     * than only disarming on empty. */
+    cl_ctr_retx_rearm(cl);
 }
 
 /*
@@ -3277,12 +3332,12 @@ static int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout)
             e->used = 0;
             cl->retx_count--;
         } else {
-            e->next_due_us = now + CL_CTR_RETX_INTERVAL_US;
+            e->next_due_us = now + (e->retry_ivl_us ? e->retry_ivl_us
+                                                    : CL_CTR_RETX_INTERVAL_US);
         }
     }
 
-    if (cl->retx_count > 0)
-        cl_ctr_arm_tfd_us(cl->retx_tfd, CL_CTR_RETX_INTERVAL_US, 0);
+    cl_ctr_retx_rearm(cl);
     return 0;
 }
 
