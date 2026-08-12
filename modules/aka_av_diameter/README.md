@@ -118,7 +118,7 @@ modparam("aka_av_diameter", "realm", "scscf.ims.mnc001.mcc001.3gppnetwork.org")
 File that should be provided to the *aaa_diameter* connection.
 
 
-``` title="Diameter Commands File Example"
+```
 VENDOR 10415 TGPP
 
 ATTRIBUTE Public-Identity                     601 string     10415
