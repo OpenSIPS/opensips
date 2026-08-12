@@ -199,6 +199,15 @@ static int h2_send_response(struct sip_msg *msg, int *code,
 				goto error;
 			}
 
+			if (!it->child) {
+				LM_ERR("bad 'headers_json' value (empty header object; expected one name/value pair)\n");
+				LM_ERR("first %d characters: %.*s ...\n",
+					headers_json->len > 20 ? 20 : headers_json->len,
+					headers_json->len > 20 ? 20 : headers_json->len, headers_json->s);
+				cJSON_Delete(hdrs);
+				goto error;
+			}
+
 			if (it->child->type != cJSON_String) {
 				LM_ERR("bad 'headers_json' value (header values must be Strings, but "
 						"detected cJSON type %d as value)\n", it->child->type);
