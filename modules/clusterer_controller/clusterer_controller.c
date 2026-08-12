@@ -7608,8 +7608,18 @@ static void cl_ctr_rpc_consumer_send(int sender, void *param)
                  * bytes - and silences -Wpointer-sign without retyping the
                  * buffer, which would only move the warning to the
                  * seal_and_send() calls that legitimately need char *. */
+                /* The SEALED length.  cl_ctr_seal_and_send() encrypted in
+                 * place, so what is on the wire is the wire header, the
+                 * ciphertext and the AEAD tag - 44 bytes more than plain_len.
+                 * Caching plain_len re-sent a packet truncated by exactly that
+                 * much, which every receiver discarded as "short" before it
+                 * could be decrypted: consumer retransmission had never
+                 * delivered a single byte.  The control plane's own enqueue
+                 * (KEY_GRANT) always passed the sealed length, which is why
+                 * the join handshake's ARQ worked and this did not. */
                 cl_ctr_retx_enqueue_bcast(cl, ntohl(seq),
-                        (const unsigned char *)pkt, plain_len);
+                        (const unsigned char *)pkt,
+                        CL_CTR_WIRE_HDR_SZ + plain_len + CL_CTR_TAG_SZ);
         } else {
             struct sockaddr_in d;
 
@@ -7642,9 +7652,11 @@ static void cl_ctr_rpc_consumer_send(int sender, void *param)
                             (const struct sockaddr *)&d, sizeof d);
                     if (reliable)
                         /* same sign-only cast as the broadcast path above */
+                        /* sealed length, as above */
                         cl_ctr_retx_enqueue_consumer(cl, ntohl(seq),
                                 CL_CTR_PKT_CONSUMER_REL,
-                                (const unsigned char *)pkt, plain_len,
+                                (const unsigned char *)pkt,
+                                CL_CTR_WIRE_HDR_SZ + plain_len + CL_CTR_TAG_SZ,
                                 (const struct sockaddr *)&d, sizeof d);
                 }
             }
