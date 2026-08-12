@@ -82,32 +82,35 @@ jobs:
           test -n "$COVERITY_SCAN_TOKEN"
           test -n "$COVERITY_EMAIL"
           tar --create --gzip --file cov-int.tar.gz cov-int
-          curl --fail --show-error --location \
+          set +e
+          HTTP_STATUS=$(curl --silent --show-error --location \
             --form "token=$COVERITY_SCAN_TOKEN" \
             --form "email=$COVERITY_EMAIL" \
             --form "file=@cov-int.tar.gz" \
             --form "version=$VERSION" \
             --form "description=GitHub Actions master $GITHUB_SHA" \
-            "https://scan.coverity.com/builds?project=OpenSIPS%2Fopensips"
+            --output coverity-submit-response.txt \
+            --write-out '%{http_code}' \
+            "https://scan.coverity.com/builds?project=OpenSIPS%2Fopensips")
+          CURL_EXIT=$?
+          set -e
+          printf '%s' "$HTTP_STATUS" > coverity-submit-http-status.txt
+          cat coverity-submit-response.txt
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            exit "$CURL_EXIT"
+          fi
+          test "$HTTP_STATUS" -ge 200 -a "$HTTP_STATUS" -lt 300
 
       - name: Publish build summary
         if: always()
         run: |
-          {
-            echo "## Coverity build summary"
-            echo
-            echo "- Commit: \`${GITHUB_SHA}\`"
-            echo "- Build: \`${{ steps.build.outcome }}\`"
-            echo "- Coverity submission: \`${{ steps.submit.outcome }}\`"
-            if [ -x ./opensips ]; then
+          if [ -s coverity-submit-response.txt ]; then
+            {
+              echo "## Coverity feedback"
+              echo
+              echo '```text'
+              head -c 4096 coverity-submit-response.txt
               echo
               echo '```'
-              ./opensips -V 2>&1
-              echo '```'
-            else
-              echo "- OpenSIPS binary: not produced"
-            fi
-            if [ -d cov-int ]; then
-              echo "- Coverity intermediate data: \`$(du -sh cov-int | awk '{print $1}')\`"
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
