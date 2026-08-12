@@ -122,6 +122,11 @@ static int mmg_lookup_cmd(struct sip_msg *msg, str *_fields, str *ipaddr_str,
 		LM_ERR("Internal error getting AVP name.\n");
 		return -1;
 	}
+	if (ipaddr_str->len < 0 || ipaddr_str->len >= sizeof(ipaddr_buf) ||
+			_fields->len < 0 || _fields->len >= sizeof(field_buf)) {
+		LM_ERR("input is too long for GeoIP lookup\n");
+		return -1;
+	}
 
 	memcpy(ipaddr_buf, ipaddr_str->s, ipaddr_str->len);
 	ipaddr_buf[ipaddr_str->len] = 0;
