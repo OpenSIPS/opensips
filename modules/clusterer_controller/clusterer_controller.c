@@ -469,8 +469,27 @@ typedef struct {
  *   - IPsec ESP tunnel (~1400 MTU): 4 fragments
  *   - GRE-over-IPsec (~1350 MTU):  4-5 fragments
  * Firewalls that block fragmented UDP packets will silently drop MEMBER_LIST,
- * preventing new nodes from joining.  The DF bit is not set so fragmentation
- * occurs transparently where the network allows it. */
+ * preventing new nodes from joining.
+ *
+ * WHY THAT FRAGMENTATION IS ALLOWED TO HAPPEN, precisely - an earlier version
+ * of this comment said "the DF bit is not set", which is false and was never
+ * measured.  The socket sets no IP_MTU_DISCOVER at all, so Linux's default
+ * applies (IP_PMTUDISC_WANT, per-route), and that default DOES set DF - on
+ * unicast AND on multicast alike, verified on the wire.  What actually carries
+ * MEMBER_LIST across a 1500-byte link is that 4395 bytes EXCEEDS THE LOCAL MTU,
+ * and a datagram the kernel must fragment locally cannot also be doing path-MTU
+ * discovery, so those fragments leave with DF clear.  The old wording happened
+ * to describe the right outcome for the wrong reason, and the reason matters:
+ * a datagram that FITS the local MTU goes out with DF SET, so if it later meets
+ * a smaller-MTU hop it is dropped with an ICMP "fragmentation needed" that is
+ * routinely filtered - it is not fragmented and does not arrive.
+ *
+ * That is left exactly as it is, deliberately.  Clearing DF would let a jumbo
+ * node reach a peer across a narrow ROUTED hop, but this module's contract is
+ * about the interface it runs on, not about how the operator has chosen to
+ * carry multicast between segments.  Enforcing a uniform MTU across the cluster
+ * is what makes the local bound meaningful; getting the packets between
+ * segments is the network's job. */
 #define CL_CTR_SMALL_PKT_SZ      (CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_MAX_IP_LEN + 1 + CL_CTR_TAG_SZ)
 /* Consistency-critical settings advertised in ALIVE so peers can detect
  * accidental per-node config drift for the same cluster:
