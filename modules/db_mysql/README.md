@@ -1,5 +1,5 @@
 ---
-title: "mysql Module"
+title: "DB_MYSQL Module"
 description: "This is a module which provides MySQL connectivity for OpenSIPS. It implements the DB API defined in OpenSIPS."
 ---
 
