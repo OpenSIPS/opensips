@@ -891,6 +891,7 @@ static int clctr_send_list(int cluster_id, const int *node_ids, int n,
 static int clctr_get_my_node_id(int cluster_id);
 int cl_ctr_get_my_ip(const char **ip, const char **iface, const char **src);
 int load_clctr(clctr_api_t *api);
+static int clctr_get_max_payload(void);
 
 /* clusterer integration - loaded at mod_init if clusterer use_controller=1 */
 static clusterer_ctrl_binds_t clctl;
@@ -8478,6 +8479,13 @@ static int cl_ctr_script_init(void)
 	return clctr_register_channel(&cl_ctr_script_chan, cl_ctr_script_recv);
 }
 
+/* Consumers must reach cc_max_payload through the bound API, never as an extern
+ * - see the note in api.h. */
+static int clctr_get_max_payload(void)
+{
+    return cc_max_payload;
+}
+
 int load_clctr(clctr_api_t *api)
 {
     if (!api)
@@ -8488,5 +8496,6 @@ int load_clctr(clctr_api_t *api)
     api->send_list        = clctr_send_list;
     api->get_my_node_id   = clctr_get_my_node_id;
     api->get_my_ip        = cl_ctr_get_my_ip;
+    api->get_max_payload  = clctr_get_max_payload;
     return 0;
 }

@@ -109,9 +109,18 @@
  *
  * So: size a stack buffer with CLCTR_MAX_PAYLOAD - that is always safe, since
  * a buffer can only be too big - but test the length you actually intend to
- * send against cc_max_payload, which is the only bound that will be enforced. */
+ * send against the runtime bound, which is the only one that will be enforced,
+ * and which you obtain through get_max_payload() below.
+ *
+ * Do NOT declare `extern int cc_max_payload` in a consumer. It is defined in
+ * clusterer_controller.c, and OpenSIPS modules are dlopen'd, so referencing it
+ * directly makes the consumer's .so carry an undefined symbol that resolves
+ * only if clusterer_controller happens to have been loaded first. It does not
+ * fail at build time - it fails at startup with
+ *   "cachedb_perf.so: undefined symbol: cc_max_payload"
+ * and takes the whole config down with it. Every other cross-module call here
+ * goes through the bound API for exactly this reason. */
 #define CLCTR_MAX_PAYLOAD    1300
-extern int cc_max_payload;
 
 typedef void (*clctr_msg_cb_f)(int cluster_id, int src_node_id,
 		str *channel, str *payload);
@@ -146,6 +155,12 @@ typedef int (*clctr_send_list_f)(int cluster_id, const int *node_ids, int n,
 
 typedef int (*clctr_get_my_node_id_f)(int cluster_id);
 
+/* The runtime maximum consumer payload, derived from the interface MTU at
+ * mod_init.  May be LARGER than CLCTR_MAX_PAYLOAD on a jumbo link or SMALLER on
+ * one under ~1411 MTU, so a consumer that cares must ask rather than assume.
+ * Safe to call any time after the controller's mod_init. */
+typedef int (*clctr_get_max_payload_f)(void);
+
 /*
  * This node's own address on the cluster plane, as RESOLVED at startup - not
  * the raw modparam.  It comes from one of three places (explicit `my_ip`, the
@@ -170,6 +185,7 @@ typedef struct clctr_api {
 	clctr_send_list_f         send_list;
 	clctr_get_my_node_id_f    get_my_node_id;
 	clctr_get_my_ip_f         get_my_ip;
+	clctr_get_max_payload_f   get_max_payload;
 } clctr_api_t;
 
 typedef int (*load_clctr_f)(clctr_api_t *api);
