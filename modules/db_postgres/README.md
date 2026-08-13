@@ -1,5 +1,5 @@
 ---
-title: "db_postgres Module"
+title: "DB_POSTGRES Module"
 description: "Module description"
 ---
 
