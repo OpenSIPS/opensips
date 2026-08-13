@@ -2004,7 +2004,7 @@ static int get_parsed_identity(struct sip_msg *msg,
 				(*parsed)->ppt_hdr_param.len, (*parsed)->ppt_hdr_param.s);
 			rc = -2; /* consider we did not find a proper Identity header */
 		}
-		pkg_free(*parsed);
+		parsed_ctx_free(*parsed);
 		*parsed = NULL;
 		/* let's check other Identity hdr, if present */
 		identity_hdr = get_next_header_by_static_name ( identity_hdr,
