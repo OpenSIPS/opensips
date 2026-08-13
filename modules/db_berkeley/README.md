@@ -1,5 +1,5 @@
 ---
-title: "Berkeley DB Module"
+title: "DB_BERKELEY Module"
 description: "This is a module which integrates the Berkeley DB into OpenSIPS. It implements the DB API defined in OpenSIPS."
 ---
 
