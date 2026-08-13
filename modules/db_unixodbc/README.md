@@ -1,5 +1,5 @@
 ---
-title: "unixodbc Module"
+title: "DB_UNIXODBC Module"
 description: "This module allows to use the unixodbc package with OpenSIPS."
 ---
 
