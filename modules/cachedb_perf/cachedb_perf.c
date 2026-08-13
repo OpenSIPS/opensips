@@ -345,7 +345,27 @@ static int pull_on_miss;               /* modparam; read repair on the get path 
  * value and also not an absence, so it needs its own counter for the same
  * reason. */
 #define PULL_ST_OVERSIZE  16
-#define PULL_ST_MAX       17
+/* A miss that reached the pull gate and was refused before any request left
+ * this node.  Without these, `misses` and `pulls_requested` could not be
+ * reconciled at all: on a live gateway ~986 misses a minute were counted by the
+ * cache and then vanished, which made it impossible to answer the only question
+ * that matters about pull_on_miss - is it doing anything for this collection?
+ *
+ * The reasons are kept apart because they call for completely different
+ * actions: NOTREPLICATED is a configuration statement (this collection was
+ * never meant to pull), NOPEERS means the cluster is not formed, NOSLOT means
+ * demand is outrunning the slot table, and TOOLONG means the key can never be
+ * asked for at all. Rolled into one counter they would be indistinguishable,
+ * which is how the original hole came to be.
+ *
+ * Together with PULL_ST_SUPPRESSED these close the miss side the way
+ * PULL_ST_NEGATIVE closed the reply side:
+ *   misses == requested + suppressed + skipped(all four)  */
+#define PULL_ST_SKIP_NOTREPLICATED 17  /* pull off for this collection      */
+#define PULL_ST_SKIP_TOOLONG       18  /* key/collection name cannot be asked */
+#define PULL_ST_SKIP_NOPEERS       19  /* no live cluster member to ask     */
+#define PULL_ST_SKIP_NOSLOT        20  /* slot table full, nothing evictable */
+#define PULL_ST_MAX       21
 /* Two different readinesses, deliberately kept apart:
  *   cluster_ready - the clusterer is bound, the capability is registered and
  *                   membership is being tracked.  Everything cross-node needs
@@ -701,6 +721,10 @@ PULLSTATF(smf_pulls_orphan_expired, PULL_ST_ORPHAN_EXPIRED)
 PULLSTATF(smf_pulls_foreign_cluster, PULL_ST_FOREIGN_CLUSTER)
 PULLSTATF(smf_pulls_negative,   PULL_ST_NEGATIVE)
 PULLSTATF(smf_pulls_oversize,   PULL_ST_OVERSIZE)
+PULLSTATF(smf_pulls_skip_notreplicated, PULL_ST_SKIP_NOTREPLICATED)
+PULLSTATF(smf_pulls_skip_toolong, PULL_ST_SKIP_TOOLONG)
+PULLSTATF(smf_pulls_skip_nopeers, PULL_ST_SKIP_NOPEERS)
+PULLSTATF(smf_pulls_skip_noslot, PULL_ST_SKIP_NOSLOT)
 
 /* A GAUGE, unlike every other pull stat: it should read 0 whenever nothing is
  * being asked.  Anything parked here means slots are taken and not released,
@@ -882,6 +906,14 @@ static const stat_export_t mod_stats[] = {
 	{"pulls_in_flight",  STAT_IS_FUNC, (stat_var **)smf_pulls_in_flight},
 	{"pulls_foreign_cluster", STAT_IS_FUNC,
 		(stat_var **)smf_pulls_foreign_cluster},
+	{"pulls_skip_notreplicated", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_skip_notreplicated},
+	{"pulls_skip_toolong", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_skip_toolong},
+	{"pulls_skip_nopeers", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_skip_nopeers},
+	{"pulls_skip_noslot", STAT_IS_FUNC,
+		(stat_var **)smf_pulls_skip_noslot},
 	{0,0,0}
 };
 
@@ -1098,6 +1130,14 @@ static mi_response_t *mi_perf_stats(str *col_s)
 		        pull_stats[PULL_ST_NEGATIVE]) < 0 ||
 		     add_mi_number(clobj, MI_SSTR("pulls_oversize"),
 		        pull_stats[PULL_ST_OVERSIZE]) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_skip_notreplicated"),
+		                   pull_stat(PULL_ST_SKIP_NOTREPLICATED)) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_skip_toolong"),
+		                   pull_stat(PULL_ST_SKIP_TOOLONG)) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_skip_nopeers"),
+		                   pull_stat(PULL_ST_SKIP_NOPEERS)) < 0 ||
+		     add_mi_number(clobj, MI_SSTR("pulls_skip_noslot"),
+		                   pull_stat(PULL_ST_SKIP_NOSLOT)) < 0 ||
 		     add_mi_number(clobj, MI_SSTR("pulls_abandoned"),
 		        pull_stats[PULL_ST_ABANDONED]) < 0))
 			goto err;
@@ -2535,16 +2575,23 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 	int ids[CL_MAX_NODE_ID], nmembers, i, truncated = 0;
 	unsigned int gen = 0, id;
 
-	if (!pcache_pull_enabled(col) || key->len > pull_max_key ||
-	        col->col_name.len > 63)
+	if (!pcache_pull_enabled(col)) {
+		__sync_fetch_and_add(&pull_stats[PULL_ST_SKIP_NOTREPLICATED], 1);
 		return -1;
+	}
+	if (key->len > pull_max_key || col->col_name.len > 63) {
+		__sync_fetch_and_add(&pull_stats[PULL_ST_SKIP_TOOLONG], 1);
+		return -1;
+	}
 	if (pcache_neg_check(col, key)) {
 		__sync_fetch_and_add(&pull_stats[PULL_ST_SUPPRESSED], 1);
 		return 0;
 	}
 	nmembers = pcache_cluster_members(ids, CL_MAX_NODE_ID, &gen, &truncated);
-	if (nmembers <= 0)
+	if (nmembers <= 0) {
+		__sync_fetch_and_add(&pull_stats[PULL_ST_SKIP_NOPEERS], 1);
 		return -1;
+	}
 
 	/* Validate the hint before trusting it: a node id that is not a
 	 * current peer is stale, reissued, or simply wrong, and asking it
@@ -2592,6 +2639,7 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 	}
 	if (!sl) {
 		lock_release(pull_lock);
+		__sync_fetch_and_add(&pull_stats[PULL_ST_SKIP_NOSLOT], 1);
 		LM_WARN("all %d pull slots busy - dropping the request\n",
 			PCACHE_PULL_SLOTS);
 		return -1;
@@ -3721,8 +3769,22 @@ static int pcache_htable_fetch(cachedb_con *con, str *attr, str *val)
 	if (!col || !col->htable)
 		return -1;
 	rc = pcache_ht_fetch(col->htable, attr, val);
-	if (rc != -2 || !pull_on_miss || !pcache_pull_enabled(col))
+	if (rc != -2)
 		return rc;
+	/* A miss from here on.  The two conditions below skip the pull without
+	 * ever entering pcache_pull_start(), so they have to be accounted for
+	 * here or the miss disappears - which is precisely how the gap between
+	 * `misses` and `pulls_requested` came to be unexplainable.
+	 * pull_on_miss off is a deployment choice and not worth its own counter
+	 * (nothing is being refused - the feature is simply not in use), but a
+	 * collection that is not replicated IS worth counting: that is the case
+	 * an operator misreads as "pull is enabled, why is nothing pulling". */
+	if (!pull_on_miss)
+		return rc;
+	if (!pcache_pull_enabled(col)) {
+		__sync_fetch_and_add(&pull_stats[PULL_ST_SKIP_NOTREPLICATED], 1);
+		return rc;
+	}
 
 	/* the pull buffer lives in this branch, not in the frame of every
 	 * local hit: this is the vtable read, and a cross-node miss is the
