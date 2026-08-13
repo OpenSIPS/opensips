@@ -389,11 +389,71 @@ on-key")
    JOIN_REJECT packet and stops responding to further JOIN_REQs
    from that IP.
 
-   On the joining side, a received JOIN_REJECT is only acted on
-   while the node is still in the initial join phase (CL_CTR_NODE_NEW
-   state) and is addressed to this node; an already-active cluster
-   member ignores any JOIN_REJECT unconditionally, so a node with
-   the correct password can never be evicted by a peer.
+   On the joining side, a received JOIN_REJECT is acted on only if
+   it is addressed to this node and this node currently has an
+   admission request outstanding (join_pending). A member that is
+   not asking to be admitted ignores JOIN_REJECT unconditionally,
+   so a node with the correct password can never be evicted by a
+   peer.
+
+   The guard is deliberately the pending request and not the
+   CL_CTR_NODE_NEW state. After a simultaneous cold start both
+   nodes can reach the join deadline and self-promote, and the
+   loser then merges into the winner by sending a fresh JOIN_REQ
+   from the active state. Keying on the state label would have
+   that node discard the refusal of a join it had just made, which
+   is precisely the case the MTU and config checks below exist for.
+
+   Uniform cluster MTU: every member of a cluster runs at the same
+   cluster-plane MTU, and the master enforces it at admission. The
+   value is detected from the interface that owns the cluster-plane
+   IP (SIOCGIFMTU) and there is deliberately no modparam for it:
+   the kernel already owns that fact, and a configured copy could
+   only ever disagree with it. A node that cannot read its own MTU
+   refuses to start.
+
+   Each node advertises its current reading in JOIN_REQ and ALIVE.
+   A master that receives a JOIN_REQ whose MTU differs from its own
+   answers with a JOIN_REJECT carrying reason CL_CTR_REJECT_MTU,
+   and the joiner stands down. This is not covered by
+   on_config_mismatch and is never optional - that parameter
+   governs genuinely configured settings, whereas a mismatched MTU
+   means the two nodes cannot exchange full-size packets at all. (A
+   node old enough not to advertise an MTU is admitted unchanged.)
+
+   The rule needs nothing on the wire beyond that check, by
+   induction: the master admits only equal-MTU nodes, so every
+   member carries the master's MTU, so the backup that is promoted
+   on handover already carries it too. A cluster's MTU therefore
+   cannot change through an election, and there is no inherited MTU
+   field in MEMBER_LIST.
+
+   After joining, each node polls its own interface. What it joined
+   at is what it is judged against; what the kernel says now is
+   what it advertises - the two are tracked separately, or a node
+   whose link changed would keep announcing its old value and no
+   peer could ever see the difference. CL_CTR_MTU_DRIFT_STRIKES (3)
+   consecutive disagreeing readings confirm a local change, and the
+   node then logs a critical message and shuts itself down: it can
+   no longer receive full-size cluster traffic, and it would
+   otherwise keep sending heartbeats and look healthy while
+   silently missing membership updates. A single odd reading, or a
+   reading that agrees again, clears the strikes. A failed
+   SIOCGIFMTU is not a strike, is not advertised, and does not
+   reset one - it is reported on the first failure and then every
+   CL_CTR_MTU_READ_FAIL_LOUD (12) failures, so a persistently blind
+   poll cannot pass for a quiet healthy one.
+
+   A node never acts on a peer's reading. Seeing a peer advertise a
+   different MTU produces a warning only - that peer detects its
+   own change and removes itself, and terminating on someone else's
+   reading would turn one `ip link` command into a fleet outage.
+   One case does need a louder signal: master election is by
+   highest IP and ignores the MTU, so a single wrongly-configured
+   host that wins it will refuse an otherwise healthy fleet. A
+   master that has refused CL_CTR_MTU_SUSPECT_PEERS (2) distinct
+   peers while holding no members of its own logs a critical
+   message naming itself as the probable misconfiguration.
 
    A node joining with the wrong password cannot decrypt the
    JOIN_REJECT (it is encrypted with the master's bootstrap key),
@@ -1500,9 +1560,23 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
           + GRE-over-IPsec (~1350 MTU): 4–5 fragments
        All other packet types (ALIVE, JOIN_REQ, KEY_GRANT,
        GOODBYE, etc.) fit comfortably within a single datagram on
-       any of these links. The DF bit is not set, so IP
-       fragmentation occurs transparently where the network allows
-       it. However, firewalls or stateless middleboxes that
+       any of these links. Because every member runs at the same
+       MTU (see the uniform-MTU rule above), the fragment count is
+       the same on every node, and a host on a narrower link is
+       refused admission rather than left fragmenting differently
+       from the rest. The socket sets no IP_MTU_DISCOVER option, so
+       Linux's default (IP_PMTUDISC_WANT) applies and DF IS set -
+       on multicast as well as unicast, verified on the wire. What
+       lets MEMBER_LIST through is that it exceeds the LOCAL MTU: a
+       datagram the kernel must fragment locally is not also doing
+       path-MTU discovery, so those fragments leave with DF clear.
+       A datagram that fits the local MTU goes out with DF set, and
+       if it later meets a narrower routed hop it is dropped with
+       an ICMP "fragmentation needed" that is routinely filtered.
+       This is left as it is deliberately: the module's contract is
+       the interface it runs on, not how the operator chose to
+       carry multicast between segments. However, firewalls or
+       stateless middleboxes that
        silently drop fragmented UDP will prevent new nodes from
        joining, since MEMBER_LIST is required to complete the join
        sequence. Verify that fragmented UDP is permitted on all
