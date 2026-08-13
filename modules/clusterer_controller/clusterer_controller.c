@@ -502,6 +502,10 @@ typedef struct {
 /* Distinct peers a master may refuse on MTU before it says out loud that IT is
  * the likely misconfiguration.  See cl_ctr_mtu_note_reject(). */
 #define CL_CTR_MTU_SUSPECT_PEERS  2
+/* Consecutive unreadable MTU polls between complaints.  The first failure is
+ * always reported; after that this keeps a blind poll from being silent
+ * without letting it flood. At query_time=5 this is about once a minute. */
+#define CL_CTR_MTU_READ_FAIL_LOUD 12
 /* Noise handshake message sizes (NNpsk0, X25519, ChaChaPoly, SHA-256):
  *   msg 1 = e(32) + tag over empty payload(16)                 = 48
  *   msg 2 = e(32) + AEAD(master_salt 32 + tag 16)              = 80             */
@@ -862,6 +866,10 @@ static int cc_mtu = 0;
 static int cc_mtu_now = 0;
 /* Consecutive polls that disagreed with cc_mtu (see CL_CTR_MTU_DRIFT_STRIKES). */
 static int cc_mtu_drift_strikes = 0;
+/* Consecutive polls that could not read the MTU at all.  Tracked separately
+ * from the drift strikes because a failed read is not evidence of anything -
+ * see cl_ctr_mtu_step(). */
+static int cc_mtu_read_fails = 0;
 
 /**
  * cl_ctr_read_iface_mtu() - current MTU of the interface we run the plane on.
@@ -896,6 +904,50 @@ static inline uint16_t cl_ctr_mtu_wire(int mtu)
     if (mtu <= 0)      return 0;
     if (mtu > 0xFFFF)  return 0xFFFF;
     return (uint16_t)mtu;
+}
+
+/* Outcome of a single MTU poll. */
+#define CL_CTR_MTU_STEP_STEADY      0   /* reads what we joined at            */
+#define CL_CTR_MTU_STEP_UNREADABLE  1   /* the read failed - nothing learned  */
+#define CL_CTR_MTU_STEP_DRIFTING    2   /* differs, not yet confirmed         */
+#define CL_CTR_MTU_STEP_CONFIRMED   3   /* differs, confirmed - stand down    */
+#define CL_CTR_MTU_STEP_RECOVERED   4   /* agrees again after >=1 strike      */
+
+/**
+ * cl_ctr_mtu_step() - decide what one MTU reading means.
+ *
+ * Split out of the timer callback so the decision can be exercised directly:
+ * the interesting sequences (a failed read landing in the middle of a drift, a
+ * transient that recovers, a drift that persists) are awkward to produce
+ * against a real interface and trivial to enumerate here.
+ *
+ * THE FAILED READ IS THE WHOLE POINT.  It used to fall into the same branch as
+ * "the link is fine again", which did two wrong things at once: it cleared the
+ * strike count, so an ioctl failing at roughly the confirmation cadence could
+ * hold a genuinely drifted node alive indefinitely; and it logged that the MTU
+ * was "back to" a value it had never read - a measurement that did not happen,
+ * which is the one kind of log line worse than no log line at all.
+ *
+ * A failed read is neither drift nor recovery.  It is an absence of evidence,
+ * so it leaves the strike count exactly where it was.
+ */
+static int cl_ctr_mtu_step(int now_mtu, int joined_mtu, int *strikes, int *fails)
+{
+    if (now_mtu <= 0) {
+        (*fails)++;
+        return CL_CTR_MTU_STEP_UNREADABLE;
+    }
+    *fails = 0;
+    if (now_mtu == joined_mtu) {
+        if (*strikes) {
+            *strikes = 0;
+            return CL_CTR_MTU_STEP_RECOVERED;
+        }
+        return CL_CTR_MTU_STEP_STEADY;
+    }
+    if (++(*strikes) >= CL_CTR_MTU_DRIFT_STRIKES)
+        return CL_CTR_MTU_STEP_CONFIRMED;
+    return CL_CTR_MTU_STEP_DRIFTING;
 }
 
 /* Largest packet the retransmit cache will hold, raised in mod_init once the
@@ -6464,35 +6516,70 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
      * not move /sys/class/net/X/mtu; only a host-local action does. */
     if (cc_mtu > 0) {
         int now_mtu = cl_ctr_read_iface_mtu();
+        const char *ifn = my_interface_buf[0] ? my_interface_buf : "(unknown)";
+
+        /* Advertise only a reading we actually got.  A failed read must not
+         * push a zero out to peers as though the link had changed. */
         if (now_mtu > 0)
-            cc_mtu_now = now_mtu;   /* what we advertise: the live reading */
-        if (now_mtu > 0 && now_mtu != cc_mtu) {
-            if (++cc_mtu_drift_strikes >= CL_CTR_MTU_DRIFT_STRIKES) {
-                LM_CRIT("clusterer_controller: [cluster %d] the MTU of %s changed "
-                        "from %d to %d and stayed there for %d checks. This node "
-                        "joined at %d and every other member still uses it, so it "
-                        "can no longer RECEIVE full-size cluster traffic - it would "
-                        "keep sending heartbeats and look healthy while silently "
-                        "missing membership updates. Shutting down; restore the MTU "
-                        "to %d and restart\n",
-                        cl->cluster_id,
-                        my_interface_buf[0] ? my_interface_buf : "(unknown)",
-                        cc_mtu, now_mtu, cc_mtu_drift_strikes, cc_mtu, cc_mtu);
-                exit(-1);
-            }
+            cc_mtu_now = now_mtu;
+
+        switch (cl_ctr_mtu_step(now_mtu, cc_mtu, &cc_mtu_drift_strikes,
+                                &cc_mtu_read_fails)) {
+        case CL_CTR_MTU_STEP_CONFIRMED:
+            LM_CRIT("clusterer_controller: [cluster %d] the MTU of %s changed "
+                    "from %d to %d and stayed there for %d checks. This node "
+                    "joined at %d and every other member still uses it, so it "
+                    "can no longer RECEIVE full-size cluster traffic - it would "
+                    "keep sending heartbeats and look healthy while silently "
+                    "missing membership updates. Shutting down; restore the MTU "
+                    "to %d and restart\n",
+                    cl->cluster_id, ifn, cc_mtu, now_mtu,
+                    cc_mtu_drift_strikes, cc_mtu, cc_mtu);
+            exit(-1);
+        case CL_CTR_MTU_STEP_DRIFTING:
             LM_WARN("clusterer_controller: [cluster %d] MTU of %s reads %d, this "
                     "node joined at %d (%d/%d consecutive) - confirming before "
                     "acting, since a bond failover or driver reset can report a "
                     "transient value\n",
-                    cl->cluster_id,
-                    my_interface_buf[0] ? my_interface_buf : "(unknown)",
-                    now_mtu, cc_mtu, cc_mtu_drift_strikes,
-                    CL_CTR_MTU_DRIFT_STRIKES);
-        } else if (cc_mtu_drift_strikes) {
-            LM_INFO("clusterer_controller: [cluster %d] MTU of %s is back to %d - "
-                    "the earlier reading was a transient\n", cl->cluster_id,
-                    my_interface_buf[0] ? my_interface_buf : "(unknown)", cc_mtu);
-            cc_mtu_drift_strikes = 0;
+                    cl->cluster_id, ifn, now_mtu, cc_mtu,
+                    cc_mtu_drift_strikes, CL_CTR_MTU_DRIFT_STRIKES);
+            break;
+        case CL_CTR_MTU_STEP_RECOVERED:
+            LM_INFO("clusterer_controller: [cluster %d] MTU of %s reads %d again, "
+                    "matching what this node joined at - the earlier readings "
+                    "were a transient\n", cl->cluster_id, ifn, cc_mtu);
+            break;
+        case CL_CTR_MTU_STEP_UNREADABLE:
+            /* Deliberately NOT fatal, and deliberately not a reset.
+             *
+             * Not a reset because a read that failed is not a link that
+             * recovered - the strike count is left exactly where it was, so a
+             * drift already under way still confirms on the next real reading.
+             *
+             * Not fatal, even though mod_init refuses to START without an MTU,
+             * and the asymmetry is intentional: at startup the node has no
+             * membership and nothing to lose by refusing, while here it is an
+             * established member carrying calls, and an ioctl we could not
+             * complete is evidence about our own visibility, not about the
+             * link. The drift this poll exists to catch - a host-local `ip
+             * link` change - leaves the interface perfectly readable. A reading
+             * that fails instead means the interface was renamed or removed,
+             * which announces itself far more loudly elsewhere.
+             *
+             * Say so on the first failure and then rarely, so a persistently
+             * blind poll cannot masquerade as a quiet healthy one. */
+            if (cc_mtu_read_fails == 1
+                || cc_mtu_read_fails % CL_CTR_MTU_READ_FAIL_LOUD == 0)
+                LM_WARN("clusterer_controller: [cluster %d] cannot read the MTU "
+                        "of %s (%s) - %d consecutive attempts. This node is not "
+                        "verifying that it still matches the cluster's %d; it "
+                        "keeps running on its last good reading, and any drift "
+                        "already being confirmed is NOT cancelled by this\n",
+                        cl->cluster_id, ifn, strerror(errno),
+                        cc_mtu_read_fails, cc_mtu);
+            break;
+        default:
+            break;                      /* steady - the common case, silent */
         }
     }
     /* ALIVE transport: a settled non-master unicasts its heartbeat to the master,
