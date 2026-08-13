@@ -200,9 +200,13 @@ static int mod_init(void)
 	/*verify table versions */
 	if(db_check_table_version(&config_db_func, config_db_con,
 			&config_table, CONFIG_TABLE_VERSION) < 0) {
+		config_db_func.close(config_db_con);
+		config_db_con = NULL;
 		LM_ERR("error during table version check\n");
 		return -1;
 	}
+	config_db_func.close(config_db_con);
+	config_db_con = NULL;
 
 	config_lock = lock_alloc();
 	if (!config_lock || !lock_init(config_lock)) {
