@@ -847,8 +847,43 @@ WARNING:cachedb_perf:mod_init: replicate_collections is set but
 		<listitem><para><emphasis>seqlock_retries</emphasis> - optimistic-read retries (the contention signal)</para></listitem>
 		<listitem><para><emphasis>lock_fallbacks</emphasis> - reads that fell back to the bucket lock</para></listitem>
 		<listitem><para><emphasis>arena_bytes</emphasis> / <emphasis>arena_chunks</emphasis> - memory taken from shm</para></listitem>
-		<listitem><para><emphasis>memory_tier</emphasis> - the achieved huge-page tier (1 hugetlb .. 4 plain 4K)</para></listitem>
+		<listitem><para><emphasis>memory_tier_probe</emphasis> / <emphasis>memory_tier_active</emphasis> - the huge-page tier the host was probed for, and the one the module's own arena actually runs on (1 hugetlb .. 4 plain 4K). They differ when <varname>arena_hugepage_mb</varname> could not be satisfied.</para></listitem>
+		<listitem><para><emphasis>hugepage_arena_active</emphasis>, <emphasis>hugepage_arena_total_bytes</emphasis>, <emphasis>hugepage_arena_used_bytes</emphasis>, <emphasis>hugepage_arena_free_bytes</emphasis> - the module's own hugepage arena, which is SEPARATE from the OpenSIPS shm arena. Records live in one or the other, never both, so these do not add to <emphasis>arena_bytes</emphasis>.</para></listitem>
 	</itemizedlist>
+	<para>
+		<emphasis role="bold">Cross-node pull statistics.</emphasis>
+		These exist only when <varname>pull_on_miss</varname> is enabled.
+		They are grouped so that two identities hold, which is the point of
+		having them: every miss is accounted on the way out, and every
+		request is accounted on the way back. A missing counter here is not
+		cosmetic - it is a miss that vanished.
+	</para>
+	<itemizedlist>
+		<listitem><para><emphasis>pulls_requested</emphasis> - misses that turned into a request on the wire. <emphasis>pulls_served</emphasis> - requests from peers this node answered.</para></listitem>
+		<listitem><para><emphasis>pulls_suppressed</emphasis> - asks absorbed by an already-cached negative (<varname>pull_negative_ms</varname>); the second and later asker for a key a peer has already denied.</para></listitem>
+		<listitem><para><emphasis>pulls_skip_notreplicated</emphasis>, <emphasis>pulls_skip_toolong</emphasis>, <emphasis>pulls_skip_nopeers</emphasis>, <emphasis>pulls_skip_noslot</emphasis> - misses refused at the gate before anything was sent. They are kept apart because each calls for a different action: pull is off for that collection; the key or collection name is too long to ask for at all; no live cluster member to ask; or the slot table is full and nothing was evictable.</para></listitem>
+		<listitem><para><emphasis>pulls_received</emphasis> - a value came back. <emphasis>pulls_negative</emphasis> - a peer answered that it does not have the key. <emphasis>pulls_oversize</emphasis> - a peer has it but it exceeds the cluster transport limit. <emphasis>pulls_timed_out</emphasis> - nothing came back in <varname>pull_timeout_ms</varname>. <emphasis>pulls_send_failed</emphasis> - the transport refused the datagram, so no peer was ever asked.</para></listitem>
+		<listitem><para><emphasis>pulls_stored</emphasis> - answers written into the cache. <emphasis>pulls_in_flight</emphasis> - requests outstanding right now (a gauge, not a total).</para></listitem>
+		<listitem><para><emphasis>pulls_orphaned</emphasis> - a waiter gave up but the slot was kept in case the answer still arrives, for <varname>pull_linger_ms</varname>. Its outcomes: <emphasis>pulls_late_stored</emphasis> (arrived and was stored - convergence that would otherwise be lost), <emphasis>pulls_late_superseded</emphasis> (a local write had already filled the key), <emphasis>pulls_late_expired</emphasis> (arrived past the linger and was refused as stale), <emphasis>pulls_orphan_expired</emphasis> (no late answer ever came - the ordinary end of a timeout), <emphasis>pulls_orphan_evicted</emphasis> (the slot was reclaimed early because the pool ran dry).</para></listitem>
+		<listitem><para><emphasis>pulls_abandoned</emphasis> - slots the reaper released because the caller never collected them. Distinct from a timeout, which the caller DID collect: a non-zero value here is a defect signal, not tuning.</para></listitem>
+		<listitem><para><emphasis>pulls_foreign_cluster</emphasis> - pull messages that arrived on a controller cluster this module does not sync on and were refused. Non-zero means either a genuine multi-cluster node behaving correctly, or <varname>sync_cluster_id</varname> naming a cluster the controller does not manage; the accompanying warning tells the two apart.</para></listitem>
+	</itemizedlist>
+	<para>
+		The two identities:
+	</para>
+	<programlisting format="linespecific">
+misses          = pulls_requested + pulls_suppressed
+                  + pulls_skip_notreplicated + pulls_skip_toolong
+                  + pulls_skip_nopeers + pulls_skip_noslot
+
+pulls_requested = pulls_received + pulls_negative + pulls_oversize
+                  + pulls_timed_out + pulls_send_failed + pulls_in_flight
+	</programlisting>
+	<para>
+		The second holds exactly on a two-node cluster.
+		<emphasis>pulls_negative</emphasis> is counted per REPLY, so with
+		more peers one request can raise it more than once.
+	</para>
 	<para>
 		The <emphasis>perf_stats</emphasis> MI command gives the same
 		figures broken down per collection, plus load factor, overflow

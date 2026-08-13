@@ -704,8 +704,76 @@ WARNING:cachedb_perf:mod_init: replicate_collections is set but
        signal)
      * lock_fallbacks - reads that fell back to the bucket lock
      * arena_bytes / arena_chunks - memory taken from shm
-     * memory_tier - the achieved huge-page tier (1 hugetlb .. 4
-       plain 4K)
+     * memory_tier_probe / memory_tier_active - the huge-page tier
+       the host was probed for, and the one the module's own arena
+       actually runs on (1 hugetlb .. 4 plain 4K). They differ
+       when arena_hugepage_mb could not be satisfied.
+     * hugepage_arena_active, hugepage_arena_total_bytes,
+       hugepage_arena_used_bytes, hugepage_arena_free_bytes - the
+       module's own hugepage arena, which is SEPARATE from the
+       OpenSIPS shm arena. Records live in one or the other, never
+       both, so these do not add to arena_bytes.
+
+   Cross-node pull statistics. These exist only when pull_on_miss
+   is enabled. They are grouped so that two identities hold, which
+   is the point of having them: every miss is accounted on the way
+   out, and every request is accounted on the way back. A missing
+   counter here is not cosmetic - it is a miss that vanished.
+     * pulls_requested - misses that turned into a request on the
+       wire. pulls_served - requests from peers this node
+       answered.
+     * pulls_suppressed - asks absorbed by an already-cached
+       negative (pull_negative_ms); the second and later asker for
+       a key a peer has already denied.
+     * pulls_skip_notreplicated, pulls_skip_toolong,
+       pulls_skip_nopeers, pulls_skip_noslot - misses refused at
+       the gate before anything was sent. They are kept apart
+       because each calls for a different action: pull is off for
+       that collection; the key or collection name is too long to
+       ask for at all; no live cluster member to ask; or the slot
+       table is full and nothing was evictable.
+     * pulls_received - a value came back. pulls_negative - a peer
+       answered that it does not have the key. pulls_oversize - a
+       peer has it but it exceeds the cluster transport limit.
+       pulls_timed_out - nothing came back in pull_timeout_ms.
+       pulls_send_failed - the transport refused the datagram, so
+       no peer was ever asked.
+     * pulls_stored - answers written into the cache.
+       pulls_in_flight - requests outstanding right now (a gauge,
+       not a total).
+     * pulls_orphaned - a waiter gave up but the slot was kept in
+       case the answer still arrives, for pull_linger_ms. Its
+       outcomes: pulls_late_stored (arrived and was stored -
+       convergence that would otherwise be lost),
+       pulls_late_superseded (a local write had already filled the
+       key), pulls_late_expired (arrived past the linger and was
+       refused as stale), pulls_orphan_expired (no late answer
+       ever came - the ordinary end of a timeout),
+       pulls_orphan_evicted (the slot was reclaimed early because
+       the pool ran dry).
+     * pulls_abandoned - slots the reaper released because the
+       caller never collected them. Distinct from a timeout, which
+       the caller DID collect: a non-zero value here is a defect
+       signal, not tuning.
+     * pulls_foreign_cluster - pull messages that arrived on a
+       controller cluster this module does not sync on and were
+       refused. Non-zero means either a genuine multi-cluster node
+       behaving correctly, or sync_cluster_id naming a cluster the
+       controller does not manage; the accompanying warning tells
+       the two apart.
+
+   The two identities:
+
+misses          = pulls_requested + pulls_suppressed
+                  + pulls_skip_notreplicated + pulls_skip_toolong
+                  + pulls_skip_nopeers + pulls_skip_noslot
+
+pulls_requested = pulls_received + pulls_negative + pulls_oversize
+                  + pulls_timed_out + pulls_send_failed + pulls_in_flight
+
+   The second holds exactly on a two-node cluster. pulls_negative
+   is counted per REPLY, so with more peers one request can raise
+   it more than once.
 
    The perf_stats MI command gives the same figures broken down
    per collection, plus load factor, overflow occupancy,
