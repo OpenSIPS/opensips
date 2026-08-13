@@ -97,11 +97,19 @@
 
 /* limits a consumer can rely on */
 #define CLCTR_MAX_CHAN_LEN   31
-/* Compile-time lower bound for consumer payload; the actual runtime limit is
- * cc_max_payload, which is derived from the interface MTU at mod_init and may
- * be larger on jumbo-frame links.  Consumers that size local buffers at
- * compile time should use CLCTR_MAX_PAYLOAD; consumers that want to send the
- * largest possible message at runtime should check cc_max_payload instead. */
+/* A constant to size compile-time buffers with - nothing more.  It is NOT a
+ * guaranteed payload size.
+ *
+ * The runtime limit is cc_max_payload, derived from the interface MTU at
+ * mod_init: LARGER on a jumbo-frame link, and SMALLER on a VPN, tunnel or
+ * PPPoE link whose MTU is under about 1411.  It used to be padded up to this
+ * constant when the link was smaller, which made the constant a promise the
+ * network could not keep and fragmented every full-size datagram to pretend
+ * otherwise; the module now honours the link and warns at startup instead.
+ *
+ * So: size a stack buffer with CLCTR_MAX_PAYLOAD - that is always safe, since
+ * a buffer can only be too big - but test the length you actually intend to
+ * send against cc_max_payload, which is the only bound that will be enforced. */
 #define CLCTR_MAX_PAYLOAD    1300
 extern int cc_max_payload;
 

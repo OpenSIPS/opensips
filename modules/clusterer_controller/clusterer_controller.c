@@ -7449,13 +7449,42 @@ static int mod_init(void)
 		int _overhead = 20 + 8 + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
 		                + CL_CTR_CONSUMER_HDR_SZ + CLCTR_MAX_CHAN_LEN + CL_CTR_TAG_SZ;
 		cc_max_payload = _mtu - _overhead;
+		/* Do NOT pad this back up to CLCTR_MAX_PAYLOAD when the link is
+		 * smaller than that. It used to, and the effect was that any
+		 * interface under ~1411 MTU - a VPN, a GRE/IPIP tunnel, PPPoE,
+		 * the usual 1400/1420/1436 - reported a bound ABOVE what the
+		 * path carries, which is the exact inverse of why the MTU is
+		 * consulted at all. Every full-size consumer datagram then IP
+		 * fragments, and a fragmented datagram is lost entirely if any
+		 * one fragment is, so the padding manufactured precisely the
+		 * losses the retransmit machinery then has to repair.
+		 *
+		 * Honour the link and say so instead: the compile-time constant
+		 * stays what a consumer sizes a buffer with, but it stops being
+		 * a promise the network cannot keep. */
 		if (cc_max_payload < CLCTR_MAX_PAYLOAD)
-		    cc_max_payload = CLCTR_MAX_PAYLOAD;
+		    LM_WARN("clusterer_controller: interface %s has MTU %d, so a "
+		            "consumer datagram carries at most %d bytes - below "
+		            "the %d that CLCTR_MAX_PAYLOAD leads consumers to "
+		            "expect. Sends above %d will be refused on this "
+		            "link. Raise the MTU, or keep consumer payloads "
+		            "under it; the bound is deliberately NOT padded up "
+		            "to the constant, because that only fragments and a "
+		            "lost fragment loses the whole message.\n",
+		            my_interface_buf, _mtu, cc_max_payload,
+		            (int)CLCTR_MAX_PAYLOAD, cc_max_payload);
 		/* However large the MTU claims to be, one datagram still has
 		 * to fit a UDP payload. Loopback reports 65536, which lands a
 		 * byte past what sendto() accepts. */
 		if (cc_max_payload > CL_CTR_UDP_PAYLOAD_MAX - CL_CTR_PKT_OVERHEAD)
 		    cc_max_payload = CL_CTR_UDP_PAYLOAD_MAX - CL_CTR_PKT_OVERHEAD;
+		if (cc_max_payload <= 0) {
+		    LM_ERR("clusterer_controller: interface %s has MTU %d, which "
+		           "cannot carry even the %d bytes of per-datagram "
+		           "overhead - the cluster plane cannot run on it\n",
+		           my_interface_buf, _mtu, _overhead);
+		    return -1;
+		}
 		LM_INFO("clusterer_controller: interface %s MTU=%d, "
 		        "max consumer payload=%d bytes\n",
 		        my_interface_buf, _mtu, cc_max_payload);
