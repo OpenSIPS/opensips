@@ -1,5 +1,5 @@
 ---
-title: "db_cachedb Module"
+title: "DB_CACHEDB Module"
 ---
 
 ## Admin Guide
