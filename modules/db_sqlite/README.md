@@ -1,5 +1,5 @@
 ---
-title: "db_sqlite Module"
+title: "DB_SQLITE Module"
 description: "This is a module which provides SQLite support for OpenSIPS. It implements the DB API defined in OpenSIPS."
 ---
 
