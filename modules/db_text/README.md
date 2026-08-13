@@ -1,5 +1,5 @@
 ---
-title: "DBTEXT Module"
+title: "DB_TEXT Module"
 description: "The module implements a simplified database engine based on text files. It can be used by OpenSIPS DB interface instead of other database module (like MySQL)."
 ---
 
