@@ -1,5 +1,5 @@
 ---
-title: "db_virtual Module"
+title: "DB_VIRTUAL Module"
 ---
 
 ## Admin Guide
