@@ -472,7 +472,13 @@ on-key")
    host that wins it will refuse an otherwise healthy fleet. A
    master that has refused CL_CTR_MTU_SUSPECT_PEERS (2) distinct
    peers while holding no members of its own logs a critical
-   message naming itself as the probable misconfiguration.
+   message naming itself as the probable misconfiguration. The
+   same safety net exists for the CONFIG gate
+   (CL_CTR_CFG_SUSPECT_PEERS, also 2): election ignores
+   manage_shtags / master_stickiness / query_time exactly as it
+   ignores the MTU, so a master that has refused two distinct
+   peers on settings while holding no members names itself the
+   probable culprit too.
 
    A node joining with the wrong password cannot decrypt the
    JOIN_REJECT (it is encrypted with the master's bootstrap key),

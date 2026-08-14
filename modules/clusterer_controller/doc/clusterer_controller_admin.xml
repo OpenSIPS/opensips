@@ -451,7 +451,13 @@
 	refuse an otherwise healthy fleet. A master that has refused
 	<emphasis>CL_CTR_MTU_SUSPECT_PEERS</emphasis> (2) distinct peers while
 	holding no members of its own logs a critical message naming
-	<emphasis>itself</emphasis> as the probable misconfiguration.
+	<emphasis>itself</emphasis> as the probable misconfiguration. The same
+	safety net exists for the CONFIG gate
+	(<emphasis>CL_CTR_CFG_SUSPECT_PEERS</emphasis>, also 2): election ignores
+	<varname>manage_shtags</varname> / <varname>master_stickiness</varname> /
+	<varname>query_time</varname> exactly as it ignores the MTU, so a master
+	that has refused two distinct peers on settings while holding no members
+	names itself the probable culprit too.
     </para>
     <para>
 	A node joining with the <emphasis>wrong</emphasis> password cannot

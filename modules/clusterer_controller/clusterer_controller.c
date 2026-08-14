@@ -521,6 +521,11 @@ typedef struct {
 /* Distinct peers a master may refuse on MTU before it says out loud that IT is
  * the likely misconfiguration.  See cl_ctr_mtu_note_reject(). */
 #define CL_CTR_MTU_SUSPECT_PEERS  2
+/* Same idea for the config gate: a master refusing this many DIFFERENT peers on
+ * settings while holding no members is probably the misconfigured one, because
+ * election ignores the settings just as it ignores the MTU.  See
+ * cl_ctr_cfg_note_reject(). */
+#define CL_CTR_CFG_SUSPECT_PEERS  2
 /* Consecutive unreadable MTU polls between complaints.  The first failure is
  * always reported; after that this keeps a blind poll from being silent
  * without letting it flood. At query_time=5 this is about once a minute. */
@@ -799,6 +804,11 @@ typedef struct cl_ctr_cluster_ {
     uint32_t         mtu_reject_ips[CL_CTR_MTU_SUSPECT_PEERS * 2];
     int              mtu_reject_n;
     int              mtu_suspect_said;
+    /* Same, for peers we have refused on config settings.  See
+     * cl_ctr_cfg_note_reject() - the config analogue of the MTU one above. */
+    uint32_t         cfg_reject_ips[CL_CTR_CFG_SUSPECT_PEERS * 2];
+    int              cfg_reject_n;
+    int              cfg_suspect_said;
     /* utime (us since start) of the last JOIN_REQ we transmitted, for a
      * minimum-interval throttle so a key-mismatch/split-brain burst cannot
      * flood the group with JOIN_REQs.  0 = never sent.  Worker-local.         */
@@ -4485,6 +4495,49 @@ static void cl_ctr_mtu_note_reject(const char *src_ip, cl_ctr_cluster_t *cl)
 }
 
 /**
+ * cl_ctr_cfg_note_reject() - the config analogue of cl_ctr_mtu_note_reject().
+ *
+ * Election is highest-IP and just as blind to manage_shtags / master_stickiness
+ * / query_time as it is to the MTU, so the same failure exists: one host booted
+ * with the wrong settings that happens to win the election becomes master and
+ * refuses an otherwise-agreeing fleet, where that same host joining an already
+ * formed cluster would only have shut itself down.  Warn, and nothing more, for
+ * the same reasons spelled out above the MTU version.
+ */
+static void cl_ctr_cfg_note_reject(const char *src_ip, cl_ctr_cluster_t *cl)
+{
+    uint32_t ip_num = ip_to_num(src_ip);
+    int      i, members;
+
+    if (ip_num == 0 || cl->cfg_suspect_said)
+        return;
+    for (i = 0; i < cl->cfg_reject_n; i++)
+        if (cl->cfg_reject_ips[i] == ip_num)
+            return;                     /* same peer retrying, not a new one */
+    if (cl->cfg_reject_n < (int)(sizeof(cl->cfg_reject_ips)
+                                 / sizeof(cl->cfg_reject_ips[0])))
+        cl->cfg_reject_ips[cl->cfg_reject_n++] = ip_num;
+
+    lock_start_read(cl->peers->lock);
+    members = cl->peers->count;
+    lock_stop_read(cl->peers->lock);
+
+    if (cl->cfg_reject_n >= CL_CTR_CFG_SUSPECT_PEERS && members <= 1) {
+        cl->cfg_suspect_said = 1;
+        LM_CRIT("clusterer_controller: [cluster %d] THIS NODE IS PROBABLY THE "
+                "MISCONFIGURED ONE: it is master with manage_shtags=%d "
+                "master_stickiness=%d query_time=%d, has refused %d different "
+                "peers for not matching, and holds no members of its own. Master "
+                "election is by highest IP and ignores these settings, so a "
+                "single wrongly-configured host that wins it will refuse an "
+                "otherwise healthy fleet. Check this node's config before "
+                "changing any of the others\n",
+                cl->cluster_id, cl->manage_shtags ? 1 : 0,
+                cl->master_stickiness ? 1 : 0, query_time, cl->cfg_reject_n);
+    }
+}
+
+/**
  * cl_ctr_handle_alive() - process a CL_CTR_PKT_ALIVE packet.
  *
  * Regular heartbeat path: upsert the sender, re-elect.
@@ -4735,6 +4788,11 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
 	int loc_stick  = cl->master_stickiness ? 1 : 0;
 	if (j_manage != loc_manage || j_stick != loc_stick || j_qt != query_time) {
 	    char diff[160];
+	    /* Drop before releasing the lock: while we were ourselves NEW we may
+	     * have upserted this joiner, and refusing alone would leave it in the
+	     * table, so cl_ctr_cfg_note_reject() would count it as a member we
+	     * hold and never fire.  Mirrors the MTU refusal below. */
+	    cl_ctr_drop_peer_locked(src_ip, cl);
 	    lock_stop_write(cl->peers->lock);
 	    cl_ctr_fmt_cfg_diff(diff, sizeof(diff), "cluster", "node",
 	                    loc_manage, j_manage, loc_stick, j_stick,
@@ -4743,6 +4801,7 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
 	            "different settings than the running cluster (%s)\n",
 	            cl->cluster_id, src_ip, diff);
 	    cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_CONFIG);
+	    cl_ctr_cfg_note_reject(src_ip, cl);
 	    return;
 	}
     }
