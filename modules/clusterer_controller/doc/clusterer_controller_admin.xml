@@ -377,6 +377,27 @@
 	which is precisely the case the MTU and config checks below exist for.
     </para>
     <para>
+	<emphasis role="bold">What a JOIN_REJECT carries, and why.</emphasis>
+	Beyond the target IP and a reason byte, the refusal carries the
+	<emphasis>master's own</emphasis> cluster-plane MTU and its
+	consistency-critical settings
+	(<varname>manage_shtags</varname>, <varname>master_stickiness</varname>,
+	<varname>query_time</varname>), encoded exactly as JOIN_REQ carries the
+	joiner's. Both are diagnostic, not state the joiner adopts, and they buy
+	two things. First, the node that is about to stop can name
+	<emphasis>both</emphasis> sides in its own log - it is the node an
+	operator looks at first, and "the settings differ" without values sends
+	them off to read two config files by hand. Second, the joiner can check
+	the refusal against what it holds and <emphasis>refuse a refusal that
+	contradicts itself</emphasis>: a reject quoting this node's own MTU, or
+	its own config triple, is either a stale packet or a peer asserting
+	something untrue, since a real master sends those reasons only when the
+	values differ. Without that check any holder of the cluster password
+	could end a merging master's process by assertion alone. Older senders
+	omit both fields; the parse is by length, and a reject without them is
+	still honoured, just with the generic message.
+    </para>
+    <para>
 	<emphasis role="bold">Uniform cluster MTU:</emphasis>
 	every member of a cluster runs at the same cluster-plane MTU, and the
 	master enforces it at admission. The value is <emphasis>detected</emphasis>

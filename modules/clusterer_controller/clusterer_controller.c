@@ -5872,10 +5872,15 @@ static int cl_ctr_join_fail_check(const char *src_ip, cl_ctr_cluster_t *cl)
 static void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
                                 int reason)
 {
-    /* +1 reason byte, +2 the master's MTU (diagnostic only - it is NOT cluster
-     * state the joiner adopts; it exists so the log line can name both
-     * numbers instead of leaving an operator to guess which side is wrong) */
-    char               pkt[CL_CTR_SMALL_PKT_SZ + 1 + CL_CTR_MTU_SZ];
+    /* +1 reason byte, +2 the master's MTU, +CL_CTR_CONFIG_SZ the master's
+     * config triple.  All three are diagnostic only - NOT cluster state the
+     * joiner adopts; they exist so the refused node's own log can name both
+     * sides instead of leaving an operator to guess which is wrong, and so it
+     * can refuse a refusal that contradicts itself (see
+     * cl_ctr_handle_join_reject).  The MTU came first; the config triple is
+     * the same idea applied to the reason an operator actually meets. */
+    char               pkt[CL_CTR_SMALL_PKT_SZ + 1 + CL_CTR_MTU_SZ
+                          + CL_CTR_CONFIG_SZ];
     uint32_t           seq = htonl(++cl->peers->my_seq);
     int                ip_len, plain_len;
 
@@ -5895,7 +5900,18 @@ static void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_clus
                &m, CL_CTR_MTU_SZ);
     }
 
-    plain_len = CL_CTR_PLAIN_HDR_SZ + ip_len + 1 + 1 + CL_CTR_MTU_SZ;
+    /* then our config triple, encoded exactly as JOIN_REQ carries the
+     * joiner's: [manage 1B][stickiness 1B][query_time 2B BE] */
+    {
+	char    *c  = pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
+	              + ip_len + 2 + CL_CTR_MTU_SZ;
+	uint16_t qt = htons((uint16_t)(query_time & 0xFFFF));
+	c[0] = (char)(cl->manage_shtags ? 1 : 0);
+	c[1] = (char)(cl->master_stickiness ? 1 : 0);
+	memcpy(c + 2, &qt, 2);
+    }
+    plain_len = CL_CTR_PLAIN_HDR_SZ + ip_len + 1 + 1 + CL_CTR_MTU_SZ
+                + CL_CTR_CONFIG_SZ;
     if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->key, CL_CTR_PKT_JOIN_REJECT) == 0)
         LM_WARN("clusterer_controller: [cluster %d] sent JOIN_REJECT to %s (%s)\n",
                 cl->cluster_id, target_ip,
@@ -5942,12 +5958,23 @@ static void cl_ctr_handle_join_reject(const char *payload, int payload_len,
     {
         int reason = CL_CTR_REJECT_GENERIC;
         int their_mtu = 0;
+        /* the master's config triple, absent on older senders */
+        int cfg_present = 0, r_manage = 0, r_stick = 0, r_qt = 0;
         if (payload_len > l + 1)
             reason = (unsigned char)payload[l + 1];
         if (payload_len >= l + 2 + CL_CTR_MTU_SZ) {
             uint16_t m_be;
             memcpy(&m_be, payload + l + 2, CL_CTR_MTU_SZ);
             their_mtu = ntohs(m_be);
+        }
+        if (payload_len >= l + 2 + CL_CTR_MTU_SZ + CL_CTR_CONFIG_SZ) {
+            const char *c = payload + l + 2 + CL_CTR_MTU_SZ;
+            uint16_t    qt_be;
+            r_manage = (unsigned char)c[0];
+            r_stick  = (unsigned char)c[1];
+            memcpy(&qt_be, c + 2, 2);
+            r_qt        = ntohs(qt_be);
+            cfg_present = 1;
         }
         /* Only act if the refusal is self-consistent with what WE measure: the
          * master says the cluster runs at X, and our own interface really is
@@ -5958,6 +5985,23 @@ static void cl_ctr_handle_join_reject(const char *payload, int payload_len,
                     "JOIN_REJECT from %s that quotes %d - which is exactly this "
                     "node's own MTU, so the refusal contradicts itself\n",
                     cl->cluster_id, sender_ip, their_mtu);
+            return;
+        }
+        /* Same self-consistency rule the MTU branch uses, for the same
+         * reason: act on a refusal only if it disagrees with what WE hold.  A
+         * CONFIG reject quoting our own triple back at us is bogus - a real
+         * master only sends this reason when the values DIFFER - so it is
+         * either a stale packet or a peer asserting something untrue, and
+         * acting on it would let any PSK holder end a merging master. */
+        if (reason == CL_CTR_REJECT_CONFIG && cfg_present
+                && r_manage == (cl->manage_shtags ? 1 : 0)
+                && r_stick  == (cl->master_stickiness ? 1 : 0)
+                && r_qt     == (query_time & 0xFFFF)) {
+            LM_WARN("clusterer_controller: [cluster %d] ignoring a CONFIG "
+                    "JOIN_REJECT from %s that quotes manage_shtags=%d "
+                    "master_stickiness=%d query_time=%d - which is exactly what "
+                    "this node runs, so the refusal contradicts itself\n",
+                    cl->cluster_id, sender_ip, r_manage, r_stick, r_qt);
             return;
         }
         if (reason == CL_CTR_REJECT_MTU)
@@ -5971,12 +6015,28 @@ static void cl_ctr_handle_join_reject(const char *payload, int payload_len,
                     my_interface_buf[0] ? my_interface_buf : "(unknown interface)",
                     my_interface_buf[0] ? my_interface_buf : "the cluster interface",
                     their_mtu);
-        else if (reason == CL_CTR_REJECT_CONFIG)
-            LM_CRIT("clusterer_controller: [cluster %d] JOIN_REJECT from %s - the "
-                    "running cluster has different settings than this node; fix the "
-                    "local config (manage_shtags/master_stickiness/query_time) to "
-                    "match and restart; shutting down\n",
-                    cl->cluster_id, sender_ip);
+        else if (reason == CL_CTR_REJECT_CONFIG) {
+            /* Name the values when the master sent them.  The node that dies is
+             * the one an operator looks at first, and "settings differ" without
+             * numbers sends them to read two config files by hand. */
+            char diff[160];
+            if (cfg_present) {
+                cl_ctr_fmt_cfg_diff(diff, sizeof(diff), "cluster", "this node",
+                                r_manage, cl->manage_shtags ? 1 : 0,
+                                r_stick,  cl->master_stickiness ? 1 : 0,
+                                r_qt,     query_time & 0xFFFF);
+                LM_CRIT("clusterer_controller: [cluster %d] JOIN_REJECT from %s - "
+                        "the running cluster has different settings than this node "
+                        "(%s); fix the local config to match and restart; shutting "
+                        "down\n", cl->cluster_id, sender_ip, diff);
+            } else {
+                LM_CRIT("clusterer_controller: [cluster %d] JOIN_REJECT from %s - the "
+                        "running cluster has different settings than this node; fix the "
+                        "local config (manage_shtags/master_stickiness/query_time) to "
+                        "match and restart; shutting down\n",
+                        cl->cluster_id, sender_ip);
+            }
+        }
         else
             LM_CRIT("clusterer_controller: [cluster %d] JOIN_REJECT from %s - "
                     "wrong password or unauthorized node; shutting down\n",
