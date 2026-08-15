@@ -18,6 +18,7 @@
 #db_oracle= Provides Oracle connectivity for OpenSIPS. | Development library of OCI, typically instantclient-sdk-10.2.0.3
 #db_perlvdb= Provides a virtualization framework for OpenSIPS's database access. | Perl library development files, typically libperl-dev
 #db_postgres= Provides Postgres connectivity for OpenSIPS | PostgreSQL library and development library - typically libpq5 and libpq-dev
+#db_redis= Provides Redis (single instance or cluster) row storage for OpenSIPS | Redis client library, hiredis
 #db_sqlite= Provides SQLite connectivity for OpenSIPS | SQLite library and development library - typically libsqlite3 and libsqlite3-dev
 #db_unixodbc= Allows to use the unixodbc package with OpenSIPS | ODBC library and ODBC development library
 #dialplan= Implements generic string translations based on matching and replacement rules | PCRE development library, typically libpcre2-dev
@@ -76,7 +77,7 @@
 #uuid= UUID generator | uuid-dev
 
 # Modules omitted from the default build, generally due to external dependencies.
-exclude_modules?= aaa_diameter aaa_radius auth_jwt auth_web3 b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc mmgeoip opentelemetry osp perl pi_http presence presence_dialoginfo presence_mwi presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python regex rabbitmq_consumer rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
+exclude_modules?= aaa_diameter aaa_radius auth_jwt auth_web3 b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates clusterer_controller compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_redis db_sqlite db_unixodbc dialplan emergency event_kafka event_rabbitmq event_sqs h350 http2d httpd identity jabber json launch_darkly ldap lua mi_xmlrpc mmgeoip opentelemetry osp perl pi_http presence presence_dfks presence_dialoginfo presence_mwi presence_reginfo presence_xml proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python rabbitmq_consumer regex rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
 
 # Modules forced into the build, even when also listed in exclude_modules.
 include_modules?=
@@ -97,6 +98,17 @@ DEFS+= -DQ_MALLOC #Quality assurance memory allocator with runtime safety checks
 DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
 DEFS+= -DF_PARALLEL_MALLOC #Fast memory allocator with paralel buckets
+DEFS+= -DHG_MALLOC #Hugepage-backed slab allocator with a lock-free fast path
+# HG_MALLOC reserves its arena up front on 2 MB huge pages, pre-faults and
+# mlock()s it, and serves fixed size classes from per-thread caches so the
+# common path takes no lock. A block belongs to one size class while in use;
+# once it drains completely it returns to the class-agnostic buddy and can be
+# re-carved for a different class, so the carve shrinks again after a burst.
+# Because the arena is pinned, resident memory equals -m plus -M x processes
+# from the first second - unlike the mmap-backed allocators, oversizing is not
+# cheap. It needs a huge-page pool of at least (-m + -M x procs) / 2 pages and
+# a raised memlock limit; without them it drops to a lower tier and keeps
+# running. See mem/README.hg_malloc and mem/README.hg_arena_v2
 #DEFS+= -DQM_DBG_MALLOC_HIST=3 #Size of debug history for Q_MALLOC (default is 1)
 #DEFS+= -DNO_DEBUG #Compile out all debug messages
 #DEFS+= -DNO_LOG #Compile out all logging

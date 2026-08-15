@@ -246,6 +246,11 @@ RPM_MEM_FILE "restart_persistency_cache_file"
 RPM_MEM_SIZE "restart_persistency_size"
 MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
+PIN_WORKERS	"pin_workers"|"cpu_pinning"
+PIN_UDP_CPUS	"pin_udp_cpus"
+PIN_TCP_CPUS	"pin_tcp_cpus"
+PIN_TIMER_CPUS	"pin_timer_cpus"
+PIN_MODULE_CPUS	"pin_module_cpus"
 SHM_MEMLOG_SIZE			"shm_memlog_size"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
 WORKER_REACTOR_TIMEOUT	"workerreactortimeout"|"worker_reactor_timeout"
@@ -290,6 +295,10 @@ DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
 AUTO_SCALING_PROFILE "auto_scaling_profile"
+SHM_AUTO_SCALING_PROFILE "shm_auto_scaling_profile"
+PKG_AUTO_SCALING_PROFILE "pkg_auto_scaling_profile"
+HG_RAM_FLOOR_MB "hg_ram_floor_mb"
+HG_AUTOSCALE_DRY_RUN "hg_autoscale_dry_run"
 AUTO_SCALING_CYCLE "auto_scaling_cycle"
 TIMER_WORKERS "timer_workers"
 
@@ -319,6 +328,7 @@ TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
+PIN_CPUS	{EAT_ABLE}("pin_cpus"|"PIN_CPUS"){EAT_ABLE}
 SOCK_TOS	{EAT_ABLE}("tos"|"TOS"){EAT_ABLE}
 USE_AUTO_SCALING_PROFILE {EAT_ABLE}("use_auto_scaling_profile"|"USE_AUTO_SCALING_PROFILE"){EAT_ABLE}
 SCALE_UP_TO		{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("up"|"UP"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
@@ -481,6 +491,11 @@ SPACE		[ ]
 <INITIAL>{RPM_MEM_SIZE}	{ count(); yylval.strval=yytext; return RPM_MEM_SIZE; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
+<INITIAL>{PIN_WORKERS}	{ count(); yylval.strval=yytext; return PIN_WORKERS; }
+<INITIAL>{PIN_UDP_CPUS}	{ count(); yylval.strval=yytext; return PIN_UDP_CPUS; }
+<INITIAL>{PIN_TCP_CPUS}	{ count(); yylval.strval=yytext; return PIN_TCP_CPUS; }
+<INITIAL>{PIN_TIMER_CPUS}	{ count(); yylval.strval=yytext; return PIN_TIMER_CPUS; }
+<INITIAL>{PIN_MODULE_CPUS}	{ count(); yylval.strval=yytext; return PIN_MODULE_CPUS; }
 <INITIAL>{SHM_MEMLOG_SIZE}	{ count(); yylval.strval=yytext; return SHM_MEMLOG_SIZE; }
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
 <INITIAL>{WORKER_REACTOR_TIMEOUT}	{ count(); yylval.strval=yytext; return WORKER_REACTOR_TIMEOUT; }
@@ -544,6 +559,14 @@ SPACE		[ ]
 									return DISABLE_503_TRANSLATION; }
 <INITIAL>{AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
 									return AUTO_SCALING_PROFILE; }
+<INITIAL>{SHM_AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return SHM_AUTO_SCALING_PROFILE; }
+<INITIAL>{PKG_AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return PKG_AUTO_SCALING_PROFILE; }
+<INITIAL>{HG_RAM_FLOOR_MB}	{	count(); yylval.strval=yytext;
+									return HG_RAM_FLOOR_MB; }
+<INITIAL>{HG_AUTOSCALE_DRY_RUN}	{	count(); yylval.strval=yytext;
+									return HG_AUTOSCALE_DRY_RUN; }
 <INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
 									return AUTO_SCALING_CYCLE; }
 <INITIAL>{TIMER_WORKERS}	{	count(); yylval.strval=yytext;
@@ -603,6 +626,7 @@ SPACE		[ ]
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_WORKERS}  { count(); return USE_WORKERS; }
+<INITIAL>{PIN_CPUS}  { count(); return PIN_CPUS; }
 <INITIAL>{SOCK_TOS}	{ count(); return SOCK_TOS; }
 <INITIAL>{USE_AUTO_SCALING_PROFILE}  { count(); return USE_AUTO_SCALING_PROFILE; }
 <INITIAL>{COLON}	{ count(); return COLON; }

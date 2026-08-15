@@ -1,0 +1,472 @@
+HG_MALLOC - hugepage-backed slab allocator
+==========================================
+
+HG_MALLOC is one of the memory allocators OpenSIPS can use for its shared
+(shm) and process-private (pkg) memory. It is built around two ideas the
+other allocators do not use: huge pages, and a per-process allocation fast
+path that takes no lock and touches no shared cache line.
+
+It is selected at runtime like any other allocator:
+
+    opensips -a HG_MALLOC            # both shm and pkg
+    opensips -s HG_MALLOC            # shm only
+    opensips -k HG_MALLOC            # pkg only
+
+and compiled in by default (-DHG_MALLOC in Makefile.conf). "opensips -V"
+lists it in the flags line when present, and "opensips -h" lists the
+accepted values.
+
+
+Sizing
+------
+
+    -m <MB>   shared memory, one arena for the whole server
+    -M <MB>   private memory, per process
+
+Minimums for a small configuration (a handful of modules):
+
+    absolute minimum      -m 8 -M 2
+    recommended floor     -m 64 -M 16
+
+Below the minimum the allocator refuses to serve and says so, e.g.
+
+    ERROR:core:carve_chunk: shm: no more HG_MALLOC arena memory for a
+    65536 byte chunk (class 7) - increase the arena size
+
+A real configuration needs more. Loading cachedb_perf, for instance,
+raises the shm floor noticeably: at 200 CPS, -m 64 produced a stream of
+carve_chunk failures and tm could not clone messages, while -m 256 ran
+clean. If you see carve_chunk in the log, raise -m or -M; it is not a
+leak.
+
+Note that -m is rounded up to a whole number of huge pages, so on a
+machine with 2 MB huge pages the real granularity is 2 MB.
+
+
+Sizing it against the other allocators
+--------------------------------------
+
+*The old "budget twice F_MALLOC" rule is RETIRED - see below. It is kept
+here because the reasoning still explains what to watch for, and because
+the number is quoted in older notes.*
+
+An arena that is enough under one of the other allocators may not be
+enough here, and the gap widens with call concurrency rather than with
+call rate. Two properties of the design caused it:
+
+  * every allocation is rounded up to its size class, so a request lands
+    in a cell up to one class larger than it asked for - this STILL
+    applies, and it is the part you still budget for;
+  * a freed cell went back to the class it came from and was never
+    reclassified, so memory the peak of one class took was not available
+    to another afterwards - this is FIXED in v2. A block whose cells have
+    all been freed is un-typed, returned to the buddy allocator, and can
+    be re-cut for any other class. See README.hg_arena_v2, which names
+    exactly this as the origin of the 2x rule and fixing it as what
+    retires the rule.
+
+Neither is a leak, and neither shows up at low concurrency - both are
+proportional to how many objects are alive at once.
+
+Measured on v1, on a topology-hiding proxy (three nodes, four UDP workers
+each, INVITE/200/ACK/BYE held for 500 ms, so roughly 1500 calls in flight
+per node at 3000 CPS):
+
+    F_MALLOC    -m 512    clean
+    HG_MALLOC   -m 512    carve_chunk failures on the hot class within
+                          seconds; topology_hiding could no longer store
+                          its state and the calls were lost
+    HG_MALLOC   -m 1024   clean - 0 carve_chunk, 0 failed calls, and
+                          25% less CPU than F_MALLOC at the same load
+
+Under v2 the reclaim closes most of that gap. On the production billing
+gateways HG_MALLOC peaks at 14.8 MB of shm while Q_MALLOC in the same
+role peaks at 16.1 MB - lower, while carrying four times the traffic. So
+do not apply a multiplier: size from measurement. Run the workload and
+ask hg_advise, which derives -m and -M from the high-water marks the
+allocator actually saw, and confirm against the log rather than by
+arithmetic. The requirement differs with the mix of allocation sizes a
+particular config makes.
+
+The failure is loud but it is not fatal, which is the trap: the server
+keeps running and keeps answering, while the module that could not get
+memory quietly drops what it was doing. Watch for carve_chunk in the log
+of any new deployment before trusting a capacity number from it.
+
+Unlike the other allocators, HG_MALLOC pre-faults and mlock()s its whole
+reservation at startup, so the memory is resident immediately rather than
+growing as it is used. Budget for -m plus (-M x number of processes).
+
+
+Huge pages
+----------
+
+The arena is obtained through a four-tier ladder, best first. Each tier is
+attempted and then *verified* through /proc - never assumed from the
+kernel version or from sysfs settings:
+
+    1  mmap(MAP_HUGETLB)                 huge pages from the hugetlb pool
+    2  MADV_HUGEPAGE                     THP, huge at first fault
+    3  MADV_COLLAPSE                     THP, retrofitted after filling
+    4  plain 4K pages                    always works
+
+A miss degrades to the next tier; it never fails the startup. Which tier
+was actually achieved is logged, and that log line is the only reliable
+way to know:
+
+    NOTICE:core:hg_malloc_init: shm HG_MALLOC arena: 256 MB on
+    MAP_HUGETLB 2M pages, 256 MB pinned
+
+Tier 1 needs a hugetlb pool big enough for the arena, e.g.
+
+    sysctl -w vm.nr_overcommit_hugepages=<pages>
+
+Huge pages are worth having but are not where most of the benefit comes
+from. Measured on one host at 800 CPS, allocator CPU self-time varied only
+between 2.75% (tier 1) and 3.38% (tier 4, huge pages fully disabled) -
+while the other allocators on the same machine and workload ranged from
+9.5% to 22.8%. If the machine cannot give you huge pages, HG_MALLOC is
+still worth using.
+
+
+Carving, and what the memory statistics mean
+--------------------------------------------
+
+HG_MALLOC does not treat the arena as one pool of interchangeable bytes.
+It CARVES it: the first time a process needs a cell of some size class, a
+whole chunk is cut out of the arena, divided into equal cells of that
+class, and given to that process. A chunk is never handed back. Freeing a
+cell returns it to a per-process free stack, ready to be reused - but only
+for the same size class, and preferentially by the same process.
+
+That single property is why the memory statistics read differently here
+than under q_malloc or f_malloc, where a freed fragment returns to a
+general pool and can serve a request of any size.
+
+    used_size        payload bytes currently handed to callers. Rises and
+                     falls with load; same meaning as everywhere else.
+
+    real_used_size   live commitment - the cell slots currently handed
+                     out, including each cell's header and the round-up to
+                     its size class. Rises and falls with load.
+
+    max_used_size    high-water mark of real_used_size. Climbs to the
+                     working set and then holds, as for the other
+                     allocators.
+
+    free_size        arena not yet carved. This is the figure that
+                     predicts "no more HG_MALLOC arena memory": it counts
+                     down as chunks are cut, and never goes back up.
+
+    fragments        live cells.
+
+Two consequences are worth stating plainly.
+
+First, free_size + real_used_size does not add up to total_size. Under
+q_malloc it does. Here the difference is the carved-but-idle capacity -
+cells sitting on a free stack. They are genuinely reusable, so calling
+them "used" would overstate demand; they are also already committed to one
+size class, so calling them "free" would overstate what is available. The
+identity that does hold is:
+
+    free_size + carved = total_size
+
+Second, recycled capacity is not interchangeable. An arena can report a
+large free_size and still fail an allocation, if what has been carved does
+not match the size being asked for. In practice a given workload settles
+into a stable mix of sizes and this does not arise, but it is the reason
+free_size is defined as "not yet carved" rather than "not in use".
+
+None of this has to be inferred: hg_stats below reports each quantity
+separately.
+
+
+hg_stats
+--------
+
+    opensips-cli -x mi hg_stats
+
+Reports the allocator's own view of each arena it manages: shm, and the
+pkg arena of whichever process answered the command. pkg arenas are
+per-process, so that half is one process's arena, not a server-wide total.
+
+    tier              which of the four huge-page tiers the arena got
+    total_size        arena size, as given by -m / -M
+    pinned_mb         MB protected from swapping
+    carved            bytes ever cut out of the arena into chunks
+    carved_peak       high-water mark of the above
+    chunks            how many chunks that is
+    free_to_carve     total_size - carved, i.e. shmem:free_size
+    live_cell_bytes   cell slots currently handed out
+    live_payload      of which, requested payload, i.e. shmem:used_size
+    live_cells        number of live cells, i.e. shmem:fragments
+    live_peak         high-water mark, i.e. shmem:max_used_size
+    recycled          carved but idle: on a free stack or in the global
+                      pool
+    classes           per size class: cell size, chunk count, total cells
+
+The per-class breakdown is the quickest way to tell whether an arena is
+being carved into the sizes the workload actually asks for.
+
+
+Per-module memory accounting
+----------------------------
+
+Building with -DSHM_EXTRA_STATS lets a config attribute shared memory to
+named groups of modules:
+
+    mem-group = "core": "core"
+    mem-group = "tm": "tm"
+
+which then appear as ordinary statistics - shmem_core:memory_used,
+shmem_tm:fragments and so on - queryable over MI.
+
+It is not free, but close to it. Measured on the same host and workload as
+above, HG_MALLOC's allocator CPU self-time went from 2.74% without it to
+2.90% with it (two runs each). The symbols that exist only in this build -
+update_module_stats plus the two per-cell index accessors - account for
+0.13-0.15% of CPU directly. Most of that is not specific to this
+allocator: update_module_stats is called from the generic shared-memory
+wrappers, so every allocator pays it.
+
+Set against the 9.5% to 22.8% the other allocators spend on allocation
+alone, the accounting is worth having.
+
+
+Sharing the hugetlb pool with cachedb_perf
+------------------------------------------
+
+cachedb_perf reserves its own huge-page arena (arena_hugepage_mb). Both it
+and HG_MALLOC can be on tier 1 at the same time, but they do not
+coordinate with each other - each simply asks the kernel and takes what is
+available. Two consequences:
+
+  * Size the pool for the SUM of every arena, not the largest one:
+
+        nr_overcommit_hugepages >= (-m + -M + arena_hugepage_mb) / 2
+
+    on a 2 MB huge page machine, plus headroom.
+
+  * HG_MALLOC always claims first. shm and pkg are initialised in main()
+    before any module is loaded, so cachedb_perf only ever sees what is
+    left. With a pool too small for both, it is the *core* arena that
+    degrades to a lower tier while cachedb_perf still gets tier 1.
+
+Nothing fails when the pool is short - each arena just lands on a lower
+tier - so check both startup log lines rather than assuming.
+
+Also note that pkg is a private mapping made before the workers fork, so
+every worker copies its huge pages as it writes to them; pool consumption
+grows with the number of processes.
+
+
+CPU pinning
+-----------
+
+The core option "pin_workers=1" pins each worker process to a single CPU,
+round-robin. It is off by default and independent of the allocator, but it
+matters here: HG_MALLOC's fast path keeps its free lists in per-process
+memory, so once workers stop migrating those lists stay warm in one CPU's
+cache.
+
+Each kind of process can instead be given its own CPU list, which is
+usually what you want - the point of pinning is normally to keep the
+packet-receiving workers away from everything else:
+
+    pin_udp_cpus    = "0-7"
+    pin_tcp_cpus    = "8-11"
+    pin_timer_cpus  = "12"
+    pin_module_cpus = "13-15"
+
+Setting any of these turns pinning on by itself, so pin_workers=1 is only
+needed to pin everything with no grouping. A type with no list may use
+every CPU it is allowed. Lists take the usual "0-7,12" form.
+
+A single UDP listener can also name its own list, which overrides the group
+for just that listener's workers:
+
+    pin_udp_cpus = "8-11"
+    socket = udp:203.0.113.10:5060  use_workers 2  pin_cpus "0-1"
+    socket = udp:10.0.0.10:5060     use_workers 4
+    socket = udp:10.0.0.10:5080     use_workers 2
+
+Here the two workers of the first listener are confined to CPUs 0-1, while
+the other six fall back to pin_udp_cpus and are spread across 8-11 by
+occupancy. A listener that names no list is unaffected, so the coarse
+option stays the sensible default and pin_cpus is the exception you make
+for the interfaces that need one - typically to keep a public-facing
+listener off the cores serving the internal ones.
+
+A list shorter than use_workers is legitimate, not an error: the workers
+share it by occupancy, so three workers on one CPU is a valid thing to ask
+for. Only UDP-based protocols fork per-listener workers, so pin_cpus on a
+TCP listener is reported and ignored (use_workers on TCP is already a
+no-op for the same reason).
+
+There is no bin or hep group. Neither forks processes of its own: they are
+transport protocols carried by the ordinary UDP and TCP workers, so a
+"bin:" listener is served by TCP workers and follows pin_tcp_cpus, and HEP
+follows the UDP or TCP list depending on the transport it runs over.
+
+CPUs are chosen from the set the process is already allowed to run on, so
+a cpuset or container restriction is respected and can only be narrowed,
+never widened - a group is intersected with that set, never substituted
+for it. If the intersection is empty those processes are left unpinned
+with a warning rather than failing the startup, and a malformed list is
+reported naming the option and the value.
+
+Within its group, each process gets the least-occupied CPU, counted over
+the processes running at that moment rather than derived from a process
+index. This matters with auto-scaling: workers come and go, and an index
+would say nothing about who is already running where.
+
+NUMA placement is deliberately NOT implemented. On a 2-socket test machine
+the arena was pinned to one node and the workers run first on the same node
+and then on the other; the remote arrangement measured no worse (in fact
+marginally better, the node hosting the network interrupts being the busier
+one). Until a workload shows a real cost, there is nothing here to recover.
+
+Limitations
+-----------
+
+  * Allocations are served from fixed size classes up to 64K, and from a
+    coalescing tier above that. v2 does garbage-collect and defragment -
+    a fully drained block loses its class and merges with its buddy - but
+    reclaim is WITHIN the arena: the reservation is never handed back to
+    the OS while the server runs, by design, because it is pre-faulted
+    and mlock()ed.
+  * Reclaim needs a block to drain COMPLETELY, so a class whose blocks
+    each keep one live cell holds all of them, and merging is buddy-only,
+    so two free neighbours that are not buddies never merge.
+  * On exhaustion it fails loudly rather than falling back to another
+    allocator. Raise -m / -M.
+  * NUMA-aware arena placement is not implemented - see CPU pinning
+    above for why.
+  * The arena is excluded from core dumps (MADV_DONTDUMP) by default. Since
+    every page is resident, including it would add the full arena size to
+    every worker's core file.
+
+    Set HG_DUMP_ARENA=1 in the environment to include it instead. Needed
+    whenever the allocator itself is under suspicion: VM_DONTDUMP overrides
+    coredump_filter, so no filter value can recover the arena, and without it
+    a core has no free lists, no class counters and no cell headers - gdb
+    simply reports "Cannot access memory" for shm_block. It is an environment
+    variable rather than a config parameter because it must apply during
+    allocator init, before the config file is read. Budget the full arena
+    size per crashing worker, and remember coredump_filter must also carry
+    bit 6 (shared huge pages, 0x40) - the kernel default 0x33 does not.
+
+
+Testing
+-------
+
+modules/hgstress is a throwaway stress module that hammers shm from every
+worker at once and detects the failure mode ordinary tests miss - the same
+block being handed to two processes. Each worker stamps its blocks with a
+value derived from its own pid and re-reads them later, so a foreign
+writer is caught and named. See that module's source for the parameters.
+
+
+The v3 elastic arena
+--------------------
+
+From v3 the arena distinguishes COMMITTED memory (pre-faulted, pinned,
+usable) from the RESERVATION around it, and can move the committed size in
+both directions at runtime. With no cap configured, nothing changes: the
+arena is fixed at -m/-M exactly as in v2.
+
+Giving it room - the command line, not the config:
+
+    opensips -m 128:1024 -M 16:64 ...
+
+reserves a 1024 MB shm span (and a 64 MB span per pkg arena) while
+committing only the 128/16 the run starts with. The cap lives on the
+command line for a hard reason: the shm arena is created BEFORE the config
+file is parsed, and on the hugetlb tier the whole cap is reserved from the
+page pool at map time - there is no later moment at which a config value
+could still shape the reservation. On tiers 2-4 the uncommitted remainder
+costs only page-table entries; on tier 1 it is EARMARKED POOL, see sizing
+below.
+
+Growth is exhaustion-triggered by default: an allocation that would have
+failed instead commits one granule (16 MB) more and retries, up to the
+cap. Every delta re-negotiates its backing with the kernel and is
+VERIFIED, never assumed - a THP arena's delta may land on 4K pages, and
+hg_stats then reports the split in tier_bytes rather than pretending one
+tier. Growth is refused, never degraded, when the host cannot back it:
+the mlock that populates the delta reports failure as a clean errno, and
+the host-RAM check before it keeps MemAvailable above a floor of
+max(256 MB, MemTotal/20), overridable with
+
+    hg_ram_floor_mb = 2048
+
+pkg deltas are charged times the process count in that check - every
+worker grows its own private arena under the same workload.
+
+Shrink returns whole-free TOP pages (madvise, so every mapped process
+sees it; on tier 1 the pages go back to HugePages_Free) after a
+sustained quiet period, never below the starting -m/-M unless a profile
+says otherwise. The top-order free list is kept address-ordered so
+carves concentrate low and the top drains.
+
+Policy - the worker autoscaler grammar, reused:
+
+    auto_scaling_profile = MEM_SHM
+        scale up to 1024 on 80% for 3 cycles within 10
+        scale down to 256 on 30% for 120 cycles
+
+    shm_auto_scaling_profile = MEM_SHM
+    pkg_auto_scaling_profile = MEM_PKG
+
+"up to"/"down to" are MB (rounded to whole huge pages); percentages are
+carved-of-committed; a cycle is one sweep interval (30 s). A profile
+adds PROACTIVE growth - the arena grows when usage holds over the
+up-threshold, before any allocation fails (the exhaustion path stays
+armed for bursts between cycles) - and makes the down-threshold and
+cycle count drive the shrink gate. The grammar's implicit 10x delay
+after a scale-down is honoured as a post-grow cooldown. The scale-up
+target becomes the ceiling WITHIN the -m cap; the scale-down target
+becomes the shrink floor and may sit below -m: with a profile attached,
+the profile is the ask and -m is just the starting size. A profile that
+names nothing, exceeds the reservation, could never act, or floors
+below two huge pages FAILS STARTUP - a policy that cannot work is a
+misconfiguration, not a default. The pre-fork parent pkg arena predates
+the config and stays fixed; every per-child pkg arena follows the
+profile.
+
+    hg_autoscale_dry_run = 1
+
+keeps every decision advisory: ticks and even emergency growth log what
+they WOULD have done ("DRY RUN - would grow (committed 64 MB, usage
+97%...)") and act never - the arena behaves exactly like a fixed v2 one
+while you watch what the policy thinks.
+
+Observability: hg_stats (MI) shows committed/cap/grow_headroom, the
+grows/grow_bytes/grow_refused/shrinks/shrink_bytes ledgers, the
+grow_blocked gauge and the per-tier byte split; the same numbers export
+as hgmem: statistics (hg_shm_committed, hg_shm_cap, hg_shm_grows,
+hg_shm_grow_refused, hg_shm_grow_blocked, hg_shm_shrinks, ...). A
+RESOURCE refusal that survives reclaim latches GROW-BLOCKED: one WARN,
+the gauge goes 1, and E_CORE_SHM_GROW_BLOCKED is raised from the sweep
+timer (subscribe with event_route; params arena/committed_mb/cap_mb/
+grow_refused) and re-raised every 5 minutes while latched. An admin
+ceiling refusing is a NOTICE and never latches - a limit doing its job
+is not an incident.
+
+Sizing rules that are not obvious:
+
+  * tier 1 (hugetlb): the pool must fit the CAPS, not the initial
+    sizes - the whole -m cap is reserved from the pool at map time, and
+    every per-child pkg arena reserves its own -M cap the same way. On
+    top of that, leave free pages for the fork window: children briefly
+    COW-touch the parent's pkg arena before they build their own, each
+    touched page drawing a FREE page - a pool with zero free pages at
+    fork time SIGBUSes children (measured; it is the same crash family
+    as the 2026-08 pool-exhaustion incident). If the pool cannot fit a
+    cap, the arena falls back to a cap-less hugetlb reservation: it
+    keeps its huge pages and simply cannot grow, and says so.
+  * a 30-worker gateway with -M 16:64 exposes 30 x 64 MB of potential
+    pinned pkg growth. The RAM-floor check accounts for this, but the
+    admin should too.
+  * shrink on tier 1 returns pages to the POOL, not to general RAM -
+    freeing host memory needs the pool resized down as well.

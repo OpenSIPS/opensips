@@ -55,6 +55,19 @@ extern int udp_workers_no;
 extern char *udp_auto_scaling_profile;
 extern enum poll_types io_poll_method;
 extern int auto_scaling_enabled;
+
+/* v3 elastic HG_MALLOC arenas. Defined in main.c UNCONDITIONALLY (the -m/-M
+ * parser and cfg.y reference them in every build); consumed only when the
+ * HG allocator is selected - inert otherwise. Caps come from the command
+ * line (-m INIT:CAP) because the reservation precedes config parsing; the
+ * profile names/floor/dry-run come from the config and are applied
+ * post-parse. */
+extern unsigned long hg_shm_cap_bytes;
+extern unsigned long hg_pkg_cap_bytes;
+extern char *hg_shm_profile_name;
+extern char *hg_pkg_profile_name;
+extern int hg_ram_floor_mb;        /* 0 = auto: max(256MB, MemTotal/20) */
+extern int hg_autoscale_dry_run;   /* 1 = ticks log, never act */
 extern int auto_scaling_cycle;
 
 /* TCP network layer related parameters */
@@ -121,6 +134,11 @@ extern int is_pre_daemon;
 
 extern int memlog;  /*!< debugging level for printing memory debugs */
 extern int memdump; /*!< debugging level for dumping memory status */
+extern int pin_workers; /*!< pin each worker process to a single CPU */
+extern char *pin_udp_cpus;    /*!< CPU list for UDP workers */
+extern char *pin_tcp_cpus;    /*!< CPU list for TCP workers */
+extern char *pin_timer_cpus;  /*!< CPU list for timer processes */
+extern char *pin_module_cpus; /*!< CPU list for module processes */
 extern unsigned int shm_memlog_size;
 extern int execmsgthreshold;  /*!< Maximum number of microseconds a SIP msg processing can last
 						before triggering Warning log */

@@ -67,6 +67,15 @@
 #include "trans.h"
 #include "net_tcp_dbg.h"
 
+#if defined(HG_MALLOC) && !defined(INLINE_ALLOC)
+/* mem/hg_arena.c - flush this thread's allocator cache if a sweep is due.
+ * Declared here rather than by including mem/hg_arena.h: that header
+ * redefines HG_ROUNDTO and pulls in mem/common.h, which changes what the
+ * thread_malloc/thread_free MACROS expand to in this file and corrupts the
+ * libc heap at startup. See the call site in the IO pool loop. */
+void hg_cache_flush_if_due(void);
+#endif
+
 struct struct_hist_list *con_hist;
 
 enum tcp_worker_state { STATE_INACTIVE=0, STATE_ACTIVE, STATE_DRAINING};
@@ -1264,6 +1273,26 @@ static void *tcp_thread_routine(void *arg)
 	/* Reactor operations stay in TCP main; IO threads only run read/write
 	 * callbacks and notify completion back to the main thread. */
 	while (1) {
+#if defined(HG_MALLOC) && !defined(INLINE_ALLOC)
+		/*
+		 * Job boundary: no locks held, no job in flight. The allocator's
+		 * idle sweep cannot reach this thread by IPC - it waits on the
+		 * condition variable below rather than on a reactor - so it leaves
+		 * a generation counter and we act on it here.
+		 *
+		 * Declared locally rather than by including mem/hg_arena.h. That
+		 * include is what caused the glibc heap corruption this hook was
+		 * first shipped with: it drags in mem/hg_malloc.h, which #undefs
+		 * and redefines HG_ROUNDTO and pulls mem/common.h into this
+		 * translation unit, and thread_malloc/thread_free here are MACROS
+		 * whose expansion depends on what is in scope. Allocate with one
+		 * form and free with the other and libc's allocator reports an
+		 * "unaligned fastbin chunk" at startup. The network layer has no
+		 * business importing the allocator's internal headers for one
+		 * void(void) call.
+		 */
+		hg_cache_flush_if_due();
+#endif
 		cond_lock(&tcp_write_queue->cond);
 		while (!tcp_pool.stop && tcp_pool.task_head == NULL &&
 				tcp_write_queue->head == NULL)
@@ -2627,6 +2656,10 @@ int tcp_start_listener(void)
 		.proc_desc = "TCP main",
 		.flags = 0,
 		.type = TYPE_NONE,
+		.pin_group = TYPE_TCP,
+		/* TCP main is multithreaded - its IO pool defaults to one thread
+		 * per online CPU - so it takes the whole group, not one CPU */
+		.pin_whole_group = 1,
 	};
 
 	if (tcp_disabled)

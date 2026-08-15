@@ -420,6 +420,26 @@ int main(int argc, char** argv)
 		switch(c){
 			case 'M':
 					pkg_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
+					/*
+					 * -M INIT[:CAP] - CAP megabytes of growth headroom for
+					 * the v3 elastic arena. A COMMAND LINE extension rather
+					 * than a config global because this runs before the
+					 * config is parsed, and the reservation (for tier-1
+					 * hugetlb, a map-time pool reservation) must exist
+					 * before the first arena is created. The
+					 * auto-scaling profile from the config supplies the
+					 * POLICY within this reservation, never the
+					 * reservation itself.
+					 */
+					if (tmp && *tmp == ':') {
+						hg_pkg_cap_bytes =
+							strtol(tmp + 1, &tmp, 10) * 1024 * 1024;
+						if ((unsigned long)pkg_mem_size > hg_pkg_cap_bytes) {
+							LM_ERR("-M cap smaller than the initial "
+								"size: %s\n", optarg);
+							goto error00;
+						}
+					}
 					if (tmp &&(*tmp)){
 						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
 						goto error00;
@@ -427,6 +447,16 @@ int main(int argc, char** argv)
 					break;
 			case 'm':
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
+					/* -m INIT[:CAP], see the -M note above */
+					if (tmp && *tmp == ':') {
+						hg_shm_cap_bytes =
+							strtol(tmp + 1, &tmp, 10) * 1024 * 1024;
+						if ((unsigned long)shm_mem_size > hg_shm_cap_bytes) {
+							LM_ERR("-m cap smaller than the initial "
+								"size: %s\n", optarg);
+							goto error00;
+						}
+					}
 					if (tmp &&(*tmp)){
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;

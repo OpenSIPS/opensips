@@ -274,7 +274,7 @@ void *shm_getmem(int fd, void *force_addr, unsigned long size)
 }
 
 
-#if !defined(INLINE_ALLOC) && (defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC))
+#if !defined(INLINE_ALLOC) && (defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC) || defined(HG_MALLOC))
 /* startup optimization */
 int shm_use_global_lock = 1;
 #endif
@@ -292,8 +292,13 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	shm_block = qm_malloc_init(mempool, pool_size, "shm");
 #elif defined HP_MALLOC
 	shm_block = hp_shm_malloc_init(mempool, pool_size, "shm");
-#elif define F_PARALEL_MALLOC
+#elif defined F_PARALLEL_MALLOC
 	shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
+#elif defined HG_MALLOC
+	/* ignores mempool/pool_size as an address - HG_MALLOC does its own
+	 * reservation, pool_size is reused only as the size to request, see
+	 * the shm_mem_init() caller-side skip of shm_getmem() for this case */
+	shm_block = hg_malloc_init(pool_size, "shm", 1, NULL, 0);
 #endif
 #else
 
@@ -314,6 +319,19 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 #ifdef F_PARALLEL_MALLOC
 	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||
 	mem_allocator_shm == MM_F_PARALLEL_MALLOC_DBG) {
+		shm_use_global_lock = 0;
+	}
+#endif
+
+#ifdef HG_MALLOC
+	if (mem_allocator_shm == MM_HG_MALLOC || mem_allocator_shm == MM_HG_MALLOC_DBG) {
+		/* HG_MALLOC does its own internal locking (hb->lock, slow-path
+		 * only) - without this, shm_lock()/shm_unlock() would still
+		 * acquire the unrelated F_MALLOC/Q_MALLOC-style global mem_lock
+		 * around every hg_malloc()/hg_free() call: not a corruption risk
+		 * (hg_malloc still does its own correct locking underneath), but
+		 * it would serialize every shm allocation behind one lock again,
+		 * defeating the fine-grained design entirely. */
 		shm_use_global_lock = 0;
 	}
 #endif
@@ -368,6 +386,18 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		shm_frag_line = parallel_frag_line;
 		break;
 #endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+	case MM_HG_MALLOC_DBG:
+		shm_stats_core_init = (osips_shm_stats_init_f)hg_stats_core_init;
+		shm_stats_get_index = hg_stats_get_index;
+		shm_stats_set_index = hg_stats_set_index;
+		shm_frag_overhead = HG_FRAG_OVERHEAD;
+		shm_frag_file = hg_frag_file;
+		shm_frag_func = hg_frag_func;
+		shm_frag_line = hg_frag_line;
+		break;
+#endif
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
@@ -398,6 +428,12 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	case MM_F_PARALLEL_MALLOC:
 	case MM_F_PARALLEL_MALLOC_DBG:
 		shm_frag_size = parallel_frag_size;
+		break;
+#endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+	case MM_HG_MALLOC_DBG:
+		shm_frag_size = hg_frag_size;
 		break;
 #endif
 	default:
@@ -488,6 +524,27 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		gen_shm_get_frags      = (osips_get_mmstat_f)hp_shm_get_frags;
 		break;
 #endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+		/* ignores mempool - HG_MALLOC does its own reservation; see the
+		 * shm_mem_init() caller-side skip of shm_getmem() for this case */
+		shm_block = hg_malloc_init(pool_size, "shm", 1, NULL, 0);
+		gen_shm_malloc         = (osips_block_malloc_f)hg_malloc;
+		gen_shm_malloc_unsafe  = (osips_block_malloc_f)hg_malloc;
+		gen_shm_realloc        = (osips_block_realloc_f)hg_realloc;
+		gen_shm_realloc_unsafe = (osips_block_realloc_f)hg_realloc;
+		gen_shm_free           = (osips_block_free_f)hg_free;
+		gen_shm_free_unsafe    = (osips_block_free_f)hg_free;
+		gen_shm_info           = (osips_mem_info_f)hg_info;
+		gen_shm_status         = (osips_mem_status_f)hg_status;
+		gen_shm_get_size       = (osips_get_mmstat_f)hg_get_size;
+		gen_shm_get_used       = (osips_get_mmstat_f)hg_get_used;
+		gen_shm_get_rused      = (osips_get_mmstat_f)hg_get_real_used;
+		gen_shm_get_mused      = (osips_get_mmstat_f)hg_get_max_real_used;
+		gen_shm_get_free       = (osips_get_mmstat_f)hg_get_free;
+		gen_shm_get_frags      = (osips_get_mmstat_f)hg_get_frags;
+		break;
+#endif
 #ifdef DBG_MALLOC
 #ifdef F_MALLOC
 	case MM_F_MALLOC_DBG:
@@ -544,6 +601,25 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 		gen_shm_get_mused      = (osips_get_mmstat_f)hp_shm_get_max_real_used;
 		gen_shm_get_free       = (osips_get_mmstat_f)hp_shm_get_free;
 		gen_shm_get_frags      = (osips_get_mmstat_f)hp_shm_get_frags;
+		break;
+#endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC_DBG:
+		shm_block = hg_malloc_init(pool_size, "shm", 1, NULL, 0);
+		gen_shm_malloc         = (osips_block_malloc_f)hg_malloc_dbg;
+		gen_shm_malloc_unsafe  = (osips_block_malloc_f)hg_malloc_dbg;
+		gen_shm_realloc        = (osips_block_realloc_f)hg_realloc_dbg;
+		gen_shm_realloc_unsafe = (osips_block_realloc_f)hg_realloc_dbg;
+		gen_shm_free           = (osips_block_free_f)hg_free_dbg;
+		gen_shm_free_unsafe    = (osips_block_free_f)hg_free_dbg;
+		gen_shm_info           = (osips_mem_info_f)hg_info;
+		gen_shm_status         = (osips_mem_status_f)hg_status_dbg;
+		gen_shm_get_size       = (osips_get_mmstat_f)hg_get_size;
+		gen_shm_get_used       = (osips_get_mmstat_f)hg_get_used;
+		gen_shm_get_rused      = (osips_get_mmstat_f)hg_get_real_used;
+		gen_shm_get_mused      = (osips_get_mmstat_f)hg_get_max_real_used;
+		gen_shm_get_free       = (osips_get_mmstat_f)hg_get_free;
+		gen_shm_get_frags      = (osips_get_mmstat_f)hg_get_frags;
 		break;
 #endif
 #endif
@@ -731,6 +807,13 @@ int shm_dbg_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_dbg_block = hp_shm_malloc_init(mempool, pool_size, "shm_dbg");
 		break;
 #endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+	case MM_HG_MALLOC_DBG:
+		/* ignores mempool, same reasoning as shm_mem_init_mallocs() */
+		shm_dbg_block = hg_malloc_init(pool_size, "shm_dbg", 1, NULL, 0);
+		break;
+#endif
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
@@ -831,6 +914,20 @@ int shm_mem_init(void)
 
 		init_done = 1;
 		return 0;
+#ifdef HG_MALLOC
+	} else if (mem_allocator_shm == MM_HG_MALLOC ||
+	           mem_allocator_shm == MM_HG_MALLOC_DBG) {
+		/* HG_MALLOC does its own reservation (its own hugepage tier
+		 * ladder) - shm_getmem()'s plain mmap is skipped entirely here,
+		 * not just allocated-and-ignored, since for -m sized regions
+		 * (often gigabytes) that would be a real leak, not a rounding
+		 * error. mempool is passed as NULL: shm_mem_init_mallocs() never
+		 * dereferences it for this allocator. */
+#ifndef USE_ANON_MMAP
+		close(fd);
+#endif /* USE_ANON_MMAP */
+		return shm_mem_init_mallocs(NULL, shm_mem_size, 0);
+#endif
 	} else {
 		shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
 #ifndef USE_ANON_MMAP
@@ -847,6 +944,15 @@ int shm_mem_init(void)
 		return shm_mem_init_mallocs(shm_mempool, shm_mem_size,0);
 	}
 #else
+#ifdef HG_MALLOC
+	if (mem_allocator_shm == MM_HG_MALLOC ||
+	    mem_allocator_shm == MM_HG_MALLOC_DBG) {
+#ifndef USE_ANON_MMAP
+		close(fd);
+#endif /* USE_ANON_MMAP */
+		return shm_mem_init_mallocs(NULL, shm_mem_size, 0);
+	}
+#endif
 	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
 #ifndef USE_ANON_MMAP
 	close(fd);
@@ -883,6 +989,8 @@ int shm_dbg_mem_init(void)
 	shm_dbg_pool_size = qm_get_dbg_pool_size(shm_memlog_size);
 	#elif defined HP_MALLOC
 	shm_dbg_pool_size = hp_get_dbg_pool_size(shm_memlog_size);
+	#elif defined HG_MALLOC
+	shm_dbg_pool_size = hg_get_dbg_pool_size(shm_memlog_size);
 	#endif
 	#else
 	switch (mem_allocator_shm) {
@@ -904,6 +1012,12 @@ int shm_dbg_mem_init(void)
 		shm_dbg_pool_size = hp_get_dbg_pool_size(shm_memlog_size);
 		break;
 	#endif
+	#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+	case MM_HG_MALLOC_DBG:
+		shm_dbg_pool_size = hg_get_dbg_pool_size(shm_memlog_size);
+		break;
+	#endif
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
@@ -914,6 +1028,17 @@ int shm_dbg_mem_init(void)
 
 	LM_DBG("Debug SHM pool size: %.2lf GB\n",
 		(double)shm_dbg_pool_size / 1024 / 1024 / 1024);
+
+	#ifdef HG_MALLOC
+	if (mem_allocator_shm == MM_HG_MALLOC || mem_allocator_shm == MM_HG_MALLOC_DBG) {
+		/* same reasoning as shm_mem_init(): skip shm_getmem()'s plain
+		 * mmap entirely rather than allocate-and-ignore it */
+		#ifndef USE_ANON_MMAP
+		close(fd_dbg);
+		#endif
+		return shm_dbg_mem_init_mallocs(NULL, shm_dbg_pool_size);
+	}
+	#endif
 
 	shm_dbg_mempool = shm_getmem(fd_dbg, NULL, shm_dbg_pool_size);
 
@@ -972,6 +1097,12 @@ mi_response_t *mi_shm_check(const mi_params_t *params,
 
 int init_shm_post_yyparse(void)
 {
+#ifdef HG_MALLOC
+	/* v3: resolve + attach the configured auto-scaling profiles - this is
+	 * the first moment the config is known AND the arena already exists */
+	if (hg_autoscale_post_cfg() < 0)
+		return -1;
+#endif
 #ifdef HP_MALLOC
 	if (mem_allocator_shm == MM_HP_MALLOC ||
 	    mem_allocator_shm == MM_HP_MALLOC_DBG) {
@@ -1084,6 +1215,31 @@ void shm_mem_destroy(void)
 #ifdef F_PARALLEL_MALLOC
 	/* just let OS free for us, for now */
 	return;
+#endif
+
+#ifdef HG_MALLOC
+	/*
+	 * shm_mempool/shm_dbg_mempool were never set for HG_MALLOC (see the
+	 * shm_getmem() skip in shm_mem_init()/shm_dbg_mem_init()) - the real
+	 * reservation is hb->hbase/hb->hsize, owned and released entirely by
+	 * hg_malloc_destroy() (arena teardown + lock_destroy + munmap of the
+	 * actual hugepage mapping). A runtime check, not a compile-time
+	 * unconditional return like F_PARALLEL_MALLOC above: a multi-allocator
+	 * build could have HG_MALLOC compiled in while some other allocator is
+	 * the one actually selected at runtime, which still needs the cleanup
+	 * below.
+	 */
+	if (mem_allocator_shm == MM_HG_MALLOC || mem_allocator_shm == MM_HG_MALLOC_DBG) {
+		if (shm_block)
+			hg_malloc_destroy((struct hg_block *)shm_block);
+		shm_block = NULL;
+#ifdef DBG_MALLOC
+		if (shm_dbg_block)
+			hg_malloc_destroy((struct hg_block *)shm_dbg_block);
+		shm_dbg_block = NULL;
+#endif
+		return;
+	}
 #endif
 
 #ifdef HP_MALLOC

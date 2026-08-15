@@ -98,6 +98,12 @@ struct process_table {
 	/* the load statistic of this process */
 	struct proc_load_info load;
 
+	/* CPU this process is pinned to, or -1 if unpinned. Chosen by the
+	 * parent at fork time (see pin_pick_cpu() in pt.c) and applied by the
+	 * child; also what makes the choice occupancy-aware, since the parent
+	 * counts the CPUs of the currently-running processes here. */
+	int pinned_cpu;
+
 	/* synchronization during fork */
 	atomic_t startup_result;
 };
@@ -125,10 +131,28 @@ int   count_child_processes(void);
 #define is_process_running(_idx) \
 	( (pt[_idx].flags&OSS_PROC_IS_RUNNING)?1:0 )
 
+struct socket_info;
+
 struct internal_fork_params {
 	const char *proc_desc;
 	unsigned int flags;
 	enum process_type type;
+	/* The listener this process serves, when it serves one. A UDP
+	 * listener may name its own CPU list (pin_cpus on the socket), which
+	 * is more specific than the process-type group and wins over it. */
+	struct socket_info *sock;
+	/* Which pin_*_cpus group this process belongs to, when that is not
+	 * the same as its type. The core timer processes and the TCP manager
+	 * are TYPE_NONE - they are not workers and take no script - yet an
+	 * operator naming pin_timer_cpus or pin_tcp_cpus plainly means them
+	 * too. Left at TYPE_NONE, the type is used. */
+	enum process_type pin_group;
+	/* Pin this process to its group's WHOLE CPU list instead of one CPU
+	 * chosen from it. For multithreaded processes - TCP main runs a pool
+	 * of IO threads, one per online CPU by default - a single-CPU pin
+	 * would serialise every thread onto that one core; the group is what
+	 * the operator meant. Threads created after the pin inherit it. */
+	int pin_whole_group;
 };
 
 struct internal_fork_handler {

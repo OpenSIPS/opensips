@@ -40,6 +40,11 @@ static str evi_core_table[] = {
 	CORE_EVENT_STR(PKG_THRESHOLD),
 	CORE_EVENT_STR(PROC_AUTO_SCALE),
 	CORE_EVENT_STR(TCP_DISCONNECT),
+	/* Published unconditionally so event_route[] can always subscribe;
+	 * only ever RAISED when the shm allocator is HG_MALLOC with a growth
+	 * cap and a latched resource refusal (core_stats.c, the sweep timer).
+	 * An event that exists but never fires costs one table entry. */
+	CORE_EVENT_STR(SHM_GROW_BLOCKED),
 };
 
 int evi_register_core(void)

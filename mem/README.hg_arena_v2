@@ -1,0 +1,319 @@
+HG_MALLOC arena v2 - reclaiming the carve
+=========================================
+
+DESIGN ONLY. Nothing in this file is implemented yet. It exists so the
+reasoning is reviewable before any code is written, and so the measurements
+that motivate it are not lost.
+
+
+The problem, measured
+---------------------
+
+From core:hg_stats on a production gateway carrying real traffic:
+
+    carved            53.42 MB
+    live_committed     9.14 MB
+    slab_recycled     44.28 MB     <- 83% of the carve, idle
+    cells carved      154,454
+    cells live          1,353      <- 0.88% in use
+
+Chunks are carved per size class and never returned, so a burst pins its peak
+for the lifetime of the process. Class 96 holds 6 MB across 24 chunks; class
+24576 holds 11.7 MB - a quarter of the entire carve - from 500 cells.
+
+This, and not size-class round-up, is the origin of the "budget about twice
+what F_MALLOC needs" rule that forces -m 5120 and a 2880-page hugetlb pool on
+these nodes. Fixing it retires that rule.
+
+A dead end, measured and rejected: the 32-byte cell header (24 bytes of it
+from DBG_MALLOC being compiled in). Real, but worth only ~32 KB of 8.4 MB
+here, because the average allocation is ~6 KB. Not worth losing the _DBG
+allocators for.
+
+
+Two constraints that shape everything
+-------------------------------------
+
+1. Live blocks can never be relocated. Callers hold raw void *, there is no
+   handle indirection and no pointer map. This is therefore a garbage
+   collector, never a compacting defragmenter. The only sanctioned relocation
+   channel is hg_realloc(), which returns a new pointer by contract.
+
+2. The carve is irreversible. hg_chunk_backing() is a monotonic atomic add on
+   hb->hoff, and on exhaustion deliberately leaves hoff past the end because
+   undoing it would race other bumpers. Nothing returns to the arena, so
+   reclaim must mean re-cutting inside what is already carved.
+
+
+Structure
+---------
+
+    arena (-m, reserved, mlocked and pre-faulted at init)
+      -> 2 MB hugepages, each the top order of a buddy tree
+        -> buddy blocks, 8 KB .. 2 MB, split and merged on demand
+          -> each block dedicated to one cell class
+            -> cells, per-thread LIFO caches
+
+Only the bottom level is on the hot path. Everything above it lives in the
+slow path that already takes hb->lock, which is how the allocator's measured
+2.73% self-time survives the change.
+
+Splitting is pure bookkeeping: the memory is already mapped and pre-faulted,
+so a 16 KB block becomes two 8 KB blocks by changing records alone. Merging
+two free buddies is the reverse, and is the only defragmentation that is legal
+here, because it operates on free space rather than live objects.
+
+A page is not one block per order. Three 8 KB blocks simply means splitting
+twice; a page ends up as e.g. 8 + 8 + 8 + 8(free) + 16 + 32. Buddy constrains
+only that a size is a power of two multiple of MIN_ORDER, that a block is
+naturally aligned to its own size, and that it merges only with the half it
+was split from. The count per order is unconstrained.
+
+Top order equals page size, so the hierarchy terminates naturally: there is no
+cross-page merging to implement, and a wholly free top block is exactly one
+huge page.
+
+
+Address to block
+----------------
+
+    page  = (addr - hbase) >> 21
+    order = leaforder[(off & (2MB-1)) >> 13]      one byte per 8 KB leaf
+    base  = mask by order
+
+hbase is 2 MB aligned, so this holds by construction. PREREQUISITE: blocks
+must be aligned at carve time. hg_chunk_backing() today aligns to 64 bytes
+only, so the mask does not work as-is.
+
+
+Reclaim: two mechanisms that are useless apart
+----------------------------------------------
+
+GC un-types. A block whose cells are all free is returned to the buddy pool
+and stops belonging to a size class. This is what recovers the 44 MB: a block
+full of free 96-byte cells is worthless to a class-768 requester until it is
+returned and re-cut.
+
+Defrag re-joins. A freed block merges with its buddy, that with its buddy, and
+so on up to a whole page. O(1) per step, since a buddy's address is the block's
+own with one bit flipped. Its one limitation is inherent: merging is
+buddy-only, not any-adjacent, so two free neighbours that are not partners
+never merge.
+
+Run only GC and the result is correctly-sized but fragmented free space. Run
+only defrag and nothing ever becomes free enough to merge.
+
+Both are event-driven, not periodic. A free pushes onto a thread's LIFO and
+never touches the block; the block's live counter only changes at cache/block
+transitions, which is 1-3% of operations and already under the lock. Checking
+"did this block hit zero, and can it merge" there costs almost nothing and
+returns memory the moment it is genuinely free - which matters, because under
+memory pressure a deferred scheme is slowest exactly when the reserve is most
+needed.
+
+Eager merging can thrash at a boundary (free, merge to 16 KB, immediately need
+8 KB, split back). Delayed coalescing fixes it: keep a few free blocks per
+order deliberately unmerged as hysteresis.
+
+A periodic sweep survives for one job only: flushing the caches of threads
+that have gone idle. No event fires on a quiet thread, so its cached cells are
+unreachable by any inline mechanism.
+
+
+Allocation policy decides how much is reclaimable at all
+--------------------------------------------------------
+
+GC and defrag are passive - they act on blocks that happen to empty. What
+causes blocks to empty is policy:
+
+  - concentration: when a class needs a new current block, take the FULLEST
+    partial, never the emptiest and never round-robin. Without this, refill
+    keeps topping up every block, live cells stay smeared, and the sweep finds
+    nothing.
+
+  - thread ownership: a thread claims a whole block and carves cells locally.
+    Beyond the reduction in lock traffic, a block owned by one thread drains
+    as a unit instead of holding one stray survivor from each of sixteen.
+
+  - splitting: always split the smallest free block that fits, so large free
+    blocks are preserved by construction.
+
+  - page preference: satisfy small requests from pages that already have a
+    free block of that order, or are already fragmented; satisfy large
+    requests from untouched pages. Keep the mess concentrated, or every page
+    ends up lightly speckled with survivors and none can serve a large block.
+
+The reclaim machinery is the easy half. Policy is what determines whether this
+recovers 40 MB or 2 MB.
+
+
+Cross-thread frees
+------------------
+
+Ownership cannot assume the owner frees: hg_used() clamps at zero precisely
+because slots go negative when one process frees another's cells. A cell freed
+by a non-owner goes on a per-block remote-free list, reconciled when the owner
+next touches the block or when the sweep runs.
+
+This is the one place a write-back queue is correct - the deferred work is
+genuinely more expensive than the deferral, because doing it inline would mean
+touching another thread's structures.
+
+
+Cache budget
+------------
+
+The current HG_PRIVATE_MAX is a flat count of 256 cells per class regardless
+of size, which for class 65536 permits a 16 MB hoard per process. It bounds
+nothing. The cap belongs in bytes.
+
+The budget must also be derived rather than fixed:
+
+    per_thread_budget ~= arena_size * F / concurrent_consumers      F ~ 10-25%
+
+The binding case is not shm but pkg. pkg is MAP_PRIVATE per process, and TCP
+main is one process running an IO thread pool - sixteen threads sharing one
+8 MB pkg arena. At 21 classes and one 8 KB block each, caches alone would
+consume 5.4 MB of that 8 MB. On shm the same rule is comfortable. This
+constraint did not exist before 4.1, because there was one thread per process.
+
+
+Metadata
+--------
+
+Per 2 MB page: leaf-order array 256 B, buddy free bitmap 64 B (511 bits covers
+all nine orders), page descriptor 64 B. 384 B per page.
+
+    pkg  -M 8      4 pages       1.5 KB      0.018%
+    shm  -m 256  128 pages        48 KB      0.018%
+    shm  5 GB   2560 pages       960 KB      0.019%
+
+Plus a flat ~1.3 KB fullness index. The GC needs no structure of its own; the
+empty-page queue threads through page descriptors that already exist.
+
+Per-block metadata (class, live count, links, remote-free head) is ~32 B. As a
+separate array that would be 20 MB on a 5 GB arena - twenty times everything
+else combined. Put it in the first 32 bytes of the block itself: zero external
+cost, better locality, and one cell fewer per block.
+
+Metadata is carved from the front of the arena rather than given its own page.
+It then inherits the tier the ladder already achieved, is shared for shm and
+private for pkg without a decision, and costs no extra hugepages. A dedicated
+2 MB page would be 25% overhead on an 8 MB pkg arena, and 30 processes each
+wanting one would burn 60 MB to hold 45 KB.
+
+
+Failure mode to design against
+------------------------------
+
+Commit lock: the arena fully committed with a stray survivor in every block,
+so a large request cannot be served though the arena is mostly free. Splitting
+does not cure this - there is nothing free to split. Only draining does.
+
+  - keep a floor of free pages in reserve, not consumable by an expanding
+    class;
+  - trigger the sweep on reserve pressure, not only on idle time.
+
+
+Rejected
+--------
+
+  - compacting defragmentation: impossible, see constraint 1.
+  - whole-chunk reclaim of today's fixed 256 KB chunks: too coarse. Class 96
+    packs 2,730 cells per chunk, so one survivor pins 256 KB and reclaim would
+    almost never fire.
+  - a page dedicated to a size CLASS: the floor becomes 21 * 2 MB = 42 MB,
+    worse than what is being reclaimed. Blocks, not pages, are class-dedicated.
+  - a general write-back queue for GC/defrag: the deferred work is already
+    nearly free, the queue needs storage inside an allocator, a full queue is a
+    new failure mode, reclaim latency peaks exactly under pressure, and
+    deferred entries need revalidating against a structure that keeps mutating.
+  - per-CPU arena sharding, for now: NUMA was A/B'd on this hardware and remote
+    CPU with local memory came out marginally FASTER, and CPU pinning measured
+    a wash at 12 workers on 16 cores. Build the seams, ship at N=1, raise it
+    only if a profile shows lock pressure. Today no lock symbol appears above
+    0.01%.
+
+
+Acceptance
+----------
+
+  - speed: no regression on the three-arm bench harness, three validated reps
+    per arm.
+  - memory: core:hg_stats before and after on a real node; slab_recycled should
+    collapse from ~83% of carve.
+  - correctness: the hgstress soak, which already catches double hand-out by
+    stamping every word with a pid-derived value.
+
+
+Reaching per-process pkg memory
+-------------------------------
+
+A pkg arena is MAP_PRIVATE, and after the move to __thread free-stacks a
+thread's cached cells live in TLS. Neither is reachable from any other process
+or thread, so there can be no central sweeper: a flush must be executed by the
+owning thread.
+
+The core already solves this shape. Despite its name, signal_pkg_status() in
+core_stats.c does not signal - it uses ipc_send_rpc() to make the target run
+rpc_get_pkg_stats() in its own context, writing results into the shared
+pkg_status[] array. That is the mechanism to reuse.
+
+Its read side, however, should not be copied. The caller reads pkg_status[]
+immediately after dispatching, so it returns the previous request's value; the
+only synchronisation is usleep(20), which is 20 microseconds for a process to
+wake from epoll and write back; and it is rate limited to once per second per
+process. The published pkg figures are therefore stale by up to a second.
+
+That flaw does not affect the sweep, because staleness is a reader problem and
+a cache flush is not a reader. Dispatch fire and forget, never wait for a
+result, and re-check the reserve on the next tick. Two things do carry across:
+
+  - a process must flush its own cache inline, never by RPC to itself, or it
+    orders against its own pending job;
+  - promptness is not guaranteed. A busy worker may not reach its reactor for
+    some time, so the reserve floor needs enough hysteresis that a slow flush
+    is not an allocation failure.
+
+TCP main's IO threads are the exception: they wait on a condition variable
+rather than the reactor, so IPC does not reach them. They need a flag checked
+at job boundaries.
+
+No dedicated GC or defrag worker is needed, and none should be added. The
+mechanisms are inline on whichever thread is already allocating, and the sweep
+is a list walk measured in microseconds, seconds apart.
+
+
+Instrumentation: counters for rates, events for transitions
+-----------------------------------------------------------
+
+At 800 CPS the allocator sees on the order of 10^5 cell operations per second.
+Cache/block transitions are 1-3% of that. Block returns are burstier still -
+near zero while load is steady, since a stable working set keeps blocks owned
+and absorbs the churn in caches, then a flurry as caches drain afterwards.
+
+So there must be no per-block or per-merge event. They are individually
+meaningless, and an EVI event with an event_route subscriber executes SIP
+script: at 10^3 per second that would cost more than the allocator it reports
+on. Even unsubscribed, the dispatch is not free.
+
+Counters carry the rates: blocks returned, blocks re-cut, merges, splits, cells
+flushed, sweep runs - alongside the existing carved, slab_recycled and
+live_cells.
+
+Per-process pkg counters are constrained by the section above: they can only be
+read through the stale, rate-limited pkg_status path. Either aggregate them
+into shm as they are produced, or publish them with an explicit staleness
+caveat. shm counters have no such problem.
+
+Three events, all low rate by construction:
+
+  - a whole page freed or re-graded. All 256 blocks must drain first, so this
+    is single digits per minute even during churn. It shows reclaim working.
+  - the reserve floor crossed, in either direction. The valuable one: it
+    precedes allocation failure, hysteresis bounds its rate, and it is the only
+    one an operator can act on in time.
+  - allocation failed, from commit lock or exhaustion. Rare and critical.
+
+This matches the module precedent - cachedb_perf carries four EVI events for
+genuine state changes and uses statistics for everything rate-shaped.

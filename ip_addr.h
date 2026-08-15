@@ -154,6 +154,7 @@ struct socket_id {
 	int proto;
 	int port;
 	int workers;
+	char* pin_cpus;
 	int tos;
 	enum si_flags flags;
 	struct socket_id* next;
