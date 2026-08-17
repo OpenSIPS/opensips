@@ -120,6 +120,16 @@ str* normalize_sip_uri(const str *uri)
         static str null_str = {NULL, 0};
         static char buf[MAX_URI_SIZE];
 
+        if (uri == NULL || uri->s == NULL) {
+                LM_ERR("invalid URI\n");
+                return &null_str;
+        }
+
+        if (uri->len > MAX_URI_SIZE-1) {
+                LM_ERR("SIP URI is too long\n");
+                return &null_str;
+        }
+
         normalized_uri.s = buf;
         if (un_escape((str *)uri, &normalized_uri) < 0)
         {
@@ -130,6 +140,10 @@ str* normalize_sip_uri(const str *uri)
         normalized_uri.s[normalized_uri.len] = '\0';
         if (strncasecmp(normalized_uri.s, SIP_PREFIX, SIP_PREFIX_LEN) != 0 && strchr(normalized_uri.s, '@') != NULL)
         {
+                if (normalized_uri.len > MAX_URI_SIZE-SIP_PREFIX_LEN-1) {
+                        LM_ERR("SIP URI is too long\n");
+                        return &null_str;
+                }
                 memmove(normalized_uri.s+SIP_PREFIX_LEN, normalized_uri.s, normalized_uri.len+1);
                 memcpy(normalized_uri.s, SIP_PREFIX, SIP_PREFIX_LEN);
                 normalized_uri.len += SIP_PREFIX_LEN;
@@ -140,4 +154,3 @@ str* normalize_sip_uri(const str *uri)
 
 #undef SIP_PREFIX
 #undef SIP_PREFIX_LEN
-
