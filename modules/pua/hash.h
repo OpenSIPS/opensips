@@ -63,6 +63,8 @@
 #define UPDATEDB_FLAG       1
 #define INSERTDB_FLAG       2
 
+#define PUA_MAX_ETAG_LEN    255
+
 #define MAX_FORWARD  70
 
 #define PRES_HASH_ID(presentity) \
