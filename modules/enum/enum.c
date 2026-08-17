@@ -706,6 +706,11 @@ int isn_query(struct sip_msg* _msg, str* suffix, str* service)
 	user_s = _msg->parsed_uri.user.s;
 	user_len = _msg->parsed_uri.user.len;
 
+	if (user_len >= (int)sizeof(string)) {
+		LM_ERR("R-URI user too long\n");
+		return -1;
+	}
+
 	memcpy(&(string[0]), user_s, user_len);
 	string[user_len] = (char)0;
 
