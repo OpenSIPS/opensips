@@ -239,6 +239,11 @@ int update_htable(unsigned int hash_index, unsigned int local_index,
 
 	if(etag)
 	{
+		if(etag->len < 0 || etag->len > PUA_MAX_ETAG_LEN)
+		{
+			LM_ERR("SIP-ETag is too long\n");
+			goto error;
+		}
 		if(p->etag.s)
 			shm_free(p->etag.s);
 		p->etag.s= (char*)shm_malloc(etag->len);
@@ -921,4 +926,3 @@ list_entry_t *get_subs_list(str *did)
 done:
 	return list;
 }
-
