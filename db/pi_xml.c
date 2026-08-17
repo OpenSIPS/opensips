@@ -126,10 +126,16 @@ xmlDocPtr pi_xml_parse_file(const char *filename)
 			if (!node) goto error;
 			node->name = strndup(parser.elem,
 					yxml_symlen(&parser, parser.elem));
-			if (!node->name) goto error;
+			if (!node->name) {
+				pi_xml_free_node(node);
+				goto error;
+			}
 			if (current) pi_xml_append_child(current, node);
 			else if (!doc->children) doc->children = node;
-			else goto error;
+			else {
+				pi_xml_free_node(node);
+				goto error;
+			}
 			current = node;
 			break;
 		case YXML_ATTRSTART:
