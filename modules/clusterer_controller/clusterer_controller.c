@@ -744,6 +744,14 @@ typedef struct cl_ctr_cluster_ {
      * CL_CTR_RESYNC_MIN_US. */
     utime_t             last_resync_us;
     utime_t             last_full_state_us;
+    /* A full-state announcement that cl_ctr_announce_full_state() had to
+     * coalesce away, still owed to the cluster.  Only the master sets it; the
+     * keepalive tick flushes it once the window has passed.  A join must never
+     * be merely dropped the way a RESYNC can be: RESYNC is a repair request
+     * that its sender will repeat, while a join is a one-shot event whose
+     * whole point is telling the OTHER members that this node restarted. */
+    int                 full_state_pending;
+    char                full_state_why[64];
     /* Master-side per-IP table tracking bootstrap-decrypt failures.
      * Worker-local (no shm, no lock needed).  After CL_CTR_JOIN_FAIL_LIMIT
      * failures from the same source IP the master sends JOIN_REJECT.       */
@@ -1438,6 +1446,7 @@ static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint
 static void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
                            const struct sockaddr *dest, socklen_t destlen);
 static void cl_ctr_broadcast_full_state(cl_ctr_cluster_t *cl);
+static void cl_ctr_announce_full_state(cl_ctr_cluster_t *cl, const char *why);
 static int  cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout);
 static void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master);
 static int  cl_ctr_on_join_tfd(int fd, void *param, int was_timeout);
@@ -4100,10 +4109,47 @@ static void cl_ctr_broadcast_full_state(cl_ctr_cluster_t *cl)
  * master answers, and coalesces a burst of RESYNCs into one full-state
  * re-broadcast per CL_CTR_RESYNC_MIN_US.
  */
+/**
+ * cl_ctr_announce_full_state() - master: publish cluster state to EVERYONE.
+ *
+ * Master path only.  Coalesced to one broadcast per CL_CTR_RESYNC_MIN_US, and
+ * an announcement suppressed by that window is REMEMBERED (full_state_pending)
+ * so the keepalive tick emits it a moment later instead of losing it.
+ *
+ * Why the pending flag matters: a MEMBER_LIST is what makes every receiver
+ * reset that peer's replay windows (see cl_ctr_handle_member_list()).  A node
+ * that restarts resumes its sequence counters at zero, so until the others
+ * reset, every packet it sends is judged "older than the replay window" and
+ * dropped - silently, because the consumer-plane drop is LM_DBG.  Measured in
+ * production: a gateway restarted, the master unicast the MEMBER_LIST to the
+ * joiner ALONE, and the third node black-holed 100% of the restarted node's
+ * consumer traffic for ten hours.  Its cross-node cache pulls then waited the
+ * full timeout on every miss.  Coalescing away a second join inside the same
+ * window would reproduce exactly that for the second node, which is why a
+ * suppressed announcement is deferred rather than dropped.
+ */
+static void cl_ctr_announce_full_state(cl_ctr_cluster_t *cl, const char *why)
+{
+    utime_t now = get_uticks();
+
+    if ((utime_t)(now - cl->last_full_state_us) < CL_CTR_RESYNC_MIN_US) {
+        cl->full_state_pending = 1;
+        snprintf(cl->full_state_why, sizeof cl->full_state_why, "%s", why);
+        LM_DBG("clusterer_controller: [cluster %d] %s - full-state broadcast "
+               "coalesced, owed to the cluster\n", cl->cluster_id, why);
+        return;
+    }
+    cl->last_full_state_us  = now;
+    cl->full_state_pending  = 0;
+    LM_INFO("clusterer_controller: [cluster %d] %s - broadcasting full state "
+            "to the cluster\n", cl->cluster_id, why);
+    cl_ctr_broadcast_full_state(cl);
+}
+
 static void cl_ctr_handle_resync(const char *sender_ip, cl_ctr_cluster_t *cl)
 {
-    int     i_am_master;
-    utime_t now;
+    int   i_am_master;
+    char  why[64];
 
     lock_start_read(cl->peers->lock);
     i_am_master = cl_ctr_i_am_master_locked(cl);
@@ -4111,16 +4157,8 @@ static void cl_ctr_handle_resync(const char *sender_ip, cl_ctr_cluster_t *cl)
     if (!i_am_master)
         return;
 
-    now = get_uticks();
-    if ((utime_t)(now - cl->last_full_state_us) < CL_CTR_RESYNC_MIN_US) {
-        LM_DBG("clusterer_controller: [cluster %d] RESYNC from %s coalesced\n",
-               cl->cluster_id, sender_ip);
-        return;
-    }
-    cl->last_full_state_us = now;
-    LM_INFO("clusterer_controller: [cluster %d] RESYNC from %s - re-broadcasting "
-            "full state\n", cl->cluster_id, sender_ip);
-    cl_ctr_broadcast_full_state(cl);
+    snprintf(why, sizeof why, "RESYNC from %s", sender_ip);
+    cl_ctr_announce_full_state(cl, why);
 }
 
 /**
@@ -4968,6 +5006,21 @@ static void cl_ctr_handle_join_req(int sock, const char *payload, int payload_le
     /* the joiner's authoritative snapshot - unicast to it (a member that misses
      * it self-heals via the membership digest; the joiner, via its JOIN_REQ retry). */
     cl_ctr_send_list_pkt(sock, CL_CTR_PKT_MEMBER_LIST, cl, src, src_len);
+
+    /* ...and tell the REST of the cluster that this node joined.  The unicast
+     * above serves the joiner only; every other member still holds the state it
+     * had before this node restarted - including that node's replay windows,
+     * which cl_ctr_handle_member_list() resets when (and only when) a
+     * MEMBER_LIST arrives.  Without this broadcast a rejoining node's traffic
+     * is dropped by everyone except the master, silently and indefinitely; the
+     * master itself is unaffected because it re-creates the peer entry here,
+     * which is why the failure looks like "only the master can hear it".
+     * Coalesced (and deferred, never dropped) inside cl_ctr_announce_full_state. */
+    {
+        char why[64];
+        snprintf(why, sizeof why, "node %s joined", src_ip);
+        cl_ctr_announce_full_state(cl, why);
+    }
 }
 
 /**
@@ -6949,6 +7002,16 @@ static int cl_ctr_on_master_alive_tfd(int fd, void *param, int was_timeout)
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     cl_ctr_drain_tfd(fd);
     cl_ctr_send_master_alive(cl->sock, cl);
+    /* An announcement the coalescing window swallowed is still owed - emit it
+     * as soon as the window allows.  This timer only runs on the master, which
+     * is the only node that announces. */
+    if (cl->full_state_pending &&
+        (utime_t)(get_uticks() - cl->last_full_state_us) >= CL_CTR_RESYNC_MIN_US) {
+        char why[64];
+        snprintf(why, sizeof why, "%s", cl->full_state_why);
+        cl->full_state_pending = 0;
+        cl_ctr_announce_full_state(cl, why);
+    }
     /* Emit a bootstrap-key beacon every CL_CTR_MASTER_BEACON_EVERY ticks so any
      * peer master holding a different session key can find us and merge. */
     if (++cl->beacon_tick >= CL_CTR_MASTER_BEACON_EVERY) {
