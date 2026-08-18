@@ -218,6 +218,7 @@ int srec_register_callbacks(struct src_sess *sess)
 		LM_ERR("cannot register callback for dialog termination\n");
 		return -1;
 	}
+	sess->flags |= SIPREC_DLG_CBS;
 
 	/* register handler for sequentials */
 	if (srec_dlg.register_dlgcb(sess->ctx->dlg, DLGCB_REQ_WITHIN,
@@ -240,7 +241,6 @@ int srec_register_callbacks(struct src_sess *sess)
 	}
 
 	LM_DBG("registered dialog callbacks for %p\n", sess);
-	sess->flags |= SIPREC_DLG_CBS;
 	return 0;
 }
 
