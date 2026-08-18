@@ -924,8 +924,8 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	pcache_ht_totals_t t;
 	unsigned long reads;
 	const char *note;
-	double rate;
-	char buf[32];
+	double rate, per_store, exp_share;
+	char buf[32], rbuf[32], ebuf[32], nbuf[224];
 	int n;
 
 	pcache_ht_totals(ht, &t);
@@ -949,11 +949,41 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	n = snprintf(buf, sizeof buf, "%.1f", rate);
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_pct"), buf, n) < 0)
 		return -1;
+	/*
+	 * Two derived figures, both plain facts about what this collection did.
+	 * Deliberately NOT a "target" or an achievable maximum.
+	 *
+	 * cachedb_perf is a GENERIC backend: any module can open a collection,
+	 * and each brings its own access pattern and its own per-store TTLs.
+	 * Two things follow, and they are why this reports rather than grades:
+	 *
+	 *  - a store does not imply a preceding miss. topology_hiding's
+	 *    th_store, for one, writes its state without ever looking it up
+	 *    first, so a "one unavoidable miss per new key" ceiling would be
+	 *    wrong for that consumer while being right for a read-through one.
+	 *    We cannot see which we are serving.
+	 *  - there is no module-wide TTL to quote. The expiry is an argument of
+	 *    each set(), so two collections - or two callers of one collection -
+	 *    can hold state for wildly different times. Naming any single TTL
+	 *    here, or a consumer's modparam, would be a guess.
+	 *
+	 * So report what happened. reads_per_store is how many times an average
+	 * stored key was read back; the expired share is how much of what was
+	 * stored has since aged out. Whether that share is benign depends on the
+	 * consumer, so the note says which removal paths were actually USED
+	 * rather than assuming expiry is the only one.
+	 */
+	per_store = t.stores ? (double)t.hits / t.stores : 0.0;
+	exp_share = t.stores ? 100.0 * t.expired / t.stores : 0.0;
+	n = snprintf(rbuf, sizeof rbuf, "%.2f", per_store);
+	if (add_mi_string(cobj, MI_SSTR("reads_per_store"), rbuf, n) < 0)
+		return -1;
+	n = snprintf(ebuf, sizeof ebuf, "%.1f", exp_share);
+	if (add_mi_string(cobj, MI_SSTR("expired_pct_of_stores"), ebuf, n) < 0)
+		return -1;
+
 	/* The counters are cumulative since startup (or the last
-	 * perf_stats_reset), so this is a lifetime average: right after a
-	 * restart it is dragged down by every sequential request whose dialog
-	 * predates the cache, and it recovers only as those age out.  Judge a
-	 * running system on the trend between two polls, not on one reading. */
+	 * perf_stats_reset), so these are lifetime averages. */
 	if (!reads)
 		note = "no lookups yet";
 	else if (!t.stores)
@@ -966,14 +996,32 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 		note = "no state has ever been stored in this collection - a miss "
 		       "here is not loss or expiry, check whether writes reach "
 		       "this collection and whether persistence loaded any rows";
-	else if (rate >= 80.0)
-		note = "healthy: the large majority of lookups hit";
-	else if (rate >= 40.0)
-		note = "fair: normal while the cache refills after a restart - "
-		       "if it does not climb, state is expiring before it is used";
-	else
-		note = "low: cached state is being lost or is expiring before it "
-		       "is used - expected only shortly after a restart";
+	else if (!t.expired) {
+		/* Nothing has aged out yet, so no reading here can be blamed on
+		 * expiry - and the cache has not yet completed one full entry
+		 * lifetime. This is the only "still filling" statement the
+		 * module can make from its own counters, with no TTL constant
+		 * and no guess about how long ago it started. */
+		n = snprintf(nbuf, sizeof nbuf,
+			"%.2f reads per stored key; no entry has reached its TTL yet, "
+			"so nothing here has been lost to expiry", per_store);
+		note = nbuf;
+	} else if (!t.removes) {
+		/* Nothing was ever removed explicitly, so for THIS collection
+		 * expiry is demonstrably the only way an entry leaves - derived
+		 * from the counter, not assumed from who the caller might be. */
+		n = snprintf(nbuf, sizeof nbuf,
+			"%.2f reads per stored key; %.1f%% of what was stored has since "
+			"expired, and nothing was removed explicitly - expiry is this "
+			"collection's only removal path", per_store, exp_share);
+		note = nbuf;
+	} else {
+		n = snprintf(nbuf, sizeof nbuf,
+			"%.2f reads per stored key; %.1f%% of what was stored has since "
+			"expired, %lu were removed explicitly",
+			per_store, exp_share, (unsigned long)t.removes);
+		note = nbuf;
+	}
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"), note, strlen(note)) < 0)
 		return -1;
 
