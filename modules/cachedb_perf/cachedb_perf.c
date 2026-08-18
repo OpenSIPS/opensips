@@ -970,8 +970,9 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	 * So report what happened. reads_per_store is how many times an average
 	 * stored key was read back; the expired share is how much of what was
 	 * stored has since aged out. Whether that share is benign depends on the
-	 * consumer, so the note says which removal paths were actually USED
-	 * rather than assuming expiry is the only one.
+	 * consumer, so the note says which removal paths have actually been
+	 * USED rather than assuming expiry is the only one - and it never
+	 * promises that anything WILL expire, since a 0 expiry means never.
 	 */
 	per_store = t.stores ? (double)t.hits / t.stores : 0.0;
 	exp_share = t.stores ? 100.0 * t.expired / t.stores : 0.0;
@@ -997,23 +998,28 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 		       "here is not loss or expiry, check whether writes reach "
 		       "this collection and whether persistence loaded any rows";
 	else if (!t.expired) {
-		/* Nothing has aged out yet, so no reading here can be blamed on
-		 * expiry - and the cache has not yet completed one full entry
-		 * lifetime. This is the only "still filling" statement the
-		 * module can make from its own counters, with no TTL constant
-		 * and no guess about how long ago it started. */
+		/*
+		 * Nothing has aged out, and we must NOT say "not yet": an expiry
+		 * of 0 means the entry never expires at all (see the set() path),
+		 * and the counters cannot tell an immortal collection from one
+		 * whose TTLs simply have not elapsed - there is no immortal
+		 * counter in pcache_ht_totals_t. Promising a future expiry would
+		 * be the same wait-and-see error this note was rewritten to
+		 * remove. State the fact and name both possibilities.
+		 */
 		n = snprintf(nbuf, sizeof nbuf,
-			"%.2f reads per stored key; no entry has reached its TTL yet, "
-			"so nothing here has been lost to expiry", per_store);
+			"%.2f reads per stored key; nothing here has expired - the "
+			"entries are either still within their TTL or were stored to "
+			"never expire", per_store);
 		note = nbuf;
 	} else if (!t.removes) {
-		/* Nothing was ever removed explicitly, so for THIS collection
-		 * expiry is demonstrably the only way an entry leaves - derived
-		 * from the counter, not assumed from who the caller might be. */
+		/* Report the observed history, not a property: no explicit remove
+		 * has happened SO FAR, which is not the same as this collection
+		 * being incapable of one. */
 		n = snprintf(nbuf, sizeof nbuf,
 			"%.2f reads per stored key; %.1f%% of what was stored has since "
-			"expired, and nothing was removed explicitly - expiry is this "
-			"collection's only removal path", per_store, exp_share);
+			"expired, and nothing has been removed explicitly so far",
+			per_store, exp_share);
 		note = nbuf;
 	} else {
 		n = snprintf(nbuf, sizeof nbuf,
