@@ -125,12 +125,26 @@ struct povf;
  */
 typedef struct pcache_pstat {
 	unsigned long hits, misses, stores, removes,
-	              created, destroyed, expired, retries, fallbacks;
+	              created, destroyed, expired, retries, fallbacks,
+	/*
+	 * Stores made with expires == 0, i.e. "never expires".  A COUNT OF
+	 * STORE OPERATIONS, not a population: an immortal entry can still be
+	 * dropped by an explicit remove (which lands in `removes`, never in
+	 * `expired`), so this must not be read as "immortals currently live".
+	 * It exists so `expired` can be measured against the stores that were
+	 * ever ELIGIBLE to expire - dividing by every store understates the
+	 * share on a collection that mixes the two.
+	 * Inexact under overwrite, exactly as `stores` already is: re-storing
+	 * a key flips its eligibility without unwinding the earlier count.
+	 * Free to carry - the struct is 128 bytes with or without it.
+	 */
+	              stores_immortal;
 } __attribute__((aligned(64))) pcache_pstat_t;
 
 typedef struct pcache_ht_totals {
 	unsigned long hits, misses, stores, removes,
-	              created, destroyed, expired, retries, fallbacks, entries;
+	              created, destroyed, expired, retries, fallbacks, entries,
+	              stores_immortal;
 } pcache_ht_totals_t;
 
 typedef struct pcache_htable {

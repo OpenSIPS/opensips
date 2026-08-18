@@ -722,6 +722,8 @@ done:
 	if (node)
 		pcache_cell_free(node);
 	HT_ST(ht, stores);
+	if (!expires)
+		HT_ST(ht, stores_immortal);
 	if (inserted)
 		HT_ST(ht, created);
 	return 0;
@@ -872,6 +874,8 @@ done:
 	if (node)
 		pcache_cell_free(node);
 	HT_ST(ht, stores);
+	if (!expires)
+		HT_ST(ht, stores_immortal);
 	if (inserted)
 		HT_ST(ht, created);
 	if (new_val)
@@ -1366,6 +1370,7 @@ void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out)
 		out->expired += p->expired;
 		out->retries += p->retries;
 		out->fallbacks += p->fallbacks;
+		out->stores_immortal += p->stores_immortal;
 	}
 	/* live gauge: always absolute, never relative to a reset */
 	out->entries = out->created - out->destroyed;
@@ -1380,6 +1385,7 @@ void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out)
 	out->expired   -= ht->base.expired;
 	out->retries   -= ht->base.retries;
 	out->fallbacks -= ht->base.fallbacks;
+	out->stores_immortal -= ht->base.stores_immortal;
 }
 
 void pcache_ht_stats_reset(pcache_htable_t *ht)
@@ -1402,6 +1408,7 @@ void pcache_ht_stats_reset(pcache_htable_t *ht)
 	ht->base.expired   += now.expired;
 	ht->base.retries   += now.retries;
 	ht->base.fallbacks += now.fallbacks;
+	ht->base.stores_immortal += now.stores_immortal;
 
 	LM_INFO("statistics reset; %lu entries live\n", entries);
 }

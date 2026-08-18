@@ -589,7 +589,8 @@ static const param_export_t params[] = {
  */
 enum pcache_stat_field {
 	PSF_HITS, PSF_MISSES, PSF_STORES, PSF_REMOVES, PSF_ENTRIES,
-	PSF_RETRIES, PSF_FALLBACKS, PSF_EXPIRED, PSF_DESTROYED
+	PSF_RETRIES, PSF_FALLBACKS, PSF_EXPIRED, PSF_DESTROYED,
+	PSF_STORES_IMMORTAL
 };
 
 static unsigned long pcache_stat_field(enum pcache_stat_field which)
@@ -612,6 +613,7 @@ static unsigned long pcache_stat_field(enum pcache_stat_field which)
 		case PSF_ENTRIES:   sum += t.entries; break;
 		case PSF_RETRIES:   sum += t.retries; break;
 		case PSF_FALLBACKS: sum += t.fallbacks; break;
+		case PSF_STORES_IMMORTAL: sum += t.stores_immortal; break;
 		}
 	}
 	return sum;
@@ -630,6 +632,7 @@ PSTATF(smf_destroyed, PSF_DESTROYED)
 PSTATF(smf_entries, PSF_ENTRIES)
 PSTATF(smf_retries, PSF_RETRIES)
 PSTATF(smf_fallbacks, PSF_FALLBACKS)
+PSTATF(smf_stores_immortal, PSF_STORES_IMMORTAL)
 
 /*
  * Cross-node pull statistics.
@@ -865,6 +868,7 @@ static const stat_export_t mod_stats[] = {
 	{"stores",          STAT_IS_FUNC, (stat_var **)smf_stores},
 	{"removes",         STAT_IS_FUNC, (stat_var **)smf_removes},
 	{"expired",         STAT_IS_FUNC, (stat_var **)smf_expired},
+	{"stores_immortal", STAT_IS_FUNC, (stat_var **)smf_stores_immortal},
 	{"destroyed",       STAT_IS_FUNC, (stat_var **)smf_destroyed},
 	{"entries",         STAT_IS_FUNC, (stat_var **)smf_entries},
 	{"seqlock_retries", STAT_IS_FUNC, (stat_var **)smf_retries},
@@ -924,6 +928,7 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	pcache_ht_totals_t t;
 	unsigned long reads;
 	const char *note;
+	unsigned long expirable;
 	double rate, per_store, exp_share;
 	char buf[32], rbuf[32], ebuf[32], nbuf[224];
 	int n;
@@ -939,6 +944,7 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	    add_mi_number(cobj, MI_SSTR("stores"), t.stores) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("removes"), t.removes) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("expired"), t.expired) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("stores_immortal"), t.stores_immortal) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("destroyed"), t.destroyed) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("seqlock_retries"), t.retries) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("lock_fallbacks"), t.fallbacks) < 0)
@@ -975,12 +981,16 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	 * promises that anything WILL expire, since a 0 expiry means never.
 	 */
 	per_store = t.stores ? (double)t.hits / t.stores : 0.0;
-	exp_share = t.stores ? 100.0 * t.expired / t.stores : 0.0;
+	/* Measure expiry against the stores that could ever expire.  A store
+	 * with no expiry never can, so counting it in the denominator only
+	 * dilutes the figure on a collection that mixes the two. */
+	expirable = t.stores - t.stores_immortal;
+	exp_share = expirable ? 100.0 * t.expired / expirable : 0.0;
 	n = snprintf(rbuf, sizeof rbuf, "%.2f", per_store);
 	if (add_mi_string(cobj, MI_SSTR("reads_per_store"), rbuf, n) < 0)
 		return -1;
 	n = snprintf(ebuf, sizeof ebuf, "%.1f", exp_share);
-	if (add_mi_string(cobj, MI_SSTR("expired_pct_of_stores"), ebuf, n) < 0)
+	if (add_mi_string(cobj, MI_SSTR("expired_pct_of_expirable"), ebuf, n) < 0)
 		return -1;
 
 	/* The counters are cumulative since startup (or the last
@@ -997,35 +1007,36 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 		note = "no state has ever been stored in this collection - a miss "
 		       "here is not loss or expiry, check whether writes reach "
 		       "this collection and whether persistence loaded any rows";
-	else if (!t.expired) {
-		/*
-		 * Nothing has aged out, and we must NOT say "not yet": an expiry
-		 * of 0 means the entry never expires at all (see the set() path),
-		 * and the counters cannot tell an immortal collection from one
-		 * whose TTLs simply have not elapsed - there is no immortal
-		 * counter in pcache_ht_totals_t. Promising a future expiry would
-		 * be the same wait-and-see error this note was rewritten to
-		 * remove. State the fact and name both possibilities.
-		 */
+	else if (!t.expired && !expirable) {
+		/* Every store was immortal, so nothing here CAN expire.  No
+		 * "yet" - waiting will not change this one. */
 		n = snprintf(nbuf, sizeof nbuf,
-			"%.2f reads per stored key; nothing here has expired - the "
-			"entries are either still within their TTL or were stored to "
-			"never expire", per_store);
+			"%.2f reads per stored key; every store was made without an "
+			"expiry, so nothing here can expire - entries leave only by an "
+			"explicit remove", per_store);
+		note = nbuf;
+	} else if (!t.expired) {
+		/* Some stores were expirable and none has aged out. Now that the
+		 * immortal count exists this really is a "not yet", so it can be
+		 * said - it is no longer indistinguishable from immortality. */
+		n = snprintf(nbuf, sizeof nbuf,
+			"%.2f reads per stored key; none of the %lu expirable stores "
+			"has reached its TTL yet", per_store, expirable);
 		note = nbuf;
 	} else if (!t.removes) {
 		/* Report the observed history, not a property: no explicit remove
 		 * has happened SO FAR, which is not the same as this collection
 		 * being incapable of one. */
 		n = snprintf(nbuf, sizeof nbuf,
-			"%.2f reads per stored key; %.1f%% of what was stored has since "
-			"expired, and nothing has been removed explicitly so far",
-			per_store, exp_share);
+			"%.2f reads per stored key; %.1f%% of the %lu expirable stores "
+			"have since expired, and nothing has been removed explicitly "
+			"so far", per_store, exp_share, expirable);
 		note = nbuf;
 	} else {
 		n = snprintf(nbuf, sizeof nbuf,
-			"%.2f reads per stored key; %.1f%% of what was stored has since "
-			"expired, %lu were removed explicitly",
-			per_store, exp_share, (unsigned long)t.removes);
+			"%.2f reads per stored key; %.1f%% of the %lu expirable stores "
+			"have since expired, %lu were removed explicitly",
+			per_store, exp_share, expirable, (unsigned long)t.removes);
 		note = nbuf;
 	}
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"), note, strlen(note)) < 0)
