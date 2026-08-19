@@ -58,7 +58,7 @@ xychart-beta
 clock. Middle, stepped: what v3 keeps committed — granule steps up
 under load, shrink lagging the peak by the quiet window. Bottom: live
 demand. (Illustrative shapes; a measured cycle is charted in
-Section 8.)*
+Section 9.)*
 
 v3 replaces both bets with a **range**: `-m 64:512 -M 16:32`. Start at
 the size you can defend, reserve the ceiling (address space — free),
@@ -78,30 +78,92 @@ mockups.
 **Contents**
 
 0. [Why an elastic arena](#0-why-an-elastic-arena)
-1. [Quickstart](#1-quickstart)
-2. [Concepts and architecture](#2-concepts-and-architecture)
-3. [Why the cap is on the command line](#3-why-the-cap-is-on-the-command-line)
-4. [The memory tiers](#4-the-memory-tiers)
-5. [Growth](#5-growth)
-6. [The three-limit ceiling](#6-the-three-limit-ceiling)
-7. [GROW-BLOCKED — the alertable state](#7-grow-blocked--the-alertable-state)
-8. [Shrink](#8-shrink)
-9. [The profile — configuration reference](#9-the-profile--configuration-reference)
-10. [Dry-run mode](#10-dry-run-mode)
-11. [pkg arenas — what is different](#11-pkg-arenas--what-is-different)
-12. [Deployment cookbook](#12-deployment-cookbook)
-13. [Monitoring and alerting](#13-monitoring-and-alerting)
-14. [Log line reference](#14-log-line-reference)
-15. [Sizing rules that are not obvious](#15-sizing-rules-that-are-not-obvious)
-16. [Troubleshooting](#16-troubleshooting)
-17. [Testing — the rig and how to reproduce the proofs](#17-testing--the-rig-and-how-to-reproduce-the-proofs)
-18. [Appendix A — measured kernel facts](#18-appendix-a--measured-kernel-facts)
-19. [Appendix B — internals map for developers](#19-appendix-b--internals-map-for-developers)
-20. [Limitations](#20-limitations)
+1. [Build](#1-build)
+2. [Quickstart](#2-quickstart)
+3. [Concepts and architecture](#3-concepts-and-architecture)
+4. [Why the cap is on the command line](#4-why-the-cap-is-on-the-command-line)
+5. [The memory tiers](#5-the-memory-tiers)
+6. [Growth](#6-growth)
+7. [The three-limit ceiling](#7-the-three-limit-ceiling)
+8. [GROW-BLOCKED — the alertable state](#8-grow-blocked--the-alertable-state)
+9. [Shrink](#9-shrink)
+10. [The profile — configuration reference](#10-the-profile--configuration-reference)
+11. [Dry-run mode](#11-dry-run-mode)
+12. [pkg arenas — what is different](#12-pkg-arenas--what-is-different)
+13. [Deployment cookbook](#13-deployment-cookbook)
+14. [Monitoring and alerting](#14-monitoring-and-alerting)
+15. [Log line reference](#15-log-line-reference)
+16. [Sizing rules that are not obvious](#16-sizing-rules-that-are-not-obvious)
+17. [Troubleshooting](#17-troubleshooting)
+18. [Testing — the rig and how to reproduce the proofs](#18-testing--the-rig-and-how-to-reproduce-the-proofs)
+19. [Appendix A — measured kernel facts](#19-appendix-a--measured-kernel-facts)
+20. [Appendix B — internals map for developers](#20-appendix-b--internals-map-for-developers)
+21. [Limitations](#21-limitations)
 
 ---
 
-## 1. Quickstart
+## 1. Build
+
+HG_MALLOC lives in core (`mem/`), not a loadable module — there is no
+`include_modules` entry for it and no separate module build step. Any
+standard OpenSIPS build already contains it:
+
+```bash
+make proper
+make -j$(nproc) install PREFIX=/opt/opensips-4.1.0-<rev>
+```
+
+**Leave `-DDBG_MALLOC` in `Makefile.conf`'s `DEFS`** (it ships on by
+default in the template). It does not turn on debug tracking for the
+allocator you run — it compiles in the *debug-instrumented flavours*
+(`HG_MALLOC_DBG`, alongside `F_MALLOC_DBG` etc.) as additional runtime
+choices, selected the same way as the plain ones. Stripping it to "clean
+up" a build does not skip anything HG_MALLOC-specific; the tree fails to
+build without it, from an unrelated include-chain dependency several
+other core files have on it. Every build in this repo's CI carries it.
+
+**Build and runtime allocator selection are two different steps.**
+`opensips -V` lists every allocator *compiled in* — it says nothing about
+which one is running. Selection happens at process start, via `-a
+HG_MALLOC` (or `-a HG_MALLOC_DBG` for the instrumented flavour), or
+`MALLOC=HG_MALLOC` in whatever env file your unit's `ExecStart` reads
+`-a` from. Confirm what actually started with the log line, not the
+build:
+
+```
+NOTICE:core:main: using 128 MB of shared memory, allocator: HG_MALLOC_V3
+```
+
+or `opensips-cli -x mi core:hg_stats`, which errors cleanly
+(`"HG_MALLOC is not the active allocator"`) if something else is running
+— a fixed-size hugetlb pool sitting at `Free == Total` after a restart is
+the same tell from the outside, if you'd rather check without MI.
+
+**Host prerequisites are all optional and the arena degrades gracefully
+without them** — this is the tier ladder in Section 5, not a build
+requirement. If you want the hugetlb tier specifically:
+
+- Reserve `vm.nr_hugepages` sized to the **cap**, not the init size — a
+  grow event needs the whole reservation available in the pool the
+  moment it fires, not just the starting commitment.
+- Set `LimitMEMLOCK` (systemd) or `ulimit -l` to at least the cap too,
+  and remember pkg is **per worker**: the real number is the pkg cap
+  times worker count, added to the shm cap.
+
+Skip both and HG_MALLOC starts on THP, then `MADV_COLLAPSE`, then plain
+4 KB pages automatically — see Section 5 for what each tier costs.
+
+**Cross-compiling** needs nothing allocator-specific: HG_MALLOC is
+written against standard POSIX `mmap`/`mlock`/`madvise`, no
+architecture-specific code path. Verified via cross + qemu for
+arm32/arm64/i386/mips64, and full native-userland container builds for
+arm32/arm64 (Section 18).
+
+Next: Section 2 for the smallest working `-m`/`-M`/`-a` invocation.
+
+---
+
+## 2. Quickstart
 
 ```bash
 # 128 MB now, allowed to grow to 1 GB:
@@ -137,7 +199,7 @@ pkg_auto_scaling_profile = MEM_PKG
 
 The pkg profile governs **every worker's private arena individually**,
 so its numbers are per-worker scale — an order of magnitude below the
-shared arena's (Section 11).
+shared arena's (Section 12).
 
 Watch it work:
 
@@ -147,7 +209,7 @@ opensips-cli -x mi core:hg_stats           # committed / cap / grows / shrinks /
 
 ---
 
-## 2. Concepts and architecture
+## 3. Concepts and architecture
 
 ### 2.1 Committed vs reserved
 
@@ -215,7 +277,7 @@ exists.
 
 ---
 
-## 3. Why the cap is on the command line
+## 4. Why the cap is on the command line
 
 The shm arena is created **before the config file is parsed**
 (`init_shm_mallocs()` runs before `parse_opensips_cfg()` in `main()`),
@@ -241,7 +303,7 @@ it can only choose how the space inside it is used.
 
 ---
 
-## 4. The memory tiers
+## 5. The memory tiers
 
 The arena tries four backings in order, each **attempted and then
 verified through `/proc`** — never inferred from kernel version or
@@ -265,7 +327,7 @@ Two v3-specific rules:
   (measured: mapping 64 MB moved `HugePages_Rsvd` by exactly 32 pages
   before any fault). Consequences: tier-1 growth can never fail
   mid-flight — the pages are earmarked — and the pool must be sized for
-  the **caps** (Section 15). If the pool cannot fit the cap, the arena
+  the **caps** (Section 16). If the pool cannot fit the cap, the arena
   falls back to a cap-less hugetlb reservation: it keeps huge pages,
   cannot grow, and says so.
 
@@ -276,7 +338,7 @@ win; losing a delta to 4 K is a percent, not a disaster.
 
 ---
 
-## 5. Growth
+## 6. Growth
 
 Two triggers, one mechanism.
 
@@ -295,12 +357,12 @@ ticks.
 
 The commit itself (`hg_mem_commit()`):
 
-1. optional host-RAM check (Section 6) — before any work;
+1. optional host-RAM check (Section 7) — before any work;
 2. `mlock()` of the delta — chosen because it populates *exactly* that
    range, pins it, and reports failure through `errno` instead of
    letting a worker SIGBUS later on half-committed memory. Growth is
    **refused, never degraded**;
-3. per-delta tier verification (Section 4), `tier_bytes` accounting;
+3. per-delta tier verification (Section 5), `tier_bytes` accounting;
 4. only then: `hsize` moves, pages are published, the reserve floor is
    recomputed, counters tick.
 
@@ -313,7 +375,7 @@ Granule: 16 MB (huge-page rounded).
 
 ---
 
-## 6. The three-limit ceiling
+## 7. The three-limit ceiling
 
 `min(admin, tier, host RAM)` — each limb enforced where it is real:
 
@@ -367,12 +429,12 @@ flowchart TD
     C --> W["publish pages to the buddy grid
     grows++, headroom NOTICE, cooldown armed"]
     R -- "resource refusals only" --> B["GROW-BLOCKED machinery
-    (Section 7)"]
+    (Section 8)"]
 ```
 
 ---
 
-## 7. GROW-BLOCKED — the alertable state
+## 8. GROW-BLOCKED — the alertable state
 
 A **resource** refusal (host RAM, mlock limit — not an admin ceiling)
 should page someone *only if it means something*. The state machine:
@@ -430,7 +492,7 @@ the log carries the fact.
 
 ---
 
-## 8. Shrink
+## 9. Shrink
 
 ### 8.1 Why it is safe with zero cross-process coordination
 
@@ -498,10 +560,10 @@ concentration policy, and their lists are the long ones where an
 ordered walk would cost.
 
 Floor: never below `-m`/`-M`'s initial size — unless a profile says
-otherwise (Section 9): with a profile attached, the profile is the ask
+otherwise (Section 10): with a profile attached, the profile is the ask
 and `-m` is just the starting size.
 
-A full cycle, measured on a live process (rig arm K, Section 17): grow
+A full cycle, measured on a live process (rig arm K, Section 18): grow
 under MI-driven load, cooldown, the shrink train once the quiet window
 passes, regrowth on the next pulse — committed walking 32→96→16→80 MB
 while the reservation never moves and the hugetlb pool gets every
@@ -518,7 +580,7 @@ xychart-beta
 
 ---
 
-## 9. The profile — configuration reference
+## 10. The profile — configuration reference
 
 v3 reuses the worker autoscaler's grammar — same tokens, same shape
 your configs already use for `use_auto_scaling_profile`:
@@ -570,7 +632,7 @@ NOTICE:core:hg_autoscale_apply: shm auto-scaling profile 'MEM_SHM': 32..160 MB (
 
 ---
 
-## 10. Dry-run mode
+## 11. Dry-run mode
 
 ```
 hg_autoscale_dry_run = 1
@@ -596,7 +658,7 @@ tune thresholds against the advice lines, flip to 0.
 
 ---
 
-## 11. pkg arenas — what is different
+## 12. pkg arenas — what is different
 
 * **Per-child, post-config.** Each worker's private arena is created at
   fork time (after the config is parsed), so it takes the full policy:
@@ -642,7 +704,7 @@ word intact.
 
 ---
 
-## 12. Deployment cookbook
+## 13. Deployment cookbook
 
 ### 12.1 Billing gateway, hugetlb tier
 
@@ -717,7 +779,7 @@ arena returns even part of the initial allocation.
 
 ### 12.3 First rollout — dry-run
 
-Section 10. Profile + `hg_autoscale_dry_run = 1`, observe, tune, flip.
+Section 11. Profile + `hg_autoscale_dry_run = 1`, observe, tune, flip.
 
 ### 12.4 Cap only, no profile
 
@@ -732,7 +794,7 @@ surface at all.
 ### 12.5 The first soak, charted
 
 Two nodes, first 14 hours on v3 (2026-08-14/15), every point taken from
-the arena's own grow/shrink NOTICE lines. The LB ran the section 12.2
+the arena's own grow/shrink NOTICE lines. The LB ran the section 13.2
 recipe untouched; the gateway was deliberately re-cut mid-soak to a
 near-empty start (`-m 8:512 -M 2:32`) to make growth earn everything.
 
@@ -776,7 +838,7 @@ corruption counters 0, tier-1 hugetlb throughout, and the
 
 ---
 
-## 13. Monitoring and alerting
+## 14. Monitoring and alerting
 
 ### 13.1 MI
 
@@ -841,13 +903,13 @@ Suggested alerts:
 
 ### 13.3 The event
 
-Section 7 — `E_CORE_SHM_GROW_BLOCKED`, params `arena`, `committed_mb`,
+Section 8 — `E_CORE_SHM_GROW_BLOCKED`, params `arena`, `committed_mb`,
 `cap_mb`, `grow_refused`; raised on latch and every 5 minutes while
 held; with no subscriber, a WARN says so and points at the gauge.
 
 ---
 
-## 14. Log line reference
+## 15. Log line reference
 
 All at their exact severities; `%` values are illustrative.
 
@@ -869,7 +931,7 @@ All at their exact severities; `%` values are illustrative.
 
 ---
 
-## 15. Sizing rules that are not obvious
+## 16. Sizing rules that are not obvious
 
 1. **Tier 1: the pool must fit the caps.** The whole `-m` cap is
    reserved from the hugetlb pool at map time, and every per-child pkg
@@ -905,7 +967,7 @@ All at their exact severities; `%` values are illustrative.
 
 ---
 
-## 16. Troubleshooting
+## 17. Troubleshooting
 
 | symptom | cause | fix |
 |---|---|---|
@@ -924,7 +986,7 @@ All at their exact severities; `%` values are illustrative.
 
 ---
 
-## 17. Testing — the rig and how to reproduce the proofs
+## 18. Testing — the rig and how to reproduce the proofs
 
 ### 17.1 hgstress
 
@@ -965,7 +1027,7 @@ their output.
 
 ---
 
-## 18. Appendix A — measured kernel facts
+## 19. Appendix A — measured kernel facts
 
 All on Linux 5.4 (the fleet's oldest) unless noted; every claim
 re-verified rather than assumed from documentation.
@@ -990,7 +1052,7 @@ re-verified rather than assumed from documentation.
 
 ---
 
-## 19. Appendix B — internals map for developers
+## 20. Appendix B — internals map for developers
 
 | file | owns |
 |---|---|
@@ -1023,7 +1085,7 @@ Development notes that cost real time, recorded so they are paid once:
 
 ---
 
-## 20. Limitations
+## 21. Limitations
 
 * The **pre-fork parent** pkg arena predates the config and stays fixed
   at `-M`'s initial size; profiles govern every per-child arena.
