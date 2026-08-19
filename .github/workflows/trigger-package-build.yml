@@ -1,0 +1,37 @@
+name: Trigger Repository Package Builder
+
+on:
+  push:
+    tags:
+      - '**'
+
+permissions: {}
+
+jobs:
+  trigger-opensips-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger opensips-repo release build
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.OPENSIPS_WORKFLOW_DISPATCH }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ -z "$TOKEN" ]]; then
+            echo "::error::OPENSIPS_WORKFLOW_DISPATCH is not configured"
+            exit 1
+          fi
+
+          curl --fail-with-body -sS -L -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/OpenSIPS/opensips-repo/actions/workflows/build-packages.yml/dispatches \
+            -d "$(jq -nc --arg tag "$TAG" '{
+              ref: "main",
+              inputs: {
+                mode: "release",
+                tag: $tag
+              }
+            }')"
