@@ -303,6 +303,10 @@ int tcp_dispatch_msg(char *msg, int len,
 		LM_BUG("negative TCP message length: %d\n", len);
 		return -1;
 	}
+	if (len && !msg) {
+		LM_BUG("NULL TCP message buffer with non-zero length: %d\n", len);
+		return -1;
+	}
 	if (data_len < 0) {
 		LM_BUG("negative TCP dispatch data length: %d\n", data_len);
 		return -1;
