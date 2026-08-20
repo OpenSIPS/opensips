@@ -352,7 +352,7 @@ install-app: mk-install-dirs install-cfg install-bin \
 
 # Install all module stuff
 install-modules-files: install-modules install-modules-doc
-install-modules-all: install-modules-files install-modules-dbschema
+install-modules-all: install-modules-files
 
 # Install everything
 install: install-app install-modules-all
