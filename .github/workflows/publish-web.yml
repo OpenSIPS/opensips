@@ -1,7 +1,14 @@
 name: Publish opensips.org documentation
 
 on:
+  # master and the release branches only. Without a branch filter a tag push
+  # triggers this too (GitHub ignores the paths below for tags), and a tag has
+  # no "before" commit, so every component looks changed and the whole
+  # documentation is republished under a version (4.0.1) the site rejects.
   push:
+    branches:
+      - master
+      - '[0-9]+.[0-9]+'
     paths:
       - 'examples/**'
       - 'modules/*/samples/**'
