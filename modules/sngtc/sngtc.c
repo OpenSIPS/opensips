@@ -993,6 +993,19 @@ static int process_stream(struct sdp_stream_cell *s1, struct sdp_stream_cell *s2
 	return rc;
 }
 
+static int parse_sdp_ipv4(struct in_addr *addr, const str *ip)
+{
+	char buf[INET_ADDRSTRLEN];
+
+	if (ip->len <= 0 || ip->len >= (int)sizeof(buf))
+		return -1;
+
+	memcpy(buf, ip->s, ip->len);
+	buf[ip->len] = '\0';
+
+	return inet_pton(AF_INET, buf, addr) == 1 ? 0 : -1;
+}
+
 /**
  * performs the following operations at 200 OK time (early neg <-> late neg):
  *
@@ -1015,7 +1028,6 @@ static int process_session(struct sip_msg *msg, struct sngtc_info *info, str *sr
 	struct in_addr addr;
 	int rc = 0, ret, tc_on = 0;
 	int idx;
-	char buf[INET_ADDRSTRLEN];
 	str repl;
 
 	if (s1->next && s2->next)
@@ -1078,11 +1090,10 @@ static int process_session(struct sip_msg *msg, struct sngtc_info *info, str *sr
 			/* Codec, ms, IP and port for side A */
 			request.a.codec_id = pair.tc1;
 			request.a.ms = 0;
-			sprintf(buf, "%.*s", s1->ip_addr.len, s1->ip_addr.s);
-			ret = inet_pton(AF_INET, buf, &addr);
-			if (ret != 1) {
-				LM_ERR("failed to convert ip %s to binary form (%d)\n",
-				       s1->ip_addr.s, ret);
+			ret = parse_sdp_ipv4(&addr, &s1->ip_addr);
+			if (ret != 0) {
+				LM_ERR("failed to convert SDP IP to binary form (len %d)\n",
+				       s1->ip_addr.len);
 				return SNGTC_ERR;
 			}
 			request.a.host_ip = htonl(addr.s_addr);
@@ -1094,11 +1105,10 @@ static int process_session(struct sip_msg *msg, struct sngtc_info *info, str *sr
 			/* Codec, ms, IP and port for side B */
 			request.b.codec_id = pair.tc2;
 			request.b.ms = 0;
-			sprintf(buf, "%.*s", s2->ip_addr.len, s2->ip_addr.s);
-			ret = inet_pton(AF_INET, buf, &addr);
-			if (ret != 1) {
-				LM_ERR("failed to convert ip %.*s to binary form (%d)\n",
-				       s2->ip_addr.len, s2->ip_addr.s, ret);
+			ret = parse_sdp_ipv4(&addr, &s2->ip_addr);
+			if (ret != 0) {
+				LM_ERR("failed to convert SDP IP to binary form (len %d)\n",
+				       s2->ip_addr.len);
 				return SNGTC_ERR;
 			}
 			request.b.host_ip = htonl(addr.s_addr);
@@ -1435,4 +1445,3 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 
 	return 1;
 }
-
