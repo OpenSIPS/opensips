@@ -1,0 +1,1021 @@
+cachedb_perf Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. cache_collections (string)
+              1.3.2. expiry_sweep_period (integer)
+              1.3.3. cachedb_url (string)
+              1.3.4. growth_load_factor (integer)
+              1.3.5. growth_budget (integer)
+              1.3.6. arena_hugepage_mb (integer)
+              1.3.7. arena_selftest (integer)
+              1.3.8. htable_selftest (integer)
+              1.3.9. event_expired_collections (string)
+              1.3.10. db_url (string)
+              1.3.11. db_table (string)
+              1.3.12. db_mode (integer)
+              1.3.13. persist_collections (string)
+              1.3.14. sync_cluster_id (integer)
+              1.3.15. sync_shtag (string)
+              1.3.16. replicate_collections (string)
+              1.3.17. pull_transport (string)
+              1.3.18. pull_timeout_ms (integer)
+              1.3.19. pull_negative_ms (integer)
+              1.3.20. pull_on_miss (integer)
+
+        1.4. DB persistence
+        1.5. Cluster sync
+        1.6. Degraded operation: what each surface does without
+                its modules
+
+        1.7. Exported Statistics
+        1.8. Exported MI Functions
+
+              1.8.1. perf_stats
+              1.8.2. perf_stats_reset
+              1.8.3. Key introspection: perf_keys / perf_scan /
+                      perf_dump / perf_get / perf_probe /
+                      perf_pull / perf_set / perf_ttl / perf_del
+
+              1.8.4. perf_save / perf_load
+              1.8.5. perf_sync
+
+        1.9. Exported Events
+
+              1.9.1. E_CACHEDB_PERF_EXPIRED
+              1.9.2. E_CACHEDB_PERF_NOMEM
+              1.9.3. E_CACHEDB_PERF_GROWN
+              1.9.4. E_CACHEDB_PERF_MEM_DEGRADED
+              1.9.5. E_CACHEDB_PERF_SYNCED
+
+        1.10. Exported Functions
+
+              1.10.1. perf_del(glob[, collection])
+              1.10.2. perf_mget(glob, keys_avp, vals_avp[,
+                      collection[, limit]])
+
+              1.10.3. perf_mget_json(glob, dst_var[, collection[,
+                      limit]])
+
+   List of Examples
+
+   1.1. Set cache_collections parameter
+   1.2. Set expiry_sweep_period parameter
+   1.3. Set cachedb_url parameter
+   1.4. Set growth_load_factor parameter
+   1.5. Set growth_budget parameter
+   1.6. Set arena_hugepage_mb parameter
+   1.7. Set arena_selftest parameter
+   1.8. Set htable_selftest parameter
+   1.9. Set event_expired_collections parameter
+   1.10. Set db_url parameter
+   1.11. Set db_mode parameter
+   1.12. Set persist_collections parameter
+   1.13. Set sync_cluster_id parameter
+   1.14. Setting sync_shtag
+   1.15. Setting replicate_collections
+   1.16. Cluster-sync setup (one authority, two read replicas)
+   1.17. perf_stats usage
+   1.18. perf_stats_reset usage
+   1.19. introspection usage
+   1.20. perf_save / perf_load usage
+   1.21. perf_sync usage
+   1.22. perf_del() usage
+   1.23. perf_mget() usage
+   1.24. perf_mget_json() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module is a high-performance local memory cache
+   implementing the Key-Value interface exported by the OpenSIPS
+   core. It is a drop-in alternative to cachedb_local, selected by
+   URL scheme (perf:// instead of local://), designed for large,
+   high-churn caches: lock-free reads, cache-line-sized buckets
+   and a table that grows at runtime instead of being sized once
+   at startup.
+
+   Each OpenSIPS instance keeps its own in-memory copy, but a
+   whole collection can be persisted to an SQL backend so it
+   survives a restart (see DB persistence), and refreshed
+   cluster-wide from that shared DB with perf_sync (see Cluster
+   sync). What the module does not do is cachedb_local-style
+   per-operation replication (a cluster_id write streamed between
+   nodes on every operation) - that would tax the lock-free path
+   the module exists to keep fast; sharing here is the
+   pull-from-DB refresh model. Deployments that need per-operation
+   replication must stay on cachedb_local.
+
+   Data is organized in named collections (hash tables), declared
+   via the cache_collections parameter. Each cachedb_url points to
+   one collection; a URL naming no collection uses the collection
+   named “default”, which always exists.
+
+Warning
+
+   Work in progress: this module is under active development, but
+   functionally complete for a single node - data operations, the
+   background expiry sweep, runtime table growth, statistics, the
+   huge-page arena, the introspection MI and the observability
+   events are all in place, whole collections can be persisted to
+   a db_* backend, and perf_sync refreshes a collection
+   cluster-wide from that shared DB. Per-operation replication (a
+   streamed write log between nodes) is intentionally out of scope
+   - sharing is the pull-from-DB refresh model, not a merge of
+   divergent copies.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   None required. Two are optional:
+     * clusterer - enables the cluster features: cross-node pull
+       over its BIN links, the perf_sync peer signal and the
+       sync_shtag failover hook. Without it the module runs purely
+       node-local (see Degraded operation).
+     * clusterer_controller - enables the optional clctr pull
+       transport (encrypted multicast). Optional at build time
+       too: a tree built without it simply has no clctr transport,
+       and everything runs over the clusterer's BIN links.
+
+1.2.2. External Libraries or Applications
+
+   None.
+
+1.3. Exported Parameters
+
+1.3.1. cache_collections (string)
+
+   Declares the collections and, optionally, their initial hash
+   table size, as a semicolon-separated list of name or name=size
+   entries. The size is the power-of-2 exponent of the initial
+   bucket count (as in cachedb_local) and only sets the starting
+   point - the table grows at runtime as entries accumulate.
+   Values are clamped to the [4, 24] range; the default is 14
+   (16384 buckets).
+
+   The cachedb_local replication marker (“/r”) is rejected: this
+   cache is single-node.
+
+   Example 1.1. Set cache_collections parameter
+...
+modparam("cachedb_perf", "cache_collections", "th=16;profiles")
+...
+
+1.3.2. expiry_sweep_period (integer)
+
+   How often, in seconds, expired records are reclaimed. Expired
+   entries are already invisible to reads the moment they expire -
+   the sweep only frees their memory, guided by per-bucket hints
+   so idle collections cost next to nothing. Default is 1 second;
+   0 disables the sweep (expired records then hold their memory
+   until overwritten or deleted).
+
+   Example 1.2. Set expiry_sweep_period parameter
+...
+modparam("cachedb_perf", "expiry_sweep_period", 5)
+...
+
+1.3.3. cachedb_url (string)
+
+   URL(s) usable from the script or by other modules. The
+   collection is given by the URL's database part (perf:///name)
+   or, equivalently, its host part (perf://name) - a host has no
+   meaning for a local cache, so both forms select the collection.
+   A URL naming no collection (perf://) uses the “default”
+   collection. Naming an undefined collection is a startup error.
+   Multiple URLs may share one collection; use a group
+   (perf:group_name:///name) to address a specific URL from the
+   script.
+
+   Example 1.3. Set cachedb_url parameter
+...
+modparam("cachedb_perf", "cachedb_url", "perf:///th")
+modparam("cachedb_perf", "cachedb_url", "perf:prof:///profiles")
+
+# usage from script:
+#   cache_store("perf", ...)        - collection "th"
+#   cache_store("perf:prof", ...)   - collection "profiles"
+...
+
+1.3.4. growth_load_factor (integer)
+
+   The target number of entries per bucket the maintenance timer
+   grows the table toward. As entries accumulate the timer splits
+   buckets to keep the load factor near this value, so lookups
+   stay flat as the cache scales - the behaviour cachedb_local
+   lacks. 0 disables growth, leaving the table fixed at its
+   declared size. Default is 2.
+
+   Example 1.4. Set growth_load_factor parameter
+...
+modparam("cachedb_perf", "growth_load_factor", 2)
+...
+
+1.3.5. growth_budget (integer)
+
+   The maximum number of bucket splits the maintenance timer
+   performs on a single run, bounding the work of one growth pass
+   so the timer never stalls under a burst of inserts. Default is
+   4096.
+
+   Example 1.5. Set growth_budget parameter
+...
+modparam("cachedb_perf", "growth_budget", 4096)
+...
+
+1.3.6. arena_hugepage_mb (integer)
+
+   Size, in megabytes, of a huge-page-backed reservation for the
+   cache entries. When set, the module reserves this much memory
+   at startup and backs it with 2 MB pages to cut TLB misses on a
+   large cache. It does not pick a mechanism: it climbs a
+   detect-by-trying ladder - overcommit hugetlb pool (MAP_HUGETLB)
+   then transparent huge pages (MADV_HUGEPAGE) then MADV_COLLAPSE
+   then plain 4 KB - and keeps the best tier the running kernel
+   actually grants, which it reports at startup and through the
+   memory_tier statistic and perf_stats. 0 (default) uses plain
+   demand-faulted shared memory.
+
+   To make the faster tiers available: allow on-demand huge pages
+   with sysctl vm.nr_overcommit_hugepages=N (N >=
+   arena_hugepage_mb/2), and/or enable shmem THP with echo advise
+   > /sys/kernel/mm/transparent_hugepage/shmem_enabled. Except for
+   the hugetlb tier (which is unswappable and exempt), the
+   reservation is mlock-pinned against swap; that needs
+   LimitMEMLOCK=infinity in the systemd unit, otherwise the module
+   warns and runs the arena unpinned.
+
+   Example 1.6. Set arena_hugepage_mb parameter
+...
+modparam("cachedb_perf", "arena_hugepage_mb", 512)
+...
+
+1.3.7. arena_selftest (integer)
+
+   When set to 1, the slab arena runs a self-test at startup and
+   aborts startup on any mismatch - a permanent, cheap diagnostic.
+   Default is 0 (off).
+
+   Example 1.7. Set arena_selftest parameter
+...
+modparam("cachedb_perf", "arena_selftest", 1)
+...
+
+1.3.8. htable_selftest (integer)
+
+   When set to 1, the hash table and its runtime-growth machinery
+   run a self-test at startup and abort startup on any mismatch.
+   Default is 0 (off).
+
+   Example 1.8. Set htable_selftest parameter
+...
+modparam("cachedb_perf", "htable_selftest", 1)
+...
+
+1.3.9. event_expired_collections (string)
+
+   Comma-separated list of the collections that raise
+   E_CACHEDB_PERF_EXPIRED (one event per reaped key) as the sweep
+   reclaims them. It is opt-in per collection because a high-churn
+   collection can reap in bulk, and event delivery is synchronous
+   - a collection should pay for the per-key events only if
+   something is listening for them. Empty (default) means no
+   collection raises the event. See Exported Events.
+
+   Example 1.9. Set event_expired_collections parameter
+...
+modparam("cachedb_perf", "event_expired_collections", "sessions,subscrip
+tions")
+...
+
+1.3.10. db_url (string)
+
+   URL of a db_* (SQL) backend used to persist collections - see
+   DB persistence. The matching db_* module must be loaded. When
+   unset, persistence is disabled. The DB is a shared, durable
+   store; the in-memory cache is a view over it.
+
+   Example 1.10. Set db_url parameter
+...
+modparam("cachedb_perf", "db_url", "mysql://opensips:pw@localhost/opensi
+ps")
+...
+
+1.3.11. db_table (string)
+
+   Table that holds the persisted entries. Default is
+   “cachedb_perf”. See DB persistence for the schema.
+
+1.3.12. db_mode (integer)
+
+   Automatic persistence for the collections listed in
+   persist_collections: 0 = off (default; load/save only on the
+   perf_load/ perf_save MI commands), 1 = load them from the DB at
+   startup, 2 = load at startup and save on a graceful shutdown.
+
+   Example 1.11. Set db_mode parameter
+...
+modparam("cachedb_perf", "db_mode", 2)
+...
+
+1.3.13. persist_collections (string)
+
+   Comma-separated list of the collections that db_mode loads at
+   startup and saves at shutdown. Empty (default) means none are
+   persisted automatically - though perf_save/perf_load still work
+   on any collection on demand.
+
+   Example 1.12. Set persist_collections parameter
+...
+modparam("cachedb_perf", "persist_collections", "sessions,profiles")
+...
+
+1.3.14. sync_cluster_id (integer)
+
+   Cluster to signal on perf_sync - see Cluster sync. 0 (default)
+   = off. When set, the clusterer module must be loaded (before
+   cachedb_perf) and db_url configured; if either is missing,
+   perf_sync degrades to a DB save with no peer signal (a soft
+   dependency, never fatal).
+
+   Example 1.13. Set sync_cluster_id parameter
+...
+loadmodule "clusterer.so"
+loadmodule "cachedb_perf.so"
+modparam("cachedb_perf", "sync_cluster_id", 1)
+...
+
+1.3.15. sync_shtag (string)
+
+   A clusterer sharing tag, as “name/cluster_id”, that arms the
+   failover sync. A node whose tag turns active warms every
+   declared collection from the DB snapshot before the redirected
+   traffic arrives; a node gracefully demoted to backup saves its
+   state and signals the peers to reload it - so a failover moves
+   the cache as one snapshot instead of a storm of misses.
+
+   Requires db_url. The tag only schedules these bulk operations -
+   lookups are never gated on its state. On a crash failover the
+   last saved snapshot is the only source, so pair this with
+   periodic perf_save (or db_mode 2) on the active node.
+
+   Default value is unset (failover sync off).
+
+   Example 1.14. Setting sync_shtag
+modparam("clusterer", "sharing_tag", "vip1/1=backup")
+modparam("cachedb_perf", "sync_shtag", "vip1/1")
+
+1.3.16. replicate_collections (string)
+
+   Comma-separated collections whose keys may be fetched from
+   another node when this one misses (“pull on miss”). Nothing is
+   pulled unless it is listed here, and the default is to list
+   nothing.
+
+   The opt-in is deliberate and cannot be inferred: a key is only
+   worth asking the cluster about if it means the same thing on
+   every node. That holds for keys derived from the call - the
+   topology hiding state, for instance - and fails for anything a
+   script names after something local, where a peer's answer would
+   be wrong rather than merely useless. Values must be portable
+   too: a blob that embeds a node's own address is not.
+
+   Requires sync_cluster_id and the clusterer.
+
+   A pulled key is kept: the next request for it is answered
+   locally and the cluster is never asked again, which is what
+   makes this a repair rather than a relay. The copy keeps the
+   expiry the owner had - never a fresh lifetime - so it dies when
+   the original does instead of outliving it. Note the consequence
+   for sizing: as traffic spreads, every node tends toward holding
+   every key, so size the arena for the whole keyspace rather than
+   its share of it.
+
+   Native counters (created with cache_add) are never served to a
+   peer. A counter records what happened on the node holding it,
+   so handing it over would import one node's tally into another;
+   the requester is told the key is not there, which from its side
+   is true.
+
+   Default value is unset (no collection is pulled).
+
+   Example 1.15. Setting replicate_collections
+modparam("cachedb_perf", "sync_cluster_id", 1)
+modparam("cachedb_perf", "replicate_collections", "th")
+
+1.3.17. pull_transport (string)
+
+   How cross-node pulls travel: bin (default) uses the clusterer's
+   BIN links. clctr rides the clusterer_controller module's
+   encrypted multicast plane instead: one datagram reaches every
+   peer, and the payload is encrypted, which the BIN links are
+   not.
+
+   The controller is optional, at build time and at run time. When
+   this build does not include clusterer_controller, or the module
+   is not loaded, clctr logs a warning and degrades to bin; if the
+   clusterer module is unavailable too, cross-node pull and sync
+   are disabled and the cache runs purely node-local. Missing
+   cluster infrastructure never stops the module from starting.
+
+   Default value is “bin”.
+
+1.3.18. pull_timeout_ms (integer)
+
+   How long a pull waits for the cluster, in milliseconds
+   (1..5000). It is a backstop, not the normal cost: with every
+   peer answering either way, a pull finishes as soon as the last
+   one has spoken - on a LAN, in a couple of milliseconds. The
+   timeout only decides how long an unanswered request lingers.
+
+   Default value is “50”.
+
+1.3.19. pull_negative_ms (integer)
+
+   How long to remember that the whole cluster answered “not here”
+   for a key, in milliseconds (0..2000; 0 disables it). A SIP
+   retransmit asks the same question a few hundred milliseconds
+   later, and without this every retransmit repeats the round of
+   questions.
+
+   Keep it short. A key may legitimately be created on another
+   node a moment from now, and a negative that outlives that turns
+   a transient miss into a hard failure - which is why the
+   parameter is capped rather than left open. Only a verdict the
+   whole cluster gave is remembered: a timeout is not absence, and
+   neither is an answer from a set of nodes that has since
+   changed. A local write to the key clears it at once.
+
+   Negatives are held outside the cache, so they never appear in
+   perf_keys or perf_dump and never count as entries.
+
+   Default value is “300”.
+
+1.3.20. pull_on_miss (integer)
+
+   Repair a miss on the ordinary read path: when a lookup finds
+   nothing locally, ask the cluster and return whatever comes back
+   as though it had been here all along. A consumer needs no
+   changes - cross-node lookups simply start working for the
+   collections listed in replicate_collections.
+
+   Off by default, and it should stay off on a SIP path for now.
+   The lookup blocks until the cluster answers or pull_timeout_ms
+   elapses, and a blocked lookup means a process serving nothing
+   else in the meantime. A LAN pull takes a couple of milliseconds
+   and the negative cache absorbs retransmits, but that is a
+   statement about the common case, not a guarantee under load.
+   Enable it for maintenance, migration or test paths; a startup
+   warning repeats this when it is on.
+
+   Default value is “0” (disabled).
+
+1.4. DB persistence
+
+   With db_url set, a whole collection can be saved to and loaded
+   from an SQL backend. A save is a full snapshot: the
+   collection's rows are deleted and every live entry is
+   re-inserted, with its TTL stored as an absolute wall-clock time
+   so it survives a restart (already-expired entries are skipped
+   on both save and load). Native counters round-trip as their
+   decimal value.
+
+   Trigger it on demand with the perf_save / perf_load MI
+   commands, or automatically via db_mode. This is single-node
+   durability; for cross-node sharing over the same DB, see
+   Cluster sync (still not per-operation replication).
+
+Warning
+
+   A save/load is a full, blocking snapshot of the collection: one
+   SQL statement per entry, run synchronously in the process that
+   issued it. On a large collection (this module is built for
+   millions of entries) or a slow backend such as db_text or
+   db_sqlite, that can take a long time and stall that process for
+   its duration. Treat it as a maintenance / bootstrap operation -
+   startup warm-up, shutdown flush, an occasional snapshot or a
+   perf_sync refresh - never on a per-request path and not on a
+   tight timer. Frequent whole-collection persistence is an
+   anti-pattern; if you need durable per-key writes on every
+   operation, this is the wrong tool.
+
+   The table (default “cachedb_perf”) needs these columns:
+collection   string   - the collection name
+pkey         string   - the cache key
+pvalue       binary   - the value (BLOB; binary-safe)
+expires      int      - absolute unix expiry, 0 = never
+
+1.5. Cluster sync
+
+   Built on the same DB: with sync_cluster_id set, perf_sync (MI
+   command and script function) saves a collection to the DB and
+   then signals every node in the cluster to reload it from there.
+   The signal is one small message per sync - not per cache
+   operation - so it costs nothing on the hot path.
+
+Warning
+
+   A reload overwrites a peer's copy from the DB, so perf_sync is
+   for single-writer / read-replica topologies: one node (or the
+   application writing the DB directly) is the authority for a
+   collection, the others refresh from it. A node that also takes
+   its own local writes would lose the unsaved ones on a reload -
+   this is convergence to a shared source of truth, not a merge of
+   divergent copies, and deliberately not per-operation
+   replication.
+
+   A node that reloads because of a peer's perf_sync raises
+   E_CACHEDB_PERF_SYNCED. With no clusterer or sync_cluster_id 0,
+   perf_sync still saves to the DB, just without the peer signal.
+
+   When active, the module's capability shows in the clusterer's
+   clusterer_list_cap MI command as “cachedb-perf-sync”. Note that
+   the state the clusterer reports there (“Ok”) only means the
+   capability is registered and enabled: this module does not take
+   part in the clusterer's startup data-sync, so that field never
+   reflects whether the caches have converged. It would read “not
+   synced” only if the capability were disabled administratively.
+   To see the sync activity itself, use the last_sync_out /
+   last_sync_in / last_sync_source fields of perf_stats, which
+   report how many seconds ago this node last pushed a snapshot
+   and last reloaded one at a peer's request (-1 = never), or
+   subscribe to E_CACHEDB_PERF_SYNCED. Between syncs the nodes are
+   expected to differ - convergence is on demand, by design.
+
+   Because it runs a full save first, perf_sync carries the same
+   blocking cost as perf_save (see the warning under DB
+   persistence): it is an occasional refresh, not something to
+   fire on a timer or per request.
+
+   Example 1.16. Cluster-sync setup (one authority, two read
+   replicas)
+# on every node - clusterer must load before cachedb_perf (the module
+# declares a soft dependency, so init order is handled either way):
+loadmodule "clusterer.so"
+modparam("clusterer", "my_node_id", 1)          # 2 and 3 on the other n
+odes
+...
+loadmodule "cachedb_perf.so"
+modparam("cachedb_perf", "cache_collections", "profiles")
+modparam("cachedb_perf", "db_url", "mysql://opensips:pw@dbhost/opensips"
+)
+modparam("cachedb_perf", "sync_cluster_id", 1)
+
+# on the authority node, after it has updated the "profiles" collection:
+#   opensips-cli -x mi cachedb_perf:perf_sync profiles
+#     -> saves "profiles" to the DB, signals nodes 2 and 3 to reload it
+#
+# or from script (e.g. after a reload route), same save-then-broadcast:
+#   perf_sync("profiles");
+#
+# the replicas raise E_CACHEDB_PERF_SYNCED when they finish reloading:
+event_route[E_CACHEDB_PERF_SYNCED] {
+    xlog("L_INFO", "reloaded $param(collection) from node $param(source_
+node)\n");
+}
+
+1.6. Degraded operation: what each surface does without its modules
+
+   The cache itself never depends on the cluster plane. Whatever
+   is missing, the module starts, serves node-local traffic, and
+   says at startup exactly what it turned off. There are two
+   degraded modes worth knowing precisely; every output below is
+   captured from a live instance, not paraphrased.
+
+   Mode 1 - clusterer loaded, clusterer_controller absent. The
+   only thing lost is the clctr transport; pull and sync are fully
+   functional over the clusterer's BIN links. One warning at
+   startup, worded for the reason the controller is missing:
+# controller not in this build:
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but this
+    build carries no clusterer_controller support - falling
+    back to 'bin'
+# controller in the build but not loaded:
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but
+    clusterer_controller is not loaded - falling back to 'bin'
+
+   Mode 2 - neither module available. Pull and sync are disabled
+   entirely; the cache runs purely node-local. Three warnings at
+   startup:
+WARNING:cachedb_perf:mod_init: clusterer module not available -
+    the cluster features are disabled; load clusterer before
+    cachedb_perf
+WARNING:cachedb_perf:mod_init: pull_transport 'clctr' but this
+    build carries no clusterer_controller support - falling
+    back to 'bin'
+WARNING:cachedb_perf:mod_init: replicate_collections is set but
+    the cluster is not available (needs sync_cluster_id +
+    clusterer) - cross-node pull disabled
+
+   Unaffected in both modes: every local surface. The cachedb
+   script API (cache_store / cache_fetch / cache_add / cache_sub /
+   cache_remove on "perf"), the glob functions (perf_del,
+   perf_mget, perf_mget_json), the local MI set (perf_get /
+   perf_set / perf_probe / perf_keys / perf_scan / perf_dump /
+   perf_ttl / perf_del / perf_stats / perf_stats_reset), DB
+   persistence (perf_save / perf_load, db_mode), and the four
+   local events (E_CACHEDB_PERF_EXPIRED / NOMEM / GROWN /
+   MEM_DEGRADED).
+
+   perf_pull - in mode 1 the pull runs over bin; on a single node
+   (or when no peer holds the key) it reports where the answer did
+   not come from. In mode 2 it refuses:
+# mode 1:
+{ "source": "no-answer" }
+
+# mode 2:
+{ "code": 500,
+  "message": "cross-node pull not active
+              (replicate_collections)" }
+
+   perf_cluster_probe - mode 1 probes over bin (on a lone node:
+   error 500, "could not start the probe - no peers, or no free
+   pull slot"); mode 2 answers error 400, "cross-node pull is not
+   active for this collection (replicate_collections)".
+
+   perf_sync (MI and script function) - never fails for cluster
+   reasons. Mode 1 saves and signals the peers; mode 2 degrades to
+   the DB save alone and says so:
+# mode 1:
+{ "collections": 2, "saved": 1, "broadcast": 2 }
+
+# mode 2:
+{ "collections": 2, "saved": 1, "broadcast": 0,
+  "note": "cluster sync inactive (no clusterer /
+           cluster_id 0) - saved to the DB only" }
+
+   perf_stats - the per-collection and memory sections are
+   identical in both modes (including the pulled_from_cluster /
+   served_to_cluster counters, which simply stay 0). The
+   difference is the cluster object: present in mode 1 (ids,
+   membership, the pull counters and slot count, and a topology
+   array), absent in mode 2.
+# mode 1 only:
+"cluster": {
+    "cluster_id": 1, "my_node_id": 1, "peers_up": 0,
+    ...
+    "pull_slots": 64,
+    "topology": [ { "node_id": 1, "role": "self", "membership": "up" } ]
+}
+
+   cache_fetch with pull_on_miss=1 - mode 1: a miss on an opted-in
+   collection blocks up to pull_timeout_ms asking the cluster,
+   exactly as documented under pull_on_miss. Mode 2: no pull
+   exists, so a miss is a plain immediate miss - no blocking, no
+   timeout, no negative cache.
+
+   E_CACHEDB_PERF_SYNCED - only ever raised when a peer's sync
+   signal arrives, so it keeps firing in mode 1 and can never fire
+   in mode 2. Subscribing to it costs nothing either way.
+
+1.7. Exported Statistics
+
+   All counters are aggregated per-process and summed only when
+   read, so instrumentation never touches a shared cache line on
+   the hot path. Query with get_statistics cachedb_perf:.
+     * hits / misses - fetch outcomes (expired counts as a miss)
+     * stores / removes - write and explicit delete operations
+       (removes counts only remove/perf_del, never TTL expiry)
+     * expired - records reclaimed by the TTL expiry sweep (this
+       is where timed-out keys are accounted, separate from
+       removes)
+     * destroyed - total records whose cells were freed back to
+       the arena, from any cause; it equals removes + expired.
+       Overwriting an existing key does not count here (the cell
+       is reused in place), so entries = created - destroyed. A
+       large gap between stores and entries with a small destroyed
+       means most churn is same-key overwrites rather than expiry
+       or deletes.
+     * entries - live records across all collections
+     * seqlock_retries - optimistic-read retries (the contention
+       signal)
+     * lock_fallbacks - reads that fell back to the bucket lock
+     * arena_bytes / arena_chunks - memory taken from shm
+     * memory_tier_probe / memory_tier_active - the huge-page tier
+       the host was probed for, and the one the module's own arena
+       actually runs on (1 hugetlb .. 4 plain 4K). They differ
+       when arena_hugepage_mb could not be satisfied.
+     * hugepage_arena_active, hugepage_arena_total_bytes,
+       hugepage_arena_used_bytes, hugepage_arena_free_bytes - the
+       module's own hugepage arena, which is SEPARATE from the
+       OpenSIPS shm arena. Records live in one or the other, never
+       both, so these do not add to arena_bytes.
+
+   Cross-node pull statistics. These exist only when pull_on_miss
+   is enabled. They are grouped so that two identities hold, which
+   is the point of having them: every miss is accounted on the way
+   out, and every request is accounted on the way back. A missing
+   counter here is not cosmetic - it is a miss that vanished.
+     * pulls_requested - misses that turned into a request on the
+       wire. pulls_served - requests from peers this node
+       answered.
+     * pulls_suppressed - asks absorbed by an already-cached
+       negative (pull_negative_ms); the second and later asker for
+       a key a peer has already denied.
+     * pulls_skip_notreplicated, pulls_skip_toolong,
+       pulls_skip_nopeers, pulls_skip_noslot - misses refused at
+       the gate before anything was sent. They are kept apart
+       because each calls for a different action: pull is off for
+       that collection; the key or collection name is too long to
+       ask for at all; no live cluster member to ask; or the slot
+       table is full and nothing was evictable.
+     * pulls_received - a value came back. pulls_negative - a peer
+       answered that it does not have the key. pulls_oversize - a
+       peer has it but it exceeds the cluster transport limit.
+       pulls_timed_out - nothing came back in pull_timeout_ms.
+       pulls_send_failed - the transport refused the datagram, so
+       no peer was ever asked.
+     * pulls_stored - answers written into the cache.
+       pulls_in_flight - requests outstanding right now (a gauge,
+       not a total).
+     * pulls_orphaned - a waiter gave up but the slot was kept in
+       case the answer still arrives, for pull_linger_ms. Its
+       outcomes: pulls_late_stored (arrived and was stored -
+       convergence that would otherwise be lost),
+       pulls_late_superseded (a local write had already filled the
+       key), pulls_late_expired (arrived past the linger and was
+       refused as stale), pulls_orphan_expired (no late answer
+       ever came - the ordinary end of a timeout),
+       pulls_orphan_evicted (the slot was reclaimed early because
+       the pool ran dry).
+     * pulls_abandoned - slots the reaper released because the
+       caller never collected them. Distinct from a timeout, which
+       the caller DID collect: a non-zero value here is a defect
+       signal, not tuning.
+     * pulls_foreign_cluster - pull messages that arrived on a
+       controller cluster this module does not sync on and were
+       refused. Non-zero means either a genuine multi-cluster node
+       behaving correctly, or sync_cluster_id naming a cluster the
+       controller does not manage; the accompanying warning tells
+       the two apart.
+
+   The two identities:
+
+misses          = pulls_requested + pulls_suppressed
+                  + pulls_skip_notreplicated + pulls_skip_toolong
+                  + pulls_skip_nopeers + pulls_skip_noslot
+
+pulls_requested = pulls_received + pulls_negative + pulls_oversize
+                  + pulls_timed_out + pulls_send_failed + pulls_in_flight
+
+   The second holds exactly on a two-node cluster. pulls_negative
+   is counted per REPLY, so with more peers one request can raise
+   it more than once.
+
+   The perf_stats MI command gives the same figures broken down
+   per collection, plus load factor, overflow occupancy,
+   retries-per-1k-reads, the memory-backing description and
+   hit_rate_pct - hits / (hits + misses) as a percentage. On a
+   healthy server the large majority of lookups hit (upwards of
+   80% under steady dialog traffic); a persistently low or falling
+   hit rate means the cached state is being lost or is expiring
+   before it is used. The same guidance rides inline in the
+   hit_rate_note field.
+
+1.8. Exported MI Functions
+
+1.8.1. perf_stats
+
+   Reports per-collection statistics (entries, buckets, overflow,
+   hits/misses/stores/removes, load factor, seqlock retries and
+   retries-per-1k-reads) plus the arena occupancy and the achieved
+   memory tier. With no parameter it reports every collection; an
+   optional collection name restricts it to one.
+
+   Name: perf_stats. Parameters: collection (optional).
+
+   Example 1.17. perf_stats usage
+opensips-cli -x mi cachedb_perf:perf_stats
+opensips-cli -x mi cachedb_perf:perf_stats th
+
+1.8.2. perf_stats_reset
+
+   The counters behind perf_stats - hits, misses, stores, removes,
+   expired, destroyed, retries - are running totals since startup,
+   so every rate derived from them is a lifetime average. A burst
+   of misses right after a restart, when sequential requests
+   arrive for dialogs older than the cache, keeps dragging the hit
+   rate down long after the cache has recovered. This command
+   re-baselines them so the next reading covers a fresh interval,
+   without restarting OpenSIPS.
+
+   The counters themselves are not rewound: each process owns its
+   own counter cache line and must never have it written from
+   another process. Only a baseline is recorded, and the reported
+   figures are the difference. Live gauges - entries, buckets,
+   overflow, load factor and the arena figures - are read from
+   current state rather than from the counters, so a reset does
+   not disturb them.
+
+   With no parameter every collection is reset; an optional
+   collection name restricts it to one.
+
+   Name: perf_stats_reset. Parameters: collection (optional).
+
+   Example 1.18. perf_stats_reset usage
+opensips-cli -x mi cachedb_perf:perf_stats_reset
+opensips-cli -x mi cachedb_perf:perf_stats_reset th
+
+1.8.3. Key introspection: perf_keys / perf_scan / perf_dump /
+perf_get / perf_probe / perf_pull / perf_set / perf_ttl / perf_del
+
+   These give an operator the visibility that cachedb_local lacks.
+   All are lock-free: the walkers take no bucket locks (seqlock
+   reads), so unlike a cachedb_local key scan they never stall SIP
+   traffic. Every command carries the perf_ prefix, matching the
+   script functions and staying clear of the core's bare get/set.
+   The optional collection selects the table; omitted, it is the
+   groupless cachedb_url's collection.
+     * perf_keys <glob> [collection] [limit] - names (and TTL) of
+       the keys matching a shell glob, bounded (default 1000; the
+       reply carries a note when it truncates). The KEYS
+       equivalent.
+     * perf_scan <cursor> [glob] [count] - cursored incremental
+       iteration with Redis SCAN semantics over the default
+       collection: start with cursor 0 and repeat with the
+       returned cursor until it comes back 0. An entry present
+       throughout is returned at least once; count bounds the
+       buckets visited per call. This is the answer for a large
+       cache, where perf_keys would truncate.
+     * perf_dump <glob> [collection] [limit] - like perf_keys but
+       includes the values; values are opt-in, never the default.
+     * perf_get <key> [collection] - one key: its value, remaining
+       TTL (-1 = never) and size.
+     * perf_pull <key> [collection] - fetch one key from the
+       cluster, for a collection listed in replicate_collections.
+       Reports where the answer came from: local (this node had it
+       after all), cluster (a peer had it, with its remaining
+       TTL), absent (every peer answered, none has it) or
+       no-answer (nobody answered in time, or there was nobody to
+       ask). The last two are deliberately different: absence is a
+       fact only when the whole cluster has said so.
+     * perf_probe <key> [collection] - is the key here: its size
+       and remaining TTL, but never the value. Not merely a
+       cheaper perf_get - it shares the whole read path (same
+       optimistic loop, lock fallback and expiry rules) and stops
+       before the copy-out, so it cannot disagree with a read
+       about whether a key is present; it allocates nothing and
+       never touches the record's payload. Use it to answer “do
+       you have this key?”, where a read would pay for bytes
+       nobody wants.
+     * perf_set <key> <value> [ttl] [collection] - write one key;
+       ttl is seconds (0 or omitted = never expires).
+     * perf_ttl <glob> <ttl> [collection] - re-arm the TTL of
+       every key matching the glob without rewriting its value
+       (one atomic expiry store under the bucket lock, so
+       lock-free readers are undisturbed); ttl is seconds (0 =
+       never). Returns the count updated; a literal key matches
+       exactly one.
+     * perf_del <glob> [collection] - delete every key matching
+       the glob; returns the count. The MI face of the perf_del()
+       script function.
+
+   Example 1.19. introspection usage
+opensips-cli -x mi cachedb_perf:perf_keys "session-*"
+opensips-cli -x mi cachedb_perf:perf_keys "session-*" th 50
+opensips-cli -x mi cachedb_perf:perf_scan 0
+opensips-cli -x mi cachedb_perf:perf_scan 384 "user-*" 128
+opensips-cli -x mi cachedb_perf:perf_dump "profile-*"
+opensips-cli -x mi cachedb_perf:perf_get session-abc123
+opensips-cli -x mi cachedb_perf:perf_set greeting hello 300
+opensips-cli -x mi cachedb_perf:perf_ttl "session-*" 1800
+opensips-cli -x mi cachedb_perf:perf_del "session-abc*"
+
+1.8.4. perf_save / perf_load
+
+   Persist a collection to, or restore it from, the db_url backend
+   (see DB persistence). With no argument they operate on every
+   declared collection; with a collection name, only that one. The
+   reply reports how many collections and entries were written or
+   read.
+
+   Example 1.20. perf_save / perf_load usage
+opensips-cli -x mi cachedb_perf:perf_save
+opensips-cli -x mi cachedb_perf:perf_save sessions
+opensips-cli -x mi cachedb_perf:perf_load sessions
+
+1.8.5. perf_sync
+
+   Save a collection to the DB and signal the cluster to reload it
+   (see Cluster sync); all declared collections if none is named.
+   Also available as a script function, perf_sync([collection]).
+
+   Example 1.21. perf_sync usage
+opensips-cli -x mi cachedb_perf:perf_sync sessions
+
+1.9. Exported Events
+
+   Every event is gated by evi_probe_event(), so with no
+   subscriber it costs a single shared read and nothing more; none
+   of them sit on the lock-free get/set path.
+
+1.9.1. E_CACHEDB_PERF_EXPIRED
+
+   Raised by the sweep for each expired record it reclaims, but
+   only for the collections named in event_expired_collections
+   (opt-in, since a high-churn collection reaps in bulk and
+   delivery is synchronous). Parameters: collection, key.
+
+1.9.2. E_CACHEDB_PERF_NOMEM
+
+   Raised when a write is dropped because the arena is full - the
+   cache is out of memory and rejecting stores. One event per
+   dropped write (subscribers should expect bursts under memory
+   pressure). Parameters: collection, key, size (the value's byte
+   length).
+
+1.9.3. E_CACHEDB_PERF_GROWN
+
+   Raised by the maintenance timer after it grows a collection's
+   table. Parameters: collection, prev_buckets, buckets, splits,
+   entries.
+
+1.9.4. E_CACHEDB_PERF_MEM_DEGRADED
+
+   Raised once at startup when arena_hugepage_mb was set but the
+   arena settled on a tier below hugetlb (missing
+   vm.nr_overcommit_hugepages, for instance) - the node is running
+   slower than intended. Parameters: requested_mb, tier (1 hugetlb
+   .. 4 plain 4K), backing (its description), overcommit_pages.
+
+1.9.5. E_CACHEDB_PERF_SYNCED
+
+   Raised on a node that reloaded a collection from the DB because
+   a peer issued perf_sync (see Cluster sync). Parameters:
+   collection, source_node (the cluster id of the node that issued
+   the sync).
+
+1.10. Exported Functions
+
+   Single-key operations go through the core cache functions
+   (cache_store(), cache_fetch(), ...) with the “perf” backend.
+   The functions below are the module's own glob (multi-key)
+   operations. All of them match keys with shell-style globs
+   (fnmatch), walk the table lock-free and give the Redis SCAN
+   class of guarantee: an entry mutated concurrently may be seen
+   once, twice or not at all. Unlike cachedb_local's
+   cache_remove_chunk(), these are perf_-prefixed - scripts
+   migrating from cachedb_local must rename those calls. When the
+   optional collection argument is omitted, they operate on the
+   collection of the default (groupless) cachedb_url - exactly
+   where cache_store("perf", ...) writes.
+
+1.10.1. perf_del(glob[, collection])
+
+   Deletes every key matching the glob (expired entries included).
+   Returns the number of keys removed, or -1 (false) if none
+   matched.
+
+   Example 1.22. perf_del() usage
+...
+perf_del("session-*");
+perf_del("th-*", "th");
+...
+
+1.10.2. perf_mget(glob, keys_avp, vals_avp[, collection[, limit]])
+
+   Returns every live key/value pair matching the glob into two
+   writable variables (use AVPs - each match adds one value to
+   each, and the indexes correspond pairwise; ordering is
+   unspecified). limit bounds the number of matches, default 1000,
+   0 = unbounded. Returns the match count, or -1 (false) if none
+   matched.
+
+   Example 1.23. perf_mget() usage
+...
+if (perf_mget("user-*", $avp(k), $avp(v))) {
+    xlog("first match: $(avp(k)[0]) = $(avp(v)[0])\n");
+}
+...
+
+1.10.3. perf_mget_json(glob, dst_var[, collection[, limit]])
+
+   Like perf_mget(), but returns all matches as one JSON object
+   {"key":"value",...} in a single writable variable ({} when
+   nothing matches). Quote, backslash and control bytes are
+   escaped, so binary values survive; bytes above 0x7F pass
+   through unescaped - strict JSON consumers therefore need UTF-8
+   values. Returns the match count, or -1 (false) if none matched.
+
+   Example 1.24. perf_mget_json() usage
+...
+if (perf_mget_json("user-*", $var(blob), , 100))
+    xlog("users: $var(blob)\n");
+...
+
+   Documentation Copyrights:
+
+   Copyright © 2026 Yury Kirsanov
