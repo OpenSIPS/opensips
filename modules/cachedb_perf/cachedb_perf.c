@@ -2210,9 +2210,19 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 	budget = pull_max_value;
 #endif
 	if (val.len > budget) {
-		LM_DBG("pull: <%.*s> is %d bytes, over this transport's %d - "
-			"reporting held-but-unsendable\n", key->len, key->s, val.len,
-			budget);
+		/* An error on EVERY occurrence, deliberately: each one is a value
+		 * this cluster holds and cannot serve, and the requester's side
+		 * only sees its miss counters move.  The remedy follows the
+		 * transport the request rode in on. */
+		LM_ERR("pull: the value of key <%.*s> is %d bytes - more than the "
+			"%d this transport can carry in one message; answering "
+			"held-but-unsendable, so the value stays unpullable from "
+			"this node - %s\n",
+			key->len, key->s, val.len, budget,
+			via_clctr ? "switch pull_transport to 'bin', which has no "
+			            "such limit, to serve values this large"
+			          : "raise pull_max_value (on every node) to cover "
+			            "values this large");
 		found = PCACHE_FOUND_OVERSIZE;
 	} else {
 		found = PCACHE_FOUND_YES;
