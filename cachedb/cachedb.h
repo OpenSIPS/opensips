@@ -162,7 +162,36 @@ typedef struct cachedb_funcs_t {
 	 */
 	int (*is_replicated) (cachedb_con *con);
 
+
 	int capability;
+
+	/**
+	 * OPTIONAL, advertised by CACHEDB_CAP_GET_BUF.  Reads a value into a
+	 * caller-owned buffer, so a hot read path need not allocate: it is
+	 * get() without the pkg_malloc the caller would then have to free.
+	 *
+	 * @buf must be memory private to the calling process (its own stack or
+	 * pkg).  A backend may write into it speculatively and then abandon the
+	 * attempt, so on ANY outcome other than a hit its contents are
+	 * undefined - never a stale previous value to fall back on.  The value
+	 * is not NUL-terminated.
+	 *
+	 * Return values:
+	 *  -3: @buf is too small; *vlen is 0 and *needed holds the size that
+	 *      would be required (the caller may then fall back to get())
+	 *  -2: key does not exist, or has expired
+	 *  -1: internal error, or a malformed request (NULL @buf, or @buflen
+	 *      below the backend's documented minimum)
+	 *   0: found; *vlen bytes were written to @buf, always <= @buflen
+	 *
+	 * *vlen and *needed are zeroed before anything else is done, so a
+	 * caller that ignores the return code reads a zero length rather than
+	 * an uninitialised one.  @needed may be NULL.  NOTE this differs from
+	 * get(), which signals a hit with a positive value at the script
+	 * boundary - a hit here is 0.
+	 */
+	int (*get_buf) (cachedb_con *con, str *attr, char *buf,
+		unsigned int buflen, unsigned int *vlen, unsigned int *needed);
 } cachedb_funcs;
 
 typedef struct cachedb_engines {
