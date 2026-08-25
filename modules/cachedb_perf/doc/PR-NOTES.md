@@ -1,3 +1,13 @@
+> **Superseded (2026-08-26).** The cross-node latency and convergence numbers
+> in these archived notes were measured on a **single-host container bridge**
+> (all three nodes on one kernel — no real network). Re-measured on three
+> physical hosts with per-host containers and host networking: warm p50 is
+> ~197 µs (not 105 µs), and full 30k-key convergence takes 17.5–20.8 s
+> depending on transport (not 11.5–13.2 s). The current, authoritative
+> measurements live in [STUDY.md — "Cross-node pull, measured on a real
+> network"](STUDY.md#cross-node-pull-measured-on-a-real-network). The text
+> below is kept verbatim as the historical record.
+
 # cachedb_perf: progress notes from the pull request
 
 The comments posted on OpenSIPS/opensips#4118 while the module grew - the

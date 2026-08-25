@@ -268,6 +268,63 @@ The arena can now back its chunks with **2 MB huge pages** instead of 4 K (modpa
 
 The gain is larger at 50k, where the working set spreads across enough memory to thrash the 4K TLB — exactly the case huge pages relieve. It's below the 1.19–1.43× the pointer-chase showed in isolation because each operation also pays for the hash, the tag scan and a copy of the value. Detection is by *trying* each tier (hugetlb → THP → collapse → 4K), never by kernel version; `mlock` wants `LimitMEMLOCK=infinity` and warns-and-continues otherwise.
 
+## Cross-node pull, measured on a real network
+
+*(2026-08-26: this section supersedes the earlier cross-node numbers, which
+were measured on a single-host container bridge — three nodes on one kernel,
+sub-millisecond "wire". Those runs understated convergence by roughly half
+and warm latency by one LAN round trip. The historical figures remain in
+[PR-NOTES.md](PR-NOTES.md), marked as superseded.)*
+
+**Topology.** Three separate physical hosts on one L2 switch (measured UDP
+round trip between them: 165 µs p50 / 325 µs p99). One container per host,
+`--network host`, the same binary mounted into all three — the container only
+pins the userland; every inter-node and client byte crosses the real NIC.
+Twelve external OPTIONS loaders, ring-distributed so each node is driven from
+a *different* host and the client leg crosses the wire too. 30k keys in a
+`th=16` collection, `pull_on_miss=1`, `pull_timeout_ms=100`, `-a F_MALLOC`.
+Two scenarios per transport: **warm** (all nodes fully seeded, 60 s) and
+**thirds** (each node seeded with a disjoint third, 90 s — every node must
+pull 20k keys under ~50k req/s of live load).
+
+**Result: zero failures.** 3.4–5.0M requests per scenario, all answered, no
+timeouts, and in every thirds run each node pulled almost exactly its missing
+20,000 keys (20,000–20,006).
+
+| transport | warm p50 / p99 | convergence p50 / p99 / p999 (max) | 99.9% converged |
+|---|---|---|---|
+| `udp` | 199 / 450 µs | 199 / 450 / 664 µs (8.8 ms) | **10.7 s** |
+| `tcp` | 198 / 391 µs | 199 / 503 / 707 µs (11.9 ms) | 11.2 s |
+| `bin` | 196 / 434 µs | 198 / **910 / 1462** µs (10.1 ms) | 14.2 s |
+
+The last ~0.1% of convergence is bounded by when the final keys are first
+*requested* (a coupon-collector tail of the random 30k keyspace, not a
+transport property); observed 100% times were 17.5 / 19.3 / 20.8 s.
+
+![convergence](study/xnet/xnet-convergence.png)
+
+The medians are identical across transports and equal to the warm state —
+a pull only ever touches the miss path. The whole difference lives in the
+tail, which is exactly where the module-owned transports earn their place:
+
+![latency tail](study/xnet/xnet-latency-cdf.png)
+
+`bin` rides the clusterer's TCP links, and every message bounces through the
+core's TCP main dispatcher; during the heaviest miss phase its p99 starts
+near 2 ms and takes ~10 s to settle, while `udp`/`tcp` (own socket, dedicated
+receive process) start under 0.9 ms and settle within ~5 s:
+
+![p99 timeline](study/xnet/xnet-latency-timeline.png)
+
+![transport comparison](study/xnet/xnet-transports.png)
+
+Warm-state figures across all transports sit at p50 ~197 µs / p99 ~390–434 µs —
+the local-cache cost plus one real client round trip, with no cluster traffic
+at all (`pulls: 0` throughout the warm runs). The `clctr` transport is not
+measurable on this branch (the controller module is a separate PR); `bin`
+remains the zero-configuration default, and the udp/tcp results above are the
+case for using the module's own sockets on pull-heavy deployments.
+
 ## Design in brief
 
 ```c
