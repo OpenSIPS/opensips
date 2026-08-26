@@ -668,7 +668,7 @@ void rmq_connect_servers(void)
 				srv->conn.uri.host, srv->conn.uri.port);
 		}
 		if (ret == -2) {
-			rmq_destroy_connection(&srv->conn, 1);
+			rmq_destroy_connection(&srv->conn, 1, 0);
 		}
 	}
 }
@@ -731,8 +731,8 @@ int amqp_check_status(rmq_connection_t *conn, int r, int *retry, str cid)
 					cid.len, cid.s, r, strerror(errno), errno);
 			break;
 	}
-	/* we close the connection here to be able to re-connect later */
-	rmq_destroy_connection(conn, 1);
+	/* skip protocol close frames on an already failed publish stream */
+	rmq_destroy_connection(conn, 1, 1);
 no_close:
 	if (retry && *retry > 0) {
 		(*retry)--;
@@ -769,7 +769,7 @@ int rmq_basic_server_publish(rmq_connection_t *conn, int max_frames,
 			return ret;
 		}
 		if (ret == -2) {
-			rmq_destroy_connection(conn, 1);
+			rmq_destroy_connection(conn, 1, 0);
 			LM_ERR("cannot connect to RabbitMQ server %s:%u\n",
 				conn->uri.host, conn->uri.port);
 				return ret;

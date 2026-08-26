@@ -153,17 +153,19 @@ void rmq_free_param(rmq_params_t *rmqp)
 		shm_free(rmqp->routing_key.s);
 }
 
-void rmq_destroy_connection(rmq_connection_t *conn, int temporarely)
+void rmq_destroy_connection(rmq_connection_t *conn, int temporarely, int force)
 {
 	switch (conn->state)
 	{
 	case RMQS_ON:
 	case RMQS_CONN:
-		rmq_error("closing channel",
-				amqp_channel_close(conn->conn, RMQ_DEFAULT_CHANNEL, AMQP_REPLY_SUCCESS));
+		if (!force)
+			rmq_error("closing channel",
+					amqp_channel_close(conn->conn, RMQ_DEFAULT_CHANNEL, AMQP_REPLY_SUCCESS));
 	case RMQS_INIT:
-		rmq_error("closing connection",
-				amqp_connection_close(conn->conn, AMQP_REPLY_SUCCESS));
+		if (!force)
+			rmq_error("closing connection",
+					amqp_connection_close(conn->conn, AMQP_REPLY_SUCCESS));
 		if (amqp_destroy_connection(conn->conn) < 0)
 			LM_ERR("cannot destroy connection\n");
 	case RMQS_OFF:
@@ -193,7 +195,7 @@ void rmq_destroy(evi_reply_sock *sock)
 	if ((sock->flags & EVI_PARAMS) && sock->params) {
 		rmq_free_param((rmq_params_t *)sock->params);
 		rmq_params_t *rmqp = (rmq_params_t *)sock->params;
-		rmq_destroy_connection(&rmqp->conn, 0);
+		rmq_destroy_connection(&rmqp->conn, 0, 0);
 	}
 	shm_free(sock);
 }
