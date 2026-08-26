@@ -554,7 +554,7 @@ Summary:  MySQL database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 %if 0%{?rhel} >= 10
-Requires: mariadb-libs
+Requires: libmariadb.so.3()(64bit)
 %else
 Requires: mysql-libs
 %endif
