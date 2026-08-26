@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 #define RMQ_SIZE (sizeof(rmq_send_t *))
 #define IS_ERR(_err) (errno == _err)
@@ -204,6 +205,8 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 	int ret;
 	int re_publish = 2;
 	amqp_basic_properties_t props;
+
+	memset(&props, 0, sizeof props);
 
 	if (!rmqp || !(rmqp->conn.flags & RMQF_MAND)) {
 		LM_ERR("not enough socket info\n");
