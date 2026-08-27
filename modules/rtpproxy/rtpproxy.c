@@ -3581,7 +3581,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 	);
 	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p, *newbody;
 	char medianum_buf[20];
-	char buf[32], dbuf[128];
+	char buf[32], dbuf[256];
 	int medianum, media_multi;
 	str medianum_str, tmpstr1;
 	int c1p_altered;
@@ -3885,10 +3885,15 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 				LM_ERR("did too large to fit!\n");
 				goto error;
 			}
-			dtmf_tag.len = snprintf(dbuf, 128, "d%.*s", did->len, did->s);
+			dtmf_tag.len = snprintf(dbuf, sizeof(dbuf), "d%.*s", did->len, did->s);
 		} else {
 			LM_DBG("using DTMF callid %.*s identifier\n", args->callid.len, args->callid.s);
-			dtmf_tag.len = snprintf(dbuf, 128, "c%.*s", args->callid.len, args->callid.s);
+			if (args->callid.len > (int)sizeof(dbuf) - 2) {
+				LM_ERR("callid too large to fit!\n");
+				goto error;
+			}
+			dtmf_tag.len = snprintf(dbuf, sizeof(dbuf), "c%.*s",
+				args->callid.len, args->callid.s);
 		}
 		dtmf_tag.s = dbuf;
 	}
