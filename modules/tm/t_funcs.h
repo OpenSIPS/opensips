@@ -85,24 +85,43 @@ extern int noisy_ctimer;
 */
 #ifdef EXTRA_DEBUG
 int send_pr_buffer( struct retr_buf *rb,
-	void *buf, int len, char* file, const char *function, int line, void* ctx);
+	void *buf, int len, char* file, const char *function, int line, void* ctx,
+	str *sent_buffer);
 #define SEND_PR_BUFFER(_rb,_bf,_le ) \
-	send_pr_buffer( (_rb), (_bf), (_le), __FILE__,  __FUNCTION__, __LINE__, NULL)
+	send_pr_buffer( (_rb), (_bf), (_le), __FILE__,  __FUNCTION__, __LINE__, NULL, NULL)
+#define SEND_PR_BUFFER_CAPTURE(_rb,_bf,_le,_out) \
+	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION__, __LINE__, NULL, (_out))
 #define SEND_PR_CONTEXTS_BUFFER(_rb,_bf,_le, _ctx ) \
-	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION, __LINE__ ,_ctx)
+	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION, __LINE__ ,_ctx, NULL)
 #else
-int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx);
+int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx,
+	str *sent_buffer);
 #define SEND_PR_BUFFER(_rb,_bf,_le ) \
-	send_pr_buffer( (_rb), (_bf), (_le), NULL)
+	send_pr_buffer( (_rb), (_bf), (_le), NULL, NULL)
+#define SEND_PR_BUFFER_CAPTURE(_rb,_bf,_le,_out) \
+	send_pr_buffer( (_rb), (_bf), (_le), NULL, (_out))
 #define SEND_PR_CONTEXTS_BUFFER(_rb,_bf,_le, _ctx ) \
-	send_pr_buffer( (_rb), (_bf), (_le), _ctx)
+	send_pr_buffer( (_rb), (_bf), (_le), _ctx, NULL)
 #endif
 
 #define SEND_BUFFER( _rb ) \
 	SEND_PR_BUFFER( (_rb) , (_rb)->buffer.s , (_rb)->buffer.len )
 
+#define SEND_BUFFER_CAPTURE( _rb, _out ) \
+	SEND_PR_BUFFER_CAPTURE( (_rb), (_rb)->buffer.s, (_rb)->buffer.len, (_out) )
+
 #define SEND_CONTEXTS_BUFFER( _rb, ctx) \
 	SEND_PR_CONTEXTS_BUFFER( (_rb) , (_rb)->buffer.s, (_rb)->buffer.len, ctx)
+
+/* msg_send_ex() lends the input buffer when raw processing leaves it
+ * unchanged, and transfers ownership when it creates a replacement. */
+static inline void release_sent_buffer(str *sent_buffer, const char *input)
+{
+	if (sent_buffer->s && sent_buffer->s != input)
+		pkg_free(sent_buffer->s);
+	sent_buffer->s = NULL;
+	sent_buffer->len = 0;
+}
 
 
 #define UNREF_UNSAFE(_T_cell) do { \
@@ -226,4 +245,3 @@ int t_relay_to( struct sip_msg  *p_msg, struct proxy_l *proxy, int replicate);
 int tm_has_request_disponsition_no_cancel(struct sip_msg *msg);
 
 #endif
-
