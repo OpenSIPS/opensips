@@ -29,6 +29,7 @@
 
 #include "topo_hiding_logic.h"
 #include "th_no_dlg_logic.h"
+#include "topo_hiding_codec.h"
 
 #include "../../trim.h"
 #include "../../ut.h"
@@ -44,6 +45,7 @@ str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
 
 str th_contact_encode_scheme = str_init("base64");
+str th_callid_encode_scheme = str_init("xor-word64");
 str th_contact_caller_var = str_init("_th_contact_caller_username_var_");
 str th_contact_callee_var = str_init("_th_contact_callee_username_var_");
 
@@ -53,6 +55,8 @@ str th_use_param = DEFAULT_PARAM;
 int auto_route_on_trusted_socket = 1;
 
 int th_ct_enc_scheme;
+int th_callid_enc_scheme;
+static char *callid_buf = NULL;
 
 /* Global buffer for decoded routes */
 str decoded_uris[MAX_ENCODED_SIP_URIS];
@@ -99,6 +103,7 @@ static const param_export_t params[] = {
 	{ "th_passed_contact_params",         STR_PARAM,                &topo_hiding_ct_hdr_params.s  },
 	{ "th_callid_passwd",                 STR_PARAM,                &topo_hiding_seed.s           },
 	{ "th_callid_prefix",                 STR_PARAM,                &topo_hiding_prefix.s         },
+	{ "th_callid_encode_scheme",          STR_PARAM,                &th_callid_encode_scheme.s    },
 	{ "th_contact_encode_scheme",         STR_PARAM,                &th_contact_encode_scheme.s   },
 	{ "th_contact_caller_username_var",   STR_PARAM,                &th_contact_caller_var.s      },
 	{ "th_contact_callee_username_var",   STR_PARAM,                &th_contact_callee_var.s      },
@@ -178,6 +183,19 @@ static int mod_init(void)
 	/* param handling */
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
+	th_callid_encode_scheme.len = strlen(th_callid_encode_scheme.s);
+	if (!str_strcmp(&th_callid_encode_scheme, const_str("xor-word64")))
+		th_callid_enc_scheme = TH_CALLID_ENC_XOR_WORD64;
+	else if (!str_strcmp(&th_callid_encode_scheme, const_str("ff1-alnum62")))
+		th_callid_enc_scheme = TH_CALLID_ENC_FF1_ALNUM62;
+	else {
+		LM_ERR("Unsupported value for 'th_callid_encode_scheme' modparam! "
+			"Use 'xor-word64' or 'ff1-alnum62'\n");
+		goto error;
+	}
+	if (th_callid_codec_init(th_callid_enc_scheme, &topo_hiding_seed,
+			&topo_hiding_prefix) < 0)
+		goto error;
 	if (topo_hiding_ct_params.s) {
 		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
 		topo_parse_passed_ct_params(&topo_hiding_ct_params);
@@ -250,6 +268,11 @@ error:
 
 static void mod_destroy(void)
 {
+	th_callid_codec_cleanup();
+	if (callid_buf) {
+		pkg_free(callid_buf);
+		callid_buf = NULL;
+	}
 	th_free_param_passwords();
 }
 
@@ -383,7 +406,6 @@ int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val)
 		return 1;
 }
 
-static char *callid_buf=NULL;
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
 	struct dlg_cell *dlg;

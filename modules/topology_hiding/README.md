@@ -36,7 +36,8 @@ The following libraries or applications must be installed before running
 OpenSIPS with this module loaded:
 
 
-- *None*
+- *OpenSSL libcrypto*. It provides the AES primitive used by the optional
+  `ff1-alnum62` Call-ID encoding scheme.
 
 
 ### Exported Parameters
@@ -46,6 +47,12 @@ OpenSIPS with this module loaded:
 
 
 The string password that will be used for encoding/decoding the callid in case of topology_hiding with callid mangling.
+
+When `th_callid_encode_scheme` is `ff1-alnum62`, this value is converted to an
+AES-256 key using HKDF-SHA-256 with a fixed, versioned, module-specific context.
+The default password is rejected for that scheme. Use a high-entropy secret of
+at least 32 characters. Changing the password while dialogs are active prevents
+those dialogs' masked Call-IDs from being decoded.
 
 
 *Default value is ""OpenSIPS""*
@@ -63,6 +70,11 @@ modparam("topology_hiding", "th_callid_passwd", "my_topo_hiding_secret")
 
 The prefix that will be used for detecting callids which have been encoded by the dialog topology hiding. Make sure to change this value in case your SIP path contains multiple OpenSIPS boxes with topology hiding.
 
+`ff1-alnum62` requires a non-empty prefix containing only ASCII letters and
+digits. The prefix remains visible and is included in the input masked by the
+next topology-hiding hop, so punctuation in it would defeat the alphanumeric
+wire format.
+
 
 *Default value is ""DLGCH_""*
 
@@ -70,6 +82,45 @@ The prefix that will be used for detecting callids which have been encoded by th
 ```opensips title="Set th_callid_prefix parameter"
 ...
 modparam("topology_hiding", "th_callid_prefix", "MYCALLIDPREFIX_")
+...
+```
+
+
+#### th_callid_encode_scheme (string)
+
+
+Selects the codec used to mask Call-IDs. Possible values are:
+
+
+- *xor-word64* - the historical repeating-key XOR and OpenSIPS `word64`
+  encoding. This is the default and remains wire-compatible with previous
+  releases.
+- *ff1-alnum62* - AES-256 FF1 over an alphanumeric alphabet. A compliant SIP
+  Call-ID containing punctuation or `@` is first mapped reversibly into radix
+  62. The first hop may grow by approximately 8%; subsequent upgraded hops add
+  only their prefix and one format-marker character.
+
+
+The FF1 wire marker distinguishes native radix-62 input, structured SIP `word`
+input and the legacy fallback. Input which is not compliant with the SIP
+Call-ID grammar, is too short for FF1, or is above the FF1 processing bound is
+encoded using the legacy codec for that layer. This preserves interoperability
+without allowing malformed input into the format-preserving cipher.
+
+The FF1 construction does not authenticate the Call-ID. A wrong password may
+therefore decode to plausible text. Drain active dialogs before changing the
+scheme, password or prefix; decoding with previous settings is not attempted.
+
+
+*Default value is "xor-word64"*
+
+
+```opensips title="Enable radix-preserving Call-ID masking"
+...
+modparam("topology_hiding", "th_callid_encode_scheme", "ff1-alnum62")
+modparam("topology_hiding", "th_callid_prefix", "TH1")
+modparam("topology_hiding", "th_callid_passwd",
+         "replace-with-at-least-32-random-characters")
 ...
 ```
 
