@@ -92,7 +92,7 @@ int send_pr_buffer( struct retr_buf *rb,
 #define SEND_PR_BUFFER_CAPTURE(_rb,_bf,_le,_out) \
 	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION__, __LINE__, NULL, (_out))
 #define SEND_PR_CONTEXTS_BUFFER(_rb,_bf,_le, _ctx ) \
-	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION, __LINE__ ,_ctx, NULL)
+	send_pr_buffer( (_rb), (_bf), (_le), __FILE__, __FUNCTION__, __LINE__ ,_ctx, NULL)
 #else
 int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx,
 	str *sent_buffer);
@@ -114,7 +114,10 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len, void* ctx,
 	SEND_PR_CONTEXTS_BUFFER( (_rb) , (_rb)->buffer.s, (_rb)->buffer.len, ctx)
 
 /* msg_send_ex() lends the input buffer when raw processing leaves it
- * unchanged, and transfers ownership when it creates a replacement. */
+ * unchanged, and transfers ownership of a pkg-allocated replacement.  A
+ * captured buffer may only be exposed synchronously before this function is
+ * called; callbacks which retain it must make their own copy.  Call this on
+ * every successful send for which capture was requested. */
 static inline void release_sent_buffer(str *sent_buffer, const char *input)
 {
 	if (sent_buffer->s && sent_buffer->s != input)

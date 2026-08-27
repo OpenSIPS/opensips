@@ -141,9 +141,10 @@ static inline int msg_send_ex( const struct socket_info* send_sock, int proto,
 		goto error;
 	}
 
-	/* Return the final plaintext payload to send observers, before any
-	 * transport framing or encryption.  An unchanged buffer is borrowed from
-	 * the caller; a buffer allocated by raw processing is transferred to it. */
+	/* Return the final post-raw SIP buffer passed to the protocol transport.
+	 * Protocol-specific framing or encryption happens inside tran.send(), so
+	 * observers receive the plaintext SIP bytes.  An unchanged buffer is
+	 * borrowed from the caller; a pkg-allocated replacement is transferred. */
 	if (sent_buffer)
 		*sent_buffer = out_buff;
 	else if (out_buff.s != buf)
