@@ -81,10 +81,19 @@ unranks the value and restores `@` in its original position.
 
 ### Bounds and fallback
 
-FF1 processing is bounded at 4096 input or ciphertext characters. Longer,
-shorter-than-domain, or non-compliant inputs use marker `C` and the historical
-XOR/word64 codec. A decoder rejects unknown markers, non-radix-62 ciphertext,
-invalid structured ranks and malformed word64 padding.
+FF1 processing is bounded at 4096 plaintext characters. Native radix-62
+ciphertexts have the same bound, while structured ciphertexts may contain up
+to 4411 payload characters due to conversion from the larger radix-85 domain.
+Longer, shorter-than-domain, or visible non-compliant inputs use marker `C`
+and the historical XOR/word64 codec. Control characters are rejected rather
+than passed through the fallback. A decoder rejects unknown markers,
+non-radix-62 ciphertext, invalid structured ranks, unsafe fallback plaintext
+and malformed word64 padding.
+
+When `th_callid_loop_protection` is enabled, the internal loop tag separator
+is outside the RFC Call-ID alphabet. Such values deliberately use marker `C`
+and the legacy fallback, so this combination does not receive the FF1 length
+reduction.
 
 The format provides confidentiality but not integrity. Scheme, password or
 prefix changes require active dialogs to be drained.

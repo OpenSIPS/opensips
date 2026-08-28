@@ -196,6 +196,9 @@ static int mod_init(void)
 	if (th_callid_codec_init(th_callid_enc_scheme, &topo_hiding_seed,
 			&topo_hiding_prefix) < 0)
 		goto error;
+	if (th_callid_enc_scheme == TH_CALLID_ENC_FF1_ALNUM62 && th_loop_protection)
+		LM_WARN("th_callid_loop_protection adds an internal separator and "
+			"therefore uses the legacy Call-ID fallback encoding\n");
 	if (topo_hiding_ct_params.s) {
 		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
 		topo_parse_passed_ct_params(&topo_hiding_ct_params);

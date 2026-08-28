@@ -27,7 +27,9 @@
 #define TH_FF1_RADIX 62
 #define TH_WORD_RADIX 85
 #define TH_FF1_MIN_LEN 4
-#define TH_CALLID_MAX_FF1_LEN 4096
+#define TH_CALLID_MAX_PLAIN_LEN 4096
+/* ceil(log_62(domain(4096))) for the structured radix-85 Call-ID domain. */
+#define TH_CALLID_MAX_STRUCTURED_PAYLOAD_LEN 4411
 
 /* The marker encodes both the wire version and the input domain. */
 #define TH_FF1_MARK_NATIVE 'A'
@@ -553,16 +555,20 @@ done:
 
 static int word_len_for_radix62_len(int radix_len, BIGNUM *domain)
 {
+	int low = 1, high = radix_len;
 	int n, encoded_len;
 
-	for (n = 1; n <= radix_len; n++) {
+	while (low <= high) {
+		n = low + (high - low) / 2;
 		if (domain_for_word_len(n, domain) < 0)
 			return -1;
 		encoded_len = radix62_len_for_domain(domain);
 		if (encoded_len == radix_len)
 			return n;
-		if (encoded_len > radix_len)
-			break;
+		if (encoded_len < radix_len)
+			low = n + 1;
+		else
+			high = n - 1;
 	}
 	return -1;
 }
@@ -672,6 +678,21 @@ error:
 	return -1;
 }
 
+static int safe_legacy_plaintext(const str *input)
+{
+	int i;
+	unsigned char c;
+
+	/* Keep compatibility for visible non-RFC characters, but never allow a
+	 * decoded fallback value to inject or truncate a SIP header. */
+	for (i = 0; i < input->len; i++) {
+		c = input->s[i];
+		if (c < 0x20 || c == 0x7f)
+			return 0;
+	}
+	return input->len > 0;
+}
+
 static int legacy_decode(const str *input, str *output)
 {
 	int i, max_len;
@@ -698,6 +719,12 @@ static int legacy_decode(const str *input, str *output)
 			(unsigned char *)input->s, input->len);
 	for (i = 0; i < output->len; i++)
 		output->s[i] ^= callid_password.s[i % callid_password.len];
+	if (!safe_legacy_plaintext(output)) {
+		pkg_free(output->s);
+		output->s = NULL;
+		output->len = 0;
+		return -1;
+	}
 	return 0;
 }
 
@@ -726,17 +753,20 @@ int th_callid_codec_encode(const str *callid, str *encoded)
 
 	encoded->s = NULL;
 	encoded->len = 0;
-	if (callid_scheme == TH_CALLID_ENC_XOR_WORD64)
+	if (callid_scheme == TH_CALLID_ENC_XOR_WORD64) {
+		if (!safe_legacy_plaintext(callid))
+			return -1;
 		return legacy_encode(callid, encoded, 1);
+	}
 
 	if (callid->len >= TH_FF1_MIN_LEN &&
-			callid->len <= TH_CALLID_MAX_FF1_LEN && is_native_alnum(callid)) {
+			callid->len <= TH_CALLID_MAX_PLAIN_LEN && is_native_alnum(callid)) {
 		marker = TH_FF1_MARK_NATIVE;
 		payload_len = callid->len;
 		plain_digits = pkg_malloc(payload_len);
 		if (!plain_digits || chars_to_digits(callid, alnum62_idx, plain_digits) < 0)
 			goto done;
-	} else if (callid->len <= TH_CALLID_MAX_FF1_LEN &&
+	} else if (callid->len <= TH_CALLID_MAX_PLAIN_LEN &&
 			encode_rank62(callid, &plain_digits, &payload_len) == 0 &&
 			payload_len >= TH_FF1_MIN_LEN) {
 		marker = TH_FF1_MARK_WORD;
@@ -746,6 +776,8 @@ int th_callid_codec_encode(const str *callid, str *encoded)
 			plain_digits = NULL;
 		}
 		marker = TH_FF1_MARK_LEGACY;
+		if (!safe_legacy_plaintext(callid))
+			goto done;
 		if (legacy_encode(callid, &legacy, 0) < 0)
 			goto done;
 		payload_len = legacy.len;
@@ -805,7 +837,11 @@ int th_callid_codec_decode(const str *encoded, str *callid)
 	payload.len--;
 	if (marker == TH_FF1_MARK_LEGACY)
 		return legacy_decode(&payload, callid);
-	if (payload.len < TH_FF1_MIN_LEN || payload.len > TH_CALLID_MAX_FF1_LEN)
+	if (payload.len < TH_FF1_MIN_LEN ||
+			(marker == TH_FF1_MARK_NATIVE &&
+			 payload.len > TH_CALLID_MAX_PLAIN_LEN) ||
+			(marker == TH_FF1_MARK_WORD &&
+			 payload.len > TH_CALLID_MAX_STRUCTURED_PAYLOAD_LEN))
 		return -1;
 
 	cipher_digits = pkg_malloc(payload.len);
@@ -824,6 +860,8 @@ int th_callid_codec_decode(const str *encoded, str *callid)
 		callid->len = payload.len;
 	} else if (marker == TH_FF1_MARK_WORD) {
 		if (decode_rank62(plain_digits, payload.len, callid) < 0)
+			goto done;
+		if (callid->len > TH_CALLID_MAX_PLAIN_LEN)
 			goto done;
 	} else {
 		goto done;

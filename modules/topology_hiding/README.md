@@ -105,7 +105,16 @@ The FF1 wire marker distinguishes native radix-62 input, structured SIP `word`
 input and the legacy fallback. Input which is not compliant with the SIP
 Call-ID grammar, is too short for FF1, or is above the FF1 processing bound is
 encoded using the legacy codec for that layer. This preserves interoperability
-without allowing malformed input into the format-preserving cipher.
+without allowing malformed input into the format-preserving cipher. Visible
+non-compliant characters are supported by the fallback, while control
+characters are rejected to prevent unsafe reconstructed SIP headers. FF1
+plaintext is limited to 4096 characters; structured radix-85 input may produce
+up to 4411 radix-62 payload characters and remains decodable at that boundary.
+
+When `th_callid_loop_protection` is enabled, its internal separator is outside
+the RFC Call-ID alphabet, so the combined Call-ID and loop tag deliberately use
+the legacy fallback. Loop protection remains functional, but does not receive
+the FF1 length reduction.
 
 The FF1 construction does not authenticate the Call-ID. A wrong password may
 therefore decode to plausible text. Drain active dialogs before changing the
