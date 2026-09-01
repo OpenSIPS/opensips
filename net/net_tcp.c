@@ -1886,8 +1886,11 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 						tcpconn) < 0) {
 					LM_ERR("failed to re-arm TCP conn %p for read events\n",
 						tcpconn);
-					tcpconn->flags &= ~F_CONN_REMOVED_READ;
+					tcp_fail_conn(tcpconn, "Failed to re-arm read", 0);
+					return 0;
 				}
+				tcpconn->flags &= ~F_CONN_REMOVED_READ;
+			}
 
 			goto async_write;
 		} else {
