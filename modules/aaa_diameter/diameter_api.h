@@ -61,12 +61,12 @@ typedef int (diameter_send_req_f)(diameter_conn*, int app_id, int code,
 		cJSON *req, diameter_reply *reply);
 
 /*
-	Callback run for an asynchornous command reply
+	Callback run for an asynchronous command reply
  */
 typedef int (diameter_reply_cb)(diameter_conn *conn, diameter_reply *reply, void *param);
 
 /*
-	Sends an asynchornous diameter request and calls the callback in the reply
+	Sends an asynchronous diameter request and calls the callback in the reply
  */
 typedef int (diameter_send_req_async_f)(diameter_conn*, int app_id, int code,
 		cJSON *req, diameter_reply_cb *reply_cb, void *reply_param);
