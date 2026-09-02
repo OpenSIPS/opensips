@@ -174,6 +174,8 @@ typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
 typedef void* (*b2b_get_context_t)(void);
 typedef int (*b2b_get_reply_leg_t)(enum b2b_entity_type et, str *b2b_key,
 		str *to_tag);
+typedef int (*b2b_has_leg_idx_t)(enum b2b_entity_type et, str *b2b_key,
+		int leg_idx);
 
 typedef struct b2b_api
 {
@@ -191,6 +193,7 @@ typedef struct b2b_api
 	b2b_apply_lumps_t         apply_lumps;
 	b2b_get_context_t		  get_context;
 	b2b_get_reply_leg_t       get_reply_leg;
+	b2b_has_leg_idx_t         has_leg_idx;
 }b2b_api_t;
 
 typedef int(*load_b2b_f) (b2b_api_t* api);
