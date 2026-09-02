@@ -139,6 +139,22 @@ static int b2b_get_server_leg_idx(const str *to_tag)
 	return -1;
 }
 
+/* Return the leg matching a 1-based leg index - the index carried by the
+ * indexed upstream to-tags - or NULL if the index is unusable or unknown */
+static dlg_leg_t *b2b_get_leg_by_idx(b2b_dlg_t *dlg, int leg_idx)
+{
+	dlg_leg_t *leg;
+
+	if (!dlg || leg_idx <= 0)
+		return NULL;
+
+	for (leg = dlg->legs; leg; leg = leg->next)
+		if (leg->id == leg_idx - 1)
+			return leg;
+
+	return NULL;
+}
+
 static int b2b_store_callee_tag(b2b_dlg_t *dlg, const str *to_tag)
 {
 	str new_tag = {0, 0};
@@ -160,6 +176,30 @@ static int b2b_store_callee_tag(b2b_dlg_t *dlg, const str *to_tag)
 	dlg->tag[CALLEE_LEG] = new_tag;
 
 	return 0;
+}
+
+/* Check whether this entity owns the indexed early dialog. */
+int b2b_has_leg_idx(enum b2b_entity_type et, str *b2b_key, int leg_idx)
+{
+	b2b_table table;
+	b2b_dlg_t *dlg;
+	unsigned int hash_index, local_index;
+	int found = 0;
+
+	if (!b2b_key || !b2b_key->s || leg_idx <= 0)
+		return -1;
+	if (b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+		return -1;
+	table = (et == B2B_SERVER) ? server_htable : client_htable;
+	B2BE_LOCK_GET(table, hash_index);
+	for (dlg = table[hash_index].first; dlg; dlg = dlg->next) {
+		if (dlg->id == local_index && b2b_get_leg_by_idx(dlg, leg_idx)) {
+			found = 1;
+			break;
+		}
+	}
+	B2BE_LOCK_RELEASE(table, hash_index);
+	return found;
 }
 
 int b2b_get_reply_leg(enum b2b_entity_type et, str *b2b_key, str *to_tag)
@@ -191,6 +231,10 @@ int b2b_get_reply_leg(enum b2b_entity_type et, str *b2b_key, str *to_tag)
 			continue;
 
 		leg_id = b2b_get_leg_index(dlg, to_tag);
+		if (leg_id >= 0)
+			LM_DBG("resolved leg idx [%d] for to-tag [%.*s] on %s dlg[%p]\n",
+				leg_id + 1, to_tag->len, to_tag->s,
+				et == B2B_SERVER ? "server" : "client", dlg);
 		if (leg_id >= 0)
 			break;
 	}
@@ -610,6 +654,8 @@ void b2b_delete_legs(dlg_leg_t** legs)
 		aux_leg = leg->next;
 		if (leg->prack_tran)
 			tmb.unref_cell(leg->prack_tran);
+		if (leg->update_tran)
+			tmb.unref_cell(leg->update_tran);
 		if (leg->prack_headers.s)
 			shm_free(leg->prack_headers.s);
 		shm_free(leg);
@@ -1314,13 +1360,10 @@ logic_notify:
 				/* Because PRACK transactions are separate from whatever UAS is dealing with now (PRACKs can come before
 				   INVITE is answered and will have new CSeq), we need to make sure we store it for when we get response for it. */
 				leg_idx = b2b_get_server_leg_idx(&to_tag);
-				if (leg_idx > 0) {
-					for (leg = dlg->legs; leg; leg = leg->next)
-						if (leg->id == leg_idx - 1)
-							break;
-				} else {
+				if (leg_idx > 0)
+					leg = b2b_get_leg_by_idx(dlg, leg_idx);
+				else
 					leg = dlg->legs;
-				}
 				if (!leg) {
 					leg = b2b_add_leg(dlg, msg, &to_tag);
 					if (!leg) {
@@ -1338,7 +1381,33 @@ logic_notify:
 			}
 			else if(method_value == METHOD_UPDATE)
 			{
-				dlg->update_tran = tm_tran;
+				/* Just like PRACK, an UPDATE may target any of the early
+				 * dialogs we advertised upstream. Keeping a single UAS
+				 * transaction per dialog makes the second UPDATE overwrite
+				 * the first one, which then can never be replied to. */
+				leg_idx = b2b_get_server_leg_idx(&to_tag);
+				leg = b2b_get_leg_by_idx(dlg, leg_idx);
+				if (!leg && leg_idx > 0) {
+					leg = b2b_add_leg(dlg, msg, &to_tag);
+					if (leg) {
+						leg->id = leg_idx - 1;
+					}
+				}
+				if (leg) {
+					if (leg->update_tran)
+						tmb.unref_cell(leg->update_tran);
+					leg->update_tran = tm_tran;
+					LM_DBG("UPDATE to-tag [%.*s] -> leg idx [%d], leg [%p], "
+						"tran [%p] on dlg[%p]\n", to_tag.len, to_tag.s,
+						leg_idx, leg, tm_tran, dlg);
+				} else {
+					if (dlg->update_tran)
+						tmb.unref_cell(dlg->update_tran);
+					dlg->update_tran = tm_tran;
+					LM_DBG("UPDATE to-tag [%.*s] carries no leg index - stored "
+						"on dlg[%p], tran [%p]\n", to_tag.len, to_tag.s,
+						dlg, tm_tran);
+				}
 			}
 			else
 			{
@@ -1992,16 +2061,51 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		local_contact = dlg->contact[CALLEE_LEG];
 
 	if (sip_method == METHOD_PRACK) {
-		if (rpl_data->leg_idx > 0) {
-			for (leg = dlg->legs; leg; leg = leg->next)
-				if (leg->id == rpl_data->leg_idx - 1)
-					break;
-		} else {
+		if (rpl_data->leg_idx > 0)
+			leg = b2b_get_leg_by_idx(dlg, rpl_data->leg_idx);
+		else
 			leg = dlg->legs;
-		}
 		tm_tran = leg ? leg->prack_tran : NULL;
-	} else if (sip_method == METHOD_UPDATE)
-		tm_tran = dlg->update_tran;
+	} else if (sip_method == METHOD_UPDATE) {
+		/* reply on the UAS transaction of the early dialog this reply
+		 * actually belongs to. If the index does not resolve to a pending
+		 * UPDATE (e.g. the reply comes from an entity bridged in later,
+		 * carrying a leg index the upstream side never saw), fall back to
+		 * the only pending UPDATE - but never guess between several */
+		leg = b2b_get_leg_by_idx(dlg, rpl_data->leg_idx);
+		if (leg && leg->update_tran) {
+			tm_tran = leg->update_tran;
+			LM_DBG("reply [%d] for UPDATE leg idx [%d] -> leg [%p], "
+				"tran [%p]\n", code, rpl_data->leg_idx, leg, tm_tran);
+		} else {
+			dlg_leg_t *it, *pending = NULL;
+			int n = dlg->update_tran ? 1 : 0;
+
+			for (it = dlg->legs; it; it = it->next)
+				if (it->update_tran) {
+					pending = it;
+					n++;
+				}
+			if (n == 1) {
+				leg = pending;
+				tm_tran = pending ? pending->update_tran : dlg->update_tran;
+				if (rpl_data->leg_idx > 0)
+					LM_WARN("UPDATE reply carries leg idx [%d] with no pending "
+						"transaction on that leg - falling back to the only "
+						"pending UPDATE (leg [%p]) in dlg[%p]\n",
+						rpl_data->leg_idx, pending, dlg);
+				else
+					LM_DBG("UPDATE reply without a leg index - using the only "
+						"pending UPDATE (leg [%p]) in dlg[%p]\n", pending, dlg);
+			} else {
+				tm_tran = NULL;
+				if (n > 1)
+					LM_ERR("Reply for UPDATE with leg index [%d] does not match "
+						"any of the %d pending UPDATE transactions in dlg[%p]\n",
+						rpl_data->leg_idx, n, dlg);
+			}
+		}
+	}
 	else
 	{
 		tm_tran = dlg->uas_tran;
@@ -2026,10 +2130,19 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	}
 	if(tm_tran == NULL)
 	{
+		/* the reply state is kept per leg whenever the request itself was
+		 * tracked per leg, otherwise an identical code arriving from a
+		 * different early dialog looks like a retransmission and is
+		 * silently dropped */
+		unsigned int last_code = leg ? leg->last_reply_code :
+			dlg->last_reply_code;
+
 		LM_DBG("code = %d, last_method= %d\n", code, dlg->last_method);
-		if(dlg->last_reply_code == code)
+		if(last_code == code)
 		{
-			LM_DBG("it is a retransmission - nothing to do\n");
+			LM_DBG("it is a retransmission - nothing to do (leg [%p], "
+				"leg idx [%d], last_reply_code=%d)\n", leg,
+				rpl_data->leg_idx, last_code);
 			B2BE_LOCK_RELEASE(table, hash_index);
 			return 0;
 		}
@@ -2062,9 +2175,12 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 			UPDATE_DBFLAG(dlg);
 		} else {
 			LM_DBG("Reset transaction- send final reply [%p], uas_tran=0\n", dlg);
-			if(sip_method == METHOD_UPDATE)
-				dlg->update_tran = NULL;
-			else if (sip_method == METHOD_PRACK)
+			if(sip_method == METHOD_UPDATE) {
+				if (leg)
+					leg->update_tran = NULL;
+				else
+					dlg->update_tran = NULL;
+			} else if (sip_method == METHOD_PRACK)
 				leg->prack_tran = NULL;
 			else
 				dlg->uas_tran = NULL;
@@ -2121,6 +2237,8 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		dlg->state = B2B_TERMINATED;
 
 	dlg->last_reply_code = code;
+	if (leg)
+		leg->last_reply_code = code;
 	UPDATE_DBFLAG(dlg);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
@@ -2261,9 +2379,23 @@ static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable)
 {
 	str reply_text = str_init("Request Timeout");
 	struct to_body *pto;
+	dlg_leg_t *leg;
 
 	if(htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
+
+	for (leg = dlg->legs; leg; leg = leg->next) {
+		if (!leg->update_tran)
+			continue;
+		pto = get_to(leg->update_tran->uas.request);
+		if (pto == NULL || pto->error != PARSE_OK) {
+			LM_ERR("'To' header COULD NOT be parsed\n");
+		} else {
+			if (tmb.t_reply_with_body(leg->update_tran, 408, &reply_text,
+				0, 0, &pto->tag_value) < 0)
+				LM_ERR("Failed to send 408 reply\n");
+		}
+	}
 
 	b2b_delete_legs(&dlg->legs);
 

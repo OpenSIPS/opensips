@@ -837,6 +837,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->apply_lumps        = b2b_apply_lumps;
 	api->get_context		= b2b_get_context;
 	api->get_reply_leg      = b2b_get_reply_leg;
+	api->has_leg_idx        = b2b_has_leg_idx;
 
 	return 0;
 }

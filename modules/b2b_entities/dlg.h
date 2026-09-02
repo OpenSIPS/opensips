@@ -71,6 +71,12 @@ typedef struct b2b_dlg_leg {
 	str contact;
 	str prack_headers;
 	struct cell* prack_tran;
+	/* UPDATE is tracked per leg for the same reason PRACK is: when several
+	 * early dialogs are advertised upstream with distinct to-tags, each of
+	 * them can have an UPDATE in flight at the same time, so every leg
+	 * needs its own UAS transaction and its own last reply code */
+	struct cell* update_tran;
+	unsigned int last_reply_code;
 	struct b2b_dlg_leg* next;
 }dlg_leg_t;
 
@@ -200,6 +206,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 
 int b2b_apply_lumps(struct sip_msg* msg);
 int b2b_get_reply_leg(enum b2b_entity_type et, str *b2b_key, str *to_tag);
+int b2b_has_leg_idx(enum b2b_entity_type et, str *b2b_key, int leg_idx);
 void b2b_get_server_entity_key(str *entity_key);
 
 int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name);
