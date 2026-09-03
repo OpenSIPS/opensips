@@ -870,7 +870,7 @@ out_success:
 int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 {
 	str in = *_in, tok;
-	int escape = 0, i, midx = 0;
+	int escape = 0, i, midx = 0, trailing = 1;
 	struct sdp_pv_param *param;
 	struct sdp_chunk_match *matches[3];
 	char *p;
@@ -933,6 +933,7 @@ int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 				p = q_memchr(p, '/', in.s + in.len - p);
 				if (!p) {
 					matches[midx++]->prefix = tok;
+					trailing = 0;
 					break;
 				}
 			} else {
@@ -945,11 +946,12 @@ int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 			tok.s = in.s + i+1;
 		}
 
-		if ((i+1) == in.len) {
-			tok.len = i+1 - (tok.s - in.s);
-			trim_leading(&tok);
-			matches[midx++]->prefix = tok;
-		}
+	}
+
+	if (trailing && matches[midx]) {
+		tok.len = in.s + in.len - tok.s;
+		trim_leading(&tok);
+		matches[midx++]->prefix = tok;
 	}
 
 	LM_DBG("parse sdp.line name: '%.*s', c1: '%.*s/%p'[%s], c2: '%.*s/%p'[%s], c3: '%.*s/%p'[%s]\n",
@@ -969,7 +971,7 @@ done:
 int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 {
 	str in = *_in, tok;
-	int escape = 0, i, midx = 0;
+	int escape = 0, i, midx = 0, trailing = 1;
 	struct sdp_pv_param *param;
 	struct sdp_chunk_match *matches[4];
 	char *p;
@@ -1033,6 +1035,7 @@ int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 				p = q_memchr(p, '/', in.s + in.len - p);
 				if (!p) {
 					matches[midx++]->prefix = tok;
+					trailing = 0;
 					break;
 				}
 			} else {
@@ -1045,11 +1048,12 @@ int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 			tok.s = in.s + i+1;
 		}
 
-		if ((i+1) == in.len) {
-			tok.len = i+1 - (tok.s - in.s);
-			trim_leading(&tok);
-			matches[midx++]->prefix = tok;
-		}
+	}
+
+	if (trailing && matches[midx]) {
+		tok.len = in.s + in.len - tok.s;
+		trim_leading(&tok);
+		matches[midx++]->prefix = tok;
 	}
 
 	LM_DBG("parse sdp.stream name: '%.*s',"
