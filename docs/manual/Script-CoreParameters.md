@@ -916,6 +916,33 @@ Example of usage:
 
 ```
 
+### REACTOR_DBG_FD_CHECK
+
+**Debugging option.** Enables a full consistency check of the reactor's
+fd map on every `io_watch_add()` / `io_watch_del()`, to help diagnose
+reactor and fd-map related problems. It is not a tuning or production
+setting.
+
+The check walks every one of the reactor's `open_files_limit` entries per
+call, so it is expensive on large reactors under heavy async traffic
+(measured: ~0.6 ms per call on a 21k-entry reactor; ~1,500 async
+operations per second cost 13.6% of host CPU and dropped UDP under load).
+Enable it only while investigating a reactor problem, then disable it
+again; a change requires a restart.
+
+Default value is `false` (`true` in builds with `EXTRA_DEBUG`).
+
+> [!NOTE]
+> This is a debugging option only. Keep it disabled on production
+> systems unless you are actively troubleshooting the reactor.
+
+Example of usage:
+```opensips
+
+    REACTOR_DBG_FD_CHECK = true
+
+```
+
 ### restart_persistency_cache_file
 
 The name of the cache file used to store restart persistency memory.
