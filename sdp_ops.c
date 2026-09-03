@@ -115,11 +115,164 @@ static inline int sdp_detect_line_sep(str *sdp, char *sep, int *sep_len)
 }
 
 
+int sdp_ops_set_body(struct sip_msg *msg, str *body)
+{
+	struct sdp_body_part_ops *ops;
+	int null_before = 0;
+
+	if (!msg || !body || body->len <= 0) {
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if (!msg->sdp_ops) {
+		ops = msg->sdp_ops = mk_sdp_ops();
+		if (!ops) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	if (pkg_str_sync(&ops->sdp, body) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (ops->flags & SDP_OPS_FL_NULL) {
+		null_before = 1;
+		ops->flags &= ~SDP_OPS_FL_NULL;
+	}
+
+	if (msg->body) {
+		free_sip_body(msg->body);
+		msg->body = NULL;
+	}
+
+	if (parse_sip_body(msg) != 0) {
+		LM_ERR("bad body provided (%.*s ...), refusing to set in SIP msg\n",
+		        body->len>=40 ? 40:body->len, body->s);
+		pkg_free(ops->sdp.s);
+		ops->sdp = STR_NULL;
+		if (null_before)
+			ops->flags |= SDP_OPS_FL_NULL;
+		return -1;
+	}
+
+	if (!parse_sdp(msg)) {
+		LM_ERR("bad SDP provided (%.*s ...), refusing to set in SIP msg\n",
+		        body->len>=40 ? 40:body->len, body->s);
+		free_sip_body(msg->body);
+		msg->body = NULL;
+		pkg_free(ops->sdp.s);
+		ops->sdp = STR_NULL;
+		if (null_before)
+			ops->flags |= SDP_OPS_FL_NULL;
+		return -1;
+	}
+
+	if (!sdp_detect_line_sep(&ops->sdp, ops->sep, &ops->sep_len)) {
+		LM_ERR("failed to detect SDP separator, first 50B: '%.*s'\n",
+		        ops->sdp.len >= 50 ? 50:ops->sdp.len, ops->sdp.s);
+		free_sip_body(msg->body);
+		msg->body = NULL;
+		pkg_free(ops->sdp.s);
+		ops->sdp = STR_NULL;
+		memset(ops->sep, 0, 2);
+		if (null_before)
+			ops->flags |= SDP_OPS_FL_NULL;
+		return -1;
+	}
+
+	if (ops->sdp.s[ops->sdp.len-1] > '\r')
+		ops->flags |= SDP_OPS_FL_NO_LLF;
+
+	free_sdp_ops_lines(ops);
+	if (ops->rebuilt_sdp.s) {
+		pkg_free(ops->rebuilt_sdp.s);
+		ops->rebuilt_sdp = STR_NULL;
+	}
+
+	LM_DBG("separator: %d %d (%d)\n", ops->sdp.s[ops->sdp.len-2],
+	        ops->sdp.s[ops->sdp.len-1], ops->sep_len);
+
+	return 0;
+}
+
+
+int sdp_ops_set_null_body(struct sip_msg *msg)
+{
+	struct sdp_body_part_ops *ops;
+
+	if (!msg) {
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if (!msg->sdp_ops) {
+		ops = msg->sdp_ops = mk_sdp_ops();
+		if (!ops) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	} else {
+		ops = msg->sdp_ops;
+	}
+
+	ops->flags |= SDP_OPS_FL_NULL;
+	ops->flags &= ~SDP_OPS_FL_DIRTY;
+	if (msg->body) {
+		free_sip_body(msg->body);
+		msg->body = NULL;
+	}
+	free_sdp_ops_lines(ops);
+	pkg_free(ops->rebuilt_sdp.s);
+	ops->rebuilt_sdp.s = NULL;
+
+	return 0;
+}
+
+
+int sdp_ops_splice_body(struct sip_msg *msg, str *body, int rel_off,
+		int rel_len, str *new_content)
+{
+	str new_body;
+	int extra_len = (new_content && new_content->len > 0) ? new_content->len : 0;
+	int ret;
+
+	if (!msg || !body || rel_off < 0 || rel_len < 0
+	|| rel_off + rel_len > body->len) {
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	new_body.len = body->len - rel_len + extra_len;
+	if (new_body.len == 0)
+		return sdp_ops_set_null_body(msg);
+
+	new_body.s = pkg_malloc(new_body.len);
+	if (!new_body.s) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	memcpy(new_body.s, body->s, rel_off);
+	if (extra_len)
+		memcpy(new_body.s + rel_off, new_content->s, extra_len);
+	memcpy(new_body.s + rel_off + extra_len, body->s + rel_off + rel_len,
+	        body->len - rel_off - rel_len);
+
+	ret = sdp_ops_set_body(msg, &new_body);
+	pkg_free(new_body.s);
+	return ret;
+}
+
+
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 			int op, pv_value_t *val)
 {
 	struct sdp_body_part_ops *ops;
-	int null_before = 0;
 
 	if (!msg || !param) {
 		LM_ERR("bad parameters\n");
@@ -153,75 +306,14 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 
 		if (!(val->flags & PV_VAL_STR) || val->rs.len <= 0) {
 			LM_ERR("non-empty str value required to set SDP body\n");
-			goto error;
-		}
-
-		if (pkg_str_sync(&ops->sdp, &val->rs) != 0) {
-			LM_ERR("oom\n");
 			return -1;
 		}
 
-		if (ops->flags & SDP_OPS_FL_NULL) {
-			null_before = 1;
-			ops->flags &= ~SDP_OPS_FL_NULL;
-		}
-
-		if (msg->body) {
-			free_sip_body(msg->body);
-			msg->body = NULL;
-		}
-
-		if (parse_sip_body(msg) != 0) {
-			LM_ERR("bad body provided (%.*s ...), refusing to set in SIP msg\n",
-			        val->rs.len>=40 ? 40:val->rs.len, val->rs.s);
-			pkg_free(ops->sdp.s);
-			ops->sdp = STR_NULL;
-			if (null_before)
-				ops->flags |= SDP_OPS_FL_NULL;
+		if (sdp_ops_set_body(msg, &val->rs) != 0)
 			return -1;
-		}
-
-		if (!parse_sdp(msg)) {
-			LM_ERR("bad SDP provided (%.*s ...), refusing to set in SIP msg\n",
-			        val->rs.len>=40 ? 40:val->rs.len, val->rs.s);
-			free_sip_body(msg->body);
-			msg->body = NULL;
-			pkg_free(ops->sdp.s);
-			ops->sdp = STR_NULL;
-			if (null_before)
-				ops->flags |= SDP_OPS_FL_NULL;
-			return -1;
-		}
-
-		if (!sdp_detect_line_sep(&ops->sdp, ops->sep, &ops->sep_len)) {
-			LM_ERR("failed to detect SDP separator, first 50B: '%.*s'\n",
-			        ops->sdp.len >= 50 ? 50:ops->sdp.len, ops->sdp.s);
-			free_sip_body(msg->body);
-			msg->body = NULL;
-			pkg_free(ops->sdp.s);
-			ops->sdp = STR_NULL;
-			memset(ops->sep, 0, 2);
-			if (null_before)
-				ops->flags |= SDP_OPS_FL_NULL;
-			return -1;
-		}
-
-		if (ops->sdp.s[ops->sdp.len-1] > '\r')
-			ops->flags |= SDP_OPS_FL_NO_LLF;
-
-		free_sdp_ops_lines(ops);
-		if (ops->rebuilt_sdp.s) {
-			pkg_free(ops->rebuilt_sdp.s);
-			ops->rebuilt_sdp = STR_NULL;
-		}
-
-		LM_DBG("separator: %d %d (%d)\n", ops->sdp.s[ops->sdp.len-2],
-		        ops->sdp.s[ops->sdp.len-1], ops->sep_len);
 	}
 
 	return 0;
-error:
-	return -1;
 }
 
 
