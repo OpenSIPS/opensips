@@ -174,28 +174,44 @@ static inline void add_xlog_data(trace_message message, void* param)
 
 	switch (*xlog_level) {
 		case L_ALERT:
-			str_level.s = DP_ALERT_TEXT; break;
+			str_level.s = DP_ALERT_STR;
+			str_level.len = sizeof(DP_ALERT_STR) - 1;
+			break;
 		case L_CRIT:
-			str_level.s = DP_CRIT_TEXT; break;
+			str_level.s = DP_CRIT_STR;
+			str_level.len = sizeof(DP_CRIT_STR) - 1;
+			break;
 		case L_ERR:
-			str_level.s = DP_ERR_TEXT; break;
+		case 0: /* this is not used, but we have it here just to have
+		         * a continous range and simplify the "default" */
+			str_level.s = DP_ERR_STR;
+			str_level.len = sizeof(DP_ERR_STR) - 1;
+			break;
 		case L_WARN:
-			str_level.s = DP_WARN_TEXT; break;
+			str_level.s = DP_WARN_STR;
+			str_level.len = sizeof(DP_WARN_STR) - 1;
+			break;
 		case L_NOTICE:
-			str_level.s = DP_NOTICE_TEXT; break;
+			str_level.s = DP_NOTICE_STR;
+			str_level.len = sizeof(DP_NOTICE_STR) - 1;
+			break;
 		case L_INFO:
-			str_level.s = DP_INFO_TEXT; break;
+			str_level.s = DP_INFO_STR;
+			str_level.len = sizeof(DP_INFO_STR) - 1;
+			break;
 		case L_DBG:
-			str_level.s = DP_DBG_TEXT;
-			str_level.len = sizeof(DP_DBG_TEXT) - 2;
+			str_level.s = DP_DBG_STR;
+			str_level.len = sizeof(DP_DBG_STR) - 1;
 			break;
 		default:
-			LM_BUG("Unexpected log level [%d]\n", xlog_print_level);
-			return;
+			if (*xlog_level < L_ALERT) {
+				str_level.s = DP_ALERT_STR;
+				str_level.len = sizeof(DP_ALERT_STR) - 1;
+			} else {
+				str_level.s = DP_DBG_STR;
+				str_level.len = sizeof(DP_DBG_STR) - 1;
+			}
 	}
-
-	/* remove ':' after each level */
-	str_level.len = strlen(str_level.s) - 1;
 
 	tprot.add_payload_part( message, "Event", &str_level);
 
