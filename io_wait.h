@@ -298,11 +298,14 @@ again:
 	}while(0)
 
 
+extern int reactor_dbg_fd_check;
+
 #define check_io_data() \
 	do { \
 		struct fd_map* _e;\
 		int _t,k;\
 		check_error = 0;\
+		if (!reactor_dbg_fd_check) break;\
 		/* iterate the fd_array and check if fd_hash is properly set for each */ \
 		for(k=0;k<h->fd_no;k++) {\
 			_e = get_fd_map(h, h->fd_array[k].fd); \
