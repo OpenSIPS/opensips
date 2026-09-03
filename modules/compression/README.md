@@ -74,7 +74,7 @@ running OpenSIPS with this module loaded:
 ### Exported Parameters
 
 
-#### mc_level (int)
+#### compression_level (int)
 
 
 This parameter ranges from 1 to 9 and it specifies the level of compression you want to do.
@@ -83,9 +83,9 @@ If, by mistake, you set a lower or a higher level, the default, 6, will be used,
 receive a warning.
 
 
-```opensips title="Set mc_level parameter"
+```opensips title="Set compression_level parameter"
 ...
-modparam("mc", "mc_level", "3")
+modparam("compression", "compression_level", 3)
 ...
 		
 ```
