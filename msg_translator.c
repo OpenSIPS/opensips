@@ -1940,7 +1940,8 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 							unsigned int max_offset)
 {
 	unsigned int size;
-	str body;
+	str body, rcv_body = STR_NULL;
+	struct sdp_body_part_ops *ops;
 
 	/* apply changes over the SIP headers */
 	process_lumps(msg, msg->add_rm, new_buf, new_offs, orig_offs, sock, -1);
@@ -1950,8 +1951,13 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 		if (get_body(msg, &body) != 0 || body.len==0)
 			return;
 
-		size = msg->body->body.s ?
-			((msg->body->body.s - msg->buf) - *orig_offs)  /* msg had body */
+		ops = msg->sdp_ops;
+		msg->sdp_ops = NULL;
+		get_body(msg, &rcv_body);
+		msg->sdp_ops = ops;
+
+		size = rcv_body.s ?
+			((rcv_body.s - msg->buf) - *orig_offs)         /* msg had body */
 			: (msg->len - *orig_offs);                     /* no body at all */
 		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, size );
 		*new_offs += size;

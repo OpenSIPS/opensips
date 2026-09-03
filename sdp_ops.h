@@ -77,6 +77,13 @@ static inline int have_sdp_ops(struct sip_msg *msg)
 }
 void free_sdp_ops(struct sdp_body_part_ops *ops);
 
+int sdp_ops_set_body(struct sip_msg *msg, str *body);
+
+int sdp_ops_set_null_body(struct sip_msg *msg);
+
+int sdp_ops_splice_body(struct sip_msg *msg, str *body, int rel_off,
+		int rel_len, str *new_content);
+
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 int pv_parse_sdp_name(pv_spec_p sp, const str *in);
 
