@@ -79,6 +79,12 @@ int enable_asserts = 1;
 #else
 int enable_asserts = 0;
 #endif
+
+#ifdef EXTRA_DEBUG
+int reactor_dbg_fd_check = 1;
+#else
+int reactor_dbg_fd_check = 0;
+#endif
 /* abort process on failed assertion. disabled by default */
 int abort_on_assert = 0;
 /* start by only logging to stderr */

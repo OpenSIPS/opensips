@@ -383,6 +383,7 @@ extern int cfg_parse_only_routes;
 %token TCP_NO_NEW_CONN_BFLAG
 %token TCP_NO_NEW_CONN_RPLFLAG
 %token TCP_KEEPALIVE
+%token REACTOR_DBG_FD_CHECK
 %token TCP_KEEPCOUNT
 %token TCP_KEEPIDLE
 %token TCP_KEEPINTERVAL
@@ -1381,6 +1382,10 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				tcp_keepalive=!!$3;
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
+		| REACTOR_DBG_FD_CHECK EQUAL NUMBER { IFOR();
+				reactor_dbg_fd_check=!!$3;
+				}
+		| REACTOR_DBG_FD_CHECK EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER { IFOR();
 				tcp_max_msg_time=$3;
 		}

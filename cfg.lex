@@ -270,6 +270,7 @@ TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
 TCP_NO_NEW_CONN_RPLFLAG "tcp_no_new_conn_rplflag"
 TCP_KEEPALIVE           "tcp_keepalive"
+REACTOR_DBG_FD_CHECK    "REACTOR_DBG_FD_CHECK"
 TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
 TCP_KEEPINTERVAL        "tcp_keepinterval"
@@ -508,6 +509,7 @@ SPACE		[ ]
 <INITIAL>{TCP_MAX_CONNECTIONS}  { count(); yylval.strval=yytext;
 									return TCP_MAX_CONNECTIONS; }
 <INITIAL>{TCP_KEEPALIVE}       { count(); yylval.strval=yytext; return TCP_KEEPALIVE; }
+<INITIAL>{REACTOR_DBG_FD_CHECK} { count(); yylval.strval=yytext; return REACTOR_DBG_FD_CHECK; }
 <INITIAL>{TCP_KEEPCOUNT}       { count(); yylval.strval=yytext; return TCP_KEEPCOUNT; }
 <INITIAL>{TCP_KEEPIDLE}        { count(); yylval.strval=yytext; return TCP_KEEPIDLE; }
 <INITIAL>{TCP_KEEPINTERVAL}    { count(); yylval.strval=yytext; return TCP_KEEPINTERVAL; }

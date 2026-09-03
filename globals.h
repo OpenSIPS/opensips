@@ -68,6 +68,7 @@ extern int tcp_socket_backlog;
 extern int tcp_max_fd_no;
 extern int tcp_max_connections;
 extern int tcp_keepalive;
+extern int reactor_dbg_fd_check;
 extern int tcp_keepcount;
 extern int tcp_keepidle;
 extern int tcp_keepinterval;
