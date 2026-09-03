@@ -298,8 +298,6 @@ again:
 	}while(0)
 
 
-extern int reactor_dbg_fd_check;
-
 #define check_io_data() \
 	do { \
 		struct fd_map* _e;\
