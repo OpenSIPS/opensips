@@ -27,13 +27,12 @@
 #include "../../ut.h"
 #include "topo_hiding_logic.h"
 #include "th_no_dlg_logic.h"
+#include "topo_hiding_codec.h"
 
 extern int force_dialog;
 extern struct rr_binds rr_api;
 extern struct tm_binds tm_api;
 extern struct dlg_binds dlg_api;
-extern str topo_hiding_prefix;
-extern str topo_hiding_seed;
 extern int th_loop_protection;
 
 static struct th_ct_params *th_param_list=NULL;
@@ -729,7 +728,6 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 {
 	struct lump *del;
 	str new_callid;
-	int i,max_size;
 	char *q;
 	str enc_tag, *tag;
 
@@ -738,19 +736,10 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 		return -1;
 	}
 
-	max_size = calc_max_word64_decode_len(msg->callid->body.len - topo_hiding_prefix.len);
-	new_callid.s = pkg_malloc(max_size);
-	if (new_callid.s==NULL) {
-		LM_ERR("No more pkg\n");
+	if (th_callid_codec_decode(&msg->callid->body, &new_callid) < 0) {
+		LM_ERR("failed to decode Call-ID\n");
 		return -1;
 	}
-
-	new_callid.len = word64decode((unsigned char *)(new_callid.s),
-			(unsigned char *)(msg->callid->body.s + topo_hiding_prefix.len),
-			msg->callid->body.len - topo_hiding_prefix.len);
-	
-	for (i=0;i<new_callid.len;i++)
-		new_callid.s[i] ^= topo_hiding_seed.s[i%topo_hiding_seed.len];
 
 	if (th_loop_protection) {
 		/* locate the start of the from tag */
@@ -797,45 +786,35 @@ static int dlg_th_decode_callid(struct sip_msg *msg)
 
 char *th_get_encoded_callid(struct sip_msg *msg, str *tag, int *enc_len)
 {
-	int i,j,len,append_tag;
-	char *new_callid;
-	unsigned char *old_callid;
+	int len,append_tag;
+	str plain, encoded;
 
 	len = msg->callid->body.len;
 	append_tag = th_loop_protection && tag;
 	if (append_tag)
 		len += tag->len + 1;
 
-	old_callid = pkg_malloc(len);
-	if (!old_callid) {
+	plain.s = pkg_malloc(len);
+	if (!plain.s) {
 		LM_ERR("Failed to allocate old callid\n");
 		return NULL;
 	}
+	plain.len = len;
 
-	memcpy(old_callid, msg->callid->body.s, msg->callid->body.len);
-	for (j=0;j<msg->callid->body.len;j++)
-		old_callid[j] = msg->callid->body.s[j] ^ topo_hiding_seed.s[j%topo_hiding_seed.len];
+	memcpy(plain.s, msg->callid->body.s, msg->callid->body.len);
 	if (append_tag) {
-		old_callid[msg->callid->body.len] =
-			TH_FROM_TAG_SEP ^ topo_hiding_seed.s[j++%topo_hiding_seed.len];
-		for (i = 0; i < tag->len; i++, j++)
-			old_callid[j] =
-				tag->s[i] ^ topo_hiding_seed.s[j%topo_hiding_seed.len];
+		plain.s[msg->callid->body.len] = TH_FROM_TAG_SEP;
+		memcpy(plain.s + msg->callid->body.len + 1, tag->s, tag->len);
 	}
 
-	*enc_len = calc_word64_encode_len(len) + topo_hiding_prefix.len;
-	new_callid = pkg_malloc(*enc_len);
-	if (new_callid==NULL) {
-		LM_ERR("Failed to allocate new callid\n");
-		pkg_free(old_callid);
+	if (th_callid_codec_encode(&plain, &encoded) < 0) {
+		LM_ERR("failed to encode Call-ID\n");
+		pkg_free(plain.s);
 		return NULL;
 	}
-
-	memcpy(new_callid,topo_hiding_prefix.s,topo_hiding_prefix.len);
-
-	word64encode((unsigned char *)(new_callid+topo_hiding_prefix.len), old_callid, len);
-	pkg_free(old_callid);
-	return new_callid;
+	pkg_free(plain.s);
+	*enc_len = encoded.len;
+	return encoded.s;
 }
 
 static int dlg_th_encode_callid(struct sip_msg *msg)
@@ -886,12 +865,7 @@ static int dlg_th_needs_decoding(struct sip_msg *msg)
 		return 0;
 	}
 
-	if (msg->callid->body.len > topo_hiding_prefix.len &&
-        memcmp(msg->callid->body.s,topo_hiding_prefix.s,
-	topo_hiding_prefix.len) == 0)
-		return 1;
-
-	return 0;
+	return th_callid_codec_is_encoded(&msg->callid->body);
 }
 
 static inline char *dlg_th_rebuild_req(struct sip_msg *msg,int *len)
@@ -949,6 +923,36 @@ error:
 	reset_proc_log_level();
 	return -1;
 }
+
+#ifdef UNIT_TESTS
+int th_test_encode_callid_raw(str *data)
+{
+	struct sip_msg msg;
+	char *rebuilt;
+	int rebuilt_len;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.buf = data->s;
+	msg.len = data->len;
+	if (dlg_th_callid_pre_parse(&msg, 1) < 0 ||
+			dlg_th_encode_callid(&msg) < 0)
+		goto error;
+	if (msg.first_line.type == SIP_REQUEST)
+		rebuilt = dlg_th_rebuild_req(&msg, &rebuilt_len);
+	else
+		rebuilt = dlg_th_rebuild_rpl(&msg, &rebuilt_len);
+	if (!rebuilt)
+		goto error;
+	data->s = rebuilt;
+	data->len = rebuilt_len;
+	free_sip_msg(&msg);
+	return 0;
+
+error:
+	free_sip_msg(&msg);
+	return -1;
+}
+#endif
 
 int topo_callid_pre_raw(str *data, struct sip_msg* foo)
 {
