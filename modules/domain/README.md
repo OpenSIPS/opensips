@@ -117,7 +117,7 @@ modparam("domain", "attrs_col", "attributes")
 ```
 
 
-#### subdomain_col (int)
+#### accept_subdomain_col (string)
 
 
 Name of the "accept_subdomain" column in the domain table.
@@ -128,8 +128,8 @@ A 0 value means it does not.
 Default value is "accept_subdomain".
 
 
-```opensips title="Setting subdomain_col parameter"
-modparam("domain", "subdomain_col", "has_subdomain")
+```opensips title="Setting accept_subdomain_col parameter"
+modparam("domain", "accept_subdomain_col", "has_subdomain")
 ```
 
 

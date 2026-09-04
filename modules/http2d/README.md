@@ -95,7 +95,7 @@ modparam("http2d", "tls_cert_path", "/etc/pki/http2/cert.pem")
 ```
 
 
-#### tls_cert_key (string)
+#### tls_key_path (string)
 
 
 File path to the TLS private key, in PEM format.
@@ -104,8 +104,8 @@ File path to the TLS private key, in PEM format.
 Default value is *NULL* (not set).
 
 
-```opensips title="Setting the tls_cert_key parameter"
-modparam("http2d", "tls_cert_key", "/etc/pki/http2/private/key.pem")
+```opensips title="Setting the tls_key_path parameter"
+modparam("http2d", "tls_key_path", "/etc/pki/http2/private/key.pem")
 ```
 
 
