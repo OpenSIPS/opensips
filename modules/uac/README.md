@@ -28,8 +28,14 @@ The following modules must be loaded before this module:
 
 
 - *TM - Transaction Module*.
-- *RR - Record-Route Module*, but only if
-restore mode for FROM URI is set to "auto".
+- *RR - Record-Route Module*, if restore mode for FROM
+URI is set to "auto", or if uac_auth() is used anywhere in the
+configuration script. In both cases the "append_fromtag" parameter of
+the rr module must be enabled: uac needs the from-tag in the
+Record-Route to tell the direction of sequential requests and increment
+the CSeq accordingly. It defaults to 1, but the opensips.cfg shipped
+with the packages and the scripts under examples/templates/ set it
+to 0.
 - *UAC_AUTH - UAC Authentication Module*.
 - *Dialog Module*, if "force_dialog"
 module parameter is enabled, or a dialog is created from the
