@@ -796,7 +796,7 @@ modparam("tls_mgm", "ca_dir_col", "ca_dir")
 ```
 
 
-#### cipher_list_col (string)
+#### ciphers_list_col (string)
 
 
 Sets the cipher list column name.
@@ -805,8 +805,8 @@ Sets the cipher list column name.
 Default value is "cipher_list".
 
 
-```opensips title="Usage of cipher_list_col block"
-modparam("tls_mgm", "cipher_list_col", "cipher_list")
+```opensips title="Usage of ciphers_list_col block"
+modparam("tls_mgm", "ciphers_list_col", "cipher_list")
 ```
 
 
