@@ -215,8 +215,9 @@ done:
 		goto error;
 	}
 	/* TO and FROM (in this order) must be the first ones */
-	if (msg->headers->type!=HDR_TO_PATH_T &&
-	msg->headers->next->type!=HDR_FROM_PATH_T) {
+	if (msg->headers==NULL || msg->headers->next==NULL ||
+			msg->headers->type!=HDR_TO_PATH_T ||
+			msg->headers->next->type!=HDR_FROM_PATH_T) {
 		LM_ERR("TO and FROM are not the first headers\n");
 		goto error;
 	}

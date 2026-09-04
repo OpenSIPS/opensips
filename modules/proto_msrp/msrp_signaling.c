@@ -220,7 +220,7 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 	struct msrp_url *to, *from;
 	union sockaddr_union su;
 	struct hostent* he;
-	int i, len, hash = 0, idx = 0;
+	int i, len, copy_len, hash = 0, idx = 0;
 	char md5[MD5_LEN];
 	str ident, md5_src[3];
 	struct msrp_cell *cell = NULL;
@@ -355,7 +355,12 @@ redo_ident:
 	append_string( p, s, (int)(to->whole.s-s));
 	/* copy starting with the second URL, all the way to the first FROM URL */
 	s = to->next->whole.s;
-	append_string( p, s, (int)(from->whole.s-s));
+	if (from->whole.s < s) {
+		LM_ERR("invalid header order: From-Path before To-Path\n");
+		goto error;
+	}
+	copy_len = (int)(from->whole.s - s);
+	append_string( p, s, copy_len);
 	/* first place here the first TO URL that was skipped */
 	append_string( p, to->whole.s, to->whole.len);
 	*(p++) = ' ';
@@ -456,7 +461,7 @@ int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell)
 {
 	char *buf, *p, *s;
 	struct msrp_url *to, *from;
-	int i, len;
+	int i, len, copy_len;
 
 	if (rpl==NULL || cell==NULL)
 		return -1;
@@ -507,7 +512,12 @@ int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell)
 	append_string( p, s, (int)(to->whole.s-s));
 	/* copy starting with the second URL, all the way to the first FROM URL */
 	s = to->next->whole.s;
-	append_string( p, s, (int)(from->whole.s-s));
+	if (from->whole.s < s) {
+		LM_ERR("invalid header order: From-Path before To-Path\n");
+		goto error;
+	}
+	copy_len = (int)(from->whole.s - s);
+	append_string( p, s, copy_len);
 	/* first place here the first TO URL that was skipped */
 	append_string( p, to->whole.s, to->whole.len);
 	*(p++) = ' ';
