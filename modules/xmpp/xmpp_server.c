@@ -91,6 +91,7 @@ struct xmpp_connection {
 	char *domain;
 	int type;
 	int fd;
+	int authenticated;
 	char *stream_id;
 	xode_pool pool;
 	xode_stream stream;
@@ -245,9 +246,10 @@ static void out_stream_node_callback(int type, xode node, void *arg)
 			char *to = xode_get_attrib(node, "to");
 			char *id = xode_get_attrib(node, "id");
 			char *type = xode_get_attrib(node, "type");
+			int valid = type && !strcmp(type, "valid");
 			/* char *cdata = xode_get_data(node); */
 
-			if (!strcmp(type, "valid") || !strcmp(type, "invalid")) {
+			if (valid || (type && !strcmp(type, "invalid"))) {
 				/* got a reply, report it */
 				x = xode_new_tag("db:result");
 				xode_put_attrib(x, "xmlns:db", "jabber:server:dialback");
@@ -255,11 +257,13 @@ static void out_stream_node_callback(int type, xode node, void *arg)
 				xode_put_attrib(x, "to", from);
 				xode_put_attrib(x, "id", id);
 				xode_put_attrib(x, "type", type);
-				if (in_conn)
+				if (in_conn) {
+					in_conn->authenticated = valid;
 					xode_send(in_conn->fd, x);
-				else
+				} else {
 					LM_ERR("need to send reply to domain '%s', but no inbound"
 							" connection found\n", from);
+				}
 				xode_free(x);
 			}
 		} else if (!strcmp(tag, "db:result")) {
@@ -367,6 +371,10 @@ static void in_stream_node_callback(int type, xode node, void *arg)
 
 			if (!type)
 				type = "chat";
+			if (!conn->authenticated) {
+				LM_DBG("ignoring message stanza before dialback authentication\n");
+				goto out;
+			}
 			if (!strcmp(type, "error")) {
 				LM_DBG("received message error stanza\n");
 				goto out;
@@ -530,5 +538,4 @@ int xmpp_server_child_process(int data_pipe)
 	}
 	return 0;
 }
-
 

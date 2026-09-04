@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "xmpp.h"
+#include "../../config.h"
 #include "../../parser/parse_uri.h"
 /*
  sip_uri:  sip:user@xmpp_domain ->
@@ -36,7 +37,7 @@
 */
 char* uri_sip2xmpp(str* uri)
 {
-	static char buf[256];
+	static char buf[MAX_URI_SIZE + 1];
 	struct sip_uri suri;
 	int len;
 
@@ -48,22 +49,21 @@ char* uri_sip2xmpp(str* uri)
 
 	if(sip_domain.s)
 	{
-		len = sprintf(buf, "%.*s@%s", suri.user.len, suri.user.s, sip_domain.s);
-		if(suri.user.len + 2 + sip_domain.len > 256)
-		{
-			LM_ERR("Buffer overflow\n");
+		len = snprintf(buf, sizeof(buf), "%.*s@%s",
+				suri.user.len, suri.user.s, sip_domain.s);
+		if(len < 0 || len > MAX_URI_SIZE) {
+			LM_ERR("XMPP URI too long\n");
 			return 0;
 		}
 	}
 	else
 	{
-		if(uri->len > 256)
-		{
-			LM_ERR("Buffer overflow\n");
+		len = snprintf(buf, sizeof(buf), "%.*s@%.*s",
+				suri.user.len, suri.user.s, suri.host.len, suri.host.s);
+		if(len < 0 || len > MAX_URI_SIZE) {
+			LM_ERR("XMPP URI too long\n");
 			return 0;
 		}
-
-		len = sprintf(buf, "%.*s@%.*s", suri.user.len, suri.user.s, suri.host.len, suri.host.s);
 	}
 
 	buf[len] = '\0';
@@ -76,9 +76,10 @@ char* uri_sip2xmpp(str* uri)
 */
 char* uri_xmpp2sip(char* uri, int* len)
 {
-	static char buf[256];
+	static char buf[MAX_URI_SIZE + 1];
 	char* arond, *slash;
 	str user;
+	size_t domain_len;
 
 	if(sip_domain.s == 0)
 	{
@@ -91,14 +92,16 @@ char* uri_xmpp2sip(char* uri, int* len)
 		else
 			user.len = strlen(uri);
 
-		if(5 + user.len > 256)
-		{
-			LM_ERR("Buffer overflow\n");
+		if(4 + user.len > MAX_URI_SIZE) {
+			LM_ERR("SIP URI too long\n");
 			return 0;
 		}
 
-		*len = sprintf(buf, "sip:%.*s", user.len, user.s);
-		buf[*len] = '\0';
+		*len = snprintf(buf, sizeof(buf), "sip:%.*s", user.len, user.s);
+		if(*len < 0 || *len > MAX_URI_SIZE) {
+			LM_ERR("failed to encode SIP URI\n");
+			return 0;
+		}
 		return buf;
 	}
 
@@ -117,14 +120,18 @@ char* uri_xmpp2sip(char* uri, int* len)
 	user.s = uri;
 	user.len = arond - uri;
 
-	if(6 + user.len + strlen(xmpp_domain) > 256)
-	{
-		LM_ERR("Buffer overflow\n");
+	domain_len = strlen(xmpp_domain);
+	if((size_t)user.len + domain_len + 5 > MAX_URI_SIZE) {
+		LM_ERR("SIP URI too long\n");
 		return 0;
 	}
 
-	*len = sprintf(buf, "sip:%.*s@%s", user.len, user.s, xmpp_domain);
-	buf[*len] = '\0';
+	*len = snprintf(buf, sizeof(buf), "sip:%.*s@%s",
+			user.len, user.s, xmpp_domain);
+	if(*len < 0 || *len > MAX_URI_SIZE) {
+		LM_ERR("failed to encode SIP URI\n");
+		return 0;
+	}
 	return buf;
 }
 
@@ -170,4 +177,3 @@ char *db_key(char *secret, char *domain, char *id)
 	hash = shahash(buf);
 	return hash;
 }
-
