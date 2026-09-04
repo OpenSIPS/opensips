@@ -62,11 +62,11 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len,
 #ifdef EXTRA_DEBUG
 					char* file, const char *function, int line,
 #endif
-					void* ctx)
+					void* ctx, str *sent_buffer)
 {
 	if (buf && len && rb )
-		return msg_send( rb->dst.send_sock, rb->dst.proto, &rb->dst.to,
-				         rb->dst.proto_reserved1, buf, len, ctx);
+		return msg_send_ex( rb->dst.send_sock, rb->dst.proto, &rb->dst.to,
+				         rb->dst.proto_reserved1, buf, len, ctx, sent_buffer);
 	else {
 #ifdef EXTRA_DEBUG
 		LM_CRIT("sending an empty buffer from %s: %s (%d)\n",file,
@@ -280,4 +280,3 @@ int t_relay_to( struct sip_msg  *p_msg , struct proxy_l *proxy, int flags)
 done:
 	return ret;
 }
-
