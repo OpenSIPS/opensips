@@ -779,6 +779,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 		}
 		memcpy(at, val.s.s, val.s.len); at = at + val.s.len;
 		*at = '.'; at = at + 1;	/* add . as delimiter between prefix and domain */
+		len = len + val.s.len + 1;
 		didsomething = 1;
 	} else {
 		LM_DBG("domain_prefix_avp not found\n");
@@ -799,6 +800,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 			return -1;
 		}
 		memcpy(at, val.s.s, val.s.len); at = at + val.s.len;
+		len = len + val.s.len;
 		didsomething = 1;
 	} else {
 	    LM_DBG("domain_replacement_avp not found, using original domain '"
@@ -808,6 +810,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 		return -1;
 	    }
 	    memcpy(at, domain->s, domain->len); at = at + domain->len;
+	    len = len + domain->len;
 	}
 
 	/* search for suffix and add it to duri buffer */
@@ -825,6 +828,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 		}
 		*at = '.'; at = at + 1;	/* add . as delimiter between domain and suffix */
 		memcpy(at, val.s.s, val.s.len); at = at + val.s.len;
+		len = len + val.s.len + 1;
 		didsomething = 1;
 	} else {
 		LM_DBG("domain_suffix_avp not found\n");
@@ -845,6 +849,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 		}
 		*at = ':'; at = at + 1;	/* add : as delimiter between domain and port */
 		memcpy(at, val.s.s, val.s.len); at = at + val.s.len;
+		len = len + val.s.len + 1;
 		didsomething = 1;
 	} else {
 		LM_DBG("port_override_avp not found, using original port\n");
@@ -858,6 +863,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 			/* add : as delimiter between domain and port */
 			memcpy(at, _msg->parsed_uri.port.s, _msg->parsed_uri.port.len);
 			at = at + _msg->parsed_uri.port.len;
+			len = len + _msg->parsed_uri.port.len + 1;
 		} else {
 			LM_DBG("port not found in RURI, no need to copy it to DURI\n");
 		}
@@ -880,6 +886,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 		/* add : as transport parameter to duri; NOTE: no checks if transport parameter is valid  */
 		memcpy(at, ";transport=", 11); at = at + 11;
 		memcpy(at, val.s.s, val.s.len); at = at + val.s.len;
+		len = len + val.s.len + 11;
 		didsomething = 1;
 	} else {
 		LM_DBG("transport_override_avp not found, using original transport\n");
@@ -891,6 +898,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 			}
 			*at = ';'; at = at + 1; /* add : as delimiter between domain and port */
 			memcpy(at, _msg->parsed_uri.transport.s, _msg->parsed_uri.transport.len); at = at + _msg->parsed_uri.transport.len;
+			len = len + _msg->parsed_uri.transport.len + 1;
 		} else {
 			LM_DBG("transport not found in RURI, no need to copy it to DURI\n");
 		}
@@ -911,4 +919,3 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 
 	return 1;
 }
-
