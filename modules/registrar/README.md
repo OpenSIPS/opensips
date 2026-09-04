@@ -101,23 +101,23 @@ The registrar module includes support for standards-based SIP Push
 Notifications, per
 [RFC 8599](https://tools.ietf.org/html/rfc8599).
 Support for the basic version of the draft can be enabled by switching
-[on enable](#on_enable-boolean) to *true*.  The
+[pn enable](#pn_enable-boolean) to *true*.  The
 module also includes optional support for sending Push Notifications
 during long-lived dialogs ([see RFC section 6](https://tools.ietf.org/html/rfc8599#page-23)),
-through the [on enable purr](#on_enable_purr-boolean) switch.
+through the [pn enable purr](#pn_enable_purr-boolean) switch.
 
 
-Essential mechanics behind the Push Notification (ON) support:
+Essential mechanics behind the Push Notification (PN) support:
 
 
 - the ON support is fully compatible with the existing logic and
 enabling it does not impose any limitations, as the
-registrar can simultaneously handle both SIP ON compliant
+registrar can simultaneously handle both SIP PN compliant
 and standard SIP User Agents
 - OpenSIPS will raise a
 [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 event any time a Push Notification needs to be sent to a
-ON-enabled contact.  The event includes the ON coordinates of
+PN-enabled contact.  The event includes the PN coordinates of
 the contact -- they may be found in the Contact URI ('uri'
 event parameter) and may be extracted using the {uri.param,name}
 transformation. From here onwards, it is up to the script
@@ -125,31 +125,31 @@ developer to trigger the Push Notification (e.g. possibly by
 sending an HTTP POST with the
 [rest_client](../rest_client/README.md) module), thus forcing
 a re-registration from the device.
-- REGISTER processing is unchanged -- ON-enabled UAs are saved
+- REGISTER processing is unchanged -- PN-enabled UAs are saved
 just as regular UAs, with the former ones additionally having
 the *4* bitflag set in the "Flags" field of
 any MI listing of contacts, for differentiation purposes
 - initial INVITE processing is barely changed, with the *lookup()*
 function now additionally returning a value of
 **2** if the only
-found contacts were ON-enabled contacts, all which required a
+found contacts were PN-enabled contacts, all which required a
 Push Notification.  This means that PNs have been triggered for
 each of them and t_relay() is not required, since they are not
 reachable until they re-register!
 Using the event_routing module, OpenSIPS will transparently
 fork a new branch from the current INVITE on each
 re-registration from these contacts within the accepted
-[on refresh timeout](#on_refresh_timeout-integer)
+[pn refresh timeout](#pn_refresh_timeout-integer)
 - mid-dialog requests: In some cases (e.g. long-lived dialogs),
-a ON may be required before being able to route a mid-dialog
-request to a SIP UA.  The [afunc on process purr](#on_process_purrdomain)
-async function will take care of triggering the ON event and
+a PN may be required before being able to route a mid-dialog
+request to a SIP UA.  The [afunc pn process purr](#pn_process_purrdomain)
+async function will take care of triggering the PN event and
 resuming the script as soon as a re-registration from the
 concerned contact is received.
 
 
 For more information or examples, refer to the documentation of the
-"on_xxx" module parameters or the OpenSIPS blog posts around the
+"pn_xxx" module parameters or the OpenSIPS blog posts around the
 "SIP Push Notification" topic.
 
 
@@ -165,7 +165,7 @@ The following modules must be loaded before this module:
 - *usrloc - User Location Module*.
 - *signaling - Signaling module*.
 - *event_routing*,
-if [on enable](#on_enable-boolean) is set to *true*.
+if [pn enable](#pn_enable-boolean) is set to *true*.
 
 
 #### External Libraries or Applications
@@ -652,12 +652,12 @@ modparam("registrar", "disable_gruu", 0)
 ```
 
 
-#### on_enable (boolean)
+#### pn_enable (boolean)
 
 
 Enable SIP Push Notification support ([RFC 8599](https://tools.ietf.org/html/rfc8599)).
 If enabled, Contact header field URIs which include all
-[on ct match params](#on_ct_match_params-string) will be matched against
+[pn ct match params](#pn_ct_match_params-string) will be matched against
 existing bindings using only these parameters.  Otherwise,
 the module will attempt to match them as usual, using the current
 usrloc [matching_mode](../usrloc/README.md#matching_mode-integer).
@@ -666,14 +666,14 @@ usrloc [matching_mode](../usrloc/README.md#matching_mode-integer).
 *Default value is **false**.*
 
 
-```opensips title="Setting the on_enable parameter"
+```opensips title="Setting the pn_enable parameter"
 ...
-modparam("registrar", "on_enable", true)
+modparam("registrar", "pn_enable", true)
 ...
 ```
 
 
-#### on_providers (string)
+#### pn_providers (string)
 
 
 A list of supported Push Notification providers.  While only three
@@ -685,14 +685,14 @@ non-standard values may be specified as well.
 (not set).*
 
 
-```opensips title="Setting the on_providers parameter"
+```opensips title="Setting the pn_providers parameter"
 ...
-modparam("registrar", "on_providers", "apns, fcm, webpush")
+modparam("registrar", "pn_providers", "apns, fcm, webpush")
 ...
 ```
 
 
-#### on_ct_match_params (string)
+#### pn_ct_match_params (string)
 
 
 The minimally required list of RFC 8599 parameters (custom ones are
@@ -704,29 +704,29 @@ will fall back to performing regular contact matching.
 
 
 > [!NOTE]
-> If all above ON Contact URI parameters match an existing
+> If all above PN Contact URI parameters match an existing
 > binding, the match is considered to be successful regardless if
 > other parts of the SIP URI do not match (e.g. hostname, port,
 > other URI parameters, etc.).
 
 
 After calling *lookup()* or
-[afunc on process purr](#on_process_purrdomain), the above ON-related
+[afunc pn process purr](#pn_process_purrdomain), the above PN-related
 parameters will be automatically stripped from the resulting
 Request and Contact URI event parameter, respectively.
 
 
-*Default value is **"on-provider, on-prid, on-param"**.*
+*Default value is **"pn-provider, pn-prid, pn-param"**.*
 
 
-```opensips title="Setting the on_ct_match_params parameter"
+```opensips title="Setting the pn_ct_match_params parameter"
 ...
-modparam("registrar", "on_ct_match_params", "on-provider, on-prid")
+modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 ...
 ```
 
 
-#### on_pnsreg_interval (integer)
+#### pn_pnsreg_interval (integer)
 
 
 For devices capable of waking up and refreshing their binding on
@@ -740,19 +740,19 @@ device should issue its binding refresh request.
 (seconds before expiry).*
 
 
-```opensips title="Setting the on_pnsreg_interval parameter"
+```opensips title="Setting the pn_pnsreg_interval parameter"
 ...
-modparam("registrar", "on_pnsreg_interval", 140)
+modparam("registrar", "pn_pnsreg_interval", 140)
 ...
 
 ```
 
 
-#### on_trigger_interval (integer)
+#### pn_trigger_interval (integer)
 
 
 If a binding refresh REGISTER request from a given SIP endpoint does
-not arrive within at least [on trigger interval](#on_trigger_interval-integer)
+not arrive within at least [pn trigger interval](#pn_trigger_interval-integer)
 seconds prior to expiration (e.g. because the device does not
 support *";+sip.pnsreg"* or because of other
 error conditions), the [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
@@ -770,15 +770,15 @@ order to cause the device to wake up and re-register.
 (seconds before expiry).*
 
 
-```opensips title="Setting the on_trigger_interval parameter"
+```opensips title="Setting the pn_trigger_interval parameter"
 ...
-modparam("registrar", "on_trigger_interval", 130)
+modparam("registrar", "pn_trigger_interval", 130)
 ...
 
 ```
 
 
-#### on_skip_on_interval (integer)
+#### pn_skip_pn_interval (integer)
 
 
 Following a successful (re)registration of a contact, this setting
@@ -790,18 +790,18 @@ assumed to be reachable, so any Push Notifications will be skipped.
 (always generate Push Notifications).*
 
 
-```opensips title="Setting the on_skip_on_interval parameter"
+```opensips title="Setting the pn_skip_pn_interval parameter"
 ...
-modparam("registrar", "on_skip_on_interval", 10)
+modparam("registrar", "pn_skip_pn_interval", 10)
 ...
 ```
 
 
-#### on_refresh_timeout (integer)
+#### pn_refresh_timeout (integer)
 
 
 This timeout starts counting following a *lookup()* or a
-[afunc on process purr](#on_process_purrdomain) which
+[afunc pn process purr](#pn_process_purrdomain) which
 triggers a Push Notification.  The value represents the maximum
 allowed sum of the duration required for the Push Notification to
 be sent and the duration required for the corresponding
@@ -824,14 +824,14 @@ target device is actually reachable
 *Default value is **6** seconds.*
 
 
-```opensips title="Setting the on_refresh_timeout parameter"
+```opensips title="Setting the pn_refresh_timeout parameter"
 ...
-modparam("registrar", "on_refresh_timeout", 10)
+modparam("registrar", "pn_refresh_timeout", 10)
 ...
 ```
 
 
-#### on_enable_purr (boolean)
+#### pn_enable_purr (boolean)
 
 
 Enable the SIP Push Notification mechanism for long-lived dialogs.
@@ -844,21 +844,21 @@ registration (PURR - Proxy Unique Registration Reference).
 
 During dialog setup, each UA may include, in its Contact header,
 the PURR value returned by OpenSIPS during registration.  By
-including the PURR (e.g. ";on-purr=XXX"), an agent indicates that
-it expects to be first awoken by a ON before being able to receive
+including the PURR (e.g. ";pn-purr=XXX"), an agent indicates that
+it expects to be first awoken by a PN before being able to receive
 a mid-dialog request sent by the other party.
 
 
 When enabling this parameter, make sure to also add logic for
-[afunc on process purr](#on_process_purrdomain).
+[afunc pn process purr](#pn_process_purrdomain).
 
 
 *Default value is **false**.*
 
 
-```opensips title="Setting the on_enable_purr parameter"
+```opensips title="Setting the pn_enable_purr parameter"
 ...
-modparam("registrar", "on_enable_purr", true)
+modparam("registrar", "pn_enable_purr", true)
 ...
 ```
 
@@ -1405,16 +1405,16 @@ add_sock_hdr("Sock-Info");
 ### Exported Asynchronous Functions
 
 
-#### on_process_purr(domain)
+#### pn_process_purr(domain)
 
 
 Perform mid-dialog request processing, according to RFC 8599.  For
 such requests, search the R-URI and topmost Route header field URI for
-a *";on-purr"* parameter value that both matches the
+a *";pn-purr"* parameter value that both matches the
 OpenSIPS PURR format and corresponds to an usrloc registration. Once a
 usrloc contact is located, trigger an [E_UL_CONTACT_REFRESH](../usrloc/README.md#e_ul_contact_refresh)
 event and place the request on async hold for at most
-[on refresh timeout](#on_refresh_timeout-integer) seconds, until a matching
+[pn refresh timeout](#pn_refresh_timeout-integer) seconds, until a matching
 REGISTER request arrives.
 
 
@@ -1441,7 +1441,7 @@ offline contact)
 - **-1** - Internal Error
 
 
-```opensips title="async on_process_purr() usage"
+```opensips title="async pn_process_purr() usage"
 route {
 	...
 	if (has_totag()) {
@@ -1456,7 +1456,7 @@ route {
 		}
 
 		if (!is_method("ACK"))
-			async (on_process_purr("location"), resume_route);
+			async (pn_process_purr("location"), resume_route);
 
 		route(relay);
 		exit;
@@ -1465,7 +1465,7 @@ route {
 
 route [resume_route] {
 	$var(rc) = $rc;
-	xlog("on_process_purr() finished with $var(rc)\n");
+	xlog("pn_process_purr() finished with $var(rc)\n");
 
 	...
 }
