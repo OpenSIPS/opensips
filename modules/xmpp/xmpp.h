@@ -25,6 +25,10 @@
 #ifndef _MOD_XMPP_H
 #define _MOD_XMPP_H
 
+#include <stdio.h>
+#include <string.h>
+
+#include "../../config.h"
 #include "../../str.h"
 
 enum xmpp_pipe_cmd_type {
@@ -38,6 +42,33 @@ struct xmpp_pipe_cmd {
 	enum xmpp_pipe_cmd_type type;
 	char *from, *to, *body, *id;
 };
+
+static inline int xmpp_encode_sip_uri(str *dst, char *buf, size_t buf_size,
+		const char *src)
+{
+	const char *slash;
+	size_t full_len, uri_len;
+	int len;
+
+	if (!dst || !buf || !src)
+		return -1;
+
+	full_len = strlen(src);
+	slash = strchr(src, '/');
+	uri_len = slash ? (size_t)(slash - src) : full_len;
+
+	if (full_len > MAX_URI_SIZE - 4 ||
+			full_len + sizeof("sip:") > buf_size)
+		return -1;
+
+	len = snprintf(buf, buf_size, "sip:%s", src);
+	if (len < 0 || (size_t)len != full_len + 4 || len > MAX_URI_SIZE)
+		return -1;
+
+	dst->s = buf;
+	dst->len = uri_len + 4;
+	return 0;
+}
 
 
 /* configuration parameters */
@@ -70,22 +101,12 @@ int xmpp_component_child_process(int data_pipe);
 /* sha.c */
 char *shahash(const char *str);
 
-#define ENC_SIP_URI(dst, buf, src) \
-	do{\
-		char* slash = strchr(src, '/'); \
-		if(slash)\
-			dst.len = slash - src + 4;\
-		else\
-			dst.len = strlen(src) + 4; \
-		dst.s = buf;\
-		sprintf(buf, "sip:%s", src);\
-	}while(0)
-
 struct xmpp_private_data {
 	int fd;		/* outgoing stream socket */
 	int listen_fd;	/* listening socket */
 	int in_fd;	/* incoming stream socket */
 	int running;
+	int authenticated;
 };
 
 void xmpp_server_net_send(struct xmpp_pipe_cmd *cmd);

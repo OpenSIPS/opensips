@@ -61,6 +61,7 @@ static void stream_node_callback(int type, xode node, void *arg)
 	LM_DBG("stream callback: %d: %s\n", type, node ? xode_get_name(node) : "n/a");
 	switch (type) {
 	case XODE_STREAM_ROOT:
+		priv->authenticated = 0;
 		id = xode_get_attrib(node, "id");
 		snprintf(buf, sizeof(buf), "%s%s", id, xmpp_password);
 		hash = shahash(buf);
@@ -74,6 +75,7 @@ static void stream_node_callback(int type, xode node, void *arg)
 		tag = xode_get_name(node);
 		if (!strcmp(tag, "handshake")) {
 			LM_DBG("handshake succeeded\n");
+			priv->authenticated = 1;
 		} else if (!strcmp(tag, "message")) {
 			LM_DBG("XMPP IM received\n");
 			char *from = xode_get_attrib(node, "from");
@@ -84,6 +86,10 @@ static void stream_node_callback(int type, xode node, void *arg)
 
 			if (!type)
 				type = "chat";
+			if (!priv->authenticated) {
+				LM_DBG("ignoring message stanza before handshake\n");
+				goto out;
+			}
 			if (!strcmp(type, "error")) {
 				LM_DBG("received message error stanza\n");
 				goto out;
@@ -194,6 +200,7 @@ int xmpp_component_child_process(int data_pipe)
 
 		priv.fd = fd;
 		priv.running = 1;
+		priv.authenticated = 0;
 
 		pool = xode_pool_new();
 		stream = xode_stream_new(pool, stream_node_callback, &priv);
@@ -243,5 +250,4 @@ int xmpp_component_child_process(int data_pipe)
 	}
 	return 0;
 }
-
 
