@@ -105,14 +105,32 @@ static const param_export_t params[]={
 	{  0,                       0,                                          0}
 };
 
+static module_dependency_t *get_deps_force_active(const param_export_t *param)
+{
+	if (*(int *)param->param_pointer)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "xcap", DEP_ABORT);
+}
+
+static module_dependency_t *get_deps_pidf_manipulation(const param_export_t *param)
+{
+	if (*(int *)param->param_pointer <= 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "xcap", DEP_ABORT);
+}
+
 static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "xcap",      DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "xcap",      DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "presence",  DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "force_active",      get_deps_force_active },
+		{ "pidf_manipulation", get_deps_pidf_manipulation },
 		{ NULL, NULL },
 	},
 };
@@ -177,29 +195,29 @@ static int mod_init(void)
 	bind_xcap_t bind_xcap;
 	xcap_api_t xcap_api;
 
-        /* load XCAP API */
-        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
-        if (!bind_xcap)
-        {
-                LM_ERR("Can't bind xcap\n");
-                return -1;
-        }
-
-        if (bind_xcap(&xcap_api) < 0)
-        {
-                LM_ERR("Can't bind xcap\n");
-                return -1;
-        }
-        integrated_xcap_server = xcap_api.integrated_server;
-        db_url = xcap_api.db_url;
-        xcap_table = xcap_api.xcap_table;
-        normalizeSipUri = xcap_api.normalize_sip_uri;
-        xcapParseUri = xcap_api.parse_xcap_uri;
-        xcapDbGetDoc = xcap_api.get_xcap_doc;
-
-	if(force_active==0)
+	if(force_active==0 || pidf_manipulation)
 	{
-		if ( verify_db() < 0 )
+		/* load XCAP API */
+		bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
+		if (!bind_xcap)
+		{
+			LM_ERR("Can't bind xcap\n");
+			return -1;
+		}
+
+		if (bind_xcap(&xcap_api) < 0)
+		{
+			LM_ERR("Can't bind xcap\n");
+			return -1;
+		}
+		integrated_xcap_server = xcap_api.integrated_server;
+		db_url = xcap_api.db_url;
+		xcap_table = xcap_api.xcap_table;
+		normalizeSipUri = xcap_api.normalize_sip_uri;
+		xcapParseUri = xcap_api.parse_xcap_uri;
+		xcapDbGetDoc = xcap_api.get_xcap_doc;
+
+		if(force_active==0 && verify_db() < 0)
 			return -1;
 	}
 

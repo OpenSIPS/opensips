@@ -14,7 +14,7 @@ It is used with the general event handling module, presence. It constructs and a
 3 events to it: presence, presence.winfo, dialog;sla.
 
 
-This module takes the xcap permission rule documents from xcap_table.
+When XCAP-backed authorization is enabled, this module takes the XCAP permission rule documents from xcap_table.
 
 The presence permission rules are interpreted according to the specifications
 in RFC 4745 and RFC 5025.
@@ -29,13 +29,11 @@ in RFC 4745 and RFC 5025.
 The following modules must be loaded before this module:
 
 
-- *a database module*.
 - *presence*.
 - *signaling*.
-- *xcap*.
-- *xcap_client*.
-Only compulsory if not using an integrated xcap server 
-(if 'integrated_xcap_server' parameter is not set).
+- *xcap*. Only mandatory if force_active is 0 or pidf_manipulation is 1.
+- *xcap_client*. Only mandatory if force_active is 0 and not using an
+  integrated XCAP server (if 'integrated_xcap_server' parameter is not set).
 
 
 #### External Libraries or Applications
@@ -56,9 +54,10 @@ OpenSIPS with this module loaded:
 
 This parameter is used for permissions when handling Subscribe messages.
 If set to 1, subscription state is considered active and the presentity
-is not queried for permissions(should be set to 1 if not using an xcap 
-server). 
-Otherwise,the xcap server is queried and the subscription states is
+is not queried for permissions (should be set to 1 if not using an xcap
+server). If pidf_manipulation is not enabled, this mode does not require
+the xcap module.
+Otherwise, the xcap server is queried and the subscription states is
 according to user defined permission rules. If no rules are defined for
 a certain watcher, the subscriptions remains in pending state and the
 Notify sent will have no body.
@@ -104,8 +103,8 @@ modparam("presence_xml", "pidf_manipulation", 1)
 
 
 The address of the xcap servers used for storage.
-This parameter is compulsory if the integrated_xcap_server parameter
-is not set. It can be set more that once, to construct an address
+This parameter is mandatory if force_active is 0 and the
+integrated_xcap_server parameter is not set. It can be set more that once, to construct an address
 list of trusted XCAP servers.
 
 
