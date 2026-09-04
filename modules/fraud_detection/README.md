@@ -179,7 +179,7 @@ modparam("fraud_detection", "prefix_col", "myprefix")
 ```
 
 
-#### start_h (string)
+#### start_h_col (string)
 
 
 The column's name in the database storing the
@@ -194,14 +194,14 @@ the format: "HH:MM"
 *Default value is "start_hour".*
 
 
-```opensips title="Set 'start_h' parameter"
+```opensips title="Set 'start_h_col' parameter"
 ...
-modparam("fraud_detection", "start_h", "the_start_time")
+modparam("fraud_detection", "start_h_col", "the_start_time")
 ...
 ```
 
 
-#### end_h (string)
+#### end_h_col (string)
 
 
 The column's name in the database storing the
@@ -216,9 +216,9 @@ the format: "HH:MM"
 *Default value is "end_hour".*
 
 
-```opensips title="Set 'end_h' parameter"
+```opensips title="Set 'end_h_col' parameter"
 ...
-modparam("fraud_detection", "end_h", "the_end_time")
+modparam("fraud_detection", "end_h_col", "the_end_time")
 ...
 ```
 
