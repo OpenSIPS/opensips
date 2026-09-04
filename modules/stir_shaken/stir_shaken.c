@@ -1625,16 +1625,6 @@ invalid_hdr:
 error:
 	if (params)
 		free_params(params);
-	if (parsed->dec_header.s)
-		pkg_free(parsed->dec_header.s);
-	if (parsed->dec_payload.s)
-		pkg_free(parsed->dec_payload.s);
-	if (parsed->dec_signature.s)
-		pkg_free(parsed->dec_signature.s);
-	if (parsed->header)
-		cJSON_Delete(parsed->header);
-	if (parsed->payload)
-		cJSON_Delete(parsed->payload);
 	return rc;
 }
 
