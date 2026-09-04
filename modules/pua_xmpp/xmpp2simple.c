@@ -344,7 +344,7 @@ int build_publish(xmlNodePtr pres_node, int expires)
 	char* resource= NULL;
 	str pres_uri= {0, 0};
 	char* slash;
-	char buf[256];
+	char buf[MAX_URI_SIZE + 1];
 	char* uri;
 
 	uri = XMLNodeGetAttrContentByName(pres_node, "from");
@@ -354,7 +354,11 @@ int build_publish(xmlNodePtr pres_node, int expires)
 		return -1;
 	}
 
-	ENC_SIP_URI(pres_uri, buf, uri);
+	if (xmpp_encode_sip_uri(&pres_uri, buf, sizeof(buf), uri) < 0) {
+		LM_ERR("failed to encode XMPP URI\n");
+		xmlFree(uri);
+		return -1;
+	}
 	xmlFree(uri);
 
 	slash= memchr(pres_uri.s, '/', pres_uri.len);
@@ -432,7 +436,7 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
 	char *uri= NULL;
  	str to_uri= {0, 0};
  	str from_uri= {0, 0};
- 	char buf_from[256];
+	char buf_from[MAX_URI_SIZE + 1];
 
 	uri= XMLNodeGetAttrContentByName(pres_node, "to");
 	if(uri== NULL)
@@ -455,7 +459,11 @@ int presence_subscribe(xmlNodePtr pres_node, int expires,int  flag)
  		goto error;
  	}
 
- 	ENC_SIP_URI(from_uri, buf_from, uri);
+	if (xmpp_encode_sip_uri(&from_uri, buf_from, sizeof(buf_from), uri) < 0) {
+		LM_ERR("failed to encode XMPP URI\n");
+		xmlFree(uri);
+		goto error;
+	}
  	xmlFree(uri);
 
 	memset(&subs, 0, sizeof(subs_info_t));

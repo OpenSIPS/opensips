@@ -78,6 +78,7 @@
 #include "../../parser/parse_from.h"
 #include "../tm/tm_load.h"
 #include "../../pt.h"
+#include "../../config.h"
 
 #include "xode.h"
 #include "xmpp.h"
@@ -279,14 +280,36 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 {
 	str msg_type = { "MESSAGE", 7 };
 	str hdr, fromstr, tostr, msgstr;
-	char buf[512];
-	char buf_from[256];
+	char buf[MAX_URI_SIZE + sizeof("Content-type: text/plain" CRLF "Contact: " CRLF)];
+	char buf_from[MAX_URI_SIZE + 1];
+	size_t from_len, to_len;
+	int len;
 
-	ENC_SIP_URI(fromstr, buf_from, from);
+	if (!from || !to || !msg) {
+		LM_ERR("invalid XMPP message parameters\n");
+		return -1;
+	}
+
+	from_len = strlen(from);
+	to_len = strlen(to);
+	if (from_len > MAX_URI_SIZE || to_len > MAX_URI_SIZE) {
+		LM_ERR("XMPP URI too long\n");
+		return -1;
+	}
+
+	if (xmpp_encode_sip_uri(&fromstr, buf_from, sizeof(buf_from), from) < 0) {
+		LM_ERR("failed to encode XMPP URI\n");
+		return -1;
+	}
 
 	hdr.s = buf;
-	hdr.len = snprintf(buf, sizeof(buf),
+	len = snprintf(buf, sizeof(buf),
 			"Content-type: text/plain" CRLF "Contact: %s" CRLF, from);
+	if (len < 0 || (size_t)len >= sizeof(buf)) {
+		LM_ERR("failed to build XMPP MESSAGE headers\n");
+		return -1;
+	}
+	hdr.len = len;
 
 	tostr.s = uri_xmpp2sip(to, &tostr.len);
 	if(tostr.s == NULL) {
@@ -409,6 +432,10 @@ static int cmd_send_message(struct sip_msg* msg, char* _foo, char* _bar)
 	}
 
 	from_uri.s = uri_sip2xmpp(&((struct to_body *) msg->from->parsed)->uri);
+	if (from_uri.s == NULL) {
+		LM_ERR("failed to translate sip uri to xmpp uri\n");
+		return -1;
+	}
 	from_uri.len = strlen(from_uri.s);
 
 	tagid = ((struct to_body *) msg->from->parsed)->tag_value;
