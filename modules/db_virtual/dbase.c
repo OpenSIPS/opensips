@@ -63,7 +63,7 @@ extern info_global_t* global;
 extern handle_private_t* private;
 
 extern int db_reconnect_with_timer;
-extern int db_max_consec_retrys;
+extern int db_max_consec_retries;
 
 str use_table={0,0};
 
@@ -106,7 +106,7 @@ void try_reconnect(handle_set_t * p){
                 global->set_list[p->set_index].db_list[i].flags & CAN_USE){
 
             if( global->set_list[p->set_index].db_list[i].flags & RERECONNECT){
-                p->con_list[i].no_retries = db_max_consec_retrys;
+                p->con_list[i].no_retries = db_max_consec_retries;
             }
             if(p->con_list[i].no_retries-- > 0){
                 p->con_list[i].con =
@@ -125,7 +125,7 @@ void try_reconnect(handle_set_t * p){
                 p->con_list[i].flags |= CAN_USE;
                 set_update_flags(i, p);
 
-                p->con_list[i].no_retries = db_max_consec_retrys;
+                p->con_list[i].no_retries = db_max_consec_retries;
             }
         }
     }
@@ -375,7 +375,7 @@ db_con_t* db_virtual_init(const str* _set_url)
             set_update_flags(i, p);
 
         }
-        p->con_list[i].no_retries = db_max_consec_retrys;
+        p->con_list[i].no_retries = db_max_consec_retries;
     }
 
 

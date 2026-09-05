@@ -43,7 +43,7 @@
 int db_probe_time = 10;
 
 /* max consecutive retries before give up */
-int db_max_consec_retrys = 10;
+int db_max_consec_retries = 10;
 
 /* for debug.. try_reconect with or without a timer process(probe) */
 int db_reconnect_with_timer = 1;
@@ -95,7 +95,9 @@ static const cmd_export_t cmds[] = {
 static const param_export_t params[] = {
         //{"db_file",                 STR_PARAM, &db_file.s},
         {"db_probe_time",           INT_PARAM, &db_probe_time},
-        {"db_max_consec_retrys",    INT_PARAM, &db_max_consec_retrys},
+        /* kept for backwards-compatibility */
+        {"db_max_consec_retrys",    INT_PARAM, &db_max_consec_retries},
+        {"db_max_consec_retries",   INT_PARAM, &db_max_consec_retries},
         {"db_urls",     STR_PARAM|USE_FUNC_PARAM,(void*)store_urls},
 	{0, 0, 0}
 };
