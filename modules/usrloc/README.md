@@ -1175,7 +1175,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 Enable a timer which will periodically scan a sorted list of contacts
 and raise the [E UL CONTACT REFRESH](#e_ul_contact_refresh) for any of
 them which are past their re-registration time interval limit.  This
-limit may given by registrar's *on_trigger_interval*
+limit may given by registrar's *pn_trigger_interval*
 module parameter, for example.
 
 
