@@ -49,6 +49,10 @@ char* uri_sip2xmpp(str* uri)
 
 	if(sip_domain.s)
 	{
+		if((size_t)suri.user.len + sip_domain.len + 1 > MAX_URI_SIZE) {
+			LM_ERR("XMPP URI too long\n");
+			return 0;
+		}
 		len = snprintf(buf, sizeof(buf), "%.*s@%s",
 				suri.user.len, suri.user.s, sip_domain.s);
 		if(len < 0 || len > MAX_URI_SIZE) {
@@ -58,6 +62,10 @@ char* uri_sip2xmpp(str* uri)
 	}
 	else
 	{
+		if((size_t)suri.user.len + suri.host.len + 1 > MAX_URI_SIZE) {
+			LM_ERR("XMPP URI too long\n");
+			return 0;
+		}
 		len = snprintf(buf, sizeof(buf), "%.*s@%.*s",
 				suri.user.len, suri.user.s, suri.host.len, suri.host.s);
 		if(len < 0 || len > MAX_URI_SIZE) {
