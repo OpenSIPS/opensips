@@ -1928,6 +1928,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	int b2b_ev = -1;
 	char indexed_to_tag_buf[B2B_MAX_KEY_SIZE + 1 + INT2STR_MAX_LEN];
 	dlg_leg_t *leg = NULL;
+	int contact_hdr_params_len;
 
 	if(et == B2B_SERVER)
 	{
@@ -2160,9 +2161,10 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	if (b2b_ev != -1 && storage.buffer.s)
 		bin_free_packet(&storage);
 
+	contact_hdr_params_len = rpl_data->contact_hdr_params ?
+		rpl_data->contact_hdr_params->len : 0;
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact.len
-			+ 20 + CRLF_LEN > BUF_LEN +
-			(rpl_data->contact_hdr_params?rpl_data->contact_hdr_params->len:0))
+			+ contact_hdr_params_len + 20 + CRLF_LEN > BUF_LEN)
 	{
 		LM_ERR("Buffer overflow!\n");
 		goto error;
