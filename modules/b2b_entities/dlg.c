@@ -4230,9 +4230,11 @@ int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
 	static char buf[BUF_LEN];
 	static struct sip_msg foo_msg;
 	str str_empty = str_init("");
+	int ct_hdr_params_len;
 
+	ct_hdr_params_len = ct_hdr_params ? ct_hdr_params->len : 0;
 	if(((extra_headers?extra_headers->len:0) + 14 + local_contact->len +
-		(client_headers?client_headers->len:0))> BUF_LEN)
+		ct_hdr_params_len + (client_headers?client_headers->len:0))> BUF_LEN)
 	{
 		LM_ERR("Buffer too small\n");
 		return -1;
