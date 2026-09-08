@@ -15,7 +15,7 @@ backends such as syslog, SQL, AAA.
 
 To account a transaction and to choose which set of backends to be
 used, the script writer only has to mark the transaction for
-accounting by using the [do accounting](#do_accountingtype-flags-table) script function.
+accounting by using the [do_accounting()](#do_accountingtype-flags-table) script function.
 Note that the function is not actually doing the accounting at that
 very time, it is just setting a marker - the actual accounting
 will be done later when the transaction or dialog will be
@@ -276,7 +276,7 @@ start time and setup time.
 
 In order to have CDRs accounting, first you need to set the
 *cdr* flag when calling
-[do accounting](#do_accountingtype-flags-table) script function for the
+[do_accounting()](#do_accountingtype-flags-table) script function for the
 initial INVITE of the dialog.
 
 
@@ -648,11 +648,11 @@ modparam("acc", "acc_time_column", "time")
 
 
 This variable can addresed with the tag names defined
-using [extra fields](#extra_fields-string). If
-[do accounting](#do_accountingtype-flags-table) isn't called, this
+using [extra_fields](#extra_fields-string). If
+[do_accounting()](#do_accountingtype-flags-table) isn't called, this
 variable is visible during the whole processing of one message,
 enabling calling *acc_XXX_request()*.
-If [do accounting](#do_accountingtype-flags-table) is called, the variable
+If [do_accounting()](#do_accountingtype-flags-table) is called, the variable
 will be visible from the first call of this function until the
 actual accounting is being made.
 
@@ -661,9 +661,9 @@ actual accounting is being made.
 
 
 This variable can be addressed with the tag names defined
-using [leg fields](#leg_fields-string) and  a valid leg index
-(<= [acc current leg](#acc_current_leg-read-only)). This variable cannot
-be used unless [do accounting](#do_accountingtype-flags-table) is used. The
+using [leg_fields](#leg_fields-string) and  a valid leg index
+(<= [$acc_current_leg](#acc_current_leg-read-only)). This variable cannot
+be used unless [do_accounting()](#do_accountingtype-flags-table) is used. The
 variable also accepts negative indexes, which start from -1
 (the lastly added leg).
 
@@ -685,7 +685,7 @@ $(acc_leg(caller)[-2])
 
 
 Holds the index of the current leg, starting from 0.  Calling
-[acc new leg](#acc_new_leg) will increment this index.
+[acc_new_leg()](#acc_new_leg) will increment this index.
 
 
 ### Exported Functions
@@ -942,7 +942,7 @@ acc_evi_request("403 Destination not allowed");
 #### acc_new_leg()
 
 
-Creates a new leg and increments [acc current leg](#acc_current_leg-read-only)
+Creates a new leg and increments [$acc_current_leg](#acc_current_leg-read-only)
 only if multi-leg accounting is used.  All values of the new leg
 will be initialized to null.
 
@@ -1012,7 +1012,7 @@ whatever accounting context was present before doing the load.
 This function can be used from any type of route.
 
 
-For usage example, see the [acc load ctx from dlg](#acc_load_ctx_from_dlg).
+For usage example, see the [acc_load_ctx_from_dlg()](#acc_load_ctx_from_dlg).
 
 
 ### Exported Events

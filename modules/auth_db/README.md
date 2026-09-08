@@ -90,15 +90,15 @@ Possible meanings of this parameter are:
 - *1 (calculate HA1)* - the loaded
 password is a plaintext password, so OpenSIPS will internally
 calculate the HA1. As the passwords will be loaded from the column
-specified in the [password column](#password_column-string) parameter,
+specified in the [password_column](#password_column-string) parameter,
 be sure this parameter points to a column holding a plaintext password
 (by default, this parameter points to the "ha1" column);
 - *0 (do **not**
 calculate HA1)* - the loaded password is a pre-computed
 HA1 hash (no calculation needed).  The module will load all hashes
-stored in the [password column](#password_column-string),
-[hash column sha256](#hash_column_sha256-string) and
-[hash column sha512t256](#hash_column_sha512t256-string) columns, then use
+stored in the [password_column](#password_column-string),
+[hash_column_sha256](#hash_column_sha256-string) and
+[hash_column_sha512t256](#hash_column_sha512t256-string) columns, then use
 the hash corresponding to the hashing algorithm selected for a
 given digest authentication challenge.
 The content of the hash columns can be generated as follows:
@@ -445,7 +445,7 @@ if (!proxy_authorize("", "subscriber"))
 The function checks against a  'URI' like table to see if the
 username extracted from the To header URI is allowed/authorized to
 use the credentials (authentication username) validated by
-[www authorize](#www_authorizerealm-table).
+[www_authorize()](#www_authorizerealm-table).
 
 
 The function is part of the mechanism that allows to create
@@ -476,7 +476,7 @@ if (!db_is_to_authorized("uri")) {
 #### db_is_from_authorized(table)
 
 
-Similar to [db is to authorized](#db_is_to_authorizedtable) but instead of
+Similar to [db_is_to_authorized()](#db_is_to_authorizedtable) but instead of
 checking the TO header URI, the FROM header URI is checked.
 
 

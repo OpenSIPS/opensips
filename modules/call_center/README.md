@@ -28,7 +28,7 @@ RTP/audio calls and (multiple) MSRP/chat calls, in the same time.
 The module provides an internal buit-in dispatching logic (for sending the
 calls/chats to the agents), but also offers the possibility to use an
 external logic to do the dispatching
-(see [mi cc dispatch call to agent](#cc_dispatch_call_to_agent) MI command).
+(see [cc_dispatch_call_to_agent](#cc_dispatch_call_to_agent) MI command).
 
 
 ### How it works
@@ -329,11 +329,11 @@ A parameter to tell if the internal/buit-in call dispatching to agent
 should be used or not. If enabled, the module will automatically
 dispatch (by itself) the queued/incoming calls to the available agents.
 If disabled, the module will not do such dispaching by itself and it
-is expected to use the  [mi cc dispatch call to agent](#cc_dispatch_call_to_agent)
+is expected to use the  [cc_dispatch_call_to_agent](#cc_dispatch_call_to_agent)
 MI command to dispatch the queued calls to agents. This allows the
 implementation of an external, custom dispatching logic. The value of
 this setting may be changed during runtime via the 
-[mi cc internal call dispatching](#cc_internal_call_dispatching) MI command.
+[cc_internal_call_dispatching](#cc_internal_call_dispatching) MI command.
 
 
 *Default value is "1" (enabled).*
@@ -741,7 +741,7 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 
 The name of the *$b2b_logic.ctx* variable that can be
 used to retrieve the value of the parameter passed to
-the [cc handle call](#cc_handle_call-flowid-param) function.
+the [cc_handle_call()](#cc_handle_call-flowid-param) function.
 
 
 This parameter will be copied throughout all the B2B scenarios started
@@ -798,7 +798,7 @@ it is 100% up to the script writer about the value and purpose
 of this parameter, OpenSIPS will not touch or interpret it.
 You can retrieve the value of this parameter using the
 *$b2b_logic.ctx* variable with the name
-defined in the [b2b logic ctx param](#b2b_logic_ctx_param-string)
+defined in the [b2b_logic_ctx_param](#b2b_logic_ctx_param-string)
 parameter.
 
 
@@ -1176,16 +1176,16 @@ It takes two parameters.
 
 
 - *call_id* - the ID of the call, as provided by
-the queue listing MI command [mi cc list queue](#cc_list_queue)
+the queue listing MI command [cc_list_queue](#cc_list_queue)
 - *agent_id* - the ID of the call, as provided by
-the agents listing MI command [mi cc list agents](#cc_list_agents)
+the agents listing MI command [cc_list_agents](#cc_list_agents)
 
 
 > [!IMPORTANT]
 > In order to be used, you need to be sure that the internal
 > call dispatching is DISABLED via the
-> [internal call dispatching](#internal_call_dispatching-int) module parameter
-> or the [mi internal call dispatching](#cc_internal_call_dispatching) MI command.
+> [internal_call_dispatching](#internal_call_dispatching-int) module parameter
+> or the [cc_internal_call_dispatching](#cc_internal_call_dispatching) MI command.
 
 
 MI FIFO Command usage:
@@ -1200,7 +1200,7 @@ opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
 
 
 Command to inspect and/or change the 
-[internal call dispatching](#internal_call_dispatching-int) setting
+[internal_call_dispatching](#internal_call_dispatching-int) setting
 
 
 It takes one optional parameter `dispatching` if the

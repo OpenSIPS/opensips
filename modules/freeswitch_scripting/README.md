@@ -194,7 +194,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 
 Run an arbitrary command on an arbitrary FreeSWITCH ESL socket. The
 socket need not necessarily be defined in the database or through
-**[fs subscribe](#fs_subscribe-string)**.
+**[fs_subscribe](#fs_subscribe-string)**.
 However, if this is the case, then the "password" part of the URL
 becomes mandatory.
 
@@ -308,8 +308,8 @@ events with the current data (ESL sockets and their events) found in the
 
 
 * this includes any sockets/events provisioned through
-[fs subscribe](#fs_subscribe-string), MI
-[mi fs subscribe](#fs_subscribe) commands or previous DB data set.
+[fs_subscribe](#fs_subscribe-string), MI
+[fs_subscribe](#fs_subscribe) commands or previous DB data set.
 
 
 ### Exported Events

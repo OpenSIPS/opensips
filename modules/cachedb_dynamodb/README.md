@@ -64,8 +64,8 @@ cachedb_url: *modparam("cachedb_dynamodb", "cachedb_url",
 "dynamodb://localhost:8000/TableName?key=KeyName;val=ValName")"*
 
 
-For additional examples of how cachedb_url should be formatted, refer to the 
-[cachedb_url (string)](#cachedb_url-string) section.
+For additional formatting examples, refer to the
+[cachedb_url](#cachedb_url-string) section.
 
 
 To enable TTL (Time to Live) for the table, which can be used with operations like set,

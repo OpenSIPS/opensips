@@ -70,7 +70,7 @@ with that presentity.
 > via DB (the clustering layer is used for notifications only), it is
 > important to set a very low update interval for the DB (for data being
 > flushed from memoryc cache into DB), to get the DB content updated as 
-> realtime as possible. See the the [update period](#update_period-int),
+> realtime as possible. See the the [update_period](#update_period-int),
 > module parameter, with recomanded values like 2-5 seconds.
 
 

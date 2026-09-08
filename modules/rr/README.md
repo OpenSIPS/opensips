@@ -47,9 +47,8 @@ RFC 3261 (see 12.1.1 UAS behavior).
 For this purpose, the modules offers the following functions:
 
 
-- add_rr_param() - see [add rr param](#add_rr_paramparam)
-- check_route_param() - see 
-[check route param](#check_route_paramre)
+- [add_rr_param()](#add_rr_paramparam)
+- [check_route_param()](#check_route_paramre)
 
 
 ```c title="Dialog support in RR module"
@@ -296,10 +295,9 @@ record_route_preset("1.2.3.4:5090");
 #### add_rr_param(param)
 
 
-Adds a parameter to the Record-Route URI (param must be in 
-";name=value" format. The function may be called also 
-before or after the record_route() call 
-(see [record route](#record_route-and-record_routestring)).
+Adds a parameter to the Record-Route URI. The parameter must use the
+";name=value" format. The function may be called before or after the
+[record_route()](#record_route-and-record_routestring) call.
 
 
 Meaning of the parameters is as follows:
@@ -323,10 +321,9 @@ add_rr_param(";nat=yes");
 #### check_route_param(re)
 
 
-The function checks if the URI parameters of the local Route 
-header (corresponding to the local server) matches the given regular 
-expression. It must be call after loose_route() 
-(see [loose route](#loose_route)).
+The function checks if the URI parameters of the local Route
+header (corresponding to the local server) matches the given regular
+expression. It must be called after [loose_route()](#loose_route).
 
 
 Meaning of the parameters is as follows:
@@ -352,10 +349,10 @@ if (check_route_param("nat=yes")) {
 
 
 The function checks the flow direction of the request.
-As for checking it's used the "ftag" Route header 
-parameter, the append_fromtag (see [append fromtag](#append_fromtag-integer) 
-module parameter must be enabled. Also this must be called only after 
-loose_route() (see [loose route](#loose_route)).
+For this check, the "ftag" Route header parameter is used, so the
+[append_fromtag](#append_fromtag-integer) module parameter must be enabled.
+This function must also be called only after
+[loose_route()](#loose_route).
 
 
 The function returns true if the "dir" is the same with
@@ -462,12 +459,11 @@ expression to be checked against the Route header parameters.
 #### is_direction( msg, dir)
 
 
-The function checks the flow direction of the request 
-"msg". As for checking it's used the "ftag" 
-Route header parameter, the append_fromtag (see 
-[append fromtag](#append_fromtag-integer) module parameter 
-must be enables. Also this must be call only after the loose_route is 
-done.
+The function checks the flow direction of the request "msg".
+For this check, the "ftag" Route header parameter is used, so the
+[append_fromtag](#append_fromtag-integer) module parameter must be enabled.
+This function must also be called only after
+[loose_route()](#loose_route).
 
 
 The function returns 0 if the "dir" is the same with

@@ -25,8 +25,8 @@ subscriber processing.
 
 Also, the Events are generated either internally by OpenSIPS (predefined 
 Events), either from the script level (custom Events). Please refer to the
-Event Interface documentation for more on how the Events are generated 
-([Event Interface](../../docs/manual/Interface-Events.md)).
+[Event Interface](../../docs/manual/Interface-Events.md) documentation for
+more information on how the Events are generated.
 
 
 Depending on how the notification is handled by the subscribing processing,

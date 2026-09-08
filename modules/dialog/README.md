@@ -33,15 +33,15 @@ the create_dialog() function, with or without parameter.
 
 The dialog is automatically terminated when a "BYE" is
 received. In case of no "BYE", the dialog lifetime is
-controlled via the default timeout (see "default_timeout"
-	- [default timeout](#default_timeout-integer)) and custom timeout (see
-"$DLG_timeout" - [DLG timeout](#dlg_timeout)).
+controlled via the [default_timeout](#default_timeout-integer) module
+parameter or a custom value set through
+[$DLG_timeout](#dlg_timeout).
 
 
 Once terminated, the in-memory dialog may be destroyed right away or, 
-depending on the "delete_delay"
-	- [delete delay](#delete_delay-integer)) setting, it may be kept for a
-while in memory, in a read-only state (no action, no changes, nothing).
+depending on the [delete_delay](#delete_delay-integer) setting, it may be
+kept for a while in memory, in a read-only state (no action, no changes,
+nothing).
 This delaying may be used to help with the routing of late in-dialog
 request that may be received after the dialog terminted (like late BYE's
 due retransmissions, cross BYE requests, auth'ed BYE request, slow ACK on
@@ -347,9 +347,8 @@ be kept in a read only state (no action, no changes), but it will
 still be able to match and route late in-dialog requests.
 
 
-This global value may be per-call changed via the DLG_del_delay
-"$DLG_del_delay" ([DLG del delay](#dlg_del_delay))
-script variable.
+This global value may be changed per call through the
+[$DLG_del_delay](#dlg_del_delay) script variable.
 
 
 *Default value is "0" (disabled).*
@@ -1245,7 +1244,7 @@ to an ongoing dialog.
 
 
 By default, dialog matching is performed according to the
-[dlg match mode](#dlg_match_mode-integer) module parameter. A specific
+[dlg_match_mode](#dlg_match_mode-integer) module parameter. A specific
 matching mode may be enforced by specifying the optional
 "dlg_match_mode" parameter. Possible values for this parameter are
 "DID_ONLY", "DID_FALLBACK" and "DID_NONE".
@@ -2500,7 +2499,7 @@ opensips-cli -x mi profile_get_values inboundCalls
 
 
 Terminate all ongoing dialogs from a specified profile, on a single dialog it
-performs the same operations as the command **[mi dlg end dlg](#dlg_end_dlg)**
+performs the same operations as the command **[dlg_end_dlg](#dlg_end_dlg)**
 
 
 Name: *profile_end_dlgs*
@@ -2552,7 +2551,7 @@ This command will only take effect if dialog replication is enabled.
 
 
 Fully synchronize the dialog information in memory from a suitable donor
-node within the [dialog replication cluster](#dialog_replication_cluster-int). Dialogs
+node within the [dialog_replication_cluster](#dialog_replication_cluster-int). Dialogs
 that already exist in memory which are not reconfirmed through syncing will
 be discarded. A sharing tag can be specified in order to sync only dialogs
 marked with that sharing tag.
@@ -2927,9 +2926,8 @@ number of seconds until the dialog expiration.
 Used to set the dialog deletion delay (in seconds) for the
 current dialog (in a per-call manner). When read, the variable
 returns the number of seconds that were set for the call or
-the default value ( see the
-"delete_delay" - [delete delay](#delete_delay-integer))
-module param) for the delete delaying.
+the default value configured through the
+[delete_delay](#delete_delay-integer) module parameter.
 
 
 The variable must be used when the context of a dialog is

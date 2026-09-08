@@ -65,8 +65,8 @@ tunnels by restoring them after a restart.
 
 
 When a request is received over an IPSec tunnel, the module provides
-two variables, [ipsec](#ipsec) and
-[ipsec ue](#ipsec_ue) to inspect details about it.
+two variables, [$ipsec](#ipsec) and
+[$ipsec_ue](#ipsec_ue) to inspect details about it.
 
 
 ### Dependencies
@@ -307,17 +307,17 @@ Meaning of the parameters is as follows:
 port to be used in the IPSec communication. It should be an existing
 IPSec port and is advertised in the
 *Security-Server* header. If missing, the
-[default client port](#default_client_port-integer) is considered.
+[default_client_port](#default_client_port-integer) is considered.
 - *port_client (integer, optional)* - the client
 port to be used in the IPSec communication. It should be an existing
 IPSec port and is advertised in the
 *Security-Server* header. If missing, the
-[default server port](#default_server_port-integer) is considered.
+[default_server_port](#default_server_port-integer) is considered.
 - *algos (string, optional)* - a list of
 algorithms that should be used for creating this security association.
-It has the same format as [allowed algorithms](#allowed_algorithms-string)
+It has the same format as [allowed_algorithms](#allowed_algorithms-string)
 and overwrites its value when used. If missing, the
-[allowed algorithms](#allowed_algorithms-string) is considered.
+[allowed_algorithms](#allowed_algorithms-string) is considered.
 
 
 This function can be used from REPLY_ROUTE.

@@ -210,8 +210,8 @@ running OpenSIPS with this module loaded:
 Specify a new dialplan partition (data source).  This parameter may
 be set multiple times.  Each partition may have a specific "db_url" and
 "table_name".  If not specified, these values will be inherited from
-[db url](#db_url-string), db_default_url or
-[table name](#table_name-string), respectively.  The name of
+[db_url](#db_url-string), db_default_url or
+[table_name](#table_name-string), respectively.  The name of
 the default partition is 'default'.
 
 

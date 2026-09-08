@@ -32,7 +32,7 @@ The module allows definition of several sets of rtpengines.
 Load-balancing will be performed over a set and the admin has the
 ability to choose what set should be used. The set is selected via
 its id - the id being defined with the set. Refer to the
-"[rtpengine sock](#rtpengine_sock-string)" module parameter
+"[rtpengine_sock](#rtpengine_sock-string)" module parameter
 definition for syntax description.
 
 
@@ -77,7 +77,7 @@ returns one of the following errors:
 - Ran out of ports
 
 
-You can use the [extra failover error](#extra_failover_error-string) parameter
+You can use the [extra_failover_error()](#extra_failover_error-string) parameter
 to extend the above list.
 
 
@@ -298,7 +298,7 @@ modparam("rtpengine", "error_pv", "$var(rtpengine_error)")
 
 Database URL, used to load RTPEngines sockets
 from db, instead of specifying them in the
-script ([rtpengine sock](#rtpengine_sock-string)
+script ([rtpengine_sock](#rtpengine_sock-string)
 module parameter).
 
 
@@ -371,7 +371,7 @@ enabled nodes as well.
 
 
 If this parameter is set, each enabled node is pinged
-every [rtpengine timer interval](#rtpengine_timer_interval-integer) seconds, unless
+every [rtpengine_timer_interval](#rtpengine_timer_interval-integer) seconds, unless
 there was any communication with the node since the previous interval.
 
 
@@ -435,7 +435,7 @@ RTP proxy. Possible values are:
 "auto" - use the first "Via" header if this is
 a request, or the second one if this is a reply;
 "extra" - don't take the value from a header, but instead use
-the value of the "[extra id pv](#extra_id_pv-string)" variable.
+the value of the "[extra_id_pv](#extra_id_pv-string)" variable.
 This can be used to create one media session per branch
 on the RTP proxy. When sending a subsequent "delete" command to
 the RTP proxy, you can then stop just the session for a specific branch when
@@ -1140,7 +1140,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 #### rtpengine_offer([flags[, sock_pvar[, sdp_pvar[, body]]]])
 
 
-The asynchronous flavor of the [rtpengine offer](#rtpengine_offerflags-sock_var-sdp_pvar-body)
+The asynchronous flavor of the [rtpengine_offer()](#rtpengine_offerflags-sock_var-sdp_pvar-body)
 function. It receives the same parameters, with the same meanings.
 
 
@@ -1160,7 +1160,7 @@ route[resume_invite] {
 #### rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])
 
 
-The asynchronous flavor of the [rtpengine answer](#rtpengine_answerflags-sock_pvar-sdp_pvar-body)
+The asynchronous flavor of the [rtpengine_answer()](#rtpengine_answerflags-sock_pvar-sdp_pvar-body)
 function. It receives the same parameters, with the same meanings.
 
 
@@ -1181,7 +1181,7 @@ route[resume_ack] {
 #### rtpengine_delete([flags[, sock_var]])
 
 
-The asynchronous flavor of the [rtpengine delete](#rtpengine_deleteflags-sock_var)
+The asynchronous flavor of the [rtpengine_delete()](#rtpengine_deleteflags-sock_var)
 function. It receives the same parameters, with the same meanings.
 
 
@@ -1374,7 +1374,7 @@ $ opensips-cli -x mi rtpengine_show
 
 
 Reloads all rtpengine sets from the database. Used only when the
-"[db url](#db_url-string)" parameter is set.
+"[db_url](#db_url-string)" parameter is set.
 
 
 Parameters:

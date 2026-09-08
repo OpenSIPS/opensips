@@ -107,9 +107,9 @@ Specify how the data should be encapsulated in the HEP packet. If set to
 *0*, then the JSON based HOMER 6 format will be used. Otherwise,
 if set to anything different than *0*, the plain text HOMER 5
 format will be used for encapsulation. On the capturing node, this parameter
-affects the behavior of the *report_capture* function from the
-[sipcapture](../sipcapture/README.md#report_capturecorrelation_id-table_name-proto_type)
-module.
+affects the behavior of the
+[report_capture()](../sipcapture/README.md#report_capturecorrelation_id-table_name-proto_type)
+function from the sipcapture module.
 
 
 Default value 1, HOMER5 format.

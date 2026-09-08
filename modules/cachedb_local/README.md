@@ -47,7 +47,7 @@ module for details on how to do this and why is it needed.
 
 
 *Note:* You have to explicitly specify which collections
-you want to replicate when you set [cache collections](#cache_collections-string).
+you want to replicate when you set [cache_collections](#cache_collections-string).
 
 
 **Limitations:** The clustering operations are not atomic
@@ -63,7 +63,7 @@ and constistency over the cluster nodes is not guaranteed.
 The following modules must be loaded before this module:
 
 
-- *clusterer, if [cluster id](#cluster_id-int)
+- *clusterer, if [cluster_id](#cluster_id-int)
 is set.*
 
 
