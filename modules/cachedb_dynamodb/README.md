@@ -64,7 +64,7 @@ cachedb_url: *modparam("cachedb_dynamodb", "cachedb_url",
 "dynamodb://localhost:8000/TableName?key=KeyName;val=ValName")"*
 
 
-For additional examples of how cachedb_url should be formatted, refer to the 
+For additional formatting examples, refer to the
 [cachedb_url](#cachedb_url-string) section.
 
 
