@@ -141,7 +141,7 @@ Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer
 chapter for more details.
 
 
-For more on presence clustering see the 
+For more information, see the
 [presence clustering](#presence-clustering) chapter.
 
 
@@ -184,7 +184,7 @@ you to add and remove presence servers without losing
 state.
 
 
-For more on presence clustering see the 
+For more information, see the
 [presence clustering](#presence-clustering) chapter.
 
 
@@ -206,7 +206,7 @@ federated cluster - only presentities advertising one of these events
 will be broadcasted via the cluster.
 
 
-For more on presence clustering see the 
+For more information, see the
 [presence clustering](#presence-clustering) chapter.
 
 
@@ -239,7 +239,7 @@ This parameter has meaning only in clustering mode. If not defined, the
 node will be active all the time.
 
 
-For more on presence clustering see the 
+For more information, see the
 [presence clustering](#presence-clustering) chapter.
 
 
