@@ -74,7 +74,7 @@ Here you can find some cli commands such as create-queue, send/receive-message, 
 
 
 This parameter specifies the configuration for an SQS queue that can be used
-to publish messages directly from the script, using the sqs_publish_message() function
+to publish messages directly from the script, using the sqs_send_message() function
 or to send messages using raise_event function.
 
 
@@ -109,7 +109,7 @@ modparam("event_sqs", "queue_url",
 ### Exported Functions
 
 
-#### sqs_publish_message(queue_id, message)
+#### sqs_send_message(queue_id, message)
 
 
 Publishes a message to an SQS queue. As the actual 
@@ -127,11 +127,11 @@ The function has the following parameters:
 - *message (string)* - The payload of the message to publish.
 
 
-```opensips title="sqs_publish_message() function usage"
+```opensips title="sqs_send_message() function usage"
 ...
 
 $var(msg) = "Hello, this is a message to SQS!";
-sqs_publish_message("q1", $var(msg));
+sqs_send_message("q1", $var(msg));
 
 ...
 		
