@@ -597,7 +597,9 @@ static const param_export_t params[] = {
 	{"raw_moni_capture_on",		INT_PARAM|USE_FUNC_PARAM,
 		(void*)sipcapture_set_moni_capture   },
 	{"raw_interface",     		STR_PARAM, &raw_interface.s   },
+        /* kept for backwards-compatibility */
         {"promiscious_on",  		INT_PARAM, &promisc_on   },
+        {"promiscuous_on",  		INT_PARAM, &promisc_on   },
         {"raw_moni_bpf_on",  		INT_PARAM, &bpf_on   },
 	{"hep_route",		STR_PARAM, &hep_route_name},
 	{0, 0, 0}
