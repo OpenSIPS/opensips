@@ -40,10 +40,10 @@ Since LDAP server implementations are optimized for fast read access they are a 
 First so called LDAP sessions have to be specified in an external configuration file (as described in [ldap config](#ldap-configuration-file)). Each LDAP session includes LDAP server access parameters like server hostname or connection timeouts. Normally only a single LDAP session will be used unless there is a need to access more than one LDAP server. The LDAP session name will then be used in the OpenSIPS configuration script to refer to a specific LDAP session.
 
 
-The `ldap_search` function ([ldap search fn](#ldap_searchldap_url)) performs an LDAP search operation. It expects an LDAP URL as input which includes the LDAP session name and search parameters. [ldap urls](#ldap-urls)  provides a quick overview on LDAP URLs.
+The `ldap_search` function ([ldap_search()](#ldap_searchldap_url)) performs an LDAP search operation. It expects an LDAP URL as input which includes the LDAP session name and search parameters. [ldap urls](#ldap-urls)  provides a quick overview on LDAP URLs.
 
 
-The result of an LDAP search is stored internally and can be accessed with one of the `ldap_result*` functions. `ldap_result` ([ldap result fn](#ldap_resultldap_attr_name-avp_spec-avp_type-regex_subst)) stores resulting LDAP attribute value as AVPs. `ldap_result_check` ([ldap result check fn](#ldap_result_checkldap_attr_name-string_to_match--regex_subst)) is a convenience function to compare a string with LDAP attribute values using regular expression matching. Finally, `ldap_result_next` ([ldap result next fn](#ldap_result_next)) allows to handle LDAP search queries that return more than one LDAP entry.
+The result of an LDAP search is stored internally and can be accessed with one of the `ldap_result*` functions. `ldap_result` ([ldap_result()](#ldap_resultldap_attr_name-avp_spec-avp_type-regex_subst)) stores resulting LDAP attribute value as AVPs. `ldap_result_check` ([ldap result check fn](#ldap_result_checkldap_attr_name-string_to_match--regex_subst)) is a convenience function to compare a string with LDAP attribute values using regular expression matching. Finally, `ldap_result_next` ([ldap_result_next()](#ldap_result_next)) allows to handle LDAP search queries that return more than one LDAP entry.
 
 
 All `ldap_result*` functions do always access the LDAP result set from the last `ldap_search` call. This should be kept in mind when calling `ldap_search` more than once in the OpenSIPS configuration script.
@@ -109,7 +109,7 @@ LDAP search filter definition following rules of RFC 4515
 > Non-URL characters in an LDAP URL have to be escaped using
 > percent-encoding (refer to section 2.1 of RFC 4516). In particular
 > this means that any "?" character in an LDAP URL component must be
-> written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap filter url encode fn](#ldap_filter_url_encodestring-avp_spec))
+> written as "%3F", since "?" is used as a URL delimiter. The exported function `ldap_filter_url_encode` ([ldap_filter_url_encode()](#ldap_filter_url_encodestring-avp_spec))
 > implements RFC 4515/4516 LDAP search filter and URL escaping
 > rules.
 
@@ -1300,7 +1300,7 @@ LDAP search scope integer.
 #### ldap_rfc4515_escape
 
 
-Applies escaping rules described in [ldap filter url encode fn](#ldap_filter_url_encodestring-avp_spec).
+Applies escaping rules described in [ldap_filter_url_encode()](#ldap_filter_url_encodestring-avp_spec).
 
 
 ```c

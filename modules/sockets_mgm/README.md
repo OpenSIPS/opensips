@@ -16,10 +16,10 @@ an SQL database and can be dynamically changed at runtime.
 
 The module caches the entire table sockets and only adjusts the
 dynamic socket list after a reload using the
-[mi reload](#sockets_mgmreload) MI command.
+[sockets_mgm:reload](#sockets_mgmreload) MI command.
 
 
-The [mi list](#sockets_mgmlist) MI command.
+The [sockets_mgm:list](#sockets_mgmlist) MI command.
 can be used to show all the dynamic sockets OpenSIPS is listening on.
 
 
@@ -83,9 +83,9 @@ done with an explicit IP.
 pre-allocated at startup. This means that the number of dynamic
 sockets used at runtime have to be limited by a static value,
 defined at startup. This is why it is recommended to use a fairly
-high value for the sockets in the [max sockets](#max_sockets-integer)
-parameter - we're defaulting a confortable 100 sockets.
-- The sockets defined in the  [max sockets](#max_sockets-integer) are
+high value for the sockets in the [max_sockets](#max_sockets-integer)
+parameter - we're defaulting a comfortable 100 sockets.
+- The sockets defined in the  [max_sockets](#max_sockets-integer) are
 being rotated in a FIFO manner - this way we are trying to avoid
 overlapping sockets in a short period of time.
 

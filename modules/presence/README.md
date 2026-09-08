@@ -56,7 +56,7 @@ please refer to this article [https://blog.opensips.org/2018/03/27/clustering-pr
 
 
 As data synchronization at startup is performed when using the
-*full-sharing* [cluster federation mode](#cluster_federation_mode-str),
+*full-sharing* [cluster_federation_mode](#cluster_federation_mode-str),
 you should define at least one "seed" node in the cluster in this case.
 
 
@@ -403,7 +403,7 @@ contact). So we added this parameter that allows defining a custom
 uri to be used as presentity uri for BLA subscribes. You should 
 set this parameter to the name of a pseudovariable and then set 
 this pseudovariable to the desired URI before calling the
-[handle subscribe](#handle_subscribeforce_active-sharing_tag) function.
+[handle_subscribe()](#handle_subscribeforce_active-sharing_tag) function.
 
 
 *Default value is "NULL".*

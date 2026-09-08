@@ -208,10 +208,10 @@ the replication "bridges" between them.  Full details in the
 chapter of the clusterer module.
 
 
-At ratelimit level, you only need to enable [bridge replication](#bridge_replication-boolean),
+At ratelimit level, you only need to enable [bridge_replication](#bridge_replication-boolean),
 after which the CPS pipes should start flowing to remote clusters.  Make
-sure to tweak [bridge repl timer interval](#bridge_repl_timer_interval-string) and
-[bridge repl timer expire](#bridge_repl_timer_expire-string) as needed.
+sure to tweak [bridge_repl_timer_interval](#bridge_repl_timer_interval-string) and
+[bridge_repl_timer_expire](#bridge_repl_timer_expire-string) as needed.
 
 
 ### Dependencies
@@ -443,7 +443,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
 
 Enable the [cluster-bridge replication](../clusterer/README.md#cluster-bridge-replication)
-feature, if applicable (e.g. the current [pipe replication cluster](#pipe_replication_cluster-integer) has
+feature, if applicable (e.g. the current [pipe_replication_cluster](#pipe_replication_cluster-integer) has
 at least one bridge definition to a foreign cluster).
 
 

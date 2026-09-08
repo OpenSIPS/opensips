@@ -62,7 +62,7 @@ default value is '5672'.
 	The default value is ''.
 	* *tls_domain* - indicates which TLS domain (as
 	defined using the *tls_mgm* module) to use for
-	this connection. The [use tls](#use_tls-integer) module parameter
+	this connection. The [use_tls](#use_tls-integer) module parameter
 	must be enabled.
 	* *persistent* - indicates that the message should be
 	published as persistent *delivery_mode=2*. This
@@ -85,7 +85,7 @@ where the event should be sent.
 The following modules must be loaded before this module:
 
 
-- *tls_mgm* if [use tls](#use_tls-integer) is enabled.
+- *tls_mgm* if [use_tls](#use_tls-integer) is enabled.
 
 
 #### External Libraries or Applications
@@ -242,7 +242,7 @@ server restarts. Optional parameter, default is persistent.
 - *tls_domain* - indicates which TLS domain (as
 defined using the *tls_mgm* module) to use for
 this connection. This must be an *amqps* URI and the
-[use tls](#use_tls-integer) module parameter must be enabled.
+[use_tls](#use_tls-integer) module parameter must be enabled.
 
 
 ```opensips title="Set server_id parameter"

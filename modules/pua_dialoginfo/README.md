@@ -133,7 +133,7 @@ a second incoming call) dialog.
 
 
 To enable dialoginfo notifications for a certain dialog, you must call
-[dialoginfo set](#dialoginfo_setside) function for that dialog.
+[dialoginfo_set()](#dialoginfo_setside) function for that dialog.
 This function can take one parameter which through which you can tell the
 module to publish dialoginfo only for one side of the call. This is useful
 because you want to store dialoginfo only for the local users, and you can
@@ -145,7 +145,7 @@ is given, the module will generate dialoginfo for both parties.
 
 It is possible to specify what URIs should be used for caller and callee by setting the
 the pseudovariables with the names defined as module parameter "caller_spec_param" and
-"callee_spec_param" before calling [dialoginfo set](#dialoginfo_setside) function.
+"callee_spec_param" before calling [dialoginfo_set()](#dialoginfo_setside) function.
 Please read the description of this parameters in
 [exported parameters](#exported-parameters) section. If this parameters are
 not set, the default sources will be used, From header for the caller
@@ -271,7 +271,7 @@ modparam("pua_dialoginfo", "caller_confirmed", 1)
 
 Usually the dialog-info of the caller will be
 "trying -> early -> confirmed". The "trying" state will be triggered as soon
-as you call [dialoginfo set](#dialoginfo_setside) on the caller, while "early" is triggered
+as you call [dialoginfo_set()](#dialoginfo_setside) on the caller, while "early" is triggered
 as soon as the callee is ringing (triggered by a 180 or 183 provisional reply).
 Sometimes, it is advisable to be notified only when the callee reaches
 the early state and not before. In other cases, it is advisable to
@@ -397,7 +397,7 @@ modparam("pua_dialoginfo", "presence_server", "sip:ps@opensips.org:5060")
 The name of the pseudovariable that will hold a custom caller URI.
 If this variable is not set, the information in From header is used.
 If you want to use another caller definition, you have to fill in this
-pseudovariable before calling [dialoginfo set](#dialoginfo_setside) 
+pseudovariable before calling [dialoginfo_set()](#dialoginfo_setside)
 function. The format of the string
 resemples the format of To/From SIP headers:
 "display_name<sip_uri>"  or "sip_uri".

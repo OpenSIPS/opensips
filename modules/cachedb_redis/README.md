@@ -55,7 +55,7 @@ the appropriate messages.
 When connecting to a Redis Cluster, the module automatically detects
 cluster mode and manages the full slot-to-node topology at runtime.
 No extra configuration is needed beyond the standard
-[cachedb url](#cachedb_url-string) parameter.
+[cachedb_url](#cachedb_url-string) parameter.
 
 
 #### Topology Discovery
@@ -147,7 +147,7 @@ closing brace, the entire key is hashed as usual.
 The following modules must be loaded before this module:
 
 
-- *If a [use tls](#use_tls-integer) is defined, the **tls_mgm** and **tls_openssl** modules will need to be loaded as well*.
+- *If a [use_tls](#use_tls-integer) is defined, the **tls_mgm** and **tls_openssl** modules will need to be loaded as well*.
 
 
 #### External Libraries or Applications
@@ -164,7 +164,7 @@ by running 'apt-get install libhiredis-dev'
 Alternatively, if hiredis is not available on your OS repos,
 hiredis can be downloaded from: https://github.com/antirez/hiredis .
 Download the archive, extract sources, run make,sudo make install.
-If TLS connections are enabled via the [use tls](#use_tls-integer) modparam,
+If TLS connections are enabled via the [use_tls](#use_tls-integer) modparam,
 *hiredis* needs to be compiled with TLS support.
 
 
@@ -348,7 +348,7 @@ is restarted.
 
 
 When this parameter is enabled, the
-[shutdown on error](#shutdown_on_error-integer) parameter has no effect,
+[shutdown_on_error](#shutdown_on_error-integer) parameter has no effect,
 since no connection is attempted at startup time.
 
 
