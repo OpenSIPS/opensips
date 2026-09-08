@@ -1,3 +1,398 @@
+=========================== Release 3.6.9 ==============================
+
+2026-09-08  Liviu Chircu  <liviu@opensips.org>
+        * [35eb7af4ef] :
+
+        Module docs: Improve various link labels
+
+        - Add missing "_" in various labels
+        - Functions now include "()" suffix
+        - Parameters, pseudo-variables, events, statistics, transformations,
+            and MI commands use exact exported spelling.
+
+        (cherry picked from commit 566e6d6ae220330cb4f7b94ac633e89774820a2d)
+
+
+2026-09-07  Norm Brandinger  <n.brandinger@gmail.com>
+        * [2adcda88cb] :
+
+        stir_shaken: strip RFC 4904 user parameters from telephone numbers (#3904)
+
+        get_orig_tn_from_msg()/get_dest_tn_from_msg() take the originating and
+        destination telephone numbers straight from parse_uri()'s .user field. When a
+        From/To/P-Asserted-Identity URI carries RFC 4904 parameters in the userinfo
+        part, e.g.
+
+            sip:+33123456789;tgrp=grp1;trunk-context=example.com@host
+
+        parse_uri() folds the whole userinfo into .user (the still_at_user backtrack in
+        parser/parse_uri.c) and leaves .user_param empty, so the parameters stay glued
+        to the number, the E.164 check in check_passport_phonenum() fails, and
+        stir_shaken_verify() errors out unless orig_tn/dest_tn are pre-cleaned from
+        script.
+
+        Add trim_user_params() in parser/parse_uri.c (declared in parse_uri.h) so it
+        can be reused from other modules/parts, and call it from both TN extraction
+        sites. It trims the userinfo str in place at the first ';' via the length-based
+        q_memchr() core util, so it is binary-safe and a no-op for params-free userinfo
+        (e.g. tel: URIs, where parse_uri() already splits the params off into
+        .host/params). No change for URIs without user parameters.
+
+        Unit tests (parser/test/test_parser.c, test_trim_user_params) pin the contract:
+        RFC 4904 params stripped, param-less userinfo untouched, cut at the first of
+        several ';', leading/bare ';' -> empty, empty/NULL-safe, idempotency, in-place
+        (.s unchanged), and that backslashes, special characters and an embedded NUL
+        are preserved up to the first ';'. An end-to-end case composes the real
+        parse_uri() with trim_user_params() to pin the fold-into-.user premise.
+        make test module=core: 1..2564, all ok.
+
+        Based on the patch proposed by @StellaTeam in #3904.
+
+        Closes #3904
+
+        (cherry picked from commit e6686119de2bbe1e672943437978618efdf2ebd4)
+
+
+2026-09-07  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [53474a9727] :
+
+        Merge pull request #4113 from kvwake/fix/tm-on_reply-shm-double-free
+
+        tm: fix shm double-free of script-route refs on shared transactions
+        (cherry picked from commit ee8abced1292bddfcfd155d74033e3af863dc2bd)
+
+
+2026-09-07  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e87893ac1d] :
+
+        [parser] fix negative len computation of a body part when...
+
+        ... a multipart body part contains headers and a header/body separator but no actual body content
+        Reported by @sandrogauci from EnbleSecurity
+        Completing bd831dad17
+
+        (cherry picked from commit 6c6731966795aadb9e610f677de7d972353069a4)
+
+
+2026-09-07  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [672907ec50] :
+
+        fix potential heap/buffer overflow in parsing multi-parts body
+
+        https://github.com/OpenSIPS/opensips/security/advisories/GHSA-hx7p-6j27-gjpv
+        Discovered by Anthropic and manually confirmed by Paweł Płatek of Trail of Bits.
+
+        (cherry picked from commit bd831dad1742aca8471c5a5c709286a79db8fb97)
+
+
+2026-09-07  Razvan Crainea  <razvan@opensips.org>
+        * [3d00045abc] :
+
+        xmpp: reject overlong SIP-to-XMPP URIs early
+
+        Check the converted SIP-to-XMPP URI length before formatting it
+
+        Fixes GHSA-hwv5-237j-jq7m
+
+        Reported-by: TristanInSec
+        (cherry picked from commit d3620b9ba28867459d3ea9f74094355ce56145c8)
+
+
+2026-09-07  Razvan Crainea  <razvan@opensips.org>
+        * [2b5b3f431e] :
+
+        sip_i: validate parsed ISUP parameter lengths
+
+        Fixes GHSA-qc7q-vrx3-3j4h
+
+        Reported-by: TristanInSec
+        (cherry picked from commit 635ce1737eb27b12a4a4f12a1f0a1b6a4ee2f92d)
+
+
+2026-09-07  Razvan Crainea  <razvan@opensips.org>
+        * [4794414d7a] :
+
+        proto_msrp: reject invalid To-Path header order
+
+        Require To-Path and From-Path to be the first MSRP headers in that
+        order, and guard the forwarding path against negative header span copies
+        before moving To-Path URLs into From-Path.
+
+        Fixes GHSA-qj7m-hgmv-pfrv
+
+        Reported-by: SecBuddyF KeenLab Tencent (CodeBuddy Security) <tinkerzf@gmail.com>
+        (cherry picked from commit adc1e4e5681ed8f1024ffb4b4cabaab6c2714d73)
+
+
+2026-09-07  Razvan Crainea  <razvan@opensips.org>
+        * [8b9fff80d6] :
+
+        domainpolicy: keep DURI buffer length in sync
+
+        Fixes GHSA-4vg3-hjjc-xv58
+
+        Reported-by: SecBuddyF KeenLab Tencent (CodeBuddy Security) <tinkerzf@gmail.com>
+        (cherry picked from commit 2d842e2e60e774cc9c2ab3c5dff7a6b63898948c)
+
+
+2026-09-07  Razvan Crainea  <razvan@opensips.org>
+        * [e14016db1e] :
+
+        xmpp: prevent unauthenticated message URI overflow
+
+        Require the component handshake or server dialback validation before accepting inbound XMPP message stanzas.
+
+        Fixes GHSA-5gm5-wj62-p234
+
+        Reported-by: SecBuddyF KeenLab Tencent (CodeBuddy Security) <tinkerzf@gmail.com>
+        (cherry picked from commit ec24165bc25fa462e08cdb33ee8071f58e166d36)
+
+
+2026-09-07  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [613b69a11b] :
+
+        [sipmsgops] add note for has_body_part() behavior
+
+        Related #3900
+        Thanks to @securepii-dev
+
+        (cherry picked from commit 5a7f3a63fe39de0f58f373d9b42aa218498a2f17)
+
+
+2026-09-07  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b6ee5ac339] :
+
+        [presence_xml] fix bogus dependency to xcap module
+
+        Even if force_active is ON (so no xcap rules are needed), the module still required binding to the xcap module.
+        Now, the dependency to xcap module is conditioned by the setting of the `force_active` and `pidf_manipulation` modparams
+
+        (cherry picked from commit 371fe181c4068ca3a6f1ca6c688d83e39920f0f1)
+
+
+2026-09-04  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [52a218fd06] :
+
+        Merge pull request #4241 from denys-i-didww/docs/parameter-names-not-exported
+
+        docs: correct parameter names that the modules do not export [skip ci]
+        (cherry picked from commit 6055df383680693ddf3409849658821e1185524d)
+
+
+2026-09-04  Liviu Chircu  <liviu@opensips.org>
+        * [b4ad73ca9c] :
+
+        stir_shaken: Avoid duplicate cleanup on Identity parse errors
+
+        Make get_parsed_identity() the sole owner of the parsed_identity
+        structure and its members, including when parsing fails.  This preserves
+        the unsupported-ppt cleanup added in 80d48a9e4 while keeping all
+        rejected Identity headers on a single cleanup path.
+
+        Credits to Nick Altmann for reporting the issue and suggesting a fix!
+
+        (cherry picked from commit 0fb49d8ec486b63f02b56d2ef8d2edcdd7edbcb5)
+
+
+2026-09-04  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [57e904b1cc] :
+
+        Merge pull request #4239 from denys-i-didww/docs/uac-rr-dependency-is-not-conditional
+
+        uac: the RR dependency is not conditional on restore_mode
+        (cherry picked from commit 753818ad943db6568fbd4681fc6354e03bcb7672)
+
+
+2026-09-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [8d7f09b6ab] :
+
+        Merge pull request #4121 from Lt-Flash/fix/log-level-before-fork
+
+        core: do not crash setting the log level before the process table exists
+        (cherry picked from commit 33f6bdf2e2214f7162be8d01ec7372fe52219515)
+
+
+2026-09-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [8407d62faa] :
+
+        Merge pull request #4235 from denys-i-didww/docs/fix-compression-parameter-name
+
+        compression: fix the documented parameter name and example
+        (cherry picked from commit 55f63f9927091281ee5cfc3b3cbd381664a6b52f)
+
+
+2026-09-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e939ddd39d] :
+
+        remove duble declaration of external var
+
+        (better alternative to 379b4b68db5bde975fbc19aa1b9c8fdaeac983f7)
+        Related to 92363ab7de5885f0f50fa8002d1d5208cd182673
+
+        (cherry picked from commit f5f31387b27729e96beb63758cf99a4bb7643c9a)
+
+
+2026-09-03  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [f79ca7fa0f] :
+
+        Merge pull request #4221 from Lt-Flash/fix/io-wait-check-io-data
+
+        io_wait: run the fd-map consistency check only with EXTRA_DEBUG
+
+        (cherry picked from commit 92363ab7de5885f0f50fa8002d1d5208cd182673)
+
+
+2026-09-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4ad8bb03da] :
+
+        fix critical log in tracing when the xlog level in out of range
+
+        The convention is to have ALERT for whatever lower than ALERT and DBG for whatever above DBG.
+        Closes #4236
+        Reported by @lardht
+
+        (cherry picked from commit ba0eded8682e056c872755e7f2209192d1ede311)
+
+
+2026-09-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f2f58962f9] :
+
+        [tm] fix mem leak (lumps) upon async and sync jumps
+
+        If you do a 2 level async() op, where the first is actually handled in async mode while the second is in sync mode, the memory of added lumps will leak.
+
+        Fixes #3914
+        Credits for the report goes to @vadimd333
+
+        (cherry picked from commit d5d1760ff135dbfcd6f48c15a91d1fd6bdc2c858)
+
+
+2026-09-01  Razvan Crainea  <razvan@opensips.org>
+        * [474aa1f5cb] :
+
+        proto_hep: free decompressed HEPv3 payloads
+
+        When compressed_payload is enabled, unpack_hepv3() replaces
+        payload_chunk.data with pkg memory returned by decompression, but the
+        receive path never releases it.
+
+        Track ownership of decompressed payload buffers and release them when
+        the HEP context is freed. Also release owned payloads if a later payload
+        chunk or sipcapture mutation replaces or deletes the payload.
+
+        References: GHSA-3w47-rhcp-gpw5
+
+        Reported-by: Bin Luo(@1121984919) from University of Electronic Science and Technology of China (UESTC)
+        (cherry picked from commit aeae55374428b72069286a75f194eaf11692c0f9)
+
+
+2026-09-01  Razvan Crainea  <razvan@opensips.org>
+        * [473bf476a5] :
+
+        identity: validate Identity header copy length
+
+        References: GHSA-f7wm-6cwv-4q46
+
+        Reported-by: Bin Luo (@1121984919) from University of Electronic Science and Technology of China (UESTC)
+        (cherry picked from commit c599b4d1ed4e3e12486f634a85035b453bf5166b)
+
+
+2026-08-31  Razvan Crainea  <razvan@opensips.org>
+        * [a967a1f7b1] :
+
+        cgrates: fix empty session tag persistence
+
+        Many thanks to @kimaiden1984-boop for the report.
+
+        Closes #4131
+
+        (cherry picked from commit 416680f97a032c029c0b00df5fb0b9aed5e103c2)
+
+
+2026-08-27  Razvan Crainea  <razvan@opensips.org>
+        * [a72edc8de8] :
+
+        rtpproxy: prevent DTMF tag OOB read
+
+        Reject oversized Call-ID values before using them to build the DTMF tag.
+
+        Fixes GHSA-qv9x-v8jq-434w
+
+        Reported-by: Nikola Kojic (@nikolakojic-rasit on GitHub)
+        (cherry picked from commit 61ae3165203824c59c4bd6724502d31018d6d46f)
+
+
+2026-08-26  Razvan Crainea  <razvan@opensips.org>
+        * [cc3c36d76f] :
+
+        event_rabbitmq: force close broken publish streams
+
+        Avoid graceful AMQP close writes after publish errors.
+
+        Many thanks to @jarvisathome for the report.
+
+        Closes #4224
+
+        (cherry picked from commit 9d0f95edd36cb5c02bc104daba5bc564288e2c2f)
+
+
+2026-08-26  Razvan Crainea  <razvan@opensips.org>
+        * [4b71292efa] :
+
+        event_rabbitmq: fix persistent event publishing
+
+        Initialize props structure to avoid using dangling info.
+
+        Many thanks to @jarvisathome for the report.
+
+        Closes #4223
+
+        (cherry picked from commit f92a4329a82dd603771c2876b0318137bd1fb593)
+
+
+2026-08-26  Razvan Crainea  <razvan@opensips.org>
+        * [f800e7f627] :
+
+        packaging/rpm: fix EL10 mysql module dependency
+
+        Many thanks to @rwilkinson87 for the report.
+
+        Closes #4225
+
+        (cherry picked from commit 68e5725c916a873b078f531f435d49ea94a694b8)
+
+
+2026-08-24  Razvan Crainea  <razvan@opensips.org>
+        * [c47d47da73] :
+
+        sngtc: validate SDP connection IP length
+
+        Reject SDP connection address tokens that cannot fit in the IPv4 conversion buffer before copying them for inet_pton(). This keeps transcoding session setup from writing past the stack buffer while parsing untrusted SDP.
+
+        Addresses GHSA-6pjc-3x9r-mp8h.
+
+        Reported by zx (Jace, @manus-use).
+
+        (cherry picked from commit 87ec59696a6f606f468093f472d9b77762cda800)
+
+
+2026-08-20  Răzvan Crainea  <razvan@opensips.org>
+        * [e6c1a35a34] :
+
+        Merge pull request #4219 from dariusstefan/master
+
+        ci: do not publish documentation on tag pushes
+        (cherry picked from commit 8f4f1e1b4015a52f88953e6c16758f800bd0e9fb)
+
+
+2026-08-19  Razvan Crainea  <razvan@opensips.org>
+        * [7cfcfed882] :
+
+        ci: trigger package builds on tags [skip ci]
+
+        (cherry picked from commit 4bbf566a26f9aa33053def460e3157b5228e2c50)
+
+
 =========================== Release 3.6.8 ==============================
 
 2026-08-18  Razvan Crainea  <razvan@opensips.org>
