@@ -65,7 +65,7 @@ enum HTTPD_CONTENT_TYPE {
  *             callback (see httpd_flush_data_cb)
  * @returns code the HTTP code to be returned to the client
  */
-typedef int (httpd_acces_handler_cb) (void *cls, void *connection, const char *url,
+typedef int (httpd_access_handler_cb) (void *cls, void *connection, const char *url,
 				const char *method, const char *version,
 				const char *upload_data, size_t upload_data_size,
 				void **con_cls,
@@ -112,7 +112,7 @@ typedef void (httpd_init_proc_cb) (void);
 struct httpd_cb {
 	const char *module;
 	str *http_root;
-	httpd_acces_handler_cb *callback;
+	httpd_access_handler_cb *callback;
 	httpd_flush_data_cb *flush_data_callback;
 	httpd_init_proc_cb *init_proc_callback;
 	enum HTTPD_CONTENT_TYPE type;
@@ -126,12 +126,8 @@ void lookup_arg(void *connection, const char *key,
 typedef void (*lookup_arg_f)(void *connection, const char *key,
 			void *con_cls, str *val);
 
-int register_httpdcb(const char *mod, str *root_path,
-			httpd_acces_handler_cb f1,
-			httpd_flush_data_cb f2,
-			httpd_init_proc_cb f3);
 typedef int (*register_httpdcb_f)(const char *mod, str *root_path,
-			httpd_acces_handler_cb f1,
+			httpd_access_handler_cb f1,
 			httpd_flush_data_cb f2,
 			enum HTTPD_CONTENT_TYPE type,
 			httpd_init_proc_cb f3);

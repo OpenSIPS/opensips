@@ -371,7 +371,7 @@ setcap 'cap_net_bind_service=+ep' /usr/local/sbin/opensips
 ### Available Functions
 
 
-#### register_httpdcb (module, root_path, httpd_access_handler_cb, httpd_flush_data_cb, httpd_init_proc_cb)
+#### register_httpdcb (module, root_path, httpd_access_handler_cb, httpd_flush_data_cb, HTTPD_CONTENT_TYPE, httpd_init_proc_cb)
 
 
 Register a new http root with it's associated callbacks into the httpd module.
@@ -388,6 +388,8 @@ Meaning of the parameters is as follows:
 			- handler to the callback method to be called on root path match;
 - *httpd_flush_data_cb f2*
 			- handler to the callback method to be called for sending extra data (at a later time);
+- *enum HTTPD_CONTENT_TYPE type*
+			- the Content-Type header to be set on the responses sent for this root path; HTTPD_STD_CNT_TYPE leaves it as text/html;
 - *httpd_init_proc_cb f3*
 			- handler to the callback method to be called during httpd process init;
 <!-- CONTRIBUTORS -->

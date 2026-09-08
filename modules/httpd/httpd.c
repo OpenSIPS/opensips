@@ -237,7 +237,7 @@ static void destroy(void)
 
 
 int httpd_register_httpdcb(const char *module, str *http_root,
-			httpd_acces_handler_cb f1,
+			httpd_access_handler_cb f1,
 			httpd_flush_data_cb f2,
 			enum HTTPD_CONTENT_TYPE type,
 			httpd_init_proc_cb f3)
@@ -252,7 +252,7 @@ int httpd_register_httpdcb(const char *module, str *http_root,
 		LM_ERR("NULL http root path\n"); return -1;
 	}
 	if (!f1) {
-		LM_ERR("NULL acces handler cb\n"); return -1;
+		LM_ERR("NULL access handler cb\n"); return -1;
 	}
 	if (!f2) {
 		LM_ERR("NULL flush data cb\n"); return -1;
