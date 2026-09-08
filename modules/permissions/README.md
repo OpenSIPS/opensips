@@ -329,8 +329,8 @@ modparam("permissions", "address_table", "pbx")
 Specify a new IP-based checking partition (data source).  This
 parameter may be set multiple times.  Each partition may have a
 specific "db_url" and "table_name".  If not specified, these values
-will be inherited from [db url](#db_url-string), db_default_url
-or [address table](#address_table-string), respectively.  The name of
+will be inherited from [db_url](#db_url-string), db_default_url
+or [address_table](#address_table-string), respectively.  The name of
 the default partition is 'default'.
 
 

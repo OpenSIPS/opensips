@@ -456,7 +456,7 @@ Replaces obsolete MI command: *media_fork_from_call_to_uri*.
 
 
 MI command that has the same behavior as
-[media fork to uri](#media_fork_to_uriuri-leg-headers-medianum-instance), only that the triggering
+[media_fork_to_uri()](#media_fork_to_uriuri-leg-headers-medianum-instance), only that the triggering
 is not script driven, but exterior driven. Useful for starting
 listening a call.
 
@@ -506,7 +506,7 @@ Replaces obsolete MI command: *media_exchange_from_call_to_uri*.
 
 
 MI command that has the same behavior as
-[media exchange from uri](#media_exchange_from_uriuri-leg-body-headers-nohold), only that the triggering
+[media_exchange_from_uri()](#media_exchange_from_uriuri-leg-body-headers-nohold), only that the triggering
 is not script driven, but exterior driven. Useful for injecting media
 announcements during a call.
 
@@ -552,11 +552,11 @@ Replaces obsolete MI command: *media_exchange_from_call_to_uri_body*.
 
 
 MI command that does the same thing as the
-[mi from call to uri](#media_exchangefrom_call_to_uri) MI function, but
+[media_exchange:from_call_to_uri](#media_exchangefrom_call_to_uri) MI function, but
 also allows you to specify a custom body in the outgoing request.
 The body has to be specified in the mandatory *body*
 parameter, all the other parameters being the same as the ones of
-[mi from call to uri](#media_exchangefrom_call_to_uri).
+[media_exchange:from_call_to_uri](#media_exchangefrom_call_to_uri).
 
 
 #### media_exchange:terminate

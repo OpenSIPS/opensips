@@ -34,13 +34,13 @@ the create_dialog() function, with or without parameter.
 The dialog is automatically terminated when a "BYE" is
 received. In case of no "BYE", the dialog lifetime is
 controlled via the default timeout (see "default_timeout"
-	- [default timeout](#default_timeout-integer)) and custom timeout (see
-"$DLG_timeout" - [DLG timeout](#dlg_timeout)).
+	- [default_timeout](#default_timeout-integer)) and custom timeout (see
+"$DLG_timeout" - [$DLG_timeout](#dlg_timeout)).
 
 
 Once terminated, the in-memory dialog may be destroyed right away or, 
 depending on the "delete_delay"
-	- [delete delay](#delete_delay-integer)) setting, it may be kept for a
+	- [delete_delay](#delete_delay-integer)) setting, it may be kept for a
 while in memory, in a read-only state (no action, no changes, nothing).
 This delaying may be used to help with the routing of late in-dialog
 request that may be received after the dialog terminated (like late BYE's
@@ -348,7 +348,7 @@ still be able to match and route late in-dialog requests.
 
 
 This global value may be per-call changed via the DLG_del_delay
-"$DLG_del_delay" ([DLG del delay](#dlg_del_delay))
+"$DLG_del_delay" ([$DLG_del_delay](#dlg_del_delay))
 script variable.
 
 
@@ -1295,7 +1295,7 @@ to an ongoing dialog.
 
 
 By default, dialog matching is performed according to the
-[dlg match mode](#dlg_match_mode-integer) module parameter. A specific
+[dlg_match_mode](#dlg_match_mode-integer) module parameter. A specific
 matching mode may be enforced by specifying the optional
 "dlg_match_mode" parameter. Possible values for this parameter are
 "DID_ONLY", "DID_FALLBACK" and "DID_NONE".
@@ -1647,7 +1647,7 @@ whatever dialog context was present before doing the load.
 This function can be used from any type of route.
 
 
-For usage example, see the [load dialog ctx](#load_dialog_ctx-dialog--id_type--active_only)
+For usage example, see the [load_dialog_ctx()](#load_dialog_ctx-dialog--id_type--active_only)
 
 
 #### set_dlg_profile(profile, [value], [clear_values])
@@ -2177,7 +2177,7 @@ Used to send an in-dialog request towards one if the dialog's legs.
 The function assumes that is runs inside a dialog context - if you
 are running it from a different context (such as an event_route),
 make sure you first load the dialog context using the
-[load dialog ctx](#load_dialog_ctx-dialog--id_type--active_only) function.
+[load_dialog_ctx()](#load_dialog_ctx-dialog--id_type--active_only) function.
 
 
 Parameters:
@@ -2578,7 +2578,7 @@ Replaces obsolete MI command: *profile_end_dlgs*.
 
 
 Terminate all ongoing dialogs from a specified profile, on a single dialog it
-performs the same operations as the command **[mi end dlg](#dialogend_dlg)**
+performs the same operations as the command **[dialog:end_dlg](#dialogend_dlg)**
 
 
 Name: *dialog:profile_end_dlgs*
@@ -2636,7 +2636,7 @@ This command will only take effect if dialog replication is enabled.
 
 
 Fully synchronize the dialog information in memory from a suitable donor
-node within the [dialog replication cluster](#dialog_replication_cluster-int). Dialogs
+node within the [dialog_replication_cluster](#dialog_replication_cluster-int). Dialogs
 that already exist in memory which are not reconfirmed through syncing will
 be discarded. A sharing tag can be specified in order to sync only dialogs
 marked with that sharing tag.
@@ -3033,7 +3033,7 @@ Used to set the dialog deletion delay (in seconds) for the
 current dialog (in a per-call manner). When read, the variable
 returns the number of seconds that were set for the call or
 the default value ( see the
-"delete_delay" - [delete delay](#delete_delay-integer))
+"delete_delay" - [delete_delay](#delete_delay-integer))
 module param) for the delete delaying.
 
 
@@ -3049,7 +3049,7 @@ the current dialog. The value must be positive and the dialog must
 have OPTIONS pinging enabled through the
 "options-ping-caller" and/or
 "options-ping-callee" flags of
-[create dialog](#create_dialogflags).
+[create_dialog()](#create_dialogflags).
 
 When assigned before the dialog is matched or created, the value is
 stored in the current processing context and applied once the dialog
@@ -3068,7 +3068,7 @@ for the dialog.
 The custom interval is replicated to backup nodes when dialog
 replication is enabled. It is not stored in the dialog database;
 dialogs restored from DB use the
-[options ping interval](#options_ping_interval-integer) module parameter.
+[options_ping_interval](#options_ping_interval-integer) module parameter.
 
 
 #### $DLG_reinvite_ping_interval
@@ -3079,7 +3079,7 @@ the current dialog. The value must be positive and the dialog must
 have Re-INVITE pinging enabled through the
 "reinvite-ping-caller" and/or
 "reinvite-ping-callee" flags of
-[create dialog](#create_dialogflags).
+[create_dialog()](#create_dialogflags).
 
 When assigned before the dialog is matched or created, the value is
 stored in the current processing context and applied once the dialog
@@ -3098,7 +3098,7 @@ not enabled for the dialog.
 The custom interval is replicated to backup nodes when dialog
 replication is enabled. It is not stored in the dialog database;
 dialogs restored from DB use the
-[reinvite ping interval](#reinvite_ping_interval-integer) module parameter.
+[reinvite_ping_interval](#reinvite_ping_interval-integer) module parameter.
 
 
 #### $DLG_json

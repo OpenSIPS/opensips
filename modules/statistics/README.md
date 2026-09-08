@@ -27,13 +27,13 @@ their names with the name of the desired group, along with a colon
 separator (e.g. **$stat(method:invite)** or
 **update_stat("packets:$var(ptype)", "+1")**).
 In order for this to work, the groups must be defined prior to OpenSIPS startup
-using the **[stat groups](#stat_groups-string)**
+using the **[stat_groups](#stat_groups-string)**
 module parameter.
 
 
 The module allows easy iteration over the statistics of a group using
-the **[stat iter init](#stat_iter_initgroup-iter)**
-and **[stat iter next](#stat_iter_nextname-val-iter)**
+the **[stat_iter_init()](#stat_iter_initgroup-iter)**
+and **[stat_iter_next()](#stat_iter_nextname-val-iter)**
 functions.
 
 
@@ -142,7 +142,7 @@ a hash map attached to the profile; this setting tunes the size of the hash
 (default is: 8)
 - *group* - indicates the group where the statistics
 belonging to this profile are grouped (as described in
-**[stat groups](#stat_groups-string)**
+**[stat_groups](#stat_groups-string)**
 (default is to use the same group as the profile)
 - *window* - the number of seconds a timeframe has;
 all older values (out of the specified window) are discarded
@@ -301,7 +301,7 @@ Meaning of the parameters is as follows:
 
 
 - *profile* (string) - the profile as defined in
-**[stat series profile](#stat_series_profile-string)**
+**[stat_series_profile](#stat_series_profile-string)**
 - *variable* (string) - variable to be updated;
 - *value* (int) - value to update with; it may be
 also negative; when using *percentage* algorithm, the

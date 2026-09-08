@@ -42,7 +42,7 @@ OpenSIPS with this module loaded:
 #### default_str (string)
 
 
-The default parameter used when the [example str](#example_strstring)
+The default parameter used when the [example_str()](#example_strstring)
 function is called without any parameter.
 
 
@@ -59,7 +59,7 @@ modparam("example", "default_str", "TEST")
 #### default_int (integer)
 
 
-The default parameter used when the [example int](#example_intint)
+The default parameter used when the [example_int()](#example_intint)
 function is called without any parameter.
 
 
@@ -97,7 +97,7 @@ example();
 
 Function that simply prints a message to log, saying that it has been called.
 If a parameter is passed, it is printed in the log, otherwise the value of
-[default str](#default_str-string) parameter is used.
+[default_str](#default_str-string) parameter is used.
 
 
 Meaning of the parameters is as follows:
@@ -121,7 +121,7 @@ example_str("test");
 
 Function that simply prints a message to log, saying that it has been called.
 If a parameter is passed, it is printed in the log, otherwise the value of
-[default int](#default_int-integer) parameter is used.
+[default_int](#default_int-integer) parameter is used.
 
 
 Meaning of the parameters is as follows:

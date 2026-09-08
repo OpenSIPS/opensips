@@ -807,7 +807,7 @@ given cluster.
 The clustering with sharing tag support may be used to control which 
 node in the cluster will perform the pinging/probing to 
 gateways. See the
-[cluster sharing tag](#cluster_sharing_tag-string) option.
+[cluster_sharing_tag](#cluster_sharing_tag-string) option.
 
 
 This OpenSIPS cluster exposes the **"drouting-status-repl"**
@@ -840,13 +840,13 @@ modparam("drouting", "cluster_id", 9)
 The name of the sharing tag (as defined per clusterer modules) to 
 control which node is responsible for perform the self-triggered
 actions in the module. Such actions may be the gateway probing (see
-also the [cluster probing mode](#cluster_probing_mode-string) parameter)  or
+also the [cluster_probing_mode](#cluster_probing_mode-string) parameter)  or
 sharing the gateway/carrier status changes.
 If defined, only the node with active status of this tag will 
 perform the actions (pinging and sharing status).
 
 
-The [cluster id](#cluster_id-integer) must be defined for this option
+The [cluster_id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -875,7 +875,7 @@ using the clustering support. It is about which node in the cluster
 pings which gateway/destination.
 
 
-The [cluster id](#cluster_id-integer) must be defined for this option
+The [cluster_id](#cluster_id-integer) must be defined for this option
 to work.
 
 
@@ -887,7 +887,7 @@ cluster will independently ping all the defined gateways,
 an "all" pings "all" mode.
 - **"by-shtag"** - all the gateways
 are pinged by only one node in the cluster, the node having the
-[cluster sharing tag](#cluster_sharing_tag-string) active. By 
+[cluster_sharing_tag](#cluster_sharing_tag-string) active. By
 activating the sharing tag on a different node, the pinging
 duty will be transferred to another node in the cluster.
 - **"distributed"** - the pinging
