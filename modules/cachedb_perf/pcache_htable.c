@@ -315,6 +315,12 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 		*vlen_out = n->rec->vlen;
 		*exp_out = n->rec->expires;
 		*fl_out = n->rec->rflags;
+		/* probe: existence and metadata, no copy - the same stop the
+		 * bucket scan makes, or a record in the leg reads as absent */
+		if (!dst) {
+			rc = 0;
+			break;
+		}
 		if (*vlen_out > dstlen) {
 			rc = PCACHE_E_TOOSMALL;     /* nothing copied */
 			break;
