@@ -622,6 +622,12 @@ send_it:
 	tcp_conn_release(c, (rlen<len)?1:0);
 	return rlen;
 con_release:
+	/* mark the ID and real ports of the used connection (tracing purposes),
+	 * as the write was only queued here, not going through send_it */
+	last_outgoing_tcp_id = c->id;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
+
 	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
 	/* close the fd if this process is not meant to own it */
 	if (c->proc_id != process_no)
