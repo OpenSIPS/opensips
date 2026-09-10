@@ -1172,18 +1172,27 @@ static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
 
 /* walk the overflow leg under the overflow lock; @kbuf/@vbuf are the caller's
  * snapshot buffers.  Returns the last callback rc (<0 stops). */
-static int iter_overflow(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
-		char *kbuf, char *vbuf)
+/* The overflow leg from overflow bucket *@oidx on.  @budget > 0 stops after
+ * the chain in which that many records have been emitted, *@oidx then
+ * naming the next chain; @budget 0 walks to the end.  On a callback stop
+ * *@oidx names the chain being emitted, so a resumed walk re-offers its
+ * earlier nodes (at-least-once, as everywhere in this walk).  *@oidx ==
+ * PCACHE_OVF_BUCKETS on return means the leg is done. */
+static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
+		void *ctx, char *kbuf, char *vbuf, unsigned int *oidx,
+		unsigned int budget)
 {
 	pcache_rec_t *r;
 	struct povf *n;
-	unsigned int idx, klen, vlen;
+	unsigned int idx, klen, vlen, emitted = 0;
 	int rc = 0;
 
-	if (!ht->ovf_count)
+	if (!ht->ovf_count) {
+		*oidx = PCACHE_OVF_BUCKETS;
 		return 0;
+	}
 	lock_get(&ht->ovf_lock);
-	for (idx = 0; idx < PCACHE_OVF_BUCKETS && rc >= 0; idx++) {
+	for (idx = *oidx; idx < PCACHE_OVF_BUCKETS; idx++) {
 		for (n = ht->ovf_tab[idx]; n; n = n->next) {
 			r = n->rec;
 			klen = r->klen;
@@ -1194,10 +1203,26 @@ static int iter_overflow(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
 				r->expires, r->rflags);
 			if (rc < 0)
 				break;
+			emitted++;
+		}
+		if (rc < 0)
+			break;
+		if (budget && emitted >= budget) {
+			idx++;
+			break;
 		}
 	}
 	lock_release(&ht->ovf_lock);
+	*oidx = idx;
 	return rc;
+}
+
+static int iter_overflow(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
+		char *kbuf, char *vbuf)
+{
+	unsigned int oidx = 0;
+
+	return iter_overflow_from(ht, cb, ctx, kbuf, vbuf, &oidx, 0);
 }
 
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
@@ -1256,6 +1281,7 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 	unsigned int idx, end, i, klen, vlen, exp, nb;
 	unsigned char fl;
 	char *kbuf, *vbuf;
+	unsigned int oidx;
 	int rc = 0;
 
 	if (!max_buckets)
@@ -1271,6 +1297,10 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 
 	nb = ht->nbuckets;
 	idx = *cursor;
+	if (idx & PCACHE_CURSOR_OVF) {  /* resuming inside the overflow leg */
+		oidx = idx & ~PCACHE_CURSOR_OVF;
+		goto leg;
+	}
 	end = (idx > nb || nb - idx < max_buckets) ? nb : idx + max_buckets;
 
 	for (; idx < end; idx++) {
@@ -1289,10 +1319,16 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		*cursor = idx;               /* more buckets remain */
 		goto out;
 	}
-
-	/* last bucket reached: drain overflow once, then signal completion */
-	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
-	*cursor = 0;
+	oidx = 0;
+leg:
+	/* the overflow leg under the same budget, counted in records - a
+	 * bucket's worth is PCACHE_SLOTS - whole chains at a time; the
+	 * cursor names the next chain, and 0 once the leg is done */
+	rc = iter_overflow_from(ht, cb, ctx, kbuf, vbuf, &oidx,
+		max_buckets * PCACHE_SLOTS);
+	if (rc < 0)
+		goto out;                    /* the cursor stands: retry smaller */
+	*cursor = oidx < PCACHE_OVF_BUCKETS ? (PCACHE_CURSOR_OVF | oidx) : 0;
 out:
 	pkg_free(kbuf);
 	return rc < 0 ? rc : 0;

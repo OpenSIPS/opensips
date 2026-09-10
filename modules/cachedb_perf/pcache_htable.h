@@ -335,6 +335,14 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
 /* default buckets visited per perf_scan call when count is unset */
 #define PCACHE_SCAN_BUCKETS 100
 
+/* A cursor with this bit set names a position INSIDE the overflow leg: the
+ * low bits are the overflow bucket to resume at.  Bucket cursors never
+ * carry it (a table's buckets stay far below 2^31), so a cursor stays
+ * unambiguous across a resize that grows nbuckets past an older overflow
+ * cursor's value.  Callers treat cursors as opaque; this is for the ones
+ * that split a table by bucket range and must know where the leg begins. */
+#define PCACHE_CURSOR_OVF 0x80000000u
+
 /*
  * Cursored, bounded walk (MI perf_scan, Redis SCAN semantics).  Starts at
  * bucket *@cursor, visits up to @max_buckets buckets calling @cb per live
@@ -343,6 +351,13 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
  * ascending cursor is stable across a concurrent resize (3.4 / 5.2) and gives
  * the >=-once guarantee; it advances a whole bucket at a time.  0, or <0 on
  * error / callback stop.
+ *
+ * The overflow leg is walked under the same budget: once the buckets are
+ * done the cursor moves into the leg (PCACHE_CURSOR_OVF | overflow bucket)
+ * and each call emits about @max_buckets buckets' worth of records from it
+ * - whole chains, so a call may run over by one chain - rather than the
+ * whole leg in the final call, which on a table at load factor four is
+ * some percent of every record it holds.
  */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx);
