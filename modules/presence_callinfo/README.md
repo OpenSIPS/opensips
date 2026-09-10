@@ -139,12 +139,11 @@ the script.
 
 
 To trigger the internal publishing (from the dialog module) for a
-certain call, use the "sca_set_calling_line()" or
-"sca_set_called_line()" functions from the script when handling a
-new call. These functions will do all the work (creating dialog, 
-setting the internal publishing, etc) - you just need to use them
-and eventually specify the name of the line (if other then the one
-from the SIP INVITE) - see the below documentation.
+certain call, use the "sca_set_called_line()" function from the
+script when handling a new call. This function will do all the work
+(creating dialog, setting the internal publishing, etc) - you just
+need to use it and eventually specify the name of the line (if other
+then the one from the SIP INVITE) - see the below documentation.
 
 
 LIMITATIONS : in this mode, the module does not really check if the
@@ -253,32 +252,6 @@ modparam("presence_callinfo", "line_hash_size", 128)
 
 
 ### Exported Functions
-
-
-#### sca_set_calling_line([line])
-
-
-The function (to be used only in internal publishing mode) is setting
-for the current new call (initinal INVITE) the outbound line - the line
-used for calling out.
-
-
-If no parameter is provided, the name of the line is taken from the
-SIP FROM header of the INVITE. You can override that by providing 
-the name of the line as a string parameter - be careful as the value must be
-a SIP URI !
-
-
-This function can be used from REQUEST_ROUTE.
-
-
-```opensips title="sca_set_calling_line() usage"
-...
-	if (is_method("INVITE") and !has_totag()) {
-		sca_set_calling_line();
-	}
-...
-```
 
 
 #### sca_set_called_line([line])
