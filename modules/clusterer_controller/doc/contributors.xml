@@ -1,0 +1,25 @@
+<chapter>
+    <title>Contributors</title>
+    <section id="contributors" xreflabel="Contributors">
+	<title>Contributors</title>
+	<para>
+	Definition, design and implementation of this module was made by:
+	<itemizedlist>
+	    <listitem>
+	    <para>Yury Kirsanov — VoIPLine Telecom</para>
+	    </listitem>
+	</itemizedlist>
+	</para>
+    </section>
+    <section id="doc_contributors" xreflabel="Documentation Contributors">
+	<title>Documentation Contributors</title>
+	<para>
+	Documentation was written by:
+	<itemizedlist>
+	    <listitem>
+	    <para>Yury Kirsanov — VoIPLine Telecom</para>
+	    </listitem>
+	</itemizedlist>
+	</para>
+    </section>
+</chapter>
