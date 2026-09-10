@@ -1606,7 +1606,19 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 {
 	pcache_htable_t *ht;
 	pcache_bucket_t *seg;
-	unsigned int nbuckets = 1U << size_log2, done, n, s, i;
+	unsigned int nbuckets, done, n, s, i;
+
+	/* The segment directory is a FIXED array of PCACHE_NSEGS pointers.
+	 * A larger size_log2 asks for more segments than it holds, and the
+	 * loop below would write past it; 32 or more is not even a defined
+	 * shift.  Every caller is gated today, so this guards the next one. */
+	if (size_log2 > PCACHE_MAX_SIZE_LOG2) {
+		LM_ERR("a table of 2^%u buckets is past the %u-segment "
+			"directory's ceiling of 2^%u\n", size_log2,
+			PCACHE_NSEGS, PCACHE_MAX_SIZE_LOG2);
+		return NULL;
+	}
+	nbuckets = 1U << size_log2;
 
 	ht = pcache_region_alloc(sizeof *ht);
 	if (!ht)
