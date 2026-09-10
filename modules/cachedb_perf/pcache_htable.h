@@ -32,7 +32,12 @@
 #define PCACHE_SLOTS        6
 #define PCACHE_SEG_BITS     12
 #define PCACHE_SEG_SIZE     (1U << PCACHE_SEG_BITS)          /* 4096 buckets */
-#define PCACHE_NSEGS        (1U << (24 - PCACHE_SEG_BITS))   /* for 2^24 max */
+/* The largest table the segment directory can describe.  NSEGS is derived
+ * from it rather than the other way round, so the two cannot drift, and
+ * pcache_htable_new() refuses anything larger instead of writing past the
+ * directory. */
+#define PCACHE_MAX_SIZE_LOG2 24
+#define PCACHE_NSEGS        (1U << (PCACHE_MAX_SIZE_LOG2 - PCACHE_SEG_BITS))
 #define PCACHE_SEQ_RETRIES  64
 #define PCACHE_OVF_BUCKETS  1024
 /* per-process stat shards: sized to a fixed cap, not counted_max_processes
