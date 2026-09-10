@@ -137,11 +137,8 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg,
 			return 0;
 	}
 
-	if (leg >= 0) {
-		if (dlg->legs[leg].adv_contact.len)
-			ct = &dlg->legs[leg].adv_contact;
-		else
-			ct = &dlg->legs[leg].contact;
+	if (leg >= 0 && dlg->legs[leg].adv_contact.len) {
+		ct = &dlg->legs[leg].adv_contact;
 
 		prefix = pkg_malloc(ct->len);
 		if (!prefix) {
