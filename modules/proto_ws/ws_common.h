@@ -276,6 +276,18 @@ static inline int ws_send_pong(struct tcp_connection *con, struct ws_req *req)
 	return ret;
 }
 
+static inline int ws_send_crlf_pong(struct tcp_connection *con)
+{
+	static char crlf[] = "\r\n";
+	int ret;
+
+	lock_get(&con->write_lock);
+	ret = ws_send(con, con->fd, WS_OP_TEXT, crlf, sizeof(crlf) - 1);
+	lock_release(&con->write_lock);
+
+	return ret;
+}
+
 static inline int ws_send_close(struct tcp_connection *con)
 {
 	uint16_t code;
@@ -544,9 +556,18 @@ again:
 					"keeping connection \n");
 			}
 
-			if (tcp_dispatch_msg(msg_buf, msg_len,
-					&local_rcv, NULL, 0) < 0)
-				LM_ERR("failed to deliver WS message\n");
+			if (msg_len == 4 && msg_buf[0] == '\r' && msg_buf[1] == '\n' &&
+			    msg_buf[2] == '\r' && msg_buf[3] == '\n') {
+				if (ws_send_crlf_pong(con) < 0)
+					LM_ERR("cannot send CRLF pong\n");
+			} else if (msg_len == 2 && msg_buf[0] == '\r' &&
+			           msg_buf[1] == '\n') {
+				LM_DBG("Received CRLF pong\n");
+			} else {
+				if (tcp_dispatch_msg(msg_buf, msg_len,
+						&local_rcv, NULL, 0) < 0)
+					LM_ERR("failed to deliver WS message\n");
+			}
 
 			*req->tcp.parsed = bk;
 
