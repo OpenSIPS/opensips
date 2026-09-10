@@ -1319,7 +1319,10 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		*cursor = idx;               /* more buckets remain */
 		goto out;
 	}
-	oidx = 0;
+	/* the buckets are done: the leg starts on the NEXT call, so a chunk
+	 * is never the last buckets plus a leg budget on top */
+	*cursor = ht->ovf_count ? PCACHE_CURSOR_OVF : 0;
+	goto out;
 leg:
 	/* the overflow leg under the same budget, counted in records - a
 	 * bucket's worth is PCACHE_SLOTS - whole chains at a time; the
