@@ -1297,6 +1297,18 @@ unsigned int pcache_ht_nbuckets(pcache_htable_t *ht)
 	return __atomic_load_n(&ht->nbuckets, __ATOMIC_RELAXED);
 }
 
+/* Records living in the overflow leg rather than in a bucket's slots.
+ * A table at its target load factor keeps this near zero; a table that
+ * cannot grow puts everything here, and the leg is a chain per hash
+ * bucket under ONE lock, so its occupancy is the difference between a
+ * table that performs and one that does not.  It was reported nowhere,
+ * which is why a table sitting at 81 entries per bucket looked the same
+ * from the outside as one at 4. */
+unsigned int pcache_ht_overflow(pcache_htable_t *ht)
+{
+	return __atomic_load_n(&ht->ovf_count, __ATOMIC_RELAXED);
+}
+
 unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 		pcache_expired_cb cb, void *cb_ctx)
 {
