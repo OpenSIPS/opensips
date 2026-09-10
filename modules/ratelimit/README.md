@@ -751,27 +751,6 @@ opensips-cli -x mi rl_get_pid
 ```
 
 
-#### rl_bin_status
-
-
-Dumps each destination used for replication, as well as
-the timestamp of the last message received from them.
-
-
-Name: *rl_bin_status*
-
-
-Parameters: *none*
-
-
-MI FIFO Command Format:
-
-
-```bash
-opensips-cli -x mi rl_bin_status
-```
-
-
 ### Exported Pseudo-Variables
 
 
