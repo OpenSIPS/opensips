@@ -128,14 +128,6 @@ the lua script.
 Disabled by default.
 
 
-#### warn_missing_free_fixup (int)
-
-
-When you call a function via moduleFunc() you could have a memleak.
-Enable this warns you when you're doing it.
-Enabled by default.
-
-
 #### lua_allocator (string)
 
 
@@ -235,12 +227,6 @@ level is one of the following:
 - NOTICE
 - INFO
 - DBG
-
-
-#### WarnMissingFreeFixup
-
-
-Dynamically change the variable warn_missing_free_fixup.
 
 
 #### getpid
