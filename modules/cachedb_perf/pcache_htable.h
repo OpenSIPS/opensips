@@ -211,6 +211,9 @@ void pcache_ht_stats_reset(pcache_htable_t *ht);
 /* current live bucket count (grows at runtime, CP-09) - for the CP-11
  * growth event, which reports the before/after span */
 unsigned int pcache_ht_nbuckets(pcache_htable_t *ht);
+/* records in the overflow leg - near zero at the target load factor, and
+ * everything once a table stops growing */
+unsigned int pcache_ht_overflow(pcache_htable_t *ht);
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 
