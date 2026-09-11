@@ -45,6 +45,7 @@
 #include "../../sl_cb.h"
 #include "../../str.h"
 #include "../../script_cb.h"
+#include "../../receive.h"
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
 #include "../b2b_logic/b2b_load.h"
@@ -153,6 +154,8 @@ static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_in_rev(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_out_rev(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_local_buffered_request(struct cell* t, int type,
+		struct tmcb_params *ps, int leg_flag);
 static void trace_msg_out(struct sip_msg* req, str  *buffer,
 		const struct socket_info* send_sock, int proto, const union sockaddr_union *to,
 		trace_info_p info, int leg_flag);
@@ -2849,6 +2852,8 @@ static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps)
 	} else if (ps->rpl) {
 		/* an outpoing reply (local or relaied) */
 		trace_onreply_out( t, type, ps, TRACE_C_CALLER);
+	} else {
+		trace_local_buffered_request(t, type, ps, TRACE_C_CALLEE);
 	}
 }
 
@@ -2861,7 +2866,68 @@ static void trace_tm_out_rev(struct cell* t, int type, struct tmcb_params *ps)
 	} else if (ps->rpl) {
 		/* an outpoing reply (local or relaied) */
 		trace_onreply_out( t, type, ps, TRACE_C_CALLEE);
+	} else {
+		trace_local_buffered_request(t, type, ps, TRACE_C_CALLER);
 	}
+}
+
+/* Some locally generated sends (including retransmissions, ACKs and CANCELs)
+ * do not have a UAS request.  TM still provides the actual outgoing buffer and
+ * destination through extra1 and extra2, so build a temporary request for the
+ * regular tracing path. */
+static void trace_local_buffered_request(struct cell* t, int type,
+		struct tmcb_params *ps, int leg_flag)
+{
+	struct sip_msg *req;
+	struct tmcb_params params;
+	struct dest_info *dest;
+	str *buffer;
+
+	if (!t || !is_local(t) || !ps || !ps->extra1)
+		return;
+
+	buffer = (str *)ps->extra1;
+	if (!buffer->s || buffer->len <= 0)
+		return;
+
+	req = pkg_malloc(sizeof(*req));
+	if (!req) {
+		LM_ERR("no more pkg memory for parsing a locally generated request\n");
+		return;
+	}
+
+	memset(req, 0, sizeof(*req));
+	req->id = get_next_msg_no();
+	req->buf = buffer->s;
+	req->len = buffer->len;
+	if (parse_msg(req->buf, req->len, req) < 0) {
+		LM_ERR("failed to parse a locally generated outgoing request\n");
+		pkg_free(req);
+		return;
+	}
+	if (req->first_line.type != SIP_REQUEST) {
+		LM_ERR("locally generated outgoing buffer is not a SIP request\n");
+		free_sip_msg(req);
+		pkg_free(req);
+		return;
+	}
+
+	dest = (struct dest_info *)ps->extra2;
+	if (dest && dest->send_sock) {
+		req->force_send_socket = dest->send_sock;
+		req->rcv.proto = dest->proto;
+		req->rcv.src_ip = req->rcv.dst_ip = dest->send_sock->address;
+		req->rcv.src_port = req->rcv.dst_port = dest->send_sock->port_no;
+		req->rcv.bind_address = dest->send_sock;
+	}
+	req->flags |= FL_IS_LOCAL;
+
+	params = *ps;
+	params.req = req;
+	trace_onreq_out(t, type, &params, leg_flag);
+
+	free_sip_msg(req);
+	pkg_free(req);
 }
 
 static int mi_tid_dyn_filters(tlist_dyn_elem_p tid_el, mi_item_t *dest_item)
