@@ -90,6 +90,39 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 	LM_DBG("expires: %d\n", *_e);
 }
 
+static void persist_tcp_connection(struct sip_msg *msg)
+{
+	contact_t *ct;
+	struct sip_uri uri;
+	int expires, max_expires = 0;
+
+	if (!is_tcp_based_proto(msg->rcv.proto) ||
+	    !(msg->flags & tcp_persistent_flag))
+		return;
+
+	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
+		calc_contact_expires(msg, ct->expires, &expires, 1);
+		if (expires <= 0)
+			continue;
+
+		if (parse_uri(ct->uri.s, ct->uri.len, &uri) < 0) {
+			LM_ERR("failed to parse contact <%.*s>\n",
+			       ct->uri.len, ct->uri.s);
+			continue;
+		}
+
+		if (is_tcp_based_proto(uri.proto) && expires > max_expires)
+			max_expires = expires;
+	}
+
+	if (max_expires > 0) {
+		LM_DBG("ensure TCP conn lifetime of at least %d sec\n",
+		       max_expires + 10);
+		trans_set_dst_attr(&msg->rcv, DST_FCNTL_SET_LIFETIME,
+		                   (void *)(long)(max_expires + 10));
+	}
+}
+
 /* with the optionally added outgoing timeout extension
  *
  * @_e: output param (UNIX timestamp) - expiration time on the main registrar
@@ -2694,6 +2727,8 @@ quick_reply:
 
 	if (unlock_udomain)
 		ul.unlock_udomain(d, &sctx.aor);
+
+	persist_tcp_connection(msg);
 
 	/* quick SIP reply */
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
