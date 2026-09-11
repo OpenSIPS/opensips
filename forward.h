@@ -87,9 +87,10 @@ int forward_reply( struct sip_msg* msg);
  * \param len - the length of the message to be sent
  * \return 0 if ok, -1 on error
  */
-static inline int msg_send( const struct socket_info* send_sock, int proto,
+static inline int msg_send_ex( const struct socket_info* send_sock, int proto,
 							union sockaddr_union* to, unsigned int id,
-							char* buf, int len, struct sip_msg* msg)
+							char* buf, int len, struct sip_msg* msg,
+							str *sent_buffer)
 {
 	str out_buff;
 	unsigned short port;
@@ -107,6 +108,10 @@ static inline int msg_send( const struct socket_info* send_sock, int proto,
 
 	out_buff.len = len;
 	out_buff.s = buf;
+	if (sent_buffer) {
+		sent_buffer->s = NULL;
+		sent_buffer->len = 0;
+	}
 
 	/* determine the send socket */
 	if (send_sock==0)
@@ -136,15 +141,31 @@ static inline int msg_send( const struct socket_info* send_sock, int proto,
 		goto error;
 	}
 
-	/* potentially allocated by the out raw processing */
-	if (out_buff.s != buf)
+	/* Return the final post-raw SIP buffer passed to the protocol transport.
+	 * Protocol-specific framing or encryption happens inside tran.send(), so
+	 * observers receive the plaintext SIP bytes.  An unchanged buffer is
+	 * borrowed from the caller; a pkg-allocated replacement is transferred. */
+	if (sent_buffer)
+		*sent_buffer = out_buff;
+	else if (out_buff.s != buf)
 		pkg_free(out_buff.s);
 
 	return 0;
 error:
 	if (out_buff.s != buf)
 		pkg_free(out_buff.s);
+	if (sent_buffer) {
+		sent_buffer->s = NULL;
+		sent_buffer->len = 0;
+	}
 	return -1;
+}
+
+static inline int msg_send( const struct socket_info* send_sock, int proto,
+							union sockaddr_union* to, unsigned int id,
+							char* buf, int len, struct sip_msg* msg)
+{
+	return msg_send_ex(send_sock, proto, to, id, buf, len, msg, NULL);
 }
 
 

@@ -426,6 +426,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	struct proxy_l *proxy;
 	struct tm_callback *it;
 	struct ua_client* uac;
+	str sent_buffer = STR_NULL;
+	int observe_send;
 
 	ret=-1;
 
@@ -602,10 +604,15 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		tcp_no_new_conn = 1;
 
 	set_bavp_list(&uac->user_avps);
-	if (SEND_BUFFER(request) == -1) {
+	observe_send = req && has_tran_tmcbs(new_cell, TMCB_MSG_SENT_OUT);
+	if (SEND_BUFFER_CAPTURE(request,
+			observe_send ? &sent_buffer : NULL) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
+		/* Preserve the established callback behavior on send failure. */
+		if (observe_send)
+			sent_buffer = request->buffer;
 	}
 	reset_bavp_list();
 
@@ -623,11 +630,11 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		/* run callbacks 
 		 * NOTE: this callback will be executed ONLY if the local route
 		 * was executed (so we have the msg) */
-		if ( has_tran_tmcbs( new_cell, TMCB_MSG_SENT_OUT) ) {
-			set_extra_tmcb_params( &request->buffer,
-				&request->dst);
+		if (observe_send) {
+			set_extra_tmcb_params(&sent_buffer, &request->dst);
 			run_trans_callbacks( TMCB_MSG_SENT_OUT, new_cell,
 				req, 0, 0);
+			release_sent_buffer(&sent_buffer, request->buffer.s);
 		}
 		free_sip_msg(req);
 		pkg_free(req);
