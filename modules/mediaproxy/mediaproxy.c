@@ -39,6 +39,7 @@
 #include "../../pvar.h"
 #include "../../error.h"
 #include "../../data_lump.h"
+#include "../../sdp_ops.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../trim.h"
@@ -1260,6 +1261,14 @@ replace_element(struct sip_msg *msg, str *old_element, str *new_element)
         return True;
     }
 
+    if (have_sdp_ops(msg)) {
+        str body;
+        if (get_body(msg, &body) != 0)
+            return False;
+        return sdp_ops_splice_body(msg, &body, old_element->s - body.s,
+                                    old_element->len, new_element) == 0;
+    }
+
     buf = pkg_malloc(new_element->len);
     if (!buf) {
         LM_ERR("out of memory\n");
@@ -1288,6 +1297,14 @@ replace_element(struct sip_msg *msg, str *old_element, str *new_element)
 static Bool
 remove_element(struct sip_msg *msg, str *element)
 {
+    if (have_sdp_ops(msg)) {
+        str body;
+        if (get_body(msg, &body) != 0)
+            return False;
+        return sdp_ops_splice_body(msg, &body, element->s - body.s,
+                                    element->len, NULL) == 0;
+    }
+
     if (!del_lump(msg, element->s - msg->buf, element->len, 0)) {
         LM_ERR("failed to delete old element\n");
         return False;

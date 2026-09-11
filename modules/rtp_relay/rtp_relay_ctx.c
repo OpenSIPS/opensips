@@ -27,6 +27,7 @@
 #include "../../lib/cJSON.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+#include "../../sdp_ops.h"
 #include "../b2b_logic/b2b_load.h"
 #include "../../parser/parse_to.h"
 #include "../../route.h"
@@ -1153,6 +1154,13 @@ static int rtp_relay_replace_body(struct sip_msg *msg, str *body)
 	oldbody = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 	if (!oldbody)
 		return -1;
+
+	if (have_sdp_ops(msg)) {
+		if (sdp_ops_set_body(msg, body) < 0)
+			return -1;
+		pkg_free(body->s);
+		return 0;
+	}
 
 	anchor = del_lump(msg, oldbody->s - msg->buf, oldbody->len, 0);
 	if (!anchor) {
