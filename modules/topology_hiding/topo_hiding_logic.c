@@ -1696,6 +1696,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	str rr_set = {NULL, 0};
 	str contact;
 	str flags_str;
+	const str *sock_name;
 	int i,total_len,enc_len;
 	struct sip_uri ctu;
 	struct th_ct_params* el;
@@ -1744,9 +1745,9 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	flags_str.s = int2str(flags, &flags_str.len);
 	if (topo_ct_short_len(flags_str.len, &flags_len, "flags") < 0)
 		goto error;
-	
-	if (topo_ct_short_len(msg->rcv.bind_address->sock_str.len,
-			&addr_len, "bind address") < 0)
+
+	sock_name = get_socket_internal_name(msg->rcv.bind_address);
+	if (topo_ct_short_len(sock_name->len, &addr_len, "bind address") < 0)
 		goto error;
 	local_len += rr_len + ct_len + flags_len + addr_len; 
 	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
@@ -1823,8 +1824,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg, str *routes, int 
 	p+= flags_str.len;
 	memcpy(p,&addr_len,sizeof(short));
 	p+= sizeof(short);
-	memcpy(p,msg->rcv.bind_address->sock_str.s,msg->rcv.bind_address->sock_str.len);
-	p+= msg->rcv.bind_address->sock_str.len;
+	memcpy(p, sock_name->s, sock_name->len);
+	p+= sock_name->len;
 	for (i=0;i<(int)(p-suffix_plain);i++)
 		suffix_plain[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len];
 
@@ -2256,16 +2257,19 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	}
 
 	if (bind_buf.len && bind_buf.s) {
-		LM_DBG("forcing send socket for req to [%.*s]\n",bind_buf.len,bind_buf.s);
+		LM_DBG("forcing send socket for req to [%.*s]\n",
+			bind_buf.len,bind_buf.s);
 		if (parse_phostport( bind_buf.s, bind_buf.len, &host.s, &host.len,
 		&port, &proto)!=0) {
 			LM_ERR("bad socket <%.*s>\n", bind_buf.len, bind_buf.s);
 		} else {
-			sock = grep_sock_info( &host, (unsigned short)port, proto);
+			sock = grep_internal_sock_info(&host, (unsigned short)port, proto);
 			if (!sock) {
-				LM_WARN("non-local socket <%.*s>...ignoring\n", bind_buf.len, bind_buf.s);
+				LM_WARN("non-local socket <%.*s>...ignoring\n",
+					bind_buf.len, bind_buf.s);
+			} else {
+				msg->force_send_socket = sock;
 			}
-			msg->force_send_socket = sock;
 		}
 	}
 
