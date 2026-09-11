@@ -176,11 +176,13 @@ Examples of usage:
 ```
 
 ### version
-Prints the version string of a running**OpenSIPS**.
+Prints the version string of a running **OpenSIPS**.
 
-**Arguments**: none
+**Arguments**:
+* *revision* (optional) - add the versioning revision
 
-**Output**: one item (named "Server") containing the version string.
+**Output**: one item (named "Server") containing the version string. If
+*revision* is provided, the output also includes the versioning revision.
 
 Examples of usage:
 ```bash
@@ -188,6 +190,11 @@ Examples of usage:
     $ opensips-cli -x mi version
     {
         "Server": "OpenSIPS (3.3.0-dev (x86_64/linux))"
+    }
+    $ opensips-mi version revision
+    {
+        "Server": "OpenSIPS (4.1.0-dev (x86_64/linux))",
+        "git": "88ab7f2"
     }
 
 ```
