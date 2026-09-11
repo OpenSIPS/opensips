@@ -51,6 +51,9 @@
 #include <sys/resource.h> /* setrlimit */
 #include <sys/syscall.h>
 #include <unistd.h>
+#if defined(__OS_linux) && !defined(SYS_close_range)
+#include <dirent.h>
+#endif
 #ifdef __OS_linux
 #include <sys/prctl.h>
 #endif
@@ -569,15 +572,49 @@ int get_open_fds_limit(void)
 
 void close_open_fds(void)
 {
-	int fd, open_max = get_open_fds_limit();
-	for (fd = 3; fd < open_max; fd++)
-		syscall(SYS_close, fd); /* does not set errno */
+	close_open_fds_except(-1);
 }
 
 void close_open_fds_except(int except)
 {
-	int fd, open_max = get_open_fds_limit();
+#ifdef SYS_close_range
+	if (except < 3) {
+		syscall(SYS_close_range, 3U, ~0U, 0);
+		return;
+	}
+
+	if (except > 3)
+		syscall(SYS_close_range, 3U, (unsigned int)except - 1U, 0);
+	syscall(SYS_close_range, (unsigned int)except + 1U, ~0U, 0);
+#else
+#ifdef __OS_linux
+	DIR *dir;
+	struct dirent *ent;
+	char *end;
+	long dfd;
+	int dir_fd;
+
+	dir = opendir("/proc/self/fd");
+	if (!dir)
+		return;
+
+	dir_fd = dirfd(dir);
+	while ((ent = readdir(dir)) != NULL) {
+		errno = 0;
+		dfd = strtol(ent->d_name, &end, 10);
+		if (errno || end == ent->d_name || *end != '\0' ||
+				dfd < 3 || dfd == except || dfd == dir_fd)
+			continue;
+		syscall(SYS_close, dfd);
+	}
+
+	closedir(dir);
+#else
+	int fd, open_max;
+	open_max = get_open_fds_limit();
 	for (fd = 3; fd < open_max; fd++)
 		if (fd != except)
 			syscall(SYS_close, fd);
+#endif /* __OS_linux */
+#endif /* SYS_close_range */
 }
