@@ -160,7 +160,7 @@ modparam("janus", "janus_db_table", "my_janus_table")
 ### Exported Functions
 
 
-#### janus_send_requeest(janus_id, janus_command[, response_var])
+#### janus_send_request(janus_id, janus_command[, response_var])
 
 
 Run an arbitrary command on an arbitrary Janus socket. The
