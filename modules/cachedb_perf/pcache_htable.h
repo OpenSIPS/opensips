@@ -39,7 +39,21 @@
 #define PCACHE_MAX_SIZE_LOG2 24
 #define PCACHE_NSEGS        (1U << (PCACHE_MAX_SIZE_LOG2 - PCACHE_SEG_BITS))
 #define PCACHE_SEQ_RETRIES  64
-#define PCACHE_OVF_BUCKETS  1024
+/* Heads in the overflow leg.  A key lives in its bucket OR here, never
+ * both, so any operation that misses the bucket must walk the chain for
+ * its hash - under the ONE leg lock - and that includes every store, not
+ * just operations on records that are actually in the leg.  Profiled on
+ * a receiver applying replicas: the leg lookup was 17% of the thread,
+ * the largest cost outside the cipher, on a table whose leg had grown
+ * during a write burst.
+ *
+ * Chain length is leg size / this, so widening it shortens every chain
+ * proportionally.  16,384 is chosen because the head array is one
+ * allocation of 8 bytes a head: 131,072 bytes, which is the largest
+ * power of two that still fits inside a single 256 KB region slot, the
+ * same one slot 1,024 heads occupied.  Sixteen times the chains for no
+ * extra memory at all. */
+#define PCACHE_OVF_BUCKETS  16384
 /* per-process stat shards: sized to a fixed cap, not counted_max_processes
  * (not yet final when the table is built in mod_init, pre-fork).  The
  * owner:12 bucket field already caps the system at 4096 processes. */
