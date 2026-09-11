@@ -1487,7 +1487,7 @@ Value of max_expires parameter.
 The value of max_contacts parameter.
 
 
-#### default_expire
+#### default_expires
 
 
 The value of default_expires parameter.
