@@ -34,6 +34,7 @@
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
 #include "../../mem/mem.h"
+#include "../../strcommon.h"
 #include "jwt_avps.h"
 #include "authjwt_mod.h"
 
@@ -57,12 +58,13 @@ int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token,
 		pv_spec_t* decoded_jwt, pv_spec_t* auth_user)
 {
 	char raw_query_s[RAW_QUERY_BUF_LEN], *p;
+	char *escaped_tag_buf = NULL;
 	int n,len, i,j;
 	str raw_query,secret;
 	struct jwt_avp *cred;
 	char *jwt_token_buf = NULL,*tag_s;
 	jwt_t *jwt = NULL,*jwt_dec=NULL;
-	str tag;
+	str tag, escaped_tag;
 	db_res_t *res = NULL;
 	db_row_t *row;
 	pv_value_t pv_val;
@@ -98,6 +100,22 @@ int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token,
 	tag.s = tag_s;
 	tag.len = strlen(tag_s);
 
+	/* Escape the tag value to prevent SQL injection
+	 * escape_common() escapes single quotes, double quotes, backslashes, and null bytes
+	 * Allocate buffer for worst case: each char escaped = 2x original length + 1 for null
+	 */
+	escaped_tag_buf = pkg_malloc(tag.len * 2 + 1);
+	if (!escaped_tag_buf) {
+		LM_ERR("No more pkg mem for escaped tag\n");
+		goto err_out;
+	}
+
+	escaped_tag.len = escape_common(escaped_tag_buf, tag.s, tag.len);
+	escaped_tag.s = escaped_tag_buf;
+
+	LM_DBG("Escaped JWT tag claim from [%.*s] to [%.*s]\n",
+		tag.len, tag.s, escaped_tag.len, escaped_tag.s);
+
 	raw_query.s = raw_query_s;
 	p = raw_query_s;	
 	len = RAW_QUERY_BUF_LEN;
@@ -121,7 +139,7 @@ int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token,
 	tag_column.len,tag_column.s,
 	secret_tag_column.len,secret_tag_column.s,
 	tag_column.len,tag_column.s,
-	tag.len,tag.s,
+	escaped_tag.len,escaped_tag.s,
 	unix_ts, start_ts_column.len,start_ts_column.s,
 	unix_ts, end_ts_column.len,end_ts_column.s);
 
@@ -227,6 +245,8 @@ int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token,
 
 		LM_INFO("Validated jwt %s with key %.*s\n",jwt_dump_str(jwt_dec,0),secret.len,secret.s);
 		auth_dbf.free_result(auth_db_handle, res);
+		if (escaped_tag_buf)
+			pkg_free(escaped_tag_buf);
 		if (jwt_token_buf)
 			pkg_free(jwt_token_buf);
 		if (jwt)
@@ -239,6 +259,8 @@ int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token,
 	auth_dbf.free_result(auth_db_handle, res);
 
 err_out:
+	if (escaped_tag_buf)
+		pkg_free(escaped_tag_buf);
 	if (jwt_token_buf)
 		pkg_free(jwt_token_buf);
 	if (jwt)
