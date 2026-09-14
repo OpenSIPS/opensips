@@ -177,11 +177,12 @@ int launch_route_param_get(struct sip_msg *msg, pv_param_t *ip,
 }
 
 
-int async_launch_resume(int fd, void *param)
+int async_launch_resume(int fd, void *param, int was_timeout)
 {
 	struct sip_msg *req;
 	async_launch_ctx *ctx = (async_launch_ctx *)param;
 	int bk_rt;
+	int rc;
 
 	LM_DBG("resume for a launch job\n");
 
@@ -195,8 +196,11 @@ int async_launch_resume(int fd, void *param)
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
-	/* call the resume function in order to read and handle data */
-	return_code = ((async_resume_module*)(ctx->async.resume_f))
+	/* call the resume function in order to read and handle data; on a
+	 * timeout, run the module's timeout handler instead (same as the
+	 * script async path), so it can release whatever it allocated */
+	return_code = ((async_resume_module*)
+		(was_timeout ? ctx->async.timeout_f : ctx->async.resume_f))
 		( fd, req, ctx->async.resume_param );
 
 	if (async_status==ASYNC_CONTINUE) {
@@ -223,9 +227,14 @@ int async_launch_resume(int fd, void *param)
 		reactor_del_reader(fd, -1, IO_FD_CLOSING);
 		fd=return_code;
 
-		/* insert the new fd inside the reactor */
-		if (reactor_add_reader(fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
-		(void*)ctx)<0 ) {
+		/* insert the new fd inside the reactor, keeping the timeout (if
+		 * any) armed, otherwise the new fd would never expire */
+		rc = (ctx->async.timeout_f && ctx->async.timeout_s) ?
+			reactor_add_reader_with_timeout(fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
+				ctx->async.timeout_s, (void*)ctx) :
+			reactor_add_reader(fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
+				(void*)ctx);
+		if (rc<0) {
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			do {
 				async_status = ASYNC_DONE;
@@ -294,6 +303,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 	async_launch_ctx *ctx;
 	int fd = -1;
 	int bk_rt;
+	int rc;
 
 	/* run the function (the action) and get back from it the FD,
 	 * resume function and param */
@@ -371,8 +381,16 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 
 	if (async_status!=ASYNC_NO_FD) {
 		LM_DBG("placing launch job into reactor\n");
-		/* place the FD + resume function (as param) into reactor */
-		if (reactor_add_reader(fd,F_LAUNCH_ASYNC,RCT_PRIO_ASYNC,(void*)ctx)<0){
+		/* place the FD + resume function (as param) into reactor.
+		 * The launch statement carries no timeout parameter, so a module
+		 * may declare its own via ctx->async.timeout_s - without one the
+		 * reactor never expires the fd, and a reply which never arrives
+		 * leaks the descriptor (and its port) for good */
+		rc = (ctx->async.timeout_f && ctx->async.timeout_s) ?
+			reactor_add_reader_with_timeout(fd, F_LAUNCH_ASYNC, RCT_PRIO_ASYNC,
+				ctx->async.timeout_s, (void*)ctx) :
+			reactor_add_reader(fd,F_LAUNCH_ASYNC,RCT_PRIO_ASYNC,(void*)ctx);
+		if (rc<0){
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 			goto sync;
 		}

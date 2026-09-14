@@ -166,7 +166,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		str *report_route_param, void **params);
 
 /* @fd is always valid */
-int async_launch_resume(int fd, void *param);
+int async_launch_resume(int fd, void *param, int was_timeout);
 
 
 #endif

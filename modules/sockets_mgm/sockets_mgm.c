@@ -882,7 +882,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			async_fd_resume( fm->fd, fm->data);
 			break;
 		case F_LAUNCH_ASYNC:
-			async_launch_resume( fm->fd, fm->data);
+			async_launch_resume( fm->fd, fm->data,
+				(event_type==IO_WATCH_TIMEOUT)?1:0 );
 			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);

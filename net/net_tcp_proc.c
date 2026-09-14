@@ -132,7 +132,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			break;
 		case F_LAUNCH_ASYNC:
 			profiling_proc_enter( LEVEL_SIP, "async_launch", 0 );
-			n = async_launch_resume( fm->fd, fm->data);
+			n = async_launch_resume( fm->fd, fm->data,
+					(event_type==IO_WATCH_TIMEOUT)?1:0 );
 			profiling_proc_exit( LEVEL_SIP, "async_launch", n);
 			break;
 		case F_IPC:
