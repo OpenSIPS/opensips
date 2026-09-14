@@ -3637,9 +3637,6 @@ enum async_ret_code timeout_async_send_rtpe_command(int fd, struct sip_msg *msg,
 	rtpe_async_param *param = (rtpe_async_param *)_param;
 	LM_ERR("can't read reply from a RTP proxy - TIMEOUT on %s\n",param->node->rn_url.s);
 
-	param->node->rn_disabled = 1;
-	param->node->rn_recheck_ticks = get_ticks() + rtpengine_disable_tout;
-
 	pkg_free(param->cookie);
 	bencode_buffer_free(param->bencbuf);
 	pkg_free(param->bencbuf);
