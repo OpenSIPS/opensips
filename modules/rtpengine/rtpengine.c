@@ -288,6 +288,8 @@ static int rtpengine_offer_af(struct sip_msg *msg, async_ctx *ctx, str *flags, p
 static int rtpengine_answer_af(struct sip_msg *msg, async_ctx *ctx, str *flags, pv_spec_t *spvar,
                 pv_spec_t *bpvar, str *body);
 static int rtpengine_delete_af(struct sip_msg* msg, async_ctx *ctx, str *flags, pv_spec_t *spvar);
+static int rtpengine_start_recording_af(struct sip_msg *msg, async_ctx *ctx,
+		str *flags, pv_spec_t *spvar);
 
 static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
@@ -465,6 +467,9 @@ static acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}}},
 	{"rtpengine_delete", (acmd_function)rtpengine_delete_af, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}}},
+	{"rtpengine_start_recording", (acmd_function)rtpengine_start_recording_af, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}}},
 		{0, 0, {{0, 0, 0}}}
@@ -3550,7 +3555,11 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		goto error;
 	}
 
-	if (param->op != OP_DELETE) {
+	/* only the offer/answer/subscribe-answer commands return a new SDP
+	 * that has to replace the message body; other commands (recording,
+	 * media control, ...) just return a result */
+	if (param->op == OP_OFFER || param->op == OP_ANSWER ||
+	    param->op == OP_SUBSCRIBE_ANSWER) {
 		LM_DBG("Got reply for a non-delete - yay \n");
 		if (!bencode_dictionary_get_str_dup(dict, "sdp", &newbody)) {
 			LM_ERR("failed to extract sdp body from proxy reply\n");
@@ -3881,6 +3890,27 @@ rtpengine_delete_af(struct sip_msg *msg, async_ctx *ctx, str *flags, pv_spec_t *
                 return -1;
 
 	return rtpe_function_call_async(msg, ctx, flags, spvar, NULL, NULL, OP_DELETE);
+}
+
+/* Async version of rtpengine_start_recording(): reuses the whole
+ * rtpe_function_call_async() machinery (per-command socket, cookie,
+ * timeout handling). An empty body is passed so that the mandatory
+ * SDP extraction is skipped - recording commands carry no SDP and are
+ * typically invoked on in-dialog requests without a body. Their reply
+ * carries no "sdp" field either, which the tightened condition in
+ * resume_async_send_rtpe_command() now handles. */
+static int
+rtpengine_start_recording_af(struct sip_msg *msg, async_ctx *ctx, str *flags, pv_spec_t *spvar)
+{
+	str empty_body = STR_NULL;
+
+	LM_DBG("Async rtpengine_start_recording\n");
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
+
+	return rtpe_function_call_async(msg, ctx, flags, spvar, NULL, &empty_body,
+			OP_START_RECORDING);
 }
 
 /* This function assumes p points to a line of requested type. */
