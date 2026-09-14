@@ -388,6 +388,13 @@ static int rtpengine_stats_used = 0;
 static int rtpengine_disable_tout = 60;
 static int rtpengine_retr = 5;
 static int rtpengine_tout = 1;
+/* timeout (seconds) declared to the core for async operations which did not
+ * get one from the script - in particular every launch(), as the launch
+ * syntax has no timeout parameter. Without it a reply which never arrives
+ * leaves the per-command socket in the reactor forever, leaking the fd and
+ * its local ephemeral port. It only ever expires on a lost reply, so it can
+ * be generous; a script-provided async() timeout still takes precedence. */
+static int rtpengine_async_timeout = 5;
 static int rtpengine_ping_enabled = 0;
 static int rtpengine_timer_interval = 5;
 static pid_t mypid;
@@ -741,6 +748,7 @@ static const param_export_t params[] = {
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
 	{"rtpengine_retr",         INT_PARAM, &rtpengine_retr         },
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
+	{"rtpengine_async_timeout", INT_PARAM, &rtpengine_async_timeout},
 	{"rtpengine_timer_interval", INT_PARAM, &rtpengine_timer_interval},
 	{"extra_id_pv",            STR_PARAM, &extra_id_pv_param.s },
 	{"setid_avp",              STR_PARAM, &setid_avp_param },
@@ -3835,6 +3843,14 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	ASYNC_SET_RESUME_F(ctx, resume_async_send_rtpe_command);
 	ctx->timeout_f = timeout_async_send_rtpe_command;
 	ctx->resume_param = param;
+
+	/* The launch() statement has no timeout parameter, so declare our own
+	 * (the async() path already got the script's one, if any). Without a
+	 * timeout the reactor never expires the per-command socket, and a reply
+	 * which never arrives leaks the descriptor and its local ephemeral port
+	 * for the lifetime of the process. */
+	if (ctx->timeout_s == 0)
+		ctx->timeout_s = rtpengine_async_timeout;
 
 	/* async started with success */
 	async_status = read_fd;
