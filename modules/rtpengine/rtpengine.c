@@ -3637,6 +3637,27 @@ enum async_ret_code timeout_async_send_rtpe_command(int fd, struct sip_msg *msg,
 	return -1;
 }
 
+/* errors that indicate a problem with the local machine (out of ephemeral
+ * ports, memory or fds) rather than with the rtpengine node itself; a UDP
+ * connect() needs the kernel to autobind a local source port first, so an
+ * exhausted ip_local_port_range (shared between TCP and UDP) surfaces as
+ * EAGAIN here. Only valid right after the failing syscall, where errno is
+ * guaranteed to belong to it. */
+static inline int rtpe_local_resource_errno(int err)
+{
+	switch (err) {
+	case EAGAIN:        /* ephemeral port pool exhausted */
+	case EADDRNOTAVAIL:
+	case ENOBUFS:       /* memory / send buffer shortage */
+	case ENOMEM:
+	case EMFILE:        /* fd exhaustion */
+	case ENFILE:
+		return 1;
+	default:
+		return 0;
+	}
+}
+
 static int start_async_send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, char* cookie, enum async_ret_code *out_fd)
 {
 	struct sockaddr_un addr;
@@ -3663,10 +3684,19 @@ static int start_async_send_rtpe_command(struct rtpe_node *node, bencode_item_t 
 
 		fd = socket(AF_LOCAL, SOCK_STREAM, 0);
 		if (fd < 0) {
+			/* a failed socket() is always a local problem - never
+			 * blame the node for it */
 			LM_ERR("can't create socket %d \n",errno);
-			goto badproxy;
+			goto error;
 		}
 		if (connect(fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+			if (rtpe_local_resource_errno(errno)) {
+				LM_ERR("local resource error, NOT disabling proxy <%s> (%d:%s)\n",
+						node->rn_url.s, errno, strerror(errno));
+				close(fd);
+				fd = -1;
+				goto error;
+			}
 			LM_ERR("can't connect to RTP proxy %s (%d:%s)\n",node->rn_url.s,errno,strerror(errno));
 			close(fd);
 			fd = -1;
@@ -3677,6 +3707,13 @@ static int start_async_send_rtpe_command(struct rtpe_node *node, bencode_item_t 
 			len = writev(fd, v + 1, vcnt);
 		} while (len == -1 && errno == EINTR);
 		if (len <= 0) {
+			if (rtpe_local_resource_errno(errno)) {
+				LM_ERR("local resource error, NOT disabling proxy <%s> (%d:%s)\n",
+						node->rn_url.s, errno, strerror(errno));
+				close(fd);
+				fd = -1;
+				goto error;
+			}
 			LM_ERR("can't send command to RTP proxy %s (%d:%s)\n",node->rn_url.s,
 			errno, strerror(errno));
 			close(fd);
@@ -3715,10 +3752,19 @@ static int start_async_send_rtpe_command(struct rtpe_node *node, bencode_item_t 
 
 		fd = socket((node->rn_umode == 6) ? AF_INET6 : AF_INET, SOCK_DGRAM, 0);
 		if (fd < 0) {
+			/* a failed socket() is always a local problem - never
+			 * blame the node for it */
 			LM_ERR("can't create socket %d \n",errno);
-			goto badproxy;
+			goto error;
 		}
 		if (connect(fd, &node->ai_addr.s, node->ai_addrlen) < 0) {
+			if (rtpe_local_resource_errno(errno)) {
+				LM_ERR("local resource error, NOT disabling proxy <%s> (%d:%s)\n",
+						node->rn_url.s, errno, strerror(errno));
+				close(fd);
+				fd = -1;
+				goto error;
+			}
 			LM_ERR("can't connect to RTP proxy %s (%d:%s)\n",node->rn_url.s,errno,strerror(errno));
 			close(fd);
 			fd = -1;
@@ -3729,6 +3775,13 @@ static int start_async_send_rtpe_command(struct rtpe_node *node, bencode_item_t 
 		} while (len == -1 && (errno == EINTR || errno == ENOBUFS || errno == EMSGSIZE));
 
 		if (len <= 0) {
+			if (rtpe_local_resource_errno(errno)) {
+				LM_ERR("local resource error, NOT disabling proxy <%s> (%d:%s)\n",
+						node->rn_url.s, errno, strerror(errno));
+				close(fd);
+				fd = -1;
+				goto error;
+			}
 			LM_ERR("can't send command to RTP proxy %s (%d:%s)\n",node->rn_url.s,
 			errno, strerror(errno));
 
