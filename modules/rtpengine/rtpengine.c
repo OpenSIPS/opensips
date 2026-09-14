@@ -3172,7 +3172,7 @@ static char *
 send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 {
 	struct sockaddr_un addr;
-	int fd, len, i, vcnt;
+	int fd, len, i, vcnt, disable;
 	int max_vcnt=OSIP_IOV_MAX;
 	char *cp;
 	static char buf[RTPENGINE_BUF_SIZE];
@@ -3212,6 +3212,9 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		vcnt = max_vcnt;
 	}
 
+	/* the node is only disabled if it never produced any data; a received
+	 * (even non-matching) datagram proves the node is alive */
+	disable = 1;
 	len = 0;
 	cp = buf;
 	if (node->rn_umode == 0) {
@@ -3315,6 +3318,10 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 					goto out;
 				}
 				fds[0].revents = 0;
+				/* data received from the node, even though the cookie
+				 * did not match (stale reply of a previous command) -
+				 * the node is alive */
+				disable = 0;
 			}
 		}
 		if (i == rtpengine_retr) {
@@ -3328,10 +3335,14 @@ out:
 	*outlen = len;
 	return cp;
 badproxy:
-	LM_ERR("proxy <%s> does not respond, disable it\n", node->rn_url.s);
-	node->rn_disabled = 1;
-	node->rn_recheck_ticks = get_ticks() + rtpengine_disable_tout;
-	raise_rtpengine_status_event(node);
+	/* data was received at some point (disable == 0): the node is alive,
+	 * its replies were just stale/mismatched - keep it enabled */
+	if (disable == 1) {
+		LM_ERR("proxy <%s> does not respond, disable it\n", node->rn_url.s);
+		node->rn_disabled = 1;
+		node->rn_recheck_ticks = get_ticks() + rtpengine_disable_tout;
+		raise_rtpengine_status_event(node);
+	}
 
 	return NULL;
 }
