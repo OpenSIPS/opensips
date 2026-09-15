@@ -3586,8 +3586,20 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		/* if statistics are to be used, store stats in the ctx, if possible */
 		if ((ctx = rtpe_ctx_get())) {
 			if (ctx->stats) {
-				rtpe_stats_free(ctx->stats); /* release the buffer */
-				pkg_free(&(ctx->stats->buf));
+				/* release the buffer, but keep the struct for reuse:
+				 * buf is an embedded bencode_buffer_t inside
+				 * struct rtpe_stats (2nd member, after dict), so
+				 * &ctx->stats->buf is NOT the address returned by
+				 * pkg_malloc() - freeing it corrupts the pkg
+				 * allocator's free lists. Moreover ctx->stats
+				 * was not NULLed afterwards, so the code below
+				 * would write through a dangling pointer anyway.
+				 * rtpe_stats_free() above already releases the
+				 * json string and the buffer's inner pieces, and
+				 * the three fields get overwritten right below;
+				 * rtpe_ctx_free() eventually frees the struct
+				 * itself (with its base address). */
+				rtpe_stats_free(ctx->stats);
 			} else
 				ctx->stats = pkg_malloc(sizeof *ctx->stats);
 			if (ctx->stats) {
