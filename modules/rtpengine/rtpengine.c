@@ -3501,7 +3501,10 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		do {
 			len = read(fd, buf, sizeof(buf) - 1);
 		} while (len == -1 && errno == EINTR);
-		close(fd);
+		/* no close(fd) here: every return path of this function sets
+		 * async_status = ASYNC_DONE_CLOSE_FD, so the async framework
+		 * (tm/async.c, async.c) closes the fd - closing it here too
+		 * would close it twice */
 		if (len <= 0) {
 			LM_ERR("can't read reply from a RTP Engine\n");
 			goto error;
@@ -3516,7 +3519,14 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		len = recv(fd, buf, sizeof(buf)-1, 0);
 		if (len <= 0) {
 			LM_ERR("can't read reply from a RTP Engine (%d, %d)\n", len, errno);
-			RTPE_IO_ERROR_CLOSE(param->node->idx);
+			/* no RTPE_IO_ERROR_CLOSE(param->node->idx) here: on its
+			 * EPIPE/EBADF branch the macro would close() the node's
+			 * array index as if it were an fd (for the first nodes of
+			 * a set that is one of the stdio descriptors) and then
+			 * set node->idx = -1, turning every later
+			 * rtpe_socks[node->idx] access into an out-of-bounds
+			 * array access; the framework closes the fd anyway via
+			 * ASYNC_DONE_CLOSE_FD */
 			goto error;
 		}
 		cookielen = strlen(param->cookie);
