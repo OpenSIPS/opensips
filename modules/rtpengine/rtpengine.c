@@ -3788,6 +3788,11 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	char *err;
 
 	bencode_buffer_t *bencbuf = pkg_malloc(sizeof(bencode_buffer_t));
+	if (!bencbuf) {
+		/* nothing has been allocated yet, so simply bail out */
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
 	memset(&ng_flags, 0, sizeof(ng_flags));
 
 	/*** get & init basic stuff needed ***/
