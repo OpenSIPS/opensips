@@ -115,11 +115,10 @@ static struct __bencode_buffer_piece *__bencode_piece_new(unsigned int size) {
 }
 
 int bencode_buffer_init(bencode_buffer_t *buf) {
+	memset(buf, 0, sizeof(*buf));
 	buf->pieces = __bencode_piece_new(0);
 	if (!buf->pieces)
 		return -1;
-	buf->free_list = NULL;
-	buf->error = 0;
 	return 0;
 }
 
