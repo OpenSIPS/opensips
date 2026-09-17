@@ -774,6 +774,18 @@ int xj_jcon_jconf_presence(xj_jcon jbc, xj_jconf jcf, char* type,
 		char* status)
 {
 	char buff[256];
+	size_t remaining = sizeof(buff) - 3;
+
+	if (jcf->room.len < 0 || jcf->server.len < 0 || jcf->nick.len < 0)
+		return -1;
+	if ((size_t)jcf->room.len > remaining)
+		return -1;
+	remaining -= jcf->room.len;
+	if ((size_t)jcf->server.len > remaining)
+		return -1;
+	remaining -= jcf->server.len;
+	if ((size_t)jcf->nick.len > remaining)
+		return -1;
 
 	strncpy(buff, jcf->room.s,
 			jcf->room.len + jcf->server.len +1);
