@@ -54,6 +54,7 @@
 #include "../../dprint.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+#include "../../sdp_ops.h"
 #include "../../error.h"
 #include "../../forward.h"
 #include "../../context.h"
@@ -3565,6 +3566,12 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 			if(pv_set_value(msg, param->bpvar, (int)EQ_T, &val)<0)
 				LM_ERR("setting PV failed\n");
 			pkg_free(newbody.s);
+		} else if (have_sdp_ops(msg)) {
+			if (sdp_ops_set_body(msg, &newbody) < 0) {
+				pkg_free(newbody.s);
+				goto error;
+			}
+			pkg_free(newbody.s);
 		} else if (extract_body(msg, &oldbody) > 0) {
 			/* otherwise directly set the body of the message */
 			anchor = del_lump(msg, oldbody.s - msg->buf, oldbody.len, 0);
@@ -4039,6 +4046,10 @@ rtpengine_offer_answer_body(struct sip_msg *msg, str *flags, str *node,
 
 	if (outbody) {
 		*outbody = newbody;
+	} else if (have_sdp_ops(msg)) {
+		if (sdp_ops_set_body(msg, &newbody) < 0)
+			goto error_free;
+		pkg_free(newbody.s);
 	} else if (!body || (extract_body(msg, &oldbody) > 0)) {
 		/* otherwise directly set the body of the message */
 		anchor = del_lump(msg, oldbody.s - msg->buf, oldbody.len, 0);
