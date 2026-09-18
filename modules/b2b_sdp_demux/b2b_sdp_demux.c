@@ -483,6 +483,8 @@ static void b2b_sdp_client_free(void *param)
 	if (!param)
 		return;
 
+	ctx = client->ctx;
+
 	if (client->hdrs.s)
 		shm_free(client->hdrs.s);
 
@@ -492,11 +494,12 @@ static void b2b_sdp_client_free(void *param)
 	if (client->body.s)
 		shm_free(client->body.s);
 
+	lock_get(&ctx->lock);
 	list_for_each_safe(it, safe, &client->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
+	lock_release(&ctx->lock);
 	if (client->dlginfo)
 		shm_free(client->dlginfo);
-	ctx = client->ctx;
 	shm_free(client);
 	b2b_sdp_ctx_unref(ctx);
 }
@@ -613,10 +616,10 @@ static void b2b_sdp_ctx_release(struct b2b_sdp_ctx *ctx, int replicate)
 		b2b_sdp_client_terminate(client, &client->b2b_key, 1);
 		lock_get(&ctx->lock);
 	}
-	lock_release(&ctx->lock);
 	/* free remaining streams */
 	list_for_each_safe(it, safe, &ctx->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, ordered));
+	lock_release(&ctx->lock);
 	if (ctx->b2b_key.s)
 		b2b_api.entity_delete(B2B_SERVER, &ctx->b2b_key, ctx->dlginfo, 1, replicate);
 }
