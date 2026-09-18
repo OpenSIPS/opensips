@@ -28,6 +28,7 @@
 #include "../../lib/list.h"
 #include "../../msg_translator.h"
 #include "../../rw_locking.h"
+#include "../../timer.h"
 
 static const dep_export_t mod_deps = {
 	{ /* OpenSIPS module dependencies */
@@ -43,6 +44,7 @@ static b2b_api_t b2b_api;
 static str b2b_sdp_demux_server_cap = str_init("b2b_sdp_demux_server");
 static str b2b_sdp_demux_client_cap = str_init("b2b_sdp_demux_client");
 static str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
+static int b2b_sdp_pending_wait_timeout;
 
 static enum {
 	B2B_SDP_BYE_DISABLE_TERMINATE,
@@ -81,6 +83,11 @@ static struct list_head *b2b_sdp_contexts;
 /** Module init function */
 static int mod_init(void)
 {
+	if (b2b_sdp_pending_wait_timeout < 0) {
+		LM_ERR("invalid pending_wait_timeout: %d\n",
+				b2b_sdp_pending_wait_timeout);
+		return -1;
+	}
 
 	b2b_sdp_contexts_lock = lock_init_rw();
 	if (!b2b_sdp_contexts_lock) {
@@ -146,6 +153,7 @@ static int b2b_sdp_parse_bye_mode(unsigned int type, void *val)
 
 static const param_export_t mod_params[]={
 	{ "client_bye_mode", STR_PARAM|USE_FUNC_PARAM, b2b_sdp_parse_bye_mode },
+	{ "pending_wait_timeout", INT_PARAM, &b2b_sdp_pending_wait_timeout },
 	{ 0,                 0,                        0                       }
 };
 
@@ -907,14 +915,29 @@ static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 	return &body;
 }
 
-#define B2B_SDP_CLIENT_WAIT_FREE(_ctx) \
-	do { \
-		while ((_ctx)->pending_no) { \
-			lock_release(&(_ctx)->lock); \
-			usleep(50); \
-			lock_get(&(_ctx)->lock); \
-		} \
-	} while (0)
+#define B2B_SDP_CLIENT_WAIT_INC_US 50
+
+/* called with the context lock held; returns with it held */
+static int b2b_sdp_client_wait_free(struct b2b_sdp_ctx *ctx)
+{
+	utime_t deadline = 0;
+
+	if (b2b_sdp_pending_wait_timeout)
+		deadline = get_uticks() + (utime_t)b2b_sdp_pending_wait_timeout * 1000;
+
+	while (ctx->pending_no) {
+		if (deadline && get_uticks() >= deadline) {
+			LM_WARN("[%.*s] timeout while waiting for %d pending SDP negotiation(s)\n",
+					ctx->callid.len, ctx->callid.s, ctx->pending_no);
+			return -1;
+		}
+		lock_release(&ctx->lock);
+		usleep(B2B_SDP_CLIENT_WAIT_INC_US);
+		lock_get(&ctx->lock);
+	}
+
+	return 0;
+}
 
 static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
@@ -939,7 +962,10 @@ static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *c
 		code = 491;
 		goto end;
 	}
-	B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
+	if (b2b_sdp_client_wait_free(client->ctx) < 0) {
+		code = 491;
+		goto end;
+	}
 	ret = b2b_sdp_client_sync(client, body);
 	if (ret < 0) {
 		code = 488;
@@ -1098,7 +1124,11 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 			body = b2b_sdp_mux_body(ctx);
 			if (body) {
 				/* we do a busy waiting if there's a different negotiation happening */
-				B2B_SDP_CLIENT_WAIT_FREE(ctx);
+				if (b2b_sdp_client_wait_free(ctx) < 0) {
+					lock_release(&ctx->lock);
+					pkg_free(body->s);
+					return 0;
+				}
 				ctx->pending_no = 1;
 				lock_release(&ctx->lock);
 				memset(&req_data, 0, sizeof(b2b_req_data_t));
@@ -1408,8 +1438,14 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 
 	if (type == B2B_REQUEST) {
 		lock_get(&client->ctx->lock);
-		if (msg->REQ_METHOD != METHOD_BYE)
-			B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
+		if (msg->REQ_METHOD != METHOD_BYE &&
+				b2b_sdp_client_wait_free(client->ctx) < 0) {
+			lock_release(&client->ctx->lock);
+			if (msg->REQ_METHOD != METHOD_ACK)
+				b2b_sdp_reply(&client->b2b_key, client->dlginfo,
+						B2B_CLIENT, msg->REQ_METHOD, 491, NULL);
+			return -1;
+		}
 		/*
 		if (client->ctx->pending_no) {
 			lock_release(&client->ctx->lock);
