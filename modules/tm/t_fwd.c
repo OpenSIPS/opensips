@@ -875,8 +875,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	success_branch=0;
 	for (i=t->first_branch; i<t->nr_of_outgoings; i++) {
 		if ( BRANCH_BM_TST_IDX(added_branches, i) ) {
+			str sent_buffer = STR_NULL;
+			int observe_send;
 
 			uac = & TM_BRANCH( t, i);
+			observe_send = has_tran_tmcbs(t, TMCB_MSG_SENT_OUT);
 
 			if (uac->br_flags & tcp_no_new_conn_bflag)
 				tcp_no_new_conn = 1;
@@ -904,7 +907,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 							&uac->request.dst);
 					run_trans_callbacks(TMCB_PRE_SEND_BUFFER, t, p_msg, 0, i);
 
-					if (SEND_BUFFER( &uac->request)==0) {
+					if (SEND_BUFFER_CAPTURE(&uac->request,
+							observe_send ? &sent_buffer : NULL) == 0) {
 						reset_bavp_list();
 						ser_error = 0;
 						break;
@@ -940,11 +944,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			set_kr(REQ_FWDED);
 
 			/* successfully sent out -> run callbacks */
-			if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-				set_extra_tmcb_params( &uac->request.buffer,
-					&uac->request.dst);
+			if (observe_send) {
+				set_extra_tmcb_params(&sent_buffer, &uac->request.dst);
 				run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
 					p_msg, 0, 0);
+				release_sent_buffer(&sent_buffer, uac->request.buffer.s);
 			}
 
 		}
