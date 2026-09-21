@@ -28,6 +28,7 @@
 #include "../../lib/hash.h"
 #include "../../evi/evi_modules.h"
 #include "../../ipc.h"
+#include "../../mem/mem.h"
 
 #include "dm_impl.h"
 #include "dm_evi.h"
@@ -181,7 +182,7 @@ static inline void dm_update_unreplied_req(struct msg *req)
 			LM_DBG("Diameter request timeout (unhandled), cleaning up\n");
 			list_del(&rit->list);
 			fd_msg_free(rit->req);
-			pkg_free(rit);
+			thread_free(rit);
 		} else {
 			break;
 		}
@@ -189,7 +190,8 @@ static inline void dm_update_unreplied_req(struct msg *req)
 
 	lock_release(&dm_unreplied_req_lk);
 
-	ml = pkg_malloc(sizeof *ml);
+	/* freeDiameter dispatch threads share the non-thread-safe process PKG pool */
+	ml = thread_malloc(sizeof *ml);
 	if (!ml) {
 		LM_ERR("oom\n");
 		return;
@@ -219,7 +221,7 @@ int dm_remove_unreplied_req(struct msg *req)
 			list_del(&rit->list);
 			lock_release(&dm_unreplied_req_lk);
 			LM_DBG("matched unreplied req, removing from list\n");
-			pkg_free(rit);
+			thread_free(rit);
 			return 0;
 		}
 	}
@@ -556,13 +558,28 @@ static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * 
 	avps = cJSON_CreateArray();
 	if (!avps) {
 		LM_ERR("oom 1\n");
+		cJSON_InitHooks(NULL);
 		goto error;
 	}
 
 	if (dm_avps2json(req, avps) != 0) {
 		LM_ERR("failed to pack request AVPs as JSON string\n");
-		goto error;
+		cJSON_Delete(avps);
+		avps = NULL;
+	} else {
+		avp_arr.s = cJSON_PrintUnformatted(avps);
+		if (!avp_arr.s) {
+			LM_ERR("cJSON_PrintUnformatted failed\n");
+			cJSON_Delete(avps);
+			avps = NULL;
+		} else {
+			avp_arr.len = strlen(avp_arr.s);
+		}
 	}
+	cJSON_InitHooks(NULL);
+
+	if (!avps)
+		goto error;
 
 	/* search for any "transaction identifier" in the request */
 	for (it = avps->child; it; it = it->next) {
@@ -581,13 +598,6 @@ static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * 
 			break;
 		}
 	}
-
-	avp_arr.s = cJSON_PrintUnformatted(avps);
-	if (!avp_arr.s) {
-		LM_ERR("cJSON_PrintUnformatted failed\n");
-		goto error;
-	}
-	avp_arr.len = strlen(avp_arr.s);
 
 	/* keep the request for a while in order to be able to generate the answer */
 	if (!dm_server_autoreply_error)
@@ -617,9 +627,12 @@ static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * 
 error:
 	FD_CHECK(fd_msg_free(req));
 out:
-	cJSON_PurgeString(avp_arr.s);
-	cJSON_Delete(avps);
-	cJSON_InitHooks(NULL);
+	if (avp_arr.s || avps) {
+		cJSON_InitHooks(&shm_mem_hooks);
+		cJSON_PurgeString(avp_arr.s);
+		cJSON_Delete(avps);
+		cJSON_InitHooks(NULL);
+	}
 
 	*_req = NULL;
 	*act = DISP_ACT_CONT;
@@ -652,13 +665,19 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 	avps = cJSON_CreateArray();
 	if (!avps) {
 		LM_ERR("oom 1\n");
+		cJSON_InitHooks(NULL);
 		goto out;
 	}
 
 	if (dm_avps2json(msg, avps) != 0) {
 		LM_ERR("failed to pack Message AVPs as JSON string\n");
-		goto out;
+		cJSON_Delete(avps);
+		avps = NULL;
 	}
+	cJSON_InitHooks(NULL);
+
+	if (!avps)
+		goto out;
 
 	rc = fd_msg_search_avp(msg, dm_dict.Session_Id, &a);
 	if (rc != 0) {
@@ -697,12 +716,6 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 	}
 	rpl_cond = *prpl_cond;
 
-	if (!hash_find_key(pending_replies, tid)) {
-		LM_ERR("Transaction_Id %.*s already processed!\n", tid.len, tid.s);
-		hash_unlock(pending_replies, hentry);
-		goto out;
-	}
-
 	rpl_cond->rpl.json = avps;
 	avps = NULL;
 
@@ -726,9 +739,11 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 	dm_cond_unref(rpl_cond);
 
 out:
-	if (avps)
+	if (avps) {
+		cJSON_InitHooks(&shm_mem_hooks);
 		cJSON_Delete(avps);
-	cJSON_InitHooks(NULL);
+		cJSON_InitHooks(NULL);
+	}
 
 	FD_CHECK(fd_msg_free(msg));
 	*_msg = NULL;
@@ -1937,9 +1952,9 @@ int dm_build_avps(struct list_head *out_avps, cJSON *array)
 				goto error;
 			} else if (ret == 0) {
 				ret = _dm_avp_add(NULL, out_avps, &my_avp, st.s, st.len, 0);
-				/* if a string, release whatever was alocated in the enc_func */
+				/* release the temporary thread buffer allocated by enc_func */
 				if (st.len >= 0)
-					pkg_free(st.s);
+					thread_free(st.s);
 				if (ret != 0) {
 					LM_ERR("failed to add encoded AVP %d, aborting request\n", code);
 					goto error;
@@ -2383,6 +2398,8 @@ static struct dict_avp_enc_f *dm_enc_get(int code, int vendor)
 	return a?enc_type2func(a->enc):NULL;
 }
 
+/* These helpers may run on concurrent freeDiameter callback threads, so their
+ * temporary buffers must use the thread-safe allocator rather than PKG. */
 static int dict_avp_enc_ip(cJSON *obj, struct dict_avp_data *avp, int _, str *ret)
 {
 	int af;
@@ -2398,7 +2415,7 @@ static int dict_avp_enc_ip(cJSON *obj, struct dict_avp_data *avp, int _, str *re
 	if (inet_pton(af, obj->valuestring, buf) <= 0)
 		return 1; /* not a valid format */
 	ret->len = (af == AF_INET?sizeof(struct in_addr):sizeof(struct in6_addr));
-	ret->s = pkg_malloc(ret->len);
+	ret->s = thread_malloc(ret->len);
 	if (!ret->s) {
 		LM_ERR("oom in IP\n");
 		return -1;
@@ -2434,7 +2451,7 @@ static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *r
 	if ((obj->type & cJSON_String) == 0)
 		return 1; /* encode it as it is */
 	len = strlen(obj->valuestring);
-	buf = pkg_malloc(len/2);
+	buf = thread_malloc(len/2);
 	if (!buf) {
 		LM_ERR("oom for hex encoding\n");
 		return -1;
@@ -2446,7 +2463,7 @@ static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *r
 	ret->len = len;
 	return 0;
 error:
-	pkg_free(buf);
+	thread_free(buf);
 	LM_ERR("invalid hex encoding\n");
 	return 1;
 }
@@ -2461,14 +2478,14 @@ static cJSON *dict_avp_dec_hex(struct avp_hdr * h, struct dict_avp_data *avp)
 		LM_ERR("invalid base type for IP: %d\n", avp->avp_basetype);
 		return NULL;
 	}
-	buf = pkg_malloc(h->avp_value->os.len * 2);
+	buf = thread_malloc(h->avp_value->os.len * 2);
 	if (!buf) {
 		LM_ERR("oom for hex buffer\n");
 		return NULL;
 	}
 	len = string2hex((const char *)h->avp_value->os.data, h->avp_value->os.len, buf);
 	obj = cJSON_CreateStr(buf, len);
-	pkg_free(buf);
+	thread_free(buf);
 	return obj;
 }
 
@@ -2482,7 +2499,7 @@ static int dict_avp_enc_time(cJSON *obj, struct dict_avp_data *avp, int _, str *
 	if ((obj->type & cJSON_Number) == 0)
 		return 1; /* encode it as it is */
 
-	buf = pkg_malloc(sizeof(uint32_t));
+	buf = thread_malloc(sizeof(uint32_t));
 	if (!buf) {
 		LM_ERR("oom for hex encoding\n");
 		return -1;
