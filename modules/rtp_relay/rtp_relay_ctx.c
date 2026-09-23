@@ -3222,7 +3222,11 @@ int rtp_relay_route_offer(struct rtp_relay_session *sess,
 	if (script_return_get(&val, 1) > 0 && val.flags & PV_VAL_STR) {
 		if (server->node.s)
 			shm_free(server->node.s);
-		return shm_nt_str_dup(&server->node, &val.rs);
+		if (shm_nt_str_dup(&server->node, &val.rs) < 0) {
+			if (body)
+				pkg_free(body->s);
+			return -1;
+		}
 	}
 	return 0;
 }
