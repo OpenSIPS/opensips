@@ -3460,7 +3460,10 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		do {
 			len = read(fd, buf, sizeof(buf) - 1);
 		} while (len == -1 && errno == EINTR);
-		close(fd);
+		/* no close(fd) here: every return path of this function sets
+		 * async_status = ASYNC_DONE_CLOSE_FD, so the async framework
+		 * (tm/async.c, async.c) closes the fd - closing it here too
+		 * would close it twice */
 		if (len <= 0) {
 			LM_ERR("can't read reply from a RTP Engine\n");
 			goto error;
@@ -3475,7 +3478,14 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		len = recv(fd, buf, sizeof(buf)-1, 0);
 		if (len <= 0) {
 			LM_ERR("can't read reply from a RTP Engine (%d, %d)\n", len, errno);
-			RTPE_IO_ERROR_CLOSE(param->node->idx);
+			/* no RTPE_IO_ERROR_CLOSE(param->node->idx) here: on its
+			 * EPIPE/EBADF branch the macro would close() the node's
+			 * array index as if it were an fd (for the first nodes of
+			 * a set that is one of the stdio descriptors) and then
+			 * set node->idx = -1, turning every later
+			 * rtpe_socks[node->idx] access into an out-of-bounds
+			 * array access; the framework closes the fd anyway via
+			 * ASYNC_DONE_CLOSE_FD */
 			goto error;
 		}
 		cookielen = strlen(param->cookie);
@@ -3545,8 +3555,20 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		/* if statistics are to be used, store stats in the ctx, if possible */
 		if ((ctx = rtpe_ctx_get())) {
 			if (ctx->stats) {
-				rtpe_stats_free(ctx->stats); /* release the buffer */
-				pkg_free(&(ctx->stats->buf));
+				/* release the buffer, but keep the struct for reuse:
+				 * buf is an embedded bencode_buffer_t inside
+				 * struct rtpe_stats (2nd member, after dict), so
+				 * &ctx->stats->buf is NOT the address returned by
+				 * pkg_malloc() - freeing it corrupts the pkg
+				 * allocator's free lists. Moreover ctx->stats
+				 * was not NULLed afterwards, so the code below
+				 * would write through a dangling pointer anyway.
+				 * rtpe_stats_free() above already releases the
+				 * json string and the buffer's inner pieces, and
+				 * the three fields get overwritten right below;
+				 * rtpe_ctx_free() eventually frees the struct
+				 * itself (with its base address). */
+				rtpe_stats_free(ctx->stats);
 			} else
 				ctx->stats = pkg_malloc(sizeof *ctx->stats);
 			if (ctx->stats) {
@@ -3722,6 +3744,12 @@ static int rtpe_function_call_async(struct sip_msg *msg, async_ctx *ctx, str *fl
 	char *err;
 
 	bencode_buffer_t *bencbuf = pkg_malloc(sizeof(bencode_buffer_t));
+	if (!bencbuf) {
+		/* nothing has been allocated yet, so simply bail out */
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memset(bencbuf, 0, sizeof(*bencbuf));
 	memset(&ng_flags, 0, sizeof(ng_flags));
 
 	/*** get & init basic stuff needed ***/
