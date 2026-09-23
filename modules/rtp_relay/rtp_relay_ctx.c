@@ -3166,7 +3166,13 @@ static inline int rtp_relay_route_fill_body(struct sip_msg *msg, str *body)
 	if (script_return_get(&val, 0) > 0) {
 		if (val.flags & PV_VAL_STR) {
 			if (body) {
-				*body = val.rs;
+				/* the caller takes ownership of the returned body, so
+				 * it needs a buffer of its own - val.rs points inside
+				 * the script return value, which the core frees itself */
+				if (pkg_str_dup(body, &val.rs) < 0) {
+					LM_ERR("could not duplicate the returned body!\n");
+					return -1;
+				}
 				LM_DBG("returning body [%.*s]\n", body->len, body->s);
 			}
 			if (msg) {
@@ -3208,12 +3214,16 @@ int rtp_relay_route_offer(struct rtp_relay_session *sess,
 		return r;
 	if (rtp_relay_route_fill_body(sess->msg, body) < 0)
 		return -1;
-	if (sess->msg && body)
-		rtp_relay_replace_body(sess->msg, body);
+	/* rtp_relay_route_fill_body() has already replaced the body of the
+	 * message, using a copy of its own */
 	if (script_return_get(&val, 1) > 0 && val.flags & PV_VAL_STR) {
 		if (server->node.s)
 			shm_free(server->node.s);
-		return shm_nt_str_dup(&server->node, &val.rs);
+		if (shm_nt_str_dup(&server->node, &val.rs) < 0) {
+			if (body)
+				pkg_free(body->s);
+			return -1;
+		}
 	}
 	return 0;
 }
