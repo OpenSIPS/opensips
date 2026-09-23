@@ -722,8 +722,12 @@ int cgrc_async_read(struct cgr_conn *c,
 try_again:
 	bytes_read = read(c->fd, buffer, CGR_BUFFER_SIZE);
 	if (bytes_read < 0) {
-		if (errno == EINTR || errno == EAGAIN)
+		if (errno == EINTR)
 			goto try_again;
+		else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+			async_status = f ? ASYNC_CONTINUE : ASYNC_DONE;
+			return final_ret;
+		}
 		else if (errno == ECONNRESET) {
 			LM_INFO("CGRateS engine reset the connection\n");
 			goto disable;
