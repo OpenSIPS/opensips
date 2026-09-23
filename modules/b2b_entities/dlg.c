@@ -37,6 +37,7 @@
 #include "../../parser/parse_supported.h"
 
 #include "../../parser/sdp/sdp.h"
+#include "../../parser/parse_body.h"
 #include "../../locking.h"
 #include "../../script_cb.h"
 #include "../../lib/digest_auth/digest_auth.h"
@@ -4522,7 +4523,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
 		return 0;
 
-	if(!msg->body_lumps && !msg->add_rm)
+	if(!msg->body_lumps && !msg->add_rm && !should_update_sip_body(msg))
 		return 0;
 
 	/* TM faked request: cannot reparse in place (SHM-backed headers/buffer
