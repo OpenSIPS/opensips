@@ -548,7 +548,8 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	if (WS_STATE(con) != WS_CON_HANDSHAKE_DONE) {
 		size = ws_server_handshake(con);
 		if (size < 0) {
-			LM_ERR("cannot complete WebSocket handshake\n");
+			LM_ERR("cannot complete WebSocket handshake from %s:%d\n",
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
 			goto error;
 		}
 
