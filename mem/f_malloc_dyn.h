@@ -144,6 +144,7 @@ void *fm_malloc(struct fm_block *fm, unsigned long size,
 			{
 				fm_remove_free(fm, n);
 				frag->size += n->size + FRAG_OVERHEAD;
+				FRAG_NEXT(frag)->pf = frag;
 
 				#if defined(DBG_MALLOC) || defined(STATISTICS)
 				//fm->real_used -= FRAG_OVERHEAD;
