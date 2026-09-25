@@ -1283,18 +1283,42 @@ logic_notify:
 		}
 		else
 		{
+			/* NOTE: a single TM lookup is enough for ACKs - do NOT call
+			 * t_newtran() here:
+			 * - TM never creates a transaction for ACKs (t_newtran()
+			 *   returns 1 with T_UNDEFINED), so the tracing guarded by
+			 *   "tm_tran != T_UNDEFINED" could never fire;
+			 * - its internal lookup would match the INVITE transaction a
+			 *   second time (t_release_trans() only puts the transaction
+			 *   on wait, it does not unlink it from the hash table),
+			 *   firing TMCB_MSG_MATCHED_IN again and making the tracer
+			 *   record the same hop-by-hop ACK twice.
+			 */
 			ret = tmb.t_check_trans(msg);
 			switch (ret) {
-				case 1: /* hop-by-hop ACK */
+				case 1: /* hop-by-hop ACK (for a negative final reply) */
 					tm_tran = tmb.t_gett();
 					/* just grab the transaction and release it */
 					tmb.t_sett(T_UNDEFINED);
+					/* this ACK is part of the INVITE transaction and was
+					 * already traced by the TMCB_MSG_MATCHED_IN callback
+					 * fired during the lookup above; mark it so that
+					 * b2b_logic will not run the script route */
+					b2b_cb_flags |= B2B_NOTIFY_FL_ACK_NEG;
 					break;
 				case -2: /* end-to-end ACK */
 					tm_tran = tmb.t_get_e2eackt();
+					/* the e2e ACK is not part of any transaction and TM
+					 * never creates one for it, so transaction-based
+					 * tracing never fires for it; the tracer handles a
+					 * NULL transaction by tracing the message standalone */
+					b2b_run_tracer(dlg, msg, NULL);
 					break;
 				default:
+					/* ACK for an unknown/terminated transaction: treat as
+					 * ACK for a negative reply (previous behaviour) */
 					tm_tran = NULL;
+					b2b_cb_flags |= B2B_NOTIFY_FL_ACK_NEG;
 					break;
 			}
 			/* if we managed to find a coresponding hop-by-hop INVITE transaction
@@ -1305,34 +1329,8 @@ logic_notify:
 					tmb.unref_cell(dlg->uas_tran);
 					dlg->uas_tran = NULL;
 				}
-				if (ret == 1)
-					tmb.unref_cell(tm_tran);
-			}
-
-			ret = tmb.t_newtran(msg);
-			if (ret >= 0) {
-				tm_tran = tmb.t_gett();
-				/* if a valid transaction was created, trace it
-				   NOTE that the end2end ACK forms a separate transaction
-				   (even if TM will return a NULL transaction) and
-				   we will trace it as standalone request, while a negative hop-by-hop ACK
-				   (part of INVITE transaction) we will get T_UNDEFINED, so not to be traced
-				   */
-				if (tm_tran && tm_tran != T_UNDEFINED)
-					b2b_run_tracer(dlg, msg, tm_tran);
-				/* we got an ACK - we need to fetch its initial transaction */
-				if(!tm_tran || tm_tran==T_UNDEFINED)
-					tm_tran = tmb.t_get_e2eackt();
-
-				if(!tm_tran || tm_tran==T_UNDEFINED) {
-					tm_tran = tmb.t_get_e2eackt();
-					if (!tm_tran || tm_tran==T_UNDEFINED)
-						/* ACK for a negative reply */
-						b2b_cb_flags |= B2B_NOTIFY_FL_ACK_NEG;
-				}
-
-				if(tm_tran && tm_tran!=T_UNDEFINED)
-					tmb.unref_cell(tm_tran);
+				/* release the reference taken by the lookup above */
+				tmb.unref_cell(tm_tran);
 			}
 		}
 	}
