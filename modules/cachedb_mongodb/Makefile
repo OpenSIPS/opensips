@@ -18,12 +18,16 @@ MONGOC_BUILDER := $(shell \
 endif
 
 ifeq ($(MONGOC_BUILDER),)
+	# Keep the existing fallback compatible with current libmongoc installs.
+	DEFS += -DHAVE_MONGOC_NEW_HEADERS
 
 include ../../Makefile.openssl
 
 	DEFS += -I$(SYSBASE)/include/libmongoc-1.0 -I$(SYSBASE)/include/libbson-1.0
 	LIBS += -L$(LOCALBASE)/lib -lrt -lmongoc-1.0 -lbson-1.0
 else
+	DEFS += $(shell $(MONGOC_BUILDER) --atleast-version=1.13.0 && \
+		echo -DHAVE_MONGOC_NEW_HEADERS)
 	DEFS += $(shell $(MONGOC_BUILDER) --cflags)
 	LIBS += $(shell $(MONGOC_BUILDER) --libs)
 endif
