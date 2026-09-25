@@ -1333,6 +1333,8 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 			(ctx && ctx->flags.s?ctx->flags.len:0),
 			(ctx && ctx->flags.s?ctx->flags.s:NULL),
 			RTP_RELAY_FLAGS_S(leg, RTP_RELAY_FLAGS_DELETE));
+	if (info->branch == RTP_RELAY_ALL_BRANCHES)
+		info->flags |= RTP_RELAY_SESS_DELETE_ALL_BRANCHES;
 	ret = sess->relay->funcs.delete(info, &sess->server,
 			(ctx && ctx->delete.s?&ctx->flags:NULL),
 			RTP_RELAY_FLAGS(leg, RTP_RELAY_FLAGS_DELETE));

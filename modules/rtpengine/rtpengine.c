@@ -206,7 +206,7 @@ struct rtpe_ctx {
 
 
 struct ng_flags_parse {
-	int via, to, packetize, transport, directional;
+	int via, to, packetize, transport, directional, no_from_tag;
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
 	str call_id, from_tag, to_tag, received_from;
 	str viabranch;
@@ -2365,6 +2365,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						goto error;
 					BCHECK(bencode_dictionary_add_integer(ng_flags->dict, "repacketize", ng_flags->packetize));
 					continue;
+				} else if (str_eq(&key, "no-from-tag")) {
+					ng_flags->no_from_tag = 1;
 				} else if (str_eq(&key, "directional")) {
 					ng_flags->directional = 1;
 					bitem = bencode_str(bencode_item_buffer(ng_flags->flags), &key);
@@ -2824,14 +2826,14 @@ static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg 
 			op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_MEDIA ||
 			op == OP_BLOCK_DTMF || op == OP_UNBLOCK_DTMF ||
 			op == OP_START_FORWARD || op == OP_STOP_FORWARD) {
-		if (ng_flags->directional && !from_tag_exist)
+		if (ng_flags->directional && !from_tag_exist && !ng_flags->no_from_tag)
 			bencode_dictionary_add_str(ng_flags->dict, "from-tag", &ng_flags->from_tag);
 	} else if (ng_flags->directional
 		|| (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))))
 	{
-		if (!from_tag_exist && op != OP_DELETE)
+		if (!from_tag_exist && !ng_flags->no_from_tag)
 			bencode_dictionary_add_str(ng_flags->dict, "from-tag", &ng_flags->from_tag);
 		if (op != OP_START_MEDIA && op != OP_STOP_MEDIA) {
 			/* no need of to-tag if we are just playing media */
@@ -2844,7 +2846,7 @@ static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg 
 			*err = "No to-tag present";
 			goto error;
 		}
-		if (!from_tag_exist)
+		if (!from_tag_exist && !ng_flags->no_from_tag)
 			bencode_dictionary_add_str(ng_flags->dict, "from-tag", &ng_flags->to_tag);
 		if (!to_tag_exist && !extra_dict)
 			bencode_dictionary_add_str(ng_flags->dict, "to-tag", &ng_flags->from_tag);
@@ -5156,6 +5158,7 @@ static int rtpengine_api_answer(struct rtp_relay_session *sess,
 static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra)
 {
+	static str no_from_tag = str_init("no-from-tag");
 	struct sip_msg *msg;
 	struct rtpe_set* rset;
 	str *newflags;
@@ -5165,7 +5168,9 @@ static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay
 	rset = select_rtpe_set(server->set);
 	RTPE_STOP_READ();
 
-	newflags = rtpengine_get_call_flags(sess, NULL, NULL, NULL, flags, extra, NULL);
+	newflags = rtpengine_get_call_flags(sess, NULL, NULL, NULL, flags, extra,
+			(sess->flags & RTP_RELAY_SESS_DELETE_ALL_BRANCHES) ?
+			&no_from_tag : NULL);
 	if (!newflags)
 		return -1;
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
