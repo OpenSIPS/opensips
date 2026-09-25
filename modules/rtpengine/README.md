@@ -494,6 +494,9 @@ RTP proxy at the moment!*
 missing, the Call-Id of the request/reply is used.
   - *from-tag* - provide a custom from-tag for the session. If
 missing, the from-tag request is used.
+  - *no-from-tag* - do not include a from-tag in the command sent to
+the RTP proxy. This can be used when the command must apply to all branches
+of a call rather than selecting a specific call leg.
   - *to-tag* - provide a custom to-tag of the session. If
 missing, the to-tag of the request/reply is used, is present.
   - *asymmetric* - flags that UA from which message is

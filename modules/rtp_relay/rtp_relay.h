@@ -28,10 +28,12 @@
 #include "rtp_relay_common.h"
 
 #define RTP_RELAY_ALL_BRANCHES -1
+#define RTP_RELAY_SESS_DELETE_ALL_BRANCHES (1U << 0)
 
 struct rtp_relay_session {
 	struct sip_msg *msg;
 	int branch;
+	unsigned int flags;
 	str *callid;
 	str *from_tag;
 	str *to_tag;
