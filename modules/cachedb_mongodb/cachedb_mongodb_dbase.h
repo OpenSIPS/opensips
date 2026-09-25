@@ -27,8 +27,13 @@
 
 #define MONGO_HAVE_STDINT 1
 
+#ifdef HAVE_MONGOC_NEW_HEADERS
 #include <mongoc/mongoc.h>
 #include <bson/bson.h>
+#else
+#include <mongoc.h>
+#include <bson.h>
+#endif
 
 #include <stdint.h>
 

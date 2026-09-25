@@ -23,7 +23,6 @@
 
 #include "cachedb_mongodb_dbase.h"
 
-#include <bson/bson.h>
 #include <stdint.h>
 
 int json_to_bson(char *json,bson_t *bb);
@@ -32,4 +31,3 @@ void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
                           bson_type_t type);
 
 #endif /* CACHEDBMONGO_JSON_H */
-
