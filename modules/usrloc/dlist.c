@@ -129,6 +129,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	unsigned int dbflags;
 	int needed;
 	int shortage = 0;
+	int client_side_partition = 0;
 	uint64_t contact_id;
 	void *record_start;
 
@@ -149,51 +150,99 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 		goto error;
 	}
 
-	i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
+	if (DB_CAPABILITY(ul_dbf, DB_CAP_RAW_QUERY)) {
+		/* the contact_id modulo partitioning is done in the query */
+		i = snprintf(query_buf, sizeof query_buf, "select %.*s, %.*s, %.*s,"
 #ifdef ORACLE_USRLOC
 	" %.*s, %.*s, %.*s from %s where %.*s > %lld and mod(contact_id, %u) = %u",
 #else
 	" %.*s, %.*s, %.*s from %s where %.*s > %lld and contact_id %% %u = %u",
 #endif
-		received_col.len, received_col.s,
-		contact_col.len, contact_col.s,
-		sock_col.len, sock_col.s,
-		cflags_col.len, cflags_col.s,
-		path_col.len, path_col.s,
-		contactid_col.len, contactid_col.s,
-		d->name->s,
-		expires_col.len, expires_col.s,
-		(long long)now,
-		part_max, part_idx);
+			received_col.len, received_col.s,
+			contact_col.len, contact_col.s,
+			sock_col.len, sock_col.s,
+			cflags_col.len, cflags_col.s,
+			path_col.len, path_col.s,
+			contactid_col.len, contactid_col.s,
+			d->name->s,
+			expires_col.len, expires_col.s,
+			(long long)now,
+			part_max, part_idx);
 
-	LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
-	if (i >= sizeof query_buf) {
-		LM_ERR("DB query too long\n");
-		goto error;
-	}
+		LM_DBG("query: %.*s\n", (int)(sizeof query_buf), query_buf);
+		if (i >= sizeof query_buf) {
+			LM_ERR("DB query too long\n");
+			goto error;
+		}
 
-	query_str.s = query_buf;
-	query_str.len = i;
+		query_str.s = query_buf;
+		query_str.len = i;
 
-	if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
-		if (ul_dbf.raw_query(ul_dbh, &query_str, 0) < 0) {
+		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
+			if (ul_dbf.raw_query(ul_dbh, &query_str, 0) < 0) {
+				LM_ERR("raw_query failed\n");
+				goto error;
+			}
+
+			no_rows = estimate_available_rows(20+128+20+128+64, 5);
+			if (no_rows == 0)
+				no_rows = 10;
+
+			LM_DBG("fetching %d rows\n", no_rows);
+
+			if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
+				LM_ERR("Error fetching rows\n");
+				goto error;
+			}
+		} else if (ul_dbf.raw_query(ul_dbh, &query_str, &res) < 0) {
 			LM_ERR("raw_query failed\n");
 			goto error;
 		}
+	} else {
+		/* the DB backend has no raw query support (e.g. db_redis): run
+		 * the equivalent structured query and apply the contact_id
+		 * modulo partitioning while iterating the resulting rows */
+		db_key_t cols[6];
+		db_key_t keys[1];
+		db_op_t ops[1];
+		db_val_t vals[1];
 
-		no_rows = estimate_available_rows(20+128+20+128+64, 5);
-		if (no_rows == 0)
-			no_rows = 10;
+		cols[0] = &received_col;
+		cols[1] = &contact_col;
+		cols[2] = &sock_col;
+		cols[3] = &cflags_col;
+		cols[4] = &path_col;
+		cols[5] = &contactid_col;
 
-		LM_DBG("fetching %d rows\n", no_rows);
+		keys[0] = &expires_col;
+		ops[0]  = OP_GT;
+		memset(vals, 0, sizeof vals);
+		VAL_TYPE(vals) = DB_BIGINT;
+		VAL_BIGINT(vals) = (long long)now;
 
-		if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
-			LM_ERR("Error fetching rows\n");
+		client_side_partition = (part_max > 1);
+
+		if (DB_CAPABILITY(ul_dbf, DB_CAP_FETCH)) {
+			if (ul_dbf.query(ul_dbh, keys, ops, vals, cols, 1, 6, 0, 0) < 0) {
+				LM_ERR("query failed\n");
+				goto error;
+			}
+
+			no_rows = estimate_available_rows(20+128+20+128+64, 5);
+			if (no_rows == 0)
+				no_rows = 10;
+
+			LM_DBG("fetching %d rows\n", no_rows);
+
+			if (ul_dbf.fetch_result(ul_dbh, &res, no_rows) < 0) {
+				LM_ERR("Error fetching rows\n");
+				goto error;
+			}
+		} else if (ul_dbf.query(ul_dbh, keys, ops, vals, cols,
+		                        1, 6, 0, &res) < 0) {
+			LM_ERR("query failed\n");
 			goto error;
 		}
-	} else if (ul_dbf.raw_query(ul_dbh, &query_str, &res) < 0) {
-		LM_ERR("raw_query failed\n");
-		goto error;
 	}
 
 	do {
@@ -245,6 +294,12 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 			/* contact id*/
 			contact_id = VAL_BIGINT(ROW_VALUES(row) + 5);
+
+			/* when the query could not partition by contact_id (no raw
+			 * query support), do the modulo partitioning here */
+			if (client_side_partition &&
+			    contact_id % part_max != part_idx)
+				continue;
 
 			needed = (int)(p_len + sizeof p_len + r_len + sizeof r_len + p1_len + sizeof p1_len +
 			               sizeof sock + sizeof dbflags + sizeof next_hop);

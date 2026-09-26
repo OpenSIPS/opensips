@@ -1,0 +1,5 @@
+HSET schema:version __cols "table_name table_version" __pk table_name table_name string table_version int
+HSET schema:clusterer __cols "id cluster_id node_id url state no_ping_retries priority sip_addr flags description" __pk id id int,auto cluster_id int node_id int url string state int no_ping_retries int priority int sip_addr string,null flags string,null description string,null
+HSET version:clusterer table_name clusterer table_version 4
+HSET schema:clusterer_bridge __cols "id cluster_a cluster_b send_shtag dst_node_csv" __pk id id int,auto cluster_a int cluster_b int send_shtag string dst_node_csv string,null
+HSET version:clusterer_bridge table_name clusterer_bridge table_version 1
