@@ -343,6 +343,26 @@ static inline char del_transfer(int fd)
 	return -1;
 }
 
+/*
+ * guard against registering a non-socket fd. libcurl's
+ * internal wakeup eventfd can appear in curl_multi_fdset()'s read set
+ * alongside the real transfer socket (observed on 8.21.0, not 8.17.0);
+ * is_new_transfer() only checks fd numbers, not fd type.
+ *
+ * Note: CURLINFO_ACTIVESOCKET is not a usable alternative here - at this
+ * point the easy handle is fresh out of curl_easy_init(), so it always
+ * reads back CURL_SOCKET_BAD. A cleaner long-term fix would be adopting
+ * CURLMOPT_SOCKETFUNCTION, which reports fds with an explicit type instead
+ * of relying on fd_set scanning.
+ */
+static inline int rest_fd_is_socket(int fd)
+{
+	int type;
+	socklen_t len = sizeof(type);
+
+	return getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &len) == 0;
+}
+
 static OSS_CURLM *get_multi(void)
 {
 	OSS_CURLM *multi_list;
@@ -973,6 +993,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		}
 
 		FD_ZERO(&rset);
+		FD_ZERO(&wset);
+		FD_ZERO(&eset);
 		mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
 		if (mrc != CURLM_OK) {
 			LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
@@ -983,7 +1005,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			for (fd = 0; fd <= max_fd; fd++) {
 				if (FD_ISSET(fd, &rset)) {
 					LM_DBG("ongoing transfer on fd %d\n", fd);
-					if ((connect > 0 || req_sz > 0) && is_new_transfer(fd)) {
+					if ((connect > 0 || req_sz > 0) && is_new_transfer(fd) &&
+							rest_fd_is_socket(fd)) {
 						LM_DBG(">>> add fd %d to ongoing transfers\n", fd);
 						add_transfer(fd);
 						goto success;
@@ -1123,6 +1146,8 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 	}
 
 	FD_ZERO(&rset);
+	FD_ZERO(&wset);
+	FD_ZERO(&eset);
 	mrc = curl_multi_fdset(multi_handle, &rset, &wset, &eset, &max_fd);
 	if (mrc != CURLM_OK) {
 		LM_ERR("curl_multi_fdset: %s\n", curl_multi_strerror(mrc));
