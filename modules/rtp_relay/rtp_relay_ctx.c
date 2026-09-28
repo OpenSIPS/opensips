@@ -1682,10 +1682,16 @@ static void rtp_relay_dlg_req_callbacks(struct dlg_cell *dlg, struct rtp_relay_c
 			return;
 		}
 	}
+	/* the request-within callback can outlive the transaction currently
+	 * owning the context, so keep a dedicated reference until the dialog
+	 * destroys its callback list */
+	RTP_RELAY_CTX_REF(ctx);
 	if (rtp_relay_dlg.register_dlgcb(dlg,
 			DLGCB_REQ_WITHIN,
-			rtp_relay_indlg, ctx, NULL) != 0)
+			rtp_relay_indlg, ctx, rtp_relay_ctx_release) != 0) {
 		LM_ERR("could not register request within dlg callback!\n");
+		RTP_RELAY_CTX_UNREF(ctx);
+	}
 }
 
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
