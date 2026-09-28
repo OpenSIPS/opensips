@@ -80,6 +80,20 @@
 #define TIME_FORMAT "Date: %a, %d %b %Y %H:%M:%S GMT"
 #define MAX_TIME 64
 
+#define MIME_IS_UNKNOWN(type) \
+	(((type) >> 16) == TYPE_UNKNOWN || ((type) & 0xffff) == SUBTYPE_UNKNOWN)
+
+struct mime_param {
+	unsigned int type;
+	str str;
+};
+
+/* Compare a MIME parameter with a decoded type and a str pointer. */
+#define COMPARE_MIMES(_mime, _type, _str) \
+	((MIME_IS_UNKNOWN((_mime)->type) || MIME_IS_UNKNOWN(_type)) ? \
+		str_strcasecmp(&(_mime)->str, (_str)) == 0 : \
+		(_mime)->type == (_type))
+
 static int remove_hf(struct sip_msg* msg, int_str_t* hf);
 static int remove_hf_re(struct sip_msg* msg, regex_t* re);
 static int remove_hf_glob(struct sip_msg* msg, str* pattern);
@@ -93,12 +107,14 @@ static int insert_hf(struct sip_msg *msg, str *str1, void *str2);
 static int append_urihf(struct sip_msg *msg, str *str1, str *str2);
 static int append_time_f(struct sip_msg* msg, char* , char *);
 static int is_method_f(struct sip_msg *msg, void *meth);
-static int has_body_f(struct sip_msg *msg, void *type);
+static int has_body_f(struct sip_msg *msg, struct mime_param *mime);
 static int is_privacy_f(struct sip_msg *msg, void *privacy);
-static int remove_body_part_f(struct sip_msg *msg, void *type, void *revert);
+static int remove_body_part_f(struct sip_msg *msg, struct mime_param *mime,
+	void *revert);
 static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
-                           str *extra_hdrs);
-static int get_updated_body_part_f(struct sip_msg *msg, int *type,pv_spec_t* out);
+	str *extra_hdrs);
+static int get_updated_body_part_f(struct sip_msg *msg,
+	struct mime_param *mime,pv_spec_t* out);
 static int w_is_audio_on_hold(struct sip_msg *msg);
 static int w_sip_validate(struct sip_msg *msg, void *flags, pv_spec_t* err_txt);
 static int w_sip_to_json(struct sip_msg *msg, pv_spec_t* out_json);
@@ -170,12 +186,12 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"has_body",         (cmd_function)has_body_f, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, fixup_free_pkg},
 		{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"has_body_part",    (cmd_function)has_body_f, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, fixup_free_pkg},
 		{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
@@ -184,7 +200,7 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"remove_body_part", (cmd_function)remove_body_part_f, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, fixup_free_pkg},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_revert, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
 
@@ -195,7 +211,7 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"get_updated_body_part",    (cmd_function)get_updated_body_part_f, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, fixup_free_pkg},
 		{CMD_PARAM_VAR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
@@ -858,28 +874,39 @@ static int fixup_mime_type(void** param)
 	char *p;
 	char *r;
 	unsigned int type;
-	str *mime = (str *)*param;
+	str *s = (str *)*param;
+	struct mime_param *mime;
 
-	if (!mime)
+	if (!s)
 		return 0;
 
-	p = mime->s;
+	trim(s);
+	p = s->s;
 
-	if (p==0 || p[0]==0) {
+	if (p==0 || s->len==0 || p[0]==0) {
 		type = 0;
 	} else {
-		r = decode_mime_type( p, p + mime->len , &type , NULL);
+		r = decode_mime_type( p, p + s->len , &type , NULL);
 		if (r==0) {
 			LM_ERR("unsupported mime <%s>\n",p);
 			return E_CFG;
 		}
-		if ( r!=p + mime->len ) {
+		if ( r!=p + s->len ) {
 			LM_ERR("multiple mimes not supported!\n");
 			return E_CFG;
 		}
 	}
 
-	*param = (void*)(long)type;
+	mime = pkg_malloc(sizeof(*mime));
+	if (!mime) {
+		LM_ERR("no pkg memory left\n");
+		return E_OUT_OF_MEM;
+	}
+	mime->type = type;
+	/* The script parser owns the string for the lifetime of the script. */
+	mime->str = *s;
+
+	*param = mime;
 	return 0;
 }
 
@@ -896,7 +923,7 @@ static int fixup_revert(void** param)
 }
 
 
-static int has_body_f(struct sip_msg *msg, void *type)
+static int has_body_f(struct sip_msg *msg, struct mime_param *mime)
 {
 	struct body_part * p;
 
@@ -912,18 +939,18 @@ static int has_body_f(struct sip_msg *msg, void *type)
 		}
 	}
 
-	if( ( ((int)(long)type )>>16) == TYPE_MULTIPART )
+	if (mime && (mime->type >> 16) == TYPE_MULTIPART)
 	{
-		int mime = parse_content_type_hdr(msg);
+		int type = parse_content_type_hdr(msg);
 
-		if( mime == ((int)(long)type ) )
-			return 1;
+		if (type <= 0)
+			return -1;
 
-		return -1;
+		return COMPARE_MIMES(mime, type, &msg->content_type->body) ? 1 : -1;
 	}
 
 	/* check type also? */
-	if (type==0)
+	if (mime==NULL || mime->type==0)
 		return 1;
 
 	if (parse_sip_body(msg)<0 || msg->body==NULL) {
@@ -934,7 +961,7 @@ static int has_body_f(struct sip_msg *msg, void *type)
 	p = &msg->body->first;
 	while (p)
 	{
-		if( p->mime == ((int)(long)type ) )
+		if (COMPARE_MIMES(mime, p->mime, &p->mime_s))
 			return 1;
 		p = p->next;
 	}
@@ -953,11 +980,13 @@ static int is_privacy_f(struct sip_msg *msg, void *privacy)
 }
 
 
-static int remove_body_part_f(struct sip_msg *msg, void *type, void *revert)
+static int remove_body_part_f(struct sip_msg *msg, struct mime_param *mime,
+																void *revert)
 {
 	struct sip_msg_body * b;
 	struct body_part * p;
 	int deleted = 0;
+	int match;
 
 	if (parse_sip_body(msg)<0 || (b=msg->body)==NULL) {
 		LM_DBG("no body found\n");
@@ -969,8 +998,15 @@ static int remove_body_part_f(struct sip_msg *msg, void *type, void *revert)
 
 	for ( p=&b->first ; p ; p=p->next) {
 
-		if ( (type==NULL) || ( !revert && (p->mime==((int)(long)type)) )
-		|| ( revert && (p->mime!=((int)(long)type)) ) ) {
+		if (mime==NULL || mime->type==0) {
+			match = 1;
+		} else {
+			match = COMPARE_MIMES(mime, p->mime, &p->mime_s);
+			if (revert)
+				match = !match;
+		}
+
+		if (match) {
 			delete_body_part( msg, p);
 			deleted =  1;
 		}
@@ -1012,7 +1048,8 @@ static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
  *	Function to apply all pending changes over a body part and
  *	return the result into a variable
  * */
-static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* res)
+static int get_updated_body_part_f(struct sip_msg *msg,
+									struct mime_param *mime, pv_spec_t* res)
 {
 	static str out = {NULL, 0};
 	struct body_part *p = NULL, *it;
@@ -1026,12 +1063,12 @@ static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* re
 	}
 
 
-	if (type) {
+	if (mime && mime->type) {
 
 		p = &msg->body->first;
 		while (p) {
 			if ( (p->flags&SIP_BODY_PART_FLAG_DELETED) == 0
-			&& p->mime == ((int)(long)type) )
+			&& COMPARE_MIMES(mime, p->mime, &p->mime_s) )
 				break;
 
 			p = p->next;
@@ -1085,7 +1122,7 @@ static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* re
 	}
 
 
-	if (type) {
+	if (mime && mime->type) {
 
 		/* restore the correct DELETED flag */
 		for (it = &msg->body->first ; it ; it=it->next)
