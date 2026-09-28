@@ -997,7 +997,9 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 				&dlg->legs[callee_idx(dlg)].tag : NULL);
 	if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
 		goto error;
+	RTP_RELAY_CTX_LOCK(ctx);
 	rtp_relay_dlg_req_callbacks(dlg, ctx);
+	RTP_RELAY_CTX_UNLOCK(ctx);
 
 	return;
 error:
@@ -1682,10 +1684,17 @@ static void rtp_relay_dlg_req_callbacks(struct dlg_cell *dlg, struct rtp_relay_c
 			return;
 		}
 	}
+	/* the callback keeps ctx for the dialog's lifetime, so it must own a
+	 * reference: when the INVITE is challenged, rtp_relay_sess_success()
+	 * never runs and the dialog holds no other reference to ctx.
+	 * Called with ctx->lock held. */
+	RTP_RELAY_CTX_REF_UNSAFE(ctx, 1);
 	if (rtp_relay_dlg.register_dlgcb(dlg,
 			DLGCB_REQ_WITHIN,
-			rtp_relay_indlg, ctx, NULL) != 0)
+			rtp_relay_indlg, ctx, rtp_relay_ctx_release) != 0) {
 		LM_ERR("could not register request within dlg callback!\n");
+		RTP_RELAY_CTX_REF_UNSAFE(ctx, -1);
+	}
 }
 
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
