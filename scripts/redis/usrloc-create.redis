@@ -1,0 +1,3 @@
+HSET schema:version __cols "table_name table_version" __pk table_name table_name string table_version int
+HSET schema:location __cols "contact_id username domain contact received path expires q callid cseq last_modified flags cflags user_agent socket methods sip_instance kv_store attr" __pk contact_id contact_id bigint,auto username string domain string,null contact string received string,null path string,null expires int q double callid string cseq int last_modified datetime flags int cflags string,null user_agent string socket string,null methods int,null sip_instance string,null kv_store string,null attr string,null
+HSET version:location table_name location table_version 1013
