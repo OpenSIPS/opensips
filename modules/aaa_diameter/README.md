@@ -239,6 +239,12 @@ This function can be used from any route.
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
 
+# ATTRIBUTE syntax: name code type [ID|vendor-id=ID] [mandatory=0|1].
+# Options may appear in any order. A bare number is the legacy vendor ID.
+# The Mandatory flag defaults to 1 for backwards compatibility.
+# For example, this 3GPP AVP is sent without the Mandatory flag:
+ATTRIBUTE 3GPP-Charging-Id 2 string vendor-id=10415 mandatory=0
+
 ATTRIBUTE out_gw            232 string
 ATTRIBUTE trunk_id          233 string
 

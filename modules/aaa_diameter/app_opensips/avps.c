@@ -577,6 +577,8 @@ int parse_attr_def(char *line, FILE *fp)
 	struct dm_avp_def avps[128];
 	int avp_count = 0;
 	unsigned int vendor_id = -1;
+	int mandatory = 1;
+	int vendor_set = 0, mandatory_set = 0;
 	size_t buflen = strlen(line);
 	int i, len = buflen, attr_len = strlen("ATTRIBUTE"), name_len, avp_code;
 	char *name, *nt_name = NULL, *newp, *p = line, *end = p + len;
@@ -655,12 +657,36 @@ int parse_attr_def(char *line, FILE *fp)
 
 	/* skip over the type */
 	while (len > 0 && !isspace(*p)) { p++; len--; }
+	while (len > 0) {
+		char *token, *token_end, *equals, *value;
+		unsigned int parsed;
 
-	if (len > 0 && *p != '\r' && *p != '\n') {
-		if (parse_uint(p, &newp, &vendor_id) < 0)
+		while (len > 0 && isspace(*p)) { p++; len--; }
+		if (!len)
+			break;
+		token = p;
+		while (len > 0 && !isspace(*p)) { p++; len--; }
+		token_end = p;
+		equals = memchr(token, '=', token_end - token);
+		value = equals ? equals + 1 : token;
+		if (parse_uint(value, &newp, &parsed) < 0 || newp != token_end)
 			goto error;
 
-		len -= newp - p;
+		if (!equals || (equals - token == strlen("vendor-id") &&
+				!strncasecmp(token, "vendor-id", equals - token))) {
+			if (vendor_set)
+				goto error;
+			vendor_id = parsed;
+			vendor_set = 1;
+		} else if (equals - token == strlen("mandatory") &&
+				!strncasecmp(token, "mandatory", equals - token)) {
+			if (mandatory_set || parsed > 1)
+				goto error;
+			mandatory = parsed;
+			mandatory_set = 1;
+		} else {
+			goto error;
+		}
 	}
 
 	if (avp_type != AVP_TYPE_GROUPED)
@@ -722,7 +748,8 @@ create_avp:;
 		(vendor_id != -1?vendor_id:0),			/* Vendor */
 		nt_name,	/* Name */
 		AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-		(vendor_id != -1?AVP_FLAG_VENDOR:0)|AVP_FLAG_MANDATORY, /* Fixed flag values */
+		(vendor_id != -1?AVP_FLAG_VENDOR:0) |
+			(mandatory ? AVP_FLAG_MANDATORY : 0),
 		avp_type 	/* base type of data */
 	};
 
