@@ -528,7 +528,8 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	}
 
 	/* we need to fix the SSL connection before doing anything */
-	if (tls_mgm_api.tls_fix_read_conn(con, con->fd, 0, t_dst, 1) < 0) {
+	size = tls_mgm_api.tls_fix_read_conn(con, con->fd, 0, t_dst, 1);
+	if (size < 0) {
 		LM_ERR("cannot fix read connection\n");
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
@@ -541,6 +542,10 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 			}
 		}
 		goto error;
+	}
+	if (size == 0) {
+		LM_DBG("SSL accept/connect still pending!\n");
+		goto done;
 	}
 
 	d=con->proto_data;
