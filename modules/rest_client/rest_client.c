@@ -87,20 +87,24 @@ static int cfg_validate(void);
  * Function headers
  */
 static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
-                      pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+                      pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+                      int *max_redirects);
 static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
-					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+					int *max_redirects);
 static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
-					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+					int *max_redirects);
 
 static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
-				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+				int *max_redirects);
 static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects);
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects);
 
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv);
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
@@ -122,21 +126,24 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}}},
 	{"rest_post",(acmd_function)w_async_rest_post, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}}},
 	{"rest_put",(acmd_function)w_async_rest_put, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}}},
 	{0,0,{{0,0,0}}}
 };
 
@@ -149,7 +156,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_post",(cmd_function)w_rest_post, {
 		{CMD_PARAM_STR,0,0},
@@ -157,7 +165,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_put",(cmd_function)w_rest_put, {
 		{CMD_PARAM_STR,0,0},
@@ -165,7 +174,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_append_hf",(cmd_function)w_rest_append_hf, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -511,12 +521,27 @@ error:
 
 /**************************** Module functions *******************************/
 
+
+static inline int validate_max_redirects(int *max_redirects)
+{
+	if (max_redirects && *max_redirects < 0) {
+		LM_ERR("max_redirects must be greater than or equal to 0\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
-                      pv_spec_t *ctype_pv, pv_spec_t *code_pv)
+                      pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+                      int *max_redirects)
 {
 	str url_nt;
 	int lrc = RCL_OK, rc;
 	char *host;
+
+	if (validate_max_redirects(max_redirects) < 0)
+		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -527,7 +552,7 @@ static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
 		return lrc;
 
 	rc = rest_sync_transfer(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL,
-	                          body_pv, ctype_pv, code_pv);
+	                          body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
 
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
@@ -537,12 +562,16 @@ static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
 }
 
 static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
-					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv)
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+					int *max_redirects)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
 	int lrc = RCL_OK, rc;
 	char *host;
+
+	if (validate_max_redirects(max_redirects) < 0)
+		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -556,7 +585,7 @@ static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 		ctype = *_ctype;
 
 	rc = rest_sync_transfer(REST_CLIENT_POST, msg, url_nt.s, body, &ctype,
-	                          body_pv, ctype_pv, code_pv);
+	                          body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
 
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
@@ -566,12 +595,16 @@ static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 }
 
 static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
-					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv)
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+					int *max_redirects)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
 	int lrc = RCL_OK, rc;
 	char *host;
+
+	if (validate_max_redirects(max_redirects) < 0)
+		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -585,7 +618,7 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 		ctype = *_ctype;
 
 	rc = rest_sync_transfer(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype,
-	                          body_pv, ctype_pv, code_pv);
+	                          body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
 
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
@@ -596,7 +629,8 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 
 int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
                       char *url, str *body, str *ctype, async_ctx *ctx,
-                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
+                      pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv,
+                      long max_redirects)
 {
 	rest_async_param *param;
 	pv_value_t val;
@@ -618,7 +652,8 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 			ctx->timeout_s : curl_timeout;
 
 	rc = start_async_http_req(msg, method, url, body, ctype,
-			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd);
+			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd,
+			max_redirects);
 
 	/* error occurred; no transfer done */
 	if (read_fd == ASYNC_NO_IO) {
@@ -702,10 +737,14 @@ done:
 }
 
 static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
-				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv)
+				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
+				int *max_redirects)
 {
 	str url_nt;
 	int rc;
+
+	if (validate_max_redirects(max_redirects) < 0)
+		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -716,7 +755,7 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 			body_pv, ctype_pv, code_pv);
 
 	rc = async_rest_method(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL, ctx,
-				body_pv, ctype_pv, code_pv);
+				body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -724,11 +763,14 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 
 static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv)
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
 	int rc;
+
+	if (validate_max_redirects(max_redirects) < 0)
+		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -742,7 +784,8 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 			body_pv, ctype_pv, code_pv);
 
 	rc = async_rest_method(REST_CLIENT_POST, msg, url_nt.s, body, &ctype, ctx,
-							body_pv, ctype_pv, code_pv);
+							body_pv, ctype_pv, code_pv,
+							max_redirects ? *max_redirects : 0);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -750,11 +793,14 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv)
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
 	int rc;
+
+	if (validate_max_redirects(max_redirects) < 0)
+		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -768,7 +814,8 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 		url->len, url->s, body_pv, ctype_pv, code_pv);
 
 	rc = async_rest_method(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype, ctx,
-						body_pv, ctype_pv, code_pv);
+						body_pv, ctype_pv, code_pv,
+						max_redirects ? *max_redirects : 0);
 
 	pkg_free(url_nt.s);
 	return rc;

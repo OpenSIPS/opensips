@@ -399,7 +399,7 @@ static inline int get_easy_status(CURL *handle, CURLM *multi, CURLcode *code)
 	return -1;
 }
 
-static int init_transfer(CURL *handle, char *url, unsigned long timeout_s)
+static int init_transfer(CURL *handle, char *url, unsigned long timeout_s, long max_redirects)
 {
 	CURLcode rc;
 
@@ -421,6 +421,17 @@ static int init_transfer(CURL *handle, char *url, unsigned long timeout_s)
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 0L);
 	w_curl_easy_setopt(handle, CURLOPT_FAILONERROR, 0L);
+
+	if (max_redirects > 0) {
+		w_curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+		w_curl_easy_setopt(handle, CURLOPT_MAXREDIRS, max_redirects);
+#if LIBCURL_VERSION_NUM >= 0x075500 /* 7.85.0 */
+		w_curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+		w_curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS,
+				(long)(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+#endif
+	}
 
 	if (ssl_capath)
 		w_curl_easy_setopt(handle, CURLOPT_CAPATH, ssl_capath);
@@ -693,7 +704,8 @@ static inline char rest_easy_perform(
  */
 int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
           /* in */    char *url, str *body, str *ctype,
-          /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
+          /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv,
+          /* in */    long max_redirects)
 {
 	int ret;
 	CURLcode rc;
@@ -703,7 +715,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	str st = STR_NULL, res_body = STR_NULL, tbody, ttype;
 
 	curl_easy_reset(sync_handle);
-	if (init_transfer(sync_handle, url, 0) != 0) {
+	if (init_transfer(sync_handle, url, 0, max_redirects) != 0) {
 		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
@@ -813,7 +825,7 @@ cleanup:
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
                          char *url, str *req_body, str *req_ctype,
                          rest_async_param *async_parm, str *body, str *ctype,
-						 enum async_ret_code *out_fd)
+                         enum async_ret_code *out_fd, long max_redirects)
 {
 	CURL *handle;
 	CURLcode rc;
@@ -836,7 +848,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		goto cleanup;
 	}
 
-	if (init_transfer(handle, url, async_parm->timeout_s) != 0) {
+	if (init_transfer(handle, url, async_parm->timeout_s, max_redirects) != 0) {
 		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
