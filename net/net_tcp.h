@@ -116,6 +116,12 @@ int tcp_get_rcv(unsigned int id, struct receive_info *ri);
 /* returns the process-table slot of TCP main */
 int tcp_get_main_proc_no(void);
 
+/* Traverse all shared TCP connections while holding one partition lock at a time.
+ * The callback must not perform operations which acquire TCP connection locks.
+ * Returning a non-zero value stops the traversal and that value is propagated. */
+typedef int (*tcp_conn_traverse_f)(struct tcp_connection *conn, void *arg);
+int tcp_conn_traverse(tcp_conn_traverse_f cb, void *arg);
+
 int tcp_run_task(tcp_thread_job_f run, void *data);
 int tcp_async_write_job(struct tcp_connection *tcpconn);
 

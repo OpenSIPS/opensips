@@ -2805,6 +2805,34 @@ found:
 }
 
 
+int tcp_conn_traverse(tcp_conn_traverse_f cb, void *arg)
+{
+	struct tcp_connection *conn;
+	unsigned int part, i;
+	int rc;
+
+	if (!cb || tcp_disabled)
+		return 0;
+
+	for (part = 0; part < TCP_PARTITION_SIZE; part++) {
+		TCPCONN_LOCK(part);
+		for (i = 0; i < TCP_ID_HASH_SIZE; i++) {
+			for (conn = TCP_PART(part).tcpconn_id_hash[i]; conn;
+					conn = conn->id_next) {
+				rc = cb(conn, arg);
+				if (rc) {
+					TCPCONN_UNLOCK(part);
+					return rc;
+				}
+			}
+		}
+		TCPCONN_UNLOCK(part);
+	}
+
+	return 0;
+}
+
+
 /***************************** MI functions **********************************/
 
 mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
