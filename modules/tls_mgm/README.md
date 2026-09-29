@@ -189,6 +189,39 @@ The previous DB defined domains are discarded but the
 script defined domains are preserved.
 
 
+### Exported Statistics
+
+The module exports read-only gauges describing the TLS metadata of currently
+active stream connections. The values are computed directly from the shared
+TCP connection table when queried, so they do not drift after reconnects or
+connection teardown. These statistics can also be selected by the Prometheus
+module.
+
+#### connections
+
+Number of active connections for which TLS metadata is available.
+
+#### tls_v1_0_connections / tls_v1_1_connections / tls_v1_2_connections / tls_v1_3_connections
+
+Number of active TLS connections negotiated with each TLS protocol version.
+
+#### peer_verified_connections / peer_unverified_connections
+
+Number of active TLS connections whose peer certificate validation result was
+respectively successful or not successful. A connection without a peer
+certificate is counted as unverified.
+
+#### aes_gcm_connections / chacha20_connections / other_cipher_connections
+
+Active TLS connections grouped by negotiated cipher family. AES-GCM includes
+both OpenSSL and wolfSSL cipher names containing `GCM`; ChaCha20 includes
+cipher names containing `CHACHA20`. All remaining negotiated ciphers are
+reported by `other_cipher_connections`.
+
+All statistic names use the `tls_mgm:` prefix, for example
+`tls_mgm:tls_v1_3_connections`. Reading a statistic traverses the active TCP
+connection table and briefly holds one connection-partition lock at a time.
+
 ### Exported Parameters
 
 
