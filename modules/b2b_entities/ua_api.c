@@ -178,6 +178,12 @@ int raise_ua_sess_event(str *key, enum b2b_entity_type ent_type,
 	int statuscode;
 	str empty = STR_NULL;
 
+	if (ent_type < B2B_SERVER || ent_type > B2B_CLIENT ||
+			ev_type < UA_SESS_EV_NEW || ev_type > UA_SESS_EV_TERMINATED) {
+		LM_ERR("invalid entity (%d) or event type (%d)\n", ent_type, ev_type);
+		return -1;
+	}
+
 	if (evi_param_set_str(evi_key_param, key) < 0) {
 		LM_ERR("cannot set event parameter\n");
 		return -1;

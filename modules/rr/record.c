@@ -386,7 +386,6 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 	}
 
 	memcpy(p, _data->s, _data->len);
-	p += _data->len;
 
 	/*suffix*/
 	p = suffix;
@@ -541,5 +540,4 @@ int add_rr_param(struct sip_msg* msg, str* rr_param)
 error:
 	return -1;
 }
-
 

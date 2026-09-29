@@ -91,8 +91,8 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	 * We need to check the length here, otherwise we could overwrite the buffer
 	 * boundaries if off is equal to SQL_BUF_LEN.
 	 */
-	if (off + 1 >= SQL_BUF_LEN) goto error;
-	sql_buf[off + 1] = '\0';
+	if (off >= SQL_BUF_LEN) goto error;
+	sql_buf[off] = '\0';
 	sql_str.s = sql_buf;
 	sql_str.len = off;
 

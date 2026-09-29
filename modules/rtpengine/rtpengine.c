@@ -1863,7 +1863,7 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 	}
 
 	pnode->ai_addrlen = res->ai_addrlen;
-	memcpy(&pnode->ai_addr.s, res->ai_addr, res->ai_addrlen);
+	memcpy(&pnode->ai_addr, res->ai_addr, res->ai_addrlen);
 
 	freeaddrinfo(res);
 	return 1;

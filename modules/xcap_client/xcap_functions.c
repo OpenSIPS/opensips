@@ -227,7 +227,7 @@ xcap_node_sel_t* xcapNodeSelAddStep(xcap_node_sel_t* curr_sel, str* name,
 	}
 
 	curr_sel->size+= 1+ new_step.len;
-	if(namespace->len)
+	if(namespace && namespace->len)
 	{
 		curr_sel->size+= namespace->len+ 3;
 	}
@@ -473,6 +473,11 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 	char* path= NULL;
 	str stream= {0, 0};
 
+	if (!etag) {
+		LM_ERR("no etag holder provided\n");
+		return NULL;
+	}
+
 	path= get_xcap_path(req);
 	if(path== NULL)
 	{
@@ -484,13 +489,6 @@ char* xcapGetElem(xcap_get_req_t req, char** etag)
 	if(stream.s== NULL)
 	{
 		LM_DBG("the serched element was not found\n");
-	}
-
-	if(etag== NULL)
-	{
-		LM_ERR("no etag found\n");
-		pkg_free(stream.s);
-		stream.s= NULL;
 	}
 
 	if(path)

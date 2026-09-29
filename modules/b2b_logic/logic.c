@@ -1111,6 +1111,10 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			cur_route_ctx.entity_key.len, cur_route_ctx.entity_key.s);
 	}
 
+	if (!msg) {
+		LM_ERR("missing reply message\n");
+		goto error;
+	}
 	method = get_cseq(msg)->method;
 	if(parse_method(method.s, method.s+method.len, &method_value) == NULL)
 	{

@@ -641,7 +641,7 @@ static int
 fix_nated_contact_f(struct sip_msg* msg, str *params, void *_flags)
 {
 	int len, len1;
-	char *cp, *buf, temp, *p;
+	char *cp, *buf, *p;
 	contact_t *c;
 	struct hdr_field *hdr;
 	struct lump *anchor;
@@ -720,38 +720,48 @@ fix_nated_contact_f(struct sip_msg* msg, str *params, void *_flags)
 				pkg_free(org_param.s);
 			return -1;
 		}
-		temp = hostport.s[0]; hostport.s[0] = '\0';
 		if (params==NULL) {
 			if (msg->rcv.src_ip.af==AF_INET6)
-				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s%.*s", c->uri.s, cp,
+				len1 = snprintf(buf, len, "%.*s[%s]:%d%.*s%.*s%.*s",
+					(int)(hostport.s-c->uri.s), c->uri.s, cp,
 					msg->rcv.src_port,org_param.len,org_param.s,
 					left.len,left.s,left2.len,left2.s);
 			else
-				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s", c->uri.s, cp,
+				len1 = snprintf(buf, len, "%.*s%s:%d%.*s%.*s%.*s",
+					(int)(hostport.s-c->uri.s), c->uri.s, cp,
 					msg->rcv.src_port,org_param.len,org_param.s,
 					left.len,left.s,left2.len,left2.s);
 		} else if (!is_enclosed) {
 			if (msg->rcv.src_ip.af==AF_INET6)
-				len1 = snprintf(buf, len, "<%s[%s]:%d%.*s%.*s>", c->uri.s, cp,
+				len1 = snprintf(buf, len, "<%.*s[%s]:%d%.*s%.*s>",
+					(int)(hostport.s-c->uri.s), c->uri.s, cp,
 					msg->rcv.src_port,params->len,params->s,
 					org_param.len,org_param.s);
 			else
-				len1 = snprintf(buf, len, "<%s%s:%d%.*s%.*s>", c->uri.s, cp,
+				len1 = snprintf(buf, len, "<%.*s%s:%d%.*s%.*s>",
+					(int)(hostport.s-c->uri.s), c->uri.s, cp,
 					msg->rcv.src_port,params->len,params->s,
 					org_param.len,org_param.s);
 		} else {
 			if (msg->rcv.src_ip.af==AF_INET6)
-				len1 = snprintf(buf, len, "%s[%s]:%d%.*s%.*s%.*s%.*s", c->uri.s, cp,
+				len1 = snprintf(buf, len, "%.*s[%s]:%d%.*s%.*s%.*s%.*s",
+					(int)(hostport.s-c->uri.s), c->uri.s, cp,
 					msg->rcv.src_port,params->len,params->s,
 					org_param.len,org_param.s,left.len,left.s,left2.len,left2.s);
 			else
-				len1 = snprintf(buf, len, "%s%s:%d%.*s%.*s%.*s%.*s", c->uri.s, cp,
+				len1 = snprintf(buf, len, "%.*s%s:%d%.*s%.*s%.*s%.*s",
+					(int)(hostport.s-c->uri.s), c->uri.s, cp,
 					msg->rcv.src_port,params->len,params->s,
 					org_param.len,org_param.s,left.len,left.s,left2.len,left2.s);
 		}
-		if (len1 < len)
-			len = len1;
-		hostport.s[0] = temp;
+		if (len1 < 0 || len1 >= len) {
+			LM_ERR("failed to build new Contact URI\n");
+			pkg_free(buf);
+			if (org_param.s)
+				pkg_free(org_param.s);
+			return -1;
+		}
+		len = len1;
 		if (org_param.s)
 			pkg_free(org_param.s);
 		//LM_DBG("lump--- |%.*s|\n",len,buf);

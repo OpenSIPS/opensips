@@ -161,6 +161,7 @@ struct module_exports exports= {
  */
 static int mod_init(void)
 {
+	int max_hash_exp;
 	load_tm_f  load_tm;
 
 	LM_DBG("...\n");
@@ -216,12 +217,15 @@ static int mod_init(void)
 		HASH_SIZE= 512;
 	else {
 		/* must fit in half of "long" when building the pres_id */
-		if ( HASH_SIZE > (sizeof(long)*8/2) ) {
+		max_hash_exp = (int)(sizeof(long) * 8 / 2);
+		if (max_hash_exp >= (int)(sizeof(HASH_SIZE) * 8) - 1)
+			max_hash_exp = (int)(sizeof(HASH_SIZE) * 8) - 2;
+		if (HASH_SIZE > max_hash_exp) {
 			LM_WARN("hash_size %d too large, limiting to max allowed %d\n",
-				HASH_SIZE, (int)(sizeof(long)*8/2) );
-			HASH_SIZE = (sizeof(long)*8/2);
+				HASH_SIZE, max_hash_exp);
+			HASH_SIZE = max_hash_exp;
 		}
-		HASH_SIZE = 1<<HASH_SIZE;
+		HASH_SIZE = 1U << HASH_SIZE;
 	}
 
 	HashT= new_htable();
@@ -1159,4 +1163,3 @@ static void db_update(unsigned int ticks,void *param)
 
 	return ;
 }
-

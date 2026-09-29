@@ -1580,6 +1580,11 @@ static int pv_get_content_type(struct sip_msg *msg, pv_param_t *param,
 		}
 	} else {
 		/* copy main content type */
+		if (msg->content_type->body.len < 0) {
+			LM_ERR("Invalid Content-Type header length (%d)\n",
+				msg->content_type->body.len);
+			return pv_get_null(msg, param, res);
+		}
 		if (msg->content_type->body.len >= BUFLEN) {
 			LM_ERR("Content-Type header too long for pvar buffer (%d >= %d)\n",
 				msg->content_type->body.len, BUFLEN);

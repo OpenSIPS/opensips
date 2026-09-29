@@ -239,6 +239,10 @@ int list_hdr_add_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 	}
 
 	if (old_hdr.len==0) {
+		if (!l) {
+			LM_BUG("missing lump for an empty modified header\n");
+			return -1;
+		}
 
 		/* all original options were removed (current hdr status is to be
 		 * entirly removed) -> rebuild it again */
@@ -458,6 +462,5 @@ int list_hdr_remove_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 
 	return removed?1:-1;
 }
-
 
 

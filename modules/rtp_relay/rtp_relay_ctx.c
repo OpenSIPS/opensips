@@ -2620,6 +2620,10 @@ static int rtp_relay_push_flags_type(struct rtp_relay_sess *sess,
 				rtp_leg_set_disabled(sess->legs[leg], o->valueint);
 				break;
 			default:
+				if (f < RTP_RELAY_FLAGS_FIRST || f >= RTP_RELAY_FLAGS_SIZE) {
+					LM_WARN("Invalid RTP relay flag %s\n", o->string);
+					continue;
+				}
 				if (!(o->type & cJSON_String)) {
 					LM_WARN("%s not a string - ignoring!\n", o->string);
 					continue;

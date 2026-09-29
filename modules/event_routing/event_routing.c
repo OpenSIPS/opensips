@@ -498,7 +498,7 @@ static int wait_for_event_sync(struct sip_msg* msg,
 		rc = 1;
 	}
 
-	return rc == 0 ? 1 : rc;
+	return rc;
 done3:
 	cond_destroy(&swait_data->cond);
 done2:

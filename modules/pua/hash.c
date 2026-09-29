@@ -633,7 +633,6 @@ int replace_in_htable(unsigned int hash_index, unsigned int local_index,
 	{
 		if(p->local_index == local_index)
 		{
-			q->next = p->next;
 			q->next = new_pres;
 			new_pres->next = p->next;
 			new_pres->local_index = local_index;

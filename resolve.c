@@ -1805,6 +1805,11 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	struct hostent* he;
 	unsigned short local_proto=PROTO_NONE;
 
+	if (!name || !name->s || name->len < 0) {
+		LM_ERR("invalid domain name\n");
+		return 0;
+	}
+
 	if (dn)
 		*dn = 0;
 
@@ -1888,7 +1893,7 @@ struct hostent* sip_resolvehost( str* name, unsigned short* port,
 	*proto = (is_sips)?PROTO_TLS:PROTO_UDP;
 
 do_srv:
-	if ((name->len+SRV_MAX_PREFIX_LEN+1)>MAX_DNS_NAME) {
+	if (name->len > MAX_DNS_NAME - SRV_MAX_PREFIX_LEN - 1) {
 		LM_WARN("domain name too long (%d),"
 			" unable to perform SRV lookup\n", name->len);
 		/* set defaults */

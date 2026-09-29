@@ -66,7 +66,7 @@ static int read_and_write2var(struct sip_msg* msg, FILE** strm, pv_spec_t *outva
 
 
 	while((tmplen=fread(tmpbuf, 1, MAX_LINE_SIZE, *strm))) {
-		if ((buflen + tmplen) >= MAX_BUF_SIZE) {
+		if (tmplen > MAX_BUF_SIZE - buflen) {
 			LM_WARN("no more space in output buffer\n");
 			break;
 		}
@@ -350,4 +350,3 @@ error:
 	return -1;
 	#undef MAX_LINE_SIZE
 }
-

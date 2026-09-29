@@ -657,8 +657,6 @@ end:
 error:
 	if(result)
 		config_db_func.free_result(config_db_con, result);
-	if (ret)
-		free_config_hash(ret);
 	return NULL;
 }
 
