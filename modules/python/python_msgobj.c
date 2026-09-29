@@ -439,7 +439,10 @@ msg_set_pseudoVar(msgobject *self, PyObject *args)
         return Py_None;
     }
     val.flags = PV_VAL_STR;
-	pv_set_value(self->msg, &model, EQ_T, &val);
+	if (pv_set_value(self->msg, &model, EQ_T, &val) < 0) {
+		PyErr_SetString(PyExc_RuntimeError, "failed to set pseudo-variable");
+		return NULL;
+	}
 	Py_INCREF(Py_None);
 	return Py_None;
 

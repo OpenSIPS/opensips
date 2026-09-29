@@ -173,14 +173,28 @@ void cdb_add_n_pairs(cdb_dict_t *pairs, int idx_start, int idx_end)
 
 	for (i = idx_start; i <= idx_end; i++)
 		if (qvals[i].nul || (qvals[i].type == DB_STR && !qvals[i].val.str_val.s))
-			cdb_dict_add_null(pairs, qcols[i]->s, qcols[i]->len);
+		{
+			if (cdb_dict_add_null(pairs, qcols[i]->s, qcols[i]->len) < 0) {
+				LM_ERR("failed to add cachedb null value\n");
+				return;
+			}
+		}
 		else if (qvals[i].type == DB_STR)
-			/* coverity[check_result] - false positive */
-			cdb_dict_add_str(pairs, qcols[i]->s, qcols[i]->len,
-				&qvals[i].val.str_val);
+		{
+			if (cdb_dict_add_str(pairs, qcols[i]->s, qcols[i]->len,
+					&qvals[i].val.str_val) < 0) {
+				LM_ERR("failed to add cachedb string value\n");
+				return;
+			}
+		}
 		else if (qvals[i].type == DB_INT)
-			cdb_dict_add_int32(pairs, qcols[i]->s, qcols[i]->len,
-				qvals[i].val.int_val);
+		{
+			if (cdb_dict_add_int32(pairs, qcols[i]->s, qcols[i]->len,
+					qvals[i].val.int_val) < 0) {
+				LM_ERR("failed to add cachedb integer value\n");
+				return;
+			}
+		}
 }
 
 void b2b_logic_dump(int no_lock)

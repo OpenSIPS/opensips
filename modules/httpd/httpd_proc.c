@@ -1028,7 +1028,10 @@ static char * load_file(char * filename)
 	if(!f)
 		return NULL;
 
-	fseek(f, 0, SEEK_END);
+	if (fseek(f, 0, SEEK_END) != 0) {
+		fclose(f);
+		return NULL;
+	}
 	long fsize = ftell(f);
 
 	if(fsize <= 0) {
@@ -1036,7 +1039,10 @@ static char * load_file(char * filename)
 		return NULL;
 	}
 
-	fseek(f, 0, SEEK_SET);
+	if (fseek(f, 0, SEEK_SET) != 0) {
+		fclose(f);
+		return NULL;
+	}
 
 	char *string = malloc(fsize + 1);
 	size_t bread;

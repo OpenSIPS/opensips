@@ -158,14 +158,20 @@ static int web3_blockchain_call(const char *rpc_url, const char *to_address,
     LM_DBG("Blockchain call: %s", to_address);
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, rpc_url);
-  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_rpc_timeout);
+	  if (curl_easy_setopt(curl, CURLOPT_URL, rpc_url) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_rpc_timeout) != CURLE_OK) {
+	    LM_ERR("Failed to configure curl for blockchain call");
+	    goto cleanup;
+	  }
 
   headers = curl_slist_append(NULL, "Content-Type: application/json");
-  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	  if (!headers || curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers) != CURLE_OK) {
+	    LM_ERR("Failed to configure blockchain request headers");
+	    goto cleanup;
+	  }
 
   res = curl_easy_perform(curl);
 
@@ -1077,14 +1083,20 @@ int auth_web3_check_response(dig_cred_t *cred, str *rmethod) {
   }
 
 
-  curl_easy_setopt(curl, CURLOPT_URL, web3_authentication_rpc_url);
-  curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_rpc_timeout);
+	  if (curl_easy_setopt(curl, CURLOPT_URL, web3_authentication_rpc_url) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, web3_curl_callback) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_WRITEDATA, &web3_response) != CURLE_OK ||
+	      curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)web3_rpc_timeout) != CURLE_OK) {
+	    LM_ERR("Failed to configure curl for authentication call");
+	    goto cleanup;
+	  }
 
   headers = curl_slist_append(NULL, "Content-Type: application/json");
-  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+	  if (!headers || curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers) != CURLE_OK) {
+	    LM_ERR("Failed to configure authentication request headers");
+	    goto cleanup;
+	  }
 
   res = curl_easy_perform(curl);
 

@@ -1264,7 +1264,8 @@ static mi_response_t *mi_enable_rtpengine(const mi_params_t *params,
 	int enable, set;
 	struct rtpe_set * rtpe_list;
 	struct rtpe_node * crt_rtpe;
-	int found, disabled, prev_disabled, recheck_ticks;
+	int found, disabled, prev_disabled;
+	unsigned int recheck_ticks;
 
 	found = 0;
 
@@ -1734,7 +1735,7 @@ mod_init(void)
 
 	if (err_pv_param) {
 		init_str(&s, err_pv_param);
-		if (pv_parse_spec(&s, &err_pv) < 0) {
+		if (pv_parse_spec(&s, &err_pv) == NULL) {
 			LM_ERR("malformed return variable definition <%s>\n",
 					err_pv_param);
 			return -1;
@@ -2902,8 +2903,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	/*** If the spvar "sock_var" has been specified, parse it into a (socket_val) STR variable ***/
 	memset(&socket_val, 0, sizeof(pv_value_t));
-	if (spvar)
-		pv_get_spec_value(msg, spvar, &socket_val);
+	if (spvar && pv_get_spec_value(msg, spvar, &socket_val) < 0) {
+		LM_ERR("could not retrieve rtpengine socket variable\n");
+		goto error;
+	}
 	forced_socket = socket_val.rs.len > 0;
 
 	failed_node = NULL;
@@ -3516,7 +3519,12 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 		struct timeval tv;
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
-		setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+		if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,
+				(const char *)&tv, sizeof tv) < 0) {
+			LM_ERR("failed to set RTP Engine receive timeout: %s\n",
+					strerror(errno));
+			goto error;
+		}
 
 		len = recv(fd, buf, sizeof(buf)-1, 0);
 		if (len <= 0) {
@@ -5127,7 +5135,8 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess,
 			fill_rtpengine_node(server, &val.rs);
 		else
 			LM_ERR("could not retrieve the value of the used rtpengine!\n");
-		pv_set_value(sess->msg, &media_pvar, EQ_T, NULL);
+		if (pv_set_value(sess->msg, &media_pvar, EQ_T, NULL) < 0)
+			LM_ERR("could not reset the used rtpengine variable!\n");
 	}
 	return ret;
 }

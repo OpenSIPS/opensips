@@ -56,7 +56,8 @@ static int try_connect(int s, const struct sockaddr *name, socklen_t namelen, in
 		cres = 0;
 	}
 out:
-	fcntl(s, F_SETFL, oflags);
+	if (fcntl(s, F_SETFL, oflags) < 0)
+		return -1;
 	return cres;
 }
 

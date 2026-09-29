@@ -313,7 +313,7 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	struct msg *msg = *_msg;
 	struct avp *a = NULL;
 	struct avp_hdr * h = NULL;
-	int rc;
+	int rc, ret;
 	str callid;
 	struct dm_cond **prpl_cond, *rpl_cond;
 	unsigned int hentry;
@@ -352,7 +352,11 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	hash_remove_key(pending_replies, callid);
 	hash_unlock(pending_replies, hentry);
 
-	fd_msg_search_avp(msg, dm_dict.Error_Message, &a);
+	ret = fd_msg_search_avp(msg, dm_dict.Error_Message, &a);
+	if (ret != 0) {
+		LM_ERR("failed to search for Error-Message AVP: %d\n", ret);
+		a = NULL;
+	}
 	if (a) {
 		rpl_cond->rpl.is_error = 1;
 		FD_CHECK(fd_msg_avp_hdr(a, &h));
