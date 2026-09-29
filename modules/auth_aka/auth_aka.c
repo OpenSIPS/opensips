@@ -760,26 +760,25 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	hdr_types_t hftype;
 	struct hdr_field *h;
 	struct aka_user *user;
-	struct aka_av *av, **avs;
+	struct aka_av *av, **avs = NULL;
 	int count = aka_count_avs(algmask), new_count;
 	int sync_count, err_count;
 
 	realm = (_realm?*_realm:str_init(""));
-	if (count > 1) {
-		avs = pkg_malloc(count * sizeof *avs);
-		if (!avs) {
-			LM_ERR("could not allocate %d AVs\n", count);
-			return -1;
-		}
-	} else {
-		avs = &av;
-	}
-
 	if (aka_challenge_pre(_msg, &realm, _code, &hftype, &h, &user, &auts, &sync_count) < 0) {
 		LM_ERR("cannot prepare challenge from message\n");
 		goto end;
 	}
 	count += sync_count;
+	if (count > 1) {
+		avs = pkg_malloc(count * sizeof *avs);
+		if (!avs) {
+			LM_ERR("could not allocate %d AVs\n", count);
+			goto release;
+		}
+	} else {
+		avs = &av;
+	}
 	/* try to fetch as many local AVs as possible */
 	new_count = aka_avs_get_new(user, &algmask, avs, count, &err_count);
 
@@ -803,7 +802,7 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 release:
 	aka_user_release(user);
 end:
-	if (count > 1)
+	if (count > 1 && avs)
 		pkg_free(avs);
 	return ret;
 }

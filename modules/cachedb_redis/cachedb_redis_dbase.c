@@ -1774,6 +1774,10 @@ int redis_update_subkeys(cachedb_con *_con, const cdb_filter_t *row_filter,
 		pair = list_entry(_, cdb_pair_t, list);
 		if (pair->val.type != CDB_DICT || !pair->subkey.s)
 			continue;
+		if (i + 2 >= REDIS_ARGV_MAX_LEN) {
+			LM_ERR("too many subkeys in update\n");
+			goto error2;
+		}
 
 		argv[i] = skey.s;
 		argvlen[i] = skey.len;
@@ -1937,7 +1941,7 @@ error1:
 	return -1;
 
 error2:
-	for (i = 2; argv[i] && i < REDIS_ARGV_MAX_LEN; i += 3)
+	for (i = 2; i < REDIS_ARGV_MAX_LEN && argv[i]; i += 3)
 		pkg_free(argv[i]);
 
 	freeReplyObject(rpl);
