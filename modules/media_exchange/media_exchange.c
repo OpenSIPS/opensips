@@ -1058,15 +1058,15 @@ static int handle_media_indialog_refresh(struct sip_msg *msg,
 		}
 	} else {
 		/* here, we still have the initial leg - it is part of an exchange - proxy it */
-		if (media_session_req(leg, INVITE, body) < 0) {
+		if (media_session_req(tleg, INVITE, body) < 0) {
 			media_send_fail(t, ms->dlg, req_leg);
 			ret = -3;
 		} else if (t) {
 			/* link the transaction here */
 			p = media_session_tm_new(t, req_leg);
 			if (p) {
-				MSL_REF(leg); /* make sure the media session leg does not dissapear either */
-				leg->params = p;
+				MSL_REF(tleg); /* make sure the media session leg does not dissapear either */
+				tleg->params = p;
 			}
 			ret = -2;
 		}
