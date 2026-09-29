@@ -112,11 +112,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	memset(c, 0, sizeof(ucontact_t));
 
 	if (have_mem_storage()) {
-		if (!ZSTRP(_ci->packed_kv_storage))
-			c->kv_storage = store_deserialize(_ci->packed_kv_storage);
-		else
-			c->kv_storage = map_create(AVLMAP_SHARED);
-
+		c->kv_storage = store_deserialize(_ci->packed_kv_storage);
 		if (!c->kv_storage)
 			goto mem_error;
 	}
