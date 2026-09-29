@@ -504,7 +504,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 				ret = MHD_queue_basic_auth_fail_response(
 					connection, auth_realm.s, response);
 				MHD_destroy_response(response);
-#if MHD_VERSION >= 0x00093800
+#if MHD_VERSION >= 0x00095600
 				if (user) MHD_free(user);
 				if (pass) MHD_free(pass);
 #else
@@ -513,7 +513,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 #endif
 				return ret;
 			}
-#if MHD_VERSION >= 0x00093800
+#if MHD_VERSION >= 0x00095600
 			MHD_free(user);
 			MHD_free(pass);
 #else
