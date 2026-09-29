@@ -115,9 +115,10 @@ void sca_dialog_sendpublish(struct dlg_cell *dlg, int type,
 		struct sip_msg pkg_msg;
 
 		memset(&pkg_msg, 0, sizeof pkg_msg);
-		parse_msg(msg->buf, msg->len, &pkg_msg);
-
-		if (parse_call_info_header(&pkg_msg) != 0) {
+		if (parse_msg(msg->buf, msg->len, &pkg_msg) < 0) {
+			LM_SCA("failed to parse SIP message, assuming index 1\n");
+			idx = 1;
+		} else if (parse_call_info_header(&pkg_msg) != 0) {
 			LM_SCA("message has no Call-Info hf, assuming index 1\n");
 			idx = 1;
 		} else {

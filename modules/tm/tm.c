@@ -2851,8 +2851,11 @@ static inline int _pv_set_tm_branch_field(struct sip_msg* msg,
 			old_list = set_avp_list( &TM_BRANCH(t,idx).battrs );
 			if ( (avp=search_first_avp( 0, attr_name, NULL, 0))!=NULL )
 				destroy_avp(avp);
-			if ( !(attr_flags&AVP_VAL_NULL) )
-				add_avp( attr_flags, attr_name, attr_val);
+			if (!(attr_flags & AVP_VAL_NULL) &&
+					add_avp(attr_flags, attr_name, attr_val) < 0) {
+				set_avp_list(old_list);
+				return -1;
+			}
 			set_avp_list( old_list );
 			break;
 		default:

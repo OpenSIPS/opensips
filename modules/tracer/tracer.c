@@ -1037,7 +1037,8 @@ static int mod_init(void)
 	if (load_dlg_api(&dlgb) != 0)
 		LM_DBG("failed to load the dialog API (dialog module not loaded?)\n");
 
-	load_tm_api(&tmb);
+	if (load_tm_api(&tmb) != 0)
+		LM_DBG("failed to load the TM API (TM module not loaded?)\n");
 
 	/* statelessly forwarded request callbacks */
 	if (register_slcb(SLCB_REQUEST_OUT, FL_USE_SIPTRACE,

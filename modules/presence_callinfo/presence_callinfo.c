@@ -920,8 +920,11 @@ mi_response_t *sca_mi_release_line(const mi_params_t *params,
 	str match_line = STR_NULL;
 	int release_all = 0, cnt = 0, cnt_idx = 0, match_index = -1, i;
 
-	get_mi_string_param(params, "sca_line", &match_line.s, &match_line.len);
-	try_get_mi_int_param(params, "sca_index", &match_index);
+	if (get_mi_string_param(params, "sca_line",
+			&match_line.s, &match_line.len) < 0)
+		return init_mi_param_error();
+	if (try_get_mi_int_param(params, "sca_index", &match_index) == -2)
+		return init_mi_param_error();
 
 	if (!str_strcasecmp(&match_line, str_static("ALL")))
 		release_all = 1;

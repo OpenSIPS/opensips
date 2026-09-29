@@ -107,8 +107,9 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 		}
 		/* this converstion is risk free as the we already tested
 		 * for a valid number above */
-		str2int( &msg->fl.u.reply.status,
-			(unsigned int*)&msg->fl.u.reply.status_no );
+		if (str2int(&msg->fl.u.reply.status,
+				(unsigned int *)&msg->fl.u.reply.status_no) < 0)
+			goto error;
 	} else {
 		/* let's hope it is a request, check for spaces at least */
 		if (q_memchr( msg->fl.u.request.method.s, ' ',
