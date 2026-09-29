@@ -36,6 +36,7 @@
 #include "ip_addr.h"
 #include "script_cb.h"
 #include "sl_cb.h"
+#include "net/net_tcp.h"
 #include "net/trans.h"
 #include "socket_info.h"
 
@@ -128,7 +129,15 @@ static inline int msg_send( const struct socket_info* send_sock, int proto,
 	if ((send_sock->flags & SI_INTERNAL) && send_sock->internal_proto != PROTO_NONE)
 		proto = send_sock->internal_proto;
 
-	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to,id)<0){
+	if (is_tcp_based_proto(proto)) {
+		last_outgoing_tcp_id = 0;
+		if (send_sock->last_real_ports) {
+			send_sock->last_real_ports->local = 0;
+			send_sock->last_real_ports->remote = 0;
+		}
+	}
+
+	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to, id)<0){
 		get_su_info(to, ip, port);
 		LM_ERR("send() to %s:%hu for proto %s/%d failed\n",
 				ip, port, proto2a(proto),proto);
