@@ -31,6 +31,7 @@
 #include "../../dprint.h"
 #include "../../route.h"
 #include "../../map.h"
+#include "../../ut.h"
 #include "sqlops_parse.h"
 #include "sqlops_db.h"
 
@@ -182,8 +183,8 @@ int sqlops_db_init(const str* db_table, str** db_cols)
 	for(i=0;i<no_db_urls;i++) {
 		db_urls[i].hdl = db_urls[i].dbf.init( &db_urls[i].url );
 		if (db_urls[i].hdl==0) {
-			LM_ERR("cannot initialize database connection for %s\n",
-				db_urls[i].url.s);
+			LM_ERR("cannot initialize database connection for [%s]\n",
+				db_url_escape(&db_urls[i].url));
 			goto error;
 		}
 		if (db_urls[i].dbf.use_table(db_urls[i].hdl, db_table)<0) {
