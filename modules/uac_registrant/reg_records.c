@@ -28,7 +28,6 @@
 #include <stdlib.h>
 
 #include "../../mem/mem.h"
-#include "../../statistics.h"
 #include "../../status_report.h"
 #include "reg_events.h"
 #include "reg_records.h"
@@ -135,7 +134,7 @@ static unsigned long get_failed_registrants(void *unused)
 	return get_registrant_count(REG_STAT_FAILED);
 }
 
-static const stat_export_t reg_stats[] = {
+const stat_export_t reg_stats[] = {
 	{"registrants", STAT_IS_FUNC, (stat_var **)get_total_registrants},
 	{"enabled_registrants", STAT_IS_FUNC, (stat_var **)get_enabled_registrants},
 	{"registered_registrants", STAT_IS_FUNC, (stat_var **)get_registered_registrants},
@@ -505,11 +504,6 @@ int init_reg_htable(void) {
 			return -1;
 		}
 		reg_htable[i].s_list = NULL;
-	}
-
-	if (register_module_stats("uac_registrant", reg_stats) < 0) {
-		LM_ERR("failed to register uac_registrant statistics\n");
-		return -1;
 	}
 
 	return 0;
