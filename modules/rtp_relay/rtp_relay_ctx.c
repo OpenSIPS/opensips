@@ -1022,6 +1022,7 @@ static int rtp_relay_b2b_new_tuple(struct b2bl_cb_params *p, unsigned int m)
 		return 0;
 	}
 	rtp_relay_ctx_set_b2b(ctx);
+	RTP_RELAY_CTX_REF(ctx);
 	RTP_RELAY_PUT_B2B_CTX(p->key, ctx);
 
 	return 0;
