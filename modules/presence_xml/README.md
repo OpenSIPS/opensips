@@ -144,7 +144,7 @@ modparam("presence_xml", "pres_rules_filename", "pres-rules")
 ```
 
 
-#### generate_offline_body (str)
+#### generate_offline_body (int)
 
 
 This parameter should be set to 0 if you want to prevent OpenSIPS from automatically

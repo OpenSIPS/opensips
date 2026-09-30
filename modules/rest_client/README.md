@@ -176,7 +176,7 @@ modparam("rest_client", "ssl_verifyhost", 0)
 ```
 
 
-#### ssl_capath (integer)
+#### ssl_capath (string)
 
 
 An optional path for CA certificates to be used for host verifications.
