@@ -135,7 +135,9 @@ static int count_tls_connection(struct tcp_connection *conn, void *arg)
 	struct tcp_tls_info *info;
 	const char *v, *c;
 
-	if (!conn || !conn->shared_data)
+	if (!conn ||
+			(conn->type != PROTO_TLS && conn->type != PROTO_WSS) ||
+			!conn->shared_data)
 		return 0;
 
 	info = conn->shared_data;
