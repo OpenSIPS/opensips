@@ -201,7 +201,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 						goto parse_error;
 				}
 				break;
-			case  0:
+			case 0:
+				goto parse_error;
 			case ',':
 				switch (status)
 				{
@@ -236,6 +237,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 							goto parse_error;
 						switch (*(tmp+1))
 						{
+							case 0:
+								goto parse_error;
 							case '\r':
 							case '\n':
 								break;
@@ -585,19 +588,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 				}
 				break;
 			case 0:
-				switch (status)
-				{
-					case URI_OR_TOKEN:
-					case MAYBE_URI_END:
-						to_b->uri.len = tmp - to_b->uri.s;
-						/* fall through */
-					case END:
-						saved_status = status = END;
-						goto endofheader;
-					default:
-						goto parse_error;
-				}
-				break;
+				goto parse_error;
 			case ',':
 				switch (status)
 				{
@@ -641,6 +632,8 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 				switch (status)
 				{
 					case DISPLAY_QUOTED:
+						if (tmp+1==end || *(tmp+1)==0)
+							goto parse_error;
 						tmp++; /* jump over next char */
 						break;
 					default:
