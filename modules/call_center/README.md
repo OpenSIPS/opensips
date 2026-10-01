@@ -287,7 +287,7 @@ modparam("call_center", "reject_on_no_agents", 0)
 ```
 
 
-#### chat_dispatch_policy (int)
+#### chat_dispatch_policy (string)
 
 
 A parameter to tell what should be the policy on dispatching the
