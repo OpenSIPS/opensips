@@ -117,7 +117,7 @@ modparam("b2b_sdp_demux", "client_bye_mode", "terminate")
 ...
 ```
 
-#### pending_wait_timeout (string)
+#### pending_wait_timeout (integer)
 
 Maximum amount of time, in milliseconds, to busy wait for an ongoing SDP
 negotiation to finish before handling a new client-side operation. A value of

@@ -405,7 +405,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
 ```
 
 
-#### timerec_col (integer)
+#### timerec_col (string)
 
 
 The column name that indicates an additional time recurrence check 
@@ -428,7 +428,7 @@ modparam("dialplan", "timerec_col", "month_match")
 ```
 
 
-#### disabled_col (integer)
+#### disabled_col (string)
 
 
 The column name that indicates if the dialplan rule is disabled.

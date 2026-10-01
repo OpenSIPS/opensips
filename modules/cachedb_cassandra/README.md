@@ -142,7 +142,7 @@ modparam("cachedb_cassandra", "query_timeout",1000);
 ```
 
 
-#### wr_consistency_level (int)
+#### wr_consistency_level (string)
 
 
 The consistency level desired for write operations.
@@ -171,7 +171,7 @@ modparam("cachedb_cassandra", "wr_consistency_level", "each_quorum");
 ```
 
 
-#### rd_consistency_level (int)
+#### rd_consistency_level (string)
 
 
 The consistency level desired for write operations.
