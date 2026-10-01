@@ -55,54 +55,80 @@ enum reg_stat_filter {
 	REG_STAT_FAILED
 };
 
-struct reg_stat_ctx {
-	enum reg_stat_filter filter;
-	unsigned long count;
-};
+static int count_registrant(void *e_data, void *data, void *r_data)
+{
+	unsigned long *count = (unsigned long *)data;
 
-static int count_registrant_stat(void *e_data, void *data, void *r_data)
+	(*count)++;
+	return 0;
+}
+
+static int count_enabled_registrant(void *e_data, void *data, void *r_data)
 {
 	reg_record_t *rec = (reg_record_t *)e_data;
-	struct reg_stat_ctx *ctx = (struct reg_stat_ctx *)data;
+	unsigned long *count = (unsigned long *)data;
 
-	switch (ctx->filter) {
-	case REG_STAT_ALL:
-		ctx->count++;
-		break;
-	case REG_STAT_ENABLED:
-		if (rec->flags & REG_ENABLED)
-			ctx->count++;
-		break;
-	case REG_STAT_REGISTERED:
-		if ((rec->flags & REG_ENABLED) && rec->state == REGISTERED_STATE)
-			ctx->count++;
-		break;
-	case REG_STAT_FAILED:
-		if ((rec->flags & REG_ENABLED) &&
-			(rec->state == REGISTER_TIMEOUT_STATE ||
-			 rec->state == INTERNAL_ERROR_STATE ||
-			 rec->state == WRONG_CREDENTIALS_STATE ||
-			 rec->state == REGISTRAR_ERROR_STATE))
-			ctx->count++;
-		break;
-	}
+	if (rec->flags & REG_ENABLED)
+		(*count)++;
+	return 0;
+}
 
+static int count_registered_registrant(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t *)e_data;
+	unsigned long *count = (unsigned long *)data;
+
+	if ((rec->flags & REG_ENABLED) && rec->state == REGISTERED_STATE)
+		(*count)++;
+	return 0;
+}
+
+static int count_failed_registrant(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t *)e_data;
+	unsigned long *count = (unsigned long *)data;
+
+	if ((rec->flags & REG_ENABLED) &&
+		(rec->state == REGISTER_TIMEOUT_STATE ||
+		 rec->state == INTERNAL_ERROR_STATE ||
+		 rec->state == WRONG_CREDENTIALS_STATE ||
+		 rec->state == REGISTRAR_ERROR_STATE))
+		(*count)++;
 	return 0;
 }
 
 static unsigned long get_registrant_count(enum reg_stat_filter filter)
 {
-	struct reg_stat_ctx ctx = {filter, 0};
+	slinkedl_run_data_f count_handler;
+	unsigned long count = 0;
 	unsigned int i;
 	int ret;
 
 	if (!reg_htable)
 		return 0;
 
+	switch (filter) {
+	case REG_STAT_ALL:
+		count_handler = count_registrant;
+		break;
+	case REG_STAT_ENABLED:
+		count_handler = count_enabled_registrant;
+		break;
+	case REG_STAT_REGISTERED:
+		count_handler = count_registered_registrant;
+		break;
+	case REG_STAT_FAILED:
+		count_handler = count_failed_registrant;
+		break;
+	default:
+		LM_ERR("invalid registrant statistic filter %d\n", filter);
+		return 0;
+	}
+
 	for (i = 0; i < reg_hsize; i++) {
 		lock_get(&reg_htable[i].lock);
 		ret = slinkedl_traverse(reg_htable[i].p_list,
-			count_registrant_stat, &ctx, NULL);
+			count_handler, &count, NULL);
 		lock_release(&reg_htable[i].lock);
 
 		if (ret < 0) {
@@ -111,7 +137,7 @@ static unsigned long get_registrant_count(enum reg_stat_filter filter)
 		}
 	}
 
-	return ctx.count;
+	return count;
 }
 
 static unsigned long get_total_registrants(void *unused)
