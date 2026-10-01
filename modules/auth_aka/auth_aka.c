@@ -185,6 +185,8 @@ static const param_export_t params[] = {
 	{"hash_size",         INT_PARAM, &aka_hash_size },
 	{"sync_timeout",      INT_PARAM, &aka_sync_timeout },
 	{"async_timeout",      INT_PARAM, &aka_async_timeout },
+	{"unused_timeout",    INT_PARAM, &aka_unused_timeout },
+	{"pending_timeout",   INT_PARAM, &aka_pending_timeout },
 	{0, 0, 0}
 };
 

@@ -232,7 +232,7 @@ modparam("auth_aka", "unused_timeout", 120)
 ```
 
 
-#### unused_timeout (integer)
+#### pending_timeout (integer)
 
 
 The amount of seconds an authentication vector that is being
