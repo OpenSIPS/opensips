@@ -70,7 +70,7 @@ modparam("mi_datagram", "socket_name", "udp:192.168.2.133:8080")
 ```
 
 
-#### children_count (string)
+#### children_count (integer)
 
 
 The number of child processes to be created. Each child process

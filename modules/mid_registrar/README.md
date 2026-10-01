@@ -402,7 +402,7 @@ modparam("mid_registrar", "mode", 2)
 ```
 
 
-#### contact_id_insertion (integer)
+#### contact_id_insertion (string)
 
 
 Only relevant in a "mirroring" or "contact throttling"

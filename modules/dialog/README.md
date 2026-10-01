@@ -1079,7 +1079,7 @@ modparam("dialog", "profile_replication_cluster", 1)
 ```
 
 
-#### replicate_profiles_buffer (string)
+#### replicate_profiles_buffer (integer)
 
 
 Used to specify the length of the buffer used by the binary
@@ -1099,7 +1099,7 @@ modparam("dialog", "replicate_profiles_buffer", 500)
 ```
 
 
-#### replicate_profiles_check (string)
+#### replicate_profiles_check (integer)
 
 
 Timer in seconds, used to specify how often the module should check
@@ -1117,7 +1117,7 @@ modparam("dialog", "replicate_profiles_check", 100)
 ```
 
 
-#### replicate_profiles_timer (string)
+#### replicate_profiles_timer (integer)
 
 
 Timer in milliseconds, used to specify how often the module
@@ -1134,7 +1134,7 @@ modparam("dialog", "replicate_profiles_timer", 100)
 ```
 
 
-#### replicate_profiles_expire (string)
+#### replicate_profiles_expire (integer)
 
 
 Timer in seconds, used to specify when the profiles counters received
@@ -1153,7 +1153,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 ```
 
 
-#### cluster_auto_sync (string)
+#### cluster_auto_sync (integer)
 
 
 Specifies whether to automatically issue a sync request (for dialogs

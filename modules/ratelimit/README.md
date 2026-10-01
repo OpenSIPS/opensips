@@ -345,7 +345,7 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 ```
 
 
-#### repl_buffer_threshold (string)
+#### repl_buffer_threshold (integer)
 
 
 Used to specify the length of the buffer used by the binary
@@ -364,7 +364,7 @@ modparam("ratelimit", "repl_buffer_threshold", 500)
 ```
 
 
-#### repl_timer_interval (string)
+#### repl_timer_interval (integer)
 
 
 Timer in milliseconds, used to specify how often the module
@@ -381,7 +381,7 @@ modparam("ratelimit", "repl_timer_interval", 100)
 ```
 
 
-#### repl_timer_expire (string)
+#### repl_timer_expire (integer)
 
 
 Timer in seconds, used to specify when the counter received

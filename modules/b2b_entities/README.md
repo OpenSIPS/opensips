@@ -315,7 +315,7 @@ modparam("b2b_entities", "advertised_contact", "opensips@10.10.10.10:5060")
 ```
 
 
-#### ua_default_timeout (str)
+#### ua_default_timeout (int)
 
 
 Default timeout, in seconds, for UA session started with the

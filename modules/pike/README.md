@@ -141,7 +141,7 @@ modparam("pike", "remove_latency", 130)
 ```
 
 
-#### check_route (integer)
+#### check_route (string)
 
 
 The name of the script route to be triggers (in automatic way) when a

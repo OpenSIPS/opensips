@@ -101,7 +101,7 @@ modparam("qrouting", "table_name", "qr_profiles_bak")
 ```
 
 
-#### algorithm (integer)
+#### algorithm (string)
 
 
 Quality-based destination selection/balancing algorithm to use.
@@ -327,7 +327,7 @@ modparam("qrouting", "event_bad_dst_threshold", "0.5")
 ```
 
 
-#### decimal_digits (string)
+#### decimal_digits (integer)
 
 
 The amount of decimal digits to use in logging or MI output.
