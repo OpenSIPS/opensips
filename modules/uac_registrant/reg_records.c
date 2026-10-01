@@ -99,7 +99,7 @@ static int count_failed_registrant(void *e_data, void *data, void *r_data)
 
 static unsigned long get_registrant_count(enum reg_stat_filter filter)
 {
-	slinkedl_run_data_f count_handler;
+	slinkedl_run_data_f *count_handler;
 	unsigned long count = 0;
 	unsigned int i;
 	int ret;
