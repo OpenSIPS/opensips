@@ -173,6 +173,7 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 	{"rest_put",(cmd_function)w_rest_put, {
 		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
