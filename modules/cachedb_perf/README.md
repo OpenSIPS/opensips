@@ -431,36 +431,11 @@ modparam("cachedb_perf", "arena_hugepage_mb", 512)
 #### memory_backing (string)
 
 
-Where the cache's memory comes from and who manages it. At startup
-the module looks at the allocator the core runs and, on an
-*HG_MALLOC* core, hands the whole job to it
-instead of managing chunks itself:
-
-
-- *core* - the shared-memory
-allocator is HG_MALLOC: every cache cell is an HG slab cell in the
-shm arena, so size classes, per-process caches, block garbage
-collection with re-typing, elastic growth and the maintenance
-process are HG's. Nothing is duplicated in the module and the
-memory is counted in the core's *shmem:*
-statistics.
-- *own-hg* - an HG_MALLOC build
-with [arena_hugepage_mb](#arena_hugepage_mb-int) set: the dedicated
-arena is created through the core's module-arena facade as an HG
-arena of the module's own, *arena_hugepage_mb*
-committed at start and able to grow to
-[arena_hugepage_cap_mb](#arena_hugepage_cap_mb-int), fully managed by HG
-and listed by name (*cachedb_perf*) in the
-*hg_stats* MI command. This works whatever
-allocator *-a* selected for the core, as long as
-HG_MALLOC is compiled in.
-- *own* - the module's own chunk
-allocator, in shm or in its own reservation, as on cores without
-HG_MALLOC.
-- *auto* (default) - own-hg when
-an arena is asked for, core when the shm allocator is HG_MALLOC,
-own otherwise. The explicit values refuse to start when that
-backing is not available.
+Where the cache's memory comes from. *auto* (default) and *own*
+select the module's own chunk allocator: its cells live in OpenSIPS
+shared memory, or, when [arena_hugepage_mb](#arena_hugepage_mb-int)
+is set, in a separate reservation of the module's own, outside the
+OpenSIPS memory model.
 
 
 The backing in use is reported at startup and as
@@ -469,46 +444,7 @@ The backing in use is reported at startup and as
 
 ```opensips title="Set memory_backing parameter"
 ...
-modparam("cachedb_perf", "memory_backing", "core")
-...
-```
-
-
-#### arena_hugepage_cap_mb (int)
-
-
-Upper size, in megabytes, the module's own HG_MALLOC arena
-(*memory_backing* own-hg) may grow to. The arena
-starts at [arena_hugepage_mb](#arena_hugepage_mb-int) and grows and
-shrinks between the two on demand, exactly as the core's elastic
-*-m INIT:CAP* arena does. 0 (default) or a value
-not above *arena_hugepage_mb* gives a fixed-size
-arena. Ignored by the other backings.
-
-
-```opensips title="Set arena_hugepage_cap_mb parameter"
-...
-modparam("cachedb_perf", "arena_hugepage_mb", 512)
-modparam("cachedb_perf", "arena_hugepage_cap_mb", 2048)
-...
-```
-
-
-#### arena_profile (string)
-
-
-Name of a core *auto_scaling_profile* to drive
-the growth and shrink of the module's own HG_MALLOC arena
-(*memory_backing* own-hg), as
-*shm_auto_scaling_profile* does for the core
-arena. Without it the arena follows HG's default headroom rule.
-Startup fails when the profile does not exist. Ignored by the
-other backings.
-
-
-```opensips title="Set arena_profile parameter"
-...
-modparam("cachedb_perf", "arena_profile", "CACHE_ARENA")
+modparam("cachedb_perf", "memory_backing", "own")
 ...
 ```
 
@@ -1616,8 +1552,7 @@ Reads that fell back to the bucket lock.
 #### arena_bytes / arena_chunks
 
 
-Memory taken from shm; with the *core* or *own-hg* backing the cells
-are HG_MALLOC's and *arena_chunks* reads 0. The memory backing in use
+Memory taken by the cache's chunks. The memory backing in use
 is reported as *arena.backing* in *perf_stats*, see
 [memory_backing](#memory_backing-string).
 
