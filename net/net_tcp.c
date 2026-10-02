@@ -475,6 +475,15 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 	int n;
 	int fd;
 
+	/* TCP may already be destroyed during late shutdown callbacks. */
+	if (!tcp_parts[0].tcpconn_lock || !tcp_parts[0].tcpconn_id_hash ||
+	    !tcp_parts[0].tcpconn_aliases_hash) {
+		*conn = NULL;
+		if (conn_fd)
+			*conn_fd = -1;
+		return -1;
+	}
+
 	if (id) {
 		part = id;
 		TCPCONN_LOCK(part);
