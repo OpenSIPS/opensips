@@ -325,8 +325,9 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
  * stop the walk (returned through).
  *
  * Guarantees are the Redis SCAN class: an entry mutated concurrently may
- * be seen once, twice or not at all.  The overflow leg runs under the
- * overflow lock, so the callback must not re-enter this cache.
+ * be seen once, twice or not at all.  No lock is held across the
+ * callback, in the buckets or in the overflow leg, so it may re-enter this
+ * cache; a removal it makes counts as a concurrent mutation.
  */
 typedef int (*pcache_iter_cb)(const str *key, const str *val,
 		unsigned int expires, void *ctx);

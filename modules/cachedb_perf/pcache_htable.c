@@ -1175,40 +1175,70 @@ static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
 	return cb(&key, &val, exp, ctx);
 }
 
-/* walk the overflow leg under the overflow lock; @kbuf/@vbuf are the caller's
- * snapshot buffers.  Returns the last callback rc (<0 stops). */
-/* The overflow leg from overflow bucket *@oidx on.  @budget > 0 stops after
- * the chain in which that many records have been emitted, *@oidx then
- * naming the next chain; @budget 0 walks to the end.  On a callback stop
- * *@oidx names the chain being emitted, so a resumed walk re-offers its
- * earlier nodes (at-least-once, as everywhere in this walk).  *@oidx ==
- * PCACHE_OVF_BUCKETS on return means the leg is done. */
+/* The overflow leg from overflow bucket *@oidx on; @kbuf/@vbuf are the
+ * caller's snapshot buffers.  @budget > 0 stops after the chain in which
+ * that many records have been emitted, *@oidx then naming the next chain;
+ * @budget 0 walks to the end.  On a callback stop *@oidx names the chain
+ * being emitted, so a resumed walk re-offers its earlier nodes
+ * (at-least-once, as everywhere in this walk).  *@oidx == PCACHE_OVF_BUCKETS
+ * on return means the leg is done.  Returns the last callback rc (<0 stops).
+ *
+ * The lock is DROPPED around every callback.  Holding ovf_lock across cb
+ * made any callback that touches an overflow-resident key - removing the
+ * record it was handed takes ovf_lock - deadlock against itself, and made
+ * every other process's overflow lookup and store wait out whatever the
+ * callback does (a perf_sync DB save does one SQL insert per record).  The
+ * chain is walked by index and re-resolved under the lock per entry; after
+ * the callback the node at the same index is re-checked - if it changed,
+ * the emitted node was removed and its successor slid into place, so the
+ * index does not advance.  Self-removal stays exactly-once; unrelated
+ * concurrent mutation degrades to at-least-once, which every walker here
+ * already allows.  Chains are short by design, so the re-walk is noise. */
 static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 		void *ctx, char *kbuf, char *vbuf, unsigned int *oidx,
 		unsigned int budget)
 {
 	pcache_rec_t *r;
-	struct povf *n;
-	unsigned int idx, klen, vlen, emitted = 0;
+	struct povf *n, *seen;
+	unsigned int idx, i, j, klen, vlen, exp, emitted = 0;
+	unsigned char fl;
 	int rc = 0;
 
 	if (!ht->ovf_count) {
 		*oidx = PCACHE_OVF_BUCKETS;
 		return 0;
 	}
-	lock_get(&ht->ovf_lock);
 	for (idx = *oidx; idx < PCACHE_OVF_BUCKETS; idx++) {
-		for (n = ht->ovf_tab[idx]; n; n = n->next) {
+		i = 0;
+		for (;;) {
+			lock_get(&ht->ovf_lock);
+			n = ht->ovf_tab[idx];
+			for (j = 0; n && j < i; j++)
+				n = n->next;
+			if (!n) {
+				lock_release(&ht->ovf_lock);
+				break;
+			}
 			r = n->rec;
 			klen = r->klen;
 			vlen = r->vlen;
+			exp = r->expires;
+			fl = r->rflags;
 			memcpy(kbuf, r->data, klen);
 			memcpy(vbuf, r->data + klen, vlen);
-			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen,
-				r->expires, r->rflags);
+			seen = n;
+			lock_release(&ht->ovf_lock);
+			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen, exp, fl);
 			if (rc < 0)
 				break;
 			emitted++;
+			lock_get(&ht->ovf_lock);
+			n = ht->ovf_tab[idx];
+			for (j = 0; n && j < i; j++)
+				n = n->next;
+			lock_release(&ht->ovf_lock);
+			if (n == seen)
+				i++;
 		}
 		if (rc < 0)
 			break;
@@ -1217,7 +1247,6 @@ static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 			break;
 		}
 	}
-	lock_release(&ht->ovf_lock);
 	*oidx = idx;
 	return rc;
 }
@@ -1260,7 +1289,7 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 		}
 	}
 
-	/* overflow leg - under the lock; the callback must not re-enter */
+	/* overflow leg - the lock is dropped around every callback */
 	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
 out:
 	pkg_free(kbuf);
