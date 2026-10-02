@@ -78,6 +78,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
 #include "../../ipc.h"
+#include "../../timer.h"
 #include "pcache_arena.h"
 #include "pcache_mem.h"
 
@@ -480,7 +481,22 @@ static int carve_chunk(int c, struct pcache_palloc *pl)
 
 	ch = slot_take();
 	if (!ch) {
-		LM_ERR("no more memory for a chunk (class %d)\n", c);
+		/* Not once per call: this runs for every allocation a full arena
+		 * refuses - every refused write - with the arena lock HELD, so a
+		 * line per refusal queues every allocating process behind one
+		 * formatting a log line.  At most once per 10 s per process, with
+		 * the running count.  get_ticks(), not arena->tick: the latter
+		 * only advances under the own-memory backing. */
+		static unsigned int carve_log_tick;
+		static unsigned long carve_refused;
+
+		carve_refused++;
+		if (carve_refused == 1 || get_ticks() - carve_log_tick >= 10) {
+			carve_log_tick = get_ticks();
+			LM_ERR("no more memory for a chunk (class %d) - %lu "
+				"allocation(s) refused by this process so far\n",
+				c, carve_refused);
+		}
 		return -1;
 	}
 	ch->link = NULL;
