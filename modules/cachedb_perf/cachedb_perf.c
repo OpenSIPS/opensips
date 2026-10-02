@@ -1804,13 +1804,15 @@ static void pcache_neg_add(pcache_col_t *col, const str *key)
 	lock_release(neg_lock);
 }
 
-/* a local write makes any cached negative stale */
+/* a local write makes any cached negative stale.  Only a pull records a
+ * negative, and only replicated collections pull, so every other write
+ * returns before hashing anything */
 static void pcache_neg_clear(pcache_col_t *col, const str *key)
 {
 	struct pcache_neg_slot *sl;
 	unsigned int h;
 
-	if (!neg_slots || pull_negative_ms <= 0)
+	if (!col->replicate || !neg_slots || pull_negative_ms <= 0)
 		return;
 	h = neg_hash(col, key);
 	sl = &neg_slots[h % PCACHE_NEG_SLOTS];
