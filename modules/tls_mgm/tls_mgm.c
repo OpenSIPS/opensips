@@ -53,6 +53,7 @@
 #include "../../timer.h"
 #include "../../receive.h"
 #include "../../pt.h"
+#include "../../ipc.h"
 #include "../../parser/msg_parser.h"
 #include "../../pvar.h"
 #include "../../db/db.h"
@@ -100,6 +101,7 @@ static char *sip_domain_avp = NULL;
 
 static int  mod_init(void);
 static int  child_init(int rank);
+extern int is_tcp_main;
 static void mod_destroy(void);
 static int load_tls_mgm(struct tls_mgm_binds *binds);
 static mi_response_t *tls_reload(const mi_params_t *params,
@@ -806,20 +808,24 @@ static inline char *get_ssl_method_name(enum tls_method method)
 	return ssl_versions_struct[method-1].name;
 }
 
-/* reloads data from the db */
-static int reload_data(void)
+struct tls_reload_job {
+	struct tls_domain *srv_doms;
+	struct tls_domain *cli_doms;
+	struct tls_domain *script_srv_doms;
+	struct tls_domain *script_cli_doms;
+	int rc;
+};
+
+/* initializes the freshly loaded DB domains and swaps them in; the SSL_CTX
+ * objects are private (non-shm) OpenSSL/wolfSSL allocations, so this must run
+ * in the process that uses them for connections - TCP main */
+static int reload_apply(struct tls_reload_job *job)
 {
-	struct tls_domain *tls_client_domains_tmp = NULL;
-	struct tls_domain *tls_server_domains_tmp = NULL;
-	struct tls_domain *script_cli_doms, *script_srv_doms, *dom;
-
-	script_srv_doms = find_first_script_dom(*tls_server_domains);
-	script_cli_doms = find_first_script_dom(*tls_client_domains);
-
-	/* load new domains from db */
-	if (load_info(&tls_server_domains_tmp, &tls_client_domains_tmp,
-					script_srv_doms, script_cli_doms) < 0)
-		return -1;
+	struct tls_domain *tls_client_domains_tmp = job->cli_doms;
+	struct tls_domain *tls_server_domains_tmp = job->srv_doms;
+	struct tls_domain *script_cli_doms = job->script_cli_doms;
+	struct tls_domain *script_srv_doms = job->script_srv_doms;
+	struct tls_domain *dom;
 
 	/*
 	 * initialize new domains
@@ -881,6 +887,66 @@ static int reload_data(void)
 	lock_stop_write(dom_lock);
 
 	return 0;
+}
+
+static void tls_reload_rpc(int sender, void *param)
+{
+	struct tls_reload_job *job = (struct tls_reload_job *)param;
+
+	job->rc = reload_apply(job);
+	if (ipc_send_sync_reply(sender, job) < 0)
+		LM_ERR("failed to reply to TLS reload request\n");
+}
+
+/* reloads data from the db */
+static int reload_data(void)
+{
+	struct tls_reload_job *job;
+	void *reply;
+	int tcp_main_proc, rc;
+
+	job = shm_malloc(sizeof *job);
+	if (!job) {
+		LM_ERR("oom while allocating TLS reload job\n");
+		return -1;
+	}
+	memset(job, 0, sizeof *job);
+
+	job->script_srv_doms = find_first_script_dom(*tls_server_domains);
+	job->script_cli_doms = find_first_script_dom(*tls_client_domains);
+
+	/* load new domains from db */
+	if (load_info(&job->srv_doms, &job->cli_doms,
+					job->script_srv_doms, job->script_cli_doms) < 0) {
+		shm_free(job);
+		return -1;
+	}
+
+	tcp_main_proc = tcp_get_main_proc_no();
+	if (is_tcp_main || tcp_main_proc < 0) {
+		rc = reload_apply(job);
+		shm_free(job);
+		return rc;
+	}
+
+	/* the SSL contexts are owned by TCP main: build (and free) them there */
+	if (ipc_send_rpc(tcp_main_proc, tls_reload_rpc, job) < 0) {
+		LM_ERR("failed to send TLS reload request to TCP main\n");
+		tls_free_db_domains(job->srv_doms);
+		tls_free_db_domains(job->cli_doms);
+		shm_free(job);
+		return -1;
+	}
+
+	if (ipc_recv_sync_reply(&reply) < 0 || reply != job) {
+		/* do not touch the job, TCP main may still be using it */
+		LM_ERR("failed to receive TLS reload reply from TCP main\n");
+		return -1;
+	}
+
+	rc = job->rc;
+	shm_free(job);
+	return rc;
 }
 
 /* reloads data from the db */
