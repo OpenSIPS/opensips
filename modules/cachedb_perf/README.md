@@ -407,7 +407,7 @@ overcommit hugetlb pool (*MAP_HUGETLB*) then
 transparent huge pages (*MADV_HUGEPAGE*) then
 *MADV_COLLAPSE* then plain 4 KB - and keeps the
 best tier the running kernel actually grants, which it reports at
-startup and through the *memory_tier* statistic
+startup and through the *memory_tier_active* statistic
 and *perf_stats*. 0 (default) uses plain
 demand-faulted shared memory.
 
