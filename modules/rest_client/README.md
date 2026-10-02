@@ -304,7 +304,7 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
 ### Exported Functions
 
 
-#### rest_get(url, body_pv[, [ctype_pv][, [retcode_pv][, [max_redirects]]]])
+#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform a blocking HTTP GET on the given *url* and
@@ -325,8 +325,9 @@ A **0** status code value means no HTTP
 reply arrived at all.
 - *max_redirects* (integer, optional) - maximum number of HTTP redirects
 to follow. A missing or **0** value preserves the previous behavior and does not
-follow redirects. A positive value enables redirects up to the requested limit.
-Only `http` and `https` redirect targets are accepted; negative values are invalid.
+follow redirects. Values from **1** to **30** enable redirects up to the requested
+limit. Only `http` and `https` redirect targets are accepted; values outside the
+**0** to **30** range are invalid.
 
 When redirects are enabled, libcurl applies its normal HTTP redirect method
 semantics. In particular, POST requests may be converted to GET after some
@@ -381,7 +382,7 @@ if ($var(rcode) != 200) {
 ```
 
 
-#### rest_post(url, send_body, [send_ctype], recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [max_redirects]]]])
+#### rest_post(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform a blocking HTTP POST on the given *url*.
@@ -412,8 +413,9 @@ A **0** status code value means no HTTP
 reply arrived at all.
 - *max_redirects* (integer, optional) - maximum number of HTTP redirects
 to follow. A missing or **0** value preserves the previous behavior and does not
-follow redirects. A positive value enables redirects up to the requested limit.
-Only `http` and `https` redirect targets are accepted; negative values are invalid.
+follow redirects. Values from **1** to **30** enable redirects up to the requested
+limit. Only `http` and `https` redirect targets are accepted; values outside the
+**0** to **30** range are invalid.
 
 When redirects are enabled, libcurl applies its normal HTTP redirect method
 semantics. In particular, POST requests may be converted to GET after some
@@ -465,7 +467,7 @@ if ($var(rcode) != 200) {
 ```
 
 
-#### rest_put(url, send_body, [send_ctype], recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [max_redirects]]]])
+#### rest_put(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform a blocking HTTP PUT on the given *url*.
@@ -494,8 +496,9 @@ A **0** status code value means no HTTP
 reply arrived at all.
 - *max_redirects* (integer, optional) - maximum number of HTTP redirects
 to follow. A missing or **0** value preserves the previous behavior and does not
-follow redirects. A positive value enables redirects up to the requested limit.
-Only `http` and `https` redirect targets are accepted; negative values are invalid.
+follow redirects. Values from **1** to **30** enable redirects up to the requested
+limit. Only `http` and `https` redirect targets are accepted; values outside the
+**0** to **30** range are invalid.
 
 When redirects are enabled, libcurl applies its normal HTTP redirect method
 semantics.
@@ -612,7 +615,7 @@ if (!rest_get("https://example.com"))
 ### Exported Asynchronous Functions
 
 
-#### rest_get(url, body_pv[, [ctype_pv][, [retcode_pv][, [max_redirects]]]])
+#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform an asynchronous HTTP GET.  This function behaves exactly the same as
@@ -648,7 +651,7 @@ route [resume] {
 ```
 
 
-#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [max_redirects]]]])
+#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform an asynchronous HTTP POST.  This function behaves exactly the same as
@@ -683,7 +686,7 @@ route [resume] {
 ```
 
 
-#### rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[, [recv_ctype_pv][, [retcode_pv][, [max_redirects]]]])
+#### rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
