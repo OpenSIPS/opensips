@@ -644,17 +644,23 @@ int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 	hash = pcache_key_hash(key);
 	tag = tag_of(hash);
 
-	/* build the full replacement record before any lock (3.5b rule 3) */
+	/* build the full replacement record before any lock (3.5b rule 3).
+	 *
+	 * A full arena refuses the new cell - but an overwrite whose value
+	 * fits the cell the key ALREADY holds needs none: the TTL-bump and
+	 * in-place paths below write into the existing cell.  So a refused
+	 * allocation does not end the store; it goes on with nr NULL, and
+	 * only a path that would publish nr answers "arena full". */
 	nr = pcache_cell_alloc(PCACHE_REC_SIZE(key->len, val->len));
-	if (!nr)
-		return -2;                        /* arena full - write dropped */
-	nr->rflags = rflags;
-	nr->klen = (unsigned short)key->len;
-	nr->vlen = (unsigned int)val->len;
-	nr->expires = expires;
-	nr->hash = hash;
-	memcpy(nr->data, key->s, key->len);
-	memcpy(nr->data + key->len, val->s, val->len);
+	if (nr) {
+		nr->rflags = rflags;
+		nr->klen = (unsigned short)key->len;
+		nr->vlen = (unsigned int)val->len;
+		nr->expires = expires;
+		nr->hash = hash;
+		memcpy(nr->data, key->s, key->len);
+		memcpy(nr->data + key->len, val->s, val->len);
+	}
 
 again:
 	idx = route_idx(ht, hash, &route);
@@ -717,6 +723,8 @@ again:
 		}
 
 		/* replace the record; the tag stays (same key, same hash) */
+		if (!nr)
+			goto nomem;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[i] = nr;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
@@ -729,6 +737,10 @@ again:
 	if (ht->ovf_count) {
 		lock_get(&ht->ovf_lock);
 		on = ovf_find(ht, key, hash, NULL);
+		if (on && !nr) {
+			lock_release(&ht->ovf_lock);
+			goto nomem;
+		}
 		if (on) {
 			old = on->rec;
 			on->rec = nr;         /* overflow readers are lock-serialized */
@@ -738,6 +750,8 @@ again:
 		lock_release(&ht->ovf_lock);
 	}
 
+	if (!nr)
+		goto nomem;                   /* an insert needs a cell of its own */
 	used = bkt_used(b);
 	if (used < PCACHE_SLOTS) {
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
@@ -788,6 +802,15 @@ done:
 	if (inserted)
 		HT_ST(ht, created);
 	return 0;
+
+nomem:
+	/* the allocation was refused and this store needs a cell of its own:
+	 * an insert, or a value larger than the cell it replaces */
+	bkt_clear_owner(b);
+	lock_release(&b->lock);
+	if (node)
+		pcache_cell_free(node);
+	return -2;                            /* arena full - write dropped */
 }
 
 int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
