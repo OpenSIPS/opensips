@@ -21,24 +21,19 @@
  */
 
 /*
- * The table core (DESIGN 3.1/3.2/3.4): 64-byte buckets, 1-byte tags,
- * lock-free optimistic reads under a per-bucket seqlock, writers under the
- * bucket lock.  Rules implemented here and not to be broken:
+ * The table core: 64-byte buckets with 1-byte tags, lock-free optimistic
+ * reads under a per-bucket seqlock, writers under the bucket lock.
  *
- *  - readers copy out inside the optimistic section and trust nothing
- *    until the version re-check; every length is clamped and every
- *    pointer extent-checked BEFORE use (3.2 copy-out rules)
- *  - a byte-identical set() that only refreshes the TTL skips the version
- *    bumps and the memcpy - one atomic expires store under the lock
- *    (2.7); readers of the bucket are undisturbed
- *  - no allocation and no free while holding a bucket lock (3.5b):
- *    replacement records are built before lock_get, dead records are
- *    freed after lock_release
- *  - on a miss the routing word is re-read (3.4): a completed split may
- *    have moved the key; writers re-verify routing after lock_get
- *  - full buckets overflow into a small chained side table behind one
- *    lock, gated by ovf_count so the common case costs one cached load;
- *    a key lives in its bucket or in overflow, never both
+ *  - readers copy out inside the optimistic section and trust nothing until
+ *    the version re-check; every length is clamped and every pointer
+ *    extent-checked before use
+ *  - a byte-identical set() that only refreshes the TTL is one atomic
+ *    expires store under the lock, with no version bump
+ *  - no allocation or free while holding a bucket lock
+ *  - on a miss readers re-read the routing word (a split may have moved the
+ *    key); writers re-verify routing after lock_get
+ *  - full buckets overflow into a chained side table behind one lock, gated
+ *    by ovf_count; a key lives in its bucket or in overflow, never both
  */
 
 #include <string.h>
@@ -54,14 +49,9 @@
 #include "pcache_htable.h"
 
 /*
- * The key hash.  Not the core's, which ADDS per-word mixes, so keys whose
- * 4-byte words sum alike collide on the full 32 bits - for sequential or
- * numeric keys (phone numbers, "user123456") it produced 65k distinct
- * values for 500,000 keys and put 44% of the entries into the overflow
- * table, whose single lock then serialised every miss.  MurmurHash3
- * x86_32 (public domain, Austin Appleby): 0.2% overflow on the same keys,
- * the uniform expectation.  Local to this node - never on the wire, never
- * in the DB - so it can change without a protocol bump.
+ * MurmurHash3 x86_32 (public domain, Austin Appleby).  The core hash adds
+ * per-word mixes, so numeric keys collide heavily.  Local to this node,
+ * never on the wire.
  */
 unsigned int pcache_key_hash(const str *key)
 {
@@ -87,13 +77,8 @@ unsigned int pcache_key_hash(const str *key)
 	return h;
 }
 
-/* The selftest deliberately drives two rejection paths (a non-numeric add
- * and an oversize store).  Both log at L_ERR by design, which in a PASSING
- * selftest reads as a real fault.  This flag downgrades exactly those two
- * messages while the selftest provokes them.  It is only ever set pre-fork,
- * single-threaded, from pcache_htable_selftest(), and is never set in normal
- * operation.  (The core set_proc_log_level() cannot be used here: it writes
- * pt[process_no], and the process table does not exist yet at mod_init.) */
+/* set only by the selftest, pre-fork, to log its deliberate rejections at
+ * debug level */
 static int st_expect_reject;
 
 #define PCACHE_REJECT_LOG(...) \
@@ -112,11 +97,7 @@ static int st_expect_reject;
 #endif
 
 struct povf {
-	/* byte 0 is the arena class id (pcache_cell_free reads it from every
-	 * cell) - it must never be overwritten, so the link pointer cannot
-	 * live at offset 0 the way it briefly did (its low byte clobbered
-	 * the class, sending frees to an out-of-range class -> pool
-	 * corruption -> crashes in the donate walk) */
+	/* byte 0 is the arena class id and must never be overwritten */
 	unsigned char cls_reserved;
 	struct povf *next;
 	pcache_rec_t *rec;
@@ -166,7 +147,7 @@ static inline void hint_update(pcache_htable_t *ht, unsigned int idx,
 		*h = exp;
 }
 
-/* CP-06: plain increments on the calling process's own cache line */
+/* plain increments on the calling process's own cache line */
 #define HT_ST(_ht, _f) \
 	do { \
 		if ((unsigned int)process_no < (_ht)->pstats_n) \
@@ -185,10 +166,7 @@ static inline void hint_update(pcache_htable_t *ht, unsigned int idx,
 static inline uint64_t tag_matches(const pcache_bucket_t *b,
 		unsigned char tag)
 {
-	/* uint64_t, not unsigned long: this word IS the 8 tag bytes, and the
-	 * masks below are 64-bit constants.  On an ILP32 target unsigned long
-	 * is 4 bytes, so the memcpy would overflow and every constant would be
-	 * truncated - the filter would return garbage rather than fail loudly. */
+	/* uint64_t: unsigned long is 4 bytes on ILP32 */
 	uint64_t w, x;
 
 	memcpy(&w, b->tags, 8);
@@ -218,7 +196,7 @@ static inline void bkt_clear_owner(pcache_bucket_t *b)
 	b->meta &= 0xF;
 }
 
-/* per-process copy-out scratch (3.2 rule 3) */
+/* per-process copy-out scratch */
 static char *pcache_scratch;
 
 static char *get_scratch(void)
@@ -241,10 +219,7 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		unsigned int *vlen_out, unsigned int *exp_out,
 		unsigned char *fl_out)
 {
-	/* m MUST be the full 64-bit match word, scanned with ctzll: on an ILP32
-	 * target unsigned long is 4 bytes, which silently drops the match bits
-	 * of slots 4 and 5 - lock-free reads then miss a record the write-side
-	 * find_slot (a plain loop) can see, right after its own store. */
+	/* full 64-bit match word: a 32-bit one drops slots 4 and 5 on ILP32 */
 	uint64_t m;
 	unsigned long lo, hi;
 	unsigned int bound, vlen, klen, avail;
@@ -259,9 +234,8 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		if (!r)
 			continue;
 
-		/* 3.2 copy-out rules: validate before every use.  A stale
-		 * pointer fails one of these or the final version re-check;
-		 * a mismatch on live data is just not-this-slot */
+		/* validate before every use: a stale pointer fails one of
+		 * these or the caller's version re-check */
 		if ((unsigned long)r < lo ||
 		        (unsigned long)r + PCACHE_REC_HDR > hi)
 			continue;
@@ -278,22 +252,15 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 			continue;
 
 		vlen = r->vlen;                       /* aligned 4-byte load */
-		/* subtractive, never additive: bound >= PCACHE_REC_HDR + klen was
-		 * checked above, while PCACHE_REC_HDR + klen + vlen would wrap for
-		 * a torn vlen and skip the very clamp that bounds a doomed copy */
+		/* subtractive: HDR + klen + vlen could wrap for a torn vlen */
 		avail = bound - PCACHE_REC_HDR - klen;
 		if (vlen > avail)
 			vlen = avail;
-		/* report the true length either way, so a caller whose buffer is
-		 * too small learns what it would need.  Trusted, like every other
-		 * field here, only once the version re-check passes */
+		/* report the length even if the buffer is too small */
 		*vlen_out = vlen;
 		*exp_out = r->expires;
 		*fl_out = r->rflags;
-		/* probe: the caller wants existence, length and expiry, not the
-		 * bytes.  The metadata above is already published, so a probe
-		 * validates exactly what a read would - it just stops here,
-		 * before the copy (and without touching the record's payload). */
+		/* probe: metadata only, no copy */
 		if (!dst)
 			return 0;
 		if (vlen > dstlen)
@@ -320,8 +287,7 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 		*vlen_out = n->rec->vlen;
 		*exp_out = n->rec->expires;
 		*fl_out = n->rec->rflags;
-		/* probe: existence and metadata, no copy - the same stop the
-		 * bucket scan makes, or a record in the leg reads as absent */
+		/* probe: metadata only, no copy */
 		if (!dst) {
 			rc = 0;
 			break;
@@ -338,15 +304,10 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 	return rc;
 }
 
-/* @now is a parameter (not read inside) so the selftest can run under a
- * synthetic clock - get_ticks() is still 0 during mod_init */
 /*
- * The one implementation of the read path.  @dst/@dstlen is where the value
- * lands: the internal scratch when the caller wanted an allocated str, or
- * the caller's own buffer for the allocation-free entry point.  Everything
- * else - the optimistic loop, the lock fallback, the re-route retry, the
- * overflow leg, expiry - is shared, so the two entry points can never
- * disagree about which record they return.
+ * The single read path behind every fetch and the probe.  @dst NULL with
+ * @dstlen 0 is a probe.  @now is a parameter so the selftest can run on a
+ * synthetic clock.  Returns 1 for a native counter hit (value in *ll_out).
  */
 static int _pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key,
 		char *dst, unsigned int dstlen, unsigned int *vlen_out,
@@ -360,18 +321,12 @@ static int _pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key,
 	long long ll;
 	int rc;
 
-	/* fail closed: a caller that ignores the return code must not read an
-	 * uninitialised length against a perfectly valid buffer */
 	*vlen_out = 0;
 	if (ll_out)
 		*ll_out = 0;
 	if (exp_out)
 		*exp_out = 0;
 
-	/* the destination now comes from outside the module on one of the
-	 * entry points, so a bad one is an API misuse to reject, not an
-	 * invariant to assume.  dst == NULL with dstlen == 0 is the probe:
-	 * existence and metadata, no copy (see pcache_ht_probe). */
 	if (!ht || !key || (!dst && dstlen))
 		return -1;
 
@@ -396,8 +351,7 @@ again:
 			goto settled;
 	}
 
-	/* a writer is stalled mid-update: do not keep spinning - sleep on
-	 * the lock (3.2 fallback; the lock sleeps under futex) */
+	/* a writer is stalled mid-update: stop spinning, wait on the lock */
 	lock_get(&b->lock);
 	bkt_set_owner(b);
 	rc = scan_bucket(b, key, hash, tag, dst, dstlen, &vlen, &exp, &fl);
@@ -409,7 +363,7 @@ settled:
 	if (tries)
 		HT_ST_ADD(ht, retries, tries);
 	if (rc == -2) {
-		/* 3.4: a completed split may have re-routed the key */
+		/* a completed split may have re-routed the key */
 		if (ht->route != route)
 			goto again;
 		if (ht->ovf_count)
@@ -422,7 +376,7 @@ settled:
 
 	if (exp && exp <= now) {
 		HT_ST(ht, misses);
-		return -2;                    /* expired-as-absent (3.5) */
+		return -2;                    /* expired reads as absent */
 	}
 	HT_ST(ht, hits);
 	if (exp_out)
@@ -431,16 +385,12 @@ settled:
 		*fl_out = fl;                    /* record flags, e.g. F_PASSIVE */
 	*vlen_out = vlen;
 
-	/* the value did not fit: the length above tells the caller what it
-	 * would need, and @dst holds nothing usable */
 	if (rc == PCACHE_E_TOOSMALL)
 		return PCACHE_E_TOOSMALL;
 
 	if ((fl & PCACHE_F_INT) && vlen == 8) {
-		/* native counter: the 8 raw bytes are meaningless to the caller,
-		 * so hand back the integer and let the entry point format it.
-		 * A probe copied nothing, so there is no integer to read - it
-		 * reports the hit and its metadata like any other record. */
+		/* native counter: hand back the integer for the entry point to
+		 * format; a probe copied nothing */
 		if (!dst)
 			return 1;
 		if (!ll_out)
@@ -452,12 +402,8 @@ settled:
 	return 0;
 }
 
-/*
- * Allocating entry point: copies into the per-process scratch, then into a
- * pkg buffer the caller owns.  The scratch is PCACHE_CELL_MAX bytes, i.e.
- * as large as the biggest legal record, so the too-small path below cannot
- * be reached from here - it is handled defensively all the same.
- */
+/* copies into the per-process scratch, then into a pkg buffer the caller
+ * owns; the scratch fits any record, so TOOSMALL cannot happen here */
 static int _pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val,
 		unsigned int now, unsigned int *exp_out, unsigned char *fl_out)
 {
@@ -500,8 +446,6 @@ int pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val)
 	return _pcache_ht_fetch(ht, key, val, get_ticks(), NULL, NULL);
 }
 
-/* like pcache_ht_fetch, but also returns the record's absolute expiry
- * (0 = never) - the MI perf_get needs the TTL alongside the value */
 int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
 		unsigned int *expires, unsigned char *rflags)
 {
@@ -510,10 +454,6 @@ int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
 	return _pcache_ht_fetch(ht, key, val, get_ticks(), expires, rflags);
 }
 
-/* existence probe - see the contract in pcache_htable.h.  Shares the whole
- * read path with the fetches (optimistic loop, lock fallback, re-route
- * retry, overflow leg, expiry), stopping before the copy-out, so a probe
- * can never disagree with a read about whether a key is there. */
 int pcache_ht_probe(pcache_htable_t *ht, const str *key, unsigned int *vlen,
 		unsigned int *expires, int *is_counter)
 {
@@ -535,15 +475,11 @@ int pcache_ht_probe(pcache_htable_t *ht, const str *key, unsigned int *vlen,
 		*vlen = len;
 	if (expires)
 		*expires = exp;
-	/* the shared core reports a native counter as 1; a probe has nothing
-	 * to hand back for one, but a caller may need to know it is not a
-	 * plain value (a counter's meaning is local to the node holding it) */
 	if (is_counter)
 		*is_counter = (rc == 1);
 	return 0;
 }
 
-/* allocation-free entry point - see the contract in pcache_htable.h */
 int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
 		unsigned int buflen, unsigned int *vlen, unsigned int *needed)
 {
@@ -564,8 +500,7 @@ int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
 		NULL, &ll, NULL);
 
 	if (rc == PCACHE_E_TOOSMALL) {
-		/* *vlen must never exceed the caller's buffer: {buf,*vlen} has to
-		 * stay a valid str whatever the caller does with the return code */
+		/* {buf, *vlen} must stay a valid str */
 		if (needed)
 			*needed = *vlen;
 		*vlen = 0;
@@ -573,9 +508,7 @@ int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
 	}
 	if (rc < 0)
 		return rc;
-	if (rc == 1)                         /* counter: format into the caller's
-	                                      * buffer; >= PCACHE_GETBUF_MIN is
-	                                      * enforced above, so it always fits */
+	if (rc == 1)                         /* counter: always fits */
 		*vlen = snprintf(buf, buflen, "%lld", ll);
 	return 0;
 }
@@ -618,11 +551,8 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 	return pcache_ht_store_ex(ht, key, val, expires, 0);
 }
 
-/* @rflags is stamped on the stored record: 0 for a local consumer write
- * (the authoritative kind), PCACHE_F_PASSIVE for a value that arrived
- * through a cluster pull.  The identical-bytes TTL-bump path keeps the
- * record's existing flags - re-pulling bytes the owner wrote must not
- * demote the owner's copy. */
+/* the identical-bytes TTL-bump path keeps the record's existing flags, so
+ * re-pulling the owner's bytes does not demote its copy */
 int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires, unsigned char rflags)
 {
@@ -644,13 +574,9 @@ int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 	hash = pcache_key_hash(key);
 	tag = tag_of(hash);
 
-	/* build the full replacement record before any lock (3.5b rule 3).
-	 *
-	 * A full arena refuses the new cell - but an overwrite whose value
-	 * fits the cell the key ALREADY holds needs none: the TTL-bump and
-	 * in-place paths below write into the existing cell.  So a refused
-	 * allocation does not end the store; it goes on with nr NULL, and
-	 * only a path that would publish nr answers "arena full". */
+	/* build the replacement record before any lock.  A refused allocation
+	 * does not end the store: the TTL-bump and in-place paths need no new
+	 * cell, so only a path that would publish nr fails with -2 */
 	nr = pcache_cell_alloc(PCACHE_REC_SIZE(key->len, val->len));
 	if (nr) {
 		nr->rflags = rflags;
@@ -669,7 +595,7 @@ again:
 	lock_get(&b->lock);
 	bkt_set_owner(b);
 
-	/* 3.4 writer rule: routing may have moved while we waited */
+	/* routing may have moved while we waited */
 	if (ht->route != route) {
 		bkt_clear_owner(b);
 		lock_release(&b->lock);
@@ -682,9 +608,8 @@ again:
 
 		if (old->vlen == (unsigned int)val->len &&
 		        !memcmp(old->data + key->len, val->s, val->len)) {
-			/* versionless TTL bump (2.7): the only mutation is one
-			 * aligned store readers cannot tear - no version bumps,
-			 * no reader disturbance */
+			/* versionless TTL bump: one aligned store readers cannot
+			 * tear */
 			__atomic_store_n(&old->expires, expires, __ATOMIC_RELAXED);
 			hint_update(ht, idx, expires);
 			old = nr;                     /* discard the prebuilt one */
@@ -692,26 +617,13 @@ again:
 		}
 
 		if (PCACHE_REC_SIZE(key->len, val->len) <= pcache_cell_bound(old)) {
-			/* in-place: the new value fits the cell.
-			 *
-			 * Every seqlock ENTRY bump is ACQ_REL, not RELEASE.  A
-			 * release RMW only orders accesses that PRECEDE it and
-			 * lets stores that follow be observed first, so on a
-			 * weakly-ordered CPU (aarch64, ppc64le) the payload
-			 * writes below could become visible before the version
-			 * turned odd - a reader would then see an even version,
-			 * scan a half-written record, re-read the same even
-			 * version and accept the tear.  The acquire half stops
-			 * the hoist.  (Linux writes seq++ then smp_wmb() for the
-			 * same reason.)  x86-64 is unaffected either way: the
-			 * RMW is already a full barrier.  EXIT bumps only need
-			 * the release half, but are kept ACQ_REL so no site has
-			 * to be classified by hand. */
+			/* in-place.  Seqlock entry bumps are ACQ_REL, not RELEASE:
+			 * on weakly-ordered CPUs a release RMW lets the payload
+			 * stores that follow become visible before the version
+			 * turns odd.  Exit bumps use ACQ_REL too, for uniformity. */
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
-			/* this is a plain value: drop any flag the cell carried
-			 * from a previous life.  Without it, storing an 8-byte
-			 * string over a native counter left PCACHE_F_INT set and
-			 * the read path re-interpreted the ASCII as an int64 */
+			/* reset flags, or an 8-byte string over a counter would
+			 * still read as PCACHE_F_INT */
 			old->rflags = rflags;
 			old->vlen = (unsigned int)val->len;
 			memcpy(old->data + key->len, val->s, val->len);
@@ -732,8 +644,7 @@ again:
 		goto done;
 	}
 
-	/* not in the bucket - it may sit in overflow (uniqueness: a key is
-	 * in its bucket or in overflow, never both) */
+	/* not in the bucket - it may sit in overflow */
 	if (ht->ovf_count) {
 		lock_get(&ht->ovf_lock);
 		on = ovf_find(ht, key, hash, NULL);
@@ -764,8 +675,8 @@ again:
 		goto done;
 	}
 
-	/* bucket full -> overflow.  The chain node must not be allocated
-	 * under the bucket lock, so drop it, allocate, re-take, re-check */
+	/* bucket full -> overflow.  No allocation under the bucket lock: drop
+	 * it, allocate the chain node, retry */
 	if (!node) {
 		bkt_clear_owner(b);
 		lock_release(&b->lock);
@@ -791,7 +702,7 @@ done:
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
 
-	/* frees strictly after the locks (3.5b) */
+	/* frees strictly after the locks */
 	if (old)
 		pcache_cell_free(old);
 	if (node)
@@ -804,8 +715,6 @@ done:
 	return 0;
 
 nomem:
-	/* the allocation was refused and this store needs a cell of its own:
-	 * an insert, or a value larger than the cell it replaces */
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
 	if (node)
@@ -831,8 +740,7 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 	hash = pcache_key_hash(key);
 	tag = tag_of(hash);
 
-	/* the counter record is pre-built outside any lock (3.5b); it either
-	 * becomes the entry (absent key / string conversion) or is freed */
+	/* pre-built outside any lock; becomes the entry or is freed */
 	nr = pcache_cell_alloc(PCACHE_REC_SIZE(key->len, 8));
 	if (!nr)
 		return -1;
@@ -862,8 +770,8 @@ again:
 	if (i >= 0) {
 		r = b->slot[i];
 		if (r->rflags & PCACHE_F_INT) {
-			/* fixed-width accumulate; the payload may be unaligned, so
-			 * it changes under the version, never bare */
+			/* the payload may be unaligned, so it changes under the
+			 * version */
 			memcpy(&cur, r->data + r->klen, 8);
 			cur += delta;
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
@@ -976,14 +884,8 @@ nan:
 	return -1;
 }
 
-/*
- * Re-arm an existing key's TTL without touching its value (MI perf_ttl).
- * The only mutation is one aligned store of `expires` under the bucket lock
- * - the versionless TTL bump of 2.7: no version bump, no memcpy, so the
- * lock-free readers are undisturbed and a reader that catches the store
- * mid-flight sees either the old or the new value, never a torn one.
- * @expires is absolute ticks (0 = never).  1 = re-armed, 0 = no such key.
- */
+/* versionless TTL bump: one aligned store of expires under the bucket
+ * lock, which a lock-free reader sees whole or not at all */
 int pcache_ht_touch(pcache_htable_t *ht, const str *key, unsigned int expires)
 {
 	pcache_bucket_t *b;
@@ -1003,7 +905,7 @@ again:
 
 	lock_get(&b->lock);
 	bkt_set_owner(b);
-	if (ht->route != route) {              /* 3.4 writer rule: re-routed */
+	if (ht->route != route) {              /* re-routed while waiting */
 		bkt_clear_owner(b);
 		lock_release(&b->lock);
 		goto again;
@@ -1026,7 +928,7 @@ again:
 	if (ht->route != route)
 		goto again;
 
-	/* else it may sit in overflow (hash-keyed, under the overflow lock) */
+	/* else it may sit in overflow */
 	if (ht->ovf_count) {
 		lock_get(&ht->ovf_lock);
 		on = ovf_find(ht, key, hash, NULL);
@@ -1101,11 +1003,9 @@ again:
 }
 
 /*
- * One optimistic seqlock snapshot of slot @i of bucket @b into @kbuf/@vbuf
- * (each >= PCACHE_CELL_MAX), applying the 3.2 copy-out clamps and the
- * stalled-writer lock fallback.  Returns 1 and fills the out-params if a
- * live record was captured, 0 if the slot is empty.  Shared verbatim by the
- * full-table walk (pcache_ht_iter) and the cursored scan (pcache_ht_scan).
+ * One optimistic snapshot of slot @i into @kbuf/@vbuf (each >=
+ * PCACHE_CELL_MAX), with the copy-out clamps and the lock fallback.
+ * 1 = a live record was captured, 0 = empty slot.
  */
 static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 		char *kbuf, char *vbuf, unsigned int *klen_o, unsigned int *vlen_o,
@@ -1124,7 +1024,7 @@ static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 			continue;
 		}
 		r = b->slot[i];
-		/* 3.2 copy-out rules, as in scan_bucket() */
+		/* copy-out checks, as in scan_bucket() */
 		if (r && ((unsigned long)r < lo ||
 		        (unsigned long)r + PCACHE_REC_HDR > hi))
 			r = NULL;
@@ -1175,11 +1075,8 @@ static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 	return 1;
 }
 
-/*
- * Format one snapshotted entry (native counters -> decimal), NUL-terminate
- * both buffers and hand it to the callback.  @vbuf must have room for the
- * 24-byte decimal form.  Returns the callback's rc (<0 stops the walk).
- */
+/* format a snapshotted entry (counters as decimal), NUL-terminate and pass
+ * it to the callback; returns the callback's rc */
 static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
 		unsigned int klen, char *vbuf, unsigned int vlen,
 		unsigned int exp, unsigned char fl)
@@ -1198,25 +1095,16 @@ static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
 	return cb(&key, &val, exp, ctx);
 }
 
-/* The overflow leg from overflow bucket *@oidx on; @kbuf/@vbuf are the
- * caller's snapshot buffers.  @budget > 0 stops after the chain in which
- * that many records have been emitted, *@oidx then naming the next chain;
- * @budget 0 walks to the end.  On a callback stop *@oidx names the chain
- * being emitted, so a resumed walk re-offers its earlier nodes
- * (at-least-once, as everywhere in this walk).  *@oidx == PCACHE_OVF_BUCKETS
- * on return means the leg is done.  Returns the last callback rc (<0 stops).
+/*
+ * Walk the overflow leg from chain *@oidx; @budget > 0 stops after the chain
+ * in which that many records were emitted, 0 walks to the end.  On return
+ * *@oidx is the chain to resume at (PCACHE_OVF_BUCKETS = done).
  *
- * The lock is DROPPED around every callback.  Holding ovf_lock across cb
- * made any callback that touches an overflow-resident key - removing the
- * record it was handed takes ovf_lock - deadlock against itself, and made
- * every other process's overflow lookup and store wait out whatever the
- * callback does (a perf_sync DB save does one SQL insert per record).  The
- * chain is walked by index and re-resolved under the lock per entry; after
- * the callback the node at the same index is re-checked - if it changed,
- * the emitted node was removed and its successor slid into place, so the
- * index does not advance.  Self-removal stays exactly-once; unrelated
- * concurrent mutation degrades to at-least-once, which every walker here
- * already allows.  Chains are short by design, so the re-walk is noise. */
+ * ovf_lock is dropped around every callback, so the callback may touch the
+ * leg.  Chains are walked by index, re-resolved under the lock per entry;
+ * if the node at the index changed during the callback it was removed and
+ * the index does not advance.
+ */
 static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 		void *ctx, char *kbuf, char *vbuf, unsigned int *oidx,
 		unsigned int budget)
@@ -1312,24 +1200,15 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 		}
 	}
 
-	/* overflow leg - the lock is dropped around every callback */
+	/* overflow leg; the lock is dropped around every callback */
 	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
 out:
 	pkg_free(kbuf);
 	return rc < 0 ? rc : 0;
 }
 
-/*
- * Cursored, bounded walk for the MI perf_scan (Redis SCAN semantics).  From
- * bucket *@cursor it visits up to @max_buckets buckets, invoking @cb per live
- * entry, then sets *@cursor to the bucket to resume from - or 0 once the walk
- * is complete, the overflow leg being emitted in that final call.  Buckets
- * never move and the table only grows (3.4), so a plain ascending cursor gives
- * the >=-once guarantee and stays valid across a concurrent resize.  The cursor
- * advances a whole bucket at a time, so @cb sees every entry of a visited
- * bucket and is never asked to stop mid-bucket (no intra-bucket duplicates on
- * resume).  Returns 0, or <0 on error / callback stop.
- */
+/* buckets never move and the table only grows, so an ascending cursor
+ * stays valid across a concurrent resize */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx)
 {
@@ -1376,14 +1255,11 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		*cursor = idx;               /* more buckets remain */
 		goto out;
 	}
-	/* the buckets are done: the leg starts on the NEXT call, so a chunk
-	 * is never the last buckets plus a leg budget on top */
+	/* the leg starts on the next call */
 	*cursor = ht->ovf_count ? PCACHE_CURSOR_OVF : 0;
 	goto out;
 leg:
-	/* the overflow leg under the same budget, counted in records - a
-	 * bucket's worth is PCACHE_SLOTS - whole chains at a time; the
-	 * cursor names the next chain, and 0 once the leg is done */
+	/* the leg under the same budget, PCACHE_SLOTS records per bucket */
 	rc = iter_overflow_from(ht, cb, ctx, kbuf, vbuf, &oidx,
 		max_buckets * PCACHE_SLOTS);
 	if (rc < 0)
@@ -1399,13 +1275,6 @@ unsigned int pcache_ht_nbuckets(pcache_htable_t *ht)
 	return __atomic_load_n(&ht->nbuckets, __ATOMIC_RELAXED);
 }
 
-/* Records living in the overflow leg rather than in a bucket's slots.
- * A table at its target load factor keeps this near zero; a table that
- * cannot grow puts everything here, and the leg is a chain per hash
- * bucket under ONE lock, so its occupancy is the difference between a
- * table that performs and one that does not.  It was reported nowhere,
- * which is why a table sitting at 81 entries per bucket looked the same
- * from the outside as one at 4. */
 unsigned int pcache_ht_overflow(pcache_htable_t *ht)
 {
 	return __atomic_load_n(&ht->ovf_count, __ATOMIC_RELAXED);
@@ -1459,13 +1328,13 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 		bkt_clear_owner(b);
 		lock_release(&b->lock);
 
-		/* reclamation strictly after the lock (3.5b), through the
-		 * global pool - the sweeping process is not an allocator */
+		/* free after the lock, via the global pool: the sweeping
+		 * process is not an allocator */
 		for (i = 0; i < ndead; i++) {
 			if (cb) {
 				dk.s = dead[i]->data;
 				dk.len = dead[i]->klen;
-				cb(&dk, cb_ctx);          /* CP-11 expiry event, unlocked */
+				cb(&dk, cb_ctx);          /* expiry event, unlocked */
 			}
 			pcache_cell_free_global(dead[i]);
 		}
@@ -1503,7 +1372,7 @@ unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 				if (cb) {
 					dk.s = batch_r[i]->data;
 					dk.len = batch_r[i]->klen;
-					cb(&dk, cb_ctx);      /* CP-11 expiry event, unlocked */
+					cb(&dk, cb_ctx);      /* expiry event, unlocked */
 				}
 				pcache_cell_free_global(batch_r[i]);
 				pcache_cell_free_global(batch_n[i]);
@@ -1557,9 +1426,8 @@ void pcache_ht_stats_reset(pcache_htable_t *ht)
 	pcache_ht_totals_t now;
 	unsigned long entries;
 
-	/* read through the current baseline, then fold it back in: the shards
-	 * are only ever read here, never rewound, so a worker incrementing one
-	 * concurrently just lands in the next interval. */
+	/* fold the current totals into the baseline; the shards are never
+	 * rewound, so concurrent increments land in the next interval */
 	pcache_ht_totals(ht, &now);
 	entries = now.entries;
 
@@ -1578,16 +1446,13 @@ void pcache_ht_stats_reset(pcache_htable_t *ht)
 }
 
 /*
- * CP-09: linear-hash growth.  The maintenance timer is the SOLE splitter, so
- * splits never race one another; readers and writers use the routing word
- * plus the 3.4 re-check protocol already wired into fetch/store/remove.
- * Existing buckets never move (growth appends), so no pointer invalidation.
+ * Linear-hash growth.  There is a single splitter, so splits never race;
+ * readers and writers re-check the routing word.  Existing buckets never
+ * move.
  */
 
-/* allocate the segment (+ its hint segment) containing bucket @idx if absent.
- * Single-splitter, so no alloc race; the seg pointer is published (release)
- * only once fully built, and always before the routing word that makes any
- * bucket in it reachable. */
+/* allocate the segment (and hint segment) holding bucket @idx if absent;
+ * published with release once built, before any route reaches it */
 static int ensure_segment(pcache_htable_t *ht, unsigned int idx)
 {
 	unsigned int s = idx >> PCACHE_SEG_BITS, i;
@@ -1612,13 +1477,9 @@ static int ensure_segment(pcache_htable_t *ht, unsigned int idx)
 }
 
 /*
- * Split the current bucket (index = split), redistributing its 6 slots into
- * itself and the new partner (split + 2^level) by bit `level` of each entry's
- * stored hash (no rehash).  Overflow is hash-keyed and bucket-agnostic
- * (ovf_find matches by hash+key regardless of routing), so a split leaves
- * overflow entries findable and does not touch them - they drain as the
- * freed slots absorb new inserts.  Returns 1 on a split, 0 at the ceiling,
- * -1 on OOM.
+ * Split bucket `split` into itself and split + 2^level by bit `level` of
+ * the stored hash.  Overflow is keyed by hash, not routing, so it is left
+ * alone.  1 = split, 0 = at the ceiling, -1 = OOM.
  */
 static int pcache_ht_split(pcache_htable_t *ht)
 {
@@ -1673,11 +1534,9 @@ static int pcache_ht_split(pcache_htable_t *ht)
 	*hint_at(ht, sidx) = smin;
 	*hint_at(ht, pidx) = pmin;
 
-	/* Publish the new routing word WHILE S's version is odd.  The even
-	 * bump below is a release that happens-after this store, so any
-	 * reader which later observes S even (via acquire) and misses a
-	 * moved key is guaranteed to see the new route on its 3.4 re-read
-	 * and re-route to the partner - no false-miss window. */
+	/* publish the route while S is odd: a reader that later sees S even
+	 * and misses a moved key is guaranteed to see the new route on its
+	 * re-read */
 	if (split + 1 == (1U << level))
 		nr = (uint64_t)(level + 1) << 32;     /* level up, split 0 */
 	else
@@ -1691,13 +1550,7 @@ static int pcache_ht_split(pcache_htable_t *ht)
 	return 1;
 }
 
-/*
- * Split buckets while the load factor exceeds @target_lf, up to @budget
- * splits.  Called only from the maintenance timer (single splitter).  The
- * live-entry count is read once - splitting only redistributes, never
- * changes it - so the loop just watches nbuckets climb.  Returns the number
- * of splits performed.
- */
+/* the entry count is read once: splitting never changes it */
 unsigned int pcache_ht_grow(pcache_htable_t *ht, unsigned int target_lf,
 		unsigned int budget)
 {
@@ -1722,10 +1575,7 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 	pcache_bucket_t *seg;
 	unsigned int nbuckets, done, n, s, i;
 
-	/* The segment directory is a FIXED array of PCACHE_NSEGS pointers.
-	 * A larger size_log2 asks for more segments than it holds, and the
-	 * loop below would write past it; 32 or more is not even a defined
-	 * shift.  Every caller is gated today, so this guards the next one. */
+	/* the segment directory is a fixed array */
 	if (size_log2 > PCACHE_MAX_SIZE_LOG2) {
 		LM_ERR("a table of 2^%u buckets is past the %u-segment "
 			"directory's ceiling of 2^%u\n", size_log2,
@@ -1739,11 +1589,8 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 		return NULL;
 	memset(ht, 0, sizeof *ht);
 
-	/* Segments are FIXED at PCACHE_SEG_SIZE buckets (the directory is a
-	 * directory of fixed segments, DESIGN 3.4) - always allocate full
-	 * segments, even when the initial nbuckets is smaller, so linear-hash
-	 * growth can fill a segment up to its boundary without going out of
-	 * bounds.  n rounds nbuckets up to whole segments. */
+	/* always whole segments, so growth can fill a segment up to its
+	 * boundary */
 	n = (nbuckets + PCACHE_SEG_SIZE - 1) / PCACHE_SEG_SIZE;
 	if (n == 0)
 		n = 1;
@@ -1790,13 +1637,7 @@ pcache_htable_t *pcache_htable_new(unsigned int size_log2)
 }
 
 
-/*
- * startup selftest (modparam "htable_selftest"): single-process coverage
- * of every path above - roundtrip, in-place vs replacement, the
- * versionless bump (bucket version must NOT move), removal compaction,
- * overflow spill and drain, expiry-as-absent, record-size limits.
- * Multi-process interleavings are CP-16's job.
- */
+/* startup selftest (modparam "htable_selftest"), single process */
 #define HCHK(cond, ...) \
 	do { \
 		if (!(cond)) { \
@@ -1904,9 +1745,7 @@ int pcache_htable_selftest(void)
 	HCHK(pcache_ht_fetch(ht, &k, &out) == -2, "removed key still hits\n");
 	HCHK(pcache_ht_remove(ht, &k) == 0, "second remove not idempotent\n");
 
-	/* expiry-as-absent, under a synthetic clock (get_ticks() is still 0
-	 * in mod_init, so nothing can be "in the past" through the public
-	 * wrapper here) */
+	/* expiry-as-absent, on a synthetic clock (get_ticks() is 0 here) */
 	v.s = "temp"; v.len = 4;
 	HCHK(pcache_ht_store(ht, &k, &v, 500) == 0, "expired store failed\n");
 	HCHK(_pcache_ht_fetch(ht, &k, &out, 1000, NULL, NULL) == -2,
@@ -1916,8 +1755,7 @@ int pcache_htable_selftest(void)
 	pkg_free(out.s);
 	pcache_ht_remove(ht, &k);
 
-	/* native counters (CP-04): create, accumulate, format-on-read,
-	 * string conversion, NaN refusal */
+	/* native counters */
 	{
 		long long nv = 0;
 
@@ -1984,8 +1822,7 @@ int pcache_htable_selftest(void)
 			"spill value %u mismatch\n", i);
 		pkg_free(out.s);
 	}
-	/* walker: exactly-once coverage of bucket + overflow legs (single
-	 * process, so deterministic), values verified in the callback */
+	/* walker: exactly-once coverage of buckets and overflow */
 	{
 		struct st_walk w;
 		memset(&w, 0, sizeof w);
@@ -2015,14 +1852,11 @@ int pcache_htable_selftest(void)
 		nb_used += bkt_used(bucket_at(ht, i));
 	HCHK(nb_used == 0, "%u slots still used after full drain\n", nb_used);
 
-	/* expiry sweep (CP-05): hint-routed, bucket + overflow legs, mixed
-	 * with never-expiring survivors */
+	/* expiry sweep over buckets and overflow, with a survivor */
 	{
 		unsigned int freed;
 
-		/* the never-expiring survivor goes in FIRST so it takes a bucket
-		 * slot - stored last it would land in overflow and the count
-		 * checks below would misread a correct sweep */
+		/* the survivor goes first so it takes a bucket slot */
 		k.s = "stay"; k.len = 4;
 		v.s = "keep"; v.len = 4;
 		HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "stay store\n");
@@ -2052,8 +1886,7 @@ int pcache_htable_selftest(void)
 			nb_used);
 	}
 
-	/* CP-06 counter sanity: every create matched by a destroy after the
-	 * full drain, and a single process never retries against itself */
+	/* counter sanity after the full drain */
 	{
 		pcache_ht_totals_t t;
 
@@ -2070,8 +1903,7 @@ int pcache_htable_selftest(void)
 			t.retries, t.fallbacks);
 	}
 
-	/* CP-09 growth: fill a small table past its load factor, split it
-	 * down, and prove every key survives the relink + re-routing */
+	/* growth: every key must survive the splits */
 	{
 		pcache_htable_t *g = pcache_htable_new(4);   /* 16 buckets */
 		unsigned int nb0, grown, miss = 0;

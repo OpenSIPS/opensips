@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 OpenSIPS Solutions
+ * Copyright (C) 2026 Yury Kirsanov
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -19,51 +19,13 @@
  */
 
 /*
- * cachedb_perf memory: where the cache's cells come from.
- *
- * Three backings, decided once in pcache_arena_init() (mod_init, pre-fork):
- *
- *   core    the core shm allocator is HG_MALLOC - every cell is an HG slab
- *           cell; classes, per-process caches, GC, growth and maintenance
- *           are HG's, nothing here but the class byte.
- *   own-hg  a dedicated arena on an HG_MALLOC build - created through the
- *           core's module-arena facade as an HG arena of our own.
- *   own     any other allocator: this file's slot allocator, below.
- *
- * THE OWN BACKING (DESIGN 3.3, reworked for reclaim - tasks C1..C9)
- *
- * Memory is cut into 256 KB SLOTS, each 256 KB-aligned.  A slot is one
- * CHUNK: a 64-byte header and cells of one size class.  A cell's chunk is
- * therefore a mask of its address - no per-cell back pointer, the record
- * header has no room for one.  Slots come from the dedicated reservation
- * (arena_hugepage_mb: 2 MB-aligned, huge-page backed, a bump frontier plus
- * the free lists) or from shm PAGES (16 slots carved out of one shm_malloc
- * block, plus one slot of alignment slack).
- *
- * Cells: byte 0 is the class id, stamped when the chunk is cut and never
- * written again while the chunk keeps that class (DESIGN 3.2 rule 1);
- * bytes 8..15 carry the free-list link.  A process allocates from a private
- * free stack, then from the bump of the chunk it cut, then - under the
- * arena lock - by pulling a batch of cells home on some chunk of the class.
- * A free goes to the private stack; past PCACHE_PRIVATE_MAX the surplus is
- * sent HOME: pushed on its own chunk's free list (lock-free), which is the
- * whole point - a chunk whose every cell is home is provably drained, no
- * process can hold a pointer it will later free.  Chunks with cells home
- * sit on a per-class "avail" stack (lock-free, one membership flag) where
- * the allocator finds them.
- *
- * Reclaim (the module's own process, one tick a second, never inline and
- * never a timer job): drained chunks beyond reclaim_keep per class are
- * RETIRED - the slot goes to the free lists and is re-cut for ANY class on
- * the next carve (cross-class reuse: the footprint follows the peak total,
- * not the sum of per-class peaks).  Free slots that form a whole 2 MB group
- * of the reservation, or a whole shm page, are given back to the host after
- * a quiet window and a cool-off since the last carve: MADV_REMOVE on the
- * reservation (the mapping stays, a later carve re-faults), shm_free of the
- * page.  Nothing is ever unmapped, so a lock-free reader still holding a
- * pointer into a retired, re-cut or punched-out slot reads mapped memory:
- * the copy-out chain (extents, class bound, hash, key, version re-check)
- * rejects what it finds there, exactly as for any stale pointer.
+ * Cell allocator.  The own backing cuts memory into 256 KB-aligned slots,
+ * each one chunk of a single size class, so a cell's chunk is a mask of its
+ * address.  Surplus frees go lock-free onto their own chunk's free list, so
+ * a chunk whose every cell is home is provably unreferenced; the reclaim
+ * process retires such chunks and gives whole free 2 MB groups or shm pages
+ * back.  Nothing is ever unmapped: a lock-free reader holding a stale
+ * pointer still reads mapped memory and the copy-out checks reject it.
  */
 
 #include <string.h>
@@ -82,8 +44,7 @@
 #include "pcache_arena.h"
 #include "pcache_mem.h"
 
-/* the core's module-arena facade (HG_MALLOC v3 trees); older cores have no
- * such header - then only the own backing exists */
+/* without the core's module-arena facade only the own backing exists */
 #if defined(__has_include)
 # if __has_include("../../mem/mem_arena.h")
 #  include "../../mem/mem_arena.h"
@@ -121,8 +82,7 @@ int pcache_reclaim_giveback = 1;    /* 0: retire and re-cut only, keep resident 
 static int backing = PCACHE_BACKING_OWN;
 static mem_arena_t *hg_handle;            /* CORE: the shm block; OWN_HG: ours */
 
-/* CP-20: MB to reserve for the huge-page arena; 0 = disabled (shm_malloc).
- * Set by the cachedb_perf "arena_hugepage_mb" modparam. */
+/* MB to reserve for the huge-page arena; 0 = disabled (shm_malloc) */
 int pcache_arena_hugepage_mb = 0;
 
 /* ~x1.5 ladder, all multiples of 32 so cells stay 8-aligned */
@@ -189,11 +149,8 @@ typedef struct pcache_arena {
 	unsigned int chunks_cls[PCACHE_NCLASSES];       /* chunks cut for the class */
 	unsigned int chunks_peak_cls[PCACHE_NCLASSES];
 
-	/* own backing: slots.  The reservation's free slots are bitmaps (one
-	 * bit per slot; a carve takes the LOWEST free slot so the top groups
-	 * drain), a page's free slots are its own list (a carve takes from
-	 * the FULLEST page so whole pages drain).  Packing is what makes the
-	 * give-back units - 2 MB groups, 4 MB pages - ever become empty. */
+	/* own backing: slots.  Carves take the lowest reservation slot and the
+	 * fullest page, so whole give-back units can drain */
 	unsigned long *rwarm;                   /* reservation: free, resident */
 	unsigned long *rcold;                   /* reservation: free, punched out */
 	unsigned int rslots;                    /* bits in each bitmap */
@@ -206,21 +163,17 @@ typedef struct pcache_arena {
 	unsigned int carve_tick;                /* tick of the last carve */
 	unsigned int giveback_off;              /* MADV_REMOVE refused: stay resident */
 	unsigned long chunks_retired;           /* cumulative */
-	unsigned long flush_broadcasts;         /* "send your hoard home" rounds */
+	unsigned long flush_broadcasts;         /* flush_private IPC rounds */
 	unsigned int flush_tick;                /* tick of the last broadcast */
 	unsigned long pages_freed;              /* cumulative */
 	unsigned long released_bytes;           /* cumulative give-back */
 	unsigned long cold_bytes;               /* currently punched out */
 
-	/* CP-20 huge-page reservation: a pre-fork, never-unmapped, 2M-aligned
-	 * MAP_SHARED region; slots bump from it at hoff, regions too */
+	/* huge-page reservation: pre-fork, never unmapped */
 	char                 *hbase;
 	unsigned long         hsize;
 	unsigned long         hoff;             /* chunk frontier, grows UP (lock) */
-	unsigned long         rtop;             /* region frontier, grows DOWN: the
-	                                         * index tables never share a 2 MB
-	                                         * group with chunks, so groups of
-	                                         * retired chunks can be punched out */
+	unsigned long         rtop;             /* region frontier, grows DOWN */
 	enum pcache_mem_tier  htier;
 	unsigned long         hlocked_mb;
 } pcache_arena_t;
@@ -256,11 +209,9 @@ static inline pcache_chunk_t *cell_chunk(const void *cell)
 }
 
 /*
- * A cell goes home: onto its chunk's free list.  Lock-free, any number of
- * pushers; the only popper is the allocator under the arena lock, so the
- * pop side has no ABA (a cell cannot be pushed twice while it is on the
- * list).  The chunk is announced to the class the first time its count
- * leaves zero - one membership flag keeps it on the avail stack once.
+ * Push a cell onto its chunk's free list.  Lock-free with any number of
+ * pushers; the single popper holds the arena lock, so there is no ABA.  The
+ * in_avail flag keeps the chunk on the class avail stack at most once.
  */
 static void cell_home(void *cell)
 {
@@ -422,10 +373,9 @@ static int page_add(void)
 	return 0;
 }
 
-/* a free slot for a new chunk, in packing order: the reservation's lowest
- * resident free slot, then its lowest punched-out one (re-faults, keeps
- * the used range tight), then its frontier, then the fullest page, then a
- * new page.  Arena lock held. */
+/* a free slot for a new chunk, in packing order: lowest resident
+ * reservation slot, lowest punched-out one, the frontier, the fullest page,
+ * a new page.  Arena lock held. */
 static pcache_chunk_t *slot_take(void)
 {
 	pcache_chunk_t *ch = NULL;
@@ -469,10 +419,9 @@ static pcache_chunk_t *slot_take(void)
 	return ch;
 }
 
-/* cut a chunk for class @c and hand it to the carving process as its bump
- * source - arena lock held.  The class byte of every cell is stamped HERE,
- * before the chunk is reachable by anyone - immutable from birth, so a
- * stale reader can always trust it (DESIGN 3.2 copy-out rule 1). */
+/* cut a chunk for class @c as the caller's bump source; arena lock held.
+ * Class bytes are stamped before the chunk is reachable, so a stale reader
+ * can always trust them. */
 static int carve_chunk(int c, struct pcache_palloc *pl)
 {
 	pcache_chunk_t *ch;
@@ -481,12 +430,8 @@ static int carve_chunk(int c, struct pcache_palloc *pl)
 
 	ch = slot_take();
 	if (!ch) {
-		/* Not once per call: this runs for every allocation a full arena
-		 * refuses - every refused write - with the arena lock HELD, so a
-		 * line per refusal queues every allocating process behind one
-		 * formatting a log line.  At most once per 10 s per process, with
-		 * the running count.  get_ticks(), not arena->tick: the latter
-		 * only advances under the own-memory backing. */
+		/* rate-limited: runs under the arena lock on every refused write.
+		 * get_ticks(), as arena->tick only runs under the own backing */
 		static unsigned int carve_log_tick;
 		static unsigned long carve_refused;
 
@@ -576,13 +521,8 @@ int pcache_arena_init(void)
 		size2class[idx] = (unsigned char)c;   /* NCLASSES = impossible */
 	}
 
-	/*
-	 * Which backing? An HG_MALLOC build can hand the whole job to HG: a
-	 * dedicated arena becomes an HG arena of our own (own-hg), and with
-	 * no arena asked for, cells go straight into the core shm arena when
-	 * that allocator is HG (core). Only without HG does this file's
-	 * slot allocator run (own). The policy modparam can force any.
-	 */
+	/* auto: own-hg if a dedicated arena is asked for, else core when the
+	 * shm allocator is HG; own otherwise */
 	{
 		const char *pol = pcache_backing_policy ? pcache_backing_policy : "auto";
 		int want_arena = pcache_arena_hugepage_mb > 0;
@@ -643,7 +583,7 @@ int pcache_arena_init(void)
 		return -1;
 	}
 
-	/* CP-20: reserve the huge-page arena, pre-fork, if requested */
+	/* reserve the huge-page arena, pre-fork, if requested */
 	if (pcache_arena_hugepage_mb > 0) {
 		arena->hsize = (unsigned long)pcache_arena_hugepage_mb << 20;
 		arena->hbase = pcache_mem_reserve(arena->hsize, &arena->htier,
@@ -681,10 +621,8 @@ int pcache_arena_init(void)
 }
 
 /*
- * Raw memory for an index region (bucket segments).  64-aligned, never
- * freed (task C10: tables grow and never shrink - small and bounded).
- * From the reservation's frontier in whole slots when it has room, shm
- * otherwise.
+ * Raw memory for an index region, 64-aligned and never freed (tables never
+ * shrink).  From the reservation's top frontier when it has room, else shm.
  */
 void *pcache_region_alloc(size_t size)
 {
@@ -693,8 +631,7 @@ void *pcache_region_alloc(size_t size)
 	char *aligned;
 
 	if (backing != PCACHE_BACKING_OWN) {
-		/* HG hands out whole regions too; nothing to register - the
-		 * arena's extents and accounting are HG's */
+		/* extents and accounting are HG's */
 		rg = mem_arena_malloc(hg_handle, need);
 		if (!rg) {
 			LM_ERR("no more arena memory for a %lu byte region\n", need);
@@ -746,8 +683,7 @@ void pcache_arena_destroy(void)
 		return;
 
 	if (backing != PCACHE_BACKING_OWN) {
-		/* the cells and regions are HG's; the arena mapping (ours or the
-		 * core's) goes with the process */
+		/* cells and regions belong to HG */
 		lock_destroy(&arena->lock);
 		shm_free(arena);
 		arena = NULL;
@@ -785,41 +721,17 @@ void pcache_arena_child_init(void)
 		return;
 
 	/*
-	 * After fork every child holds a COW copy of the parent's private
-	 * allocator state - the SAME bump pointer and the SAME free-list cell
-	 * addresses.  A child must not keep them (two processes bumping one
-	 * chunk would hand out the same cell), and it must NOT send them home
-	 * either: every child inherited the identical copy, so each would push
-	 * the same physical cells, landing one cell on a free list N times -
-	 * later popped by several processes at once and written through
-	 * concurrently (the CP-16 corruption: a value byte overwrites a
-	 * neighbour's class id, and the next free reads an impossible class).
-	 *
-	 * The leftover cells belong to the parent.  The child simply discards
-	 * its inherited copy and starts empty, carving its own chunk on first
-	 * use.  The parent keeps its own small hoard.
-	 *
-	 * Bug fixed here (2026-08-07): this function's OWN comment already
-	 * said "discards", but the code called pkg_free(pl) anyway - freeing
-	 * pl (the pcache_palloc struct itself) is exactly the same class of
-	 * mistake the comment warns about for its internal free-list cells:
-	 * pl is COW-shared with the parent and every sibling child inherited
-	 * the identical pointer, so pkg_free() is a WRITE into that shared
-	 * page (hg_cell_free()/cell_set_next() links it into a free list).
-	 * Under HG_MALLOC's hugepage-backed pkg arena this write-triggered
-	 * COW fault reproducibly SIGBUSed (mem/hg_arena.c:98, always via
-	 * cachedb_perf.c child_init -> here), first surfaced when a TCP-based
-	 * protocol (proto_bin, for clusterer_controller) made this fork/free
-	 * path run under HG_MALLOC for the first time. Fix: just drop the
-	 * reference, exactly as documented - no free, no donation, nothing.
-	 * pl's memory is reclaimed for free when the child process exits.
+	 * Every child inherits the same COW copy of the parent's private state.
+	 * It must neither use it (shared bump pointer) nor send it home (every
+	 * child would push the same cells) nor pkg_free() it (a write into a
+	 * COW-shared page).  Just drop the reference; the cells stay the
+	 * parent's.
 	 */
 	my_palloc = NULL;
 }
 
-/* send every privately held cell of this process home: the free stacks
- * and the bump remainders.  For a process that is done allocating (and
- * for the selftest); the hot paths never call it. */
+/* send every privately held cell of this process home; for a process
+ * that is done allocating */
 void pcache_arena_flush_private(void)
 {
 	struct pcache_palloc *pl = my_palloc;
@@ -854,9 +766,8 @@ void *pcache_cell_alloc(unsigned int size)
 	c = size2class[(size + 31) >> 5];
 
 	if (backing != PCACHE_BACKING_OWN) {
-		/* an HG slab cell, class-rounded so pcache_cell_bound() stays
-		 * exact; byte 0 carries our class id exactly as in own chunks
-		 * (HG's own header sits in front of the pointer it returns) */
+		/* class-rounded so pcache_cell_bound() stays exact; byte 0 is
+		 * our class id as in own chunks */
 		cell = mem_arena_malloc(hg_handle, cell_sizes[c]);
 		if (!cell)
 			return NULL;
@@ -951,8 +862,8 @@ void pcache_cell_free(void *cell)
 	pl->cls[c].nfree++;
 
 	if (pl->cls[c].nfree > PCACHE_PRIVATE_MAX) {
-		/* the surplus goes home, and so does an idle bump remainder -
-		 * a process hoarding cells would otherwise pin their chunks */
+		/* surplus and bump remainder go home, so a hoarding process
+		 * does not pin their chunks */
 		for (i = 0; i < PCACHE_DONATE; i++) {
 			d = pl->cls[c].free_head;
 			pl->cls[c].free_head = cell_next(d);
@@ -963,8 +874,7 @@ void pcache_cell_free(void *cell)
 	}
 }
 
-/* a free from a process that is not an allocator (the expiry sweep):
- * straight home, lock-free */
+/* free from a non-allocating process: straight home, lock-free */
 void pcache_cell_free_global(void *cell)
 {
 	unsigned int c = *(unsigned char *)cell;
@@ -995,15 +905,12 @@ unsigned int pcache_cell_bound(const void *cell)
 void pcache_arena_extents(unsigned long *lo, unsigned long *hi)
 {
 	if (backing != PCACHE_BACKING_OWN) {
-		/* the HG reservation (the whole cap): every pointer HG ever
-		 * hands out from this arena lies inside it */
+		/* the whole HG reservation */
 		mem_arena_extents(hg_handle, lo, hi);
 		return;
 	}
-	/* unlocked on purpose: readers validate with these on every lookup.
-	 * The watermarks only ever widen (a page is never unmapped), so a
-	 * torn pair can only be narrower than the truth - a live record read
-	 * through a stale pair is just a miss that the next retry serves. */
+	/* unlocked: the watermarks only widen, so a torn pair is narrower than
+	 * the truth and costs at most a retried miss */
 	*lo = __atomic_load_n(&arena->lo, __ATOMIC_RELAXED);
 	*hi = __atomic_load_n(&arena->hi, __ATOMIC_RELAXED);
 }
@@ -1062,10 +969,8 @@ static void giveback_tick(void)
 	    arena->tick - arena->carve_tick < (unsigned int)pcache_reclaim_cooloff_s)
 		return;
 
-	/* the reservation: whole 2 MB groups of free resident slots, punched
-	 * out with MADV_REMOVE - the mapping stays, the pages go (hugetlb ones
-	 * back to the pool).  Bookkeeping first: the punch zeroes the slot
-	 * headers, so nothing may still be read from them afterwards. */
+	/* punch whole quiet 2 MB groups out with MADV_REMOVE; the mapping
+	 * stays.  Bookkeeping first: the punch zeroes the slot headers */
 	if (arena->hbase) {
 		for (g = 0; (g + 1) * PCACHE_GROUP_SLOTS <= arena->hoff / PCACHE_SLOT; g++) {
 			p = arena->hbase + (unsigned long)g * PCACHE_HPS;
@@ -1108,8 +1013,7 @@ static void giveback_tick(void)
 		}
 	}
 
-	/* shm pages: a page whose every slot is free and quiet goes back to
-	 * shm_free (keep reclaim_keep of them resident for the next growth) */
+	/* fully free, quiet shm pages beyond reclaim_keep go back to shm */
 	for (ppg = &arena->pages; (pg = *ppg) != NULL; ) {
 		if (pg->nfree < pg->nslots ||
 		    !range_quiet(pg->base, pg->base + (unsigned long)pg->nslots * PCACHE_SLOT)) {
@@ -1133,25 +1037,17 @@ static void giveback_tick(void)
 	}
 }
 
-/*
- * "Send your hoard home": runs in EVERY process through the core's IPC,
- * between its messages.  A process's private free stack and the remainder
- * of the slot it is carving from pin their chunks - a few hundred cells
- * scattered over as many chunks keep those chunks from ever draining - so
- * when chunks linger partially home the reclaim process asks everyone to
- * let go; the next allocation simply refills from the arena.
- */
+/* IPC to every process: release private cells, which otherwise keep
+ * their chunks from ever draining */
 static void pcache_flush_rpc(int sender, void *param)
 {
 	pcache_arena_flush_private();
 }
 
 /*
- * One reclaim tick.  Drained chunks live on the class avail stacks (a
- * chunk with cells home is always there, or the allocator's current one,
- * or on its way): take the stack, retire the drained ones beyond
- * reclaim_keep, put the rest back.  A chunk whose announcement is still in
- * flight (flag set, not found) is left for the next tick.
+ * One reclaim tick: take each class avail stack, retire drained chunks
+ * beyond reclaim_keep and push the rest back.  A chunk still being
+ * announced (flag set, not on the stack yet) waits for the next tick.
  */
 void pcache_arena_reclaim_tick(void)
 {
@@ -1175,8 +1071,7 @@ void pcache_arena_reclaim_tick(void)
 				chunk_retire(ch);
 				continue;
 			}
-			/* partially home for a whole quiet window, nobody taking
-			 * the cells and nobody bringing the rest: a hoard pins it */
+			/* partially home for a whole quiet window: a hoard pins it */
 			if (nfree && nfree < ch->cells &&
 			    arena->tick - ch->home_since >= (unsigned int)pcache_reclaim_quiet_s)
 				lingering++;
@@ -1231,8 +1126,7 @@ int pcache_arena_mi(mi_item_t *aobj)
 
 	memset(out, 0, sizeof out);
 	lock_get(&arena->lock);
-	/* cells out (not home) per class: the reservation's cut slots and
-	 * every page slot */
+	/* cells out (not home) per class */
 	for (off = 0; off < arena->hoff; off += PCACHE_SLOT) {
 		ch = (pcache_chunk_t *)(arena->hbase + off);
 		if (ch->cls < PCACHE_NCLASSES)
@@ -1355,7 +1249,7 @@ static void pcache_arena_hg_capacity(int *active, unsigned long *total,
 }
 
 /* the dedicated reservation: used = slots holding a chunk plus the index
- * regions cut from it (task C9: live slots, not the bump frontier) */
+ * regions cut from it */
 void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
 		unsigned long *used, unsigned long *free)
 {
@@ -1386,14 +1280,7 @@ void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
 	lock_release(&arena->lock);
 }
 
-/*
- * startup selftest (modparam "arena_selftest"): exercises class mapping,
- * the stamp/bound contract, LIFO reuse, chunk growth, sending cells home,
- * refill, extents, the oversize edge, and reclaim: drained chunks retire
- * beyond reclaim_keep and their slots are re-cut for another class.  Ends
- * by dropping the private state through pcache_arena_child_init(), the
- * fork-reset path - so that gets exercised too.
- */
+/* startup selftest (modparam "arena_selftest") */
 #define CHK(cond, ...) \
 	do { \
 		if (!(cond)) { \
@@ -1487,9 +1374,8 @@ int pcache_arena_selftest(void)
 		pcache_cell_free(ptrs[i]);
 	pkg_free(ptrs);
 
-	/* reclaim: with everything home, a tick retires the drained class-0
-	 * chunks beyond reclaim_keep, and the next carve of ANOTHER class
-	 * re-cuts one of the freed slots (cross-class reuse) */
+	/* reclaim: a tick retires drained chunks, and another class re-cuts
+	 * a freed slot */
 	pcache_arena_flush_private();
 	used0 = arena->chunks_used;
 	retired0 = arena->chunks_retired;
@@ -1503,9 +1389,8 @@ int pcache_arena_selftest(void)
 	warm = arena->nfree_warm;
 	CHK(warm >= retired1 - retired0, "retired slots not on the warm list "
 		"(%u warm)\n", warm);
-	/* the largest class holds 3 cells per slot and owns exactly one chunk
-	 * here: the 4th allocation must cut a new chunk, and that cut must
-	 * take a retired slot (warm count down by one), stamped for ITS class */
+	/* the largest class holds 3 cells per slot: the 4th allocation must
+	 * cut a new chunk from a retired slot */
 	{
 		void *big[4];
 		unsigned int bc = PCACHE_NCLASSES - 1;

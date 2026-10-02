@@ -32,45 +32,21 @@
 #define PCACHE_SLOTS        6
 #define PCACHE_SEG_BITS     12
 #define PCACHE_SEG_SIZE     (1U << PCACHE_SEG_BITS)          /* 4096 buckets */
-/* The largest table the segment directory can describe.  NSEGS is derived
- * from it rather than the other way round, so the two cannot drift, and
- * pcache_htable_new() refuses anything larger instead of writing past the
- * directory. */
+/* largest table the segment directory can describe */
 #define PCACHE_MAX_SIZE_LOG2 24
 #define PCACHE_NSEGS        (1U << (PCACHE_MAX_SIZE_LOG2 - PCACHE_SEG_BITS))
 #define PCACHE_SEQ_RETRIES  64
-/* Heads in the overflow leg.  A key lives in its bucket OR here, never
- * both, so any operation that misses the bucket must walk the chain for
- * its hash - under the ONE leg lock - and that includes every store, not
- * just operations on records that are actually in the leg.  Profiled on
- * a receiver applying replicas: the leg lookup was 17% of the thread,
- * the largest cost outside the cipher, on a table whose leg had grown
- * during a write burst.
- *
- * Chain length is leg size / this, so widening it shortens every chain
- * proportionally.  16,384 is chosen because the head array is one
- * allocation of 8 bytes a head: 131,072 bytes, which is the largest
- * power of two that still fits inside a single 256 KB region slot, the
- * same one slot 1,024 heads occupied.  Sixteen times the chains for no
- * extra memory at all. */
+/* overflow leg chains; the head array (128 KB) fits one region slot */
 #define PCACHE_OVF_BUCKETS  16384
-/* per-process stat shards: sized to a fixed cap, not counted_max_processes
- * (not yet final when the table is built in mod_init, pre-fork).  The
- * owner:12 bucket field already caps the system at 4096 processes. */
+/* stat shards; the process count is not final yet in mod_init */
 #define PCACHE_MAX_PROCS    1024
 
-/*
- * The record (DESIGN 3.3).  Byte 0 is the arena class id, stamped by the
- * arena and read-only here (pcache_arena.h).  vlen and expires are
- * naturally aligned so their loads/stores are single-copy-atomic: expires
- * is the versionless-TTL-bump target (DESIGN 2.7) and vlen may be read by
- * an optimistic reader mid-update.  While a cell sits on a free list the
- * link overlays bytes 8-15 (expires/hash) - never klen/vlen, so even a
- * freed cell keeps a bounded length at the vlen offset.
- */
+/* The record.  vlen and expires are naturally aligned, so lock-free readers
+ * see them single-copy-atomic.  The free-list link overlays bytes 8-15 only,
+ * so a freed cell still holds a bounded vlen. */
 typedef struct pcache_rec {
 	unsigned char         cls;      /* arena class - read-only */
-	unsigned char         rflags;   /* PCACHE_F_INT etc. (CP-04) */
+	unsigned char         rflags;   /* PCACHE_F_* */
 	unsigned short        klen;
 	unsigned int          vlen;
 	volatile unsigned int expires;  /* absolute ticks, 0 = never */
@@ -84,17 +60,10 @@ typedef struct pcache_rec {
 unsigned int pcache_key_hash(const str *key);
 #define PCACHE_REC_SIZE(_kl, _vl)   (PCACHE_REC_HDR + (_kl) + (_vl))
 
-/* rflags: native int64 counter (CP-04) - the value payload is 8 raw
- * bytes, arithmetic is fixed-width under the bucket lock, and every
- * user-facing read (fetch, walker) formats it as a decimal string */
+/* native int64 counter: 8 raw bytes, formatted as decimal on every read */
 #define PCACHE_F_INT                0x01
-/* The record arrived through a cluster pull, not through a local consumer
- * write - a passive copy.  Provenance doubles as authority: the serve side
- * can answer "held, not authoritative" for these instead of shipping the
- * value, so in a converged cluster only the writer answers with bytes.
- * A later local write over the key clears it (the writer IS the authority);
- * a pull landing on identical bytes keeps whatever the record had, which
- * keeps an owner's copy authoritative. */
+/* passive copy that arrived through a cluster pull, not a local write;
+ * not authoritative when serving peers.  A local write clears it. */
 #define PCACHE_F_PASSIVE            0x02
 
 /* strict bounded decimal parse; no overflow guard - counter territory */
@@ -124,13 +93,8 @@ _Static_assert(offsetof(pcache_rec_t, vlen) == 4 &&
                offsetof(pcache_rec_t, data) == PCACHE_REC_HDR,
                "pcache_rec field alignment broken");
 
-/*
- * The bucket (DESIGN 3.1): exactly one cache line.  meta packs
- * used:4 (low bits) | owner:12 (process_no+1 of the lock holder, 0 =
- * none) - the owner exists so the maintenance worker can detect a dead
- * holder (3.5b).  tags[] plus meta form one aligned 8-byte word at offset
- * 8, which the SWAR tag scan loads whole.
- */
+/* one cache line; owner is process_no+1 of the lock holder.  tags[] + meta
+ * form the 8-byte word the SWAR tag scan loads whole */
 typedef struct pcache_bucket {
 	volatile unsigned int   version;  /* seqlock: odd = writer inside */
 	gen_lock_t              lock;     /* writers (+ reader fallback) */
@@ -147,27 +111,11 @@ _Static_assert(offsetof(pcache_bucket_t, tags) == 8,
 
 struct povf;
 
-/*
- * Per-process op counters (CP-06): one cache line per process per table,
- * plain increments on the owner's own line, summed only at read time.
- * NEVER update_stat() per operation - that is one shared atomic line,
- * the measured 0.72x collapse (DESIGN 2.5) installed by observability.
- */
+/* per-process op counters on the owner's own line, summed at read time */
 typedef struct pcache_pstat {
 	unsigned long hits, misses, stores, removes,
 	              created, destroyed, expired, retries, fallbacks,
-	/*
-	 * Stores made with expires == 0, i.e. "never expires".  A COUNT OF
-	 * STORE OPERATIONS, not a population: an immortal entry can still be
-	 * dropped by an explicit remove (which lands in `removes`, never in
-	 * `expired`), so this must not be read as "immortals currently live".
-	 * It exists so `expired` can be measured against the stores that were
-	 * ever ELIGIBLE to expire - dividing by every store understates the
-	 * share on a collection that mixes the two.
-	 * Inexact under overwrite, exactly as `stores` already is: re-storing
-	 * a key flips its eligibility without unwinding the earlier count.
-	 * Free to carry - the struct is 128 bytes with or without it.
-	 */
+	/* stores with expires == 0: a count of operations, not live entries */
 	              stores_immortal;
 } __attribute__((aligned(64))) pcache_pstat_t;
 
@@ -178,11 +126,8 @@ typedef struct pcache_ht_totals {
 } pcache_ht_totals_t;
 
 typedef struct pcache_htable {
-	/* the 3.4 routing word: (level << 32) | split, published whole.
-	 * On its own line - everything else here mutates */
-	/* (level << 32) | split - genuinely 64 bits, so NOT unsigned long:
-	 * that is 32 bits on every ILP32 target (arm32, i386) and the packing
-	 * would collapse silently. */
+	/* routing word (level << 32) | split, published whole, on its own
+	 * line; uint64_t because unsigned long is 32 bits on ILP32 */
 	volatile uint64_t       route;
 	char                    _pad0[56];
 
@@ -193,100 +138,58 @@ typedef struct pcache_htable {
 
 	pcache_bucket_t        *seg[PCACHE_NSEGS];
 
-	/* per-bucket min-expires hints (CP-05), parallel to seg[]: the 64B
-	 * bucket is full, and a separate array sweeps better anyway - 16
-	 * hints per cache line, no bucket touched unless due.  Written under
-	 * the bucket lock, only when a LOWER expiry arrives (a TTL bump only
-	 * raises, so the hot bump path never writes here); a stale-low hint
-	 * just costs one wasted bucket visit.  0 = nothing expiring */
+	/* per-bucket min-expires hints, parallel to seg[]; written under the
+	 * bucket lock, only lowered.  A stale-low hint costs one wasted visit.
+	 * 0 = nothing expiring */
 	unsigned int           *hint_seg[PCACHE_NSEGS];
 
-	/* CP-06 counters, indexed by process_no */
+	/* op counters, indexed by process_no */
 	pcache_pstat_t         *pstats;
 	unsigned int            pstats_n;
 
-	/* Baseline for perf_stats_reset: the shard sums as of the last reset.
-	 * The counters themselves are never rewound - the hot paths own their
-	 * own cache lines and must not be written from another process - so a
-	 * reset just records where to count from, and pcache_ht_totals()
-	 * reports the difference.  'entries' is a live gauge computed from the
-	 * raw created/destroyed, so it survives a reset untouched. */
+	/* shard sums at the last stats reset; the shards themselves are owned
+	 * by their processes and never rewound */
 	pcache_ht_totals_t      base;
 } pcache_htable_t;
 
 /* sum the per-process shards, less the reset baseline; entries is absolute */
 void pcache_ht_totals(pcache_htable_t *ht, pcache_ht_totals_t *out);
 
-/* re-baseline the cumulative counters: everything perf_stats reports as a
- * running total starts from zero again.  Live gauges (entries, buckets,
- * overflow, arena) are unaffected. */
+/* restart the cumulative counters from zero; live gauges are unaffected */
 void pcache_ht_stats_reset(pcache_htable_t *ht);
 
-/* current live bucket count (grows at runtime, CP-09) - for the CP-11
- * growth event, which reports the before/after span */
+/* current bucket count (grows at runtime) */
 unsigned int pcache_ht_nbuckets(pcache_htable_t *ht);
-/* records in the overflow leg - near zero at the target load factor, and
- * everything once a table stops growing */
+/* records in the overflow leg */
 unsigned int pcache_ht_overflow(pcache_htable_t *ht);
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 
-/* 0 = stored; -1 = error; -2 = out of memory (the arena could not allocate
- * a cell - the cache is full and the write was dropped).  @expires is
- * absolute ticks, 0 = never */
+/* 0 = stored; -1 = error; -2 = out of memory (write dropped).
+ * @expires is absolute ticks, 0 = never */
 int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires);
 
-/* as pcache_ht_store, stamping @rflags on the record (PCACHE_F_PASSIVE for
- * a value that arrived through a cluster pull).  pcache_ht_store() is this
- * with rflags 0 - a local consumer write, the authoritative kind. */
+/* as pcache_ht_store, stamping @rflags on the record */
 int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires, unsigned char rflags);
 
-/* get_buf(): @buf was too small.  *vlen stays 0 and *needed carries the
- * size the value would have needed - never a length the caller could
- * mistake for "bytes written into buf". */
+/* fetch_buf(): @buf too small, *needed holds the required size */
 #define PCACHE_E_TOOSMALL   (-3)
 
-/* Smallest buffer get_buf() will accept.  A native counter is 8 raw bytes
- * formatted as decimal on read, so anything shorter could not represent
- * every legal hit; enforced rather than assumed. */
+/* smallest buffer fetch_buf() accepts: fits any formatted counter */
 #define PCACHE_GETBUF_MIN   24
 
-/*
- * Allocation-free read into a caller-owned buffer: the value is copied
- * once, straight from the record to @buf, instead of being copied to the
- * internal scratch and then into a freshly pkg_malloc'd str.
- *
- * @buf MUST be private to the calling process (its own stack or pkg).  The
- * lock-free read path writes into it SPECULATIVELY - a retried optimistic
- * section may leave a partial value behind - so on any return other than 0
- * the contents are undefined and must not be used.  The value is not
- * NUL-terminated.
- *
- * 0 = hit, *vlen bytes written (always <= @buflen); -2 = miss or expired;
- * -1 = error or malformed request; PCACHE_E_TOOSMALL = value does not fit,
- * *needed holds the required size.  *vlen and *needed are zeroed first.
- * @needed may be NULL.
- */
-/* Existence probe: is @key present and live, how long is its value and
- * when does it expire - without copying the value anywhere.  Shares the
- * whole read path with the fetches, stopping before the copy-out, so it
- * can never disagree with a read about whether a key is there.
- *
- * Cheaper than any fetch by construction: no pkg_malloc (the ~70 ns the
- * profile attributes to the allocator), no copy, and the record's payload
- * is never touched - a miss is usually settled on the bucket's tag word
- * alone.  Intended for answering "do I have this key?" - a cross-node
- * lookup asking peers, or a script/MI existence test.
- *
- * @vlen, @expires and @is_counter are optional; @expires is absolute ticks
- * (0 = never); @is_counter reports a native counter, whose value is a
- * per-node quantity rather than a portable one.
- * @return 0 = present and live, -2 = absent or expired, -1 = bad args. */
+/* existence probe without copying the value; same read path as the
+ * fetches.  @vlen, @expires, @is_counter are optional.
+ * 0 = present and live, -2 = absent or expired, -1 = bad args */
 int pcache_ht_probe(pcache_htable_t *ht, const str *key, unsigned int *vlen,
 		unsigned int *expires, int *is_counter);
 
+/* read into a caller-owned buffer, which must be process-private: it is
+ * written speculatively, so its contents are undefined unless 0 is returned.
+ * 0 = hit, *vlen bytes written (not NUL-terminated); -2 = miss or expired;
+ * -1 = error; PCACHE_E_TOOSMALL.  @needed may be NULL */
 int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
 		unsigned int buflen, unsigned int *vlen, unsigned int *needed);
 
@@ -294,41 +197,26 @@ int pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key, char *buf,
  * -1 = error */
 int pcache_ht_fetch(pcache_htable_t *ht, const str *key, str *val);
 
-/* as pcache_ht_fetch, plus *@expires = the record's absolute expiry (0 =
- * never) on a hit - the MI perf_get reports the TTL with the value - and
- * *@rflags = the record's flags (either out pointer may be NULL) */
+/* as pcache_ht_fetch, also returning the absolute expiry and the record
+ * flags on a hit; either out pointer may be NULL */
 int pcache_ht_fetch_ex(pcache_htable_t *ht, const str *key, str *val,
 		unsigned int *expires, unsigned char *rflags);
 
 /* 1 = removed; 0 = was absent; -1 = error */
 int pcache_ht_remove(pcache_htable_t *ht, const str *key);
 
-/* re-arm an existing key's TTL without rewriting the value (MI perf_ttl):
- * one aligned store of expires under the bucket lock, the versionless bump
- * of 2.7.  @expires is absolute ticks (0 = never).  1 = re-armed, 0 = absent */
+/* re-arm an existing key's TTL without rewriting the value (no version
+ * bump).  1 = re-armed, 0 = absent */
 int pcache_ht_touch(pcache_htable_t *ht, const str *key, unsigned int expires);
 
-/* atomic counter add (CP-04): creates a native counter on an absent key,
- * accumulates fixed-width on an existing one, converts a numeric string
- * record on first touch.  0 = ok (*new_val = the result); -1 = error or
- * the existing value is not an integer.  @expires re-arms the TTL,
- * absolute ticks, 0 = never */
+/* atomic counter add; creates the counter if absent, converts a numeric
+ * string value.  0 = ok (*new_val = result); -1 = error or not an integer */
 int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 		unsigned int expires, long long *new_val);
 
-/*
- * Key/value walker: per-slot optimistic snapshots over every bucket, then
- * the overflow chains under the overflow lock.  @key/@val given to the
- * callback are stable NUL-terminated copies in walker-owned buffers,
- * valid only for the duration of the call; @expires is raw (0 = never) -
- * filtering is the callback's choice.  Return <0 from the callback to
- * stop the walk (returned through).
- *
- * Guarantees are the Redis SCAN class: an entry mutated concurrently may
- * be seen once, twice or not at all.  No lock is held across the
- * callback, in the buckets or in the overflow leg, so it may re-enter this
- * cache; a removal it makes counts as a concurrent mutation.
- */
+/* Walk every record; @key/@val are NUL-terminated copies valid during the
+ * callback, <0 from it stops the walk.  Concurrently mutated entries may be
+ * seen 0-2 times.  No lock is held across the callback. */
 typedef int (*pcache_iter_cb)(const str *key, const str *val,
 		unsigned int expires, void *ctx);
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
@@ -336,50 +224,27 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
 /* default buckets visited per perf_scan call when count is unset */
 #define PCACHE_SCAN_BUCKETS 100
 
-/* A cursor with this bit set names a position INSIDE the overflow leg: the
- * low bits are the overflow bucket to resume at.  Bucket cursors never
- * carry it (a table's buckets stay far below 2^31), so a cursor stays
- * unambiguous across a resize that grows nbuckets past an older overflow
- * cursor's value.  Callers treat cursors as opaque; this is for the ones
- * that split a table by bucket range and must know where the leg begins. */
+/* cursor bit marking a position inside the overflow leg (low bits = the
+ * overflow bucket); bucket cursors never carry it */
 #define PCACHE_CURSOR_OVF 0x80000000u
 
-/*
- * Cursored, bounded walk (MI perf_scan, Redis SCAN semantics).  Starts at
- * bucket *@cursor, visits up to @max_buckets buckets calling @cb per live
- * entry, and updates *@cursor to the bucket to resume from - 0 once the walk
- * (overflow leg included) is complete.  Pass *@cursor = 0 to begin.  The
- * ascending cursor is stable across a concurrent resize (3.4 / 5.2) and gives
- * the >=-once guarantee; it advances a whole bucket at a time.  0, or <0 on
- * error / callback stop.
- *
- * The overflow leg is walked under the same budget: once the buckets are
- * done the cursor moves into the leg (PCACHE_CURSOR_OVF | overflow bucket)
- * and each call emits about @max_buckets buckets' worth of records from it
- * - whole chains, so a call may run over by one chain - rather than the
- * whole leg in the final call, which on a table at load factor four is
- * some percent of every record it holds.
- */
+/* Bounded walk from *@cursor (0 to start) over up to @max_buckets buckets,
+ * then the overflow leg; *@cursor = where to resume, 0 when done.  Stable
+ * across a resize.  0, or <0 on error / callback stop. */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx);
 
-/* CP-11: invoked for each record the sweep reaps, after the bucket lock is
- * released and while the key is still valid, so the caller can raise an
- * expiry event.  @key points into the about-to-be-freed record; do not
- * retain it past the call. */
+/* called per reaped record after the bucket lock is released; @key is
+ * valid only during the call */
 typedef void (*pcache_expired_cb)(const str *key, void *ctx);
 
-/* expiry sweep (CP-05): visits only buckets whose hint is due, removes
- * expired records (overflow chains too whenever any overflow exists) and
- * reclaims their cells through the global pool - the sweeping process is
- * not an allocator, so private-stack frees would never drain.  If @cb is
- * non-NULL it is called once per reaped record (CP-11).  Returns the number
- * of records reclaimed. */
+/* expiry sweep over buckets whose hint is due, plus the overflow leg;
+ * cells go to the global pool.  Returns the number of records reaped */
 unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,
 		pcache_expired_cb cb, void *cb_ctx);
 
-/* linear-hash growth (CP-09): split buckets while entries/nbuckets exceeds
- * @target_lf, up to @budget splits.  Single-splitter (maintenance timer). */
+/* linear-hash growth: split up to @budget buckets while the load factor
+ * exceeds @target_lf.  Single caller only. */
 unsigned int pcache_ht_grow(pcache_htable_t *ht, unsigned int target_lf,
 		unsigned int budget);
 

@@ -42,9 +42,8 @@
 #include <poll.h>
 #include "../clusterer/api.h"
 #ifdef CLUSTERER_CTRL_SUPPORT
-/* Optional at build time: the controller offers an alternative (encrypted
- * multicast) transport for pulls, but cachedb_perf must never require it.
- * Without this flag every pull and sync rides the clusterer's bin links. */
+/* Optional: pulls may also ride the controller's transport, never required.
+ * Without it, pulls and syncs use the clusterer's BIN links. */
 #include "../clusterer_controller/api.h"
 #endif
 #include "pull_api.h"
@@ -64,21 +63,18 @@ static void mod_destroy(void);
 
 pcache_col_t *pcache_collection = NULL;
 pcache_url_t *pcache_url_list = NULL;
-/* the collection behind the engine's default (groupless) connection -
- * what cache_store("perf", ...) writes to; the glob functions default
- * to it so both views always agree */
+/* collection behind the default (groupless) connection; the glob
+ * functions default to it too */
 static pcache_col_t *pcache_default_col = NULL;
 static int arena_selftest = 0;
 static int htable_selftest = 0;
 extern int pcache_arena_hugepage_mb;
 static int expiry_sweep_period = 1;   /* seconds; 0 disables the sweep */
-/* CP-09 growth: split buckets while entries/nbuckets exceeds this; 0 = off.
- * Default 2 keeps load factor low so the 84 ns bucket shape holds at scale -
- * the whole reason this module exists (cachedb_local cannot resize). */
+/* split buckets while entries/nbuckets exceeds this; 0 = off */
 static int growth_load_factor = 2;
 static int growth_budget = 4096;      /* max splits per maintenance tick */
 
-/* ---- CP-11 observability events ---- */
+/* events */
 static str evi_expired_name  = str_init("E_CACHEDB_PERF_EXPIRED");
 static str evi_nomem_name    = str_init("E_CACHEDB_PERF_NOMEM");
 static str evi_grown_name    = str_init("E_CACHEDB_PERF_GROWN");
@@ -87,7 +83,6 @@ static event_id_t evi_expired_id  = EVI_ERROR;
 static event_id_t evi_nomem_id    = EVI_ERROR;
 static event_id_t evi_grown_id    = EVI_ERROR;
 static event_id_t evi_degraded_id = EVI_ERROR;
-/* event parameter names */
 static str evp_collection   = str_init("collection");
 static str evp_key          = str_init("key");
 static str evp_size         = str_init("size");
@@ -99,11 +94,10 @@ static str evp_tier         = str_init("tier");
 static str evp_backing      = str_init("backing");
 static str evp_requested_mb = str_init("requested_mb");
 static str evp_overcommit   = str_init("overcommit_pages");
-/* CSV of collections opted in to E_CACHEDB_PERF_EXPIRED (per-collection so a
- * high-churn collection reaping in bulk pays only if it asked to); "" = none */
+/* CSV of collections raising E_CACHEDB_PERF_EXPIRED; "" = none */
 static char *event_expired_collections = NULL;
 
-/* ---- CP-19 DB persistence ---- */
+/* DB persistence */
 static char *db_url = NULL;                    /* a db_* backend URL */
 static char *db_table = (char *)"cachedb_perf";
 /* 0 = off, 1 = load on startup, 2 = load on startup + save on shutdown */
@@ -111,7 +105,7 @@ static int db_mode = 0;
 /* CSV of the collections that auto load/save with db_mode; "" = none */
 static char *persist_collections = NULL;
 
-/* ---- CP-19 Stage 2: cluster sync (save-then-broadcast, pull-from-DB) ---- */
+/* cluster sync */
 static struct clusterer_binds clusterer_api;
 static str pcache_sync_cap = str_init("cachedb-perf-sync");
 static int sync_cluster_id = 0;        /* modparam; 0 = off */
@@ -119,94 +113,52 @@ static char *sync_shtag_str;           /* modparam "name/cluster_id"; failover s
 static str  pc_shtag;                  /* parsed tag name                    */
 static int  pc_shtag_cid;              /* parsed tag cluster                 */
 
-/* ---- CP-15.5: cross-node pull ---------------------------------------- */
-/* CP-15.5 cross-node pull, on the same capability as the sync packets */
+/* cross-node pull */
 #define PCACHE_PULL_REQ     2
 #define PCACHE_PULL_RPL     3
-/* cluster collection-size query: live per-node entry counts for one
- * collection, riding the same capability the pulls do */
+/* per-node entry counts for one collection */
 #define PCACHE_STAT_REQ     4
 #define PCACHE_STAT_RPL     5
 #define PCACHE_PULL_HELLO   6     /* "I pull at ip:port" (pcache_xport)  */
 
-/* Concurrent in-flight pulls (the "pull_slots" modparam).  64 matches the
- * blocking mode, where the UDP worker count caps concurrency anyway.  Async
- * users suspend transactions instead of workers, so hundreds can be in
- * flight at once - size this for the expected concurrent miss burst, not
- * for the worker count.  A pull that finds the pool dry is not queued, it
- * is a miss.  Every slot carries a pre-fork eventfd, so each slot costs
- * one fd in EVERY process - open_files_limit bounds this, hence the cap. */
+/* Concurrent in-flight pulls. A pull that finds the pool dry is a miss.
+ * Each slot holds a pre-fork eventfd, i.e. one fd in every process. */
 static int pull_slot_count = 64;
-/* Defaults for the pull_max_value / pull_max_key modparams below. Sized from
- * measurement rather than round numbers: the live cachedb_perf collections on
- * the billing gateways hold values of 1-20 bytes under keys of at most 33, and
- * sql_cacher's are ~70 bytes. 512/128 is roughly 25x and 4x that headroom.
- *
- * dns_cache is the deliberate exception - it serialises whole record sets and
- * runs to several KB with no real bound - which is exactly why these are
- * configurable instead of constants. A dns_cache deployment raises
- * pull_max_value and accepts a larger slot (hence fewer slots for the same
- * memory); everything above the cap already degrades through the existing
- * PCACHE_FOUND_OVERSIZE path, so the cost is "not pulled cross-node", never a
- * wrong answer. */
+/* defaults for pull_max_value / pull_max_key; larger values are reported
+ * as oversize, not pulled */
 #define PCACHE_PULL_MAX_VAL_DEF  512
 #define PCACHE_PULL_MAX_KEY_DEF  128
-/* Hard ceilings for the runtime caps below. They stay compile-time because
- * three per-call scratch buffers are stack arrays and the negative-cache slot
- * embeds a key inline - a modparam able to grow those without bound would
- * trade a queue limit for a stack overflow. */
+/* hard ceilings: some per-call scratch buffers are stack arrays */
 #define PCACHE_PULL_MAX_VAL    8192
 #define PCACHE_PULL_MAX_KEY    256
 #define PCACHE_NEG_SLOTS       256    /* direct-mapped negative cache      */
 /* how long past its deadline a woken slot is left for its caller to come
  * back and finish() before the reaper takes it away regardless */
 #define PCACHE_PULL_ABANDON_US (5 * 1000000)
-/* a peer that answered within this many seconds is treated as answering;
- * beyond it we only know it HAS answered at some point, not that it still
- * would - which is why the raw counters are reported beside the verdict */
+/* a peer that answered within this many seconds counts as answering */
 #define PCACHE_PEER_FRESH_S    300
-/* CL_MAX_NODE_ID (256) comes from pcache_xport.h */
 static char *pull_transport_str;       /* "bin" (default) | "clctr"          */
 static int   pull_max_value  = PCACHE_PULL_MAX_VAL_DEF;
 static int   pull_max_key    = PCACHE_PULL_MAX_KEY_DEF;
-/* byte offsets into a slot, computed once from the caps above - the key and
- * value buffers are no longer fixed members, so slots are sized at init */
+/* slot layout, computed at init from the caps above */
 static int   pull_slot_sz;
 static int   pull_timeout_ms = 50;     /* how long a miss waits for peers    */
-/* Optional extra bound on how late an answer may be and still be stored.
- *
- * 0 (default) = no time bound: what makes a late answer valid is that the
- * VALUE is still valid, and the value carries its own expiry.  A peer reports
- * ttl_left in RELATIVE seconds and we add it to our own clock, so nothing
- * here needs the cluster's clocks to agree.  The practical ceiling is the
- * slot's own life, PCACHE_PULL_ABANDON_US.
- *
- * Set it non-zero only where the script DELETES keys from a replicated
- * collection: store-if-absent cannot tell "never had it" from "deleted a
- * moment ago", so a peer's copy could resurrect a key the script removed.
- * A deployment that only writes and lets TTLs expire cannot hit that. */
+/* Optional bound on how late an answer may still be stored; 0 = none, the
+ * value's own TTL decides.  Set it where the script deletes keys of a
+ * replicated collection: store-if-absent could otherwise resurrect a key
+ * that was just deleted. */
 static int   pull_linger_ms = 0;
 static char *replicate_collections;    /* CSV opt-in; nothing pulls by default */
 static int   pull_ready;               /* transport up AND a collection opted in */
 
-/* CP-15.8: the pull may ride the controller's encrypted multicast plane
- * instead of the clusterer's TCP mesh.  One query becomes one packet
- * regardless of cluster size, and it is encrypted - which the BIN links
- * are not.  Everything above the transport is identical; only how a
- * request leaves and a reply comes back changes. */
+/* pulls may ride the controller's encrypted multicast plane instead of
+ * the BIN links */
 #ifdef CLUSTERER_CTRL_SUPPORT
 static clctr_api_t clctr_api;
 
-/*
- * Smaller of our own buffer and the controller's runtime payload bound.
- *
- * Asked through the bound API, never via `extern int cc_max_payload`: that is
- * defined in another dlopen'd module, so the direct reference leaves an
- * undefined symbol in this .so and the whole config fails to parse unless the
- * controller loaded first. Falls back to the buffer when the API is not bound
- * (get_max_payload NULL), which is the pre-binding state and also an older
- * controller that has no such entry point.
- */
+/* Smaller of buf_sz and the controller's payload limit.  Asked through the
+ * API, not an extern, which would leave an undefined symbol unless the
+ * controller module loaded first. */
 static inline int pcache_clctr_payload_lim(int buf_sz)
 {
 	int lim = clctr_api.get_max_payload ? clctr_api.get_max_payload() : buf_sz;
@@ -234,44 +186,27 @@ static int  pull_via_xport;
  * @found: 0 = not here, 1 = value follows, 2 = held but too big to send. */
 #define PCACHE_CLCTR_REQ  1
 #define PCACHE_CLCTR_RPL  2
-/* fixed bytes of each framing, so the size checks and the budget the serve
- * path hands out cannot drift from what the writers actually emit */
 #define PCACHE_CLCTR_REQ_HDR  8    /* type + id + collen + klen           */
 #define PCACHE_CLCTR_RPL_HDR  14   /* type + id + found + ttl + klen+vlen */
 #define PCACHE_FOUND_NO       0
 #define PCACHE_FOUND_YES      1
 #define PCACHE_FOUND_OVERSIZE 2
-/* "I hold a copy, but not the authoritative one - ask the writer."  Sent
- * instead of the value for PCACHE_F_PASSIVE records when
- * pull_authoritative_serve is on, so a converged cluster answers each pull
- * with ONE value instead of one per holder.  Not a negative (the key
- * exists) and not a value; when every peer has spoken and the best on
- * offer is held copies, the requester re-asks one holder with the force
- * flag and gets the bytes. */
+/* "I hold a passive copy, ask the writer" (pull_authoritative_serve) */
 #define PCACHE_FOUND_HELD     3
 
-/* One in-flight pull.  The request is issued by whichever process took the
- * miss, but the replies land in whichever process the transport delivers
- * them to - so the rendezvous has to live in shm, keyed by request id.
- * (Today the requester polls this slot; the async work of CP-15.9 replaces
- * the poll with an eventfd it registers here, and nothing else changes.) */
+/* One in-flight pull.  Replies land in whichever process the transport
+ * picks, so the rendezvous lives in shm, keyed by request id. */
 struct pcache_pull_slot {
 	unsigned int id;                 /* 0 = free                          */
 	int          efd;                /* readable once an answer landed    */
-	/* absolute us, like the negative cache: a pull that never gets a
-	 * conclusive answer has to be reclaimed on time, and second-grained
-	 * ticks would hold a SIP transaction up to a second past a timeout
-	 * the operator set in milliseconds */
+	/* absolute us, so a timeout given in ms is honoured */
 	utime_t      deadline;
-	/* the reaper woke this slot; do not keep re-arming the eventfd on
-	 * every tick while the consumer works its way back to finish() */
+	/* the reaper already woke this slot; do not re-arm the eventfd */
 	int          reaped;
 	unsigned int gen;                /* membership generation at dispatch */
 	int          expect;             /* peers we asked                    */
 	int          negative;           /* peers that answered "not here"    */
-	/* which nodes have answered, so a repeated reply cannot be counted
-	 * twice - two negatives from one node would otherwise reach @expect
-	 * and manufacture a "nobody has it" that nobody said */
+	/* nodes that answered, so a repeated reply is not counted twice */
 	unsigned char answered[(CL_MAX_NODE_ID + 7) / 8];
 	int          done;               /* 1 = a value landed                */
 	int          oversize;           /* a peer HAS it but could not send  */
@@ -279,23 +214,16 @@ struct pcache_pull_slot {
 	int          held_node;          /* first of them - the re-ask target */
 	int          hinted;             /* asked one node, not the cluster   */
 	int          partial;            /* more peers than the snapshot held */
-	/* The waiter left without a value and handed this slot to the protocol
-	 * rather than the pool: an answer may still be in flight, and the slot
-	 * holds the only record of which collection and key it belongs to (the
-	 * reply carries neither).  A late answer that lands here is stored by
-	 * pcache_pull_do_reply() instead of being dropped.  Reclaimed by the
-	 * reaper at deadline + PCACHE_PULL_ABANDON_US, or stolen sooner if the
-	 * pool runs dry. */
+	/* The waiter left without a value; the slot is kept so a late answer can
+	 * still be stored (the reply carries neither collection nor key).
+	 * Reclaimed by the reaper, or stolen when the pool runs dry. */
 	int          orphan;
 	unsigned int expires;            /* ABSOLUTE, as the owner holds it   */
 	unsigned int vlen;
 	int          klen;
 	char         col[64];
 	int          collen;
-	/* key[pull_max_key] then val[pull_max_value] follow this header; reach
-	 * them with pull_slot_key()/pull_slot_val(). Kept as a trailing blob
-	 * rather than two fixed arrays so the caps can be configured without
-	 * every slot paying for the largest value anyone might ever store. */
+	/* key[pull_max_key] then val[pull_max_value]; see pull_slot_key/val() */
 	char         buf[];
 };
 
@@ -307,36 +235,19 @@ static struct pcache_pull_slot *pull_slots;
 static gen_lock_t *pull_lock;
 static unsigned int *pull_next_id;     /* shm: ids must be unique per node  */
 
-/* pull counters, deliberately separate from hits/misses so a pulled key
- * cannot flatter the local hit rate (R6) */
-/* Pull counters.  In shm and bumped from several processes - the request
- * side runs in whichever worker took the miss, the reply and serve sides in
- * whichever one the transport picked - so the increments are atomic.  A
- * plain ++ would drop counts under exactly the load worth measuring.  This
- * is one shared line, which the module forbids on the hot path (CP-06); a
- * cross-node miss is not the hot path. */
+/* Pull counters, kept apart from hits/misses.  Shared shm bumped from
+ * several processes, hence atomic; a cross-node miss is not the hot path. */
 static unsigned int *pull_stats;       /* PULL_ST_* counters */
-/* Rate-limit state for the send-failure warning (pull_send_failed()).  In shm
- * rather than a plain static because a pull reply goes out from whichever
- * worker happened to receive the request: a per-process limiter would let all
- * ~30 SIP workers warn once per interval each. */
+/* send-failure warning rate limit; in shm because replies go out from any
+ * worker */
 static struct pcache_send_warn {
 	unsigned int last;        /* get_ticks() when we last warned */
 	unsigned int suppressed;  /* failures folded into the next warning */
 } *pull_send_warn, *pull_xcluster_warn;
 
-/* Negative cache (R4).  A key that is genuinely nowhere costs a full
- * round of questions, and SIP retransmits ask again a few hundred
- * milliseconds later - so remember "nobody had it" just long enough to
- * absorb the retransmit, and no longer: the key may legitimately be
- * created on another node a second from now, and a negative that outlives
- * that turns a transient miss into a hard failure.
- *
- * Kept out of the cache proper, deliberately: a negative is not a value.
- * Putting it in the table would make perf_keys and perf_dump show keys
- * that do not exist and would count in the entry total.  Direct-mapped,
- * so a fresh negative may evict an older one - losing one only costs a
- * repeated question. */
+/* Negative cache: remember "nobody had it" just long enough to absorb SIP
+ * retransmits.  Kept out of the table, as a negative is not a value.
+ * Direct-mapped; losing a slot only costs a repeated ask. */
 struct pcache_neg_slot {
 	unsigned int hash;               /* 0 = free                        */
 	utime_t      deadline;           /* absolute us                     */
@@ -348,12 +259,8 @@ static struct pcache_neg_slot *neg_slots;
 static gen_lock_t *neg_lock;
 static int pull_negative_ms = 300;     /* modparam; 0 = no negative cache  */
 static int pull_on_miss;               /* modparam; read repair on the get path */
-/* modparam: passive (pulled-in) copies answer pull requests with a compact
- * "held" instead of the value, so only the node that WROTE a key ships its
- * bytes.  Off by default: a peer that does not know the HELD code treats it
- * as silence and degrades to a timeout when no authoritative holder is
- * left, so enable this only once the whole cluster runs a build that has
- * it. */
+/* passive (pulled-in) copies answer "held" instead of the value, so only
+ * the writer ships bytes.  Enable only once every node understands it. */
 static int pull_authoritative_serve;
 #define PULL_ST_REQUESTED 0
 #define PULL_ST_SERVED    1
@@ -361,16 +268,13 @@ static int pull_authoritative_serve;
 #define PULL_ST_TIMEOUT   3
 #define PULL_ST_STORED    4
 #define PULL_ST_SUPPRESSED 5   /* asks a cached negative absorbed */
-/* slots the reaper had to release because the caller never collected them -
- * distinct from a timeout, which the caller DID collect */
+/* slots the reaper released because the caller never collected them */
 #define PULL_ST_ABANDONED 6
-/* A pull datagram the transport refused to send.  Distinct from a TIMEOUT:
- * the request never left this node, so no peer was ever given the chance to
- * answer it. */
+/* the transport refused to send a pull datagram */
 #define PULL_ST_SEND_FAIL 7
 /* a waiter left without a value and the slot was kept for a late answer */
 #define PULL_ST_ORPHANED  8
-/* that late answer arrived and was stored - convergence the old code lost */
+/* that late answer arrived and was stored */
 #define PULL_ST_LATE_STORED 9
 /* an orphan's slot was reclaimed early because the pool ran dry */
 #define PULL_ST_ORPHAN_EVICTED 10
@@ -378,78 +282,35 @@ static int pull_authoritative_serve;
 #define PULL_ST_LATE_SUPERSEDED 11
 /* a late answer landed after pull_linger_ms and was refused as too stale */
 #define PULL_ST_LATE_EXPIRED 12
-/* an orphan reached the end of its life with no late answer - the ordinary
- * outcome of a timeout, and explicitly NOT an abandoned slot: its caller DID
- * collect it, which is the distinction PULL_ST_ABANDONED exists to make */
+/* an orphan expired with no late answer (normal after a timeout) */
 #define PULL_ST_ORPHAN_EXPIRED 13
-/* a pull message arrived on a controller cluster this module does not sync on
- * and was refused. Non-zero means either a genuine multi-cluster node doing
- * the right thing, or sync_cluster_id naming a cluster the controller does not
- * manage - the accompanying warning tells the two apart. */
+/* pull message on a controller cluster we do not sync on, refused */
 #define PULL_ST_FOREIGN_CLUSTER 14
-/* A peer answered "I do not have it".  Counted per REPLY, so on a cluster
- * larger than two a single request can raise this more than once - the
- * requested/answered identity below is exact only for a 2-node cluster.
- * Distinct from PULL_ST_SUPPRESSED, which counts the SECOND and later asks
- * absorbed by an already-cached negative (pull_negative_ms): without this
- * counter the FIRST negative was invisible, and
- * `pulls_requested - pulls_received` could not be explained from statistics
- * at all - "the peer genuinely did not have it" looked identical to "the
- * request was swallowed". */
+/* a peer answered "not here"; counted per reply */
 #define PULL_ST_NEGATIVE  15
-/* A peer HAS the key but it is too big for the cluster transport.  Also not a
- * value and also not an absence, so it needs its own counter for the same
- * reason. */
+/* a peer has the key but it is too big to send */
 #define PULL_ST_OVERSIZE  16
-/* A miss that reached the pull gate and was refused before any request left
- * this node.  Without these, `misses` and `pulls_requested` could not be
- * reconciled at all: on a live gateway ~986 misses a minute were counted by the
- * cache and then vanished, which made it impossible to answer the only question
- * that matters about pull_on_miss - is it doing anything for this collection?
- *
- * The reasons are kept apart because they call for completely different
- * actions: NOTREPLICATED is a configuration statement (this collection was
- * never meant to pull), NOPEERS means the cluster is not formed, NOSLOT means
- * demand is outrunning the slot table, and TOOLONG means the key can never be
- * asked for at all. Rolled into one counter they would be indistinguishable,
- * which is how the original hole came to be.
- *
- * Together with PULL_ST_SUPPRESSED these close the miss side the way
- * PULL_ST_NEGATIVE closed the reply side:
- *   misses == requested + suppressed + skipped(all four)  */
+/* misses refused before any request left this node, by reason;
+ *   misses == requested + suppressed + skipped(all four) */
 #define PULL_ST_SKIP_NOTREPLICATED 17  /* pull off for this collection      */
 #define PULL_ST_SKIP_TOOLONG       18  /* key/collection name cannot be asked */
 #define PULL_ST_SKIP_NOPEERS       19  /* no live cluster member to ask     */
 #define PULL_ST_SKIP_NOSLOT        20  /* slot table full, nothing evictable */
-/* a peer answered "held": it has a passive copy and is deferring to the
- * authoritative holder (pull_authoritative_serve) */
+/* a peer answered "held" (pull_authoritative_serve) */
 #define PULL_ST_HELD               21
 /* serve side of the same: we withheld a passive copy behind a HELD reply */
 #define PULL_ST_SERVED_HELD        22
-/* every peer answered but only held copies were on offer - the follow-up
- * targeted ask that carries the force flag */
+/* follow-up ask with the force flag when only held copies were offered */
 #define PULL_ST_FORCED             23
 #define PULL_ST_MAX       24
-/* Two different readinesses, deliberately kept apart:
- *   cluster_ready - the clusterer is bound, the capability is registered and
- *                   membership is being tracked.  Everything cross-node needs
- *                   this and nothing more.
- *   sync_ready    - that, plus a DB to snapshot through.  Only perf_sync and
- *                   the failover hook need it, because only they use the DB.
- * Conflating them made a cache that only ever pulls demand a database it
- * never touches. */
+/* cluster_ready: clusterer bound, capability registered, membership tracked.
+ * sync_ready: that plus a DB; only perf_sync and failover need it. */
 static int cluster_ready = 0;
 static int sync_ready = 0;             /* cluster_ready + a usable db_url */
 
-/* Cluster membership view (CP-15.4).  The clusterer node list changes at
- * runtime (under clusterer_controller, on every join/leave/eviction), so
- * anything that fans work out to peers must snapshot the member set and
- * notice when it changed mid-flight.  The event callback below maintains
- * this shm view; `generation` is the load-bearing field - a future
- * cross-node pull snapshots it together with its responder set and
- * re-checks it on completion, because an absence conclusion drawn across
- * a membership change is unsafe.  Counters are monitoring-grade: plain
- * stores + atomic bumps, no lock (events are rare and single-field). */
+/* Membership view, maintained by the node event callback.  A pull snapshots
+ * generation with its peer set and re-checks it on completion: an absence
+ * concluded across a membership change is unsafe.  Lock-free atomics. */
 struct pcache_cluster_view {
 	unsigned int generation;     /* bumped on every UP/DOWN            */
 	unsigned int node_ups;       /* lifetime UP events                 */
@@ -460,12 +321,8 @@ struct pcache_cluster_view {
 };
 static struct pcache_cluster_view *pc_view;
 
-/* What each peer has actually done for us, as opposed to what the clusterer
- * says about it.  The two can disagree in the way that matters most: the
- * membership can read perfectly healthy while the transport carrying pulls
- * is dropping every packet, and a bare peer COUNT cannot show that.  Keyed
- * by node id (1..CL_MAX_NODE_ID); monitoring-grade, so atomic bumps and no
- * lock. */
+/* Per-peer pull activity, keyed by node id: membership can look healthy
+ * while the transport drops every packet.  Atomic bumps, no lock. */
 struct pcache_peer_stat {
 	unsigned int replies;        /* answers of any kind received from it */
 	unsigned int values;         /* of those, ones that carried a value  */
@@ -474,10 +331,8 @@ struct pcache_peer_stat {
 };
 static struct pcache_peer_stat *peer_stats;   /* [CL_MAX_NODE_ID + 1] */
 
-/* one outstanding cluster-size query at a time (an ops path): the MI
- * process broadcasts, replies land in whichever workers the transport
- * picks, and the MI process polls this shm gather until everyone
- * answered or the wait runs out */
+/* one outstanding cluster-size query at a time; replies land in any
+ * worker and the MI process polls this shm gather */
 #define PCACHE_STAT_MAX_NODES 32
 #define PCACHE_STAT_WAIT_MS   300
 struct pcache_stat_gather {
@@ -533,17 +388,10 @@ static void pcache_cluster_event(enum clusterer_event ev, int node_id)
 		pc_view->generation);
 }
 
-/* Snapshot the live peer set (the clusterer list holds peers only, not
- * this node) plus the membership generation it was taken under.  A caller
- * that fans work out to these peers re-reads the generation afterwards:
- * a change means the set went stale mid-flight.  Returns the number of
- * ids written, or -1 when cluster sync is not active.
- *
- * @truncated, when given, says the cluster held more peers than fitted.
- * A caller that concludes something from the whole set answering - the
- * pull deciding a key is absent - must not draw that conclusion from a
- * partial set, because the peers it never counted are exactly the ones
- * that might have had it. */
+/* Snapshot the live peers and the membership generation; returns the
+ * number of ids written, or -1 when cluster sync is off.  @truncated is set
+ * when more peers existed than fitted: an absence must not be concluded
+ * from a partial set. */
 static int pcache_cluster_members(int *ids, int max, unsigned int *gen,
 		int *truncated)
 {
@@ -576,10 +424,9 @@ static str evi_synced_name = str_init("E_CACHEDB_PERF_SYNCED");
 static event_id_t evi_synced_id = EVI_ERROR;
 static str evp_source_node = str_init("source_node");
 static void pcache_raise_synced(str *coll, int src_node);
-/* huge pages requested but the granted tier is sub-optimal; raised once from
- * the first maintenance tick, since EVI has no subscribers yet at mod_init.
- * The one-shot gate is in shm with an atomic test-and-set, so exactly one
- * process raises it however many run the timer */
+/* huge pages requested but a sub-optimal tier granted; raised once (shm
+ * test-and-set) from the first maintenance tick, as EVI has no subscribers
+ * at mod_init */
 static int mem_degraded = 0;
 static int *mem_degraded_gate = NULL;
 
@@ -593,8 +440,7 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 static int w_perf_sync(struct sip_msg *msg, str *col_s);
 static int fixup_check_wvar(void **param);
 
-/* introspection MI (CP-18) - defined just above the mi_cmds table; these
- * forward decls let that table sit before the glob/collection helpers */
+/* forward declarations for the MI commands */
 static pcache_col_t *col_by_name(const str *name);
 static mi_response_t *mi_perf_cluster_probe_0(const mi_params_t *params,
 		struct mi_handler *async);
@@ -678,11 +524,8 @@ static const param_export_t params[] = {
 	{0,0,0}
 };
 
-/*
- * CP-06 statistics: everything is STAT_IS_FUNC - sums of the per-process
- * shards computed at read time.  No shared counter is ever touched on the
- * hot path (DESIGN 2.5 hard rule).
- */
+/* Statistics are STAT_IS_FUNC: per-process shards summed at read time, so
+ * the hot path never touches a shared counter. */
 enum pcache_stat_field {
 	PSF_HITS, PSF_MISSES, PSF_STORES, PSF_REMOVES, PSF_ENTRIES,
 	PSF_RETRIES, PSF_FALLBACKS, PSF_EXPIRED, PSF_DESTROYED,
@@ -730,19 +573,7 @@ PSTATF(smf_retries, PSF_RETRIES)
 PSTATF(smf_fallbacks, PSF_FALLBACKS)
 PSTATF(smf_stores_immortal, PSF_STORES_IMMORTAL)
 
-/*
- * Cross-node pull statistics.
- *
- * These mirror what perf_stats already reports, but as module statistics so
- * Prometheus scrapes them - without that, the only evidence a dashboard has
- * that read repair is working is the entry count rising, which shows the
- * RESULT and not the mechanism: a node whose every pull times out looks
- * exactly like one that simply has no misses.
- *
- * pull_stats[] is shm and only exists once the pull layer came up, so every
- * accessor tolerates it being NULL (pull disabled, or a config that never
- * reached that far).
- */
+/* cross-node pull statistics; pull_stats is NULL when pull is disabled */
 static unsigned long pull_stat(int which)
 {
 	return pull_stats ? (unsigned long)pull_stats[which] : 0;
@@ -751,23 +582,9 @@ static unsigned long pull_stat(int which)
 #define PULLSTATF(_fn, _which) \
 	static unsigned long _fn(void *ctx) { return pull_stat(_which); }
 
-/* Complain about a pull datagram that never left, at most once every
- * PCACHE_PULL_SEND_WARN_IVL seconds.
- *
- * This used to be LM_DBG, which made it unreachable on every deployed node:
- * log_level 3 is INFO and L_DBG is 4.  That is the wrong level for it - a send
- * that fails is invisible at the far end, so the requester simply times out,
- * and this line is the only direct evidence of why.  It is the actual cause
- * behind a class of "cross-node pull is slow / does not converge" reports.
- *
- * It cannot be an unconditional LM_WARN either: a partitioned or overloaded
- * peer fails every send, and an unbounded warn is its own incident.  So warn
- * on the first failure, then at most once per interval, carrying the count it
- * stands for.  The exact total is always available as pulls_send_failed.
- *
- * Two workers can pass the interval check at once and both warn.  That is
- * deliberate - it costs an occasional duplicate line and saves taking a lock
- * on a failure path. */
+/* Warn about an unsent pull datagram on the first failure, then at most
+ * once per interval with the suppressed count.  Two workers may both warn,
+ * which is cheaper than a lock. */
 #define PCACHE_PULL_SEND_WARN_IVL 30
 
 static void pull_send_failed(const char *what, int dst_node)
@@ -828,10 +645,7 @@ PULLSTATF(smf_pulls_held,       PULL_ST_HELD)
 PULLSTATF(smf_pulls_served_held, PULL_ST_SERVED_HELD)
 PULLSTATF(smf_pulls_forced,     PULL_ST_FORCED)
 
-/* A GAUGE, unlike every other pull stat: it should read 0 whenever nothing is
- * being asked.  Anything parked here means slots are taken and not released,
- * which ends as "all pull slots busy" and silent loss of read repair - so it
- * is worth alerting on, where the counters are only worth graphing. */
+/* a gauge: should read 0 when idle; stuck non-zero means leaked slots */
 static unsigned long smf_pulls_in_flight(void *ctx)
 {
 	unsigned long busy = 0;
@@ -841,31 +655,16 @@ static unsigned long smf_pulls_in_flight(void *ctx)
 		return 0;
 	lock_get(pull_lock);
 	for (k = 0; k < pull_slot_count; k++)
-		/* an orphan is not a pull in flight - nobody is waiting on it.
-		 * This gauge is documented as the one that should sit at 0, so
-		 * counting orphans would fire the leak alarm on the ordinary
-		 * outcome of a timeout. */
+		/* orphans have no waiter, so they are not in flight */
 		if (pull_slot_at(k)->id && !pull_slot_at(k)->orphan)
 			busy++;
 	lock_release(pull_lock);
 	return busy;
 }
 
-/* Per-collection convergence, registered dynamically in mod_init (one pair per
- * declared collection) because the module-wide names above cannot say WHICH
- * collection is converging - and with a fetch-only collection like rtpdebug in
- * the mix, the aggregate is actively misleading.  @ctx is the collection. */
-/*
- * "<collection>_<stat>" in shm, for a dynamically registered statistic.
- *
- * NOT build_stat_name(): that joins with a HYPHEN, which is fine for the
- * per-process pkmem statistics because those are STAT_HIDDEN and only their
- * group name is ever exported - but these are meant to be read individually,
- * and the prometheus module concatenates a statistic name verbatim with no
- * sanitising.  A hyphen is not legal in a Prometheus metric name, so
- * "default-pulled_from_cluster" would have produced a metric that breaks the
- * scrape rather than one that merely looks odd.
- */
+/* per-collection convergence, registered in mod_init; @ctx is the collection */
+/* "<collection>_<stat>" in shm.  Not build_stat_name(): its hyphen is not
+ * legal in a Prometheus metric name. */
 static char *pcache_stat_name(pcache_col_t *col, const char *what)
 {
 	int n = col->col_name.len + 1 + strlen(what) + 1;
@@ -907,21 +706,15 @@ static unsigned long smf_arena_chunks(void *ctx)
 
 static unsigned long smf_mem_tier_probe(void *ctx)
 {
-	/* what this host is CAPABLE of - not necessarily what is in use,
-	 * see smf_mem_tier_active() for that */
+	/* what this host supports; see smf_mem_tier_active() for what is in use */
 	return pcache_mem.tier;
 }
 
 static unsigned long smf_mem_tier_active(void *ctx)
 {
-	/* the tier ACTUALLY backing the dedicated arena_hugepage_mb
-	 * reservation right now; reads as PCACHE_MEM_NO_ARENA (99) whenever
-	 * arena_hugepage_mb is unset/0 or its reservation failed - which is
-	 * also exactly when every cachedb_perf allocation is really going
-	 * through shm_malloc(), so the true page backing is the CORE
-	 * allocator's and is NOT measured here.  It used to read 4 (plain 4K),
-	 * which was misread live as "the cache is on small pages" while it sat
-	 * on HG_MALLOC's 2M hugepages.  See smf_hugepage_arena_active(). */
+	/* the tier backing the dedicated arena_hugepage_mb reservation; reads
+	 * PCACHE_MEM_NO_ARENA when there is none and allocations go through
+	 * shm_malloc() (whose backing is not tracked here) */
 	return pcache_arena_tier();
 }
 
@@ -974,18 +767,13 @@ static const stat_export_t mod_stats[] = {
 	{"lock_fallbacks",  STAT_IS_FUNC, (stat_var **)smf_fallbacks},
 	{"arena_bytes",     STAT_IS_FUNC, (stat_var **)smf_arena_bytes},
 	{"arena_chunks",    STAT_IS_FUNC, (stat_var **)smf_arena_chunks},
-	/* memory_tier renamed to memory_tier_probe (2026-08-07) - the old
-	 * name was mistaken for "what's in use" live during a real
-	 * diagnosis session; not shipped/stable API yet (module unmerged),
-	 * so a rename is safe. See smf_mem_tier_probe()'s comment. */
 	{"memory_tier_probe",  STAT_IS_FUNC, (stat_var **)smf_mem_tier_probe},
 	{"memory_tier_active", STAT_IS_FUNC, (stat_var **)smf_mem_tier_active},
 	{"hugepage_arena_active",      STAT_IS_FUNC, (stat_var **)smf_hugepage_arena_active},
 	{"hugepage_arena_total_bytes", STAT_IS_FUNC, (stat_var **)smf_hugepage_arena_total_bytes},
 	{"hugepage_arena_used_bytes",  STAT_IS_FUNC, (stat_var **)smf_hugepage_arena_used_bytes},
 	{"hugepage_arena_free_bytes",  STAT_IS_FUNC, (stat_var **)smf_hugepage_arena_free_bytes},
-	/* cross-node pull (CP-15).  Module-wide; the per-collection split is
-	 * registered dynamically in mod_init - see smf_col_pulled_in(). */
+	/* cross-node pull; per-collection stats are registered in mod_init */
 	{"pulls_requested",  STAT_IS_FUNC, (stat_var **)smf_pulls_requested},
 	{"pulls_served",     STAT_IS_FUNC, (stat_var **)smf_pulls_served},
 	{"pulls_received",   STAT_IS_FUNC, (stat_var **)smf_pulls_received},
@@ -1023,7 +811,7 @@ static const stat_export_t mod_stats[] = {
 	{0,0,0}
 };
 
-/* the perf_stats MI (5.2): per-collection detail the flat stats cannot carry */
+/* perf_stats: per-collection detail the flat stats cannot carry */
 static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 {
 	pcache_htable_t *ht = col->htable;
@@ -1057,35 +845,10 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	n = snprintf(buf, sizeof buf, "%.1f", rate);
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_pct"), buf, n) < 0)
 		return -1;
-	/*
-	 * Two derived figures, both plain facts about what this collection did.
-	 * Deliberately NOT a "target" or an achievable maximum.
-	 *
-	 * cachedb_perf is a GENERIC backend: any module can open a collection,
-	 * and each brings its own access pattern and its own per-store TTLs.
-	 * Two things follow, and they are why this reports rather than grades:
-	 *
-	 *  - a store does not imply a preceding miss. topology_hiding's
-	 *    th_store, for one, writes its state without ever looking it up
-	 *    first, so a "one unavoidable miss per new key" ceiling would be
-	 *    wrong for that consumer while being right for a read-through one.
-	 *    We cannot see which we are serving.
-	 *  - there is no module-wide TTL to quote. The expiry is an argument of
-	 *    each set(), so two collections - or two callers of one collection -
-	 *    can hold state for wildly different times. Naming any single TTL
-	 *    here, or a consumer's modparam, would be a guess.
-	 *
-	 * So report what happened. reads_per_store is how many times an average
-	 * stored key was read back; the expired share is how much of what was
-	 * stored has since aged out. Whether that share is benign depends on the
-	 * consumer, so the note says which removal paths have actually been
-	 * USED rather than assuming expiry is the only one - and it never
-	 * promises that anything WILL expire, since a 0 expiry means never.
-	 */
+	/* reads_per_store and the expired share are reported, not graded: a
+	 * store need not follow a miss, and the TTL is chosen per set() call */
 	per_store = t.stores ? (double)t.hits / t.stores : 0.0;
-	/* Measure expiry against the stores that could ever expire.  A store
-	 * with no expiry never can, so counting it in the denominator only
-	 * dilutes the figure on a collection that mixes the two. */
+	/* stores without expiry can never expire; keep them out of the ratio */
 	expirable = t.stores - t.stores_immortal;
 	exp_share = expirable ? 100.0 * t.expired / expirable : 0.0;
 	n = snprintf(rbuf, sizeof rbuf, "%.2f", per_store);
@@ -1095,40 +858,26 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	if (add_mi_string(cobj, MI_SSTR("expired_pct_of_expirable"), ebuf, n) < 0)
 		return -1;
 
-	/* The counters are cumulative since startup (or the last
-	 * perf_stats_reset), so these are lifetime averages. */
+	/* counters are cumulative since startup or the last perf_stats_reset */
 	if (!reads)
 		note = "no lookups yet";
 	else if (!t.stores)
-		/* Every read has been a miss, but nothing has ever been stored
-		 * either - there is no state to have been "lost" or "expired",
-		 * this collection has simply never been written to (e.g. it
-		 * loaded 0 entries from persistence at startup). A low rate
-		 * here points at nothing reaching this collection at all, not
-		 * at eviction/TTL tuning. */
+		/* nothing was ever stored, so nothing was lost or expired */
 		note = "no state has ever been stored in this collection - a miss "
 		       "here is not loss or expiry, check whether writes reach "
 		       "this collection and whether persistence loaded any rows";
 	else if (!t.expired && !expirable) {
-		/* Every store was immortal, so nothing here CAN expire.  No
-		 * "yet" - waiting will not change this one. */
 		n = snprintf(nbuf, sizeof nbuf,
 			"%.2f reads per stored key; every store was made without an "
 			"expiry, so nothing here can expire - entries leave only by an "
 			"explicit remove", per_store);
 		note = nbuf;
 	} else if (!t.expired) {
-		/* Some stores were expirable and none has aged out. Now that the
-		 * immortal count exists this really is a "not yet", so it can be
-		 * said - it is no longer indistinguishable from immortality. */
 		n = snprintf(nbuf, sizeof nbuf,
 			"%.2f reads per stored key; none of the %lu expirable stores "
 			"has reached its TTL yet", per_store, expirable);
 		note = nbuf;
 	} else if (!t.removes) {
-		/* Report the observed history, not a property: no explicit remove
-		 * has happened SO FAR, which is not the same as this collection
-		 * being incapable of one. */
 		n = snprintf(nbuf, sizeof nbuf,
 			"%.2f reads per stored key; %.1f%% of the %lu expirable stores "
 			"have since expired, and nothing has been removed explicitly "
@@ -1144,10 +893,8 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	if (add_mi_string(cobj, MI_SSTR("hit_rate_note"), note, strlen(note)) < 0)
 		return -1;
 
-	/* Cluster sync is on-demand, so report WHEN this node last pushed or
-	 * pulled rather than implying the caches match.  -1 = never.  Note the
-	 * clusterer's own "Ok" for the cachedb-perf-sync capability only means
-	 * it is registered and enabled - it says nothing about convergence. */
+	/* sync is on demand, so report when this node last pushed or pulled;
+	 * -1 = never */
 	if (sync_cluster_id > 0) {
 		if (add_mi_number(cobj, MI_SSTR("pulled_from_cluster"),
 		        col->pulled_in) < 0 ||
@@ -1208,10 +955,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 		return init_mi_error(404, MI_SSTR("no such collection"));
 	}
 
-	/* "arena": total cachedb_perf usage regardless of which backing
-	 * actually served it (dedicated reservation OR the shm_malloc
-	 * fallback) - NOT specific to the dedicated arena_hugepage_mb
-	 * reservation, see "hugepage_reservation" below for that. */
+	/* total cachedb_perf usage, whichever backing served it; see
+	 * "hugepage_reservation" for the dedicated reservation */
 	aobj = add_mi_object(obj, MI_SSTR("arena"));
 	if (!aobj)
 		goto err;
@@ -1224,13 +969,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 	    pcache_arena_mi(aobj) < 0)
 		goto err;
 
-	/* _probe = what this host is CAPABLE of (startup capability check,
-	 * see pcache_mem_probe()) - NOT proof anything is actually reserved.
-	 * _active = the tier ACTUALLY backing the dedicated reservation
-	 * right now; reads PCACHE_MEM_4K/"4K" whenever arena_hugepage_mb is
-	 * unset/0 or its reservation failed, which is also exactly when
-	 * every cachedb_perf allocation is really going through plain
-	 * shm_malloc() - counted in core's own shmem: stats, not here. */
+	/* _probe = what the host supports; _active = what backs the dedicated
+	 * reservation now (4K when there is none) */
 	tier_probe = pcache_mem_tier_str(pcache_mem.tier);
 	tier_active = pcache_mem_tier_str(pcache_arena_tier());
 	if (add_mi_number(obj, MI_SSTR("memory_tier_probe"), pcache_mem.tier) < 0 ||
@@ -1241,13 +981,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 	        (char *)tier_active, strlen(tier_active)) < 0)
 		goto err;
 
-	/* "hugepage_reservation": the DEDICATED arena_hugepage_mb reservation
-	 * specifically - deliberately its OWN object, never folded into
-	 * "arena" above or into core's shmem: stats, so a human or dashboard
-	 * can never double-count or misattribute. "active" MUST be checked
-	 * before trusting the byte counts - all three read 0 whenever no
-	 * dedicated reservation exists, which is NOT the same thing as "a
-	 * reservation exists and is currently empty". */
+	/* the dedicated reservation only; check "active" before trusting the
+	 * byte counts, which read 0 when no reservation exists */
 	hobj = add_mi_object(obj, MI_SSTR("hugepage_reservation"));
 	if (!hobj)
 		goto err;
@@ -1258,9 +993,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 	    add_mi_number(hobj, MI_SSTR("free_bytes"), hp_free) < 0)
 		goto err;
 
-	/* Cluster membership, when sync is active.  peers_up counts the OTHER
-	 * nodes the clusterer can currently reach; the generation ticks on
-	 * every membership change, so two equal reads bracket a quiet period. */
+	/* peers_up counts the other reachable nodes; generation ticks on every
+	 * membership change */
 	if (cluster_ready && pc_view) {
 		mi_item_t *clobj = add_mi_object(obj, MI_SSTR("cluster"));
 		int ids[CL_MAX_NODE_ID], nup;
@@ -1270,7 +1004,7 @@ static mi_response_t *mi_perf_stats(str *col_s)
 			goto err;
 		nup = pcache_cluster_members(ids, CL_MAX_NODE_ID, &gen, NULL);
 		if (add_mi_number(clobj, MI_SSTR("cluster_id"), sync_cluster_id) < 0 ||
-		    /* which of the peers below is us - the list holds peers only */
+		    /* the peer list below does not include us */
 		    add_mi_number(clobj, MI_SSTR("my_node_id"),
 		        clusterer_api.get_my_id ? clusterer_api.get_my_id() : 0) < 0 ||
 		    add_mi_number(clobj, MI_SSTR("peers_up"), nup < 0 ? 0 : nup) < 0 ||
@@ -1339,10 +1073,7 @@ static mi_response_t *mi_perf_stats(str *col_s)
 			     add_mi_number(clobj, MI_SSTR("xport_tcp_errors"), xs[6]) < 0))
 				goto err;
 		}
-		/* in-flight requests: a gauge, not a counter.  It should sit at 0
-		 * when nothing is being asked; anything else parked there means
-		 * slots are being taken and not released, which ends as "all pull
-		 * slots busy" and silent loss of read repair. */
+		/* a gauge: should sit at 0 when idle */
 		if (pull_ready && pull_slots) {
 			int busy = 0, k;
 
@@ -1357,14 +1088,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 				goto err;
 		}
 
-		/* Who the peers are, and whether they are actually answering US.
-		 * A peer count alone cannot tell a healthy cluster apart from one
-		 * whose membership is fine while the transport carrying pulls is
-		 * black-holing every packet - the two look identical until you
-		 * see that no peer has ever replied.  So each peer is listed with
-		 * both views side by side: `membership` is what the clusterer
-		 * believes, `replies`/`last_reply_ago` are what this node has
-		 * actually received from it. */
+		/* per peer, the clusterer's view (membership) beside what this node
+		 * actually received from it (replies, last_reply_ago) */
 		{
 			mi_item_t *parr = add_mi_array(clobj, MI_SSTR("topology"));
 			clusterer_node_t *list, *n;
@@ -1375,9 +1100,7 @@ static mi_response_t *mi_perf_stats(str *col_s)
 			if (!parr)
 				goto err;
 
-			/* this node first - the clusterer list holds peers only, so a
-			 * topology built from it alone silently omits the one node the
-			 * reader is talking to */
+			/* this node first; the clusterer list holds peers only */
 			self = add_mi_object(parr, NULL, 0);
 			if (!self ||
 			    add_mi_number(self, MI_SSTR("node_id"), me) < 0 ||
@@ -1385,13 +1108,8 @@ static mi_response_t *mi_perf_stats(str *col_s)
 			    add_mi_string(self, MI_SSTR("membership"),
 			        MI_SSTR("up")) < 0)
 				goto err;
-			/* Which address this node actually uses on the cluster plane,
-			 * and which of the three resolution paths produced it.  Node
-			 * ids are assigned by the controller and do not follow the
-			 * hosts' addresses in any readable order, so without this a
-			 * reader cannot tell which box they are looking at.  It is
-			 * also the fastest way to spot the failure that matters:
-			 * a node resolving its own IP onto the wrong interface. */
+			/* the address this node uses on the cluster plane and how it was
+			 * resolved */
 #ifdef CLUSTERER_CTRL_SUPPORT
 			if (pull_via_clctr && clctr_api.get_my_ip) {
 				const char *mip = NULL, *mif = NULL, *msrc = NULL;
@@ -1422,7 +1140,6 @@ static mi_response_t *mi_perf_stats(str *col_s)
 					goto err;
 				if (add_mi_number(p, MI_SSTR("node_id"), n->node_id) < 0 ||
 				    add_mi_string(p, MI_SSTR("role"), MI_SSTR("peer")) < 0 ||
-				    /* what the clusterer believes about it */
 				    add_mi_string(p, MI_SSTR("membership"),
 				        MI_SSTR("up")) < 0)
 					goto err;
@@ -1434,9 +1151,7 @@ static mi_response_t *mi_perf_stats(str *col_s)
 				    add_mi_string(p, MI_SSTR("sip_addr"),
 				        n->sip_addr.s, n->sip_addr.len) < 0)
 					goto err;
-				/* the peer's address on the cluster plane - see the note on
-				 * the self entry above; node_id alone does not identify a
-				 * host to a human reading these stats */
+				/* the peer's address on the cluster plane */
 				{
 					struct ip_addr pip;
 					char *pips;
@@ -1451,10 +1166,6 @@ static mi_response_t *mi_perf_stats(str *col_s)
 
 				if (!ps)
 					continue;
-				/* ...and what it has actually done for us.  These two can
-				 * disagree in the way that matters: a membership can read
-				 * perfectly healthy while the transport carrying pulls
-				 * drops every packet, and only this half shows it. */
 				ago = ps->last_reply ? (int)(now - ps->last_reply) : -1;
 				verdict = !ps->replies ? "never-answered"
 				        : (ago <= PCACHE_PEER_FRESH_S ? "answering"
@@ -1506,17 +1217,9 @@ static mi_response_t *mi_perf_stats_2(const mi_params_t *params,
 /*
  * perf_stats_reset - re-baseline the cumulative counters.
  *
- * hits/misses/stores/removes/expired/destroyed/retries are running totals
- * since startup, so the rates derived from them are lifetime averages: a
- * burst of misses right after a restart keeps dragging the hit rate down
- * long after the cache has recovered.  Resetting gives a clean interval to
- * measure over without restarting OpenSIPS.
- *
- * The counters themselves are not rewound - the hot paths own their per
- * process cache lines and must never be written from another process.  Only
- * a baseline is recorded, and pcache_ht_totals() reports the difference.
- * Live gauges (entries, buckets, overflow, load factor, arena) are derived
- * from current state, not from the counters, so a reset does not disturb them.
+ * The per-process counters are never rewound (another process must not
+ * write them); a baseline is recorded and pcache_ht_totals() reports the
+ * difference.  Gauges are derived from current state and are unaffected.
  */
 static mi_response_t *mi_perf_stats_reset(str *col_s)
 {
@@ -1564,11 +1267,8 @@ static mi_response_t *mi_perf_stats_reset_2(const mi_params_t *params,
 }
 
 /*
- * Introspection MI (CP-18, DESIGN 5.2).  Every command is perf_-prefixed to
- * match the script functions and to stay clear of the core's bare get/set.
- * The walkers are lock-free (seqlock reads), so unlike cachedb_local's scan
- * they never stall writers; keys/dump are bounded and scan is the cursored
- * answer for anything large.
+ * MI commands.  The walkers are lock-free (seqlock reads), so they never
+ * stall writers; keys/dump are bounded, scan is cursored.
  */
 #define PCACHE_MI_DEF_LIMIT 1000
 
@@ -1589,7 +1289,7 @@ static int mi_walk_cb(const str *key, const str *val, unsigned int exp, void *p)
 	int ttl;
 
 	if (exp && exp <= w->now)
-		return 0;                          /* expired-as-absent (3.5) */
+		return 0;                          /* expired reads as absent */
 	if (w->pat && fnmatch(w->pat, key->s, 0))
 		return 0;
 
@@ -1730,11 +1430,9 @@ err:
 	return init_mi_error(500, MI_SSTR("internal error"));
 }
 
-/* perf_get <key> [collection] - value + TTL + size for one key */
-/* perf_pull <key> [collection] - ask the cluster for a key this node does
- * not have.  The MI face exists to exercise and observe the protocol on
- * its own, before a SIP path uses it: it reports where the answer came
- * from, which is what makes a failing pull diagnosable. */
+/* perf_get <key> [collection] */
+/* perf_pull <key> [collection] - ask the cluster for a key this node
+ * lacks, reporting where the answer came from */
 static mi_response_t *do_perf_pull(str *key, str *col_s)
 {
 	pcache_col_t *col;
@@ -1754,7 +1452,6 @@ static mi_response_t *do_perf_pull(str *key, str *col_s)
 		return init_mi_error(500,
 			MI_SSTR("collection is not in replicate_collections"));
 
-	/* a local hit needs no cluster at all - say so plainly */
 	if (pcache_ht_probe(col->htable, key, &vlen, &exp, NULL) == 0) {
 		resp = init_mi_result_object(&obj);
 		if (!resp)
@@ -1789,10 +1486,7 @@ err:
 	return init_mi_error(500, MI_SSTR("internal error"));
 }
 
-/* perf_probe <key> [collection] - is the key here, and what does it look
- * like?  Deliberately never returns the value: this is the existence test
- * a cross-node lookup would run on a peer, so it must cost what that costs
- * (no allocation, no copy, the payload never touched). */
+/* perf_probe <key> [collection] - existence test; never copies the value */
 static mi_response_t *do_perf_probe(str *key, str *col_s)
 {
 	pcache_col_t *col;
@@ -1863,7 +1557,7 @@ static mi_response_t *do_perf_get(str *key, str *col_s)
 	return resp;
 }
 
-/* perf_set <key> <value> [ttl] [collection] - single key write */
+/* perf_set <key> <value> [ttl] [collection] */
 static mi_response_t *do_perf_set(str *key, str *value, int ttl, str *col_s)
 {
 	pcache_col_t *col;
@@ -1876,7 +1570,7 @@ static mi_response_t *do_perf_set(str *key, str *value, int ttl, str *col_s)
 	return init_mi_result_ok();
 }
 
-/* perf_del <glob> [collection] - the MI face of the perf_del() script fn */
+/* perf_del <glob> [collection] */
 static mi_response_t *do_perf_del_mi(str *glob, str *col_s)
 {
 	pcache_col_t *col;
@@ -1901,8 +1595,8 @@ static mi_response_t *do_perf_del_mi(str *glob, str *col_s)
 	return resp;
 }
 
-/* re-arm the TTL of every live key matching a glob (perf_ttl): collect the
- * matches lock-free, then touch each - like perf_del, not an atomic snapshot */
+/* perf_ttl: collect the matches lock-free, then touch each; not an
+ * atomic snapshot */
 struct touch_ctx {
 	const char *pat;
 	str *keys;
@@ -1966,7 +1660,7 @@ static int perf_touch_run(pcache_col_t *col, str *glob, unsigned int expires)
 	return (int)touched;
 }
 
-/* perf_ttl <glob> <ttl> [collection] - re-arm the TTL of matching keys */
+/* perf_ttl <glob> <ttl> [collection] */
 static mi_response_t *do_perf_ttl(str *glob, int ttl, str *col_s)
 {
 	pcache_col_t *col;
@@ -1991,8 +1685,7 @@ static mi_response_t *do_perf_ttl(str *glob, int ttl, str *col_s)
 	return resp;
 }
 
-/* perf_save / perf_load [collection] - persist to / restore from the DB
- * backend; with no collection, all declared collections */
+/* perf_save / perf_load [collection]; no collection = all declared ones */
 static mi_response_t *do_perf_persist(str *col_s, int save)
 {
 	pcache_col_t *col;
@@ -2044,30 +1737,17 @@ err:
 }
 
 /*
- * CP-19 Stage 2: cluster sync.  The DB is the shared source of truth; a sync
- * is save-then-broadcast (the issuing node writes its collection to the DB,
- * then signals peers to reload it) - never per-operation replication, and no
- * locking.  perf_sync OVERWRITES a peer's copy from the DB, so it is meant
- * for single-writer / read-replica topologies; a node that also takes local
- * writes would lose the unsaved ones.  With no clusterer (or cluster_id 0) it
- * degrades to a DB save only.
+ * Cluster sync: the DB is the shared source of truth.  perf_sync saves the
+ * collection to the DB, then signals peers to reload it, overwriting their
+ * copy; it suits single-writer topologies.  Without a cluster it only saves.
  */
 
 /* a peer signalled "reload collection X": pull it from the DB and announce */
-/* =====================================================================
- * CP-15.5: pull a key from the cluster on a local miss (read repair)
- *
- * A node that misses asks the cluster for that one key and uses the
- * answer.  Pull rather than eager push because the request is issued at
- * the moment of need, so it cannot race the traffic the way a broadcast
- * on write does - and because misses are the only thing that pays.
- *
- * Every peer answers, positively or negatively (R5): with a handful of
- * nodes the extra packets are trivial and definitive absence is worth
- * far more than saving them, because "nobody has it" is then a fact
- * rather than a timeout.  The probe of CP-15.2 is what makes answering
- * cheap - a negative costs the bucket's tag word and nothing else.
- * ===================================================================== */
+/*
+ * Cross-node pull: on a local miss, ask the cluster for that one key.
+ * Every peer answers, positively or negatively, so "nobody has it" is a
+ * fact rather than a timeout.
+ */
 
 static unsigned int neg_hash(pcache_col_t *col, const str *key)
 {
@@ -2124,8 +1804,7 @@ static void pcache_neg_add(pcache_col_t *col, const str *key)
 	lock_release(neg_lock);
 }
 
-/* A local write makes the key exist here, so whatever we concluded about
- * the cluster no longer describes it. */
+/* a local write makes any cached negative stale */
 static void pcache_neg_clear(pcache_col_t *col, const str *key)
 {
 	struct pcache_neg_slot *sl;
@@ -2145,9 +1824,8 @@ static void pcache_neg_clear(pcache_col_t *col, const str *key)
 	lock_release(neg_lock);
 }
 
-/* Is this collection opted in?  Nothing pulls unless an operator said so:
- * a pull only makes sense where keys are globally meaningful, which the
- * module cannot know and must not assume (R2). */
+/* opted-in collections only: whether keys are globally meaningful is the
+ * operator's call */
 static int pcache_pull_enabled(pcache_col_t *col)
 {
 	return pull_ready && col && col->replicate;
@@ -2163,14 +1841,9 @@ static struct pcache_pull_slot *pull_slot_get(unsigned int id)
 	return NULL;
 }
 
-/* Send one reply, over the transport the request came in on.
- *
- * @via_clctr says how it arrived, and is deliberately NOT this node's own
- * configuration: the two can differ while a cluster is being reconfigured,
- * and answering a BIN request over the multicast plane (or the reverse)
- * means the requester waits out its timeout for an answer that was sent,
- * which is indistinguishable from packet loss. */
-/* the flat reply: [u8 RPL][u32 id][u8 found][u32 ttl][u16 klen][key][u16 vlen][val];
+/* Send one reply over the transport the request arrived on (not our own
+ * configured one), else the requester waits out its timeout. */
+/* [u8 RPL][u32 id][u8 found][u32 ttl][u16 klen][key][u16 vlen][val];
  * returns the length, or -1 when it does not fit @lim */
 static int pull_rpl_payload(char *buf, int lim, unsigned int id,
 		const str *key, int found, int ttl, const str *val)
@@ -2197,7 +1870,7 @@ static int pull_rpl_payload(char *buf, int lim, unsigned int id,
 	return n;
 }
 
-/* the flat request: [u8 REQ][u32 id][u8 collen][col][u16 klen][key][u8 flags] */
+/* [u8 REQ][u32 id][u8 collen][col][u16 klen][key][u8 flags] */
 static int pull_req_payload(char *buf, int lim, unsigned int id,
 		const str *col, const str *key, int force)
 {
@@ -2287,9 +1960,7 @@ static void pcache_pull_send_rpl(int dst_node, unsigned int id, const str *key,
 	}
 }
 
-/* Answer a peer's request for one key.  Transport-neutral: both the BIN
- * and the controller-plane receivers decode their own framing and land
- * here, so the two can never disagree about what is served. */
+/* Answer a peer's request for one key; shared by all transports. */
 static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 		str *key, int via, int force)
 {
@@ -2299,11 +1970,7 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 	unsigned char rfl = 0;
 	int found = PCACHE_FOUND_NO, ttl_left = 0, budget;
 
-	/* The key arrives from a peer and is echoed back in the reply, so it
-	 * is sized before anything else touches it.  A requester never asks
-	 * for more than pull_max_key; anything longer is a peer that
-	 * is broken, of another version, or hostile, and answering it at all
-	 * would mean copying it into a fixed reply buffer. */
+	/* the key comes from a peer and is echoed back: bound it first */
 	if (key->len <= 0 || key->len > pull_max_key ||
 	        coll->len <= 0 || coll->len > 63) {
 		LM_ERR("pull request from node %d has a %d byte key in a %d byte "
@@ -2319,12 +1986,8 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 	{
 		int is_counter = 0;
 
-		/* Classify before reading: a native counter counts what happened
-		 * on THIS node, so handing it to a peer would import our tally as
-		 * if it were theirs - and the read path formats it as a decimal
-		 * string, which would silently arrive as a plain value and stop
-		 * being a counter at all.  Refuse to serve one; the requester
-		 * treats it as "not here", which is the truth from its side. */
+		/* never serve a native counter: it counts this node's events, and would
+		 * arrive as a plain string value */
 		if (pcache_ht_probe(col->htable, key, NULL, NULL, &is_counter) == 0
 		        && is_counter) {
 			LM_DBG("pull: <%.*s> is a counter - not portable, not served\n",
@@ -2337,9 +2000,7 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 		goto reply;
 
 
-	/* Hand over the ORIGINAL lifetime, never a fresh TTL: a copy that
-	 * outlives the owner's entry would serve state the owner already
-	 * dropped (R6).  0 = never expires. */
+	/* hand over the original lifetime, never a fresh TTL; 0 = never expires */
 	if (exp) {
 		unsigned int now = get_ticks();
 
@@ -2351,11 +2012,8 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 		ttl_left = (int)(exp - now);
 	}
 
-	/* A passive copy defers to whoever WROTE the key: answer "held" and
-	 * let the authority ship the bytes, unless the requester already
-	 * concluded no authority is left and is forcing this very copy out.
-	 * Gated: a peer of the previous format reads HELD as silence, so the
-	 * cluster must uniformly understand it before anyone sends it. */
+	/* a passive copy answers "held" and defers to the writer, unless the
+	 * requester forces it.  Gated, as older peers read HELD as silence. */
 	if (pull_authoritative_serve && !force && (rfl & PCACHE_F_PASSIVE)) {
 		pkg_free(val.s);
 		val.s = NULL; val.len = 0;
@@ -2364,19 +2022,9 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 		goto reply;
 	}
 
-	/* The controller plane is one datagram, so a large value cannot ride
-	 * it.  Say "I have it but cannot send it" rather than "not here":
-	 * the requester must not conclude the key is absent from a node that
-	 * demonstrably holds it. */
-	/* The effective bound, not the compile-time constant: cc_max_payload
-	 * follows the interface MTU and is SMALLER than CLCTR_MAX_PAYLOAD on a
-	 * link under ~1411 (VPN, tunnel, PPPoE).  Budgeting against the constant
-	 * there would build a reply the controller then refuses to send, and the
-	 * requester would wait out its timeout instead of being told the value is
-	 * held-but-unsendable - which is precisely the answer this branch exists
-	 * to give. */
-	/* Bound by CLCTR_MAX_PAYLOAD, which is what the reply buffer in
-	 * pcache_pull_send_rpl() is sized to - there is no buffer in scope here. */
+	/* a value too big for the datagram is reported as oversize, not absent */
+	/* use the runtime limit: cc_max_payload follows the MTU and can be below
+	 * CLCTR_MAX_PAYLOAD */
 	budget = pull_max_value;
 #ifdef CLUSTERER_CTRL_SUPPORT
 	if (via == PULL_VIA_CLCTR)
@@ -2384,10 +2032,7 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 			- (int)(PCACHE_CLCTR_RPL_HDR + key->len);
 #endif
 	if (val.len > budget) {
-		/* An error on EVERY occurrence, deliberately: each one is a value
-		 * this cluster holds and cannot serve, and the requester's side
-		 * only sees its miss counters move.  The remedy follows the
-		 * transport the request rode in on. */
+		/* logged every time: the requester only sees a miss */
 		LM_ERR("pull: the value of key <%.*s> is %d bytes - more than the "
 			"%d this transport can carry in one message; answering "
 			"held-but-unsendable, so the value stays unpullable from "
@@ -2400,9 +2045,7 @@ static void pcache_pull_do_serve(int src_node, unsigned int id, str *coll,
 		found = PCACHE_FOUND_OVERSIZE;
 	} else {
 		found = PCACHE_FOUND_YES;
-		/* counted here, not in pcache_pull_send_rpl(): that helper is
-		 * transport framing and has no collection in scope.  Only a real
-		 * value counts - a "not here"/oversize answer is not a serve. */
+		/* only a real value counts as served */
 		if (col)
 			__sync_fetch_and_add(&col->served_out, 1);
 	}
@@ -2414,7 +2057,7 @@ reply:
 		pkg_free(val.s);
 }
 
-/* BIN framing -> the shared serve path */
+/* BIN framing -> shared serve path */
 static void pcache_pull_serve(bin_packet_t *in)
 {
 	str coll, key;
@@ -2426,18 +2069,14 @@ static void pcache_pull_serve(bin_packet_t *in)
 		LM_ERR("malformed pull request from node %d\n", in->src_id);
 		return;
 	}
-	/* trailing field: a requester of the previous wire format does not
-	 * send it, and not sending it means not forcing anything */
+	/* optional trailing field; absent means no force */
 	if (bin_pop_int(in, &force) < 0)
 		force = 0;
-	/* arrived over BIN, so it is answered over BIN - even on a node whose
-	 * own pull_transport is the controller plane */
+	/* arrived over BIN, so it is answered over BIN */
 	pcache_pull_do_serve(in->src_id, id, &coll, &key, PULL_VIA_BIN, force);
 }
 
-/* A peer answered.  Fill the waiting slot; first positive answer wins and
- * later ones are dropped (several nodes may hold the key once pulls have
- * converged).  Transport-neutral, like the serve path. */
+/* A peer answered.  First positive answer wins, later ones are dropped. */
 static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		int found, int ttl_left, str *val)
 {
@@ -2450,8 +2089,7 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 
 	lock_get(pull_lock);
 	sl = pull_slot_get(id);
-	/* the echoed key must match the slot's, or this is an answer to a
-	 * request that has already been recycled */
+	/* the echoed key must match, or the slot has been recycled */
 	if (!sl || sl->klen != key->len || memcmp(pull_slot_key(sl), key->s, key->len)) {
 		lock_release(pull_lock);
 		LM_DBG("late or unmatched pull reply (id %u) from node %d\n",
@@ -2459,18 +2097,11 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		return;
 	}
 
-	/* record who answered before any dedupe or early return, so the peer
-	 * view reflects what actually arrived on the wire */
+	/* record the reply before any dedupe or early return */
 	peer_note_reply(src_node, found == PCACHE_FOUND_YES);
 
-	/* Count each node once, whatever the transport does.  An id outside
-	 * the range the bitmap covers cannot be tracked, and counting it
-	 * undeduped is exactly the defect the bitmap exists to prevent - two
-	 * answers from one node reaching @expect and manufacturing an absence
-	 * nobody stated.  The controller assigns 1..CL_MAX_NODE_ID, but a
-	 * stock clusterer takes whatever the database says, so this is
-	 * reachable without the controller.  Drop such a reply rather than
-	 * let it vote. */
+	/* Count each node once.  An id outside the bitmap cannot be deduped, and
+	 * duplicates could fake an absence by reaching @expect, so drop it. */
 	if (src_node <= 0 || src_node > CL_MAX_NODE_ID) {
 		lock_release(pull_lock);
 		LM_ERR("pull reply from node id %d, outside 1..%d - cannot be "
@@ -2493,14 +2124,11 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		__sync_fetch_and_add(&pull_stats[PULL_ST_NEGATIVE], 1);
 	} else if (found == PCACHE_FOUND_OVERSIZE) {
 		__sync_fetch_and_add(&pull_stats[PULL_ST_OVERSIZE], 1);
-		/* someone HAS it - so the key is not absent, whatever the rest of
-		 * the cluster says.  Not a negative, and not a value either. */
+		/* someone has it, so the key is not absent */
 		sl->oversize = 1;
 	} else if (found == PCACHE_FOUND_HELD) {
-		/* a passive holder deferring to the authority
-		 * (pull_authoritative_serve on the serve side).  Like OVERSIZE it
-		 * proves the key exists; unlike OVERSIZE the copy is one targeted
-		 * force-ask away, so remember who to ask. */
+		/* a passive holder deferring to the writer; remember it for a forced
+		 * re-ask */
 		if (!sl->held_node)
 			sl->held_node = src_node;
 		sl->held++;
@@ -2514,11 +2142,9 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		sl->done = 1;
 		__sync_fetch_and_add(&pull_stats[PULL_ST_RECEIVED], 1);
 	}
-	/* Nobody is waiting on an orphan - its caller timed out and left.  We
-	 * are the last chance this value has to reach the cache, so copy what
-	 * we need out of the slot, hand the slot back, and store after the
-	 * lock is dropped.  Storing here under pull_lock would nest it outside
-	 * the bucket locks; see the note in pcache_pull_finish(). */
+	/* Nobody waits on an orphan: copy what is needed, free the slot and store
+	 * after unlocking, as storing under pull_lock would nest it outside the
+	 * bucket locks. */
 	if (sl->orphan && sl->done) {
 		late_len = sl->vlen;
 		late_exp = sl->expires;
@@ -2527,14 +2153,8 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 		memcpy(late_key, pull_slot_key(sl), late_kl);
 		memcpy(late_col, sl->col, late_cl);
 		memcpy(late_val, pull_slot_val(sl), late_len);
-		/* No in-flight TTL correction, deliberately.  The peer computes
-		 * ttl_left immediately before sending (see the serve path: it reads
-		 * get_ticks() and hands the value straight to send_rpl), so a peer
-		 * that was busy for seconds still reports a CURRENT remaining TTL.
-		 * The only unaccounted time is the transit back to us.  Charging the
-		 * requester's elapsed time here would subtract the peer's own delay
-		 * from a figure that never included it - expiring late answers early
-		 * for precisely the reason they were late. */
+		/* no transit-time TTL correction: the peer computes ttl_left just before
+		 * sending */
 		late_after_linger = pull_linger_ms > 0 &&
 			get_uticks() > sl->deadline + (utime_t)pull_linger_ms * 1000;
 		sl->id     = 0;              /* back to the pool, job finished */
@@ -2543,10 +2163,8 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 	} else if (sl->efd >= 0 &&
 	        (sl->done || sl->oversize || sl->negative >= sl->expect ||
 	         (sl->held && sl->negative + sl->held >= sl->expect))) {
-		/* Wake whoever is waiting on this slot.  The reply almost never
-		 * lands in the process that asked, so this is the only way back
-		 * to it: the fd was created before the fork, which is what lets
-		 * a sibling write to it at all. */
+		/* wake the waiter; the eventfd was created pre-fork, so any process can
+		 * write it */
 		uint64_t one = 1;
 
 		if (write(sl->efd, &one, sizeof one) != sizeof one)
@@ -2572,14 +2190,8 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 			LM_DBG("late pull answer for <%.*s> had already expired\n",
 				lk.len, lk.s);
 		} else if (pcache_ht_probe(lcol->htable, &lk, NULL, NULL, NULL) == 0) {
-			/* Something live is already here.  This is read REPAIR: fill what
-			 * is missing, never overwrite what is present.  Seconds may have
-			 * passed since the request went out, and a local write in that
-			 * window is by definition fresher than a peer's copy of what we
-			 * asked for.  probe() is allocation-free and returns exactly 0
-			 * for a present, live key - NOT `!= -2`, which would read a pkg
-			 * failure (-1) as "present" and silently stop repairing under the
-			 * very memory pressure that matters, while miscounting it here. */
+			/* Read repair only fills what is missing: a local write since the request
+			 * is fresher.  Test probe() == 0, so a pkg failure (-1) is not "present". */
 			__sync_fetch_and_add(&pull_stats[PULL_ST_LATE_SUPERSEDED], 1);
 			LM_DBG("late pull answer for <%.*s> superseded by a local "
 				"write - not stored\n", lk.len, lk.s);
@@ -2598,31 +2210,12 @@ static void pcache_pull_do_reply(int src_node, unsigned int id, str *key,
 	}
 }
 
-/* Reclaim pulls that never got a conclusive answer.
- *
- * pcache_pull_do_reply() only arms the eventfd once the outcome is settled
- * - a value, an oversize holder, or every asked peer having said no.  When
- * fewer than @expect peers answer (a reply is lost, a peer dies mid-flight,
- * a node is asked that never responds) that never becomes true, so on the
- * ASYNCHRONOUS path nothing wakes the caller: its resume never runs,
- * pcache_pull_finish() is never reached, and since that is the only place a
- * slot is released the slot is held for ever.  Enough of those and every
- * slot is busy and the node stops pulling entirely.
- *
- * The blocking entry point never had this problem - it polls for at most
- * pull_timeout_ms and then calls finish() regardless - which is exactly why
- * the concurrent soak, which drives that path, reported no leak.
- *
- * Two stages, deliberately:
- *   1. past its deadline, arm the eventfd once.  The caller then resumes
- *      normally and finish() draws the ordinary "no answer" conclusion and
- *      counts the timeout, so nothing about the outcome is special-cased
- *      here.
- *   2. still busy well past that, give up on the caller ever coming back
- *      (its transaction may already be gone) and release the slot.  Safe
- *      because releasing means clearing @id: a late finish() then simply
- *      fails to find the slot and reports "already reaped", and ids are
- *      monotonic so it cannot match a slot that has since been reused.
+/* Reclaim pulls that never got a conclusive answer, which would otherwise
+ * hold their slot for ever on the async path.
+ *   1. past the deadline, arm the eventfd once; finish() then reports the
+ *      timeout as usual.
+ *   2. still busy well after that, release the slot.  A late finish() then
+ *      fails to find it; ids are monotonic, so it cannot match a reused slot.
  */
 static void pcache_pull_reap(utime_t ticks, void *param)
 {
@@ -2642,9 +2235,7 @@ static void pcache_pull_reap(utime_t ticks, void *param)
 
 		if (!sl->reaped) {
 			sl->reaped = 1;
-			/* An orphan's caller already finished and left - there is
-			 * nobody on the eventfd, and arming it would leave a count
-			 * for whoever inherits this slot to drain. */
+			/* an orphan has no waiter; arming would leave a count for the next user */
 			if (sl->orphan)
 				continue;
 			if (sl->efd >= 0 &&
@@ -2652,10 +2243,7 @@ static void pcache_pull_reap(utime_t ticks, void *param)
 				LM_DBG("could not wake the pull waiter on reap\n");
 			woke++;
 		} else if (now > sl->deadline + PCACHE_PULL_ABANDON_US) {
-			/* An orphan reaching here is the ordinary end of a timeout
-			 * whose answer never came.  Only a slot whose caller never
-			 * came back is genuinely abandoned - that distinction is the
-			 * whole point of PULL_ST_ABANDONED and its warning. */
+			/* an orphan ending here is a normal timeout, not abandoned */
 			if (sl->orphan)
 				expired++;
 			else
@@ -2678,7 +2266,7 @@ static void pcache_pull_reap(utime_t ticks, void *param)
 	}
 }
 
-/* BIN framing -> the shared reply path */
+/* BIN framing -> shared reply path */
 static void pcache_pull_reply(bin_packet_t *in)
 {
 	str key, val;
@@ -2694,8 +2282,7 @@ static void pcache_pull_reply(bin_packet_t *in)
 	pcache_pull_do_reply(in->src_id, id, &key, found, ttl_left, &val);
 }
 
-/* the flat wire format (clctr plane and the module's own transport):
- * parse one message and hand it to the serve or reply path */
+/* flat wire format: parse one message and dispatch it */
 static void pcache_pull_dispatch(int src_node, const char *p, int left, int via)
 {
 	uint32_t id_be, ttl_be;
@@ -2748,7 +2335,7 @@ bad:
 		via == PULL_VIA_XPORT ? pcache_xport_name() : "clctr");
 }
 
-/* the module's own transport hands every message here (transport process) */
+/* own transport: every message lands here (transport process) */
 static void pcache_xport_recv(int src_node, const char *p, int len)
 {
 	pcache_pull_dispatch(src_node, p, len, PULL_VIA_XPORT);
@@ -2813,26 +2400,12 @@ int pcache_pull_node_addr(int node, union sockaddr_union *su)
 }
 
 #ifdef CLUSTERER_CTRL_SUPPORT
-/* Controller-plane framing -> the shared paths.  Runs in the controller's
- * receiving process; the cache is in shm, so serving from here is fine. */
-/* A pull message that arrived on a cluster this module does not sync on.
- *
- * Rate-limited on the same reasoning as pull_send_failed(): the condition is
- * either permanent (a misconfigured sync_cluster_id, in which case EVERY
- * message trips it) or routine (a multi-cluster node seeing its other
- * clusters' traffic), and an unbounded warn on either is its own incident.
- * First occurrence warns, then at most once per interval carrying the count
- * it stands for.
- *
- * It is a WARN and not a DBG because the two causes are indistinguishable
- * from the outside and one of them is a silent, total failure of cross-node
- * pull: if sync_cluster_id names a cluster the controller does not manage,
- * this filter discards everything and the only symptom is that pull never
- * converges. There is no way to detect that at startup - the controller's
- * get_my_node_id() returns 0 both for "unknown cluster" and for "not joined
- * yet" (clusterer_controller.c:7693-7699), and mod_init runs pre-fork, long
- * before any cluster is joined. So the check has to live here, and it has to
- * say enough to tell the two apart. */
+/* Controller-plane framing -> shared paths.  Runs in the controller's
+ * process; the cache is in shm. */
+/* A pull message on a cluster this module does not sync on.  Rate-limited
+ * like pull_send_failed().  A WARN because a sync_cluster_id the controller
+ * does not manage silently drops every pull, and that cannot be detected at
+ * startup. */
 #define PCACHE_PULL_XCLUSTER_WARN_IVL 60
 
 static void pull_foreign_cluster(int cluster_id)
@@ -2885,31 +2458,18 @@ static void pcache_clctr_recv(int cluster_id, int src_node_id, str *channel,
 }
 #endif
 
-/* ---- asynchronous face -------------------------------------------------
- *
- * Same protocol, without owning a process while the cluster thinks.  The
- * caller starts a pull, gets back a file descriptor, hands it to whatever
- * reactor it lives under, and collects the answer when that fd fires.
- *
- * The fd is the slot's, created before the fork; the reply handler writes
- * to it from whichever process received the answer.  Nothing else about
- * the protocol changes - the blocking entry point below is this same
- * machinery with a poll loop where the reactor would be.
- * ---------------------------------------------------------------------- */
+/* Asynchronous pull: start returns the slot's eventfd (created pre-fork)
+ * for the caller's reactor; the reply handler writes it from whichever
+ * process got the answer.  The blocking face polls the same fd. */
 
 /* Begin a pull.  @fd receives the descriptor to wait on, @id the handle to
  * finish with.
  * @return  1 = started, wait on @fd,
  *          0 = answered without asking anyone (a cached negative),
  *         -1 = cannot pull (not enabled, no peers, no free slot). */
-/* @hint_node: ask this one node instead of everybody, when membership
- * confirms it exists and is not us.  A hint is never authoritative - the
- * node may have restarted, expired the entry, or had its id reissued to
- * somebody else - so an unhelpful answer must leave the caller able to
- * ask the rest, which is why a hinted request that comes back empty is
- * reported as "no answer" rather than as absence. */
-/* @force rides the request to the peers: answer with the value even for a
- * passive copy.  Set only on the follow-up leg of a held-only exchange. */
+/* @hint_node: ask only this node.  A hint is never authoritative, so an
+ * empty hinted answer is reported as "no answer", not absence. */
+/* @force: peers return the value even for a passive copy */
 static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		int force, int *fd, unsigned int *id_out)
 {
@@ -2936,9 +2496,7 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		return -1;
 	}
 
-	/* Validate the hint before trusting it: a node id that is not a
-	 * current peer is stale, reissued, or simply wrong, and asking it
-	 * would waste the request. */
+	/* ignore a hint that is not a current peer */
 	if (hint_node > 0) {
 		int k, live = 0;
 
@@ -2961,10 +2519,8 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 			break;
 		}
 	if (!sl) {
-		/* Nothing free.  An orphan is only holding its slot on the chance
-		 * that a late answer still arrives, which is worth strictly less
-		 * than the request in front of us - take the one whose deadline
-		 * passed longest ago.  A live pull is never stolen. */
+		/* pool dry: steal the orphan whose deadline passed longest ago; a live
+		 * pull is never stolen */
 		struct pcache_pull_slot *victim = NULL;
 		int v;
 
@@ -2996,17 +2552,14 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 
 		memset(sl, 0, sizeof *sl);
 		sl->efd = efd;
-		/* a previous user may have left the counter armed if it timed
-		 * out just as an answer arrived - start from a known state */
+		/* the counter may have been left armed by the previous user */
 		while (read(efd, &drain, sizeof drain) == (ssize_t)sizeof drain)
 			;
 	}
 	sl->id       = id;
 	sl->gen      = gen;
 	sl->hinted   = hint_node;
-	/* A broadcast goes to every peer, but only the ones that fitted the
-	 * snapshot were counted - so on a truncated set the negatives can
-	 * reach @expect while peers nobody tallied still hold the key. */
+	/* on a truncated peer set the negatives cannot prove absence */
 	sl->partial  = hint_node > 0 ? 0 : truncated;
 	/* one node was asked, so one answer settles it */
 	sl->expect   = hint_node > 0 ? 1 : nmembers;
@@ -3047,11 +2600,7 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		uint16_t kl = htons((uint16_t)key->len);
 		int n = 0;
 
-		/* Against the smaller of the buffer and the link's effective
-		 * bound: the entry checks above bound both lengths, so this can
-		 * only fire if those ever change - or if the MTU makes
-		 * cc_max_payload smaller than the buffer, which is exactly when
-		 * it should. */
+		/* bounded by the buffer and the link's effective payload limit */
 		int _lim = pcache_clctr_payload_lim((int)sizeof buf);
 		if (PCACHE_CLCTR_REQ_HDR + col->col_name.len + key->len > _lim) {
 			LM_ERR("pull request for a %d byte key does not fit %d\n",
@@ -3068,8 +2617,7 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		buf[n++] = (char)(force ? 1 : 0);   /* trailing flags byte */
 		pl.s = buf;
 		pl.len = n;
-		/* one packet, whatever the cluster size - and encrypted, which
-		 * the BIN links are not */
+		/* one packet whatever the cluster size, and encrypted */
 		if (hint_node > 0
 		        ? clctr_api.send_ucast(sync_cluster_id, hint_node,
 		              &pull_channel, &pl, 0) < 0
@@ -3085,8 +2633,7 @@ static int pcache_pull_start(pcache_col_t *col, const str *key, int hint_node,
 		if (bin_push_int(&packet, (int)id) < 0 ||
 		    bin_push_str(&packet, &col->col_name) < 0 ||
 		    bin_push_str(&packet, (str *)key) < 0 ||
-		    /* trailing, so a peer of the previous wire format simply does
-		     * not pop it - absent means 0 on the parse side too */
+		    /* trailing: older peers do not pop it, absent means 0 */
 		    bin_push_int(&packet, force) < 0) {
 			bin_free_packet(&packet);
 			goto fail;
@@ -3111,16 +2658,9 @@ fail:
 	return -1;
 }
 
-/* Collect a started pull.  Safe to call on a timeout as well - it releases
- * the slot either way, so a caller that gives up leaks nothing.
- *
- * When every peer answered but the best on offer was held (passive) copies,
- * this performs ONE follow-up: a targeted, force-flagged ask to a node that
- * answered "held", bounded by pull_timeout_ms like the first leg.  That
- * node proved alive an instant ago, so the leg is one LAN round trip - and
- * it only ever runs when the authoritative holder is gone, the case where
- * correctness outranks the extra millisecond.  For an async consumer it
- * runs in whatever context calls finish(); @allow_forced caps it at one.
+/* Collect a started pull; releases the slot even on a timeout.  When only
+ * held (passive) copies were offered, makes one force-flagged follow-up ask
+ * to a holder, bounded by pull_timeout_ms (@allow_forced caps it at one).
  * @return 1 = value in @out, 0 = definitively absent, -1 = no answer. */
 static int pcache_pull_finish_ex(pcache_col_t *col, const str *key,
 		unsigned int id, char *out, unsigned int outlen, unsigned int *vlen,
@@ -3147,36 +2687,23 @@ static int pcache_pull_finish_ex(pcache_col_t *col, const str *key,
 			*expires = exp;
 		rc = 1;
 	} else if (sl->oversize) {
-		/* a peer holds it but could not send it over this transport.  The
-		 * key exists, so this is "no answer", never absence - and nothing
-		 * about it is worth remembering as a negative. */
+		/* a holder could not send it: the key exists, so "no answer", and not a
+		 * negative to remember */
 		rc = -1;
 	} else if (sl->negative >= sl->expect) {
-		/* One node was asked and it does not have it.  That is not the
-		 * cluster's answer, so it must not become one: report no answer
-		 * and let the caller ask properly.  Same for a set we could only
-		 * partly account for - silence from peers we never counted is
-		 * not evidence of absence. */
+		/* a hinted ask, or a peer set only partly accounted for, cannot prove
+		 * absence */
 		rc = (sl->hinted || sl->partial) ? -1 : 0;
 	} else if (sl->held && sl->negative + sl->held >= sl->expect) {
-		/* Every peer has spoken and at least one is holding a passive
-		 * copy back - the authority they defer to never answered (dead,
-		 * or restarted empty).  Not absence, not a timeout: the value is
-		 * one force-flagged ask away, made below once the lock is off. */
+		/* every peer spoke and some hold a passive copy back: the writer never
+		 * answered, so force-ask a holder once the lock is off */
 		held_node = sl->held_node;
 		held_complete = 1;
 	} else {
 		__sync_fetch_and_add(&pull_stats[PULL_ST_TIMEOUT], 1);
-		/* Timed out - but if somebody DID answer "held", the key provably
-		 * exists and the holder is one ask away.  The silent peer may be
-		 * dead without membership knowing yet (a bin peer that refuses
-		 * connects can take a full detection cycle to be dropped), and
-		 * waiting for that would fail lookups for up to a minute while a
-		 * holder sits there deferring.  Serving the passive copy is
-		 * exactly what the pre-held protocol did whenever a passive
-		 * holder answered first, so the forced leg is never worse - and
-		 * the slot still lingers as an orphan, so an authoritative answer
-		 * that limps in late is stored all the same. */
+		/* timed out, but a "held" answer proves the key exists: force-ask that
+		 * holder rather than wait for membership to drop the silent peer.  The slot
+		 * still orphans, so a late authoritative answer is stored anyway. */
 		if (sl->held)
 			held_node = sl->held_node;
 	}
@@ -3185,18 +2712,11 @@ static int pcache_pull_finish_ex(pcache_col_t *col, const str *key,
 			"absence\n");
 		rc = -1;
 	}
-	/* Hand the slot to the protocol rather than the pool when we leave
-	 * empty-handed: the answer may simply be late, and this slot holds the
-	 * only copy of the collection and key it belongs to.  rc == 1 is already
-	 * stored below; an oversize holder and a settled absence are final
-	 * answers - none of those wants a late reply. */
+	/* leaving empty-handed with no final answer: orphan the slot so a late
+	 * reply can still be stored */
 	if (rc == 1 || sl->oversize || sl->negative >= sl->expect ||
 	        held_complete) {
-		/* a held-COMPLETE exchange is concluded too: every peer spoke and
-		 * the holders withheld deliberately, so no late value is coming to
-		 * an orphan.  A timeout-with-held is NOT concluded - the silent
-		 * peer may still answer - so that one orphans as usual below, and
-		 * the forced leg runs off the held_node copy taken above. */
+		/* a completed held exchange is final: no late value is coming */
 		sl->id = 0;                  /* the slot is reusable from here */
 	} else {
 		sl->orphan = 1;
@@ -3204,11 +2724,8 @@ static int pcache_pull_finish_ex(pcache_col_t *col, const str *key,
 	}
 	lock_release(pull_lock);
 
-	/* Everything below runs OUTSIDE the pull lock, on the copy taken above.
-	 * Storing under it would serialise every node-wide pull behind one
-	 * table write - and worse, it would nest the pull lock outside the
-	 * bucket locks, so any future caller that pulls while holding a bucket
-	 * would deadlock.  Nothing here needs the slot. */
+	/* Outside pull_lock from here: storing under it would serialise all pulls
+	 * and nest pull_lock outside the bucket locks. */
 	if (rc == 1) {
 		str v;
 
@@ -3223,8 +2740,7 @@ static int pcache_pull_finish_ex(pcache_col_t *col, const str *key,
 				key->len, key->s);
 		} else {
 			__sync_fetch_and_add(&pull_stats[PULL_ST_STORED], 1);
-			/* per-collection twin of PULL_ST_STORED: this is the number
-			 * that actually answers "is this collection converging?" */
+			/* per-collection twin of PULL_ST_STORED */
 			__sync_fetch_and_add(&col->pulled_in, 1);
 			pcache_neg_clear(col, key);
 		}
@@ -3266,13 +2782,8 @@ static int pcache_pull_finish(pcache_col_t *col, const str *key,
 	return pcache_pull_finish_ex(col, key, id, out, outlen, vlen, expires, 1);
 }
 
-/* Ask the cluster for one key and wait for the answer.
- *
- * A thin wrapper over the asynchronous pair above, with a poll where a
- * reactor would be - so the two paths cannot drift apart, and everything
- * that exercises this also exercises the machinery a suspended lookup
- * will use.  Blocking is why pull_on_miss is off by default.
- *
+/* Blocking pull: the async pair above with a poll in place of a reactor.
+ * Blocking is why pull_on_miss is off by default.
  * @return 1 = value found (copied into @out), 0 = definitively absent,
  *        -1 = no answer in time, or not usable. */
 static int pcache_pull_key(pcache_col_t *col, const str *key, char *out,
@@ -3303,26 +2814,15 @@ static int pcache_pull_key(pcache_col_t *col, const str *key, char *out,
 	return pcache_pull_finish(col, key, id, out, outlen, vlen, expires);
 }
 
-/* Ask every peer for a key that cannot exist, purely to see who answers.
+/*
+ * Ask every peer for a key that cannot exist, to see who answers, over the
+ * same transport and serve path as a real pull.  Over bin the send is a TCP
+ * write and may block on a peer that is up but not reading; pull_timeout_ms
+ * bounds only the wait for answers.
  *
- * The passive per-peer counters cannot separate "this peer ignores us" from
- * "we have never had reason to ask it" - both read as zero replies.  This
- * settles it by generating the traffic itself, over the configured
- * transport and through the same serve path a real pull uses, so a peer
- * that answers here is genuinely reachable for pulls.
- *
- * CAVEAT, measured: the request inherits the transport's send semantics.
- * Over `bin` that is a TCP write through the clusterer, and a peer that is
- * up but not READING (wedged, stopped, swapping) can block it well past
- * pull_timeout_ms - the timeout here bounds the wait for an ANSWER, not
- * the send.  Observed blocking until the peer was resumed.  Over `clctr`
- * the send is a datagram and cannot block, so this is dependable exactly
- * where it is most wanted.  Run it on a bin cluster knowing it may stall
- * against the kind of peer you are probing for.
- *
- * @seen must have room for CL_MAX_NODE_ID + 1 flags; on return each live
- * peer's slot is 1 if it answered.  Returns the number that did, or -1 if
- * the pull could not even be started.
+ * @seen must have room for CL_MAX_NODE_ID + 1 flags; each answering peer's
+ * slot is set to 1.  Returns the number that answered, or -1 if the pull
+ * could not be started.
  */
 static int pcache_cluster_probe(pcache_col_t *col, unsigned char *seen,
 		int *asked)
@@ -3331,14 +2831,13 @@ static int pcache_cluster_probe(pcache_col_t *col, unsigned char *seen,
 	struct pcache_pull_slot *sl;
 	unsigned int id = 0;
 	int fd = -1, rc, left = pull_timeout_ms, i, answered = 0;
-	/* no caller can store this: perf_set rejects an empty key, and the
-	 * marker byte cannot appear in a th key or any script key */
+	/* cannot be stored by any caller: perf_set rejects an empty key and the
+	 * marker byte cannot appear in a script key */
 	static str probe_key = str_init("\x01""cachedb-perf-probe");
 
 	if (asked)
 		*asked = 0;
-	/* a cached negative for the probe key would answer without asking
-	 * anyone, which is the one thing this must not do */
+	/* a cached negative would answer without asking anyone */
 	pcache_neg_clear(col, &probe_key);
 
 	rc = pcache_pull_start(col, &probe_key, 0, 0, &fd, &id);
@@ -3359,9 +2858,7 @@ static int pcache_cluster_probe(pcache_col_t *col, unsigned char *seen,
 		break;
 	}
 
-	/* read the bitmap the reply handler filled in, then release the slot
-	 * exactly as finish() would - the answers are the result here, so the
-	 * value path is not used at all */
+	/* read the reply bitmap, then release the slot as finish() would */
 	lock_get(pull_lock);
 	sl = pull_slot_get(id);
 	if (sl) {
@@ -3379,13 +2876,12 @@ static int pcache_cluster_probe(pcache_col_t *col, unsigned char *seen,
 	}
 	lock_release(pull_lock);
 
-	/* the probe key is absent everywhere by construction; do not let that
-	 * conclusion linger and suppress the next probe */
+	/* do not let the probe's absence linger as a negative */
 	pcache_neg_clear(col, &probe_key);
 	return answered;
 }
 
-/* perf_cluster_probe [collection] - who is actually reachable for a pull */
+/* perf_cluster_probe [collection] - which peers answer a pull */
 static mi_response_t *do_perf_cluster_probe(str *col_s)
 {
 	mi_response_t *resp;
@@ -3463,11 +2959,8 @@ static mi_response_t *mi_perf_cluster_probe_1(const mi_params_t *params,
 	return do_perf_cluster_probe(&col);
 }
 
-/* perf_cluster_size <collection>: one broadcast question, one LIVE
- * entry count per node.  For a replicated collection this is the
- * convergence gauge: each node's count climbs toward the full set as
- * its pulls decay toward zero, and a node that does not answer within
- * the wait is exactly as unreachable as it would be for a pull. */
+/* perf_cluster_size <collection>: one broadcast, one live entry count per
+ * node */
 static mi_response_t *do_perf_cluster_size(str *col_s)
 {
 	mi_response_t *resp;
@@ -3621,7 +3114,7 @@ static mi_response_t *w_perf_cluster_size(const mi_params_t *params,
 	return do_perf_cluster_size(&col);
 }
 
-/* answer a cluster-size question: our live entry count for @collection */
+/* answer a cluster-size query with our live entry count */
 static void pcache_stat_serve(bin_packet_t *in)
 {
 	bin_packet_t out;
@@ -3741,8 +3234,7 @@ static void pcache_sync_recv(bin_packet_t *packet)
 	}
 }
 
-/* broadcast "reload collection X" to the cluster (best-effort - the DB
- * already holds the truth; a peer that misses it re-syncs later) */
+/* broadcast "reload collection X"; best effort, the DB holds the truth */
 static void pcache_sync_broadcast(str *coll)
 {
 	bin_packet_t packet;
@@ -3778,29 +3270,18 @@ static int perf_sync_one(pcache_col_t *col, int *bcast)
 	return rc;
 }
 
-/* Sharing-tag failover hook (CP-15.12).  A BACKUP->ACTIVE flip hands this
- * node traffic for state its cache never saw - a mass-miss event.  The two
- * directions of the hook keep that a snapshot-sized problem:
- *   ACTIVE - warm the persist collections from the DB snapshot BEFORE the
- *            storm.  On a crash failover the snapshot is the only source
- *            there is; wall-clock TTLs skip whatever already expired.
- *   BACKUP - graceful demotion: save our (freshest) state and broadcast,
- *            so the new active reloads it via the normal sync path.  This
- *            also repairs the flip-ordering race: the new active's warm
- *            load may run before our save lands, but the broadcast makes
- *            it reload again afterwards.
- * The tag schedules bulk syncs and NOTHING ELSE - lookups are never gated
- * on shtag state (a backup node can still legitimately receive traffic).
- * Runs in whichever process the clusterer delivers the state change to;
- * the DB ops use their own short-lived, fork-safe connections. */
+/* Sharing-tag failover hook.
+ *   ACTIVE - warm the collections from the DB snapshot before the miss storm.
+ *   BACKUP - save our state and broadcast, so the new active reloads it;
+ *            this also covers its warm load racing our save.
+ * The tag only schedules bulk syncs; lookups are never gated on it. */
 static void pcache_shtag_cb(str *tag_name, int state, int c_id, void *param)
 {
 	pcache_col_t *col;
 	int n = 0, entries = 0, bcast = 0, rc;
 
 	if (state == SHTAG_STATE_ACTIVE) {
-		/* same scope as a no-argument perf_load/perf_sync: every declared
-		 * collection - the persist flag only governs startup/shutdown */
+		/* every declared collection, as perf_load/perf_sync with no argument */
 		for (col = pcache_collection; col; col = col->next) {
 			if (!col->htable)
 				continue;
@@ -3826,7 +3307,7 @@ static void pcache_shtag_cb(str *tag_name, int state, int c_id, void *param)
 	}
 }
 
-/* perf_sync [collection] - save-then-broadcast; all declared if none named */
+/* perf_sync [collection]; all declared if none named */
 static mi_response_t *do_perf_sync(str *col_s)
 {
 	pcache_col_t *col;
@@ -3897,7 +3378,7 @@ static int w_perf_sync(struct sip_msg *msg, str *col_s)
 	return 1;
 }
 
-/* thin per-arity recipe wrappers: extract params, then defer to the workers */
+/* per-arity MI wrappers */
 #define MI_S(nm, dst) \
 	do { if (get_mi_string_param(params, nm, &(dst).s, &(dst).len) < 0) \
 		return init_mi_param_error(); } while (0)
@@ -4107,10 +3588,8 @@ static const mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-/* soft clusterer dependency: when sync_cluster_id is set, have clusterer
- * init first (so register_capability runs and "cachedb-perf-sync" shows in
- * clusterer_list_caps) - but SILENT, so a missing clusterer does not abort;
- * perf_sync then degrades to a DB save (mod_init handles it) */
+/* soft clusterer dependency when sync_cluster_id is set: init it first, but
+ * a missing clusterer only degrades perf_sync to a DB save */
 static module_dependency_t *get_deps_sync_cluster(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
@@ -4128,10 +3607,8 @@ static const dep_export_t deps = {
 	},
 };
 
-/** module exports */
-/* the own backing's reclaim process: retires drained chunks and gives
- * memory back, one tick a second, off every request path and off the
- * shared timer handler; switched off in mod_init for the HG backings */
+/* reclaim process for the own backing: retires drained chunks and returns
+ * memory, off the request paths; disabled in mod_init for HG backings */
 static void pcache_reclaim_proc(int rank)
 {
 	for (;;) {
@@ -4142,13 +3619,13 @@ static void pcache_reclaim_proc(int rank)
 
 static proc_export_t procs[] = {
 	{ "cachedb_perf reclaim", NULL, NULL, pcache_reclaim_proc, 1, 0 },
-	/* the own pull transport's receive (and, for tcp, send) process;
-	 * switched off in mod_init unless pull_transport is udp/tcp/tls */
+	/* receive (and, for tcp, send) process of the own pull transport */
 	{ "cachedb_perf transport", NULL, NULL, pcache_xport_proc, 1,
 	  PROC_FLAG_HAS_IPC },
 	{ NULL, NULL, NULL, NULL, 0, 0 },
 };
 
+/** module exports */
 struct module_exports exports = {
 	"cachedb_perf",             /* module name */
 	MOD_TYPE_CACHEDB,           /* class of this module */
@@ -4163,7 +3640,7 @@ struct module_exports exports = {
 	mi_cmds,                    /* exported MI functions */
 	0,                          /* exported pseudo-variables */
 	0,                          /* exported transformations */
-	procs,                      /* extra processes: the own backing's reclaim */
+	procs,                      /* extra processes */
 	0,                          /* module pre-initialization function */
 	mod_init,                   /* module initialization function */
 	(response_function) 0,      /* response handling function */
@@ -4176,24 +3653,12 @@ struct module_exports exports = {
 /*
  * connection management
  *
- * The collection is taken from the URL's "database" part (perf:///name)
- * or, as a convenience, from the "host" part (perf://name) - a host has
- * no meaning for a local cache.  No collection in the URL means the
- * default one.  Matching is exact and an unknown name is a hard error.
+ * The collection comes from the URL's database part (perf:///name) or host
+ * part (perf://name); none means the default.  Unknown names are an error.
  */
-/* Connections this module created, so a con arriving through the exported
- * pull API can be recognised before anything is read out of it.
- *
- * The API is bound by name through find_export, which offers no type safety
- * whatever: any module that loads cachedb_perf can call these entry points
- * and pass a cachedb_con belonging to some other backend.  Reading ->data as
- * a pcache_con at that point is a type confusion - the field where this
- * module keeps its collection pointer is, in a redis or local connection,
- * whatever that module put there.  So the pointer is checked against this
- * list instead, which never dereferences the stranger.
- *
- * Per-process (pkg), like the connections themselves, and short - one entry
- * per URL this process opened. */
+/* Connections this module created.  The pull API is bound by name with no
+ * type safety, so a con passed in is checked against this list before its
+ * ->data is read as ours.  Per-process. */
 struct pcache_con_reg {
 	pcache_con            *con;
 	struct pcache_con_reg *next;
@@ -4229,8 +3694,7 @@ static void pcache_con_unregister(pcache_con *c)
 	}
 }
 
-/* The collection behind a connection, or NULL when the connection is not
- * ours.  Every exported entry point goes through this. */
+/* the collection behind a connection, or NULL if the connection is not ours */
 static pcache_col_t *pcache_col_of(cachedb_con *con)
 {
 	struct pcache_con_reg *r;
@@ -4321,10 +3785,8 @@ static void pcache_destroy(cachedb_con *con)
 
 
 /*
- * CP-11 event raising.  Every raise is gated by evi_probe_event(), so with
- * no subscribers the cost is one shared read and nothing else - none of
- * these sit on the lock-free get/set hot path (expiry/growth run in the
- * maintenance timer, NOMEM only on a dropped write, degraded once at boot).
+ * Event raising.  Each raise is gated by evi_probe_event(); none runs on the
+ * get/set hot path.
  */
 static void pcache_on_expired(const str *key, void *ctx)
 {
@@ -4435,8 +3897,8 @@ static void pcache_raise_synced(str *coll, int src_node)
 }
 
 /*
- * the cachedb vtable (CP-04) - thin adapters over the table core.  TTL to
- * absolute-ticks conversion happens here; internals only see absolutes.
+ * cachedb vtable: thin adapters over the table.  TTLs become absolute ticks
+ * here.
  */
 static pcache_htable_t *con_ht(cachedb_con *con)
 {
@@ -4454,16 +3916,8 @@ static inline unsigned int ttl_to_abs(int expires)
 	return expires > 0 ? get_ticks() + (unsigned int)expires : 0;
 }
 
-/* Read repair on the normal get path: a miss here asks the cluster, and a
- * value that comes back is returned as if it had been local all along -
- * so a consumer gets cross-node lookups without knowing they exist.
- *
- * Off by default, and it must stay that way until the lookup can suspend
- * the transaction instead of the worker: this blocks for as long as the
- * pull takes, which on a SIP path means a worker not serving anything
- * else.  A LAN pull is a couple of milliseconds and the negative cache
- * absorbs retransmits, but "usually fast" is not the same as "safe under
- * load", which is why the startup warning says so out loud. */
+/* Read repair on the get path: a miss asks the cluster.  Blocks the worker
+ * for the pull, hence off by default. */
 static int pcache_htable_fetch(cachedb_con *con, str *attr, str *val)
 {
 	pcache_col_t *col = con ? ((pcache_con *)con->data)->col : NULL;
@@ -4475,14 +3929,8 @@ static int pcache_htable_fetch(cachedb_con *con, str *attr, str *val)
 	rc = pcache_ht_fetch(col->htable, attr, val);
 	if (rc != -2)
 		return rc;
-	/* A miss from here on.  The two conditions below skip the pull without
-	 * ever entering pcache_pull_start(), so they have to be accounted for
-	 * here or the miss disappears - which is precisely how the gap between
-	 * `misses` and `pulls_requested` came to be unexplainable.
-	 * pull_on_miss off is a deployment choice and not worth its own counter
-	 * (nothing is being refused - the feature is simply not in use), but a
-	 * collection that is not replicated IS worth counting: that is the case
-	 * an operator misreads as "pull is enabled, why is nothing pulling". */
+	/* misses skipped before pcache_pull_start() are counted here, else they
+	 * vanish from the misses/pulls_requested balance; pull_on_miss off is not */
 	if (!pull_on_miss)
 		return rc;
 	if (!pcache_pull_enabled(col)) {
@@ -4490,16 +3938,13 @@ static int pcache_htable_fetch(cachedb_con *con, str *attr, str *val)
 		return rc;
 	}
 
-	/* the pull buffer lives in this branch, not in the frame of every
-	 * local hit: this is the vtable read, and a cross-node miss is the
-	 * rare path */
+	/* keep the pull buffer out of the local-hit frame */
 	{
 		char buf[PCACHE_PULL_MAX_VAL];
 
 		if (pcache_pull_key(col, attr, buf, sizeof buf, &vlen, NULL) != 1)
 			return -2;                /* absent, or nobody answered */
 
-		/* hand back a copy the caller owns, exactly as a local hit would */
 		val->s = pkg_malloc(vlen ? vlen : 1);
 		if (!val->s) {
 			LM_ERR("no more pkg memory for a %u byte pulled value\n", vlen);
@@ -4511,9 +3956,7 @@ static int pcache_htable_fetch(cachedb_con *con, str *attr, str *val)
 	return 0;
 }
 
-/* CACHEDB_CAP_GET_BUF: the allocation-free read.  Note this deliberately
- * does NOT touch pcache_htable_fetch() above - the vtable get() keeps its
- * own documented behaviour, byte for byte. */
+/* CACHEDB_CAP_GET_BUF: the allocation-free read; get() is unchanged */
 static int pcache_htable_fetch_buf(cachedb_con *con, str *attr, char *buf,
 		unsigned int buflen, unsigned int *vlen, unsigned int *needed)
 {
@@ -4562,8 +4005,7 @@ static int pcache_htable_insert(cachedb_con *con, str *attr, str *val,
 		pcache_raise_nomem(&col->col_name, attr, val ? val->len : 0);
 		return -1;
 	}
-	/* the key exists here now, so any conclusion we drew about the
-	 * cluster not having it no longer describes it */
+	/* the key exists here now; drop any cached negative */
 	if (rc >= 0)
 		pcache_neg_clear(col, attr);
 	return rc;
@@ -4641,9 +4083,8 @@ static int pcache_htable_iter_keys(cachedb_con *con,
 
 
 /*
- * glob operations (CP-07): perf_del / perf_mget / perf_mget_json, all on
- * the pcache_ht_iter() walker.  Redis SCAN-class guarantee: entries
- * mutating concurrently may be seen once, twice or not at all.
+ * glob operations: perf_del / perf_mget / perf_mget_json.  Entries changing
+ * concurrently may be seen once, twice or not at all.
  */
 
 static pcache_col_t *col_by_name(const str *name)
@@ -4652,8 +4093,7 @@ static pcache_col_t *col_by_name(const str *name)
 	str def = str_init(PCACHE_DEFAULT_COLLECTION);
 
 	if (!name || !name->s || !name->len) {
-		/* no collection argument = wherever cache_store("perf", ...)
-		 * goes, i.e. the default connection's collection */
+		/* default: the default connection's collection */
 		if (pcache_default_col)
 			return pcache_default_col;
 		name = &def;
@@ -4720,10 +4160,8 @@ static int del_collect_cb(const str *key, const str *val, unsigned int exp,
 	return 0;
 }
 
-/* glob-delete core, shared by the script perf_del() and the MI perf_del:
- * collect matches lock-free, then remove one by one - a glob delete is not
- * an atomic snapshot (and cannot usefully be).  Returns the number removed
- * (>= 0), or -1 on OOM (the removal is then partial). */
+/* glob delete: collect matches lock-free, then remove one by one (not an
+ * atomic snapshot).  Returns the number removed, or -1 on OOM (partial). */
 static int perf_del_run(pcache_col_t *col, str *glob)
 {
 	struct del_ctx dc;
@@ -4788,9 +4226,8 @@ static int jb_put(struct jbuf *jb, const char *p, unsigned int n)
 	return 0;
 }
 
-/* length-based JSON string emission: escapes quote, backslash and
- * control bytes (values may be binary - embedded NULs survive); bytes
- * >= 0x80 pass through, so strict-JSON consumers need UTF-8 values */
+/* escapes quote, backslash and control bytes; bytes >= 0x80 pass through,
+ * so strict-JSON consumers need UTF-8 values */
 static int jb_put_jstr(struct jbuf *jb, const str *s)
 {
 	static const char hexd[] = "0123456789abcdef";
@@ -4945,21 +4382,16 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 }
 
 
-/* CP-05 + CP-09: the maintenance timer.  Runs in a single timer process
- * (so it is the SOLE splitter, which the growth code relies on).  First
- * reclaims expired records (CP-05, hint-routed - an idle collection costs a
- * 16-hints-per-line scan), then grows any collection whose load factor has
- * climbed past growth_load_factor (CP-09), bounded per tick. */
+/* Maintenance timer: reaps expired records, then grows collections past
+ * growth_load_factor, bounded per tick.  Runs in one timer process, so it
+ * is the sole splitter. */
 static void pcache_expire_timer(unsigned int ticks, void *param)
 {
 	pcache_col_t *col;
 	pcache_ht_totals_t t;
 	unsigned int now = get_ticks(), freed, split, prev_b, new_b;
 
-	/* one-shot: huge pages were requested but the granted tier is
-	 * sub-optimal.  Deferred here from mod_init because EVI has no
-	 * subscribers that early; the shm gate's atomic test-and-set makes it
-	 * fire exactly once even if more than one process runs the timer. */
+	/* one-shot degraded-memory event; see mem_degraded */
 	if (mem_degraded && mem_degraded_gate &&
 	        __sync_bool_compare_and_swap(mem_degraded_gate, 0, 1))
 		pcache_raise_degraded();
@@ -4968,8 +4400,7 @@ static void pcache_expire_timer(unsigned int ticks, void *param)
 		if (!col->htable)
 			continue;
 
-		/* only pay for the per-key expiry callback where a collection
-		 * opted in AND someone is listening */
+		/* per-key expiry events only when opted in and subscribed */
 		if (col->raise_expired && evi_probe_event(evi_expired_id))
 			freed = pcache_ht_sweep(col->htable, now,
 				pcache_on_expired, &col->col_name);
@@ -5030,7 +4461,7 @@ static void mark_collections(char *csv_s, const char *what, enum col_flag f)
 	free_csv_record(cr);
 }
 
-/* ---- consumer-facing pull API (pull_api.h) ---------------------------- */
+/* pull API (pull_api.h) */
 
 static int pcache_api_pull_start(cachedb_con *con, str *key, int *fd,
 		unsigned int *handle)
@@ -5078,8 +4509,7 @@ static int pcache_api_pull_finish(cachedb_con *con, str *key,
 	if (rc != 1 || !val)
 		return rc;
 
-	/* hand back memory the caller owns, exactly as a get would - the value
-	 * is in the local table too, so a plain get would find it as well */
+	/* caller-owned copy, as a get returns */
 	val->s = pkg_malloc(vlen ? vlen : 1);
 	if (!val->s) {
 		LM_ERR("no more pkg memory for a %u byte pulled value\n", vlen);
@@ -5116,15 +4546,9 @@ static int mod_init(void)
 	pcache_col_t *col;
 	int i;
 
-	/* which of the four memory backings (DESIGN 2.6.1) does this host
-	 * support?  Probed by trying, pre-fork; the arena CONSUMES the
-	 * result only if arena_hugepage_mb>0 (CP-02/CP-20) - with it unset
-	 * (the default), this is a capability check only and every
-	 * cachedb_perf allocation actually goes through plain shm_malloc(),
-	 * fully counted in core's own shmem: stats, not a separate
-	 * reservation. The two NOTICEs below are deliberately worded to
-	 * never be mistaken for each other - a probe result is not a
-	 * report of what is actually in use. */
+	/* probe the memory tiers this host supports (pre-fork).  Only the arena
+	 * uses it, and only with arena_hugepage_mb > 0; otherwise allocations go
+	 * through shm_malloc(). */
 	pcache_mem_probe();
 
 	if (pcache_mem.tier == PCACHE_MEM_HUGETLB)
@@ -5159,22 +4583,17 @@ static int mod_init(void)
 			"returned on exit, so nothing is held while unused)\n");
 	}
 
-	/* the slab arena (DESIGN 3.3) - shm globals, pre-fork; decides the
-	 * memory backing (own chunks / the core HG arena / an HG arena of our
-	 * own) and says which one is in use */
+	/* slab arena (shm, pre-fork); picks the memory backing */
 	if (pcache_arena_init() < 0) {
 		LM_ERR("failed to init the arena\n");
 		return -1;
 	}
 	pcache_arena_backing_notice();
-	/* the reclaim process exists only for the own backing; HG reclaims
-	 * its own arenas (core / own-hg) */
+	/* the reclaim process is only for the own backing */
 	if (pcache_arena_backing() != PCACHE_BACKING_OWN)
 		procs[0].no = 0;
 
-	/* CP-11: huge pages were asked for but the arena settled on a lesser
-	 * tier - flagged now, raised from the first timer tick (EVI has no
-	 * subscribers this early) via a shm one-shot gate */
+	/* huge pages requested, lesser tier granted: raised from the first tick */
 	mem_degraded = (pcache_arena_hugepage_mb > 0 &&
 		pcache_arena_tier() != PCACHE_MEM_HUGETLB);
 	if (mem_degraded) {
@@ -5217,8 +4636,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* CP-11: publish the observability events.  A failed publish just
-	 * leaves the id EVI_ERROR and the raise is skipped - never fatal. */
+	/* a failed publish leaves EVI_ERROR and the raise is skipped */
 	evi_expired_id  = evi_publish_event(evi_expired_name);
 	evi_nomem_id    = evi_publish_event(evi_nomem_name);
 	evi_grown_id    = evi_publish_event(evi_grown_name);
@@ -5229,9 +4647,8 @@ static int mod_init(void)
 	    evi_synced_id == EVI_ERROR)
 		LM_ERR("could not publish one or more cachedb_perf events\n");
 
-	/* CP-19 Stage 2: cluster sync is a soft, opt-in feature.  It needs a DB
-	 * (peers pull from it) and the clusterer module; if either is missing,
-	 * perf_sync degrades to a DB save with no peer signal - never fatal. */
+	/* cluster sync is opt-in; without a DB or the clusterer, perf_sync only
+	 * saves to the DB */
 	if (sync_cluster_id > 0) {
 		if (load_clusterer_api(&clusterer_api) != 0) {
 			LM_WARN("clusterer module not available - the cluster features "
@@ -5247,8 +4664,7 @@ static int mod_init(void)
 				"cluster features are disabled\n");
 		} else {
 			cluster_ready = 1;
-			/* the DB is what perf_sync snapshots through; a cache that
-			 * only pulls has no use for one */
+			/* only perf_sync needs the DB */
 			if (db_url && *db_url) {
 				sync_ready = 1;
 				LM_INFO("cluster sync active on cluster_id %d (cap <%.*s>)\n",
@@ -5261,9 +4677,8 @@ static int mod_init(void)
 		}
 	}
 
-	/* CP-15.12: arm the failover sync on a sharing tag.  Independent of
-	 * sync_cluster_id (a deployment may want only the failover hook), so
-	 * bind the clusterer API here if the sync block did not. */
+	/* failover sync on a sharing tag; independent of sync_cluster_id, so bind
+	 * the clusterer here if not done above */
 	if (sync_shtag_str && *sync_shtag_str) {
 		char *slash = strchr(sync_shtag_str, '/');
 
@@ -5291,12 +4706,9 @@ static int mod_init(void)
 		}
 	}
 
-	/* CP-15.5: cross-node pull.  Opt-in per collection, and inert without
-	 * it: a key is only worth asking the cluster about if it means the
-	 * same thing on every node, which only the operator knows. */
+	/* cross-node pull, opt-in per collection */
 	if (replicate_collections && *replicate_collections) {
-		/* pull_bind set and no transport named = the module's own udp
-		 * socket; nothing set = the clusterer's links, zero config */
+		/* pull_bind set, no transport = own udp socket; neither = clusterer links */
 		const char *pt = pull_transport_str ? pull_transport_str
 			: (pcache_pull_bind && *pcache_pull_bind) ? "udp" : "bin";
 		int use_clctr = !strcasecmp(pt, "clctr");
@@ -5304,8 +4716,7 @@ static int mod_init(void)
 		            !strcasecmp(pt, "tcp") ? PCACHE_XPORT_TCP :
 		            !strcasecmp(pt, "tls") ? PCACHE_XPORT_TLS : PCACHE_XPORT_NONE;
 
-		/* "bins" = the clusterer's links too; whether they are bin or
-		 * bins is the clusterer's node URLs, not ours */
+		/* "bins" also means the clusterer's links */
 		if (strcasecmp(pt, "bin") && strcasecmp(pt, "bins") && !use_clctr &&
 		        !xkind) {
 			LM_ERR("bad pull_transport '%s' - expected bin, bins, udp, tcp, "
@@ -5321,12 +4732,8 @@ static int mod_init(void)
 			pull_via_xport = 1;
 		}
 		if (use_clctr) {
-			/* The controller is optional at build time AND at run time.
-			 * An explicit clctr choice this deployment cannot honour
-			 * degrades to the bin transport - or to no pull at all if
-			 * the clusterer is missing too, which the cluster_ready
-			 * check below already handles.  Loudly, but the cache
-			 * itself is never held hostage by its cluster plane. */
+			/* an unavailable clctr degrades to bin (or no pull without a clusterer);
+			 * the cache itself keeps working */
 #ifdef CLUSTERER_CTRL_SUPPORT
 			if (load_clctr_api(&clctr_api) < 0) {
 				LM_WARN("pull_transport 'clctr' but clusterer_controller "
@@ -5395,12 +4802,8 @@ static int mod_init(void)
 			memset(pull_slots, 0, (size_t)pull_slot_count * pull_slot_sz);
 			memset(peer_stats, 0,
 				(CL_MAX_NODE_ID + 1) * sizeof *peer_stats);
-			/* One eventfd per slot, created HERE - before the fork - so
-			 * that every worker inherits every fd.  This is the whole
-			 * reason the pool is fixed and preallocated: a reply arrives
-			 * in whichever process the transport chose, and it has to be
-			 * able to wake the process that asked.  An fd created after
-			 * the fork exists only in its own process and could not. */
+			/* one eventfd per slot, created pre-fork so any process can wake the
+			 * waiter */
 			for (i = 0; i < pull_slot_count; i++) {
 				pull_slot_at(i)->efd = eventfd(0, EFD_NONBLOCK);
 				if (pull_slot_at(i)->efd < 0) {
@@ -5432,13 +4835,8 @@ static int mod_init(void)
 			}
 			mark_collections(replicate_collections, "replicate_collections",
 				COL_FLAG_REPLICATE);
-			/* Reclaim slots whose answer never became conclusive.  A
-			 * microsecond timer rather than the second-grained expiry
-			 * sweep: pull_timeout_ms is set in milliseconds and a
-			 * suspended lookup should not wait whole seconds past it.
-			 * Checked at half the timeout so a slot is reclaimed within
-			 * ~1.5x of it, and never tied to expiry_sweep_period, which
-			 * an operator is allowed to switch off entirely. */
+			/* microsecond timer at half pull_timeout_ms, independent of
+			 * expiry_sweep_period (which may be 0) */
 			{
 				unsigned int iv = (unsigned int)pull_timeout_ms * 1000 / 2;
 
@@ -5454,13 +4852,8 @@ static int mod_init(void)
 				}
 			}
 			pull_ready = 1;
-			/* One pair of stats per collection, named <collection>-<stat>
-			 * via build_stat_name() (the same convention call_center uses
-			 * for its per-flow stats).  Registered here rather than in the
-			 * static table because the collection list is only known after
-			 * cache_collections has been parsed.  A failure is not fatal:
-			 * losing a statistic must never stop the module serving
-			 * traffic, so it warns and carries on. */
+			/* per-collection stats, registered once cache_collections is parsed; a
+			 * failure only warns */
 			{
 				pcache_col_t *sc;
 
@@ -5536,14 +4929,13 @@ static int mod_init(void)
 			col->col_name.len, col->col_name.s, col->size_log2);
 	}
 
-	/* CP-11 / CP-19: per-collection opt-ins */
+	/* per-collection opt-ins */
 	mark_collections(event_expired_collections, "event_expired_collections",
 		COL_FLAG_EXPIRED);
 	mark_collections(persist_collections, "persist_collections",
 		COL_FLAG_PERSIST);
 
-	/* CP-19: bind the DB backend and load the persisted collections before
-	 * the workers fork (so every worker starts with a warm cache) */
+	/* load the persisted collections before the workers fork */
 	if (db_url && *db_url) {
 		str url = { db_url, strlen(db_url) };
 		str tbl = { db_table, strlen(db_table) };
@@ -5576,8 +4968,7 @@ static int mod_init(void)
 				return -1;
 			}
 
-			/* a groupless URL becomes the engine's default connection;
-			 * remember its collection for the glob functions */
+			/* a groupless URL is the default connection; remember its collection */
 			if (!((pcache_con *)con->data)->id->group_name)
 				pcache_default_col = ((pcache_con *)con->data)->col;
 
@@ -5610,8 +5001,7 @@ static int mod_init(void)
 			"but their memory is never reclaimed\n");
 	}
 
-	/* the own pull transport's process exists only when that transport
-	 * was selected above (udp/tcp/tls); decided here, after the parsing */
+	/* the own pull transport's process exists only for udp/tcp/tls */
 	if (!pull_via_xport)
 		procs[1].no = 0;
 
@@ -5620,8 +5010,7 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	/* drop any allocator state inherited over fork - two processes must
-	 * never share a bump pointer (pcache_arena.h) */
+	/* drop allocator state inherited over fork: no shared bump pointer */
 	pcache_arena_child_init();
 	return 0;
 }
@@ -5630,7 +5019,7 @@ static void mod_destroy(void)
 {
 	pcache_col_t *col, *next;
 
-	/* CP-19: persist the marked collections on a graceful shutdown */
+	/* persist the marked collections on a graceful shutdown */
 	if (db_mode >= 2 && pcache_db_enabled())
 		for (col = pcache_collection; col; col = col->next)
 			if (col->persist && col->htable)

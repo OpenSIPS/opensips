@@ -23,18 +23,14 @@
 #ifndef _PCACHE_MEM_H_
 #define _PCACHE_MEM_H_
 
-/* the four-tier huge-page ladder (DESIGN 2.6.1 / CP-20), best first */
+/* huge-page backing tiers, best first */
 enum pcache_mem_tier {
-	PCACHE_MEM_HUGETLB = 1,   /* mmap MAP_HUGETLB - best, 1.42x on chases */
+	PCACHE_MEM_HUGETLB = 1,   /* mmap MAP_HUGETLB */
 	PCACHE_MEM_THP_ADVISE,    /* shmem THP via MADV_HUGEPAGE, huge at fault */
 	PCACHE_MEM_THP_COLLAPSE,  /* shmem THP via MADV_COLLAPSE, post-fill */
 	PCACHE_MEM_4K,            /* plain pages - always works */
-	/* Not a backing tier at all: there is no dedicated reservation, so
-	 * every allocation goes through the core's shm_malloc() and the real
-	 * page backing is whatever the CORE allocator uses (under HG_MALLOC
-	 * that is 2M hugepages).  Reporting 4K here was wrong - it named a
-	 * property of an arena that does not exist and read as "your cache
-	 * is on small pages" when it may well not be. */
+	/* no dedicated reservation: pages are whatever the core shm
+	 * allocator uses */
 	PCACHE_MEM_NO_ARENA = 99,
 };
 
@@ -50,8 +46,8 @@ extern struct pcache_mem_info pcache_mem;
 void pcache_mem_probe(void);
 const char *pcache_mem_tier_str(enum pcache_mem_tier tier);
 
-/* CP-20: reserve a huge-page-backed, mlock-pinned, 2M-aligned MAP_SHARED
- * region for the arena (pre-fork, never unmapped). NULL -> use shm_malloc. */
+/* reserve a huge-page-backed, mlock-pinned, 2M-aligned MAP_SHARED region
+ * for the arena (pre-fork, never unmapped); NULL -> use shm_malloc */
 void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 		unsigned long *locked_mb);
 

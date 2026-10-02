@@ -26,10 +26,8 @@
 #include "../../cachedb/cachedb.h"
 #include "../../cachedb/cachedb_cap.h"
 
-/* log2 of a collection's initial bucket count.  Growth (CP-09) resizes at
- * runtime, so this only sets the starting point.  Configured values are
- * clamped to [PCACHE_SIZE_MIN, PCACHE_SIZE_MAX]: an unbounded "1 << size"
- * is undefined behaviour at 32 and a zero-size table at 64. */
+/* log2 of a collection's initial bucket count, clamped to [MIN, MAX];
+ * tables grow at runtime */
 #define PCACHE_SIZE_MIN      4
 #define PCACHE_SIZE_MAX     24
 #define PCACHE_SIZE_DEFAULT 14
@@ -40,25 +38,18 @@ struct pcache_htable;
 
 typedef struct pcache_col {
 	str col_name;
-	unsigned int size_log2;         /* initial table size (log2 buckets) */
+	unsigned int size_log2;
 	struct pcache_htable *htable;
-	int raise_expired;              /* CP-11: emit E_CACHEDB_PERF_EXPIRED */
-	int persist;                    /* CP-19: load-on-start / save-on-stop */
-	int replicate;                  /* CP-15: may be pulled across nodes    */
-	/* cluster-sync observability (shm: written by whichever process runs
-	 * the sync, read by perf_stats).  These record when this node last
-	 * pushed or pulled - NOT that the caches currently match. */
-	unsigned int last_sync_out;     /* ticks: last save-and-broadcast here */
-	unsigned int last_sync_in;      /* ticks: last reload asked for by a peer */
-	int last_sync_src;              /* node id that asked for that reload */
-	/* CP-15 convergence, PER COLLECTION.  The pull_stats[] counters are
-	 * module-wide, so with more than one collection they cannot show WHICH
-	 * one is converging - and last_sync_out/in stay -1 forever unless
-	 * perf_sync is explicitly invoked, which says nothing about pull-based
-	 * convergence.  These two do.  shm, written by any worker, so both are
-	 * touched only with __sync_fetch_and_add. */
-	unsigned long pulled_in;        /* values fetched from a peer AND stored */
-	unsigned long served_out;       /* times we answered a peer WITH a value */
+	int raise_expired;              /* raise E_CACHEDB_PERF_EXPIRED */
+	int persist;                    /* load on start, save on stop */
+	int replicate;                  /* may be pulled by other nodes */
+	/* last sync times (ticks) for perf_stats; not a consistency signal */
+	unsigned int last_sync_out;
+	unsigned int last_sync_in;
+	int last_sync_src;
+	/* per-collection pull counters, updated with __sync_fetch_and_add */
+	unsigned long pulled_in;
+	unsigned long served_out;
 	struct pcache_col *next;
 } pcache_col_t;
 

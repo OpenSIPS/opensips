@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 OpenSIPS Solutions
+ * Copyright (C) 2026 Yury Kirsanov
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -19,17 +19,8 @@
  */
 
 /*
- * The module's own pull transport - see pcache_xport.h for the shape.
- *
- * Why it exists: a pull over the clusterer's bin links is one TCP message
- * each way, and every one of them is handed from the core's TCP main to a
- * receiver and back.  At a few thousand pulls a second that dispatcher is
- * one process at the edge of a core, and every receive-side stall behind
- * it becomes head-of-line blocking for everything else on the link.  Here
- * the sockets are the module's: datagrams go straight from the asking
- * process to the wire and straight from the wire to one transport process
- * that only parses, copies into the slot and wakes the waiter; streams are
- * owned by that process end to end.
+ * Module-owned pull transport (see pcache_xport.h), so pulls do not go
+ * through the core TCP main process and its dispatch.
  */
 
 /* io_wait.h sets up the GNU fcntl extensions itself - it must come first */
@@ -72,7 +63,7 @@ int   pcache_pull_port;
 #define XP_FRAME_HDR    4                  /* tcp: length of what follows   */
 #define XP_MAX_MSG      65535
 #define XP_HELLO_S      30                 /* heartbeat announce period     */
-#define XP_HELLO_TICK_S 2                  /* the announce timer            */
+#define XP_HELLO_TICK_S 2
 #define XP_SEND_TMO_MS  200                /* tcp blocking write budget     */
 #define XP_CONN_TMO_MS  200                /* tcp connect budget            */
 #define XP_SNDBUF       (4 * 1024 * 1024)
@@ -89,7 +80,7 @@ struct xp_peer {
 
 struct xp_shm {
 	gen_lock_t lock;
-	int proc_no;                            /* the transport process        */
+	int proc_no;
 	struct xp_peer peers[CL_MAX_NODE_ID + 1];
 	unsigned long st[PCACHE_XPORT_NSTATS];
 };
@@ -112,14 +103,14 @@ struct xp_conn {
 
 static int kind = PCACHE_XPORT_NONE;
 static int my_node;
-static int max_msg;                         /* largest payload we carry     */
+static int max_msg;
 static int udp_fd = -1;                     /* shared, pre-fork             */
 static int listen_fd = -1;                  /* tcp, pre-fork                */
 static union sockaddr_union bind_su;
 static socklen_t bind_len;
 static struct xp_shm *xp;
 static pcache_xport_recv_f *recv_cb;
-/* the transport process's own state */
+/* transport process only */
 static struct xp_conn *conns;               /* incoming connections         */
 static struct xp_conn *out[CL_MAX_NODE_ID + 1];
 static char *rxbuf;
@@ -128,8 +119,6 @@ static inline void st_inc(int i)
 {
 	__sync_fetch_and_add(&xp->st[i], 1);
 }
-
-/* ---- addresses --------------------------------------------------------- */
 
 /* "ip:port" / "[ip6]:port" -> sockaddr; 0 on success */
 static int parse_addr(const char *s, int len, union sockaddr_union *su,
@@ -271,8 +260,6 @@ int pcache_xport_peers_known(void)
 			n++;
 	return n;
 }
-
-/* ---- sockets ----------------------------------------------------------- */
 
 static int set_nonblock(int fd)
 {
@@ -444,8 +431,6 @@ static int peer_derive(int node, union sockaddr_union *su, socklen_t *sulen)
 	return 0;
 }
 
-/* ---- sending ------------------------------------------------------------ */
-
 static void put_hdr(char *b)
 {
 	uint32_t n = htonl((uint32_t)my_node);
@@ -484,7 +469,7 @@ int pcache_xport_send(int dst_node, const char *payload, int len)
 		st_inc(ST_TX);
 		return 0;
 	}
-	/* tcp: the transport process owns the connections */
+	/* tcp: only the transport process may touch the connections */
 	m = shm_malloc(sizeof *m + len);
 	if (!m) {
 		st_inc(ST_TX_FAIL);
@@ -504,8 +489,6 @@ int pcache_xport_send(int dst_node, const char *payload, int len)
 	}
 	return 0;
 }
-
-/* ---- the transport process ---------------------------------------------- */
 
 static struct xp_conn *conn_new(int fd, int node)
 {
@@ -763,7 +746,6 @@ void pcache_xport_proc(int rank)
 		LM_ERR("cannot watch the pull listen socket\n");
 		return;
 	}
-	/* announce now and every XP_HELLO_S: peers learn where we pull */
 	tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	if (tfd < 0) {
 		LM_ERR("timerfd: %s - peers will only be learned from their own "

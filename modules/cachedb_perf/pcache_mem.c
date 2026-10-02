@@ -21,18 +21,10 @@
  */
 
 /*
- * Huge-page tier detection (DESIGN 2.6.1 / CP-20, detection half).
- *
- * Every tier is detected by TRYING it on a scratch mapping and verifying
- * the result through /proc/self/smaps - never inferred from the kernel
- * version or from sysfs configuration (the 6.8/6.12 MADV_COLLAPSE
- * divergence proves such checks lie).  The scratch mapping is unmapped
- * after the probe; the never-unmap invariant (DESIGN 3.2) applies to the
- * arena, which holds entries - not to a probe that never does.
- *
- * The probe is advisory: the arena allocator (CP-02/CP-20) re-runs the
- * ladder per chunk, so a pool that appears or drains after startup is
- * handled at allocation time.  This runs pre-fork, from mod_init.
+ * Huge-page tier detection.  Each tier is detected by trying it on a scratch
+ * mapping and verifying the result in /proc, never inferred from the kernel
+ * version or sysfs.  The probe is advisory; the arena re-runs the ladder at
+ * reservation time.  Runs pre-fork, from mod_init.
  */
 
 #include <stdio.h>
@@ -74,11 +66,9 @@ static int read_vm_int(const char *path)
 	return v;
 }
 
-/* global huge shmem, /proc/meminfo "ShmemHugePages:" in kB.  This is the
- * verification for MADV_COLLAPSE: a shmem collapse creates the huge folio
- * but does NOT install the PMD mapping in the caller's page table, so
- * per-process smaps shows nothing until a re-fault - the bench verified
- * through this same global counter (DESIGN 2.6.1) */
+/* /proc/meminfo "ShmemHugePages:" in kB.  Used to verify MADV_COLLAPSE:
+ * a shmem collapse does not PMD-map the folio in the caller, so smaps shows
+ * nothing until a re-fault */
 static long read_shmem_huge_kb(void)
 {
 	FILE *f;
@@ -98,8 +88,7 @@ static long read_shmem_huge_kb(void)
 	return kb;
 }
 
-/* is the 2M range starting at @addr PMD-mapped in this process?
- * ("verify, never infer" - DESIGN 2.6.1) */
+/* is the 2M range starting at @addr PMD-mapped in this process? */
 static int range_is_huge(unsigned long addr)
 {
 	FILE *f;
@@ -162,16 +151,9 @@ void pcache_mem_probe(void)
 		return;
 	}
 
-	/* Tiers 2 and 3 need a 2M-aligned shmem scratch, and aligning the VA
-	 * inside an unaligned mapping is NOT enough: shmem THP requires the
-	 * VA and the shmem *file offset* to be congruent mod 2M, and offset
-	 * 0 is pinned to wherever the mapping starts.  A VA-aligned range
-	 * inside an unaligned mapping sits at offset != 0 there and is
-	 * simply ineligible (THPeligible 0, MADV_COLLAPSE EINVAL) - found
-	 * the hard way: the probe passed standalone and failed in-process
-	 * purely on ASLR luck.  So: reserve VA PROT_NONE first, then
-	 * MAP_FIXED the shmem at a 2M boundary inside the reservation - an
-	 * atomic replace, no race with other mappings. */
+	/* shmem THP needs the VA and the file offset congruent mod 2M, so
+	 * aligning inside an unaligned mapping is not enough: reserve VA
+	 * PROT_NONE, then MAP_FIXED the shmem at a 2M boundary inside it */
 	len = 2 * PCACHE_HPS;
 	resv = mmap(NULL, len, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	if (resv == MAP_FAILED)
@@ -193,9 +175,8 @@ void pcache_mem_probe(void)
 		goto out;
 	}
 
-	/* tier 3: collapse the already-faulted 4K pages in place.  Verified
-	 * by the ShmemHugePages delta, not smaps: shmem collapse creates the
-	 * huge folio without PMD-mapping it here (later faults do that) */
+	/* tier 3: collapse the already-faulted 4K pages in place; verified by
+	 * the ShmemHugePages delta, not smaps */
 	shmem_kb = read_shmem_huge_kb();
 	rc = madvise(aligned, PCACHE_HPS, MADV_COLLAPSE);
 	if (rc == 0 && shmem_kb >= 0 &&
@@ -211,12 +192,10 @@ out:
 }
 
 /*
- * CP-20: reserve a large 2M-aligned MAP_SHARED region for the arena, backed
- * by huge pages via the same ladder as the probe, mlock-pinned against swap.
- * Created pre-fork and never unmapped, so every worker inherits it (the
- * invariant the lock-free read path and CP-09 growth both need).  Returns
- * the base (NULL on total failure -> caller falls back to shm_malloc),
- * sets *tier to what was achieved and *locked_mb to the pinned amount.
+ * Reserve a 2M-aligned MAP_SHARED arena region, huge-page backed via the
+ * same ladder as the probe and mlock-pinned.  Created pre-fork and never
+ * unmapped, which the lock-free read path relies on.  Returns NULL on
+ * failure (caller falls back to shm_malloc).
  */
 void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 		unsigned long *locked_mb)
@@ -235,25 +214,12 @@ void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 	if (p != MAP_FAILED) {
 		memset(p, 0, asize);           /* commit the pool pages */
 		*tier = PCACHE_MEM_HUGETLB;
-		/*
-		 * No mlock() call needed here (tier 1 is already unswappable by
-		 * construction, per the comment above) - but report the nominal
-		 * size as pinned anyway, matching HG_MALLOC's own hg_mem_reserve()
-		 * convention for the identical tier-1 case. Leaving this at the
-		 * init'd 0 was technically true (no mlock() syscall happened) but
-		 * reads, side by side with HG_MALLOC's own tier-1 NOTICE line, as
-		 * "this reservation is unprotected against swap" - which is false;
-		 * it is exactly as protected as HG_MALLOC's, just via a different
-		 * mechanism. Caught live during a real diagnosis session (2026-08-07)
-		 * by the same kind of confusion the tier_probe/tier_active split
-		 * above was written to eliminate.
-		 */
+		/* hugetlb pages are unswappable: report them as pinned */
 		*locked_mb = asize >> 20;
 		return p;
 	}
 
-	/* tiers 2-4: 2M-aligned MAP_SHARED|ANON (reserve PROT_NONE, then
-	 * MAP_FIXED at a 2M boundary - VA/offset congruence, DESIGN 2.6.1) */
+	/* tiers 2-4: 2M-aligned shmem, aligned as in the probe */
 	resv = mmap(NULL, asize + PCACHE_HPS, PROT_NONE,
 	            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
 	if (resv == MAP_FAILED)
@@ -267,8 +233,8 @@ void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 		return NULL;
 	}
 
-	/* advise huge before first touch (tier 2), then pin+populate: a cold
-	 * mlock populates to pin, so it doubles as the pre-fault (DESIGN 2.6.2) */
+	/* advise huge before first touch; mlock populates, so it doubles as
+	 * the pre-fault */
 	madvise(base, asize, MADV_HUGEPAGE);
 	shmem_kb = read_shmem_huge_kb();
 	if (mlock(base, asize) == 0) {

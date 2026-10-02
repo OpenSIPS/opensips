@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 VoIPcloud
+ * Copyright (C) 2026 Yury Kirsanov
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -19,19 +19,8 @@
  */
 
 /*
- * Asynchronous cross-node pull, for a consumer that would rather suspend
- * a transaction than occupy a process while the cluster answers.
- *
- *     pcache_pull_api_t pull;
- *     if (load_pcache_pull_api(&pull) == 0) ...        (mod_init)
- *
- *     rc = pull.start(con, &key, &fd, &handle);
- *     if (rc == 1)  -> wait on @fd, then call finish()
- *     if (rc == 0)  -> the cluster has already answered: nobody has it
- *     if (rc < 0)   -> cannot pull (not enabled, no peers, no free slot)
- *
- * Binding is optional by design: a consumer that cannot find this simply
- * does not do cross-node lookups, exactly as today.
+ * Asynchronous cross-node pull: bind with load_pcache_pull_api() at
+ * mod_init, start() a pull, wait on the returned fd, then finish().
  */
 
 #ifndef PCACHE_PULL_API_H
@@ -41,32 +30,22 @@
 #include "../../sr_module.h"
 #include "../../cachedb/cachedb.h"
 
-/* Begin a pull for @key on @con's collection.  On success @fd becomes
- * readable once an answer has landed (or the request has been settled),
- * and @handle identifies it to finish().
- * @return 1 = started, 0 = already known absent, -1 = cannot pull. */
+/* Pull @key for @con's collection; @fd turns readable when the request is
+ * settled.  1 = started, 0 = known absent, -1 = cannot pull. */
 typedef int (*pcache_pull_start_f)(cachedb_con *con, str *key, int *fd,
 		unsigned int *handle);
 
-/* As start(), but ask one node first instead of the whole cluster.  The
- * caller supplies @node_id from whatever knowledge it has of where the
- * key was put; it is treated as a hint and validated against current
- * membership, so a stale or nonsensical one costs nothing but the usual
- * broadcast.  @node_id <= 0 behaves exactly like start(). */
+/* As start(), but ask @node_id first; an invalid hint falls back to a
+ * broadcast, @node_id <= 0 is plain start(). */
 typedef int (*pcache_pull_start_at_f)(cachedb_con *con, str *key,
 		int node_id, int *fd, unsigned int *handle);
 
-/* This node's id in the cluster the cache is part of, 0 if it has none.
- * A consumer that wants to record where it stored something needs this,
- * and getting it from here saves it from binding the clusterer itself. */
+/* this node's cluster id, 0 if none */
 typedef int (*pcache_my_node_id_f)(cachedb_con *con);
 
-/* Collect a started pull.  Safe to call after a timeout as well as after
- * the descriptor fires - it releases the request either way, so a caller
- * that gives up leaks nothing.  On a hit @val is pkg memory the caller
- * owns; the value has also been stored locally, so an ordinary get will
- * now find it.
- * @return 1 = value in @val, 0 = definitively absent, -1 = no answer. */
+/* Collect and release a started pull (also after a timeout).  On a hit
+ * @val is pkg memory owned by the caller and the value is cached locally.
+ * 1 = value in @val, 0 = absent, -1 = no answer. */
 typedef int (*pcache_pull_finish_f)(cachedb_con *con, str *key,
 		unsigned int handle, str *val);
 
