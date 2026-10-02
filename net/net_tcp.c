@@ -2685,6 +2685,14 @@ static int tcp_close_conn_run(void *data)
 	if (!conn)
 		return -1;
 
+	/* take the fd out of the reactor before it is closed, as every other
+	 * TCP main destroy path does - otherwise the stale entry captures the
+	 * next connection that reuses the fd number */
+	if ((conn->flags & F_CONN_REMOVED) != F_CONN_REMOVED && conn->fd != -1) {
+		reactor_del_all(conn->fd, -1, IO_FD_CLOSING);
+		conn->flags |= F_CONN_REMOVED;
+	}
+
 	tcp_conn_destroy(conn);
 	return 0;
 }
