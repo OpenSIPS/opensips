@@ -306,14 +306,13 @@ accumulate. Values are clamped to the [4, 24] range; the default
 is 14 (16384 buckets).
 
 
-The *cachedb_local* replication marker
-("/r") is rejected: this cache does not replicate per operation.
-To let other nodes pull a collection, list it in
-[replicate_collections](#replicate_collections-string) instead.
+The *cachedb_local* replication marker ("/r") is not accepted here;
+see [replicate_collections](#replicate_collections-string).
 
 
 ```opensips title="Set cache_collections parameter"
 ...
+# "th" starts at 2^16 buckets, "profiles" at the default 2^14
 modparam("cachedb_perf", "cache_collections", "th=16;profiles")
 ...
 ```
@@ -710,6 +709,12 @@ Nothing is pulled unless it is listed here, and the default is
 to list nothing.
 
 
+This replaces *cachedb_local*'s "/r" collection suffix: declare
+the collection in *cache_collections* as usual and list it here.
+It is not per-operation replication - a node that misses a key
+asks its peers for it.
+
+
 The opt-in is deliberate and cannot be inferred: a key is only
 worth asking the cluster about if it means the same thing on
 every node. That holds for keys derived from the call - the
@@ -743,8 +748,12 @@ from its side is true.
 
 
 ```opensips title="Set replicate_collections parameter"
+...
+# cachedb_local:  modparam("cachedb_local", "cache_collections", "th/r")
+modparam("cachedb_perf", "cache_collections", "th")
 modparam("cachedb_perf", "sync_cluster_id", 1)
 modparam("cachedb_perf", "replicate_collections", "th")
+...
 ```
 
 
