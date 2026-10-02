@@ -272,7 +272,6 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 	} else if ( type == CURLINFO_DATA_IN || type == CURLINFO_DATA_OUT ){
 		if ( size > 0) {
 			if ( is_req ) {
-				/* request data */
 				tparam->req_len = snprintf( tparam->req_body, BODY_MAX, "%.*s", (int)size, data);
 				if ( tparam->req_len >= FLINE_MAX ) {
 					/* \0 in the end */
@@ -313,10 +312,9 @@ static inline char is_new_transfer(int fd)
 {
 	int it;
 
-	for (it = 0; it < transfers; it++) {
+	for (it = 0; it < transfers; it++)
 		if (fd == read_fds[it])
 			return 0;
-	}
 
 	return 1;
 }
@@ -399,7 +397,7 @@ static inline int get_easy_status(CURL *handle, CURLM *multi, CURLcode *code)
 	return -1;
 }
 
-static int init_transfer(CURL *handle, char *url, unsigned long timeout_s, long max_redirects)
+static int init_transfer(CURL *handle, char *url, unsigned long timeout_s, int max_redirects)
 {
 	CURLcode rc;
 
@@ -424,7 +422,7 @@ static int init_transfer(CURL *handle, char *url, unsigned long timeout_s, long 
 
 	if (max_redirects > 0) {
 		w_curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
-		w_curl_easy_setopt(handle, CURLOPT_MAXREDIRS, max_redirects);
+		w_curl_easy_setopt(handle, CURLOPT_MAXREDIRS, (long)max_redirects);
 #if LIBCURL_VERSION_NUM >= 0x075500 /* 7.85.0 */
 		w_curl_easy_setopt(handle, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
 #else
@@ -705,7 +703,7 @@ static inline char rest_easy_perform(
 int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
           /* in */    char *url, str *body, str *ctype,
           /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv,
-          /* in */    long max_redirects)
+          /* in */    int max_redirects)
 {
 	int ret;
 	CURLcode rc;
@@ -825,7 +823,7 @@ cleanup:
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
                          char *url, str *req_body, str *req_ctype,
                          rest_async_param *async_parm, str *body, str *ctype,
-                         enum async_ret_code *out_fd, long max_redirects)
+                         enum async_ret_code *out_fd, int max_redirects)
 {
 	CURL *handle;
 	CURLcode rc;
