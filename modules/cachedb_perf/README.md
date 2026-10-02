@@ -308,6 +308,8 @@ is 14 (16384 buckets).
 
 The *cachedb_local* replication marker
 ("/r") is rejected: this cache does not replicate per operation.
+To let other nodes pull a collection, list it in
+[replicate_collections](#replicate_collections-string) instead.
 
 
 ```opensips title="Set cache_collections parameter"

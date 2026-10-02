@@ -5123,8 +5123,9 @@ static int pcache_parse_collections(unsigned int type, void *val)
 
 		if (name.len >= 2 && name.s[name.len-2] == '/'
 		        && name.s[name.len-1] == 'r') {
-			LM_ERR("collection <%.*s>: replication ('/r') is not "
-				"supported, cachedb_perf is a single-node cache\n",
+			LM_ERR("collection <%.*s>: the '/r' suffix is not used by "
+				"cachedb_perf - list the collection in "
+				"replicate_collections to let other nodes pull from it\n",
 				name.len, name.s);
 			goto error;
 		}
