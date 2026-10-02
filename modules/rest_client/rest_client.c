@@ -41,6 +41,8 @@
 #include "rest_methods.h"
 #include "../../pt.h"
 
+#define REST_CLIENT_MAX_REDIRECTS 30
+
 /*
  * Module parameters
  */
@@ -82,6 +84,7 @@ static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy(void);
 static int cfg_validate(void);
+static int fixup_max_redirects(void **param);
 
 /*
  * Function headers
@@ -127,7 +130,7 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}}},
 	{"rest_post",(acmd_function)w_async_rest_post, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -135,7 +138,7 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}}},
 	{"rest_put",(acmd_function)w_async_rest_put, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -143,7 +146,7 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}}},
 	{0,0,{{0,0,0}}}
 };
 
@@ -157,7 +160,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_post",(cmd_function)w_rest_post, {
 		{CMD_PARAM_STR,0,0},
@@ -166,16 +169,15 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_put",(cmd_function)w_rest_put, {
-		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_append_hf",(cmd_function)w_rest_append_hf, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -352,6 +354,19 @@ int validate_curl_http_version(const int *http_version)
 	return 1;
 }
 
+static int fixup_max_redirects(void **param)
+{
+	int max_redirects = **(int **)param;
+
+	if (max_redirects < 0 || max_redirects > REST_CLIENT_MAX_REDIRECTS) {
+		LM_ERR("max_redirects must be between 0 and %d\n",
+		       REST_CLIENT_MAX_REDIRECTS);
+		return -1;
+	}
+
+	return 0;
+}
+
 /**************************** Transformations ********************************/
 
 /**
@@ -522,16 +537,6 @@ error:
 /**************************** Module functions *******************************/
 
 
-static inline int validate_max_redirects(int *max_redirects)
-{
-	if (max_redirects && *max_redirects < 0) {
-		LM_ERR("max_redirects must be greater than or equal to 0\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
                       pv_spec_t *ctype_pv, pv_spec_t *code_pv,
                       int *max_redirects)
@@ -539,9 +544,6 @@ static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
 	str url_nt;
 	int lrc = RCL_OK, rc;
 	char *host;
-
-	if (validate_max_redirects(max_redirects) < 0)
-		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -569,9 +571,6 @@ static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 	str url_nt;
 	int lrc = RCL_OK, rc;
 	char *host;
-
-	if (validate_max_redirects(max_redirects) < 0)
-		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -603,9 +602,6 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 	int lrc = RCL_OK, rc;
 	char *host;
 
-	if (validate_max_redirects(max_redirects) < 0)
-		return RCL_INTERNAL_ERR;
-
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
 		return RCL_INTERNAL_ERR;
@@ -630,7 +626,7 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
                       char *url, str *body, str *ctype, async_ctx *ctx,
                       pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv,
-                      long max_redirects)
+                      int max_redirects)
 {
 	rest_async_param *param;
 	pv_value_t val;
@@ -743,9 +739,6 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 	str url_nt;
 	int rc;
 
-	if (validate_max_redirects(max_redirects) < 0)
-		return RCL_INTERNAL_ERR;
-
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
 		return RCL_INTERNAL_ERR;
@@ -768,9 +761,6 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 	str ctype = { NULL, 0 };
 	str url_nt;
 	int rc;
-
-	if (validate_max_redirects(max_redirects) < 0)
-		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
@@ -798,9 +788,6 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 	str ctype = { NULL, 0 };
 	str url_nt;
 	int rc;
-
-	if (validate_max_redirects(max_redirects) < 0)
-		return RCL_INTERNAL_ERR;
 
 	if (pkg_nt_str_dup(&url_nt, url) < 0) {
 		LM_ERR("No more pkg memory\n");
