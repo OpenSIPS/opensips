@@ -687,7 +687,6 @@ static int kafka_evi_raise(struct sip_msg *msg, str* ev_name,
 
 	if (kafka_send_job(job) < 0) {
 		LM_ERR("cannot send job to worker\n");
-		shm_free(job);
 		return -1;
 	}
 
@@ -765,7 +764,6 @@ static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
 
 	if (kafka_send_job(job) < 0) {
 		LM_ERR("cannot send job to worker\n");
-		shm_free(job);
 		return -1;
 	}
 
