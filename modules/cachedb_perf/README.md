@@ -429,31 +429,10 @@ modparam("cachedb_perf", "arena_hugepage_mb", 512)
 ```
 
 
-#### memory_backing (string)
-
-
-Where the cache's memory comes from. *auto* (default) and *own*
-select the module's own chunk allocator: its cells live in OpenSIPS
-shared memory, or, when [arena_hugepage_mb](#arena_hugepage_mb-int)
-is set, in a separate reservation of the module's own, outside the
-OpenSIPS memory model.
-
-
-The backing in use is reported at startup and as
-*arena.backing* in *perf_stats*.
-
-
-```opensips title="Set memory_backing parameter"
-...
-modparam("cachedb_perf", "memory_backing", "own")
-...
-```
-
-
 #### reclaim_keep (int)
 
 
-*own* backing only. The module's own allocator
+The module's allocator
 cuts its memory into 256 KB slots, one size class per slot, and
 keeps a free list per slot, so a slot whose every cell has come
 home is provably drained. A reclaim process of the module's own
@@ -486,7 +465,7 @@ modparam("cachedb_perf", "reclaim_keep", 4)
 #### reclaim_quiet_s (int)
 
 
-*own* backing only. Seconds a retired slot has to
+Seconds a retired slot has to
 stay free before its memory is given back to the host: a whole 2 MB
 group of the dedicated reservation is punched out with
 *MADV_REMOVE* (the mapping stays, a later carve
@@ -506,7 +485,7 @@ modparam("cachedb_perf", "reclaim_quiet_s", 30)
 #### reclaim_cooloff_s (int)
 
 
-*own* backing only. No memory is given back for
+No memory is given back for
 this many seconds after the last carve, so a release can never
 re-trigger the growth that follows it. Default 10.
 
@@ -521,7 +500,7 @@ modparam("cachedb_perf", "reclaim_cooloff_s", 60)
 #### reclaim_giveback (int)
 
 
-*own* backing only. 0 keeps every retired slot
+0 keeps every retired slot
 resident (re-cut for any class, never returned to the host); 1
 (default) gives whole empty groups and pages back as described
 under [reclaim_quiet_s](#reclaim_quiet_s-int). If the kernel
@@ -1563,12 +1542,13 @@ Reads that fell back to the bucket lock.
 #### arena_bytes / arena_chunks
 
 
-Memory taken by the cache's chunks. The memory backing in use
-is reported as *arena.backing* in *perf_stats*, see
-[memory_backing](#memory_backing-string).
+Memory taken by the cache's chunks. Where that memory comes from -
+OpenSIPS shared memory, or the separate arena of
+[arena_hugepage_mb](#arena_hugepage_mb-int) - is reported at startup
+and as *arena.backing* in *perf_stats*.
 
 
-With the *own* backing, the *arena* object of *perf_stats* also
+The *arena* object of *perf_stats* also
 reports the reclaim state: *slots_total*, *slots_free_warm*
 (retired, resident), *slots_free_cold* (retired, punched out),
 *chunks_strand* (slots held by classes with nothing live - the
