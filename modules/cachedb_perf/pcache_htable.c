@@ -174,6 +174,27 @@ static inline uint64_t tag_matches(const pcache_bucket_t *b,
 	return (x - 0x0101010101010101ULL) & ~x & 0x0000808080808080ULL;
 }
 
+/* equality of @n bytes, reading exactly those bytes, so it is as safe as
+ * memcmp() inside an optimistic section.  Not memcmp(): with the
+ * -minline-all-stringops OpenSIPS builds with, gcc inlines it as
+ * "repz cmpsb", which costs about a nanosecond per byte */
+static inline int pcache_mem_eq(const void *a, const void *b, unsigned int n)
+{
+	const unsigned char *p = a, *q = b;
+	uint64_t x, y;
+
+	for (; n >= 8; n -= 8, p += 8, q += 8) {
+		memcpy(&x, p, 8);
+		memcpy(&y, q, 8);
+		if (x != y)
+			return 0;
+	}
+	for (; n; n--)
+		if (*p++ != *q++)
+			return 0;
+	return 1;
+}
+
 /* meta helpers - writers only, under the bucket lock */
 static inline unsigned int bkt_used(const pcache_bucket_t *b)
 {
@@ -248,7 +269,7 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		if (klen != (unsigned int)key->len ||
 		        PCACHE_REC_HDR + klen > bound)
 			continue;
-		if (memcmp(r->data, key->s, klen))
+		if (!pcache_mem_eq(r->data, key->s, klen))
 			continue;
 
 		vlen = r->vlen;                       /* aligned 4-byte load */
@@ -282,7 +303,7 @@ static int ovf_fetch(pcache_htable_t *ht, const str *key, unsigned int hash,
 	lock_get(&ht->ovf_lock);
 	for (n = ht->ovf_tab[hash & (PCACHE_OVF_BUCKETS - 1)]; n; n = n->next) {
 		if (n->hash != hash || n->rec->klen != key->len ||
-		        memcmp(n->rec->data, key->s, key->len))
+		        !pcache_mem_eq(n->rec->data, key->s, key->len))
 			continue;
 		*vlen_out = n->rec->vlen;
 		*exp_out = n->rec->expires;
@@ -524,7 +545,7 @@ static int find_slot(pcache_bucket_t *b, const str *key, unsigned int hash,
 		r = b->slot[i];
 		if (b->tags[i] == tag && r && r->hash == hash &&
 		        r->klen == key->len &&
-		        !memcmp(r->data, key->s, key->len))
+		        pcache_mem_eq(r->data, key->s, key->len))
 			return (int)i;
 	}
 	return -1;
@@ -538,7 +559,7 @@ static struct povf *ovf_find(pcache_htable_t *ht, const str *key,
 
 	for (n = *prev; n; prev = &n->next, n = n->next)
 		if (n->hash == hash && n->rec->klen == key->len &&
-		        !memcmp(n->rec->data, key->s, key->len))
+		        pcache_mem_eq(n->rec->data, key->s, key->len))
 			break;
 	if (prev_out)
 		*prev_out = prev;
@@ -551,18 +572,35 @@ int pcache_ht_store(pcache_htable_t *ht, const str *key, const str *val,
 	return pcache_ht_store_ex(ht, key, val, expires, 0);
 }
 
+static pcache_rec_t *rec_build(const str *key, const str *val,
+		unsigned int expires, unsigned int hash, unsigned char rflags)
+{
+	pcache_rec_t *r = pcache_cell_alloc(PCACHE_REC_SIZE(key->len, val->len));
+
+	if (r) {
+		r->rflags = rflags;
+		r->klen = (unsigned short)key->len;
+		r->vlen = (unsigned int)val->len;
+		r->expires = expires;
+		r->hash = hash;
+		memcpy(r->data, key->s, key->len);
+		memcpy(r->data + key->len, val->s, val->len);
+	}
+	return r;
+}
+
 /* the identical-bytes TTL-bump path keeps the record's existing flags, so
  * re-pulling the owner's bytes does not demote its copy */
 int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires, unsigned char rflags)
 {
 	pcache_bucket_t *b;
-	pcache_rec_t *nr, *old = NULL;
+	pcache_rec_t *nr = NULL, *old = NULL;
 	struct povf *node = NULL, *on;
 	uint64_t route;
 	unsigned int hash, idx, used;
 	unsigned char tag;
-	int i, inserted = 0;
+	int i, inserted = 0, built = 0;
 
 	if (key->len > 0xFFFF ||
 	        PCACHE_REC_SIZE(key->len, val->len) > PCACHE_CELL_MAX) {
@@ -574,23 +612,18 @@ int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 	hash = pcache_key_hash(key);
 	tag = tag_of(hash);
 
-	/* build the replacement record before any lock.  A refused allocation
-	 * does not end the store: the TTL-bump and in-place paths need no new
-	 * cell, so only a path that would publish nr fails with -2 */
-	nr = pcache_cell_alloc(PCACHE_REC_SIZE(key->len, val->len));
-	if (nr) {
-		nr->rflags = rflags;
-		nr->klen = (unsigned short)key->len;
-		nr->vlen = (unsigned int)val->len;
-		nr->expires = expires;
-		nr->hash = hash;
-		memcpy(nr->data, key->s, key->len);
-		memcpy(nr->data + key->len, val->s, val->len);
-	}
-
 again:
 	idx = route_idx(ht, hash, &route);
 	b = bucket_at(ht, idx);
+
+	/* A new record is built outside the lock, and only when a path will
+	 * publish it: the TTL-bump and in-place overwrites need none.  No tag
+	 * match in the bucket predicts an insert, so build it now; a wrong
+	 * guess either way costs one retry, never a wrong result */
+	if (!built && !tag_matches(b, tag)) {
+		nr = rec_build(key, val, expires, hash, rflags);
+		built = 1;
+	}
 
 	lock_get(&b->lock);
 	bkt_set_owner(b);
@@ -607,7 +640,7 @@ again:
 		old = b->slot[i];
 
 		if (old->vlen == (unsigned int)val->len &&
-		        !memcmp(old->data + key->len, val->s, val->len)) {
+		        pcache_mem_eq(old->data + key->len, val->s, val->len)) {
 			/* versionless TTL bump: one aligned store readers cannot
 			 * tear */
 			__atomic_store_n(&old->expires, expires, __ATOMIC_RELAXED);
@@ -636,7 +669,7 @@ again:
 
 		/* replace the record; the tag stays (same key, same hash) */
 		if (!nr)
-			goto nomem;
+			goto need_rec;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[i] = nr;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
@@ -650,7 +683,7 @@ again:
 		on = ovf_find(ht, key, hash, NULL);
 		if (on && !nr) {
 			lock_release(&ht->ovf_lock);
-			goto nomem;
+			goto need_rec;
 		}
 		if (on) {
 			old = on->rec;
@@ -662,7 +695,7 @@ again:
 	}
 
 	if (!nr)
-		goto nomem;                   /* an insert needs a cell of its own */
+		goto need_rec;                /* an insert needs a cell of its own */
 	used = bkt_used(b);
 	if (used < PCACHE_SLOTS) {
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
@@ -714,7 +747,16 @@ done:
 		HT_ST(ht, created);
 	return 0;
 
-nomem:
+need_rec:
+	/* a publishing path without a record: build one outside the lock and
+	 * retry, unless the arena already refused it */
+	if (!built) {
+		bkt_clear_owner(b);
+		lock_release(&b->lock);
+		nr = rec_build(key, val, expires, hash, rflags);
+		built = 1;
+		goto again;
+	}
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
 	if (node)
