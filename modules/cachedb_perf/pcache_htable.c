@@ -241,7 +241,12 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 		unsigned int *vlen_out, unsigned int *exp_out,
 		unsigned char *fl_out)
 {
-	unsigned long m, lo, hi;
+	/* m MUST be the full 64-bit match word, scanned with ctzll: on an ILP32
+	 * target unsigned long is 4 bytes, which silently drops the match bits
+	 * of slots 4 and 5 - lock-free reads then miss a record the write-side
+	 * find_slot (a plain loop) can see, right after its own store. */
+	uint64_t m;
+	unsigned long lo, hi;
 	unsigned int bound, vlen, klen, avail;
 	pcache_rec_t *r;
 	int i;
@@ -249,7 +254,7 @@ static int scan_bucket(pcache_bucket_t *b, const str *key, unsigned int hash,
 	pcache_arena_extents(&lo, &hi);
 
 	for (m = tag_matches(b, tag); m; m &= m - 1) {
-		i = __builtin_ctzl(m) >> 3;
+		i = __builtin_ctzll(m) >> 3;
 		r = b->slot[i];
 		if (!r)
 			continue;
