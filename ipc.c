@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define _GNU_SOURCE /* for F_{GET,SET}PIPE_SZ */
 
 #include <string.h>
 #include <errno.h>
@@ -32,6 +33,7 @@
 #include <fcntl.h>
 
 #define IPC_HANDLER_NAME_MAX  32
+#define IPC_SHARED_PIPE_SIZE  (1024 * 1024)
 typedef struct _ipc_handler {
 	/* handler function */
 	ipc_handler_f *func;
@@ -61,9 +63,40 @@ static ipc_handler_type ipc_rpc_type = 0;
 /* FD (pipe) used for dispatching IPC jobs between all processes (1 to any) */
 int ipc_shared_fd_read;
 
+
+int enlarge_pipe(int fd, int target_size)
+{
+#if !defined(F_GETPIPE_SZ) || !defined(F_SETPIPE_SZ)
+	(void)fd;
+	(void)target_size;
+	errno = ENOTSUP;
+	return -1;
+#else
+	int initial_size, requested_size, actual_size;
+
+	initial_size = fcntl(fd, F_GETPIPE_SZ);
+	if (initial_size <= 0)
+		return -1;
+	if (initial_size >= target_size)
+		return initial_size;
+
+	for (requested_size = target_size;
+		requested_size > initial_size; requested_size /= 2) {
+		actual_size = fcntl(fd, F_SETPIPE_SZ, requested_size);
+		if (actual_size > 0) {
+			LM_DBG("enlarged pipe %d from %d to %d bytes\n",
+				fd, initial_size, actual_size);
+			return actual_size;
+		}
+	}
+
+	return initial_size;
+#endif
+}
+
 int init_ipc(void)
 {
-	int optval;
+	int optval, pipe_size;
 
 	/* create the pipe for dispatching the timer jobs */
 	if (pipe(ipc_shared_pipe) != 0) {
@@ -80,6 +113,32 @@ int init_ipc(void)
 
 	if (fcntl(ipc_shared_pipe[0], F_SETFL, optval|O_NONBLOCK) == -1) {
 		LM_ERR("set non-blocking failed: (%d) %s\n", errno, strerror(errno));
+		return -1;
+	}
+
+	/* The shared IPC pipe may receive large bursts of jobs.  Increase its
+	 * capacity where supported, but keep startup working if the kernel or
+	 * the per-user pipe quota does not allow the requested size. */
+	pipe_size = enlarge_pipe(ipc_shared_pipe[0], IPC_SHARED_PIPE_SIZE);
+	if (pipe_size == -1) {
+		if (errno != ENOTSUP)
+			LM_WARN("failed to enlarge the shared IPC pipe: %s\n",
+				strerror(errno));
+	} else if (pipe_size < IPC_SHARED_PIPE_SIZE) {
+		LM_WARN("shared IPC pipe size is %d instead of the requested %d bytes\n",
+			pipe_size, IPC_SHARED_PIPE_SIZE);
+	}
+
+	/* Never let a full shared pipe block a producer process indefinitely. */
+	optval = fcntl(ipc_shared_pipe[1], F_GETFL);
+	if (optval == -1) {
+		LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+		return -1;
+	}
+
+	if (fcntl(ipc_shared_pipe[1], F_SETFL, optval|O_NONBLOCK) == -1) {
+		LM_ERR("set non-blocking write failed: (%d) %s\n",
+			errno, strerror(errno));
 		return -1;
 	}
 
@@ -187,8 +246,8 @@ static inline int __ipc_send_job(int fd, int dst_proc, ipc_handler_type type,
 	ipc_job job;
 	int n;
 
-	// FIXME - we should check if the destination process really listens
-	// for read, otherwise we may end up filling in the pipe and block
+	// FIXME - check whether the destination process still listens for reads,
+	// otherwise its pipe may fill up and the job will be rejected
 	memset(&job, 0, sizeof job);
 
 	job.snd_proc = (short)process_no;
@@ -197,9 +256,9 @@ static inline int __ipc_send_job(int fd, int dst_proc, ipc_handler_type type,
 	job.payload2 = payload2;
 
 again:
-	/* The per-proc IPC write fds are sent to non-blocking (to be sure we
-	 * do not escalate into a global blocking if a single process got stuck.
-	 * In such care the EAGAIN or EWOULDBLOCK will be thrown and we will
+	/* The IPC write fds are set to non-blocking (to be sure we do not
+	 * escalate into a global blocking if the consumer processes got stuck).
+	 * In such case EAGAIN or EWOULDBLOCK will be thrown and we will
 	 * handle as generic error, nothing special to do.
 	 */
 	n = write(fd, &job, sizeof(job) );
@@ -345,4 +404,3 @@ void ipc_handle_all_pending_jobs(int fd)
 	while ( recv(fd, &buf, 1, MSG_DONTWAIT|MSG_PEEK)==1 )
 		ipc_handle_job(fd);
 }
-

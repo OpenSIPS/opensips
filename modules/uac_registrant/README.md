@@ -461,6 +461,50 @@ modparam("uac_registrant", "reregister_expiry_percentage", 90)
 None to be used in configuration file.
 
 
+### Exported Statistics
+
+
+The statistics below are read-only computed gauges. They are calculated from
+the current in-memory registrant table when queried, so they stay consistent
+across reloads, MI upsert/delete operations, enable/disable operations and
+registration state changes.
+
+
+#### registrants
+
+
+Total number of registrants currently held in memory, including disabled
+registrants. The full statistic name is `uac_registrant:registrants`.
+
+
+#### enabled_registrants
+
+
+Number of registrants which are currently enabled. The full statistic name is
+`uac_registrant:enabled_registrants`.
+
+
+#### registered_registrants
+
+
+Number of enabled registrants currently in `REGISTERED_STATE`. The full
+statistic name is `uac_registrant:registered_registrants`.
+
+
+#### failed_registrants
+
+
+Number of enabled registrants currently in `REGISTER_TIMEOUT_STATE`,
+`INTERNAL_ERROR_STATE`, `WRONG_CREDENTIALS_STATE` or
+`REGISTRAR_ERROR_STATE`. The full statistic name is
+`uac_registrant:failed_registrants`.
+
+
+Reading any of these statistics walks the in-memory registrant hash table and
+holds only one bucket lock at a time. The cost of each read is therefore
+proportional to the number of registrants.
+
+
 ### Exported MI Functions
 
 

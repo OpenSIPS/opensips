@@ -236,7 +236,7 @@ modparam("pua", "cluster_id", 10)
 ```
 
 
-#### cluster_sharing_tag (int)
+#### cluster_sharing_tag (str)
 
 
 The clustering share-tag to be used by the PUA module when creating

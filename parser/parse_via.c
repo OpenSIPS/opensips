@@ -131,6 +131,8 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 
 	for (tmp=p;tmp<end;tmp++){
 		switch(*tmp){
+			case '\0':
+				goto parse_error;
 			case ' ':
 			case '\t':
 				switch(state){
@@ -910,7 +912,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 				}
 				break;
 			case '\0':
-				break;
+				goto parse_error;
 
 			default:
 				switch(state){
@@ -1002,6 +1004,8 @@ parse_again:
 	param_start=0;
 	for(tmp=buffer;tmp<end;tmp++){
 		switch(*tmp){
+			case '\0':
+				goto parse_error;
 			case ' ':
 			case'\t':
 				switch(state){
@@ -2088,7 +2092,7 @@ parse_again:
 				}
 				break;
 			case '\0':
-				break;
+				goto parse_error;
 
 			default:
 				switch(state){
