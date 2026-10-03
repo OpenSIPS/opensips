@@ -337,6 +337,40 @@ modparam("clusterer", "neighbor_node_info", "cluster_id=1,node_id=2,url=bin:192.
 ```
 
 
+#### cluster_options (string)
+
+
+Per-cluster options, in the same *key=value, key=value* form as
+[my_node_info](#my_node_info). Recognised keys:
+
+
+- *cluster_id* (required) - the cluster these options apply to;
+- *use_controller* (optional, *0* or *1*, default *0*) - *1* makes the cluster
+**controller-managed**: its topology and this node's id are driven at runtime
+by the [clusterer_controller](../clusterer_controller/README.md) module
+instead of the database or *my_node_info* / *neighbor_node_info*. A
+controller-managed cluster never touches the database and always behaves as
+*db_mode=0*. Each such cluster must also be configured in
+*clusterer_controller* - the two lists must match exactly, or OpenSIPS refuses
+to start.
+
+
+The parameter may be set once per cluster.
+
+
+*This parameter exists only when clusterer_controller is part of the build*
+(the top-level Makefile then compiles clusterer with *CLUSTERER_CTRL_SUPPORT*);
+a build without it has the stock clusterer module, which rejects the parameter
+as unknown.
+
+
+```opensips title="Set cluster_options parameter"
+...
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1")
+...
+```
+
+
 #### ping_interval
 
 
