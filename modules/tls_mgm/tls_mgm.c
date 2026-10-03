@@ -45,6 +45,7 @@
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
+#include "../../statistics.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
@@ -107,6 +108,114 @@ static mi_response_t *tls_reload(const mi_params_t *params,
 static mi_response_t *tls_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d);
+
+enum tls_stat_filter {
+	TLS_STAT_CONNECTIONS,
+	TLS_STAT_V10,
+	TLS_STAT_V11,
+	TLS_STAT_V12,
+	TLS_STAT_V13,
+	TLS_STAT_PEER_VERIFIED,
+	TLS_STAT_PEER_UNVERIFIED,
+	TLS_STAT_AES_GCM,
+	TLS_STAT_CHACHA20,
+	TLS_STAT_OTHER_CIPHER
+};
+
+struct tls_stat_ctx {
+	enum tls_stat_filter filter;
+	unsigned long count;
+};
+
+static int count_tls_connection(struct tcp_connection *conn, void *arg)
+{
+	struct tls_stat_ctx *ctx = arg;
+	struct tcp_tls_info *info;
+	const char *v, *c;
+
+	if (!conn ||
+			(conn->type != PROTO_TLS && conn->type != PROTO_WSS) ||
+			!conn->shared_data)
+		return 0;
+
+	info = conn->shared_data;
+	v = info->version;
+	c = info->cipher_name;
+
+	switch (ctx->filter) {
+	case TLS_STAT_CONNECTIONS:
+		ctx->count++;
+		break;
+	case TLS_STAT_V10:
+		if (v && (!strcmp(v, "TLSv1") || !strcmp(v, "TLSv1.0")))
+			ctx->count++;
+		break;
+	case TLS_STAT_V11:
+		if (v && !strcmp(v, "TLSv1.1"))
+			ctx->count++;
+		break;
+	case TLS_STAT_V12:
+		if (v && !strcmp(v, "TLSv1.2"))
+			ctx->count++;
+		break;
+	case TLS_STAT_V13:
+		if (v && !strcmp(v, "TLSv1.3"))
+			ctx->count++;
+		break;
+	case TLS_STAT_PEER_VERIFIED:
+		if (info->peer_verified)
+			ctx->count++;
+		break;
+	case TLS_STAT_PEER_UNVERIFIED:
+		if (!info->peer_verified)
+			ctx->count++;
+		break;
+	case TLS_STAT_AES_GCM:
+		if (c && (strstr(c, "GCM") || strstr(c, "AESGCM")))
+			ctx->count++;
+		break;
+	case TLS_STAT_CHACHA20:
+		if (c && strstr(c, "CHACHA20"))
+			ctx->count++;
+		break;
+	case TLS_STAT_OTHER_CIPHER:
+		if (c && !strstr(c, "GCM") && !strstr(c, "AESGCM") &&
+				!strstr(c, "CHACHA20"))
+			ctx->count++;
+		break;
+	}
+
+	return 0;
+}
+
+static unsigned long get_tls_stat(void *arg)
+{
+	struct tls_stat_ctx ctx = {(enum tls_stat_filter)(long)arg, 0};
+
+	if (tcp_conn_traverse(count_tls_connection, &ctx) < 0)
+		return 0;
+
+	return ctx.count;
+}
+
+struct tls_stat_export {
+	const char *name;
+	enum tls_stat_filter filter;
+};
+
+static const struct tls_stat_export tls_stats_desc[] = {
+	{"connections", TLS_STAT_CONNECTIONS},
+	{"tls_v1_0_connections", TLS_STAT_V10},
+	{"tls_v1_1_connections", TLS_STAT_V11},
+	{"tls_v1_2_connections", TLS_STAT_V12},
+	{"tls_v1_3_connections", TLS_STAT_V13},
+	{"peer_verified_connections", TLS_STAT_PEER_VERIFIED},
+	{"peer_unverified_connections", TLS_STAT_PEER_UNVERIFIED},
+	{"aes_gcm_connections", TLS_STAT_AES_GCM},
+	{"chacha20_connections", TLS_STAT_CHACHA20},
+	{"other_cipher_connections", TLS_STAT_OTHER_CIPHER},
+	{0, 0}
+};
 
 /* DB handler */
 static db_con_t *db_hdl = 0;
@@ -972,6 +1081,7 @@ static int load_tls_library(void)
 
 static int mod_init(void) {
 	str s;
+	int i;
 	str tls_db_param = str_init(DB_TLS_DOMAIN_PARAM_EQ);
 	struct tls_domain *tls_client_domains_tmp = NULL;
 	struct tls_domain *tls_server_domains_tmp = NULL;
@@ -981,6 +1091,16 @@ static int mod_init(void) {
 
 	if (load_tls_library() < 0)
 		return -1;
+
+	for (i = 0; tls_stats_desc[i].name; i++) {
+		if (register_stat2("tls_mgm", (char *)tls_stats_desc[i].name,
+				(stat_var **)(void *)get_tls_stat, STAT_IS_FUNC,
+				(void *)(long)tls_stats_desc[i].filter, 0) != 0) {
+			LM_ERR("failed to register TLS statistic %s\n",
+				tls_stats_desc[i].name);
+			return -1;
+		}
+	}
 
 	if (tls_db_url.s) {
 
