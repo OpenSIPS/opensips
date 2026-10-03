@@ -141,6 +141,11 @@ static inline int ipc_is_async_dispatch(void) { return ipc_running_rpc_job; }
 int init_ipc(void);
 
 
+/* Best-effort increase of a pipe's capacity up to the requested size.
+ * Returns the resulting capacity, or -1 if it cannot be inspected. */
+int enlarge_pipe(int fd, int target_size);
+
+
 int create_ipc_pipes(int proc_no);
 
 

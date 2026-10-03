@@ -872,18 +872,18 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		return;
 	}
 
-	if (type==TMCB_TRANS_DELETED) {
+	if (type==TMCB_TRANS_DELETED)
 		event = DLG_EVENT_TDEL;
-	} else if (param->code<200) {
+	else if (param->code<200)
 		event = DLG_EVENT_RPL1xx;
-		ctx_lastdstleg_set(DLG_CALLER_LEG);
-	} else if (param->code<300) {
+	else if (param->code<300)
 		event = DLG_EVENT_RPL2xx;
-		ctx_lastdstleg_set(DLG_CALLER_LEG);
-	} else {
+	else
 		event = DLG_EVENT_RPL3xx;
+
+	/* Some locally generated replies may run without a processing context. */
+	if (event != DLG_EVENT_TDEL && current_processing_ctx)
 		ctx_lastdstleg_set(DLG_CALLER_LEG);
-	}
 
 	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state,
 	               &unref, DLG_CALLER_LEG, 1);
@@ -1125,7 +1125,7 @@ static void dlg_update_req_info(str *buffer, struct dlg_cell *dlg, int leg,
 	if (req && req->REQ_METHOD != METHOD_ACK)
 		dlg_update_contact(dlg, req, leg);
 	if (t && is_invite(t))
-		dlg_leg_push_cseq_map(dlg, t, DLG_CALLER_LEG, &msg);
+		dlg_leg_push_cseq_map(dlg, t, leg, &msg);
 	dlg_update_out_sdp(dlg, leg, other_leg(dlg, leg), &msg,
 			msg.first_line.type == SIP_REQUEST &&
 			msg.REQ_METHOD != METHOD_ACK);

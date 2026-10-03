@@ -232,7 +232,7 @@ struct module_exports exports= {
 	0,					/* exported functions */
 	0,					/* exported async functions */
 	params,				/* exported parameters */
-	NULL,				/* exported statistics */
+	reg_stats,			/* exported statistics */
 	mi_cmds,			/* exported MI functions */
 	NULL,				/* exported pseudo-variables */
 	0,					/* exported transformations */

@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "../../lock_ops.h"
+#include "../../statistics.h"
 #include "../../ut.h"
 #include "../../mem/shm_mem.h"
 #include "../tm/dlg.h"
@@ -112,6 +113,7 @@ typedef struct record_coords {
 
 extern reg_table_t reg_htable;
 extern unsigned int reg_hsize;
+extern const stat_export_t reg_stats[];
 
 void *reg_alloc(size_t size);
 void reg_free(void *ptr);
