@@ -70,6 +70,19 @@ include Makefile.defs
 # always exclude the SVN dir
 override exclude_modules+= .svn $(skip_modules)
 
+# The clusterer module exposes its controller-support API (and the extra
+# cluster_options modparam) only when the clusterer_controller module is part of
+# this build; otherwise it is a stock module.  Mirror the module-selection rule
+# below (built if force-included, else unless excluded) and export the result so
+# clusterer/Makefile can define -DCLUSTERER_CTRL_SUPPORT.  Derived from the
+# configured include/exclude lists (not the current 'modules' subset) so it stays
+# consistent whether you 'make all' or rebuild just modules/clusterer.
+ifneq ($(filter clusterer_controller,$(include_modules)),)
+export CLUSTERER_CTRL_SUPPORT:=1
+else ifeq ($(filter clusterer_controller,$(exclude_modules)),)
+export CLUSTERER_CTRL_SUPPORT:=1
+endif
+
 #always include this modules
 #include_modules?=
 
