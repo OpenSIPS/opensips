@@ -241,7 +241,7 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 				continue;
 
 			ttag = (include_tags && (msg=TM_BRANCH(t,branch).reply)!=NULL
-			&& msg->to && msg->to->parsed) ?
+			&& msg!=FAKED_REPLY && msg->to && msg->to->parsed) ?
 			&(get_to(msg)->tag_value) : NULL;
 
 			BRANCH_BM_SET_IDX( param->bitmask_failed, branch);
