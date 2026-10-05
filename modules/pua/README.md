@@ -294,6 +294,59 @@ if($rm=="NOTIFY")
 ```
 
 
+### Exported MI Functions
+
+#### pua:list_presentities
+
+Lists only the publish presentity records in the local PUA hash table.
+Subscription records are excluded. With no parameters, all publish
+records are returned. The optional filters may be used independently or
+together:
+
+- `pres_uri`: exact presentity URI to match.
+- `event`: registered event name to match, such as `presence` or `dialog`.
+  An unknown event returns a 400 error.
+
+The result is an array containing the following fields of
+each publish record: `pres_uri`, `event`,
+`expires`, `desired_expires`, `flag`, `db_flag`, `ua_flag`, `etag`,
+`tuple_id`, `waiting_reply` and `pending_publ`. The `etag` and `sharing_tag`
+fields are included only when set. Expiration values are Unix
+timestamps. Each pending publication contains `content_type`, `body`,
+`extra_headers` and `expires` (the requested lifetime in seconds).
+Internal identifiers, pointers and subscribe fields are omitted. No matches returns
+an empty array.
+
+```shell
+opensips-cli -x mi pua:list_presentities
+opensips-cli -x mi pua:list_presentities pres_uri=sip:alice@example.com
+opensips-cli -x mi pua:list_presentities event=presence
+opensips-cli -x mi pua:list_presentities pres_uri=sip:alice@example.com event=presence
+```
+
+#### pua:list_subscription
+
+Lists only the subscription records in the local PUA hash table. With no
+parameters, all subscription records are returned. The optional `pres_uri`
+and `event` filters work independently or together, as for
+`pua:list_presentities`. An unknown event returns a 400 error; no matches
+returns an empty array.
+
+Each record contains the common fields `pres_uri`, `event`, `expires`,
+`desired_expires`, `flag`, `db_flag` and `ua_flag`, plus the subscription
+fields `to_uri`, `watcher_uri`, `call_id`, `to_tag`, `from_tag`, `cseq`,
+`version`, `watcher_count`, `extra_headers`, `record_route`,
+`remote_contact` and `contact`. The `sharing_tag` and `outbound_proxy`
+fields are included only when set. Expiration values are Unix timestamps.
+Internal identifiers, pointers and publish fields are omitted.
+
+```shell
+opensips-cli -x mi pua:list_subscription
+opensips-cli -x mi pua:list_subscription pres_uri=sip:alice@example.com
+opensips-cli -x mi pua:list_subscription event=presence
+opensips-cli -x mi pua:list_subscription pres_uri=sip:alice@example.com event=presence
+```
+
 ### Installation
 
 

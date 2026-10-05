@@ -40,6 +40,7 @@
 #include "../../mem/mem.h"
 #include "../../pt.h"
 #include "../../db/db.h"
+#include "../../mi/mi.h"
 #include "../tm/tm_load.h"
 #include "../presence/hash.h"
 #include "pua.h"
@@ -101,6 +102,28 @@ static void destroy(void);
 static int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final);
 static void db_update(unsigned int ticks,void *param);
 static void hashT_clean(unsigned int ticks,void *param);
+static mi_response_t *mi_list_presentities(const mi_params_t *params,
+		struct mi_handler *async_hdl);
+static mi_response_t *mi_list_subscription(const mi_params_t *params,
+		struct mi_handler *async_hdl);
+
+static const mi_export_t mi_cmds[] = {
+	{ "list_presentities", 0,0,0, {
+		{mi_list_presentities, {0}},
+		{mi_list_presentities, {"pres_uri", 0}},
+		{mi_list_presentities, {"event", 0}},
+		{mi_list_presentities, {"pres_uri", "event", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ "list_subscription", 0,0,0, {
+		{mi_list_subscription, {0}},
+		{mi_list_subscription, {"pres_uri", 0}},
+		{mi_list_subscription, {"event", 0}},
+		{mi_list_subscription, {"pres_uri", "event", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{EMPTY_MI_EXPORT}
+};
 
 static const cmd_export_t cmds[]={
 	{"pua_update_contact",(cmd_function)update_contact, {{0,0,0}},
@@ -144,7 +167,7 @@ struct module_exports exports= {
 	0,                          /* exported async functions */
 	params,                     /* exported parameters */
 	0,                          /* exported statistics */
-	0,                          /* exported MI functions */
+	mi_cmds,                    /* exported MI functions */
 	0,                          /* exported pseudo-variables */
 	0,							/* exported transformations */
 	0,                          /* extra processes */
@@ -155,6 +178,160 @@ struct module_exports exports= {
 	child_init,                 /* per-child init function */
 	0                           /* reload confirm function */
 };
+
+static int mi_print_common(mi_item_t *item, ua_pres_t *p)
+{
+	pua_event_t *event;
+
+	event = get_event(p->event);
+	if (add_mi_string(item, MI_SSTR("pres_uri"),
+			p->pres_uri->s, p->pres_uri->len) < 0 ||
+		(event ? add_mi_string(item, MI_SSTR("event"),
+			event->name.s, event->name.len) :
+			add_mi_number(item, MI_SSTR("event"), p->event)) < 0 ||
+		add_mi_number(item, MI_SSTR("expires"), p->expires) < 0 ||
+		add_mi_number(item, MI_SSTR("desired_expires"), p->desired_expires) < 0 ||
+		add_mi_number(item, MI_SSTR("flag"), p->flag) < 0 ||
+		add_mi_number(item, MI_SSTR("db_flag"), p->db_flag) < 0 ||
+		add_mi_number(item, MI_SSTR("ua_flag"), p->ua_flag) < 0)
+		return -1;
+
+	if (p->sh_tag.len && add_mi_string(item, MI_SSTR("sharing_tag"),
+		p->sh_tag.s, p->sh_tag.len) < 0)
+		return -1;
+	return 0;
+}
+
+static int mi_print_presentity(mi_item_t *array, ua_pres_t *p)
+{
+	mi_item_t *item, *pending, *publ_item;
+	publ_t *publ;
+
+	item = add_mi_object(array, NULL, 0);
+	if (!item || mi_print_common(item, p) < 0)
+		return -1;
+
+	if (add_mi_string(item, MI_SSTR("tuple_id"),
+			p->tuple_id.s, p->tuple_id.len) < 0 ||
+		add_mi_number(item, MI_SSTR("waiting_reply"), p->waiting_reply) < 0)
+		return -1;
+
+	if (p->etag.s && p->etag.len &&
+		add_mi_string(item, MI_SSTR("etag"), p->etag.s, p->etag.len) < 0)
+		return -1;
+
+	pending = add_mi_array(item, MI_SSTR("pending_publ"));
+	if (!pending)
+		return -1;
+	for (publ = p->pending_publ; publ; publ = publ->next) {
+		publ_item = add_mi_object(pending, NULL, 0);
+		if (!publ_item ||
+			add_mi_string(publ_item, MI_SSTR("content_type"),
+				publ->content_type.s, publ->content_type.len) < 0 ||
+			add_mi_string(publ_item, MI_SSTR("body"),
+				publ->body.s, publ->body.len) < 0 ||
+			add_mi_string(publ_item, MI_SSTR("extra_headers"),
+				publ->extra_headers.s, publ->extra_headers.len) < 0 ||
+			add_mi_number(publ_item, MI_SSTR("expires"), publ->expires) < 0)
+			return -1;
+	}
+	return 0;
+}
+
+static int mi_print_subscription(mi_item_t *array, ua_pres_t *p)
+{
+	mi_item_t *item;
+
+	item = add_mi_object(array, NULL, 0);
+	if (!item || mi_print_common(item, p) < 0)
+		return -1;
+
+	if (add_mi_string(item, MI_SSTR("to_uri"), p->to_uri.s, p->to_uri.len) < 0 ||
+		add_mi_string(item, MI_SSTR("watcher_uri"),
+			p->watcher_uri->s, p->watcher_uri->len) < 0 ||
+		add_mi_string(item, MI_SSTR("call_id"), p->call_id.s, p->call_id.len) < 0 ||
+		add_mi_string(item, MI_SSTR("to_tag"), p->to_tag.s, p->to_tag.len) < 0 ||
+		add_mi_string(item, MI_SSTR("from_tag"), p->from_tag.s, p->from_tag.len) < 0 ||
+		add_mi_number(item, MI_SSTR("cseq"), p->cseq) < 0 ||
+		add_mi_number(item, MI_SSTR("version"), p->version) < 0 ||
+		add_mi_number(item, MI_SSTR("watcher_count"), p->watcher_count) < 0 ||
+		add_mi_string(item, MI_SSTR("extra_headers"),
+			p->extra_headers.s, p->extra_headers.len) < 0 ||
+		add_mi_string(item, MI_SSTR("record_route"),
+			p->record_route.s, p->record_route.len) < 0 ||
+		add_mi_string(item, MI_SSTR("remote_contact"),
+			p->remote_contact.s, p->remote_contact.len) < 0 ||
+		add_mi_string(item, MI_SSTR("contact"), p->contact.s, p->contact.len) < 0)
+		return -1;
+
+	if (p->outbound_proxy && p->outbound_proxy->len &&
+		add_mi_string(item, MI_SSTR("outbound_proxy"),
+			p->outbound_proxy->s, p->outbound_proxy->len) < 0)
+		return -1;
+	return 0;
+}
+
+static mi_response_t *mi_list_records(const mi_params_t *params,
+		int subscriptions)
+{
+	mi_response_t *resp;
+	mi_item_t *array;
+	str pres_uri = STR_NULL, event_name = STR_NULL;
+	pua_event_t *event = NULL;
+	ua_pres_t *p;
+	int i, rc, have_pres_uri;
+
+	rc = try_get_mi_string_param(params, "pres_uri", &pres_uri.s, &pres_uri.len);
+	if (rc < -1)
+		return init_mi_param_error();
+	have_pres_uri = (rc == 0);
+	rc = try_get_mi_string_param(params, "event", &event_name.s, &event_name.len);
+	if (rc < -1)
+		return init_mi_param_error();
+	if (rc == 0) {
+		event = contains_pua_event(&event_name);
+		if (!event)
+			return init_mi_error(400, MI_SSTR("Unknown event"));
+	}
+
+	resp = init_mi_result_array(&array);
+	if (!resp)
+		return NULL;
+	for (i = 0; i < HASH_SIZE; i++) {
+		lock_get(&HashT->p_records[i].lock);
+		for (p = HashT->p_records[i].entity->next; p; p = p->next) {
+			/* A watcher URI identifies a subscription record. */
+			if (!!p->watcher_uri != subscriptions)
+				continue;
+			if (have_pres_uri && (p->pres_uri->len != pres_uri.len ||
+				memcmp(p->pres_uri->s, pres_uri.s, pres_uri.len) != 0))
+				continue;
+			if (event && p->event != event->ev_flag)
+				continue;
+			if ((subscriptions ? mi_print_subscription(array, p) :
+				mi_print_presentity(array, p)) < 0) {
+				lock_release(&HashT->p_records[i].lock);
+				free_mi_response(resp);
+				LM_ERR("Unable to create PUA records reply\n");
+				return NULL;
+			}
+		}
+		lock_release(&HashT->p_records[i].lock);
+	}
+	return resp;
+}
+
+static mi_response_t *mi_list_presentities(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	return mi_list_records(params, 0);
+}
+
+static mi_response_t *mi_list_subscription(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	return mi_list_records(params, 1);
+}
 
 /**
  * init module function
