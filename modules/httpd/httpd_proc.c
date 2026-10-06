@@ -41,6 +41,7 @@
 #include <microhttpd.h>
 #endif
 
+#include "../../globals.h"
 #include "../../pt.h"
 #include "../../sr_module.h"
 #include "../../str.h"
@@ -70,6 +71,119 @@ static union sockaddr_union httpd_server_info;
 extern int receive_buf_size;
 extern char *httpd_receive_buff;
 extern int httpd_receive_buff_pos;
+
+int httpd_listen_fd = -1;
+
+static int httpd_build_sockaddr(str *sip, int sport, struct sockaddr_storage *ss,
+		int *family, int *dual_stack, char **ip_repr, char *reprbuf)
+{
+	struct sockaddr_in6 *s6 = (struct sockaddr_in6 *)ss;
+	struct sockaddr_in *s4 = (struct sockaddr_in *)ss;
+
+	memset(ss, 0, sizeof *ss);
+	*dual_stack = 0;
+
+	if (sip->s && strcmp(sip->s, "*")) {
+		if (q_memchr(sip->s, ':', sip->len)) {
+			if (inet_pton(AF_INET6, sip->s, &s6->sin6_addr) <= 0) {
+				LM_ERR("failed to parse 'ip' modparam: %s\n", sip->s);
+				return -1;
+			}
+			s6->sin6_family = AF_INET6;
+			s6->sin6_port = htons(sport);
+			*family = AF_INET6;
+			sprintf(reprbuf, "[%s]", !strcmp(sip->s, "::0") ? "::" : sip->s);
+			*ip_repr = reprbuf;
+			return sizeof *s6;
+		}
+
+		if (inet_pton(AF_INET, sip->s, &s4->sin_addr) <= 0) {
+			LM_ERR("failed to parse 'ip' modparam: %s\n", sip->s);
+			return -1;
+		}
+		s4->sin_family = AF_INET;
+		s4->sin_port = htons(sport);
+		*family = AF_INET;
+		*ip_repr = sip->s;
+		return sizeof *s4;
+	}
+
+	s6->sin6_addr = in6addr_any;
+	s6->sin6_family = AF_INET6;
+	s6->sin6_port = htons(sport);
+	*family = AF_INET6;
+	*dual_stack = 1;
+	*ip_repr = "*";
+	return sizeof *s6;
+}
+
+static int httpd_open_listen_socket(struct httpd_server *s)
+{
+	struct sockaddr_storage ss;
+	int family, dual, salen, fd, on = 1, off = 0;
+	char *ip_repr, reprbuf[1 + IP_ADDR_MAX_STR_SIZE + 1];
+
+	salen = httpd_build_sockaddr(&s->ip, s->port, &ss, &family, &dual,
+			&ip_repr, reprbuf);
+	if (salen < 0)
+		return -1;
+
+	fd = socket(family, SOCK_STREAM, 0);
+	if (fd < 0) {
+		LM_ERR("failed to create HTTPD socket: %s\n", strerror(errno));
+		return -1;
+	}
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on) < 0)
+		LM_WARN("failed to set SO_REUSEADDR: %s\n", strerror(errno));
+	if (dual)
+		setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof off);
+
+	if (bind(fd, (struct sockaddr *)&ss, salen) < 0) {
+		LM_ERR("failed to bind HTTPD socket on %s:%d: %s\n",
+			ip_repr, s->port, strerror(errno));
+		close(fd);
+		return -1;
+	}
+	if (listen(fd, 1024) < 0) {
+		LM_ERR("failed to listen on HTTPD socket: %s\n", strerror(errno));
+		close(fd);
+		return -1;
+	}
+
+	return fd;
+}
+
+int httpd_pre_fork(void)
+{
+	int i;
+	struct httpd_server *s;
+
+	for (i = 0; i < httpd_n_servers; i++) {
+		s = &httpd_servers[i];
+		s->listen_fd = -1;
+		if (s->workers <= 1)
+			continue;
+		s->listen_fd = httpd_open_listen_socket(s);
+		if (s->listen_fd < 0)
+			return -1;
+	}
+	return 0;
+}
+
+int httpd_post_fork(void)
+{
+	int i;
+	struct httpd_server *s;
+
+	for (i = 0; i < httpd_n_servers; i++) {
+		s = &httpd_servers[i];
+		if (s->listen_fd >= 0) {
+			close(s->listen_fd);
+			s->listen_fd = -1;
+		}
+	}
+	return 0;
+}
 
 static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
@@ -816,6 +930,40 @@ int httpd_callback(int fd, void *dmn, int was_timeout)
 void httpd_proc(int rank)
 {
 	struct httpd_cb *cb = httpd_cb_list;
+	struct httpd_server *s = NULL, *o;
+	int i, acc = 0;
+
+	for (i = 0; i < httpd_n_servers; i++) {
+		o = &httpd_servers[i];
+		if (rank < acc + o->workers) {
+			s = o;
+			break;
+		}
+		acc += o->workers;
+	}
+	if (!s) {
+		LM_ERR("cannot map HTTPD worker rank %d to a server\n", rank);
+		return;
+	}
+
+	ip = s->ip;
+	port = s->port;
+	buffer.len = s->buf_size;
+	hd_conn_timeout_s = s->conn_timeout;
+	post_buf_size = s->post_buf_size;
+	receive_buf_size = s->receive_buf_size;
+	tls_cert_file = s->tls_cert_file;
+	tls_key_file = s->tls_key_file;
+	tls_ciphers = s->tls_ciphers;
+	httpd_listen_fd = s->listen_fd;
+
+	for (i = 0; i < httpd_n_servers; i++) {
+		o = &httpd_servers[i];
+		if (o != s && o->listen_fd >= 0) {
+			close(o->listen_fd);
+			o->listen_fd = -1;
+		}
+	}
 
 	/*child's initial settings*/
 	if (init_mi_child()!=0) {
@@ -823,10 +971,19 @@ void httpd_proc(int rank)
 		return;
 	}
 
+	if (buffer.len == 0)
+		buffer.len = (pkg_mem_size/4);
+
 	/* Allocating http response buffer */
 	buffer.s = (char*)malloc(sizeof(char)*buffer.len);
 	if (buffer.s==NULL) {
 		LM_ERR("oom\n");
+		return;
+	}
+
+	httpd_receive_buff = pkg_malloc(receive_buf_size);
+	if (httpd_receive_buff == NULL) {
+		LM_ERR("oom for receive buffer\n");
 		return;
 	}
 
@@ -843,7 +1000,7 @@ void httpd_proc(int rank)
 	char *key_pem, *cert_pem, *ip_repr, ip6buf[1+IP_ADDR_MAX_STR_SIZE+1];
 	void *saddr;
 	struct sockaddr_in saddr4;
-	struct MHD_OptionItem mhd_opts[4];
+	struct MHD_OptionItem mhd_opts[5];
 	const union MHD_DaemonInfo *dmni;
 	int fd;
 
@@ -879,10 +1036,6 @@ void httpd_proc(int rank)
 
 	} else
 		mhd_flags = mhd_flags | MHD_NO_FLAG;
-
-	mhd_opts[mhd_opt_n].option = MHD_OPTION_END;
-	mhd_opts[mhd_opt_n].value = 0;
-	mhd_opts[mhd_opt_n].ptr_value = NULL;
 
 	#if (MHD_VERSION <= 0x00095000)
 	mhd_flags = mhd_flags | MHD_USE_EPOLL_LINUX_ONLY;
@@ -952,12 +1105,28 @@ void httpd_proc(int rank)
 	httpd_server_info.sin.sin_port = port;
 #endif
 
+	if (httpd_listen_fd >= 0) {
+		mhd_flags &= ~(MHD_USE_IPv6 | MHD_USE_DUAL_STACK);
+		mhd_opts[mhd_opt_n].option = MHD_OPTION_LISTEN_SOCKET;
+		mhd_opts[mhd_opt_n].value = httpd_listen_fd;
+		mhd_opts[mhd_opt_n].ptr_value = NULL;
+		mhd_opt_n++;
+	} else {
+		mhd_opts[mhd_opt_n].option = MHD_OPTION_SOCK_ADDR;
+		mhd_opts[mhd_opt_n].value = 0;
+		mhd_opts[mhd_opt_n].ptr_value = saddr;
+		mhd_opt_n++;
+	}
+
+	mhd_opts[mhd_opt_n].option = MHD_OPTION_END;
+	mhd_opts[mhd_opt_n].value = 0;
+	mhd_opts[mhd_opt_n].ptr_value = NULL;
+
 	LM_DBG("init_child [%d] - [%d] HTTP Server init [%s:%d]\n",
 		rank, getpid(), ip_repr, port);
 	set_proc_attrs("HTTPD %s:%d", ip_repr, port);
 	dmn = MHD_start_daemon(mhd_flags, port, NULL, NULL,
 			&(answer_to_connection), NULL,
-			MHD_OPTION_SOCK_ADDR, saddr,
 			MHD_OPTION_ARRAY, mhd_opts,
 			MHD_OPTION_END);
 

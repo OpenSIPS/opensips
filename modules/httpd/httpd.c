@@ -48,6 +48,8 @@
 
 #define MIN_POST_BUF_SIZE 256
 #define DEFAULT_POST_BUF_SIZE 1024
+#define DEFAULT_TLS_CIPHERS "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2"
+#define DEFAULT_CONN_TIMEOUT 30
 
 /* module functions */
 static int mod_init();
@@ -59,10 +61,10 @@ static mi_response_t *mi_list_root_path(const mi_params_t *params,
 int port = 8888;
 str ip = {"127.0.0.1", 9};
 str buffer = {NULL, 0};
-unsigned int hd_conn_timeout_s = 30;
+unsigned int hd_conn_timeout_s = DEFAULT_CONN_TIMEOUT;
 str tls_cert_file = {NULL, 0};
 str tls_key_file = {NULL, 0};
-str tls_ciphers = {"SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2", 45};
+str tls_ciphers = {DEFAULT_TLS_CIPHERS, sizeof(DEFAULT_TLS_CIPHERS) - 1};
 int post_buf_size = DEFAULT_POST_BUF_SIZE;
 int receive_buf_size = DEFAULT_POST_BUF_SIZE;
 str auth_realm = {"OpenSIPS MI", 11};
@@ -73,24 +75,150 @@ struct httpd_cb *httpd_cb_list = NULL;
 char *httpd_receive_buff = NULL;
 int httpd_receive_buff_pos=0;
 
-static const proc_export_t mi_procs[] = {
-	{"HTTPD",  0,  0, httpd_proc, 1,
+#define HTTPD_DEFAULT_SRV "default"
+
+struct httpd_server *httpd_servers = NULL;
+int httpd_n_servers = 0;
+
+static proc_export_t mi_procs[] = {
+	{"HTTPD",  httpd_pre_fork,  httpd_post_fork, httpd_proc, 1,
 		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{NULL, 0, 0, NULL, 0, 0}
 };
 
 
+static void httpd_split(char *val, str *name, str *rest)
+{
+	char *p;
+	str v;
+
+	v.s = val;
+	v.len = val ? strlen(val) : 0;
+	while (v.len && v.s[0] == ' ') {
+		v.s++;
+		v.len--;
+	}
+
+	if (v.len && v.s[0] == '[' && (p = memchr(v.s, ']', v.len))) {
+		name->s = v.s + 1;
+		name->len = (int)(p - v.s - 1);
+		while (name->len && name->s[0] == ' ') {
+			name->s++;
+			name->len--;
+		}
+		while (name->len && name->s[name->len - 1] == ' ')
+			name->len--;
+
+		rest->s = p + 1;
+		rest->len = v.len - (int)(p - v.s) - 1;
+	} else {
+		name->s = HTTPD_DEFAULT_SRV;
+		name->len = sizeof(HTTPD_DEFAULT_SRV) - 1;
+		rest->s = v.s;
+		rest->len = v.len;
+	}
+
+	while (rest->len && rest->s[0] == ' ') {
+		rest->s++;
+		rest->len--;
+	}
+	while (rest->len && rest->s[rest->len - 1] == ' ')
+		rest->len--;
+}
+
+static struct httpd_server *httpd_get_server(str *name)
+{
+	struct httpd_server *arr;
+	int i;
+
+	for (i = 0; i < httpd_n_servers; i++)
+		if (httpd_servers[i].name.len == name->len &&
+				memcmp(httpd_servers[i].name.s, name->s, name->len) == 0)
+			return &httpd_servers[i];
+
+	arr = realloc(httpd_servers, (httpd_n_servers + 1) * sizeof *arr);
+	if (!arr) {
+		LM_ERR("no more memory for HTTP servers\n");
+		return NULL;
+	}
+	httpd_servers = arr;
+	arr = &httpd_servers[httpd_n_servers];
+	memset(arr, 0, sizeof *arr);
+	arr->name.s = malloc(name->len + 1);
+	if (!arr->name.s) {
+		LM_ERR("no more memory for HTTP server name\n");
+		return NULL;
+	}
+	memcpy(arr->name.s, name->s, name->len);
+	arr->name.s[name->len] = '\0';
+	arr->name.len = name->len;
+	arr->listen_fd = -1;
+	httpd_n_servers++;
+	return arr;
+}
+
+static struct httpd_server *httpd_srv_str(void *val, str *rest)
+{
+	str name;
+
+	httpd_split((char *)val, &name, rest);
+	return httpd_get_server(&name);
+}
+
+static int httpd_srv_int(modparam_t type, void *val, struct httpd_server **s,
+		int *out)
+{
+	str name, rest;
+
+	if (type & STR_PARAM) {
+		httpd_split((char *)val, &name, &rest);
+		if (str2sint(&rest, out) < 0) {
+			LM_ERR("invalid integer modparam value '%.*s'\n",
+				rest.len, rest.s);
+			return -1;
+		}
+	} else {
+		name.s = HTTPD_DEFAULT_SRV;
+		name.len = sizeof(HTTPD_DEFAULT_SRV) - 1;
+		*out = (int)(long)val;
+	}
+	*s = httpd_get_server(&name);
+	return *s ? 0 : -1;
+}
+
+static int set_ip(modparam_t t, void *v)
+{ struct httpd_server *s; str r; s = httpd_srv_str(v, &r); if (!s) return -1; s->ip = r; return 0; }
+static int set_tls_cert(modparam_t t, void *v)
+{ struct httpd_server *s; str r; s = httpd_srv_str(v, &r); if (!s) return -1; s->tls_cert_file = r; return 0; }
+static int set_tls_key(modparam_t t, void *v)
+{ struct httpd_server *s; str r; s = httpd_srv_str(v, &r); if (!s) return -1; s->tls_key_file = r; return 0; }
+static int set_tls_ciphers(modparam_t t, void *v)
+{ struct httpd_server *s; str r; s = httpd_srv_str(v, &r); if (!s) return -1; s->tls_ciphers = r; return 0; }
+static int set_port(modparam_t t, void *v)
+{ struct httpd_server *s; int n; if (httpd_srv_int(t, v, &s, &n) < 0) return -1; s->port = n; return 0; }
+static int set_buf_size(modparam_t t, void *v)
+{ struct httpd_server *s; int n; if (httpd_srv_int(t, v, &s, &n) < 0) return -1; s->buf_size = n; return 0; }
+static int set_conn_timeout(modparam_t t, void *v)
+{ struct httpd_server *s; int n; if (httpd_srv_int(t, v, &s, &n) < 0) return -1; s->conn_timeout = n; return 0; }
+static int set_post_buf_size(modparam_t t, void *v)
+{ struct httpd_server *s; int n; if (httpd_srv_int(t, v, &s, &n) < 0) return -1; s->post_buf_size = n; return 0; }
+static int set_receive_buf_size(modparam_t t, void *v)
+{ struct httpd_server *s; int n; if (httpd_srv_int(t, v, &s, &n) < 0) return -1; s->receive_buf_size = n; return 0; }
+static int set_workers(modparam_t t, void *v)
+{ struct httpd_server *s; int n; if (httpd_srv_int(t, v, &s, &n) < 0) return -1; s->workers = n; return 0; }
+
 /** Module parameters */
 static const param_export_t params[] = {
-	{"port",          INT_PARAM, &port},
-	{"ip",            STR_PARAM, &ip.s},
-	{"buf_size",      INT_PARAM, &buffer.len},
-	{"conn_timeout",  INT_PARAM, &hd_conn_timeout_s},
-	{"post_buf_size", INT_PARAM, &post_buf_size},
-	{"receive_buf_size", INT_PARAM, &receive_buf_size},
-	{"tls_cert_file", STR_PARAM, &tls_cert_file.s},
-	{"tls_key_file", STR_PARAM,  &tls_key_file.s},
-	{"tls_ciphers", STR_PARAM, &tls_ciphers.s},
+	{"ip",               STR_PARAM|USE_FUNC_PARAM,           (void*)set_ip},
+	{"port",             STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)set_port},
+	{"buf_size",         STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)set_buf_size},
+	{"conn_timeout",     STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)set_conn_timeout},
+	{"post_buf_size",    STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)set_post_buf_size},
+	{"receive_buf_size", STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)set_receive_buf_size},
+	{"tls_cert_file",    STR_PARAM|USE_FUNC_PARAM,           (void*)set_tls_cert},
+	{"tls_key_file",     STR_PARAM|USE_FUNC_PARAM,           (void*)set_tls_key},
+	{"tls_ciphers",      STR_PARAM|USE_FUNC_PARAM,           (void*)set_tls_ciphers},
+	{"workers",          STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)set_workers},
 	{"auth_realm", STR_PARAM, &auth_realm.s},
 	{"auth_username", STR_PARAM, &auth_username.s},
 	{"auth_password", STR_PARAM, &auth_password.s},
@@ -165,6 +293,8 @@ static long httpd_get_runtime_version(void)
 static int mod_init(void)
 {
 	struct ip_addr *_ip;
+	struct httpd_server *s;
+	int i, total_workers = 0;
 
 #if defined MHD_VERSION && MHD_VERSION >= 0x00093500
 	/* Get whether epoll() is supported. If supported then
@@ -178,12 +308,63 @@ static int mod_init(void)
 			"running %s\n",MHD_get_version());
 		return -1;
 	}
-	if (ip.s) {
-		ip.len = strlen(ip.s);
-		if ( strcmp(ip.s, "*") && !(_ip=str2ip(&ip)) && !(_ip=str2ip6(&ip))) {
-			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
+
+	if (httpd_n_servers == 0) {
+		str def = {HTTPD_DEFAULT_SRV, sizeof(HTTPD_DEFAULT_SRV) - 1};
+		if (!httpd_get_server(&def))
+			return -1;
+	}
+
+	for (i = 0; i < httpd_n_servers; i++) {
+		s = &httpd_servers[i];
+
+		if (s->port == 0) {
+			if (s->name.len == sizeof(HTTPD_DEFAULT_SRV) - 1 &&
+					memcmp(s->name.s, HTTPD_DEFAULT_SRV, s->name.len) == 0)
+				s->port = 8888;
+			else {
+				LM_ERR("missing 'port' for HTTP server '%.*s'\n",
+					s->name.len, s->name.s);
+				return -1;
+			}
+		}
+
+		if (s->ip.s) {
+			s->ip.len = strlen(s->ip.s);
+			if (strcmp(s->ip.s, "*") && !(_ip=str2ip(&s->ip))
+					&& !(_ip=str2ip6(&s->ip))) {
+				LM_ERR("invalid IP [%.*s] for HTTP server '%.*s'\n",
+					s->ip.len, s->ip.s, s->name.len, s->name.s);
+				return -1;
+			}
+		}
+
+		if (s->workers < 1)
+			s->workers = 1;
+		if (s->post_buf_size == 0)
+			s->post_buf_size = DEFAULT_POST_BUF_SIZE;
+		if (s->post_buf_size < MIN_POST_BUF_SIZE) {
+			LM_ERR("post_buf_size should be bigger than %d (HTTP server '%.*s')\n",
+				MIN_POST_BUF_SIZE, s->name.len, s->name.s);
 			return -1;
 		}
+		if (s->receive_buf_size == 0)
+			s->receive_buf_size = DEFAULT_POST_BUF_SIZE;
+		if (s->conn_timeout == 0)
+			s->conn_timeout = DEFAULT_CONN_TIMEOUT;
+		if (!s->tls_ciphers.s)
+			s->tls_ciphers.s = DEFAULT_TLS_CIPHERS;
+		if ((s->tls_cert_file.s && !s->tls_key_file.s) ||
+				(!s->tls_cert_file.s && s->tls_key_file.s)) {
+			LM_ERR("both tls_cert_file and tls_key_file are required for a "
+				"TLS HTTP server ('%.*s')\n", s->name.len, s->name.s);
+			return -1;
+		}
+
+		total_workers += s->workers;
+		LM_INFO("HTTP server '%.*s' on %s:%d with %d worker(s)%s\n",
+			s->name.len, s->name.s, s->ip.s ? s->ip.s : "*", s->port,
+			s->workers, s->tls_cert_file.s ? " (TLS)" : "");
 	}
 
 	if (auth_realm.s)
@@ -203,20 +384,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (post_buf_size < MIN_POST_BUF_SIZE) {
-		LM_ERR("post_buf_size should be bigger then %d\n",
-			MIN_POST_BUF_SIZE);
-		return -1;
-	}
-	if (buffer.len == 0)
-		buffer.len = (pkg_mem_size/4);
-	LM_DBG("buf_size=[%d]\n", buffer.len);
-
-	httpd_receive_buff = pkg_malloc(receive_buf_size);
-	if (httpd_receive_buff == NULL) {
-		LM_ERR("No more pkg\n");
-		return -1;
-	}
+	mi_procs[0].no = total_workers;
 
 	return 0;
 }

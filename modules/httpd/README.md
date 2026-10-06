@@ -24,6 +24,25 @@ and `tls_key_file` parameters. If this is enabled, support for plain
 http is disabled.
 
 
+### Multiple HTTP Servers
+
+
+The module can run several named HTTP listeners, each with its own
+worker pool, so requests are handled in parallel instead of serially.
+Prefix a modparam value with a listener name in brackets (e.g.
+`[critical]port`) to configure that listener; unprefixed values
+apply to the `default` listener.
+
+
+```opensips title="Example: two listeners"
+...
+modparam("httpd", "port", "[default]8888")
+modparam("httpd", "port", "[critical]8889")
+modparam("httpd", "workers", "[critical]4")
+...
+```
+
+
 ### Dependencies
 
 
@@ -64,6 +83,12 @@ lasting until **0.9.71** (May 2020)
 
 
 ### Exported Parameters
+
+
+> [!NOTE]
+> Except for the `auth_*` parameters, all parameters below accept the
+> `[name]`-prefixed syntax from [Multiple HTTP Servers](#multiple-http-servers).
+> The `auth_*` parameters are global and apply to all listeners.
 
 
 #### ip(string)
@@ -235,6 +260,23 @@ and then choose, use the gnutls-cli application:
 ```opensips title="Set tls_key_file parameter"
 ...
 modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2")
+...
+```
+
+
+#### workers (integer)
+
+
+The number of worker processes handling HTTP requests for this
+listener, in parallel.
+
+
+*The default value is 1.*
+
+
+```opensips title="Set workers parameter"
+...
+modparam("httpd", "workers", 4)
 ...
 ```
 
