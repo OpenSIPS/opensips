@@ -26,9 +26,46 @@
 #include "proxy_protocol.h"
 #include "trans.h"
 #include "../tsend.h"
+#include "../ipc.h"
 #include "proto_tcp/tcp_common_defs.h"
 
 #define TCP_DEFAULT_ASYNC_CHUNKS 32
+
+tcp_chunk_fail_f *tcp_chunk_fail_cb;
+unsigned long long tcp_chunk_fail_token;
+
+static void tcp_chunk_fail_rpc(int sender, void *param)
+{
+	unsigned long long *token = (unsigned long long *)param;
+
+	tcp_chunk_fail_cb(*token);
+	shm_free(token);
+}
+
+void tcp_async_fail_chunks(struct tcp_connection *con)
+{
+	unsigned long long *job;
+	int i;
+
+	if (!con->async || !tcp_chunk_fail_cb)
+		return;
+
+	for (i = 0; i < con->async->pending; i++) {
+		if (!con->async->chunks[i]->fail_token)
+			continue;
+
+		job = shm_malloc(sizeof *job);
+		if (!job) {
+			LM_ERR("no more SHM for chunk failure notification\n");
+			continue;
+		}
+		*job = con->async->chunks[i]->fail_token;
+		if (ipc_dispatch_rpc(tcp_chunk_fail_rpc, job) < 0) {
+			LM_ERR("failed to dispatch chunk failure notification\n");
+			shm_free(job);
+		}
+	}
+}
 
 static int tcp_async_init_data(struct tcp_connection *con)
 {
@@ -410,6 +447,7 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 		return -1;
 	}
 
+	c->fail_token = tcp_chunk_fail_token;
 	c->len = len;
 	c->ticks = get_ticks();
 	c->buf = (char *)(c+1);

@@ -842,6 +842,7 @@ static void __tcpconn_rm(struct tcp_connection* c, int no_event)
 	lock_destroy(&c->write_lock);
 
 	if (c->async) {
+		tcp_async_fail_chunks(c);
 		for (r = 0; r<c->async->pending; r++)
 			shm_free(c->async->chunks[r]);
 		shm_free(c->async);
