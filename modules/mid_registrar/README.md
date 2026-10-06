@@ -737,7 +737,7 @@ improving interoperability.
 ```opensips title="Setting the allow_dup_cseq parameter"
 ...
 # strict RFC 3261 compliance: reject REGISTER requests with duplicate CSeq
-modparam("
+modparam("mid_registrar", "allow_dup_cseq", true)
 ```
 
 
@@ -763,7 +763,7 @@ than, e.g., every 1800 seconds following the restart.
 ```opensips title="Setting the expires_max_deviation parameter"
 ...
 # add a random +/- 0-100 seconds to each registration lifetime
-modparam("
+modparam("mid_registrar", "expires_max_deviation", 100)
 ```
 
 
@@ -784,7 +784,7 @@ That's it - the function parameter overrides this global parameter.
 ```opensips title="Set max_contacts parameter"
 ...
 # Allow no more than 10 contacts per AOR
-modparam("
+modparam("mid_registrar", "max_contacts", 10)
 ```
 
 
@@ -798,7 +798,7 @@ Default value is **64**.
 
 
 ```opensips title="Setting the *max_username_len* module parameter"
-modparam("
+modparam("mid_registrar", "max_username_len", 128)
 ```
 
 
@@ -812,7 +812,7 @@ Default value is **64**.
 
 
 ```opensips title="Setting the *max_domain_len* module parameter"
-modparam("
+modparam("mid_registrar", "max_domain_len", 128)
 ```
 
 
@@ -826,7 +826,7 @@ Default value is **256**.
 
 
 ```opensips title="Setting the *max_aor_len* module parameter"
-modparam("
+modparam("mid_registrar", "max_aor_len", 512)
 ```
 
 
@@ -840,7 +840,7 @@ Default value is **255**.
 
 
 ```opensips title="Setting the *max_contact_len* module parameter"
-modparam("
+modparam("mid_registrar", "max_contact_len", 512)
 ```
 
 
