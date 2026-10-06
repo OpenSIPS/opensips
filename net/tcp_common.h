@@ -64,6 +64,11 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 int tcp_async_add_chunks(struct tcp_connection *con, const struct iovec *iov,
 			int iovcnt, int lock);
 
+extern tcp_chunk_fail_f *tcp_chunk_fail_cb;
+extern unsigned long long tcp_chunk_fail_token;
+
+void tcp_async_fail_chunks(struct tcp_connection *con);
+
 /* returns the first chunk to be written */
 struct tcp_async_chunk *tcp_async_get_chunk(struct tcp_connection *con);
 

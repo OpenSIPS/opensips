@@ -68,6 +68,7 @@
 #include "ut.h"
 #include "t_reply.h"
 #include "t_fwd.h"
+#include "../../net/tcp_common.h"
 #include "t_lookup.h"
 #include "callid.h"
 #include "t_cancel.h"
@@ -909,6 +910,8 @@ static int mod_init(void)
 		"branch bitmask size [%d/%zu] ...\n",
 		TM_BRANCH_MAX, TM_BRANCH_CHUNK_SIZE, TM_BRANCH_MAX_FACTOR,
 		sizeof(branch_bm_t));
+
+	tcp_chunk_fail_cb = tm_tcp_chunk_fail;
 
 	minor_branch_flag =
 		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str, 0);

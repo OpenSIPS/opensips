@@ -111,6 +111,7 @@
 #include "t_funcs.h"
 #include "t_reply.h"
 #include "t_cancel.h"
+#include "t_lookup.h"
 #include "t_stats.h"
 
 
@@ -272,6 +273,35 @@ static void fake_reply(struct cell *t, int branch, int code )
 
 
 
+
+
+void tm_tcp_chunk_fail(unsigned long long token)
+{
+	unsigned int hash_index = (token >> 9) & 0xffff;
+	unsigned int label = token >> 25;
+	int branch = (int)(token & 0x1ff) - 1;
+	struct cell *t;
+
+	if (t_lookup_ident(&t, hash_index, label) < 0)
+		return;
+
+	if (push_new_global_context()) {
+		set_t(t);
+
+		LOCK_REPLIES(t);
+		if (branch >= t->nr_of_outgoings ||
+		TM_BRANCH(t,branch).last_received != 0 ||
+		TM_BRANCH(t,branch).request.buffer.s == NULL)
+			UNLOCK_REPLIES(t);
+		else
+			fake_reply(t, branch, -E_SEND);
+
+		init_t();
+		pop_pushed_global_context();
+	}
+
+	UNREF(t);
+}
 
 
 inline static void retransmission_handler( struct timer_link *retr_tl )
