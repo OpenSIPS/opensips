@@ -132,11 +132,15 @@ void cancel_branch( struct cell *t, int branch )
 		tcp_no_new_conn = 1;
 	backup_list = set_avp_list( &t->user_avps );
 	set_bavp_list(&TM_BRANCH(t,branch).user_avps);
-	if (SEND_BUFFER( crb )==0) {
-		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-			set_extra_tmcb_params( &crb->buffer, &crb->dst);
+	{
+		str sent_buffer = STR_NULL;
+		int observe_send = has_tran_tmcbs(t, TMCB_MSG_SENT_OUT);
+		if (SEND_BUFFER_CAPTURE(crb,
+				observe_send ? &sent_buffer : NULL) == 0 && observe_send) {
+			set_extra_tmcb_params(&sent_buffer, &crb->dst);
 			run_trans_callbacks( TMCB_MSG_SENT_OUT,
 				t, t->uas.request, 0, 0);
+			release_sent_buffer(&sent_buffer, crb->buffer.s);
 		}
 	}
 	set_avp_list(backup_list);
@@ -168,5 +172,3 @@ char *build_cancel(struct cell *Trans,unsigned int branch,
 	 * (by t_should_relay_response) which may lead into races ( building the
 	 * cancel versus handling a final response in a different process )*/
 }
-
-
