@@ -39,6 +39,8 @@
 #endif
 
 #include "../../mem/mem.h"
+#include "../../ipc.h"
+#include "../../net/net_tcp.h"
 #include "../../lib/csv.h"
 #include "tls_domain.h"
 #include "tls_params.h"
@@ -57,6 +59,7 @@ rw_lock_t *dom_lock;
 
 extern struct openssl_binds openssl_api;
 extern struct wolfssl_binds wolfssl_api;
+extern int is_tcp_main;
 
 void destroy_tls_dom(struct tls_domain *d);
 
@@ -118,39 +121,63 @@ void map_remove_tls_dom(struct tls_domain *dom)
 	}
 }
 
-void tls_free_domain(struct tls_domain *dom)
+static void tls_destroy_domain(struct tls_domain *dom)
 {
 	str_list *m_it, *m_tmp;
 
-	dom->refs--;
-	if (dom->refs == 0) {
-		LM_DBG("Freeing domain: %.*s\n",
-			dom->name.len, dom->name.s);
+	LM_DBG("Freeing domain: %.*s\n", dom->name.len, dom->name.s);
 
-		destroy_tls_dom(dom);
+	destroy_tls_dom(dom);
 
-		lock_destroy(dom->lock);
-		lock_dealloc(dom->lock);
+	lock_destroy(dom->lock);
+	lock_dealloc(dom->lock);
 
-		map_remove_tls_dom(dom);
+	map_remove_tls_dom(dom);
 
-		m_it = dom->match_domains;
-		while (m_it) {
-			m_tmp = m_it;
-			m_it = m_it->next;
-			shm_free(m_tmp->s.s);
-			shm_free(m_tmp);
-		}
-		m_it = dom->match_addresses;
-		while (m_it) {
-			m_tmp = m_it;
-			m_it = m_it->next;
-			shm_free(m_tmp->s.s);
-			shm_free(m_tmp);
-		}
-
-		shm_free(dom);
+	m_it = dom->match_domains;
+	while (m_it) {
+		m_tmp = m_it;
+		m_it = m_it->next;
+		shm_free(m_tmp->s.s);
+		shm_free(m_tmp);
 	}
+	m_it = dom->match_addresses;
+	while (m_it) {
+		m_tmp = m_it;
+		m_it = m_it->next;
+		shm_free(m_tmp->s.s);
+		shm_free(m_tmp);
+	}
+
+	shm_free(dom);
+}
+
+static void tls_destroy_domain_rpc(int sender, void *param)
+{
+	tls_destroy_domain((struct tls_domain *)param);
+}
+
+void tls_free_domain(struct tls_domain *dom)
+{
+	int tcp_main_proc;
+
+	dom->refs--;
+	if (dom->refs != 0)
+		return;
+
+	/* SSL_CTX is allocated from TCP main's private heap.  A DB domain may
+	 * outlive its removal from the shared lists while another process holds
+	 * a reference, so its final release must hand destruction back to the
+	 * process which owns that heap. */
+	tcp_main_proc = tcp_get_main_proc_no();
+	if (dom->ctx && !is_tcp_main && tcp_main_proc >= 0) {
+		if (ipc_send_rpc(tcp_main_proc, tls_destroy_domain_rpc, dom) < 0)
+			LM_ERR("failed to send TLS domain destruction to TCP main; "
+				"leaking domain %.*s safely\n", dom->name.len, dom->name.s);
+		return;
+	}
+
+	tls_destroy_domain(dom);
 }
 
 /* frees the DB domains */
@@ -886,4 +913,3 @@ int sort_map_dom_arrays(map_t matching_map)
 
 	return 0;
 }
-
