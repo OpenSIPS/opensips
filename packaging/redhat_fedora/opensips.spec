@@ -37,6 +37,10 @@
 %global _with_wolfssl 1
 %endif
 
+%if 0%{?rhel} > 8 || 0%{?fedora} > 42
+%global _with_grpc_client 1
+%endif
+
 %if 0%{?rhel} > 10 || 0%{?fedora} > 43
 %global _with_opentelemetry 1
 %endif
@@ -45,7 +49,7 @@
 %global _with_wolfssl_stir_shaken 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_grpc_client:grpc_client} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
@@ -106,6 +110,9 @@ BuildRequires:  systemd-units
 BuildRequires:  libxslt
 BuildRequires:  lynx
 BuildRequires:  json-c-devel
+%if 0%{?_with_grpc_client:1}
+BuildRequires:  grpc-devel >= 1.40.0
+%endif
 
 #Initscripts
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
@@ -388,6 +395,21 @@ scripts. Lookups are executed against the freely-available GeoLite City
 database; and the non-free GeoIP City database is drop-in
 compatible   Lookups are executed against the freely-available GeoLite City
 database; and the non-free GeoIP City database is drop-in compatible
+
+%if 0%{?_with_grpc_client:1}
+%package  grpc-client-module
+Summary:  Asynchronous gRPC client module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: grpc-cpp >= 1.40.0
+
+%description  grpc-client-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the native asynchronous generic gRPC client module.
+%endif
 
 %package  http-modules
 Summary:  HTTP transport layer and Management Interface for OpenSIPS
@@ -1443,6 +1465,12 @@ fi
 %files geoip-module
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
+
+%if 0%{?_with_grpc_client:1}
+%files grpc-client-module
+%{_libdir}/opensips/modules/grpc_client.so
+%doc docdir/README.grpc_client
+%endif
 
 %files http-modules
 %{_libdir}/opensips/modules/httpd.so

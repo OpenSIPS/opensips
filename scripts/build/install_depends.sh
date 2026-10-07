@@ -35,6 +35,13 @@ then
 	PKGS="${PKGS} opentelemetry-cpp-dev"
 fi
 
+# grpc_client requires grpc++ >= 1.40. Ubuntu 20.04/22.04 ship older
+# versions, while 24.04/26.04 provide a sufficiently recent libgrpc++-dev.
+if [ "${BUILD_OS}" = "ubuntu:24.04" -o "${BUILD_OS}" = "ubuntu:26.04" ]
+then
+	PKGS="${PKGS} libgrpc++-dev"
+fi
+
 # CI images contain all compiler variants for their Ubuntu release.  Keep the
 # normal compiler selection above for regular builds, while allowing the
 # image builder to add its complete compiler package set through the existing
