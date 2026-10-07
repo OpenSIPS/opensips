@@ -41,11 +41,13 @@
 #include <netinet/tcp.h>
 #include <netinet/ip.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
 #include "../../statistics.h"
+#include "../../locking.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
@@ -218,6 +220,293 @@ static const struct tls_stat_export tls_stats_desc[] = {
 	{"other_cipher_connections", TLS_STAT_OTHER_CIPHER},
 	{0, 0}
 };
+
+/*
+ * Handshake outcome tracking.
+ *
+ * TLS handshakes may span multiple non-blocking read/write callbacks and may
+ * resume in a different worker.  Keep the timing state in shared memory,
+ * keyed by the globally unique TCP connection id, instead of treating each
+ * callback as a separate handshake attempt.
+ */
+#define TLS_HS_BUCKET_COUNT 64U
+
+struct tls_hs_tracker {
+	unsigned long long cid;
+	utime_t started_us;
+	unsigned char server_side;
+	struct tls_hs_tracker *next;
+};
+
+static gen_lock_set_t *tls_hs_locks;
+static struct tls_hs_tracker **tls_hs_buckets;
+
+static stat_var *st_hs_attempts;
+static stat_var *st_hs_successes;
+static stat_var *st_hs_failures;
+static stat_var *st_hs_aborted;
+static stat_var *st_hs_client_attempts;
+static stat_var *st_hs_server_attempts;
+static stat_var *st_hs_peer_verified;
+static stat_var *st_hs_peer_unverified;
+static stat_var *st_hs_in_progress;
+static stat_var *st_hs_duration_us_total;
+
+static const stat_export_t handshake_stats[] = {
+	{"handshake_attempts", STAT_NO_RESET, &st_hs_attempts},
+	{"handshake_successes", STAT_NO_RESET, &st_hs_successes},
+	{"handshake_failures", STAT_NO_RESET, &st_hs_failures},
+	{"handshake_aborted", STAT_NO_RESET, &st_hs_aborted},
+	{"client_handshake_attempts", STAT_NO_RESET, &st_hs_client_attempts},
+	{"server_handshake_attempts", STAT_NO_RESET, &st_hs_server_attempts},
+	{"peer_verified_handshakes", STAT_NO_RESET, &st_hs_peer_verified},
+	{"peer_unverified_handshakes", STAT_NO_RESET, &st_hs_peer_unverified},
+	{"handshakes_in_progress", STAT_NO_RESET, &st_hs_in_progress},
+	{"handshake_duration_us_total", STAT_NO_RESET, &st_hs_duration_us_total},
+	{0, 0, 0}
+};
+
+static inline int tls_hs_active(const struct tcp_connection *c)
+{
+	return c && (c->proto_flags & (F_TLS_DO_ACCEPT | F_TLS_DO_CONNECT));
+}
+
+/*
+ * get_uticks() only advances with the utimer (UTIMER_TICK, 100ms), which is
+ * far too coarse for handshake latency.  Use the system-wide monotonic clock,
+ * which is comparable across processes and threads.
+ */
+static utime_t tls_hs_now_us(void)
+{
+	struct timespec ts;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
+		return 0;
+
+	return (utime_t)ts.tv_sec * 1000000ULL + (utime_t)ts.tv_nsec / 1000ULL;
+}
+
+static inline unsigned int tls_hs_bucket(unsigned long long cid)
+{
+	/* cids are already well distributed monotonically assigned identifiers. */
+	return (unsigned int)(cid % TLS_HS_BUCKET_COUNT);
+}
+
+static struct tls_hs_tracker *tls_hs_find_locked(unsigned int bucket,
+	unsigned long long cid, struct tls_hs_tracker **prev)
+{
+	struct tls_hs_tracker *p, *last = NULL;
+
+	if (prev)
+		*prev = NULL;
+	if (!tls_hs_buckets || bucket >= TLS_HS_BUCKET_COUNT)
+		return NULL;
+
+	for (p = tls_hs_buckets[bucket]; p; p = p->next) {
+		if (p->cid == cid) {
+			if (prev)
+				*prev = last;
+			return p;
+		}
+		last = p;
+	}
+
+	return NULL;
+}
+
+static void tls_hs_start(struct tcp_connection *c)
+{
+	struct tls_hs_tracker *p;
+	unsigned int bucket;
+
+	if (!tls_hs_locks || !tls_hs_buckets || !tls_hs_active(c))
+		return;
+
+	bucket = tls_hs_bucket(c->cid);
+	lock_set_get(tls_hs_locks, bucket);
+	if (tls_hs_find_locked(bucket, c->cid, NULL)) {
+		lock_set_release(tls_hs_locks, bucket);
+		return;
+	}
+
+	p = shm_malloc(sizeof(*p));
+	if (!p) {
+		lock_set_release(tls_hs_locks, bucket);
+		LM_ERR("no shared memory for TLS handshake tracker\n");
+		return;
+	}
+
+	p->cid = c->cid;
+	p->started_us = tls_hs_now_us();
+	p->server_side = !!(c->flags & F_CONN_ACCEPTED);
+	p->next = tls_hs_buckets[bucket];
+	tls_hs_buckets[bucket] = p;
+
+	update_stat(st_hs_attempts, 1);
+	update_stat(st_hs_in_progress, 1);
+	if (p->server_side)
+		update_stat(st_hs_server_attempts, 1);
+	else
+		update_stat(st_hs_client_attempts, 1);
+
+	lock_set_release(tls_hs_locks, bucket);
+}
+
+static void tls_hs_finish(struct tcp_connection *c, int success, int aborted)
+{
+	struct tls_hs_tracker *p, *prev;
+	struct tcp_tls_info *info;
+	utime_t now, elapsed;
+	unsigned int bucket;
+
+	if (!c || !tls_hs_locks || !tls_hs_buckets)
+		return;
+
+	now = tls_hs_now_us();
+	bucket = tls_hs_bucket(c->cid);
+	lock_set_get(tls_hs_locks, bucket);
+	p = tls_hs_find_locked(bucket, c->cid, &prev);
+	if (!p) {
+		lock_set_release(tls_hs_locks, bucket);
+		return;
+	}
+
+	if (prev)
+		prev->next = p->next;
+	else
+		tls_hs_buckets[bucket] = p->next;
+
+	elapsed = (now && p->started_us && now >= p->started_us) ?
+		now - p->started_us : 0;
+	update_stat(st_hs_in_progress, -1);
+	update_stat(st_hs_duration_us_total, (long)elapsed);
+
+	if (success) {
+		update_stat(st_hs_successes, 1);
+		info = c->shared_data;
+		if (info && info->peer_verified)
+			update_stat(st_hs_peer_verified, 1);
+		else
+			update_stat(st_hs_peer_unverified, 1);
+	} else {
+		update_stat(st_hs_failures, 1);
+		if (aborted)
+			update_stat(st_hs_aborted, 1);
+	}
+
+	shm_free(p);
+	lock_set_release(tls_hs_locks, bucket);
+}
+
+enum tls_hs_result {
+	TLS_HS_PENDING = 0,
+	TLS_HS_SUCCESS = 1,
+	TLS_HS_FAILURE = -1
+};
+
+static int tls_hs_classify_result(const struct tcp_connection *c, int ret)
+{
+	if (!c)
+		return TLS_HS_PENDING;
+
+	/*
+	 * The TLS backends clear F_TLS_DO_ACCEPT/F_TLS_DO_CONNECT at the exact
+	 * point the cryptographic handshake succeeds. Prefer that state over
+	 * the wrapper return value: wolfSSL can still report a later
+	 * post-handshake setup error after the handshake flag was cleared.
+	 */
+	if (!tls_hs_active(c))
+		return TLS_HS_SUCCESS;
+	if (ret < 0)
+		return TLS_HS_FAILURE;
+	return TLS_HS_PENDING;
+}
+
+/*
+ * @was_active must be sampled before calling into the TLS backend: the
+ * read/write wrappers run for every I/O on established connections, and
+ * only the call which drives the handshake needs to touch the tracker.
+ */
+static void tls_hs_observe_result(struct tcp_connection *c, int was_active,
+	int ret)
+{
+	int outcome;
+
+	if (!c || !was_active)
+		return;
+
+	outcome = tls_hs_classify_result(c, ret);
+	if (outcome == TLS_HS_SUCCESS)
+		tls_hs_finish(c, 1, 0);
+	else if (outcome == TLS_HS_FAILURE)
+		tls_hs_finish(c, 0, 0);
+}
+
+#ifdef UNIT_TESTS
+int tls_mgm_test_hs_result(unsigned int proto_flags, int ret)
+{
+	struct tcp_connection c;
+
+	memset(&c, 0, sizeof(c));
+	c.proto_flags = proto_flags;
+	return tls_hs_classify_result(&c, ret);
+}
+#endif
+
+static int tls_hs_tracker_init(void)
+{
+	tls_hs_locks = lock_set_alloc(TLS_HS_BUCKET_COUNT);
+	if (!tls_hs_locks) {
+		LM_ERR("failed to allocate TLS handshake tracker locks\n");
+		return -1;
+	}
+	if (!lock_set_init(tls_hs_locks)) {
+		LM_ERR("failed to initialize TLS handshake tracker locks\n");
+		lock_set_dealloc(tls_hs_locks);
+		tls_hs_locks = NULL;
+		return -1;
+	}
+
+	tls_hs_buckets = shm_malloc(sizeof(*tls_hs_buckets) * TLS_HS_BUCKET_COUNT);
+	if (!tls_hs_buckets) {
+		LM_ERR("no shared memory for TLS handshake tracker buckets\n");
+		lock_set_destroy(tls_hs_locks);
+		lock_set_dealloc(tls_hs_locks);
+		tls_hs_locks = NULL;
+		return -1;
+	}
+	memset(tls_hs_buckets, 0,
+		sizeof(*tls_hs_buckets) * TLS_HS_BUCKET_COUNT);
+
+	return 0;
+}
+
+static void tls_hs_tracker_destroy(void)
+{
+	struct tls_hs_tracker *p, *next;
+	unsigned int bucket;
+
+	if (!tls_hs_locks)
+		return;
+
+	if (tls_hs_buckets) {
+		for (bucket = 0; bucket < TLS_HS_BUCKET_COUNT; bucket++) {
+			lock_set_get(tls_hs_locks, bucket);
+			for (p = tls_hs_buckets[bucket]; p; p = next) {
+				next = p->next;
+				shm_free(p);
+			}
+			tls_hs_buckets[bucket] = NULL;
+			lock_set_release(tls_hs_locks, bucket);
+		}
+		shm_free(tls_hs_buckets);
+		tls_hs_buckets = NULL;
+	}
+
+	lock_set_destroy(tls_hs_locks);
+	lock_set_dealloc(tls_hs_locks);
+	tls_hs_locks = NULL;
+}
 
 /* DB handler */
 static db_con_t *db_hdl = 0;
@@ -478,7 +767,7 @@ struct module_exports exports = {
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* module parameters */
-	0,          /* exported statistics */
+	handshake_stats, /* exported statistics */
 	mi_cmds,          /* exported MI functions */
 	mod_items,          /* exported pseudo-variables */
 	0,			/* exported transformations */
@@ -1357,6 +1646,14 @@ static int mod_init(void) {
 	if (*tls_client_domains)
 		sort_map_dom_arrays(client_dom_matching);
 
+	/*
+	 * Initialize handshake tracking only after all configuration, DB and
+	 * domain setup has succeeded.  This avoids leaking the tracker lock/SHM
+	 * through any of the many earlier mod_init() failure paths.
+	 */
+	if (tls_hs_tracker_init() < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -1385,6 +1682,8 @@ static int child_init(int rank)
 static void mod_destroy(void)
 {
 	struct tls_domain *d, *d_tmp;
+
+	tls_hs_tracker_destroy();
 
 	if (dom_lock)
 		lock_destroy_rw(dom_lock);
@@ -1571,12 +1870,22 @@ int tls_conn_init(struct tcp_connection *c, struct tls_domain *tls_dom)
 	}
 	if (ret < 0)
 		c->proto_extra_id = NULL;
+	else
+		tls_hs_start(c);
 
 	return ret;
 }
 
 void tls_conn_clean(struct tcp_connection* c, struct tls_domain **tls_dom)
 {
+	/* If the connection disappears while its TLS state machine is still
+	 * active, account it as an aborted handshake exactly once.  A completed
+	 * handshake whose outcome was not observed yet must not leak its
+	 * tracker entry nor the in-progress gauge either. */
+	if (tls_hs_active(c))
+		tls_hs_finish(c, 0, 1);
+	else
+		tls_hs_finish(c, 1, 0);
 	if (tls_library == TLS_LIB_OPENSSL)
 		openssl_api.tls_conn_clean(c, tls_dom);
 	else if (tls_library == TLS_LIB_WOLFSSL)
@@ -1602,14 +1911,19 @@ int tls_update_fd(struct tcp_connection* c, int fd)
 int tls_async_connect(struct tcp_connection *con, int fd,
     int timeout, trace_dest t_dst)
 {
+	int ret, hs_active = tls_hs_active(con);
+
 	if (tls_library == TLS_LIB_OPENSSL)
-		return openssl_api.tls_async_connect(con, fd, timeout, t_dst);
+		ret = openssl_api.tls_async_connect(con, fd, timeout, t_dst);
 	else if (tls_library == TLS_LIB_WOLFSSL)
-		return wolfssl_api.tls_async_connect(con, fd, timeout, t_dst);
+		ret = wolfssl_api.tls_async_connect(con, fd, timeout, t_dst);
 	else {
 		LM_CRIT("No TLS library module loaded\n");
-		return -1;
+		ret = -1;
 	}
+
+	tls_hs_observe_result(con, hs_active, ret);
+	return ret;
 }
 
 int tls_write(struct tcp_connection *c, int fd, const void *buf,
@@ -1629,29 +1943,39 @@ int tls_blocking_write(struct tcp_connection *c, int fd,
     const char *buf, size_t len, int handshake_timeout, int send_timeout,
     trace_dest t_dst)
 {
+	int ret, hs_active = tls_hs_active(c);
+
 	if (tls_library == TLS_LIB_OPENSSL)
-		return openssl_api.tls_blocking_write(c, fd, buf, len,
+		ret = openssl_api.tls_blocking_write(c, fd, buf, len,
 			handshake_timeout, send_timeout, t_dst);
 	else if (tls_library == TLS_LIB_WOLFSSL)
-		return wolfssl_api.tls_blocking_write(c, fd, buf, len,
+		ret = wolfssl_api.tls_blocking_write(c, fd, buf, len,
 			handshake_timeout, send_timeout, t_dst);
 	else {
 		LM_CRIT("No TLS library module loaded\n");
-		return -1;
+		ret = -1;
 	}
+
+	tls_hs_observe_result(c, hs_active, ret);
+	return ret;
 }
 
 int tls_fix_read_conn(struct tcp_connection *c, int fd,
     int async_timeout, trace_dest t_dst, int lock)
 {
+	int ret, hs_active = tls_hs_active(c);
+
 	if (tls_library == TLS_LIB_OPENSSL)
-		return openssl_api.tls_fix_read_conn(c, fd, async_timeout, t_dst, lock);
+		ret = openssl_api.tls_fix_read_conn(c, fd, async_timeout, t_dst, lock);
 	else if (tls_library == TLS_LIB_WOLFSSL)
-		return wolfssl_api.tls_fix_read_conn(c, fd, async_timeout, t_dst, lock);
+		ret = wolfssl_api.tls_fix_read_conn(c, fd, async_timeout, t_dst, lock);
 	else {
 		LM_CRIT("No TLS library module loaded\n");
-		return -1;
+		ret = -1;
 	}
+
+	tls_hs_observe_result(c, hs_active, ret);
+	return ret;
 }
 
 int tls_read(struct tcp_connection * c,struct tcp_req *r)

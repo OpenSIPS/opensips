@@ -222,6 +222,57 @@ All statistic names use the `tls_mgm:` prefix, for example
 `tls_mgm:tls_v1_3_connections`. Reading a statistic traverses the active TCP
 connection table and briefly holds one connection-partition lock at a time.
 
+
+#### Handshake observability
+
+In addition to the active-connection gauges, `tls_mgm` exports cumulative
+handshake outcome statistics for both OpenSSL and wolfSSL.  A handshake is
+counted once per TCP connection even when the non-blocking TLS state machine
+requires several read/write callbacks or resumes in another process or
+thread. Tracking
+state is stored in a shared-memory table sharded into 64 connection-id buckets,
+with one lock per bucket, so unrelated handshakes do not serialize on a single
+global mutex.
+
+The exported statistics are:
+
+- `handshake_attempts` - TLS handshakes started
+- `handshake_successes` - handshakes which completed successfully
+- `handshake_failures` - handshakes which ended in an error or were aborted
+- `handshake_aborted` - subset of failures where the connection disappeared
+  before the TLS state machine completed
+- `client_handshake_attempts` - outbound/client-side attempts
+- `server_handshake_attempts` - accepted/server-side attempts
+- `peer_verified_handshakes` - successful handshakes whose cached peer
+  verification result is valid
+- `peer_unverified_handshakes` - successful handshakes without a verified peer
+- `handshakes_in_progress` - current number of tracked incomplete handshakes
+- `handshake_duration_us_total` - cumulative duration, in microseconds, of
+  completed, failed or aborted handshakes. A handshake is timed, using the
+  monotonic clock, from the moment TLS state is attached to the connection
+  until its outcome is known; for outbound connections this also includes
+  the TCP connect time.
+
+All names use the `tls_mgm:` prefix.
+
+Average handshake latency can be calculated without introducing a histogram
+implementation in the TLS hot path. For example, with the `prometheus` module
+configured with `group_mode` set to 1:
+
+```
+rate(opensips_tls_mgm_handshake_duration_us_total[5m])
+/
+(rate(opensips_tls_mgm_handshake_successes[5m]) +
+ rate(opensips_tls_mgm_handshake_failures[5m]))
+```
+
+A return value of zero from the non-blocking TLS backend is deliberately not
+classified as a timeout: OpenSSL and wolfSSL also use that state to mean
+"WANT_READ/WANT_WRITE, handshake still pending".  An incomplete handshake is
+therefore kept in the in-progress gauge until it succeeds, fails, or the
+connection is cleaned up.  This avoids false timeout metrics.
+
+
 ### Exported Parameters
 
 
