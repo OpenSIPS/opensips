@@ -827,11 +827,13 @@ static int reload_apply(struct tls_reload_job *job)
 	struct tls_domain *script_srv_doms = job->script_srv_doms;
 	struct tls_domain *dom;
 
-	/*
-	 * initialize new domains
-	 */
-	init_tls_domains(&tls_server_domains_tmp);
-	init_tls_domains(&tls_client_domains_tmp);
+	/* With no TCP main there is no owner or user for the process-private TLS
+	 * contexts.  This is also consistent with startup, where domains are only
+	 * initialized from child_init(PROC_TCP_MAIN). */
+	if (is_tcp_main) {
+		init_tls_domains(&tls_server_domains_tmp);
+		init_tls_domains(&tls_client_domains_tmp);
+	}
 
 	lock_start_write(dom_lock);
 
@@ -869,12 +871,12 @@ static int reload_apply(struct tls_reload_job *job)
 	for (dom = *tls_server_domains; dom; dom = dom->next)
 		if (update_matching_map(dom) < 0) {
 			LM_ERR("Unable to update domain matching map\n");
-			return -1;
+			goto error;
 		}
 	for (dom = *tls_client_domains; dom; dom = dom->next)
 		if (update_matching_map(dom) < 0) {
 			LM_ERR("Unable to update domain matching map\n");
-			return -1;
+			goto error;
 		}
 
 	/* sort arrays of domain filters in order to be able to select the
@@ -887,6 +889,10 @@ static int reload_apply(struct tls_reload_job *job)
 	lock_stop_write(dom_lock);
 
 	return 0;
+
+error:
+	lock_stop_write(dom_lock);
+	return -1;
 }
 
 static void tls_reload_rpc(int sender, void *param)
