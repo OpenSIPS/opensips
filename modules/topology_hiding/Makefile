@@ -3,5 +3,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=topology_hiding.so
+LIBS+=-lcrypto
 
 include ../../Makefile.modules
