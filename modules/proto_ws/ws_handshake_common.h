@@ -123,6 +123,21 @@ static char ws_trace_buf[WS_TRACE_MAX];
 
 static pthread_mutex_t ws_http_parse_lock = PTHREAD_MUTEX_INITIALIZER;
 
+/*
+ * The handshake is parsed on a TCP IO thread, with the core SIP parser, which
+ * allocates the header list from the process' pkg memory. pkg memory is not
+ * thread safe, so ws_http_parse_lock must cover both the parsing and the
+ * release of that list - releasing it unlocked races with another thread
+ * parsing (and allocating) at the same time.
+ */
+static inline void ws_free_parsed_headers(struct sip_msg *msg)
+{
+	pthread_mutex_lock(&ws_http_parse_lock);
+	free_hdr_field_lst(msg->headers);
+	msg->headers = NULL;
+	pthread_mutex_unlock(&ws_http_parse_lock);
+}
+
 /* safety checks */
 #ifndef _ws_common_module
 #error "_ws_common_module not defined!"
@@ -952,11 +967,11 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	}
 
 	/* parsing done, free headers */
-	free_hdr_field_lst(tmp_msg.headers);
+	ws_free_parsed_headers(&tmp_msg);
 
 	return 0;
 ws_error:
-	free_hdr_field_lst(tmp_msg.headers);
+	ws_free_parsed_headers(&tmp_msg);
 error:
 	WS_STATE(c) = WS_CON_BAD_REQ;
 	return -1;
@@ -1210,11 +1225,11 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 	}
 
 	/* parsing done, free headers */
-	free_hdr_field_lst(tmp_msg.headers);
+	ws_free_parsed_headers(&tmp_msg);
 
 	return 0;
 ws_error:
-	free_hdr_field_lst(tmp_msg.headers);
+	ws_free_parsed_headers(&tmp_msg);
 error:
 	WS_STATE(c) = WS_CON_BAD_REQ;
 	return -1;
