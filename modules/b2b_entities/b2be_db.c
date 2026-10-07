@@ -138,15 +138,17 @@ int cdb_add_n_pairs(cdb_dict_t *pairs, int idx_start, int idx_end)
 	int i;
 
 	for (i = idx_start; i <= idx_end; i++)
-		if (qvals[i].nul || (qvals[i].type == DB_STR && !qvals[i].val.str_val.s))
-			cdb_dict_add_null(pairs, qcols[i]->s, qcols[i]->len);
-		else if (qvals[i].type == DB_STR || qvals[i].type == DB_BLOB) {
+		if (qvals[i].nul || (qvals[i].type == DB_STR && !qvals[i].val.str_val.s)) {
+			if (cdb_dict_add_null(pairs, qcols[i]->s, qcols[i]->len) < 0)
+				return -1;
+		} else if (qvals[i].type == DB_STR || qvals[i].type == DB_BLOB) {
 			if (cdb_dict_add_str(pairs, qcols[i]->s, qcols[i]->len,
 					&qvals[i].val.str_val) < 0)
 				return -1;
-		} else if (qvals[i].type == DB_INT)
-			cdb_dict_add_int32(pairs, qcols[i]->s, qcols[i]->len,
-				qvals[i].val.int_val);
+		} else if (qvals[i].type == DB_INT && cdb_dict_add_int32(pairs,
+					qcols[i]->s, qcols[i]->len, qvals[i].val.int_val) < 0) {
+				return -1;
+		}
 	return 0;
 }
 

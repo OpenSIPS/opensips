@@ -827,11 +827,13 @@ static int reload_apply(struct tls_reload_job *job)
 	struct tls_domain *script_srv_doms = job->script_srv_doms;
 	struct tls_domain *dom;
 
-	/*
-	 * initialize new domains
-	 */
-	init_tls_domains(&tls_server_domains_tmp);
-	init_tls_domains(&tls_client_domains_tmp);
+	/* With no TCP main there is no owner or user for the process-private TLS
+	 * contexts.  This is also consistent with startup, where domains are only
+	 * initialized from child_init(PROC_TCP_MAIN). */
+	if (is_tcp_main) {
+		init_tls_domains(&tls_server_domains_tmp);
+		init_tls_domains(&tls_client_domains_tmp);
+	}
 
 	lock_start_write(dom_lock);
 
@@ -869,12 +871,12 @@ static int reload_apply(struct tls_reload_job *job)
 	for (dom = *tls_server_domains; dom; dom = dom->next)
 		if (update_matching_map(dom) < 0) {
 			LM_ERR("Unable to update domain matching map\n");
-			return -1;
+			goto error;
 		}
 	for (dom = *tls_client_domains; dom; dom = dom->next)
 		if (update_matching_map(dom) < 0) {
 			LM_ERR("Unable to update domain matching map\n");
-			return -1;
+			goto error;
 		}
 
 	/* sort arrays of domain filters in order to be able to select the
@@ -887,6 +889,70 @@ static int reload_apply(struct tls_reload_job *job)
 	lock_stop_write(dom_lock);
 
 	return 0;
+
+error:
+	lock_stop_write(dom_lock);
+	return -1;
+}
+
+static void tls_reload_rpc(int sender, void *param)
+{
+	struct tls_reload_job *job = (struct tls_reload_job *)param;
+
+	job->rc = reload_apply(job);
+	if (ipc_send_sync_reply(sender, job) < 0)
+		LM_ERR("failed to reply to TLS reload request\n");
+}
+
+/* reloads data from the db */
+static int reload_data(void)
+{
+	struct tls_reload_job *job;
+	void *reply;
+	int tcp_main_proc, rc;
+
+	job = shm_malloc(sizeof *job);
+	if (!job) {
+		LM_ERR("oom while allocating TLS reload job\n");
+		return -1;
+	}
+	memset(job, 0, sizeof *job);
+
+	job->script_srv_doms = find_first_script_dom(*tls_server_domains);
+	job->script_cli_doms = find_first_script_dom(*tls_client_domains);
+
+	/* load new domains from db */
+	if (load_info(&job->srv_doms, &job->cli_doms,
+					job->script_srv_doms, job->script_cli_doms) < 0) {
+		shm_free(job);
+		return -1;
+	}
+
+	tcp_main_proc = tcp_get_main_proc_no();
+	if (is_tcp_main || tcp_main_proc < 0) {
+		rc = reload_apply(job);
+		shm_free(job);
+		return rc;
+	}
+
+	/* the SSL contexts are owned by TCP main: build (and free) them there */
+	if (ipc_send_rpc(tcp_main_proc, tls_reload_rpc, job) < 0) {
+		LM_ERR("failed to send TLS reload request to TCP main\n");
+		tls_free_db_domains(job->srv_doms);
+		tls_free_db_domains(job->cli_doms);
+		shm_free(job);
+		return -1;
+	}
+
+	if (ipc_recv_sync_reply(&reply) < 0 || reply != job) {
+		/* do not touch the job, TCP main may still be using it */
+		LM_ERR("failed to receive TLS reload reply from TCP main\n");
+		return -1;
+	}
+
+	rc = job->rc;
+	shm_free(job);
+	return rc;
 }
 
 static void tls_reload_rpc(int sender, void *param)

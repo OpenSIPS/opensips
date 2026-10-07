@@ -134,7 +134,7 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 		goto done;
 	}
 
-	if(!dbn->s)
+	if(!dbn || !dbn->s)
 		goto done;
 
 	dtp = dbt_table_new(tbn, dbn, path);
@@ -694,4 +694,3 @@ int dbt_print_table(dbt_table_p _dtp, str *_dbn)
 
 	return 0;
 }
-

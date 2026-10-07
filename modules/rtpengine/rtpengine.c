@@ -1863,7 +1863,7 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 	}
 
 	pnode->ai_addrlen = res->ai_addrlen;
-	memcpy(&pnode->ai_addr.s, res->ai_addr, res->ai_addrlen);
+	memcpy(&pnode->ai_addr, res->ai_addr, res->ai_addrlen);
 
 	freeaddrinfo(res);
 	return 1;
@@ -2368,6 +2368,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					continue;
 				} else if (str_eq(&key, "no-from-tag")) {
 					ng_flags->no_from_tag = 1;
+					continue;
 				} else if (str_eq(&key, "directional")) {
 					ng_flags->directional = 1;
 					bitem = bencode_str(bencode_item_buffer(ng_flags->flags), &key);

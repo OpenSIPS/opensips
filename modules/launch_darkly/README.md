@@ -40,20 +40,32 @@ running OpenSIPS with this module loaded:
 - *ldserverapi*
 
 
-*ldserverapi* must be compiled and installed
-from the official
-[GITHUB repository](https://github.com/launchdarkly/c-server-sdk).
+*ldserverapi* must be compiled and installed.
+It is built from LaunchDarkly's C++ server-side SDK
+([cpp-sdks](https://github.com/launchdarkly/cpp-sdks), which also exposes
+a C API used by this module); the resulting archive is simply renamed to
+the legacy *ldserverapi* name expected by this module's Makefile. This
+replaces the older, deprecated
+[c-server-sdk](https://github.com/launchdarkly/c-server-sdk).
 
 
-The instructions for a quick installations of the library (note that it has to be compiled as shared lib in order to be compatible with the OpenSIPS modules):
+The instructions for a quick installation of the library (built as a
+static lib by default). Note that even though the SDK itself and OpenSSL
+are linked statically, Debian/Ubuntu's Boost CMake packages only ship
+shared library targets, so the module still ends up with a runtime
+dependency on the matching *libboost-json*, *libboost-url*,
+*libboost-coroutine*, *libboost-context*, *libboost-thread*,
+*libboost-system*, *libboost-date-time* and *libboost-filesystem* runtime
+packages (version 1.81) being installed wherever OpenSIPS actually runs:
 
 
 ```bash
 ...
-$ git clone https://github.com/launchdarkly/c-server-sdk.git
-$ cd c-server-sdk
-$ cmake -DBUILD_SHARED_LIBS=On -DBUILD_TESTING=OFF .
-$ sudo make install
+$ git clone -b launchdarkly-cpp-server-v3.9.1 https://github.com/launchdarkly/cpp-sdks.git
+$ cd cpp-sdks
+$ cmake -DBUILD_TESTING=Off -DLD_BUILD_EXAMPLES=Off -DLD_BUILD_CONTRACT_TESTS=Off .
+$ sudo cmake --build . --target install
+$ sudo mv /usr/local/lib/liblaunchdarkly-cpp-server.a /usr/local/lib/libldserverapi.a
 ...
 ```
 

@@ -176,7 +176,7 @@ modparam("rest_client", "ssl_verifyhost", 0)
 ```
 
 
-#### ssl_capath (integer)
+#### ssl_capath (string)
 
 
 An optional path for CA certificates to be used for host verifications.
@@ -304,7 +304,7 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
 ### Exported Functions
 
 
-#### rest_get(url, body_pv, [ctype_pv], [retcode_pv])
+#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform a blocking HTTP GET on the given *url* and
@@ -323,6 +323,15 @@ contain the value of the "Content-Type:" header of the response.
 retain the status code of the HTTP response.
 A **0** status code value means no HTTP
 reply arrived at all.
+- *max_redirects* (integer, optional) - maximum number of HTTP redirects
+to follow. A missing or **0** value preserves the previous behavior and does not
+follow redirects. Values from **1** to **30** enable redirects up to the requested
+limit. Only `http` and `https` redirect targets are accepted; values outside the
+**0** to **30** range are invalid.
+
+When redirects are enabled, libcurl applies its normal HTTP redirect method
+semantics. In particular, POST requests may be converted to GET after some
+3xx responses, as defined by libcurl.
 
 
 **Return Codes**
@@ -356,7 +365,8 @@ This function can be used from any route.
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
                     $var(credit),
                     $var(ct),
-                    $var(rcode));
+                    $var(rcode),
+                    5);
 if ($var(rc) < 0) {
 	xlog("rest_get() failed with $var(rc), acc=$fU\n");
 	send_reply(500, "Server Internal Error");
@@ -372,7 +382,7 @@ if ($var(rcode) != 200) {
 ```
 
 
-#### rest_post(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv])
+#### rest_post(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform a blocking HTTP POST on the given *url*.
@@ -401,6 +411,15 @@ header of the response
 which will retain the status code of the HTTP response.
 A **0** status code value means no HTTP
 reply arrived at all.
+- *max_redirects* (integer, optional) - maximum number of HTTP redirects
+to follow. A missing or **0** value preserves the previous behavior and does not
+follow redirects. Values from **1** to **30** enable redirects up to the requested
+limit. Only `http` and `https` redirect targets are accepted; values outside the
+**0** to **30** range are invalid.
+
+When redirects are enabled, libcurl applies its normal HTTP redirect method
+semantics. In particular, POST requests may be converted to GET after some
+3xx responses, as defined by libcurl.
 
 
 **Return Codes**
@@ -448,7 +467,7 @@ if ($var(rcode) != 200) {
 ```
 
 
-#### rest_put(url, send_body, [send_ctype], recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+#### rest_put(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform a blocking HTTP PUT on the given *url*.
@@ -475,6 +494,14 @@ which will contain the value of the "Content-Type" header of the response
 which will retain the status code of the HTTP response.
 A **0** status code value means no HTTP
 reply arrived at all.
+- *max_redirects* (integer, optional) - maximum number of HTTP redirects
+to follow. A missing or **0** value preserves the previous behavior and does not
+follow redirects. Values from **1** to **30** enable redirects up to the requested
+limit. Only `http` and `https` redirect targets are accepted; values outside the
+**0** to **30** range are invalid.
+
+When redirects are enabled, libcurl applies its normal HTTP redirect method
+semantics.
 
 
 **Return Codes**
@@ -588,14 +615,14 @@ if (!rest_get("https://example.com"))
 ### Exported Asynchronous Functions
 
 
-#### rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform an asynchronous HTTP GET.  This function behaves exactly the same as
-**[rest_get()](#rest_geturl-body_pv-ctype_pv-retcode_pv)**
+**rest_get()**
 (in terms of input, output and processing),
 but in a non-blocking manner.  Script execution is suspended until the
-entire content of the HTTP response is available.
+entire content of the HTTP response is available. The optional *max_redirects* argument has the same behavior in asynchronous mode.
 
 
 ```opensips title="async rest_get usage"
@@ -624,14 +651,14 @@ route [resume] {
 ```
 
 
-#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform an asynchronous HTTP POST.  This function behaves exactly the same as
-**[rest_post()](#rest_posturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv)** (in
+**rest_post()** (in
 terms of input, output and processing), but in a non-blocking manner.
 Script execution is suspended until the entire content of the HTTP
-response is available.
+response is available. The optional *max_redirects* argument has the same behavior in asynchronous mode.
 
 
 ```opensips title="async rest_post usage"
@@ -659,14 +686,14 @@ route [resume] {
 ```
 
 
-#### rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+#### rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
 
 
 Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
-**[rest_put()](#rest_puturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv)** (in
+**rest_put()** (in
 terms of input, output and processing), but in a non-blocking manner.
 Script execution is suspended until the entire content of the HTTP
-response is available.
+response is available. The optional *max_redirects* argument has the same behavior in asynchronous mode.
 
 
 ```opensips title="async rest_put usage"

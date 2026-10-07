@@ -1022,6 +1022,7 @@ static int rtp_relay_b2b_new_tuple(struct b2bl_cb_params *p, unsigned int m)
 		return 0;
 	}
 	rtp_relay_ctx_set_b2b(ctx);
+	RTP_RELAY_CTX_REF(ctx);
 	RTP_RELAY_PUT_B2B_CTX(p->key, ctx);
 
 	return 0;
@@ -1979,10 +1980,6 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	}
 
 	if (route_type != LOCAL_ROUTE) {
-		if (rtp_relay_dlg_ctx_idx < 0) {
-			LM_ERR("dialog module not loaded - failed to engage\n");
-			return -1;
-		}
 		if (!rtp_relay_ctx_engaged(ctx)) {
 
 			/* handles the replies to the original INVITE */
@@ -1992,7 +1989,8 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 				LM_ERR("failed to install TM reply callback\n");
 				return -1;
 			}
-			rtp_relay_dlg_req_callbacks(NULL, ctx);
+			if (rtp_relay_dlg_ctx_idx >= 0)
+				rtp_relay_dlg_req_callbacks(NULL, ctx);
 			rtp_relay_ctx_set_engaged(ctx);
 		}
 		sess = rtp_relay_new_sess(ctx, relay, set,
@@ -2620,6 +2618,10 @@ static int rtp_relay_push_flags_type(struct rtp_relay_sess *sess,
 				rtp_leg_set_disabled(sess->legs[leg], o->valueint);
 				break;
 			default:
+				if (f < RTP_RELAY_FLAGS_FIRST || f >= RTP_RELAY_FLAGS_SIZE) {
+					LM_WARN("Invalid RTP relay flag %s\n", o->string);
+					continue;
+				}
 				if (!(o->type & cJSON_String)) {
 					LM_WARN("%s not a string - ignoring!\n", o->string);
 					continue;

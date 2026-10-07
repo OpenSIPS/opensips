@@ -128,14 +128,14 @@ int init_sync_handle(void);
 int rcl_init_internals(void);
 int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
                        char *url, str *body, str *ctype, pv_spec_p body_pv,
-                       pv_spec_p ctype_pv, pv_spec_p code_pv);
+                       pv_spec_p ctype_pv, pv_spec_p code_pv, int max_redirects);
 int rcl_acquire_url(const char *url, char **url_host);
 void rcl_release_url(char *url_host, int update_conn_ts);
 
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
                          char *url, str *req_body, str *req_ctype,
                          rest_async_param *async_parm, str *body, str *ctype,
-						 enum async_ret_code *out_fd);
+                         enum async_ret_code *out_fd, int max_redirects);
 
 enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_param);
 enum async_ret_code time_out_async_http_req(int fd, struct sip_msg *msg, void *_param);

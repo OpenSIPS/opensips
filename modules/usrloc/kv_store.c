@@ -186,6 +186,9 @@ map_t store_deserialize(const str *input)
 		return NULL;
 	}
 
+	if (ZSTRP(input))
+		return map;
+
 	cJSON_InitHooks(&shm_hooks);
 
 	json_map = cJSON_Parse(input->s);

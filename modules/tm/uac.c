@@ -555,14 +555,15 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	/* run the local route */
 	if (sroutes==NULL)
 		LM_BUG("running local route/t_uac, but no routes in the process\n");
-	run_local_route( new_cell, &buf, &buf_len, dialog, &req, &buf_req);
+	else
+		run_local_route(new_cell, &buf, &buf_len, dialog, &req, &buf_req);
 
 	if (request->buffer.s==NULL) {
 		request->buffer.s = buf;
 		request->buffer.len = buf_len;
 	}
 
-	if (ref_script_route_is_valid(tm_local_request_route)) {
+	if (sroutes && ref_script_route_is_valid(tm_local_request_route)) {
 		LM_DBG("Found Local-Request Route...\n");
 		memset(&dummy_msg, 0, sizeof(struct sip_msg));
 		dummy_msg.buf = request->buffer.s;

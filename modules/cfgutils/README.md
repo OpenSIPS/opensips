@@ -63,7 +63,7 @@ listed modules must be loaded before this module):
 ### Exported Parameters
 
 
-#### initial_probability (string)
+#### initial_probability (integer)
 
 
 The initial value of the probability.

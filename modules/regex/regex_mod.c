@@ -725,7 +725,6 @@ static struct pcre_subst_expr *pcre_subst_parser(str *subst)
 	char *repl;
 	char *repl_end;
 	char saved = 0;
-	int re_saved = 0;
 	struct replace_with rw[MAX_REPLACE_WITH];
 	int r;
 	int rw_no;
@@ -806,11 +805,9 @@ found_re:
 
 	saved = *re_end;
 	*re_end = '\0';
-	re_saved = 1;
 	pcre_re = pcre2_compile((PCRE2_SPTR)re, PCRE2_ZERO_TERMINATED,
 			pcre_flags, &pcre_error, &pcre_erroffset, NULL);
 	*re_end = saved;
-	re_saved = 0;
 	if (pcre_re == NULL) {
 		pcre2_get_error_message(pcre_error, pcre_error_str,
 				sizeof(pcre_error_str));
@@ -862,8 +859,6 @@ found_re:
 	return se;
 
 error:
-	if (re_saved)
-		*re_end = saved;
 	if (se)
 		pcre_subst_expr_free(se);
 	if (pcre_re)
@@ -1309,7 +1304,7 @@ static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s,
 		pcre2_code_free(pcre_re);
 		pkg_free(regex.s);
 		if (set_match_pvar(_msg, match, NULL) < 0)
-			return -1;
+			LM_ERR("failed to reset match pvar\n");
 		return -1;
 	}
 

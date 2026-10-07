@@ -291,9 +291,12 @@ int aaa_is_user_in(struct sip_msg* _m, void* _hf, str* grp)
 	if (hf_type != 4 && turi){
 		user = turi->user;
 		domain = turi->host;
-	} else {
+	} else if (cred) {
 		user = cred->username.user;
 		domain = *GET_REALM(cred);
+	} else {
+		LM_ERR("missing URI and credentials\n");
+		return -4;
 	}
 
 	if (user.s == NULL || user.len == 0) {

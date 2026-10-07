@@ -296,7 +296,7 @@ build_trie_info(
 	return rt;
 
 err_exit:
-	if (NULL!=rt->attrs.s)
+	if (rt && rt->attrs.s)
 		func_free(ff,rt->attrs.s);
 	if ((NULL != rt) ) {
 		func_free(ff, rt);

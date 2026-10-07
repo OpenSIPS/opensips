@@ -174,6 +174,10 @@ int add_event(pres_ev_t* event)
 		}
 	}
 
+	if (!event->content_type.s || event->content_type.len <= 0) {
+		LM_ERR("invalid content type\n");
+		goto error;
+	}
 	ev->content_type.s = (char*)shm_malloc(event->content_type.len);
 	if(ev->content_type.s== NULL)
 	{
@@ -447,4 +451,3 @@ void destroy_evlist(void)
 		shm_free(EvList);
     }
 }
-

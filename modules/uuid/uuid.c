@@ -190,9 +190,6 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 		return RET_ERR;
 	}
 
-	if (rc == RET_ERR)
-		return rc;
-
 	LM_DBG("Generated UUID version: %d\n", uuid_type(uuid));
 
 	uuid_unparse(uuid, uuid_str);
