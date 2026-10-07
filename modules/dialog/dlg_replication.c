@@ -784,10 +784,12 @@ int dlg_replicated_value(bin_packet_t *packet)
 
 	dlg = lookup_dlg_unsafe(h_entry, h_id);
 	if (!dlg) {
+		/* not created here yet, or already deleted: nothing to update,
+		 * as for the delete and cseq packets above */
 		LM_DBG("dialog not found (callid: |%.*s| [%u:%d]\n",
 				call_id.len, call_id.s, h_id, h_entry);
 		dlg_unlock(d_table, d_entry);
-		return -1;
+		return 0;
 	}
 
 	if (dlg->state == DLG_STATE_DELETED) {
