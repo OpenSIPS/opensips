@@ -21,6 +21,8 @@
 #include <tap.h>
 
 #include "../parse_uri.h"
+#include "../parse_via.h"
+#include "../../mem/mem.h"
 
 #include "test_parse_qop.h"
 #include "test_parse_fcaps.h"
@@ -320,11 +322,44 @@ void test_parse_msg(void)
 }
 
 
+/* a quoted-string Via param value (e.g. RFC 7339 oc-algo) may contain ',' */
+void test_parse_via_quoted_comma(void)
+{
+	char buf[] = "SIP/2.0/UDP 10.0.0.1:5060;branch=z9hG4bKx;oc;"
+		"oc-algo=\"loss,rate\";x=1, SIP/2.0/UDP 10.0.0.2\r\n"
+		"Max-Forwards: 70\r\n";
+	struct via_body *vb;
+	struct via_param *p;
+
+	vb = pkg_malloc(sizeof *vb);
+	if (!vb) {
+		fail("pvia-quoted-comma-alloc");
+		return;
+	}
+	memset(vb, 0, sizeof *vb);
+
+	ok(parse_via(buf, buf + sizeof buf - 1, vb) != NULL &&
+		vb->error == PARSE_OK, "pvia-quoted-comma-1");
+	for (p = vb->param_lst; p; p = p->next)
+		if (str_match(&p->name, const_str("oc-algo")))
+			break;
+	ok(p && str_match(&p->value, const_str("loss,rate")),
+		"pvia-quoted-comma-2");
+	ok(vb->last_param && str_match(&vb->last_param->name, const_str("x")),
+		"pvia-quoted-comma-3");
+	ok(vb->next && str_match(&vb->next->host, const_str("10.0.0.2")),
+		"pvia-quoted-comma-4");
+
+	free_via_list(vb);
+}
+
+
 void test_parser(void)
 {
 	test_parse_uri();
 	test_trim_user_params();
 	test_parse_msg();
+	test_parse_via_quoted_comma();
 	test_parse_qop_val();
 	test_parse_fcaps();
 	test_parse_authenticate_body();
