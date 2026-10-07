@@ -47,6 +47,9 @@ enum _tr_s_subtype {
 	TR_S_SHA256, TR_S_SHA256_HMAC, TR_S_SHA384, TR_S_SHA384_HMAC, TR_S_SHA512,
 	TR_S_SHA512_HMAC
 };
+enum _tr_i_subtype {
+	TR_I_NONE=0, TR_I_BOOL
+};
 enum _tr_uri_subtype {
 	TR_URI_NONE=0, TR_URI_USER, TR_URI_HOST, TR_URI_PASSWD, TR_URI_PORT,
 	TR_URI_PARAMS, TR_URI_PARAM, TR_URI_HEADERS, TR_URI_TRANSPORT, TR_URI_TTL,
@@ -131,6 +134,10 @@ char *tr_parse_sparam(char *p, str *in, tr_param_t **tp,
 /* core transformations */
 int tr_parse_string(str* in, trans_t *t);
 int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+int tr_parse_integer(str *in, trans_t *t);
+int tr_eval_integer(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val);
 
 int tr_parse_uri(str* in, trans_t *t);

@@ -345,6 +345,21 @@ $json(object/array) := $json(array) ;
 ```
 
 
+#### $json_true and $json_false
+
+
+These read-only variables provide JSON boolean values for assignments made
+with the `=` operator. Unlike the integer values `1` and `0`, they are stored
+and serialized as the JSON literals `true` and `false`.
+
+
+```opensips title="Assigning JSON boolean values"
+$json(object) := "{}";
+$json(object/acc_enabled) = $json_true;
+$json(object/blocked) = $json_false;
+```
+
+
 #### $json_pretty(id)
 
 

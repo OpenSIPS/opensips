@@ -76,6 +76,7 @@ trans_extra_t *tr_extra_list;
 
 static const trans_export_t core_trans[] = {
 	{str_const_init("s"), tr_parse_string, tr_eval_string},
+	{str_const_init("i"), tr_parse_integer, tr_eval_integer},
 	{str_const_init("uri"), tr_parse_uri, tr_eval_uri},
 	{str_const_init("via"), tr_parse_via, tr_eval_via},
 	{str_const_init("param"), tr_parse_paramlist, tr_eval_paramlist},
@@ -1106,6 +1107,34 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	}
 
 	return 0;
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
+}
+
+int tr_eval_integer(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	if (!val)
+		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if (subtype != TR_I_BOOL) {
+		LM_ERR("unknown subtype %d\n", subtype);
+		goto error;
+	}
+
+	if (!pvv_is_int(val)) {
+		LM_ERR("boolean transformation requires an integer value\n");
+		goto error;
+	}
+
+	*val = val->ri ? pv_true : pv_false;
+	val->flags |= PV_VAL_BOOL;
+	return 0;
+
 error:
 	val->flags = PV_VAL_NULL;
 	return -1;
@@ -3289,6 +3318,26 @@ unknown:
 error:
 	if(tp)
 		free_tr_param(tp);
+	return -1;
+}
+
+int tr_parse_integer(str *in, trans_t *t)
+{
+	str name;
+
+	if (!in || !t)
+		return -1;
+
+	name = *in;
+	trim(&name);
+
+	if (name.len == 4 && strncasecmp(name.s, "bool", 4) == 0) {
+		t->subtype = TR_I_BOOL;
+		return 0;
+	}
+
+	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
+			name.len, name.s, name.len);
 	return -1;
 }
 

@@ -473,6 +473,32 @@ xlog("SHA512 HMAC over From username using key 'secret': $(fU{s.sha512_hmac,secr
 
 ```
 
+## Integer Transformations
+
+The names of these transformations start with `i.`. They operate on
+integer-valued variables.
+
+### {i.bool}
+
+Converts an integer to a boolean value. Zero becomes `false`, while any
+non-zero integer becomes `true`. The result remains usable as the integer
+`0` or `1`, but consumers which support boolean values can preserve its
+boolean type.
+
+```opensips
+
+$json(output/enabled) = $(json(input/enabled){i.bool});
+
+```
+
+String values can first be converted to integers by chaining `{s.int}`:
+
+```opensips
+
+$json(output/enabled) = $(var(input){s.int}{i.bool});
+
+```
+
 ## URI Transformations
 
 The name of transformation starts with 'uri.'. The value of the variable is considered to be a SIP URI. This transformation returns parts of SIP URI (see struct sip_uri). If that part is missing, the returned value is NULL.
