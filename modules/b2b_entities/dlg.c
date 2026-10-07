@@ -647,6 +647,28 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	return new_dlg;
 }
 
+static void b2b_end_pending_tran(struct cell *tran)
+{
+	str reply_text = str_init("Request Timeout");
+	struct to_body *pto;
+
+	if (tran->uas.status < 200) {
+		if (!tran->uas.request) {
+			LM_ERR("Cannot send 408 reply on transaction without a request\n");
+		} else {
+			pto = get_to(tran->uas.request);
+			if (pto == NULL || pto->error != PARSE_OK) {
+				LM_ERR("'To' header COULD NOT be parsed\n");
+			} else if (run_tm_api(&tmb, t_reply_with_body, tran, 408,
+				&reply_text, 0, 0, &pto->tag_value) < 0) {
+				LM_ERR("Failed to send 408 reply\n");
+			}
+		}
+	}
+
+	tmb.unref_cell(tran);
+}
+
 void b2b_delete_legs(dlg_leg_t** legs)
 {
 	dlg_leg_t* leg, *aux_leg;
@@ -656,9 +678,9 @@ void b2b_delete_legs(dlg_leg_t** legs)
 	{
 		aux_leg = leg->next;
 		if (leg->prack_tran)
-			tmb.unref_cell(leg->prack_tran);
+			b2b_end_pending_tran(leg->prack_tran);
 		if (leg->update_tran)
-			tmb.unref_cell(leg->update_tran);
+			b2b_end_pending_tran(leg->update_tran);
 		if (leg->prack_headers.s)
 			shm_free(leg->prack_headers.s);
 		shm_free(leg);
@@ -1402,7 +1424,7 @@ logic_notify:
 						leg->id = leg_idx - 1;
 				}
 				if (leg->prack_tran)
-					tmb.unref_cell(leg->prack_tran);
+					b2b_end_pending_tran(leg->prack_tran);
 				leg->prack_tran = tm_tran;
 				dlg->cseq[CALLEE_LEG]++;
 			}
@@ -1422,14 +1444,14 @@ logic_notify:
 				}
 				if (leg) {
 					if (leg->update_tran)
-						tmb.unref_cell(leg->update_tran);
+						b2b_end_pending_tran(leg->update_tran);
 					leg->update_tran = tm_tran;
 					LM_DBG("UPDATE to-tag [%.*s] -> leg idx [%d], leg [%p], "
 						"tran [%p] on dlg[%p]\n", to_tag.len, to_tag.s,
 						leg_idx, leg, tm_tran, dlg);
 				} else {
 					if (dlg->update_tran)
-						tmb.unref_cell(dlg->update_tran);
+						b2b_end_pending_tran(dlg->update_tran);
 					dlg->update_tran = tm_tran;
 					LM_DBG("UPDATE to-tag [%.*s] carries no leg index - stored "
 						"on dlg[%p], tran [%p]\n", to_tag.len, to_tag.s,
@@ -2404,23 +2426,9 @@ static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable)
 {
 	str reply_text = str_init("Request Timeout");
 	struct to_body *pto;
-	dlg_leg_t *leg;
 
 	if(htable == server_htable && dlg->tag[CALLEE_LEG].s)
 		shm_free(dlg->tag[CALLEE_LEG].s);
-
-	for (leg = dlg->legs; leg; leg = leg->next) {
-		if (!leg->update_tran)
-			continue;
-		pto = get_to(leg->update_tran->uas.request);
-		if (pto == NULL || pto->error != PARSE_OK) {
-			LM_ERR("'To' header COULD NOT be parsed\n");
-		} else {
-			if (tmb.t_reply_with_body(leg->update_tran, 408, &reply_text,
-				0, 0, &pto->tag_value) < 0)
-				LM_ERR("Failed to send 408 reply\n");
-		}
-	}
 
 	b2b_delete_legs(&dlg->legs);
 
@@ -2451,23 +2459,8 @@ static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable)
 		tmb.unref_cell(dlg->uas_tran);
 	}
 
-	if (dlg->update_tran) {
-
-		/* if we come across an already finally replied trans,
-		 * just release it; otherwise send 408 */
-		if ( dlg->update_tran->uas.status<200) {
-			pto = get_to(dlg->update_tran->uas.request);
-			if (pto == NULL || pto->error != PARSE_OK) {
-				LM_ERR("'To' header COULD NOT be parsed\n");
-			} else {
-				if (run_tm_api(&tmb, t_reply_with_body, dlg->update_tran,
-				408, &reply_text, 0, 0, &pto->tag_value) < 0)
-					LM_ERR("Failed to send 408 reply\n");
-			}
-		}
-
-		tmb.unref_cell(dlg->update_tran);
-	}
+	if (dlg->update_tran)
+		b2b_end_pending_tran(dlg->update_tran);
 
 	if(dlg->ack_sdp.s)
 		shm_free(dlg->ack_sdp.s);
