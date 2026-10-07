@@ -35,6 +35,51 @@ The local SIP span convention emitted by this module is documented in
 `modules/opentelemetry/semantic-convention/sip-spans.md`.
 
 
+### SIP Call Correlation
+
+
+When enabled (see the `sip_correlation` parameter), all the
+SIP messages sharing the same Call-ID are placed in the same
+OpenTelemetry trace, even if they are processed independently, by
+different OpenSIPS workers. No state is shared between the workers:
+the TraceId is derived deterministically from the Call-ID, so the
+INVITE, its provisional and final replies, the in-dialog requests and
+the final BYE all end up in one trace.
+
+
+The root span of each SIP message is also given a deterministic
+synthetic parent SpanId, derived from the SIP transaction (Call-ID,
+CSeq and top Via branch). This parent span is never exported, so trace
+backends will display the message root spans as children of a missing
+(orphan) parent. Note that a received reply carries the OpenSIPS Via
+branch at the top, so it gets a different synthetic parent than the
+request it answers.
+
+
+The root message span is enriched with the following attributes:
+
+
+- `sip.trace.id` - hash of the Call-ID (equals the TraceId,
+unless an async resume parent context was used).
+- `sip.transaction.id` - hash of the Call-ID, CSeq and top Via branch.
+- `sip.branch.id` - the top Via branch, when available.
+- `sip.dialog.id` - hash of the Call-ID and the From and To tags
+(direction independent), once both tags exist.
+- `sip.correlation.mode` - always `call-id`.
+
+
+An existing profiling context has precedence: a route resumed after
+an async operation continues the trace of the route which launched it,
+rather than using the synthetic SIP correlation parent. Timer, event
+and startup routes are not correlated.
+
+
+Keep in mind that SIP traffic re-using one Call-ID for a long time
+(e.g. REGISTER refreshes or OPTIONS keepalives from the same UA, or
+very long calls) results in very long-lived traces, which some trace
+backends may truncate or reject.
+
+
 ### Dependencies
 
 
@@ -130,6 +175,25 @@ the batch span processor; otherwise it uses the simple span processor.
 ```opensips title="Set use_batch parameter"
 ...
 modparam("opentelemetry", "use_batch", 0)
+...
+```
+
+
+#### sip_correlation (integer)
+
+
+Places all the SIP messages with the same Call-ID into the same trace -
+see the [SIP Call Correlation](#sip-call-correlation) section. When
+disabled (the default), each processed SIP message starts an
+independent trace, as before.
+
+
+*Default value is "0 (disabled)".*
+
+
+```opensips title="Set sip_correlation parameter"
+...
+modparam("opentelemetry", "sip_correlation", 1)
 ...
 ```
 

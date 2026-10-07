@@ -66,6 +66,11 @@ The module emits the following attributes when the data is available:
 | `sip.call_id` | SIP `Call-ID` header value. |
 | `sip.cseq` | Raw SIP `CSeq` header value. |
 | `sip.raw` | Raw SIP message payload. |
+| `sip.trace.id` | Hex hash of the `Call-ID`; with `sip_correlation` enabled. |
+| `sip.transaction.id` | Hex hash of the `Call-ID`, `CSeq` and top Via branch; with `sip_correlation` enabled. |
+| `sip.branch.id` | Top Via branch parameter; with `sip_correlation` enabled. |
+| `sip.dialog.id` | Direction independent hex hash of the `Call-ID`, From and To tags, once both tags exist; with `sip_correlation` enabled. |
+| `sip.correlation.mode` | Always `call-id`; with `sip_correlation` enabled. |
 
 ## Route span
 
