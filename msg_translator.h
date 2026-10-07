@@ -134,6 +134,20 @@ static inline const str *_get_adv_port(const struct socket_info *send_sock,
 		return &send_sock->port_no_str;
 }
 
+#define VIA_PARAM_CTX_REQUEST 0
+#define VIA_PARAM_CTX_REPLY   1
+
+typedef int (*via_param_provider_f)(struct sip_msg *msg, int context, str *params);
+
+/*
+ * Register a provider for extra parameters placed on locally generated Via
+ * headers and on the top Via of locally generated replies. Multiple modules
+ * may register independent providers; their returned parameter strings are
+ * concatenated in registration order. Providers must be registered from
+ * mod_init(), before the worker processes are forked.
+ */
+int register_via_param_provider(via_param_provider_f provider);
+
 char * build_req_buf_from_sip_req (	struct sip_msg* msg,
 				unsigned int *returned_len, const struct socket_info* send_sock,
 				int proto, str *via_params, unsigned int flags);
