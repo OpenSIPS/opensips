@@ -28,6 +28,7 @@ extern send_publish_t pua_send_publish;
 extern send_subscribe_t pua_send_subscribe;
 void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_);
 int pua_set_publish(struct sip_msg* , char*, char*);
+int pul_cluster_shtag_is_active(void);
 
 extern str pres_prefix;
 extern str presence_server;
