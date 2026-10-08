@@ -1883,7 +1883,13 @@ int insert_subs_db(subs_t* s)
 }
 
 
-int restore_db_subs(void)
+/* Load the active watchers of table `active_watchers_table` over `db` into the
+ * subscription hash table. runtime=0 is the start-up restore (mod_init): every row
+ * is taken and the table emptied after (unless fallback2db). runtime=1 is the
+ * "subs_load" MI command, run while the proxy works: a row whose event is not
+ * registered is skipped (the event list is not touched at runtime), a dialog
+ * already in the hash table is skipped, and the source is never emptied. */
+static int load_db_subs(db_con_t *db, int runtime, int *loaded, int *skipped)
 {
 	db_key_t result_cols[23];
 	db_res_t *result= NULL;
@@ -1906,6 +1912,7 @@ int restore_db_subs(void)
 	str host;
 	int nr_rows;
 	int no_rows = 10;
+	subs_t *dup;
 
 	result_cols[pres_uri_col=n_result_cols++]	=&str_presentity_uri_col;
 	result_cols[expires_col=n_result_cols++]=&str_expires_col;
@@ -1929,13 +1936,13 @@ int restore_db_subs(void)
 	result_cols[reason_col= n_result_cols++]	=&str_reason_col;
 	result_cols[sharing_tag_col= n_result_cols++]	=&str_sharing_tag_col;
 
-	if(!pa_db)
+	if(!db)
 	{
 		LM_ERR("null database connection\n");
 		return -1;
 	}
 
-	if(pa_dbf.use_table(pa_db, &active_watchers_table)< 0)
+	if(pa_dbf.use_table(db, &active_watchers_table)< 0)
 	{
 		LM_ERR("in use table\n");
 		return -1;
@@ -1943,7 +1950,7 @@ int restore_db_subs(void)
 	/* select the whole tabel and all the columns */
 	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH))
 	{
-		if(pa_dbf.query(pa_db,0,0,0,result_cols, 0,
+		if(pa_dbf.query(db,0,0,0,result_cols, 0,
 		n_result_cols, 0, 0) < 0)
 		{
 			LM_ERR("Error while querying (fetch) database\n");
@@ -1952,14 +1959,14 @@ int restore_db_subs(void)
 		no_rows = estimate_available_rows( 64+4+32+4+64+64+64+64+128
 			+32+32+8+8+256+32+64+64+8+8+8, n_result_cols);
 		if (no_rows==0) no_rows = 10;
-		if(pa_dbf.fetch_result(pa_db,&result, no_rows)<0)
+		if(pa_dbf.fetch_result(db,&result, no_rows)<0)
 		{
 			LM_ERR("fetching rows failed\n");
 			goto error;
 		}
 	} else
 	{
-		if (pa_dbf.query (pa_db, 0, 0, 0,result_cols,0, n_result_cols,
+		if (pa_dbf.query (db, 0, 0, 0,result_cols,0, n_result_cols,
 					0, &result) < 0)
 		{
 			LM_ERR("querying presentity\n");
@@ -2013,6 +2020,14 @@ int restore_db_subs(void)
 			ev_sname.len= strlen(ev_sname.s);
 
 			event= contains_event(&ev_sname, &parsed_event);
+			if(event== NULL && runtime)
+			{
+				LM_DBG("event <%.*s> not registered, skipping record\n",
+					ev_sname.len, ev_sname.s);
+				free_event_params(parsed_event.params, PKG_MEM_TYPE);
+				(*skipped)++;
+				continue;
+			}
 			if(event== NULL)
 			{
 				LM_DBG("insert a new event structure in the list waiting"
@@ -2108,16 +2123,27 @@ int restore_db_subs(void)
 			}
 
 			hash_code= core_hash(&s.pres_uri, &s.event->name, shtable_size);
+			if (runtime) {
+				lock_get(&subs_htable[hash_code].lock);
+				dup= search_shtable(subs_htable, s.callid, s.to_tag, s.from_tag,
+					hash_code);
+				lock_release(&subs_htable[hash_code].lock);
+				if (dup) {
+					(*skipped)++;
+					continue;
+				}
+			}
 			if(insert_shtable(subs_htable, hash_code, &s)< 0)
 			{
 				LM_ERR("adding new record in hash table, skipping record\n");
 				continue;
 			}
+			(*loaded)++;
 		}
 
 		/* any more data to be fetched ?*/
 		if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH)) {
-			if (pa_dbf.fetch_result( pa_db, &result, no_rows ) < 0) {
+			if (pa_dbf.fetch_result( db, &result, no_rows ) < 0) {
 				LM_ERR("fetching more rows failed\n");
 				goto error;
 			}
@@ -2128,12 +2154,12 @@ int restore_db_subs(void)
 
 	}while (nr_rows>0);
 
-	pa_dbf.free_result(pa_db, result);
+	pa_dbf.free_result(db, result);
 
-	if(!fallback2db)
+	if(!fallback2db && !runtime)
 	{
 		/* delete all records */
-		if(pa_dbf.delete(pa_db, 0,0,0,0)< 0)
+		if(pa_dbf.delete(db, 0,0,0,0)< 0)
 		{
 			LM_ERR("deleting all records from database table\n");
 			return -1;
@@ -2144,8 +2170,36 @@ int restore_db_subs(void)
 
 error:
 	if(result)
-		pa_dbf.free_result(pa_db, result);
+		pa_dbf.free_result(db, result);
 	return -1;
+}
+
+int restore_db_subs(void)
+{
+	int loaded = 0, skipped = 0;
+
+	return load_db_subs(pa_db, 0, &loaded, &skipped);
+}
+
+/* The "subs_load" MI command: read the active watchers of another database
+ * (e.g. a copy of the peer's table taken before it failed) into the running
+ * hash table, with no restart. */
+int load_db_subs_url(str *url, int *loaded, int *skipped)
+{
+	db_con_t *db;
+	int ret;
+
+	*loaded = *skipped = 0;
+	db = pa_dbf.init(url);
+	if (!db) {
+		LM_ERR("cannot connect to <%.*s>\n", url->len, url->s);
+		return -1;
+	}
+	ret = load_db_subs(db, 1, loaded, skipped);
+	pa_dbf.close(db);
+	LM_INFO("subs_load from <%.*s>: %d loaded, %d skipped\n",
+		url->len, url->s, *loaded, *skipped);
+	return ret;
 }
 
 int refresh_watcher(str* pres_uri, str* watcher_uri, str* event,

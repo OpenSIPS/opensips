@@ -100,6 +100,8 @@ static mi_response_t *mi_refresh_watchers(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_cleanup(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_subs_load(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static mi_response_t *mi_list_phtable(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_list_shtable_1(const mi_params_t *params,
@@ -199,6 +201,10 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ "cleanup", 0,0,0, {
 		{mi_cleanup, {0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ "subs_load", 0,0,0, {
+		{mi_subs_load, {"db_url", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "expose", 0,0,0, {
@@ -642,6 +648,31 @@ error:
 /*
  *  mi cmd: cleanup
  *		* */
+static mi_response_t *mi_subs_load(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str url;
+	int loaded, skipped;
+
+	if (get_mi_string_param(params, "db_url", &url.s, &url.len) < 0)
+		return init_mi_param_error();
+
+	if (load_db_subs_url(&url, &loaded, &skipped) < 0)
+		return init_mi_error(500, MI_SSTR("Failed to load subscriptions"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+	if (add_mi_number(resp_obj, MI_SSTR("loaded"), loaded) < 0 ||
+		add_mi_number(resp_obj, MI_SSTR("skipped"), skipped) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
+	return resp;
+}
+
 static mi_response_t *mi_cleanup(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {

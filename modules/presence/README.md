@@ -771,6 +771,39 @@ opensips-cli -x mi presence:cleanup
 ```
 
 
+#### presence:subs_load
+
+
+Loads the active watchers stored in another database into the running
+subscription hash table, with no restart. The table read is
+`active_watchers_table`, through the module's SQL backend. Typical use: the
+node that takes over from a failed peer loads a copy of the peer's table, so
+the watchers keep getting NOTIFYs without having to re-subscribe.
+
+Expired rows, rows of events not registered by this instance and dialogs
+already in the hash table are skipped. The source table is only read. The
+loaded subscriptions are written to the module's own table by the usual
+database timer.
+
+
+Name: *presence:subs_load*
+
+
+Parameters:
+
+  * *db_url* - the database to read, a URL of the SQL backend in use
+
+
+MI FIFO Command Format:
+
+
+```bash
+opensips-cli -x mi presence:subs_load sqlite:///var/lib/presence-copy.sqlite
+```
+
+The answer gives the number of subscriptions `loaded` and `skipped`.
+
+
 #### presence:phtable_list
 
 
