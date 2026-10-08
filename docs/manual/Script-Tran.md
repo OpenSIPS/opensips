@@ -72,7 +72,7 @@ The transformations can be used anywhere, being considered parts of script varia
 > To learn what variables can be used with transformations see [Scripting variables list](Script-CoreVar.md).
 
 ## String Transformations
-The name of these transformation starts with 's.'. They are intended to apply string operations to variables.
+The names of these transformations start with `s.`. They are intended to apply string operations to variables.
 
 Available transformations in this class:
 
@@ -475,7 +475,7 @@ xlog("SHA512 HMAC over From username using key 'secret': $(fU{s.sha512_hmac,secr
 
 ## URI Transformations
 
-The name of transformation starts with 'uri.'. The value of the variable is considered to be a SIP URI. This transformation returns parts of SIP URI (see struct sip_uri). If that part is missing, the returned value is NULL.
+The names of these transformations start with `uri.`. The value of the variable is considered to be a SIP URI. These transformations return parts of a SIP URI (see `struct sip_uri`). If the requested part is missing, the returned value is NULL.
 
 Available transformations in this class:
 
@@ -543,7 +543,7 @@ Returns the schema part of the given URI.
 
 ## VIA Transformations
 
-These transformations parse Via headers and all starts with `via.`. The value of the variable is considered to be a SIP Via header. This transformation returns parts of the via header (see struct via_body). If the requested part is missing, the returned value is NULL. Transformation will fail (with script error) if variable holding the Via header is empty. Unless otherwise specified in descriptions below, the result of transform is a string (not an integer).
+These transformations parse Via headers, and their names all start with `via.`. The value of the variable is considered to be a SIP Via header. These transformations return parts of the Via header (see `struct via_body`). If the requested part is missing, the returned value is NULL. A transformation will fail (with a script error) if the variable holding the Via header is empty. Unless otherwise specified in the descriptions below, the result of the transformation is a string (not an integer).
 
 Examples:
 ```opensips
@@ -602,13 +602,13 @@ Returns the value of the rport parameter in the VIA header, if any.
 
 ## Parameters List Transformations
 
-The name of the transformation starts with "param.". The value of the variable is considered to be a string like name1=value1;name2=value2;...". The transformations returns the value for a specific parameter, or the name of a parameter at a specific index.
+The names of these transformations start with `param.`. The value of the variable is considered to be a string like `name1=value1;name2=value2;...`. These transformations return the value of a specific parameter or the name of a parameter at a specific index.
 
 Available transformations in this class:
 
 ### {param.value,name}
 
-Returns the value of parameter 'name'
+Returns the value of parameter `name`.
 
 Example:
 ```opensips
@@ -617,7 +617,7 @@ Example:
 
 ```
 
-'name' can be a variable
+`name` can be a variable.
 
 ### {param.exist,name}
 
@@ -634,7 +634,7 @@ Example:
 
 ### {param.valueat,index}
 
-Returns the value of parameter at position give by 'index' (0-based index). Negative indexes are accepted, with -1 being the last parameter.
+Returns the value of the parameter at the position given by `index` (a zero-based index). Negative indexes are accepted, with -1 being the last parameter.
 
 Example:
 ```opensips
@@ -643,11 +643,11 @@ Example:
 
 ```
 
-'index' can be a variable
+`index` can be a variable.
 
 ### {param.name,index}
 
-Returns the name of parameter at position 'index'. Negative indexes are accepted, with -1 being the last parameter. 'index' can be a variable.
+Returns the name of the parameter at position `index`. Negative indexes are accepted, with -1 being the last parameter. `index` can be a variable.
 
 Example:
 ```opensips
@@ -669,9 +669,9 @@ Example:
 
 ## Name-address Transformations
 
-The name of the transformation starts with 'nameaddr.'. The value of the variable is considered to be a string like '[display_name] uri'. The transformations returns the value for a specific field.
+The names of these transformations start with `nameaddr.`. The value of the variable is considered to be a string like `[display_name] uri`. These transformations return the value of a specific field.
 
-Each transformation supports an optional 'index'. This can be used when passing a list of nameaddr specs, and represents the spec index that should be considered when extracting the value. Indexes start with 0 (the default value when missing), and can accept negative values (-1 represents the last nameaddr spec).
+Each transformation supports an optional `index`. This can be used when passing a list of nameaddr specs and represents the spec index that should be considered when extracting the value. Indexes start with 0 (the default value when missing) and can accept negative values (-1 represents the last nameaddr spec).
 
 Example:
 ```opensips
@@ -732,7 +732,7 @@ Example:
 
 ## IP Transformations
 
-The name of the transformation starts with 'ip.'. Available transformations in this class:
+The names of these transformations start with `ip.`. Available transformations in this class:
 
 ### {ip.pton}
 
@@ -830,7 +830,7 @@ else
 
 ## CSV Transformations
 
-The name of the transformation starts with "csv.". The value of the variable is considered to be a string like "field1,field2,...". The transformations return the number of entries in the provided CSV, or the field at a specified position in the CSV.
+The names of these transformations start with `csv.`. The value of the variable is considered to be a string like "field1,field2,...". The transformations return the number of entries in the provided CSV, or the field at a specified position in the CSV.
 
 Available transformations in this class:
 
@@ -854,12 +854,12 @@ Example:
 
 ## SDP Transformations
 
-The name of the transformation starts with "sdp.". The value of the variable is considered to be a valid SDP body. The transformation returns a specific line in the SDP body.
+The names of these transformations start with `sdp.`. The value of the variable is considered to be a valid SDP body. The transformation returns a specific line in the SDP body.
 
 Available transformations in this class:
 
 ### {sdp.line}
-Returns the specified line in the SDP body. The transformations also accepts a second parameter, that specifies the line number of the first parameter's type to get from the SDP body. Indexing starts from 0. If the second parameter is missing, it is assumed to be 0. 
+Returns the specified line in the SDP body. The transformation also accepts a second parameter that specifies the line number of the first parameter's type to get from the SDP body. Indexing starts from 0. If the second parameter is missing, it is assumed to be 0.
 Example:
 ```opensips
 
@@ -919,7 +919,7 @@ if (is_method("INVITE"))
 
 ## Regular Expression Transformations
 
-The name of the transformation starts with "re.". The input can be any string.
+The names of these transformations start with `re.`. The input can be any string.
 
 ### {re.subst,reg_exp}
 

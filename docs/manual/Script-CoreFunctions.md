@@ -794,7 +794,7 @@ seturi("sip:test@opensips.org");
 
 ## route(name [, param1 [, param2 [, ...] ] ] )
 
-This function is used to run the code from the 'name' route, declared in the script. Optionally, it can receive several parameters (up to 7), that can be later retrieved using the '`$param(idx)`' pseudo-variable.
+This function is used to run the code from the `name` route declared in the script. Optionally, it can receive several parameters (up to 7), which can later be retrieved using the `$param(idx)` pseudo-variable.
 
 The name of the route is an identifier format, whereas the parameters can be either int, string, or a pseudo-variable.
 
@@ -807,13 +807,13 @@ route(HANDLE_SEQUENTIALS, 1, "param", $var(param));
 
 ## script_trace([log_level, pv_format_string, [info]])
 
-This function start the script tracing - this helps to better understand the flow of execution in the OpenSIPS script, like what function is executed, what line it is, etc. Moreover, you can also trace the values of pseudo-variables, as script execution progresses.
+This function starts script tracing, which helps you better understand the flow of execution in the OpenSIPS script, such as which function is executed and on which line. You can also trace the values of pseudo-variables as script execution progresses.
 
 The blocks of the script where script tracing is enabled will print a line for each individual action that is done (e.g. assignments, conditional tests, module functions, core functions, etc.). Multiple pseudo-variables can be monitored by specifying a **pv_format_string** (e.g. "`$ru`---`$avp(var1)`").
 
 The logs produced by multiple/different traced regions of your script can be differentiated (tagged) by specifying an additional plain string - **info_string** - as the 3rd parameter.
 
-To disable script tracing, just do script_trace(). Otherwise, the tracing will automatically stop at the end the end of the top route.
+To disable script tracing, call `script_trace()`. Otherwise, tracing will automatically stop at the end of the top route.
 
 Parameters:
 * *log_level* (int, optional)

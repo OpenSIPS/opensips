@@ -7,7 +7,7 @@ Assignments, string and arithmetic operations can be done directly in the config
 
 ## Assignment
 
-Assignments can be done like in C, via '=' (equal) operator. Not that not all variables (from script) can be written, some are read-only. Check with [listing of variables](Script-CoreVar.md) to see which ones can be written too.
+Assignments can be done as in C, using the `=` (equal) operator. Note that not all script variables can be written; some are read-only. Check the [list of variables](Script-CoreVar.md) to see which ones are writable.
 
 ```opensips
 
@@ -16,7 +16,7 @@ $ru = "sip:user@domain";
 
 ```
 
-There is a special assign operator ':=' (colon equal) that can be used with AVPs. If the right value is **null**, all AVPs with that name are deleted. If different, the new value will overwrite any existing values for the AVPs with than name (on other words, delete existing AVPs with same name, add a new one with the right side value).
+There is a special assignment operator, `:=` (colon equal), that can be used with AVPs. If the right-hand value is **null**, all AVPs with that name are deleted. Otherwise, the new value overwrites any existing values for AVPs with that name (in other words, it deletes the existing AVPs with the same name and adds a new one with the right-hand value).
 
 ```opensips
 
