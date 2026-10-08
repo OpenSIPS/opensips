@@ -988,7 +988,7 @@ static enum rps t_should_relay_response( struct cell *Trans , int new_code,
 
 	/* if final response received at this branch, allow only INVITE 2xx */
 	if (TM_BRANCH(Trans,branch).last_received>=200
-			&& !(inv_through && TM_BRANCH(Trans,branch).last_received<300)) {
+			&& !(inv_through)) {
 #ifdef EXTRA_DEBUG
 		/* don't report on retransmissions */
 		if (TM_BRANCH(Trans,branch).last_received==new_code) {
