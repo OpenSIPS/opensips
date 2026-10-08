@@ -954,7 +954,7 @@ Examples of usage:
 ## Memory
 
 ### mem:pkg_dump
-Triggers a pkg memory dump for a given process. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.  
+Triggers a pkg memory dump for a given process. The memory dump will be written to OpenSIPS's log (syslog or stderr) using the `memdump` logging level. The global `memdump` log level may be overridden by a custom value provided as an argument to this command.
 
 **Arguments**:
 * *pid* - the PID of the process to perform the pkg dump
@@ -986,7 +986,7 @@ Examples of usage:
 ```
 
 ### mem:shm_dump
-Triggers a shm memory dump. The memory dump will written to OpenSIPS's log (syslog or stderr) using the 'memdump' logging level. The global 'memdump' log level may be overwritten by a custom value provided as argument to this command.  
+Triggers a shm memory dump. The memory dump will be written to OpenSIPS's log (syslog or stderr) using the `memdump` logging level. The global `memdump` log level may be overridden by a custom value provided as an argument to this command.
 
 **Arguments**:
 * *log_level* (optional) - a log level to be used for this dump
