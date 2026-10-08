@@ -371,8 +371,13 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		 * ongoing media sessions */
 		if (ss->flags & SIPREC_ONGOING)
 			return 0;
-		if (!ss->ctx->dlg || ss->ctx->dlg->state >= DLG_STATE_DELETED)
-			return 0;
+		if (!ss->ctx->dlg || ss->ctx->dlg->state >= DLG_STATE_DELETED) {
+			/* the call is over - no failover, just drop the session; as on
+			 * failover, destroy it first, so no stop event is raised for a
+			 * recording that never started */
+			srec_logic_destroy(ss, 0);
+			goto no_recording;
+		}
 		if (srs_skip_failover(msg->first_line.u.reply.status) ||
 				srs_do_failover(ss) < 0) {
 			LM_DBG("no more to failover!\n");
@@ -443,10 +448,11 @@ no_recording:
 		raise_siprec_stop_event(ss);
 	srec_logic_destroy(ss, 0);
 
-	if (ss->ctx->dlg && !(ss->flags & SIPREC_DLG_CBS)) {
+	if (!(ss->flags & SIPREC_DLG_CBS)) {
 		/* if the dialog has already been engaged, then we need to keep the
 		 * reference until the end of the dialog, where it will be cleaned up */
-		srec_dlg.dlg_ctx_put_ptr(ss->ctx->dlg, srec_dlg_idx, NULL);
+		if (ss->ctx->dlg)
+			srec_dlg.dlg_ctx_put_ptr(ss->ctx->dlg, srec_dlg_idx, NULL);
 		srec_hlog(ss, SREC_UNREF, "no recording");
 		SIPREC_UNREF(ss);
 	}
