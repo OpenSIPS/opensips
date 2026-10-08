@@ -61,6 +61,8 @@ static int wss_hs_read_tout = 100;
 static int wss_hs_tls_tout = 100;
 static int wss_send_tout = 100;
 static int wss_require_origin = 1;
+/* comma-separated list of accepted Origin values; empty = any */
+static str wss_allowed_origins = {NULL, 0};
 
 /* check the SSL certificate when comes to TCP conn reusage */
 static int cert_check_on_conn_reusage = 0;
@@ -79,6 +81,7 @@ static int wss_async_write(struct tcp_connection* con, int fd);
 #define _ws_common_read_tout wss_hs_read_tout
 #define _ws_common_proxy_send_tout wss_send_tout
 #define _ws_common_require_origin wss_require_origin
+#define _ws_common_allowed_origins wss_allowed_origins
 /*
  * the timeout is only used by the _ws_common_writev function
  * but in our case, the timeout specified in the TLS MGM
@@ -137,6 +140,7 @@ static const param_export_t params[] = {
 	{ "wss_resource",       STR_PARAM, &wss_resource.s     },
 	{ "wss_send_timeout",   INT_PARAM, &wss_send_tout      },
 	{ "require_origin",     INT_PARAM, &wss_require_origin },
+	{ "allowed_origins",    STR_PARAM, &wss_allowed_origins.s },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "wss_tls_handshake_timeout",  INT_PARAM, &wss_hs_tls_tout           },
@@ -223,6 +227,8 @@ static int mod_init(void)
 	LM_INFO("initializing Secure WebSocket protocol\n");
 
 	wss_resource.len = strlen(wss_resource.s);
+	if (wss_allowed_origins.s)
+		wss_allowed_origins.len = strlen(wss_allowed_origins.s);
 
 	if(load_tls_mgm_api(&tls_mgm_api) != 0){
 		LM_DBG("failed to find tls API - is tls_mgm module loaded?\n");
