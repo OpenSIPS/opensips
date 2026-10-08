@@ -48,6 +48,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../data_lump_rpl.h"
 #include "../../net/trans.h"
+#include "../clusterer/api.h"
 
 str register_method = str_init("REGISTER");
 str contact_hdr = str_init("Contact: ");
@@ -115,6 +116,12 @@ static int lookup_flags_fixup_free(void** param);
 
 int solve_avp_defs(void);
 
+/* in a cluster sharing the location table, every node expires every AoR and
+ * contact: send the upstream De-REGISTER only where this sharing tag is active */
+static int mid_reg_cluster_id = 0;
+static str mid_reg_cluster_shtag = {NULL, 0};
+static struct clusterer_binds mid_reg_c_api;
+
 /* 
  * Working modes:
  *    0 = mirror
@@ -172,6 +179,8 @@ static const param_export_t mod_params[] = {
 	{ "at_escape_str",        STR_PARAM, &at_escape_str.s },
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ "attr_avp",             STR_PARAM, &attr_avp_param },
+	{ "cluster_id",           INT_PARAM, &mid_reg_cluster_id },
+	{ "cluster_sharing_tag",  STR_PARAM, &mid_reg_cluster_shtag.s },
 
 	/* common registrar modparams */
 	reg_modparams,
@@ -371,6 +380,21 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (mid_reg_cluster_id > 0 && mid_reg_cluster_shtag.s) {
+		if (load_clusterer_api(&mid_reg_c_api) != 0) {
+			LM_ERR("failed to find clusterer API - is clusterer "
+				"module loaded?\n");
+			return -1;
+		}
+		mid_reg_cluster_shtag.len = strlen(mid_reg_cluster_shtag.s);
+		if (mid_reg_c_api.shtag_get(&mid_reg_cluster_shtag,
+				mid_reg_cluster_id) < 0) {
+			LM_ERR("failed to initialize the sharing tag <%.*s>\n",
+				mid_reg_cluster_shtag.len, mid_reg_cluster_shtag.s);
+			return -1;
+		}
+	}
+
 	if (!ul.have_mem_storage()) {
 		LM_ERR("cannot work with a non-caching usrloc!\n");
 		return -1;
@@ -455,6 +479,16 @@ static int cfg_validate(void)
 	return 1;
 }
 
+
+int mid_reg_shtag_is_active(void)
+{
+	if (mid_reg_cluster_id <= 0 || mid_reg_cluster_shtag.s == NULL ||
+	mid_reg_c_api.shtag_get(&mid_reg_cluster_shtag, mid_reg_cluster_id)
+			== SHTAG_STATE_ACTIVE)
+		return 1;
+
+	return 0;
+}
 
 void set_ct(struct mid_reg_info *ct)
 {
