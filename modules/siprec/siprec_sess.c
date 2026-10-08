@@ -251,18 +251,19 @@ void src_clean_session(struct src_sess *sess)
 	}
 }
 
+/* called with the ctx lock taken, which it releases;
+ * the ctx is freed only when it has no sessions left and the dialog's
+ * DLGCB_DESTROY callback, that holds a pointer to it, has already run */
 void src_release_ctx(struct src_ctx *ctx)
 {
-	SIPREC_LOCK(ctx);
-	if (!list_empty(&ctx->sess)) {
-		LM_DBG("ongoing sessions: %d\n", list_size(&ctx->sess));
+	if (!list_empty(&ctx->sess) || ctx->dlg) {
+		LM_DBG("ctx=%p still in use: sessions=%d dlg=%p\n", ctx,
+				list_size(&ctx->sess), ctx->dlg);
 		SIPREC_UNLOCK(ctx);
 		return;
 	}
 	SIPREC_UNLOCK(ctx);
 
-	if (ctx->dlg)
-		srec_dlg.dlg_ctx_put_ptr(ctx->dlg, srec_dlg_idx, NULL);
 	lock_destroy(&ctx->lock);
 	shm_free(ctx);
 }
@@ -278,6 +279,7 @@ void src_free_session(struct src_sess *sess)
 	sh_unref(sess->hist);
 	sess->hist = NULL;
 #endif
+	SIPREC_LOCK(ctx);
 	list_del(&sess->list);
 	shm_free(sess);
 	src_release_ctx(ctx);
@@ -573,6 +575,7 @@ error:
 	if (sess && !update)
 		src_free_session(sess);
 free:
+	SIPREC_LOCK(ctx);
 	src_release_ctx(ctx);
 	return -1;
 }
@@ -820,7 +823,9 @@ static void srec_dlg_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_param
 	ctx = *_params->param;
 	/* dialog is going to be removed, so we drop it from the structure */
 	LM_DBG("resetting ctx=%p dlg=%p\n", ctx, ctx->dlg);
+	SIPREC_LOCK(ctx);
 	ctx->dlg = NULL;
+	src_release_ctx(ctx);
 }
 
 
