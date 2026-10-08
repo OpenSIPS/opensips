@@ -200,6 +200,11 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0)
 		return;
 
+	/* an expiry runs on every node holding the contact: only the
+	 * holder of the sharing tag (if set) publishes it */
+	if ((type & UL_CONTACT_EXPIRE) && !pul_cluster_shtag_is_active())
+		return;
+
 	if(type & UL_CONTACT_DELETE)
 		LM_DBG("\nul_publish: DELETE type\n");
 	else
