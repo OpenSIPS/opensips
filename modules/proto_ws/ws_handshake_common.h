@@ -145,6 +145,35 @@ static pthread_mutex_t ws_http_parse_lock = PTHREAD_MUTEX_INITIALIZER;
 #ifndef _ws_common_require_origin
 #error "_ws_common_require_origin not defined!"
 #endif
+#ifndef _ws_common_allowed_origins
+#error "_ws_common_allowed_origins not defined!"
+#endif
+
+/* Is <origin> in the comma-separated <list> (exact, case-insensitive match;
+ * spaces around the entries are ignored)? An empty or unset list allows any
+ * Origin, which is the behaviour without the "allowed_origins" parameter. */
+static int ws_origin_allowed(const str *list, const str *origin)
+{
+	char *p, *end, *tok;
+	str t;
+
+	if (!list->s || list->len == 0)
+		return 1;
+	p = list->s;
+	end = list->s + list->len;
+	while (p < end) {
+		tok = p;
+		while (p < end && *p != ',')
+			p++;
+		t.s = tok;
+		t.len = p - tok;
+		str_trim_spaces_lr(t);
+		if (t.len == origin->len && strncasecmp(t.s, origin->s, t.len) == 0)
+			return 1;
+		p++;
+	}
+	return 0;
+}
 
 /* all flags for req */
 #define WS_ALL_REQ_F (WS_HOST_F | \
@@ -856,6 +885,12 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 					GET_LOWER(hf->name.s + 5) != 'n')
 				break;
 
+			str_trim_spaces_lr(hf->body);
+			if (!ws_origin_allowed(&_ws_common_allowed_origins, &hf->body)) {
+				LM_ERR("Origin <%.*s> not in allowed_origins\n",
+						hf->body.len, hf->body.s);
+				goto ws_error;
+			}
 			if (_ws_common_require_origin)
 				flags |= WS_ORIGIN_F;
 			break;

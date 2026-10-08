@@ -52,6 +52,8 @@
 int ws_max_msg_chunks = TCP_CHILD_MAX_MSG_CHUNK;
 
 static int ws_require_origin = 1;
+/* comma-separated list of accepted Origin values; empty = any */
+static str ws_allowed_origins = {NULL, 0};
 
 /* in milliseconds */
 int ws_send_timeout = 100;
@@ -71,6 +73,7 @@ static str ws_resource = str_init("/");
 #define _ws_common_proxy_send_tout ws_send_timeout
 #define _ws_common_resource ws_resource
 #define _ws_common_require_origin ws_require_origin
+#define _ws_common_allowed_origins ws_allowed_origins
 #include "ws_handshake_common.h"
 #include "ws_common.h"
 
@@ -122,6 +125,7 @@ static const param_export_t params[] = {
 	{ "ws_send_timeout",   INT_PARAM, &ws_send_timeout   },
 	{ "ws_resource",       STR_PARAM, &ws_resource.s     },
 	{ "require_origin",    INT_PARAM, &ws_require_origin },
+	{ "allowed_origins",   STR_PARAM, &ws_allowed_origins.s },
 	{ "ws_handshake_timeout", INT_PARAM, &ws_hs_read_tout },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
@@ -201,6 +205,8 @@ static int mod_init(void)
 	LM_INFO("initializing WebSocket protocol\n");
 
 	ws_resource.len = strlen(ws_resource.s);
+	if (ws_allowed_origins.s)
+		ws_allowed_origins.len = strlen(ws_allowed_origins.s);
 
 	if (trace_destination_name.s) {
 		if ( !net_trace_api ) {
