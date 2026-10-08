@@ -93,6 +93,15 @@ int t_resume_async_request(int fd, void*param, int was_timeout)
 	struct cell *t= ctx->t;
 	int route;
 
+	/* check the marker t==NULL indicating that this resume 
+	 * makes no sense anymore and it should be discarded. This may happen
+	 * when a async start failed and it was handled in sync mode, but
+	 * some resume jobs were left set */
+	if (t==NULL) {
+		LM_DBG("resuming with NULL transaction -> silent discard \n");
+		return 0;
+	}
+
 	if (valid_async_fd(fd))
 		LM_DBG("resuming request on fd %d, transaction %p \n", fd, t);
 	else
@@ -566,17 +575,6 @@ async:
 		goto sync;
 	}
 	ctx->route_type = route_type;
-	ctx->msg_ctx = current_processing_ctx;
-	ctx->t = t;
-	ctx->kr = get_kr();
-
-	ctx->cancelled_t = get_cancelled_t();
-	ctx->e2eack_t = get_e2eack_t();
-
-	set_global_context(NULL);
-	set_t(T_UNDEFINED);
-	reset_cancelled_t();
-	reset_e2eack_t();
 
 	if (async_status!=ASYNC_NO_FD) {
 		LM_DBG("placing async job into reactor with timeouts %d/%d\n",
@@ -599,18 +597,32 @@ async:
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 		 	/* as attaching to reactor failed, we have to run in sync mode,
 			 * so we have to restore the environment -- razvanc */
-			set_global_context(ctx->msg_ctx);
-			set_t(t);
-			set_cancelled_t(ctx->cancelled_t);
-			set_e2eack_t(ctx->e2eack_t);
 			goto sync;
 		}
 	}
+
+	ctx->msg_ctx = current_processing_ctx;
+	ctx->t = t;
+	ctx->kr = get_kr();
+
+	ctx->cancelled_t = get_cancelled_t();
+	ctx->e2eack_t = get_e2eack_t();
+
+	set_global_context(NULL);
+	set_t(T_UNDEFINED);
+	reset_cancelled_t();
+	reset_e2eack_t();
 
 	/* done, break the script */
 	return 0;
 
 sync:
+	/* as a marker of SYNC-handling of an ASYNC operation the `t`
+	 * (transaction) is NULL - this will be used by
+	 * the resume function t_resume_async_request() to actually ignore
+	 * any resume attempts on jobs which actually did not covert into
+	 * an async op (like a failed async +  ebr_wait due to wrong route type) */
+
 	/* run the resume function */
 	do {
 		async_status = ASYNC_DONE;
