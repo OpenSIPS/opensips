@@ -149,7 +149,12 @@ void *hg_buddy_alloc(struct hg_block *hb, unsigned int order);
 /* commit up to max(granule, @need) more of the reservation and publish
  * the new whole pages as free. hb->lock must be held. 0 = grew (retry the
  * allocation), -1 = cannot (at cap / no cap / host refused the commit). */
-int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why);
+/* the *_unlocks functions and the three ticks DROP hb->lock inside (the
+ * two-phase commit: reserve locked, populate unlocked, publish locked)
+ * and re-take it before returning. Hold the lock on entry; it is held again
+ * on return; nothing read before the call is valid after it. Each asserts
+ * both ends (hg_lock_assert_held). */
+int hg_buddy_grow_unlocks(struct hg_block *hb, unsigned long need, enum hg_grow_why why);
 /* the always-on headroom rule on its own (the maintenance process ticks it
  * every second); hb->lock held; 1 = grew */
 int hg_grow_headroom_tick(struct hg_block *hb);

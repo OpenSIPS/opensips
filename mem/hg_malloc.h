@@ -620,6 +620,7 @@ enum hg_lock_reason {
 	HG_LK_OTHER,
 	HG_LK_REASONS
 };
+#define HG_LK_NONE (-1)   /* lk_cur while hb->lock is not held */
 #define HG_LK_BUCKETS 18           /* <1us, 1,2,4,...,32ms, >=64ms */
 
 struct hg_lkstat {
@@ -1228,7 +1229,7 @@ void hg_malloc_destroy(struct hg_block *hb);
  * delta (>= 1) or -1 with everything rolled back - a refusal, not a
  * degradation, so a worker never SIGBUSes on memory the allocator
  * half-committed. Defined in hg_malloc.c because the tier ladder and its
- * verification probes live there; called by hg_buddy_grow() with
+ * verification probes live there; called by hg_buddy_grow_unlocks() with
  * hb->lock released.
  *
  * Commit [off, off+delta) of the reservation: populate, pin, verify the
@@ -1253,7 +1254,7 @@ void hg_collapse_deferred(struct hg_block *hb);
  * multiplied by the process count first: every worker grows its own
  * private arena under the same workload, so the single-arena delta
  * understates the real cost ~30x on a gateway. Defined in hg_malloc.c
- * (it owns /proc/meminfo parsing); called by hg_buddy_grow() under
+ * (it owns /proc/meminfo parsing); called by hg_buddy_grow_unlocks() under
  * hb->lock.
  */
 int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta);
@@ -1541,11 +1542,22 @@ static inline void hg_lock_leave(struct hg_block *hb)
 		hb->lk_stall_event_due = 1;
 		stalled = 1;
 	}
+	/* mark the lock free BEFORE releasing it, so a callee that must
+	 * return with the lock held can be checked (hg_lock_assert_held) */
+	hb->lk_cur = HG_LK_NONE;
 	HG_TSAN_RELEASE(&hb->lock);
 	lock_release(&hb->lock);
 	if (stalled)
 		hg_lock_stall_note(hb, r, held);
 }
+
+/*
+ * The contract check for the functions that drop and re-take hb->lock
+ * inside (the *_unlocks family in hg_buddy.c and the ticks that call them):
+ * the lock must be held on entry and is held again on return. Out of line in
+ * hg_arena.c so the header stays free of dprint.
+ */
+void hg_lock_assert_held(struct hg_block *hb, const char *where);
 
 #define HG_ARENA_REG_MAX 8
 struct hg_arena_range {

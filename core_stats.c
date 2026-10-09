@@ -273,7 +273,7 @@ static void rpc_hg_cache_flush(int sender, void *param)
 }
 
 /*
- * The deferred half of GROW-BLOCKED alerting. hg_buddy_grow() latches
+ * The deferred half of GROW-BLOCKED alerting. hg_buddy_grow_unlocks() latches
  * the state under hb->lock and may not raise an event there:
  * evi_raise_event() allocates shm, and the arena that just refused to grow
  * is the arena it would allocate from. This runs in the timer process with

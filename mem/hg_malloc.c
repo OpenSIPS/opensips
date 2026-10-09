@@ -1393,10 +1393,11 @@ static struct {
  * "hugetlb pool cannot back a %lu MB cap; reserving the %lu MB in use
  * instead", after which the arena keeps its huge pages and simply cannot
  * grow. Nothing re-checked the profile against that smaller number, so
- * pol.up_bytes could sit above hb->hcap; hg_buddy_grow() then sized a granule
- * past the end of the mapping on every tick and hg_mem_commit() refused it at
- * "off + delta > hb->hcap" with LM_BUG, a resource refusal and a latched
- * grow-block - once per policy tick, for the life of the process.
+ * pol.up_bytes could sit above hb->hcap; hg_buddy_grow_unlocks() then sized a
+ * granule past the end of the mapping on every tick and hg_mem_commit()
+ * refused it at "off + delta > hb->hcap" with LM_BUG, a resource refusal
+ * and a latched grow-block - once per policy tick, for the life of the
+ * process.
  *
  * Clamped rather than refused, deliberately. A target above the REQUEST is a
  * config error the admin can fix by editing a line; a reservation that came up
@@ -1405,7 +1406,7 @@ static struct {
  * arena that works at its initial size is worth more than a process that
  * refuses to run because the hugepage pool was short. Clamped to hcap the
  * ordinary ceiling path takes over: hg_grow_tick() returns at the profile
- * ceiling and hg_buddy_grow() reports room==0 once per episode.
+ * ceiling and hg_buddy_grow_unlocks() reports room==0 once per episode.
  */
 static void hg_pol_fit_to_cap(struct hg_block *hb, const char *which,
 		const char *pname, unsigned long *up_b, unsigned long *down_b)

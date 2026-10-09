@@ -1393,7 +1393,7 @@ static int carve_chunk(struct hg_block *hb, int c, struct hg_palloc *pl)
 	 * only - if the arena grew, the freshly published pages satisfy this
 	 * order by construction (they are whole), so a second miss can only
 	 * mean the grow itself was refused and would be refused again. */
-	if (!ch && hg_buddy_grow(hb, size, HG_GROW_EXHAUSTION) == 0)
+	if (!ch && hg_buddy_grow_unlocks(hb, size, HG_GROW_EXHAUSTION) == 0)
 		ch = hg_buddy_alloc(hb, (unsigned int)ord);
 
 	/*
@@ -2475,6 +2475,15 @@ void hg_arena_stats_core_init(struct hg_block *hb, int core_index)
 const char * const hg_lk_reason_str[HG_LK_REASONS] = {
 	"refill", "return", "flush", "large", "policy", "stats", "other"
 };
+
+void hg_lock_assert_held(struct hg_block *hb, const char *where)
+{
+	if (hb->lk_cur != HG_LK_NONE)
+		return;
+	hg_corrupt(hb, HG_C_INTERNAL);
+	LM_BUG("%s: %s without hb->lock held - a lock-dropping callee broke its "
+		"contract (hold on entry, held again on return)", hb->name, where);
+}
 
 void hg_lock_stall_note(struct hg_block *hb, int reason, unsigned long held_ns)
 {

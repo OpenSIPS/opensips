@@ -46,7 +46,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mem/hg_malloc.h"
 #include "../../mem/hg_arena.h"   /* hg_quarantine_drain() */
-#include "../../mem/hg_buddy.h"   /* hg_buddy_grow() */
+#include "../../mem/hg_buddy.h"   /* hg_buddy_grow_unlocks() */
 
 #define HGT_WAIT_US   (30 * 1000 * 1000)
 #define HGT_STEP_US   (10 * 1000)
@@ -356,7 +356,7 @@ static void test_hg_grow(void)
 
 /*
  * A refused grow records what refused it, for hg_stats' last_grow_refusal.
- * The policy causes, through hg_buddy_grow() itself under the arena lock:
+ * The policy causes, through hg_buddy_grow_unlocks() under the arena lock:
  * dry-run mode, then a profile ceiling at what is committed now (on a fixed
  * arena that ceiling is the reservation, so the cause is the cap). Every
  * field borrowed is restored before the lock is released, so no other
@@ -385,7 +385,7 @@ static void test_hg_grow_refusal_cause(void)
 
 		hg_autoscale_dry_run = 1;
 		hb->pol_dry_said = 1;          /* expected: no warning */
-		r_dry = hg_buddy_grow(hb, 4096, HG_GROW_EXHAUSTION);
+		r_dry = hg_buddy_grow_unlocks(hb, 4096, HG_GROW_EXHAUSTION);
 		why_dry = hb->grow_refuse_why;
 		hg_autoscale_dry_run = 0;
 
@@ -394,7 +394,7 @@ static void test_hg_grow_refusal_cause(void)
 		if (hb->committed_bytes == hb->hcap)
 			want_ceil = HG_GR_CAP;
 		hb->grow_refuse_said = 1;      /* expected: no notice */
-		r_ceil = hg_buddy_grow(hb, 4096, HG_GROW_EXHAUSTION);
+		r_ceil = hg_buddy_grow_unlocks(hb, 4096, HG_GROW_EXHAUSTION);
 		why_ceil = hb->grow_refuse_why;
 
 		hg_autoscale_dry_run = dry;

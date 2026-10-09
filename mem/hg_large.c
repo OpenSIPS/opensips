@@ -169,7 +169,7 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 			 * means the grow was refused - fall through to the
 			 * ordinary exhaustion error. */
 			for (attempt = 0; attempt < 2 && !base; attempt++) {
-				if (attempt && hg_buddy_grow(hb, total, HG_GROW_EXHAUSTION) != 0)
+				if (attempt && hg_buddy_grow_unlocks(hb, total, HG_GROW_EXHAUSTION) != 0)
 					break;
 				if (ord >= 0) {
 					base = hg_buddy_alloc(hb, (unsigned int)ord);

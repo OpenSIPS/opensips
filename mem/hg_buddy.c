@@ -305,7 +305,7 @@ int hg_buddy_init(struct hg_block *hb)
 		 * get theirs stamped by the grow that commits them */
 		pg->tier = (unsigned char)hb->tier;
 		/* starts wholly reserved; pages < npages are published below,
-		 * pages beyond wait for hg_buddy_grow() */
+		 * pages beyond wait for hg_buddy_grow_unlocks() */
 	}
 
 	/*
@@ -509,8 +509,8 @@ void hg_grow_blocked_tick(struct hg_block *hb)
 #define HG_GROW_WAIT_MAX_NS  2000000000UL
 #define HG_GROW_WAIT_SLICE_US 100
 
-static int hg_buddy_regrow_holes(struct hg_block *hb, unsigned long need,
-                                 unsigned long room);
+static int hg_buddy_regrow_holes_unlocks(struct hg_block *hb, unsigned long need,
+                                         unsigned long room);
 
 /*
  * Deferred collapse. A grow done by a worker on exhaustion publishes a delta
@@ -596,7 +596,7 @@ void hg_collapse_deferred(struct hg_block *hb)
 	}
 }
 
-int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
+static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 {
 	unsigned long delta, room, old_pages, i, limit, t0, off, commit_ns;
 	unsigned long cp_ns[HG_CP_PHASES];
@@ -709,7 +709,7 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	 * pin and no virtual memory to take back, and refilling them is
 	 * what keeps a punched arena from growing past its own free space */
 	{
-		int r = hg_buddy_regrow_holes(hb, need, room);
+		int r = hg_buddy_regrow_holes_unlocks(hb, need, room);
 
 		if (r > 0)
 			return 0;       /* served: the caller retries */
@@ -820,6 +820,16 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	return 0;
 }
 
+int hg_buddy_grow_unlocks(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
+{
+	int r;
+
+	hg_lock_assert_held(hb, "hg_buddy_grow_unlocks entry");
+	r = buddy_grow_body(hb, need, why);
+	hg_lock_assert_held(hb, "hg_buddy_grow_unlocks return");
+	return r;
+}
+
 /* --- shrink ----------------------------------------------------------- */
 
 /* defined with the run machinery below; shrink shares its eligibility test */
@@ -851,7 +861,7 @@ static inline int page_is_whole_free(const struct hg_block *hb,
  *
  * Returns the number of pages released.
  */
-static unsigned long hg_buddy_shrink(struct hg_block *hb)
+static unsigned long buddy_shrink_body(struct hg_block *hb)
 {
 	unsigned long lpp = hg_leaves_per_page(hb);
 	unsigned long limit = hb->shrink_step >> hb->hps_shift;
@@ -980,6 +990,16 @@ static unsigned long hg_buddy_shrink(struct hg_block *hb)
 	return n;
 }
 
+static unsigned long hg_buddy_shrink_unlocks(struct hg_block *hb)
+{
+	unsigned long r;
+
+	hg_lock_assert_held(hb, "hg_buddy_shrink_unlocks entry");
+	r = buddy_shrink_body(hb);
+	hg_lock_assert_held(hb, "hg_buddy_shrink_unlocks return");
+	return r;
+}
+
 /*
  * Interior release: give back a whole-free page from ANYWHERE in the span.
  *
@@ -999,10 +1019,11 @@ static unsigned long hg_buddy_shrink(struct hg_block *hb)
  * first fl_unlink() through its zeroed node nulled the list head and
  * orphaned every page behind it (28 reachable before, 0 after). So the page
  * is unlinked FIRST, while its node can still be read, and stays off the
- * list until hg_buddy_regrow_holes() re-commits it. Its bitmap and leaforder
- * live in the metadata region and are untouched: page_is_whole_free() still
- * describes it truthfully, the extent stays a power of two and the
- * double-free detector keeps the bitmap as its authority.
+ * list until hg_buddy_regrow_holes_unlocks() re-commits it. Its bitmap and
+ * leaforder live in the metadata region and are untouched:
+ * page_is_whole_free() still describes it truthfully, the extent stays a
+ * power of two and the double-free detector keeps the bitmap as its
+ * authority.
  * buddy_free_leaves counts CARVABLE leaves, so a hole leaves it and the
  * reserve floor and headroom rules keep meaning what they say.
  *
@@ -1013,7 +1034,7 @@ static unsigned long hg_buddy_shrink(struct hg_block *hb)
  * the top trim has taken what it could. Returns the pages punched.
  */
 #define HG_PAGES_PER_EVENT 128   /* per release or re-commit event */
-static unsigned long hg_buddy_punch(struct hg_block *hb)
+static unsigned long buddy_punch_body(struct hg_block *hb)
 {
 	unsigned long sel[HG_PAGES_PER_EVENT];
 	unsigned long limit = hb->shrink_step >> hb->hps_shift;
@@ -1110,12 +1131,22 @@ static unsigned long hg_buddy_punch(struct hg_block *hb)
 	return ok;
 }
 
+static unsigned long hg_buddy_punch_unlocks(struct hg_block *hb)
+{
+	unsigned long r;
+
+	hg_lock_assert_held(hb, "hg_buddy_punch_unlocks entry");
+	r = buddy_punch_body(hb);
+	hg_lock_assert_held(hb, "hg_buddy_punch_unlocks return");
+	return r;
+}
+
 /*
  * The other half of the punch, and the one that carries the correctness
  * risk: a hole is re-committed - faulted back in AND re-pinned - before it
  * can be carved again, in THIS process, because mlock() is per-vma and does
  * not survive fork (measured). It runs from
- * hg_buddy_grow(), i.e. in whatever process hit exhaustion or in the
+ * hg_buddy_grow_unlocks(), i.e. in whatever process hit exhaustion or in the
  * maintenance process growing ahead, and it runs BEFORE the span is
  * extended: a hole is committed RAM the arena already owns the address of,
  * and taking it back costs a pin and no virtual memory.
@@ -1126,8 +1157,8 @@ static unsigned long hg_buddy_punch(struct hg_block *hb)
  * it. Returns 1 if it served the request, 0 if there were no holes to
  * serve it from, -1 if the RAM limb refused.
  */
-static int hg_buddy_regrow_holes(struct hg_block *hb, unsigned long need,
-                                 unsigned long room)
+static int buddy_regrow_holes_body(struct hg_block *hb, unsigned long need,
+                                   unsigned long room)
 {
 	unsigned long sel[HG_PAGES_PER_EVENT];
 	unsigned long want, i, got = 0, ok, t0, pin_ns;
@@ -1225,6 +1256,17 @@ static int hg_buddy_regrow_holes(struct hg_block *hb, unsigned long need,
 	return 1;
 }
 
+static int hg_buddy_regrow_holes_unlocks(struct hg_block *hb, unsigned long need,
+                                         unsigned long room)
+{
+	int r;
+
+	hg_lock_assert_held(hb, "hg_buddy_regrow_holes_unlocks entry");
+	r = buddy_regrow_holes_body(hb, need, room);
+	hg_lock_assert_held(hb, "hg_buddy_regrow_holes_unlocks return");
+	return r;
+}
+
 
 /* the no-policy default: consecutive quiet sweep ticks per released
  * granule (two minutes at the 30 s sweep) - deliberately down-slow. A
@@ -1244,7 +1286,7 @@ static int hg_buddy_regrow_holes(struct hg_block *hb, unsigned long need,
  * auto_scaling_profile surface; the profile replaces the constants, not
  * the shape.
  */
-void hg_shrink_tick(struct hg_block *hb)
+static void shrink_tick_body(struct hg_block *hb)
 {
 	unsigned long granule_leaves;
 	unsigned int need_ticks;
@@ -1277,8 +1319,8 @@ void hg_shrink_tick(struct hg_block *hb)
 	 * precisely the case interior release exists for, so keeping this test in
 	 * front of the whole tick would return before the punch ever ran and
 	 * make the feature a no-op exactly where it is needed.
-	 * hg_buddy_shrink() re-tests the top itself and does nothing when it
-	 * is busy, so dropping the test here costs the trim nothing. */
+	 * hg_buddy_shrink_unlocks() re-tests the top itself and does nothing
+	 * when it is busy, so dropping the test here costs the trim nothing. */
 	if (hb->below_floor || hb->grow_blocked ||
 	    (!hg_interior_release &&
 	     !page_is_whole_free(hb, &hb->pages[hb->npages - 1]))) {
@@ -1328,6 +1370,13 @@ void hg_shrink_tick(struct hg_block *hb)
 	hg_drain_tick(hb);
 }
 
+void hg_shrink_tick(struct hg_block *hb)
+{
+	hg_lock_assert_held(hb, "hg_shrink_tick entry");
+	shrink_tick_body(hb);
+	hg_lock_assert_held(hb, "hg_shrink_tick return");
+}
+
 /*
  * One step of the drain, hb->lock held: the top trim, then the interior
  * punch. Called every maintenance tick (1 s) while draining is set - and
@@ -1363,11 +1412,11 @@ void hg_drain_tick(struct hg_block *hb)
 		return;
 	}
 
-	released = hg_buddy_shrink(hb);
+	released = hg_buddy_shrink_unlocks(hb);
 	/* the trim can only ever reach the top of the span; this reaches the
 	 * rest, and is the only thing that returns memory once a
 	 * startup-lifetime allocation has landed above the free space */
-	released += hg_buddy_punch(hb);
+	released += hg_buddy_punch_unlocks(hb);
 	if (!released)
 		hb->draining = 0;
 }
@@ -1389,17 +1438,27 @@ void hg_drain_tick(struct hg_block *hb)
  * second by the maintenance process when there is one, else once per
  * sweep interval. Returns 1 if it grew.
  */
-int hg_grow_headroom_tick(struct hg_block *hb)
+static int grow_headroom_tick_body(struct hg_block *hb)
 {
 	if (!hb->buddy_ready || !hg_grow_ahead)
 		return 0;
 	if (hb->span_end < hb->hcap && !hb->grow_inflight &&
 	    hb->buddy_free_leaves < 2 * hb->reserve_floor)
-		return hg_buddy_grow(hb, hb->grow_granule, HG_GROW_PROACTIVE) == 0;
+		return hg_buddy_grow_unlocks(hb, hb->grow_granule, HG_GROW_PROACTIVE) == 0;
 	return 0;
 }
 
-void hg_grow_tick(struct hg_block *hb)
+int hg_grow_headroom_tick(struct hg_block *hb)
+{
+	int r;
+
+	hg_lock_assert_held(hb, "hg_grow_headroom_tick entry");
+	r = grow_headroom_tick_body(hb);
+	hg_lock_assert_held(hb, "hg_grow_headroom_tick return");
+	return r;
+}
+
+static void grow_tick_body(struct hg_block *hb)
 {
 	int hit;
 
@@ -1438,7 +1497,14 @@ void hg_grow_tick(struct hg_block *hb)
 		}
 		return;
 	}
-	hg_buddy_grow(hb, hb->grow_granule, HG_GROW_PROACTIVE);
+	hg_buddy_grow_unlocks(hb, hb->grow_granule, HG_GROW_PROACTIVE);
+}
+
+void hg_grow_tick(struct hg_block *hb)
+{
+	hg_lock_assert_held(hb, "hg_grow_tick entry");
+	grow_tick_body(hb);
+	hg_lock_assert_held(hb, "hg_grow_tick return");
 }
 
 /*
@@ -1458,10 +1524,10 @@ unsigned long hg_buddy_top_reachable(struct hg_block *hb)
 /*
  * Rebuild one order's free list from the per-page bitmaps - the
  * authority for "free, whole, not split" - skipping punched
- * pages, whose blocks belong to hg_buddy_regrow_holes() and are republished
- * when it re-commits them. Corruption path only: it is reached when a list
- * head is found on a punched page (below), and it walks every page's every
- * block of the order, so it is not for routine use.
+ * pages, whose blocks belong to hg_buddy_regrow_holes_unlocks() and are
+ * republished when it re-commits them. Corruption path only: it is reached
+ * when a list head is found on a punched page (below), and it walks every
+ * page's every block of the order, so it is not for routine use.
  */
 static void fl_rebuild(struct hg_block *hb, unsigned int o)
 {
