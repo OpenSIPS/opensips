@@ -594,6 +594,42 @@ branch_route [parallel_fork] {
 ```
 
 
+#### cluster_id (integer)
+
+
+With usrloc in a cluster that shares the location table
+(e.g. *full-sharing-cluster*), every node expires every record and runs
+the expiry callbacks, so every node would send the same De-REGISTER upstream.
+Together with [cluster_sharing_tag](#cluster_sharing_tag-string), this
+parameter restricts the De-REGISTER sent on an expired or deleted AoR
+(*mode* 2) or contact (*mode* 1) to the node where the sharing tag is
+active. The ID of the cluster the sharing tag belongs to.
+
+
+*Default value is 0 (no restriction).*
+
+
+```opensips title="Set cluster_id parameter"
+modparam("mid_registrar", "cluster_id", 1)
+```
+
+
+#### cluster_sharing_tag (string)
+
+
+The sharing tag that must be active on this node for it to send the
+upstream De-REGISTER of an expired or deleted record. Used only with
+[cluster_id](#cluster_id-integer).
+
+
+*Default value is NULL (no restriction).*
+
+
+```opensips title="Set cluster_sharing_tag parameter"
+modparam("mid_registrar", "cluster_sharing_tag", "vip")
+```
+
+
 #### min_expires (integer)
 
 
