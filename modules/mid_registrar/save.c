@@ -1224,7 +1224,8 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 	ci.last_modified = get_act_time();
 	ci.flags = mri->ul_flags;
 	ci.cflags = mri->cflags;
-	ci.expires = randomize_expires(ctmap->expires + get_act_time());
+	ci.expires = randomize_expires(ctmap->expires + get_act_time(),
+					min_expires, max_expires);
 	ci.shtag = mri->ownership_tag;
 
 	ci.q = ctmap->q;
@@ -2244,7 +2245,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 	/* pack the contact_info */
 	if ( (ci=pack_ci(msg, 0, 0, cflags, ul.nat_flag, _sctx->flags,
-						&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
+						&_sctx->ownership_tag, &_sctx->cmatch,
+					_sctx->min_expires, _sctx->max_expires))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2292,7 +2294,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 				/* pack the contact specific info */
 				ci = pack_ci(msg, ct, e + get_act_time(), cflags,
 					ul.nat_flag, _sctx->flags, &_sctx->ownership_tag,
-					&_sctx->cmatch);
+					&_sctx->cmatch, _sctx->min_expires,
+					_sctx->max_expires);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
@@ -2417,7 +2420,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	/* pack the contact_info */
 	if ( (ci=pack_ci(req, 0, 0, cflags, ul.nat_flag, _sctx->flags,
-						&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
+						&_sctx->ownership_tag, &_sctx->cmatch,
+					_sctx->min_expires, _sctx->max_expires))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2488,7 +2492,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), cflags,
 				ul.nat_flag, _sctx->flags, &_sctx->ownership_tag,
-				&_sctx->cmatch);
+				&_sctx->cmatch, _sctx->min_expires,
+				_sctx->max_expires);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2528,7 +2533,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), cflags,
 				ul.nat_flag, _sctx->flags, &_sctx->ownership_tag,
-				&_sctx->cmatch);
+				&_sctx->cmatch, _sctx->min_expires,
+				_sctx->max_expires);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
