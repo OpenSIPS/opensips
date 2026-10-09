@@ -44,6 +44,7 @@ static struct src_sess *src_create_session(struct src_ctx *ctx, str *m_ip, str *
 		return NULL;
 	}
 	memset(ss, 0, sizeof *ss);
+	INIT_LIST_HEAD(&ss->srs);
 	ss->socket = si;
 	ss->ctx = ctx;
 
@@ -91,8 +92,6 @@ static struct src_sess *src_create_session(struct src_ctx *ctx, str *m_ip, str *
 	ss->participants_no = 0;
 	ss->ts = ts;
 
-	INIT_LIST_HEAD(&ss->srs);
-
 #ifdef DBG_SIPREC_HIST
 	ss->hist = sh_push(ss, srec_hist);
 #endif
@@ -100,7 +99,10 @@ static struct src_sess *src_create_session(struct src_ctx *ctx, str *m_ip, str *
 
 	return ss;
 error:
-	src_free_session(ss);
+	/* the session is not linked into the ctx yet, so only discard the
+	 * partially built object here */
+	src_clean_session(ss);
+	shm_free(ss);
 	return NULL;
 }
 
@@ -180,7 +182,7 @@ struct src_sess *src_new_session(str *srs, struct src_ctx *ctx,
 		return NULL;
 
 	if (srs && srs_add_nodes(sess, srs) < 0) {
-		src_free_session(sess);
+		src_free_session_unsafe(sess);
 		return NULL;
 	}
 
@@ -268,10 +270,9 @@ void src_release_ctx(struct src_ctx *ctx)
 	shm_free(ctx);
 }
 
-/* called without lock */
-void src_free_session(struct src_sess *sess)
+/* called with the ctx lock taken; does not release it */
+void src_free_session_unsafe(struct src_sess *sess)
 {
-	struct src_ctx *ctx = sess->ctx;
 	src_clean_session(sess);
 #ifdef DBG_SIPREC_HIST
 	srec_hlog(sess, SREC_DESTROY, "successful destroying");
@@ -279,9 +280,17 @@ void src_free_session(struct src_sess *sess)
 	sh_unref(sess->hist);
 	sess->hist = NULL;
 #endif
-	SIPREC_LOCK(ctx);
 	list_del(&sess->list);
 	shm_free(sess);
+}
+
+/* called without lock */
+void src_free_session(struct src_sess *sess)
+{
+	struct src_ctx *ctx = sess->ctx;
+
+	SIPREC_LOCK(ctx);
+	src_free_session_unsafe(sess);
 	src_release_ctx(ctx);
 }
 
