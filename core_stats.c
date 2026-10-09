@@ -440,7 +440,19 @@ static void hg_cache_sweep(unsigned int ticks, void *param)
 	}
 
 	for (i = 0; i < n; i++) {
-		if ((unsigned int)((unsigned long)i * HG_SWEEP_INTERVAL / n) != slot)
+		/*
+		 * A process's sweep second is a hash of its index, not
+		 * index * interval / nproc. The latter maps the live (low-index)
+		 * processes - SIP receivers, the TCP pool - into the first
+		 * fraction of the interval, and skipping the clean (mostly
+		 * high) indices made the dispatched set cluster there even
+		 * tighter (measured on a production SBC: the flushes fell in
+		 * the first ~13 s of 30). A multiplicative hash spreads any
+		 * contiguous block of indices across the whole interval; each
+		 * index still maps to exactly one second, so every process
+		 * still flushes once per interval.
+		 */
+		if ((unsigned int)((unsigned int)i * 2654435761u % HG_SWEEP_INTERVAL) != slot)
 			continue;
 		/*
 		 * A process whose shared-arena caches took nothing since its
