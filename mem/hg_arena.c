@@ -1710,6 +1710,7 @@ int hg_arena_init(struct hg_block *hb, unsigned long hdr_size)
 	/* see chunk_size_for(): no single chunk may swallow a big slice of a
 	 * small arena. /64 keeps all 21 classes plus the large tier inside a
 	 * third of the arena even in the worst case. */
+	hb->thread_slot_next = HG_STAT_SLOTS - 1;   /* threads count down */
 	hb->chunk_max = hb->size / 64;
 	if (hb->chunk_max > HG_CHUNK_SMALL)
 		hb->chunk_max = HG_CHUNK_SMALL;
@@ -2470,6 +2471,37 @@ void hg_arena_stats_core_init(struct hg_block *hb, int core_index)
 #include "../statistics.h"
 #include "shm_mem.h"   /* mem_allocator_shm */
 #include "mem.h"       /* mem_allocator_pkg */
+
+/* this thread's stats slot, -1 = the process's own (see hg_pstat_mine) */
+__thread int hg_pstat_slot = -1;
+
+void hg_thread_stats_init(void)
+{
+	struct hg_block *hb = (struct hg_block *)shm_block;
+	static unsigned int local_next = HG_STAT_SLOTS - 1;
+	static int said;
+	unsigned int *next, s;
+
+	if (hg_pstat_slot >= 0)
+		return;
+	/* the shared counter when the shm arena is ours, else a per-process one
+	 * (threads exist in one process today; a second kind would collide only
+	 * on a pkg arena, which is private anyway) */
+	next = (hb && (mem_allocator_shm == MM_HG_MALLOC ||
+	               mem_allocator_shm == MM_HG_MALLOC_DBG)) ?
+	       &hb->thread_slot_next : &local_next;
+	s = __atomic_fetch_sub(next, 1, __ATOMIC_ACQ_REL);
+	if (s <= HG_STAT_SLOTS / 4 || s >= HG_STAT_SLOTS) {
+		/* out of thread slots: share the process slot */
+		if (!said) {
+			said = 1;
+			LM_WARN("no free per-thread stats slot (claimed %u of %u) - this "
+				"thread shares its process's slot\n", s, HG_STAT_SLOTS);
+		}
+		return;
+	}
+	hg_pstat_slot = (int)s;
+}
 
 /* --- lock-stall bookkeeping (called after the release) ----------------- */
 const char * const hg_lk_reason_str[HG_LK_REASONS] = {

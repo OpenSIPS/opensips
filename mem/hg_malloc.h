@@ -547,6 +547,11 @@ struct hg_palloc {
  * Both fields are SIGNED on purpose: a cell allocated by one process can
  * be freed by another (that is what the shared pool is for), so an
  * individual slot legitimately goes negative. Only the sum is meaningful.
+ *
+ * A THREAD gets its own slot too (hg_thread_stats_init). TCP main's IO
+ * pool used to share the process's slot, so its threads raced on the same
+ * words with plain read-modify-writes - and lost updates, which is how the
+ * TCP main's pkg "used" drifted under WSS load.
  */
 #define HG_STAT_SLOTS     256
 #define HG_STAT_LINE      64
@@ -781,6 +786,7 @@ struct hg_block {
 	/* the fast-path counters - see struct hg_pstat above. Summed by
 	 * hg_used()/hg_fragments(); never read directly. */
 	struct hg_pstat pstat[HG_STAT_SLOTS];
+	unsigned int thread_slot_next;   /* next thread slot, counts down */
 	unsigned long size;        /* total arena size */
 
 	/* Two sizes for two questions: span_end is the ADDRESS EXTENT of
@@ -1672,10 +1678,24 @@ static inline unsigned long hg_frag_line(void *p) { return 0; }
  * lost-update race for those two, never corrupt anything, and with
  * HG_STAT_SLOTS slots that needs a genuinely enormous process table.
  */
+/* a thread of a threaded process (TCP main's IO pool) has its own slot,
+ * claimed at thread start by hg_thread_stats_init(); -1 = the process slot */
+extern __thread int hg_pstat_slot;
+
 static inline struct hg_pstat *hg_pstat_mine(struct hg_block *hb)
 {
-	return &hb->pstat[((unsigned int)(process_no + 1)) % HG_STAT_SLOTS];
+	int s = hg_pstat_slot;
+
+	if (s < 0)
+		s = (int)(((unsigned int)(process_no + 1)) % HG_STAT_SLOTS);
+	return &hb->pstat[s];
 }
+
+/* claim a slot of my own for this thread (idempotent; threads of the TCP IO
+ * pool call it first thing). Slots are handed out from the top of the
+ * array, processes use the bottom; the counter is in the shm arena so the
+ * index is unique across every process that could ever start a thread. */
+void hg_thread_stats_init(void);
 
 /* summed on read; clamped at 0 because individual slots go negative when
  * one process frees another's cells and a torn sum could otherwise

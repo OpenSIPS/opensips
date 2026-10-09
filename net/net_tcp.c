@@ -1289,6 +1289,11 @@ static void *tcp_thread_routine(void *arg)
 
 	(void)arg;
 
+#ifdef HG_MALLOC
+	/* own HG stats slot for this IO thread (no-op unless HG is the allocator) */
+	hg_thread_stats_init();
+#endif
+
 	/* Reactor operations stay in TCP main; IO threads only run read/write
 	 * callbacks and notify completion back to the main thread. */
 	while (1) {

@@ -2178,6 +2178,10 @@ void hg_status(struct hg_block *hb)
 	LM_GEN1(memdump, " heap size= %lu, tier=%s, pinned=%lu MB\n",
 		hb->size, hg_mem_tier_str(hb->tier), hb->locked_mb);
 	LM_GEN1(memdump, " chunks= %u, chunk bytes= %lu\n", nchunks, bytes);
+	/* the live figures this process can see - its own slot(s) plus,
+	 * for shm, every other process's */
+	LM_GEN1(memdump, " live: used= %lu, fragments= %lu, cell bytes= %lu\n",
+		hg_used(hb), hg_fragments(hb), hg_cell_live(hb));
 }
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
