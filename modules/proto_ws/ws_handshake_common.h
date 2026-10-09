@@ -29,6 +29,7 @@
 #include <pthread.h>
 
 #include "../../ip_addr.h"
+#include "../../lib/csv.h"
 
 #define HTTP_SEP			"\r\n"
 #define HTTP_SEP_LEN		(sizeof(HTTP_SEP) - 1)
@@ -160,6 +161,43 @@ static inline void ws_free_parsed_headers(struct sip_msg *msg)
 #ifndef _ws_common_require_origin
 #error "_ws_common_require_origin not defined!"
 #endif
+/* the "allowed_origins" list, parsed once in mod_init; NULL = any Origin */
+static csv_record *ws_allowed_origins_list;
+
+/* Parse the comma-separated "allowed_origins" parameter into a list (spaces
+ * around the entries are ignored). Called once, from mod_init. */
+static int ws_parse_allowed_origins(str *param)
+{
+	if (!param->s)
+		return 0;
+	param->len = strlen(param->s);
+	if (param->len == 0)
+		return 0;
+
+	ws_allowed_origins_list = parse_csv_record(param);
+	if (!ws_allowed_origins_list) {
+		LM_ERR("failed to parse allowed_origins <%.*s>\n",
+				param->len, param->s);
+		return -1;
+	}
+	return 0;
+}
+
+/* Is <origin> in the "allowed_origins" list (exact, case-insensitive match)?
+ * An empty or unset list allows any Origin, which is the behaviour without
+ * the "allowed_origins" parameter. */
+static int ws_origin_allowed(const str *origin)
+{
+	csv_record *it;
+
+	if (!ws_allowed_origins_list)
+		return 1;
+	for (it = ws_allowed_origins_list; it; it = it->next)
+		if (it->s.len && it->s.len == origin->len &&
+				strncasecmp(it->s.s, origin->s, origin->len) == 0)
+			return 1;
+	return 0;
+}
 
 /* all flags for req */
 #define WS_ALL_REQ_F (WS_HOST_F | \
@@ -871,6 +909,12 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 					GET_LOWER(hf->name.s + 5) != 'n')
 				break;
 
+			str_trim_spaces_lr(hf->body);
+			if (!ws_origin_allowed(&hf->body)) {
+				LM_ERR("Origin <%.*s> not in allowed_origins\n",
+						hf->body.len, hf->body.s);
+				goto ws_error;
+			}
 			if (_ws_common_require_origin)
 				flags |= WS_ORIGIN_F;
 			break;

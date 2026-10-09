@@ -337,6 +337,29 @@ modparam("proto_wss", "require_origin", no)
 ```
 
 
+#### allowed_origins (string)
+
+
+A comma-separated list of the Origin values accepted in the WebSocket
+handshake (exact match, case-insensitive; spaces around the entries are
+ignored). A handshake whose Origin header is not in the list is refused
+(the connection is closed, as for any malformed handshake) and an error is
+logged. A handshake without an Origin header is still governed by
+*require_origin*.
+
+Browsers always send the Origin of the page that opens the WebSocket, so
+this stops a third-party web page from opening SIP connections from its
+visitors' browsers.
+
+
+*Default value is empty (any Origin is accepted).*
+
+
+```opensips title="Set allowed_origins parameter"
+modparam("proto_wss", "allowed_origins", "https://sip.example.com, https://www.example.com")
+```
+
+
 ### Exported MI Functions
 
 
