@@ -260,6 +260,8 @@ int hg_pkg_peak_all(unsigned long *peak, unsigned long *sum, int *nproc)
  * hg_sweep_gen in the process it runs in, and those threads flush at their
  * next job boundary (hg_cache_flush_if_due(), net/net_tcp.c).
  */
+/* every 4th interval sweeps the clean processes too (their pkg caches) */
+#define HG_SWEEP_FORCE_EVERY 4
 #define HG_SWEEP_INTERVAL 30   /* seconds; the caches are a slow leak, not a
                                 * fast one, and each sweep costs a lock per
                                 * arena per process */
@@ -440,6 +442,19 @@ static void hg_cache_sweep(unsigned int ticks, void *param)
 	for (i = 0; i < n; i++) {
 		if ((unsigned int)((unsigned long)i * HG_SWEEP_INTERVAL / n) != slot)
 			continue;
+		/*
+		 * A process whose shared-arena caches took nothing since its
+		 * last flush has nothing to collect - skip the job and its lock
+		 * holds. Its pkg caches are its own business and invisible here,
+		 * so every HG_SWEEP_FORCE_EVERY-th interval sweeps everyone.
+		 */
+		if ((ticks / HG_SWEEP_INTERVAL) % HG_SWEEP_FORCE_EVERY &&
+		    !hg_proc_cache_dirty(i)) {
+			if (mem_allocator_shm == MM_HG_MALLOC ||
+			    mem_allocator_shm == MM_HG_MALLOC_DBG)
+				((struct hg_block *)shm_block)->sweeps_skipped++;
+			continue;
+		}
 		if (i == process_no) {
 			/* never RPC ourselves - see signal_pkg_status() */
 			hg_cache_flush_self();

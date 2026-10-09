@@ -1307,6 +1307,9 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 		if (add_mi_number(o, MI_SSTR("gc_kept_blocks"), kept) < 0)
 			return -1;
 	}
+	/* sweep jobs not dispatched because the process was clean */
+	if (add_mi_number(o, MI_SSTR("sweeps_skipped"), hb->sweeps_skipped) < 0)
+		return -1;
 	if (add_mi_number(o, MI_SSTR("buddy_splits"), hb->buddy_splits) < 0)
 		return -1;
 	if (add_mi_number(o, MI_SSTR("buddy_merges"), hb->buddy_merges) < 0)

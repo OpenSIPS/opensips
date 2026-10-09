@@ -559,6 +559,11 @@ struct hg_palloc {
 struct hg_pstat {
 	long used;       /* payload bytes handed out by this process */
 	long fragments;  /* live cells handed out by this process */
+	/* set by this process's free fast path (a store into the line it
+	 * is already writing), cleared when its flush starts; the sweep
+	 * dispatcher skips a process whose slot is clean - its caches took
+	 * nothing since the last flush, so there is nothing to collect */
+	long dirty;
 	/* Cell-slot bytes (header + payload + size-class round-up) currently
 	 * handed out by this process. "used" alone cannot tell how much ARENA
 	 * a process is holding, because a 100-byte request occupies a whole
@@ -1111,6 +1116,7 @@ struct hg_block {
 	 * the emergency threshold on the donate path) */
 	unsigned long       gc_tick_blocks;
 	unsigned long       gc_inline_blocks;
+	unsigned long       sweeps_skipped;        /* clean, not dispatched */
 	unsigned long       cache_flushes;            /* sweeps run */
 	unsigned long       cells_flushed;            /* cells recovered from TLS */
 	unsigned long       pressure_flushes;         /* self-flushes at carve exhaustion */

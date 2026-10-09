@@ -1162,6 +1162,17 @@ unsigned int hg_gc_tick(struct hg_block *hb, unsigned int budget)
 	return done;
 }
 
+/* does process @proc hold anything in its SHARED-arena caches since its
+ * last flush? Read without the lock - a stale answer costs one interval. */
+int hg_proc_cache_dirty(int proc)
+{
+	struct hg_block *hb = (struct hg_block *)shm_block;
+
+	if (!hb || proc < 0)
+		return 1;
+	return hb->pstat[((unsigned int)(proc + 1)) % HG_STAT_SLOTS].dirty != 0;
+}
+
 static __thread unsigned long hg_sweep_seen;
 
 void hg_cache_flush_if_due(void)
@@ -1186,6 +1197,8 @@ void hg_cache_flush_self(void)
 
 		if (!hb)
 			continue;
+		/* clean before the walk, so a free during it is not lost */
+		hg_pstat_mine(hb)->dirty = 0;
 		for (c = 0; c < HG_NCLASSES; c++) {
 			unsigned int keep = flush_residue(hb, pl, c);
 
@@ -2177,6 +2190,7 @@ void hg_cell_free(struct hg_block *hb, void *p)
 		ps->used -= cell_sizes[c] - HG_CELL_HDR;
 		ps->fragments--;
 		ps->cell_live -= cell_sizes[c];
+		ps->dirty = 1;   /* this cache now holds something to sweep */
 	}
 
 #ifdef DBG_MALLOC
@@ -2627,7 +2641,7 @@ enum hg_stat_field {
 	 * EVI event here would cost more than the allocator it reports on. */
 	HGS_BLOCKS_CARVED, HGS_BLOCKS_RETURNED, HGS_GC_PASSES,
 	HGS_CACHE_FLUSHES, HGS_CELLS_FLUSHED, HGS_PRESSURE_FLUSHES, HGS_PRESSURE_CELLS,
-	HGS_GC_TICK_BLOCKS, HGS_GC_INLINE_BLOCKS, HGS_GC_KEPT_BLOCKS,
+	HGS_GC_TICK_BLOCKS, HGS_GC_INLINE_BLOCKS, HGS_GC_KEPT_BLOCKS, HGS_SWEEPS_SKIPPED,
 	HGS_BUDDY_SPLITS, HGS_BUDDY_MERGES, HGS_BUDDY_FREE_LEAVES,
 	/* large tier footprint, and the reserve floor - without these last
 	 * three the floor is invisible outside a one-shot log line */
@@ -2697,6 +2711,7 @@ static unsigned long hg_shm_stat(void *ctx)
 	case HGS_PRESSURE_CELLS:  return hb->pressure_cells;
 	case HGS_GC_TICK_BLOCKS:   return hb->gc_tick_blocks;
 	case HGS_GC_INLINE_BLOCKS: return hb->gc_inline_blocks;
+	case HGS_SWEEPS_SKIPPED:   return hb->sweeps_skipped;
 	case HGS_GC_KEPT_BLOCKS: {
 		unsigned long n = 0;
 		int c;
@@ -2767,6 +2782,7 @@ static const struct {
 	{"hg_shm_gc_tick_blocks",   HGS_GC_TICK_BLOCKS},
 	{"hg_shm_gc_inline_blocks", HGS_GC_INLINE_BLOCKS},
 	{"hg_shm_gc_kept_blocks",   HGS_GC_KEPT_BLOCKS},
+	{"hg_shm_sweeps_skipped",   HGS_SWEEPS_SKIPPED},
 	{"hg_shm_buddy_splits",    HGS_BUDDY_SPLITS},
 	{"hg_shm_buddy_merges",    HGS_BUDDY_MERGES},
 	{"hg_shm_buddy_free_leaves", HGS_BUDDY_FREE_LEAVES},

@@ -68,6 +68,7 @@ void *hg_chunk_backing(struct hg_block *hb, unsigned long size);
  * unreachable from anywhere else, which is the whole reason the sweep is
  * dispatched rather than executed centrally. */
 void hg_cache_flush_self(void);
+int hg_proc_cache_dirty(int proc);
 
 /* the drained-block GC, hb->lock held by the caller. hg_gc_cycle()
  * recomputes every class's keep from the carves of the cycle just ended;
