@@ -22,7 +22,21 @@
 
 #include "../ut.h"
 #include "../str.h"
+#include "../strcommon.h"
 #include "../mod_fix.h"
+
+#include "../parser/test/test_oob.h"
+
+static void test_unescape_user_oob(const str *tstr, enum oob_position where,
+		void *farg)
+{
+	char obuf[256];
+	str out = {obuf, sizeof(obuf)};
+	str_const in = {tstr->s, tstr->len};
+
+	_unescape_user(&in, &out);
+	ok(1, OOB_CHECK_OK_MSG("_unescape_user", tstr, where));
+}
 
 void test_ut(void)
 {
@@ -187,5 +201,24 @@ void test_ut(void)
 			else
 				ok(p == (tests[i].a.s + tests[i].ok_offset), "test-str_strcasestr-%d", i);
 		}
+	}
+
+	/* _unescape_user() read-past-end regression: a '%' near the end of
+	 * the input must not read the hex digits beyond it. Driving each
+	 * input through the guard-page harness faults on any OOB read. */
+	{
+		str escaped[] = {
+			str_init("%"),
+			str_init("%4"),
+			str_init("ab%"),
+			str_init("ab%4"),
+			str_init("%41%"),
+			str_init("abc%41"),
+			STR_NULL
+			};
+		int i;
+
+		for (i = 0; escaped[i].s != NULL; i++)
+			test_oob(&escaped[i], test_unescape_user_oob, NULL);
 	}
 }
