@@ -81,7 +81,6 @@ static int wss_async_write(struct tcp_connection* con, int fd);
 #define _ws_common_read_tout wss_hs_read_tout
 #define _ws_common_proxy_send_tout wss_send_tout
 #define _ws_common_require_origin wss_require_origin
-#define _ws_common_allowed_origins wss_allowed_origins
 /*
  * the timeout is only used by the _ws_common_writev function
  * but in our case, the timeout specified in the TLS MGM
@@ -227,8 +226,8 @@ static int mod_init(void)
 	LM_INFO("initializing Secure WebSocket protocol\n");
 
 	wss_resource.len = strlen(wss_resource.s);
-	if (wss_allowed_origins.s)
-		wss_allowed_origins.len = strlen(wss_allowed_origins.s);
+	if (ws_parse_allowed_origins(&wss_allowed_origins) < 0)
+		return -1;
 
 	if(load_tls_mgm_api(&tls_mgm_api) != 0){
 		LM_DBG("failed to find tls API - is tls_mgm module loaded?\n");

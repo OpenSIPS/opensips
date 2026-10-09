@@ -73,7 +73,6 @@ static str ws_resource = str_init("/");
 #define _ws_common_proxy_send_tout ws_send_timeout
 #define _ws_common_resource ws_resource
 #define _ws_common_require_origin ws_require_origin
-#define _ws_common_allowed_origins ws_allowed_origins
 #include "ws_handshake_common.h"
 #include "ws_common.h"
 
@@ -205,8 +204,8 @@ static int mod_init(void)
 	LM_INFO("initializing WebSocket protocol\n");
 
 	ws_resource.len = strlen(ws_resource.s);
-	if (ws_allowed_origins.s)
-		ws_allowed_origins.len = strlen(ws_allowed_origins.s);
+	if (ws_parse_allowed_origins(&ws_allowed_origins) < 0)
+		return -1;
 
 	if (trace_destination_name.s) {
 		if ( !net_trace_api ) {
