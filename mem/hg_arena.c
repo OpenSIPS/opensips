@@ -23,6 +23,7 @@
 #ifdef HG_MALLOC
 
 #include <string.h>
+#include <limits.h>
 #include <stdlib.h>
 
 #include "hg_malloc.h"
@@ -40,6 +41,9 @@ static const unsigned int cell_sizes[HG_NCLASSES] = {
 	64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048,
 	3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152, 65536
 };
+
+/* defined with the carve path below; hg_gc_cycle() sizes a class's keep by it */
+static inline unsigned int chunk_size_for(struct hg_block *hb, int c);
 
 #define HG_CHUNK_SMALL    (256 * 1024)  /* ceiling on chunk_max, see below */
 #define HG_CHUNK_MIN      (8 * 1024)    /* floor, however tiny the arena */
@@ -66,7 +70,14 @@ static const unsigned int cell_sizes[HG_NCLASSES] = {
  * block straight back with no split and no merge. The buddy IS the cache, and
  * holding a block back from it only hides the memory.
  */
-#define HG_GC_KEEP 0
+/*
+ * GC policy. Drained blocks beyond a class's keep are returned by
+ * the maintenance tick, HG_GC_TICK_BUDGET at a time, so the request path
+ * never walks the drained list - except past HG_GC_EMERGENCY beyond keep,
+ * where the donate path returns a batch itself rather than let the list
+ * grow without bound between ticks. Keep is at most HG_GC_KEEP_MAX blocks
+ * and at most arena >> HG_GC_KEEP_BUDGET_SHIFT bytes per class.
+ */
 #define HG_REFILL_BATCH   32             /* cells pulled from the global pool */
 
 /*
@@ -425,8 +436,8 @@ static inline int pool_link_ok(struct hg_block *hb, struct hg_chunk *ch,
 }
 
 /*
- * Hand fully-drained blocks of class @c back to the buddy, keeping the last
- * HG_GC_KEEP as hysteresis.
+ * Hand fully-drained blocks of class @c back to the buddy, down to @keep
+ * of them (the class's demand-sized reserve) and at most @limit per call.
  *
  * With per-block free lists this is O(1) per block: every cell of a drained
  * block is on that block's OWN list, so there is nothing to unlink from a
@@ -436,23 +447,29 @@ static inline int pool_link_ok(struct hg_block *hb, struct hg_chunk *ch,
  *
  * hb->lock must be held.
  */
-static void gc_class_run(struct hg_block *hb, int c);
+static unsigned int gc_class_run(struct hg_block *hb, int c, unsigned int keep,
+                                 unsigned int limit);
 
 /* every block-return pass is timed into hb->lk_gc (lock held) */
-static void gc_class(struct hg_block *hb, int c)
+static unsigned int gc_class(struct hg_block *hb, int c, unsigned int keep,
+                             unsigned int limit)
 {
 	unsigned long t0 = hg_now_ns();
+	unsigned int n;
 
-	gc_class_run(hb, c);
+	n = gc_class_run(hb, c, keep, limit);
 	hg_lkstat_add(&hb->lk_gc, hg_now_ns() - t0);
+	return n;
 }
 
-static void gc_class_run(struct hg_block *hb, int c)
+static unsigned int gc_class_run(struct hg_block *hb, int c, unsigned int keep,
+                                 unsigned int limit)
 {
 	struct hg_chunk *ch;
 	unsigned int freed = 0;
 
-	while (hb->ndrained[c] > HG_GC_KEEP) {
+	/* down to @keep blocks, at most @limit per call */
+	while (hb->ndrained[c] > keep && freed < limit) {
 		unsigned int ord;
 		unsigned long sz;
 
@@ -525,6 +542,7 @@ static void gc_class_run(struct hg_block *hb, int c)
 		LM_DBG("%s gc class %d: returned %u blocks, %u drained kept\n",
 			hb->name, c, freed, hb->ndrained[c]);
 	}
+	return freed;
 }
 
 /* a cell becomes shared: onto its OWN block's free list */
@@ -575,8 +593,12 @@ static inline int gpool_push(struct hg_block *hb, int c, void *cell_start)
 	 * what a flush tends to hold - the walk would then dereference recycled
 	 * memory. Collect first, collect the reclaim afterwards.
 	 */
-	if (!hb->gc_deferred && hb->ndrained[c] > HG_GC_KEEP)
-		gc_class(hb, c);
+	/* not on the donate path any more - the maintenance tick returns
+	 * drained blocks beyond keep, a budget at a time. Only when the list has
+	 * run far past keep between ticks does this path return a batch itself. */
+	if (!hb->gc_deferred &&
+	    hb->ndrained[c] > hb->gc_keep[c] + HG_GC_EMERGENCY)
+		hb->gc_inline_blocks += gc_class(hb, c, hb->gc_keep[c], HG_GC_EMERGENCY);
 	return 0;
 }
 
@@ -811,10 +833,12 @@ static unsigned int cache_flush_locked(struct hg_block *hb,
 	}
 	hb->gc_deferred = 0;
 
-	/* now it is safe to let blocks go - nothing is walking their cells */
+	/* now it is safe to let blocks go - nothing is walking their cells. Under
+	 * pressure the keep is waived: a kept block is a page the carve could
+	 * use, and the alternative is a grow */
 	for (c = 0; c < HG_NCLASSES; c++)
-		if (hb->ndrained[c] > HG_GC_KEEP)
-			gc_class(hb, c);
+		if (hb->ndrained[c])
+			hb->gc_inline_blocks += gc_class(hb, c, 0, UINT_MAX);
 
 	return n;
 }
@@ -1066,8 +1090,8 @@ static unsigned int cache_flush_class(struct hg_block *hb,
 		}
 		hb->gc_deferred = 0;
 		/* only class c's blocks can have drained in this batch */
-		if (hb->ndrained[c] > HG_GC_KEEP)
-			gc_class(hb, c);
+		if (hb->ndrained[c] > hb->gc_keep[c])
+			hb->gc_inline_blocks += gc_class(hb, c, hb->gc_keep[c], UINT_MAX);
 		hg_lock_leave(hb);
 		n += b;
 		/* a batch that ended exactly at the chain end or at the residue
@@ -1087,6 +1111,55 @@ static unsigned int cache_flush_class(struct hg_block *hb,
 			left);
 	}
 	return n;
+}
+
+/*
+ * Recompute every class's keep from the cycle just ended. Demand is the
+ * carves of the cycle; the keep decays by half per idle cycle, so a class
+ * that stops carving stops keeping within a few cycles, and a class that
+ * carves every cycle keeps what it carved - capped per class by a byte
+ * budget and HG_GC_KEEP_MAX blocks. hb->lock held.
+ */
+void hg_gc_cycle(struct hg_block *hb)
+{
+	unsigned long budget = hb->size >> HG_GC_KEEP_BUDGET_SHIFT;
+	int c;
+
+	for (c = 0; c < HG_NCLASSES; c++) {
+		unsigned int demand = hb->carves_cycle[c], keep = hb->gc_keep[c] / 2;
+		unsigned long bsz = chunk_size_for(hb, c);
+		unsigned long cap = bsz ? budget / bsz : 0;
+
+		hb->carves_cycle[c] = 0;
+		if (demand > keep)
+			keep = demand;
+		if (cap > HG_GC_KEEP_MAX)
+			cap = HG_GC_KEEP_MAX;
+		hb->gc_keep[c] = keep > cap ? (unsigned int)cap : keep;
+	}
+}
+
+/*
+ * The deferred GC. Return up to @budget drained blocks beyond their
+ * classes' keep, round-robin over the classes so one class cannot starve
+ * the rest. hb->lock held; the caller is the maintenance tick (shm) or the
+ * owner's sweep (private arena).
+ */
+unsigned int hg_gc_tick(struct hg_block *hb, unsigned int budget)
+{
+	unsigned int done = 0, n;
+	int i, c;
+
+	for (i = 0; i < HG_NCLASSES && done < budget; i++) {
+		c = (hb->gc_next_class + i) % HG_NCLASSES;
+		if (hb->ndrained[c] <= hb->gc_keep[c])
+			continue;
+		n = gc_class(hb, c, hb->gc_keep[c], budget - done);
+		done += n;
+	}
+	hb->gc_next_class = (hb->gc_next_class + 1) % HG_NCLASSES;
+	hb->gc_tick_blocks += done;
+	return done;
 }
 
 static __thread unsigned long hg_sweep_seen;
@@ -1137,6 +1210,10 @@ void hg_cache_flush_self(void)
 			 * latches (or disarms) GROW-BLOCKED here, as the sweep
 			 * timer does for the shared one */
 			hg_grow_blocked_tick(hb);
+			/* a private arena has no maintenance process - its
+			 * owner's sweep is its policy cycle and its GC tick */
+			hg_gc_cycle(hb);
+			hg_gc_tick(hb, HG_GC_TICK_BUDGET);
 			hg_grow_tick(hb);
 			hg_shrink_tick(hb);
 #ifdef STATISTICS
@@ -1199,9 +1276,12 @@ void hg_cache_drain_self(void)
 			}
 		}
 		hb->gc_deferred = 0;
+		/* each class keeps its demand-sized reserve of drained blocks
+		 * (gc_keep) and returns the rest, as after a flush */
 		for (c = 0; c < HG_NCLASSES; c++)
-			if (hb->ndrained[c] > HG_GC_KEEP)
-				gc_class(hb, c);
+			if (hb->ndrained[c] > hb->gc_keep[c])
+				hb->gc_inline_blocks +=
+					gc_class(hb, c, hb->gc_keep[c], UINT_MAX);
 
 		hb->cache_flushes++;
 		hb->cells_flushed += n + unused;
@@ -1467,6 +1547,7 @@ static int carve_chunk(struct hg_block *hb, int c, struct hg_palloc *pl)
 	hb->nchunks++;
 	hb->slab_capacity += (unsigned long)ch->cells * ch->cell_size;
 	hb->blocks_carved++;
+	hb->carves_cycle[c]++;          /* this cycle's demand */
 	hb->real_used += size;
 	if (hb->real_used > hb->max_real_used)
 		hb->max_real_used = hb->real_used;
@@ -2546,6 +2627,7 @@ enum hg_stat_field {
 	 * EVI event here would cost more than the allocator it reports on. */
 	HGS_BLOCKS_CARVED, HGS_BLOCKS_RETURNED, HGS_GC_PASSES,
 	HGS_CACHE_FLUSHES, HGS_CELLS_FLUSHED, HGS_PRESSURE_FLUSHES, HGS_PRESSURE_CELLS,
+	HGS_GC_TICK_BLOCKS, HGS_GC_INLINE_BLOCKS, HGS_GC_KEPT_BLOCKS,
 	HGS_BUDDY_SPLITS, HGS_BUDDY_MERGES, HGS_BUDDY_FREE_LEAVES,
 	/* large tier footprint, and the reserve floor - without these last
 	 * three the floor is invisible outside a one-shot log line */
@@ -2613,6 +2695,16 @@ static unsigned long hg_shm_stat(void *ctx)
 	case HGS_CELLS_FLUSHED:   return hb->cells_flushed;
 	case HGS_PRESSURE_FLUSHES: return hb->pressure_flushes;
 	case HGS_PRESSURE_CELLS:  return hb->pressure_cells;
+	case HGS_GC_TICK_BLOCKS:   return hb->gc_tick_blocks;
+	case HGS_GC_INLINE_BLOCKS: return hb->gc_inline_blocks;
+	case HGS_GC_KEPT_BLOCKS: {
+		unsigned long n = 0;
+		int c;
+
+		for (c = 0; c < HG_NCLASSES; c++)
+			n += hb->ndrained[c];
+		return n;
+	}
 	case HGS_BUDDY_SPLITS:    return hb->buddy_splits;
 	case HGS_BUDDY_MERGES:    return hb->buddy_merges;
 	case HGS_BUDDY_FREE_LEAVES: return hb->buddy_free_leaves;
@@ -2672,6 +2764,9 @@ static const struct {
 	{"hg_shm_cells_flushed",   HGS_CELLS_FLUSHED},
 	{"hg_shm_pressure_flushes", HGS_PRESSURE_FLUSHES},
 	{"hg_shm_pressure_cells",   HGS_PRESSURE_CELLS},
+	{"hg_shm_gc_tick_blocks",   HGS_GC_TICK_BLOCKS},
+	{"hg_shm_gc_inline_blocks", HGS_GC_INLINE_BLOCKS},
+	{"hg_shm_gc_kept_blocks",   HGS_GC_KEPT_BLOCKS},
 	{"hg_shm_buddy_splits",    HGS_BUDDY_SPLITS},
 	{"hg_shm_buddy_merges",    HGS_BUDDY_MERGES},
 	{"hg_shm_buddy_free_leaves", HGS_BUDDY_FREE_LEAVES},

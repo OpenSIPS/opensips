@@ -1291,6 +1291,22 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 		return -1;
 	if (add_mi_number(o, MI_SSTR("pressure_cells"), hb->pressure_cells) < 0)
 		return -1;
+	/* blocks returned by the maintenance tick vs at a trigger site,
+	 * and the drained blocks currently kept (the per-class keeps are in the
+	 * classes array) */
+	if (add_mi_number(o, MI_SSTR("gc_tick_blocks"), hb->gc_tick_blocks) < 0)
+		return -1;
+	if (add_mi_number(o, MI_SSTR("gc_inline_blocks"), hb->gc_inline_blocks) < 0)
+		return -1;
+	{
+		unsigned long kept = 0;
+		int c;
+
+		for (c = 0; c < HG_NCLASSES; c++)
+			kept += hb->ndrained[c];
+		if (add_mi_number(o, MI_SSTR("gc_kept_blocks"), kept) < 0)
+			return -1;
+	}
 	if (add_mi_number(o, MI_SSTR("buddy_splits"), hb->buddy_splits) < 0)
 		return -1;
 	if (add_mi_number(o, MI_SSTR("buddy_merges"), hb->buddy_merges) < 0)
@@ -1412,6 +1428,11 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 			cell_size_of[c]) < 0)
 			return -1;
 		if (add_mi_number(cls_item, MI_SSTR("chunks"), chunks_of[c]) < 0)
+			return -1;
+		/* this class's keep and what it holds drained right now */
+		if (add_mi_number(cls_item, MI_SSTR("gc_keep"), hb->gc_keep[c]) < 0)
+			return -1;
+		if (add_mi_number(cls_item, MI_SSTR("drained"), hb->ndrained[c]) < 0)
 			return -1;
 		if (add_mi_number(cls_item, MI_SSTR("cells"), cells_of[c]) < 0)
 			return -1;

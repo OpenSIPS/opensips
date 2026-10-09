@@ -56,6 +56,7 @@
 #include "../daemonize.h"
 #include "shm_mem.h"
 #include "hg_malloc.h"
+#include "hg_arena.h"
 #include "hg_buddy.h"
 #include "hg_maint.h"
 
@@ -117,7 +118,11 @@ static void hg_maint_tick(void)
 			continue;
 		hg_lock_enter(hb, HG_LK_POLICY);
 		hg_grow_headroom_tick(hb);
+		/* the deferred GC - drained blocks beyond keep go back here, a
+		 * budget per tick, instead of on the workers' donate path */
+		hg_gc_tick(hb, HG_GC_TICK_BUDGET);
 		if (slow) {
+			hg_gc_cycle(hb);   /* next cycle's keep */
 			hg_grow_tick(hb);
 			hg_shrink_tick(hb);
 		} else {

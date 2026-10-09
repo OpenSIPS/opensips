@@ -1087,12 +1087,30 @@ struct hg_block {
 	struct hg_chunk    *drained[HG_NCLASSES];
 	/* the OLDEST drained block, O(1). gc_class_run() returns from
 	 * the tail (the head is the most recently drained, the one to keep if
-	 * HG_GC_KEEP is ever raised); without it, finding the tail is a walk
-	 * of the whole list per block returned, O(n^2) per pass. */
+	 * gc_keep[c] is non-zero) and used to walk the whole list to find
+	 * it - for every block returned, O(n^2) per pass. */
 	struct hg_chunk    *drained_tail[HG_NCLASSES];
 	unsigned int        ndrained[HG_NCLASSES];
 	unsigned long       gc_blocks_returned;       /* lifetime, for stats */
 	unsigned long       gc_passes;
+	/*
+	 * Per-class hysteresis. gc_keep[c] drained blocks of class c are
+	 * KEPT - carved, empty, the right class - instead of being handed back
+	 * to the buddy at once; gpool_pop() takes one before it carves. Fed by
+	 * the class's carve count per policy cycle (carves_cycle, decaying by
+	 * half when demand stops), capped by a byte budget per class
+	 * (arena >> HG_GC_KEEP_BUDGET_SHIFT) and HG_GC_KEEP_MAX blocks. A class
+	 * that never carves keeps nothing; one that carves every cycle keeps
+	 * what it carved.
+	 */
+	unsigned int        gc_keep[HG_NCLASSES];
+	unsigned int        carves_cycle[HG_NCLASSES];
+	unsigned int        gc_next_class;       /* tick's round-robin start */
+	/* who returned the blocks - the maintenance tick (budgeted, off
+	 * the request path) or a trigger site (pressure flush, sweep flush, or
+	 * the emergency threshold on the donate path) */
+	unsigned long       gc_tick_blocks;
+	unsigned long       gc_inline_blocks;
 	unsigned long       cache_flushes;            /* sweeps run */
 	unsigned long       cells_flushed;            /* cells recovered from TLS */
 	unsigned long       pressure_flushes;         /* self-flushes at carve exhaustion */

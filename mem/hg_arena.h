@@ -69,6 +69,20 @@ void *hg_chunk_backing(struct hg_block *hb, unsigned long size);
  * dispatched rather than executed centrally. */
 void hg_cache_flush_self(void);
 
+/* the drained-block GC, hb->lock held by the caller. hg_gc_cycle()
+ * recomputes every class's keep from the carves of the cycle just ended;
+ * hg_gc_tick() returns up to @budget blocks beyond their classes' keep,
+ * round-robin over the classes. The maintenance process runs both for shm
+ * (tick every second, cycle every policy cycle); a private arena runs both
+ * in its owner's sweep flush. Returns blocks handed back. */
+#define HG_GC_KEEP_MAX          8
+#define HG_GC_KEEP_BUDGET_SHIFT 8     /* 1/256 of the arena per class */
+#define HG_GC_EMERGENCY         32    /* drained beyond keep: donate path GCs */
+#define HG_GC_TICK_BUDGET       32    /* blocks per maintenance tick */
+
+void hg_gc_cycle(struct hg_block *hb);
+unsigned int hg_gc_tick(struct hg_block *hb, unsigned int budget);
+
 /* Flush only if a sweep has been requested since this thread last looked.
  * For threads IPC cannot reach - TCP main's IO pool waits on a condvar, not
  * the reactor - called at a job boundary. Cheap: one read of a global. */

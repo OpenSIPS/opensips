@@ -344,12 +344,12 @@ void hg_large_free(struct hg_block *hb, struct hg_lfrag *frag)
 	 * first fragment, which is how we get back to it.
 	 *
 	 * Returning it unconditionally, with no keep-one hysteresis: the slab
-	 * tier's equivalent is HG_GC_KEEP 0, and holding a chunk back is
-	 * exactly the invisible retention this tier was just fixed for. The
-	 * risk it trades against is alloc/free thrash on a workload that
-	 * repeatedly empties and refills the tier, which is why both a carve
-	 * and a return counter are exported - carved climbing far faster than
-	 * returned is what that would look like.
+	 * tier keeps only what its classes' demand asks for, and holding a
+	 * chunk back here is exactly the invisible retention this tier was just
+	 * fixed for. The risk it trades against is alloc/free thrash on a
+	 * workload that repeatedly empties and refills the tier, which is why
+	 * both a carve and a return counter are exported - carved climbing far
+	 * faster than returned is what that would look like.
 	 */
 	if (!frag->pf && HG_LFRAG_NEXT(frag)->size == 0) {
 		struct hg_large_chunk *ch = (struct hg_large_chunk *)(void *)
