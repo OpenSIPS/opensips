@@ -149,6 +149,7 @@ struct src_sess *src_get_session(struct src_ctx *ctx, str *instance);
 struct src_sess *src_new_session(str *srs, struct src_ctx *ctx,
 		struct srec_var *var, str *instance);
 void src_free_session(struct src_sess *sess);
+void src_free_session_unsafe(struct src_sess *sess);
 void src_clean_session(struct src_sess *sess);
 int src_add_participant(struct src_sess *sess, str *aor, str *name, str *xml_val,
 		siprec_uuid *uuid, time_t *start);
@@ -195,7 +196,7 @@ extern struct dlg_binds srec_dlg;
 		(_s)->ref--; \
 		if ((_s)->ref == 0) { \
 			LM_DBG("destroying session=%p\n", _s); \
-			src_free_session(_s); \
+			src_free_session_unsafe(_s); \
 		} else { \
 			if ((_s)->ref < 0) \
 				LM_BUG("invalid ref for session=%p ref=%d (%s:%d)\n", \
