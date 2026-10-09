@@ -26,8 +26,6 @@
 #ifndef _WS_HANDSHAKE_H_
 #define _WS_HANDSHAKE_H_
 
-#include <pthread.h>
-
 #include "../../ip_addr.h"
 
 #define HTTP_SEP			"\r\n"
@@ -121,21 +119,60 @@ static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status st
 #define WS_TRACE_MAX 1024
 static char ws_trace_buf[WS_TRACE_MAX];
 
-static pthread_mutex_t ws_http_parse_lock = PTHREAD_MUTEX_INITIALIZER;
+static inline int ws_parse_headers(struct sip_msg *msg)
+{
+	struct hdr_field *hf;
+	char *tmp, *rest, *end;
 
-/*
- * The handshake is parsed on a TCP IO thread, with the core SIP parser, which
- * allocates the header list from the process' pkg memory. pkg memory is not
- * thread safe, so ws_http_parse_lock must cover both the parsing and the
- * release of that list - releasing it unlocked races with another thread
- * parsing (and allocating) at the same time.
- */
+	tmp = msg->unparsed;
+	end = msg->buf + msg->len;
+
+	while (tmp < end) {
+		hf = thread_malloc(sizeof *hf);
+		if (!hf) {
+			LM_ERR("thread memory allocation failed\n");
+			return -1;
+		}
+
+		memset(hf, 0, sizeof *hf);
+		hf->type = HDR_ERROR_T;
+		rest = get_hdr_field_aux(tmp, end, hf, 0);
+
+		if (hf->type == HDR_ERROR_T) {
+			LM_INFO("bad header field\n");
+			thread_free(hf);
+			return -1;
+		}
+
+		if (hf->type == HDR_EOH_T) {
+			msg->eoh = tmp;
+			msg->unparsed = tmp;
+			thread_free(hf);
+			return 0;
+		}
+
+		if (!msg->headers)
+			msg->headers = hf;
+		else
+			msg->last_header->next = hf;
+		msg->last_header = hf;
+		tmp = rest;
+	}
+
+	msg->unparsed = tmp;
+	return 0;
+}
+
 static inline void ws_free_parsed_headers(struct sip_msg *msg)
 {
-	pthread_mutex_lock(&ws_http_parse_lock);
-	free_hdr_field_lst(msg->headers);
+	struct hdr_field *hf, *next;
+
+	for (hf = msg->headers; hf; hf = next) {
+		next = hf->next;
+		thread_free(hf);
+	}
 	msg->headers = NULL;
-	pthread_mutex_unlock(&ws_http_parse_lock);
+	msg->last_header = NULL;
 }
 
 /* safety checks */
@@ -810,13 +847,10 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = len;
 	tmp_msg.buf = tmp_msg.unparsed = msg;
-	pthread_mutex_lock(&ws_http_parse_lock);
-	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0,0) < 0) {
-		pthread_mutex_unlock(&ws_http_parse_lock);
+	if (ws_parse_headers(&tmp_msg) < 0) {
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
 		goto ws_error;
 	}
-	pthread_mutex_unlock(&ws_http_parse_lock);
 	/* verify headers according to RFC6455 */
 	for (hf = tmp_msg.headers; hf; hf = hf->next) {
 		if (hf->type != HDR_OTHER_T)
@@ -1091,13 +1125,10 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = len;
 	tmp_msg.buf = tmp_msg.unparsed = msg;
-	pthread_mutex_lock(&ws_http_parse_lock);
-	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0, 0) < 0) {
-		pthread_mutex_unlock(&ws_http_parse_lock);
+	if (ws_parse_headers(&tmp_msg) < 0) {
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
 		goto ws_error;
 	}
-	pthread_mutex_unlock(&ws_http_parse_lock);
 	/* verify headers according to RFC6455 */
 	for (hf = tmp_msg.headers; hf; hf = hf->next) {
 		if (hf->type != HDR_OTHER_T)

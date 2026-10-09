@@ -108,7 +108,8 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 		case HDR_VIA_T:
 			/* keep number of vias parsed -- we want to report it in
 			   replies for diagnostic purposes */
-			via_cnt++;
+			if (sip_well_known_parse)
+				via_cnt++;
 			if (sip_well_known_parse) {
 				vb=pkg_malloc(sizeof(struct via_body));
 				if (vb==0){
@@ -356,12 +357,15 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 	return tmp;
 
 error_bad_hdr:
-	set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
-		"error parsing headers");
-	set_err_reply(400, "bad headers");
+	if (sip_well_known_parse) {
+		set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
+			"error parsing headers");
+		set_err_reply(400, "bad headers");
+	}
 error:
 	LM_DBG("error exit\n");
-	update_stat( bad_msg_hdr, 1);
+	if (sip_well_known_parse)
+		update_stat(bad_msg_hdr, 1);
 	hdr->type=HDR_ERROR_T;
 	hdr->len=tmp-hdr->name.s;
 	return tmp;
@@ -379,7 +383,7 @@ error:
    give you the first occurrence of a header you are interested in,
    look at check_transaction_quadruple
 */
-int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_well_known_parse)
+int parse_headers(struct sip_msg *msg, hdr_flags_t flags, int next)
 {
 	struct hdr_field *hf;
 	char* tmp;
@@ -408,7 +412,7 @@ int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_
 		}
 		memset(hf,0, sizeof(struct hdr_field));
 		hf->type=HDR_ERROR_T;
-		rest=get_hdr_field_aux(tmp, msg->buf+msg->len, hf,sip_well_known_parse);
+		rest=get_hdr_field_aux(tmp, msg->buf+msg->len, hf, 1);
 		switch (hf->type){
 			case HDR_ERROR_T:
 				LM_INFO("bad header field\n");
@@ -590,21 +594,19 @@ int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_
 				link_sibling_hdr(h_via1,hf);
 				msg->parsed_flag|=HDR_VIA_F;
 				LM_DBG("via found, flags=%llx\n", (unsigned long long)flags);
-				if (sip_well_known_parse) {
-					if (msg->via1==0) {
-						LM_DBG("this is the first via\n");
-						msg->h_via1=hf;
-						msg->via1=hf->parsed;
-						if (msg->via1->next){
-							msg->via2=msg->via1->next;
-							msg->parsed_flag|=HDR_VIA2_F;
-						}
-					} else
+				if (msg->via1==0) {
+					LM_DBG("this is the first via\n");
+					msg->h_via1=hf;
+					msg->via1=hf->parsed;
+					if (msg->via1->next){
+						msg->via2=msg->via1->next;
+						msg->parsed_flag|=HDR_VIA2_F;
+					}
+				} else
 					if (msg->via2==0) {
 						msg->via2=hf->parsed;
 						msg->parsed_flag|=HDR_VIA2_F;
 					}
-				}
 				break;
 			case HDR_FEATURE_CAPS_T:
 				link_sibling_hdr(feature_caps, hf);

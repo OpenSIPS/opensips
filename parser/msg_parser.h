@@ -377,9 +377,7 @@ extern int sdp_get_custom_body(struct sip_msg *msg, str *body);
 int parse_msg_opt(char* buf, unsigned int len, struct sip_msg* msg,
 		int free_on_err);
 
-#define parse_headers(msg, flags,next) 	parse_headers_aux(msg,flags,next, 1)
-
-int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_well_known_parse);
+int parse_headers(struct sip_msg *msg, hdr_flags_t flags, int next);
 
 #define get_hdr_field(buf,end,hdr)	get_hdr_field_aux(buf,end,hdr,1)
 
