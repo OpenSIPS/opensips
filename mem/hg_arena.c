@@ -25,6 +25,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <unistd.h>   /* sysconf, for the IO-pool consumer count */
 
 #include "hg_malloc.h"
 #include "hg_arena.h"
@@ -114,7 +115,13 @@ static inline unsigned int chunk_size_for(struct hg_block *hb, int c);
  * this change is meant to lower the bound, never raise it.
  */
 #define HG_PRIVATE_PCT        25   /* of the arena, per thread, all classes */
-#define HG_PRIVATE_CONSUMERS  16   /* budget for a per-CPU IO pool          */
+#define HG_PRIVATE_CONSUMERS  16   /* fallback when the count is unknown     */
+/* the divisor is the IO-pool thread count (tcp_threads, or online CPUs
+ * when it is unset - the same fallback tcp_init_children uses), clamped so a
+ * 1-CPU box does not hand one thread the whole share and a 128-CPU box does
+ * not starve each thread's cache to nothing. */
+#define HG_PRIVATE_CONSUMERS_MIN  4
+#define HG_PRIVATE_CONSUMERS_MAX  64
 #define HG_PRIVATE_CAP        256  /* never above the historical flat cap   */
 
 /*
@@ -1593,10 +1600,33 @@ static int carve_chunk(struct hg_block *hb, int c, struct hg_palloc *pl)
  * relied on, now maintained per class instead of by two constants that had to
  * be kept in the right order by hand.
  */
+/*
+ * How many threads the per-arena private-cache share is divided between.
+ * tcp_threads is 0 until the config is parsed, so at shm/pkg init this is the
+ * online-CPU count; hg_private_caps_retune() re-runs this once the config is
+ * known, picking up a configured tcp_threads.
+ */
+static unsigned int hg_io_consumers(void)
+{
+	int n = tcp_threads;
+
+	if (n <= 0) {
+		long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+
+		n = (cpus > 0) ? (int)cpus : HG_PRIVATE_CONSUMERS;
+	}
+	if (n < HG_PRIVATE_CONSUMERS_MIN)
+		n = HG_PRIVATE_CONSUMERS_MIN;
+	if (n > HG_PRIVATE_CONSUMERS_MAX)
+		n = HG_PRIVATE_CONSUMERS_MAX;
+	return (unsigned int)n;
+}
+
 static void private_caps_init(struct hg_block *hb)
 {
+	unsigned int consumers = hg_io_consumers();
 	unsigned long per_thread = (unsigned long)hb->size / 100 * HG_PRIVATE_PCT
-	                           / HG_PRIVATE_CONSUMERS;
+	                           / consumers;
 	unsigned long per_class  = per_thread / HG_NCLASSES;
 	unsigned int c;
 
@@ -1611,11 +1641,20 @@ static void private_caps_init(struct hg_block *hb)
 			hb->priv_donate[c] = 1;
 	}
 
-	LM_DBG("%s: private cache budget %lu B/thread (%lu B/class): "
+	LM_DBG("%s: private cache budget %lu B/thread over %u consumers (%lu B/class): "
 		"class %u caches %u cells, class %u caches %u\n",
-		hb->name, per_thread, per_class,
+		hb->name, per_thread, consumers, per_class,
 		cell_sizes[0], hb->priv_max[0],
 		cell_sizes[HG_NCLASSES - 1], hb->priv_max[HG_NCLASSES - 1]);
+}
+
+/* re-derive the private caps once the config (tcp_threads) is known.
+ * Runs pre-fork from hg_autoscale_post_cfg(), so children inherit the result.
+ * The caps are set once and read on the fast path; this is the last write. */
+void hg_private_caps_retune(struct hg_block *hb)
+{
+	if (hb)
+		private_caps_init(hb);
 }
 
 /*

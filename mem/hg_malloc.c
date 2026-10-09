@@ -1547,6 +1547,14 @@ int hg_autoscale_post_cfg(void)
 	int hg_pkg = 0;     /* pkg memory is the system malloc */
 #endif
 
+	/* the config is parsed now, so tcp_threads is known - re-derive the
+	 * private-cache divisor from the real IO-pool size. Pre-fork, so every
+	 * worker inherits it. */
+	if (hg_shm && shm_block)
+		hg_private_caps_retune((struct hg_block *)shm_block);
+	if (hg_pkg && mem_block)
+		hg_private_caps_retune((struct hg_block *)mem_block);
+
 	if (hg_shm_profile_name) {
 		if (!hg_shm) {
 			LM_WARN("shm_auto_scaling_profile ignored: the shm "
