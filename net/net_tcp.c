@@ -1069,7 +1069,8 @@ static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* 
 	c->lifetime = get_ticks() + prof->con_lifetime;
 	c->timeout = c->lifetime;
 	c->profile = *prof;
-	c->flags|=F_CONN_REMOVED|flags;
+	c->flags = flags;
+	c->main_flags = F_TCP_MAIN_REMOVED;
 #ifdef DBG_TCPCON
 	c->hist = sh_push(c, con_hist);
 #endif
@@ -1263,6 +1264,19 @@ static inline struct tcp_connection *tcp_pop_shared_write_conn_locked(void)
 	return conn;
 }
 
+/* tcp_write_queue->cond must be held and conn->write_queued must be set. */
+static inline void tcp_push_shared_write_conn_locked(
+		struct tcp_connection *conn)
+{
+	conn->wq_next = NULL;
+	if (tcp_write_queue->tail)
+		tcp_write_queue->tail->wq_next = conn;
+	else
+		tcp_write_queue->head = conn;
+	tcp_write_queue->tail = conn;
+	cond_signal(&tcp_write_queue->cond);
+}
+
 static void *tcp_thread_routine(void *arg)
 {
 	struct tcp_job *job;
@@ -1295,7 +1309,7 @@ static void *tcp_thread_routine(void *arg)
 			job = thread_malloc(sizeof(*job));
 			if (!job) {
 				LM_ERR("oom while building shared TCP write job\n");
-				conn->flags &= ~F_CONN_WRITE_QUEUED;
+				conn->write_queued = 0;
 				cond_unlock(&tcp_write_queue->cond);
 				tcpconn_put(conn);
 				continue;
@@ -1485,7 +1499,7 @@ static void tcp_pool_destroy(void)
 	}
 	tcp_pool.task_head = tcp_pool.task_tail = NULL;
 	while ((conn = tcp_pop_shared_write_conn_locked()) != NULL) {
-		conn->flags &= ~F_CONN_WRITE_QUEUED;
+		conn->write_queued = 0;
 		tcpconn_put(conn);
 	}
 	cond_unlock(&tcp_write_queue->cond);
@@ -1542,7 +1556,7 @@ int tcp_async_write_job(struct tcp_connection *tcpconn)
 		tcpconn_add(tcpconn);
 
 	cond_lock(&tcp_write_queue->cond);
-	if (tcpconn->flags & F_CONN_WRITE_QUEUED) {
+	if (tcpconn->write_queued) {
 		cond_unlock(&tcp_write_queue->cond);
 		/* a write job is already queued for this connection and it owns
 		 * exactly one reference, which it releases on completion; our
@@ -1553,14 +1567,8 @@ int tcp_async_write_job(struct tcp_connection *tcpconn)
 		return 0;
 	}
 
-	tcpconn->flags |= F_CONN_WRITE_QUEUED;
-	tcpconn->wq_next = NULL;
-	if (tcp_write_queue->tail)
-		tcp_write_queue->tail->wq_next = tcpconn;
-	else
-		tcp_write_queue->head = tcpconn;
-	tcp_write_queue->tail = tcpconn;
-	cond_signal(&tcp_write_queue->cond);
+	tcpconn->write_queued = 1;
+	tcp_push_shared_write_conn_locked(tcpconn);
 	cond_unlock(&tcp_write_queue->cond);
 	return 0;
 }
@@ -1605,10 +1613,11 @@ int tcp_run_task(tcp_thread_job_f run, void *data)
 
 static inline int tcp_queue_write_job(struct tcp_connection *tcpconn)
 {
-	if (!(tcpconn->flags & F_CONN_REMOVED_READ) && tcpconn->fd != -1) {
+	if (!(tcpconn->main_flags & F_TCP_MAIN_REMOVED_READ) &&
+			tcpconn->fd != -1) {
 		if (reactor_del_reader(tcpconn->fd, -1, 0) == -1)
 			return -1;
-		tcpconn->flags |= F_CONN_REMOVED_READ;
+		tcpconn->main_flags |= F_TCP_MAIN_REMOVED_READ;
 	}
 
 	if (tcp_async_write_job(tcpconn) < 0)
@@ -1620,10 +1629,11 @@ static inline int tcp_queue_write_job(struct tcp_connection *tcpconn)
 static inline void tcp_fail_conn(struct tcp_connection *tcpconn,
 		const char *reason, int report)
 {
-	if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
+	if ((tcpconn->main_flags & F_TCP_MAIN_REMOVED) !=
+			F_TCP_MAIN_REMOVED &&
 	    tcpconn->fd != -1) {
 		reactor_del_all(tcpconn->fd, -1, IO_FD_CLOSING);
-		tcpconn->flags |= F_CONN_REMOVED;
+		tcpconn->main_flags |= F_TCP_MAIN_REMOVED;
 	}
 
 	if (report)
@@ -1638,7 +1648,7 @@ static inline void tcp_complete_read(struct tcp_job *job)
 
 	tcpconn = job->conn;
 
-	tcpconn->flags &= ~F_CONN_READ_QUEUED;
+	tcpconn->main_flags &= ~F_TCP_MAIN_READ_QUEUED;
 
 	if (job->resp == -2) {
 		tcp_fail_conn(tcpconn, "Timeout waiting for a complete message", 1);
@@ -1655,13 +1665,13 @@ static inline void tcp_complete_read(struct tcp_job *job)
 		return;
 	}
 
-	if (tcpconn->flags & F_CONN_REMOVED_READ) {
+	if (tcpconn->main_flags & F_TCP_MAIN_REMOVED_READ) {
 		if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn) < 0) {
 			LM_ERR("failed to re-add TCP conn %p for read events\n", tcpconn);
 			tcp_fail_conn(tcpconn, "Failed to re-arm read", 0);
 			return;
 		}
-		tcpconn->flags &= ~F_CONN_REMOVED_READ;
+		tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_READ;
 	}
 
 	tcpconn_put(tcpconn);
@@ -1679,19 +1689,16 @@ static inline void tcp_complete_write(struct tcp_job *job)
 		return;
 	}
 
-	lock_get(&tcpconn->write_lock);
-	pending_chunks = (tcpconn->async && tcpconn->async->pending);
-	lock_release(&tcpconn->write_lock);
-
-	if ((tcpconn->flags & F_CONN_REMOVED_READ) &&
-			!(tcpconn->flags & F_CONN_READ_QUEUED) && tcpconn->fd != -1) {
+	if ((tcpconn->main_flags & F_TCP_MAIN_REMOVED_READ) &&
+			!(tcpconn->main_flags & F_TCP_MAIN_READ_QUEUED) &&
+			tcpconn->fd != -1) {
 		if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
 				tcpconn) < 0) {
 			LM_ERR("failed to add TCP conn %p for read events\n", tcpconn);
 			tcp_fail_conn(tcpconn, "Failed to arm read", 0);
 			return;
 		}
-		tcpconn->flags &= ~F_CONN_REMOVED_READ;
+		tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_READ;
 	}
 
 	if (job->resp == 1) {
@@ -1700,28 +1707,31 @@ static inline void tcp_complete_write(struct tcp_job *job)
 			tcp_fail_conn(tcpconn, "Failed to re-arm write", 0);
 			return;
 		}
-		tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
-		tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
+		tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_WRITE;
+		cond_lock(&tcp_write_queue->cond);
+		tcpconn->write_queued = 0;
+		cond_unlock(&tcp_write_queue->cond);
 		tcpconn_put(tcpconn);
 		return;
 	}
 
+	/* Serialize the pending-data check with producers deciding whether they
+	 * need to enqueue this connection.  Otherwise a producer may observe the
+	 * old queued state after we checked an empty async queue, leaving its new
+	 * chunk without either a queued job or a writer event. */
+	cond_lock(&tcp_write_queue->cond);
+	lock_get(&tcpconn->write_lock);
+	pending_chunks = (tcpconn->async && tcpconn->async->pending);
+	lock_release(&tcpconn->write_lock);
+
 	if (pending_chunks) {
-		tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
-		if (tcp_async_write_job(tcpconn) < 0) {
-			LM_ERR("failed queuing follow-up TCP write job\n");
-			tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
-			if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET, tcpconn) < 0) {
-				tcp_fail_conn(tcpconn, "Failed queueing follow-up write", 0);
-				return;
-			}
-			tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
-			tcpconn_put(tcpconn);
-		}
+		tcp_push_shared_write_conn_locked(tcpconn);
+		cond_unlock(&tcp_write_queue->cond);
 		return;
 	}
 
-	tcpconn->flags &= ~F_CONN_WRITE_QUEUED;
+	tcpconn->write_queued = 0;
+	cond_unlock(&tcp_write_queue->cond);
 	tcpconn_put(tcpconn);
 }
 
@@ -1808,7 +1818,7 @@ static inline int handle_new_connect(const struct socket_info* si)
 			}
 			TCPCONN_UNLOCK(id);
 		} else {
-			tcpconn->flags &= ~F_CONN_REMOVED_READ;
+			tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_READ;
 			tcpconn_put(tcpconn);
 		}
 	} else {
@@ -1834,31 +1844,32 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 
 	if (event_type == IO_WATCH_READ) {
 		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->fd);
-		if (tcpconn->flags & F_CONN_READ_QUEUED) {
+		if (tcpconn->main_flags & F_TCP_MAIN_READ_QUEUED) {
 			LM_BUG("read job already queued for TCP conn %p\n", tcpconn);
-			if (!(tcpconn->flags & F_CONN_REMOVED_READ) && tcpconn->fd != -1) {
+			if (!(tcpconn->main_flags & F_TCP_MAIN_REMOVED_READ) &&
+					tcpconn->fd != -1) {
 				if (reactor_del_reader(tcpconn->fd, fd_i, 0) == -1)
 					return -1;
-				tcpconn->flags |= F_CONN_REMOVED_READ;
+				tcpconn->main_flags |= F_TCP_MAIN_REMOVED_READ;
 			}
 			return 0;
 		}
 		if (reactor_del_reader(tcpconn->fd, fd_i, 0) == -1)
 			return -1;
-		tcpconn->flags |= F_CONN_REMOVED_READ;
-		tcpconn->flags |= F_CONN_READ_QUEUED;
+		tcpconn->main_flags |=
+				F_TCP_MAIN_REMOVED_READ|F_TCP_MAIN_READ_QUEUED;
 		tcpconn_ref(tcpconn); /* refcnt ++ */
 		sh_log(tcpconn->hist, TCP_REF, "tcp-main read queued, (%d)",
 			tcpconn->refcnt);
 		if (tcp_queue_job(tcpconn, TCP_READ_JOB) < 0) {
 			LM_ERR("failed queuing TCP read job\n");
-			tcpconn->flags &= ~F_CONN_READ_QUEUED;
+			tcpconn->main_flags &= ~F_TCP_MAIN_READ_QUEUED;
 			if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
 					tcpconn) < 0) {
 				tcp_fail_conn(tcpconn, "Failed queueing read", 0);
 				return 0;
 			}
-			tcpconn->flags &= ~F_CONN_REMOVED_READ;
+			tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_READ;
 			tcpconn_put(tcpconn);
 		}
 		return 0;
@@ -1875,7 +1886,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 				tcpconn_ref(tcpconn);
 				sh_log(tcpconn->hist, TCP_REF, "tcpconn connect, (%d)", tcpconn->refcnt);
 				reactor_del_all(tcpconn->fd, fd_i, IO_FD_CLOSING);
-				tcpconn->flags|=F_CONN_REMOVED;
+				tcpconn->main_flags |= F_TCP_MAIN_REMOVED;
 				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
 					"Async connect failed");
 				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn connect, (%d)", tcpconn->refcnt);
@@ -1890,8 +1901,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 
 			/* now that we completed the async connection, we also need to
 			 * listen for READ events, otherwise these will get lost */
-			if ((tcpconn->flags & F_CONN_REMOVED_READ) &&
-					!(tcpconn->flags & F_CONN_READ_QUEUED)) {
+			if ((tcpconn->main_flags & F_TCP_MAIN_REMOVED_READ) &&
+					!(tcpconn->main_flags & F_TCP_MAIN_READ_QUEUED)) {
 				if (reactor_add_reader(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
 						tcpconn) < 0) {
 					LM_ERR("failed to re-arm TCP conn %p for read events\n",
@@ -1899,7 +1910,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 					tcp_fail_conn(tcpconn, "Failed to re-arm read", 0);
 					return 0;
 				}
-				tcpconn->flags &= ~F_CONN_REMOVED_READ;
+				tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_READ;
 			}
 
 			goto async_write;
@@ -1908,7 +1919,7 @@ async_write:
 			/* no more write events for now */
 				if (reactor_del_writer(tcpconn->fd, fd_i, 0) == -1)
 					return -1;
-			tcpconn->flags |= F_CONN_REMOVED_WRITE;
+			tcpconn->main_flags |= F_TCP_MAIN_REMOVED_WRITE;
 			tcpconn_ref(tcpconn); /* refcnt ++ */
 			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)",
 				tcpconn->refcnt);
@@ -1919,7 +1930,7 @@ async_write:
 					tcp_fail_conn(tcpconn, "Failed queueing write", 0);
 					return 0;
 				}
-				tcpconn->flags &= ~F_CONN_REMOVED_WRITE;
+				tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_WRITE;
 				tcpconn_put(tcpconn);
 			}
 			return 0;
@@ -2039,9 +2050,10 @@ static inline void __tcpconn_lifetime(int shutdown)
 					if ((!shutdown)&&(fd>0)&&(c->refcnt==0)) {
 						/* if any of read or write are set, we need to remove
 						 * the fd from the reactor */
-						if ((c->flags & F_CONN_REMOVED) != F_CONN_REMOVED){
+						if ((c->main_flags & F_TCP_MAIN_REMOVED) !=
+								F_TCP_MAIN_REMOVED) {
 							reactor_del_all( fd, -1, IO_FD_CLOSING);
-							c->flags|=F_CONN_REMOVED;
+							c->main_flags |= F_TCP_MAIN_REMOVED;
 						}
 						close(fd);
 						c->fd = -1;
@@ -2691,9 +2703,11 @@ static int tcp_close_conn_run(void *data)
 	/* take the fd out of the reactor before it is closed, as every other
 	 * TCP main destroy path does - otherwise the stale entry captures the
 	 * next connection that reuses the fd number */
-	if ((conn->flags & F_CONN_REMOVED) != F_CONN_REMOVED && conn->fd != -1) {
+	if ((conn->main_flags & F_TCP_MAIN_REMOVED) !=
+			F_TCP_MAIN_REMOVED &&
+			conn->fd != -1) {
 		reactor_del_all(conn->fd, -1, IO_FD_CLOSING);
-		conn->flags |= F_CONN_REMOVED;
+		conn->main_flags |= F_TCP_MAIN_REMOVED;
 	}
 
 	tcp_conn_destroy(conn);

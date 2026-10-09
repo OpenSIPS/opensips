@@ -63,7 +63,8 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 		return;
 	}
 	if (!pending_data && c->async && c->async->pending &&
-			((c->state == S_CONN_OK && (c->flags & F_CONN_REMOVED_WRITE)) ||
+			((c->state == S_CONN_OK &&
+			  (c->main_flags & F_TCP_MAIN_REMOVED_WRITE)) ||
 			 c->fd == -1))
 		pending_data = 1;
 	if (pending_data) {
