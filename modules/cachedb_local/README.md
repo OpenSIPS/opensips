@@ -350,6 +350,35 @@ opensips-cli -x mi cachedb_local:fetch_chunk "keyprefix*" collection
 ```
 
 
+### Exported Events
+
+
+#### E_CACHEDB_LOCAL_EXPIRED
+
+
+This event is raised when a cached entry expires and is removed
+during the periodic cleanup (controlled by *cache_clean_period*).
+
+
+Parameters:
+
+
+- *key* - The key of the expired cache entry.
+- *value* - The value of the expired cache entry.
+- *collection* - The name of the cache collection.
+
+
+Example usage:
+
+
+```opensips title="E_CACHEDB_LOCAL_EXPIRED usage"
+event_route[E_CACHEDB_LOCAL_EXPIRED] {
+    xlog("cache expired: $param(key) = $param(value) "
+         "in collection $param(collection)\n");
+}
+```
+
+
 ## Frequently Asked Questions
 
 
