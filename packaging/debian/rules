@@ -103,6 +103,13 @@ ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_STRETCH_OR_XENIAL); echo $$?),0)
 endif
 
 #
+# GRPC_CLIENT package
+#
+ifneq (,$(filter grpc-client,$(DEB_BUILD_PROFILES)))
+	ALL_MODPKG_LIST += GRPC_CLIENT
+endif
+
+#
 # OPENTELEMETRY package
 #
 ifneq (,$(filter opentelemetry,$(DEB_BUILD_PROFILES)))
@@ -136,6 +143,9 @@ AUTH_JWT_MOD_PATH=$(addprefix modules/, $(AUTH_JWT_MODULES))
 AUTH_WEB3_CLIENT_PKGNAME = opensips-auth-web3-module
 AUTH_WEB3_CLIENT_MODULES = auth_web3
 AUTH_WEB3_CLIENT_MOD_PATH=$(addprefix modules/, $(AUTH_WEB3_CLIENT_MODULES))
+GRPC_CLIENT_PKGNAME = opensips-grpc-client-module
+GRPC_CLIENT_MODULES = grpc_client
+GRPC_CLIENT_MOD_PATH=$(addprefix modules/, $(GRPC_CLIENT_MODULES))
 OPENTELEMETRY_PKGNAME = opensips-opentelemetry-module
 OPENTELEMETRY_MODULES = opentelemetry
 OPENTELEMETRY_MOD_PATH=$(addprefix modules/, $(OPENTELEMETRY_MODULES))
