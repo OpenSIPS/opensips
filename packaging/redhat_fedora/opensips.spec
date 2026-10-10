@@ -780,6 +780,19 @@ per second even on low-budget hardware.
 .
 This package provides the REST client support for OpenSIPS.
 
+%package  secrets-module
+Summary:  Secret provider integrations for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  secrets-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides environment, file, Vault and Kubernetes Secret
+providers with runtime reload support.
+
 %package  sctp-module
 Summary:  SCTP transport module for OpenSIPS
 Group:    System Environment/Daemons
@@ -1646,6 +1659,10 @@ fi
 %files restclient-module
 %{_libdir}/opensips/modules/rest_client.so
 %doc docdir/README.rest_client
+
+%files secrets-module
+%{_libdir}/opensips/modules/secrets.so
+%doc docdir/README.secrets
 
 %files sctp-module
 %{_libdir}/opensips/modules/proto_sctp.so
