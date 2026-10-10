@@ -873,6 +873,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						state=F_VIA;
 						goto endofvalue;
 					case P_STRING:
+						break; /* a quoted-string may contain commas */
 					case F_LF:
 					case F_CR:
 					case F_CRLF:
