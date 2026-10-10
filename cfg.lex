@@ -291,6 +291,17 @@ DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
 AUTO_SCALING_PROFILE "auto_scaling_profile"
+SHM_AUTO_SCALING_PROFILE "shm_auto_scaling_profile"
+PKG_AUTO_SCALING_PROFILE "pkg_auto_scaling_profile"
+HG_RAM_FLOOR_MB "hg_ram_floor_mb"
+HG_AUTOSCALE_DRY_RUN "hg_autoscale_dry_run"
+SHM_GROW_GRANULE "shm_grow_granule"
+PKG_GROW_GRANULE "pkg_grow_granule"
+HG_LOCK_STALL_US "hg_lock_stall_us"
+HG_GROW_AHEAD "hg_grow_ahead"
+HG_INTERIOR_RELEASE "hg_interior_release"
+HG_SCALING_CYCLE "hg_scaling_cycle"
+HG_SHRINK_STEP "hg_shrink_step"
 AUTO_SCALING_CYCLE "auto_scaling_cycle"
 TIMER_WORKERS "timer_workers"
 
@@ -546,6 +557,28 @@ SPACE		[ ]
 									return DISABLE_503_TRANSLATION; }
 <INITIAL>{AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
 									return AUTO_SCALING_PROFILE; }
+<INITIAL>{SHM_AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return SHM_AUTO_SCALING_PROFILE; }
+<INITIAL>{PKG_AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return PKG_AUTO_SCALING_PROFILE; }
+<INITIAL>{HG_RAM_FLOOR_MB}	{	count(); yylval.strval=yytext;
+									return HG_RAM_FLOOR_MB; }
+<INITIAL>{HG_AUTOSCALE_DRY_RUN}	{	count(); yylval.strval=yytext;
+									return HG_AUTOSCALE_DRY_RUN; }
+<INITIAL>{SHM_GROW_GRANULE}	{	count(); yylval.strval=yytext;
+									return SHM_GROW_GRANULE; }
+<INITIAL>{PKG_GROW_GRANULE}	{	count(); yylval.strval=yytext;
+									return PKG_GROW_GRANULE; }
+<INITIAL>{HG_LOCK_STALL_US}	{	count(); yylval.strval=yytext;
+									return HG_LOCK_STALL_US; }
+<INITIAL>{HG_GROW_AHEAD}	{	count(); yylval.strval=yytext;
+									return HG_GROW_AHEAD; }
+<INITIAL>{HG_INTERIOR_RELEASE}	{	count(); yylval.strval=yytext;
+									return HG_INTERIOR_RELEASE; }
+<INITIAL>{HG_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
+									return HG_SCALING_CYCLE; }
+<INITIAL>{HG_SHRINK_STEP}	{	count(); yylval.strval=yytext;
+									return HG_SHRINK_STEP; }
 <INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
 									return AUTO_SCALING_CYCLE; }
 <INITIAL>{TIMER_WORKERS}	{	count(); yylval.strval=yytext;

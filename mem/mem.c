@@ -80,13 +80,32 @@ int set_pkg_mm(const char *mm_name)
 int init_pkg_mallocs(void)
 {
 #ifdef PKG_MALLOC
+	/*
+	 * HG_MALLOC does its OWN reservation (its own hugepage tier ladder,
+	 * see hg_malloc_init() in hg_malloc.c) and never touches a
+	 * pre-allocated address - unlike every other allocator here, which
+	 * receives this malloc()'d block and lays its control structure out
+	 * inside it. Calling malloc(pkg_mem_size) for HG_MALLOC would just
+	 * leak that block (never freed, never used) - across dozens of
+	 * worker processes that adds up, so the call is skipped for it
+	 * rather than allocated-and-ignored.
+	 *
+	 * HG_INIT_INHERITED: this is the ONE arena every forked child
+	 * inherits copy-on-write (pt.c hands each child a fresh arena of its
+	 * own, but the parent's stays mapped in the child, holding all the
+	 * module state parsed pre-fork). It must not sit on hugetlb - a
+	 * child's COW fault there has no 4K fallback and no reservation, so
+	 * an empty pool at fork is a silent SIGBUS. It starts on THP instead.
+	 */
+#ifdef INLINE_ALLOC
+#if defined HG_MALLOC
+	mem_block = hg_malloc_init(pkg_mem_size, "pkg", 0, NULL, HG_INIT_INHERITED);
+#else
 	mem_pool = malloc(pkg_mem_size);
 	if (!mem_pool) {
 		LM_CRIT("could not initialize PKG memory: %ld\n", pkg_mem_size);
 		return -1;
 	}
-
-#ifdef INLINE_ALLOC
 #if defined F_MALLOC
 		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 #elif defined Q_MALLOC
@@ -94,9 +113,18 @@ int init_pkg_mallocs(void)
 #elif defined HP_MALLOC
 		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
 #endif
+#endif /* HG_MALLOC */
 #else
 	if (mem_allocator_pkg == MM_NONE)
 		mem_allocator_pkg = mem_allocator;
+
+	if (mem_allocator_pkg != MM_HG_MALLOC && mem_allocator_pkg != MM_HG_MALLOC_DBG) {
+		mem_pool = malloc(pkg_mem_size);
+		if (!mem_pool) {
+			LM_CRIT("could not initialize PKG memory: %ld\n", pkg_mem_size);
+			return -1;
+		}
+	}
 
 	switch (mem_allocator_pkg) {
 #ifdef F_MALLOC
@@ -147,6 +175,22 @@ int init_pkg_mallocs(void)
 		gen_pkg_get_frags  = (osips_get_mmstat_f)hp_pkg_get_frags;
 		break;
 #endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+		mem_block = hg_malloc_init(pkg_mem_size, "pkg", 0, NULL, HG_INIT_INHERITED);
+		gen_pkg_malloc     = (osips_block_malloc_f)hg_malloc;
+		gen_pkg_realloc    = (osips_block_realloc_f)hg_realloc;
+		gen_pkg_free       = (osips_block_free_f)hg_free;
+		gen_pkg_info       = (osips_mem_info_f)hg_info;
+		gen_pkg_status     = (osips_mem_status_f)hg_status;
+		gen_pkg_get_size   = (osips_get_mmstat_f)hg_get_size;
+		gen_pkg_get_used   = (osips_get_mmstat_f)hg_get_used;
+		gen_pkg_get_rused  = (osips_get_mmstat_f)hg_get_real_used;
+		gen_pkg_get_mused  = (osips_get_mmstat_f)hg_get_max_real_used;
+		gen_pkg_get_free   = (osips_get_mmstat_f)hg_get_free;
+		gen_pkg_get_frags  = (osips_get_mmstat_f)hg_get_frags;
+		break;
+#endif
 #ifdef DBG_MALLOC
 #ifdef F_MALLOC
 	case MM_F_MALLOC_DBG:
@@ -194,6 +238,22 @@ int init_pkg_mallocs(void)
 		gen_pkg_get_mused = (osips_get_mmstat_f)hp_pkg_get_max_real_used;
 		gen_pkg_get_free  = (osips_get_mmstat_f)hp_pkg_get_free;
 		gen_pkg_get_frags = (osips_get_mmstat_f)hp_pkg_get_frags;
+		break;
+#endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC_DBG:
+		mem_block = hg_malloc_init(pkg_mem_size, "pkg", 0, NULL, HG_INIT_INHERITED);
+		gen_pkg_malloc    = (osips_block_malloc_f)hg_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)hg_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)hg_free_dbg;
+		gen_pkg_info      = (osips_mem_info_f)hg_info;
+		gen_pkg_status    = (osips_mem_status_f)hg_status_dbg;
+		gen_pkg_get_size  = (osips_get_mmstat_f)hg_get_size;
+		gen_pkg_get_used  = (osips_get_mmstat_f)hg_get_used;
+		gen_pkg_get_rused = (osips_get_mmstat_f)hg_get_real_used;
+		gen_pkg_get_mused = (osips_get_mmstat_f)hg_get_max_real_used;
+		gen_pkg_get_free  = (osips_get_mmstat_f)hg_get_free;
+		gen_pkg_get_frags = (osips_get_mmstat_f)hg_get_frags;
 		break;
 #endif
 #endif

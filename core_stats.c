@@ -186,6 +186,307 @@ static unsigned long get_pkg_fragments( void*proc_id)
 	return pkg_status[(unsigned long)proc_id][PKG_FRAGMENTS_SIZE_IDX];
 }
 
+int hg_pkg_peak_all(unsigned long *peak, unsigned long *sum, int *nproc)
+{
+	unsigned long mx = 0, tot = 0;
+	int i, n = 0;
+
+	if (!pkg_status || no_pkg_status <= 0)
+		return -1;
+
+	/*
+	 * Two passes on purpose.  signal_pkg_status() only ASKS each process to
+	 * refresh its slot - the answer arrives later over IPC - so reading in
+	 * the same loop that asks would report whatever was there from the
+	 * previous round, and on the very first call that is zero.  Ask
+	 * everyone, give the replies a moment to land, then read.
+	 */
+	for (i = 0; i < no_pkg_status; i++)
+		signal_pkg_status((unsigned long)i);
+
+	usleep(50000);
+
+	for (i = 0; i < no_pkg_status; i++) {
+		unsigned long v = pkg_status[i][PKG_MAX_USED_SIZE_IDX];
+
+		/* a slot with no total_size has never been filled in: that
+		 * process either does not exist or has not answered yet */
+		if (!pkg_status[i][PKG_TOTAL_SIZE_IDX])
+			continue;
+		n++;
+		tot += v;
+		if (v > mx)
+			mx = v;
+	}
+
+	if (peak)  *peak  = mx;
+	if (sum)   *sum   = tot;
+	if (nproc) *nproc = n;
+	return n ? 0 : -1;
+}
+
+
+
+#if defined(HG_MALLOC) && !defined(INLINE_ALLOC)
+#include "mem/hg_arena.h"
+#include "mem/hg_buddy.h"       /* hg_grow_blocked_tick */
+#include "mem/shm_mem.h"        /* shm_block, for the grow-blocked gauge */
+#include "evi/evi_core.h"       /* EVI_SHM_GROW_BLOCKED_ID, EVI_HG_LOCK_STALL_ID */
+#include "evi/evi_modules.h"    /* evi_probe/get_params/raise */
+
+/*
+ * The HG_MALLOC idle-cache sweep.
+ *
+ * HG_MALLOC's per-thread free caches live in __thread storage, so no other
+ * process or thread can reach them - a cell parked there is invisible to the
+ * block accounting and pins a whole block from being reclaimed. The allocator
+ * flushes its own cache when it is about to grow the arena, but nothing fires
+ * on a thread that has simply STOPPED allocating, which is precisely what a
+ * worker does after a traffic burst subsides - the case that strands memory.
+ *
+ * So the flush has to be dispatched to each worker to run in its own context,
+ * exactly the problem signal_pkg_status() above already solves: ipc_send_rpc()
+ * makes the target execute the job on its own reactor. Two things are carried
+ * over from it deliberately:
+ *
+ *   - the self case runs INLINE. Sending ourselves an IPC job would order
+ *     behind the job we are currently running.
+ *   - nothing waits for a result. Its read side blocks on usleep(20) for a
+ *     value that is a request behind; a flush is not a reader, so it is
+ *     fire-and-forget and the next tick simply tries again.
+ *
+ * NOT covered, and it needs saying: TCP main's IO pool threads wait on a
+ * condition variable rather than the reactor, so IPC never reaches them. Their
+ * caches still need a flag checked at a job boundary.
+ */
+#define HG_SWEEP_INTERVAL 30   /* seconds; the caches are a slow leak, not a
+                                * fast one, and each sweep costs a lock per
+                                * arena per process */
+
+static void rpc_hg_cache_flush(int sender, void *param)
+{
+	hg_cache_flush_self();
+}
+
+/*
+ * The deferred half of GROW-BLOCKED alerting. hg_buddy_grow() latches
+ * the state under hb->lock and may not raise an event there:
+ * evi_raise_event() allocates shm, and the arena that just refused to grow
+ * is the arena it would allocate from. This runs in the timer process with
+ * no arena lock held, once per sweep - which also gives the design's
+ * "re-warn interval exceeds a GC cycle" for free.
+ *
+ * SHM arena only, and honestly so: each worker's PKG arena is
+ * MAP_PRIVATE, its grow_blocked visible only inside that process - a pkg
+ * latch still WARNs in that worker's log and shows in its hg_stats pkg
+ * section, but no single process can gauge them all.
+ *
+ * While the latch holds, the event re-raises every
+ * HG_GROW_REWARN_SWEEPS sweeps so a subscriber that attached late (or an
+ * event pipeline that dropped one) still learns of a persistent block.
+ */
+#define HG_GROW_REWARN_SWEEPS 10   /* x 30s sweep = every 5 minutes */
+
+static str hg_gb_arena_str     = str_init("arena");
+static str hg_gb_committed_str = str_init("committed_mb");
+static str hg_gb_cap_str       = str_init("cap_mb");
+static str hg_gb_refused_str   = str_init("grow_refused");
+static str hg_ls_reason_str    = str_init("reason");
+static str hg_ls_hold_str      = str_init("hold_us");
+static str hg_ls_proc_str      = str_init("process");
+static str hg_ls_stalls_str    = str_init("stalls");
+
+/*
+ * The deferred half of lock-stall alerting. hg_lock_leave() latches
+ * the most recent stall under the lock; this raises it from the sweep
+ * timer, outside the lock, for the same reason the grow-blocked event is
+ * deferred (raising allocates shm).
+ */
+static void hg_lock_stall_event(unsigned long hold_ns, int reason, int proc,
+                                unsigned long stalls)
+{
+	evi_params_p list;
+	str arena = str_init("shm");
+	str rs;
+	int hold_us = (int)(hold_ns / 1000), stalls_i = (int)stalls;
+
+	rs.s = (char *)(reason >= 0 && reason < HG_LK_REASONS ?
+	                hg_lk_reason_str[reason] : "?");
+	rs.len = strlen(rs.s);
+	if (!evi_probe_event(EVI_HG_LOCK_STALL_ID))
+		return;           /* hg_shm_lock_stalls carries it for pollers */
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &hg_gb_arena_str, &arena) ||
+	    evi_param_add_str(list, &hg_ls_reason_str, &rs) ||
+	    evi_param_add_int(list, &hg_ls_hold_str, &hold_us) ||
+	    evi_param_add_int(list, &hg_ls_proc_str, &proc) ||
+	    evi_param_add_int(list, &hg_ls_stalls_str, &stalls_i)) {
+		LM_ERR("unable to build the lock-stall event parameters\n");
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(EVI_HG_LOCK_STALL_ID, list))
+		LM_ERR("unable to raise the lock-stall event\n");
+}
+
+static void hg_grow_blocked_event(void)
+{
+	struct hg_block *hb = (struct hg_block *)shm_block;
+	static unsigned int blocked_sweeps;
+	evi_params_p list;
+	int due, committed_mb, cap_mb, refused;
+	unsigned int stall_due;
+	unsigned long stall_ns, stalls;
+	int stall_reason, stall_proc;
+	str arena = str_init("shm");
+
+	if (!hb)
+		return;
+
+	/* consume the due flag and sample the numbers under the lock; the
+	 * raise itself must happen outside it */
+	hg_lock_enter(hb, HG_LK_POLICY);
+	/* promote (or disarm) an armed episode first, so a latch earns its
+	 * event in the same tick that detects it */
+	hg_grow_blocked_tick(hb);
+	/* the profile's proactive grow gate, then the down-slow shrink gate -
+	 * the shm arena's once-per-interval policy heartbeat (pkg arenas tick
+	 * themselves from each process's flush path; a private arena has one
+	 * owner) */
+	if (!hb->maint_active) {        /* else the maintenance process ticks */
+		hg_grow_tick(hb);
+		hg_shrink_tick(hb);
+	}
+	due = hb->grow_event_due;
+	hb->grow_event_due = 0;
+	if (!due && hb->grow_blocked &&
+	    ++blocked_sweeps >= HG_GROW_REWARN_SWEEPS) {
+		due = 1;                     /* still blocked - re-warn */
+	}
+	if (due)
+		blocked_sweeps = 0;
+	if (!hb->grow_blocked)
+		blocked_sweeps = 0;
+	committed_mb = (int)(hb->committed_bytes >> 20);
+	cap_mb       = (int)(hb->hcap >> 20);
+	refused      = (int)hb->grow_refused;
+	stall_due    = hb->lk_stall_event_due;
+	hb->lk_stall_event_due = 0;
+	stall_ns     = hb->lk_last_stall_ns;
+	stall_reason = hb->lk_last_stall_reason;
+	stall_proc   = hb->lk_last_stall_proc;
+	stalls       = hb->lk_stalls;
+	hg_lock_leave(hb);
+
+	if (stall_due)
+		hg_lock_stall_event(stall_ns, stall_reason, stall_proc, stalls);
+
+	if (!due)
+		return;
+
+	if (!evi_probe_event(EVI_SHM_GROW_BLOCKED_ID)) {
+		LM_WARN("shm GROW-BLOCKED event due, no subscribers - alert "
+			"on the hg_shm_grow_blocked statistic instead\n");
+		return;
+	}
+
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &hg_gb_arena_str, &arena) ||
+	    evi_param_add_int(list, &hg_gb_committed_str, &committed_mb) ||
+	    evi_param_add_int(list, &hg_gb_cap_str, &cap_mb) ||
+	    evi_param_add_int(list, &hg_gb_refused_str, &refused)) {
+		LM_ERR("unable to build the grow-blocked event parameters\n");
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(EVI_SHM_GROW_BLOCKED_ID, list))
+		LM_ERR("unable to raise the grow-blocked event\n");
+}
+
+/*
+ * The sweep is STAGGERED. This runs once a second; process i is
+ * dispatched in second (i * HG_SWEEP_INTERVAL / nproc) of each interval, so
+ * every process still flushes once per interval, but the flushes land
+ * one or two per second instead of all in the same tick - which was a
+ * convoy on the arena lock (the first holds for its chain, the rest queue)
+ * followed by every process refilling at once: the :09/:39 shape in every
+ * production lock histogram. The IO-pool generation counter is bumped once
+ * per interval, as before; those threads cannot be reached by IPC and take
+ * it at their next job boundary.
+ */
+static void hg_cache_sweep(unsigned int ticks, void *param)
+{
+	/* keyed on the timer's own tick (seconds since start), not a counter
+	 * of our own: each timer worker has its own copy of a static, and a
+	 * private counter per worker dispatched some processes twice per
+	 * interval and others once in 40 s (measured on the rig) */
+	unsigned int slot = ticks % HG_SWEEP_INTERVAL;
+	int i, n = counted_max_processes;
+
+	if (slot == 0) {
+		hg_grow_blocked_event();
+
+		/*
+		 * Publish the sweep to threads IPC cannot reach BEFORE dispatching
+		 * to the ones it can. TCP main's IO pool waits on a condition
+		 * variable rather than the reactor, so those threads never receive
+		 * an RPC job; they compare this counter at a job boundary instead
+		 * (hg_cache_flush_if_due()). Bumping it first means a thread that
+		 * is between jobs right now picks the sweep up immediately rather
+		 * than waiting for the next one.
+		 */
+		hg_sweep_gen++;
+	}
+
+	for (i = 0; i < n; i++) {
+		if ((unsigned int)((unsigned long)i * HG_SWEEP_INTERVAL / n) != slot)
+			continue;
+		if (i == process_no) {
+			/* never RPC ourselves - see signal_pkg_status() */
+			hg_cache_flush_self();
+			continue;
+		}
+		if (IPC_FD_WRITE(i) <= 0)
+			continue;
+		/* fire and forget: a failed dispatch is not worth logging every
+		 * 30 seconds for a process that may simply be shutting down */
+		ipc_send_rpc(i, rpc_hg_cache_flush, NULL);
+	}
+}
+
+int hg_register_cache_sweep(void)
+{
+	/*
+	 * Both variants, for correctness rather than for a bug that was
+	 * observed: with -a HG_MALLOC the allocator resolves to MM_HG_MALLOC,
+	 * but -a HG_MALLOC_DBG resolves to MM_HG_MALLOC_DBG and would otherwise
+	 * silently decline to register. Every other such test in the tree pairs
+	 * them (mem/shm_mem.c:327, :918, :948, :1033, :1226).
+	 */
+	if (mem_allocator_shm != MM_HG_MALLOC &&
+	    mem_allocator_shm != MM_HG_MALLOC_DBG &&
+	    mem_allocator_pkg != MM_HG_MALLOC &&
+	    mem_allocator_pkg != MM_HG_MALLOC_DBG)
+		return 0;   /* not our allocator - nothing caches anything */
+
+	/* every second: the dispatch is staggered across the interval */
+	if (register_timer("hg-cache-sweep", hg_cache_sweep, NULL,
+	                   1, TIMER_FLAG_SKIP_ON_DELAY) < 0) {
+		LM_ERR("failed to register the HG_MALLOC cache sweep\n");
+		return -1;
+	}
+	LM_NOTICE("HG_MALLOC idle-cache sweep registered, every %d s per "
+		"process, staggered (shm=%s pkg=%s)\n", HG_SWEEP_INTERVAL,
+		mm_str(mem_allocator_shm), mm_str(mem_allocator_pkg));
+	return 0;
+}
+#else
+int hg_register_cache_sweep(void) { return 0; }
+#endif /* HG_MALLOC */
 
 int init_pkg_stats(int procs_no)
 {

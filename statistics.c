@@ -44,6 +44,7 @@
 #include "dprint.h"
 #include "locking.h"
 #include "core_stats.h"
+#include "mem/hg_malloc.h"
 #include "statistics.h"
 #include "pt.h"
 #include "globals.h"
@@ -301,6 +302,14 @@ int init_stats_collector(void)
 	/* register core statistics */
 	if (register_module_stats( "core", core_stats)!=0 ) {
 		LM_ERR("failed to register core statistics\n");
+		goto error;
+	}
+
+	/* HG_MALLOC's own shm-arena statistics - a no-op unless that allocator
+	 * is in use.  Registered here so they sit alongside the core memory
+	 * statistics rather than behind a module that may not be loaded. */
+	if (hg_register_stats() != 0) {
+		LM_ERR("failed to register the HG_MALLOC statistics\n");
 		goto error;
 	}
 
