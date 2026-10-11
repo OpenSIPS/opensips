@@ -220,6 +220,7 @@ STDERROR_FORMAT stderror_log_format
 SYSLOG_FORMAT   syslog_log_format
 LOG_JSON_BUF_SIZE	"log_json_buf_size"
 LOG_MSG_BUF_SIZE    "log_msg_buf_size"
+LOG_RATELIMIT_PERIOD	"log_ratelimit_period"
 SYSLOG_FACILITY	syslog_facility
 SYSLOG_NAME	syslog_name
 SOCKET		socket
@@ -448,6 +449,8 @@ SPACE		[ ]
 									return LOG_JSON_BUF_SIZE; }
 <INITIAL>{LOG_MSG_BUF_SIZE}    {	count(); yylval.strval=yytext;
 									return LOG_MSG_BUF_SIZE; }
+<INITIAL>{LOG_RATELIMIT_PERIOD}	{	count(); yylval.strval=yytext;
+									return LOG_RATELIMIT_PERIOD; }
 <INITIAL>{SYSLOG_FACILITY}	{ yylval.strval=yytext; return SYSLOG_FACILITY; }
 <INITIAL>{SYSLOG_NAME}	{ yylval.strval=yytext; return SYSLOG_NAME; }
 <INITIAL>{SOCKET}	{ count(); yylval.strval=yytext; return SOCKET; }
