@@ -76,6 +76,25 @@ extern stat_var* slow_msgs;
 
 #ifdef PKG_MALLOC
 int init_pkg_stats(int no_procs);
+
+/* Registers the HG_MALLOC idle-cache sweep. No-op unless HG_MALLOC is the
+ * live allocator. Must be called PRE-FORK: register_timer() only accepts
+ * registrations before the timer processes are created. */
+int hg_register_cache_sweep(void);
+
+/*
+ * Highest pkg high-water reached by ANY process, the sum across all of them,
+ * and how many reported.  pkg arenas are private memory, so a process cannot
+ * read another's directly - this walks the shared pkg_status array that the
+ * pkmem: statistics are built from, refreshing it by IPC first.
+ *
+ * Needed because the -M advisory has to be sized for the WORST process, and
+ * the one answering an MI command is typically the idlest (over mi_fifo it is
+ * the FIFO listener, which does no SIP work at all).
+ *
+ * Returns 0 on success, -1 if no process has reported yet.
+ */
+int hg_pkg_peak_all(unsigned long *peak, unsigned long *sum, int *nproc);
 #endif
 
 #endif /*STATISTICS*/

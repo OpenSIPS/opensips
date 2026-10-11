@@ -524,7 +524,9 @@ endif
 ifeq (,$(findstring F_MALLOC, $(DEFS)))
 ifeq (,$(findstring Q_MALLOC, $(DEFS)))
 ifeq (,$(findstring HP_MALLOC, $(DEFS)))
+ifeq (,$(findstring HG_MALLOC, $(DEFS)))
 	DEFS+= -DQ_MALLOC
+endif
 endif
 endif
 endif
@@ -558,6 +560,10 @@ MKTAGS=ctags -R .
 #		decently fast allocator with extra sanity checks + safety buffers
 # -DHP_MALLOC
 #		high performance allocator optimized for shared memory multiprocessing
+# -DHG_MALLOC
+#		hugepage-backed slab allocator; fixed size classes bump-carved from
+#		its own huge-page (or best-effort degraded) reservation, no fallback
+#		to another allocator on exhaustion - increase -m/-M instead
 # -DDBG_MALLOC
 #       will cause each of the enabled allocators to also include a "debugging"
 #       flavor of itself;  by running a debugging version of an allocator, you

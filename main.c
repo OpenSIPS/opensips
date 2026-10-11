@@ -110,6 +110,7 @@
 #include "db/pi_framework.h"
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "mem/hg_maint.h"
 #include "mem/rpm_mem.h"
 #include "sr_module.h"
 #include "timer.h"
@@ -283,6 +284,12 @@ static int main_loop(void)
 		goto error;
 	}
 
+	/* fork the HG_MALLOC maintenance process (elastic shm arenas only) */
+	if (hg_maint_start()!=0) {
+		LM_CRIT("cannot start the HG maintenance process\n");
+		goto error;
+	}
+
 	/* fork all processes required by UDP network layer */
 	if (udp_start_processes( &chd_rank, startup_done)<0) {
 		LM_CRIT("cannot start UDP processes\n");
@@ -389,6 +396,25 @@ error:
  * \return don't return on sucess, -1 on error
  * \see main_loop
  */
+/* One half of -m/-M INIT[:CAP]: a number with an optional k/m/g suffix,
+ * returned in BYTES. A bare number keeps the historical meaning of
+ * megabytes. On return *end points past everything consumed (the ':'
+ * separator or a trailing garbage character is the caller's to judge). */
+static long parse_mem_size(const char *s, char **end)
+{
+	long v = strtol(s, end, 10);
+
+	if (*end == s || v < 0)
+		return -1;
+	switch (**end) {
+	case 'k': case 'K': v *= 1024;               (*end)++; break;
+	case 'g': case 'G': v *= 1024 * 1024 * 1024L; (*end)++; break;
+	case 'm': case 'M': (*end)++;                /* fall through */
+	default:            v *= 1024 * 1024;         break;
+	}
+	return v;
+}
+
 int main(int argc, char** argv)
 {
 	int c, n;
@@ -419,15 +445,58 @@ int main(int argc, char** argv)
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'M':
-					pkg_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
-					if (tmp &&(*tmp)){
-						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
+					pkg_mem_size=parse_mem_size(optarg, &tmp);
+					/*
+					 * -M INIT[:CAP] - CAP of growth headroom for the
+					 * elastic arena. A COMMAND LINE extension rather
+					 * than a config global because this runs before the
+					 * config is parsed, and the reservation (for tier-1
+					 * hugetlb, a map-time pool reservation) must exist
+					 * before the first arena is created. The
+					 * auto-scaling profile from the config supplies the
+					 * POLICY within this reservation, never the
+					 * reservation itself.
+					 *
+					 * Each half takes an optional k/m/g suffix
+					 * (-M 512k:16m); a bare number stays megabytes.
+					 */
+					if (tmp && *tmp == ':') {
+						long capv = parse_mem_size(tmp + 1, &tmp);
+
+						if (capv <= 0) {
+							LM_ERR("bad -M cap: %s\n", optarg);
+							goto error00;
+						}
+						hg_pkg_cap_bytes = (unsigned long)capv;
+						if ((unsigned long)pkg_mem_size > hg_pkg_cap_bytes) {
+							LM_ERR("-M cap smaller than the initial "
+								"size: %s\n", optarg);
+							goto error00;
+						}
+					}
+					if (pkg_mem_size <= 0 || (tmp &&(*tmp))){
+						LM_ERR("bad pkgmem size number: -M %s\n", optarg);
 						goto error00;
 					}
 					break;
 			case 'm':
-					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
-					if (tmp &&(*tmp)){
+					shm_mem_size=parse_mem_size(optarg, &tmp);
+					/* -m INIT[:CAP], see the -M note above */
+					if (tmp && *tmp == ':') {
+						long capv = parse_mem_size(tmp + 1, &tmp);
+
+						if (capv <= 0) {
+							LM_ERR("bad -m cap: %s\n", optarg);
+							goto error00;
+						}
+						hg_shm_cap_bytes = (unsigned long)capv;
+						if ((unsigned long)shm_mem_size > hg_shm_cap_bytes) {
+							LM_ERR("-m cap smaller than the initial "
+								"size: %s\n", optarg);
+							goto error00;
+						}
+					}
+					if (shm_mem_size <= 0 || (tmp &&(*tmp))){
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;
 					}
@@ -868,12 +937,21 @@ try_again:
 	/* print OpenSIPS version to log for history tracking */
 	LM_NOTICE("version: %s\n", version);
 
-	/* print some data about the configuration */
-	LM_NOTICE("using %ld MB of shared memory, allocator: %s\n",
-	          shm_mem_size/1024/1024, mm_str(mem_allocator_shm));
+	/* print some data about the configuration (sub-MB arenas exist now,
+	 * so print KB when MB would round to a lie) */
+	if (shm_mem_size < 1024 * 1024)
+		LM_NOTICE("using %ld KB of shared memory, allocator: %s\n",
+		          shm_mem_size/1024, mm_str(mem_allocator_shm));
+	else
+		LM_NOTICE("using %ld MB of shared memory, allocator: %s\n",
+		          shm_mem_size/1024/1024, mm_str(mem_allocator_shm));
 #if defined(PKG_MALLOC)
-	LM_NOTICE("using %ld MB of private process memory, allocator: %s\n",
-	          pkg_mem_size/1024/1024, mm_str(mem_allocator_pkg));
+	if (pkg_mem_size < 1024 * 1024)
+		LM_NOTICE("using %ld KB of private process memory, allocator: %s\n",
+		          pkg_mem_size/1024, mm_str(mem_allocator_pkg));
+	else
+		LM_NOTICE("using %ld MB of private process memory, allocator: %s\n",
+		          pkg_mem_size/1024/1024, mm_str(mem_allocator_pkg));
 #else
 	LM_NOTICE("using system memory for private process memory\n");
 #endif

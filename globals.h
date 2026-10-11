@@ -55,6 +55,31 @@ extern int udp_workers_no;
 extern char *udp_auto_scaling_profile;
 extern enum poll_types io_poll_method;
 extern int auto_scaling_enabled;
+
+/* Elastic HG_MALLOC arenas. Defined in main.c UNCONDITIONALLY (the -m/-M
+ * parser and cfg.y reference them in every build); consumed only when the
+ * HG allocator is selected - inert otherwise. Caps come from the command
+ * line (-m INIT:CAP) because the reservation precedes config parsing; the
+ * profile names/floor/dry-run come from the config and are applied
+ * post-parse. */
+extern unsigned long hg_shm_cap_bytes;
+extern unsigned long hg_pkg_cap_bytes;
+extern char *hg_shm_profile_name;
+extern char *hg_pkg_profile_name;
+extern int hg_ram_floor_mb;        /* 0 = auto: max(256MB, MemTotal/20) */
+extern int hg_autoscale_dry_run;   /* 1 = ticks log, never act */
+/* one committed-size step per grow event, in bytes; 0 = the built-in
+ * default (16 MB huge-page-mode, one page in small mode). Config:
+ * shm_grow_granule / pkg_grow_granule, plain number = MB, k/m/g ok. */
+extern unsigned long hg_shm_grow_granule;
+extern unsigned long hg_pkg_grow_granule;
+extern int hg_lock_stall_us;       /* arena lock hold counted as a stall */
+extern int hg_grow_ahead;          /* keep the free grid above 2x the floor */
+extern int hg_scaling_cycle;       /* seconds per policy cycle: the profile
+                                    * gates and the shrink DECISION; the
+                                    * drain itself runs every tick */
+extern unsigned long hg_shrink_step; /* max bytes released per drain tick */
+extern int hg_interior_release;    /* 1 = punch whole-free pages anywhere */
 extern int auto_scaling_cycle;
 
 /* TCP network layer related parameters */

@@ -113,6 +113,18 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define PKG_GET_MUSED()        hp_pkg_get_max_real_used(mem_block)
 #define PKG_GET_FREE()         hp_pkg_get_free(mem_block)
 #define PKG_GET_FRAGS()        hp_pkg_get_frags(mem_block)
+#elif defined HG_MALLOC
+#define PKG_MALLOC_            hg_malloc
+#define PKG_REALLOC            hg_realloc
+#define PKG_FREE               hg_free
+#define PKG_INFO               hg_info
+#define PKG_STATUS             hg_status
+#define PKG_GET_SIZE()         hg_get_size(mem_block)
+#define PKG_GET_USED()         hg_get_used(mem_block)
+#define PKG_GET_RUSED()        hg_get_real_used(mem_block)
+#define PKG_GET_MUSED()        hg_get_max_real_used(mem_block)
+#define PKG_GET_FREE()         hg_get_free(mem_block)
+#define PKG_GET_FRAGS()        hg_get_frags(mem_block)
 #endif /* F_MALLOC */
 #else
 #define PKG_MALLOC_            gen_pkg_malloc

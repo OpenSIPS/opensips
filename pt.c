@@ -33,6 +33,7 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "pt.h"
+#include "mem/hg_maint.h"
 #include "bin_interface.h"
 #include "core_stats.h"
 
@@ -143,6 +144,16 @@ int init_multi_proc_support(void)
 		return -1;
 	}
 	#endif
+
+	/* HG_MALLOC's per-thread caches are __thread, so only their owner can
+	 * give them back; this registers the timer that asks each worker to.
+	 * Here because it must happen PRE-FORK - register_timer() is closed to
+	 * new registrations once the timer processes exist - and because
+	 * counted_max_processes, which the sweep iterates, is known by now. */
+	if (hg_register_cache_sweep()!=0) {
+		LM_ERR("failed to register the HG_MALLOC cache sweep\n");
+		return -1;
+	}
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
@@ -266,6 +277,29 @@ static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
 
 	/* free the script if not needed */
 	if (!(ifpp->flags & OSS_PROC_NEEDS_SCRIPT) && sroutes) {
+#if defined(PKG_MALLOC) && defined(HG_MALLOC)
+		/*
+		 * Under HG_MALLOC this child is about to abandon the whole pkg
+		 * arena it inherited from the parent (internal_fork() swaps in
+		 * a fresh, private one right after this handler chain), so
+		 * freeing the route AST cell by cell buys nothing - and it was
+		 * the one thing writing into the inherited arena before the
+		 * swap: every such write is a copy-on-write fault against the
+		 * parent's mapping, and while that mapping was hugetlb-backed
+		 * an empty pool turned the very first one into a SIGBUS (how
+		 * TCP main, the last no-script child, died at startup on a
+		 * short pool). The parent's arena no longer sits on hugetlb
+		 * (HG_INIT_INHERITED), so this is not load-bearing for safety
+		 * any more - it just spares every no-script child a private
+		 * 4K copy of each AST page it would otherwise dirty. Dropping
+		 * the pointer is all the child needs.
+		 */
+		if (mem_allocator_pkg == MM_HG_MALLOC ||
+		    mem_allocator_pkg == MM_HG_MALLOC_DBG) {
+			sroutes = NULL;
+			return 0;
+		}
+#endif
 		free_route_lists(sroutes);
 		sroutes = NULL;
 	}
@@ -331,6 +365,23 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		const struct internal_fork_handler *cfhp;
 		/* child process */
 		is_main = 0; /* a child is not main process */
+
+#ifdef HG_MALLOC
+		/*
+		 * MUST run before this child allocates anything. HG_MALLOC keeps
+		 * its fast-path allocation state (per-size-class bump pointer +
+		 * private free stack) in plain process memory, so a fresh child
+		 * inherits an identical COPY of the parent's - pointing at the
+		 * very same shm cells. Left alone, every worker would hand out
+		 * the same cells to different callers.
+		 */
+		/* every SHARED arena, from the registry - shm and shm_dbg when
+		 * the shm allocator is HG, and module arenas under ANY -a (they
+		 * exist independently of the core allocator choice, which is
+		 * why this is no longer gated on mem_allocator_shm) */
+		hg_malloc_child_init_all();
+#endif /* HG_MALLOC */
+
 		/* set uid */
 		process_no = new_idx;
 		/* set attributes, pid etc */
@@ -364,6 +415,65 @@ int internal_fork(const struct internal_fork_params *ifpp)
 				child_startup_failed();
 			}
 		}
+#if defined(PKG_MALLOC) && defined(HG_MALLOC)
+		/*
+		 * HG_MALLOC as well as PKG_MALLOC: the body calls hg_malloc_init()
+		 * and names struct hg_block, neither of which exists when the
+		 * allocator is not compiled in. PKG_MALLOC alone is not enough -
+		 * a build with pkg on and HG off failed here with an implicit
+		 * declaration, which is how this was found. mem_allocator_pkg can
+		 * never hold MM_HG_MALLOC in such a build (parse_mm rejects the
+		 * name), so the runtime test below is unreachable there anyway.
+		 */
+		if (mem_allocator_pkg == MM_HG_MALLOC ||
+		    mem_allocator_pkg == MM_HG_MALLOC_DBG) {
+			/*
+			 * pkg memory is private (MAP_PRIVATE), not shared like shm - so
+			 * unlike the shm case above, resetting just the fast-path
+			 * bookkeeping on the COW-inherited block is not enough: the
+			 * block's own metadata (chunk list, bump offset, lock) lives
+			 * INSIDE that same COW-shared region, so every process's
+			 * writes to it silently diverge into disconnected private
+			 * copies while all still pulling physical hugepages from the
+			 * ONE shared reservation the parent made pre-fork - with
+			 * enough worker processes this exhausts the hugetlb pool well
+			 * beyond what pkg_mem_size alone would suggest, and confuses
+			 * the kernel's own hugetlb reservation accounting.
+			 *
+			 * Give this child its own independent reservation instead of
+			 * inheriting the parent's: hg_malloc_init() already knows how
+			 * to try tier 1 (MAP_HUGETLB) and gracefully fall back through
+			 * the tier ladder if the pool doesn't have enough left for this
+			 * specific process - exactly the semantics wanted here, just
+			 * never previously invoked per child.
+			 *
+			 * Runs after the post-fork handler chain, so anything a handler
+			 * frees is still resolved against the arena it was allocated
+			 * from (the inherited one). Two guarantees back this up now,
+			 * neither of which depends on the hugetlb pool having a page
+			 * left at fork time:
+			 *   - internal_fork_child_setup() no longer walks the route AST
+			 *     with pkg_free under HG (see there): core makes NO writes
+			 *     into the inherited arena before the swap;
+			 *   - the inherited arena is not hugetlb-backed
+			 *     (HG_INIT_INHERITED in mem.c): should anything ever write
+			 *     into it - now or later in the child's life - the COW is
+			 *     an ordinary page fault with a 4K fallback, not a SIGBUS.
+			 * The parent's mapping stays in this child, unreferenced; the
+			 * child reads parent-parsed module state through it and never
+			 * allocates from it again.
+			 */
+			struct hg_block *child_pkg =
+				hg_malloc_init(pkg_mem_size, "pkg", 0, ifpp->proc_desc, 0);
+			if (!child_pkg) {
+				LM_CRIT("failed to init this child's own pkg memory "
+					"(%lu bytes)\n", pkg_mem_size);
+				exit(-1);
+			}
+			mem_block = child_pkg;
+		}
+#endif
+
 		atomic_store(&pt[process_no].startup_result, CHLD_OK);
 		return 0;
 	}else{
@@ -448,6 +558,9 @@ int count_child_processes(void)
 	/* Timer related processes */
 	proc_no += timer_count_processes( &extra );
 	proc_extra_no += extra;
+
+	/* the HG_MALLOC maintenance process, for an elastic shm arena */
+	proc_no += hg_maint_count_processes();
 
 	/* attendent */
 	proc_no++;
