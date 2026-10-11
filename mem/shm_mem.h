@@ -82,6 +82,14 @@
 #define shm_frag_file hp_frag_file
 #define shm_frag_func hp_frag_func
 #define shm_frag_line hp_frag_line
+#elif defined HG_MALLOC
+#define shm_stats_core_init hg_stats_core_init
+#define shm_stats_get_index hg_stats_get_index
+#define shm_stats_set_index hg_stats_set_index
+#define shm_frag_overhead HG_FRAG_OVERHEAD
+#define shm_frag_file hg_frag_file
+#define shm_frag_func hg_frag_func
+#define shm_frag_line hg_frag_line
 #endif
 #else
 extern void (*shm_stats_core_init)(void *blk, int core_index);
@@ -103,6 +111,8 @@ extern unsigned long (*shm_frag_line)(void *p);
 #define shm_frag_size hp_frag_size
 #elif defined F_PARALLEL_MALLOC
 #define shm_frag_size parallel_frag_size
+#elif defined HG_MALLOC
+#define shm_frag_size hg_frag_size
 #endif
 #else
 extern unsigned long (*shm_frag_size)(void *p);
@@ -188,7 +198,22 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_GET_MUSED          hp_shm_get_max_real_used
 #define SHM_GET_FREE           hp_shm_get_free
 #define SHM_GET_FRAGS          hp_shm_get_frags
-#endif /* F_MALLOC || Q_MALLOC || HP_MALLOC */
+#elif defined HG_MALLOC
+#define SHM_MALLOC             hg_malloc
+#define SHM_MALLOC_UNSAFE      hg_malloc
+#define SHM_REALLOC            hg_realloc
+#define SHM_REALLOC_UNSAFE     hg_realloc
+#define SHM_FREE               hg_free
+#define SHM_FREE_UNSAFE        hg_free
+#define SHM_INFO               hg_info
+#define SHM_STATUS             hg_status
+#define SHM_GET_SIZE           hg_get_size
+#define SHM_GET_USED           hg_get_used
+#define SHM_GET_RUSED          hg_get_real_used
+#define SHM_GET_MUSED          hg_get_max_real_used
+#define SHM_GET_FREE           hg_get_free
+#define SHM_GET_FRAGS          hg_get_frags
+#endif /* F_MALLOC || Q_MALLOC || HP_MALLOC || HG_MALLOC */
 #else
 #define SHM_MALLOC             gen_shm_malloc
 #define SHM_MALLOC_UNSAFE      gen_shm_malloc_unsafe
@@ -286,7 +311,7 @@ inline static void shm_threshold_check(void)
  #define shm_threshold_check()
 #endif
 
-#if defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC)
+#if defined(HP_MALLOC) || defined(F_PARALLEL_MALLOC) || defined(HG_MALLOC)
 	#ifdef INLINE_ALLOC
 	#define shm_lock()
 	#define shm_unlock()
@@ -840,6 +865,22 @@ inline static void shm_info(struct mem_info* mi)
 
 inline static void shm_force_unlock(void)
 {
+#ifdef HG_MALLOC
+	/*
+	 * HG_MALLOC's lock lives inside the block itself (hb->lock), not as
+	 * a separate global like mem_lock/mem_locks - its fast path holds no
+	 * lock at all, only the slow path (chunk carve / gpool refill) briefly
+	 * takes it, so a process crashing mid-slow-path can still wedge every
+	 * other worker exactly like F_MALLOC's mem_lock can. Handled as its
+	 * own early branch since it doesn't fit the mem_lock/mem_locks pattern
+	 * the rest of this function is built around.
+	 */
+	if (mem_allocator_shm == MM_HG_MALLOC || mem_allocator_shm == MM_HG_MALLOC_DBG) {
+		if (shm_block)
+			lock_release(&((struct hg_block *)shm_block)->lock);
+		return;
+	}
+#endif
 	if (0
 #if defined F_MALLOC || defined Q_MALLOC
 		|| mem_lock
