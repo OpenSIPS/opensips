@@ -55,6 +55,11 @@ struct scaling_profile {
 	/* the number of cycles to wait before down scaling (after up or start) */
 	unsigned short down_cycles_delay;
 
+	/* max_procs/min_procs hold KB, not the legacy unit (a size suffix was
+	 * used in the config). Only the memory-arena consumer reads this; the
+	 * worker scaler never sets it and never sees a suffixed profile. */
+	unsigned char mem_kb_units;
+
 	struct scaling_profile *next;
 };
 
