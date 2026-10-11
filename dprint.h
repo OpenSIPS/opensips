@@ -136,6 +136,10 @@ extern enum log_format stderr_log_format, syslog_log_format;
 extern int log_event_level_filter;
 extern int log_json_buf_size;
 extern int log_msg_buf_size;
+extern int log_ratelimit_period;
+
+/* upper bound of log_ratelimit_period, in seconds */
+#define LOG_RATELIMIT_PERIOD_MAX 3600
 
 extern str log_cee_hostname;
 
@@ -613,6 +617,53 @@ static inline const char *dp_log_level_str(int log_level)
 				"Please help us make OpenSIPS better by reporting it at " \
 				"https://github.com/OpenSIPS/opensips/issues\n\n", ##args); \
 	} while (0)
+
+/*
+ * Rate-limited logging: LMR_ERR(), LMR_WARN(), ... and LMR_GEN1() log like
+ * their LM_* counterparts, but at most once per log_ratelimit_period seconds
+ * per call site and process. Meant for messages that can repeat for every
+ * request - an allocation failure under memory pressure, for example - where
+ * one line per request floods the log. The number of suppressed lines is
+ * reported before the next one logged. A period of 0 disables the limiting.
+ */
+#define __LMR_LOG(_log_suppressed, _log_msg) \
+	do { \
+		static time_t __lmr_last; \
+		static unsigned int __lmr_skipped; \
+		time_t __lmr_now = time(NULL); \
+		if (__lmr_now < __lmr_last || \
+		__lmr_now - __lmr_last >= log_ratelimit_period) { \
+			if (__lmr_skipped) { \
+				_log_suppressed; \
+			} \
+			__lmr_last = __lmr_now; \
+			__lmr_skipped = 0; \
+			_log_msg; \
+		} else { \
+			__lmr_skipped++; \
+		} \
+	} while (0)
+
+#define __LMR_SUPPRESSED "%u similar messages suppressed\n"
+
+#define LMR_GEN1(_lev, fmt, args...) \
+	__LMR_LOG(LM_GEN1(_lev, __LMR_SUPPRESSED, __lmr_skipped), \
+		LM_GEN1(_lev, fmt, ##args))
+#define LMR_ALERT(fmt, args...) \
+	__LMR_LOG(LM_ALERT(__LMR_SUPPRESSED, __lmr_skipped), LM_ALERT(fmt, ##args))
+#define LMR_CRIT(fmt, args...) \
+	__LMR_LOG(LM_CRIT(__LMR_SUPPRESSED, __lmr_skipped), LM_CRIT(fmt, ##args))
+#define LMR_ERR(fmt, args...) \
+	__LMR_LOG(LM_ERR(__LMR_SUPPRESSED, __lmr_skipped), LM_ERR(fmt, ##args))
+#define LMR_WARN(fmt, args...) \
+	__LMR_LOG(LM_WARN(__LMR_SUPPRESSED, __lmr_skipped), LM_WARN(fmt, ##args))
+#define LMR_NOTICE(fmt, args...) \
+	__LMR_LOG(LM_NOTICE(__LMR_SUPPRESSED, __lmr_skipped), \
+		LM_NOTICE(fmt, ##args))
+#define LMR_INFO(fmt, args...) \
+	__LMR_LOG(LM_INFO(__LMR_SUPPRESSED, __lmr_skipped), LM_INFO(fmt, ##args))
+#define LMR_DBG(fmt, args...) \
+	__LMR_LOG(LM_DBG(__LMR_SUPPRESSED, __lmr_skipped), LM_DBG(fmt, ##args))
 
 #define CASE_PRINTENUM(em) \
 	CASE_FPRINTENUM(stdout, em)
