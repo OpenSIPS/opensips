@@ -245,9 +245,6 @@ int process_body(str notify_body, udomain_t *domain)
 	ucontact_t *ul_contact = NULL;
 	struct sip_uri parsed_aor;
 
-	/* Temporary */
-	int mem_only = 1;
-
 	uri[0] = '\0';
 	doc = xmlParseMemory(notify_body.s, notify_body.len);
 	if(doc == NULL) {
@@ -311,11 +308,7 @@ int process_body(str notify_body, udomain_t *domain)
 			if(ul_record) {
 				ul_contact = ul_record->contacts;
 				while(ul_contact) {
-					if(mem_only) {
-						ul_contact->flags |= FL_MEM;
-					} else {
-						ul_contact->flags &= ~FL_MEM;
-					}
+					ul_contact->flags |= FL_MEM;
 					ul_contact = ul_contact->next;
 				}
 

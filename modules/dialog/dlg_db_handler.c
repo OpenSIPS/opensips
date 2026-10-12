@@ -1303,7 +1303,7 @@ str* write_dialog_vars( struct dlg_cell *dlg)
 		if (v->type == DLG_VAL_TYPE_STR) {
 			l += v->val.s.len;
 		} else {
-			p = sint2str(v->val.n, &intlen);
+			sint2str(v->val.n, &intlen);
 			l += intlen;
 		}
 

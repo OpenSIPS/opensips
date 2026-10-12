@@ -584,7 +584,6 @@ void destroy_htable(void)
 					shm_free(q->remote_contact.s);
 			if(q->extra_headers.s) shm_free(q->extra_headers.s);
 			shm_free(q);
-			q= NULL;
 		}
 		shm_free(p);
 	}

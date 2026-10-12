@@ -513,7 +513,6 @@ static int load_sca_info_from_db(void)
 					if (call->b2bl_key.s)
 						shm_free(call->b2bl_key.s);
 					shm_free(call);
-					call = NULL;
 					record->call[appearance_index-1] = NULL;
 					goto cont;
 				}
@@ -531,7 +530,6 @@ static int load_sca_info_from_db(void)
 					if (call->b2bl_key.s)
 						shm_free(call->b2bl_key.s);
 					shm_free(call);
-					call = NULL;
 					record->call[appearance_index-1] = NULL;
 					goto cont;
 				}

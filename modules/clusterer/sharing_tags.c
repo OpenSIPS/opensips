@@ -150,7 +150,6 @@ void shtag_validate_list(void)
 			next_tag = tag->next;
 			tag->next = NULL;
 			shm_free(tag);
-			tag=NULL;
 
 		} else {
 

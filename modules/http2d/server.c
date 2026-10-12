@@ -139,7 +139,7 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 	if (SSL_CTX_set1_curves_list(ssl_ctx, "P-256") != 1) {
 		LM_ERR("SSL_CTX_set1_curves_list failed: %s\n",
 		      ERR_error_string(ERR_get_error(), NULL));
-		return NULL;
+		goto error;
 	}
 #else  /* !(OPENSSL_VERSION_NUMBER >= 0x30000000L) */
 	{
@@ -148,7 +148,7 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 		if (!ecdh) {
 			LM_ERR("EC_KEY_new_by_curv_name failed: %s\n",
 			     ERR_error_string(ERR_get_error(), NULL));
-			return NULL;
+			goto error;
 		}
 		SSL_CTX_set_tmp_ecdh(ssl_ctx, ecdh);
 		EC_KEY_free(ecdh);
@@ -157,16 +157,20 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 
 	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, key_file, SSL_FILETYPE_PEM) != 1) {
 		LM_ERR("Could not read private key file %s\n", key_file);
-		return NULL;
+		goto error;
 	}
 	if (SSL_CTX_use_certificate_chain_file(ssl_ctx, cert_file) != 1) {
 		LM_ERR("Could not read certificate file %s\n", cert_file);
-		return NULL;
+		goto error;
 	}
 
 	SSL_CTX_set_alpn_select_cb(ssl_ctx, alpn_select_proto_cb, NULL);
 
 	return ssl_ctx;
+
+error:
+	SSL_CTX_free(ssl_ctx);
+	return NULL;
 }
 
 /* Create SSL object */
@@ -972,6 +976,7 @@ static void start_listen(struct event_base *evbase, const char *service,
 		}
 	}
 
+	freeaddrinfo(res);
 	LM_ERR("Could not start listener\n");
 }
 

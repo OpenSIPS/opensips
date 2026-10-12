@@ -55,12 +55,11 @@ static inline uint64_t cvt_step(uint64_t val, uint64_t msk, int shft)
 static inline int bcmp_hex128(const char *bin, const char *hex, int hashlen)
 {
 	const int inelem = VECTOR_BYTES(hashlen) / sizeof(uint64_t);
-	uint64_t base;
+	const uint64_t base = UINT64_C(0x3030303030303030);
 	uint64_t inws[inelem];
 	int i, ib, b;
 
 	assert(hashlen >= sizeof(inws) && (hashlen % sizeof(inws) == 0));
-	memset(&base, '0', sizeof(base));
 	for (i = 0; i < hashlen; i += sizeof(inws)) {
 		uint64_t outw[inelem * 2];
 		memcpy(&inws, bin + i, sizeof(inws));
@@ -86,13 +85,12 @@ static inline int bcmp_hex128(const char *bin, const char *hex, int hashlen)
 static inline void cvt_hex128(const char *bin, char *hex, int hashlen, int hashhexlen)
 {
 	const int inelem = VECTOR_BYTES(hashlen) / sizeof(uint64_t);
-	uint64_t base;
+	const uint64_t base = UINT64_C(0x3030303030303030);
 	uint64_t inws[inelem];
 	int i, ib, b;
 
 	assert(hashlen >= sizeof(inws) && (hashlen % sizeof(inws) == 0));
 	assert(hashhexlen >= (hashlen * 2));
-	memset(&base, '0', sizeof(base));
 	for (i = 0; i < hashlen; i += sizeof(inws)) {
 		uint64_t outw[inelem * 2];
 		memcpy(&inws, bin + i, sizeof(inws));

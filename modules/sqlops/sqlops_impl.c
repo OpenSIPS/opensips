@@ -635,12 +635,6 @@ int ops_sql_avp_store(struct sip_msg* msg, struct fis_param *sp,
 				LM_INFO("no value for P2\n");
 				goto error;
 			}
-			if(xvalue.flags&PV_TYPE_INT)
-			{
-				avp_name = xvalue.ri;
-			} else {
-				avp_name = -1;
-			}
 			if(xvalue.flags&PV_VAL_STR)
 			{
 				if(xvalue.rs.len>=SQLOPS_ATTR_LEN)
@@ -669,7 +663,6 @@ int ops_sql_avp_store(struct sip_msg* msg, struct fis_param *sp,
 	} else {
 		LM_WARN("TODO: avp is not a dynamic name <%.*s> name is %d\n",
 			dbp->sa.len, dbp->sa.s, avp_name);
-		avp_name = -1;
 	}
 
 	/* set uuid/(username and domain) fields */

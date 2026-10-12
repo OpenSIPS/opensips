@@ -304,7 +304,6 @@ int fix_bond_socket_list(struct socket_id *list)
 			bond_si = grep_internal_sock_info(&host, (unsigned short)port,
 				(unsigned short)proto);
 			if (bond_si) {
-				found_any = 1;
 				ref = pkg_malloc(sizeof(*ref));
 				if (!ref) {
 					LM_ERR("pkg memory allocation failed while building "

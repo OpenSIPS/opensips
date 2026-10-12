@@ -310,7 +310,9 @@ int redis_connect(redis_con *con)
 {
 	redisContext *ctx;
 	redisReply *rpl;
+#ifdef HAVE_REDIS_SSL
 	struct tls_domain *tls_dom = NULL;
+#endif
 
 	/* Unix socket: skip cluster probe, force single instance */
 	if (con->flags & REDIS_UNIX_SOCKET) {
@@ -476,8 +478,10 @@ int redis_connect(redis_con *con)
 
 	redisFree(ctx);
 
+#ifdef HAVE_REDIS_SSL
 	if (use_tls && tls_dom)
 		tls_api.release_domain(tls_dom);
+#endif
 
 	con->flags |= REDIS_INIT_NODES;
 
@@ -493,8 +497,10 @@ int redis_connect(redis_con *con)
 
 error:
 	redisFree(ctx);
+#ifdef HAVE_REDIS_SSL
 	if (use_tls && tls_dom)
 		tls_api.release_domain(tls_dom);
+#endif
 	return -1;
 }
 

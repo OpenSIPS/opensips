@@ -1179,6 +1179,7 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   auth_result_t ret;
   auth_result_t rauth;
   char from_username[256] = {0};
+  char method_buffer[32];
 
   if (web3_contract_debug_mode) {
     LM_INFO("Starting digest authentication for realm=%.*s",
@@ -1367,7 +1368,6 @@ int web3_digest_authenticate(struct sip_msg *msg, str *realm,
   
   if (rmethod && rmethod->s && rmethod->len > 0) {
     /* Copy rmethod to local buffer to avoid memory issues */
-    char method_buffer[32];
     int copy_len = (rmethod->len < sizeof(method_buffer) - 1) ? rmethod->len : sizeof(method_buffer) - 1;
     memcpy(method_buffer, rmethod->s, copy_len);
     method_buffer[copy_len] = '\0';

@@ -1209,7 +1209,6 @@ int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 			}
 			uncompress_len += hf->len;
 		}
-		hf = 0;
 	}
 
 	str buf2compress={NULL, 0};

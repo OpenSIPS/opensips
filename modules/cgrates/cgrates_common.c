@@ -752,7 +752,6 @@ reprocess:
 	if (jobj) {
 		ret = cgrates_process(jobj, c, f, p);
 		json_object_put(jobj);
-		jobj = NULL;
 		if (ret)
 			final_ret = ret;
 	} else {

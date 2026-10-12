@@ -406,7 +406,7 @@ static int srec_pop_ctx(struct dlg_cell *dlg, bin_packet_t *packet)
 			LM_DBG("group custom extension: <%.*s>\n", group_custom_extension.len, group_custom_extension.s);
 
 		SIPREC_BIN_POP(str, &session_custom_extension);
-		if (group_custom_extension.s)
+		if (session_custom_extension.s)
 			LM_DBG("session custom extension: <%.*s>\n", session_custom_extension.len, session_custom_extension.s);
 
 		SIPREC_BIN_POP(str, &tmp);

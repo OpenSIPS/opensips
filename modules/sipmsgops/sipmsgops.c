@@ -1700,7 +1700,7 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 	struct cseq_body * cbody;
 	pv_value_t pv_val;
 	char reason[MAX_REASON];
-	int ret = -SV_GENERIC_FAILURE;
+	int ret;
 
 	if (!msg) {
 		strcpy(reason, "no message object");
