@@ -738,7 +738,6 @@ static inline int aka_avs_get_new(struct aka_user *user, int *algmask,
 	for (c = 0; c < count - *err_count;) {
 		switch (aka_av_get_new(user, *algmask, &avs[c])) {
 			case -1: /* error */
-				c--;
 				(*err_count)++;
 				break;
 			case  0: /* no AV found within the expected time */
@@ -951,8 +950,10 @@ struct aka_async_param {
 
 static inline void aka_async_param_remove(struct aka_async_param *param)
 {
+	cond_lock(&param->user->cond);
 	if (list_is_valid(&param->list))
-		aka_pop_async(param->user, &param->list);
+		aka_pop_unsafe_async(param->user, &param->list);
+	cond_unlock(&param->user->cond);
 }
 
 static int aka_async_param_unref(struct aka_async_param *param)
@@ -1145,7 +1146,6 @@ static void aka_challenge_resume_tout(int fd, void *_param)
 
 static void aka_signal_async_resume(struct aka_async_param *param, ipc_rpc_f *func)
 {
-	param->ref++;
 	if (ipc_send_rpc(param->process_no, func, param) < 0) {
 		LM_ERR("could not resume aka challenge\n");
 		aka_async_param_remove(param);
@@ -1153,20 +1153,39 @@ static void aka_signal_async_resume(struct aka_async_param *param, ipc_rpc_f *fu
 	}
 }
 
-void aka_signal_async(struct aka_user *user, struct  list_head *subs)
+struct aka_async_param *aka_prepare_async(struct list_head *subs)
 {
 	struct aka_async_param *param = list_entry(subs, struct aka_async_param, list);
+	param->ref++;
+	return param;
+}
+
+void aka_signal_async(struct aka_async_param *param)
+{
 	aka_signal_async_resume(param, aka_challenge_resume);
 }
 
-void aka_check_expire_async(unsigned int ticks, struct list_head *subs)
+void aka_check_expire_async(unsigned int ticks, struct list_head *subs,
+		struct list_head *expired)
 {
 	struct aka_async_param *param = list_entry(subs, struct aka_async_param, list);
 	if (param->ticks + aka_async_timeout > ticks)
 		return;
 	/* this subscription expired - should drop it */
 	aka_pop_unsafe_async(param->user, subs);
-	aka_signal_async_resume(param, aka_challenge_resume_tout);
+	param->ref++;
+	list_add_tail(&param->list, expired);
+}
+
+void aka_resume_expired_async(struct list_head *expired)
+{
+	struct aka_async_param *param;
+
+	while (!list_empty(expired)) {
+		param = list_entry(expired->next, struct aka_async_param, list);
+		list_del(&param->list);
+		aka_signal_async_resume(param, aka_challenge_resume_tout);
+	}
 }
 
 void aka_check_expire_av(unsigned int ticks, struct aka_av *av)

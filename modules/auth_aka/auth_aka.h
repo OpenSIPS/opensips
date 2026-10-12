@@ -80,6 +80,8 @@ struct aka_av_mgm {
 	char buf[0];
 };
 
+struct aka_async_param;
+
 
 
 int aka_init_mgm(int hash_size);
@@ -109,8 +111,11 @@ int aka_av_drop_all_user(struct aka_user *user);
 void aka_push_async(struct aka_user *user, struct  list_head *subs);
 void aka_pop_async(struct aka_user *user, struct  list_head *subs);
 void aka_pop_unsafe_async(struct aka_user *user, struct  list_head *subs);
-void aka_signal_async(struct aka_user *user, struct  list_head *subs);
-void aka_check_expire_async(unsigned int ticks, struct list_head *subs);
+struct aka_async_param *aka_prepare_async(struct list_head *subs);
+void aka_signal_async(struct aka_async_param *async_param);
+void aka_check_expire_async(unsigned int ticks, struct list_head *subs,
+		struct list_head *expired);
+void aka_resume_expired_async(struct list_head *expired);
 void aka_check_expire_av(unsigned int ticks, struct aka_av *av);
 void aka_av_free(struct aka_av *av);
 

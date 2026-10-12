@@ -464,6 +464,7 @@ int aka_av_add(str *pub_id, str *priv_id, int algmask,
 		str *authenticate, str *authorize, str *ck, str *ik)
 {
 	int ret = -1;
+	struct aka_async_param *async_param = NULL;
 	struct aka_av *av;
 	struct aka_user *user = aka_user_get(pub_id, priv_id);
 	if (!user) {
@@ -476,14 +477,16 @@ int aka_av_add(str *pub_id, str *priv_id, int algmask,
 		LM_ERR("could not create new AV\n");
 		goto end;
 	}
+	av->ts = av->new_ts = get_ticks();
 	cond_lock(&user->cond);
 	aka_av_insert(user, av);
 	/* we also need to inform users we have an AV */
 	if (!list_empty(&user->async))
-		aka_signal_async(user, user->async.next);
+		async_param = aka_prepare_async(user->async.next);
 	cond_signal(&user->cond);
 	cond_unlock(&user->cond);
-	av->ts = av->new_ts = get_ticks();
+	if (async_param)
+		aka_signal_async(async_param);
 	ret = 1;
 	LM_DBG("adding av %p\n", av);
 end:
@@ -547,6 +550,7 @@ int aka_av_drop(str *pub_id, str *priv_id, str *nonce)
 
 int aka_av_fail(str *pub_id, str *priv_id, int count)
 {
+	struct aka_async_param *async_param = NULL;
 	struct aka_user *user = aka_user_find(pub_id, priv_id);
 
 	if (!user) {
@@ -557,9 +561,11 @@ int aka_av_fail(str *pub_id, str *priv_id, int count)
 	cond_lock(&user->cond);
 	user->error_count += count;
 	if (!list_empty(&user->async))
-		aka_signal_async(user, user->async.next);
+		async_param = aka_prepare_async(user->async.next);
 	cond_signal(&user->cond);
 	cond_unlock(&user->cond);
+	if (async_param)
+		aka_signal_async(async_param);
 	aka_user_release(user);
 	return 0;
 }
@@ -591,10 +597,15 @@ void aka_pop_async(struct aka_user *user, struct list_head *subs)
 	cond_unlock(&user->cond);
 }
 
+struct aka_expire_ctx {
+	unsigned int ticks;
+	struct list_head expired;
+};
+
 static int aka_async_hash_iterator(void *param, str key, void *value)
 {
 	struct list_head *it, *safe, *uit, *usafe;
-	unsigned int ticks = *(unsigned int*)param;
+	struct aka_expire_ctx *ctx = param;
 	struct aka_user *user;
 	struct aka_user_impi *impi = (struct aka_user_impi *)value;
 
@@ -602,10 +613,10 @@ static int aka_async_hash_iterator(void *param, str key, void *value)
 		user = list_entry(uit, struct aka_user, list);
 		cond_lock(&user->cond);
 		list_for_each_safe(it, safe, &user->async) {
-			aka_check_expire_async(ticks, it);
+			aka_check_expire_async(ctx->ticks, it, &ctx->expired);
 		}
 		list_for_each_safe(it, safe, &user->avs) {
-			aka_check_expire_av(ticks, list_entry(it, struct aka_av, list));
+			aka_check_expire_av(ctx->ticks, list_entry(it, struct aka_av, list));
 		}
 		cond_unlock(&user->cond);
 		aka_user_try_free(user);
@@ -615,5 +626,10 @@ static int aka_async_hash_iterator(void *param, str key, void *value)
 
 void aka_async_expire(unsigned int ticks, void* param)
 {
-	hash_for_each_locked(aka_users, aka_async_hash_iterator, &ticks);
+	struct aka_expire_ctx ctx;
+
+	ctx.ticks = ticks;
+	INIT_LIST_HEAD(&ctx.expired);
+	hash_for_each_locked(aka_users, aka_async_hash_iterator, &ctx);
+	aka_resume_expired_async(&ctx.expired);
 }
