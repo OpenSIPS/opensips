@@ -65,6 +65,8 @@ static int prom_stats_param( modparam_t type, void* val);
 static int prom_labels_param( modparam_t type, void* val);
 static int w_prom_declare_stat(struct sip_msg *msg, str *name, str *type, str *help);
 static int w_prom_push_stat(struct sip_msg *msg, int *label, str *labeln, str *labelv);
+static int w_prom_push_histogram_stat(struct sip_msg *msg, int *value,
+		str *suffix, str *labeln, str *labelv);
 
 /* module parameters */
 static const param_export_t mi_params[] = {
@@ -99,6 +101,13 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE},
 	{"prometheus_push_stat", (cmd_function)w_prom_push_stat, {
 		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"prometheus_push_histogram_stat", (cmd_function)w_prom_push_histogram_stat, {
+		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
@@ -1048,7 +1057,8 @@ static int w_prom_declare_stat(struct sip_msg *msg, str *name, str *type, str *h
 	return 1;
 }
 
-static int w_prom_push_stat(struct sip_msg *msg, int *value, str *labeln, str *labelv)
+static int prom_push_stat_impl(struct sip_msg *msg, int *value,
+		str *labeln, str *labelv, str *suffix)
 {
 	int len, ret = -1;
 	str labels = str_init("");
@@ -1081,8 +1091,8 @@ static int w_prom_push_stat(struct sip_msg *msg, int *value, str *labeln, str *l
 			labels = *labeln;
 		}
 	}
-	len = prometheus_route_page_stat.len + labels.len + 1 /* ' ' */ +
-		INT2STR_MAX_LEN + 1 /* \n' */;
+	len = prometheus_route_page_stat.len + (suffix ? suffix->len : 0) +
+		labels.len + 1 /* ' ' */ + INT2STR_MAX_LEN + 1 /* \n' */;
 	if (prometheus_route_page->len + len >= prometheus_route_page_max) {
 		LM_ERR("pushing statistic overflows\n");
 		goto end;
@@ -1091,6 +1101,11 @@ static int w_prom_push_stat(struct sip_msg *msg, int *value, str *labeln, str *l
 	memcpy(prometheus_route_page->s + prometheus_route_page->len,
 			prometheus_route_page_stat.s, prometheus_route_page_stat.len);
 	prometheus_route_page->len += prometheus_route_page_stat.len;
+	if (suffix) {
+		memcpy(prometheus_route_page->s + prometheus_route_page->len,
+				suffix->s, suffix->len);
+		prometheus_route_page->len += suffix->len;
+	}
 	if (labels.len) {
 		memcpy(prometheus_route_page->s + prometheus_route_page->len,
 				labels.s, labels.len);
@@ -1106,4 +1121,27 @@ end:
 	if (labeln && labelv)
 		pkg_free(labels.s);
 	return ret;
+}
+
+/* Histogram samples use the same family name plus a Prometheus suffix.
+ * Bucket counters, sum and count are maintained by the caller; this helper
+ * only formats their cumulative values at scrape time. */
+static int w_prom_push_stat(struct sip_msg *msg, int *value,
+		str *labeln, str *labelv)
+{
+	return prom_push_stat_impl(msg, value, labeln, labelv, NULL);
+}
+
+static int w_prom_push_histogram_stat(struct sip_msg *msg, int *value,
+		str *suffix, str *labeln, str *labelv)
+{
+	if (!suffix ||
+			!( (suffix->len == 7 && memcmp(suffix->s, "_bucket", 7) == 0) ||
+			   (suffix->len == 4 && memcmp(suffix->s, "_sum", 4) == 0) ||
+			   (suffix->len == 6 && memcmp(suffix->s, "_count", 6) == 0))) {
+		LM_ERR("invalid histogram suffix: expected _bucket, _sum or _count\n");
+		return -2;
+	}
+
+	return prom_push_stat_impl(msg, value, labeln, labelv, suffix);
 }
