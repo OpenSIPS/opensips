@@ -96,7 +96,7 @@ static void *get_ssl(struct sip_msg *msg, struct tcp_connection **c)
 
 	/* get conn by ID */
 	if (tcp_conn_get(msg->rcv.proto_reserved1, 0, 0, PROTO_NONE, NULL,
-			c, NULL) <= 0) {
+			c, NULL) <= 0 || !*c) {
 		LM_INFO("TLS connection not found\n");
 		goto err;
 	}

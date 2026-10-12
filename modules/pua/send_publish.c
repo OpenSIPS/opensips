@@ -374,8 +374,9 @@ done:
 		presentity->waiting_reply = 1;
 		presentity->pending_publ  = pending_publ->next;
 
-		send_publish_int(presentity, publ, get_event(presentity->event),
-				presentity->hash_index);
+		if (send_publish_int(presentity, publ, get_event(presentity->event),
+				presentity->hash_index) != ERR_PUBLISH_NO_ERROR)
+			LM_ERR("failed to send pending PUBLISH\n");
 
 		shm_free(pending_publ);
 		pkg_free(publ);

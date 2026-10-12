@@ -135,8 +135,9 @@ static int httpd_open_listen_socket(struct httpd_server *s)
 	}
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on) < 0)
 		LM_WARN("failed to set SO_REUSEADDR: %s\n", strerror(errno));
-	if (dual)
-		setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof off);
+	if (dual && setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off,
+			sizeof off) < 0)
+		LM_WARN("failed to disable IPV6_V6ONLY: %s\n", strerror(errno));
 
 	if (bind(fd, (struct sockaddr *)&ss, salen) < 0) {
 		LM_ERR("failed to bind HTTPD socket on %s:%d: %s\n",
