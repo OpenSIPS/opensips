@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<scenario name="INVITE CANCEL cancel_487 via OpenSIPS">
+  <send retrans="500"><![CDATA[
+INVITE sip:1001@127.0.0.1:5072 SIP/2.0
+Via: SIP/2.0/UDP [local_ip]:[local_port];branch=z9hG4bK-[call_number];rport
+Max-Forwards: 70
+From: <sip:1000@[local_ip]>;tag=[call_number]
+To: <sip:1001@127.0.0.1>
+Call-ID: [call_id]
+CSeq: 1 INVITE
+Contact: <sip:1000@[local_ip]:[local_port]>
+Content-Length: 0
+
+]]></send>
+  <recv response="100" optional="true" />
+  <recv response="180" />
+  <send retrans="500"><![CDATA[
+CANCEL sip:1001@127.0.0.1:5072 SIP/2.0
+Via: SIP/2.0/UDP [local_ip]:[local_port];branch=z9hG4bK-[call_number];rport
+Max-Forwards: 70
+From: <sip:1000@[local_ip]>;tag=[call_number]
+To: <sip:1001@127.0.0.1>
+Call-ID: [call_id]
+CSeq: 1 CANCEL
+Content-Length: 0
+
+]]></send>
+  <recv response="200" />
+  <recv response="487" />
+  <send><![CDATA[
+ACK sip:1001@127.0.0.1:5072 SIP/2.0
+Via: SIP/2.0/UDP [local_ip]:[local_port];branch=z9hG4bK-[call_number];rport
+Max-Forwards: 70
+From: <sip:1000@[local_ip]>;tag=[call_number]
+To: [last_To:]
+Call-ID: [call_id]
+CSeq: 1 ACK
+Content-Length: 0
+
+]]></send>
+</scenario>
