@@ -2119,7 +2119,8 @@ do { \
 	(((_msg)->rcv.bind_address && (_msg)->rcv.bind_address->adv_sock_str.len)? \
 	 (struct ip_addr *)&(_msg)->rcv.bind_address->adv_address:&(_msg)->rcv.dst_ip)
 #define TRACE_GET_DST_PORT(_msg) \
-	(((_msg)->rcv.bind_address && (_msg)->rcv.bind_address->adv_sock_str.len)? \
+	(((_msg)->rcv.bind_address && (_msg)->rcv.bind_address->adv_sock_str.len && \
+	  (_msg)->rcv.dst_port == (_msg)->rcv.bind_address->port_no)? \
 	 (_msg)->rcv.bind_address->adv_port:(_msg)->rcv.dst_port)
 
 
