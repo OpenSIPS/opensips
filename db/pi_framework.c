@@ -41,6 +41,10 @@
 
 pi_framework_t *pi_framework_data = NULL;
 
+void pi_freeDbUrlNodes(pi_db_url_t **pi_db_urls, int pi_db_urls_size);
+void pi_freeDbTables(pi_db_table_t **pi_db_tables, int pi_db_tables_size);
+void pi_freeMods(pi_mod_t **pi_modules, int pi_modules_size);
+
 
 xmlAttrPtr pi_xml_node_get_attr_by_name(xmlNodePtr node, const char *name)
 {
@@ -85,7 +89,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 	xmlNodePtr node;
 	pi_db_url_t *db_urls;
 	pi_db_url_t *pi_db_urls = NULL;
-	str id, db_url;
+	str id = {0, 0}, db_url = {0, 0};
 
 	//_pi_framework_data->pi_db_urls_size=0;
 	for(node=framework_node->children;node;node=node->next){
@@ -105,6 +109,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 			pi_db_urls = _pi_framework_data->pi_db_urls;
 			db_urls = &pi_db_urls[_pi_framework_data->pi_db_urls_size];
 			memset(db_urls, 0, sizeof(pi_db_url_t));
+			_pi_framework_data->pi_db_urls_size++;
 
 			id.s = pi_xml_node_get_attr_content_by_name(node,
 						PI_XML_ID_ATTR);
@@ -112,34 +117,34 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 				LM_ERR("No attribute for node %d [%s]\n",
 					_pi_framework_data->pi_db_urls_size,
 					node->name);
-				return -1;
+				goto error;
 			}
 			id.len = strlen(id.s);
 			if(id.len==0){
 				LM_ERR("Empty attr for node %d [%s]\n",
 					_pi_framework_data->pi_db_urls_size,
 					node->name);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&db_urls->id, &id)!=0) return -1;
-			pi_xml_free(id.s);id.s=NULL;id.len=0;
+			if(shm_str_dup(&db_urls->id, &id)!=0) goto error;
+			pi_xml_free(id.s); id.s = NULL;
 
 			db_url.s = (char*)pi_xml_node_get_content(node);
 			if(db_url.s==NULL){
 				LM_ERR("No content for node [%.*s][%s]\n",
 					db_urls->id.len, db_urls->id.s, node->name);
-				return -1;
+				goto error;
 			}
 			db_url.len = strlen(db_url.s);
 			if(db_url.len==0){
 				LM_ERR("Empty content for node [%.*s][%s]\n",
 					db_urls->id.len, db_urls->id.s, node->name);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&db_urls->db_url, &db_url)!=0) return -1;
-			pi_xml_free(db_url.s);db_url.s=NULL;db_url.len=0;
+			if(shm_str_dup(&db_urls->db_url, &db_url)!=0) goto error;
+			pi_xml_free(db_url.s); db_url.s = NULL;
 
-			for(i=0;i<_pi_framework_data->pi_db_urls_size;i++){
+			for(i=0;i<_pi_framework_data->pi_db_urls_size - 1;i++){
 				if(db_urls->id.len==pi_db_urls[i].id.len &&
                                         strncmp(pi_db_urls[i].id.s,
                                                 db_urls->id.s,
@@ -149,7 +154,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 						PI_XML_ID_ATTR,
 						db_urls->id.len,
 						db_urls->id.s);
-					return -1;
+					goto error;
 				}
 				if(db_urls->db_url.len==pi_db_urls[i].db_url.len &&
                                         strncmp(pi_db_urls[i].db_url.s,
@@ -159,7 +164,7 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 						PI_XML_DB_URL_NODE,
 						db_urls->db_url.len,
 						db_urls->db_url.s);
-					return -1;
+					goto error;
 				}
 			}
 			/* */
@@ -168,7 +173,6 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 				db_urls->id.len, db_urls->id.s,
 				db_urls->db_url.len, db_urls->db_url.s);
 			/* */
-			_pi_framework_data->pi_db_urls_size++;
 		}
 	}
 	if(_pi_framework_data->pi_db_urls_size==0){
@@ -184,17 +188,27 @@ int pi_getDbUrlNodes(pi_framework_t *_pi_framework_data, xmlNodePtr framework_no
 	}
 	/* */
 	return 0;
+
+error:
+	if (id.s)
+		pi_xml_free(id.s);
+	if (db_url.s)
+		pi_xml_free(db_url.s);
+	pi_freeDbUrlNodes(&_pi_framework_data->pi_db_urls,
+			_pi_framework_data->pi_db_urls_size);
+	_pi_framework_data->pi_db_urls_size = 0;
+	return -1;
 }
 
 int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 			const xmlNodePtr table_node)
 {
 	int i;
-	char *val;
+	char *val = NULL;
 	int val_len;
 	xmlNodePtr node;
 	pi_table_col_t *cols;
-	str field;
+	str field = {0, 0};
 
 	for(node=table_node->children,db_tables->cols_size=0;node;node=node->next){
 		if (pi_xml_strcasecmp(node->name,
@@ -206,11 +220,12 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 			else
 				cols = (pi_table_col_t*)
 					shm_malloc(sizeof(pi_table_col_t));
-			if(cols==NULL) {LM_ERR("oom\n");return -1;}
+			if(cols==NULL) {LM_ERR("oom\n");goto error;}
 			db_tables->cols = cols;
 			cols = &db_tables->cols[db_tables->cols_size];
 			memset(cols, 0, sizeof(pi_table_col_t));
 			cols->type=(db_type_t)-1;
+			db_tables->cols_size++;
 			/* Populate the field */
 			field.s =
 				pi_xml_node_get_node_content_by_name(node->children,
@@ -220,7 +235,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 					table_node->name,
 					db_tables->name.len, db_tables->name.s,
 					node->name, PI_XML_FIELD_NODE);
-				return -1;
+				goto error;
 			}
 			field.len = strlen(field.s);
 			if(field.len==0){
@@ -228,12 +243,12 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 					table_node->name,
 					db_tables->name.len, db_tables->name.s,
 					node->name, PI_XML_FIELD_NODE);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&cols->field, &field)!=0) return -1;
-			pi_xml_free(field.s);field.s=NULL;field.len=0;
+			if(shm_str_dup(&cols->field, &field)!=0) goto error;
+			pi_xml_free(field.s); field.s = NULL;
 			/* Each field MUST be unique */
-			for(i=0;i<db_tables->cols_size;i++){
+			for(i=0;i<db_tables->cols_size - 1;i++){
 				if(cols->field.len==db_tables->cols[i].field.len &&
 					strncmp(db_tables->cols[i].field.s,
 						cols->field.s,
@@ -243,7 +258,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 						cols->field.len, cols->field.s,
 						table_node->name,
 						db_tables->name.len, db_tables->name.s);
-					return -1;
+					goto error;
 				}
 			}
 			/* Populate the validation */
@@ -275,9 +290,11 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 						val, table_node->name, node->name,
 						PI_XML_VALIDATE_NODE);
 					pi_xml_free(val);
-					return -1;
+					val = NULL;
+					goto error;
 				}
 				pi_xml_free(val);
+				val = NULL;
 			}
 			/* Populate the type */
 			val = pi_xml_node_get_node_content_by_name(node->children,
@@ -286,7 +303,7 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 				LM_ERR("missing node %s %s %s\n",
 					table_node->name, node->name,
 					PI_XML_TYPE_NODE);
-				return -1;
+				goto error;
 			}
 			val_len = strlen(val);
 			if(val_len==0){
@@ -294,7 +311,8 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 					table_node->name, node->name,
 					PI_XML_TYPE_NODE);
 				pi_xml_free(val);
-				return -1;
+				val = NULL;
+				goto error;
 			}else if(val_len==6){
 				if(strncmp("DB_INT",val,6)==0)
 					cols->type=DB_INT;
@@ -321,18 +339,19 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 					val, table_node->name, node->name,
 					PI_XML_TYPE_NODE);
 				pi_xml_free(val);
-				return -1;
+				val = NULL;
+				goto error;
 			}
 			pi_xml_free(val);
+			val = NULL;
 			/* */
 			LM_DBG("got node %s [%d][%.*s][%d]\n",
 				PI_XML_COLUMN_NODE,
-				db_tables->cols_size,
-				db_tables->cols[db_tables->cols_size].field.len,
-				db_tables->cols[db_tables->cols_size].field.s,
-				db_tables->cols[db_tables->cols_size].type);
+				db_tables->cols_size - 1,
+				db_tables->cols[db_tables->cols_size - 1].field.len,
+				db_tables->cols[db_tables->cols_size - 1].field.s,
+				db_tables->cols[db_tables->cols_size - 1].type);
 			/* */
-			db_tables->cols_size++;
 		}
 	}
 	if(db_tables->cols_size==0){
@@ -341,18 +360,30 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 		return -1;
 	}
 	return 0;
+
+error:
+	if (field.s)
+		pi_xml_free(field.s);
+	if (val)
+		pi_xml_free(val);
+	for (i = 0; i < db_tables->cols_size; i++)
+		shm_free(db_tables->cols[i].field.s);
+	shm_free(db_tables->cols);
+	db_tables->cols = NULL;
+	db_tables->cols_size = 0;
+	return -1;
 }
 
 int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 {
 	int i;
 	int j;
-	char *val;
+	char *val = NULL;
 	int val_len;
 	xmlNodePtr node;
 	pi_db_table_t *db_tables;
 	pi_db_table_t *pi_db_tables = NULL;
-	str id, name;
+	str id = {0, 0}, name = {0, 0};
 
 	//_pi_framework_data->pi_db_tables_size=0;
 	for(node=framework_node->children;node;node=node->next){
@@ -366,12 +397,13 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 			else
 				db_tables = (pi_db_table_t*)
 						shm_malloc(sizeof(pi_db_table_t));
-			if(db_tables==NULL) {LM_ERR("oom\n"); return -1;}
+			if(db_tables==NULL) {LM_ERR("oom\n"); goto error;}
 			_pi_framework_data->pi_db_tables = db_tables;
 
 			pi_db_tables = _pi_framework_data->pi_db_tables;
 			db_tables = &pi_db_tables[_pi_framework_data->pi_db_tables_size];
 			memset(db_tables, 0, sizeof(pi_db_table_t));
+			_pi_framework_data->pi_db_tables_size++;
 
 			/* Populate table ids */
 			id.s = pi_xml_node_get_attr_content_by_name(node,
@@ -380,17 +412,17 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 				LM_ERR("No attribute for node %d [%s]\n",
 					_pi_framework_data->pi_db_tables_size,
 					node->name);
-				return -1;
+				goto error;
 			}
 			id.len = strlen(id.s);
 			if(id.len==0){
 				LM_ERR("Empty attr for node %d [%s]\n",
 					_pi_framework_data->pi_db_tables_size,
 					node->name);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&db_tables->id, &id)!=0) return -1;
-			pi_xml_free(id.s);id.s=NULL;id.len=0;
+			if(shm_str_dup(&db_tables->id, &id)!=0) goto error;
+			pi_xml_free(id.s); id.s = NULL;
 			/* Populate table name */
 			name.s =
 				pi_xml_node_get_node_content_by_name(node->children,
@@ -399,19 +431,19 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 				LM_ERR("No content for node [%.*s][%s]\n",
 					db_tables->id.len, db_tables->id.s,
 					node->name);
-				return -1;
+				goto error;
 			}
 			name.len = strlen(name.s);
 			if(name.len==0){
 				LM_ERR("Empty content for node [%.*s][%s]\n",
 					db_tables->id.len, db_tables->id.s,
 					node->name);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&db_tables->name, &name)!=0) return -1;
-			pi_xml_free(name.s);name.s=NULL;name.len=0;
+			if(shm_str_dup(&db_tables->name, &name)!=0) goto error;
+			pi_xml_free(name.s); name.s = NULL;
 			/* Each table_id MUST be unique */
-			for(i=0;i<_pi_framework_data->pi_db_tables_size;i++){
+			for(i=0;i<_pi_framework_data->pi_db_tables_size - 1;i++){
 				if(db_tables->id.len==pi_db_tables[i].id.len &&
                                         strncmp(pi_db_tables[i].id.s,
                                                 db_tables->id.s,
@@ -420,7 +452,7 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 						PI_XML_DB_TABLE_NODE,
 						PI_XML_ID_ATTR,
 						db_tables->id.len, db_tables->id.s);
-					return -1;
+					goto error;
 				}
 			}
 			/* Populate the optional db_url index.  If omitted, the
@@ -434,20 +466,20 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 					PI_XML_DB_URL_ID_NODE,
 					PI_XML_DB_TABLE_NODE,
 					db_tables->name.len, db_tables->name.s);
-				return -1;
+				goto error;
 			}
 			if (val) {
 				str db_url_id = {val, val_len};
 				if (shm_str_dup(&db_tables->db_url_id, &db_url_id) != 0)
-					return -1;
+					goto error;
 				pi_xml_free(val);
+				val = NULL;
 			}
 
 			if(pi_getDbTableCols(_pi_framework_data->pi_db_urls,
 							db_tables, node)!=0)
-				return -1;
+				goto error;
 
-			_pi_framework_data->pi_db_tables_size++;
 			/*
 			LM_DBG("got node [%s]->[%s][%s]\n",
 				node->name, db_tables->id.s, db_tables->db_table.s);
@@ -477,6 +509,18 @@ int pi_getDbTables(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node
 	}
 	/* */
 	return 0;
+
+error:
+	if (id.s)
+		pi_xml_free(id.s);
+	if (name.s)
+		pi_xml_free(name.s);
+	if (val)
+		pi_xml_free(val);
+	pi_freeDbTables(&_pi_framework_data->pi_db_tables,
+			_pi_framework_data->pi_db_tables_size);
+	_pi_framework_data->pi_db_tables_size = 0;
+	return -1;
 }
 
 int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
@@ -486,9 +530,10 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 	str *vals, *col_vals = NULL;
 	str *ids, *col_ids = NULL;
 	int size = 0;
+	int alloc_size = 0;
 	int i;
-	str attr;
-	str val;
+	str attr = {0, 0};
+	str val = {0, 0};
 
 	for(node=col_node->children;node;node=node->next){
 		if (pi_xml_strcasecmp(node->name,
@@ -496,14 +541,19 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 			if(size){
 				vals = (str*)shm_realloc(col_vals,
 					(size+1)*sizeof(str));
+				if(vals==NULL) {LM_ERR("oom\n"); goto error;}
+				col_vals = vals;
 				ids = (str*)shm_realloc(col_ids,
 					(size+1)*sizeof(str));
 			}else{
 				vals = (str*)shm_malloc(sizeof(str));
+				if(vals==NULL) {LM_ERR("oom\n"); goto error;}
+				col_vals = vals;
 				ids = (str*)shm_malloc(sizeof(str));
 			}
-			if(vals==NULL||ids==NULL) {LM_ERR("oom\n"); return -1;}
-			col_vals = vals; col_ids = ids;
+			if(ids==NULL) {LM_ERR("oom\n"); goto error;}
+			col_ids = ids;
+			alloc_size = size + 1;
 			vals = &col_vals[size]; ids = &col_ids[size];
 			memset(vals, 0, sizeof *vals); memset(ids, 0, sizeof *ids);
 			/* Retrieve the node attribute */
@@ -511,28 +561,28 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 							PI_XML_ID_ATTR);
 			if(attr.s==NULL){
 				LM_ERR("No attribute for node\n");
-				return -1;
+				goto error;
 			}
 			attr.len = strlen(attr.s);
 			if(attr.len==0){
 				LM_ERR("No attribute for node\n");
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(ids, &attr)!=0) return -1;
-			pi_xml_free(attr.s); attr.s = NULL; attr.len = 0;
+			if(shm_str_dup(ids, &attr)!=0) goto error;
+			pi_xml_free(attr.s); attr.s = NULL;
 			/* Retrieve the node value */
 			val.s = (char*)pi_xml_node_get_content(node);
 			if(val.s==NULL){
 				LM_ERR("No content for node\n");
-				return -1;
+				goto error;
 			}
 			val.len = strlen(val.s);
 			if(val.len==0){
 				LM_ERR("No content for node\n");
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(vals, &val)!=0) return -1;
-			pi_xml_free(val.s); val.s = NULL; val.len = 0;
+			if(shm_str_dup(vals, &val)!=0) goto error;
+			pi_xml_free(val.s); val.s = NULL;
 			/*
 			LM_DBG(">  > [%d] [%p]->[%s] [%p]->[%s]\n",
 					size, ids, ids->s, vals, vals->s);
@@ -554,6 +604,19 @@ int pi_getColVals(pi_mod_t *module, pi_cmd_t *cmd,
 		/* */
 	}
 	return 0;
+
+error:
+	if (attr.s)
+		pi_xml_free(attr.s);
+	if (val.s)
+		pi_xml_free(val.s);
+	for (i = 0; i < alloc_size; i++) {
+		shm_free(col_ids[i].s);
+		shm_free(col_vals[i].s);
+	}
+	shm_free(col_ids);
+	shm_free(col_vals);
+	return -1;
 }
 
 int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
@@ -562,12 +625,12 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 		int *key_size, xmlNodePtr cmd_node)
 {
 	xmlNodePtr node;
-	str *key;
-	str field;
+	str *key = NULL;
+	str field = {0, 0};
 	db_key_t *keys;
 	db_key_t *cmd_keys = NULL;
 	int op_len;
-	char *operator;
+	char *operator = NULL;
 	char *_operator;
 	db_op_t *ops;
 	db_op_t *cmd_ops = NULL;
@@ -575,11 +638,13 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 	db_type_t *cmd_types = NULL;
 	pi_vals_t *vals;
 	pi_vals_t *cmd_vals = NULL;
-	str link_cmd;
+	str link_cmd = {0, 0};
 	str *linkCmd;
 	str *cmd_linkCmd = NULL;
 	int i;
 	int size = 0;
+	int keys_size = 0, ops_size = 0;
+	int vals_size = 0, links_size = 0;
 	int table_size;
 	pi_table_col_t *table_cols;
 
@@ -591,12 +656,14 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 					(size+1)*sizeof(db_key_t));
 			else
 				keys = (db_key_t*)shm_malloc(sizeof(db_key_t));
-			if (keys==NULL) {LM_ERR("oom\n");return -1;}
+			if (keys==NULL) {LM_ERR("oom\n");goto error;}
 			cmd_keys = keys;
+			keys_size = size + 1;
 			keys = &cmd_keys[size];
 			memset(keys, 0, sizeof(db_key_t));
 			key = (str*)shm_malloc(sizeof(str));
-			if (key==NULL) {LM_ERR("oom\n");return -1;}
+			if (key==NULL) {LM_ERR("oom\n");goto error;}
+			memset(key, 0, sizeof(*key));
 			/* get the col field */
 			field.s = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_FIELD_NODE);
@@ -608,7 +675,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 					cmd_node->parent->name,
 					cmd->name.len, cmd->name.s,
 					cmd_node->name, node->name);
-				return -1;
+				goto error;
 			}
 			field.len = strlen(field.s);
 			if(field.len==0){
@@ -619,7 +686,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 					cmd_node->parent->name,
 					cmd->name.len, cmd->name.s,
 					cmd_node->name, node->name);
-				return -1;
+				goto error;
 			}
 			/* Each field must be valid */
 			table_size = cmd->db_table->cols_size;
@@ -641,11 +708,12 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 					cmd->name.len, cmd->name.s,
 					cmd_node->name, node->name,
 					cmd->db_table->name.len, cmd->db_table->name.s);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(key, &field)) return -1;
+			if(shm_str_dup(key, &field)) goto error;
 			*keys = key;
-			pi_xml_free(field.s); field.s = NULL; field.len = 0;
+			key = NULL;
+			pi_xml_free(field.s); field.s = NULL;
 			LM_DBG("cmd_keys=[%p] keys=[%p]->[%p]->[%.*s]\n",
 						cmd_keys, keys, *keys,
 						(*keys)->len, (*keys)->s);
@@ -657,7 +725,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 				else
 					types =
 					(db_type_t*)shm_malloc(sizeof(db_type_t));
-				if (types==NULL) {LM_ERR("oom\n");return -1;}
+				if (types==NULL) {LM_ERR("oom\n");goto error;}
 				cmd_types = types;
 				types = &cmd_types[size];
 				memset(types, 0, sizeof(db_type_t));
@@ -670,8 +738,9 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 						(size+1)*sizeof(db_op_t));
 				else
 					ops = (db_op_t*)shm_malloc(sizeof(db_op_t));
-				if (ops==NULL) {LM_ERR("oom\n");return -1;}
+				if (ops==NULL) {LM_ERR("oom\n");goto error;}
 				cmd_ops = ops;
+				ops_size = size + 1;
 				ops = &cmd_ops[size];
 				memset(ops, 0, sizeof(db_op_t));
 				/* Retrieve the col op */
@@ -686,7 +755,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 						cmd_node->parent->name,
 						cmd->name.len, cmd->name.s,
 						cmd_node->name, node->name);
-					return -1;
+					goto error;
 				}
 				op_len = strlen(operator);
 				if(op_len==0){
@@ -697,23 +766,19 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 						cmd_node->parent->name,
 						cmd->name.len, cmd->name.s,
 						cmd_node->name, node->name);
-					return -1;
+					goto error;
 				}else if(op_len==1){
-					if(strncmp(OP_LT,operator,1)==0)
-						*ops = operator;
-					else if(strncmp(OP_GT,operator,1)==0)
-						*ops = operator;
-					else if(strncmp(OP_EQ,operator,1)==0)
-						*ops = operator;
+					if(strncmp(OP_LT,operator,1)!=0 &&
+							strncmp(OP_GT,operator,1)!=0 &&
+							strncmp(OP_EQ,operator,1)!=0)
+						goto invalid_operator;
 				}else if(op_len==2){
-					if(strncmp(OP_LEQ,operator,2)==0)
-						*ops = operator;
-					else if(strncmp(OP_GEQ,operator,2)==0)
-						*ops = operator;
-					else if(strncmp(OP_NEQ,operator,2)==0)
-						*ops = operator;
-				}
-				if(*ops==NULL){
+					if(strncmp(OP_LEQ,operator,2)!=0 &&
+							strncmp(OP_GEQ,operator,2)!=0 &&
+							strncmp(OP_NEQ,operator,2)!=0)
+						goto invalid_operator;
+				}else {
+invalid_operator:
 					LM_ERR("unexpected %s [%s] in "
 						"%s [%.*s] %s [%.*s] %s %s\n",
 						PI_XML_OPERATOR_NODE,
@@ -723,15 +788,15 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 						cmd_node->parent->name,
 						cmd->name.len, cmd->name.s,
 						cmd_node->name, node->name);
-					return -1;
+					goto error;
 				}
 				/* We need to copy the null string terminator */
 				op_len++;
 				_operator = shm_malloc(op_len);
-				if(_operator==NULL){LM_ERR("oom\n"); return -1;}
+				if(_operator==NULL){LM_ERR("oom\n"); goto error;}
 				memcpy(_operator, operator, op_len);
 				*ops = _operator;
-				pi_xml_free(operator); operator = NULL; op_len = 0;
+				pi_xml_free(operator); operator = NULL;
 				LM_DBG("%s [%p]=>[%p]=>[%.*s] %s [%.*s] %s %s [%.*s][%s]\n",
 					cmd_node->parent->parent->name, module,
 					module->module.s,
@@ -758,12 +823,13 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 				else
 					vals =
 					(pi_vals_t*)shm_malloc(sizeof(pi_vals_t));
-				if(vals==NULL) {LM_ERR("oom\n");return -1;}
+				if(vals==NULL) {LM_ERR("oom\n");goto error;}
 				cmd_vals = vals;
+				vals_size = size + 1;
 				vals = &cmd_vals[size];
 				memset(vals, 0, sizeof(pi_vals_t));
 				if(pi_getColVals(module, cmd, vals, node)!=0)
-					return -1;
+					goto error;
 			}
 			/* Retrieve the link_cmds */
 			if(mod_cmd_linkCmd){
@@ -772,8 +838,9 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 						(size+1)*sizeof(str));
 				else
 					linkCmd = (str*)shm_malloc(sizeof(str));
-				if(linkCmd==NULL) {LM_ERR("oom\n");return -1;}
+				if(linkCmd==NULL) {LM_ERR("oom\n");goto error;}
 				cmd_linkCmd = linkCmd;
+				links_size = size + 1;
 				linkCmd = &cmd_linkCmd[size];
 				memset(linkCmd, 0, sizeof(str));
 				/* get the link_cmd */
@@ -790,9 +857,9 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 							cmd_node->parent->name,
 							cmd->name.len, cmd->name.s,
 							cmd_node->name, node->name);
-						if(shm_str_dup(linkCmd, &link_cmd)) return -1;
+						if(shm_str_dup(linkCmd, &link_cmd)) goto error;
 					}
-					pi_xml_free(link_cmd.s); link_cmd.s = NULL; link_cmd.len = 0;
+					pi_xml_free(link_cmd.s); link_cmd.s = NULL;
 				}
 			}
 			size++;
@@ -803,7 +870,7 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 			cmd_node->name, cmd_node->parent->parent->name,
 			module->module.len, module->module.s,
 			cmd_node->parent->name, cmd->name.len, cmd->name.s);
-		return -1;
+		goto error;
 	}else if(cmd_keys!=NULL){
 		*mod_cmd_keys = cmd_keys;
 		LM_DBG("***  mod_cmd_keys=[%p] *mod_cmd_keys=[%p] cmd_keys=[%p]\n",
@@ -838,6 +905,42 @@ int pi_getCols(pi_mod_t *module, pi_cmd_t *cmd,
 		LM_DBG("\n");
 	}
 	return 0;
+
+error:
+	if (field.s)
+		pi_xml_free(field.s);
+	if (operator)
+		pi_xml_free(operator);
+	if (link_cmd.s)
+		pi_xml_free(link_cmd.s);
+	if (key) {
+		shm_free(key->s);
+		shm_free(key);
+	}
+	for (i = 0; i < keys_size; i++) {
+		if (cmd_keys[i]) {
+			shm_free(cmd_keys[i]->s);
+			shm_free(cmd_keys[i]);
+		}
+	}
+	for (i = 0; i < ops_size; i++)
+		shm_free((char *)cmd_ops[i]);
+	for (i = 0; i < vals_size; i++) {
+		for (op_len = 0; op_len < cmd_vals[i].vals_size; op_len++) {
+			shm_free(cmd_vals[i].ids[op_len].s);
+			shm_free(cmd_vals[i].vals[op_len].s);
+		}
+		shm_free(cmd_vals[i].ids);
+		shm_free(cmd_vals[i].vals);
+	}
+	for (i = 0; i < links_size; i++)
+		shm_free(cmd_linkCmd[i].s);
+	shm_free(cmd_keys);
+	shm_free(cmd_ops);
+	shm_free(cmd_types);
+	shm_free(cmd_vals);
+	shm_free(cmd_linkCmd);
+	return -1;
 }
 
 int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
@@ -845,11 +948,11 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 {
 	int i;
 	int j;
-	char *val;
+	char *val = NULL;
 	int val_len;
 	pi_cmd_t *cmds;
 	xmlNodePtr node, cmd_cols;
-	str name;
+	str name = {0, 0};
 
 	for(node=mod_node->children,modules->cmds_size=0;node;node=node->next){
 		if (pi_xml_strcasecmp(node->name,
@@ -859,11 +962,12 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					(modules->cmds_size+1)*sizeof(pi_cmd_t));
 			else
 				cmds = (pi_cmd_t*)shm_malloc(sizeof(pi_cmd_t));;
-			if (cmds==NULL) {LM_ERR("oom\n");return -1;}
+			if (cmds==NULL) {LM_ERR("oom\n");goto error;}
 			modules->cmds = cmds;
 			cmds = &modules->cmds[modules->cmds_size];
 			memset(cmds, 0, sizeof(pi_cmd_t));
 			cmds->type = -1;
+			modules->cmds_size++;
 			/* Populate the cmd name */
 			name.s =
 				pi_xml_node_get_node_content_by_name(node->children,
@@ -873,7 +977,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					PI_XML_CMD_NAME_NODE,
 					mod_node->name,
 					modules->module.len, modules->module.s);
-				return -1;
+				goto error;
 			}
 			name.len = strlen(name.s);
 			if(name.len==0){
@@ -881,12 +985,12 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					PI_XML_CMD_NAME_NODE,
 					mod_node->name,
 					modules->module.len, modules->module.s);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&cmds->name, &name)!=0) return -1;
-			pi_xml_free(name.s);name.s=NULL;name.len=0;
+			if(shm_str_dup(&cmds->name, &name)!=0) goto error;
+			pi_xml_free(name.s); name.s = NULL;
 			/* Each cmd name MUST be unique */
-			for(i=0;i<modules->cmds_size;i++){
+			for(i=0;i<modules->cmds_size - 1;i++){
 				if(cmds->name.len==modules->cmds[i].name.len &&
                                         strncmp(modules->cmds[i].name.s,
                                                 cmds->name.s,
@@ -895,7 +999,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 						mod_node->name, modules->module.s,
 						node->name,
 						cmds->name.len, cmds->name.s);
-					return -1;
+					goto error;
 				}
 			}
 			/* Populate the db_table_index */
@@ -908,7 +1012,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					modules->module.len, modules->module.s,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
-				return -1;
+				goto error;
 			}
 			val_len = strlen(val);
 			if(val_len==0){
@@ -919,7 +1023,8 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
 				pi_xml_free(val);
-				return -1;
+				val = NULL;
+				goto error;
 			}
 			/* Get db_table */
 			for(i=0;i<pi_db_tables_size;i++){
@@ -938,9 +1043,11 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
 				pi_xml_free(val);
-				return -1;
+				val = NULL;
+				goto error;
 			}
 			pi_xml_free(val);
+			val = NULL;
 			/* Get cmd_type */
 			val = pi_xml_node_get_node_content_by_name(node->children,
 						PI_XML_CMD_TYPE_NODE);
@@ -951,7 +1058,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					modules->module.len, modules->module.s,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
-				return -1;
+				goto error;
 			}
 			val_len = strlen(val);
 			if(val_len==0){
@@ -962,7 +1069,8 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
 				pi_xml_free(val);
-				return -1;
+				val = NULL;
+				goto error;
 			}else if(val_len==8){
 				if(strncmp("DB_QUERY",val,8)==0){
 					cmds->type = DB_CAP_QUERY;
@@ -979,7 +1087,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->c_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					cmd_cols =
 					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_QUERY_COLS_NODE);
@@ -993,7 +1101,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								&cmds->link_cmd,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					}else{
 						LM_ERR("no %s in %s [%.*s] %s [%.*s]\n",
 							PI_XML_QUERY_COLS_NODE,
@@ -1003,7 +1111,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 							node->name,
 							cmds->name.len,
 							cmds->name.s);
-						return -1;
+						goto error;
 					}
 					cmd_cols =
 					pi_xml_node_get_node_by_name(node->children,
@@ -1018,7 +1126,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->o_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					}
 				}
 			}else if(val_len==9){
@@ -1037,7 +1145,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					}else{
 						LM_ERR("no %s in %s [%.*s] %s [%.*s]\n",
 							PI_XML_QUERY_COLS_NODE,
@@ -1047,7 +1155,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 							node->name,
 							cmds->name.len,
 							cmds->name.s);
-						return -1;
+						goto error;
 					}
 				}else if(strncmp("DB_DELETE",val,9)==0){
 					cmds->type = DB_CAP_DELETE;
@@ -1064,7 +1172,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->c_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					}else{
 						LM_ERR("no %s in %s [%.*s] %s [%.*s]\n",
 							PI_XML_CLAUSE_COLS_NODE,
@@ -1074,7 +1182,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 							node->name,
 							cmds->name.len,
 							cmds->name.s);
-						return -1;
+						goto error;
 					}
 
 				}else if(strncmp("DB_UPDATE",val,9)==0){
@@ -1092,7 +1200,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->c_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					cmd_cols =
 					pi_xml_node_get_node_by_name(node->children,
 						PI_XML_QUERY_COLS_NODE);
@@ -1106,7 +1214,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					}else{
 						LM_ERR("no %s in %s [%.*s] %s [%.*s]\n",
 							PI_XML_QUERY_COLS_NODE,
@@ -1116,7 +1224,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 							node->name,
 							cmds->name.len,
 							cmds->name.s);
-						return -1;
+						goto error;
 					}
 				}
 			}else if(val_len==10){
@@ -1135,7 +1243,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 								NULL,
 								&cmds->q_keys_size,
 								cmd_cols)!=0)
-							return -1;
+							goto error;
 					}else{
 						LM_ERR("no %s in %s [%.*s] %s [%.*s]\n",
 							PI_XML_QUERY_COLS_NODE,
@@ -1145,7 +1253,7 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 							node->name,
 							cmds->name.len,
 							cmds->name.s);
-						return -1;
+						goto error;
 					}
 				}
 			}
@@ -1157,9 +1265,11 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 					PI_XML_CMD_NODE,
 					cmds->name.len, cmds->name.s);
 				pi_xml_free(val);
-				return -1;
+				val = NULL;
+				goto error;
 			}
 			pi_xml_free(val);
+			val = NULL;
 			/**/
 			LM_DBG("got node %s %s %s [%.*s] [%p]=>[%.*s]\n",
 					mod_node->name, node->name,
@@ -1210,10 +1320,16 @@ int pi_getCmds(pi_db_table_t *pi_db_tables, int pi_db_tables_size,
 						i, (*(cmds->o_keys[i])).len,
 						(*(cmds->o_keys[i])).s);
 			/**/
-			modules->cmds_size++;
 		}
 	}
 	return 0;
+
+error:
+	if (name.s)
+		pi_xml_free(name.s);
+	if (val)
+		pi_xml_free(val);
+	return -1;
 }
 
 int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
@@ -1222,7 +1338,7 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 	pi_mod_t *modules;
 	xmlNodePtr mod_node;
 	pi_mod_t *pi_modules;
-	str module;
+	str module = {0, 0};
 
 	/* Build pi commands skeleton */
 	for(mod_node=framework_node->children,_pi_framework_data->pi_modules_size=0;
@@ -1243,6 +1359,7 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 			pi_modules = _pi_framework_data->pi_modules;
 			modules = &pi_modules[_pi_framework_data->pi_modules_size];
 			memset(modules, 0, sizeof(pi_mod_t));
+			_pi_framework_data->pi_modules_size++;
 
 			/* Populate module name */
 			module.s =
@@ -1252,19 +1369,19 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 				LM_ERR("no %s for node %s\n",
 					PI_XML_MOD_NAME_NODE,
 					PI_XML_MOD_NODE);
-				return -1;
+				goto error;
 			}
 			module.len = strlen(module.s);
 			if(module.len==0){
 				LM_ERR("empty %s for node %s\n",
 					PI_XML_MOD_NAME_NODE,
 					PI_XML_MOD_NODE);
-				return -1;
+				goto error;
 			}
-			if(shm_str_dup(&modules->module, &module)!=0) return -1;
-			pi_xml_free(module.s);module.s=NULL;module.len=0;
+			if(shm_str_dup(&modules->module, &module)!=0) goto error;
+			pi_xml_free(module.s); module.s = NULL;
 			/* Each mod name MUST be unique */
-			for(i=0;i<_pi_framework_data->pi_modules_size;i++){
+			for(i=0;i<_pi_framework_data->pi_modules_size - 1;i++){
 				if(modules->module.len==pi_modules[i].module.len &&
                                         strncmp(pi_modules[i].module.s,
                                                 modules->module.s,
@@ -1273,15 +1390,14 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 						mod_node->name,
 						modules->module.len,
 						modules->module.s);
-					return -1;
+					goto error;
 				}
 			}
 			/* Get cmds */
 			if(pi_getCmds(_pi_framework_data->pi_db_tables,
 					_pi_framework_data->pi_db_tables_size,
 					modules, mod_node)!=0)
-				return -1;
-			_pi_framework_data->pi_modules_size++;
+				goto error;
 			LM_DBG("got node %s [%.*s]\n",
 				mod_node->name,
 				modules->module.len, modules->module.s);
@@ -1292,6 +1408,14 @@ int pi_getMods(pi_framework_t *_pi_framework_data, xmlNodePtr framework_node)
 		return -1;
 	}
 	return 0;
+
+error:
+	if (module.s)
+		pi_xml_free(module.s);
+	pi_freeMods(&_pi_framework_data->pi_modules,
+			_pi_framework_data->pi_modules_size);
+	_pi_framework_data->pi_modules_size = 0;
+	return -1;
 }
 
 
@@ -1335,7 +1459,7 @@ void pi_freeDbTables(pi_db_table_t **pi_db_tables, int pi_db_tables_size)
 }
 void pi_freeMods(pi_mod_t **pi_modules, int pi_modules_size)
 {
-	int i, j, k;
+	int i, j, k, l;
 	pi_mod_t *_pi_modules = *pi_modules;
 	db_key_t *cmd_keys;
 	db_op_t *cmd_ops;
@@ -1371,22 +1495,12 @@ void pi_freeMods(pi_mod_t **pi_modules, int pi_modules_size)
 					cmd_keys[k] = NULL;
 				}
 				if(cmd_vals){
-					if(cmd_vals[k].ids){
-						if(cmd_vals[k].ids->s){
-							shm_free(cmd_vals[k].ids->s);
-							cmd_vals[k].ids->s = NULL;
-						}
-						shm_free(cmd_vals[k].ids);
-						cmd_vals[k].ids = NULL;
+					for (l = 0; l < cmd_vals[k].vals_size; l++) {
+						shm_free(cmd_vals[k].ids[l].s);
+						shm_free(cmd_vals[k].vals[l].s);
 					}
-					if(cmd_vals[k].vals){
-						if(cmd_vals[k].vals->s){
-							shm_free(cmd_vals[k].vals->s);
-							cmd_vals[k].vals->s = NULL;
-						}
-						shm_free(cmd_vals[k].vals);
-						cmd_vals[k].vals = NULL;
-					}
+					shm_free(cmd_vals[k].ids);
+					shm_free(cmd_vals[k].vals);
 				}
 			}
 			if(_pi_modules[i].cmds[j].c_keys){
@@ -1419,22 +1533,12 @@ void pi_freeMods(pi_mod_t **pi_modules, int pi_modules_size)
 					cmd_keys[k] = NULL;
 				}
 				if(cmd_vals){
-					if(cmd_vals[k].ids){
-						if(cmd_vals[k].ids->s){
-							shm_free(cmd_vals[k].ids->s);
-							cmd_vals[k].ids->s = NULL;
-						}
-						shm_free(cmd_vals[k].ids);
-						cmd_vals[k].ids = NULL;
+					for (l = 0; l < cmd_vals[k].vals_size; l++) {
+						shm_free(cmd_vals[k].ids[l].s);
+						shm_free(cmd_vals[k].vals[l].s);
 					}
-					if(cmd_vals[k].vals){
-						if(cmd_vals[k].vals->s){
-							shm_free(cmd_vals[k].vals->s);
-							cmd_vals[k].vals->s = NULL;
-						}
-						shm_free(cmd_vals[k].vals);
-						cmd_vals[k].vals = NULL;
-					}
+					shm_free(cmd_vals[k].ids);
+					shm_free(cmd_vals[k].vals);
 				}
 				if(cmd_linkCmd && cmd_linkCmd[k].s){
 					shm_free(cmd_linkCmd[k].s);
@@ -1457,10 +1561,9 @@ void pi_freeMods(pi_mod_t **pi_modules, int pi_modules_size)
 				shm_free(_pi_modules[i].cmds[j].link_cmd);
 				_pi_modules[i].cmds[j].link_cmd = NULL;
 			}
-			cmd_keys = NULL; cmd_vals = NULL;
 			/* */
-			cmd_keys = _pi_modules[i].cmds[j].c_keys;
-			for(k=0;k<_pi_modules[i].cmds[j].c_keys_size;k++){
+			cmd_keys = _pi_modules[i].cmds[j].o_keys;
+			for(k=0;k<_pi_modules[i].cmds[j].o_keys_size;k++){
 				if(cmd_keys && cmd_keys[k]){
 					if(cmd_keys[k]->s){
 						shm_free(cmd_keys[k]->s);
@@ -1470,11 +1573,10 @@ void pi_freeMods(pi_mod_t **pi_modules, int pi_modules_size)
 					cmd_keys[k] = NULL;
 				}
 			}
-			if(_pi_modules[i].cmds[j].c_keys){
-				shm_free(_pi_modules[i].cmds[j].c_keys);
-				_pi_modules[i].cmds[j].c_keys = NULL;
+			if(_pi_modules[i].cmds[j].o_keys){
+				shm_free(_pi_modules[i].cmds[j].o_keys);
+				_pi_modules[i].cmds[j].o_keys = NULL;
 			}
-			cmd_keys = NULL;
 		}
 		if(_pi_modules[i].cmds){
 			shm_free(_pi_modules[i].cmds);
@@ -1559,8 +1661,15 @@ int pi_init_cmds(pi_framework_t **framework_data, const char* filename)
 	}
 	return 0;
 xml_error:
-	/* FIXME: free thw whole structure */
-	if(_framework_data){shm_free(_framework_data);}
+	if (_framework_data) {
+		pi_freeMods(&_framework_data->pi_modules,
+				_framework_data->pi_modules_size);
+		pi_freeDbTables(&_framework_data->pi_db_tables,
+				_framework_data->pi_db_tables_size);
+		pi_freeDbUrlNodes(&_framework_data->pi_db_urls,
+				_framework_data->pi_db_urls_size);
+		shm_free(_framework_data);
+	}
 	if(doc)pi_xml_free(doc);
 	doc=NULL;
 	return -1;
