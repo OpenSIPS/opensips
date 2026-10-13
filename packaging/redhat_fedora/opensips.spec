@@ -52,6 +52,9 @@
 # done for dependency-bearing modules from the main module tree.
 %global CONTRIB_MODULES_WITH_DEPS %{nil}
 
+# Database backends shipped as opensips-dbschema-<backend> packages.
+%global DBSCHEMA_MODULES berkeley mysql postgres sqlite
+
 Summary:  Very fast and configurable SIP server
 Name:     opensips
 Version:  3.6.0
@@ -160,6 +163,7 @@ core team and may have different support guarantees.
 
 %if 0%{?_with_auth_jwt:1}
 %package  auth-jwt-module
+Requires: %{name}-module-auth-jwt = %{version}-%{release}
 Summary:  JSON Web Tokens authentication module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -184,6 +188,7 @@ JWT secrets can point to the same JWT profile.
 %endif
 
 %package  auth-web3-module
+Requires: %{name}-module-auth-web3 = %{version}-%{release}
 Summary:  Web3-based authentication for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -198,6 +203,7 @@ authentication through blockchain technology and ENS (Ethereum Name Service)
 resolution.
 
 %package  auth-modules
+Requires: %{name}-modules-auth = %{version}-%{release}
 Summary:  Authentication interfaces for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -213,20 +219,29 @@ authentication interface (the auth module), as well as the UAC
 authentication module (uac_auth).
 
 %package  berkeley-bin
+Requires: %{name}-module-db-berkeley-bin = %{version}-%{release}
+Summary:  Transitional package for %{name}-module-db-berkeley-bin
+Group:    System Environment/Daemons
+
+%description  berkeley-bin
+This package preserves the former OpenSIPS Berkeley helper package name.
+
+%package -n %{name}-module-db-berkeley-bin
 Summary:  Berkeley Database module for OpenSIPS - helper program
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  berkeley-bin
+%description -n %{name}-module-db-berkeley-bin
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This package provides the berkeley database module for OpenSIPS, a
 high-performance embedded DB kernel. You should normally install
-opensips-berkeley-module and not this package directly.
+opensips-module-db-berkeley and not this package directly.
 
 %package  berkeley-module
+Requires: %{name}-module-db-berkeley = %{version}-%{release}
 Summary:  Berkeley Database module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -241,10 +256,18 @@ high-performance embedded DB kernel. All database tables are stored
 in files, no additional server is necessary
 
 %package  berkeley-dbschema
-Summary:  Berkeley database schema for OpenSIPS
+Requires: %{name}-dbschema-berkeley = %{version}-%{release}
+Summary:  Transitional package for %{name}-dbschema-berkeley
 Group:    System Environment/Daemons
 
 %description  berkeley-dbschema
+This package preserves the former OpenSIPS database schema package name.
+
+%package -n %{name}-dbschema-berkeley
+Summary:  Berkeley database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description -n %{name}-dbschema-berkeley
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
@@ -252,6 +275,7 @@ per second even on low-budget hardware.
 This package provides the Berkeley database schema files for OpenSIPS.
 
 %package  carrierroute-module
+Requires: %{name}-module-carrierroute = %{version}-%{release}
 Summary:  Carrierroute module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -266,6 +290,7 @@ solution for routing, balancing and blacklisting.
 
 %if 0%{?_with_cachedb_cassandra:1}
 %package  cassandra-module
+Requires: %{name}-module-cachedb-cassandra = %{version}-%{release}
 Summary:  Interface module to interact with a Cassandra server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -281,6 +306,7 @@ work with a cassandra server.
 %endif
 
 %package  cgrates-module
+Requires: %{name}-module-cgrates = %{version}-%{release}
 Summary:  CGRateS connector for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -293,6 +319,7 @@ per second even on low-budget hardware.
 This package provides a connnector to the CGRateS rating/billing engine.
 
 %package  compression-module
+Requires: %{name}-module-compression = %{version}-%{release}
 Summary:  Headers and body compression module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -308,6 +335,7 @@ SIP headers and body, as  well as shrink the size of a SIP package.
 
 %if 0%{?_with_cachedb_couchbase:1}
 %package couchbase-module
+Requires: %{name}-module-cachedb-couchbase = %{version}-%{release}
 Summary:  Interface module to interact with a Couchbase server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -324,6 +352,7 @@ It uses the Key-Value interface exported from the core.
 %endif
 
 %package  cpl-module
+Requires: %{name}-module-cpl-c = %{version}-%{release}
 Summary:  CPL module (CPL interpreter engine) for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -337,6 +366,7 @@ This package provides a CPL (Call Processing Language) interpreter for
 OpenSIPS, turning OpenSIPS into a CPL server (storage and interpreter).
 
 %package  dbhttp-module
+Requires: %{name}-module-db-http = %{version}-%{release}
 Summary:  HTTP database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -349,6 +379,7 @@ per second even on low-budget hardware.
 This package provides the HTTP-based database driver for OpenSIPS
 
 %package  dialplan-module
+Requires: %{name}-module-dialplan = %{version}-%{release}
 Summary:  Generic string translation module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -364,6 +395,7 @@ manipulate R-URI or a PV and to translated to a new format/value.
 
 %if 0%{?_with_aaa_diameter:1}
 %package  diameter-module
+Requires: %{name}-modules-diameter = %{version}-%{release}
 Summary:  Diameter module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -378,6 +410,7 @@ This package provides a DIAMETER driver for the AAA API from OpenSIPS.
 %endif
 
 %package  emergency-module
+Requires: %{name}-module-emergency = %{version}-%{release}
 Summary:  Emergency call module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -392,6 +425,7 @@ the architecture i2 specification of the American entity NENA. (National
 Emergency Number Association).
 
 %package  geoip-module
+Requires: %{name}-module-mmgeoip = %{version}-%{release}
 Summary:  IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -409,6 +443,7 @@ compatible   Lookups are executed against the freely-available GeoLite City
 database; and the non-free GeoIP City database is drop-in compatible
 
 %package  http-modules
+Requires: %{name}-modules-http = %{version}-%{release}
 Summary:  HTTP transport layer and Management Interface for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -423,6 +458,7 @@ This package provides an HTTP transport layer and Management Interface for
 OpenSIPS.
 
 %package  identity-module
+Requires: %{name}-module-identity = %{version}-%{release}
 Summary:  SIP Identity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -435,6 +471,7 @@ per second even on low-budget hardware.
 This package provides support for SIP Identity (see RFC 4474).
 
 %package  ipsec-module
+Requires: %{name}-module-proto-ipsec = %{version}-%{release}
 Summary:  IPSec proto module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -449,6 +486,7 @@ per second even on low-budget hardware.
 This package provides IMS IPSec connections (see TS 33.203).
 
 %package  jabber-module
+Requires: %{name}-module-jabber = %{version}-%{release}
 Summary:  Jabber gateway module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -461,6 +499,7 @@ per second even on low-budget hardware.
 This package provides the SIP to Jabber translator module for OpenSIPS.
 
 %package  json-module
+Requires: %{name}-module-json = %{version}-%{release}
 Summary:  Support for JSON handling in OpenSIPS script
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -476,6 +515,7 @@ provides ways to access (from script) objects and arrays to add,replace or
 delete values from the script.
 
 %package  kafka-module
+Requires: %{name}-module-event-kafka = %{version}-%{release}
 Summary:  Implementation of an Apache Kafka producer
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -492,6 +532,7 @@ also provides a stand-alone connector to be used from the
 OpenSIPS script in order to publish messages to Kafka brokers.
 
 %package  ldap-modules
+Requires: %{name}-modules-ldap = %{version}-%{release}
 Summary:  LDAP modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -506,6 +547,7 @@ queries from the OpenSIPS config and storage of SIP account data in an LDAP
 directory.
 
 %package  lua-module
+Requires: %{name}-module-lua = %{version}-%{release}
 Summary:  Lua extensions for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -523,6 +565,7 @@ per second even on low-budget hardware.
 This package provides an interface for OpenSIPS to utilize Lua extensions.
 
 %package  memcached-module
+Requires: %{name}-module-cachedb-memcached = %{version}-%{release}
 Summary:  Interface module to interact with a memcached server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -541,6 +584,7 @@ interface.
 
 %if 0%{?_with_cachedb_mongodb:1}
 %package  mongodb-module
+Requires: %{name}-module-cachedb-mongodb = %{version}-%{release}
 Summary:  Interface module to interact with a MongoDB server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -557,6 +601,7 @@ MongoDB servers.
 %endif
 
 %package  msrp-modules
+Requires: %{name}-modules-msrp = %{version}-%{release}
 Summary:  Implementation of the MSRP protocol
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -569,6 +614,7 @@ per second even on low-budget hardware.
 This package provides the MSRP protocol support for OpenSIPS.
 
 %package  mysql-module
+Requires: %{name}-module-db-mysql = %{version}-%{release}
 Summary:  MySQL database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -586,10 +632,18 @@ per second even on low-budget hardware.
 This package provides the MySQL database driver for OpenSIPS.
 
 %package  mysql-dbschema
-Summary:  MySQL database schema for OpenSIPS
+Requires: %{name}-dbschema-mysql = %{version}-%{release}
+Summary:  Transitional package for %{name}-dbschema-mysql
 Group:    System Environment/Daemons
 
 %description  mysql-dbschema
+This package preserves the former OpenSIPS database schema package name.
+
+%package -n %{name}-dbschema-mysql
+Summary:  MySQL database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description -n %{name}-dbschema-mysql
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
@@ -598,6 +652,7 @@ This package provides the MySQL database schema files for OpenSIPS.
 
 %if 0%{?_with_db_oracle:1}
 %package  oracle-module
+Requires: %{name}-module-db-oracle = %{version}-%{release}
 Summary:  Oracle Storage Support for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -614,6 +669,7 @@ a Oracle-Database to be used for persistent storage.
 
 %if 0%{?_with_opentelemetry:1}
 %package  opentelemetry-module
+Requires: %{name}-module-opentelemetry = %{version}-%{release}
 Summary:  OpenSIPS observability using OpenTelemetry
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -630,6 +686,7 @@ This package provides OpenSISP observability using OpenTelemetry.
 
 %if 0%{?_with_osp:1}
 %package  osp-module
+Requires: %{name}-module-osp = %{version}-%{release}
 Summary:  OSP Support for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -645,6 +702,7 @@ the OSP standard defined by ETSI (TS 101 321 V4.1.1).
 %endif
 
 %package  perl-modules
+Requires: %{name}-modules-perl = %{version}-%{release}
 Summary:  Perl extensions and database driver for OpenSIPS
 Group:    System Environment/Daemons
 BuildRequires: perl(ExtUtils::MakeMaker)
@@ -662,6 +720,7 @@ This package provides an interface for OpenSIPS to write Perl extensions and
 the db_perlvdb database driver for OpenSIPS.
 
 %package  postgres-module
+Requires: %{name}-module-db-postgres = %{version}-%{release}
 Summary:  PostgreSQL database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -675,10 +734,18 @@ per second even on low-budget hardware.
 This package provides the PostgreSQL database driver for OpenSIPS.
 
 %package  postgres-dbschema
-Summary:  PostgreSQL database schema for OpenSIPS
+Requires: %{name}-dbschema-postgres = %{version}-%{release}
+Summary:  Transitional package for %{name}-dbschema-postgres
 Group:    System Environment/Daemons
 
 %description  postgres-dbschema
+This package preserves the former OpenSIPS database schema package name.
+
+%package -n %{name}-dbschema-postgres
+Summary:  PostgreSQL database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description -n %{name}-dbschema-postgres
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
@@ -686,6 +753,7 @@ per second even on low-budget hardware.
 This package provides the PostgreSQL database schema files for OpenSIPS.
 
 %package  presence-modules
+Requires: %{name}-modules-presence = %{version}-%{release}
 Summary:  SIMPLE presence modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -700,6 +768,7 @@ server and presence user agent for RICH presence, registrar-based presence,
 external triggered presence and XCAP support.
 
 %package  prometheus-module
+Requires: %{name}-module-prometheus = %{version}-%{release}
 Summary:  Prometheus Monitoring support for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -714,6 +783,7 @@ This module provides support in OpenSIPS for the Prometheus
 (https://prometheus.io/) monitoring tool.
 
 %package  python-module
+Requires: %{name}-module-python = %{version}-%{release}
 Summary:  Python scripting support
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -726,6 +796,7 @@ per second even on low-budget hardware.
 This module provides a Python interface to implement your scripting logic.
 
 %package  rabbitmq-modules
+Requires: %{name}-modules-rabbitmq = %{version}-%{release}
 Summary:  Interface module to interact with a RabbitMQ server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -742,6 +813,7 @@ the Event Interface triggers an event subscribed for. It also provides a
 module to publish RabbitMQ messages to a RabbitMQ server.
 
 %package  radius-modules
+Requires: %{name}-modules-radius = %{version}-%{release}
 Summary:  Radius modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -760,6 +832,7 @@ This package provides the RADIUS driver for the AAA API from OpenSIPS.
 
 %if 0%{?_with_cachedb_redis:1}
 %package  redis-module
+Requires: %{name}-module-cachedb-redis = %{version}-%{release}
 Summary:  Interface module to interact with a Redis server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -777,6 +850,7 @@ a Redis Cluster. It uses the Key-Value interface exported from the core.
 %endif
 
 %package  regex-module
+Requires: %{name}-module-regex = %{version}-%{release}
 Summary:  PCRE regexp modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -792,6 +866,7 @@ sed-like regular expressions; PCRE library brings perl-like regular
 expressions.
 
 %package  restclient-module
+Requires: %{name}-module-rest-client = %{version}-%{release}
 Summary:  REST client module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -804,6 +879,7 @@ per second even on low-budget hardware.
 This package provides the REST client support for OpenSIPS.
 
 %package  sctp-module
+Requires: %{name}-module-proto-sctp = %{version}-%{release}
 Summary:  SCTP transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -818,6 +894,7 @@ per second even on low-budget hardware.
 This package provides the SCTP support for OpenSIPS.
 
 %package  siprec-module
+Requires: %{name}-module-siprec = %{version}-%{release}
 Summary:  SIP Call Recording Implementation for the SIPREC Protocol
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -832,6 +909,7 @@ This module provides the means to Record Calls using the SIPREC protocol.
 
 %if 0%{?_with_sngtc:1}
 %package  sngtc-module
+Requires: %{name}-module-sngtc = %{version}-%{release}
 Summary:  Sangoma media transcoding interface for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -846,6 +924,7 @@ The sngtc package implements interface to Sangoma media transcoding.
 
 %if 0%{!?_without_snmpstats:1}
 %package  snmpstats-module
+Requires: %{name}-module-snmpstats = %{version}-%{release}
 Summary:  SNMP AgentX subagent module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -862,6 +941,7 @@ as an AgentX subagent which connects to a master agent.
 %endif
 
 %package  sqlite-module
+Requires: %{name}-module-db-sqlite = %{version}-%{release}
 Summary:  SQLite database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -875,10 +955,18 @@ per second even on low-budget hardware.
 This package provides the SQLite database driver for OpenSIPS.
 
 %package  sqlite-dbschema
-Summary:  SQLite database schema for OpenSIPS
+Requires: %{name}-dbschema-sqlite = %{version}-%{release}
+Summary:  Transitional package for %{name}-dbschema-sqlite
 Group:    System Environment/Daemons
 
 %description  sqlite-dbschema
+This package preserves the former OpenSIPS database schema package name.
+
+%package -n %{name}-dbschema-sqlite
+Summary:  SQLite database schema for OpenSIPS
+Group:    System Environment/Daemons
+
+%description -n %{name}-dbschema-sqlite
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
@@ -886,6 +974,7 @@ per second even on low-budget hardware.
 This package provides the SQLite database schema files for OpenSIPS.
 
 %package  stir-shaken-module
+Requires: %{name}-module-stir-shaken = %{version}-%{release}
 Summary:  STIR/SHAKEN support for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -906,6 +995,7 @@ This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
 Authentication and Verification services in OpenSIPS.
 
 %package  tls-openssl-module
+Requires: %{name}-module-tls-openssl = %{version}-%{release}
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -922,6 +1012,7 @@ This package provides the OpenSSL implementation for TLS in OpenSIPS.
 
 %if 0%{?_with_wolfssl:1}
 %package  tls-wolfssl-module
+Requires: %{name}-module-tls-wolfssl = %{version}-%{release}
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -936,6 +1027,7 @@ This package provides the wolfSSL implementation for TLS in OpenSIPS.
 %endif
 
 %package  tls-module
+Requires: %{name}-module-proto-tls = %{version}-%{release}
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -952,6 +1044,7 @@ per second even on low-budget hardware.
 This package provides the TLS support for OpenSIPS.
 
 %package  tlsmgm-module
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
 Summary:  TLS management module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -964,6 +1057,7 @@ per second even on low-budget hardware.
 This package provides support for TLS management for OpenSIPS.
 
 %package  unixodbc-module
+Requires: %{name}-module-db-unixodbc = %{version}-%{release}
 Summary:  unixODBC database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -976,6 +1070,7 @@ per second even on low-budget hardware.
 This package provides the unixODBC database driver for OpenSIPS.
 
 %package  uuid-module
+Requires: %{name}-module-uuid = %{version}-%{release}
 Summary:  UUID (Universally Unique Identifier) generator for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -988,6 +1083,7 @@ per second even on low-budget hardware.
 This package provides a UUID generator for the OpenSIPS script.
 
 %package  wss-module
+Requires: %{name}-module-proto-wss = %{version}-%{release}
 Summary:  WebSocket Secure (WSS) transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -1001,6 +1097,7 @@ per second even on low-budget hardware.
 This package provides the WebSocket Secure (WSS) support for OpenSIPS.
 
 %package  xml-module
+Requires: %{name}-module-xml = %{version}-%{release}
 Summary:  Support for XML documents handling in OpenSIPS script
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -1016,6 +1113,7 @@ provides ways to access (from script) objects and arrays to add, replace or
 delete values from the script.
 
 %package  xmlrpc-module
+Requires: %{name}-module-mi-xmlrpc = %{version}-%{release}
 Summary:  XMLRPC support for OpenSIPS's Management Interface
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -1030,6 +1128,7 @@ This package provides the XMLRPC transport implementation for OpenSIPS's
 Management Interface.
 
 %package  xmpp-module
+Requires: %{name}-module-xmpp = %{version}-%{release}
 Summary:  XMPP gateway module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
@@ -1041,6 +1140,890 @@ per second even on low-budget hardware.
 .
 This package provides the SIP to XMPP IM translator module for OpenSIPS.
 
+
+
+# Canonical one-module packages
+%if 0%{?_with_auth_jwt:1}
+%package -n %{name}-module-auth-jwt
+Summary: OpenSIPS auth_jwt module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-auth-jwt
+This package contains only the auth_jwt loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-auth-web3
+Summary: OpenSIPS auth_web3 module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-auth-web3
+This package contains only the auth_web3 loadable module for OpenSIPS.
+
+%package -n %{name}-module-auth
+Summary: OpenSIPS auth module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-auth
+This package contains only the auth loadable module for OpenSIPS.
+
+%package -n %{name}-module-auth-aka
+Summary: OpenSIPS auth_aka module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-auth = %{version}-%{release}
+
+%description -n %{name}-module-auth-aka
+This package contains only the auth_aka loadable module for OpenSIPS.
+
+%package -n %{name}-module-uac-auth
+Summary: OpenSIPS uac_auth module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-uac-auth
+This package contains only the uac_auth loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-berkeley
+Summary: OpenSIPS db_berkeley module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-db-berkeley
+This package contains only the db_berkeley loadable module for OpenSIPS.
+
+%package -n %{name}-module-carrierroute
+Summary: OpenSIPS carrierroute module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-carrierroute
+This package contains only the carrierroute loadable module for OpenSIPS.
+
+%if 0%{?_with_cachedb_cassandra:1}
+%package -n %{name}-module-cachedb-cassandra
+Summary: OpenSIPS cachedb_cassandra module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cachedb-cassandra
+This package contains only the cachedb_cassandra loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-cgrates
+Summary: OpenSIPS cgrates module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cgrates
+This package contains only the cgrates loadable module for OpenSIPS.
+
+%package -n %{name}-module-compression
+Summary: OpenSIPS compression module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-compression
+This package contains only the compression loadable module for OpenSIPS.
+
+%if 0%{?_with_cachedb_couchbase:1}
+%package -n %{name}-module-cachedb-couchbase
+Summary: OpenSIPS cachedb_couchbase module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cachedb-couchbase
+This package contains only the cachedb_couchbase loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-cpl-c
+Summary: OpenSIPS cpl_c module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cpl-c
+This package contains only the cpl_c loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-http
+Summary: OpenSIPS db_http module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-db-http
+This package contains only the db_http loadable module for OpenSIPS.
+
+%package -n %{name}-module-dialplan
+Summary: OpenSIPS dialplan module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-dialplan
+This package contains only the dialplan loadable module for OpenSIPS.
+
+%if 0%{?_with_aaa_diameter:1}
+%package -n %{name}-module-aaa-diameter
+Summary: OpenSIPS aaa_diameter module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-aaa-diameter
+This package contains only the aaa_diameter loadable module for OpenSIPS.
+
+%package -n %{name}-module-aka-av-diameter
+Summary: OpenSIPS aka_av_diameter module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-auth-aka = %{version}-%{release}
+Requires: %{name}-module-aaa-diameter = %{version}-%{release}
+
+%description -n %{name}-module-aka-av-diameter
+This package contains only the aka_av_diameter loadable module for OpenSIPS.
+%endif
+
+%package -n %{name}-module-emergency
+Summary: OpenSIPS emergency module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-emergency
+This package contains only the emergency loadable module for OpenSIPS.
+
+%package -n %{name}-module-mmgeoip
+Summary: OpenSIPS mmgeoip module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-mmgeoip
+This package contains only the mmgeoip loadable module for OpenSIPS.
+
+%package -n %{name}-module-httpd
+Summary: OpenSIPS httpd module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-httpd
+This package contains only the httpd loadable module for OpenSIPS.
+
+%package -n %{name}-module-mi-html
+Summary: OpenSIPS mi_html module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-httpd = %{version}-%{release}
+
+%description -n %{name}-module-mi-html
+This package contains only the mi_html loadable module for OpenSIPS.
+
+%package -n %{name}-module-mi-http
+Summary: OpenSIPS mi_http module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-httpd = %{version}-%{release}
+
+%description -n %{name}-module-mi-http
+This package contains only the mi_http loadable module for OpenSIPS.
+
+%package -n %{name}-module-pi-http
+Summary: OpenSIPS pi_http module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-httpd = %{version}-%{release}
+
+%description -n %{name}-module-pi-http
+This package contains only the pi_http loadable module for OpenSIPS.
+
+%package -n %{name}-module-identity
+Summary: OpenSIPS identity module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-identity
+This package contains only the identity loadable module for OpenSIPS.
+
+%package -n %{name}-module-proto-ipsec
+Summary: OpenSIPS proto_ipsec module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: libmnl
+
+%description -n %{name}-module-proto-ipsec
+This package contains only the proto_ipsec loadable module for OpenSIPS.
+
+%package -n %{name}-module-jabber
+Summary: OpenSIPS jabber module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-jabber
+This package contains only the jabber loadable module for OpenSIPS.
+
+%package -n %{name}-module-json
+Summary: OpenSIPS json module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-json
+This package contains only the json loadable module for OpenSIPS.
+
+%package -n %{name}-module-event-kafka
+Summary: OpenSIPS event_kafka module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-event-kafka
+This package contains only the event_kafka loadable module for OpenSIPS.
+
+%package -n %{name}-module-h350
+Summary: OpenSIPS h350 module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-ldap = %{version}-%{release}
+
+%description -n %{name}-module-h350
+This package contains only the h350 loadable module for OpenSIPS.
+
+%package -n %{name}-module-ldap
+Summary: OpenSIPS ldap module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-ldap
+This package contains only the ldap loadable module for OpenSIPS.
+
+%package -n %{name}-module-lua
+Summary: OpenSIPS lua module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-lua
+This package contains only the lua loadable module for OpenSIPS.
+
+%package -n %{name}-module-cachedb-memcached
+Summary: OpenSIPS cachedb_memcached module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cachedb-memcached
+This package contains only the cachedb_memcached loadable module for OpenSIPS.
+
+%if 0%{?_with_cachedb_mongodb:1}
+%package -n %{name}-module-cachedb-mongodb
+Summary: OpenSIPS cachedb_mongodb module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cachedb-mongodb
+This package contains only the cachedb_mongodb loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-msrp-gateway
+Summary: OpenSIPS msrp_gateway module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-msrp-ua = %{version}-%{release}
+
+%description -n %{name}-module-msrp-gateway
+This package contains only the msrp_gateway loadable module for OpenSIPS.
+
+%package -n %{name}-module-msrp-relay
+Summary: OpenSIPS msrp_relay module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-auth = %{version}-%{release}
+
+%description -n %{name}-module-msrp-relay
+This package contains only the msrp_relay loadable module for OpenSIPS.
+
+%package -n %{name}-module-msrp-ua
+Summary: OpenSIPS msrp_ua module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-proto-msrp = %{version}-%{release}
+
+%description -n %{name}-module-msrp-ua
+This package contains only the msrp_ua loadable module for OpenSIPS.
+
+%package -n %{name}-module-proto-msrp
+Summary: OpenSIPS proto_msrp module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-proto-msrp
+This package contains only the proto_msrp loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-mysql
+Summary: OpenSIPS db_mysql module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+%if 0%{?rhel} >= 10
+Requires: libmariadb.so.3()(64bit)
+%else
+Requires: mysql-libs
+%endif
+
+%description -n %{name}-module-db-mysql
+This package contains only the db_mysql loadable module for OpenSIPS.
+
+%if 0%{?_with_db_oracle:1}
+%package -n %{name}-module-db-oracle
+Summary: OpenSIPS db_oracle module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-db-oracle
+This package contains only the db_oracle loadable module for OpenSIPS.
+
+%endif
+
+%if 0%{?_with_opentelemetry:1}
+%package -n %{name}-module-opentelemetry
+Summary: OpenSIPS opentelemetry module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: opentelemetry-cpp-devel
+
+%description -n %{name}-module-opentelemetry
+This package contains only the opentelemetry loadable module for OpenSIPS.
+
+%endif
+
+%if 0%{?_with_osp:1}
+%package -n %{name}-module-osp
+Summary: OpenSIPS osp module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-osp
+This package contains only the osp loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-perl
+Summary: OpenSIPS perl module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+
+%description -n %{name}-module-perl
+This package contains only the perl loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-perlvdb
+Summary: OpenSIPS db_perlvdb module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-perl = %{version}-%{release}
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+
+%description -n %{name}-module-db-perlvdb
+This package contains only the db_perlvdb loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-postgres
+Summary: OpenSIPS db_postgres module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: postgresql-libs
+
+%description -n %{name}-module-db-postgres
+This package contains only the db_postgres loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence
+Summary: OpenSIPS presence module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-presence
+This package contains only the presence loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-callinfo
+Summary: OpenSIPS presence_callinfo module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+
+%description -n %{name}-module-presence-callinfo
+This package contains only the presence_callinfo loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-dialoginfo
+Summary: OpenSIPS presence_dialoginfo module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+
+%description -n %{name}-module-presence-dialoginfo
+This package contains only the presence_dialoginfo loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-dfks
+Summary: OpenSIPS presence_dfks module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+
+%description -n %{name}-module-presence-dfks
+This package contains only the presence_dfks loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-reginfo
+Summary: OpenSIPS presence_reginfo module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+
+%description -n %{name}-module-presence-reginfo
+This package contains only the presence_reginfo loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-mwi
+Summary: OpenSIPS presence_mwi module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+
+%description -n %{name}-module-presence-mwi
+This package contains only the presence_mwi loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-xcapdiff
+Summary: OpenSIPS presence_xcapdiff module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-presence-xcapdiff
+This package contains only the presence_xcapdiff loadable module for OpenSIPS.
+
+%package -n %{name}-module-presence-xml
+Summary: OpenSIPS presence_xml module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+
+%description -n %{name}-module-presence-xml
+This package contains only the presence_xml loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua
+Summary: OpenSIPS pua module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-pua
+This package contains only the pua loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua-bla
+Summary: OpenSIPS pua_bla module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+
+%description -n %{name}-module-pua-bla
+This package contains only the pua_bla loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua-dialoginfo
+Summary: OpenSIPS pua_dialoginfo module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+
+%description -n %{name}-module-pua-dialoginfo
+This package contains only the pua_dialoginfo loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua-mi
+Summary: OpenSIPS pua_mi module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+
+%description -n %{name}-module-pua-mi
+This package contains only the pua_mi loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua-reginfo
+Summary: OpenSIPS pua_reginfo module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+
+%description -n %{name}-module-pua-reginfo
+This package contains only the pua_reginfo loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua-usrloc
+Summary: OpenSIPS pua_usrloc module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+
+%description -n %{name}-module-pua-usrloc
+This package contains only the pua_usrloc loadable module for OpenSIPS.
+
+%package -n %{name}-module-pua-xmpp
+Summary: OpenSIPS pua_xmpp module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+Requires: %{name}-module-xmpp = %{version}-%{release}
+
+%description -n %{name}-module-pua-xmpp
+This package contains only the pua_xmpp loadable module for OpenSIPS.
+
+%package -n %{name}-module-rls
+Summary: OpenSIPS rls module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-presence = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+Requires: %{name}-module-xcap = %{version}-%{release}
+
+%description -n %{name}-module-rls
+This package contains only the rls loadable module for OpenSIPS.
+
+%package -n %{name}-module-xcap
+Summary: OpenSIPS xcap module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-xcap
+This package contains only the xcap loadable module for OpenSIPS.
+
+%package -n %{name}-module-xcap-client
+Summary: OpenSIPS xcap_client module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-xcap = %{version}-%{release}
+
+%description -n %{name}-module-xcap-client
+This package contains only the xcap_client loadable module for OpenSIPS.
+
+%package -n %{name}-module-prometheus
+Summary: OpenSIPS prometheus module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-httpd = %{version}-%{release}
+
+%description -n %{name}-module-prometheus
+This package contains only the prometheus loadable module for OpenSIPS.
+
+%package -n %{name}-module-python
+Summary: OpenSIPS python module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-python
+This package contains only the python loadable module for OpenSIPS.
+
+%package -n %{name}-module-event-rabbitmq
+Summary: OpenSIPS event_rabbitmq module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
+Requires: %{name}-module-tls-openssl = %{version}-%{release}
+
+%description -n %{name}-module-event-rabbitmq
+This package contains only the event_rabbitmq loadable module for OpenSIPS.
+
+%package -n %{name}-module-rabbitmq-consumer
+Summary: OpenSIPS rabbitmq_consumer module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
+
+%description -n %{name}-module-rabbitmq-consumer
+This package contains only the rabbitmq_consumer loadable module for OpenSIPS.
+
+%package -n %{name}-module-peering
+Summary: OpenSIPS peering module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-peering
+This package contains only the peering loadable module for OpenSIPS.
+
+%package -n %{name}-module-aaa-radius
+Summary: OpenSIPS aaa_radius module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-aaa-radius
+This package contains only the aaa_radius loadable module for OpenSIPS.
+
+%if 0%{?_with_cachedb_redis:1}
+%package -n %{name}-module-cachedb-redis
+Summary: OpenSIPS cachedb_redis module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-cachedb-redis
+This package contains only the cachedb_redis loadable module for OpenSIPS.
+%endif
+
+%package -n %{name}-module-regex
+Summary: OpenSIPS regex module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-regex
+This package contains only the regex loadable module for OpenSIPS.
+
+%package -n %{name}-module-rest-client
+Summary: OpenSIPS rest_client module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-rest-client
+This package contains only the rest_client loadable module for OpenSIPS.
+
+%package -n %{name}-module-proto-sctp
+Summary: OpenSIPS proto_sctp module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: lksctp-tools
+
+%description -n %{name}-module-proto-sctp
+This package contains only the proto_sctp loadable module for OpenSIPS.
+
+%package -n %{name}-module-siprec
+Summary: OpenSIPS siprec module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-siprec
+This package contains only the siprec loadable module for OpenSIPS.
+
+%if 0%{?_with_sngtc:1}
+%package -n %{name}-module-sngtc
+Summary: OpenSIPS sngtc module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-sngtc
+This package contains only the sngtc loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-snmpstats
+Summary: OpenSIPS snmpstats module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+
+%description -n %{name}-module-snmpstats
+This package contains only the snmpstats loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-sqlite
+Summary: OpenSIPS db_sqlite module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-db-sqlite
+This package contains only the db_sqlite loadable module for OpenSIPS.
+
+%package -n %{name}-module-stir-shaken
+Summary: OpenSIPS stir_shaken module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+%if 0%{?_with_wolfssl_stir_shaken}
+Requires: wolfssl
+%else
+Requires: openssl
+%endif
+
+%description -n %{name}-module-stir-shaken
+This package contains only the stir_shaken loadable module for OpenSIPS.
+
+%package -n %{name}-module-tls-openssl
+Summary: OpenSIPS tls_openssl module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
+Requires: openssl
+
+%description -n %{name}-module-tls-openssl
+This package contains only the tls_openssl loadable module for OpenSIPS.
+
+%if 0%{?_with_wolfssl:1}
+%package -n %{name}-module-tls-wolfssl
+Summary: OpenSIPS tls_wolfssl module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
+
+%description -n %{name}-module-tls-wolfssl
+This package contains only the tls_wolfssl loadable module for OpenSIPS.
+
+%endif
+
+%package -n %{name}-module-proto-tls
+Summary: OpenSIPS proto_tls module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
+%if 0%{?rhel} > 7 || 0%{?fedora} > 23
+Requires: (%{name}-module-tls-openssl or %{name}-module-tls-wolfssl)
+%endif
+
+%description -n %{name}-module-proto-tls
+This package contains only the proto_tls loadable module for OpenSIPS.
+
+%package -n %{name}-module-tls-mgm
+Summary: OpenSIPS tls_mgm module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-tls-mgm
+This package contains only the tls_mgm loadable module for OpenSIPS.
+
+%package -n %{name}-module-db-unixodbc
+Summary: OpenSIPS db_unixodbc module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-db-unixodbc
+This package contains only the db_unixodbc loadable module for OpenSIPS.
+
+%package -n %{name}-module-uuid
+Summary: OpenSIPS uuid module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-uuid
+This package contains only the uuid loadable module for OpenSIPS.
+
+%package -n %{name}-module-proto-wss
+Summary: OpenSIPS proto_wss module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-tls-mgm = %{version}-%{release}
+
+%description -n %{name}-module-proto-wss
+This package contains only the proto_wss loadable module for OpenSIPS.
+
+%package -n %{name}-module-xml
+Summary: OpenSIPS xml module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-xml
+This package contains only the xml loadable module for OpenSIPS.
+
+%package -n %{name}-module-mi-xmlrpc
+Summary: OpenSIPS mi_xmlrpc module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-httpd = %{version}-%{release}
+
+%description -n %{name}-module-mi-xmlrpc
+This package contains only the mi_xmlrpc loadable module for OpenSIPS.
+
+%package -n %{name}-module-xmpp
+Summary: OpenSIPS xmpp module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-xmpp
+This package contains only the xmpp loadable module for OpenSIPS.
+
+%package -n %{name}-modules-auth
+Summary: OpenSIPS auth module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-auth = %{version}-%{release}
+Requires: %{name}-module-auth-aka = %{version}-%{release}
+Requires: %{name}-module-uac-auth = %{version}-%{release}
+
+%description -n %{name}-modules-auth
+This metapackage installs the OpenSIPS modules in the auth bundle.
+
+%if 0%{?_with_aaa_diameter:1}
+%package -n %{name}-modules-diameter
+Summary: OpenSIPS diameter module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-aaa-diameter = %{version}-%{release}
+Requires: %{name}-module-aka-av-diameter = %{version}-%{release}
+
+%description -n %{name}-modules-diameter
+This metapackage installs the OpenSIPS modules in the diameter bundle.
+%endif
+
+%package -n %{name}-modules-http
+Summary: OpenSIPS http module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-httpd = %{version}-%{release}
+Requires: %{name}-module-mi-html = %{version}-%{release}
+Requires: %{name}-module-mi-http = %{version}-%{release}
+Requires: %{name}-module-pi-http = %{version}-%{release}
+
+%description -n %{name}-modules-http
+This metapackage installs the OpenSIPS modules in the http bundle.
+
+%package -n %{name}-modules-ldap
+Summary: OpenSIPS ldap module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-h350 = %{version}-%{release}
+Requires: %{name}-module-ldap = %{version}-%{release}
+
+%description -n %{name}-modules-ldap
+This metapackage installs the OpenSIPS modules in the ldap bundle.
+
+%package -n %{name}-modules-msrp
+Summary: OpenSIPS msrp module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-msrp-gateway = %{version}-%{release}
+Requires: %{name}-module-msrp-relay = %{version}-%{release}
+Requires: %{name}-module-msrp-ua = %{version}-%{release}
+Requires: %{name}-module-proto-msrp = %{version}-%{release}
+
+%description -n %{name}-modules-msrp
+This metapackage installs the OpenSIPS modules in the msrp bundle.
+
+%package -n %{name}-modules-perl
+Summary: OpenSIPS perl module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-perl = %{version}-%{release}
+Requires: %{name}-module-db-perlvdb = %{version}-%{release}
+
+%description -n %{name}-modules-perl
+This metapackage installs the OpenSIPS modules in the perl bundle.
+
+%package -n %{name}-modules-presence
+Summary: OpenSIPS presence module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-presence = %{version}-%{release}
+Requires: %{name}-module-presence-callinfo = %{version}-%{release}
+Requires: %{name}-module-presence-dialoginfo = %{version}-%{release}
+Requires: %{name}-module-presence-dfks = %{version}-%{release}
+Requires: %{name}-module-presence-reginfo = %{version}-%{release}
+Requires: %{name}-module-presence-mwi = %{version}-%{release}
+Requires: %{name}-module-presence-xcapdiff = %{version}-%{release}
+Requires: %{name}-module-presence-xml = %{version}-%{release}
+Requires: %{name}-module-pua = %{version}-%{release}
+Requires: %{name}-module-pua-bla = %{version}-%{release}
+Requires: %{name}-module-pua-dialoginfo = %{version}-%{release}
+Requires: %{name}-module-pua-mi = %{version}-%{release}
+Requires: %{name}-module-pua-reginfo = %{version}-%{release}
+Requires: %{name}-module-pua-usrloc = %{version}-%{release}
+Requires: %{name}-module-pua-xmpp = %{version}-%{release}
+Requires: %{name}-module-rls = %{version}-%{release}
+Requires: %{name}-module-xcap = %{version}-%{release}
+Requires: %{name}-module-xcap-client = %{version}-%{release}
+
+%description -n %{name}-modules-presence
+This metapackage installs the OpenSIPS modules in the presence bundle.
+
+%package -n %{name}-modules-rabbitmq
+Summary: OpenSIPS rabbitmq module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-event-rabbitmq = %{version}-%{release}
+Requires: %{name}-module-rabbitmq-consumer = %{version}-%{release}
+
+%description -n %{name}-modules-rabbitmq
+This metapackage installs the OpenSIPS modules in the rabbitmq bundle.
+
+%package -n %{name}-modules-radius
+Summary: OpenSIPS radius module bundle
+Group: System Environment/Daemons
+Requires: %{name}-module-peering = %{version}-%{release}
+Requires: %{name}-module-aaa-radius = %{version}-%{release}
+
+%description -n %{name}-modules-radius
+This metapackage installs the OpenSIPS modules in the radius bundle.
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -1414,158 +2397,174 @@ fi
 %doc docdir/README.usrloc
 
 %if 0%{?_with_auth_jwt:1}
-%files auth-jwt-module
+%files -n %{name}-module-auth-jwt
 %{_libdir}/opensips/modules/auth_jwt.so
 %doc docdir/README.auth_jwt
 %endif
 
-%files auth-web3-module
+%files -n %{name}-module-auth-web3
 %{_libdir}/opensips/modules/auth_web3.so
 %doc docdir/README.auth_web3
 
-%files auth-modules
+%files -n %{name}-module-auth
 %{_libdir}/opensips/modules/auth.so
-%{_libdir}/opensips/modules/auth_aka.so
-%{_libdir}/opensips/modules/uac_auth.so
 %doc docdir/README.auth
-%doc docdir/README.auth_aka
-%doc docdir/README.uac_auth
 
-%files berkeley-bin
+%files -n %{name}-module-auth-aka
+%{_libdir}/opensips/modules/auth_aka.so
+%doc docdir/README.auth_aka
+
+%files -n %{name}-module-uac-auth
+%{_libdir}/opensips/modules/uac_auth.so
+%doc docdir/README.uac_auth
+%files -n %{name}-module-db-berkeley-bin
 %{_sbindir}/bdb_recover
 
-%files berkeley-module
+%files -n %{name}-module-db-berkeley
 %{_libdir}/opensips/modules/db_berkeley.so
 %doc docdir/README.db_berkeley
 
-%files berkeley-dbschema
+%files -n %{name}-dbschema-berkeley
 %dir %{_datadir}/opensips/db_berkeley
 %dir %{_datadir}/opensips/db_berkeley/opensips
 %{_datadir}/opensips/db_berkeley/opensips/*
 
-%files carrierroute-module
+%files -n %{name}-module-carrierroute
 %{_libdir}/opensips/modules/carrierroute.so
 %doc docdir/README.carrierroute
 
 %if 0%{?_with_cachedb_cassandra:1}
-%files cassandra-module
+%files -n %{name}-module-cachedb-cassandra
 %{_libdir}/opensips/modules/cachedb_cassandra.so
 %doc docdir/README.cachedb_cassandra
 %endif
 
-%files cgrates-module
+%files -n %{name}-module-cgrates
 %{_libdir}/opensips/modules/cgrates.so
 %doc docdir/README.cgrates
 
-%files compression-module
+%files -n %{name}-module-compression
 %{_libdir}/opensips/modules/compression.so
 %doc docdir/README.compression
 
 %if 0%{?_with_cachedb_couchbase:1}
-%files couchbase-module
+%files -n %{name}-module-cachedb-couchbase
 %{_libdir}/opensips/modules/cachedb_couchbase.so
 %doc docdir/README.cachedb_couchbase
 %endif
 
-%files cpl-module
+%files -n %{name}-module-cpl-c
 %{_libdir}/opensips/modules/cpl_c.so
 %doc docdir/README.cpl_c
 
-%files dbhttp-module
+%files -n %{name}-module-db-http
 %{_libdir}/opensips/modules/db_http.so
 %doc docdir/README.db_http
 
-%files dialplan-module
+%files -n %{name}-module-dialplan
 %{_libdir}/opensips/modules/dialplan.so
 %doc docdir/README.dialplan
 
 %if 0%{?_with_aaa_diameter:1}
-%files diameter-module
+%files -n %{name}-module-aaa-diameter
 %{_libdir}/opensips/modules/aaa_diameter.so
-%{_libdir}/opensips/modules/aka_av_diameter.so
 %doc docdir/README.aaa_diameter
+
+%files -n %{name}-module-aka-av-diameter
+%{_libdir}/opensips/modules/aka_av_diameter.so
 %doc docdir/README.aka_av_diameter
 %endif
 
-%files emergency-module
+%files -n %{name}-module-emergency
 %{_libdir}/opensips/modules/emergency.so
 %doc docdir/README.emergency
 
-%files geoip-module
+%files -n %{name}-module-mmgeoip
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
 
-%files http-modules
+%files -n %{name}-module-httpd
 %{_libdir}/opensips/modules/httpd.so
 %doc docdir/README.httpd
+
+%files -n %{name}-module-mi-html
 %{_libdir}/opensips/modules/mi_html.so
 %doc docdir/README.mi_html
+
+%files -n %{name}-module-mi-http
 %{_libdir}/opensips/modules/mi_http.so
 %doc docdir/README.mi_http
+
+%files -n %{name}-module-pi-http
 %{_libdir}/opensips/modules/pi_http.so
 %{_datadir}/opensips/pi/*
 %doc docdir/README.pi_http
-
-%files identity-module
+%files -n %{name}-module-identity
 %{_libdir}/opensips/modules/identity.so
 %doc docdir/README.identity
 
-%files ipsec-module
+%files -n %{name}-module-proto-ipsec
 %{_libdir}/opensips/modules/proto_ipsec.so
 %doc docdir/README.proto_ipsec
 
-%files jabber-module
+%files -n %{name}-module-jabber
 %{_libdir}/opensips/modules/jabber.so
 %doc docdir/README.jabber
 
-%files json-module
+%files -n %{name}-module-json
 %{_libdir}/opensips/modules/json.so
 %doc docdir/README.json
 
-%files kafka-module
+%files -n %{name}-module-event-kafka
 %{_libdir}/opensips/modules/event_kafka.so
 %doc docdir/README.event_kafka
 
-%files ldap-modules
+%files -n %{name}-module-h350
 %{_libdir}/opensips/modules/h350.so
 %doc docdir/README.h350
+
+%files -n %{name}-module-ldap
 %{_libdir}/opensips/modules/ldap.so
 %doc docdir/README.ldap
-
-%files lua-module
+%files -n %{name}-module-lua
 %{_libdir}/opensips/modules/lua.so
 %doc docdir/README.lua
 
-%files memcached-module
+%files -n %{name}-module-cachedb-memcached
 %{_libdir}/opensips/modules/cachedb_memcached.so
 %doc docdir/README.cachedb_memcached
 
 %if 0%{?_with_cachedb_mongodb:1}
-%files mongodb-module
+%files -n %{name}-module-cachedb-mongodb
 %{_libdir}/opensips/modules/cachedb_mongodb.so
 %doc docdir/README.cachedb_mongodb
 %endif
 
-%files msrp-modules
+%files -n %{name}-module-msrp-gateway
 %{_libdir}/opensips/modules/msrp_gateway.so
-%{_libdir}/opensips/modules/msrp_relay.so
-%{_libdir}/opensips/modules/msrp_ua.so
-%{_libdir}/opensips/modules/proto_msrp.so
 %doc docdir/README.msrp_gateway
-%doc docdir/README.msrp_relay
-%doc docdir/README.msrp_ua
-%doc docdir/README.proto_msrp
 
-%files mysql-module
+%files -n %{name}-module-msrp-relay
+%{_libdir}/opensips/modules/msrp_relay.so
+%doc docdir/README.msrp_relay
+
+%files -n %{name}-module-msrp-ua
+%{_libdir}/opensips/modules/msrp_ua.so
+%doc docdir/README.msrp_ua
+
+%files -n %{name}-module-proto-msrp
+%{_libdir}/opensips/modules/proto_msrp.so
+%doc docdir/README.proto_msrp
+%files -n %{name}-module-db-mysql
 %{_libdir}/opensips/modules/db_mysql.so
 %doc docdir/README.db_mysql
 
-%files mysql-dbschema
+%files -n %{name}-dbschema-mysql
 %dir %{_datadir}/opensips/mysql
 %{_datadir}/opensips/mysql/*.sql
 
 %if 0%{?_with_db_oracle:1}
-%files oracle-module
+%files -n %{name}-module-db-oracle
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
 %dir %{_datadir}/opensips/oracle
@@ -1574,18 +2573,18 @@ fi
 %endif
 
 %if 0%{?_with_opentelemetry:1}
-%files  opentelemetry-module
+%files -n %{name}-module-opentelemetry
 %{_libdir}/opensips/modules/opentelemetry.so
 %doc docdir/README.opentelemetry
 %endif
 
 %if 0%{?_with_osp:1}
-%files osp-module
+%files -n %{name}-module-osp
 %{_libdir}/opensips/modules/osp.so
 %doc docdir/README.osp
 %endif
 
-%files perl-modules
+%files -n %{name}-module-perl
 %dir %{perl_vendorlib}/OpenSIPS
 %dir %{perl_vendorlib}/OpenSIPS/LDAPUtils
 %dir %{perl_vendorlib}/OpenSIPS/Utils
@@ -1598,7 +2597,9 @@ fi
 %{perl_vendorlib}/OpenSIPS/Utils/PhoneNumbers.pm
 %{perl_vendorlib}/OpenSIPS/Utils/Debug.pm
 %doc docdir/README.perl
+
 %if 0%{!?_without_db_perlvdb:1}
+%files -n %{name}-module-db-perlvdb
 %dir %{perl_vendorlib}/OpenSIPS/VDB
 %dir %{perl_vendorlib}/OpenSIPS/VDB/Adapter
 %{_libdir}/opensips/modules/db_perlvdb.so
@@ -1617,103 +2618,137 @@ fi
 %{perl_vendorlib}/OpenSIPS/VDB/Value.pm
 %doc docdir/README.db_perlvdb
 %endif
-
-%files postgres-module
+%files -n %{name}-module-db-postgres
 %{_libdir}/opensips/modules/db_postgres.so
 %doc docdir/README.db_postgres
 
-%files postgres-dbschema
+%files -n %{name}-dbschema-postgres
 %dir %{_datadir}/opensips/postgres
 %{_datadir}/opensips/postgres/*.sql
 
-%files presence-modules
+%files -n %{name}-module-presence
 %{_libdir}/opensips/modules/presence.so
 %doc docdir/README.presence
+
+%files -n %{name}-module-presence-callinfo
 %{_libdir}/opensips/modules/presence_callinfo.so
 %doc docdir/README.presence_callinfo
+
+%files -n %{name}-module-presence-dialoginfo
 %{_libdir}/opensips/modules/presence_dialoginfo.so
 %doc docdir/README.presence_dialoginfo
+
+%files -n %{name}-module-presence-dfks
 %{_libdir}/opensips/modules/presence_dfks.so
 %doc docdir/README.presence_dfks
+
+%files -n %{name}-module-presence-reginfo
 %{_libdir}/opensips/modules/presence_reginfo.so
 %doc docdir/README.presence_reginfo
+
+%files -n %{name}-module-presence-mwi
 %{_libdir}/opensips/modules/presence_mwi.so
 %doc docdir/README.presence_mwi
+
+%files -n %{name}-module-presence-xcapdiff
 %{_libdir}/opensips/modules/presence_xcapdiff.so
 %doc docdir/README.presence_xcapdiff
+
+%files -n %{name}-module-presence-xml
 %{_libdir}/opensips/modules/presence_xml.so
 %doc docdir/README.presence_xml
+
+%files -n %{name}-module-pua
 %{_libdir}/opensips/modules/pua.so
 %doc docdir/README.pua
+
+%files -n %{name}-module-pua-bla
 %{_libdir}/opensips/modules/pua_bla.so
 %doc docdir/README.pua_bla
+
+%files -n %{name}-module-pua-dialoginfo
 %{_libdir}/opensips/modules/pua_dialoginfo.so
 %doc docdir/README.pua_dialoginfo
+
+%files -n %{name}-module-pua-mi
 %{_libdir}/opensips/modules/pua_mi.so
 %doc docdir/README.pua_mi
+
+%files -n %{name}-module-pua-reginfo
 %{_libdir}/opensips/modules/pua_reginfo.so
 %doc docdir/README.pua_reginfo
+
+%files -n %{name}-module-pua-usrloc
 %{_libdir}/opensips/modules/pua_usrloc.so
 %doc docdir/README.pua_usrloc
+
+%files -n %{name}-module-pua-xmpp
 %{_libdir}/opensips/modules/pua_xmpp.so
 %doc docdir/README.pua_xmpp
+
+%files -n %{name}-module-rls
 %{_libdir}/opensips/modules/rls.so
 %doc docdir/README.rls
+
+%files -n %{name}-module-xcap
 %{_libdir}/opensips/modules/xcap.so
 %doc docdir/README.xcap
+
+%files -n %{name}-module-xcap-client
 %{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
-
-%files prometheus-module
+%files -n %{name}-module-prometheus
 %{_libdir}/opensips/modules/prometheus.so
 %doc docdir/README.prometheus
 
-%files python-module
+%files -n %{name}-module-python
 %{_libdir}/opensips/modules/python.so
 %doc docdir/README.python
 
-%files rabbitmq-modules
+%files -n %{name}-module-event-rabbitmq
 %{_libdir}/opensips/modules/event_rabbitmq.so
 %doc docdir/README.event_rabbitmq
+
+%files -n %{name}-module-rabbitmq-consumer
 %{_libdir}/opensips/modules/rabbitmq_consumer.so
 %doc docdir/README.rabbitmq_consumer
-
-%files radius-modules
+%files -n %{name}-module-peering
 %{_libdir}/opensips/modules/peering.so
 %doc docdir/README.peering
+
+%files -n %{name}-module-aaa-radius
 %{_libdir}/opensips/modules/aaa_radius.so
 %doc docdir/README.aaa_radius
-
 %if 0%{?_with_cachedb_redis:1}
-%files redis-module
+%files -n %{name}-module-cachedb-redis
 %{_libdir}/opensips/modules/cachedb_redis.so
 %doc docdir/README.cachedb_redis
 %endif
 
-%files regex-module
+%files -n %{name}-module-regex
 %{_libdir}/opensips/modules/regex.so
 %doc docdir/README.regex
 
-%files restclient-module
+%files -n %{name}-module-rest-client
 %{_libdir}/opensips/modules/rest_client.so
 %doc docdir/README.rest_client
 
-%files sctp-module
+%files -n %{name}-module-proto-sctp
 %{_libdir}/opensips/modules/proto_sctp.so
 %doc docdir/README.proto_sctp
 
-%files siprec-module
+%files -n %{name}-module-siprec
 %{_libdir}/opensips/modules/siprec.so
 %doc docdir/README.siprec
 
 %if 0%{?_with_sngtc:1}
-%files sngtc-module
+%files -n %{name}-module-sngtc
 %{_libdir}/opensips/modules/sngtc.so
 %doc docdir/README.sngtc
 %endif
 
 %if 0%{!?_without_snmpstats:1}
-%files snmpstats-module
+%files -n %{name}-module-snmpstats
 %{_libdir}/opensips/modules/snmpstats.so
 %doc docdir/README.snmpstats
 %dir %{_datadir}/snmp
@@ -1725,65 +2760,165 @@ fi
 %{_datadir}/snmp/mibs/OPENSER-TC
 %endif
 
-%files sqlite-module
+%files -n %{name}-module-db-sqlite
 %{_libdir}/opensips/modules/db_sqlite.so
 %doc docdir/README.db_sqlite
 
-%files sqlite-dbschema
+%files -n %{name}-dbschema-sqlite
 %dir %{_datadir}/opensips/sqlite
 %{_datadir}/opensips/sqlite/*.sql
 
-%files stir-shaken-module
+%files -n %{name}-module-stir-shaken
 %{_libdir}/opensips/modules/stir_shaken.so
 %doc docdir/README.stir_shaken
 
-%files  tls-openssl-module
+%files -n %{name}-module-tls-openssl
 %{_libdir}/opensips/modules/tls_openssl.so
 %doc docdir/README.tls_openssl
 
 %if 0%{?_with_wolfssl:1}
-%files  tls-wolfssl-module
+%files -n %{name}-module-tls-wolfssl
 %{_libdir}/opensips/modules/tls_wolfssl.so
 %doc docdir/README.tls_wolfssl
 %endif
 
-%files tls-module
+%files -n %{name}-module-proto-tls
 %{_libdir}/opensips/modules/proto_tls.so
 %doc docdir/README.proto_tls
 
-%files tlsmgm-module
+%files -n %{name}-module-tls-mgm
 %{_libdir}/opensips/modules/tls_mgm.so
 %doc docdir/README.tls_mgm
 
-%files unixodbc-module
+%files -n %{name}-module-db-unixodbc
 %{_libdir}/opensips/modules/db_unixodbc.so
 %doc docdir/README.db_unixodbc
 
-%files uuid-module
+%files -n %{name}-module-uuid
 %{_libdir}/opensips/modules/uuid.so
 %doc docdir/README.uuid
 
-%files wss-module
+%files -n %{name}-module-proto-wss
 %{_libdir}/opensips/modules/proto_wss.so
 %doc docdir/README.proto_wss
 
-%files xml-module
+%files -n %{name}-module-xml
 %{_libdir}/opensips/modules/xml.so
 %doc docdir/README.xml
 
-%files xmlrpc-module
+%files -n %{name}-module-mi-xmlrpc
 %{_libdir}/opensips/modules/mi_xmlrpc.so
 %{_libdir}/opensips/modules/mi_xmlrpc_ng.so
 %doc docdir/README.mi_xmlrpc
 
-%files xmpp-module
+%files -n %{name}-module-xmpp
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
 
+
+# Transitional aliases and bundle metapackages contain no files.
+%files berkeley-bin
+%files berkeley-dbschema
+%files mysql-dbschema
+%files postgres-dbschema
+%files sqlite-dbschema
+%if 0%{?_with_auth_jwt:1}
+%files auth-jwt-module
+%endif
+%files auth-web3-module
+%files auth-modules
+%files berkeley-module
+%files carrierroute-module
+%if 0%{?_with_cachedb_cassandra:1}
+%files cassandra-module
+%endif
+%files cgrates-module
+%files compression-module
+%if 0%{?_with_cachedb_couchbase:1}
+%files couchbase-module
+%endif
+%files cpl-module
+%files dbhttp-module
+%files dialplan-module
+%if 0%{?_with_aaa_diameter:1}
+%files diameter-module
+%endif
+%files emergency-module
+%files geoip-module
+%files http-modules
+%files identity-module
+%files ipsec-module
+%files jabber-module
+%files json-module
+%files kafka-module
+%files ldap-modules
+%files lua-module
+%files memcached-module
+%if 0%{?_with_cachedb_mongodb:1}
+%files mongodb-module
+%endif
+%files msrp-modules
+%files mysql-module
+%if 0%{?_with_db_oracle:1}
+%files oracle-module
+%endif
+%if 0%{?_with_opentelemetry:1}
+%files opentelemetry-module
+%endif
+%if 0%{?_with_osp:1}
+%files osp-module
+%endif
+%files perl-modules
+%files postgres-module
+%files presence-modules
+%files prometheus-module
+%files python-module
+%files rabbitmq-modules
+%files radius-modules
+%if 0%{?_with_cachedb_redis:1}
+%files redis-module
+%endif
+%files regex-module
+%files restclient-module
+%files sctp-module
+%files siprec-module
+%if 0%{?_with_sngtc:1}
+%files sngtc-module
+%endif
+%if 0%{!?_without_snmpstats:1}
+%files snmpstats-module
+%endif
+%files sqlite-module
+%files stir-shaken-module
+%files tls-openssl-module
+%if 0%{?_with_wolfssl:1}
+%files tls-wolfssl-module
+%endif
+%files tls-module
+%files tlsmgm-module
+%files unixodbc-module
+%files uuid-module
+%files wss-module
+%files xml-module
+%files xmlrpc-module
+%files xmpp-module
+%files -n %{name}-modules-auth
+%if 0%{?_with_aaa_diameter:1}
+%files -n %{name}-modules-diameter
+%endif
+%files -n %{name}-modules-http
+%files -n %{name}-modules-ldap
+%files -n %{name}-modules-msrp
+%files -n %{name}-modules-perl
+%files -n %{name}-modules-presence
+%files -n %{name}-modules-rabbitmq
+%files -n %{name}-modules-radius
+
 %changelog
-* Fri Dec 05 2025 Razvan Crainea <razvan@opensips.org> - 4.0.0-1
+* Tue Oct 13 2026 Razvan Crainea <razvan@opensips.org> - 4.0.0-1
 - New module: auth_web3
+- Rename module packages and preserve the old names as transitional aliases
 
 * Wed May 14 2025 Razvan Crainea <razvan@opensips.org> - 3.6.0-1
 - New module: config
