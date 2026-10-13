@@ -726,7 +726,11 @@ module to publish RabbitMQ messages to a RabbitMQ server.
 Summary:  Radius modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+%if 0%{?rhel} >= 10
+BuildRequires:  radcli-compat-devel
+%else
 BuildRequires:  radcli-devel
+%endif
 
 %description  radius-modules
 OpenSIPS is a very fast and flexible SIP (RFC3261)

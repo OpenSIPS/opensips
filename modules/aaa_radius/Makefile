@@ -47,8 +47,8 @@ else
 endif
 
 ifneq ($(BUILDER),)
-	DEFS+= $(shell $(BULDER) --cflags)
-	LIBS+= $(shell $(BULDER) --libs)
+	DEFS+= $(shell $(BUILDER) --cflags)
+	LIBS+= $(shell $(BUILDER) --libs)
 else
 ifeq ($(CROSS_COMPILE),)
 	## we didn't find the packet with pkg-config
