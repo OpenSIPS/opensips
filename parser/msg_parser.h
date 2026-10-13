@@ -359,6 +359,8 @@ struct sip_msg {
 	struct timeval time;
 
 	struct msg_callback *msg_cb;
+	/* Replacement message buffer allocated from pkg memory, if any. */
+	char *pkg_buf;
 };
 
 
