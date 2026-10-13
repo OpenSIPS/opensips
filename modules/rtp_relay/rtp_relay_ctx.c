@@ -181,9 +181,9 @@ struct rtp_relay_ctx *rtp_relay_get_ctx(void)
 	t = t==T_UNDEFINED ? NULL : t;
 
 	if (ctx) {
-		/* if it is local, and we have transaction, move it in transaction */
-		if (t && RTP_RELAY_GET_MSG_CTX()) {
-			RTP_RELAY_CTX_REF(ctx);
+		/* if it is local, and we have transaction, move it in transaction,
+		 * together with the message context's reference */
+		if (t && RTP_RELAY_GET_MSG_CTX() == ctx) {
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			RTP_RELAY_PUT_CTX(NULL);
 		}
@@ -193,8 +193,8 @@ struct rtp_relay_ctx *rtp_relay_get_ctx(void)
 	if (!ctx)
 		return NULL;
 
+	/* the initial reference belongs to the holder we store ctx in */
 	if (t) {
-		RTP_RELAY_CTX_REF(ctx);
 		RTP_RELAY_PUT_TM_CTX(t, ctx);
 	} else {
 		RTP_RELAY_PUT_CTX(ctx);
@@ -462,9 +462,13 @@ static void rtp_relay_reqin(struct cell* t, int type, struct tmcb_params *ps)
 		return;
 	}
 
-	RTP_RELAY_CTX_REF(ctx);
+	/* move the message context's reference in the transaction; any other
+	 * holder (dialog, B2B) keeps its own, so take a new one */
+	if (RTP_RELAY_GET_MSG_CTX() == ctx)
+		RTP_RELAY_PUT_CTX(NULL);
+	else
+		RTP_RELAY_CTX_REF(ctx);
 	RTP_RELAY_PUT_TM_CTX(t, ctx);
-	RTP_RELAY_PUT_CTX(NULL);
 }
 
 /* indicates if the new request branch id has been computed */
@@ -2004,11 +2008,15 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	if (route_type != LOCAL_ROUTE) {
 		if (!rtp_relay_ctx_engaged(ctx)) {
 
-			/* handles the replies to the original INVITE */
+			/* handles the replies to the original INVITE; the callback
+			 * owns its reference, as it may be released even if no
+			 * transaction is ever created (i.e. stateless reply) */
+			RTP_RELAY_CTX_REF_UNSAFE(ctx, 1);
 			if (rtp_relay_tmb.register_tmcb(msg, 0,
 					TMCB_RESPONSE_FWDED|TMCB_REQUEST_FWDED|TMCB_ON_FAILURE,
 					rtp_relay_ctx_initial_cb, ctx, rtp_relay_ctx_release)!=1) {
 				LM_ERR("failed to install TM reply callback\n");
+				RTP_RELAY_CTX_REF_UNSAFE(ctx, -1);
 				return -1;
 			}
 			if (rtp_relay_dlg_ctx_idx >= 0)
