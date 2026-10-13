@@ -1,0 +1,29 @@
+# OpenSIPS community-contributed modules
+
+This directory contains modules contributed by the OpenSIPS community which
+are not maintained by the OpenSIPS core team.  Their inclusion here does not
+carry the same maintenance or support expectations as modules under
+`modules/`.
+
+These modules are intentionally excluded from the default `make`, `make all`,
+`make modules`, and `make install` targets.  Build and install them explicitly:
+
+    make modules-contrib
+    make install-modules-contrib-all
+
+To build a subset, use the same `modules` selector as for core modules:
+
+    make modules=modules-contrib/example modules-contrib
+
+Each module must use the usual `modules/<name>/` layout.  Since both module
+trees have the same directory depth, a contrib module Makefile includes the
+standard build files in the same way:
+
+    include ../../Makefile.defs
+    # module-specific settings
+    include ../../Makefile.modules
+
+The Debian and RPM packaging builds place dependency-free modules from this
+directory in `opensips-contrib-modules`.  A module with external dependencies
+must be added to the explicit contrib dependency list in both packaging
+backends and given its own package metadata, dependencies, and file list.

@@ -124,6 +124,11 @@ support is enabled by "SCTP=1"):
 make   #builds only opensips core, equivalent to make opensips
 make modules
 
+# Community-contributed modules, which are not maintained by the OpenSIPS core
+# team, live under modules-contrib and are built only when explicitly requested:
+
+make modules-contrib
+
 or make all #builds everything
 
 -compile debug mode version
@@ -133,6 +138,10 @@ make mode=debug all
 -compile only the textops module
 
 make modules=modules/textops modules
+
+-compile only selected community-contributed modules
+
+make modules=modules-contrib/example modules-contrib
 
 -compile all the "default" modules except textops and db_mysql
 
