@@ -3580,7 +3580,8 @@ int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *in
 	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
-	b2b_api.apply_lumps(msg);
+	if (b2b_api.apply_lumps(msg) < 0)
+		return -1;
 
 	cust_headers = NULL;
 	if (init_params->flags & B2BL_FLAG_TRANSPARENT_AUTH)

@@ -990,7 +990,10 @@ void free_sip_msg(struct sip_msg* msg)
 		free_reply_lump(msg->reply_lump);
 	if (msg->body )
 		free_sip_body(msg->body);
-	/* don't free anymore -- now a pointer to a static buffer */
+	/* Parsed fields and callbacks may still point into this buffer. */
+	if (msg->pkg_buf)
+		pkg_free(msg->pkg_buf);
+	/* msg->buf is otherwise owned by the caller. */
 }
 
 
