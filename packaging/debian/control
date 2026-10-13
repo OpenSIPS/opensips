@@ -62,6 +62,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
           opensips-compression-module,
+          opensips-contrib-modules,
           opensips-cpl-module,
           opensips-dbhttp-module,
           opensips-dialplan-module,
@@ -123,6 +124,19 @@ Description: very fast and configurable SIP server
  .
  This package contains the main OpenSIPS binary along with the principal modules
  and support binaries.
+
+Package: opensips-contrib-modules
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: community-contributed modules for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package contains community-contributed modules which do not require
+ external build dependencies. These modules are not maintained by the
+ OpenSIPS core team and may have different support guarantees.
 
 Package: opensips-auth-jwt-module
 Architecture: any

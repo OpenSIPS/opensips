@@ -47,6 +47,11 @@
 
 %global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
 
+# Contrib modules which require external libraries belong here.  Add matching
+# build requirements, subpackage metadata and file sections for each one, as
+# done for dependency-bearing modules from the main module tree.
+%global CONTRIB_MODULES_WITH_DEPS %{nil}
+
 Summary:  Very fast and configurable SIP server
 Name:     opensips
 Version:  3.6.0
@@ -138,6 +143,20 @@ XMLRPC Interface.
 .
 This package contains the main OpenSIPS binary along with the principal modules
 and support binaries.
+
+%package contrib-modules
+Summary:  Community-contributed modules for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description contrib-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package contains community-contributed modules which do not require
+external build dependencies. These modules are not maintained by the OpenSIPS
+core team and may have different support guarantees.
 
 %if 0%{?_with_auth_jwt:1}
 %package  auth-jwt-module
@@ -1032,6 +1051,10 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_w
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__make} modules-contrib %{?_smp_mflags} \
+  cfg_target=%{_sysconfdir}/opensips/ \
+  modules_prefix=%{buildroot}%{_prefix} \
+  modules_dir=%{_lib}/%{name}/modules
 
 %install
 %{__make} install TLS=1 LIBDIR=%{_lib} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} \
@@ -1042,6 +1065,28 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_w
   modules_prefix=%{buildroot}/%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules \
   DBTEXTON=yes # fixed dbtext documentation installation
+
+%{__make} install-modules-contrib-files LIBDIR=%{_lib} \
+  basedir=%{buildroot} prefix=%{_prefix} \
+  cfg_prefix=%{buildroot} cfg_target=%{_sysconfdir}/opensips/ \
+  modules_prefix=%{buildroot}/%{_prefix} \
+  modules_dir=%{_lib}/%{name}/modules \
+  doc_dir=share/doc/%{name}
+
+# Generate the dependency-free contrib package manifest.  Modules listed in
+# CONTRIB_MODULES_WITH_DEPS must have explicit package file lists below.
+: > contrib-modules.files
+for module_dir in modules-contrib/*; do
+  test -f "$module_dir/Makefile" || continue
+  module_name=$(basename "$module_dir")
+  case " %{CONTRIB_MODULES_WITH_DEPS} " in
+    *" $module_name "*) continue ;;
+  esac
+  echo "%{_libdir}/opensips/modules/$module_name.so" >> contrib-modules.files
+  if test -f "%{buildroot}%{_docdir}/%{name}/README.$module_name"; then
+    echo "%%doc docdir/README.$module_name" >> contrib-modules.files
+  fi
+done
 
 # clean some things
 %if 0%{?el5}
@@ -1160,6 +1205,8 @@ fi
 %doc docdir/NEWS
 %doc docdir/README
 %doc COPYING
+
+%files contrib-modules -f contrib-modules.files
 
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so

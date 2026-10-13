@@ -107,6 +107,21 @@ modules_basenames=$(patsubst modules/%, %, $(modules))
 db_modules_basenames=$(filter db_%, $(modules_basenames))
 modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
 
+# Community-contributed modules are kept separate from the modules maintained
+# by the OpenSIPS core team and are built only through explicit contrib targets.
+# Reuse the standard modules= selector when it is provided on the command
+# line; otherwise discover every contrib module.
+ifeq ($(origin modules),command line)
+contrib_modules=$(modules)
+else
+contrib_modules=$(patsubst %/Makefile,%,$(wildcard modules-contrib/*/Makefile))
+endif
+contrib_modules_names=$(patsubst modules-contrib/%, %.so, $(contrib_modules))
+contrib_modules_basenames=$(patsubst modules-contrib/%, %, $(contrib_modules))
+contrib_db_modules_basenames=$(filter db_%, $(contrib_modules_basenames))
+contrib_modules_full_path=$(join $(contrib_modules), \
+			$(addprefix /, $(contrib_modules_names)))
+
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
 
 install_docs := AUTHORS NEWS README
@@ -176,8 +191,8 @@ app: $(NAME)
 .PHONY: _modules
 _modules: $(modules)
 
-.PHONY: $(modules)
-$(modules):
+.PHONY: $(filter modules/%,$(modules))
+$(filter modules/%,$(modules)):
 	@$(MAKE) --no-print-directory -C $@ && \
 		echo "Building $(notdir $@) module succeeded" || (\
 			status=$$?; \
@@ -203,6 +218,38 @@ else
 		status=$$?; \
 		if echo $(MAKEFLAGS) | grep -q -- --jobserver; then \
 			printf '\nBuilding one or more modules failed!\n'; \
+			printf 'Please re-run make without -j / --jobs to find out which.\n\n'; \
+		fi; \
+		exit $$status \
+	)
+endif
+
+.PHONY: _modules-contrib
+_modules-contrib: $(contrib_modules)
+
+.PHONY: $(contrib_modules)
+$(contrib_modules):
+	@$(MAKE) --no-print-directory -C $@ && \
+		echo "Building $(notdir $@) contrib module succeeded" || (\
+			status=$$?; \
+			echo "ERROR: Building $(notdir $@) contrib module failed!"; \
+			exit $$status; \
+		)
+
+.PHONY: modules-contrib
+modules-contrib: $(deps_gen) gen_misclibs
+ifeq (,$(FASTER))
+	@set -e; \
+	for r in $(contrib_modules); do \
+		echo  "" ; \
+		echo  "" ; \
+		$(MAKE) -C $$r ; \
+	done
+else
+	@$(MAKE) _modules-contrib || ( \
+		status=$$?; \
+		if echo $(MAKEFLAGS) | grep -q -- --jobserver; then \
+			printf '\nBuilding one or more contrib modules failed!\n'; \
 			printf 'Please re-run make without -j / --jobs to find out which.\n\n'; \
 		fi; \
 		exit $$status \
@@ -357,8 +404,17 @@ install-app: mk-install-dirs install-cfg install-bin \
 	install-app-doc install-man install-config-templates install-pi-framework
 
 # Install all module stuff
+.PHONY: install-modules-files install-modules-all install-modules-contrib \
+	install-modules-contrib-files install-modules-contrib-all \
+	install-modules-contrib-doc install-modules-contrib-dbschema
 install-modules-files: install-modules install-modules-doc
 install-modules-all: install-modules-files install-modules-dbschema
+
+# Contrib modules are never pulled in by the default install targets.
+install-modules-contrib-files: install-modules-contrib \
+	install-modules-contrib-doc
+install-modules-contrib-all: install-modules-contrib-files \
+	install-modules-contrib-dbschema
 
 # Install everything
 install: install-app install-modules-all
@@ -439,11 +495,34 @@ install-modules: modules $(modules_prefix)/$(modules_dir)
 		fi ; \
 	done
 
+install-modules-contrib: modules-contrib $(modules_prefix)/$(modules_dir)
+	@for r in $(contrib_modules_full_path) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -f "$$r" ]; then \
+				$(INSTALL_TOUCH) \
+					$(modules_prefix)/$(modules_dir)/`basename "$$r"` ; \
+				$(INSTALL_MODULES) "$$r" $(modules_prefix)/$(modules_dir) ; \
+				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
+			else \
+				echo "ERROR: contrib module $$r not compiled" ; \
+			fi ;\
+		fi ; \
+	done
+
 install-modules-dbschema:
 	@for r in $(db_modules_basenames) "" ; do \
 		if [ -n "$$r" ]; then \
 			if [ -f modules/"$$r"/Makefile ]; then \
 				$(MAKE) -C modules/"$$r" install_module_dbschema ; \
+			fi ;\
+		fi ; \
+	done
+
+install-modules-contrib-dbschema:
+	@for r in $(contrib_db_modules_basenames) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -f modules-contrib/"$$r"/Makefile ]; then \
+				$(MAKE) -C modules-contrib/"$$r" install_module_dbschema ; \
 			fi ;\
 		fi ; \
 	done
@@ -468,6 +547,17 @@ install-modules-doc: $(doc_prefix)/$(doc_dir)
 				$(INSTALL_TOUCH)  $(doc_prefix)/$(doc_dir)/README."$$r" ; \
 				$(INSTALL_DOC)  modules/"$$r"/README.md  \
 									$(doc_prefix)/$(doc_dir)/README."$$r" ; \
+			fi ; \
+		fi ; \
+	done
+
+install-modules-contrib-doc: $(doc_prefix)/$(doc_dir)
+	-@for r in $(contrib_modules_basenames) "" ; do \
+		if [ -n "$$r" ]; then \
+			if [ -f modules-contrib/"$$r"/README.md ]; then \
+				$(INSTALL_TOUCH) $(doc_prefix)/$(doc_dir)/README."$$r" ; \
+				$(INSTALL_DOC) modules-contrib/"$$r"/README.md \
+					$(doc_prefix)/$(doc_dir)/README."$$r" ; \
 			fi ; \
 		fi ; \
 	done
