@@ -108,7 +108,7 @@ parse_session_expires_body( struct hdr_field *hf )
 			if ( pos + 4 < len ) {
 				switch ( lower_4bytes(read_4bytes(p)) ) {
 					case /*refr*/MAKE_4BYTES('r','e','f','r'):
-						if ( pos + 9 <= len
+						if ( pos + 13 <= len
 							 && lower_4bytes(read_4bytes(p+4))
 								== /*eshe*/MAKE_4BYTES('e','s','h','e')
 							 && lower_byte(*(p+8)) == 'r'
