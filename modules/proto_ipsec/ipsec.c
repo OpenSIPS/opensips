@@ -744,19 +744,25 @@ struct ipsec_ctx *ipsec_ctx_get(void)
 	return IPSEC_GET_CTX();
 }
 
-struct ipsec_ctx *ipsec_ctx_find(struct ipsec_user *user, unsigned short port)
+int ipsec_ctx_unlink(struct ipsec_user *user, unsigned short port)
 {
 	struct list_head *it;
 	struct ipsec_ctx *ctx = NULL;
 	lock_get(&user->lock);
 	list_for_each(it, &user->sas) {
 		ctx = list_entry(it, struct ipsec_ctx, list);
-		if (ctx->ue.port_c == port)
+		if (ctx->ue.port_c == port) {
+			list_del(&ctx->list);
 			break;
+		}
 		ctx = NULL;
 	}
 	lock_release(&user->lock);
-	return ctx;
+	if (!ctx)
+		return 0;
+	/* the reference of the user's list */
+	ipsec_ctx_release(ctx);
+	return 1;
 }
 
 int ipsec_ctx_release_unsafe(struct ipsec_ctx *ctx)
@@ -797,15 +803,25 @@ struct ipsec_ctx_tmp {
 
 void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx, enum ipsec_state state)
 {
-	struct ipsec_ctx_tmp *tmp = shm_malloc(sizeof *tmp);
-	if (!tmp) {
-		LM_ERR("could not push ctx in ue - dropping it!\n");
-		return;
+	struct ipsec_ctx_tmp *tmp = NULL;
+
+	if (state == IPSEC_STATE_TMP) {
+		tmp = shm_malloc(sizeof *tmp);
+		if (!tmp) {
+			LM_ERR("could not push ctx in ue - dropping it!\n");
+			return;
+		}
+		memset(tmp, 0, sizeof *tmp);
+		INIT_LIST_HEAD(&tmp->list);
+		tmp->expire = get_ticks() + ipsec_tmp_timeout;
+		tmp->ctx = ctx;
 	}
-	memset(tmp, 0, sizeof *tmp);
-	INIT_LIST_HEAD(&tmp->list);
-	tmp->expire = get_ticks() + ipsec_tmp_timeout;
-	tmp->ctx = ctx;
+
+	/* ref the context for the lists it is added to, before it can be found */
+	lock_get(&ctx->lock);
+	IPSEC_CTX_REF_COUNT_UNSAFE(ctx, (tmp?2:1)); /* first in user, second in tmp list */
+	ctx->state = state;
+	lock_release(&ctx->lock);
 
 	/* add to the user */
 	lock_get(&user->lock);
@@ -814,14 +830,8 @@ void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx, enum ip
 	list_add_tail(&ctx->list, &user->sas);
 	lock_release(&user->lock);
 
-	/* ref the context, and mark its state as temporarily */
-	lock_get(&ctx->lock);
-	IPSEC_CTX_REF_COUNT_UNSAFE(ctx, (state == IPSEC_STATE_TMP?2:1)); /* first in user, second in tmp list */
-	ctx->state = state;
-	lock_release(&ctx->lock);
-
 	/* add to temporarily list */
-	if (state == IPSEC_STATE_TMP) {
+	if (tmp) {
 		lock_get(ipsec_tmp_contexts_lock);
 		list_add_tail(&tmp->list, ipsec_tmp_contexts);
 		lock_release(ipsec_tmp_contexts_lock);
@@ -830,19 +840,38 @@ void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx, enum ip
 
 void ipsec_ctx_release_tmp_user(struct ipsec_user *user)
 {
-	struct list_head *it, *safe;
+	struct list_head *it;
 	struct ipsec_ctx *ctx;
 
-	lock_get(&user->lock);
-	list_for_each_safe(it, safe, &user->sas) {
-		ctx = list_entry(it, struct ipsec_ctx, list);
-		if (ctx->state == IPSEC_STATE_TMP)
-			ipsec_ctx_remove_tmp(ctx);
-	}
-	lock_release(&user->lock);
+	do {
+		ctx = NULL;
+		lock_get(&user->lock);
+		list_for_each(it, &user->sas) {
+			ctx = list_entry(it, struct ipsec_ctx, list);
+			lock_get(&ctx->lock);
+			if (ctx->state == IPSEC_STATE_TMP) {
+				/* no longer to be confirmed */
+				ctx->state = IPSEC_STATE_INVALID;
+				lock_release(&ctx->lock);
+				break;
+			}
+			lock_release(&ctx->lock);
+			ctx = NULL;
+		}
+		if (ctx)
+			list_del(&ctx->list);
+		lock_release(&user->lock);
+		if (!ctx)
+			break;
+		/* unlinked, so the reference of the user's list is ours to drop,
+		 * out of the user lock, as the last reference takes it */
+		ipsec_ctx_remove_tmp(ctx);
+		ipsec_ctx_release(ctx);
+	} while (1);
 }
 
-void ipsec_ctx_release_user(struct ipsec_ctx *ctx)
+/* unlinks the ctx from its user, dropping the reference of the user's list */
+static void ipsec_ctx_unlink_user(struct ipsec_ctx *ctx)
 {
 	int release = 0;
 	struct ipsec_user *user = ctx->user;
@@ -854,7 +883,18 @@ void ipsec_ctx_release_user(struct ipsec_ctx *ctx)
 	}
 	lock_release(&user->lock);
 	if (release)
-		ipsec_release_user(user);
+		ipsec_ctx_release(ctx);
+}
+
+void ipsec_ctx_release_user(struct ipsec_ctx *ctx)
+{
+	struct ipsec_user *user = ctx->user;
+
+	lock_get(&user->lock);
+	if (list_is_valid(&ctx->list))
+		list_del(&ctx->list);
+	lock_release(&user->lock);
+	ipsec_release_user(user);
 }
 
 void ipsec_ctx_timer(unsigned int ticks, void* param)
@@ -863,7 +903,7 @@ void ipsec_ctx_timer(unsigned int ticks, void* param)
 	struct list_head new;
 	struct ipsec_ctx_tmp *tmp;
 	struct ipsec_ctx *ctx;
-	int free;
+	int expired;
 
 	INIT_LIST_HEAD(&new);
 
@@ -873,7 +913,6 @@ void ipsec_ctx_timer(unsigned int ticks, void* param)
 		if (ticks < tmp->expire)
 			break; /* finished */
 		prev = it;
-		IPSEC_CTX_UNREF(tmp->ctx);
 		LM_DBG("IPSec ctx %p removing\n", tmp->ctx);
 	}
 	/* unlink from the shared list */
@@ -883,18 +922,21 @@ void ipsec_ctx_timer(unsigned int ticks, void* param)
 
 	list_for_each_safe(it, safe, &new) {
 		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
-		lock_get(&tmp->ctx->lock);
-		if (tmp->ctx->state == IPSEC_STATE_TMP) {
-			tmp->ctx->state = IPSEC_STATE_INVALID;
-			LM_DBG("IPSec ctx %p expired\n", tmp->ctx);
-		}
-		list_del(&tmp->list);
 		ctx = tmp->ctx;
-		free = IPSEC_CTX_UNREF_UNSAFE(tmp->ctx);
-		lock_release(&tmp->ctx->lock);
+		list_del(&tmp->list);
 		shm_free(tmp);
-		if (free)
-			ipsec_ctx_free(ctx);
+		lock_get(&ctx->lock);
+		expired = (ctx->state == IPSEC_STATE_TMP);
+		if (expired) {
+			ctx->state = IPSEC_STATE_INVALID;
+			LM_DBG("IPSec ctx %p expired\n", ctx);
+		}
+		lock_release(&ctx->lock);
+		/* an association that was never confirmed leaves its user */
+		if (expired)
+			ipsec_ctx_unlink_user(ctx);
+		/* the reference of the tmp list */
+		ipsec_ctx_release(ctx);
 	}
 }
 

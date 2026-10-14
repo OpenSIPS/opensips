@@ -44,6 +44,7 @@ struct ipsec_user *ipsec_get_user(struct ip_addr *ip, str *impi, str *impu);
 struct ipsec_user *ipsec_find_user(struct ip_addr *ip, str *impi, str *impu);
 struct ipsec_user *ipsec_remove_user(struct ip_addr *ip);
 void ipsec_release_user(struct ipsec_user *user);
+/* the ctx lookups return a referenced ctx: release it with IPSEC_CTX_UNREF */
 struct ipsec_ctx *ipsec_get_ctx_user(struct ipsec_user *user, struct receive_info *ri);
 struct ipsec_ctx *ipsec_get_ctx_ip_port(struct ip_addr *ip, unsigned short port);
 
