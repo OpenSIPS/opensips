@@ -3819,6 +3819,25 @@ shm_err:
 	return -1;
 }
 
+/* bytes of chunk data read for a @type value */
+static inline unsigned int hep_type_size(int type)
+{
+	switch (type) {
+		case TYPE_UINT8:
+			return sizeof(uint8_t);
+		case TYPE_UINT16:
+			return sizeof(uint16_t);
+		case TYPE_UINT32:
+			return sizeof(uint32_t);
+		case TYPE_INET_ADDR:
+			return sizeof(struct in_addr);
+		case TYPE_INET6_ADDR:
+			return sizeof(struct in6_addr);
+		default:
+			return 0;
+	}
+}
+
 static int w_get_hep(struct sip_msg* msg, void *_id, void *_type,
                      pv_spec_p data_pv, pv_spec_p vendor_pv)
 {
@@ -3868,6 +3887,13 @@ static int w_get_hep(struct sip_msg* msg, void *_id, void *_type,
 		if (it->chunk.type_id == chunk_id) {
 			vendor_val.ri = it->chunk.vendor_id;
 			vendor_val.flags = PV_TYPE_INT;
+
+			if (hep_type_size(data_type) >
+					it->chunk.length - sizeof(hep_chunk_t)) {
+				LM_ERR("chunk %u too short (%d bytes) for its type!\n", chunk_id,
+					(int)(it->chunk.length - sizeof(hep_chunk_t)));
+				goto set_pv_null;
+			}
 
 			switch (data_type) {
 				/* all int types are in big endian */
@@ -4554,7 +4580,8 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	str addr_str, payload_str;
 
 	char addr[INET6_ADDRSTRLEN];
-	cJSON *pld_root, *event;
+	cJSON *pld_root = NULL, *event;
+	int ret;
 
 	if ((ctx=HEP_GET_CONTEXT(hep_api)) == NULL) {
 		LM_WARN("not a hep message!\n");
@@ -4703,22 +4730,15 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		payload_str.s[payload_str.len] = 0;
 
 		pld_root = cJSON_Parse(payload_str.s);
+		payload_str.s[payload_str.len] = holder;
 
-		if ( pld_root ) {
-			payload_str.s[payload_str.len] = holder;
-
-			/* now search if we have any Event key */
-			event = cJSON_GetObjectItem(pld_root, "Event");
-			db_vals[16].type = DB_STR;
-			if ( event ) {
-				db_vals[16].val.str_val.s = event->valuestring;
-				db_vals[16].val.str_val.len = strlen(event->valuestring);
-			} else {
-				db_vals[16].val.str_val.s = "";
-				db_vals[16].val.str_val.len = 0;
-			}
-
-			cJSON_Delete( pld_root );
+		/* now search if we have any Event key; the tree is kept until the
+		 * row is stored, as the event column points into it */
+		db_vals[16].type = DB_STR;
+		event = pld_root ? cJSON_GetObjectItem(pld_root, "Event") : NULL;
+		if ( event && (event->type & 0xFF) == cJSON_String ) {
+			db_vals[16].val.str_val.s = event->valuestring;
+			db_vals[16].val.str_val.len = strlen(event->valuestring);
 		} else {
 			db_vals[16].val.str_val.s = "";
 			db_vals[16].val.str_val.len = 0;
@@ -4734,15 +4754,19 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	}
 	CON_SET_CURR_PS(db_con, &rc_ps);
 
-	if (!actx && db_sync_store(db_vals, rtcp_db_keys, rtp_keys_no) != 1) {
-		LM_ERR("failed to insert into database\n");
-		return -1;
-	} else if (actx) {
-		return db_async_store(db_vals, rtcp_db_keys, rtp_keys_no,
+	if (!actx) {
+		ret = db_sync_store(db_vals, rtcp_db_keys, rtp_keys_no);
+		if (ret != 1)
+			LM_ERR("failed to insert into database\n");
+	} else {
+		ret = db_async_store(db_vals, rtcp_db_keys, rtp_keys_no,
 			append_rc_values, actx, t_el);
 	}
 
-	return 1;
+	if (pld_root)
+		cJSON_Delete(pld_root);
+
+	return ret;
 }
 
 static int w_report_capture_async(struct sip_msg* msg, async_ctx *actx,
