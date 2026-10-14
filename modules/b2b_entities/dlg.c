@@ -3466,7 +3466,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	int old_route_type;
 	bin_packet_t storage;
 	int b2b_ev = -1;
-	int lock_taken = 0;
+	int lock_taken = 0, dlg_pinned = 0;
 	struct b2b_context *ctx;
 	int b2b_cb_flags = 0;
 	unsigned int reqmask;
@@ -4375,6 +4375,19 @@ b2b_route:
 	if (B2BE_SERIALIZE_STORAGE()) {
 		B2BE_LOCK_GET(htable, hash_index);
 		lock_taken = 1;
+
+		/* the dialog may have been deleted while the lock was released */
+		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
+		{
+			if(aux_dlg == dlg)
+				break;
+		}
+		if(!aux_dlg || dlg->deleted)
+		{
+			B2BE_LOCK_RELEASE(htable, hash_index);
+			goto done;
+		}
+
 		if (dlg_state == B2B_CONFIRMED && prev_state == B2B_MODIFIED) {
 
 			if (dlg->state != B2B_TERMINATED) {
@@ -4402,25 +4415,20 @@ b2b_route:
 				b2b_ev = -1;
 			}
 		}
+
+		/* the replication below runs with the lock released */
+		if (b2be_cluster &&
+		(b2b_ev == B2B_EVENT_UPDATE || b2b_ev == B2B_EVENT_CREATE)) {
+			dlg->ref++;
+			dlg_pinned = 1;
+		}
 	}
 
 	current_dlg = 0;
 	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
-		/* the lock is already aquired above, since B2BE_SERIALIZE_STORAGE()
-		 * is true for the WRITE_THROUGH b2be_db_mode */
-
-		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
-		{
-			if(aux_dlg == dlg)
-				break;
-		}
-		if(!aux_dlg)
-		{
-			B2BE_LOCK_RELEASE(htable, hash_index);
-			goto done;
-		}
-
+		/* the lock is already aquired and the dialog found above, since
+		 * B2BE_SERIALIZE_STORAGE() is true for the WRITE_THROUGH b2be_db_mode */
 		if (b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
 		B2BE_LOCK_RELEASE(htable, hash_index);
@@ -4434,6 +4442,12 @@ b2b_route:
 				B2B_EVENT_UPDATE, &storage);
 		if (b2b_ev == B2B_EVENT_CREATE)
 			replicate_entity_create(dlg, etype, hash_index, &storage);
+	}
+
+	if (dlg_pinned) {
+		B2BE_LOCK_GET(htable, hash_index);
+		b2b_dlg_unref(dlg, htable, hash_index);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 	}
 
 	if (to_hdr_parsed.param_lst) {

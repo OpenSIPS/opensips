@@ -161,8 +161,125 @@ static void test_early_reply_keeps_deleted_dlg(void)
 	B2BE_LOCK_RELEASE(client_htable, hash_index);
 }
 
+dlg_leg_t* b2b_add_leg(b2b_dlg_t* dlg, struct sip_msg* msg, str* to_tag);
+
+static char reply_200[] =
+	"SIP/2.0 200 OK\r\n"
+	"Via: SIP/2.0/UDP 127.0.0.1;branch=z9hG4bK2\r\n"
+	"From: <sip:a@127.0.0.1>;tag=ftag2\r\n"
+	"To: <sip:b@127.0.0.2>;tag=ttag2\r\n"
+	"Call-ID: %.*s\r\n"
+	"CSeq: 2 INVITE\r\n"
+	"Contact: <sip:b@127.0.0.2>\r\n"
+	"Content-Length: 0\r\n\r\n";
+
+static int storage_events;
+static str deleted_key;
+
+static void count_storage_event(enum b2b_entity_type et, str *key,
+	str *logic_key, void *param, enum b2b_event_type ev,
+	bin_packet_t *storage, int backend)
+{
+	storage_events++;
+}
+
+/* the entity is ended while its reply is handed to the logic, with the
+ * entity lock dropped (here by the notified logic itself, as another
+ * process would do in the same window) */
+static int delete_on_reply(struct sip_msg *msg, str *key, int type,
+	str *logic_key, void *param, int flags)
+{
+	b2b_entity_delete(B2B_CLIENT, &deleted_key, NULL, 0, 0);
+	return 0;
+}
+
+static void test_reply_after_delete_no_storage(void)
+{
+	static str ftag = str_init("ftag2");
+	static str contact = str_init("sip:b2b@127.0.0.1");
+	static str inv = str_init("INVITE");
+	static str mod = str_init("b2b_test");
+	static str ttag = str_init("ttag2");
+	unsigned int hash_index = 2;
+	struct cell t;
+	struct tmcb_params ps;
+	struct sip_msg msg;
+	b2b_dlg_t *dlg;
+	str *key;
+	void *param;
+	char buf[1024], kbuf[B2B_MAX_KEY_SIZE];
+	int len, old_backend;
+
+	if (b2b_register_cb(count_storage_event, B2BCB_TRIGGER_EVENT, &mod) < 0) {
+		ok(0, "register storage callback");
+		return;
+	}
+
+	dlg = shm_malloc(sizeof *dlg);
+	if (!dlg) {
+		ok(0, "no shm");
+		return;
+	}
+	memset(dlg, 0, sizeof *dlg);
+	dlg->tag[CALLER_LEG] = ftag;
+	dlg->contact[CALLER_LEG] = contact;
+	dlg->mod_name = mod;
+	dlg->state = B2B_MODIFIED;
+	dlg->last_method = METHOD_INVITE;
+	dlg->id = 9;
+	dlg->db_flag = NO_UPDATEDB_FLAG;
+	dlg->b2b_cback = delete_on_reply;
+
+	key = b2b_htable_insert(client_htable, dlg, hash_index, NULL,
+		B2B_CLIENT, 0, 0, 0);
+	if (!key) {
+		ok(0, "insert client dlg");
+		return;
+	}
+	memcpy(kbuf, key->s, key->len);
+	deleted_key.s = kbuf;
+	deleted_key.len = key->len;
+	dlg->callid = deleted_key;
+
+	len = snprintf(buf, sizeof buf, reply_200, deleted_key.len, deleted_key.s);
+	memset(&msg, 0, sizeof msg);
+	msg.buf = buf;
+	msg.len = len;
+	if (parse_msg(buf, len, &msg) != 0) {
+		ok(0, "parse 200 reply");
+		return;
+	}
+	if (!b2b_add_leg(dlg, &msg, &ttag)) {
+		ok(0, "add confirmed leg");
+		return;
+	}
+
+	memset(&t, 0, sizeof t);
+	t.method = inv;
+	t.ref_count = 2;
+	dlg->uac_tran = &t;
+
+	memset(&ps, 0, sizeof ps);
+	ps.code = 200;
+	ps.rpl = &msg;
+	param = &deleted_key;
+	ps.param = &param;
+
+	old_backend = serialize_backend;
+	serialize_backend = B2BCB_BACKEND_DB;
+	storage_events = 0;
+
+	b2b_tm_cback(&t, client_htable, &ps);
+
+	serialize_backend = old_backend;
+
+	ok(storage_events == 0,
+		"no storage event for a dialog deleted while its reply was handled");
+}
+
 void mod_tests(void)
 {
 	test_early_reply_keeps_pinned_dlg();
 	test_early_reply_keeps_deleted_dlg();
+	test_reply_after_delete_no_storage();
 }
