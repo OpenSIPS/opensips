@@ -29,6 +29,8 @@
 #include "../../tm/t_hooks.h"
 #include "../dlg.h"
 #include "../b2b_entities.h"
+#include "../ua_api.h"
+#include "../../../timer.h"
 #include "../../../parser/parse_to.h"
 #include "../../tm/dlg.h"
 
@@ -491,6 +493,70 @@ static void test_request_legs_replaced_while_sending(void)
 		"meanwhile");
 }
 
+/* an unanswered UA session expires: the BYE the timer sends is refused,
+ * so the entity stays; ending it afterwards (e.g. on CANCEL) must not
+ * touch the timer entry the timer has already released */
+static void test_ua_session_deleted_after_unanswered_timeout(void)
+{
+	static str ftag = str_init("ftag5");
+	static str cid = str_init("cid5@127.0.0.2");
+	static str contact = str_init("sip:b2b@127.0.0.1");
+	static str other_key = str_init("B2B.9.9.9.9");
+	struct ua_sess_t_list *other, *reused, guard;
+	unsigned int hash_index = 5;
+	b2b_dlg_t *dlg;
+	str *key, ua_key;
+	char kbuf[B2B_MAX_KEY_SIZE];
+	int size;
+
+	dlg = shm_malloc(sizeof *dlg);
+	if (!dlg) {
+		ok(0, "no shm");
+		return;
+	}
+	memset(dlg, 0, sizeof *dlg);
+	dlg->tag[CALLER_LEG] = ftag;
+	dlg->callid = cid;
+	dlg->contact[CALLEE_LEG] = contact;
+	dlg->state = B2B_NEW;
+	dlg->id = 13;
+	dlg->db_flag = NO_UPDATEDB_FLAG;
+	dlg->ua_flags = UA_FL_IS_UA_ENTITY;
+
+	/* a session still waiting in the timer list */
+	other = insert_ua_sess_tl(&other_key, 100000);
+
+	key = b2b_htable_insert(server_htable, dlg, hash_index, NULL,
+		B2B_SERVER, 0, 0, 1);
+	if (!key || !other || !dlg->ua_timer_list) {
+		ok(0, "insert UA server dlg");
+		return;
+	}
+	memcpy(kbuf, key->s, key->len);
+	ua_key.s = kbuf;
+	ua_key.len = key->len;
+	size = sizeof *dlg->ua_timer_list + ua_key.len;
+
+	/* the UA session timeout fires */
+	ua_dlg_timer_routine(get_ticks() + 10, NULL);
+
+	/* the released timer entry is taken by its next owner */
+	reused = shm_malloc(size);
+	if (!reused) {
+		ok(0, "no shm");
+		return;
+	}
+	memset(&guard, 0, sizeof guard);
+	memset(reused, 0, size);
+	reused->prev = &guard;
+	reused->next = &guard;
+
+	ok(ua_entity_delete(B2B_SERVER, &ua_key, 0, 1) == 0,
+		"the expired unanswered session is deleted");
+	ok(!guard.next && !guard.prev,
+		"deleting it leaves the released timer entry alone");
+}
+
 void mod_tests(void)
 {
 	test_early_reply_keeps_pinned_dlg();
@@ -498,4 +564,5 @@ void mod_tests(void)
 	test_reply_after_delete_no_storage();
 	test_reply_entity_deleted_while_sending();
 	test_request_legs_replaced_while_sending();
+	test_ua_session_deleted_after_unanswered_timeout();
 }

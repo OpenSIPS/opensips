@@ -63,6 +63,8 @@ struct ua_sess_init_params {
 struct ua_sess_t_list {
 	str b2b_key;
 	volatile unsigned int timeout;
+	/* taken off the list by the timer, which releases it */
+	int expired;
 	struct ua_sess_t_list *next;
 	struct ua_sess_t_list *prev;
 };
