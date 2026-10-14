@@ -8,6 +8,10 @@
 #   exclude_modules, skip_modules, include_modules
 #   extra_defs
 #
+# Source directories containing loadable modules.  New module collections only
+# need to be added here; discovery, clean and statistics rules consume this.
+MODULE_DIRS ?= modules modules-contrib
+
 # History:
 # --------
 #              created by andrei
@@ -531,8 +535,8 @@ endif
 
 ifneq (,$(MEM_STATS_HDR))
 EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
-MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules \
-			$(dir $(MEM_STATS_HDR))/../modules-contrib -maxdepth 2 \
+MODULES_MD5=$(shell find $(addprefix $(dir $(MEM_STATS_HDR))/../,$(MODULE_DIRS)) \
+			-maxdepth 2 \
 			-name "[Mm]akefile" | \
 			awk -F/ '{print $$(NF - 1)}' | sort -u | $(md5sum_cmd) | awk '{print $$1}')
 ifneq ($(EXPECTED_MD5),$(MODULES_MD5))

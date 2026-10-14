@@ -2029,18 +2029,19 @@ This metapackage installs the OpenSIPS modules in the radius bundle.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} %{__make} all %{?_smp_mflags} \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__make} modules-contrib %{?_smp_mflags} \
+  modules="$(find modules-contrib -mindepth 1 -maxdepth 1 -type d -printf '%%p ')" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 
 %install
-%{__make} install TLS=1 LIBDIR=%{_lib} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} \
+%{__make} install LIBDIR=%{_lib} %{!?_with_wolfssl_stir_shaken:STIR_SHAKEN_OPENSSL=true} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} \
@@ -2049,7 +2050,8 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__m
   modules_dir=%{_lib}/%{name}/modules \
   DBTEXTON=yes # fixed dbtext documentation installation
 
-%{__make} install-modules-contrib-files LIBDIR=%{_lib} \
+%{__make} install-modules-files LIBDIR=%{_lib} \
+  modules="$(find modules-contrib -mindepth 1 -maxdepth 1 -type d -printf '%%p ')" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}/%{_prefix} \

@@ -282,7 +282,7 @@ override_dh_auto_install:
 
 	# Dependency-free contrib modules are kept in a separate aggregate package.
 	CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
-		install-modules-contrib-files modules="$(CONTRIB_MOD_PATHS)" \
+		install-modules-files modules="$(CONTRIB_MOD_PATHS)" \
 		basedir=$(CURDIR)/debian/$(CONTRIB_PKGNAME) \
 		prefix=$(BIN_PREFIX) \
 		cfg_prefix=$(CURDIR)/debian/$(CONTRIB_PKGNAME)/$(INSTALL_PREFIX) \
@@ -295,7 +295,7 @@ override_dh_auto_install:
 	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
 	    echo "rules: Installing contrib $${pkg} as $${pkg_pkgname} ...";\
 	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
-	        install-modules-contrib-files modules="$${pkg_paths}" \
+	        install-modules-files modules="$${pkg_paths}" \
 	        basedir=$(CURDIR)/debian/$${pkg_pkgname} \
 	        prefix=$(BIN_PREFIX) \
 	        cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \

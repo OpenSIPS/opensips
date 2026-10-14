@@ -88,39 +88,35 @@ static_defs=$(foreach mod, $(static_modules), \
 override extra_defs+=$(static_defs) $(EXTRA_DEFS)
 export extra_defs
 
-# Take subset of all modules, excluding the exclude_modules and the
-# static_modules.
-modules=$(filter-out $(addprefix modules/, \
-			$(exclude_modules) $(static_modules)), \
-			$(wildcard modules/*))
-# Let modules consist of modules and include_modules (but remove
-# duplicates).
-modules:=$(filter-out $(modules), $(addprefix modules/, $(include_modules) )) \
-			$(modules)
+# Discover modules from every configured source directory.  include_modules
+# wins over exclude_modules in every collection.
+all_module_paths=$(foreach d,$(MODULE_DIRS), \
+		$(patsubst %/Makefile,%,$(wildcard $(d)/*/Makefile)))
+effective_exclude_modules=$(filter-out $(include_modules),$(exclude_modules))
+enabled_module_paths=$(filter-out \
+		$(foreach d,$(MODULE_DIRS),$(addprefix $(d)/,$(effective_exclude_modules))) \
+		$(addprefix modules/,$(static_modules)), \
+		$(all_module_paths))
 
-ifneq ($(module),)
-	modules:=$(addprefix modules/, $(module))
-endif
-
-modules_names=$(patsubst modules/%, %.so, $(modules))
-modules_basenames=$(patsubst modules/%, %, $(modules))
-db_modules_basenames=$(filter db_%, $(modules_basenames))
-modules_full_path=$(join $(modules), $(addprefix /, $(modules_names)))
-
-# Community-contributed modules are kept separate from the modules maintained
-# by the OpenSIPS core team and are built only through explicit contrib targets.
-# Reuse the standard modules= selector when it is provided on the command
-# line; otherwise discover every contrib module.
 ifeq ($(origin modules),command line)
-contrib_modules=$(modules)
+selected_module_paths=$(modules)
+else ifneq ($(module),)
+selected_module_paths=$(addprefix modules/,$(module))
 else
-contrib_modules=$(patsubst %/Makefile,%,$(wildcard modules-contrib/*/Makefile))
+selected_module_paths=$(enabled_module_paths)
 endif
-contrib_modules_names=$(patsubst modules-contrib/%, %.so, $(contrib_modules))
-contrib_modules_basenames=$(patsubst modules-contrib/%, %, $(contrib_modules))
-contrib_db_modules_basenames=$(filter db_%, $(contrib_modules_basenames))
-contrib_modules_full_path=$(join $(contrib_modules), \
-			$(addprefix /, $(contrib_modules_names)))
+
+# The default target and install select only the core-maintained collection.
+ifeq ($(origin modules),command line)
+modules=$(selected_module_paths)
+else
+modules=$(filter modules/%,$(selected_module_paths))
+endif
+all_modules_to_build=$(selected_module_paths)
+
+modules_basenames=$(notdir $(modules))
+db_module_paths=$(filter %/db_%,$(modules))
+modules_full_path=$(foreach m,$(modules),$(m)/$(notdir $(m)).so)
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
 
@@ -188,23 +184,18 @@ all: $(NAME) modules utils
 app: $(NAME)
 
 
-.PHONY: _modules
-_modules: $(modules)
-
-.PHONY: $(filter modules/%,$(modules))
-$(filter modules/%,$(modules)):
+.PHONY: $(all_module_paths)
+$(all_module_paths):
 	@$(MAKE) --no-print-directory -C $@ && \
 		echo "Building $(notdir $@) module succeeded" || (\
 			status=$$?; \
 			echo "ERROR: Building $(notdir $@) module failed!"; \
 			exit $$status; \
 		)
-
-.PHONY: modules
-modules: $(deps_gen) gen_misclibs
 ifeq (,$(FASTER))
+define build_module_collection
 	@set -e; \
-	for r in $(modules); do \
+	for r in $(1); do \
 		if [ -n "$$r" ]; then \
 			if [ -d "$$r" ]; then \
 				echo  "" ; \
@@ -213,48 +204,29 @@ ifeq (,$(FASTER))
 			fi ; \
 		fi ; \
 	done
+endef
 else
-	@$(MAKE) _modules || ( \
+define build_module_collection
+	@if [ -n "$(strip $(1))" ]; then \
+	$(MAKE) $(1) || ( \
 		status=$$?; \
 		if echo $(MAKEFLAGS) | grep -q -- --jobserver; then \
 			printf '\nBuilding one or more modules failed!\n'; \
 			printf 'Please re-run make without -j / --jobs to find out which.\n\n'; \
 		fi; \
 		exit $$status \
-	)
+	); fi
+endef
 endif
 
-.PHONY: _modules-contrib
-_modules-contrib: $(contrib_modules)
+.PHONY: $(MODULE_DIRS)
+$(MODULE_DIRS): $(deps_gen) gen_misclibs
+	$(call build_module_collection,$(if $(filter command line,$(origin modules)), \
+		$(selected_module_paths),$(filter $@/%,$(selected_module_paths))))
 
-.PHONY: $(contrib_modules)
-$(contrib_modules):
-	@$(MAKE) --no-print-directory -C $@ && \
-		echo "Building $(notdir $@) contrib module succeeded" || (\
-			status=$$?; \
-			echo "ERROR: Building $(notdir $@) contrib module failed!"; \
-			exit $$status; \
-		)
-
-.PHONY: modules-contrib
-modules-contrib: $(deps_gen) gen_misclibs
-ifeq (,$(FASTER))
-	@set -e; \
-	for r in $(contrib_modules); do \
-		echo  "" ; \
-		echo  "" ; \
-		$(MAKE) -C $$r ; \
-	done
-else
-	@$(MAKE) _modules-contrib || ( \
-		status=$$?; \
-		if echo $(MAKEFLAGS) | grep -q -- --jobserver; then \
-			printf '\nBuilding one or more contrib modules failed!\n'; \
-			printf 'Please re-run make without -j / --jobs to find out which.\n\n'; \
-		fi; \
-		exit $$status \
-	)
-endif
+.PHONY: all-modules
+all-modules: $(deps_gen) gen_misclibs
+	$(call build_module_collection,$(all_modules_to_build))
 
 gen_misclibs:
 	@set -e; \
@@ -404,17 +376,9 @@ install-app: mk-install-dirs install-cfg install-bin \
 	install-app-doc install-man install-config-templates install-pi-framework
 
 # Install all module stuff
-.PHONY: install-modules-files install-modules-all install-modules-contrib \
-	install-modules-contrib-files install-modules-contrib-all \
-	install-modules-contrib-doc install-modules-contrib-dbschema
+.PHONY: install-modules-files install-modules-all
 install-modules-files: install-modules install-modules-doc
 install-modules-all: install-modules-files install-modules-dbschema
-
-# Contrib modules are never pulled in by the default install targets.
-install-modules-contrib-files: install-modules-contrib \
-	install-modules-contrib-doc
-install-modules-contrib-all: install-modules-contrib-files \
-	install-modules-contrib-dbschema
 
 # Install everything
 install: install-app install-modules-all
@@ -495,34 +459,11 @@ install-modules: modules $(modules_prefix)/$(modules_dir)
 		fi ; \
 	done
 
-install-modules-contrib: modules-contrib $(modules_prefix)/$(modules_dir)
-	@for r in $(contrib_modules_full_path) "" ; do \
-		if [ -n "$$r" ]; then \
-			if [ -f "$$r" ]; then \
-				$(INSTALL_TOUCH) \
-					$(modules_prefix)/$(modules_dir)/`basename "$$r"` ; \
-				$(INSTALL_MODULES) "$$r" $(modules_prefix)/$(modules_dir) ; \
-				$(MAKE) -C `dirname "$$r"` install_module_custom ; \
-			else \
-				echo "ERROR: contrib module $$r not compiled" ; \
-			fi ;\
-		fi ; \
-	done
-
 install-modules-dbschema:
-	@for r in $(db_modules_basenames) "" ; do \
+	@for r in $(db_module_paths) "" ; do \
 		if [ -n "$$r" ]; then \
-			if [ -f modules/"$$r"/Makefile ]; then \
-				$(MAKE) -C modules/"$$r" install_module_dbschema ; \
-			fi ;\
-		fi ; \
-	done
-
-install-modules-contrib-dbschema:
-	@for r in $(contrib_db_modules_basenames) "" ; do \
-		if [ -n "$$r" ]; then \
-			if [ -f modules-contrib/"$$r"/Makefile ]; then \
-				$(MAKE) -C modules-contrib/"$$r" install_module_dbschema ; \
+			if [ -f "$$r"/Makefile ]; then \
+				$(MAKE) -C "$$r" install_module_dbschema ; \
 			fi ;\
 		fi ; \
 	done
@@ -541,23 +482,13 @@ install-app-doc: $(doc_prefix)/$(doc_dir)
 
 
 install-modules-doc: $(doc_prefix)/$(doc_dir)
-	-@for r in $(modules_basenames) "" ; do \
+	-@for r in $(modules) "" ; do \
 		if [ -n "$$r" ]; then \
-			if [ -f modules/"$$r"/README.md ]; then \
-				$(INSTALL_TOUCH)  $(doc_prefix)/$(doc_dir)/README."$$r" ; \
-				$(INSTALL_DOC)  modules/"$$r"/README.md  \
-									$(doc_prefix)/$(doc_dir)/README."$$r" ; \
-			fi ; \
-		fi ; \
-	done
-
-install-modules-contrib-doc: $(doc_prefix)/$(doc_dir)
-	-@for r in $(contrib_modules_basenames) "" ; do \
-		if [ -n "$$r" ]; then \
-			if [ -f modules-contrib/"$$r"/README.md ]; then \
-				$(INSTALL_TOUCH) $(doc_prefix)/$(doc_dir)/README."$$r" ; \
-				$(INSTALL_DOC) modules-contrib/"$$r"/README.md \
-					$(doc_prefix)/$(doc_dir)/README."$$r" ; \
+			if [ -f "$$r"/README.md ]; then \
+				name=`basename "$$r"`; \
+				$(INSTALL_TOUCH) $(doc_prefix)/$(doc_dir)/README."$$name" ; \
+				$(INSTALL_DOC) "$$r"/README.md \
+					$(doc_prefix)/$(doc_dir)/README."$$name" ; \
 			fi ; \
 		fi ; \
 	done

@@ -9,7 +9,11 @@ These modules are intentionally excluded from the default `make`, `make all`,
 `make modules`, and `make install` targets.  Build and install them explicitly:
 
     make modules-contrib
-    make install-modules-contrib-all
+    make all-modules
+
+Install selected contrib modules using the generic install target:
+
+    make modules=modules-contrib/example install-modules-all
 
 To build a subset, use the same `modules` selector as for core modules:
 
