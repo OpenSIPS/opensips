@@ -449,6 +449,8 @@ struct ipsec_ctx *ipsec_get_ctx_user(struct ipsec_user *user, struct receive_inf
 			break;
 		ctx = NULL;
 	}
+	if (ctx)
+		IPSEC_CTX_REF(ctx);
 	lock_release(&user->lock);
 	return ctx;
 }
@@ -464,6 +466,8 @@ struct ipsec_ctx *ipsec_get_ctx_user_port(struct ipsec_user *user, unsigned shor
 			break;
 		ctx = NULL;
 	}
+	if (ctx)
+		IPSEC_CTX_REF(ctx);
 	lock_release(&user->lock);
 	return ctx;
 }
@@ -496,9 +500,6 @@ struct ipsec_ctx *ipsec_get_ctx_ip_port(struct ip_addr *ip, unsigned short port)
 		}
 	}
 end:
-	if (ctx) {
-		IPSEC_CTX_REF(ctx);
-	}
 	lock_release(&map->lock);
 	return ctx;
 }
