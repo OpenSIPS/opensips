@@ -616,34 +616,28 @@ static int load_entity(int_str_t *vals)
 	{
 		b2b_key = &vals[2].s;
 		htable = server_htable;
-		if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index) < 0)
+		if(b2b_parse_key(&dlg.tag[1], server_hsize,
+				&hash_index, &local_index) < 0)
 		{
-			LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len, dlg.tag[1].s);
+			LM_ERR("Wrong format for b2b key [%.*s], or hash index too large"
+				" (increase the 'server_hsize' parameter)\n",
+				dlg.tag[1].len, dlg.tag[1].s);
 			return -1;
 		}
 		dlg.tag[1].s = NULL;
 		dlg.tag[1].len = 0;
-
-		if (hash_index >= server_hsize) {
-			LM_ERR("Hash Index [%d] too large! Increase the 'server_hsize'"
-				"parameter!\n", hash_index);
-			return -1;
-		}
 	}
 	else
 	{
 		b2b_key = &vals[3].s;
 		htable = client_htable;
 
-		if(b2b_parse_key(&dlg.callid, &hash_index, &local_index) < 0)
+		if(b2b_parse_key(&dlg.callid, client_hsize,
+				&hash_index, &local_index) < 0)
 		{
-			LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.callid.len, dlg.callid.s);
-			return -1;
-		}
-
-		if (hash_index >= client_hsize) {
-			LM_DBG("Hash Index [%d] too large! Increase the 'client_hsize'"
-				"parameter!\n", hash_index);
+			LM_ERR("Wrong format for b2b key [%.*s], or hash index too large"
+				" (increase the 'client_hsize' parameter)\n",
+				dlg.callid.len, dlg.callid.s);
 			return -1;
 		}
 	}
