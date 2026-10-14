@@ -28,6 +28,6 @@ standard build files in the same way:
     include ../../Makefile.modules
 
 The Debian and RPM packaging builds place dependency-free modules from this
-directory in `opensips-contrib-modules`.  A module with external dependencies
+directory in `opensips-modules-contrib`. A module with external dependencies
 must be added to the explicit contrib dependency list in both packaging
-backends and given its own package metadata, dependencies, and file list.
+backends and shipped as `opensips-module-contrib-<module>`.

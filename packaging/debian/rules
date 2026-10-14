@@ -79,10 +79,9 @@ radius_MODULES := aaa_radius peering
 DBSCHEMA_MODULES := berkeley mysql postgres sqlite
 
 # Contrib modules without external dependencies are discovered automatically
-# and shipped in opensips-contrib-modules.  Add modules requiring external
-# libraries to this package list, then declare their packaging variables below
-# and add the corresponding stanza to debian/control.
-ALL_CONTRIB_MODPKG_LIST :=
+# and shipped in opensips-modules-contrib. Modules listed here are excluded
+# from that package and installed as opensips-module-contrib-<name>.
+STANDALONE_CONTRIB_MODULES :=
 
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
@@ -152,18 +151,14 @@ else
 		override BUILD_MODULES := $(STANDALONE_MODULES)
 	endif
 endif
-export $(foreach pkg,$(ALL_CONTRIB_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
-
 ALL_MODULES = $(STANDALONE_MODULES)
 BUILD_MODULE_PATHS = $(addprefix modules/,$(BUILD_MODULES))
 
-CONTRIB_PKGNAME = opensips-contrib-modules
+CONTRIB_PKGNAME = opensips-modules-contrib
 CONTRIB_ALL_MOD_PATHS = $(patsubst %/Makefile,%,$(wildcard modules-contrib/*/Makefile))
-CONTRIB_MODULES_WITH_DEPS = $(foreach pkg,$(ALL_CONTRIB_MODPKG_LIST),$($(pkg)_MODULES))
-CONTRIB_MOD_PATHS_WITH_DEPS = $(addprefix modules-contrib/,$(CONTRIB_MODULES_WITH_DEPS))
-CONTRIB_MOD_PATHS = $(filter-out $(CONTRIB_MOD_PATHS_WITH_DEPS),$(CONTRIB_ALL_MOD_PATHS))
-CONTRIB_BUILD_MOD_PATHS = $(CONTRIB_MOD_PATHS) \
-	$(foreach pkg,$(ALL_CONTRIB_MODPKG_LIST),$($(pkg)_MOD_PATH))
+STANDALONE_CONTRIB_MOD_PATHS = $(addprefix modules-contrib/,$(STANDALONE_CONTRIB_MODULES))
+CONTRIB_MOD_PATHS = $(filter-out $(STANDALONE_CONTRIB_MOD_PATHS),$(CONTRIB_ALL_MOD_PATHS))
+CONTRIB_BUILD_MOD_PATHS = $(CONTRIB_MOD_PATHS) $(STANDALONE_CONTRIB_MOD_PATHS)
 
 ## modules not in the "main" package or unstable modules that we never want to build
 ## Everything we don't specifically exclude here will get built into the primary package
@@ -290,17 +285,16 @@ override_dh_auto_install:
 		doc_dir=share/doc/$(CONTRIB_PKGNAME)
 
 	set -e;\
-	for pkg in $(ALL_CONTRIB_MODPKG_LIST) ; do\
-	    eval pkg_pkgname=\$$$${pkg}_PKGNAME;\
-	    eval pkg_paths=\$$$${pkg}_MOD_PATH;\
-	    echo "rules: Installing contrib $${pkg} as $${pkg_pkgname} ...";\
+	for mod in $(STANDALONE_CONTRIB_MODULES) ; do\
+	    pkg=opensips-module-contrib-`echo "$$mod" | tr _ -`;\
+	    echo "rules: Installing contrib $$mod as $$pkg ...";\
 	    CC="$(CC)" CFLAGS="$(CFLAGS)" $(VARS) FASTER=$(FASTER) $(MAKE) $(NJOBS) \
-	        install-modules-files modules="$${pkg_paths}" \
-	        basedir=$(CURDIR)/debian/$${pkg_pkgname} \
+	        install-modules-files modules="modules-contrib/$$mod" \
+	        basedir=$(CURDIR)/debian/$$pkg \
 	        prefix=$(BIN_PREFIX) \
-	        cfg_prefix=$(CURDIR)/debian/$${pkg_pkgname}/$(INSTALL_PREFIX) \
+	        cfg_prefix=$(CURDIR)/debian/$$pkg/$(INSTALL_PREFIX) \
 	        cfg_target=$(INSTALL_PREFIX)/etc/opensips/ \
-	        doc_dir=share/doc/$${pkg_pkgname};\
+	        doc_dir=share/doc/$$pkg;\
 	done
 
 	set -e;\
