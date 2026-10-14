@@ -117,7 +117,9 @@ void ipsec_sa_rm_all(struct ipsec_socket *sock, struct ipsec_ctx *ctx);
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik,
 		unsigned int spi_pc, unsigned int spi_ps);
-struct ipsec_ctx *ipsec_ctx_find(struct ipsec_user *user, unsigned short port);
+/* unlinks the ctx of the UE client port from the user, dropping the
+ * reference of the user's list; returns 0 if the user has none */
+int ipsec_ctx_unlink(struct ipsec_user *user, unsigned short port);
 void ipsec_ctx_push(struct ipsec_ctx *ctx);
 struct ipsec_ctx *ipsec_ctx_get(void);
 void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx, enum ipsec_state state);
