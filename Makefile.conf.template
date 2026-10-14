@@ -81,6 +81,10 @@ exclude_modules?= aaa_diameter aaa_radius auth_jwt auth_web3 b2b_logic_xml cache
 # Modules forced into the build, even when also listed in exclude_modules.
 include_modules?=
 
+# Source directories containing loadable module collections.  Each directory
+# is also available as a make target; all-modules builds all collections.
+MODULE_DIRS?= modules modules-contrib
+
 # Additional flags passed to the compiler and linker.
 CC_EXTRA_OPTS ?=
 LD_EXTRA_OPTS ?=
