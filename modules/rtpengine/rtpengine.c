@@ -4274,10 +4274,33 @@ static inline void pv_get_rtpstat_line(bencode_item_t *dict, pv_value_t *res)
 		(_s)->len = (_be)->iov[1].iov_len; \
 	} while (0)
 
+static int bencode_ssrc_matches(bencode_item_t *item, str *ssrc)
+{
+	bencode_item_t *ss;
+	str i;
+
+	ss = bencode_dictionary_get_expect(item, "SSRC", BENCODE_INTEGER);
+	if (!ss)
+		return 0;
+	i.s = int2str(ss->value, &i.len);
+	return str_strcmp(&i, ssrc) == 0;
+}
+
+static int bencode_ssrc_list_matches(bencode_item_t *list, str *ssrc)
+{
+	bencode_item_t *e;
+
+	if (!list)
+		return 0;
+	for (e = list->child; e; e = e->sibling)
+		if (bencode_ssrc_matches(e, ssrc))
+			return 1;
+	return 0;
+}
+
 static int bencode_dictionary_tag_has_ssrc(bencode_item_t *dict, str *ssrc, str *tag)
 {
-	str i;
-	bencode_item_t *m, *s, *ss;
+	bencode_item_t *m, *s;
 	dict = bencode_dictionary_get_expect(dict, "medias", BENCODE_LIST);
 	if (!dict) {
 		LM_DBG("medias list not found!\n");
@@ -4290,11 +4313,12 @@ static int bencode_dictionary_tag_has_ssrc(bencode_item_t *dict, str *ssrc, str 
 			continue;
 		/* now go through each stream */
 		for (s = s->child; s; s = s->sibling) {
-			ss = bencode_dictionary_get_expect(s, "SSRC", BENCODE_INTEGER);
-			if (!ss)
-				continue;
-			i.s = int2str(ss->value, &i.len);
-			if (str_strcmp(&i, ssrc) == 0) {
+			/* rtpengine >= 12.x sends the SSRCs as lists */
+			if (bencode_ssrc_matches(s, ssrc) ||
+					bencode_ssrc_list_matches(bencode_dictionary_get_expect(s,
+							"ingress SSRCs", BENCODE_LIST), ssrc) ||
+					bencode_ssrc_list_matches(bencode_dictionary_get_expect(s,
+							"egress SSRCs", BENCODE_LIST), ssrc)) {
 				LM_DBG("SSRC %.*s belongs to tag %.*s\n", ssrc->len,
 						ssrc->s, tag->len, tag->s);
 				return 1;
