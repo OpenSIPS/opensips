@@ -417,6 +417,11 @@ static str hep_app_protos[]= {
 #define MAX_PAYLOAD 32767
 static char payload_buf[MAX_PAYLOAD];
 
+/* a HEP packet rebuilt by hep_relay(); not payload_buf, which may hold the
+ * payload being relayed. 65535 is the largest HEPv3 packet length */
+#define MAX_HEP_RELAY_LEN 65535
+static char hep_relay_buf[MAX_HEP_RELAY_LEN];
+
 /* values to be set from script for hep pvar */
 
 
@@ -4016,43 +4021,63 @@ static inline void osip_to_net_proto(unsigned char* proto)
 }
 
 
-static void hepv2_to_buf(struct hepv12* h2, char* buf, int *len)
+/* append @n bytes to the @size bytes long @buf already holding @buflen */
+static inline int hep_buf_add(char *buf, int size, int *buflen,
+		const void *src, int n)
 {
-	int buflen;
+	if (n < 0 || n > size - *buflen) {
+		LM_ERR("HEP packet too big to relay (over %d bytes)\n", size);
+		return -1;
+	}
+
+	memcpy(buf + *buflen, src, n);
+	*buflen += n;
+	return 0;
+}
+
+static int hepv2_to_buf(struct hepv12* h2, char* buf, int size, int *len)
+{
+	int buflen = 0;
 	int payload_len = *len;
+	int rc;
 
 	/* instead of copying element by element we just convert
 	 * to network order and after convert it back */
 	h2->hdr.hp_sport = htons(h2->hdr.hp_sport);
 	h2->hdr.hp_dport = htons(h2->hdr.hp_dport);
 
-	memcpy(buf, &h2->hdr, sizeof(struct hep_hdr));
-	buflen = sizeof(struct hep_hdr);
+	rc = hep_buf_add(buf, size, &buflen, &h2->hdr, sizeof(struct hep_hdr));
 
 	h2->hdr.hp_sport = ntohs(h2->hdr.hp_sport);
 	h2->hdr.hp_dport = ntohs(h2->hdr.hp_dport);
 
+	if (rc < 0)
+		return -1;
+
 	if (h2->hdr.hp_f==AF_INET) {
-		memcpy(buf+buflen, &h2->addr.hep_ipheader, sizeof(struct hep_iphdr));
-		buflen += sizeof(struct hep_iphdr);
+		if (hep_buf_add(buf, size, &buflen, &h2->addr.hep_ipheader,
+				sizeof(struct hep_iphdr)) < 0)
+			return -1;
 	} else {
-		memcpy(buf+buflen, &h2->addr.hep_ip6header, sizeof(struct hep_ip6hdr));
-		buflen += sizeof(struct hep_ip6hdr);
+		if (hep_buf_add(buf, size, &buflen, &h2->addr.hep_ip6header,
+				sizeof(struct hep_ip6hdr)) < 0)
+			return -1;
 	}
 
 	if (h2->hdr.hp_v == 2) {
-		memcpy(buf + buflen, &h2->hep_time, sizeof(struct hep_timehdr));
-		buflen += sizeof(struct hep_timehdr);
+		if (hep_buf_add(buf, size, &buflen, &h2->hep_time,
+				sizeof(struct hep_timehdr)) < 0)
+			return -1;
 	}
 
+	if (hep_buf_add(buf, size, &buflen, h2->payload.s, payload_len) < 0)
+		return -1;
 
-	memcpy(buf + buflen, h2->payload.s, payload_len);
-
-
-	*len = buflen + payload_len;
+	*len = buflen;
+	return 0;
 }
 
-static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
+static int hepv3_to_buf(struct hepv3* h3, char* buf, int size, int *len)
 {
 	#define CONVERT_HEP_CHUNK(_src_chunk, _dst_chunk)          \
 	do {                                                       \
@@ -4061,15 +4086,21 @@ static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
 		_dst_chunk.type_id   = htons(_src_chunk.type_id);      \
 	} while(0);
 
-
-	#define CHUNK_COPY_AND_UPDATE(buf, len, chunk)             \
+	#define HEP_BUF_ADD(_src, _n)                              \
 		do {                                                   \
-			memcpy(buf+len, &chunk, sizeof(chunk));            \
-			len += sizeof(chunk);                              \
+			if (hep_buf_add(buf, size, &buflen, _src, _n) < 0) \
+				return -1;                                     \
+		} while(0);
+
+	#define HEP_CHUNK_ADD(_chunk)                              \
+		do {                                                   \
+			CONVERT_HEP_CHUNK(_chunk, chunk_copy);             \
+			HEP_BUF_ADD(&chunk_copy, sizeof(chunk_copy));      \
 		} while(0);
 
 	int af;
-	int buflen=sizeof(hep_ctrl_t);
+	int buflen=0;
+	int rc;
 
 	unsigned char osip_proto;
 
@@ -4092,145 +4123,116 @@ static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
 		}
 	}
 
+	/* the control header is filled in at the end */
+	if (size < (int)sizeof(hep_ctrl_t))
+		return -1;
+	buflen = sizeof(hep_ctrl_t);
 
 	if (h3->hg.ip_family.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.ip_family.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-		memcpy(buf+buflen, &h3->hg.ip_family.data, sizeof(u_int8_t));
-		buflen += sizeof(u_int8_t);
+		HEP_CHUNK_ADD(h3->hg.ip_family.chunk);
+		HEP_BUF_ADD(&h3->hg.ip_family.data, sizeof(u_int8_t));
 	}
 
 	if (h3->hg.ip_proto.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.ip_proto.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+		HEP_CHUNK_ADD(h3->hg.ip_proto.chunk);
 
 		osip_proto = h3->hg.ip_proto.data;
 		osip_to_net_proto(&h3->hg.ip_proto.data);
 
-		memcpy(buf+buflen, &h3->hg.ip_proto.data, sizeof(u_int8_t));
-		buflen += sizeof(u_int8_t);
+		rc = hep_buf_add(buf, size, &buflen, &h3->hg.ip_proto.data,
+				sizeof(u_int8_t));
 
 		h3->hg.ip_proto.data = osip_proto;
+
+		if (rc < 0)
+			return -1;
 	}
 
 	if (h3->hg.src_port.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.src_port.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.src_port.chunk);
 		data16 = htons(h3->hg.src_port.data);
-		memcpy(buf+buflen, &data16, sizeof(u_int16_t));
-		buflen += sizeof(u_int16_t);
+		HEP_BUF_ADD(&data16, sizeof(u_int16_t));
 	}
 
 	if (h3->hg.dst_port.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.dst_port.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.dst_port.chunk);
 		data16 = htons(h3->hg.dst_port.data);
-		memcpy(buf+buflen, &data16, sizeof(u_int16_t));
-		buflen += sizeof(u_int16_t);
+		HEP_BUF_ADD(&data16, sizeof(u_int16_t));
 	}
 
 	if (h3->hg.time_sec.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.time_sec.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.time_sec.chunk);
 		data32 = htonl(h3->hg.time_sec.data);
-		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
-		buflen += sizeof(u_int32_t);
+		HEP_BUF_ADD(&data32, sizeof(u_int32_t));
 	}
 
 	if (h3->hg.time_usec.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.time_usec.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.time_usec.chunk);
 		data32 = htonl(h3->hg.time_usec.data);
-		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
-		buflen += sizeof(u_int32_t);
+		HEP_BUF_ADD(&data32, sizeof(u_int32_t));
 	}
 
 	if (h3->hg.proto_t.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.proto_t.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-		memcpy(buf+buflen, &h3->hg.proto_t.data, sizeof(u_int8_t));
-		buflen += sizeof(u_int8_t);
+		HEP_CHUNK_ADD(h3->hg.proto_t.chunk);
+		HEP_BUF_ADD(&h3->hg.proto_t.data, sizeof(u_int8_t));
 	}
 
 	if (h3->hg.capt_id.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.capt_id.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.capt_id.chunk);
 		data32 = htonl(h3->hg.capt_id.data);
-		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
-		buflen += sizeof(u_int32_t);
+		HEP_BUF_ADD(&data32, sizeof(u_int32_t));
 	}
 
 	if (af == AF_INET) {
 		if (h3->addr.ip4_addr.src_ip4.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip4_addr.src_ip4.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip4_addr.src_ip4.data,
+			HEP_CHUNK_ADD(h3->addr.ip4_addr.src_ip4.chunk);
+			HEP_BUF_ADD(&h3->addr.ip4_addr.src_ip4.data,
 					sizeof(struct in_addr));
-			buflen += sizeof(struct in_addr);
 		}
 
 		if (h3->addr.ip4_addr.dst_ip4.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip4_addr.dst_ip4.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip4_addr.dst_ip4.data,
+			HEP_CHUNK_ADD(h3->addr.ip4_addr.dst_ip4.chunk);
+			HEP_BUF_ADD(&h3->addr.ip4_addr.dst_ip4.data,
 					sizeof(struct in_addr));
-			buflen += sizeof(struct in_addr);
 		}
 	} else {
 		if (h3->addr.ip6_addr.src_ip6.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip6_addr.src_ip6.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip6_addr.src_ip6.data,
+			HEP_CHUNK_ADD(h3->addr.ip6_addr.src_ip6.chunk);
+			HEP_BUF_ADD(&h3->addr.ip6_addr.src_ip6.data,
 					sizeof(struct in6_addr));
-			buflen += sizeof(struct in6_addr);
 		}
 
 		if (h3->addr.ip6_addr.dst_ip6.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip6_addr.dst_ip6.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip6_addr.dst_ip6.data,
+			HEP_CHUNK_ADD(h3->addr.ip6_addr.dst_ip6.chunk);
+			HEP_BUF_ADD(&h3->addr.ip6_addr.dst_ip6.data,
 					sizeof(struct in6_addr));
-			buflen += sizeof(struct in6_addr);
 		}
 	}
 
 	for (it=h3->chunk_list; it; it=it->next) {
-		CONVERT_HEP_CHUNK(it->chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-
-		memcpy(buf+buflen, it->data, it->chunk.length - sizeof(hep_chunk_t));
-		buflen += it->chunk.length - sizeof(hep_chunk_t);
+		HEP_CHUNK_ADD(it->chunk);
+		HEP_BUF_ADD(it->data, it->chunk.length - (int)sizeof(hep_chunk_t));
 	}
 
 	if (h3->payload_chunk.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->payload_chunk.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-		memcpy(buf+buflen, h3->payload_chunk.data,
-				h3->payload_chunk.chunk.length - sizeof(hep_chunk_t));
-		buflen += (h3->payload_chunk.chunk.length - sizeof(hep_chunk_t));
+		HEP_CHUNK_ADD(h3->payload_chunk.chunk);
+		HEP_BUF_ADD(h3->payload_chunk.data,
+				h3->payload_chunk.chunk.length - (int)sizeof(hep_chunk_t));
 	}
 
 	memcpy(((hep_ctrl_t*)buf)->id, HEP_HEADER_ID, HEP_HEADER_ID_LEN);
 	((hep_ctrl_t*)buf)->length = htons(buflen);
 
 	*len = buflen;
+	return 0;
+
+	#undef HEP_CHUNK_ADD
+	#undef HEP_BUF_ADD
+	#undef CONVERT_HEP_CHUNK
 }
 
 
-static int build_hep_buf(str* hep_buf, int* proto)
+static int build_hep_buf(str* hep_buf, int size, int* proto)
 {
 
 	struct hep_context *ctx;
@@ -4243,10 +4245,12 @@ static int build_hep_buf(str* hep_buf, int* proto)
 
 	if (ctx->h.version == 3) {
 		*proto = ctx->h.u.hepv3.hg.ip_proto.data;
-		hepv3_to_buf(&ctx->h.u.hepv3, hep_buf->s, &hep_buf->len);
+		if (hepv3_to_buf(&ctx->h.u.hepv3, hep_buf->s, size, &hep_buf->len) < 0)
+			return -1;
 	} else {
 		*proto = ctx->h.u.hepv12.hdr.hp_p;
-		hepv2_to_buf(&ctx->h.u.hepv12, hep_buf->s, &hep_buf->len);
+		if (hepv2_to_buf(&ctx->h.u.hepv12, hep_buf->s, size, &hep_buf->len) < 0)
+			return -1;
 	}
 
 	return ctx->h.version;
@@ -4284,12 +4288,12 @@ static int w_hep_relay(struct sip_msg *msg)
 
 
 	/* build everything but the sip message because we don't have it yet*/
-	buf_s.s = payload_buf;
+	buf_s.s = hep_relay_buf;
 
 	/* this way we will know what's the size of the hep payload
 	 * in version 1/2 */
 	buf_s.len = msg->len;
-	if ((hep_version=build_hep_buf(&buf_s, &proto)) < 0) {
+	if ((hep_version=build_hep_buf(&buf_s, sizeof(hep_relay_buf), &proto)) < 0) {
 		LM_ERR("failed to append hep header!\n");
 		return -1;
 	}
