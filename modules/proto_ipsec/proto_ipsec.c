@@ -425,8 +425,11 @@ static int proto_ipsec_send(const struct socket_info* source,
 	if (fl.type == SIP_REQUEST || source->proto == PROTO_UDP) {
 		/* we need to send from the client port */
 		t = tm_ipsec.t_gett();
-		if (t && t != T_UNDEFINED)
+		if (t && t != T_UNDEFINED) {
 			ctx = IPSEC_CTX_TM_GET(t);
+			if (ctx)
+				IPSEC_CTX_REF(ctx);
+		}
 		if (!ctx)
 			ctx = ipsec_get_ctx_ip_port(&ip, port);
 		if (ctx) {
@@ -1120,13 +1123,13 @@ NOTE 13: According to clause 7.4 on SA handling, at most six SAs per direction p
 a P-CSCF for one IMPI at any one time.
 */
 
-	/* pushing in global context */
-	IPSEC_CTX_REF_UNSAFE(ctx);
+	/* pushing in global context, with the reference of the lookup */
 	ipsec_ctx_push(ctx);
 	lock_release(&ctx->lock);
 
 	if (extend_tmp)
 		ipsec_ctx_extend_tmp(ctx);
+	ipsec_release_user(user);
 
 	/* we need to add the integrity-protected - search for Authorization header */
 	if (!is_secure) {
@@ -1341,6 +1344,8 @@ static void ipsec_usrloc_restore(ucontact_t *contact)
 	/* add the context as temporarily */
 	ipsec_ctx_push_user(user, ctx, IPSEC_STATE_OK);
 	ipsec_sock_close(sock);
+	/* the user's list keeps its own reference */
+	ipsec_ctx_release(ctx);
 
 	ipsec_release_user(user);
 	return;
@@ -1356,7 +1361,7 @@ static void ipsec_usrloc_insert(ucontact_t *contact)
 {
 	struct cell *t;
 	struct ipsec_ctx *ctx;
-	int remove_tmp = 0;
+	int remove_tmp = 0, expired;
 
 	/* if we have a transaction, we need to have a context as well */
 	t = tm_ipsec.t_gett();
@@ -1390,20 +1395,25 @@ static void ipsec_usrloc_insert(ucontact_t *contact)
 	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_uc, INT_STR_I(ctx->ue.port_c));
 	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_us, INT_STR_I(ctx->ue.port_s));
 	
-	/* all good mark the SA as OK */
+	/* all good mark the SA as OK, unless it was dropped meanwhile */
 	lock_get(&ctx->lock);
 	remove_tmp = (ctx->state == IPSEC_STATE_TMP);
-	ctx->state = IPSEC_STATE_OK;
+	expired = (ctx->state == IPSEC_STATE_INVALID);
+	if (!expired)
+		ctx->state = IPSEC_STATE_OK;
 	lock_release(&ctx->lock);
 	if (remove_tmp)
 		ipsec_ctx_remove_tmp(ctx);
+	if (expired)
+		LM_WARN("IPSec context for %.*s (%.*s) expired before it was saved\n",
+				contact->aor->len, contact->aor->s,
+				contact->c.len, contact->c.s);
 }
 
 static void ipsec_usrloc_update(ucontact_t *contact,
 		str *prev_host, unsigned short prev_port)
 {
 	struct ipsec_user *user;
-	struct ipsec_ctx *ctx;
 
 	LM_DBG("updating IPSec context for %.*s (%.*s)\n",
 			contact->aor->len, contact->aor->s,
@@ -1413,11 +1423,9 @@ static void ipsec_usrloc_update(ucontact_t *contact,
 		LM_ERR("could not find an IPSec user for this contact!\n");
 		return;
 	}
-	ctx = ipsec_ctx_find(user, prev_port);
-	if (ctx)
-		ipsec_ctx_release(ctx);
-	else
-		LM_ERR("could not find SA on port %hu\n", prev_port);
+	/* the SA may be shared by several contacts: only the first one removes it */
+	if (!ipsec_ctx_unlink(user, prev_port))
+		LM_DBG("no SA left on port %hu\n", prev_port);
 	ipsec_release_user(user);
 	/* now overwrite the information with the new SA */
 	ipsec_usrloc_insert(contact);
@@ -1426,7 +1434,6 @@ static void ipsec_usrloc_update(ucontact_t *contact,
 static void ipsec_usrloc_delete(ucontact_t *contact)
 {
 	struct ipsec_user *user;
-	struct ipsec_ctx *ctx;
 	unsigned short port_uc;
 
 	LM_DBG("removing IPSec context for %.*s (%.*s)\n",
@@ -1438,11 +1445,9 @@ static void ipsec_usrloc_delete(ucontact_t *contact)
 		return;
 	}
 	port_uc = UL_GET_I(contact, ipsec_usrloc_port_uc, "port_uc");
-	ctx = ipsec_ctx_find(user, port_uc);
-	if (ctx)
-		ipsec_ctx_release(ctx);
-	else
-		LM_ERR("could not find SA on port %hu\n", port_uc);
+	/* the SA may be shared by several contacts: only the first one removes it */
+	if (!ipsec_ctx_unlink(user, port_uc))
+		LM_DBG("no SA left on port %hu\n", port_uc);
 	ipsec_release_user(user);
 }
 #undef INT_STR_I
