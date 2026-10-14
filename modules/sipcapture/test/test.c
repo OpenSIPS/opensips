@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
+#include <arpa/inet.h>
 #include <tap.h>
 
 #include "../../../str.h"
@@ -27,9 +29,127 @@
 #include "../../../cmds.h"
 #include "../../../sr_module.h"
 #include "../../../parser/msg_parser.h"
+#include "../../../locking.h"
+#include "../../../db/db.h"
+#include "../../../async.h"
 
 #include "../../proto_hep/hep.h"
 #include "../../proto_hep/hep_cb.h"
+
+/* mirrors of the sipcapture.c batched insert state */
+#define TEST_MAX_QUERY 65535
+struct test_async_query {
+	str last_query_suffix;
+	int curr_async_queries;
+	int query_len;
+	char query_buf[TEST_MAX_QUERY];
+	gen_lock_t query_lock;
+};
+
+struct test_tz_table_list {
+	void *table;
+	struct test_async_query *as_qry;
+	struct test_tz_table_list *next;
+};
+
+extern db_func_t db_funcs;
+extern struct test_tz_table_list tz_global;
+extern int *capture_on_flag;
+extern char tz_table[];
+
+/* run the async sip_capture() on a HEPv3 message whose SIP body is @body_len */
+static int async_capture_hepv3(int body_len)
+{
+	static const char hdrs[] =
+		"MESSAGE sip:a@127.0.0.1 SIP/2.0\r\n"
+		"Via: SIP/2.0/UDP 127.0.0.1:5060;branch=z9hG4bK1\r\n"
+		"From: <sip:b@127.0.0.1>;tag=1\r\n"
+		"To: <sip:a@127.0.0.1>\r\n"
+		"Call-ID: 1@127.0.0.1\r\n"
+		"CSeq: 1 MESSAGE\r\n"
+		"Content-Length: %d\r\n\r\n";
+	const acmd_export_t *acmd;
+	proto_hep_api_t api;
+	load_hep_f load_hep;
+	struct hep_context *hctx;
+	struct sip_msg msg;
+	async_ctx actx;
+	context_p ctx;
+	char *buf;
+	int len, ret;
+
+	acmd = find_mod_acmd_export_t("sip_capture");
+	load_hep = (load_hep_f)find_export("load_hep", 0);
+	if (!acmd || !load_hep || load_hep(&api) < 0)
+		return -2;
+
+	buf = pkg_malloc(sizeof hdrs + 16 + body_len);
+	hctx = shm_malloc(sizeof *hctx);
+	ctx = context_alloc(CONTEXT_GLOBAL);
+	if (!buf || !hctx || !ctx)
+		return -2;
+	len = sprintf(buf, hdrs, body_len);
+	memset(buf + len, 'a', body_len);
+	len += body_len;
+
+	memset(hctx, 0, sizeof *hctx);
+	hctx->h.version = 3;
+	hctx->h.u.hepv3.hg.ip_family.data = AF_INET;
+	hctx->h.u.hepv3.hg.ip_proto.data = IPPROTO_UDP;
+	hctx->h.u.hepv3.hg.proto_t.data = 1;
+	inet_pton(AF_INET, "127.0.0.1", &hctx->h.u.hepv3.addr.ip4_addr.src_ip4.data);
+	inet_pton(AF_INET, "127.0.0.1", &hctx->h.u.hepv3.addr.ip4_addr.dst_ip4.data);
+	hctx->h.u.hepv3.payload_chunk.chunk.type_id = HEP_PAYLOAD;
+	hctx->h.u.hepv3.payload_chunk.chunk.length = len + sizeof(hep_chunk_t);
+	hctx->h.u.hepv3.payload_chunk.data = buf;
+
+	memset(ctx, 0, context_size(CONTEXT_GLOBAL));
+	context_put_ptr(CONTEXT_GLOBAL, ctx, api.get_hep_ctx_id(), hctx);
+	set_global_context(ctx);
+
+	memset(&msg, 0, sizeof msg);
+	msg.buf = buf;
+	msg.len = len;
+	if (parse_msg(buf, len, &msg) != 0)
+		return -2;
+
+	memset(&actx, 0, sizeof actx);
+	ret = acmd->function(&msg, &actx, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL, NULL);
+
+	free_sip_msg(&msg);
+	set_global_context(NULL);
+	shm_free(hctx);
+	pkg_free(buf);
+	return ret;
+}
+
+
+static void test_async_capture_size(void)
+{
+	struct test_async_query *q;
+
+	/* a DB with async raw queries, batching max_async_queries inserts */
+	db_funcs.cap |= DB_CAP_ASYNC_RAW_QUERY;
+	q = malloc(sizeof *q);
+	memset(q, 0, sizeof *q);
+	lock_init(&q->query_lock);
+	tz_global.table = (void *)tz_table;
+	tz_global.as_qry = q;
+	*capture_on_flag = 1;
+
+	ok(async_capture_hepv3(100) == 1, "small captured message is queued");
+	ok(async_capture_hepv3(65000) < 0,
+		"captured message larger than the query buffer is refused");
+	ok(q->query_len <= TEST_MAX_QUERY, "query length stays within the buffer");
+	ok(async_capture_hepv3(100) == 1,
+		"next small captured message is queued after a refused one");
+	ok(q->query_len <= TEST_MAX_QUERY, "query length still within the buffer");
+
+	tz_global.as_qry = NULL;
+	db_funcs.cap &= ~DB_CAP_ASYNC_RAW_QUERY;
+}
+
 
 
 typedef int (*relay_f)(struct sip_msg *msg);
@@ -96,5 +216,6 @@ static void test_hep_relay_size(void)
 
 void mod_tests(void)
 {
+	test_async_capture_size();
 	test_hep_relay_size();
 }
