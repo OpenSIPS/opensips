@@ -417,9 +417,12 @@ static int fixup_check_var(void** param)
 #define AKA_AUTS_LEN 14
 #define AKA_AUTHORIZATION_LEN (AKA_RAND_LEN + AKA_AUTS_LEN)
 
+#define AKA_AUTS_B64_LEN calc_base64_encode_len(AKA_AUTS_LEN)
+
 static int aka_build_resync(str *nonce, str* auts, str *resync)
 {
 	static unsigned char auth_buf[AKA_AUTHORIZATION_LEN];
+	unsigned char auts_buf[calc_max_base64_decode_len(AKA_AUTS_B64_LEN)];
 	int len;
 
 	/* check what we have */
@@ -428,14 +431,14 @@ static int aka_build_resync(str *nonce, str* auts, str *resync)
 				nonce->len, calc_base64_encode_len(AKA_RAND_LEN));
 		return -1;
 	}
-	if (calc_base64_encode_len(AKA_AUTS_LEN) != auts->len) {
-		if (calc_base64_encode_len(AKA_AUTS_LEN) > auts->len) {
+	if (AKA_AUTS_B64_LEN != auts->len) {
+		if (AKA_AUTS_B64_LEN > auts->len) {
 			LM_ERR("invalid AUTS length - have %d, need %d\n",
-					auts->len, calc_base64_encode_len(AKA_AUTS_LEN));
+					auts->len, AKA_AUTS_B64_LEN);
 			return -1;
 		} else {
 			LM_WARN("AUTS length too long - have %d, need %d; dropping the tail\n",
-					auts->len, calc_base64_encode_len(AKA_AUTS_LEN));
+					auts->len, AKA_AUTS_B64_LEN);
 		}
 	}
 	len = base64decode(auth_buf, (unsigned char *)nonce->s, calc_max_base64_decode_len(AKA_AUTHORIZATION_LEN));
@@ -443,15 +446,24 @@ static int aka_build_resync(str *nonce, str* auts, str *resync)
 		LM_ERR("not enough bytes for RAND - have %d, need %d\n", len, AKA_RAND_LEN);
 		return -1;
 	}
-	len = base64decode(auth_buf + AKA_RAND_LEN, (unsigned char *)auts->s, auts->len);
+	/* only decode the AUTS we expect, in a buffer that fits it */
+	len = base64decode(auts_buf, (unsigned char *)auts->s, AKA_AUTS_B64_LEN);
 	if (len + AKA_RAND_LEN != AKA_AUTHORIZATION_LEN) {
 		LM_ERR("mismatch bytes for RAND + AUTS - have %d, need %d\n", len, AKA_AUTHORIZATION_LEN);
 		return -1;
 	}
+	memcpy(auth_buf + AKA_RAND_LEN, auts_buf, AKA_AUTS_LEN);
 	resync->s = (char *)auth_buf;
 	resync->len = AKA_AUTHORIZATION_LEN;
 	return 0;
 }
+
+#ifdef UNIT_TESTS
+int aka_test_build_resync(str *nonce, str *auts, str *resync)
+{
+	return aka_build_resync(nonce, auts, resync);
+}
+#endif
 
 static int aka_challenge_pre(struct sip_msg *_msg, str *realm, int _code,
 		hdr_types_t *hftype, struct hdr_field **h, struct aka_user **user,
