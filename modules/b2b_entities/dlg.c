@@ -1316,14 +1316,15 @@ search_dialog:
 		}
 		else
 		{
-			B2BE_LOCK_RELEASE(table, hash_index);
 			LM_DBG("Received a PRACK - send 200 reply\n");
 			str reason={"OK", 2};
 			/* send 200 OK and exit */
 			tmb.t_newtran( msg );
 			tm_tran = tmb.t_gett();
+			/* the dlg may be gone once the entity lock is released */
 			if (dlg)
 				b2b_run_tracer(dlg, msg, tm_tran);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			run_tm_api(&tmb, t_reply, msg, 200, &reason);
 			if(tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
@@ -2303,6 +2304,10 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	dlg->last_reply_code = code;
 	if (leg)
 		leg->last_reply_code = code;
+	/* store the tag while the entity is still locked: it may be deleted
+	 * once the lock is released below */
+	if (et == B2B_SERVER && b2b_store_callee_tag(dlg, to_tag) < 0)
+		LM_ERR("Failed to store callee tag\n");
 	UPDATE_DBFLAG(dlg);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
@@ -2373,8 +2378,6 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		LM_ERR("failed to send reply with tm\n");
 		goto error;
 	}
-	if (et == B2B_SERVER && b2b_store_callee_tag(dlg, to_tag) < 0)
-		LM_ERR("Failed to store callee tag\n");
 	if(code >= 200)
 	{
 		if (sip_method != METHOD_INVITE) {
@@ -3293,6 +3296,7 @@ static int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 {
 	dlg_t* td;
 	int result;
+	str body_copy = {NULL, 0};
 	b2b_table table = etype == B2B_SERVER ? server_htable : client_htable;
 
 	if(!dlg->callid.s || !dlg->callid.len)
@@ -3322,6 +3326,17 @@ static int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 	if (dlg->tracer)
 		b2b_arm_uac_tracing( td, dlg->tracer);
 
+	/* the body may be the dialog's stored ACK SDP, which can be replaced
+	 * once the entity lock is released */
+	if (body && body->s && body->len) {
+		if (pkg_str_dup(&body_copy, body) < 0) {
+			LM_ERR("no more pkg memory\n");
+			free_tm_dlg(td);
+			return -1;
+		}
+		body = &body_copy;
+	}
+
 	/* t_request_within() synchronously executes local_route. */
 	dlg->ref++;
 	B2BE_LOCK_RELEASE(table, hash_index);
@@ -3333,6 +3348,8 @@ static int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 		NULL,               /* callback parameter*/
 		NULL);
 	B2BE_LOCK_GET(table, hash_index);
+	if (body_copy.s)
+		pkg_free(body_copy.s);
 	if (dlg->deleted) {
 		if (current_dlg == dlg)
 			current_dlg = NULL;
