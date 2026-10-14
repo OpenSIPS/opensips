@@ -32,6 +32,7 @@
 #include "../../../locking.h"
 #include "../../../db/db.h"
 #include "../../../async.h"
+#include "../../../pvar.h"
 
 #include "../../proto_hep/hep.h"
 #include "../../proto_hep/hep_cb.h"
@@ -214,8 +215,154 @@ static void test_hep_relay_size(void)
 }
 
 
+/* db_text table for report_capture() with the homer6 columns */
+static void make_rtcp_table(void)
+{
+	FILE *f = fopen("/tmp/rtcp_capture", "w");
+
+	if (!f)
+		return;
+	fputs("tss(int) tsu(int) transaction_id(string) source_ip(string) "
+		"source_port(int) destination_ip(string) destination_port(int) "
+		"proto(int) family(int) type(int) node(string) data(string) "
+		"payload_len(int) correlation_id(string) capture_ip(string) "
+		"capt_id(int) event(string,null)\n", f);
+	fclose(f);
+}
+
+
+/* run the sync report_capture() for a HEPv3 message carrying @json */
+static int report_hepv3(const char *json)
+{
+	static str cor_id = str_init("cid-1");
+	const cmd_export_t *cmd;
+	proto_hep_api_t api;
+	load_hep_f load_hep;
+	struct hep_context *hctx;
+	struct sip_msg msg;
+	context_p ctx;
+	int proto_t = 5, len, ret;
+	char *buf;
+
+	cmd = find_cmd_export_t("report_capture", 0);
+	load_hep = (load_hep_f)find_export("load_hep", 0);
+	if (!cmd || !load_hep || load_hep(&api) < 0)
+		return -2;
+
+	len = strlen(json);
+	buf = pkg_malloc(len + 1);
+	hctx = shm_malloc(sizeof *hctx);
+	ctx = context_alloc(CONTEXT_GLOBAL);
+	if (!buf || !hctx || !ctx)
+		return -2;
+	memcpy(buf, json, len + 1);
+
+	memset(hctx, 0, sizeof *hctx);
+	hctx->h.version = 3;
+	hctx->h.u.hepv3.hg.ip_family.data = AF_INET;
+	hctx->h.u.hepv3.hg.ip_proto.data = IPPROTO_UDP;
+	hctx->h.u.hepv3.payload_chunk.chunk.type_id = HEP_PAYLOAD;
+	hctx->h.u.hepv3.payload_chunk.chunk.length = len + sizeof(hep_chunk_t);
+	hctx->h.u.hepv3.payload_chunk.data = buf;
+	hctx->ri.dst_ip.af = AF_INET;
+
+	memset(ctx, 0, context_size(CONTEXT_GLOBAL));
+	context_put_ptr(CONTEXT_GLOBAL, ctx, api.get_hep_ctx_id(), hctx);
+	set_global_context(ctx);
+
+	memset(&msg, 0, sizeof msg);
+	ret = cmd->function(&msg, &cor_id, NULL, &proto_t, NULL, NULL, NULL,
+		NULL, NULL);
+
+	set_global_context(NULL);
+	shm_free(hctx);
+	pkg_free(buf);
+	return ret;
+}
+
+
+static void test_report_event(void)
+{
+	make_rtcp_table();
+	ok(report_hepv3("{\"Event\":\"rtcp-xr\",\"pad\":\"abcdefgh\"}") == 1,
+		"report with a string Event is stored");
+}
+
+static void test_report_event_type(void)
+{
+	ok(report_hepv3("{\"Event\":42}") == 1,
+		"report with a non-string Event is stored");
+}
+
+
+/* run hep_get() as @type on a custom chunk carrying @data_len bytes */
+static int get_custom_chunk(int type, int data_len)
+{
+	static str var = str_init("$var(hep_data)");
+	const cmd_export_t *cmd;
+	proto_hep_api_t api;
+	load_hep_f load_hep;
+	struct hep_context *hctx;
+	generic_chunk_t *ch;
+	struct sip_msg msg;
+	pv_spec_t data_pv;
+	context_p ctx;
+	int ret;
+
+	cmd = find_cmd_export_t("hep_get", 0);
+	load_hep = (load_hep_f)find_export("load_hep", 0);
+	if (!cmd || !load_hep || load_hep(&api) < 0 ||
+			!pv_parse_spec(&var, &data_pv))
+		return -2;
+
+	hctx = shm_malloc(sizeof *hctx);
+	ch = malloc(sizeof *ch);
+	ctx = context_alloc(CONTEXT_GLOBAL);
+	if (!hctx || !ch || !ctx)
+		return -2;
+	memset(hctx, 0, sizeof *hctx);
+	memset(ch, 0, sizeof *ch);
+	ch->chunk.type_id = 31;
+	ch->chunk.length = sizeof(hep_chunk_t) + data_len;
+	ch->data = malloc(data_len);
+	if (!ch->data)
+		return -2;
+	memset(ch->data, 1, data_len);
+	hctx->h.version = 3;
+	hctx->h.u.hepv3.chunk_list = ch;
+
+	memset(ctx, 0, context_size(CONTEXT_GLOBAL));
+	context_put_ptr(CONTEXT_GLOBAL, ctx, api.get_hep_ctx_id(), hctx);
+	set_global_context(ctx);
+
+	memset(&msg, 0, sizeof msg);
+	ret = cmd->function(&msg, (void *)31UL, (void *)(long)type, &data_pv,
+		NULL, NULL, NULL, NULL, NULL);
+
+	set_global_context(NULL);
+	free(ch->data);
+	free(ch);
+	shm_free(hctx);
+	return ret;
+}
+
+
+static void test_hep_get_custom_len(void)
+{
+	ok(get_custom_chunk(4, 4) == 1, "4-byte custom chunk is read as uint32");
+	ok(get_custom_chunk(4, 1) < 0,
+		"1-byte custom chunk is not read as uint32");
+	ok(get_custom_chunk(16, 2) < 0,
+		"2-byte custom chunk is not read as an IPv6 address");
+	ok(get_custom_chunk(1, 0) < 0, "empty custom chunk is not read as uint8");
+}
+
+
 void mod_tests(void)
 {
 	test_async_capture_size();
+	test_report_event();
+	test_hep_get_custom_len();
 	test_hep_relay_size();
+	test_report_event_type();
 }
