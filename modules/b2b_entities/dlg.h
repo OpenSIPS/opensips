@@ -128,6 +128,7 @@ typedef struct b2b_dlg
 	b2b_param_free_cb    free_param;
 	unsigned int         ref;
 	int                  deleted;
+	int                  replaced; /* unlinked copy kept for its pinners */
 }b2b_dlg_t;
 
 typedef struct b2b_entry

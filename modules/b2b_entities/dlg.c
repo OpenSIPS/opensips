@@ -67,6 +67,20 @@ static str storage_cap = str_init("b2b-storage-bin");
 
 static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable);
 
+/* free a dialog replaced in b2b_tm_cback(): it is no longer in the hash
+ * table and its transactions, param and timers moved to its replacement */
+static void b2b_free_replaced(b2b_dlg_t *dlg)
+{
+	/* set by a request sent while the dialog was pinned */
+	if (dlg->uac_tran)
+		tmb.unref_cell(dlg->uac_tran);
+
+	if (dlg->ack_sdp.s)
+		shm_free(dlg->ack_sdp.s);
+
+	shm_free(dlg);
+}
+
 /* called with the entity hash lock held */
 static void b2b_dlg_unref(b2b_dlg_t *dlg, b2b_table htable,
 		unsigned int hash_index)
@@ -74,7 +88,10 @@ static void b2b_dlg_unref(b2b_dlg_t *dlg, b2b_table htable,
 	if (--dlg->ref || !dlg->deleted)
 		return;
 
-	b2b_delete_record(dlg, htable, hash_index);
+	if (dlg->replaced)
+		b2b_free_replaced(dlg);
+	else
+		b2b_delete_record(dlg, htable, hash_index);
 }
 
 #define B2BE_DLG_DELETED (-3)
@@ -2681,8 +2698,10 @@ static int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	if(method_value == METHOD_INVITE)
 	{
 		dlg->last_invite_cseq = td->loc_seq.value +1;
-		if(dlg->uac_tran)
+		if(dlg->uac_tran) {
 			tmb.unref_cell(dlg->uac_tran);
+			dlg->uac_tran = NULL;
+		}
 		tmb.setlocalTholder(&dlg->uac_tran);
 	}
 
@@ -4015,7 +4034,9 @@ dummy_reply:
 			goto b2b_tm_done1;
 		}
 
-		if(dlg->legs == NULL && (dlg->state == B2B_NEW ||
+		/* a deleted dialog is only kept for the holders of its references:
+		 * do not bring it back by replacing it */
+		if(dlg->legs == NULL && !dlg->deleted && (dlg->state == B2B_NEW ||
 					dlg->state == B2B_NEW_AUTH ||
 					dlg->state == B2B_EARLY))
 		{
@@ -4053,9 +4074,20 @@ dummy_reply:
 
 			dlg->next= dlg->prev = NULL;
 			b2b_delete_legs(&dlg->legs);
-			if (dlg->logic_key.s)
+			if (dlg->logic_key.s) {
 				shm_free(dlg->logic_key.s);
-			shm_free(dlg);
+				dlg->logic_key.s = NULL;
+			}
+			dlg->uac_tran = dlg->uas_tran = NULL;
+			if (dlg->ref) {
+				/* pinned by a sender or by b2b_prescript_f() while they
+				 * do not hold the hash lock: they find it deleted when
+				 * they take the lock back and the last one frees it */
+				dlg->deleted = 1;
+				dlg->replaced = 1;
+			} else {
+				b2b_free_replaced(dlg);
+			}
 			dlg = new_dlg;
 			UPDATE_DBFLAG(dlg);
 		}
