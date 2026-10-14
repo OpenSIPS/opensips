@@ -47,10 +47,9 @@
 
 %global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
 
-# Contrib modules which require external libraries belong here.  Add matching
-# build requirements, subpackage metadata and file sections for each one, as
-# done for dependency-bearing modules from the main module tree.
-%global CONTRIB_MODULES_WITH_DEPS %{nil}
+# Contrib modules which require external libraries belong here. Each must have
+# matching build requirements and an opensips-module-contrib-<module> package.
+%global STANDALONE_CONTRIB_MODULES %{nil}
 
 # Database backends shipped as opensips-dbschema-<backend> packages.
 %global DBSCHEMA_MODULES berkeley mysql postgres sqlite
@@ -147,12 +146,12 @@ XMLRPC Interface.
 This package contains the main OpenSIPS binary along with the principal modules
 and support binaries.
 
-%package contrib-modules
+%package -n %{name}-modules-contrib
 Summary:  Community-contributed modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description contrib-modules
+%description -n %{name}-modules-contrib
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
@@ -2058,18 +2057,19 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__m
   modules_dir=%{_lib}/%{name}/modules \
   doc_dir=share/doc/%{name}
 
-# Generate the dependency-free contrib package manifest.  Modules listed in
-# CONTRIB_MODULES_WITH_DEPS must have explicit package file lists below.
-: > contrib-modules.files
+# Generate the dependency-free contrib package manifest. Modules listed in
+# STANDALONE_CONTRIB_MODULES must have opensips-module-contrib-<module>
+# declarations and explicit package file lists below.
+: > modules-contrib.files
 for module_dir in modules-contrib/*; do
   test -f "$module_dir/Makefile" || continue
   module_name=$(basename "$module_dir")
-  case " %{CONTRIB_MODULES_WITH_DEPS} " in
+  case " %{STANDALONE_CONTRIB_MODULES} " in
     *" $module_name "*) continue ;;
   esac
-  echo "%{_libdir}/opensips/modules/$module_name.so" >> contrib-modules.files
+  echo "%{_libdir}/opensips/modules/$module_name.so" >> modules-contrib.files
   if test -f "%{buildroot}%{_docdir}/%{name}/README.$module_name"; then
-    echo "%%doc docdir/README.$module_name" >> contrib-modules.files
+    echo "%%doc docdir/README.$module_name" >> modules-contrib.files
   fi
 done
 
@@ -2191,7 +2191,7 @@ fi
 %doc docdir/README
 %doc COPYING
 
-%files contrib-modules -f contrib-modules.files
+%files -n %{name}-modules-contrib -f modules-contrib.files
 
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so

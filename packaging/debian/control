@@ -62,7 +62,7 @@ Suggests: opensips-module-auth-jwt,
           opensips-module-carrierroute,
           opensips-module-cgrates,
           opensips-module-compression,
-          opensips-contrib-modules,
+          opensips-modules-contrib,
           opensips-module-cpl-c,
           opensips-module-db-http,
           opensips-module-dialplan,
@@ -125,7 +125,7 @@ Description: very fast and configurable SIP server
  This package contains the main OpenSIPS binary along with the principal modules
  and support binaries.
 
-Package: opensips-contrib-modules
+Package: opensips-modules-contrib
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
