@@ -2805,7 +2805,8 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 	int len;
 
 	len = snprintf(buf, max_len, VALUES_STR,
-			(long long)VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
+			(long long)VAL_TIME(db_vals+0), VAL_BIGINT(db_vals+1),
+			VAL_STR(db_vals+2).len, VAL_STR(db_vals+2).s,
 			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
 			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
 			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
@@ -2826,26 +2827,27 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 			VAL_STR(db_vals+20).len, VAL_STR(db_vals+20).s,
 			VAL_STR(db_vals+21).len, VAL_STR(db_vals+21).s,
 			VAL_STR(db_vals+22).len, VAL_STR(db_vals+22).s,
-			VAL_STR(db_vals+23).len, VAL_STR(db_vals+23).s,
-			VAL_INT(db_vals+24),
-			VAL_STR(db_vals+25).len, VAL_STR(db_vals+25).s,
-			VAL_INT(db_vals+26),
-			VAL_STR(db_vals+27).len, VAL_STR(db_vals+27).s,
-			VAL_INT(db_vals+28),
-			VAL_STR(db_vals+29).len, VAL_STR(db_vals+29).s,
-			VAL_INT(db_vals+30), VAL_INT(db_vals+31), VAL_INT(db_vals+32),
-			VAL_STR(db_vals+33).len, VAL_STR(db_vals+33).s,
-			VAL_INT(db_vals+34),
+			VAL_INT(db_vals+23),
+			VAL_STR(db_vals+24).len, VAL_STR(db_vals+24).s,
+			VAL_INT(db_vals+25),
+			VAL_STR(db_vals+26).len, VAL_STR(db_vals+26).s,
+			VAL_INT(db_vals+27),
+			VAL_STR(db_vals+28).len, VAL_STR(db_vals+28).s,
+			VAL_INT(db_vals+29), VAL_INT(db_vals+30), VAL_INT(db_vals+31),
+			VAL_STR(db_vals+32).len, VAL_STR(db_vals+32).s,
+			VAL_INT(db_vals+33),
+			VAL_STR(db_vals+34).len, VAL_STR(db_vals+34).s,
 			VAL_STR(db_vals+35).len, VAL_STR(db_vals+35).s,
 			VAL_STR(db_vals+36).len, VAL_STR(db_vals+36).s,
 			VAL_STR(db_vals+37).len, VAL_STR(db_vals+37).s,
 			VAL_STR(db_vals+38).len, VAL_STR(db_vals+38).s,
-			VAL_STR(db_vals+39).len, VAL_STR(db_vals+39).s,
-			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s,
+			VAL_BLOB(db_vals+39).len, VAL_BLOB(db_vals+39).s,
+			VAL_STR(db_vals+40).len, VAL_STR(db_vals+40).s,
 			VAL_STR(db_vals+41).len, VAL_STR(db_vals+41).s,
-			VAL_STR(db_vals+42).len, VAL_STR(db_vals+42).s,
-			VAL_STR(db_vals+43).len, VAL_STR(db_vals+43).s
+			VAL_STR(db_vals+42).len, VAL_STR(db_vals+42).s
 				);
+	if (len >= max_len)
+		return -1;
 
 	return len;
 }
@@ -2859,13 +2861,13 @@ static inline int init_raw_query(char* buf, int max_len, str* table_name,
 
 	for (i=0; i<num_keys-1; i++) {
 		ret = snprintf(buf+len, max_len-len, "%.*s,", keys[i]->len, keys[i]->s);
-		if (ret<0)	return ret;
+		if (ret<0 || ret>=max_len-len)	return -1;
 		len += ret;
 	}
 
 	ret=snprintf(buf+len, max_len-len, "%.*s) VALUES",
 				keys[num_keys-1]->len, keys[num_keys-1]->s);
-	if (ret<0)	return ret;
+	if (ret<0 || ret>=max_len-len)	return -1;
 	len += ret;
 
 	return len;
@@ -2907,16 +2909,25 @@ db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
 
 	/* use the global async query; we do this only once */
 	if (CURR_QUERIES(crt_as_query) == 0) {
-		QUERY_LEN(crt_as_query)=init_raw_query(QUERY_BUF(crt_as_query), MAX_QUERY,
+		ret = init_raw_query(QUERY_BUF(crt_as_query), MAX_QUERY,
 				&current_table, keys, num_keys);
+		if (ret < 0)
+			goto no_buffer;
+		QUERY_LEN(crt_as_query) = ret;
 	} else {
+		if (QUERY_LEN(crt_as_query) + 1 >= MAX_QUERY)
+			goto no_buffer;
 		QUERY_BUF(crt_as_query)[QUERY_LEN(crt_as_query)++] = ',';
 	}
 
 	ret=append_db_vals(QUERY_BUF(crt_as_query)+QUERY_LEN(crt_as_query),
 									MAX_QUERY-QUERY_LEN(crt_as_query), vals);
-	if (ret < 0)
+	if (ret < 0) {
+		/* drop the separator added for this row */
+		if (CURR_QUERIES(crt_as_query))
+			QUERY_LEN(crt_as_query)--;
 		goto no_buffer;
+	}
 
 	QUERY_LEN(crt_as_query) += ret;
 
@@ -4518,6 +4529,8 @@ static inline int append_rc_values(char* buf, int max_len, db_val_t* db_vals)
 			VAL_STR(db_vals+10).len, VAL_STR(db_vals+10).s,
 			VAL_STR(db_vals+11).len, VAL_STR(db_vals+11).s
 		);
+	if (len >= max_len)
+		return -1;
 
 	return len;
 }
