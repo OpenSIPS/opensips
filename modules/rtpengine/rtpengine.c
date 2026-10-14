@@ -5015,9 +5015,16 @@ end:
 static int fill_rtpengine_node(struct rtp_relay_server *server,
 		str *s)
 {
+	str node = {0, 0};
+
+	if (server->node.s && !str_strcmp(&server->node, s))
+		return 0;
+	if (shm_nt_str_dup(&node, s) < 0)
+		return -1;
 	if (server->node.s)
 		shm_free(server->node.s);
-	return shm_nt_str_dup(&server->node, s);
+	server->node = node;
+	return 0;
 }
 
 #define RTPE_APPEND_STR(_v) \
