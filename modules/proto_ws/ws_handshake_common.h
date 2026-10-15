@@ -205,13 +205,17 @@ static csv_record *ws_allowed_origins_list;
  * around the entries are ignored). Called once, from mod_init. */
 static int ws_parse_allowed_origins(str *param)
 {
+	str origins;
+
 	if (!param->s)
 		return 0;
 	param->len = strlen(param->s);
-	if (param->len == 0)
+	origins = *param;
+	trim(&origins);
+	if (origins.len == 0)
 		return 0;
 
-	ws_allowed_origins_list = parse_csv_record(param);
+	ws_allowed_origins_list = parse_csv_record(&origins);
 	if (!ws_allowed_origins_list) {
 		LM_ERR("failed to parse allowed_origins <%.*s>\n",
 				param->len, param->s);
