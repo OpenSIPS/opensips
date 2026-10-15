@@ -1323,22 +1323,19 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 		free_sip_body( body_bk );
 	}
 
-	if (msg->msg_flags & FL_TM_FAKE_REQ) {
-		/* fake requests are built based on the T->uas request, sharing
-		 * the lump pointers; so, if we updated the T->uas (aka c_msg),
-		 * we need to update the fake msg (aka msg) before freeing the
-		 * old lumps */
-		if (l1_len) msg->add_rm = c_msg->add_rm;
-		if (l2_len) msg->body_lumps = c_msg->body_lumps;
-		if (l3_len) msg->reply_lump = c_msg->reply_lump;
-		/* this will also prevent free_fake_req() to free again the
-		 * old lumps (as being different than t->uas */
-	}
-	shm_lock();
-	if (add_rm_aux) shm_free_bulk(add_rm_aux);
-	if (body_lumps_aux) shm_free_bulk(body_lumps_aux);
-	if (reply_lump_aux) shm_free_bulk(reply_lump_aux);
-	shm_unlock();
+	/* if "msg" is a fake request, due to how the fake requests are built
+	 * from the t->uas.request, the fake request "msg" and the shm cloned
+	 * request "t->uas.request" may initially (entering this function) share
+	 * the lump lumps. So we need to be carefully what we free here. We free
+	 * the lump chunk from the old cloned request ONLY if they are not shared
+	 * with the "msg", otherwise just let them attached to the "msg" and
+	 * the "free_faked_req) will take care of them */
+	if (add_rm_aux && add_rm_aux != msg->add_rm)
+		shm_free(add_rm_aux);
+	if (body_lumps_aux && body_lumps_aux != msg->body_lumps)
+		shm_free(body_lumps_aux);
+	if (reply_lump_aux && reply_lump_aux != msg->reply_lump)
+		shm_free(reply_lump_aux);
 
 	c_msg->msg_flags |= FL_SHM_UPDATED;
 	return 0;
