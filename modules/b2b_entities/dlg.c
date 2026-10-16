@@ -1347,7 +1347,10 @@ logic_notify:
 	{
 		B2BE_LOCK_RELEASE(table, hash_index);
 		run_top_route(sroutes->request[req_route_ref->idx], msg);
-		if (b2b_apply_lumps(msg))
+		ret = b2b_apply_lumps(msg);
+		if (ret < 0)
+			goto scb_drop_msg;
+		if (ret > 0)
 		{
 			if (parse_from_header(msg) < 0)
 			{
@@ -4626,6 +4629,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 {
 	str obuf;
 	struct sip_msg tmp;
+	struct sip_msg rebuilt;
 
 	/* faked reply */
 	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
@@ -4647,14 +4651,23 @@ int b2b_apply_lumps(struct sip_msg* msg)
 			msg->rcv.bind_address,0);
 
 	if (!obuf.s) {
-		LM_ERR("no more shm mem\n");
+		LM_ERR("failed to build SIP message\n");
+		return -1;
+	}
+	memset(&rebuilt, 0, sizeof(rebuilt));
+	rebuilt.buf = rebuilt.pkg_buf = obuf.s;
+	rebuilt.len = obuf.len;
+	rebuilt.rcv = msg->rcv;
+	if (parse_msg_opt(rebuilt.buf, rebuilt.len, &rebuilt, 0) != 0) {
+		LM_ERR("failed to parse rebuilt SIP message\n");
+		free_sip_msg(&rebuilt);
 		return -1;
 	}
 
 	/* temporary copy */
 	memcpy(&tmp, msg, sizeof(struct sip_msg));
 
-	/* reset dst uri and path vector to avoid freeing - restored later */
+	/* Keep these pkg strings across the reparse. */
 	if(msg->dst_uri.s != NULL)
 	{
 		msg->dst_uri.s = NULL;
@@ -4665,13 +4678,16 @@ int b2b_apply_lumps(struct sip_msg* msg)
 		msg->path_vec.s = NULL;
 		msg->path_vec.len = 0;
 	}
+	msg->set_global_address.s = NULL;
+	msg->set_global_address.len = 0;
+	msg->set_global_port.s = NULL;
+	msg->set_global_port.len = 0;
 
 	/* free old msg structure */
 	free_sip_msg(msg);
-	memset(msg, 0, sizeof(struct sip_msg));
+	memcpy(msg, &rebuilt, sizeof(*msg));
 
 	/* restore msg fields */
-	msg->buf                = tmp.buf;
 	msg->id                 = tmp.id;
 	msg->rcv                = tmp.rcv;
 	msg->set_global_address = tmp.set_global_address;
@@ -4683,22 +4699,8 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	msg->dst_uri            = tmp.dst_uri;
 	msg->path_vec           = tmp.path_vec;
 
-	memcpy(msg->buf, obuf.s, obuf.len);
-	msg->len = obuf.len;
-	msg->buf[msg->len] = '\0';
-
-	/* free new buffer - copied in the static buffer from old struct sip_msg */
-	pkg_free(obuf.s);
-
-	/* reparse the message */
-	if (parse_msg(msg->buf, msg->len, msg) != 0)
-		LM_ERR("parse_msg failed\n");
-
-	/* check for SDP */
-	if (!parse_sdp(msg)) {
-		LM_DBG("failed to parse SDP message\n");
-		return -1;
-	}
+	/* SDP is optional; parse it if present. */
+	parse_sdp(msg);
 
 	return 1;
 }
