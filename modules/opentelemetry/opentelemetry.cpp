@@ -65,9 +65,14 @@ extern "C" {
 #include "../../log_interface.h"
 #include "../../str.h"
 #include "../../route.h"
+#include "../../action.h"
 #include "../../version.h"
 #include "../../ip_addr.h"
+#include "../../md5.h"
+#include "../../md5utils.h"
 #include "../../parser/parse_cseq.h"
+#include "../../parser/parse_from.h"
+#include "../../parser/parse_to.h"
 #include "../../parser/parse_uri.h"
 #include "../../mi/mi.h"
 }
@@ -81,6 +86,7 @@ static int enable_proc = 0;
 static int *otel_enabled = NULL;
 static int otel_log_level = L_DBG;
 static int otel_use_batch = 1;
+static int otel_sip_correlation = 0;
 static str otel_service_name = str_init("opensips");
 static str otel_exporter_endpoint = STR_NULL;
 
@@ -100,6 +106,8 @@ static __thread int otel_log_in_cb;
 
 static __thread profiling_ctx_t otel_parent_ctx;
 static __thread int otel_parent_ctx_set;
+/* parent is the synthetic SIP correlation one, not a real exported span */
+static __thread int otel_parent_ctx_synthetic;
 static int otel_log_consumer_registered;
 
 static opentelemetry::nostd::shared_ptr<oteltrace::Tracer> otel_tracer;
@@ -127,6 +135,7 @@ static void otel_parent_ctx_clear(void)
 {
 	memset(&otel_parent_ctx, 0, sizeof(otel_parent_ctx));
 	otel_parent_ctx_set = 0;
+	otel_parent_ctx_synthetic = 0;
 }
 
 static int otel_get_cseq_method(struct sip_msg *msg, str *method)
@@ -350,6 +359,7 @@ static int otel_set_ctx(const profiling_ctx_t *ctx)
 		return 0;
 	memcpy(&otel_parent_ctx, ctx, sizeof(otel_parent_ctx));
 	otel_parent_ctx_set = 1;
+	otel_parent_ctx_synthetic = 0;
 	return 1;
 }
 
@@ -406,6 +416,297 @@ static int otel_init_provider(void)
 	return 0;
 }
 
+static int otel_hex_nibble(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return -1;
+}
+
+static int otel_hex_to_bytes(const char *hex, size_t hex_len,
+	uint8_t *out, size_t out_len)
+{
+	size_t i;
+	int hi, lo;
+
+	if (!hex || !out || hex_len < out_len * 2)
+		return -1;
+
+	for (i = 0; i < out_len; i++) {
+		hi = otel_hex_nibble(hex[i * 2]);
+		lo = otel_hex_nibble(hex[i * 2 + 1]);
+		if (hi < 0 || lo < 0)
+			return -1;
+		out[i] = (uint8_t)((hi << 4) | lo);
+	}
+
+	return 0;
+}
+
+/*
+ * Hex MD5 over a list of strings.  Each part is prefixed by its length, so
+ * that different splits of the same bytes (e.g. tags "ab"+"c" vs "a"+"bc")
+ * never produce the same identifier.  MD5StringArray() is not used, as it
+ * concatenates (and trims) the parts and logs every digest at debug level,
+ * which would end up as log events on the very span being enriched.
+ */
+static int otel_build_md5(const str *parts, unsigned int count,
+	char out[MD5_LEN])
+{
+	static const char hex[] = "0123456789abcdef";
+	MD5_CTX ctx;
+	char digest[16];
+	unsigned char len_buf[4];
+	unsigned int i;
+
+	if (!parts || !count || !out)
+		return 0;
+	for (i = 0; i < count; i++)
+		if (!parts[i].s || parts[i].len <= 0)
+			return 0;
+
+	MD5Init(&ctx);
+	for (i = 0; i < count; i++) {
+		len_buf[0] = (unsigned char)((unsigned int)parts[i].len >> 24);
+		len_buf[1] = (unsigned char)((unsigned int)parts[i].len >> 16);
+		len_buf[2] = (unsigned char)((unsigned int)parts[i].len >> 8);
+		len_buf[3] = (unsigned char)parts[i].len;
+		MD5Update(&ctx, (char *)len_buf, sizeof(len_buf));
+		MD5Update(&ctx, parts[i].s, parts[i].len);
+	}
+	MD5Final(digest, &ctx);
+
+	for (i = 0; i < sizeof(digest); i++) {
+		out[i * 2] = hex[((unsigned char)digest[i]) >> 4];
+		out[i * 2 + 1] = hex[((unsigned char)digest[i]) & 0x0f];
+	}
+	return 1;
+}
+
+static int otel_str_cmp(const str *a, const str *b)
+{
+	int len, rc;
+
+	if (!a || !b)
+		return 0;
+	len = a->len < b->len ? a->len : b->len;
+	rc = len ? memcmp(a->s, b->s, len) : 0;
+	if (rc)
+		return rc;
+	if (a->len < b->len)
+		return -1;
+	if (a->len > b->len)
+		return 1;
+	return 0;
+}
+
+static int otel_build_transaction_id(const str *callid, const str *cseq,
+	const str *branch, char out[MD5_LEN])
+{
+	str parts[3];
+	unsigned int count = 0;
+
+	if (!callid || !callid->s || !callid->len)
+		return 0;
+	parts[count++] = *callid;
+	if (cseq && cseq->s && cseq->len)
+		parts[count++] = *cseq;
+	if (branch && branch->s && branch->len)
+		parts[count++] = *branch;
+	return otel_build_md5(parts, count, out);
+}
+
+static int otel_build_dialog_id(const str *callid, const str *tag_a,
+	const str *tag_b, char out[MD5_LEN])
+{
+	str parts[3];
+
+	if (!callid || !callid->s || !callid->len ||
+		!tag_a || !tag_a->s || !tag_a->len ||
+		!tag_b || !tag_b->s || !tag_b->len)
+		return 0;
+
+	parts[0] = *callid;
+	if (otel_str_cmp(tag_a, tag_b) <= 0) {
+		parts[1] = *tag_a;
+		parts[2] = *tag_b;
+	} else {
+		parts[1] = *tag_b;
+		parts[2] = *tag_a;
+	}
+	return otel_build_md5(parts, 3, out);
+}
+
+/*
+ * Timer, event and startup routes all run on the same static dummy request
+ * (with a fixed Call-ID), so they must never be correlated - they would all
+ * end up in one endless trace.
+ */
+static inline int otel_sip_correlation_applies(struct sip_msg *msg)
+{
+	return otel_sip_correlation && msg && is_dummy_sip_msg(msg) != 0;
+}
+
+/*
+ * SIP messages which belong to the same Call-ID are intentionally placed in
+ * the same OpenTelemetry trace.  A deterministic synthetic parent SpanId is
+ * derived from the SIP transaction key, allowing different OpenSIPS workers
+ * to correlate messages without a shared in-memory trace table.
+ */
+static int otel_prepare_sip_correlation(struct sip_msg *msg)
+{
+	char trace_hex[MD5_LEN];
+	char transaction_hex[MD5_LEN];
+	uint8_t trace_id[16];
+	uint8_t span_id[8];
+
+	if (!otel_sip_correlation_applies(msg))
+		return 0;
+
+	if ((!msg->callid || !msg->cseq || !msg->via1) &&
+		parse_headers(msg, HDR_CALLID_F | HDR_CSEQ_F | HDR_VIA_F, 0) == -1)
+		return 0;
+
+	if (!msg->callid || !msg->callid->body.s || !msg->callid->body.len)
+		return 0;
+
+	if (!otel_build_md5(&msg->callid->body, 1, trace_hex) ||
+		otel_hex_to_bytes(trace_hex, sizeof(trace_hex), trace_id,
+			sizeof(trace_id)) < 0)
+		return 0;
+
+	{
+		str *cseq = msg->cseq && msg->cseq->body.s &&
+			msg->cseq->body.len ? &msg->cseq->body : NULL;
+		str *branch = msg->via1 && msg->via1->branch &&
+			msg->via1->branch->value.s &&
+			msg->via1->branch->value.len ?
+			&msg->via1->branch->value : NULL;
+
+		if (!otel_build_transaction_id(&msg->callid->body, cseq, branch,
+				transaction_hex) ||
+			otel_hex_to_bytes(transaction_hex, sizeof(transaction_hex),
+				span_id, sizeof(span_id)) < 0)
+			return 0;
+	}
+
+	memset(&otel_parent_ctx, 0, sizeof(otel_parent_ctx));
+	memcpy(otel_parent_ctx.trace_id, trace_id, sizeof(trace_id));
+	memcpy(otel_parent_ctx.span_id, span_id, sizeof(span_id));
+	otel_parent_ctx.trace_flags = 1;
+	otel_parent_ctx_set = 1;
+	otel_parent_ctx_synthetic = 1;
+
+	return 1;
+}
+
+#ifdef UNIT_TESTS
+extern "C" int opentelemetry_test_transaction_id(const char *callid,
+	const char *cseq, const char *branch, char out[MD5_LEN + 1])
+{
+	str callid_s = STR_NULL, cseq_s = STR_NULL, branch_s = STR_NULL;
+	int rc;
+
+	if (!callid || !out)
+		return 0;
+	callid_s.s = (char *)callid;
+	callid_s.len = strlen(callid);
+	if (cseq) {
+		cseq_s.s = (char *)cseq;
+		cseq_s.len = strlen(cseq);
+	}
+	if (branch) {
+		branch_s.s = (char *)branch;
+		branch_s.len = strlen(branch);
+	}
+
+	rc = otel_build_transaction_id(&callid_s,
+		cseq ? &cseq_s : NULL, branch ? &branch_s : NULL, out);
+	if (rc)
+		out[MD5_LEN] = '\0';
+	return rc;
+}
+
+extern "C" int opentelemetry_test_dialog_id(const char *callid,
+	const char *tag_a, const char *tag_b, char out[MD5_LEN + 1])
+{
+	str callid_s = STR_NULL, a_s = STR_NULL, b_s = STR_NULL;
+	int rc;
+
+	if (!callid || !tag_a || !tag_b || !out)
+		return 0;
+	callid_s.s = (char *)callid;
+	callid_s.len = strlen(callid);
+	a_s.s = (char *)tag_a;
+	a_s.len = strlen(tag_a);
+	b_s.s = (char *)tag_b;
+	b_s.len = strlen(tag_b);
+
+	rc = otel_build_dialog_id(&callid_s, &a_s, &b_s, out);
+	if (rc)
+		out[MD5_LEN] = '\0';
+	return rc;
+}
+#endif
+
+static void otel_set_sip_correlation_attributes(struct sip_msg *msg,
+	oteltrace::Span *span)
+{
+	char transaction_hex[MD5_LEN];
+	char dialog_hex[MD5_LEN];
+	char trace_hex[MD5_LEN];
+	struct to_body *from, *to;
+
+	if (!span || !otel_sip_correlation_applies(msg))
+		return;
+
+	if ((!msg->callid || !msg->cseq || !msg->via1) &&
+		parse_headers(msg, HDR_CALLID_F | HDR_CSEQ_F | HDR_VIA_F, 0) == -1)
+		return;
+	if (!msg->callid || !msg->callid->body.s || !msg->callid->body.len)
+		return;
+
+	if (!otel_build_md5(&msg->callid->body, 1, trace_hex))
+		return;
+	span->SetAttribute("sip.trace.id",
+		opentelemetry::nostd::string_view(trace_hex, MD5_LEN));
+	span->SetAttribute("sip.correlation.mode", "call-id");
+
+	{
+		str *cseq = msg->cseq && msg->cseq->body.s &&
+			msg->cseq->body.len ? &msg->cseq->body : NULL;
+		str *branch = msg->via1 && msg->via1->branch &&
+			msg->via1->branch->value.s &&
+			msg->via1->branch->value.len ?
+			&msg->via1->branch->value : NULL;
+
+		if (branch)
+			span->SetAttribute("sip.branch.id",
+				opentelemetry::nostd::string_view(branch->s, branch->len));
+		if (otel_build_transaction_id(&msg->callid->body, cseq, branch,
+				transaction_hex))
+			span->SetAttribute("sip.transaction.id",
+				opentelemetry::nostd::string_view(transaction_hex, MD5_LEN));
+	}
+
+	from = NULL;
+	to = NULL;
+	if (parse_from_header(msg) == 0 && msg->from)
+		from = get_from(msg);
+	if (parse_headers(msg, HDR_TO_F, 0) >= 0 && msg->to)
+		to = get_to(msg);
+
+	if (from && to &&
+		otel_build_dialog_id(&msg->callid->body,
+			&from->tag_value, &to->tag_value, dialog_hex))
+		span->SetAttribute("sip.dialog.id",
+			opentelemetry::nostd::string_view(dialog_hex, MD5_LEN));
+}
+
 static void otel_set_msg_attributes(struct sip_msg *msg, oteltrace::Span *span,
 	int route_type)
 {
@@ -443,6 +744,7 @@ static void otel_set_msg_attributes(struct sip_msg *msg, oteltrace::Span *span,
 		span->SetAttribute("sip.cseq",
 			opentelemetry::nostd::string_view(msg->cseq->body.s, msg->cseq->body.len));
 
+	otel_set_sip_correlation_attributes(msg, span);
 	otel_set_network_attributes(msg, span);
 	otel_set_request_target_attributes(msg, span);
 	otel_set_user_agent_attribute(msg, span);
@@ -483,7 +785,9 @@ static struct otel_span *otel_span_start_named(const std::string &span_name,
 			opentelemetry::trace::SpanContext sc(tid, sid, tf, true);
 			if (sc.IsValid()) {
 				opts.parent = sc;
-				has_parent_link = 1;
+				/* the synthetic SIP correlation parent only groups the
+				 * messages of a call - the span is still a message root */
+				has_parent_link = !otel_parent_ctx_synthetic;
 				if (otel_parent_ctx.has_start_time) {
 					opts.start_system_time = opentelemetry::common::SystemTimestamp(
 						std::chrono::nanoseconds(otel_parent_ctx.start_system_ns));
@@ -566,6 +870,7 @@ static void otel_on_start(int data_type, const char *name, int subtype,
 	int depth, void *payload)
 {
 	struct sip_msg *msg = (struct sip_msg *)payload;
+	int inherited_parent;
 
 	if (!otel_is_enabled())
 		return;
@@ -573,10 +878,21 @@ static void otel_on_start(int data_type, const char *name, int subtype,
 	if (otel_ensure_provider() != 0)
 		return;
 
-	if (otel_parent_ctx_set)
+	/*
+	 * Async resume may restore a real parent context before run_top_route().
+	 * Keep that parent, but still create the normal SIP message root span so
+	 * resumed work receives the same SIP attributes and route hierarchy as a
+	 * non-async message.  Only synthesize the deterministic SIP parent when
+	 * no real profiling context was supplied.
+	 */
+	/* without SIP correlation keep the original async resume behaviour */
+	if (otel_parent_ctx_set && !otel_sip_correlation)
 		return;
 
+	inherited_parent = otel_parent_ctx_set;
 	otel_span_reset();
+	if (!inherited_parent)
+		otel_prepare_sip_correlation(msg);
 
 	otel_message_span_start(msg, subtype, depth);
 
@@ -608,6 +924,12 @@ static void otel_on_end(int data_type, const char *name, int subtype,
 	(void)status;
 
 	otel_span_reset();
+	/*
+	 * A restored parent is normally consumed when the root span starts.  If
+	 * span creation failed, do not let that context leak into the next SIP
+	 * message handled by this worker.
+	 */
+	otel_parent_ctx_clear();
 }
 
 static void otel_on_enter(int data_type, const char *name, int subtype,
@@ -723,6 +1045,7 @@ static const param_export_t params[] = {
 	{ "proc_profiling", INT_PARAM, &enable_proc},
 	{ "log_level", INT_PARAM, &otel_log_level },
 	{ "use_batch", INT_PARAM, &otel_use_batch },
+	{ "sip_correlation", INT_PARAM, &otel_sip_correlation },
 	{ "service_name", STR_PARAM, &otel_service_name.s },
 	{ "exporter_endpoint", STR_PARAM, &otel_exporter_endpoint.s },
 	{ 0, 0, 0 }
