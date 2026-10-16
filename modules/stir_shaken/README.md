@@ -485,6 +485,10 @@ Reload the file containing trusted CA certificates for the verifier
 and the directory containing trusted CA certificates for the verifier.
 
 
+The CRLs are reloaded too, since CAs and CRLs share one certificate store,
+and the reload is applied in every OpenSIPS process.
+
+
 Name: *stir_shaken:ca_reload*
 
 
@@ -510,6 +514,10 @@ Replaces obsolete MI command: *stir_shaken_crl_reload*.
 
 Reload the file containing certificate revocation lists (CRLs) for the verifier
 and the directory containing certificate revocation lists for the verifier.
+
+
+The trusted CA certificates are reloaded too, since CAs and CRLs share one
+certificate store, and the reload is applied in every OpenSIPS process.
 
 
 Name: *stir_shaken:crl_reload*
