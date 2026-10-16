@@ -609,6 +609,21 @@ Example of usage:
 
 ```
 
+### log_ratelimit_period
+
+The minimum interval, in seconds, between two log lines from the same rate-limited log statement within a process. Some messages that can repeat for every request (for example, running out of private memory while evaluating a script expression) are rate-limited: the first one is logged, the following ones are suppressed until the period has passed, and the next line logged is preceded by the number of suppressed ones.
+
+A value of `0` disables the rate limiting, so every such message is logged. The maximum is `3600`; a higher value is replaced by `3600` and a warning is logged.
+
+Default value is `1` second.
+
+Example of usage:
+```opensips
+
+    log_ratelimit_period = 10  # given in seconds
+
+```
+
 ### log_stdout
 
 Controls whether OpenSIPS preserves standard output. This may be useful when trying to extract logs from third-party libraries.

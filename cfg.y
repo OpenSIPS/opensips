@@ -325,6 +325,7 @@ extern int cfg_parse_only_routes;
 %token SYSLOG_FORMAT
 %token LOG_JSON_BUF_SIZE
 %token LOG_MSG_BUF_SIZE
+%token LOG_RATELIMIT_PERIOD
 %token SYSLOG_FACILITY
 %token SYSLOG_NAME
 %token AVP_ALIASES
@@ -1122,6 +1123,17 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 			}
 		| LOG_MSG_BUF_SIZE EQUAL error { yyerror("number expected"); }
+		| LOG_RATELIMIT_PERIOD EQUAL NUMBER { IFOR();
+			if ($3 > LOG_RATELIMIT_PERIOD_MAX) {
+				LM_WARN("config file %s, line %d: log_ratelimit_period %ld is "
+					"above the maximum, using %d\n", get_cfg_file_name, line,
+					$3, LOG_RATELIMIT_PERIOD_MAX);
+				log_ratelimit_period = LOG_RATELIMIT_PERIOD_MAX;
+			} else {
+				log_ratelimit_period = $3;
+			}
+			}
+		| LOG_RATELIMIT_PERIOD EQUAL error { yyerror("number expected"); }
 		| SYSLOG_FACILITY EQUAL ID { IFOR();
 			if ( (i_tmp=str2facility($3))==-1)
 				yyerror("bad facility (see syslog(3) man page)");

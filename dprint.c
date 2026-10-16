@@ -69,6 +69,8 @@ static char *log_json_buf = NULL;
 int log_json_buf_size = 6144;
 static char *log_msg_buf = NULL;
 int log_msg_buf_size = 4096;
+/* seconds between two logs of the same LMR_* call site */
+int log_ratelimit_period = 1;
 
 str log_cee_hostname;
 
