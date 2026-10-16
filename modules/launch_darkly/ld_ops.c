@@ -37,6 +37,8 @@ unsigned int re_init_interval = 10;    //seconds
 char * sdk_key = NULL;
 
 static LDServerSDK ld_sdk = NULL;
+/* new LD client being connected in background, to take over from a shut down ld_sdk */
+static LDServerSDK ld_sdk_pending = NULL;
 static unsigned int last_init_attempt_time = 0;
 static enum LDLogLevel ld_log_level = LD_LOG_WARN;
 
@@ -97,21 +99,37 @@ static void ld_configure_logging(LDServerConfigBuilder cfg_builder)
 }
 
 
+/* the SDK retries recoverable errors (network outages, 5xx) on its own, but
+ * an unrecoverable one (e.g. 401/403 on the SDK key) permanently shuts its
+ * data source down (OFF state) - such a client never reconnects again */
+static int ld_client_is_off(void)
+{
+	LDServerDataSourceStatus status;
+	enum LDServerDataSourceStatus_State state;
+
+	status = LDServerSDK_DataSourceStatus_Status(ld_sdk);
+	state = LDServerDataSourceStatus_GetState(status);
+	LDServerDataSourceStatus_Free(status);
+
+	return state==LD_SERVERDATASOURCESTATUS_STATE_OFF;
+}
+
+
 static int ld_client_init_attempt(void)
 {
 	LDServerConfigBuilder cfg_builder;
 	LDServerConfig ld_cfg;
 	LDStatus ld_status;
+	LDServerSDK new_sdk;
 	bool ld_succeeded;
-
-	/* maybe already connected? */
-	if (ld_sdk)
-		return 0;
 
 	/* too soon to retry a new connect ?*/
 	if (last_init_attempt_time!=0 &&
 	(last_init_attempt_time + re_init_interval > get_ticks()) )
 		return -2;
+
+	if (ld_sdk)
+		LM_WARN("LD client was permanently shut down, re-creating it\n");
 
 	LM_DBG("attempting LD client re-init\n");
 	LM_INFO("waiting to initialize\n");
@@ -130,9 +148,22 @@ static int ld_client_init_attempt(void)
 	}
 
 	/* ownership of ld_cfg is transferred into the SDK instance */
-	ld_sdk = LDServerSDK_New(ld_cfg);
+	new_sdk = LDServerSDK_New(ld_cfg);
 
 	LM_INFO("connection to streaming url: %s\n", LD_DEFAULT_STREAM_URI);
+
+	if (ld_sdk) {
+		/* connect in background, the shut down client keeps serving
+		 * its last known flags meanwhile */
+		if (ld_sdk_pending)
+			LDServerSDK_Free(ld_sdk_pending);
+		ld_sdk_pending = new_sdk;
+		LDServerSDK_Start(new_sdk, LD_NONBLOCKING, NULL);
+		last_init_attempt_time = get_ticks();
+		return 0;
+	}
+
+	ld_sdk = new_sdk;
 
 	/* block for up to connect_wait ms while the SDK connects and fetches flags */
 	LDServerSDK_Start(ld_sdk, connect_wait, &ld_succeeded);
@@ -178,9 +209,18 @@ int ld_feature_enabled(str *feat, str *user, int user_extra_avp_id,
 	char *p;
 	int ret;
 
-	if (ld_sdk==NULL && ld_client_init_attempt()<0) {
-		LM_ERR("not having a connected LD client :(\n");
-		goto error;
+	/* not connected yet or permanently shut down? */
+	if (ld_sdk==NULL || ld_client_is_off()) {
+		if (ld_sdk_pending && LDServerSDK_Initialized(ld_sdk_pending)) {
+			/* new client connected, take over from the shut down one */
+			LM_INFO("shut down LD client replaced\n");
+			LDServerSDK_Free(ld_sdk);
+			ld_sdk = ld_sdk_pending;
+			ld_sdk_pending = NULL;
+		} else if (ld_client_init_attempt()<0 && ld_sdk==NULL) {
+			LM_ERR("not having a connected LD client :(\n");
+			goto error;
+		}
 	}
 
 	if (pkg_nt_str_dup( &s_nt, user)<0) {
