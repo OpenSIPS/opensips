@@ -342,7 +342,8 @@ inline static int update_totag_set(struct cell *t, struct sip_msg *ok)
  *   - return 0
  *   - populate @ack_buf, for callback purposes, which *must* be SHM freed!
  */
-static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch, str *ack_buf)
+static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch,
+		str *ack_buf, str *sent_buf)
 {
 	str method = str_init(ACK);
 	str to;
@@ -371,7 +372,8 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch, str *ac
 	set_bavp_list(&TM_BRANCH(trans,branch).user_avps);
 	backup_list = set_avp_list( &trans->user_avps );
 
-	rc = SEND_PR_BUFFER(&TM_BRANCH(trans,branch).request, ack_buf->s, ack_buf->len);
+	rc = SEND_PR_BUFFER_CAPTURE(&TM_BRANCH(trans,branch).request,
+		ack_buf->s, ack_buf->len, sent_buf);
 
 	set_avp_list(backup_list);
 	reset_bavp_list();
@@ -393,6 +395,8 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 	unsigned int buf_len;
 	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 	str cb_s;
+	str sent_buffer = STR_NULL;
+	int observe_send;
 
 	if (!buf)
 	{
@@ -500,16 +504,18 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 	}
 
 
-	if ( SEND_PR_BUFFER( rb, buf, len )==0 ) {
+	observe_send = has_tran_tmcbs(trans, TMCB_MSG_SENT_OUT);
+	if (SEND_PR_BUFFER_CAPTURE(rb, buf, len,
+			observe_send ? &sent_buffer : NULL) == 0) {
 		LM_DBG("reply sent out. buf=%p: %.9s..., "
 			"shmem=%p: %.9s\n", buf, buf, rb->buffer.s, rb->buffer.s );
 
-		if (has_tran_tmcbs(trans, TMCB_MSG_SENT_OUT) ) {
-			cb_s.s = buf;
-			cb_s.len = len;
+		if (observe_send) {
+			cb_s = sent_buffer;
 			set_extra_tmcb_params( &cb_s, &rb->dst);
 			run_trans_callbacks( TMCB_MSG_SENT_OUT, trans,
 				NULL, FAKED_REPLY, code);
+			release_sent_buffer(&sent_buffer, buf);
 		}
 		stats_trans_rpl( code, 1 /*local*/ );
 	}
@@ -1146,6 +1152,8 @@ int t_retransmit_reply( struct cell *t )
 	static char b[BUF_SIZE];
 	int len;
 	str cb_s;
+	str sent_buffer = STR_NULL;
+	int observe_send;
 
 	/* we need to lock the transaction as messages from
 	   upstream may change it continuously */
@@ -1175,16 +1183,18 @@ int t_retransmit_reply( struct cell *t )
 	if (t->uas.request && t->uas.request->flags & tcp_no_new_conn_rplflag)
 		tcp_no_new_conn = 1;
 
-	if (SEND_PR_BUFFER( & t->uas.response, b, len )==0) {
+	observe_send = has_tran_tmcbs(t, TMCB_MSG_SENT_OUT);
+	if (SEND_PR_BUFFER_CAPTURE(&t->uas.response, b, len,
+			observe_send ? &sent_buffer : NULL) == 0) {
 		/* success */
 		LM_DBG("buf=%p: %.9s..., shmem=%p: %.9s\n",b, b,
 			t->uas.response.buffer.s, t->uas.response.buffer.s );
-		if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-			cb_s.s = b;
-			cb_s.len = len;
+		if (observe_send) {
+			cb_s = sent_buffer;
 			set_extra_tmcb_params( &cb_s, &t->uas.response.dst);
 			run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
 					NULL, FAKED_REPLY, t->uas.status);
+			release_sent_buffer(&sent_buffer, b);
 		}
 	}
 
@@ -1301,6 +1311,8 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 	struct retr_buf *uas_rb;
 	str cb_s;
 	str text;
+	str sent_buffer = STR_NULL;
+	int observe_send;
 
 	/* keep compiler warnings about use of uninit vars silent */
 	res_len=0;
@@ -1442,17 +1454,19 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			tcp_no_new_conn = 1;
 
 		/* send it out*/
-		if (SEND_PR_BUFFER( uas_rb, buf, res_len)==0) {
+		observe_send = has_tran_tmcbs(t, TMCB_MSG_SENT_OUT);
+		if (SEND_PR_BUFFER_CAPTURE(uas_rb, buf, res_len,
+				observe_send ? &sent_buffer : NULL) == 0) {
 			/* success */
 			LM_DBG("sent buf=%p: %.9s..., shmem=%p: %.9s\n",
 				buf, buf, uas_rb->buffer.s, uas_rb->buffer.s );
 
-			if (has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-				cb_s.s = buf;
-				cb_s.len = res_len;
+			if (observe_send) {
+				cb_s = sent_buffer;
 				set_extra_tmcb_params( &cb_s, &uas_rb->dst);
 				run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
 					NULL, relayed_msg, relayed_code);
+				release_sent_buffer(&sent_buffer, buf);
 			}
 		}
 
@@ -1657,6 +1671,8 @@ int reply_received( struct sip_msg  *p_msg )
 	unsigned int has_reply_route;
 	int old_route_type, ack_sent = 0;
 	str ack_buf;
+	str sent_ack_buf = STR_NULL;
+	int observe_ack;
 
 	set_t(T_UNDEFINED);
 
@@ -1709,9 +1725,11 @@ int reply_received( struct sip_msg  *p_msg )
 	/* acknowledge negative INVITE replies ASAP! (do it before detailed
 	 * on_reply processing, which may take very long, like if it
 	 * is attempted to establish a TCP connection to a fail-over dst */
+	observe_ack = has_tran_tmcbs(t, TMCB_MSG_SENT_OUT);
 	if (is_invite(t) && ((msg_status >= 300) ||
 	(is_local(t) && !no_autoack(t) && msg_status >= 200) )) {
-		if (!(ack_sent = (send_ack(p_msg, t, branch, &ack_buf)>=0)))
+		if (!(ack_sent = (send_ack(p_msg, t, branch, &ack_buf,
+				observe_ack ? &sent_ack_buf : NULL)>=0)))
 			LM_ERR("failed to send ACK (local=%s)\n", is_local(t)?"yes":"no");
 	}
 
@@ -1726,10 +1744,11 @@ int reply_received( struct sip_msg  *p_msg )
 			p_msg->REPLY_STATUS);
 
 	if (ack_sent) {
-		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
-			set_extra_tmcb_params( &ack_buf, &uac->request.dst);
+		if (observe_ack) {
+			set_extra_tmcb_params(&sent_ack_buf, &uac->request.dst);
 			run_trans_callbacks( TMCB_MSG_SENT_OUT,
 				t, t->uas.request, 0, 0);
+			release_sent_buffer(&sent_ack_buf, ack_buf.s);
 		}
 		shm_free(ack_buf.s);
 	}
