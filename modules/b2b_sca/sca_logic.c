@@ -195,7 +195,7 @@ int build_publish_call_info_header(b2b_sca_record_t *rec, str *publish_hdr)
 				callinfo_appindex.len +
 				call->appearance_index_str.len +
 				callinfo_appstate.len +
-				app_state[call->call_state].len + 2;
+				app_state[call->call_state].len + 3; /* \" , < */
 		}
 	}
 
@@ -353,7 +353,9 @@ int build_absoluteURI(str *host, str *port, str *call_info_uri)
 	unsigned int size;
 	char *p;
 
-	size = sizeof(CALL_INFO_URI) - 1 + host->len + port->len;
+	size = sizeof(CALL_INFO_URI) - 1 + host->len;
+	if (port->s && port->len)
+		size += 1 /* : */ + port->len;
 	if (size > CALL_INFO_URI_LEN) {
 		LM_WARN("buffer overflow on absoluteURI: size [%d]\n", size);
 		p = (char *)pkg_malloc(size);
