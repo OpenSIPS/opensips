@@ -638,6 +638,9 @@ be used in the SDP body. Address family is detected automatically.
   - *record-call=yes/no* - indicates whether rtpengine should
 record the call or not. When using this parameter, you may pass further
 information in the "metadata".
+  - *track-state* - instructs rtpengine to record the media state of the
+last completed offer/answer exchange before applying an offer, so that
+*rtpengine_rollback()* can restore it.
   - *transcode-CODEC* - used only for offer, indicates that
 rtpengine should transcode the CODEC towards the B-side. Example:
 *transcode-PCMA* will present to the B-side the PCMA codec.
@@ -825,6 +828,41 @@ This function can be used from ALL_ROUTES.
 ```opensips title="rtpengine_delete usage"
 ...
 rtpengine_delete();
+...
+```
+
+
+#### rtpengine_rollback([flags[, sock_var[, rolled_back]]])
+
+
+This function will restore the media state of the last completed
+offer/answer exchange, recorded for offers made with the *track-state*
+flag, without deleting the call. Use it when the remote endpoint refuses
+an offer RTPEngine already applied, for example a re-INVITE answered with
+a negative final response.
+
+
+Meaning of the parameters is as follows:
+
+
+- *flags(string)* - a list of flags similar to
+the other functions.
+- *rolled_back(var, optional)* - a pseudo variable that
+will contain 1 when a recorded state was restored, or 0 when none was
+outstanding.
+
+
+This function can be used from any route.
+
+
+```opensips title="rtpengine_rollback usage"
+...
+rtpengine_offer("track-state");
+...
+onreply_route[reinvite_reply] {
+	if (t_check_status("[3-6][0-9][0-9]"))
+		rtpengine_rollback();
+}
 ...
 ```
 
