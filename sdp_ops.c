@@ -149,7 +149,7 @@ int pv_set_sdp(struct sip_msg *msg, pv_param_t *param,
 		ops->rebuilt_sdp.s = NULL;
 
 	} else {
-		LM_ERR("sdp-set: non-NULL!\n");
+		LM_DBG("sdp-set: replacing existing SDP body\n");
 
 		if (!(val->flags & PV_VAL_STR) || val->rs.len <= 0) {
 			LM_ERR("non-empty str value required to set SDP body\n");
