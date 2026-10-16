@@ -59,6 +59,8 @@
 #include "../../mod_fix.h"
 #include "../../data_lump_rpl.h"
 #include "../../mi/mi.h"
+#include "../../mem/shm_mem.h"
+#include <sys/stat.h>
 
 #include "stir_shaken.h"
 #include "div.h"
@@ -155,6 +157,21 @@ struct generated_identity {
 
 static X509_STORE *store;
 static gen_lock_t *ss_openssl_lock;
+
+/* contents of ca_list/crl_list; each process builds its own store from the
+ * current snapshot, parsing it outside any lock while it holds a reference */
+struct ss_snapshot {
+	unsigned int gen;
+	int refs;  /* one for being current, one per process parsing it */
+	str ca;
+	str crl;
+};
+static struct ss_shared {
+	gen_lock_t lock;  /* guards cur and refs */
+	struct ss_snapshot *cur;
+	unsigned int gen;  /* cur->gen, read without the lock (atomically) */
+} *ss_shared;
+static unsigned int ss_my_gen;
 
 
 static const param_export_t params[] = {
@@ -310,35 +327,266 @@ static void ss_store_set_verify_cb(X509_STORE *x509_store,
 #endif
 }
 
-// called during mod_init
-static int init_cert_validation(void)
+static X509_INFO *ss_sk_X509_INFO_shift(STACK_OF(X509_INFO) *sk);
+
+/* add the certificates and CRLs of a PEM buffer to st, failing on any that
+ * cannot be added; with want_crl only CRLs are allowed (-2 for a certificate,
+ * which would become a trust anchor); returns how many of the wanted type */
+static int ss_store_add_pem(X509_STORE *st, str *pem, int want_crl)
 {
-	store = X509_STORE_new();
-	if (!store) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
+	STACK_OF(X509_INFO) *sk;
+	X509_INFO *xi;
+	BIO *bio;
+	char name[256];
+	int certs = 0, crls = 0, rc = 0;
+
+	bio = BIO_new_mem_buf((void *)pem->s, pem->len);
+	if (!bio)
 		return -1;
+	sk = PEM_X509_INFO_read_bio(bio, NULL, NULL, NULL);
+	BIO_free(bio);
+	if (!sk)
+		return -1;
+
+	while (sk_X509_INFO_num(sk)) {
+		xi = ss_sk_X509_INFO_shift(sk);
+		if (rc == 0 && xi->x509 && want_crl) {
+			X509_NAME_oneline(X509_get_subject_name(xi->x509), name, sizeof name);
+			LM_ERR("crl_list holds a certificate (%s), only CRLs are allowed\n",
+				name);
+			rc = -2;
+		}
+		if (rc == 0 && xi->x509) {
+			if (X509_STORE_add_cert(st, xi->x509) != 1)
+				rc = -1;
+			certs++;
+		}
+		if (rc == 0 && xi->crl) {
+			if (X509_STORE_add_crl(st, xi->crl) != 1)
+				rc = -1;
+			crls++;
+		}
+		X509_INFO_free(xi);
 	}
-	ss_store_set_verify_cb(store, verify_callback);
+	sk_X509_INFO_free(sk);
+
+	if (rc == -1)
+		LM_ERR("failed to add a certificate or CRL to the store\n");
+	if (rc < 0)
+		return rc;
+	return want_crl ? crls : certs;
+}
+
+static X509_STORE *ss_build_store(struct ss_snapshot *snap, str *err)
+{
+	X509_STORE *new_store;
+	int n;
+
+	new_store = X509_STORE_new();
+	if (!new_store) {
+		LM_ERR("Failed to create X509_STORE object\n");
+		init_str(err, "Out of memory: could not create a new certificate store");
+		return NULL;
+	}
+	ss_store_set_verify_cb(new_store, verify_callback);
 
 	if (ca_list || ca_dir) {
-		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
+		if ((ca_list && ss_store_add_pem(new_store, &snap->ca, 0) <= 0) ||
+		(ca_dir && X509_STORE_load_locations(new_store, NULL, ca_dir) != 1)) {
 			LM_ERR("Failed to load trusted CAs\n");
-			return -1;
+			init_str(err,
+				"Failed to load the trusted CA certificates from ca_list/ca_dir");
+			goto error;
 		}
-		if (ss_store_set_default_paths(store) != 1) {
+		if (ss_store_set_default_paths(new_store) != 1) {
 			LM_ERR("Failed to load the system-wide CA certificates\n");
-			return -1;
+			init_str(err, "Failed to load the system's default CA certificates");
+			goto error;
 		}
 	}
 
 	if (crl_list || crl_dir) {
-		if (X509_STORE_load_locations(store, crl_list, crl_dir) != 1) {
-			LM_ERR("Failed to load CRLs\n");
-			return -1;
+		n = crl_list ? ss_store_add_pem(new_store, &snap->crl, 1) : 1;
+		if (n == -2) {
+			init_str(err, "Failed to load the CRLs from crl_list: it holds a "
+				"certificate, only CRLs are allowed");
+			goto error;
 		}
-		X509_STORE_set_flags(store,
+		if (n <= 0 ||
+		(crl_dir && X509_STORE_load_locations(new_store, NULL, crl_dir) != 1)) {
+			LM_ERR("Failed to load CRLs\n");
+			init_str(err, "Failed to load the CRLs from crl_list/crl_dir");
+			goto error;
+		}
+		X509_STORE_set_flags(new_store,
 			X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 	}
+
+	/* parsing may leave errors queued for later OpenSSL calls in this process */
+	ERR_clear_error();
+	return new_store;
+
+error:
+	ERR_clear_error();
+	X509_STORE_free(new_store);
+	return NULL;
+}
+
+#define SS_MAX_FILE_SIZE (16 * 1024 * 1024)
+
+static int ss_open_file(const char *path, FILE **f, int *len, struct stat *st)
+{
+	*f = NULL;
+	*len = 0;
+	if (!path)
+		return 0;
+
+	*f = fopen(path, "r");
+	if (!*f) {
+		LM_ERR("failed to open %s: %s\n", path, strerror(errno));
+		return -1;
+	}
+	if (fstat(fileno(*f), st) < 0 || !S_ISREG(st->st_mode)) {
+		LM_ERR("%s is not a regular file\n", path);
+		goto error;
+	}
+	if (st->st_size > SS_MAX_FILE_SIZE) {
+		LM_ERR("%s is bigger than %d bytes\n", path, SS_MAX_FILE_SIZE);
+		goto error;
+	}
+	*len = (int)st->st_size;
+	return 0;
+
+error:
+	fclose(*f);
+	*f = NULL;
+	return -1;
+}
+
+#ifdef __OS_linux
+#define ss_same_time(_a, _b) \
+	((_a)->st_mtim.tv_sec == (_b)->st_mtim.tv_sec && \
+	 (_a)->st_mtim.tv_nsec == (_b)->st_mtim.tv_nsec && \
+	 (_a)->st_ctim.tv_sec == (_b)->st_ctim.tv_sec && \
+	 (_a)->st_ctim.tv_nsec == (_b)->st_ctim.tv_nsec)
+#else
+#define ss_same_time(_a, _b) \
+	((_a)->st_mtime == (_b)->st_mtime && (_a)->st_ctime == (_b)->st_ctime)
+#endif
+
+/* read exactly buf->len bytes, the size the file had when opened; a file
+ * whose size, inode or timestamps changed meanwhile is refused (timestamps
+ * to the nanosecond on Linux, to the second elsewhere) */
+static int ss_read_file(FILE *f, const char *path, str *buf, struct stat *st)
+{
+	struct stat now;
+
+	if (!f)
+		return 0;
+
+	if ((buf->len && fread(buf->s, 1, buf->len, f) != (size_t)buf->len) ||
+	fgetc(f) != EOF || ferror(f) || fstat(fileno(f), &now) < 0 ||
+	now.st_ino != st->st_ino || now.st_size != st->st_size ||
+	!ss_same_time(&now, st)) {
+		LM_ERR("failed to read %s, or it changed while being read\n", path);
+		return -1;
+	}
+	return 0;
+}
+
+static struct ss_snapshot *ss_snapshot_load(str *err)
+{
+	struct ss_snapshot *snap = NULL;
+	FILE *ca_f, *crl_f = NULL;
+	struct stat ca_st, crl_st;
+	int ca_len, crl_len;
+
+	if (ss_open_file(ca_list, &ca_f, &ca_len, &ca_st) < 0)
+		goto ca_error;
+	if (ss_open_file(crl_list, &crl_f, &crl_len, &crl_st) < 0)
+		goto crl_error;
+
+	snap = shm_malloc(sizeof *snap + ca_len + crl_len);
+	if (!snap) {
+		LM_ERR("no more shm memory\n");
+		init_str(err, "Out of memory: could not create a new certificate store");
+		goto error;
+	}
+	snap->gen = 0;
+	snap->ca.s = (char *)(snap + 1);
+	snap->ca.len = ca_len;
+	snap->crl.s = snap->ca.s + ca_len;
+	snap->crl.len = crl_len;
+
+	if (ss_read_file(ca_f, ca_list, &snap->ca, &ca_st) < 0)
+		goto ca_error;
+	if (ss_read_file(crl_f, crl_list, &snap->crl, &crl_st) < 0)
+		goto crl_error;
+
+	if (ca_f)
+		fclose(ca_f);
+	if (crl_f)
+		fclose(crl_f);
+	return snap;
+
+ca_error:
+	init_str(err,
+		"Failed to load the trusted CA certificates from ca_list/ca_dir");
+	goto error;
+crl_error:
+	init_str(err, "Failed to load the CRLs from crl_list/crl_dir");
+error:
+	if (ca_f)
+		fclose(ca_f);
+	if (crl_f)
+		fclose(crl_f);
+	if (snap)
+		shm_free(snap);
+	return NULL;
+}
+
+static void ss_snapshot_put(struct ss_snapshot *snap)
+{
+	int last;
+
+	lock_get(&ss_shared->lock);
+	last = --snap->refs == 0;
+	lock_release(&ss_shared->lock);
+	if (last)
+		shm_free(snap);
+}
+
+// called during mod_init
+static int init_cert_validation(void)
+{
+	struct ss_snapshot *snap;
+	str err;
+
+	ss_shared = shm_malloc(sizeof *ss_shared);
+	if (!ss_shared) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	if (!lock_init(&ss_shared->lock)) {
+		LM_ERR("failed to init the snapshot lock\n");
+		shm_free(ss_shared);
+		ss_shared = NULL;
+		return -1;
+	}
+
+	snap = ss_snapshot_load(&err);
+	if (!snap)
+		return -1;
+
+	store = ss_build_store(snap, &err);
+	if (!store) {
+		shm_free(snap);
+		return -1;
+	}
+
+	snap->gen = ss_shared->gen = ss_my_gen = 1;
+	snap->refs = 1;
+	ss_shared->cur = snap;
 
 	ss_openssl_lock = lock_alloc();
 	if (!ss_openssl_lock || !lock_init(ss_openssl_lock)) {
@@ -349,75 +597,78 @@ static int init_cert_validation(void)
 	return 0;
 }
 
-// store check then reload ca_list and ca_dir
-static int init_cert_ca_reload(void)
+/* rebuild this process' store if a reload published a newer snapshot */
+static void ss_store_refresh(void)
 {
-	store = X509_STORE_new();
-	if (!store) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
-		return -1;
-	}
-	ss_store_set_verify_cb(store, verify_callback);
+	static unsigned int failed_gen;
+	static time_t retry_at;
+	struct ss_snapshot *snap;
+	X509_STORE *new_store;
+	unsigned int gen;
+	str err;
 
-	/* check if ca_list param is set */
-	if (!ca_list) {
-		LM_ERR("Failed, path to a file containing trusted CA certificates for the verifier is not set or the certificates must be in PEM format, one after another.\n");
-		return -2;
+	if (!ss_shared)
+		return;
+	gen = __atomic_load_n(&ss_shared->gen, __ATOMIC_ACQUIRE);
+	if (gen == ss_my_gen)
+		return;
+	/* a failed rebuild is retried at most once a second */
+	if (gen == failed_gen && time(NULL) < retry_at)
+		return;
+
+	lock_get(&ss_shared->lock);
+	snap = ss_shared->cur;
+	snap->refs++;
+	lock_release(&ss_shared->lock);
+
+	gen = snap->gen;
+	new_store = ss_build_store(snap, &err);
+	ss_snapshot_put(snap);
+
+	if (!new_store) {
+		LM_ERR("failed to load the reloaded CA/CRL store, keeping the "
+			"current one: %.*s\n", err.len, err.s);
+		failed_gen = gen;
+		retry_at = time(NULL) + 1;
+		return;
 	}
 
-	/* check if ca_dir param is set */
-	if (!ca_dir) {
-		LM_ERR("Failed, path to a directory containing trusted CA certificates for the verifier is not set or the certificates in the directory must be in hashed form, as described in the openssl documentation for the Hashed Directory Method.\n");
-		return -3;
-	}
-
-	/* params are set, do reload */
-	if (ca_list || ca_dir) {
-		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
-			LM_ERR("Failed to load trusted CAs\n");
-			return -4;
-		}
-		if (ss_store_set_default_paths(store) != 1) {
-			LM_ERR("Failed to load the system-wide CA certificates\n");
-			return -5;
-		}
-	}
-
-	return 0;
+	X509_STORE_free(store);
+	store = new_store;
+	ss_my_gen = gen;
 }
 
-// store check then reload crl_list and crl_dir
-static int init_cert_crl_reload(void)
+static mi_response_t *ss_mi_reload(void)
 {
-	store = X509_STORE_new();
-	if (!store) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
-		return -1;
-	}
-	ss_store_set_verify_cb(store, verify_callback);
+	struct ss_snapshot *snap, *old;
+	X509_STORE *new_store;
+	unsigned int gen;
+	str err;
 
-	/* check if crl_list param is set */
-	if (!crl_list) {
-		LM_ERR("Failed, path to a file containing certificate revocation lists (CRLs) for the verifier is not set.\n");
-		return -2;
-	}
+	snap = ss_snapshot_load(&err);
+	if (!snap)
+		return init_mi_error(500, err.s, err.len);
 
-	/* check if crl_dir param is set */
-	if (!crl_dir) {
-		LM_ERR("Failed, path to a directory containing certificate revocation lists (CRLs) for the verifier is not set or the CRLs in the directory must be in hashed form, as described in the openssl documentation for the Hashed Directory Method.\n");
-		return -3;
+	new_store = ss_build_store(snap, &err);
+	if (!new_store) {
+		shm_free(snap);
+		return init_mi_error(500, err.s, err.len);
 	}
 
-	/* params are set, do reload */
-	if (crl_list || crl_dir) {
-		if (X509_STORE_load_locations(store, crl_list, crl_dir) != 1) {
-			LM_ERR("Failed to load CRLs\n");
-			return -4;
-		}
-		X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
-	}
+	lock_get(&ss_shared->lock);
+	old = ss_shared->cur;
+	gen = snap->gen = old->gen + 1;
+	snap->refs = 1;
+	ss_shared->cur = snap;
+	__atomic_store_n(&ss_shared->gen, gen, __ATOMIC_RELEASE);
+	lock_release(&ss_shared->lock);
+	ss_snapshot_put(old);
 
-	return 0;
+	X509_STORE_free(store);
+	store = new_store;
+	ss_my_gen = gen;
+
+	return init_mi_result_ok();
 }
 
 static void parsed_ctx_free(void *param)
@@ -1347,6 +1598,8 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain,
 		return -8;
 	}
 
+	ss_store_refresh();
+
 	if (!(verify_ctx = X509_STORE_CTX_new())) {
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
 		return -1;
@@ -1859,80 +2112,16 @@ static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf)
  * MI functions
  */
 
-/*! \brief Reload stir ca_list and ca_dir shaken */
+/*! \brief Reload the CA and CRL store in every process */
 mi_response_t *mi_stir_shaken_ca_reload(const mi_params_t *params, struct mi_handler *async_hdl)
 {
-	int rc;
-
-	rc = init_cert_ca_reload();
-	LM_ERR("Engage stir shaken ca reload, result <%i>\n", rc);
-
-	switch(rc) {
-		case 0:
-			/* Reload OK */
-			return init_mi_result_ok();
-			break;
-		case -1:
-			/* X509 Store Error */
-			return init_mi_error(500, MI_SSTR("Error X509 store object."));
-			break;
-		case -2:
-			/* ca_list param */
-			return init_mi_error(500, MI_SSTR("Error ca_list param."));
-			break;
-		case -3:
-			/* ca_dir param */
-			return init_mi_error(500, MI_SSTR("Error ca_dir param."));
-			break;
-		case -4:
-			/* Cert Error */
-			return init_mi_error(500, MI_SSTR("Error failed to load trusted CAs."));
-			break;
-		case -5:
-			/* Path Error */
-			return init_mi_error(500, MI_SSTR("Error failed to load the system-wide CA certificates."));
-			break;
-		default:
-			/* Any other case */
-			return init_mi_error(500, MI_SSTR("Error"));
-	}
-
+	return ss_mi_reload();
 }
 
-/*! \brief Reload stir crl_list and crl_dir shaken */
+/*! \brief Reload the CA and CRL store in every process */
 mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_handler *async_hdl)
 {
-	int rc;
-
-	rc = init_cert_crl_reload();
-	LM_ERR("Engage stir shaken crl reload, result <%i>\n", rc);
-
-	switch(rc) {
-		case 0:
-			/* Reload OK */
-			return init_mi_result_ok();
-			break;
-		case -1:
-			/* X509 Store Error */
-			return init_mi_error(500, MI_SSTR("Error X509 store object."));
-			break;
-		case -2:
-			/* crl_list param */
-			return init_mi_error(500, MI_SSTR("Error crl_list param."));
-			break;
-		case -3:
-			/* crl_dir param */
-			return init_mi_error(500, MI_SSTR("Error crl_dir param."));
-			break;
-		case -4:
-			/* Cert Error */
-			return init_mi_error(500, MI_SSTR("Error failed to load trusted CRL."));
-			break;
-		default:
-			/* Any other case */
-			return init_mi_error(500, MI_SSTR("Error"));
-	}
-
+	return ss_mi_reload();
 }
 
 #ifdef UNIT_TESTS
