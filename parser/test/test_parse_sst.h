@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 OpenSIPS Solutions
+ * Copyright (C) 2024 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
