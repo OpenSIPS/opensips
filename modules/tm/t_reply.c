@@ -1838,6 +1838,14 @@ static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
 	struct sip_msg* p_msg = trans->uas.request;
 	str to_tag_rpl= {0, 0};
 
+	/* p_msg (trans->uas.request) is a SHARED-memory clone; two processes
+	 * building a reply for the same transaction race on p_msg->reply_lump and
+	 * corrupt it (SIGSEGV in add_lump_rpl). Serialize add -> build -> free
+	 * with the reply lock; _reply_light below is called without re-locking.*/
+
+	if (lock_replies)
+		LOCK_REPLIES( trans );
+
 	/* add the lumps for new_header and for body (by bogdan) */
 	if (new_header && new_header->len) {
 		hdr_lump = add_lump_rpl( p_msg, new_header->s,
@@ -1901,11 +1909,14 @@ static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
 		LM_ERR("failed in doing build_res_buf_from_sip_req()\n");
 		goto error;
 	}
-	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag_rpl.s, to_tag_rpl.len,
-			lock_replies, &bm );
+	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag_rpl.s,to_tag_rpl.len,
+			0 /* lock already held above */, &bm );
 
 	/* mark the transaction as replied */
 	if (code>=200) set_kr(REQ_RPLD);
+
+	if (lock_replies)
+		UNLOCK_REPLIES( trans );
 
 	return ret;
 error_1:
@@ -1914,6 +1925,8 @@ error_1:
 		free_lump_rpl( hdr_lump );
 	}
 error:
+	if (lock_replies)
+		UNLOCK_REPLIES( trans );
 	return -1;
 }
 
