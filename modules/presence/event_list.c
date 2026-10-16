@@ -174,17 +174,17 @@ int add_event(pres_ev_t* event)
 		}
 	}
 
-	if (!event->content_type.s || event->content_type.len <= 0) {
-		LM_ERR("invalid content type\n");
-		goto error;
+	/* optional - events with no mandatory body may have none */
+	if (event->content_type.s && event->content_type.len > 0) {
+		ev->content_type.s = (char*)shm_malloc(event->content_type.len);
+		if(ev->content_type.s== NULL)
+		{
+			ERR_MEM(SHARE_MEM);
+		}
+		ev->content_type.len= event->content_type.len;
+		memcpy(ev->content_type.s, event->content_type.s,
+			event->content_type.len);
 	}
-	ev->content_type.s = (char*)shm_malloc(event->content_type.len);
-	if(ev->content_type.s== NULL)
-	{
-		ERR_MEM(SHARE_MEM);
-	}
-	ev->content_type.len= event->content_type.len;
-	memcpy(ev->content_type.s, event->content_type.s, event->content_type.len);
 
 	sep= strchr(event->name.s, '.');
 	if(sep != NULL && strncasecmp(sep+1, "winfo", 5)== 0)
