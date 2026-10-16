@@ -28,6 +28,9 @@ class ImpairTests(unittest.TestCase):
         impair.ensure_mutation_safe(None, True)
         impair.ensure_mutation_safe("media-test", False)
 
+    def test_dry_run_skips_host_guard(self):
+        impair.ensure_mutation_safe(None, False, dry_run=True)
+
     def test_namespace_prefix(self):
         cmd = impair.build_show("veth-media", "media-test")
         self.assertEqual(cmd[:5], ["ip", "netns", "exec", "media-test", "tc"])

@@ -59,8 +59,9 @@ def validate_profile(p: Profile) -> None:
         raise ValueError("reordering requires non-zero delay in netem")
 
 
-def ensure_mutation_safe(namespace: Optional[str], allow_host_interface: bool) -> None:
-    if not namespace and not allow_host_interface:
+def ensure_mutation_safe(namespace: Optional[str], allow_host_interface: bool,
+                         dry_run: bool = False) -> None:
+    if not dry_run and not namespace and not allow_host_interface:
         raise ValueError(
             "refusing to modify a host interface without --allow-host-interface; "
             "use --namespace for isolated impairment tests"
@@ -161,7 +162,7 @@ def main() -> int:
 
     try:
         if args.command in ("apply", "clear"):
-            ensure_mutation_safe(args.namespace, args.allow_host_interface)
+            ensure_mutation_safe(args.namespace, args.allow_host_interface, args.dry_run)
         if args.command == "apply":
             profile = PROFILES[args.profile] if args.profile else load_custom(args.config)
             return run(build_apply(args.interface, profile, args.namespace), args.dry_run)
