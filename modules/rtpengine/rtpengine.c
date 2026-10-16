@@ -167,6 +167,7 @@ enum rtpe_operation {
 	OP_SUBSCRIBE_REQUEST,
 	OP_SUBSCRIBE_ANSWER,
 	OP_UNSUBSCRIBE,
+	OP_ROLLBACK,
 };
 
 enum rtpe_stat {
@@ -258,6 +259,7 @@ static const char *command_strings[] = {
 	[OP_SUBSCRIBE_REQUEST]= "subscribe request",
 	[OP_SUBSCRIBE_ANSWER] = "subscribe answer",
 	[OP_UNSUBSCRIBE]    = "unsubscribe",
+	[OP_ROLLBACK]       = "rollback",
 };
 
 static const str stat_maps[] = {
@@ -301,6 +303,8 @@ static int rtpengine_answer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 static int rtpengine_manage_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		pv_spec_t *bpvar, str *body);
 static int rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_rollback_f(struct sip_msg* msg, str *flags,
+		pv_spec_t *spvar, pv_spec_t *rolled_back);
 static void free_rtpe_nodes(struct rtpe_set *list);
 static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 		pv_spec_t *duration, pv_spec_t *spvar);
@@ -507,6 +511,12 @@ static const cmd_export_t cmds[] = {
 	{"rtpengine_delete", (cmd_function)rtpengine_delete_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rtpengine_rollback", (cmd_function)rtpengine_rollback_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
 		ALL_ROUTES},
 	{"rtpengine_play_media", (cmd_function)rtpengine_playmedia_f, {
 		{CMD_PARAM_STR, 0, 0},
@@ -2832,7 +2842,7 @@ static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg 
 			bencode_dictionary_add_str(ng_flags->dict, "from-tag", &ng_flags->from_tag);
 	} else if (ng_flags->directional
 		|| (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
-		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
+		|| (msg->first_line.type == SIP_REPLY && (op == OP_DELETE || op == OP_ROLLBACK))
 		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))))
 	{
 		if (!from_tag_exist && !ng_flags->no_from_tag)
@@ -3465,6 +3475,35 @@ static int
 rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
 	return rtpengine_delete(msg, flags, NULL, NULL, spvar);
+}
+
+static int
+rtpengine_rollback_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *rolled_back)
+{
+	bencode_buffer_t bencbuf;
+	bencode_item_t *dict;
+	pv_value_t val;
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
+
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_ROLLBACK, flags,
+			NULL, spvar, NULL, NULL, NULL);
+	if (!dict) {
+		LM_ERR("could not roll back media!\n");
+		return -1;
+	}
+
+	if (rolled_back) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_TYPE_INT|PV_VAL_INT;
+		val.ri = bencode_dictionary_get_integer(dict, "rolled-back", -1);
+		if (pv_set_value(msg, rolled_back, 0, &val) != 0)
+			LM_ERR("failed to set rolled-back after rolling back media!\n");
+	}
+	bencode_buffer_free(&bencbuf);
+	return 1;
 }
 
 static bencode_item_t *rtpe_function_call_process(bencode_buffer_t *bencbuf, char* cp, int ret)
