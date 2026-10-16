@@ -46,6 +46,7 @@
 #include "../../dprint.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
+#include "../../sdp_ops.h"
 #include "../../error.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
@@ -242,10 +243,12 @@ static int search_append_body_f(struct sip_msg* msg, regex_t* key, str* str2)
 		return -1;
 	}
 
-	off=body.s-msg->buf;
-
 	if (regexec(key, body.s, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
+		if (have_sdp_ops(msg))
+			return sdp_ops_splice_body(msg, &body, pmatch.rm_eo, 0, str2)==0 ? 1 : -1;
+
+		off=body.s-msg->buf;
 		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
 		s=pkg_malloc(str2->len);
