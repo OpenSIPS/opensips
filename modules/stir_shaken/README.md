@@ -154,6 +154,8 @@ modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 
 
 Path to a file containing certificate revocation lists (CRLs) for the verifier.
+It must hold only CRLs: a certificate in it would become a trusted CA, so
+it is refused at startup and on reload.
 
 
 ```opensips title="Set crl_list parameter"
@@ -885,6 +887,21 @@ Reload the file containing trusted CA certificates for the verifier
 and the directory containing trusted CA certificates for the verifier.
 
 
+The CRLs are reloaded too, since CAs and CRLs share one certificate store,
+so this command does the same as *stir_shaken:crl_reload*.
+
+
+*ca_list* and *crl_list* are read once, by the process running the
+command. If they do not load, the command returns the error and nothing
+changes. Otherwise the new contents are published, and every OpenSIPS
+process switches to them before its next certificate check, including processes started later, even
+if the files change again on disk. *ca_dir*, *crl_dir* and the system's
+default CA certificates are not part of this copy: each process reads them
+from disk when it first needs a certificate from them. "OK" means the new
+contents were published; a process that fails to switch to them logs an
+error, keeps its previous store and retries about once a second.
+
+
 Name: *stir_shaken:ca_reload*
 
 
@@ -910,6 +927,21 @@ Replaces obsolete MI command: *stir_shaken_crl_reload*.
 
 Reload the file containing certificate revocation lists (CRLs) for the verifier
 and the directory containing certificate revocation lists for the verifier.
+
+
+The trusted CA certificates are reloaded too, since CAs and CRLs share one
+certificate store, so this command does the same as *stir_shaken:ca_reload*.
+
+
+*ca_list* and *crl_list* are read once, by the process running the
+command. If they do not load, the command returns the error and nothing
+changes. Otherwise the new contents are published, and every OpenSIPS
+process switches to them before its next certificate check, including processes started later, even
+if the files change again on disk. *ca_dir*, *crl_dir* and the system's
+default CA certificates are not part of this copy: each process reads them
+from disk when it first needs a certificate from them. "OK" means the new
+contents were published; a process that fails to switch to them logs an
+error, keeps its previous store and retries about once a second.
 
 
 Name: *stir_shaken:crl_reload*
