@@ -43,6 +43,7 @@
 #include "../usrloc/ul_callback.h"
 #include "../pua/pua_bind.h"
 #include "pua_usrloc.h"
+#include "../clusterer/api.h"
 
 send_publish_t pua_send_publish = NULL;
 send_subscribe_t pua_send_subscribe = NULL;
@@ -51,6 +52,12 @@ str default_domain= {NULL, 0};
 pua_api_t pua;
 str pres_prefix= {0, 0};
 str presence_server= {0, 0};
+
+/* in a cluster sharing the location table, every node expires every contact:
+ * publish an expiry only where this sharing tag is active */
+int pul_cluster_id = 0;
+str pul_cluster_shtag = {NULL, 0};
+static struct clusterer_binds c_api;
 
 /* Structure containing pointers to usrloc functions */
 usrloc_api_t ul;
@@ -79,6 +86,8 @@ static const param_export_t params[]={
 	{"default_domain",   STR_PARAM, &default_domain.s   },
 	{"entity_prefix",    STR_PARAM, &pres_prefix.s      },
 	{"presence_server",  STR_PARAM, &presence_server.s  },
+	{"cluster_id",          INT_PARAM, &pul_cluster_id      },
+	{"cluster_sharing_tag", STR_PARAM, &pul_cluster_shtag.s },
 	{0,                  0,         0                   }
 };
 
@@ -143,6 +152,20 @@ static int mod_init(void)
 	if(presence_server.s)
 	{
 		presence_server.len= strlen(presence_server.s);
+	}
+
+	if (pul_cluster_id > 0 && pul_cluster_shtag.s) {
+		if (load_clusterer_api(&c_api) != 0) {
+			LM_ERR("failed to find clusterer API - is clusterer "
+				"module loaded?\n");
+			return -1;
+		}
+		pul_cluster_shtag.len = strlen(pul_cluster_shtag.s);
+		if (c_api.shtag_get(&pul_cluster_shtag, pul_cluster_id) < 0) {
+			LM_ERR("failed to initialize the sharing tag <%.*s>\n",
+				pul_cluster_shtag.len, pul_cluster_shtag.s);
+			return -1;
+		}
 	}
 
 	/* index in global context to keep the on/off state */
@@ -222,6 +245,15 @@ static int mod_init(void)
 static int child_init(int rank)
 {
 	LM_DBG("child [%d]  pid [%d]\n", rank, getpid());
+	return 0;
+}
+
+int pul_cluster_shtag_is_active(void)
+{
+	if (pul_cluster_id <= 0 || pul_cluster_shtag.s == NULL ||
+	c_api.shtag_get(&pul_cluster_shtag, pul_cluster_id) == SHTAG_STATE_ACTIVE)
+		return 1;
+
 	return 0;
 }
 

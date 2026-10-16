@@ -96,6 +96,45 @@ modparam("pua_usrloc", "presence_server", "sip:pa@opensips.org:5075")
 ```
 
 
+#### cluster_id (int)
+
+
+The ID of the cluster (clusterer module) this node shares its location
+table with (usrloc `full-sharing-cluster`). Used only together with
+`cluster_sharing_tag`.
+
+
+*Default value is "0" (no clustering).*
+
+
+```opensips title="Set cluster_id parameter"
+...
+modparam("pua_usrloc", "cluster_id", 1)
+...
+```
+
+
+#### cluster_sharing_tag (str)
+
+
+In a cluster sharing the location table every node expires every
+contact, so every node would PUBLISH the same expiry. When this
+sharing tag is set (with `cluster_id`), an expired contact is
+published only by the node where the tag is active. Insert, update
+and delete are not affected (they are driven by `pua_set_publish()`
+on the node that processed the REGISTER).
+
+
+*Default value is "NULL" (every node publishes expiries).*
+
+
+```opensips title="Set cluster_sharing_tag parameter"
+...
+modparam("pua_usrloc", "cluster_sharing_tag", "vip")
+...
+```
+
+
 ### Exported Functions
 
 
