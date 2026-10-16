@@ -91,6 +91,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-redis-module,
           opensips-regex-module,
           opensips-restclient-module,
+          opensips-secrets-module,
           opensips-sctp-module [linux-any],
           opensips-siprec-module,
           opensips-snmpstats-module,
@@ -675,6 +676,18 @@ Description: REST client module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the REST client support for OpenSIPS.
+
+Package: opensips-secrets-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Secret provider integrations for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides environment, file, Vault and Kubernetes Secret
+ providers with runtime reload support.
 
 Package: opensips-sctp-module
 Architecture: linux-any
