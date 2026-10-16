@@ -166,6 +166,7 @@ description: ""
 * [**CACHEDB_LOCAL**](../../modules/cachedb_local/README.md) - Local Implementation of CacheDB, 🟢 **stable**
 * [**CACHEDB_MEMCACHED**](../../modules/cachedb_memcached/README.md) - Memcached Implementation of CacheDB, 🟢 **stable**
 * [**CACHEDB_MONGODB**](../../modules/cachedb_mongodb/README.md) - MongoDB Implementation of CacheDB, 🟢 **stable**
+* [**CACHEDB_PERF**](../../modules/cachedb_perf/README.md) - High-performance local Implementation of CacheDB, alpha / 🔵 **NEW**
 * [**CACHEDB_REDIS**](../../modules/cachedb_redis/README.md) - Redis Implementation of CacheDB, 🟢 **stable**
 * [**CACHEDB_SQL**](../../modules/cachedb_sql/README.md) - SQL-based Implementation of CacheDB, 🟢 **stable**
 
