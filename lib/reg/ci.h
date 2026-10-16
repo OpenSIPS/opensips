@@ -35,7 +35,8 @@ extern int attr_avp_name;
 
 ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 		unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags,
-		 str *ownership_tag, struct ct_match *cmatch);
+		 str *ownership_tag, struct ct_match *cmatch,
+		 int _min_exp, int _max_exp);
 
 void print_ci(ucontact_info_t *ci);
 
