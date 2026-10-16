@@ -616,7 +616,7 @@ int sca_engage(struct sip_msg *msg, str *parties)
 	}
 
 	LM_SCA("sca_engage('%.*s') called, flags: %d\n",
-			parties->len, parties->s, flags);
+			parties?parties->len:0, parties?parties->s:"", flags);
 
 	if (sca_pack_cb_params( msg, &param_dlg, &param_tm) < 0) {
 		LM_ERR("Failed to allocate parameters\n");
