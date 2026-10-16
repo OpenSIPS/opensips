@@ -139,19 +139,21 @@ the script.
 
 
 To trigger the internal publishing (from the dialog module) for a
-certain call, use the "sca_set_called_line()" function from the
-script when handling a new call. This function will do all the work
-(creating dialog, setting the internal publishing, etc) - you just
-need to use it and eventually specify the name of the line (if other
-then the one from the SIP INVITE) - see the below documentation.
+certain call, use the "sca_engage()" function from the script when
+handling the initial INVITE. It creates the dialog and publishes the
+state of the caller's line, of the callee's line, or of both. For
+outbound calls, "sca_validate_invite_out()" checks that the caller
+has seized its line first. Per branch, "sca_set_called_line()" changes
+the callee's line and "sca_mute_branch()" stops publishing it - see
+the below documentation.
 
 
 LIMITATIONS : in this mode, the module does not really check if the
 line exists or not (like defined) - it blindly trust the traffic;
 also there is no check on how many indexes are for each line. Such
-information (lines and indexes) are not provisioned into the module,
-but the module will dynamically accept and handle any line and index
-based on the SIP traffic.
+information (lines and indexes) are not provisioned into the module:
+a line becomes known with the first "line-seize" SUBSCRIBE for it,
+and no "call-info" is published for a line that is not known.
 
 
 ### Dependencies
@@ -251,31 +253,173 @@ modparam("presence_callinfo", "line_hash_size", 128)
 ```
 
 
+#### caller_spec_param (string)
+
+
+A variable holding the caller's line, as a SIP URI. When the variable
+is set, "sca_engage()" and "sca_validate_invite_out()" use it instead of
+the From URI of the INVITE.
+
+
+*Default value is "NULL"* (the From URI is used).
+
+
+```opensips title="Set caller_spec_param parameter"
+...
+modparam("presence_callinfo", "caller_spec_param", "$var(sca_caller)")
+...
+			
+```
+
+
+#### callee_spec_param (string)
+
+
+A variable holding the callee's line, as a SIP URI. When the variable
+is set, "sca_engage()" uses it instead of the R-URI of the INVITE.
+
+
+*Default value is "NULL"* (the R-URI is used).
+
+
+```opensips title="Set callee_spec_param parameter"
+...
+modparam("presence_callinfo", "callee_spec_param", "$var(sca_callee)")
+...
+			
+```
+
+
+#### log_level (int)
+
+
+The log level of the module's SCA trace messages. It can be changed at
+runtime with the *presence_callinfo:set_log_level* MI command.
+
+
+*Default value is "-3"* (L_ALERT - always printed).
+
+
+```opensips title="Set log_level parameter"
+...
+modparam("presence_callinfo", "log_level", 4)
+...
+			
+```
+
+
 ### Exported Functions
 
 
-#### sca_set_called_line([line])
+#### sca_validate_invite_out()
 
 
-The function (to be used only in internal publishing mode) is setting
-for the current new call (initinal INVITE) the inbound line - the line
-the call was received on.
+The function (to be used only in internal publishing mode) checks an
+outbound call from a shared line: the INVITE must carry a Call-Info
+header with an "appearance-index", and the caller's line (the From URI,
+or "caller_spec_param") must be seized for that index.
 
 
-If no parameter is provided, the name of the line is taken from the
-SIP RURI of the INVITE. You can override that by providing 
-the name of the line as a string parameter - be careful as the value must be
-a SIP URI ! Variables are accepted.
+It returns 1 if the call is valid, otherwise:
+
+
+- *-2* - the line is not known to the module;
+- *-3* - the line is not seized;
+- *-4* - the line is seized for a different index;
+- *-5* - missing or bogus Call-Info header;
+- *-6* - no index in the Call-Info header.
 
 
 This function can be used from REQUEST_ROUTE.
 
 
-```opensips title="sca_set_called_line() usage"
+```opensips title="sca_validate_invite_out() usage"
 ...
 	if (is_method("INVITE") and !has_totag()) {
-		sca_set_called_line();
+		if (!sca_validate_invite_out()) {
+			send_reply(403, "Line Not Seized");
+			exit;
+		}
 	}
+...
+```
+
+
+#### sca_engage([parties])
+
+
+The function (to be used only in internal publishing mode) enables the
+internal publishing for the current new call (initial INVITE). It
+creates the dialog, if there is none yet, and publishes the state of
+the call on the lines given by *parties*:
+
+
+- *A* - the caller's line: the From URI, or "caller_spec_param";
+- *B* - the callee's line: the R-URI, or "callee_spec_param", or the
+line set for the branch by "sca_set_called_line()".
+
+
+If the parameter is missing, both lines are published. With *A*, the
+call is first checked as by "sca_validate_invite_out()", and its error
+code is returned if the check fails.
+
+
+This function can be used from REQUEST_ROUTE.
+
+
+```opensips title="sca_engage() usage"
+...
+	if (is_method("INVITE") and !has_totag()) {
+		# a call to a shared line - publish the callee's line only
+		sca_engage("B");
+	}
+...
+```
+
+
+#### sca_set_called_line(line)
+
+
+The function (to be used only in internal publishing mode) sets the
+callee's line for the current branch, overriding the R-URI. The value
+must be a SIP URI ! Variables are accepted. An empty string drops a
+line set before for the branch.
+
+
+The dialog must already exist, so call "sca_engage()" first.
+
+
+This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
+
+
+```opensips title="sca_set_called_line() usage"
+...
+branch_route[sca] {
+	sca_set_called_line("sip:line@example.com");
+}
+...
+```
+
+
+#### sca_mute_branch(parties)
+
+
+The function (to be used only in internal publishing mode) stops the
+publishing for the callee's line on the current branch. Only *B* has
+an effect; *A* is accepted, but the caller's line is still published.
+
+
+The dialog must already exist, so call "sca_engage()" first.
+
+
+This function can be used from BRANCH_ROUTE.
+
+
+```opensips title="sca_mute_branch() usage"
+...
+branch_route[sca] {
+	sca_mute_branch("B");
+}
 ...
 ```
 
