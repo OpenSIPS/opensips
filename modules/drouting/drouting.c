@@ -5247,8 +5247,14 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 	unsigned int i;
 	static const str gw_str = str_init("GATEWAY");
 	static const str carrier_str = str_init("CARRIER");
+	static const str active_str = str_init("active");
+	static const str inactive_str = str_init("disabled by script");
+	static const str probing_str = str_init("disabled by probing");
+	static const str disabled_str = str_init("disabled by MI");
 	str chosen_desc;
 	str chosen_id;
+	str chosen_status;
+	pgw_t *gw;
 
 	if (get_mi_string_param(params, "number", &number.s, &number.len) < 0)
 		return init_mi_param_error();
@@ -5272,26 +5278,49 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 	if (add_mi_string(resp_obj, MI_SSTR("Matched Prefix"),
 		number.s, matched_len) < 0)
 		goto error;
+	if (add_mi_number(resp_obj, MI_SSTR("Rule ID"), route->id) < 0 ||
+		add_mi_number(resp_obj, MI_SSTR("Rule Priority"), route->priority) < 0)
+		goto error;
 
 	arr_obj = add_mi_array(resp_obj, MI_SSTR("GW List"));
 	if (!arr_obj)
 		goto error;
 
-	for (i = 0; i < route->pgwa_len; ++i){
+	for (i = 0; i < route->pgwa_len; ++i) {
+		gw = NULL;
 		if (route->pgwl[i].is_carrier) {
 			chosen_desc = carrier_str;
 			chosen_id = route->pgwl[i].dst.carrier->id;
-		}
-		else {
+			chosen_status = (route->pgwl[i].dst.carrier->flags & DR_CR_FLAG_IS_OFF) ?
+				disabled_str : active_str;
+		} else {
+			gw = route->pgwl[i].dst.gw;
 			chosen_desc = gw_str;
-			chosen_id = route->pgwl[i].dst.gw->id;
+			chosen_id = gw->id;
+			if (!(gw->flags & DR_DST_STAT_DSBL_FLAG))
+				chosen_status = active_str;
+			else if (gw->flags & DR_DST_STAT_NOEN_FLAG)
+				chosen_status = disabled_str;
+			else if (gw->flags & DR_DST_PING_DSBL_FLAG)
+				chosen_status = probing_str;
+			else
+				chosen_status = inactive_str;
 		}
+
 		gw_obj = add_mi_object(arr_obj, NULL, 0);
 		if (!gw_obj)
 			goto error;
 
 		if (add_mi_string(gw_obj, chosen_desc.s, chosen_desc.len,
-			chosen_id.s, chosen_id.len) < 0)
+			chosen_id.s, chosen_id.len) < 0 ||
+			add_mi_string(gw_obj, MI_SSTR("Status"),
+			chosen_status.s, chosen_status.len) < 0 ||
+			add_mi_number(gw_obj, MI_SSTR("Weight"),
+			route->pgwl[i].weight) < 0)
+			goto error;
+
+		if (gw && add_mi_string(gw_obj, MI_SSTR("Address"),
+				gw->ip_str.s, gw->ip_str.len) < 0)
 			goto error;
 	}
 
