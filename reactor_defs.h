@@ -81,6 +81,9 @@ int init_reactor_size(void);
 
 #define reactor_add_reader( _fd, _type, _prio, _data) \
 	io_watch_add(&_worker_io, _fd, _type, _data, _prio, 0, IO_WATCH_READ)
+#define reactor_add_reader_excl( _fd, _type, _prio, _data) \
+	io_watch_add(&_worker_io, _fd, _type, _data, _prio, 0, \
+		IO_WATCH_READ|IO_WATCH_EXCLUSIVE)
 
 #define reactor_add_reader_with_timeout( _fd, _type, _prio, _t, _data) \
 	io_watch_add(&_worker_io, _fd, _type, _data, _prio, _t, IO_WATCH_READ)
