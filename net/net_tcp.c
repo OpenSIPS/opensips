@@ -1924,14 +1924,17 @@ async_write:
 			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)",
 				tcpconn->refcnt);
 			if (tcp_queue_write_job(tcpconn) < 0) {
-				LM_ERR("failed queuing TCP write job\n");
-				if (reactor_add_writer(tcpconn->fd, F_TCPCONN, RCT_PRIO_NET,
-						tcpconn) < 0) {
-					tcp_fail_conn(tcpconn, "Failed queueing write", 0);
-					return 0;
-				}
-				tcpconn->main_flags &= ~F_TCP_MAIN_REMOVED_WRITE;
-				tcpconn_put(tcpconn);
+				/* a queueing failure is not a transient the writer can
+				 * wait out: the socket is still writable, so re-arming
+				 * the writer brings the same EPOLLOUT and the same failure
+				 * back on the next loop - a tight loop in the TCP main for
+				 * as long as the cause lasts (seen at ~27k iterations/s
+				 * when a lost reader flag made reactor_del_reader() fail
+				 * here, before 7ea8daf009).  Drop the connection instead,
+				 * as the branch already did when the re-arm itself failed. */
+				LM_ERR("failed queuing TCP write job - closing the connection\n");
+				tcp_fail_conn(tcpconn, "Failed queueing write", 0);
+				return 0;
 			}
 			return 0;
 		}
