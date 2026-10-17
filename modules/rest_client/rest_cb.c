@@ -79,9 +79,18 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
 	int len, left;
-	str *st = (str *)userdata;
+	struct rest_hdr_sink *sink = (struct rest_hdr_sink *)userdata;
+	str *st = sink->ctype;
 
 	len = left = size * nmemb;
+
+	if (sink->cache)
+		rcc_parse_header(sink->cache, ptr, len);
+
+	if (!st) {
+		LM_DBG("Received: %.*s\n", len, ptr);
+		return len;
+	}
 
 	if (len > CONTENT_TYPE_HDR_LEN && *ptr == 'C' &&
 	    strncasecmp(ptr, HTTP_HDR_CONTENT_TYPE, CONTENT_TYPE_HDR_LEN) == 0) {
