@@ -1254,6 +1254,22 @@ Example of usage:
 
 ```
 
+### tcp_dispatch_mode
+
+How TCP main hands a received message to the TCP workers. The default value is `auto`.
+
+* `shared` - all TCP workers wait on one shared dispatch socket. Every dispatched message wakes every idle worker (one of them wins the read, the others return empty-handed), and the kernel wakes the last-forked worker first, so the per-worker load forms a descending ladder from the last worker to the first. This was the only behaviour before this parameter existed.
+* `per_worker` - one dispatch socket per TCP worker; TCP main hands each message to the next idle active worker in round-robin order (or to the next active one when all are busy). One wakeup per message, even load across the workers.
+* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per message. Allowed on Linux 6.0 and newer only; on older kernels a woken but not yet running worker keeps absorbing the following messages, so bursts serialize on it - OpenSIPS falls back to `shared` with a warning there.
+* `auto` - `per_worker`.
+
+Example of usage:
+```opensips
+
+    tcp_dispatch_mode = "per_worker"
+
+```
+
 ### tcp_accept_aliases
 
 If set to `true`, OpenSIPS enforces RFC 5923 behavior when detecting an `;alias` Via header field parameter, and reuses any TCP, TLS, WS or WSS connection opened for such SIP requests when sending other SIP requests backwards towards the same source IP, Via port and protocol tuple. The purpose of RFC 5923 is to minimize the number of TLS connections a SIP proxy must open, due to the large CPU overhead of connection setup.
@@ -1487,6 +1503,25 @@ Example of usage:
 tos = IPTOS_LOWDELAY
 tos = 0x10
 ```
+
+### udp_rx_mode
+
+How the UDP workers of a listener receive their datagrams. The default value is `auto`.
+
+* `shared` - all workers of a listener poll the one listening socket. Every datagram wakes every idle worker (one wins `recvfrom()`, the others get `EAGAIN`), and the kernel wakes the last-forked worker first, so the per-worker load forms a descending ladder from the last worker to the first. This was the only behaviour before this parameter existed.
+* `reuseport` - one `SO_REUSEPORT` socket per worker, all created and bound before the workers are forked. A small classic BPF program attached to the group selects the socket uniformly at random for every datagram (the kernel's default 4-tuple hash would pin a whole SIP peer - one SBC, one PBX, one trunk - to a single worker). One wakeup per datagram, even load across the workers. Works with auto-scaling profiles: a socket is created for every possible worker, and the selector is rebuilt whenever a worker is created or terminated. Requires Linux 4.5 or newer.
+* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per datagram. Allowed on Linux 6.0 and newer only (see [tcp_dispatch_mode](#tcp_dispatch_mode) for why); on older kernels OpenSIPS falls back to `shared` with a warning. The work goes to the first idle worker in a fixed order, so the load is not spread evenly.
+* `auto` - `reuseport` when the kernel supports it, otherwise `shared`.
+
+Example of usage:
+```opensips
+
+    udp_rx_mode = "reuseport"
+
+```
+
+> [!NOTE]
+> With `reuseport` the per-worker queues are not work-conserving: a worker blocked in a slow synchronous operation (a database query, a blocking REST call) delays the datagrams already assigned to it, while with `shared` any idle worker would have taken them. Scripts with long synchronous steps and few workers may prefer `shared`, or `exclusive` on a 6.x kernel.
 
 ### udp_workers
 
