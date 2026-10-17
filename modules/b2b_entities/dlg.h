@@ -128,6 +128,7 @@ typedef struct b2b_dlg
 	b2b_param_free_cb    free_param;
 	unsigned int         ref;
 	int                  deleted;
+	int                  replaced; /* unlinked copy kept for its pinners */
 }b2b_dlg_t;
 
 typedef struct b2b_entry
@@ -181,6 +182,21 @@ int b2b_send_request(b2b_req_data_t*);
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index);
 
 typedef dlg_t* (*build_dlg_f)(b2b_dlg_t* dlg, unsigned int maxfwd);
+
+/* copy a string the tm dialog is built from into the room reserved after it
+ * (freed with it), for strings not stored in the pinned dlg block */
+static inline void b2b_td_str_copy(str *dst, const str *src, char **p)
+{
+	if (!src->s || !src->len) {
+		dst->s = NULL;
+		dst->len = 0;
+		return;
+	}
+	memcpy(*p, src->s, src->len);
+	dst->s = *p;
+	dst->len = src->len;
+	*p += src->len;
+}
 
 str* b2b_key_copy_shm(str* b2b_key);
 
