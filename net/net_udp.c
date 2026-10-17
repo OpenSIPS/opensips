@@ -733,7 +733,6 @@ static int fork_dynamic_udp_process(void *si_filter)
 	struct socket_info *si = (struct socket_info*)si_filter;
 	int p_id;
 	int slot = -1;
-	int slot = -1;
 	const struct internal_fork_params ifp_udp_rcv = {
 		.proc_desc = "UDP receiver",
 		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
