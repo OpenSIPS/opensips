@@ -67,6 +67,15 @@ struct socket_info {
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
+	/* udp_rx_mode=reuseport: one SO_REUSEPORT socket per worker, all created
+	 * and bound by the attendant before forking; [0] is the same fd as
+	 * 'socket'. Worker i swaps 'socket' for worker_socks[i] in its own (pkg)
+	 * copy. NULL when the listener uses the single shared socket. With an
+	 * auto-scaling profile there is one socket per possible worker and the
+	 * shm slot table (net_udp.c) says which ones currently have a reader. */
+	int *worker_socks;
+	int worker_socks_no;
+	void *worker_slots;
 	unsigned short tos;
 	struct scaling_profile *s_profile;
 	void *extra_data;
