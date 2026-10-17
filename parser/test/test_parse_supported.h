@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 Sahana Bogar
+ * Copyright (C) 2026 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
