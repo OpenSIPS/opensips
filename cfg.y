@@ -343,6 +343,8 @@ extern int cfg_parse_only_routes;
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
 %token UDP_WORKERS
+%token UDP_RX_MODE
+%token TCP_DISPATCH_MODE
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
 %token SHM_SECONDARY_HASH_SIZE
@@ -1157,6 +1159,16 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				udp_auto_scaling_profile=$5;
 		}
 		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
+		| UDP_RX_MODE EQUAL STRING { IFOR();
+				if (parse_udp_rx_mode($3) < 0)
+					yyerror("udp_rx_mode: auto, shared, exclusive or reuseport expected");
+				}
+		| UDP_RX_MODE EQUAL error { yyerror("string value expected"); }
+		| TCP_DISPATCH_MODE EQUAL STRING { IFOR();
+				if (parse_tcp_dispatch_mode($3) < 0)
+					yyerror("tcp_dispatch_mode: auto, shared, exclusive or per_worker expected");
+				}
+		| TCP_DISPATCH_MODE EQUAL error { yyerror("string value expected"); }
 		| TIMER_WORKERS EQUAL NUMBER { IFOR();
 				timer_workers_no=$3;
 		}
