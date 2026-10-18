@@ -1260,8 +1260,8 @@ How TCP main hands a received message to the TCP workers. The default value is `
 
 * `shared` - all TCP workers wait on one shared dispatch socket. Every dispatched message wakes every idle worker (one of them wins the read, the others return empty-handed), and the kernel wakes the last-forked worker first, so the per-worker load forms a descending ladder from the last worker to the first. This was the only behaviour before this parameter existed.
 * `per_worker` - one dispatch socket per TCP worker; TCP main hands each message to the next idle active worker in round-robin order (or to the next active one when all are busy). One wakeup per message, even load across the workers.
-* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per message. Allowed on Linux 6.0 and newer only; on older kernels a woken but not yet running worker keeps absorbing the following messages, so bursts serialize on it - OpenSIPS falls back to `shared` with a warning there.
-* `auto` - `per_worker`.
+* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per message. Allowed with the `epoll` reactor on Linux 6.0 and newer only; on older kernels a woken but not yet running worker keeps absorbing the following messages, so bursts serialize on it - OpenSIPS falls back to `shared` with a warning there.
+* `auto` - `per_worker`, on every platform (it only needs `AF_UNIX` datagram socket pairs, which the `shared` mode already uses).
 
 Example of usage:
 ```opensips
@@ -1509,9 +1509,9 @@ tos = 0x10
 How the UDP workers of a listener receive their datagrams. The default value is `auto`.
 
 * `shared` - all workers of a listener poll the one listening socket. Every datagram wakes every idle worker (one wins `recvfrom()`, the others get `EAGAIN`), and the kernel wakes the last-forked worker first, so the per-worker load forms a descending ladder from the last worker to the first. This was the only behaviour before this parameter existed.
-* `reuseport` - one `SO_REUSEPORT` socket per worker, all created and bound before the workers are forked. A small classic BPF program attached to the group selects the socket uniformly at random for every datagram (the kernel's default 4-tuple hash would pin a whole SIP peer - one SBC, one PBX, one trunk - to a single worker). One wakeup per datagram, even load across the workers. Works with auto-scaling profiles: a socket is created for every possible worker, and the selector is rebuilt whenever a worker is created or terminated. Requires Linux 4.5 or newer.
-* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per datagram. Allowed on Linux 6.0 and newer only (see [tcp_dispatch_mode](#tcp_dispatch_mode) for why); on older kernels OpenSIPS falls back to `shared` with a warning. The work goes to the first idle worker in a fixed order, so the load is not spread evenly.
-* `auto` - `reuseport` when the kernel supports it, otherwise `shared`.
+* `reuseport` - one `SO_REUSEPORT` socket per worker, all created and bound before the workers are forked. A small classic BPF program attached to the group selects the socket uniformly at random for every datagram (the kernel's default 4-tuple hash would pin a whole SIP peer - one SBC, one PBX, one trunk - to a single worker). One wakeup per datagram, even load across the workers. Works with auto-scaling profiles: a socket is created for every possible worker, and the selector is rebuilt whenever a worker is created or terminated. Linux 4.5 or newer only; elsewhere it falls back to `shared` with a warning.
+* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per datagram. Allowed with the `epoll` reactor on Linux 6.0 and newer only (see [tcp_dispatch_mode](#tcp_dispatch_mode) for why); otherwise OpenSIPS falls back to `shared` with a warning. The work goes to the first idle worker in a fixed order, so the load is not spread evenly.
+* `auto` - `reuseport` when the kernel supports it, otherwise `shared`. On non-Linux systems `auto` is always `shared`, i.e. the behaviour is unchanged there.
 
 Example of usage:
 ```opensips
