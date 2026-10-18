@@ -600,50 +600,54 @@ error:
 static int wss_raw_writev(struct tcp_connection *c, int fd,
 		const struct iovec *iov, int iovcnt, int tout)
 {
-	int i, n, ret = 0;
-#ifdef TLS_DONT_WRITE_FRAGMENTS
-	static char *buf = NULL;
-#endif
+	char *buf = NULL, *data, *p;
+	size_t len;
+	int i, n, ret;
 
 	if (fd < 0) {
+		ret = 0;
 		for (i = 0; i < iovcnt; i++)
 			ret += iov[i].iov_len;
 		n = tcp_async_add_chunks(c, iov, iovcnt, 1);
 		return (n == 0) ? ret : n;
 	}
 
-#ifndef TLS_DONT_WRITE_FRAGMENTS
-	for (i = 0; i < iovcnt; i++) {
-		n = tls_mgm_api.tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
-				wss_hs_tls_tout, wss_send_tout, t_dst);
-		if (n < 0) {
-			ret = -1;
-			goto end;
+	/* Hand all the elements to a single TLS write, so they leave in one
+	 * TLS record: the reader consumes one record per read attempt and gives
+	 * up after wss_max_msg_chunks attempts, so a handshake written element
+	 * by element (16 elements for the client's upgrade request) cannot be
+	 * read by a peer with the default limit, and every data frame would
+	 * cost two records (header + payload). The buffer is per call: TCP
+	 * main's I/O threads reach this function through the handshake. */
+	if (iovcnt == 1) {
+		data = iov[0].iov_base;
+		len = iov[0].iov_len;
+	} else {
+		len = 0;
+		for (i = 0; i < iovcnt; i++)
+			len += iov[i].iov_len;
+		buf = thread_malloc(len);
+		if (!buf) {
+			LM_ERR("no more pkg memory for a %zu bytes WSS write\n", len);
+			return -1;
 		}
-		ret += n;
+		for (p = buf, i = 0; i < iovcnt; i++) {
+			memcpy(p, iov[i].iov_base, iov[i].iov_len);
+			p += iov[i].iov_len;
+		}
+		data = buf;
 	}
-#else
-	n = 0;
-	for (i = 0; i < iovcnt; i++)
-		n += iov[i].iov_len;
-	buf = pkg_realloc(buf, n);
-	if (!buf) {
-		ret = -2;
-		goto end;
-	}
-	n = 0;
-	for (i = 0; i < iovcnt; i++) {
-		memcpy(buf + n, iov[i].iov_base, iov[i].iov_len);
-		n += iov[i].iov_len;
-	}
-	n = tls_mgm_api.tls_blocking_write(c, fd, buf, n,
-				wss_hs_tls_tout, wss_send_tout, t_dst);
-#endif /* TLS_DONT_WRITE_FRAGMENTS */
 
-end:
-	if (ret > 0)
+	n = tls_mgm_api.tls_blocking_write(c, fd, data, len,
+			wss_hs_tls_tout, wss_send_tout, t_dst);
+	if (buf)
+		thread_free(buf);
+	if (n < 0)
+		return -1;
+
+	if (n > 0)
 		tcp_conn_reset_lifetime(c);
-	return ret;
+	return n;
 }
 
 static int wss_async_write(struct tcp_connection* con, int fd)
