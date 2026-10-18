@@ -32,7 +32,9 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#ifdef __OS_linux
 #include <sys/timerfd.h>
+#endif
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -704,6 +706,7 @@ static int tcp_accept_cb(int fd, void *param, int was_timeout)
 	return 0;
 }
 
+#ifdef __OS_linux
 /* every XP_HELLO_TICK_S: announce while a cluster member is still unknown
  * or the last announcement did not go out (the links come up after us),
  * otherwise once per XP_HELLO_S as a heartbeat for restarted peers */
@@ -723,11 +726,14 @@ static int hello_cb(int fd, void *param, int was_timeout)
 	}
 	return 0;
 }
+#endif
 
 void pcache_xport_proc(int rank)
 {
+#ifdef __OS_linux
 	struct itimerspec its;
 	int tfd;
+#endif
 
 	if (kind == PCACHE_XPORT_NONE)
 		return;
@@ -746,6 +752,7 @@ void pcache_xport_proc(int rank)
 		LM_ERR("cannot watch the pull listen socket\n");
 		return;
 	}
+#ifdef __OS_linux
 	tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	if (tfd < 0) {
 		LM_ERR("timerfd: %s - peers will only be learned from their own "
@@ -758,6 +765,7 @@ void pcache_xport_proc(int rank)
 		    reactor_proc_add_fd(tfd, hello_cb, NULL) < 0)
 			LM_ERR("cannot arm the HELLO timer: %s\n", strerror(errno));
 	}
+#endif
 	LM_DBG("transport process up (%s), announcing in 1 s\n", pcache_xport_name());
 	reactor_proc_loop();
 	LM_CRIT("the transport process's reactor loop ended\n");

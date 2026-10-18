@@ -38,6 +38,8 @@
 
 #include "pcache_mem.h"
 
+#ifdef __OS_linux
+/* the Linux values, for headers older than the features */
 #ifndef MAP_HUGETLB
 #define MAP_HUGETLB 0x40000
 #endif
@@ -46,6 +48,16 @@
 #endif
 #ifndef MADV_COLLAPSE
 #define MADV_COLLAPSE 25
+#endif
+#else
+/* huge pages are Linux-only: an advice the kernel does not know fails with
+ * EINVAL, so the ladder drops to plain 4K pages */
+#ifndef MADV_HUGEPAGE
+#define MADV_HUGEPAGE -1
+#endif
+#ifndef MADV_COLLAPSE
+#define MADV_COLLAPSE -1
+#endif
 #endif
 
 #define PCACHE_HPS (2UL * 1024 * 1024)   /* huge page size, x86_64 */
@@ -139,6 +151,7 @@ void pcache_mem_probe(void)
 	pcache_mem.huge_overcommit =
 		read_vm_int("/proc/sys/vm/nr_overcommit_hugepages");
 
+#ifdef MAP_HUGETLB
 	/* tier 1: MAP_HUGETLB.  Pages are secured against the pool (static
 	 * or overcommit) at mmap time, so a successful map plus one touched
 	 * byte proves the route; failure (ENOMEM/EINVAL) drops a tier */
@@ -150,6 +163,7 @@ void pcache_mem_probe(void)
 		pcache_mem.tier = PCACHE_MEM_HUGETLB;
 		return;
 	}
+#endif
 
 	/* shmem THP needs the VA and the file offset congruent mod 2M, so
 	 * aligning inside an unaligned mapping is not enough: reserve VA
@@ -208,6 +222,7 @@ void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 	*locked_mb = 0;
 	*tier = PCACHE_MEM_4K;
 
+#ifdef MAP_HUGETLB
 	/* tier 1: MAP_HUGETLB - unswappable, exempt from RLIMIT_MEMLOCK */
 	p = mmap(NULL, asize, PROT_READ|PROT_WRITE,
 	         MAP_SHARED|MAP_ANONYMOUS|MAP_HUGETLB, -1, 0);
@@ -218,6 +233,7 @@ void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 		*locked_mb = asize >> 20;
 		return p;
 	}
+#endif
 
 	/* tiers 2-4: 2M-aligned shmem, aligned as in the probe */
 	resv = mmap(NULL, asize + PCACHE_HPS, PROT_NONE,

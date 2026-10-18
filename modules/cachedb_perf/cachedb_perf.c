@@ -38,7 +38,9 @@
 #include "../../lib/csv.h"
 #include "../../evi/evi_modules.h"
 #include "../../bin_interface.h"
+#ifdef __OS_linux
 #include <sys/eventfd.h>
+#endif
 #include <poll.h>
 #include "../clusterer/api.h"
 #ifdef CLUSTERER_CTRL_SUPPORT
@@ -4718,6 +4720,12 @@ static int mod_init(void)
 		            !strcasecmp(pt, "tcp") ? PCACHE_XPORT_TCP :
 		            !strcasecmp(pt, "tls") ? PCACHE_XPORT_TLS : PCACHE_XPORT_NONE;
 
+#ifndef __OS_linux
+		LM_ERR("replicate_collections needs Linux: the cross-node pull "
+			"is built on eventfd and timerfd\n");
+		return -1;
+#endif
+
 		/* "bins" also means the clusterer's links */
 		if (strcasecmp(pt, "bin") && strcasecmp(pt, "bins") && !use_clctr &&
 		        !xkind) {
@@ -4807,7 +4815,11 @@ static int mod_init(void)
 			/* one eventfd per slot, created pre-fork so any process can wake the
 			 * waiter */
 			for (i = 0; i < pull_slot_count; i++) {
+#ifdef __OS_linux
 				pull_slot_at(i)->efd = eventfd(0, EFD_NONBLOCK);
+#else
+				pull_slot_at(i)->efd = -1;   /* refused above */
+#endif
 				if (pull_slot_at(i)->efd < 0) {
 					LM_ERR("cannot create the pull wakeup fds (pull_slots "
 						"%d - one fd per slot, in every process): %s - "

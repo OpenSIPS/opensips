@@ -68,7 +68,12 @@ static inline void mem_arena_usage(mem_arena_t *a, unsigned long *c,
 #endif
 
 #ifndef MADV_REMOVE
+#ifdef __OS_linux
 #define MADV_REMOVE 9
+#else
+/* Linux-only: the madvise() fails with EINVAL and free slots stay resident */
+#define MADV_REMOVE -1
+#endif
 #endif
 
 char *pcache_backing_policy = "auto";
