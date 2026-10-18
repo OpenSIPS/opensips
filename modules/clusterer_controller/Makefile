@@ -4,6 +4,12 @@ include ../../Makefile.defs
 auto_gen=
 NAME= clusterer_controller.so
 
+# Linux-only: the timers are timerfds and the multicast socket is pinned to
+# its interface with SO_BINDTODEVICE
+ifneq ($(OS),linux)
+  $(error clusterer_controller builds on Linux only (timerfd, SO_BINDTODEVICE) - drop it from include_modules on $(OS))
+endif
+
 # libsodium is a hard requirement: it provides the payload AEAD
 # (XChaCha20-Poly1305), the bootstrap KDF (Argon2id), the Noise_NNpsk0 join
 # handshake, and X25519 / HKDF-SHA256 / RNG.  It is linked dynamically (distro
