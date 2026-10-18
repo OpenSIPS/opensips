@@ -27,8 +27,8 @@
 
 #include <unistd.h>
 
+#include <strings.h>
 #include <sys/utsname.h>
-#include <sys/ioctl.h>
 #include "../ipc.h"
 #include "../locking.h"
 #include "../mem/shm_mem.h"
@@ -177,16 +177,25 @@ int parse_udp_rx_mode(const char *s)
 	return 0;
 }
 
+/* Per-worker SO_REUSEPORT sockets with a cBPF selector exist on Linux only
+ * (SO_ATTACH_REUSEPORT_CBPF, 4.5+); on any other system, and on Linux built
+ * against older headers, none of that code is compiled and udp_rx_mode can
+ * only resolve to shared (or exclusive, see below). */
+#if defined(__OS_linux) && defined(SO_REUSEPORT) && defined(SO_ATTACH_REUSEPORT_CBPF)
+#define UDP_RX_REUSEPORT_BUILD 1
+#endif
+
 /* SO_ATTACH_REUSEPORT_CBPF is 4.5+, EPOLLEXCLUSIVE without the "woken but not
  * running process absorbs the next events" behaviour is 6.0+ (commit
  * "epoll: autoremove wakers even more aggressively") */
-#if defined(__OS_linux) && defined(SO_REUSEPORT) && defined(SO_ATTACH_REUSEPORT_CBPF)
+#ifdef UDP_RX_REUSEPORT_BUILD
 #define UDP_RX_HAVE_REUSEPORT (os_kernel_at_least(4, 5))
 #else
 #define UDP_RX_HAVE_REUSEPORT 0
 #endif
-#ifdef EPOLLEXCLUSIVE
-#define UDP_RX_HAVE_EXCLUSIVE (os_kernel_at_least(6, 0))
+#if defined(HAVE_EPOLL) && defined(EPOLLEXCLUSIVE)
+#define UDP_RX_HAVE_EXCLUSIVE \
+	(io_poll_method == POLL_EPOLL && os_kernel_at_least(6, 0))
 #else
 #define UDP_RX_HAVE_EXCLUSIVE 0
 #endif
@@ -204,8 +213,9 @@ static void udp_rx_mode_resolve(void)
 		if (UDP_RX_HAVE_EXCLUSIVE) {
 			udp_rx_mode_eff = UDP_RX_EXCLUSIVE;
 		} else {
-			LM_WARN("udp_rx_mode=exclusive needs a 6.0+ kernel (older ones "
-				"serialize packet bursts on one worker), using 'shared'\n");
+			LM_WARN("udp_rx_mode=exclusive needs the epoll reactor on a 6.0+ "
+				"Linux kernel (older ones serialize packet bursts on one "
+				"worker), using 'shared'\n");
 			udp_rx_mode_eff = UDP_RX_SHARED;
 		}
 		break;
@@ -214,7 +224,7 @@ static void udp_rx_mode_resolve(void)
 			udp_rx_mode_eff = UDP_RX_REUSEPORT;
 		} else {
 			LM_WARN("udp_rx_mode=reuseport needs SO_REUSEPORT with a cBPF "
-				"selector (Linux 4.5+), using 'shared'\n");
+				"selector (Linux 4.5+), not available here, using 'shared'\n");
 			udp_rx_mode_eff = UDP_RX_SHARED;
 		}
 		break;
@@ -445,7 +455,7 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 }
 
 
-#if defined(__OS_linux) && defined(SO_ATTACH_REUSEPORT_CBPF)
+#ifdef UDP_RX_REUSEPORT_BUILD
 /* classic BPF program for the SO_REUSEPORT group: pick the socket index
  * uniformly at random per packet (A = prandom; A %= n; return A). The
  * kernel's default is a 4-tuple hash, which for SIP (a handful of fat
@@ -567,6 +577,12 @@ static void udp_slot_release(const struct socket_info *si)
 	recv(si->socket, &c, 1, MSG_PEEK | MSG_DONTWAIT) > 0)
 		protos[si->proto].net.dgram.read(si, &n);
 }
+#else
+/* reuseport is never selected here (udp_rx_mode_resolve()), so no listener
+ * has worker sockets and the dynamic-fork path never reaches these */
+static inline int udp_slot_reserve(struct socket_info *si) { return -1; }
+static inline void udp_slot_commit(struct socket_info *si, int slot,
+		int proc_idx) { }
 #endif
 
 
@@ -594,7 +610,7 @@ int udp_bind_listener(struct socket_info *si)
 		if (udp_bind_fd(si, si->worker_socks ? si->worker_socks[i]
 				: si->socket) < 0)
 			return -1;
-#if defined(__OS_linux) && defined(SO_ATTACH_REUSEPORT_CBPF)
+#ifdef UDP_RX_REUSEPORT_BUILD
 	/* the group exists once the sockets are bound; the program attached to
 	 * any member applies to the whole group */
 	/* at start only the static workers (slots 0..workers-1) read */
@@ -804,7 +820,7 @@ static void udp_process_graceful_terminate(int sender, void *param)
 	reactor_del_reader( IPC_FD_READ_SHARED, -1, 0);
 
 	/*remove network interface - leave the reuseport group first */
-#if defined(__OS_linux) && defined(SO_ATTACH_REUSEPORT_CBPF)
+#ifdef UDP_RX_REUSEPORT_BUILD
 	if (bind_address->worker_socks)
 		udp_slot_release(bind_address);
 #endif
