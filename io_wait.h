@@ -421,7 +421,9 @@ inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 	struct pollfd pfd;
 #endif
 	int ctl_flags;
+#ifdef EPOLLEXCLUSIVE
 	int excl;
+#endif
 	int n;  //FIXME
 	int check_error;
 #if 0 //defined(HAVE_SIGIO_RT) || defined (HAVE_EPOLL) FIXME
@@ -435,7 +437,9 @@ inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 	idx=-1;
 #endif
 	e=0;
+#ifdef EPOLLEXCLUSIVE
 	excl = flags & IO_WATCH_EXCLUSIVE;
+#endif
 	flags &= ~IO_WATCH_EXCLUSIVE;
 
 	if (fd==-1){

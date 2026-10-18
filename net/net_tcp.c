@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <pthread.h>
 #include <stdint.h>
 
@@ -136,14 +137,14 @@ static void tcp_dispatch_mode_resolve(void)
 		tcp_dispatch_eff = TCP_DISPATCH_PER_WORKER;
 		break;
 	case TCP_DISPATCH_EXCLUSIVE:
-#ifdef EPOLLEXCLUSIVE
-		if (os_kernel_at_least(6, 0)) {
+#if defined(HAVE_EPOLL) && defined(EPOLLEXCLUSIVE)
+		if (io_poll_method == POLL_EPOLL && os_kernel_at_least(6, 0)) {
 			tcp_dispatch_eff = TCP_DISPATCH_EXCLUSIVE;
 			break;
 		}
 #endif
-		LM_WARN("tcp_dispatch_mode=exclusive needs a 6.0+ kernel, "
-			"using 'shared'\n");
+		LM_WARN("tcp_dispatch_mode=exclusive needs the epoll reactor on a "
+			"6.0+ Linux kernel, using 'shared'\n");
 		tcp_dispatch_eff = TCP_DISPATCH_SHARED;
 		break;
 	default:
