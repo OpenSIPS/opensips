@@ -34,6 +34,7 @@
  */
 
 #include <stdio.h>
+#include <limits.h>
 
 #include "../../ut.h"
 #include "../../parser/msg_parser.h"
@@ -124,47 +125,52 @@ static inline int calc_temp_gruu_len(str* aor,str* instance,str *callid)
  * Calculate the length of buffer needed to
  * print contacts
  */
-static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
+static inline int calc_buf_len(ucontact_t* c,int build_gruu,
 		struct sip_msg *_m)
 {
-	unsigned int len;
+	size_t len;
 	int qlen;
 	int gruu_len;
 	const struct socket_info *sock;
+	#define ADD_LEN(_value) do { \
+		size_t _add = (size_t)(_value); \
+		if (_add > (size_t)INT_MAX - len) return -1; \
+		len += _add; \
+	} while (0)
 
 	len = 0;
 	while(c) {
 		if (VALID_CONTACT(c, get_act_time())) {
-			if (len) len += CONTACT_SEP_LEN;
-			len += 2 /* < > */ + c->c.len;
+			if (len) ADD_LEN(CONTACT_SEP_LEN);
+			ADD_LEN((size_t)2 /* < > */ + c->c.len);
 			qlen = len_q(c->q);
-			if (qlen) len += Q_PARAM_LEN + qlen;
-			len += EXPIRES_PARAM_LEN + INT2STR_MAX_LEN;
+			if (qlen) ADD_LEN((size_t)Q_PARAM_LEN + qlen);
+			ADD_LEN((size_t)EXPIRES_PARAM_LEN + INT2STR_MAX_LEN);
 			if (c->received.s) {
-				len += 1 /* ; */
+				ADD_LEN((size_t)1 /* ; */
 					+ rcv_param.len
 					+ 1 /* = */
 					+ 1 /* dquote */
 					+ c->received.len
-					+ 1 /* dquote */
-					;
+					+ 1 /* dquote */);
 			}
 			if (build_gruu && c->instance.s &&
 				(gruu_len = calc_temp_gruu_len(c->aor, &c->instance,
 					&c->callid)) >= 0) {
+				if (c->instance.len < 2)
+					return -1;
 				sock = (c->sock)?(c->sock):(_m->rcv.bind_address);
 				/* pub gruu */
-				len += PUB_GRUU_SIZE
+				ADD_LEN((size_t)PUB_GRUU_SIZE
 					+ 1 /* quote */
 					+ SIP_PROTO_SIZE
 					+ c->aor->len
 					+ (reg_use_domain ?0:(1 /* @ */ + sock->name.len + 1 /* : */ + sock->port_no_str.len))
 					+ GR_PARAM_SIZE
 					+ (c->instance.len - 2)
-					+ 1 /* quote */
-					;
+					+ 1 /* quote */);
 				/* temp gruu */
-				len += TEMP_GRUU_SIZE
+				ADD_LEN((size_t)TEMP_GRUU_SIZE
 					+ 1 /* quote */
 					+ SIP_PROTO_SIZE
 					+ TEMP_GRUU_HEADER_SIZE
@@ -174,21 +180,20 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 					+ 1 /* : */
 					+ sock->port_no_str.len
 					+ GR_NO_VAL_SIZE
-					+ 1 /* quote */
-					;
+					+ 1 /* quote */);
 				/* sip.instance */
-				len += SIP_INSTANCE_SIZE
+				ADD_LEN((size_t)SIP_INSTANCE_SIZE
 					+ 1 /* quote */
 					+ c->instance.len
-					+ 1 /* quote */
-					;
+					+ 1 /* quote */);
 			}
 		}
 		c = c->next;
 	}
 
-	if (len) len += CONTACT_BEGIN_LEN + CRLF_LEN;
-	return len;
+	if (len) ADD_LEN((size_t)CONTACT_BEGIN_LEN + CRLF_LEN);
+	#undef ADD_LEN
+	return (int)len;
 }
 
 static str temp_gruu_buf;
@@ -251,6 +256,10 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 		build_gruu=1;
 
 	contact.data_len = calc_buf_len(c,build_gruu,_m);
+	if (contact.data_len < 0) {
+		LM_ERR("contact header length overflow\n");
+		return -1;
+	}
 	if (!contact.data_len) return 0;
 
 	if (!contact.buf || (contact.buf_len < contact.data_len)) {

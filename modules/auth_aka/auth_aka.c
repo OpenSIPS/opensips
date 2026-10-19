@@ -782,7 +782,16 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 		LM_ERR("cannot prepare challenge from message\n");
 		goto end;
 	}
+	if (sync_count < 0 || count < 0 || count > INT_MAX - sync_count) {
+		LM_ERR("invalid authentication vector count %d + %d\n", count,
+				sync_count);
+		goto release;
+	}
 	count += sync_count;
+	if (count > INT_MAX / (int)sizeof(*avs)) {
+		LM_ERR("invalid authentication vector count %d\n", count);
+		goto release;
+	}
 	if (count > 1) {
 		avs = pkg_malloc(count * sizeof *avs);
 		if (!avs) {
@@ -794,6 +803,12 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	}
 	/* try to fetch as many local AVs as possible */
 	new_count = aka_avs_get_new(user, &algmask, avs, count, &err_count);
+	if (new_count < 0 || err_count < 0 ||
+			new_count > count || err_count > count - new_count) {
+		LM_ERR("invalid authentication vector result: %d fetched, %d errors, %d requested\n",
+				new_count, err_count, count);
+		goto release;
+	}
 
 	/* if we need more, fetch them remotely */
 	if (new_count + err_count != count) {
@@ -804,6 +819,8 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 			goto release;
 		}
 		new_count += aka_avs_new_wait(user, &algmask, avs + new_count, count - new_count - err_count);
+		if (new_count < 0 || new_count > count)
+			goto release;
 		if (new_count < count)
 			LM_WARN("Could not get get %d (out of %d) authentication vectors!\n",
 					count - new_count, count);
@@ -993,8 +1010,15 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 	}
 
 	/* check to see how many events we got */
+	if (param->avs_count < 0 || param->avs_fetched < 0 ||
+			param->avs_error < 0 || param->avs_fetched > param->avs_count ||
+			param->avs_error > param->avs_count - param->avs_fetched)
+		goto end;
 	param->avs_fetched += aka_avs_get_new(param->user, &param->algmask,
 			param->avs + param->avs_fetched, param->avs_count - param->avs_fetched, &err_count);
+	if (err_count < 0 || param->avs_fetched < 0 ||
+			param->avs_fetched > param->avs_count - param->avs_error)
+		goto end;
 	param->avs_error += err_count;
 	left = param->avs_count - param->avs_fetched - param->avs_error;
 	/* check to see if we still have AVS to wait for */
@@ -1012,6 +1036,11 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 	async_status = ASYNC_DONE_NO_IO;
 	if (!param->replied) {
 		if (param->avs_fetched) {
+			if (param->avs_fetched < 0 || param->avs_fetched > param->avs_count) {
+				LM_ERR("invalid fetched authentication vector count %d/%d\n",
+						param->avs_fetched, param->avs_count);
+				goto end;
+			}
 			/* now send whatever we have fetched so far */
 			aka_send_resp(msg, &param->realm, param->user, param->avs, param->avs_fetched,
 					param->qop, param->code, _cs2cc(&param->challenge_msg));
@@ -1067,6 +1096,12 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 		LM_ERR("cannot prepare challenge from message\n");
 		return -1;
 	}
+	if (sync_count < 0 || count < 0 || count > INT_MAX - sync_count ||
+			count + sync_count > INT_MAX / (int)sizeof(*av)) {
+		LM_ERR("invalid asynchronous authentication vector count %d + %d\n",
+				count, sync_count);
+		goto release;
+	}
 	count += sync_count;
 	/* try to sort them out synchronously */
 	if (count == 1) {
@@ -1077,7 +1112,8 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 			goto error;
 	}
 	/* unfortunately we might need to do it asynchronously */
-	param = shm_malloc(sizeof *param + realm.len + _challenge_msg->len +
+	param = shm_malloc(sizeof *param + (size_t)realm.len +
+			(size_t)_challenge_msg->len +
 			count * sizeof *av);
 	if (!param) {
 		LM_ERR("oom for preparing async params!\n");

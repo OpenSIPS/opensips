@@ -236,6 +236,11 @@ again:
 	}
 	tcp_conn_reset_lifetime(c);
 
+	if (rc > data->pp_hdr->len) {
+		LM_ERR("sent more bytes than the queued outbound PROXY header on TLS conn %u\n",
+				c->id);
+		return -1;
+	}
 	if (rc < data->pp_hdr->len) {
 		data->pp_hdr->len -= rc;
 		memmove(data->pp_hdr->s, data->pp_hdr->s + rc, data->pp_hdr->len);

@@ -63,6 +63,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 
 		ret = db_print_columns(sql_buf + off, SQL_BUF_LEN - off, _c, _nc);
 		if (ret < 0) goto err_exit;
+		if (ret > SQL_BUF_LEN - off) goto error;
 		off += ret;
 
 		ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, "from %.*s ", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
@@ -77,6 +78,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		ret = db_print_where(_h, sql_buf + off,
 				SQL_BUF_LEN - off, _k, _op, _v, _n, val2str);
 		if (ret < 0) goto err_exit;
+		if (ret > SQL_BUF_LEN - off) goto error;
 		off += ret;
 	}
 	if (_o) {
@@ -91,7 +93,7 @@ int db_do_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 	 * We need to check the length here, otherwise we could overwrite the buffer
 	 * boundaries if off is equal to SQL_BUF_LEN.
 	 */
-	if (off >= SQL_BUF_LEN) goto error;
+	if (off < 0 || off >= SQL_BUF_LEN) goto error;
 	sql_buf[off] = '\0';
 	sql_str.s = sql_buf;
 	sql_str.len = off;
@@ -215,6 +217,7 @@ build_query:
 
 	ret = db_print_columns(sql_buf + off, SQL_BUF_LEN - off, _k, _n);
 	if (ret < 0) goto error;
+	if (ret > SQL_BUF_LEN - off) goto error;
 	off += ret;
 
 	if (CON_HAS_INSLIST(_h))
@@ -240,6 +243,7 @@ build_query:
 				ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off,
 										CON_HAS_PS(_h)?_v:buffered_rows[i], _n, val2str);
 				if (ret < 0) goto error;
+				if (ret > SQL_BUF_LEN - off) goto error;
 				off += ret;
 
 				if (off + 1 >= SQL_BUF_LEN) goto error0;
@@ -277,6 +281,7 @@ build_query:
 
 		ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n, val2str);
 		if (ret < 0) goto error0;
+		if (ret > SQL_BUF_LEN - off) goto error0;
 		off += ret;
 
 		if (off + 2 > SQL_BUF_LEN) goto error0;
@@ -325,7 +330,7 @@ int db_do_delete(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 		ret = db_print_where(_h, sql_buf + off,
 				SQL_BUF_LEN - off, _k, _o, _v, _n, val2str);
-		if (ret < 0) goto err_exit;
+		if (ret < 0 || ret > SQL_BUF_LEN - off) goto error;
 		off += ret;
 	}
 	if (off + 1 > SQL_BUF_LEN) goto error;
@@ -369,6 +374,7 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 
 	ret = db_print_set(_h, sql_buf + off, SQL_BUF_LEN - off, _uk, _uv, _un, val2str);
 	if (ret < 0) goto err_exit;
+	if (ret > SQL_BUF_LEN - off) goto error;
 	off += ret;
 
 	if (_n) {
@@ -377,7 +383,7 @@ int db_do_update(const db_con_t* _h, const db_key_t* _k, const db_op_t* _o,
 		off += ret;
 
 		ret = db_print_where(_h, sql_buf + off, SQL_BUF_LEN - off, _k, _o, _v, _n, val2str);
-		if (ret < 0) goto err_exit;
+		if (ret < 0 || ret > SQL_BUF_LEN - off) goto error;
 		off += ret;
 	}
 	if (off + 1 > SQL_BUF_LEN) goto error;
@@ -421,6 +427,7 @@ int db_do_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 
 	ret = db_print_columns(sql_buf + off, SQL_BUF_LEN - off, _k, _n);
 	if (ret < 0) return -1;
+	if (ret > SQL_BUF_LEN - off) goto error;
 	off += ret;
 
 	ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, ") values (");
@@ -430,6 +437,7 @@ int db_do_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 	ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n,
 	val2str);
 	if (ret < 0) return -1;
+	if (ret > SQL_BUF_LEN - off) goto error;
 	off += ret;
 
 	if (off + 2 > SQL_BUF_LEN) goto error;
