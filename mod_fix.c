@@ -37,7 +37,10 @@ int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
 
 	if (dup_nt) {
 		if (re_str->len + 1 > re_buff_len) {
+			/* a persistent scratch buffer: never part of a tree generation */
+			unsigned long g = pkg_gen_suspend();
 			re_buff = pkg_realloc(re_buff,re_str->len + 1);
+			pkg_gen_resume(g);
 			if (re_buff == NULL) {
 				LM_ERR("No more pkg \n");
 				return E_OUT_OF_MEM;
@@ -62,6 +65,8 @@ int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
 		pkg_free(*re);
 		return E_BAD_RE;
 	}
+	/* libc memory behind the re goes with the tree's generation */
+	pkg_gen_track((void (*)(void *))regfree, *re);
 
 	return 0;
 }
@@ -326,8 +331,10 @@ fill_elems:
 error:
 	if (gp)
 		pkg_free(gp);
-	if (re)
+	if (re) {
+		pkg_gen_untrack(re);
 		pkg_free(re);
+	}
 	return ret;
 }
 

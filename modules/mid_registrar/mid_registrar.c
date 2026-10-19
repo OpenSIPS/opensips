@@ -237,19 +237,26 @@ static int domain_fixup(void** param)
 	udomain_t* d;
 	str *dom_s = (str *)*param; /* CMD_PARAM_STATIC is always NT */
 	str_list *dom;
+	unsigned long g;
 
 	if (!is_mid_reg_domain(dom_s)) {
+		/* mid_reg_domains outlives any reloaded script tree: keep its
+		   nodes out of the tree's pkg generation */
+		g = pkg_gen_suspend();
 		dom = pkg_malloc(sizeof *dom);
 		if (!dom) {
+			pkg_gen_resume(g);
 			LM_ERR("oom\n");
 			return E_OUT_OF_MEM;
 		}
 		memset(dom, 0, sizeof *dom);
 
 		if (pkg_nt_str_dup(&dom->s, dom_s) < 0) {
+			pkg_gen_resume(g);
 			pkg_free(dom);
 			return E_OUT_OF_MEM;
 		}
+		pkg_gen_resume(g);
 
 		add_last(dom, mid_reg_domains);
 	}

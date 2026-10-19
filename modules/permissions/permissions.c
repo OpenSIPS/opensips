@@ -554,6 +554,7 @@ static int fix_filename(void** param)
 	char* buffer;
 	void* tmp;
 	int ret, suffix_len;
+	unsigned long g;
 	str *s = (str*)*param;
 
 	if (strlen(allow_suffix) > strlen(deny_suffix)) {
@@ -569,6 +570,9 @@ static int fix_filename(void** param)
 	}
 
 	memcpy( buffer, s->s, s->len );
+	/* the loaded rule files (allow[]/deny[]) outlive any reloaded script
+	   tree: keep them out of the tree's pkg generation */
+	g = pkg_gen_suspend();
 	strcpy( buffer+s->len, allow_suffix);
 	tmp = buffer;
 	ret = load_fixup(&tmp, 1);
@@ -576,6 +580,7 @@ static int fix_filename(void** param)
 	strcpy( buffer+s->len, deny_suffix);
 	tmp = buffer;
 	ret |= load_fixup(&tmp, 2);
+	pkg_gen_resume(g);
 
 	*param = tmp;
 
