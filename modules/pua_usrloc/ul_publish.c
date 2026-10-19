@@ -281,6 +281,10 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 			   LM_ERR("failed to send publish\n");
 			}
 		}
+		else if (error == ERR_PUBLISH_NO_RECORD && publ.expires == 0)
+			/* an expiry or delete for a contact pua holds no record of
+			 * (e.g. registered before a restart): nothing to withdraw */
+			LM_DBG("no publish record to expire\n");
 		else
 			LM_ERR("failed to send publish\n");
 	}
