@@ -1027,6 +1027,28 @@ next_contact:;
 
 
 /*! \brief
+ * Match a stored contact by its +sip.instance value (RFC 5626).
+ * Expired contacts are skipped, so an expired registration with the same
+ * instance does not block a fresh insert.
+ */
+static inline struct ucontact* contact_instance_match(ucontact_t *contacts,
+                                                      str *instance)
+{
+	while (contacts) {
+		if (contacts->expires != UL_EXPIRED_TIME &&
+		    contacts->instance.len > 0 &&
+		    contacts->instance.len == instance->len &&
+		    memcmp(contacts->instance.s, instance->s, instance->len) == 0)
+			return contacts;
+
+		contacts = contacts->next;
+	}
+
+	return NULL;
+}
+
+
+/*! \brief
  * Get pointer to ucontact with given contact
  * Returns:
  *      0 - found
@@ -1049,6 +1071,22 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		match.mode = matching_mode;
 
 	LM_DBG("using ct matching mode %d\n", match.mode);
+
+	/* RFC 5626: an incoming Contact carrying +sip.instance is the same
+	 * registration as a stored contact with that instance, even when the
+	 * Contact URI changed (e.g. a browser tab reconnect) -> update the
+	 * stored contact instead of adding a new one (Kamailio registrar
+	 * behavior). Only contacts of this AoR are scanned; other devices
+	 * (no instance or a different one) are never touched. */
+	if (match.instance.len && match.instance.s) {
+		ptr = contact_instance_match(_r->contacts, &match.instance);
+		if (ptr) {
+			LM_DBG("matched contact '%.*s' by +sip.instance\n",
+			       ptr->c.len, ptr->c.s);
+			goto matched;
+		}
+	}
+
 	switch (match.mode) {
 	case CT_MATCH_CONTACT_ONLY:
 		ptr = contact_match(_r->contacts, _c);
@@ -1065,6 +1103,7 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		return -1;
 	}
 
+matched:
 	if (ptr) {
 		LM_DBG("successfully matched contact '%.*s'\n", ptr->c.len, ptr->c.s);
 

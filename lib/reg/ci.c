@@ -121,8 +121,11 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 	}
 
 	if (_c) {
-		/* if doing param-based Contact matching, force an URI update */
-		if (cmatch && cmatch->mode == CT_MATCH_PARAMS)
+		/* if doing param-based or +sip.instance-based Contact matching,
+		 * force an URI update (the URI may change across reconnects of
+		 * the same instance) */
+		if (cmatch && (cmatch->mode == CT_MATCH_PARAMS ||
+		        (cmatch->instance.len && cmatch->instance.s)))
 			ci.c = &_c->uri;
 
 		/* Calculate q value of the contact */
