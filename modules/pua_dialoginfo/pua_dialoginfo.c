@@ -240,6 +240,14 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 			!(param->bitmask_failed & (((long long)1) << branch)))
 				continue;
 
+			/* the ANSWERED branch is not dangling: its dialog lives on and
+			 * the dialog callbacks publish its "terminated" at the BYE. Without
+			 * this, TMCB_TRANS_DELETED of a successful INVITE (a few seconds
+			 * after the 200 OK) terminates the call's lamp while the call is up */
+			if (t->uac[branch].last_received>=200
+			&& t->uac[branch].last_received<300)
+				continue;
+
 			ttag = (include_tags && (msg=t->uac[branch].reply)!=NULL
 			&& msg!=FAKED_REPLY && msg->to && msg->to->parsed) ?
 			&(get_to(msg)->tag_value) : NULL;
