@@ -550,11 +550,15 @@ inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 again1:
 #ifdef EPOLLEXCLUSIVE
 				/* opt-in only (IO_WATCH_EXCLUSIVE); the unconditional use
-				 * was disabled in 3596efdc00 because, with level-triggered
-				 * epoll on kernels before 6.0, a woken but not yet running
-				 * process keeps absorbing the following events (fixed by
-				 * ep_autoremove_wake_function) - callers must gate on the
-				 * kernel version, see os_kernel_at_least() */
+				 * was disabled in 3596efdc00 because a woken but not yet
+				 * running process kept absorbing the following events: it
+				 * stayed on its epoll's wait queue until it ran, so
+				 * ep_poll_callback() still saw a waiter and ended the
+				 * exclusive wake-up there. Linux 5.7 (412895f03cbf) removes
+				 * the waiter when the wake-up succeeds, 6.0 (a16ceb139610,
+				 * ep_autoremove_wake_function) even when it fails. 5.4
+				 * serializes bursts, 6.12 does not, 5.7-5.19 are untested,
+				 * so callers gate on 6.0, see os_kernel_at_least() */
 				if (excl && (flags & IO_WATCH_READ))
 					ep_event.events|=EPOLLEXCLUSIVE;
 #endif

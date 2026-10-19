@@ -56,7 +56,8 @@ extern int udp_workers_no;
  *  shared    - one socket, every worker polls it (each packet wakes all idle
  *              workers, the last-forked one is woken first)
  *  exclusive - same socket, EPOLLEXCLUSIVE (one wakeup per packet; needs a
- *              6.0+ kernel, otherwise bursts serialize on one worker)
+ *              6.0+ kernel: before 5.7 bursts serialize on one worker,
+ *              5.7-5.19 are untested, see io_watch_add())
  *  reuseport - one SO_REUSEPORT socket per worker, a cBPF program spreads
  *              the packets uniformly at random (needs a 4.5+ kernel)
  *  auto      - reuseport when the kernel supports it, else shared */

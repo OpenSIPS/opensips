@@ -1260,7 +1260,7 @@ How TCP main hands a received message to the TCP workers. The default value is `
 
 * `shared` - all TCP workers wait on one shared dispatch socket. Every dispatched message wakes every idle worker (one of them wins the read, the others return empty-handed), and the kernel wakes the last-forked worker first, so the per-worker load forms a descending ladder from the last worker to the first. This was the only behaviour before this parameter existed.
 * `per_worker` - one dispatch socket per TCP worker; TCP main hands each message to the next idle active worker in round-robin order (or to the next active one when all are busy). One wakeup per message, even load across the workers.
-* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per message. Allowed with the `epoll` reactor on Linux 6.0 and newer only; on older kernels a woken but not yet running worker keeps absorbing the following messages, so bursts serialize on it - OpenSIPS falls back to `shared` with a warning there.
+* `exclusive` - the shared socket, registered with `EPOLLEXCLUSIVE` so that only one waiting worker is woken per message. Allowed with the `epoll` reactor on Linux 6.0 and newer only, and OpenSIPS falls back to `shared` with a warning elsewhere. Before Linux 5.7 a woken but not yet running worker keeps absorbing the following messages, so bursts serialize on it; 5.7 removes a woken worker from the epoll wait queue at wake-up and 6.0 completes that, and kernels between the two were not tested.
 * `auto` - `per_worker`, on every platform (it only needs `AF_UNIX` datagram socket pairs, which the `shared` mode already uses).
 
 Example of usage:
