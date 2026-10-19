@@ -65,6 +65,15 @@ jobs:
             cov-build --dir cov-int \
             sh -x scripts/build/do_build.sh
 
+      - name: Exclude external libraries from Coverity
+        run: |
+          EXCLUDE_RE="$GITHUB_WORKSPACE/(modules/tls_wolfssl/lib|modules/http2d/lib/nghttp2|modules/freeswitch/esl/src|modules/launch_darkly/lib)(/|$)"
+
+          cov-manage-emit \
+            --dir cov-int \
+            --tu-pattern "file('$EXCLUDE_RE')" \
+            delete
+
       - name: Read OpenSIPS version
         id: version
         run: |
