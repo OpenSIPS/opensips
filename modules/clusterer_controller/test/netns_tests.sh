@@ -71,11 +71,11 @@ check "n3 logged giving the id back" $(grep -aq "10.74.0.12 rejoined - giving it
 
 echo "=== T5 partition heal between masters with DIFFERENT settings ==="
 stop_graceful 4; rm -f $R/n4.pid; sleep 2
-ip netns exec n4 iptables -I INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
+nx 4 iptables -I INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
 start 4 $NEW 0          # master_stickiness=0 - differs from the cluster
 sleep 12
 check "isolated n4 self-promoted" $(members 4 741 | grep -q "10.74.0.14:master" && echo 1 || echo 0) "$(members 4 741)"
-ip netns exec n4 iptables -D INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
+nx 4 iptables -D INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
 sleep 16
 A=0; for i in 1 2 3 4; do alive $i && A=$((A+1)); done
 check "nobody exited after the heal (4/4 alive)" $([ $A = 4 ] && echo 1 || echo 0) "$A alive"
@@ -99,32 +99,38 @@ fi
 
 echo "=== T7 independent deployment, SAME settings, same group/password/cluster_id ==="
 stop_graceful 4; rm -f $R/n4.pid; sleep 2
-ip netns exec n4 iptables -I INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
+nx 4 iptables -I INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
 start 4 $NEW
 sleep 36            # founds alone, and its uuid outlives the 30 s grace
 check "isolated n4 founded its own, established uuid" $([ "$(cfgval 4 741 cluster_uuid_state)" = established ] && [ "$(cfgval 4 741 cluster_uuid)" != "$U1" ] && echo 1 || echo 0) "$(cfgval 4 741 cluster_uuid_state) $(cfgval 4 741 cluster_uuid)"
-ip netns exec n4 iptables -D INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
+nx 4 iptables -D INPUT -p udp --dport $PORT ! -s 10.74.0.14 -j DROP
 sleep 16
 MM=$(members 3 741)
 check "main cluster did NOT absorb n4: 3 members, n3 master" $([ "$(echo $MM | wc -w)" = 3 ] && echo "$MM" | grep -q "10.74.0.13:master" && echo 1 || echo 0) "$MM"
 check "n4 still alone, master of its own" $(members 4 741 | grep -q "^10.74.0.14:master" && [ "$(members 4 741 | wc -w)" = 1 ] && echo 1 || echo 0) "$(members 4 741)"
 check "n3 logged the foreign cluster" $(grep -aq "10.74.0.14 belongs to another cluster" $R/n3.log && echo 1 || echo 0) ""
 check "n4 logged the foreign cluster" $(grep -aq "belongs to another cluster" $R/n4.log && echo 1 || echo 0) ""
+FC=$(cfgval 3 741 foreign_clusters); U4=$(cfgval 4 741 cluster_uuid)
+check "n3 lists n4's cluster in foreign_clusters" $(echo "$FC" | grep -q "$U4" && echo "$FC" | grep -q "10.74.0.14" && echo 1 || echo 0) "$FC"
 A=0; for i in 1 2 3 4; do alive $i && A=$((A+1)); done
 check "nobody exited (4/4 alive)" $([ $A = 4 ] && echo 1 || echo 0) "$A alive"
 stop_graceful 4; rm -f $R/n4.pid
 
 echo "=== T8 a partition of the SAME cluster still heals ==="
-ip netns exec n2 iptables -I INPUT -p udp --dport $PORT -j DROP
-ip netns exec n2 iptables -I OUTPUT -p udp --dport $PORT -j DROP
+nx 2 iptables -I INPUT -p udp --dport $PORT -j DROP
+nx 2 iptables -I OUTPUT -p udp --dport $PORT -j DROP
 sleep 14
 check "isolated n2 elected itself (same uuid)" $(members 2 741 | grep -q "10.74.0.12:master" && [ "$(cfgval 2 741 cluster_uuid)" = "$U1" ] && echo 1 || echo 0) "$(members 2 741) $(cfgval 2 741 cluster_uuid)"
-ip netns exec n2 iptables -D INPUT -p udp --dport $PORT -j DROP
-ip netns exec n2 iptables -D OUTPUT -p udp --dport $PORT -j DROP
+check "the T8 cut fired ($(dropped 2 INPUT) in, $(dropped 2 OUTPUT) out dropped)" $([ "$(dropped 2 INPUT)" -gt 0 ] && [ "$(dropped 2 OUTPUT)" -gt 0 ] && echo 1 || echo 0) ""
+nx 2 iptables -D INPUT -p udp --dport $PORT -j DROP
+nx 2 iptables -D OUTPUT -p udp --dport $PORT -j DROP
 sleep 20
 MM=$(members 3 741); M2=$(members 2 741)
 check "healed: n3 sees 3 members with one master" $([ "$(echo $MM | wc -w)" = 3 ] && [ "$(echo $MM | tr ' ' '\n' | grep -c ':master:')" = 1 ] && echo 1 || echo 0) "$MM"
-check "healed: n2 follows the same master" $(echo "$M2" | grep -q "10.74.0.13:master" && echo 1 || echo 0) "$M2"
+# either master may lead the healed cluster (member count, then term, then
+# address decides) - what matters is that both sides name the same one
+H3=$(echo "$MM" | tr ' ' '\n' | grep ':master:' | cut -d: -f1); H2=$(echo "$M2" | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+check "healed: n2 and n3 name the same master" $([ -n "$H3" ] && [ "$H3" = "$H2" ] && echo 1 || echo 0) "n3: $H3, n2: $H2"
 
 echo "=== T9 pinned uuid, whole-cluster restart ==="
 for i in 1 2 3; do stop_graceful $i; rm -f $R/n$i.pid; done; sleep 2
@@ -161,10 +167,12 @@ echo "=== T11 an older MEMBER_LIST arriving late does not undo a newer one ==="
 # never seen by n2's replay window, so only the list's own stamp can order it.
 # n2 is cut off for under 2 s, inside the 3 s master keepalive timeout.
 I1=$(nid 3 1); I2=$(nid 3 2)
-ip netns exec n2 iptables -I INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
+nx 2 iptables -I INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
 tap 3 1.5 $R/t11.json >/dev/null & TP=$!
 sleep 0.3; mi 3 cl_ctr_shtag_force cluster_id=741 node_id=$I1 >/dev/null; wait $TP
-ip netns exec n2 iptables -D INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
+CUT11=$(dropped 2 INPUT)
+nx 2 iptables -D INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
+check "the T11 cut fired ($CUT11 dropped)" $([ "$CUT11" -gt 0 ] && echo 1 || echo 0) ""
 N=$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))))' $R/t11.json)
 check "recorded the master's datagrams, L1 among them ($N)" $([ "${N:-0}" -gt 0 ] && echo 1 || echo 0) "$N"
 check "n2 missed L1 (still auto)" $([ "$(cfgval 2 741 shtag_mode)" = auto ] && echo 1 || echo 0) "$(cfgval 2 741 shtag_mode)"
@@ -203,10 +211,10 @@ for k in range(120):
          "CSeq: 1 OPTIONS\r\nMax-Forwards: 70\r\nX-Relay: 1\r\nContent-Length: 0\r\n\r\n") % (s.getsockname()[1], k, k)
     s.sendto(m.encode(), ("10.74.0.14", 5060)); time.sleep(0.1)
 PY
-ip netns exec n4 iptables -I INPUT -p udp --dport $PORT -j DROP
+nx 4 iptables -I INPUT -p udp --dport $PORT -j DROP
 RIG_TM=1 start 4 $NEW 1 2 fleet-a
 sleep 1.2
-ip netns exec n4 iptables -D INPUT -p udp --dport $PORT -j DROP
+nx 4 iptables -D INPUT -p udp --dport $PORT -j DROP
 wait $SD; wait $SK
 I4=$(nid 3 4)
 read -r TOT NOCID GOOD BAD <<<"$(python3 - $R/t12.json "$I4" <<'PY'
@@ -248,7 +256,48 @@ check "woken $OLDM did not purge its peers" $(since $OM $MO | grep -aq "purging 
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "one master afterwards, and all four nodes name it" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 FM=$(echo $MS | cut -d' ' -f1)
-echo "    master before $OLDM (term $T0), while paused $NEWM, after $FM (term $(cfgval 2 741 term)) - $( [ "$FM" = "$OLDM" ] && echo 'the woken master took over again' || echo 'the new master kept it')"
+echo "    master before $OLDM (term $T0), while paused $NEWM, after $FM (term $(cfgval 2 741 term))"
+check "the master chosen meanwhile kept it - the woken one stood down" $([ "$FM" = "$NEWM" ] && since $OM $MO | grep -aq "stands down" && echo 1 || echo 0) "after=$FM"
+
+echo "=== T15 kernel drops on a full receive buffer are counted ==="
+# n2 is paused while junk floods its cluster port; the kernel drops what does
+# not fit its receive buffer, and SO_RXQ_OVFL reports the count when it reads
+# again.  The junk itself is refused as undecryptable; n2 must stay a member.
+# clusters 741 and 742 share the port: either socket may take the flood
+drops2() { echo $(( $(cfgval 2 741 rx_kernel_drops) + $(cfgval 2 742 rx_kernel_drops) )); }
+D0=$(drops2); B2=$(cfgval 2 741 rcvbuf_bytes)
+pause_node 2
+python3 - <<'PY'
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.bind(("10.74.0.254", 0))
+junk = b"\xCD\x00" + b"\x55" * 1198
+for _ in range(4000):
+    s.sendto(junk, ("10.74.0.12", 3741))
+PY
+sleep 1; resume_node 2; sleep 6
+D1=$(drops2)
+echo "    n2 rcvbuf_bytes $B2, rx_kernel_drops $D0 -> $D1"
+check "rx_kernel_drops grew" $([ "${D1:-0}" -gt "${D0:-0}" ] 2>/dev/null && echo 1 || echo 0) "$D0 -> $D1"
+check "n2 still a member after the flood" $(members 3 741 | grep -q "10.74.0.12:" && echo 1 || echo 0) "$(members 3 741)"
+
+echo "=== T16 a member that alone stops hearing the master asks before electing ==="
+# A one-sided fault: the member's own input from the master is cut, every
+# other node still hears it.  The member must not re-elect - its peers say
+# the master is alive - and the cluster must keep one master.
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+for c in 1 2 3 4; do [ "$(ip4 $c)" != "$MIP" ] && break; done
+H0=$(cfgval $c 741 election_holds); MC=$(wc -l < $R/n$c.log)
+nx $c iptables -I INPUT -p udp -s $MIP --dport $PORT -j DROP
+sleep 10
+CUT16=$(dropped $c INPUT)
+nx $c iptables -D INPUT -p udp -s $MIP --dport $PORT -j DROP
+check "the T16 cut fired ($CUT16 dropped)" $([ "$CUT16" -gt 0 ] && echo 1 || echo 0) ""
+sleep 4
+echo "    n$c cut from master $MIP for 10 s; election_holds $H0 -> $(cfgval $c 741 election_holds)"
+check "n$c did not re-elect while cut" $(since $c $MC | grep -aq "went silent .* re-electing" && echo 0 || echo 1) "$(since $c $MC | grep -a 're-electing' | head -1 | cut -c1-110)"
+check "n$c held the election because peers still hear the master" $([ "$(cfgval $c 741 election_holds)" -gt "${H0:-0}" ] 2>/dev/null && echo 1 || echo 0) "$(cfgval $c 741 election_holds)"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "one master, still $MIP, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
 echo "=== logs: crashes / criticals ==="
 # "BUG trying to overwrite entry" was core TCP_main on BIN reconnect after T8,

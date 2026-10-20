@@ -63,6 +63,8 @@ The *cluster_id* is a number an operator configures, so two separate deployments
 
 Each cluster has three roles: **master** (the active coordinator), **backup** (the standby promoted when the master fails, always the highest-IP non-master) and **member**. The election uses a quantized time window so that all nodes evaluate the same eligible peer set and reach the same result deterministically. No NTP synchronisation between nodes is required for correct election results. Every timeout, election window and purge deadline is measured on the monotonic clock, so a step of the wall clock (NTP correcting a skewed host, an operator setting the date) neither purges live peers nor delays an election.
 
+Silence is only evidence while this node was listening. A node whose own process was paused (SIGSTOP, a VM pause or live migration) or starved of CPU for more than 2 seconds does not judge its peers by the time it lost: on waking it gives every peer a full timeout from that moment, so it neither elects itself nor purges the cluster, and counts the event (*self_stalls*). And a member that stops hearing the master asks up to three peers before electing: if any of them still heard the master within the last 2 seconds, the fault lies between this node and the master, and the election is held (*election_holds*) for up to 30 seconds instead of splitting the cluster. A node that does not know these probes ignores them, and the asker then elects as before.
+
 The *master_stickiness* parameter (default 1) controls whether a live master is kept when a higher-IP node joins. With stickiness enabled, the master stays put and the higher-IP joiner becomes the backup, minimising handovers; with stickiness disabled the highest-IP node always becomes master. In either mode two live masters are reconciled deterministically (see *Split-brain handling* below). See the *master_stickiness* parameter for details.
 
 Only the master handles JOIN_REQ packets, allocates node_ids, and sends NODE_ASSIGN and MEMBER_LIST packets. Non-master nodes are passive during join events. A joining node receives the current session key from the master (via KEY_GRANT) and joins as a member or backup; it never seizes mastership during the join handshake.
@@ -549,7 +551,7 @@ opensips-cli -x mi cl_ctr_node_info node_id=2
 
 List all configured clusters and their resolved settings — the effective values actually in use after global defaults and per-cluster overrides have been applied. Useful for confirming that a per-cluster *master_stickiness* or *manage_shtags* override took effect. The cluster password is never exposed.
 
-The *shtag_mode* field reports the current sharing-tag allocation policy: *auto* when the active tag follows the master automatically, or *override:<node_id>* when an operator has pinned a fixed holder with *cl_ctr_shtag_force*. *term* is the term of the current mastership (see *Split-brain handling*), *mtu* the cluster-plane MTU this node joined at, and *cluster_uuid*, *cluster_uuid_state* and *foreign_packets* describe the [cluster identity](#cluster-identity). *peer_capacity* is the size of the peer table and *peers_refused* the number of times a new address was turned away because the table was full.
+The *shtag_mode* field reports the current sharing-tag allocation policy: *auto* when the active tag follows the master automatically, or *override:<node_id>* when an operator has pinned a fixed holder with *cl_ctr_shtag_force*. *term* is the term of the current mastership (see *Split-brain handling*), *mtu* the cluster-plane MTU this node joined at, and *cluster_uuid*, *cluster_uuid_state* and *foreign_packets* describe the [cluster identity](#cluster-identity). *peer_capacity* is the size of the peer table and *peers_refused* the number of times a new address was turned away because the table was full. *self_stalls* counts the times this node found its own worker had not run for over 2 seconds (the process was paused or starved of CPU) and *self_stall_max_ms* is the longest such gap; *election_holds* counts elections this node held because peers still heard a master it could not; *terms_refused* counts announced terms refused as implausible jumps; *rcvbuf_bytes* is the receive buffer the kernel granted the cluster socket and *rx_kernel_drops* the datagrams it dropped because that buffer was full. *foreign_clusters* lists the other clusters (by uuid) heard on the group, with the last address heard from, when, and how many packets.
 
 Parameters: *none*
 
@@ -573,7 +575,14 @@ opensips-cli -x mi cl_ctr_list_config
         "cluster_uuid_state": "established",
         "foreign_packets": 0,
         "peer_capacity": 256,
-        "peers_refused": 0
+        "peers_refused": 0,
+        "self_stalls": 0,
+        "self_stall_max_ms": 0,
+        "terms_refused": 0,
+        "election_holds": 0,
+        "rcvbuf_bytes": 212992,
+        "rx_kernel_drops": 0,
+        "foreign_clusters": []
     }
 ]
 ```
@@ -1331,7 +1340,7 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, and the *tm* anycast Via cid before and after the node has an id. It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, and a member that alone stops hearing the master. It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
 NEW=/usr/local OLD=/opt/opensips-wire1 ./test/netns_tests.sh

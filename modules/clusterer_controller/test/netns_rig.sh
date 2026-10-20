@@ -10,23 +10,33 @@
 #   NEW      install prefix of the build under test (required)
 #   OLD      install prefix of a wire-version-1 build (optional; T6 needs it)
 #   RIG_DIR  scratch directory for configs, logs, sockets (wiped on setup)
+#   RIG_NS_PREFIX  prefix for the namespace names (default none).  Namespace
+#            names are global to the host, the bridge and links are not: two
+#            runs at once need different prefixes and RIG_DIRs, each started
+#            under its own "unshare -n".
 set -u
 : "${NEW:?set NEW to the install prefix of the build under test}"
 OLD=${OLD:-}
 R=${RIG_DIR:-/tmp/cl_ctr_rig}
 RIG_TM=${RIG_TM:-0}     # 1: load tm with tm_replication_cluster=741
 BR=br74
+NSP=${RIG_NS_PREFIX:-}
 PORT=3741
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 modpath() { if [ -d "$1/lib64/opensips/modules" ]; then echo "$1/lib64/opensips/modules/"; else echo "$1/lib/opensips/modules/"; fi; }
 
 ip4() { echo "10.74.0.1$1"; }
+# nx <i> <cmd...>: run a command in node i's namespace
+nx() { local i=$1; shift; ip netns exec ${NSP}n$i "$@"; }
+# dropped <i> <chain>: packets the DROP rules of that chain in node i have
+# matched - read before deleting a cut, to prove the cut actually fired
+dropped() { nx $1 iptables -L $2 -v -n -x | awk 'NR>2 && $3=="DROP" {s+=$1} END {print s+0}'; }
 
 teardown() {
   for i in 1 2 3 4; do
     [ -f $R/n$i.pid ] && kill -9 -- -"$(ps -o pgid= -p "$(cat $R/n$i.pid)" 2>/dev/null | tr -d ' ')" 2>/dev/null
-    ip netns del n$i 2>/dev/null
+    ip netns del ${NSP}n$i 2>/dev/null
     ip link del v${i}p 2>/dev/null
   done
   ip link del $BR 2>/dev/null
@@ -40,14 +50,14 @@ setup() {
   ip addr add 10.74.0.254/24 dev $BR
   ip link set $BR up
   for i in 1 2 3 4; do
-    ip netns add n$i
+    ip netns add ${NSP}n$i
     ip link add v$i type veth peer name v${i}p
-    ip link set v$i netns n$i
+    ip link set v$i netns ${NSP}n$i
     ip link set v${i}p master $BR up
-    ip netns exec n$i ip link set lo up
-    ip netns exec n$i ip addr add $(ip4 $i)/24 dev v$i
-    ip netns exec n$i ip link set v$i up
-    ip netns exec n$i ip route add 239.0.0.0/8 dev v$i
+    ip netns exec ${NSP}n$i ip link set lo up
+    ip netns exec ${NSP}n$i ip addr add $(ip4 $i)/24 dev v$i
+    ip netns exec ${NSP}n$i ip link set v$i up
+    ip netns exec ${NSP}n$i ip route add 239.0.0.0/8 dev v$i
   done
 }
 
@@ -109,7 +119,7 @@ EOF
 start() {
   local i=$1 P=$2
   mkcfg "$@"
-  ip netns exec n$i $P/sbin/opensips -f $R/n$i.cfg -m 64 -M 16 -w $R \
+  ip netns exec ${NSP}n$i $P/sbin/opensips -f $R/n$i.cfg -m 64 -M 16 -w $R \
      -P $R/n$i.pid 2>>$R/n$i.log
 }
 stop_graceful() { [ -f $R/n$1.pid ] && kill -TERM "$(cat $R/n$1.pid)"; sleep 2; }
@@ -149,7 +159,7 @@ PY
 # tap <i> <seconds> <out>  - record node i's controller datagrams (background it)
 tap() { python3 "$HERE/wire_tap.py" capture v${1}p "$(ip4 $1)" $PORT "$2" "$3"; }
 # replay <i> <file>  - send recorded datagrams again from inside node i's netns
-replay() { ip netns exec n$1 python3 "$HERE/wire_tap.py" inject "$2" "$(ip4 $1)"; }
+replay() { ip netns exec ${NSP}n$1 python3 "$HERE/wire_tap.py" inject "$2" "$(ip4 $1)"; }
 
 # bcast <i> <count> <tag>  - make node i broadcast <count> messages via SIP
 bcast() {
