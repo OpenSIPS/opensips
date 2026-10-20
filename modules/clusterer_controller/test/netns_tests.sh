@@ -371,6 +371,7 @@ for o in 1 2 3 4; do [ $o != $MN ] && break; done
 TO=$(cfgval $o 741 master_timeout_ms)
 echo "    n$o's watchdog for master $MIP: ${TO} ms (mean $(cfgval $o 741 master_ka_mean_ms), dev $(cfgval $o 741 master_ka_dev_ms))"
 check "a steady link keeps the watchdog at its 3 s floor" $([ "${TO:-0}" = 3000 ] && echo 1 || echo 0) "$TO"
+for i in 1 2 3 4; do eval K$i=$(wc -l < $R/n$i.log); done
 T0=$(date +%s.%N); stop_hard $MN; rm -f $R/n$MN.pid
 NEWM=""; for k in $(seq 1 40); do
   MS=""; for i in 1 2 3 4; do [ $i = $MN ] && continue; MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
@@ -380,6 +381,8 @@ NEWM=""; for k in $(seq 1 40); do
 done
 DT=$(python3 -c "import time; print('%.1f' % (time.time() - $T0))")
 check "the survivors agree on a new master within 8 s (took ${DT} s: $NEWM)" $([ -n "$NEWM" ] && python3 -c "import sys; sys.exit(0 if $DT <= 8 else 1)" && echo 1 || echo 0) "$MS"
+CF=0; for i in 1 2 3 4; do [ $i = $MN ] && continue; eval m=\$K$i; CF=$((CF + $(since $i $m | grep -a "cluster 741\]" | grep -ac "confirm that master .* is silent - electing"))); done
+check "survivors elected on their peers' confirmation, not a lone timeout" $([ $CF -gt 0 ] && echo 1 || echo 0) "$CF node(s)"
 start $MN $NEW 1 2 fleet-a; sleep 8
 
 echo "=== T20 a lossy, jittery link into one member: patience, not an election ==="
@@ -401,6 +404,27 @@ T=$(cfgval $x 741 master_timeout_ms)
 check "the learned wait shrinks once the link is clean ($PEAK -> $T ms)" $([ "${T:-0}" -lt "$PEAK" ] && [ "${T:-0}" -ge 3000 ] && echo 1 || echo 0) "$T"
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "one master throughout, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+
+echo "=== T21 a member cut off in both directions suspects itself first ==="
+# Nobody answers its question: it is the likeliest fault, so it waits one
+# more watchdog period before electing itself.
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+for x in 1 2 3 4; do [ "$(ip4 $x)" != "$MIP" ] && break; done
+MX=$(wc -l < $R/n$x.log)
+nx $x iptables -I INPUT -p udp --dport $PORT -j DROP
+nx $x iptables -I OUTPUT -p udp --dport $PORT -j DROP
+sleep 14
+CUT21=$(( $(dropped $x INPUT) + $(dropped $x OUTPUT) ))
+nx $x iptables -D INPUT -p udp --dport $PORT -j DROP
+nx $x iptables -D OUTPUT -p udp --dport $PORT -j DROP
+L21=$(since $x $MX | grep -a "cluster 741\]")
+W1=$(echo "$L21" | grep -an "may be the one cut off" | head -1 | cut -d: -f1)
+E1=$(echo "$L21" | grep -an "my role changed: [a-z]* -> master" | head -1 | cut -d: -f1)
+check "the T21 cut fired ($CUT21 dropped)" $([ "$CUT21" -gt 0 ] && echo 1 || echo 0) ""
+check "isolated n$x suspected itself before electing itself" $([ -n "$W1" ] && { [ -z "$E1" ] || [ "$W1" -lt "$E1" ]; } && echo 1 || echo 0) "wait line $W1, election line $E1"
+sleep 14
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "healed: $MIP leads, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
