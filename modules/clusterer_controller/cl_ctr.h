@@ -1302,4 +1302,46 @@ struct cl_ctr_peers_ {
     int             eff_query_time;
 };
 
+
+/* =========================================================================
+ * Shared between the module's source files
+ * ========================================================================= */
+
+/* cl_ctr_consumer.c */
+extern char *cl_ctr_consumer_pkt;
+extern int cl_ctr_consumer_pkt_sz;
+void cl_ctr_handle_consumer(const char *payload, int payload_len,
+        const char *src_ip, cl_ctr_cluster_t *cl);
+int clctr_register_channel(str *channel, clctr_msg_cb_f cb);
+int clctr_send_mcast(int cluster_id, str *channel, str *payload,
+        int flags);
+int clctr_send_list(int cluster_id, const int *node_ids, int n,
+                           str *channel, str *payload, int flags, int *unknown);
+int clctr_send_ucast(int cluster_id, int node_id, str *channel,
+        str *payload, int flags);
+int load_clctr(clctr_api_t *api);
+
+/* clusterer_controller.c */
+extern const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ];
+extern cl_ctr_cluster_t cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
+extern int cl_ctr_cluster_count;
+extern char *my_ip;
+extern const char *my_ip_src;
+extern char my_interface_buf[IF_NAMESIZE];
+extern int cc_max_payload;
+extern uint16_t my_node_id;
+extern int enable_reliable_send;
+int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
+                               int plain_len, const unsigned char *key,
+                               unsigned char type,
+                               const struct sockaddr *dest, socklen_t destlen);
+int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
+                            const unsigned char *key, unsigned char type);
+void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
+                            const unsigned char *pkt, int pkt_len);
+void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
+                            unsigned char type, const unsigned char *pkt,
+                            int pkt_len, const struct sockaddr *dest,
+                            socklen_t destlen);
+
 #endif /* CL_CTR_H */
