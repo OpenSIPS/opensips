@@ -523,6 +523,7 @@ static int mod_init(void)
 		db_mode = 0;
 #endif
 
+	/* only allow the DB URL to be skipped in "P2P discovery" mode */
 	init_db_url(clusterer_db_url, db_mode == 0);
 
 #ifdef CLUSTERER_CTRL_SUPPORT
@@ -603,7 +604,7 @@ static int mod_init(void)
 				goto error;
 			}
 
-			if (cl->current_node && cl->current_node->node_id != current_id) {
+			if (cl->current_node->node_id != current_id) {
 				LM_ERR("Bad 'my_node_id' parameter, value: %d different than"
 					" the node_id property in the 'my_node_info' parameter\n", GET_CURRENT_ID);
 				goto error;
@@ -618,6 +619,7 @@ static int mod_init(void)
 	 * ones.  Static my_node_info/neighbor provisioning (db_mode==0) has already
 	 * populated cluster_list at config-parse time. */
 	if (db_mode) {
+		/* bind to the mysql module */
 		if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
 			LM_CRIT("Cannot bind to database module! "
 				"Did you forget to load a database module ?\n");
@@ -627,6 +629,7 @@ static int mod_init(void)
 			LM_CRIT("Given SQL DB does not provide query types needed by this module!\n");
 			goto error;
 		}
+		/* init DB connection */
 		if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
 			LM_ERR("cannot initialize database connection\n");
 			goto error;
