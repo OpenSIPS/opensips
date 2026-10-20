@@ -37,6 +37,7 @@
 #define _B2BE_LOAD_H_
 
 #include "../../bin_interface.h"
+#include "../../mem/shm_mem.h"
 #include "../../parser/parse_from.h"
 
 #define B2BCB_TRIGGER_EVENT    (1<<0)
