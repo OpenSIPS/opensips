@@ -30,6 +30,8 @@ static mi_response_t *mi_cl_ctr_node_info(const mi_params_t *params,
                                       struct mi_handler *hdl);
 static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
                                      struct mi_handler *hdl);
+static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
+                                            struct mi_handler *hdl);
 static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
                                         struct mi_handler *hdl);
 static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
@@ -64,6 +66,16 @@ const mi_export_t mi_cmds[] = {
 	0, 0,
 	{
 	    {mi_cl_ctr_config, {0}},
+	    {EMPTY_MI_RECIPE}
+	}, {0}
+    },
+    {
+	"cl_ctr_maintenance",
+	"Put THIS node in or out of maintenance (state: evicted|none): it stays "
+	"a member but is never master or backup and holds no sharing tag",
+	0, 0,
+	{
+	    {mi_cl_ctr_maintenance, {"cluster_id", "state", 0}},
 	    {EMPTY_MI_RECIPE}
 	}, {0}
     },
@@ -149,7 +161,10 @@ static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
 	        add_mi_number(peer_obj, MI_SSTR("node_id"), e->node_id) < 0 ||
 	        add_mi_string(peer_obj, MI_SSTR("status"),
 	                      e->is_master ? "master" : (e->is_backup ? "backup" : "member"),
-	                      6) < 0) {
+	                      6) < 0 ||
+	        add_mi_string(peer_obj, MI_SSTR("maintenance"),
+	                      cl_ctr_maint_name(e->maint),
+	                      strlen(cl_ctr_maint_name(e->maint))) < 0) {
 		lock_stop_read(cl->peers->lock);
 		goto error;
 	    }
@@ -450,12 +465,39 @@ static cl_ctr_cluster_t *cl_ctr_mi_find_cluster(int cluster_id)
  * member via the MEMBER_LIST and survives master fail-over, but is cleared
  * automatically if the forced node leaves or times out.
  */
+/*
+ * mi_cl_ctr_maintenance() - put THIS node in or out of maintenance.
+ *
+ *   opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=evicted
+ *   opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=none
+ */
+static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
+                                            struct mi_handler *hdl)
+{
+    int               cluster_id, st;
+    str               state;
+    cl_ctr_cluster_t *cl;
+
+    if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0 ||
+        get_mi_string_param(params, "state", &state.s, &state.len) < 0)
+	return init_mi_param_error();
+    st = cl_ctr_maint_parse(state.s, state.len);
+    if (st < 0)
+	return init_mi_error(400, MI_SSTR("state must be evicted or none"));
+    cl = cl_ctr_mi_find_cluster(cluster_id);
+    if (!cl || !cl->peers)
+	return init_mi_error(404, MI_SSTR("cluster_id not found"));
+    if (cl_ctr_set_my_maint(cl, st) < 0)
+	return init_mi_error(500, MI_SSTR("controller worker not running yet"));
+    return init_mi_result_ok();
+}
+
 static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
                                         struct mi_handler *hdl)
 {
     int            cluster_id, node_id;
     cl_ctr_cluster_t  *cl;
-    int            i_am_master, found = 0, proc_no;
+    int            i_am_master, found = 0, in_maint = 0, proc_no;
 
     if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0 ||
         get_mi_int_param(params, "node_id",    &node_id)    < 0)
@@ -482,10 +524,12 @@ static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
 		break;
 	    }
 	}
-	/* Every member is eligible.  Node maintenance mode (README, Planned
-	 * Features) will refuse a node in maintenance here, and clear a pin
-	 * that is already on one. */
-	if (found)
+	/* A node in maintenance holds no tag: refuse the pin (a pin already on
+	 * a node that goes into maintenance is cleared, see
+	 * cl_ctr_maint_peer_changed()). */
+	if (found && cl->peers->entries[i].maint != CL_CTR_MAINT_NONE)
+	    in_maint = 1;
+	else if (found)
 	    cl->peers->shtag_forced_node_id = (uint16_t)node_id;
     }
     proc_no = cl->peers->worker_proc_no;
@@ -496,6 +540,8 @@ static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
 	        MI_SSTR("not the master - issue cl_ctr_shtag_force on the master node"));
     if (!found)
 	return init_mi_error(404, MI_SSTR("node_id not a member of this cluster"));
+    if (in_maint)
+	return init_mi_error(409, MI_SSTR("node is in maintenance - it cannot hold the tag"));
 
     /* Apply locally and broadcast the new override from the worker process. */
     if (proc_no >= 0)

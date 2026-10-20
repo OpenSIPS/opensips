@@ -112,6 +112,7 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
             e->last_seen = t_now;
     }
     cl->peers->self_stalls++;
+    cl->rate_grace_until_ms = now + CL_CTR_STALL_GRACE_MS;
     if (gap > cl->peers->self_stall_max_ms)
         cl->peers->self_stall_max_ms = gap;
     step_down = step_down && was_master;
@@ -167,8 +168,18 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
             cl->hold_since_ms = 0;
             return 0;
         }
+        /* Liveness by proxy, as the master's relay gives every member: the
+         * master stays in this node's election window while its peers hear
+         * it, or the ALIVE tick's election would replace it regardless. */
         lock_start_write(cl->peers->lock);
         cl->peers->election_holds++;
+        {
+            int    k;
+            time_t t = cl_ctr_now();
+            for (k = 0; k < cl->peers->count; k++)
+                if (strcmp(cl->peers->entries[k].ip, cl->probe_master) == 0)
+                    cl->peers->entries[k].last_seen = t;
+        }
         lock_stop_write(cl->peers->lock);
         LM_WARN("clusterer_controller: [cluster %d] no keepalive from master "
                 "%s for %ds, but %d peer(s) still hear it - holding the "
@@ -191,7 +202,9 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
     }
 
     cl->probe_master[0] = '\0';
-    cutoff = cl_ctr_now() - (time_t)query_time * CL_CTR_ELECT_FACTOR;
+    /* Ask any peer not yet purged: a member cut off from the master also
+     * stops hearing the relay that keeps its peers in the election window. */
+    cutoff = cl_ctr_now() - (time_t)query_time * CL_CTR_PURGE_FACTOR;
     lock_start_read(cl->peers->lock);
     for (i = 0; i < cl->peers->count; i++) {
         cl_ctr_peer_t *e = &cl->peers->entries[i];
@@ -249,6 +262,7 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
     if (!cl_ctr_drain_tfd(fd))
         return 0;
     cl_ctr_stall_check(cl);
+    cl_ctr_maint_sync(cl);      /* a requested state the IPC job missed */
     cl_ctr_cid_tick(cl);
 
     /* --- Has our OWN link changed under us? ---------------------------------
@@ -587,7 +601,11 @@ static int cl_ctr_on_master_alive_tfd(int fd, void *param, int was_timeout)
 {
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     cl_ctr_drain_tfd(fd);
-    cl_ctr_stall_check(cl);
+    /* Woken from a stall: say nothing this round.  If the stall made this
+     * node stand down, a keepalive now - with a member count it never
+     * re-checked - would make the master elected meanwhile yield to it. */
+    if (cl_ctr_stall_check(cl) || !cl->master_ka_armed)
+        return 0;
     cl_ctr_send_master_alive(cl->sock, cl);
     /* An announcement the coalescing window swallowed is still owed - emit it
      * as soon as the window allows.  This timer only runs on the master, which

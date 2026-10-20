@@ -606,3 +606,58 @@ void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl)
         return;
     }
 }
+
+/* Fill @bm (CL_CTR_ALIVE_BITMAP_SZ bytes) with a bit set for every node, by
+ * node_id, in maintenance - this node's own state included.  Master path. */
+void cl_ctr_build_maint_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm)
+{
+    int i;
+
+    memset(bm, 0, CL_CTR_ALIVE_BITMAP_SZ);
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e   = &cl->peers->entries[i];
+        uint16_t       nid = e->node_id;
+        if (nid == 0 || nid > CL_CTR_MAX_PEERS || e->maint == CL_CTR_MAINT_NONE)
+            continue;
+        bm[nid >> 3] |= (unsigned char)(1u << (nid & 7));
+    }
+    lock_stop_read(cl->peers->lock);
+}
+
+/* Take the master's maintenance relay (@bm, by node_id).  This node's own
+ * entry follows its own state, not the relay.  Raises E_CL_CTR_MAINTENANCE
+ * for each node whose state changed.  Returns 1 when @master_ip itself has
+ * just gone into maintenance.  Non-master path; call WITHOUT cl->peers->lock held. */
+int cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
+                              const char *master_ip)
+{
+    uint16_t chg_id[CL_CTR_MAX_PEERS];
+    uint8_t  chg_st[CL_CTR_MAX_PEERS];
+    int      i, n = 0, master_in = 0, master_chg = 0;
+
+    lock_start_write(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e   = &cl->peers->entries[i];
+        uint16_t       nid = e->node_id;
+        uint8_t        st;
+        if (nid == 0 || nid > CL_CTR_MAX_PEERS || strcmp(e->ip, my_ip) == 0)
+            continue;
+        st = (bm[nid >> 3] & (unsigned char)(1u << (nid & 7)))
+             ? CL_CTR_MAINT_EVICTED : CL_CTR_MAINT_NONE;
+        if (st != e->maint) {
+            e->maint = st;
+            chg_id[n] = nid;
+            chg_st[n++] = st;
+            if (strcmp(e->ip, master_ip) == 0)
+                master_chg = 1;
+        }
+        if (st != CL_CTR_MAINT_NONE && strcmp(e->ip, master_ip) == 0)
+            master_in = 1;
+    }
+    lock_stop_write(cl->peers->lock);
+
+    for (i = 0; i < n; i++)
+        cl_ctr_raise_maint_event(cl, chg_id[i], chg_st[i]);
+    return master_in && master_chg;
+}

@@ -56,6 +56,12 @@ static str  cl_ctr_script_chan = str_init("_script");
 static str  ei_req_name = str_init("E_CL_CTR_REQ_RECEIVED");
 static str  ei_rpl_name = str_init("E_CL_CTR_RPL_RECEIVED");
 static event_id_t ei_req_id = EVI_ERROR;
+static str  ei_maint_name = str_init("E_CL_CTR_MAINTENANCE");
+static event_id_t ei_maint_id = EVI_ERROR;
+static evi_params_p ei_maint_params;
+static evi_param_p  ei_m_clid_p, ei_m_node_p, ei_m_state_p;
+static str ei_node_pname  = str_init("node_id");
+static str ei_state_pname = str_init("state");
 static event_id_t ei_rpl_id = EVI_ERROR;
 static evi_params_p ei_params;
 static evi_param_p  ei_clid_p, ei_srcid_p, ei_msg_p, ei_tag_p;
@@ -86,6 +92,7 @@ enum cl_ctr_pv_field {
     CL_CTR_PV_MEMBERS,     /* live member count                                */
     CL_CTR_PV_SHTAG_MODE,  /* auto | forced                                    */
     CL_CTR_PV_FORCED_NODE, /* node pinned by cl_ctr_shtag_force, NULL if auto  */
+    CL_CTR_PV_MAINT,       /* this node's maintenance state: none | evicted    */
 };
 
 /* Optional (cluster_id) argument; bare form leaves the spec zeroed (cid 0). */
@@ -217,6 +224,9 @@ static int cl_ctr_pv_get(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 	    ival = cl->peers->shtag_forced_node_id;
 	}
 	break;
+    case CL_CTR_PV_MAINT:
+	sval = cl_ctr_maint_name(cl->peers->my_maint);
+	break;
     }
 
     lock_stop_read(cl->peers->lock);
@@ -288,6 +298,25 @@ CL_CTR_PV_WRAP(cl_ctr_pv_my_ip,       CL_CTR_PV_MY_IP)
 CL_CTR_PV_WRAP(cl_ctr_pv_members,     CL_CTR_PV_MEMBERS)
 CL_CTR_PV_WRAP(cl_ctr_pv_shtag_mode,  CL_CTR_PV_SHTAG_MODE)
 CL_CTR_PV_WRAP(cl_ctr_pv_forced_node, CL_CTR_PV_FORCED_NODE)
+CL_CTR_PV_WRAP(cl_ctr_pv_maint,       CL_CTR_PV_MAINT)
+
+/* cl_ctr_set_maintenance(cluster_id, state): put THIS node in ("evicted")
+ * or out ("none") of maintenance.  1 on success, -1 otherwise. */
+static int w_cl_ctr_set_maintenance(struct sip_msg *msg, int *cid, str *state)
+{
+    int i, st = cl_ctr_maint_parse(state->s, state->len);
+
+    if (st < 0) {
+	LM_ERR("clusterer_controller: cl_ctr_set_maintenance: state must be "
+	       "evicted or none, not '%.*s'\n", state->len, state->s);
+	return -1;
+    }
+    for (i = 0; i < cl_ctr_cluster_count; i++)
+	if (cl_ctr_clusters[i].cluster_id == *cid && cl_ctr_clusters[i].peers)
+	    return cl_ctr_set_my_maint(&cl_ctr_clusters[i], st) == 0 ? 1 : -1;
+    LM_ERR("clusterer_controller: cl_ctr_set_maintenance: no cluster %d\n", *cid);
+    return -1;
+}
 
 const pv_export_t cl_ctr_mod_vars[] = {
     { {"cl_ctr_role",        sizeof("cl_ctr_role")-1},        1100,
@@ -308,11 +337,15 @@ const pv_export_t cl_ctr_mod_vars[] = {
 	cl_ctr_pv_shtag_mode,  0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
     { {"cl_ctr_forced_node", sizeof("cl_ctr_forced_node")-1}, 1108,
 	cl_ctr_pv_forced_node, 0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+    { {"cl_ctr_maintenance", sizeof("cl_ctr_maintenance")-1}, 1109,
+	cl_ctr_pv_maint,       0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
     { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 /* Script functions: per-peer lookups (two args -> functions, not variables). */
 const cmd_export_t cl_ctr_cmds[] = {
+    {"cl_ctr_set_maintenance", (cmd_function)w_cl_ctr_set_maintenance, {
+	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_STR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
     {"cl_ctr_node_is_master", (cmd_function)w_cl_ctr_node_is_master, {
 	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
     {"cl_ctr_node_present", (cmd_function)w_cl_ctr_node_present, {
@@ -569,6 +602,20 @@ static int cmd_cl_ctr_send_rpl(struct sip_msg *msg, int *cluster_id,
  * taken by a module. */
 int cl_ctr_script_init(void)
 {
+	ei_maint_id = evi_publish_event(ei_maint_name);
+	ei_maint_params = pkg_malloc(sizeof *ei_maint_params);
+	if (ei_maint_id == EVI_ERROR || !ei_maint_params) {
+		LM_ERR("clusterer_controller: cannot publish the maintenance event\n");
+		return -1;
+	}
+	memset(ei_maint_params, 0, sizeof *ei_maint_params);
+	if (!(ei_m_clid_p  = evi_param_create(ei_maint_params, &ei_clid_pname)) ||
+	    !(ei_m_node_p  = evi_param_create(ei_maint_params, &ei_node_pname)) ||
+	    !(ei_m_state_p = evi_param_create(ei_maint_params, &ei_state_pname))) {
+		LM_ERR("clusterer_controller: cannot create the maintenance event "
+		       "parameters\n");
+		return -1;
+	}
 	ei_req_id = evi_publish_event(ei_req_name);
 	ei_rpl_id = evi_publish_event(ei_rpl_name);
 	if (ei_req_id == EVI_ERROR || ei_rpl_id == EVI_ERROR) {
@@ -589,4 +636,25 @@ int cl_ctr_script_init(void)
 		return -1;
 	}
 	return clctr_register_channel(&cl_ctr_script_chan, cl_ctr_script_recv);
+}
+
+/* E_CL_CTR_MAINTENANCE: a node's maintenance state changed (raised on every
+ * node that learns of it, for itself included). */
+void cl_ctr_raise_maint_event(cl_ctr_cluster_t *cl, int node_id, int st)
+{
+	int cid = cl->cluster_id;
+	str sv;
+
+	if (ei_maint_id == EVI_ERROR || !evi_probe_event(ei_maint_id))
+		return;
+	sv.s = (char *)cl_ctr_maint_name(st);
+	sv.len = strlen(sv.s);
+	if (evi_param_set_int(ei_m_clid_p, &cid) < 0 ||
+	    evi_param_set_int(ei_m_node_p, &node_id) < 0 ||
+	    evi_param_set_str(ei_m_state_p, &sv) < 0) {
+		LM_ERR("clusterer_controller: cannot fill the maintenance event\n");
+		return;
+	}
+	if (evi_raise_event(ei_maint_id, ei_maint_params) < 0)
+		LM_ERR("clusterer_controller: cannot raise the maintenance event\n");
 }

@@ -272,6 +272,7 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_FOREIGN_MAX    16
 #define CL_CTR_STALL_TICK_MS  500
 #define CL_CTR_STALL_MS       2000
+#define CL_CTR_STALL_GRACE_MS 2000   /* control traffic not rate-limited after */
 #define CL_CTR_CRYPTO_SUITE "XChaCha20-Poly1305 + Argon2id + Noise_NNpsk0"
 
 /* =========================================================================
@@ -341,6 +342,12 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_PROBE_FRESH_MS       2000  /* "still hears it" = within this    */
 #define CL_CTR_PROBE_HOLD_MAX_S     30    /* longest an election is held for   */
 #define CL_CTR_PROBE_NOT_HEARD      0xFFFFFFFFu
+/* Maintenance state of a node (cl_ctr_maintenance / cl_ctr_set_maintenance):
+ * a node in maintenance stays a member but is never master or backup and
+ * holds no sharing tag.  A node announces its own state in its ALIVE, and
+ * the master relays every node's in MASTER_ALIVE. */
+#define CL_CTR_MAINT_NONE           0
+#define CL_CTR_MAINT_EVICTED        1
 
 /* Consumer messaging (api.h): plaintext payload layout after type+seq is
  * [src_node_id u16 BE][chan_len u8][channel bytes][consumer payload].
@@ -878,6 +885,10 @@ typedef struct cl_ctr_cluster_ {
      * open and for which master, how many peers answered that they still
      * hear it, and since when the current hold has lasted. */
     long long      master_heard_ms;
+    /* the maintenance state this worker last applied and announces */
+    uint8_t        maint_adv;
+    /* consecutive MASTER_ALIVEs whose liveness relay left this node out */
+    int            unlisted;
     int            probing;
     int            probe_heard;
     char           probe_master[CL_CTR_MAX_IP_LEN + 1];
@@ -913,6 +924,9 @@ typedef struct cl_ctr_cluster_ {
      * worker's loop last ran (cl_ctr_stall_check()). */
     int                 stall_tfd;
     long long           loop_seen_ms;
+    /* after a stall, control traffic is not rate-limited until this time:
+     * what arrives in a burst then is this node's own backlog */
+    long long           rate_grace_until_ms;
     cl_ctr_retx_entry_t retx_q[CL_CTR_RETX_QUEUE_SZ];
     /* Membership-digest resync throttles (worker-local): a member sends at most
      * one RESYNC, and a master re-broadcasts full state at most once, per
@@ -1245,6 +1259,7 @@ typedef struct cl_ctr_peer_ {
     int          is_backup;   /* 1 = standby master (highest-IP non-master) */
     int          in_election; /* 1 = currently inside the election window  */
     uint16_t     node_id;     /* allocated by master; 0 = not yet assigned */
+    uint8_t      maint;       /* CL_CTR_MAINT_*: as the node announced it  */
     uint8_t      bin_count;   /* number of BIN listeners reported          */
     char         bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
     unsigned char pubkey[CL_CTR_PUBKEY_SZ];           /* long-lived X25519 pubkey (from ALIVE);
@@ -1311,6 +1326,9 @@ struct cl_ctr_peers_ {
      * cluster (cl_ctr_shtag_force MI), suspending automatic allocation until
      * cl_ctr_shtag_auto clears it.  Propagated to all nodes in the MEMBER_LIST.  */
     uint16_t        shtag_forced_node_id;
+    /* this node's maintenance state as requested (MI or script, any
+     * process); the worker applies and announces it (cl_ctr_maint_sync()) */
+    uint8_t         my_maint;
     /* Mastership terms (see cl_ctr_master_outranks()).  term_seen is the
      * highest term this node has heard from any master; my_term is the term
      * of our own current mastership (0 = not master); master_term and
@@ -1531,6 +1549,17 @@ int cl_ctr_master_outranks(uint16_t c1, uint32_t t1, const char *ip1,
                                   uint16_t c2, uint32_t t2, const char *ip2);
 void cl_ctr_note_term(cl_ctr_cluster_t *cl, uint32_t term);
 int cl_ctr_term_sane(cl_ctr_cluster_t *cl, uint32_t term, const char *from);
+const char *cl_ctr_maint_name(int st);
+int  cl_ctr_maint_parse(const char *s, int len);
+void cl_ctr_maint_sync(cl_ctr_cluster_t *cl);
+void cl_ctr_rpc_maint(int sender, void *param);
+int  cl_ctr_set_my_maint(cl_ctr_cluster_t *cl, int st);
+void cl_ctr_build_maint_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
+int  cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
+                               const char *master_ip);
+void cl_ctr_raise_maint_event(cl_ctr_cluster_t *cl, int node_id, int st);
+void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st);
+void cl_ctr_reelect_now(cl_ctr_cluster_t *cl, const char *why);
 void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip,
                               const char *to_ip);
 void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
@@ -1584,7 +1613,7 @@ void cl_ctr_handle_alive(const char *src_ip,
                             const unsigned char *pubkey, /* may be NULL */
                             int cfg_present, int peer_manage,
                             int peer_stick, int peer_qt,
-                            int peer_mtu,
+                            int peer_mtu, int peer_maint,
                             cl_ctr_cluster_t *cl);
 void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl);
 void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,

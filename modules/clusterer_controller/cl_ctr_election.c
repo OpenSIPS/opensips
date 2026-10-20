@@ -133,6 +133,7 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
     time_t       cutoff    = cl_ctr_election_cutoff();
     unsigned int top_num   = 0;
     int          i, n_in = 0, top_idx = -1, cur_master_idx = -1, master_idx = -1;
+    int          n_maint = 0, allow_maint = 0;
     int          i_am_elected = 0;
     char         prev_master[CL_CTR_MAX_IP_LEN + 1];
     char         prev_backup[CL_CTR_MAX_IP_LEN + 1];
@@ -172,11 +173,31 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 
 	if (now_in) {
 	    n_in++;
-	    if (e->ip_num > top_num) {
+	    if (e->maint != CL_CTR_MAINT_NONE)
+		n_maint++;
+	    else if (e->ip_num > top_num) {
 		top_num = e->ip_num;
 		top_idx = i;
 	    }
 	}
+    }
+
+    /* A node in maintenance is no candidate - for master (a live current
+     * master in maintenance is not kept, which is the handover) nor for
+     * backup.  Only when every node in the window is in maintenance does the
+     * cluster take one anyway: it must have a master. */
+    if (cur_master_idx >= 0 &&
+        cl->peers->entries[cur_master_idx].maint != CL_CTR_MAINT_NONE)
+	cur_master_idx = -1;
+    if (top_idx < 0 && n_maint > 0) {
+	for (i = 0; i < cl->peers->count; i++) {
+	    cl_ctr_peer_t *e = &cl->peers->entries[i];
+	    if (e->in_election && e->ip_num > top_num) {
+		top_num = e->ip_num;
+		top_idx = i;
+	    }
+	}
+	allow_maint = 1;
     }
 
     /* Choose the master:
@@ -211,6 +232,8 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 	    cl_ctr_peer_t *e = &cl->peers->entries[j];
 	    if (j == master_idx || !e->in_election)
 		continue;
+	    if (e->maint != CL_CTR_MAINT_NONE && !allow_maint)
+		continue;
 	    if (e->ip_num > b_num) {
 		b_num = e->ip_num;
 		b_idx = j;
@@ -235,7 +258,9 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 	 * chosen (highest IP, sticky current master kept over a higher-IP peer, or
 	 * sole surviving node).                                               */
 	if (master_changed || backup_changed) {
-	    if (n_in <= 1)
+	    if (allow_maint)
+		why = "every node in the window is in maintenance";
+	    else if (n_in <= 1)
 		why = "sole node in window";
 	    else if (cl->master_stickiness == 1 && master_idx == cur_master_idx &&
 	             top_idx >= 0 && top_idx != master_idx)
@@ -483,4 +508,139 @@ void cl_ctr_request_rekey(cl_ctr_cluster_t *cl)
         return;
     cl->join_pending = 1;
     cl_ctr_send_join_req(cl->sock, cl);
+}
+
+/* =========================================================================
+ * Maintenance mode
+ * ========================================================================= */
+
+const char *cl_ctr_maint_name(int st)
+{
+    return st == CL_CTR_MAINT_EVICTED ? "evicted" : "none";
+}
+
+/* "evicted"/"on"/"1" -> CL_CTR_MAINT_EVICTED, "none"/"off"/"0" -> NONE, else -1 */
+int cl_ctr_maint_parse(const char *s, int len)
+{
+    if ((len == 7 && strncasecmp(s, "evicted", 7) == 0) ||
+        (len == 2 && strncasecmp(s, "on", 2) == 0) ||
+        (len == 1 && s[0] == '1'))
+        return CL_CTR_MAINT_EVICTED;
+    if ((len == 4 && strncasecmp(s, "none", 4) == 0) ||
+        (len == 3 && strncasecmp(s, "off", 3) == 0) ||
+        (len == 1 && s[0] == '0'))
+        return CL_CTR_MAINT_NONE;
+    return -1;
+}
+
+/* Request this node's maintenance state @st (MI or script, any process):
+ * stored in shm and handed to the worker, which applies and announces it.
+ * Returns 0, or -1 when the worker is not up yet. */
+int cl_ctr_set_my_maint(cl_ctr_cluster_t *cl, int st)
+{
+    int proc_no;
+
+    lock_start_write(cl->peers->lock);
+    cl->peers->my_maint = (uint8_t)st;
+    proc_no = cl->peers->worker_proc_no;
+    lock_stop_write(cl->peers->lock);
+    if (proc_no < 0)
+        return -1;
+    return ipc_send_rpc(proc_no, cl_ctr_rpc_maint, cl) < 0 ? -1 : 0;
+}
+
+/* Run the election now and act on its result, as the ALIVE tick would.
+ * Call WITHOUT cl->peers->lock held. */
+void cl_ctr_reelect_now(cl_ctr_cluster_t *cl, const char *why)
+{
+    int prev, now;
+
+    lock_start_write(cl->peers->lock);
+    prev = cl_ctr_i_am_master_locked(cl);
+    cl_ctr_elect_master(cl);
+    now = cl_ctr_i_am_master_locked(cl);
+    lock_stop_write(cl->peers->lock);
+    LM_INFO("clusterer_controller: [cluster %d] re-electing now - %s\n",
+            cl->cluster_id, why);
+    if (now && !cl->have_session_key) {
+        cl_ctr_request_rekey(cl);
+        return;
+    }
+    if (prev != now)
+        cl_ctr_arm_master_timers(cl, now);
+    cl_ctr_apply_shtags(cl);
+}
+
+/*
+ * cl_ctr_maint_sync() - apply this node's requested maintenance state.
+ *
+ * Worker only.  Records it in this node's own entry, announces it at once
+ * (an ALIVE, so the master learns it now and relays it), and when this node
+ * is the master going into maintenance, sends one last keepalive carrying it
+ * - the members elect a successor as soon as they read it - and steps down.
+ */
+void cl_ctr_maint_sync(cl_ctr_cluster_t *cl)
+{
+    int i, st, was_master = 0;
+
+    lock_start_write(cl->peers->lock);
+    st = cl->peers->my_maint;
+    if (st == cl->maint_adv) {
+        lock_stop_write(cl->peers->lock);
+        return;
+    }
+    cl->maint_adv = (uint8_t)st;
+    for (i = 0; i < cl->peers->count; i++)
+        if (strcmp(cl->peers->entries[i].ip, my_ip) == 0) {
+            cl->peers->entries[i].maint = (uint8_t)st;
+            was_master = cl->peers->entries[i].is_master;
+        }
+    lock_stop_write(cl->peers->lock);
+
+    LM_INFO("clusterer_controller: [cluster %d] this node %s maintenance (%s)%s\n",
+            cl->cluster_id, st == CL_CTR_MAINT_NONE ? "leaves" : "enters",
+            cl_ctr_maint_name(st),
+            was_master && st != CL_CTR_MAINT_NONE
+                ? " - it is the master and hands over" : "");
+    cl_ctr_raise_maint_event(cl, my_node_id, st);
+    cl_ctr_send_alive(cl->sock, cl);
+    if (was_master && st != CL_CTR_MAINT_NONE) {
+        cl_ctr_send_master_alive(cl->sock, cl);
+        cl_ctr_reelect_now(cl, "this node went into maintenance");
+    }
+}
+
+/* IPC job: run cl_ctr_maint_sync() in the worker. */
+void cl_ctr_rpc_maint(int sender, void *param)
+{
+    cl_ctr_maint_sync((cl_ctr_cluster_t *)param);
+}
+
+/*
+ * cl_ctr_maint_peer_changed() - a peer announced a new maintenance state
+ * (master path: heard in its ALIVE).  Raises the event, and when it went
+ * into maintenance while holding an operator's sharing-tag pin, clears the
+ * pin - automatic allocation resumes - and tells the cluster.
+ */
+void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st)
+{
+    int cleared = 0, im;
+
+    cl_ctr_raise_maint_event(cl, node_id, st);
+    if (st == CL_CTR_MAINT_NONE || node_id == 0)
+        return;
+    lock_start_write(cl->peers->lock);
+    im = cl_ctr_i_am_master_locked(cl);
+    if (im && cl->peers->shtag_forced_node_id == node_id) {
+        cl->peers->shtag_forced_node_id = 0;
+        cleared = 1;
+    }
+    lock_stop_write(cl->peers->lock);
+    if (cleared) {
+        LM_WARN("clusterer_controller: [cluster %d] node %u holding the forced "
+                "sharing tag went into maintenance - resuming automatic "
+                "allocation\n", cl->cluster_id, node_id);
+        cl_ctr_send_member_list(cl->sock, cl);
+        cl_ctr_apply_shtags(cl);
+    }
 }

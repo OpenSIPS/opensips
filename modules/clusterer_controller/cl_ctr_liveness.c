@@ -120,7 +120,7 @@ void cl_ctr_handle_alive(const char *src_ip,
                             const unsigned char *pubkey, /* may be NULL */
                             int cfg_present, int peer_manage,
                             int peer_stick, int peer_qt,
-                            int peer_mtu,
+                            int peer_mtu, int peer_maint,
                             cl_ctr_cluster_t *cl)
 {
     int  prev_master, now_master;
@@ -130,7 +130,8 @@ void cl_ctr_handle_alive(const char *src_ip,
     int  loc_manage = cl->manage_shtags ? 1 : 0;
     int  loc_stick  = cl->master_stickiness ? 1 : 0;
     int  loc_qt     = query_time;
-    int  mism = 0, changed = 0;
+    int  mism = 0, changed = 0, maint_changed = 0;
+    uint16_t maint_nid = 0;
 
     lock_start_write(cl->peers->lock);
     prev_master = cl_ctr_i_am_master_locked(cl);
@@ -172,6 +173,12 @@ void cl_ctr_handle_alive(const char *src_ip,
                     e->mtu_warned = 0;   /* re-arm once it agrees again */
                 }
                 e->mtu = peer_mtu;
+            }
+            /* the node's own word on its maintenance state */
+            if (e->maint != (uint8_t)peer_maint) {
+                e->maint      = (uint8_t)peer_maint;
+                maint_changed = (strcmp(src_ip, my_ip) != 0);
+                maint_nid     = e->node_id;
             }
             break;
         }
@@ -222,6 +229,8 @@ void cl_ctr_handle_alive(const char *src_ip,
                 cl->cluster_id, src_ip, mtu_seen, cc_mtu);
     if (adopt)
         cl_ctr_adopt_config(cl, peer_manage, peer_stick, peer_qt, is_active);
+    if (maint_changed)
+        cl_ctr_maint_peer_changed(cl, maint_nid, peer_maint);
     /* Defer acting as master until we hold the cluster key.  In normal
      * operation a higher-IP joiner has already adopted the key via KEY_GRANT
      * before winning here, so this only guards the pathological case where the
@@ -527,6 +536,50 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
         cl_ctr_apply_alive_bitmap(cl,
             (const unsigned char *)payload + CL_CTR_DIGEST_SZ);
 
+    /* Does the master still know this node?  Its liveness relay lists every
+     * member by node_id; a member it purged - this node was paused, or cut
+     * off longer than the purge window, and carried on without noticing - is
+     * missing from it, and comes back in its table without an id when its
+     * next ALIVE arrives.  Nothing on the master's side gives the id back:
+     * only a JOIN_REQ does.  So after two keepalives without itself, the
+     * member re-joins, and gets its reserved node_id back. */
+    if (!i_am_master && !from_self && cl->have_session_key &&
+        payload_len >= CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ) {
+        const unsigned char *bm = (const unsigned char *)payload + CL_CTR_DIGEST_SZ;
+        uint16_t me = 0;
+        int      k;
+
+        lock_start_read(cl->peers->lock);
+        for (k = 0; k < cl->peers->count; k++)
+            if (strcmp(cl->peers->entries[k].ip, my_ip) == 0)
+                me = cl->peers->entries[k].node_id;
+        lock_stop_read(cl->peers->lock);
+        if (me != 0 && me <= CL_CTR_MAX_PEERS &&
+                !(bm[me >> 3] & (unsigned char)(1u << (me & 7)))) {
+            if (++cl->unlisted >= 2 && !cl->join_pending) {
+                LM_INFO("clusterer_controller: [cluster %d] master %s no longer "
+                        "lists this node (node_id %u) - re-joining to be "
+                        "re-admitted\n", cl->cluster_id, sender_ip, me);
+                cl->unlisted     = 0;
+                cl->join_pending = 1;
+                cl_ctr_send_join_req(cl->sock, cl);
+            }
+        } else {
+            cl->unlisted = 0;
+        }
+    }
+
+    /* Maintenance relay: which nodes are in maintenance.  When the master
+     * itself just went into maintenance this is its last keepalive - elect
+     * its successor now rather than on the watchdog. */
+    if (!i_am_master && !from_self &&
+        payload_len >= CL_CTR_DIGEST_SZ + 2 * CL_CTR_ALIVE_BITMAP_SZ
+                       + CL_CTR_TERM_SZ &&
+        cl_ctr_apply_maint_bitmap(cl, (const unsigned char *)payload
+                                      + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
+                                      + CL_CTR_TERM_SZ, sender_ip))
+        cl_ctr_reelect_now(cl, "the master went into maintenance");
+
     /* Membership digest: if the master advertises a set we do not match, we may
      * have missed a NODE_ASSIGN (a peer known from its ALIVE but with node_id/BIN
      * unknown).  Pull a rate-limited RESYNC.  Only as a member holding the key,
@@ -774,6 +827,17 @@ void cl_ctr_handle_master_probe_ack(const char *sender_ip, const char *payload,
             cl->probe_master[l] != '\0')
         return;
     memcpy(&ago_be, payload + l + 1, 4);
+    /* the answer is itself proof the answering peer is alive - and this
+     * node, cut off from the master, hears no relay that would say so */
+    {
+        int    k;
+        time_t t = cl_ctr_now();
+        lock_start_write(cl->peers->lock);
+        for (k = 0; k < cl->peers->count; k++)
+            if (strcmp(cl->peers->entries[k].ip, sender_ip) == 0)
+                cl->peers->entries[k].last_seen = t;
+        lock_stop_write(cl->peers->lock);
+    }
     if (ntohl(ago_be) <= CL_CTR_PROBE_FRESH_MS) {
         cl->probe_heard++;
         LM_DBG("clusterer_controller: [cluster %d] %s still hears master %s "

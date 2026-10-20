@@ -528,7 +528,7 @@ void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
 {
     /* Sized for ALIVE which carries an extra pubkey + config descriptor + MTU */
     char               pkt[CL_CTR_SMALL_PKT_SZ + CL_CTR_PUBKEY_SZ
-                           + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ];
+                           + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ + 1];
     uint32_t           seq     = htonl(++cl->peers->my_seq);
     int                ip_len  = (int)strlen(my_ip);
     int                plain_len;
@@ -567,6 +567,10 @@ void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
 	    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + plain_len, &m, CL_CTR_MTU_SZ);
 	    plain_len += CL_CTR_MTU_SZ;
 	}
+	/* And this node's maintenance state (a build without maintenance mode
+	 * ignores the trailing byte; one that has it reads 0 when absent). */
+	pkt[CL_CTR_WIRE_HDR_SZ + plain_len] = (char)cl->maint_adv;
+	plain_len += 1;
     }
 
     if (dest)
@@ -820,7 +824,8 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
 {
     char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
                            + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                           + CL_CTR_TERM_SZ + CL_CTR_TAG_SZ];
+                           + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ
+                           + CL_CTR_TAG_SZ];
     uint32_t           seq = htonl(++cl->peers->my_seq);
     uint32_t           term_be = htonl(cl->peers->my_term);
     uint16_t           cnt;
@@ -843,10 +848,14 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
     /* the term of this mastership, for cl_ctr_master_outranks() */
     memcpy(p, &term_be, CL_CTR_TERM_SZ);
     p += CL_CTR_TERM_SZ;
+    /* relay which nodes are in maintenance, by node_id - members hear only
+     * the master, never each other's ALIVEs */
+    cl_ctr_build_maint_bitmap(cl, (unsigned char *)p);
+    p += CL_CTR_ALIVE_BITMAP_SZ;
 
     cl_ctr_seal_and_send(sock, cl, pkt,
                      CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                     + CL_CTR_TERM_SZ,
+                     + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ,
                      cl->session_key, CL_CTR_PKT_MASTER_ALIVE);
 }
 

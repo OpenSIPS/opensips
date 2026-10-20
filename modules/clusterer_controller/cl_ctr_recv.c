@@ -88,6 +88,14 @@ static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip,
                                             : CL_CTR_RATE_LIMIT;
     int               i;
 
+    /* Just woken from a stall: the kernel queued everything sent to this
+     * node meanwhile, and it all arrives now - a master's keepalives, its
+     * assignments, a peer's ALIVEs.  That burst is not a flood; limited, it
+     * would drop the very keepalives the node needs to follow the master. */
+    if (!is_consumer && cl->rate_grace_until_ms &&
+            cl_ctr_now_ms() < cl->rate_grace_until_ms)
+        return 0;
+
     for (i = 0; i < CL_CTR_RATE_TBL_SZ; i++) {
         cl_ctr_rate_entry_t *e = &cl->rate_tbl[i];
         int *cnt;
@@ -558,7 +566,7 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    int            ip_len = (int)strnlen(payload, CL_CTR_MAX_IP_LEN);
 	    const unsigned char *pubkey = NULL;
 	    int            cfg_present = 0, p_manage = 0, p_stick = 0, p_qt = 0;
-	    int            p_mtu = 0;
+	    int            p_mtu = 0, p_maint = 0;
 	    memcpy(ip_buf, payload, ip_len);
 	    ip_buf[ip_len] = '\0';
 	    /* Pubkey appended after NUL-terminated IP */
@@ -582,8 +590,13 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 		              + CL_CTR_CONFIG_SZ, CL_CTR_MTU_SZ);
 		p_mtu = ntohs(m_be);
 	    }
+	    /* maintenance state after the MTU (optional - older builds) */
+	    if (payload_len >= ip_len + 1 + (int)CL_CTR_PUBKEY_SZ
+	                       + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ + 1)
+		p_maint = (unsigned char)payload[ip_len + 1 + CL_CTR_PUBKEY_SZ
+		                                 + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ];
 	    cl_ctr_handle_alive(ip_buf, pubkey, cfg_present, p_manage, p_stick, p_qt,
-	                        p_mtu, cl);
+	                        p_mtu, p_maint, cl);
 	    break;
 	}
 
@@ -672,10 +685,20 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    cl_ctr_handle_master_probe_ack(sender_ip_buf, payload, payload_len, cl);
 	    break;
 
-	default:
-	    LM_WARN("clusterer_controller: unknown packet type 0x%02x "
-	            "from %s, dropping\n", pkt_type, sender_ip_buf);
+	default: {
+	    /* A newer build of the same wire version (a rolling upgrade): the
+	     * type is one this build does not know, and dropping it is the
+	     * contract - say so once a minute, not once a packet. */
+	    static time_t unknown_warned_at;
+	    time_t now = cl_ctr_now();
+	    if (now - unknown_warned_at >= CL_CTR_WIRE_WARN_IVL) {
+		unknown_warned_at = now;
+		LM_WARN("clusterer_controller: [cluster %d] packet type 0x%02x "
+		        "from %s is unknown to this build (a newer one?) - "
+		        "dropped\n", cl->cluster_id, pkt_type, sender_ip_buf);
+	    }
 	    break;
+	}
 	}
     }
 }
