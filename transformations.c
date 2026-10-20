@@ -262,7 +262,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 {
 	int i, j;
 	char *p, *s, *_tr_buffer = get_tr_buffer();
-	str st;
+	str st = {0};
 	pv_value_t v;
 	pv_elem_p el=NULL;
 
@@ -325,19 +325,23 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			unsigned char sha_buf[64];
 			int sha_hash_len = 0;
 
-			if (tp != 0) { // We have parameter (hmac function)
-				if(tp->type==TR_PARAM_STRING)
+			if (tp == 0 && (subtype == TR_S_SHA1_HMAC ||
+					subtype == TR_S_SHA224_HMAC || subtype == TR_S_SHA256_HMAC ||
+					subtype == TR_S_SHA384_HMAC || subtype == TR_S_SHA512_HMAC)) {
+				LM_ERR("sha hmac transformation requires a key parameter\n");
+				goto error;
+			}
+
+			if (tp != 0 && tp->type==TR_PARAM_STRING) {
+				st = tp->v.s;
+			} else if (tp != 0) {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+					|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
 				{
-					st = tp->v.s;
-				} else {
-					if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
-						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
-					{
-						LM_ERR("sha hmac transformation cannot get p1\n");
-						goto error;
-					}
-					st = v.rs;
+					LM_ERR("sha hmac transformation cannot get p1\n");
+					goto error;
 				}
+				st = v.rs;
 			}
 
 			if (subtype == TR_S_SHA1) {
