@@ -225,6 +225,31 @@ check "requests relayed before n4 had an id carry no cid" $([ "${NOCID:-0}" -gt 
 check "requests relayed after the join carry cid=$I4" $([ -n "$I4" ] && [ "${GOOD:-0}" -gt 0 ] && echo 1 || echo 0) "$GOOD"
 check "no request carried any other cid (-1, 0, stale)" $([ "${BAD:-1}" = 0 ] && echo 1 || echo 0) "$BAD"
 
+echo "=== T13 a member paused past every timeout wakes without electing itself ==="
+# 15 s is past the master watchdog (3 s), the election window and the purge
+# window (query_time x 3 and x 6 = 6 s and 12 s here).  Woken, the node finds
+# every timer expired and every peer stale - although only it was gone.
+M1=$(wc -l < $R/n1.log)
+pause_node 1; sleep 15; resume_node 1; sleep 10
+check "woken n1 did not elect itself" $(since 1 $M1 | grep -aq "my role changed: [a-z]* -> master\|became master" && echo 0 || echo 1) "$(since 1 $M1 | grep -a 'became master' | head -1 | cut -c1-120)"
+check "woken n1 did not purge its peers" $(since 1 $M1 | grep -aq "purging timed-out peer" && echo 0 || echo 1) "$(since 1 $M1 | grep -ac 'purging timed-out peer') purges"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "one master, and all four nodes name it" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+echo "    n1 self_stalls: $(cfgval 1 741 self_stalls)"
+
+echo "=== T14 the master paused past every timeout: one master after it wakes ==="
+OLDM=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); OM=${OLDM##*.}; OM=${OM#1}
+T0=$(cfgval 2 741 term); MO=$(wc -l < $R/n$OM.log)
+pause_node $OM; sleep 15
+NEWM=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+resume_node $OM; sleep 12
+check "the others elected a new master while $OLDM was paused" $([ -n "$NEWM" ] && [ "$NEWM" != "$OLDM" ] && echo 1 || echo 0) "new=$NEWM"
+check "woken $OLDM did not purge its peers" $(since $OM $MO | grep -aq "purging timed-out peer" && echo 0 || echo 1) "$(since $OM $MO | grep -ac 'purging timed-out peer') purges"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "one master afterwards, and all four nodes name it" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+FM=$(echo $MS | cut -d' ' -f1)
+echo "    master before $OLDM (term $T0), while paused $NEWM, after $FM (term $(cfgval 2 741 term)) - $( [ "$FM" = "$OLDM" ] && echo 'the woken master took over again' || echo 'the new master kept it')"
+
 echo "=== logs: crashes / criticals ==="
 # "BUG trying to overwrite entry" was core TCP_main on BIN reconnect after T8,
 # fixed in core by #4289; it is checked here so it cannot come back unseen.

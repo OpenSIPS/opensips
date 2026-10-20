@@ -118,6 +118,11 @@ stop_hard() {
   [ -n "$pg" ] && kill -9 -- -"$pg"; sleep 1
 }
 alive() { [ -f $R/n$1.pid ] && kill -0 "$(cat $R/n$1.pid)" 2>/dev/null; }
+# pause / resume every process of node i (a VM pause, as the node sees it)
+pause_node()  { kill -STOP -- -"$(ps -o pgid= -p "$(cat $R/n$1.pid)" | tr -d ' ')"; }
+resume_node() { kill -CONT -- -"$(ps -o pgid= -p "$(cat $R/n$1.pid)" | tr -d ' ')"; }
+# since <i> <mark>: node i's log lines written after line <mark>
+since() { tail -n +$(($2 + 1)) $R/n$1.log; }
 
 # mi <i> <method> [k=v ...]  -> JSON on stdout (integer values sent as numbers)
 mi() {
