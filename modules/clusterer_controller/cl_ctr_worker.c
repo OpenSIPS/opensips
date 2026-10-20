@@ -56,8 +56,70 @@ void cl_ctr_arm_tfd(int tfd, time_t sec_value, time_t sec_interval)
  * Reactor callbacks - one per event source
  * ========================================================================= */
 
+/*
+ * cl_ctr_stall_check() - was this worker itself stopped?
+ *
+ * A peer is judged dead by how long ago it was last heard, which is only
+ * evidence if this node was listening all that time.  A process paused by
+ * SIGSTOP, a VM pause or a live migration, or starved of CPU, wakes with every
+ * timer expired at once: it would declare the master dead, find every peer
+ * outside the election window, elect itself and purge the rest - although
+ * nobody else changed at all.
+ *
+ * So the loop records when it last ran (a CL_CTR_STALL_TICK_MS tick keeps that
+ * fresh), and every handler that acts on a peer's silence calls this first,
+ * since after a pause the expired timers fire in no particular order.  A gap
+ * over CL_CTR_STALL_MS gives every peer it could not hear a full timeout from
+ * now, as if just heard, and restarts the master watchdog; peers that really
+ * died meanwhile are then found by the normal timeouts, one timeout later.
+ * A peer already aged out (last_seen 0: a master declared dead) stays out.
+ *
+ * Returns 1 when a stall was found and handled.
+ */
+static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
+{
+    long long now = cl_ctr_now_ms(), gap;
+    time_t    t_now;
+    int       i, follow;
+
+    gap = cl->loop_seen_ms ? now - cl->loop_seen_ms : 0;
+    cl->loop_seen_ms = now;
+    if (gap <= CL_CTR_STALL_MS)
+        return 0;
+
+    t_now = cl_ctr_now();
+    lock_start_write(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e = &cl->peers->entries[i];
+        if (e->last_seen != 0 && strcmp(e->ip, my_ip) != 0)
+            e->last_seen = t_now;
+    }
+    cl->peers->self_stalls++;
+    if (gap > cl->peers->self_stall_max_ms)
+        cl->peers->self_stall_max_ms = gap;
+    follow = !cl_ctr_i_am_master_locked(cl) && cl->peers->last_master[0] != '\0';
+    lock_stop_write(cl->peers->lock);
+
+    if (follow)
+        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+
+    LM_WARN("clusterer_controller: [cluster %d] this node did not run for "
+            "%lld ms (process paused or starved of CPU) - not treating peers "
+            "it could not hear meanwhile as dead; they get a full timeout "
+            "from now\n", cl->cluster_id, gap);
+    return 1;
+}
+
+static int cl_ctr_on_stall_tfd(int fd, void *param, int was_timeout)
+{
+    cl_ctr_drain_tfd(fd);
+    cl_ctr_stall_check((cl_ctr_cluster_t *)param);
+    return 0;
+}
+
 static int cl_ctr_on_sock(int fd, void *param, int was_timeout)
 {
+    cl_ctr_stall_check((cl_ctr_cluster_t *)param);
     cl_ctr_recv_one(fd, (cl_ctr_cluster_t *)param, NULL, 0, NULL);
     return 0;
 }
@@ -67,6 +129,7 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     int prev_master, now_master;
     cl_ctr_drain_tfd(fd);
+    cl_ctr_stall_check(cl);
     cl_ctr_cid_tick(cl);
 
     /* --- Has our OWN link changed under us? ---------------------------------
@@ -404,6 +467,7 @@ static int cl_ctr_on_master_alive_tfd(int fd, void *param, int was_timeout)
 {
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     cl_ctr_drain_tfd(fd);
+    cl_ctr_stall_check(cl);
     cl_ctr_send_master_alive(cl->sock, cl);
     /* An announcement the coalescing window swallowed is still owed - emit it
      * as soon as the window allows.  This timer only runs on the master, which
@@ -431,6 +495,11 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
     char          dead_master[CL_CTR_MAX_IP_LEN + 1];
 
     cl_ctr_drain_tfd(fd);
+
+    /* the master's silence means nothing if this node was the one stopped;
+     * the check has restarted the watchdog */
+    if (cl_ctr_stall_check(cl))
+        return 0;
 
     dead_master[0] = '\0';
 
@@ -567,8 +636,10 @@ void cl_ctr_worker(int rank)
     cl->master_alive_tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     cl->master_dead_tfd  = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     cl->retx_tfd         = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    cl->stall_tfd        = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (cl->alive_tfd < 0 || cl->join_tfd < 0 || cl->rejoin_tfd < 0 ||
-        cl->master_alive_tfd < 0 || cl->master_dead_tfd < 0 || cl->retx_tfd < 0) {
+        cl->master_alive_tfd < 0 || cl->master_dead_tfd < 0 || cl->retx_tfd < 0 ||
+        cl->stall_tfd < 0) {
 	LM_CRIT("clusterer_controller: [cluster %d] timerfd_create: %s\n",
 	        cl->cluster_id, strerror(errno));
 	exit(-1);
@@ -591,6 +662,15 @@ void cl_ctr_worker(int rank)
     cl_ctr_send_join_req(cl->sock, cl);
     cl_ctr_arm_tfd(cl->join_tfd,   (time_t)query_time, 0); /* one-shot deadline  */
     cl_ctr_arm_tfd(cl->rejoin_tfd, 1, 1);                  /* retry every 1 s    */
+    {
+        struct itimerspec its;                             /* stall-check tick   */
+        memset(&its, 0, sizeof(its));
+        its.it_value.tv_nsec    = CL_CTR_STALL_TICK_MS * 1000000L;
+        its.it_interval.tv_nsec = CL_CTR_STALL_TICK_MS * 1000000L;
+        if (timerfd_settime(cl->stall_tfd, 0, &its, NULL) < 0)
+            LM_WARN("clusterer_controller: timerfd_settime: %s\n", strerror(errno));
+        cl->loop_seen_ms = cl_ctr_now_ms();
+    }
     /* alive_tfd left disarmed - armed by cl_ctr_transition_to_active() */
 
     LM_INFO("clusterer_controller: [cluster %d] sent JOIN_REQ, waiting up to %ds "
@@ -609,7 +689,8 @@ void cl_ctr_worker(int rank)
         reactor_proc_add_fd(cl->rejoin_tfd,      cl_ctr_on_rejoin_tfd,      cl) < 0 ||
         reactor_proc_add_fd(cl->master_alive_tfd, cl_ctr_on_master_alive_tfd, cl) < 0 ||
         reactor_proc_add_fd(cl->master_dead_tfd,  cl_ctr_on_master_dead_tfd,  cl) < 0 ||
-        reactor_proc_add_fd(cl->retx_tfd,         cl_ctr_on_retx_tfd,         cl) < 0) {
+        reactor_proc_add_fd(cl->retx_tfd,         cl_ctr_on_retx_tfd,         cl) < 0 ||
+        reactor_proc_add_fd(cl->stall_tfd,        cl_ctr_on_stall_tfd,        cl) < 0) {
 	LM_CRIT("clusterer_controller: [cluster %d] reactor_proc_add_fd failed\n",
 	        cl->cluster_id);
 	exit(-1);
@@ -654,4 +735,5 @@ void cl_ctr_worker(int rank)
     close(cl->rejoin_tfd);
     close(cl->master_alive_tfd);
     close(cl->master_dead_tfd);
+    close(cl->stall_tfd);
 }

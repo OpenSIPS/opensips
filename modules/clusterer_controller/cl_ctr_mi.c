@@ -293,7 +293,8 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	unsigned int term = 0;
 	char cid_s[37] = "";
 	const char *cid_st = "none";
-	unsigned long foreign = 0, refused = 0;
+	unsigned long foreign = 0, refused = 0, stalls = 0;
+	long long     stall_max = 0;
 	{
 	    uint16_t forced = 0;
 	    if (cl->peers) {
@@ -305,6 +306,8 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 		    cl_ctr_cid_str(cl->peers->cid, cid_s);
 		foreign    = cl->peers->foreign_pkts;
 		refused    = cl->peers->peers_refused;
+		stalls     = cl->peers->self_stalls;
+		stall_max  = cl->peers->self_stall_max_ms;
 		forced     = cl->peers->shtag_forced_node_id;
 		eff_manage = cl->peers->eff_manage_shtags;
 		eff_stick  = cl->peers->eff_master_stickiness;
@@ -342,7 +345,9 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	                  cid_st, strlen(cid_st))                                 < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("foreign_packets"), foreign)            < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("peer_capacity"), CL_CTR_MAX_PEERS)     < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("peers_refused"), refused)              < 0)
+	    add_mi_number(cl_obj, MI_SSTR("peers_refused"), refused)              < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("self_stalls"), stalls)                 < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("self_stall_max_ms"), stall_max)        < 0)
 	    goto error;
     }
 

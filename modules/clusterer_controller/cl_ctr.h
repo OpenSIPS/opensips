@@ -245,6 +245,22 @@ static inline time_t cl_ctr_now(void)
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (time_t)ts.tv_sec + CL_CTR_CLOCK_BIAS;
 }
+
+/* The same clock in milliseconds, for the worker's stall check. */
+static inline long long cl_ctr_now_ms(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+/* Stall check: the worker ticks every CL_CTR_STALL_TICK_MS; a gap longer than
+ * CL_CTR_STALL_MS between two runs of its loop means the process was paused
+ * (SIGSTOP, a VM pause or migration) or starved, and nothing it failed to
+ * hear meanwhile is evidence that a peer died. */
+#define CL_CTR_STALL_TICK_MS  500
+#define CL_CTR_STALL_MS       2000
 #define CL_CTR_CRYPTO_SUITE "XChaCha20-Poly1305 + Argon2id + Noise_NNpsk0"
 
 /* =========================================================================
@@ -862,6 +878,10 @@ typedef struct cl_ctr_cluster_ {
      * retx_tfd sweeps it every CL_CTR_RETX_INTERVAL_US while retx_count > 0.    */
     int                 retx_tfd;
     int                 retx_count;
+    /* Stall check (worker-local): a CL_CTR_STALL_TICK_MS tick, and when the
+     * worker's loop last ran (cl_ctr_stall_check()). */
+    int                 stall_tfd;
+    long long           loop_seen_ms;
     cl_ctr_retx_entry_t retx_q[CL_CTR_RETX_QUEUE_SZ];
     /* Membership-digest resync throttles (worker-local): a member sends at most
      * one RESYNC, and a master re-broadcasts full state at most once, per
@@ -1283,6 +1303,9 @@ struct cl_ctr_peers_ {
      * that was last logged (see cl_ctr_upsert_peer_locked()) */
     unsigned long   peers_refused;
     time_t          peers_refused_warned_at;
+    /* times this node's own worker was found stalled, and the longest stall */
+    unsigned long   self_stalls;
+    long long       self_stall_max_ms;
     /* MEMBER_LIST ordering: the sequence this node stamps on the lists it
      * sends as master, and the (term, seq) of the last list it applied. */
     uint32_t        list_seq;
