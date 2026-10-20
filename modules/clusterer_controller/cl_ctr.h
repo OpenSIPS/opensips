@@ -1306,10 +1306,15 @@ struct cl_ctr_peers_ {
 static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
 { return cl_ctr_pv_get(msg, param, res, _field); }
 
+#define cl_ctr_send_member_list(sock, cl) cl_ctr_send_list_pkt((sock), CL_CTR_PKT_MEMBER_LIST, (cl), NULL, 0)
+
 
 /* =========================================================================
  * Shared between the module's source files
  * ========================================================================= */
+
+/* cl_ctr_mi.c */
+extern const mi_export_t mi_cmds[];
 
 /* cl_ctr_script.c */
 extern char *cl_ctr_script_buf;
@@ -1337,13 +1342,21 @@ extern const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ];
 extern cl_ctr_cluster_t cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
 extern int cl_ctr_cluster_count;
 extern char *my_ip;
+extern int query_time;
 extern const char *my_ip_src;
 extern char my_interface_buf[IF_NAMESIZE];
 extern int cc_max_payload;
+extern int cc_mtu;
 extern uint16_t my_node_id;
+extern int manage_shtags;
 extern int enable_reliable_send;
+extern int master_stickiness;
 int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
                         char *ipbuf, int ipbuf_sz);
+int cl_ctr_i_am_master_locked(cl_ctr_cluster_t *cl);
+void cl_ctr_apply_shtags(cl_ctr_cluster_t *cl);
+const char *cl_ctr_cid_state_name(int st);
+void cl_ctr_cid_str(const unsigned char *cid, char *out);
 int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
                                int plain_len, const unsigned char *key,
                                unsigned char type,
@@ -1356,5 +1369,7 @@ void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
                             unsigned char type, const unsigned char *pkt,
                             int pkt_len, const struct sockaddr *dest,
                             socklen_t destlen);
+void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
+                             const struct sockaddr *dest, socklen_t destlen);
 
 #endif /* CL_CTR_H */

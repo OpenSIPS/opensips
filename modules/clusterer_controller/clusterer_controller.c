@@ -42,16 +42,6 @@ static void cl_ctr_maybe_forward(const char *buf, int n,
                              cl_ctr_cluster_t *from);
 static void cl_ctr_rpc_forward(int sender, void *param);
 static void cl_ctr_worker(int rank);
-static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
-                                     struct mi_handler *hdl);
-static mi_response_t *mi_cl_ctr_node_info(const mi_params_t *params,
-                                      struct mi_handler *hdl);
-static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
-                                     struct mi_handler *hdl);
-static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
-                                        struct mi_handler *hdl);
-static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
-                                       struct mi_handler *hdl);
 static int mod_init(void);
 static int cl_ctr_child_init(int rank);
 static void mod_destroy(void);
@@ -80,7 +70,7 @@ static int   cl_ctr_cluster_str_count = 0;
 /* Global modparams - apply to all clusters unless overridden per-cluster */
 char *my_ip             = NULL;  /* explicit IP, or NULL for auto-detect */
 static char *my_interface      = NULL;  /* explicit interface name, or NULL      */
-static int   query_time        = 5;
+int   query_time        = 5;
 static char *password          = CL_CTR_DEFAULT_PASSWORD; /* default; falls back per cluster */
 static char *on_config_mismatch_s = NULL;              /* raw modparam string   */
 static int   on_config_mismatch   = CL_CTR_CFGMISMATCH_REJECT; /* resolved; default reject */
@@ -100,7 +90,7 @@ int cc_max_payload = CLCTR_MAX_PAYLOAD;
 /* This node's cluster-plane MTU as read from my_interface_buf at mod_init.
  * 0 only before mod_init has resolved it; after that it is always a real
  * kernel-reported value, because mod_init refuses to start otherwise. */
-static int cc_mtu = 0;
+int cc_mtu = 0;
 /* The interface's CURRENT MTU, refreshed by the drift poll.  Distinct from
  * cc_mtu on purpose, and the distinction is load-bearing:
  *
@@ -199,7 +189,7 @@ static uint64_t cl_ctr_incarnation                      = 0;
 /* clusterer integration - loaded at mod_init if clusterer use_controller=1 */
 static clusterer_ctrl_binds_t clctl;
 static int                    clctl_loaded  = 0;
-static int                    manage_shtags = 1;
+int                    manage_shtags = 1;
 static int                    consumer_retries = CL_CTR_CONSUMER_RETRIES_DEFAULT;
 static int                    consumer_retry_ms = CL_CTR_CONSUMER_RETRY_MS_DEFAULT;
 /*
@@ -235,7 +225,7 @@ int                    enable_reliable_send = 1;
  *                 Result: fewer master handovers.
  *   0           = not sticky - pure highest-IP election, so a higher-IP node
  *                 takes over as master as soon as it appears (more handovers). */
-static int                    master_stickiness = 1;
+int                    master_stickiness = 1;
 static int      consumer_rate_limit = CL_CTR_CONSUMER_RATE_DEFAULT;
 static char     my_bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
 static int      my_bin_count                            = 0;
@@ -331,60 +321,6 @@ static const dep_export_t deps = {
 	{ MOD_TYPE_NULL, NULL, 0 },
     },
     { { NULL, NULL } },
-};
-
-/* =========================================================================
- * MI command export table
- * ========================================================================= */
-
-static const mi_export_t mi_cmds[] = {
-    {
-	"cl_ctr_list_members",
-	"List all current cluster members with node_id, status and BIN sockets",
-	0, 0,
-	{
-	    {mi_cl_ctr_members, {0}},
-	    {EMPTY_MI_RECIPE}
-	}, {0}
-    },
-    {
-	"cl_ctr_node_info",
-	"Return full info for a node_id across all clusters",
-	0, 0,
-	{
-	    {mi_cl_ctr_node_info, {"node_id", 0}},
-	    {EMPTY_MI_RECIPE}
-	}, {0}
-    },
-    {
-	"cl_ctr_list_config",
-	"List all configured clusters and their resolved settings",
-	0, 0,
-	{
-	    {mi_cl_ctr_config, {0}},
-	    {EMPTY_MI_RECIPE}
-	}, {0}
-    },
-    {
-	"cl_ctr_shtag_force",
-	"Force a node to hold the active sharing tag (master only); "
-	"suspends automatic allocation until cl_ctr_shtag_auto",
-	0, 0,
-	{
-	    {mi_cl_ctr_shtag_force, {"cluster_id", "node_id", 0}},
-	    {EMPTY_MI_RECIPE}
-	}, {0}
-    },
-    {
-	"cl_ctr_shtag_auto",
-	"Resume automatic master-driven sharing-tag allocation (master only)",
-	0, 0,
-	{
-	    {mi_cl_ctr_shtag_auto, {"cluster_id", 0}},
-	    {EMPTY_MI_RECIPE}
-	}, {0}
-    },
-    {EMPTY_MI_EXPORT}
 };
 
 /* -------------------------------------------------------------------------
@@ -721,7 +657,7 @@ static void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
  * cl_ctr_i_am_master_locked(cl) - return 1 if my_ip is currently elected master.
  * Must be called with cl->peers->lock held.
  */
-static int cl_ctr_i_am_master_locked(cl_ctr_cluster_t *cl)
+int cl_ctr_i_am_master_locked(cl_ctr_cluster_t *cl)
 {
     time_t cutoff = cl_ctr_election_cutoff();
     int    i;
@@ -823,7 +759,7 @@ static void cl_ctr_apply_shtags_decision(cl_ctr_cluster_t *cl, int i_am_master,
  * cl_ctr_apply_shtags() - convenience wrapper that reads the current state under a
  * read lock and applies the shtag decision.  Call WITHOUT cl->peers->lock held.
  */
-static void cl_ctr_apply_shtags(cl_ctr_cluster_t *cl)
+void cl_ctr_apply_shtags(cl_ctr_cluster_t *cl)
 {
     int      i_am_master;
     uint16_t forced;
@@ -1488,7 +1424,7 @@ static int cl_ctr_derive_key(cl_ctr_cluster_t *cl)
  * Founded cluster identity (CL_CTR_CID_*)
  * ========================================================================= */
 
-static const char *cl_ctr_cid_state_name(int st)
+const char *cl_ctr_cid_state_name(int st)
 {
     switch (st) {
     case CL_CTR_CID_PROVISIONAL: return "provisional";
@@ -1499,7 +1435,7 @@ static const char *cl_ctr_cid_state_name(int st)
 }
 
 /* "8-4-4-4-12" lowercase into @out (37 bytes) */
-static void cl_ctr_cid_str(const unsigned char *cid, char *out)
+void cl_ctr_cid_str(const unsigned char *cid, char *out)
 {
     static const char hx[] = "0123456789abcdef";
     int i, o = 0;
@@ -2602,7 +2538,7 @@ static void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster
  *
  * Wire: [magic 2B][cluster_id 2B][nonce 24B][XChaCha20-Poly1305([type 1B][seq 4B][count 2B][entries...])][tag 16B]
  */
-static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
+void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
                              const struct sockaddr *dest, socklen_t destlen)
 {
     char               pkt[CL_CTR_LIST_PKT_MAX_SZ];
@@ -2666,8 +2602,6 @@ static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t 
 	LM_INFO("clusterer_controller: [cluster %d] sent MEMBER_LIST (%d members)%s\n",
 	        cl->cluster_id, count, dest ? " (unicast)" : "");
 }
-
-#define cl_ctr_send_member_list(sock, cl) cl_ctr_send_list_pkt((sock), CL_CTR_PKT_MEMBER_LIST, (cl), NULL, 0)
 
 /**
  * cl_ctr_send_join_req_pkt() - send CL_CTR_PKT_JOIN_REQ with BIN socket info.
@@ -6534,420 +6468,6 @@ static void cl_ctr_worker(int rank)
     close(cl->rejoin_tfd);
     close(cl->master_alive_tfd);
     close(cl->master_dead_tfd);
-}
-
-/* =========================================================================
- * MI command handlers
- * ========================================================================= */
-
-/**
- * mi_cl_ctr_members() - list active cluster members with their role.
- *
- *   opensips-cli -x mi cl_ctr_list_members
- *
- *   [
- *     {"ip": "10.0.0.3", "status": "master"},
- *     {"ip": "10.0.0.1", "status": "member"},
- *     {"ip": "10.0.0.2", "status": "member"}
- *   ]
- *
- * Only peers within the current quantized election window are shown,
- * consistent with what cl_ctr_elect_master(cl) considers.
- */
-static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
-                                     struct mi_handler *hdl)
-{
-    mi_response_t  *resp;
-    mi_item_t      *arr, *cl_obj, *members_arr, *peer_obj, *bin_arr;
-    int             i, j, ci;
-    cl_ctr_cluster_t   *cl;
-
-    resp = init_mi_result_array(&arr);
-    if (!resp)
-	return NULL;
-
-    for (ci = 0; ci < cl_ctr_cluster_count; ci++) {
-	cl = &cl_ctr_clusters[ci];
-	if (!cl->peers)
-	    continue;
-
-	cl_obj = add_mi_object(arr, NULL, 0);
-	if (!cl_obj) goto error;
-
-	if (add_mi_number(cl_obj, MI_SSTR("cluster_id"), cl->cluster_id) < 0)
-	    goto error;
-
-	members_arr = add_mi_array(cl_obj, MI_SSTR("members"));
-	if (!members_arr) goto error;
-
-	lock_start_read(cl->peers->lock);
-
-	for (i = 0; i < cl->peers->count; i++) {
-	    cl_ctr_peer_t *e = &cl->peers->entries[i];
-
-	    peer_obj = add_mi_object(members_arr, NULL, 0);
-	    if (!peer_obj) {
-		lock_stop_read(cl->peers->lock);
-		goto error;
-	    }
-	    if (add_mi_number(peer_obj, MI_SSTR("mtu"), e->mtu) < 0 ||
-	        add_mi_string(peer_obj, MI_SSTR("ip"),
-	                      e->ip, strlen(e->ip)) < 0 ||
-	        add_mi_number(peer_obj, MI_SSTR("node_id"), e->node_id) < 0 ||
-	        add_mi_string(peer_obj, MI_SSTR("status"),
-	                      e->is_master ? "master" : (e->is_backup ? "backup" : "member"),
-	                      6) < 0) {
-		lock_stop_read(cl->peers->lock);
-		goto error;
-	    }
-
-	    bin_arr = add_mi_array(peer_obj, MI_SSTR("bin_sockets"));
-	    if (!bin_arr) {
-		lock_stop_read(cl->peers->lock);
-		goto error;
-	    }
-	    for (j = 0; j < (int)e->bin_count; j++) {
-		if (add_mi_string(bin_arr, NULL, 0,
-		                  e->bin_sockets[j],
-		                  strlen(e->bin_sockets[j])) < 0) {
-		    lock_stop_read(cl->peers->lock);
-		    goto error;
-		}
-	    }
-	}
-
-	lock_stop_read(cl->peers->lock);
-    }
-
-    return resp;
-
-error:
-    LM_ERR("clusterer_controller: mi_cl_ctr_members: failed to build response\n");
-    free_mi_response(resp);
-    return NULL;
-}
-
-/**
- * mi_cl_ctr_node_info() - return full info for a specific node_id.
- *
- *   opensips-cli -x mi cl_ctr_node_info node_id=2
- */
-static mi_response_t *mi_cl_ctr_node_info(const mi_params_t *params,
-                                      struct mi_handler *hdl)
-{
-    mi_response_t  *resp;
-    mi_item_t      *root, *bin_arr;
-    int             target_id;
-    int             i, j, ci;
-    cl_ctr_cluster_t   *cl;
-    cl_ctr_peer_t      *e;
-
-    if (get_mi_int_param(params, "node_id", &target_id) < 0)
-	return init_mi_param_error();
-
-    for (ci = 0; ci < cl_ctr_cluster_count; ci++) {
-	cl = &cl_ctr_clusters[ci];
-	if (!cl->peers)
-	    continue;
-
-	lock_start_read(cl->peers->lock);
-	for (i = 0; i < cl->peers->count; i++) {
-	    e = &cl->peers->entries[i];
-	    if ((int)e->node_id != target_id)
-		continue;
-
-	    resp = init_mi_result_object(&root);
-	    if (!resp) {
-		lock_stop_read(cl->peers->lock);
-		return NULL;
-	    }
-	    if (add_mi_number(root, MI_SSTR("mtu"),        e->mtu)                 < 0 ||
-	        add_mi_number(root, MI_SSTR("node_id"),    e->node_id)             < 0 ||
-	        add_mi_string(root, MI_SSTR("ip"),         e->ip, strlen(e->ip))   < 0 ||
-	        add_mi_number(root, MI_SSTR("cluster_id"), cl->cluster_id)          < 0 ||
-	        add_mi_string(root, MI_SSTR("status"),
-	                      e->is_master ? "master" : (e->is_backup ? "backup" : "member"),
-	                      6)                                                     < 0) {
-		lock_stop_read(cl->peers->lock);
-		goto error_node;
-	    }
-	    bin_arr = add_mi_array(root, MI_SSTR("bin_sockets"));
-	    if (!bin_arr) {
-		lock_stop_read(cl->peers->lock);
-		goto error_node;
-	    }
-	    for (j = 0; j < (int)e->bin_count; j++) {
-		if (add_mi_string(bin_arr, NULL, 0,
-		                  e->bin_sockets[j],
-		                  strlen(e->bin_sockets[j])) < 0) {
-		    lock_stop_read(cl->peers->lock);
-		    goto error_node;
-		}
-	    }
-	    lock_stop_read(cl->peers->lock);
-	    return resp;
-	}
-	lock_stop_read(cl->peers->lock);
-    }
-
-    return init_mi_error(404, MI_SSTR("node_id not found"));
-
-error_node:
-    LM_ERR("clusterer_controller: mi_cl_ctr_node_info: failed to build response\n");
-    free_mi_response(resp);
-    return NULL;
-}
-
-/**
- * mi_cl_ctr_config() - list all configured clusters and their resolved settings.
- *
- *   opensips-cli -x mi cl_ctr_list_config
- *
- * Reports per cluster: id, multicast endpoint, master_stickiness,
- * manage_shtags, query_time, this node's BIN socket and current member count.
- * The password is intentionally NOT exposed.
- */
-static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
-                                     struct mi_handler *hdl)
-{
-    mi_response_t  *resp;
-    mi_item_t      *arr, *cl_obj;
-    int             ci, members;
-    char            mcast[INET_ADDRSTRLEN + 8];  /* "IP:PORT" */
-    char            shtag_mode[24];              /* "auto" / "override:<id>" */
-    cl_ctr_cluster_t   *cl;
-
-    resp = init_mi_result_array(&arr);
-    if (!resp)
-	return NULL;
-
-    for (ci = 0; ci < cl_ctr_cluster_count; ci++) {
-	cl = &cl_ctr_clusters[ci];
-
-	cl_obj = add_mi_object(arr, NULL, 0);
-	if (!cl_obj) goto error;
-
-	snprintf(mcast, sizeof(mcast), "%s:%d",
-	         cl->multicast_address, cl->multicast_port);
-
-	members = 0;
-	/* Report the EFFECTIVE (possibly adopted) settings from shm, so the
-	 * values reflect what is actually in force after on_config_mismatch=
-	 * adopt (the worker mirrors them there).  Fall back to the configured
-	 * values if the peer table is not up yet. */
-	int eff_manage = cl->manage_shtags, eff_stick = cl->master_stickiness,
-	    eff_qt = query_time;
-	unsigned int term = 0;
-	char cid_s[37] = "";
-	const char *cid_st = "none";
-	unsigned long foreign = 0, refused = 0;
-	{
-	    uint16_t forced = 0;
-	    if (cl->peers) {
-		lock_start_read(cl->peers->lock);
-		members    = cl->peers->count;
-		term       = cl->peers->master_term;
-		cid_st     = cl_ctr_cid_state_name(cl->peers->cid_state);
-		if (cl->peers->cid_state != CL_CTR_CID_NONE)
-		    cl_ctr_cid_str(cl->peers->cid, cid_s);
-		foreign    = cl->peers->foreign_pkts;
-		refused    = cl->peers->peers_refused;
-		forced     = cl->peers->shtag_forced_node_id;
-		eff_manage = cl->peers->eff_manage_shtags;
-		eff_stick  = cl->peers->eff_master_stickiness;
-		eff_qt     = cl->peers->eff_query_time;
-		lock_stop_read(cl->peers->lock);
-	    }
-	    /* Current shtag allocation mode: "auto" = master-driven automatic
-	     * allocation; "override:<node_id>" = operator forced a fixed holder
-	     * via cl_ctr_shtag_force.  ("manual" is reserved for the future
-	     * maintenance mode.)                                              */
-	    if (forced)
-		snprintf(shtag_mode, sizeof(shtag_mode), "override:%u", forced);
-	    else
-		snprintf(shtag_mode, sizeof(shtag_mode), "auto");
-	}
-
-	if (add_mi_number(cl_obj, MI_SSTR("cluster_id"),   cl->cluster_id)        < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("multicast"),    mcast, strlen(mcast))  < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("my_ip"),        my_ip, strlen(my_ip))  < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("bin_socket"),
-	                  cl->bin_socket, strlen(cl->bin_socket))                 < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("mtu"),          cc_mtu)                 < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("interface"),
-	                  my_interface_buf[0] ? my_interface_buf : "(unknown)",
-	                  my_interface_buf[0] ? strlen(my_interface_buf) : 9)      < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("query_time"),   eff_qt)                < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("master_stickiness"), eff_stick)        < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("manage_shtags"), eff_manage)           < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("shtag_mode"),
-	                  shtag_mode, strlen(shtag_mode))                         < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("member_count"), members)               < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("term"),         term)                  < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("cluster_uuid"), cid_s, strlen(cid_s))  < 0 ||
-	    add_mi_string(cl_obj, MI_SSTR("cluster_uuid_state"),
-	                  cid_st, strlen(cid_st))                                 < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("foreign_packets"), foreign)            < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("peer_capacity"), CL_CTR_MAX_PEERS)     < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("peers_refused"), refused)              < 0)
-	    goto error;
-    }
-
-    return resp;
-
-error:
-    LM_ERR("clusterer_controller: mi_cl_ctr_config: failed to build response\n");
-    free_mi_response(resp);
-    return NULL;
-}
-
-/**
- * cl_ctr_rpc_apply_shtags() - IPC job run inside the cl_ctr_worker process.
- *
- * An MI handler (running in a different process) has already updated
- * cl->peers->shtag_forced_node_id in shm; this job makes the change take
- * effect promptly: it re-applies the local shtag decision and, if we are the
- * master, re-broadcasts the MEMBER_LIST so every member learns the new
- * override without waiting for the next periodic announcement.
- */
-static void cl_ctr_rpc_apply_shtags(int sender, void *param)
-{
-    cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
-    int i_am_master;
-
-    (void)sender;
-    if (!cl || !cl->peers)
-	return;
-
-    cl_ctr_apply_shtags(cl);
-
-    lock_start_read(cl->peers->lock);
-    i_am_master = cl_ctr_i_am_master_locked(cl);
-    lock_stop_read(cl->peers->lock);
-
-    if (i_am_master && cl->sock >= 0)
-	cl_ctr_send_member_list(cl->sock, cl);
-}
-
-/**
- * cl_ctr_mi_find_cluster() - locate a configured cluster by its cluster_id.
- * Returns NULL if no cluster matches.
- */
-static cl_ctr_cluster_t *cl_ctr_mi_find_cluster(int cluster_id)
-{
-    int ci;
-    for (ci = 0; ci < cl_ctr_cluster_count; ci++)
-	if (cl_ctr_clusters[ci].cluster_id == cluster_id)
-	    return &cl_ctr_clusters[ci];
-    return NULL;
-}
-
-/**
- * mi_cl_ctr_shtag_force() - force a specific node to hold the active sharing tag.
- *
- *   opensips-cli -x mi cl_ctr_shtag_force cluster_id=1 node_id=2
- *
- * Must be issued on the current master.  Suspends automatic (master-driven)
- * shtag allocation until cl_ctr_shtag_auto is called; the chosen node becomes the
- * sole active shtag holder cluster-wide.  The override is propagated to every
- * member via the MEMBER_LIST and survives master fail-over, but is cleared
- * automatically if the forced node leaves or times out.
- */
-static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
-                                        struct mi_handler *hdl)
-{
-    int            cluster_id, node_id;
-    cl_ctr_cluster_t  *cl;
-    int            i_am_master, found = 0, proc_no;
-
-    if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0 ||
-        get_mi_int_param(params, "node_id",    &node_id)    < 0)
-	return init_mi_param_error();
-
-    if (node_id <= 0 || node_id > 0xFFFF)
-	return init_mi_error(400, MI_SSTR("node_id out of range"));
-
-    cl = cl_ctr_mi_find_cluster(cluster_id);
-    if (!cl || !cl->peers)
-	return init_mi_error(404, MI_SSTR("cluster_id not found"));
-
-    if (!cl->manage_shtags)
-	return init_mi_error(409,
-	        MI_SSTR("shtag management is disabled for this cluster"));
-
-    lock_start_write(cl->peers->lock);
-    i_am_master = cl_ctr_i_am_master_locked(cl);
-    if (i_am_master) {
-	int i;
-	for (i = 0; i < cl->peers->count; i++) {
-	    if ((int)cl->peers->entries[i].node_id == node_id) {
-		found = 1;
-		break;
-	    }
-	}
-	/* Every member is eligible.  Node maintenance mode (README, Planned
-	 * Features) will refuse a node in maintenance here, and clear a pin
-	 * that is already on one. */
-	if (found)
-	    cl->peers->shtag_forced_node_id = (uint16_t)node_id;
-    }
-    proc_no = cl->peers->worker_proc_no;
-    lock_stop_write(cl->peers->lock);
-
-    if (!i_am_master)
-	return init_mi_error(409,
-	        MI_SSTR("not the master - issue cl_ctr_shtag_force on the master node"));
-    if (!found)
-	return init_mi_error(404, MI_SSTR("node_id not a member of this cluster"));
-
-    /* Apply locally and broadcast the new override from the worker process. */
-    if (proc_no >= 0)
-	ipc_send_rpc(proc_no, cl_ctr_rpc_apply_shtags, cl);
-
-    LM_INFO("clusterer_controller: [cluster %d] operator forced shtag onto "
-            "node %d\n", cluster_id, node_id);
-    return init_mi_result_ok();
-}
-
-/**
- * mi_cl_ctr_shtag_auto() - resume automatic (master-driven) shtag allocation.
- *
- *   opensips-cli -x mi cl_ctr_shtag_auto cluster_id=1
- *
- * Clears any operator override set by cl_ctr_shtag_force so the active shtag
- * follows the master again.  Must be issued on the current master.
- */
-static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
-                                       struct mi_handler *hdl)
-{
-    int            cluster_id;
-    cl_ctr_cluster_t  *cl;
-    int            i_am_master, proc_no;
-
-    if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0)
-	return init_mi_param_error();
-
-    cl = cl_ctr_mi_find_cluster(cluster_id);
-    if (!cl || !cl->peers)
-	return init_mi_error(404, MI_SSTR("cluster_id not found"));
-
-    lock_start_write(cl->peers->lock);
-    i_am_master = cl_ctr_i_am_master_locked(cl);
-    if (i_am_master)
-	cl->peers->shtag_forced_node_id = 0;
-    proc_no = cl->peers->worker_proc_no;
-    lock_stop_write(cl->peers->lock);
-
-    if (!i_am_master)
-	return init_mi_error(409,
-	        MI_SSTR("not the master - issue cl_ctr_shtag_auto on the master node"));
-
-    if (proc_no >= 0)
-	ipc_send_rpc(proc_no, cl_ctr_rpc_apply_shtags, cl);
-
-    LM_INFO("clusterer_controller: [cluster %d] operator resumed automatic "
-            "shtag allocation\n", cluster_id);
-    return init_mi_result_ok();
 }
 /* =========================================================================
  * Lifecycle
