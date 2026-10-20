@@ -502,6 +502,16 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_KA_DEV_K             4
 #define CL_CTR_KA_MARGIN_STEP_MS    1000
 #define CL_CTR_KA_MARGIN_DECAY      256
+/* Local Health Multiplier (Lifeguard): a 0..CL_CTR_LHM_MAX count of this
+ * node's OWN trouble - a stall, timers running late, the kernel dropping
+ * cluster datagrams, a question about the master nobody answered - raised by
+ * one per event and lowered by one per clean ALIVE round.  It multiplies
+ * this node's own master watchdog and purge window by (LHM + 1): a node that
+ * is struggling slows its judgement of others before it accuses anyone.  The
+ * election window is shared semantics and is not scaled. */
+#define CL_CTR_LHM_MAX              8
+#define CL_CTR_LHM_TIMEOUT_CAP_MS   (2 * CL_CTR_KA_TIMEOUT_MAX_MS)
+#define CL_CTR_LATE_MS              1000   /* a loop gap this long is "late" */
 
 /* Split-brain merge: a master emits a CL_CTR_PKT_MASTER_BEACON (bootstrap key) once
  * every CL_CTR_MASTER_BEACON_EVERY MASTER_ALIVE ticks.  This is the only traffic two
@@ -932,6 +942,11 @@ typedef struct cl_ctr_cluster_ {
      * node now asserts may raise the term.  Cleared on use and whenever a
      * master is followed again. */
     int            term_confirmed;
+    /* Local Health Multiplier (worker-local): the count, trouble events since
+     * the last ALIVE round, and the kernel drop count already accounted. */
+    int            lhm;
+    int            lhm_trouble;
+    unsigned long  lhm_drops_seen;
     char           probe_master[CL_CTR_MAX_IP_LEN + 1];
     long long      hold_since_ms;
     int            identity_registered; /* 1 once update_identity called */
@@ -1411,6 +1426,7 @@ struct cl_ctr_peers_ {
     /* the keepalive rhythm learned of the master followed, for MI */
     int             ka_mean_ms, ka_dev_ms, ka_margin_ms, ka_timeout_ms;
     unsigned long   ka_false_suspicions;
+    int             local_health;     /* this node's LHM, for MI */
     int             rcvbuf_bytes;
     unsigned long   rx_kernel_drops;
     time_t          rx_drops_warned_at;
@@ -1614,6 +1630,8 @@ long long cl_ctr_master_timeout_ms(cl_ctr_cluster_t *cl);
 void cl_ctr_arm_master_watchdog(cl_ctr_cluster_t *cl);
 void cl_ctr_ka_sample(cl_ctr_cluster_t *cl, const char *master_ip);
 void cl_ctr_ka_false_suspicion(cl_ctr_cluster_t *cl, const char *why);
+void cl_ctr_lhm_event(cl_ctr_cluster_t *cl, const char *why);
+void cl_ctr_lhm_round(cl_ctr_cluster_t *cl);
 void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip);
 void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
                                   uint32_t heard_ms_ago,

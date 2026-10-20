@@ -449,6 +449,28 @@ check "the cluster's term is unchanged by the partition" $([ "$TA" = "$TB" ] && 
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "healed: $MIP leads, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
+echo "=== T23 a stuttering member slows its own judgement (local health) ==="
+# Short pauses (1.3 s on, 1 s off, ten times) stay under the stall threshold
+# but make the member's timers run late again and again: its local health
+# multiplier rises, it neither elects itself nor purges anyone, and once it
+# runs smoothly again the multiplier drains back to 0.
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+for x in 1 2 3 4; do [ "$(ip4 $x)" != "$MIP" ] && break; done
+MX=$(wc -l < $R/n$x.log); LH=0
+for k in 1 2 3 4 5 6 7 8 9 10; do
+  pause_node $x; sleep 1.3; resume_node $x; sleep 1
+  v=$(cfgval $x 741 local_health); [ "${v:-0}" -gt "$LH" ] 2>/dev/null && LH=$v
+done
+echo "    n$x local_health peaked at $LH"
+check "the stuttering member's local health rose" $([ "$LH" -ge 2 ] && echo 1 || echo 0) "$LH"
+check "it did not elect itself" $(since $x $MX | grep -a "cluster 741\]" | grep -aq "my role changed: [a-z]* -> master" && echo 0 || echo 1) ""
+check "it did not purge anyone" $(since $x $MX | grep -aq "purging timed-out peer" && echo 0 || echo 1) ""
+sleep 25
+V=$(cfgval $x 741 local_health)
+check "healthy again 25 s after the stutter ends (local_health $V)" $([ "$V" = 0 ] && echo 1 || echo 0) "$V"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "one master throughout, $MIP, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"

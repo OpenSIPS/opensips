@@ -86,7 +86,9 @@ unsigned int ip_to_num(const char *ip)
 
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl)
 {
-    time_t cutoff = cl_ctr_now() - (time_t)(query_time * CL_CTR_PURGE_FACTOR);
+    /* a node in trouble (Local Health Multiplier) waits longer to purge */
+    time_t cutoff = cl_ctr_now()
+                    - (time_t)(query_time * CL_CTR_PURGE_FACTOR) * (cl->lhm + 1);
     int    i;
 
     for (i = 0; i < cl->peers->count; i++) {

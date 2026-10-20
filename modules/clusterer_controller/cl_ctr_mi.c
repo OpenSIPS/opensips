@@ -310,7 +310,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	const char *cid_st = "none";
 	unsigned long foreign = 0, refused = 0, stalls = 0, terms_refused = 0,
 	              rx_drops = 0, holds = 0, ka_false = 0;
-	int           ka_mean = 0, ka_dev = 0, ka_margin = 0, ka_to = 0;
+	int           ka_mean = 0, ka_dev = 0, ka_margin = 0, ka_to = 0, lhm = 0;
 	int           rcvbuf = 0, nforeign = 0, k;
 	long long     stall_max = 0;
 	time_t        tnow = cl_ctr_now();
@@ -338,6 +338,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 		ka_margin  = cl->peers->ka_margin_ms;
 		ka_to      = cl->peers->ka_timeout_ms;
 		ka_false   = cl->peers->ka_false_suspicions;
+		lhm        = cl->peers->local_health;
 		rcvbuf     = cl->peers->rcvbuf_bytes;
 		stall_max  = cl->peers->self_stall_max_ms;
 		forced     = cl->peers->shtag_forced_node_id;
@@ -396,6 +397,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	    add_mi_number(cl_obj, MI_SSTR("master_ka_margin_ms"), ka_margin)      < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("master_timeout_ms"), ka_to)            < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("master_false_suspicions"), ka_false)   < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("local_health"), lhm)                   < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("rcvbuf_bytes"), rcvbuf)                < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("rx_kernel_drops"), rx_drops)           < 0)
 	    goto error;

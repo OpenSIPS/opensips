@@ -76,6 +76,12 @@ long long cl_ctr_master_timeout_ms(cl_ctr_cluster_t *cl)
         t = CL_CTR_KA_TIMEOUT_MIN_MS;
     if (t > CL_CTR_KA_TIMEOUT_MAX_MS)
         t = CL_CTR_KA_TIMEOUT_MAX_MS;
+    /* a node in trouble waits longer before it suspects anyone */
+    if (cl->lhm > 0) {
+        t *= (cl->lhm + 1);
+        if (t > CL_CTR_LHM_TIMEOUT_CAP_MS)
+            t = CL_CTR_LHM_TIMEOUT_CAP_MS;
+    }
     return t;
 }
 
@@ -91,6 +97,38 @@ void cl_ctr_arm_master_watchdog(cl_ctr_cluster_t *cl)
     if (timerfd_settime(cl->master_dead_tfd, 0, &its, NULL) < 0)
         LM_WARN("clusterer_controller: timerfd_settime: %s\n", strerror(errno));
     cl->peers->ka_timeout_ms = (int)t;
+}
+
+/* This node noticed trouble of its own: raise its Local Health Multiplier. */
+void cl_ctr_lhm_event(cl_ctr_cluster_t *cl, const char *why)
+{
+    cl->lhm_trouble++;
+    if (cl->lhm >= CL_CTR_LHM_MAX)
+        return;
+    if (cl->lhm++ == 0)
+        LM_WARN("clusterer_controller: [cluster %d] this node is in trouble "
+                "(%s) - it waits longer before judging its peers until it "
+                "recovers\n", cl->cluster_id, why);
+    cl->peers->local_health = cl->lhm;
+}
+
+/* Once per ALIVE round: account kernel drops since the last round, and lower
+ * the multiplier when the round passed without trouble. */
+void cl_ctr_lhm_round(cl_ctr_cluster_t *cl)
+{
+    unsigned long drops = cl->peers->rx_kernel_drops;
+
+    if (drops > cl->lhm_drops_seen) {
+        cl->lhm_drops_seen = drops;
+        cl_ctr_lhm_event(cl, "the kernel dropped cluster datagrams");
+    }
+    if (cl->lhm_trouble == 0 && cl->lhm > 0) {
+        if (--cl->lhm == 0)
+            LM_INFO("clusterer_controller: [cluster %d] this node is healthy "
+                    "again - normal timeouts\n", cl->cluster_id);
+        cl->peers->local_health = cl->lhm;
+    }
+    cl->lhm_trouble = 0;
 }
 
 /*
@@ -121,8 +159,12 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
 
     gap = cl->loop_seen_ms ? now - cl->loop_seen_ms : 0;
     cl->loop_seen_ms = now;
-    if (gap <= CL_CTR_STALL_MS)
+    if (gap <= CL_CTR_STALL_MS) {
+        if (gap > CL_CTR_LATE_MS)
+            cl_ctr_lhm_event(cl, "its timers ran late");
         return 0;
+    }
+    cl_ctr_lhm_event(cl, "the process was paused or starved");
 
     /* A master gone longer than its members wait (the keepalive timeout and
      * one probe round) has been replaced, or is about to be: they elected
@@ -241,6 +283,7 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
         }
         if (cl->probe_quiet_rounds == 0) {
             cl->probe_quiet_rounds = 1;
+            cl_ctr_lhm_event(cl, "nobody answered its question about the master");
             LM_WARN("clusterer_controller: [cluster %d] master %s is silent "
                     "and only %d of %d peer(s) answered whether they hear it - "
                     "this node may be the one cut off; waiting one more "
@@ -332,6 +375,7 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
     if (!cl_ctr_drain_tfd(fd))
         return 0;
     cl_ctr_stall_check(cl);
+    cl_ctr_lhm_round(cl);
     cl_ctr_maint_sync(cl);      /* a requested state the IPC job missed */
     cl_ctr_cid_tick(cl);
 
