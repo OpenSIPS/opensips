@@ -58,6 +58,138 @@ unsigned long (*gen_pkg_get_frags)(void *blk);
 	void *mem_block;
 #endif
 
+/* per-generation PKG allocations (see mem.h) */
+unsigned long pkg_gen_current = 0;
+static unsigned long pkg_gen_last = 0;
+
+struct pkg_gen_hook {
+	unsigned long gen;
+	void (*release)(void *);
+	void *arg;
+};
+/* libc-malloc'ed, never pkg: the hooks must survive the sweep they drive */
+static struct pkg_gen_hook *pkg_gen_hooks = NULL;
+static unsigned int pkg_gen_hooks_no = 0, pkg_gen_hooks_sz = 0;
+
+unsigned long pkg_gen_begin(void)
+{
+	if (pkg_gen_current)
+		LM_BUG("pkg generation %lu still open, starting a new one\n",
+			pkg_gen_current);
+	pkg_gen_current = ++pkg_gen_last;
+	return pkg_gen_current;
+}
+
+void pkg_gen_end(void)
+{
+	pkg_gen_current = 0;
+}
+
+int pkg_gen_track(void (*release)(void *), void *arg)
+{
+	struct pkg_gen_hook *h;
+
+	if (pkg_gen_current==0)
+		return 0; /* no generation open: nothing to release later */
+
+	if (pkg_gen_hooks_no==pkg_gen_hooks_sz) {
+		h = realloc(pkg_gen_hooks,
+			(pkg_gen_hooks_sz+256)*sizeof(struct pkg_gen_hook));
+		if (h==NULL) {
+			LM_ERR("no system memory for the pkg generation hooks\n");
+			return -1;
+		}
+		pkg_gen_hooks = h;
+		pkg_gen_hooks_sz += 256;
+	}
+	h = pkg_gen_hooks + pkg_gen_hooks_no++;
+	h->gen = pkg_gen_current;
+	h->release = release;
+	h->arg = arg;
+	return 0;
+}
+
+void pkg_gen_untrack(void *arg)
+{
+	unsigned int i;
+
+	for (i=0 ; i<pkg_gen_hooks_no ; i++)
+		if (pkg_gen_hooks[i].arg==arg) {
+			pkg_gen_hooks[i] = pkg_gen_hooks[--pkg_gen_hooks_no];
+			return;
+		}
+}
+
+static void pkg_gen_run_hooks(unsigned long gen)
+{
+	unsigned int i;
+
+	for (i=0 ; i<pkg_gen_hooks_no ; ) {
+		if (pkg_gen_hooks[i].gen==gen) {
+			pkg_gen_hooks[i].release(pkg_gen_hooks[i].arg);
+			pkg_gen_hooks[i] = pkg_gen_hooks[--pkg_gen_hooks_no];
+		} else {
+			i++;
+		}
+	}
+}
+
+void pkg_gen_sweep(unsigned long gen)
+{
+	unsigned long freed = 0;
+
+	if (gen==0)
+		return; /* the startup script / runtime allocations: immortal */
+	if (gen==pkg_gen_current) {
+		LM_BUG("sweeping the open pkg generation %lu\n", gen);
+		return;
+	}
+
+	pkg_gen_run_hooks(gen);
+
+#ifdef PKG_MALLOC
+#ifdef INLINE_ALLOC
+#if defined F_MALLOC
+	freed = fm_sweep_gen(mem_block, gen);
+#elif defined Q_MALLOC
+	freed = qm_sweep_gen(mem_block, gen);
+#else
+	LM_WARN("pkg generation sweep not supported by this allocator, "
+		"the dropped script generation %lu stays allocated\n", gen);
+#endif
+#else
+	switch (mem_allocator_pkg) {
+#ifdef F_MALLOC
+	case MM_F_MALLOC:
+		freed = fm_sweep_gen(mem_block, gen);
+		break;
+#ifdef DBG_MALLOC
+	case MM_F_MALLOC_DBG:
+		freed = fm_sweep_gen_dbg(mem_block, gen);
+		break;
+#endif
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+		freed = qm_sweep_gen(mem_block, gen);
+		break;
+#ifdef DBG_MALLOC
+	case MM_Q_MALLOC_DBG:
+		freed = qm_sweep_gen_dbg(mem_block, gen);
+		break;
+#endif
+#endif
+	default:
+		LM_WARN("pkg generation sweep not supported by the %s allocator, "
+			"the dropped script generation %lu stays allocated\n",
+			mm_str(mem_allocator_pkg), gen);
+		break;
+	}
+#endif
+#endif
+	LM_INFO("pkg generation %lu swept, %lu bytes freed\n", gen, freed);
+}
+
 int set_pkg_mm(const char *mm_name)
 {
 #ifdef PKG_MALLOC

@@ -129,6 +129,12 @@ void fm_status(struct fm_block *);
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void fm_status_dbg(struct fm_block *);
 #endif
+/* free every used fragment stamped with @gen (see mem.h);
+ * returns the number of bytes freed */
+unsigned long fm_sweep_gen(struct fm_block *, unsigned long gen);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+unsigned long fm_sweep_gen_dbg(struct fm_block *, unsigned long gen);
+#endif
 void fm_info(struct fm_block *, struct mem_info *);
 
 static inline unsigned long fm_frag_size(void *p)

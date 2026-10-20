@@ -172,6 +172,7 @@ int flag_list_to_bitmask(const str_const *flags, enum flag_type type, char delim
 int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len)
 {
 	struct flag_entry *it, **flag_list;
+	unsigned long g;
 	str fn;
 
 	if (!flag_name) {
@@ -207,7 +208,12 @@ int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len)
 		}
 	}
 
-	if (!(it = pkg_malloc(sizeof(*it) + fn.len))) {
+	/* the flag names registry outlives any reloaded script tree: keep it
+	   out of the tree's pkg generation */
+	g = pkg_gen_suspend();
+	it = pkg_malloc(sizeof(*it) + fn.len);
+	pkg_gen_resume(g);
+	if (!it) {
 		LM_CRIT("Out of memory!\n");
 		return E_OUT_OF_MEM;
 	}

@@ -216,8 +216,13 @@ static struct script_route_ref * __ref_script_route_by_name(char *name, int l,
 			}
 		}
 
-		/* no reference found, create a new one */
-		ref = pkg_malloc( sizeof *ref + l + 1 );
+		/* no reference found, create a new one; the refs registry outlives
+		   the script tree being parsed, so keep it out of its generation */
+		{
+			unsigned long g = pkg_gen_suspend();
+			ref = pkg_malloc( sizeof *ref + l + 1 );
+			pkg_gen_resume(g);
+		}
 	} else {
 		ref = shm_malloc( sizeof *ref + l + 1 );
 	}
@@ -1268,6 +1273,9 @@ static int fix_expr(struct expr* exp)
 					pkg_free(exp->right.v.data);
 					exp->right.v.data=re;
 					exp->right.type=RE_ST;
+					/* the compiled re holds libc memory: release it with
+					   the tree's generation (no-op outside a reload) */
+					pkg_gen_track((void (*)(void *))regfree, re);
 				}else if (exp->right.type!=RE_ST
 						&& exp->right.type!=SCRIPTVAR_ST){
 					LM_CRIT("invalid type for match\n");
