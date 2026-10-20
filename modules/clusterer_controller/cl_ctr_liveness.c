@@ -533,9 +533,16 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
         cl_ctr_rejoin_superior_master(cl, sender_ip, "MASTER_ALIVE");
     }
 
-    /* Non-masters (including a node that just yielded) watch the keepalive. */
+    /* Non-masters learn the keepalive's rhythm - a keepalive arriving while
+     * this node was asking whether anyone still hears the master proves the
+     * suspicion was false - and watch it, for as long as that rhythm says. */
+    if (!i_am_master && !from_self) {
+        if (cl->probing)
+            cl_ctr_ka_false_suspicion(cl, "its keepalive arrived while asking");
+        cl_ctr_ka_sample(cl, sender_ip);
+    }
     if (!i_am_master || yielded)
-        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+        cl_ctr_arm_master_watchdog(cl);
     /* ... and remember when they last heard it, for peers that probe; a
      * keepalive also ends any probe round or election hold. */
     if (!i_am_master && !from_self) {
@@ -664,7 +671,7 @@ static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *supe
         cl->join_pending = 1;
         cl_ctr_send_join_req(cl->sock, cl);
     }
-    cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+    cl_ctr_arm_master_watchdog(cl);
 }
 
 /**
@@ -871,4 +878,60 @@ void cl_ctr_handle_master_probe_ack(const char *sender_ip, const char *payload,
                "(%u ms ago)\n", cl->cluster_id, sender_ip, cl->probe_master,
                ntohl(ago_be));
     }
+}
+
+/*
+ * cl_ctr_ka_sample() - a keepalive from the master followed arrived: learn
+ * its rhythm.  Smoothed gap and mean deviation with TCP's gains (1/8, 1/4);
+ * the false-suspicion margin decays by 1/CL_CTR_KA_MARGIN_DECAY.  A different master starts
+ * afresh.  Worker only.
+ */
+void cl_ctr_ka_sample(cl_ctr_cluster_t *cl, const char *master_ip)
+{
+    long long now = cl_ctr_now_ms(), gap, err;
+
+    if (strcmp(cl->ka_master, master_ip) != 0) {
+        size_t l = strnlen(master_ip, CL_CTR_MAX_IP_LEN);
+        memcpy(cl->ka_master, master_ip, l);
+        cl->ka_master[l] = '\0';
+        cl->ka_samples   = 0;
+        cl->ka_mean_ms   = CL_CTR_MASTER_KA_INTERVAL * 1000;
+        cl->ka_dev_ms    = 0;
+        cl->ka_margin_ms = 0;
+        cl->ka_last_ms   = now;
+        return;
+    }
+    gap = now - cl->ka_last_ms;
+    cl->ka_last_ms = now;
+    if (gap <= 0)
+        return;
+    if (cl->ka_samples == 0) {
+        cl->ka_mean_ms = gap;
+        cl->ka_dev_ms  = gap / 2;
+    } else {
+        err = gap - cl->ka_mean_ms;
+        cl->ka_mean_ms += err / 8;
+        cl->ka_dev_ms  += ((err < 0 ? -err : err) - cl->ka_dev_ms) / 4;
+    }
+    if (cl->ka_samples < 1000000)
+        cl->ka_samples++;
+    cl->ka_margin_ms -= cl->ka_margin_ms / CL_CTR_KA_MARGIN_DECAY;
+    cl->peers->ka_mean_ms   = (int)cl->ka_mean_ms;
+    cl->peers->ka_dev_ms    = (int)cl->ka_dev_ms;
+    cl->peers->ka_margin_ms = (int)cl->ka_margin_ms;
+}
+
+/* A suspicion of the master turned out false: widen the margin (once per
+ * suspicion; bounded by the watchdog's maximum anyway).  Worker only. */
+void cl_ctr_ka_false_suspicion(cl_ctr_cluster_t *cl, const char *why)
+{
+    cl->ka_margin_ms += CL_CTR_KA_MARGIN_STEP_MS;
+    if (cl->ka_margin_ms > CL_CTR_KA_TIMEOUT_MAX_MS)
+        cl->ka_margin_ms = CL_CTR_KA_TIMEOUT_MAX_MS;
+    cl->peers->ka_margin_ms = (int)cl->ka_margin_ms;
+    cl->peers->ka_false_suspicions++;
+    LM_INFO("clusterer_controller: [cluster %d] master %s was suspected but is "
+            "alive (%s) - its watchdog now waits %lld ms\n", cl->cluster_id,
+            cl->ka_master[0] ? cl->ka_master : "(unknown)", why,
+            cl_ctr_master_timeout_ms(cl));
 }

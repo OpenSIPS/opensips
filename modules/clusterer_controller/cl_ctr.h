@@ -485,6 +485,22 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_MASTER_KA_INTERVAL   1   /* seconds between MASTER_ALIVE sends       */
 #define CL_CTR_MASTER_KA_MISSED     3   /* missed keepalives before re-election     */
 #define CL_CTR_MASTER_KA_TIMEOUT    (CL_CTR_MASTER_KA_INTERVAL * CL_CTR_MASTER_KA_MISSED)
+/* Adaptive master watchdog (cl_ctr_master_timeout_ms()).  A member learns the
+ * rhythm of the keepalives it actually receives - a smoothed mean and mean
+ * deviation of their gaps, as TCP learns a round-trip time - and suspects the
+ * master only past mean + CL_CTR_KA_DEV_K deviations plus a safety margin.
+ * Each false suspicion (peers still heard the master, or its keepalive came
+ * while this node was asking) adds CL_CTR_KA_MARGIN_STEP_MS to the margin,
+ * which decays by 1/CL_CTR_KA_MARGIN_DECAY per keepalive (about three minutes
+ * to halve at one keepalive a second - a lossy link's bursts come minutes
+ * apart, and patience learned in one should survive to the next).  Never below
+ * the classic 3 s, so a steady LAN fails over exactly as before; never above
+ * CL_CTR_KA_TIMEOUT_MAX_MS, so a dead master is still found. */
+#define CL_CTR_KA_TIMEOUT_MIN_MS    (CL_CTR_MASTER_KA_TIMEOUT * 1000)
+#define CL_CTR_KA_TIMEOUT_MAX_MS    15000
+#define CL_CTR_KA_DEV_K             4
+#define CL_CTR_KA_MARGIN_STEP_MS    1000
+#define CL_CTR_KA_MARGIN_DECAY      256
 
 /* Split-brain merge: a master emits a CL_CTR_PKT_MASTER_BEACON (bootstrap key) once
  * every CL_CTR_MASTER_BEACON_EVERY MASTER_ALIVE ticks.  This is the only traffic two
@@ -891,6 +907,15 @@ typedef struct cl_ctr_cluster_ {
      * open and for which master, how many peers answered that they still
      * hear it, and since when the current hold has lasted. */
     long long      master_heard_ms;
+    /* Keepalive rhythm of the master followed (worker-local, see
+     * cl_ctr_ka_sample()): whose, when the last arrived, smoothed gap and
+     * deviation, the false-suspicion margin, and how many gaps were seen. */
+    char           ka_master[CL_CTR_MAX_IP_LEN + 1];
+    long long      ka_last_ms;
+    long long      ka_mean_ms;
+    long long      ka_dev_ms;
+    long long      ka_margin_ms;
+    int            ka_samples;
     /* the maintenance state this worker last applied and announces */
     uint8_t        maint_adv;
     /* consecutive MASTER_ALIVEs whose liveness relay left this node out */
@@ -1373,6 +1398,9 @@ struct cl_ctr_peers_ {
     /* the receive buffer the kernel granted, and datagrams it dropped for
      * this socket because that buffer was full (SO_RXQ_OVFL, cumulative) */
     unsigned long   election_holds;   /* elections held: peers still heard the master */
+    /* the keepalive rhythm learned of the master followed, for MI */
+    int             ka_mean_ms, ka_dev_ms, ka_margin_ms, ka_timeout_ms;
+    unsigned long   ka_false_suspicions;
     int             rcvbuf_bytes;
     unsigned long   rx_kernel_drops;
     time_t          rx_drops_warned_at;
@@ -1572,6 +1600,10 @@ int  cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
 void cl_ctr_raise_maint_event(cl_ctr_cluster_t *cl, int node_id, int st);
 void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st);
 void cl_ctr_reelect_now(cl_ctr_cluster_t *cl, const char *why);
+long long cl_ctr_master_timeout_ms(cl_ctr_cluster_t *cl);
+void cl_ctr_arm_master_watchdog(cl_ctr_cluster_t *cl);
+void cl_ctr_ka_sample(cl_ctr_cluster_t *cl, const char *master_ip);
+void cl_ctr_ka_false_suspicion(cl_ctr_cluster_t *cl, const char *why);
 void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip,
                               const char *to_ip);
 void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,

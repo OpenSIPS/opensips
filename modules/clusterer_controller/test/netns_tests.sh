@@ -8,7 +8,7 @@
 # log lines only where the log line IS the behaviour (a warning that must be
 # emitted).
 . "$(dirname "$0")/netns_rig.sh"
-trap teardown EXIT
+trap 'tc qdisc del dev v1p root 2>/dev/null; teardown' EXIT
 PASS=0; FAIL=0
 check() { if [ "$2" = 1 ]; then echo "  PASS  $1"; PASS=$((PASS+1)); else echo "  FAIL  $1  ($3)"; FAIL=$((FAIL+1)); fi; }
 members() {  # members <node> <cluster> -> "ip:status:id ..." sorted
@@ -234,6 +234,9 @@ check "requests relayed before n4 had an id carry no cid" $([ "${NOCID:-0}" -gt 
 check "requests relayed after the join carry cid=$I4" $([ -n "$I4" ] && [ "${GOOD:-0}" -gt 0 ] && echo 1 || echo 0) "$GOOD"
 check "no request carried any other cid (-1, 0, stale)" $([ "${BAD:-1}" = 0 ] && echo 1 || echo 0) "$BAD"
 
+# T10/T11 replay packets on purpose; from here on no control packet may be
+# refused as a replay - a node's sequence never restarts within its life
+for i in 1 2 3 4; do eval RP$i=$(wc -l < $R/n$i.log); done
 echo "=== T13 a member paused past every timeout wakes without electing itself ==="
 # 15 s is past the master watchdog (3 s), the election window and the purge
 # window (query_time x 3 and x 6 = 6 s and 12 s here).  Woken, the node finds
@@ -359,6 +362,49 @@ for cut in 11 12 13; do
   MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
   check "${cut} s cut of n$x ($CUT18 dropped): majority's master $MIP leads, named by all" $([ "$CUT18" -gt 0 ] && [ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 done
+echo "=== T19 a killed master is replaced within the learned timeout ==="
+# On a steady link the learned watchdog stays at its 3 s floor: a master that
+# dies (SIGKILL - no GOODBYE) must be replaced within that plus one probe
+# round and an election tick.
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for o in 1 2 3 4; do [ $o != $MN ] && break; done
+TO=$(cfgval $o 741 master_timeout_ms)
+echo "    n$o's watchdog for master $MIP: ${TO} ms (mean $(cfgval $o 741 master_ka_mean_ms), dev $(cfgval $o 741 master_ka_dev_ms))"
+check "a steady link keeps the watchdog at its 3 s floor" $([ "${TO:-0}" = 3000 ] && echo 1 || echo 0) "$TO"
+T0=$(date +%s.%N); stop_hard $MN; rm -f $R/n$MN.pid
+NEWM=""; for k in $(seq 1 40); do
+  MS=""; for i in 1 2 3 4; do [ $i = $MN ] && continue; MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+  U=$(echo $MS | tr ' ' '\n' | sort -u)
+  if [ "$(echo $MS | wc -w)" = 3 ] && [ "$(echo "$U" | wc -l)" = 1 ] && [ "$U" != "$MIP" ]; then NEWM=$U; break; fi
+  sleep 0.25
+done
+DT=$(python3 -c "import time; print('%.1f' % (time.time() - $T0))")
+check "the survivors agree on a new master within 8 s (took ${DT} s: $NEWM)" $([ -n "$NEWM" ] && python3 -c "import sys; sys.exit(0 if $DT <= 8 else 1)" && echo 1 || echo 0) "$MS"
+start $MN $NEW 1 2 fleet-a; sleep 8
+
+echo "=== T20 a lossy, jittery link into one member: patience, not an election ==="
+# 25% loss and 300 ms +/- 300 ms delay on everything n1 receives, for 90 s.
+# Keepalive gaps of 2-4 s are now routine there: the member must learn a
+# longer wait and keep the master; once the link is clean the wait shrinks
+# back towards the 3 s floor (over minutes - patience is meant to outlast one
+# burst of loss).
+x=1; MX=$(wc -l < $R/n$x.log); PEAK=0
+tc qdisc add dev v${x}p root netem delay 300ms 300ms loss 25%
+for k in 1 2 3 4 5 6 7 8 9; do sleep 10; T=$(cfgval $x 741 master_timeout_ms); [ "${T:-0}" -gt "$PEAK" ] 2>/dev/null && PEAK=$T; done
+tc qdisc del dev v${x}p root
+E=$(since $x $MX | grep -a "cluster 741\]" | grep -ac "went silent"); P=$(since $x $MX | grep -a "cluster 741\]" | grep -ac "asking .* peer")
+echo "    n$x over 90 s: $P watchdog round(s), $E election(s), learned wait peaked at $PEAK ms, $(cfgval $x 741 master_false_suspicions) false suspicion(s)"
+check "no election on the lossy member" $([ "$E" = 0 ] && echo 1 || echo 0) "$E"
+check "it learned to wait longer than 3 s" $([ "$PEAK" -gt 3000 ] && echo 1 || echo 0) "$PEAK"
+sleep 30
+T=$(cfgval $x 741 master_timeout_ms)
+check "the learned wait shrinks once the link is clean ($PEAK -> $T ms)" $([ "${T:-0}" -lt "$PEAK" ] && [ "${T:-0}" -ge 3000 ] && echo 1 || echo 0) "$T"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "one master throughout, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+
+echo "=== replays after T12: none ==="
+RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
+check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"
 echo "=== logs: crashes / criticals ==="
 # "BUG trying to overwrite entry" was core TCP_main on BIN reconnect after T8,
 # fixed in core by #4289; it is checked here so it cannot come back unseen.

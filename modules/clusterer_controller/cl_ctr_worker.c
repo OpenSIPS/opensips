@@ -63,6 +63,36 @@ void cl_ctr_arm_tfd(int tfd, time_t sec_value, time_t sec_interval)
  * Reactor callbacks - one per event source
  * ========================================================================= */
 
+/* The master watchdog's timeout now: learned keepalive rhythm plus margin,
+ * clamped (see CL_CTR_KA_TIMEOUT_MIN_MS). */
+long long cl_ctr_master_timeout_ms(cl_ctr_cluster_t *cl)
+{
+    long long t = CL_CTR_KA_TIMEOUT_MIN_MS;
+
+    if (cl->ka_samples >= 2)
+        t = cl->ka_mean_ms + CL_CTR_KA_DEV_K * cl->ka_dev_ms;
+    t += cl->ka_margin_ms;
+    if (t < CL_CTR_KA_TIMEOUT_MIN_MS)
+        t = CL_CTR_KA_TIMEOUT_MIN_MS;
+    if (t > CL_CTR_KA_TIMEOUT_MAX_MS)
+        t = CL_CTR_KA_TIMEOUT_MAX_MS;
+    return t;
+}
+
+/* (Re)arm the master watchdog for the current adaptive timeout. */
+void cl_ctr_arm_master_watchdog(cl_ctr_cluster_t *cl)
+{
+    struct itimerspec its;
+    long long         t = cl_ctr_master_timeout_ms(cl);
+
+    memset(&its, 0, sizeof(its));
+    its.it_value.tv_sec  = (time_t)(t / 1000);
+    its.it_value.tv_nsec = (long)((t % 1000) * 1000000L);
+    if (timerfd_settime(cl->master_dead_tfd, 0, &its, NULL) < 0)
+        LM_WARN("clusterer_controller: timerfd_settime: %s\n", strerror(errno));
+    cl->peers->ka_timeout_ms = (int)t;
+}
+
 /*
  * cl_ctr_stall_check() - was this worker itself stopped?
  *
@@ -135,7 +165,7 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
         cl_ctr_arm_master_timers(cl, 0);  /* stop announcing, arm the watchdog */
         cl_ctr_apply_shtags(cl);          /* release the active tag */
     } else if (follow) {
-        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+        cl_ctr_arm_master_watchdog(cl);
     }
     return 1;
 }
@@ -183,12 +213,13 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
         }
         lock_stop_write(cl->peers->lock);
         LM_WARN("clusterer_controller: [cluster %d] no keepalive from master "
-                "%s for %ds, but %d peer(s) still hear it - holding the "
+                "%s for %lld ms, but %d peer(s) still hear it - holding the "
                 "election (a fault between this node and the master, not a "
                 "dead master); %lld s of %d held so far\n", cl->cluster_id,
-                cl->probe_master, CL_CTR_MASTER_KA_TIMEOUT, cl->probe_heard,
+                cl->probe_master, cl_ctr_master_timeout_ms(cl), cl->probe_heard,
                 (now - cl->hold_since_ms) / 1000, CL_CTR_PROBE_HOLD_MAX_S);
-        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+        cl_ctr_ka_false_suspicion(cl, "peers still hear the master");
+        cl_ctr_arm_master_watchdog(cl);
         return 1;
     }
 
@@ -237,8 +268,8 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
             LM_WARN("clusterer_controller: timerfd_settime: %s\n", strerror(errno));
     }
     LM_INFO("clusterer_controller: [cluster %d] no keepalive from master %s "
-            "for %ds - asking %d peer(s) whether they still hear it\n",
-            cl->cluster_id, cl->probe_master, CL_CTR_MASTER_KA_TIMEOUT, n);
+            "for %lld ms - asking %d peer(s) whether they still hear it\n",
+            cl->cluster_id, cl->probe_master, cl_ctr_master_timeout_ms(cl), n);
     return 1;
 }
 
@@ -648,7 +679,7 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
     dead_master[0] = '\0';
 
     lock_start_write(cl->peers->lock);
-    /* The master has been silent for CL_CTR_MASTER_KA_TIMEOUT (3s).  Age the silent
+    /* The master has been silent for the watchdog timeout.  Age the silent
      * master OUT of the election window before re-electing, otherwise
      * cl_ctr_elect_master would just re-select it: the election window is
      * query_time * CL_CTR_ELECT_FACTOR (~15s), far longer than the keepalive
@@ -674,10 +705,10 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
     }
 
     LM_INFO("clusterer_controller: [cluster %d] master %s went silent "
-            "(no keepalive for %ds) - re-electing\n",
+            "(no keepalive for %lld ms) - re-electing\n",
             cl->cluster_id,
             dead_master[0] ? dead_master : "(unknown)",
-            CL_CTR_MASTER_KA_TIMEOUT);
+            cl_ctr_master_timeout_ms(cl));
 
     /* cl_ctr_elect_master logs the resulting MASTER/BACKUP roles and why. */
     cl_ctr_elect_master(cl);

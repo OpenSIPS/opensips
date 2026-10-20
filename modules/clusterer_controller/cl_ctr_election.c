@@ -494,7 +494,7 @@ void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master)
          * demoted node can't keep pushing a joiner onto a now-stale key. */
         cl_ctr_retx_flush(cl);
         cl_ctr_arm_tfd(cl->master_alive_tfd, 0, 0);   /* disarm sender   */
-        cl_ctr_arm_tfd(cl->master_dead_tfd,  CL_CTR_MASTER_KA_TIMEOUT, 0);
+        cl_ctr_arm_master_watchdog(cl);
     }
 }
 
