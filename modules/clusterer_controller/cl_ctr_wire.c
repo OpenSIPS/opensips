@@ -891,25 +891,22 @@ void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
                         cl->session_key, CL_CTR_PKT_RESYNC, dest, destlen);
 }
 
-/* MASTER_PROBE: [master ip, NUL-terminated], unicast to one peer. */
-void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip,
-                              const char *to_ip)
+/* MASTER_PROBE: [master ip, NUL-terminated], multicast to the group - one
+ * datagram asks every member at once. */
+void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip)
 {
     char     pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_MAX_IP_LEN + 1
                  + CL_CTR_TAG_SZ];
     uint32_t seq = htonl(++cl->peers->my_seq);
     int      l   = (int)strnlen(master_ip, CL_CTR_MAX_IP_LEN);
-    struct sockaddr_in d;
 
     memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
     pkt[CL_CTR_WIRE_HDR_SZ] = (char)CL_CTR_PKT_MASTER_PROBE;
     memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
     memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ, master_ip, l);
     pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + l] = '\0';
-    cl_ctr_sockaddr_in(to_ip, cl->multicast_port, &d);
-    cl_ctr_seal_and_send_to(cl->sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + l + 1,
-                            cl->session_key, CL_CTR_PKT_MASTER_PROBE,
-                            (const struct sockaddr *)&d, sizeof(d));
+    cl_ctr_seal_and_send(cl->sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + l + 1,
+                         cl->session_key, CL_CTR_PKT_MASTER_PROBE);
 }
 
 /* MASTER_PROBE_ACK: [master ip, NUL-terminated][ms since heard, 4B BE] */

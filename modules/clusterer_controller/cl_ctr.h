@@ -331,13 +331,14 @@ static inline long long cl_ctr_now_ms(void)
  * receive path can tell them apart before it parses anything, and so an old
  * build simply does not recognise it instead of half-understanding it. */
 #define CL_CTR_PKT_CONSUMER_REL     0x0E
-/* member -> a few peers, when its master went silent: do you still hear
- * [master ip]?  The answer carries how long ago the peer last did.  A node
- * that predates these types drops them, and the asker then elects as it
- * always did (cl_ctr_probe_step()). */
+/* member -> the group (multicast), when its master went silent: who still
+ * hears [master ip]?  Every member answers by unicast with how long ago it
+ * last did; the master named answers that it is alive.  A node that
+ * predates these types drops them, and the asker then elects as it always
+ * did (cl_ctr_probe_step()). */
 #define CL_CTR_PKT_MASTER_PROBE     0x0F
 #define CL_CTR_PKT_MASTER_PROBE_ACK 0x10
-#define CL_CTR_PROBE_FANOUT         3     /* peers asked                       */
+#define CL_CTR_PROBE_CONFIRM        2     /* silent answers that elect at once */
 #define CL_CTR_PROBE_WAIT_MS        1000  /* how long the answers are awaited  */
 #define CL_CTR_PROBE_FRESH_MS       2000  /* "still hears it" = within this    */
 #define CL_CTR_PROBE_HOLD_MAX_S     30    /* longest an election is held for   */
@@ -921,7 +922,10 @@ typedef struct cl_ctr_cluster_ {
     /* consecutive MASTER_ALIVEs whose liveness relay left this node out */
     int            unlisted;
     int            probing;
-    int            probe_heard;
+    int            probe_heard;     /* answers: heard the master recently   */
+    int            probe_silent;    /* answers: did not hear it either      */
+    int            probe_peers;     /* live peers that could answer         */
+    int            probe_quiet_rounds; /* rounds too few answered, this outage */
     char           probe_master[CL_CTR_MAX_IP_LEN + 1];
     long long      hold_since_ms;
     int            identity_registered; /* 1 once update_identity called */
@@ -1604,8 +1608,7 @@ long long cl_ctr_master_timeout_ms(cl_ctr_cluster_t *cl);
 void cl_ctr_arm_master_watchdog(cl_ctr_cluster_t *cl);
 void cl_ctr_ka_sample(cl_ctr_cluster_t *cl, const char *master_ip);
 void cl_ctr_ka_false_suspicion(cl_ctr_cluster_t *cl, const char *why);
-void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip,
-                              const char *to_ip);
+void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip);
 void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
                                   uint32_t heard_ms_ago,
                                   const struct sockaddr *dest, socklen_t destlen);

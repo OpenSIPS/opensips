@@ -171,56 +171,89 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
 }
 
 /*
- * cl_ctr_probe_step() - before electing on a silent master, ask the peers.
+ * cl_ctr_probe_step() - before electing on a silent master, ask the cluster.
  *
  * A master that stopped reaching THIS node is not necessarily dead: a fault
  * between the two (one NIC, one switch port, a host firewall rule) looks
- * the same from here.  Electing on it would split the cluster - this node
- * picks a new master while every other node keeps the old one.  So on the
- * first expiry of the master watchdog it asks up to CL_CTR_PROBE_FANOUT
- * live peers and waits CL_CTR_PROBE_WAIT_MS; on the next, if any of them
- * heard the master within CL_CTR_PROBE_FRESH_MS, it holds the election and
- * watches again.  A hold lasts at most CL_CTR_PROBE_HOLD_MAX_S per outage,
- * and with nobody to ask, or nobody answering, it elects as before.
+ * the same from here, and so does this node itself being cut off.  So on the
+ * first expiry of the master watchdog it asks the whole group, in one
+ * multicast datagram, who still hears the master, waits CL_CTR_PROBE_WAIT_MS,
+ * and on the next expiry decides on the answers:
  *
- * Returns 1 when the election is deferred (the watchdog is re-armed).
+ *   - anyone heard it within CL_CTR_PROBE_FRESH_MS (the master itself answers
+ *     that it is alive): a fault between this node and the master - hold
+ *     the election and watch again, for at most CL_CTR_PROBE_HOLD_MAX_S;
+ *   - CL_CTR_PROBE_CONFIRM of them (or every live peer, if fewer) did not
+ *     hear it either: independent confirmation - elect now;
+ *   - nobody, or too few, answered: this node is the likeliest fault - wait
+ *     one more watchdog period and ask again, and elect only if it is still
+ *     quiet.
+ *
+ * With nobody to ask it elects at once, as before.  Returns 1 when the
+ * election is deferred (the watchdog is re-armed).
  */
 static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
 {
     long long now = cl_ctr_now_ms();
-    char      to[CL_CTR_PROBE_FANOUT][CL_CTR_MAX_IP_LEN + 1];
-    int       i, n = 0;
+    int       i, n = 0, need;
     time_t    cutoff;
 
     if (cl->probing) {
         /* the answers are in */
         cl->probing = 0;
-        if (cl->probe_heard == 0) {
-            cl->hold_since_ms = 0;
+        if (cl->probe_heard > 0) {
+            /* Liveness by proxy, as the master's relay gives every member:
+             * the master stays in this node's election window while its
+             * peers hear it, or the ALIVE tick's election would replace it
+             * regardless. */
+            lock_start_write(cl->peers->lock);
+            cl->peers->election_holds++;
+            {
+                int    k;
+                time_t t = cl_ctr_now();
+                for (k = 0; k < cl->peers->count; k++)
+                    if (strcmp(cl->peers->entries[k].ip, cl->probe_master) == 0)
+                        cl->peers->entries[k].last_seen = t;
+            }
+            lock_stop_write(cl->peers->lock);
+            LM_WARN("clusterer_controller: [cluster %d] no keepalive from "
+                    "master %s for %lld ms, but %d node(s) still hear it - "
+                    "holding the election (a fault between this node and the "
+                    "master, not a dead master); %lld s of %d held so far\n",
+                    cl->cluster_id, cl->probe_master,
+                    cl_ctr_master_timeout_ms(cl), cl->probe_heard,
+                    (now - cl->hold_since_ms) / 1000, CL_CTR_PROBE_HOLD_MAX_S);
+            cl->probe_quiet_rounds = 0;
+            cl_ctr_ka_false_suspicion(cl, "peers still hear the master");
+            cl_ctr_arm_master_watchdog(cl);
+            return 1;
+        }
+        need = cl->probe_peers < CL_CTR_PROBE_CONFIRM ? cl->probe_peers
+                                                       : CL_CTR_PROBE_CONFIRM;
+        if (cl->probe_silent >= need) {
+            LM_INFO("clusterer_controller: [cluster %d] %d peer(s) confirm "
+                    "that master %s is silent - electing\n", cl->cluster_id,
+                    cl->probe_silent, cl->probe_master);
+            cl->hold_since_ms      = 0;
+            cl->probe_quiet_rounds = 0;
             return 0;
         }
-        /* Liveness by proxy, as the master's relay gives every member: the
-         * master stays in this node's election window while its peers hear
-         * it, or the ALIVE tick's election would replace it regardless. */
-        lock_start_write(cl->peers->lock);
-        cl->peers->election_holds++;
-        {
-            int    k;
-            time_t t = cl_ctr_now();
-            for (k = 0; k < cl->peers->count; k++)
-                if (strcmp(cl->peers->entries[k].ip, cl->probe_master) == 0)
-                    cl->peers->entries[k].last_seen = t;
+        if (cl->probe_quiet_rounds == 0) {
+            cl->probe_quiet_rounds = 1;
+            LM_WARN("clusterer_controller: [cluster %d] master %s is silent "
+                    "and only %d of %d peer(s) answered whether they hear it - "
+                    "this node may be the one cut off; waiting one more "
+                    "watchdog period before electing\n", cl->cluster_id,
+                    cl->probe_master, cl->probe_silent, cl->probe_peers);
+            cl_ctr_arm_master_watchdog(cl);
+            return 1;
         }
-        lock_stop_write(cl->peers->lock);
-        LM_WARN("clusterer_controller: [cluster %d] no keepalive from master "
-                "%s for %lld ms, but %d peer(s) still hear it - holding the "
-                "election (a fault between this node and the master, not a "
-                "dead master); %lld s of %d held so far\n", cl->cluster_id,
-                cl->probe_master, cl_ctr_master_timeout_ms(cl), cl->probe_heard,
-                (now - cl->hold_since_ms) / 1000, CL_CTR_PROBE_HOLD_MAX_S);
-        cl_ctr_ka_false_suspicion(cl, "peers still hear the master");
-        cl_ctr_arm_master_watchdog(cl);
-        return 1;
+        LM_WARN("clusterer_controller: [cluster %d] master %s still silent and "
+                "the peers still do not answer - electing\n", cl->cluster_id,
+                cl->probe_master);
+        cl->hold_since_ms      = 0;
+        cl->probe_quiet_rounds = 0;
+        return 0;
     }
 
     if (cl->hold_since_ms &&
@@ -229,13 +262,15 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
                 "from this node for over %d s although peers still hear it - "
                 "electing\n", cl->cluster_id, cl->probe_master,
                 CL_CTR_PROBE_HOLD_MAX_S);
-        cl->hold_since_ms = 0;
+        cl->hold_since_ms      = 0;
+        cl->probe_quiet_rounds = 0;
         return 0;
     }
 
     cl->probe_master[0] = '\0';
-    /* Ask any peer not yet purged: a member cut off from the master also
-     * stops hearing the relay that keeps its peers in the election window. */
+    /* Count the peers that could answer - any not yet purged: a member cut
+     * off from the master also stops hearing the relay that keeps its peers
+     * in the election window. */
     cutoff = cl_ctr_now() - (time_t)query_time * CL_CTR_PURGE_FACTOR;
     lock_start_read(cl->peers->lock);
     for (i = 0; i < cl->peers->count; i++) {
@@ -246,17 +281,18 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
             memcpy(cl->probe_master, e->ip, sizeof(cl->probe_master));
             continue;
         }
-        if (n < CL_CTR_PROBE_FANOUT && e->last_seen >= cutoff)
-            memcpy(to[n++], e->ip, sizeof(to[0]));
+        if (e->last_seen >= cutoff)
+            n++;
     }
     lock_stop_read(cl->peers->lock);
     if (cl->probe_master[0] == '\0' || n == 0)
         return 0;
 
-    for (i = 0; i < n; i++)
-        cl_ctr_send_master_probe(cl, cl->probe_master, to[i]);
-    cl->probing     = 1;
-    cl->probe_heard = 0;
+    cl_ctr_send_master_probe(cl, cl->probe_master);
+    cl->probing      = 1;
+    cl->probe_heard  = 0;
+    cl->probe_silent = 0;
+    cl->probe_peers  = n;
     if (!cl->hold_since_ms)
         cl->hold_since_ms = now;
     {
@@ -268,8 +304,9 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
             LM_WARN("clusterer_controller: timerfd_settime: %s\n", strerror(errno));
     }
     LM_INFO("clusterer_controller: [cluster %d] no keepalive from master %s "
-            "for %lld ms - asking %d peer(s) whether they still hear it\n",
-            cl->cluster_id, cl->probe_master, cl_ctr_master_timeout_ms(cl), n);
+            "for %lld ms - asking the cluster whether anyone still hears it "
+            "(%d peer(s) could answer)\n", cl->cluster_id, cl->probe_master,
+            cl_ctr_master_timeout_ms(cl), n);
     return 1;
 }
 
