@@ -1318,6 +1318,22 @@ static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
  * Shared between the module's source files
  * ========================================================================= */
 
+/* cl_ctr_reliable.c */
+extern int cl_ctr_retx_pkt_max;
+void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
+void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
+                            const unsigned char *pkt, int pkt_len);
+void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
+                            unsigned char type, const unsigned char *pkt,
+                            int pkt_len, const struct sockaddr *dest,
+                            socklen_t destlen);
+void cl_ctr_retx_enqueue(cl_ctr_cluster_t *cl, uint32_t seq, unsigned char type,
+                            const unsigned char *pkt, int pkt_len,
+                            const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_handle_ack(const char *payload, int payload_len,
+                              cl_ctr_cluster_t *cl, const char *sender_ip);
+int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout);
+
 /* cl_ctr_peers.c */
 int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
                         char *ipbuf, int ipbuf_sz);
@@ -1482,16 +1498,6 @@ int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
                                const struct sockaddr *dest, socklen_t destlen);
 int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
                             const unsigned char *key, unsigned char type);
-void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
-void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
-                            const unsigned char *pkt, int pkt_len);
-void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
-                            unsigned char type, const unsigned char *pkt,
-                            int pkt_len, const struct sockaddr *dest,
-                            socklen_t destlen);
-void cl_ctr_handle_ack(const char *payload, int payload_len,
-                              cl_ctr_cluster_t *cl, const char *sender_ip);
-int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout);
 void cl_ctr_send_ack(int sock, cl_ctr_cluster_t *cl, uint32_t acked_seq,
                         unsigned char acked_type, int use_bootstrap,
                         const struct sockaddr *dest, socklen_t destlen);
