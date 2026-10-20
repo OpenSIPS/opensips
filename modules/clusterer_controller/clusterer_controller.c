@@ -218,6 +218,29 @@
  * is Noise_NNpsk0_25519_ChaChaPoly_SHA256, and X25519 / HKDF-SHA256 / RNG also
  * come from libsodium. */
 #include <sodium.h>
+
+/* Clock for everything in this module that measures ELAPSED time - peer
+ * liveness, election and purge windows, grace periods, back-offs, warning
+ * rate limits.  CLOCK_MONOTONIC, not time(NULL): a wall-clock step (NTP
+ * correcting a drifted VM, an operator setting the date) would otherwise
+ * expire every peer at once and start an election storm, or - stepping back -
+ * keep dead peers "alive" until the clock caught up.  Nothing here needs a
+ * date; the one wall-clock value, the incarnation, is set separately.
+ *
+ * Biased by a constant because CLOCK_MONOTONIC counts from boot: on a node
+ * started seconds after boot, "now minus the purge window" would go negative
+ * and make a last_seen of 0 (never seen, or aged out by the master watchdog)
+ * look fresh.  The value is only ever compared with itself, so the bias is
+ * invisible otherwise.  The clock is system-wide, so values written by the
+ * worker and read by MI processes stay comparable. */
+#define CL_CTR_CLOCK_BIAS  1000000
+static inline time_t cl_ctr_now(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (time_t)ts.tv_sec + CL_CTR_CLOCK_BIAS;
+}
 #define CL_CTR_CRYPTO_SUITE "XChaCha20-Poly1305 + Argon2id + Noise_NNpsk0"
 
 /* =========================================================================
@@ -634,9 +657,14 @@ typedef struct {
 #define CL_CTR_NODE_ASSIGN_MAX_SZ (CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_NODE_ID_SZ \
                                + CL_CTR_MAX_IP_LEN + 1 + CL_CTR_BIN_INFO_MAX_SZ \
                                + CL_CTR_INC_SZ + CL_CTR_TAG_SZ)
+/* MEMBER_LIST stamp, after the entries: [master term 4B BE][list seq 4B BE].
+ * A receiver applies a list only if it is newer than the last one it applied
+ * from that mastership - see cl_ctr_handle_member_list(). */
+#define CL_CTR_LIST_STAMP_SZ      8
 #define CL_CTR_LIST_PKT_MAX_SZ   (CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_LIST_COUNT_SZ \
                               + CL_CTR_NODE_ID_SZ /* forced-shtag node_id */ \
-                              + CL_CTR_MAX_PEERS * CL_CTR_IP_ENTRY_SZ + CL_CTR_TAG_SZ)
+                              + CL_CTR_MAX_PEERS * CL_CTR_IP_ENTRY_SZ \
+                              + CL_CTR_LIST_STAMP_SZ + CL_CTR_TAG_SZ)
 /* Large enough to receive a fully reassembled UDP datagram (max 65507 bytes) */
 #define CL_CTR_RECV_BUF_SZ       65536
 
@@ -1526,6 +1554,15 @@ struct cl_ctr_peers_ {
     int             cid_state;
     time_t          cid_since;
     unsigned long   foreign_pkts;     /* refused for carrying another id */
+    /* new addresses turned away because the peer table was full, and when
+     * that was last logged (see cl_ctr_upsert_peer_locked()) */
+    unsigned long   peers_refused;
+    time_t          peers_refused_warned_at;
+    /* MEMBER_LIST ordering: the sequence this node stamps on the lists it
+     * sends as master, and the (term, seq) of the last list it applied. */
+    uint32_t        list_seq;
+    uint32_t        list_term_seen;
+    uint32_t        list_seq_seen;
     /* worker_proc_no: OpenSIPS process index of this cluster's cl_ctr_worker,
      * published here (shm) after fork so MI handlers running in a different
      * process can target the worker with ipc_send_rpc().  -1 until set.  */
@@ -2111,7 +2148,7 @@ static unsigned int ip_to_num(const char *ip)
  */
 static time_t cl_ctr_election_cutoff(void)
 {
-    time_t now = time(NULL);
+    time_t now = cl_ctr_now();
     return (now / (time_t)query_time) * (time_t)query_time
            - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
 }
@@ -2203,7 +2240,7 @@ static void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 	if (e->in_election && !now_in)
 	    LM_INFO("clusterer_controller: peer %s went down "
 	            "(last seen %lds ago)\n",
-	            e->ip, (long)(time(NULL) - e->last_seen));
+	            e->ip, (long)(cl_ctr_now() - e->last_seen));
 
 	e->in_election = now_in;
 
@@ -2474,7 +2511,7 @@ static void cl_ctr_reserve_id_locked(cl_ctr_cluster_t *cl, const char *ip,
 
 static void cl_ctr_prune_stale(cl_ctr_cluster_t *cl)
 {
-    time_t cutoff = time(NULL) - (time_t)(query_time * CL_CTR_PURGE_FACTOR);
+    time_t cutoff = cl_ctr_now() - (time_t)(query_time * CL_CTR_PURGE_FACTOR);
     int    i;
 
     for (i = 0; i < cl->peers->count; i++) {
@@ -2527,6 +2564,11 @@ static void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_c
 	}
     }
 
+    /* list ordering is per master: a different master starts afresh */
+    if (strcmp(cl->peers->last_master, master_ip) != 0) {
+	cl->peers->list_term_seen = 0;
+	cl->peers->list_seq_seen  = 0;
+    }
     memcpy(cl->peers->last_master, master_ip,
            strnlen(master_ip, CL_CTR_MAX_IP_LEN));
     cl->peers->last_master[strnlen(master_ip, CL_CTR_MAX_IP_LEN)] = '\0';
@@ -2589,7 +2631,7 @@ static void cl_ctr_learn_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl)
 static void cl_ctr_upsert_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl)
 {
     unsigned int src_num = ip_to_num(src_ip);
-    time_t       now     = time(NULL);
+    time_t       now     = cl_ctr_now();
     cl_ctr_peer_t   *found;
 
     if (src_num == 0) {
@@ -2605,8 +2647,18 @@ static void cl_ctr_upsert_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl)
 
     /* New entry */
     if (cl->peers->count >= CL_CTR_MAX_PEERS) {
-	LM_WARN("clusterer_controller: peer table full, ignoring %s\n",
-	        src_ip);
+	/* Counted always, said once a minute: this runs per packet, and a
+	 * flood of new sources (or a misconfiguration) must not turn a full
+	 * table into a full disk.  cl_ctr_list_config reports the count. */
+	cl->peers->peers_refused++;
+	if (cl->peers->peers_refused_warned_at == 0
+	        || now - cl->peers->peers_refused_warned_at >= 60) {
+	    cl->peers->peers_refused_warned_at = now;
+	    LM_WARN("clusterer_controller: [cluster %d] peer table full (%d of "
+	            "%d) - ignoring %s and any other new address; %lu refused "
+	            "so far\n", cl->cluster_id, cl->peers->count,
+	            CL_CTR_MAX_PEERS, src_ip, cl->peers->peers_refused);
+	}
 	return;
     }
     {
@@ -2632,7 +2684,7 @@ static void cl_ctr_reserve_id_locked(cl_ctr_cluster_t *cl, const char *ip,
                                      uint16_t node_id)
 {
     cl_ctr_id_resv_t *r, *slot = NULL;
-    time_t            now = time(NULL);
+    time_t            now = cl_ctr_now();
     int               i;
 
     if (node_id == 0 || ip[0] == '\0')
@@ -2682,7 +2734,7 @@ static int cl_ctr_id_in_use_locked(cl_ctr_cluster_t *cl, uint16_t id)
  */
 static uint16_t cl_ctr_alloc_node_id_locked(cl_ctr_cluster_t *cl, const char *ip)
 {
-    time_t   now = time(NULL);
+    time_t   now = cl_ctr_now();
     uint16_t id;
     int      i, held;
 
@@ -3201,7 +3253,7 @@ static void cl_ctr_cid_adopt(cl_ctr_cluster_t *cl, const unsigned char *cid,
     }
     memcpy(cl->peers->cid, cid, CL_CTR_CID_SZ);
     cl->peers->cid_state = CL_CTR_CID_PROVISIONAL;
-    cl->peers->cid_since = time(NULL);
+    cl->peers->cid_since = cl_ctr_now();
 }
 
 /* Founding a cluster: into an id we have already heard from authenticated
@@ -3237,7 +3289,7 @@ static void cl_ctr_cid_tick(cl_ctr_cluster_t *cl)
     char s1[37];
 
     if (cl->peers->cid_state != CL_CTR_CID_PROVISIONAL
-            || time(NULL) - cl->peers->cid_since < CL_CTR_CID_GRACE_SECS)
+            || cl_ctr_now() - cl->peers->cid_since < CL_CTR_CID_GRACE_SECS)
         return;
     cl->peers->cid_state = CL_CTR_CID_ESTABLISHED;
     cl_ctr_cid_str(cl->peers->cid, s1);
@@ -3375,7 +3427,7 @@ static int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
             if (pkt_inc != e->incarnation) {
                 if (e->incarnation != 0 && pkt_inc < e->incarnation) {
                     static time_t last_stale_warn;
-                    time_t now = time(NULL);
+                    time_t now = cl_ctr_now();
                     if (now - last_stale_warn >= CL_CTR_WIRE_WARN_IVL) {
                         last_stale_warn = now;
                         LM_WARN("clusterer_controller: [cluster %d] packet "
@@ -4239,13 +4291,14 @@ static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t 
     memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
     /* nonce at [8..19] written by cl_ctr_encrypt_pkt */
 
-    /* Plaintext: [type][seq][count BE][forced_shtag_node_id BE][entries...] */
+    /* Plaintext: [type][seq][incarnation][count BE][forced_shtag_node_id BE]
+     *            [entries...][master term BE][list seq BE] */
     pkt[CL_CTR_WIRE_HDR_SZ] = (char)type;
     memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
     /* count filled after iteration; forced_shtag_node_id filled below */
     p = pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_LIST_COUNT_SZ + CL_CTR_NODE_ID_SZ;
 
-    cutoff = time(NULL) - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
+    cutoff = cl_ctr_now() - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
 
     lock_start_read(cl->peers->lock);
     {
@@ -4271,8 +4324,17 @@ static void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t 
     count_be = htons(count);
     memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ, &count_be, CL_CTR_LIST_COUNT_SZ);
 
+    /* stamp: this mastership's term and the list's own sequence, so a
+     * receiver can tell an old list arriving late from a new one */
+    {
+	uint32_t t_be = htonl(cl->peers->my_term);
+	uint32_t s_be = htonl(++cl->peers->list_seq);
+	memcpy(p, &t_be, 4);  p += 4;
+	memcpy(p, &s_be, 4);  p += 4;
+    }
+
     plain_len = CL_CTR_PLAIN_HDR_SZ + CL_CTR_LIST_COUNT_SZ + CL_CTR_NODE_ID_SZ
-                + count * CL_CTR_IP_ENTRY_SZ;
+                + count * CL_CTR_IP_ENTRY_SZ + CL_CTR_LIST_STAMP_SZ;
     if ((dest ? cl_ctr_seal_and_send_to(sock, cl, pkt, plain_len, cl->session_key,
                                     type, dest, destlen)
               : cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->session_key, type)) == 0)
@@ -4451,7 +4513,7 @@ static void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint
 {
     uint64_t h = 0;
     uint16_t c = 0;
-    time_t   cutoff = time(NULL) - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
+    time_t   cutoff = cl_ctr_now() - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
     int      i, k;
 
     lock_start_read(cl->peers->lock);
@@ -4486,7 +4548,7 @@ static void cl_ctr_sockaddr_in(const char *ip, int port, struct sockaddr_in *out
  * master has seen inside the election window - the liveness it relays. */
 static void cl_ctr_build_alive_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm)
 {
-    time_t cutoff = time(NULL) - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
+    time_t cutoff = cl_ctr_now() - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
     int    i;
 
     memset(bm, 0, CL_CTR_ALIVE_BITMAP_SZ);
@@ -4506,7 +4568,7 @@ static void cl_ctr_build_alive_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm)
  * peers' ALIVEs directly.  Only a non-master applies this. */
 static void cl_ctr_apply_alive_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm)
 {
-    time_t now = time(NULL);
+    time_t now = cl_ctr_now();
     int    i;
 
     lock_start_write(cl->peers->lock);
@@ -5654,6 +5716,50 @@ static void cl_ctr_handle_member_list(const char *payload, int payload_len,
 
     p = payload + CL_CTR_LIST_COUNT_SZ + CL_CTR_NODE_ID_SZ;
 
+    /* Ordering.  The guard above admits lists only from the master we follow,
+     * but not every list from it is current: a list from that same address's
+     * EARLIER mastership can arrive late, and two lists of one mastership can
+     * arrive in the wrong order - the replay window accepts a delayed packet
+     * it has not seen, so applying it would wind state back (an operator's
+     * cl_ctr_shtag_force undone by the list that preceded it, for one).
+     * Drop a list whose term is older than the master's MASTER_ALIVE term or
+     * the last applied list's term, or that is not newer than the last list
+     * applied from the same term.  The record is per master and is cleared
+     * when the master changes or restarts (its MASTER_ALIVE then carries a
+     * lower term).  A node still joining takes whatever it is given.  Lists
+     * without a stamp (none exist on wire version 2) are applied as before. */
+    {
+	const char *st = p + (int)count * CL_CTR_IP_ENTRY_SZ;
+	if (payload_len >= (int)(st - payload) + CL_CTR_LIST_STAMP_SZ) {
+	    uint32_t t_be, s_be, lterm, lseq;
+	    int is_new, stale;
+
+	    memcpy(&t_be, st, 4);      lterm = ntohl(t_be);
+	    memcpy(&s_be, st + 4, 4);  lseq  = ntohl(s_be);
+	    lock_start_write(cl->peers->lock);
+	    is_new = (cl->peers->node_state == CL_CTR_NODE_NEW);
+	    stale  = !is_new &&
+	             (lterm < cl->peers->master_term ||
+	              lterm < cl->peers->list_term_seen ||
+	              (lterm == cl->peers->list_term_seen &&
+	               lseq <= cl->peers->list_seq_seen));
+	    if (!stale) {
+		cl->peers->list_term_seen = lterm;
+		cl->peers->list_seq_seen  = lseq;
+	    }
+	    lock_stop_write(cl->peers->lock);
+	    if (stale) {
+		LM_INFO("clusterer_controller: [cluster %d] MEMBER_LIST from %s "
+		        "is older than the cluster state already applied (term "
+		        "%u seq %u; master term %u, last applied term %u seq %u) - "
+		        "dropped\n", cl->cluster_id, sender_ip, lterm, lseq,
+		        cl->peers->master_term, cl->peers->list_term_seen,
+		        cl->peers->list_seq_seen);
+		return;
+	    }
+	}
+    }
+
     /* First pass: collect designated master IP */
     for (i = 0; i < (int)count; i++) {
 	const char   *entry     = p + i * CL_CTR_IP_ENTRY_SZ;
@@ -6070,7 +6176,7 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
 
     /* A master that refused to admit us: neither follow it nor yield to it
      * for a while - re-merging would only be refused again. */
-    if (!from_self && cl->merge_refused_until > time(NULL) &&
+    if (!from_self && cl->merge_refused_until > cl_ctr_now() &&
         strcmp(sender_ip, cl->merge_refused_ip) == 0)
         return;
 
@@ -6125,6 +6231,13 @@ static void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *
              * cl_ctr_elect_master preserves the correct current master. */
             cl_ctr_upsert_peer_locked(sender_ip, cl);
             cl_ctr_apply_master_from_list_locked(sender_ip, cl);
+            /* the master we follow announcing a LOWER term than its lists
+             * carried has restarted (a packet from its previous life is
+             * refused by the replay check): its lists start afresh */
+            if (adv_term < cl->peers->list_term_seen) {
+                cl->peers->list_term_seen = 0;
+                cl->peers->list_seq_seen  = 0;
+            }
             cl->peers->master_term  = adv_term;
             cl->peers->master_count = adv_cnt;
         }
@@ -6261,7 +6374,7 @@ static void cl_ctr_handle_master_beacon(const char *sender_ip, const char *paylo
 
     if (strcmp(sender_ip, my_ip) == 0)
         return;                     /* our own beacon looped back */
-    if (cl->merge_refused_until > time(NULL) &&
+    if (cl->merge_refused_until > cl_ctr_now() &&
         strcmp(sender_ip, cl->merge_refused_ip) == 0)
         return;                     /* it refused us; not trying again yet */
 
@@ -6301,7 +6414,7 @@ static void cl_ctr_handle_master_beacon(const char *sender_ip, const char *paylo
     mtu_differs = cfg_present && b_mtu > 0 && cc_mtu > 0
                   && b_mtu != cl_ctr_mtu_wire(cc_mtu);
     if (cfg_differs || mtu_differs) {
-        time_t now = time(NULL);
+        time_t now = cl_ctr_now();
         if (cl->merge_warned_at == 0
                 || now - cl->merge_warned_at >= CL_CTR_WIRE_WARN_IVL) {
             char diff[160];
@@ -6560,7 +6673,7 @@ static int cl_ctr_consumer_src_known(cl_ctr_cluster_t *cl, uint32_t src_ip)
 static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip,
                              int is_consumer)
 {
-    time_t            now     = time(NULL);
+    time_t            now     = cl_ctr_now();
     cl_ctr_rate_entry_t  *oldest  = NULL;
     int               limit   = is_consumer ? cl->consumer_rate
                                             : CL_CTR_RATE_LIMIT;
@@ -6839,7 +6952,7 @@ static void cl_ctr_handle_join_reject(const char *payload, int payload_len,
                     CL_CTR_MERGE_REFUSE_SECS);
             snprintf(cl->merge_refused_ip, sizeof(cl->merge_refused_ip), "%s",
                      sender_ip);
-            cl->merge_refused_until = time(NULL) + CL_CTR_MERGE_REFUSE_SECS;
+            cl->merge_refused_until = cl_ctr_now() + CL_CTR_MERGE_REFUSE_SECS;
             cl->join_pending = 0;
 
             /* Undo what the merge attempt did: forget the refusing master
@@ -6945,7 +7058,8 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	}
     }
 
-    /* Minimum: magic(2)+cluster_id(2)+nonce(12)+type(1)+seq(4)+tag(16) = 37 */
+    /* Minimum: wire header magic(2)+cluster_id(2)+uuid(16)+nonce(24), plaintext
+     * header type(1)+seq(4)+incarnation(8), tag(16) = 73 bytes */
     if (n < CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_TAG_SZ) {
 	LM_WARN("clusterer_controller: short packet (%zd bytes), dropping\n",
 	        n);
@@ -6964,7 +7078,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	if (m0 > CL_CTR_MAGIC_BASE && m0 <= CL_CTR_MAGIC_BASE + 0x0F &&
 	    m1 <= CL_CTR_MAGIC_TIER_MAX) {
 	    char ip[INET_ADDRSTRLEN];
-	    time_t now = time(NULL);
+	    time_t now = cl_ctr_now();
 
 	    cl->wire_refused_pkts++;
 	    if (cl->wire_warned_at == 0 ||
@@ -7021,7 +7135,7 @@ static void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	if ((st == CL_CTR_CID_ESTABLISHED || st == CL_CTR_CID_PINNED)
 	        && !cl_ctr_cid_is_zero(pc)
 	        && memcmp(pc, cl->peers->cid, CL_CTR_CID_SZ) != 0) {
-	    time_t now = time(NULL);
+	    time_t now = cl_ctr_now();
 	    cl->peers->foreign_pkts++;
 	    if (cl->foreign_warned_at == 0
 	            || now - cl->foreign_warned_at >= CL_CTR_WIRE_WARN_IVL) {
@@ -7412,7 +7526,7 @@ static void cl_ctr_maybe_forward(const char *buf, int n,
 	 * per CL_CTR_FWD_WARN_IVL seconds, carrying the count it stands for. */
 	static time_t last_warn;
 	static unsigned long suppressed;
-	time_t now = time(NULL);
+	time_t now = cl_ctr_now();
 
 	if (last_warn == 0 || now - last_warn >= CL_CTR_FWD_WARN_IVL) {
 	    if (suppressed)
@@ -8002,7 +8116,7 @@ static void cl_ctr_worker(int rank)
     /* ---- Phase 1: join protocol ---- */
     lock_start_write(cl->peers->lock);
     cl->peers->node_state    = CL_CTR_NODE_NEW;
-    cl->peers->join_deadline = time(NULL) + (time_t)query_time;
+    cl->peers->join_deadline = cl_ctr_now() + (time_t)query_time;
     lock_stop_write(cl->peers->lock);
 
     cl_ctr_send_join_req(cl->sock, cl);
@@ -8277,7 +8391,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	unsigned int term = 0;
 	char cid_s[37] = "";
 	const char *cid_st = "none";
-	unsigned long foreign = 0;
+	unsigned long foreign = 0, refused = 0;
 	{
 	    uint16_t forced = 0;
 	    if (cl->peers) {
@@ -8288,6 +8402,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 		if (cl->peers->cid_state != CL_CTR_CID_NONE)
 		    cl_ctr_cid_str(cl->peers->cid, cid_s);
 		foreign    = cl->peers->foreign_pkts;
+		refused    = cl->peers->peers_refused;
 		forced     = cl->peers->shtag_forced_node_id;
 		eff_manage = cl->peers->eff_manage_shtags;
 		eff_stick  = cl->peers->eff_master_stickiness;
@@ -8323,7 +8438,9 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	    add_mi_string(cl_obj, MI_SSTR("cluster_uuid"), cid_s, strlen(cid_s))  < 0 ||
 	    add_mi_string(cl_obj, MI_SSTR("cluster_uuid_state"),
 	                  cid_st, strlen(cid_st))                                 < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("foreign_packets"), foreign)            < 0)
+	    add_mi_number(cl_obj, MI_SSTR("foreign_packets"), foreign)            < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("peer_capacity"), CL_CTR_MAX_PEERS)     < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("peers_refused"), refused)              < 0)
 	    goto error;
     }
 
@@ -8419,8 +8536,9 @@ static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
 		break;
 	    }
 	}
-	/* TODO(maintenance-mode): once node maintenance mode lands, reject
-	 * forcing the shtag onto a node that is currently in maintenance. */
+	/* Every member is eligible.  Node maintenance mode (README, Planned
+	 * Features) will refuse a node in maintenance here, and clear a pin
+	 * that is already on one. */
 	if (found)
 	    cl->peers->shtag_forced_node_id = (uint16_t)node_id;
     }
@@ -9230,7 +9348,7 @@ static int mod_init(void)
 	    char sp[37];
 	    memcpy(cl->peers->cid, cl->cid_pin, CL_CTR_CID_SZ);
 	    cl->peers->cid_state = CL_CTR_CID_PINNED;
-	    cl->peers->cid_since = time(NULL);
+	    cl->peers->cid_since = cl_ctr_now();
 	    cl_ctr_cid_str(cl->cid_pin, sp);
 	    LM_INFO("clusterer_controller: [cluster %d] cluster uuid pinned to %s\n",
 	            cl->cluster_id, sp);
