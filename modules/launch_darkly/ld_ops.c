@@ -121,7 +121,7 @@ static int ld_client_init_attempt(void)
 	LDServerConfig ld_cfg;
 	LDStatus ld_status;
 	LDServerSDK new_sdk;
-	bool ld_succeeded;
+	bool ld_succeeded = false;
 
 	/* too soon to retry a new connect ?*/
 	if (last_init_attempt_time!=0 &&
@@ -165,9 +165,9 @@ static int ld_client_init_attempt(void)
 
 	ld_sdk = new_sdk;
 
-	/* block for up to connect_wait ms while the SDK connects and fetches flags */
-	LDServerSDK_Start(ld_sdk, connect_wait, &ld_succeeded);
-	if (!ld_succeeded) {
+	/* block for up to connect_wait ms while the SDK connects and fetches flags;
+	 * on timeout it returns false and leaves ld_succeeded untouched */
+	if (!LDServerSDK_Start(ld_sdk, connect_wait, &ld_succeeded) || !ld_succeeded) {
 		LDServerSDK_Free(ld_sdk);
 		ld_sdk = NULL;
 		last_init_attempt_time = get_ticks();
