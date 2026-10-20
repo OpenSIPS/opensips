@@ -113,7 +113,7 @@
  * and which you obtain through get_max_payload() below.
  *
  * Do NOT declare `extern int cc_max_payload` in a consumer. It is defined in
- * clusterer_controller.c, and OpenSIPS modules are dlopen'd, so referencing it
+ * the clusterer_controller module, and OpenSIPS modules are dlopen'd, so referencing it
  * directly makes the consumer's .so carry an undefined symbol that resolves
  * only if clusterer_controller happens to have been loaded first. It does not
  * fail at build time - it fails at startup with

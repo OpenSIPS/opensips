@@ -2,8 +2,9 @@
 """The sequence split, under the two cases that matter: heavy consumer
 traffic must not make control traffic look like a replay, and a node
 restart (which rewinds both counters) must not wedge the consumer plane."""
-import json, socket, subprocess, sys, time
-SRC = sys.argv[1] if len(sys.argv)>1 else "/dn/wt-cp15/modules/clusterer_controller/clusterer_controller.c"
+import glob, json, os, socket, subprocess, sys, time
+# the module's sources: a directory (all of its .c files) or one file
+SRC = sys.argv[1] if len(sys.argv)>1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 def mi(n,m,p=None):
     c=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); c.settimeout(10)
     c.sendto(json.dumps({"jsonrpc":"2.0","id":1,"method":m,"params":p or []}).encode(),
@@ -44,7 +45,8 @@ check("cluster still healthy after the load",
 # source instead: every site that rewinds a peer's last_seq must rewind
 # last_consumer_seq beside it, or a receiver stays ahead of a sender that
 # restarted at zero and silently drops everything it sends.
-src = open(SRC).read()
+src = "".join(open(f).read() for f in
+              (sorted(glob.glob(os.path.join(SRC, "*.c"))) if os.path.isdir(SRC) else [SRC]))
 parts = src.split("last_seq = 0")[:-1]
 missed = [p for p in parts if "last_consumer_seq" not in p[-300:]
           and "last_consumer_seq" not in src[src.find(p)+len(p):][:300]]
