@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OpenSIPS Control Plane</title>
+<style>
+:root{color-scheme:dark;background:#0b0d10;color:#e8edf2;font:14px/1.45 system-ui,sans-serif}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1180px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}h1{font-size:22px;margin:0}small,.muted{color:#8e99a5}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#a44;margin-right:7px}.dot.ok{background:#4c6}.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}.card{background:#11151a;border:1px solid #28313a;border-radius:12px;padding:16px}h2{font-size:15px;margin:0 0 12px}pre{white-space:pre-wrap;word-break:break-word;background:#090b0e;padding:12px;border-radius:8px;max-height:470px;overflow:auto}input,textarea,button{width:100%;background:#0b0e12;color:#e8edf2;border:1px solid #34404b;border-radius:8px;padding:10px;font:inherit}textarea{min-height:110px;resize:vertical}label{display:block;margin:10px 0 5px;color:#b7c0c9}button{cursor:pointer;background:#1a222b;font-weight:600;margin-top:10px}button:hover{background:#232e39}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pill{border:1px solid #34404b;border-radius:999px;padding:5px 9px;color:#aab5bf}.err{color:#ff9b9b}.oktxt{color:#8de5a7}@media(max-width:850px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<header><div><h1>OpenSIPS Control Plane</h1><small>MI control, live status and observability</small></div><span class="pill"><span id="dot" class="dot"></span><span id="state">connecting</span></span></header>
+<div class="grid">
+<section class="card"><h2>Live snapshot</h2><div class="muted" id="stamp">Waiting for data…</div><pre id="snapshot">{}</pre></section>
+<section class="card"><h2>MI command</h2><label>Method</label><input id="method" placeholder="get_statistics"><label>Parameters (JSON object/array)</label><textarea id="params">{}</textarea><label>Bearer token (required for all API calls in remote mode)</label><input id="token" type="password" autocomplete="off" placeholder="CONTROL_TOKEN"><button id="send">Run command</button><pre id="result">No command run yet.</pre></section>
+<section class="card"><h2>Control-plane Prometheus metrics</h2><button id="refreshMetrics">Refresh</button><pre id="metrics">Loading…</pre></section>
+<section class="card"><h2>How access works</h2><p>On localhost, explicitly classified read-only MI methods can be used without a token. In remote mode every API and metrics request requires <code>CONTROL_TOKEN</code>.</p><p class="muted">The browser does not persist the token. Put this service behind your normal TLS/authentication boundary before exposing it outside localhost.</p></section>
+</div></div>
+<script>
+const $=id=>document.getElementById(id);const snapshot=$('snapshot'),stamp=$('stamp'),dot=$('dot'),state=$('state');
+function authHeaders(extra={}){const h={...extra};if($('token').value)h.Authorization='Bearer '+$('token').value;return h}
+function showSnapshot(data){snapshot.textContent=JSON.stringify(data,null,2);stamp.textContent=new Date((data.timestamp||Date.now()/1000)*1000).toLocaleString();dot.classList.add('ok');state.textContent='live'}
+async function refreshSnapshot(){try{const r=await fetch('/api/snapshot',{cache:'no-store',headers:authHeaders()});if(!r.ok)throw new Error('HTTP '+r.status);showSnapshot(await r.json())}catch(e){dot.classList.remove('ok');state.textContent='auth/offline';snapshot.textContent=String(e)}}
+async function metrics(){try{const r=await fetch('/metrics',{cache:'no-store',headers:authHeaders()});if(!r.ok)throw new Error('HTTP '+r.status);$('metrics').textContent=await r.text()}catch(e){$('metrics').textContent=String(e)}}
+$('refreshMetrics').onclick=metrics;$('token').addEventListener('change',()=>{refreshSnapshot();metrics()});$('send').onclick=async()=>{let params;try{params=JSON.parse($('params').value||'{}')}catch(e){$('result').textContent='Invalid JSON: '+e;return}const headers=authHeaders({'Content-Type':'application/json'});$('result').textContent='Running…';try{const r=await fetch('/api/mi',{method:'POST',headers,body:JSON.stringify({method:$('method').value,params})});const data=await r.json();$('result').textContent=JSON.stringify(data,null,2);$('result').className=r.ok?'oktxt':'err'}catch(e){$('result').textContent=String(e);$('result').className='err'}};
+refreshSnapshot();metrics();setInterval(refreshSnapshot,2000);setInterval(metrics,5000);
+</script></body></html>
