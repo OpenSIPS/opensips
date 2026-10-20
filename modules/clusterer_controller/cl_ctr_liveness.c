@@ -179,6 +179,11 @@ void cl_ctr_handle_alive(const char *src_ip,
                 e->maint      = (uint8_t)peer_maint;
                 maint_changed = (strcmp(src_ip, my_ip) != 0);
                 maint_nid     = e->node_id;
+                /* our master handing over for maintenance: its successor
+                 * may raise the term (PreVote) */
+                if (maint_changed && peer_maint != CL_CTR_MAINT_NONE &&
+                        strcmp(src_ip, cl->peers->last_master) == 0)
+                    cl->term_confirmed = 1;
             }
             break;
         }
@@ -295,6 +300,10 @@ void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl)
     }
 
     remaining = cl->peers->count;
+    /* the master said goodbye: its successor may raise the term (PreVote) */
+    if (cl->peers->last_master[0] != '\0' &&
+            strcmp(src_ip, cl->peers->last_master) == 0)
+        cl->term_confirmed = 1;
 
     /* --- Decide whether re-election is warranted --- */
     if (remaining <= 1) {
@@ -550,6 +559,7 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
         cl->probing            = 0;
         cl->hold_since_ms      = 0;
         cl->probe_quiet_rounds = 0;
+        cl->term_confirmed     = 0;
     }
 
     /* Liveness relay: the master reports which node_ids it has seen in-window;
@@ -602,7 +612,10 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
         cl_ctr_apply_maint_bitmap(cl, (const unsigned char *)payload
                                       + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
                                       + CL_CTR_TERM_SZ, sender_ip))
+    {
+        cl->term_confirmed = 1;     /* the master handed over (PreVote) */
         cl_ctr_reelect_now(cl, "the master went into maintenance");
+    }
 
     /* Membership digest: if the master advertises a set we do not match, we may
      * have missed a NODE_ASSIGN (a peer known from its ALIVE but with node_id/BIN

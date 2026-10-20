@@ -426,6 +426,29 @@ sleep 14
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "healed: $MIP leads, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
+echo "=== T22 a member cut off for 25 s does not raise the term ==="
+# Nobody confirms the master is gone, so its self-election keeps the term
+# (PreVote): the cluster's term is the same after the heal as before, and
+# the cluster's master leads.
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 1 2 3 4; do [ "$(ip4 $x)" != "$MIP" ] && break; done
+TB=$(cfgval $MN 741 term); MX=$(wc -l < $R/n$x.log)
+nx $x iptables -I INPUT -p udp --dport $PORT -j DROP
+nx $x iptables -I OUTPUT -p udp --dport $PORT -j DROP
+sleep 25
+CUT22=$(( $(dropped $x INPUT) + $(dropped $x OUTPUT) ))
+TI=$(cfgval $x 741 term)
+nx $x iptables -D INPUT -p udp --dport $PORT -j DROP
+nx $x iptables -D OUTPUT -p udp --dport $PORT -j DROP
+sleep 16
+TA=$(cfgval $MN 741 term)
+echo "    term before $TB, on isolated n$x during the cut $TI, after the heal $TA"
+check "the T22 cut fired ($CUT22 dropped)" $([ "$CUT22" -gt 0 ] && echo 1 || echo 0) ""
+check "isolated n$x elected itself unconfirmed, without raising the term" $(since $x $MX | grep -a "cluster 741\]" | grep -aq "unconfirmed - nobody confirmed" && [ "$TI" = "$TB" ] && echo 1 || echo 0) "term $TI vs $TB"
+check "the cluster's term is unchanged by the partition" $([ "$TA" = "$TB" ] && echo 1 || echo 0) "$TB -> $TA"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "healed: $MIP leads, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"

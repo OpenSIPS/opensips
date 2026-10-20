@@ -234,6 +234,7 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
             LM_INFO("clusterer_controller: [cluster %d] %d peer(s) confirm "
                     "that master %s is silent - electing\n", cl->cluster_id,
                     cl->probe_silent, cl->probe_master);
+            cl->term_confirmed     = 1;
             cl->hold_since_ms      = 0;
             cl->probe_quiet_rounds = 0;
             return 0;

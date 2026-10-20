@@ -477,11 +477,26 @@ void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master)
      * of - that is what lets it win cl_ctr_master_outranks() against the
      * master it replaces.  Re-arming an existing mastership keeps its term. */
     if (i_am_master && !cl->master_ka_armed) {
-        cl->peers->my_term     = cl->peers->term_seen + 1;
+        /* PreVote, as in Raft: raise the term only when something confirmed
+         * that the old master is gone (or there never was one).  A node that
+         * elects itself unconfirmed - nobody answered its question, or there
+         * was nobody to ask - is most likely the one cut off, and keeps the
+         * term: at the heal it cannot outrank the cluster on it, however long
+         * the cut lasted. */
+        int raise = cl->term_confirmed || cl->peers->term_seen == 0;
+
+        cl->peers->my_term     = cl->peers->term_seen + (raise ? 1 : 0);
         cl->peers->term_seen   = cl->peers->my_term;
         cl->peers->master_term = cl->peers->my_term;
-        LM_INFO("clusterer_controller: [cluster %d] asserting mastership at "
-                "term %u\n", cl->cluster_id, cl->peers->my_term);
+        cl->term_confirmed     = 0;
+        if (raise)
+            LM_INFO("clusterer_controller: [cluster %d] asserting mastership "
+                    "at term %u\n", cl->cluster_id, cl->peers->my_term);
+        else
+            LM_INFO("clusterer_controller: [cluster %d] asserting mastership "
+                    "at term %u, unconfirmed - nobody confirmed the old master "
+                    "is gone, so the term is not raised\n", cl->cluster_id,
+                    cl->peers->my_term);
     } else if (!i_am_master) {
         cl->peers->my_term = 0;
     }

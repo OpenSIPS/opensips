@@ -926,6 +926,12 @@ typedef struct cl_ctr_cluster_ {
     int            probe_silent;    /* answers: did not hear it either      */
     int            probe_peers;     /* live peers that could answer         */
     int            probe_quiet_rounds; /* rounds too few answered, this outage */
+    /* PreVote (cl_ctr_arm_master_timers()): set when something confirmed that
+     * the master followed is gone - peers confirmed its silence, it said
+     * GOODBYE, it handed over for maintenance - so that a mastership this
+     * node now asserts may raise the term.  Cleared on use and whenever a
+     * master is followed again. */
+    int            term_confirmed;
     char           probe_master[CL_CTR_MAX_IP_LEN + 1];
     long long      hold_since_ms;
     int            identity_registered; /* 1 once update_identity called */
