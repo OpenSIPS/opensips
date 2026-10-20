@@ -1318,6 +1318,32 @@ static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
  * Shared between the module's source files
  * ========================================================================= */
 
+/* cl_ctr_crypto.c */
+int cl_ctr_random_bytes(unsigned char *buf, size_t len);
+int cl_ctr_hkdf_sha256(const unsigned char *ikm,  size_t ikm_len,
+                           const unsigned char *salt, size_t salt_len,
+                           const char          *info,
+                           unsigned char        out[32]);
+int cl_ctr_gen_ecdh_keypair(unsigned char *privkey, unsigned char *pubkey);
+int cl_ctr_noise_write1(cl_ctr_symstate_t *s, unsigned char e_priv[32],
+                           const unsigned char psk[32],
+                           const unsigned char *payload, size_t pl_len,
+                           unsigned char *out);
+int cl_ctr_noise_respond(const unsigned char psk[32],
+                            const unsigned char *msg1, size_t msg1_len,
+                            const unsigned char *payload, size_t pl_len,
+                            unsigned char *out);
+int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[32],
+                          const unsigned char *msg2, size_t msg2_len,
+                          unsigned char *payload_out);
+int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl);
+int cl_ctr_derive_key(cl_ctr_cluster_t *cl);
+int cl_ctr_encrypt_pkt(char *buf, int plain_off, int plain_len,
+                          const unsigned char *key, int cluster_id,
+                          const unsigned char *cid);
+int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
+                          const unsigned char *key, int is_bootstrap);
+
 /* cl_ctr_wire.c */
 extern const unsigned char CL_CTR_PACKET_MAGIC[CL_CTR_MAGIC_SZ];
 extern const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ];
@@ -1504,6 +1530,7 @@ extern cl_ctr_cluster_t cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
 extern int cl_ctr_cluster_count;
 extern char *my_ip;
 extern int query_time;
+extern char *password;
 extern int on_config_mismatch;
 extern const char *my_ip_src;
 extern char my_interface_buf[IF_NAMESIZE];
@@ -1516,24 +1543,5 @@ extern int consumer_retries;
 extern int consumer_retry_ms;
 extern int enable_reliable_send;
 extern int master_stickiness;
-int cl_ctr_random_bytes(unsigned char *buf, size_t len);
-int cl_ctr_gen_ecdh_keypair(unsigned char *privkey, unsigned char *pubkey);
-int cl_ctr_noise_write1(cl_ctr_symstate_t *s, unsigned char e_priv[32],
-                           const unsigned char psk[32],
-                           const unsigned char *payload, size_t pl_len,
-                           unsigned char *out);
-int cl_ctr_noise_respond(const unsigned char psk[32],
-                            const unsigned char *msg1, size_t msg1_len,
-                            const unsigned char *payload, size_t pl_len,
-                            unsigned char *out);
-int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[32],
-                          const unsigned char *msg2, size_t msg2_len,
-                          unsigned char *payload_out);
-int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl);
-int cl_ctr_encrypt_pkt(char *buf, int plain_off, int plain_len,
-                          const unsigned char *key, int cluster_id,
-                          const unsigned char *cid);
-int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
-                          const unsigned char *key, int is_bootstrap);
 
 #endif /* CL_CTR_H */
