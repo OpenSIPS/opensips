@@ -38,7 +38,7 @@ The following packet types are defined:
 
 - **ALIVE** — periodic heartbeat sent by every active node every *query_time* seconds. Carries the sender IP, its X25519 public key (so peers can prepare for key agreement) and a small descriptor of the sender's consistency-critical settings (*manage_shtags*, *master_stickiness*, *query_time*) used for configuration-drift detection (see Security Architecture). Encrypted with the session key.
 - **JOIN_REQ** — sent at startup by a new node, carrying its IP, BIN socket list, and Noise message 1 (the initiator's fresh ephemeral public key). Encrypted with the bootstrap key so it can be sent before a session key exists.
-- **MEMBER_LIST** — sent by the master in response to a JOIN_REQ, carrying the member count, the operator-forced sharing-tag holder node_id (0 = automatic), and the full peer IP list so the joining node can participate in elections. Only accepted from the current master (except during initial join when no master is yet known).
+- **MEMBER_LIST** — sent by the master in response to a JOIN_REQ, carrying the member count, the operator-forced sharing-tag holder node_id (0 = automatic), and the full peer IP list so the joining node can participate in elections. Only accepted from the current master (except during initial join when no master is yet known). Each list is stamped with the master's term and its own sequence number, and a member drops a list older than the last one it applied from that master, so a list delayed or reordered on the network cannot undo a newer one (a *cl_ctr_shtag_force*, for example).
 - **NODE_ASSIGN** — sent by the master to multicast, allocating a node_id and BIN socket record for a joining node, together with the incarnation the master admitted it at. All cluster members receive and apply it.
 - **GOODBYE** — sent on graceful shutdown so peers can remove the node immediately without waiting for timeout. Uses the sender's monotonic sequence counter to prevent forgery.
 - **MASTER_ALIVE** — keepalive sent by the master every 1 second (independent of *query_time*). Used by all peers to detect master failure quickly (3-second timeout). Carries the membership digest, the liveness bitmap and the master's *term*. Encrypted with the session key.
@@ -61,7 +61,7 @@ The *cluster_id* is a number an operator configures, so two separate deployments
 
 ### Master Election
 
-Each cluster has three roles: **master** (the active coordinator), **backup** (the standby promoted when the master fails, always the highest-IP non-master) and **member**. The election uses a quantized time window so that all nodes evaluate the same eligible peer set and reach the same result deterministically. No NTP synchronisation between nodes is required for correct election results.
+Each cluster has three roles: **master** (the active coordinator), **backup** (the standby promoted when the master fails, always the highest-IP non-master) and **member**. The election uses a quantized time window so that all nodes evaluate the same eligible peer set and reach the same result deterministically. No NTP synchronisation between nodes is required for correct election results. Every timeout, election window and purge deadline is measured on the monotonic clock, so a step of the wall clock (NTP correcting a skewed host, an operator setting the date) neither purges live peers nor delays an election.
 
 The *master_stickiness* parameter (default 1) controls whether a live master is kept when a higher-IP node joins. With stickiness enabled, the master stays put and the higher-IP joiner becomes the backup, minimising handovers; with stickiness disabled the highest-IP node always becomes master. In either mode two live masters are reconciled deterministically (see *Split-brain handling* below). See the *master_stickiness* parameter for details.
 
@@ -140,7 +140,7 @@ A node joining with the *wrong* password cannot decrypt the JOIN_REJECT (it is e
 
 **Rogue traffic isolation:** a node requests a re-key in response to an undecryptable session-key packet only when that packet came from its current master (a legitimate key rotation). Undecryptable session packets from any other source — for example a wrong-password or malicious node broadcasting on the multicast group — are ignored, so such traffic cannot drive the cluster into a re-JOIN churn.
 
-**Peer table exhaustion defence:** the peer table is bounded at *CL_CTR_MAX_PEERS* (256) entries. When the table is full, the master rejects JOIN_REQ packets from unknown IPs with a JOIN_REJECT response. Known peers that are reconnecting after a restart continue to be admitted regardless of the table count, since they already own a slot. This prevents an attacker with the cluster password from exhausting the peer table by flooding JOIN_REQs from spoofed source addresses.
+**Peer table exhaustion defence:** the peer table is bounded at *CL_CTR_MAX_PEERS* (256) entries. When the table is full, the master rejects JOIN_REQ packets from unknown IPs with a JOIN_REJECT response. Known peers that are reconnecting after a restart continue to be admitted regardless of the table count, since they already own a slot. This prevents an attacker with the cluster password from exhausting the peer table by flooding JOIN_REQs from spoofed source addresses. A new address that arrives while the table is full is not added; the node logs one warning a minute and counts each refusal in *peers_refused* (*cl_ctr_list_config*).
 
 **Configuration-consistency enforcement:** all nodes of a cluster must use identical consistency-critical settings (*manage_shtags*, *master_stickiness* and *query_time*); a per-node mismatch would otherwise cause silent, inconsistent failover and sharing-tag behaviour (for example, a master with *manage_shtags=0* would leave no node holding the active tag). Each node advertises these effective settings in its ALIVE heartbeat and in its JOIN_REQ, so mismatches are detected. What happens then is controlled by the *on_config_mismatch* modparam:
 
@@ -549,7 +549,7 @@ opensips-cli -x mi cl_ctr_node_info node_id=2
 
 List all configured clusters and their resolved settings — the effective values actually in use after global defaults and per-cluster overrides have been applied. Useful for confirming that a per-cluster *master_stickiness* or *manage_shtags* override took effect. The cluster password is never exposed.
 
-The *shtag_mode* field reports the current sharing-tag allocation policy: *auto* when the active tag follows the master automatically, or *override:<node_id>* when an operator has pinned a fixed holder with *cl_ctr_shtag_force*. *term* is the term of the current mastership (see *Split-brain handling*), *mtu* the cluster-plane MTU this node joined at, and *cluster_uuid*, *cluster_uuid_state* and *foreign_packets* describe the [cluster identity](#cluster-identity).
+The *shtag_mode* field reports the current sharing-tag allocation policy: *auto* when the active tag follows the master automatically, or *override:<node_id>* when an operator has pinned a fixed holder with *cl_ctr_shtag_force*. *term* is the term of the current mastership (see *Split-brain handling*), *mtu* the cluster-plane MTU this node joined at, and *cluster_uuid*, *cluster_uuid_state* and *foreign_packets* describe the [cluster identity](#cluster-identity). *peer_capacity* is the size of the peer table and *peers_refused* the number of times a new address was turned away because the table was full.
 
 Parameters: *none*
 
@@ -571,7 +571,9 @@ opensips-cli -x mi cl_ctr_list_config
         "term": 4,
         "cluster_uuid": "019a1f3c-7b2e-7d41-9c55-3e8f0a6b21d4",
         "cluster_uuid_state": "established",
-        "foreign_packets": 0
+        "foreign_packets": 0,
+        "peer_capacity": 256,
+        "peers_refused": 0
     }
 ]
 ```
@@ -1326,6 +1328,16 @@ modparam("clusterer_controller", "cluster",
 | 6 | Two clusters sharing one BIN socket (distinct multicast) | PASS |
 
 In all five failover tests (1–5): exactly one node held the active sharing tag at all times (including during the failure window), and no rejoining node stole the active tag from the current holder. Test 6 additionally confirmed that two clusters can share a single BIN socket with fully isolated replication.
+
+### Automated tests
+
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, and the *tm* anycast Via cid before and after the node has an id. It needs root, iproute2, iptables and python3:
+
+```bash title="netns tests"
+NEW=/usr/local OLD=/opt/opensips-wire1 ./test/netns_tests.sh
+```
+
+*NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, is optional and only its test is skipped without it.
 
 <!-- CONTRIBUTORS -->
 
