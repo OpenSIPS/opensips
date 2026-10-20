@@ -19,11 +19,12 @@ point: a node must refuse or order them on what the wire carries alone.
 """
 import json, socket, struct, sys, time
 
-ETH_P_IP = 0x0800
+ETH_P_ALL = 0x0003     # not ETH_P_IP: a bridge port hands its frames to the
+                       # bridge before any per-protocol tap would see them
 
 
 def capture(iface, src_ip, port, seconds, out):
-    s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IP))
+    s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_ALL))
     s.bind((iface, 0))
     s.settimeout(0.2)
     want = socket.inet_aton(src_ip)
@@ -35,6 +36,8 @@ def capture(iface, src_ip, port, seconds, out):
             continue
         if addr[2] == socket.PACKET_OUTGOING:
             continue        # the same frame is seen once per direction
+        if frame[12:14] != b"\x08\x00":
+            continue
         ip = frame[14:]
         if len(ip) < 28 or ip[9] != 17 or ip[12:16] != want:
             continue

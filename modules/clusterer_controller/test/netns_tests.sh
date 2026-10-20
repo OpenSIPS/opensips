@@ -146,8 +146,8 @@ tap 1 4 $R/t10.json >/dev/null & TP=$!
 sleep 0.5; bcast 1 5 rp >/dev/null; wait $TP
 N=$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))))' $R/t10.json)
 check "n2 and n3 got 5/5 first" $([ "$(rx_count 2 rp)" = 5 ] && [ "$(rx_count 3 rp)" = 5 ] && echo 1 || echo 0) "$(rx_count 2 rp)/$(rx_count 3 rp)"
+check "recorded n1's datagrams to send again ($N)" $([ "${N:-0}" -gt 0 ] && echo 1 || echo 0) "$N"
 replay 1 $R/t10.json >/dev/null; sleep 2
-echo "    re-sent $N recorded datagrams from n1's address"
 check "replayed while n1 runs: still 5 on n2 and n3" $([ "$(rx_count 2 rp)" = 5 ] && [ "$(rx_count 3 rp)" = 5 ] && echo 1 || echo 0) "$(rx_count 2 rp)/$(rx_count 3 rp)"
 stop_hard 1; rm -f $R/n1.pid
 start 1 $NEW 1 2 fleet-a; sleep 8
@@ -165,6 +165,8 @@ ip netns exec n2 iptables -I INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
 tap 3 1.5 $R/t11.json >/dev/null & TP=$!
 sleep 0.3; mi 3 cl_ctr_shtag_force cluster_id=741 node_id=$I1 >/dev/null; wait $TP
 ip netns exec n2 iptables -D INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
+N=$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))))' $R/t11.json)
+check "recorded the master's datagrams, L1 among them ($N)" $([ "${N:-0}" -gt 0 ] && echo 1 || echo 0) "$N"
 check "n2 missed L1 (still auto)" $([ "$(cfgval 2 741 shtag_mode)" = auto ] && echo 1 || echo 0) "$(cfgval 2 741 shtag_mode)"
 mi 3 cl_ctr_shtag_force cluster_id=741 node_id=$I2 >/dev/null; sleep 2
 check "n2 applied L2 (override:$I2)" $([ "$(cfgval 2 741 shtag_mode)" = "override:$I2" ] && echo 1 || echo 0) "$(cfgval 2 741 shtag_mode)"
@@ -175,7 +177,9 @@ mi 3 cl_ctr_shtag_auto cluster_id=741 >/dev/null; sleep 1
 
 echo "=== T12 tm anycast Via cid: absent until the node has an id, then the live id ==="
 # A sink on the bridge records the top Via of every request n4 relays
-# statefully; requests start before n4 has joined and continue after.
+# statefully.  Requests start before n4 does, and n4's controller traffic is
+# held back for its first 1.2 s (under query_time, so it does not found a
+# cluster of its own), so the first relayed requests leave before n4 has an id.
 python3 - $R/t12.json <<'PY' & SK=$!
 import json, re, socket, sys, time
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.bind(("10.74.0.254", 5070)); s.settimeout(0.5)
@@ -190,8 +194,7 @@ while time.time() < end:
 json.dump(seen, open(sys.argv[1], "w"))
 PY
 sleep 0.5
-RIG_TM=1 start 4 $NEW 1 2 fleet-a
-python3 - <<'PY'
+python3 - <<'PY' & SD=$!
 import socket, time
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.bind(("10.74.0.254", 0))
 for k in range(120):
@@ -200,7 +203,11 @@ for k in range(120):
          "CSeq: 1 OPTIONS\r\nMax-Forwards: 70\r\nX-Relay: 1\r\nContent-Length: 0\r\n\r\n") % (s.getsockname()[1], k, k)
     s.sendto(m.encode(), ("10.74.0.14", 5060)); time.sleep(0.1)
 PY
-wait $SK
+ip netns exec n4 iptables -I INPUT -p udp --dport $PORT -j DROP
+RIG_TM=1 start 4 $NEW 1 2 fleet-a
+sleep 1.2
+ip netns exec n4 iptables -D INPUT -p udp --dport $PORT -j DROP
+wait $SD; wait $SK
 I4=$(nid 3 4)
 read -r TOT NOCID GOOD BAD <<<"$(python3 - $R/t12.json "$I4" <<'PY'
 import json, re, sys
