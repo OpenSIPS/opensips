@@ -1318,6 +1318,52 @@ static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
  * Shared between the module's source files
  * ========================================================================= */
 
+/* cl_ctr_wire.c */
+extern const unsigned char CL_CTR_PACKET_MAGIC[CL_CTR_MAGIC_SZ];
+extern const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ];
+extern const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ];
+extern int cc_max_payload;
+extern int cc_mtu;
+extern int cc_mtu_now;
+extern int cc_mtu_drift_strikes;
+extern int cc_mtu_read_fails;
+int cl_ctr_read_iface_mtu(void);
+int cl_ctr_mtu_step(int now_mtu, int joined_mtu, int *strikes, int *fails);
+int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
+                                   uint64_t pkt_inc, cl_ctr_cluster_t *cl,
+                                   int is_consumer);
+int cl_ctr_setup_socket(cl_ctr_cluster_t *cl);
+int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
+                               int plain_len, const unsigned char *key,
+                               unsigned char type,
+                               const struct sockaddr *dest, socklen_t destlen);
+int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
+                            const unsigned char *key, unsigned char type);
+void cl_ctr_send_ack(int sock, cl_ctr_cluster_t *cl, uint32_t acked_seq,
+                        unsigned char acked_type, int use_bootstrap,
+                        const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
+                                const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
+                             const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_send_join_req_pkt(int sock, cl_ctr_cluster_t *cl);
+void cl_ctr_send_node_assign(int sock, const char *ip, uint16_t node_id,
+                                uint8_t bin_count,
+                                const char (*bin_sockets)[CL_CTR_MAX_BIN_SOCK_LEN],
+                                uint64_t inc, cl_ctr_cluster_t *cl,
+                                const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_sockaddr_in(const char *ip, int port, struct sockaddr_in *out);
+void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl);
+void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
+                           const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl);
+void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
+                              const unsigned char *msg1, int msg1_len,
+                              const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_send_key_handoff(int sock, const char *next_master_ip,
+                                const unsigned char *next_master_pubkey,
+                                cl_ctr_cluster_t *cl);
+
 /* cl_ctr_reliable.c */
 extern int cl_ctr_retx_pkt_max;
 void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
@@ -1454,9 +1500,6 @@ int clctr_send_ucast(int cluster_id, int node_id, str *channel,
 int load_clctr(clctr_api_t *api);
 
 /* clusterer_controller.c */
-extern const unsigned char CL_CTR_PACKET_MAGIC[CL_CTR_MAGIC_SZ];
-extern const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ];
-extern const unsigned char CL_CTR_CONSUMER_MAGIC[CL_CTR_MAGIC_SZ];
 extern cl_ctr_cluster_t cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
 extern int cl_ctr_cluster_count;
 extern char *my_ip;
@@ -1464,11 +1507,6 @@ extern int query_time;
 extern int on_config_mismatch;
 extern const char *my_ip_src;
 extern char my_interface_buf[IF_NAMESIZE];
-extern int cc_max_payload;
-extern int cc_mtu;
-extern int cc_mtu_now;
-extern int cc_mtu_drift_strikes;
-extern int cc_mtu_read_fails;
 extern uint16_t my_node_id;
 extern uint64_t cl_ctr_incarnation;
 extern clusterer_ctrl_binds_t clctl;
@@ -1478,49 +1516,24 @@ extern int consumer_retries;
 extern int consumer_retry_ms;
 extern int enable_reliable_send;
 extern int master_stickiness;
-int cl_ctr_read_iface_mtu(void);
-int cl_ctr_mtu_step(int now_mtu, int joined_mtu, int *strikes, int *fails);
 int cl_ctr_random_bytes(unsigned char *buf, size_t len);
 int cl_ctr_gen_ecdh_keypair(unsigned char *privkey, unsigned char *pubkey);
+int cl_ctr_noise_write1(cl_ctr_symstate_t *s, unsigned char e_priv[32],
+                           const unsigned char psk[32],
+                           const unsigned char *payload, size_t pl_len,
+                           unsigned char *out);
+int cl_ctr_noise_respond(const unsigned char psk[32],
+                            const unsigned char *msg1, size_t msg1_len,
+                            const unsigned char *payload, size_t pl_len,
+                            unsigned char *out);
 int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[32],
                           const unsigned char *msg2, size_t msg2_len,
                           unsigned char *payload_out);
 int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl);
+int cl_ctr_encrypt_pkt(char *buf, int plain_off, int plain_len,
+                          const unsigned char *key, int cluster_id,
+                          const unsigned char *cid);
 int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
                           const unsigned char *key, int is_bootstrap);
-int cl_ctr_check_and_update_seq(const char *sender_ip, uint32_t pkt_seq,
-                                   uint64_t pkt_inc, cl_ctr_cluster_t *cl,
-                                   int is_consumer);
-int cl_ctr_setup_socket(cl_ctr_cluster_t *cl);
-int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
-                               int plain_len, const unsigned char *key,
-                               unsigned char type,
-                               const struct sockaddr *dest, socklen_t destlen);
-int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
-                            const unsigned char *key, unsigned char type);
-void cl_ctr_send_ack(int sock, cl_ctr_cluster_t *cl, uint32_t acked_seq,
-                        unsigned char acked_type, int use_bootstrap,
-                        const struct sockaddr *dest, socklen_t destlen);
-void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
-                                const struct sockaddr *dest, socklen_t destlen);
-void cl_ctr_send_list_pkt(int sock, unsigned char type, cl_ctr_cluster_t *cl,
-                             const struct sockaddr *dest, socklen_t destlen);
-void cl_ctr_send_join_req_pkt(int sock, cl_ctr_cluster_t *cl);
-void cl_ctr_send_node_assign(int sock, const char *ip, uint16_t node_id,
-                                uint8_t bin_count,
-                                const char (*bin_sockets)[CL_CTR_MAX_BIN_SOCK_LEN],
-                                uint64_t inc, cl_ctr_cluster_t *cl,
-                                const struct sockaddr *dest, socklen_t destlen);
-void cl_ctr_sockaddr_in(const char *ip, int port, struct sockaddr_in *out);
-void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl);
-void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
-                           const struct sockaddr *dest, socklen_t destlen);
-void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl);
-void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
-                              const unsigned char *msg1, int msg1_len,
-                              const struct sockaddr *dest, socklen_t destlen);
-void cl_ctr_send_key_handoff(int sock, const char *next_master_ip,
-                                const unsigned char *next_master_pubkey,
-                                cl_ctr_cluster_t *cl);
 
 #endif /* CL_CTR_H */
