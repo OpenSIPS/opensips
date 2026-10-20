@@ -286,24 +286,38 @@ int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[32],
 int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl)
 {
     int i;
+    unsigned char nk[sizeof(cl->session_key)];
     size_t pass_len = strlen(cl->password);
     if (cl_ctr_hkdf_sha256((unsigned char *)cl->password, pass_len,
                         cl->peers->master_salt, CL_CTR_MASTER_SALT_SZ,
-                        "cl_ctr_session", cl->session_key) < 0) {
+                        "cl_ctr_session", nk) < 0) {
         LM_ERR("clusterer_controller: [cluster %d] session key derivation failed\n",
                cl->cluster_id);
         return -1;
     }
-    /* Reset sequence counters: old packets encrypted with the previous key
-     * fail AEAD authentication, so starting from 0 is safe. */
-    cl->peers->my_seq = 0;
-    cl->peers->my_consumer_seq = 0;
+    /* The key is kept across master changes, so most derivations - a
+     * KEY_GRANT to a member re-joining, a re-key after a mismatch - produce
+     * the key already in use.  Then nothing changes: resetting the replay
+     * windows would accept replays of packets sealed with this very key, and
+     * this node's own sequence never restarts within an incarnation - peers
+     * keep one window per (sender, incarnation), not per key, and refused
+     * everything it sent as a replay until the counter caught up again,
+     * which cut it off as silently as a dead link.  A new key resets the
+     * receive windows (packets under the old key no longer authenticate,
+     * and an older build restarts its sequence with a new key). */
+    if (cl->have_session_key &&
+        sodium_memcmp(nk, cl->session_key, sizeof(nk)) == 0) {
+        sodium_memzero(nk, sizeof(nk));
+        return 0;
+    }
+    memcpy(cl->session_key, nk, sizeof(nk));
+    sodium_memzero(nk, sizeof(nk));
     for (i = 0; i < cl->peers->count; i++) {
         cl_ctr_replay_reset(&cl->peers->entries[i].replay);
         cl_ctr_replay_reset(&cl->peers->entries[i].replay_consumer);
     }
     cl->have_session_key = 1;   /* a valid group key now exists */
-    /* The salt (and my_seq) just changed, so any queued retransmit is now stale. */
+    /* The key just changed, so any queued retransmit is now stale. */
     cl_ctr_retx_flush(cl);
     return 0;
 }
