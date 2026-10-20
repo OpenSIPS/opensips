@@ -936,6 +936,14 @@ typedef struct cl_ctr_cluster_ {
      * so a peer that keeps sending JOIN_REQ yet never becomes master cannot
      * defer us forever.  Worker-local; reset once we leave the NEW state.     */
     int              join_defer_total;
+    /* A master answered our JOIN_REQ with a KEY_GRANT while we were still
+     * joining (its address, empty if none), and how many deadline rounds we
+     * have waited since for the NODE_ASSIGN that follows it.  A node holding
+     * a master's KEY_GRANT has proof the cluster exists, so at the join
+     * deadline it waits for its id instead of founding a cluster of its own
+     * under an id it picked itself.  Worker-local; reset once we leave NEW. */
+    char             granted_by[CL_CTR_MAX_IP_LEN + 1];
+    int              grant_wait_count;
     /* Distinct peers we have refused on MTU while acting as master, and whether
      * we have already said we are probably the one at fault.  Worker-local and
      * diagnostic only - see cl_ctr_mtu_note_reject().                         */
@@ -4963,6 +4971,8 @@ static void cl_ctr_transition_to_active(cl_ctr_cluster_t *cl)
 {
     cl_ctr_arm_tfd(cl->join_tfd,   0, 0);              /* disarm one-shot deadline */
     cl_ctr_arm_tfd(cl->rejoin_tfd, 0, 0);              /* disarm JOIN_REQ retry    */
+    cl->granted_by[0]    = '\0';                        /* joined: forget the grant */
+    cl->grant_wait_count = 0;
     cl_ctr_send_alive(cl->sock, cl);                    /* first heartbeat now      */
     cl_ctr_arm_tfd(cl->alive_tfd, query_time, query_time); /* periodic from here   */
 }
@@ -6560,6 +6570,12 @@ static void cl_ctr_handle_key_grant(const char *payload, int payload_len,
     cl->join_attempt_count     = 0;
     cl->auth_fail_pkts         = 0;   /* authenticated: clear wrong-password evidence */
     cl->auth_defer_count       = 0;
+    lock_start_read(cl->peers->lock);
+    if (cl->peers->node_state == CL_CTR_NODE_NEW) {
+        memcpy(cl->granted_by, sender_ip, strnlen(sender_ip, CL_CTR_MAX_IP_LEN));
+        cl->granted_by[strnlen(sender_ip, CL_CTR_MAX_IP_LEN)] = '\0';
+    }
+    lock_stop_read(cl->peers->lock);
     LM_INFO("clusterer_controller: [cluster %d] KEY_GRANT from %s - "
             "session key updated\n", cl->cluster_id, sender_ip);
     /* The master's cluster id came with its key, in the authenticated header
@@ -7857,10 +7873,30 @@ static int cl_ctr_on_join_tfd(int fd, void *param, int was_timeout)
 	}
     }
 
+    /* A master has already granted us the session key: the cluster exists and
+     * its NODE_ASSIGN is on the way (or was lost, and the JOIN_REQ re-sent
+     * here asks for it again).  Founding now would give this node an id the
+     * master has handed to someone else and a mastership nobody follows. */
+    if (was_new && cl->granted_by[0] != '\0'
+                && cl->grant_wait_count < CL_CTR_JOIN_DEFER_MAX) {
+	cl->grant_wait_count++;
+	lock_stop_write(cl->peers->lock);
+	LM_INFO("clusterer_controller: [cluster %d] join deadline: master %s "
+	        "granted the key but its NODE_ASSIGN has not arrived - waiting "
+	        "(%d/%d)\n", cl->cluster_id, cl->granted_by,
+	        cl->grant_wait_count, CL_CTR_JOIN_DEFER_MAX);
+	cl->join_pending = 0;
+	cl_ctr_send_join_req(cl->sock, cl);
+	cl_ctr_arm_tfd(cl->join_tfd, CL_CTR_JOIN_DEFER_SECS, 0);
+	return 0;
+    }
+
     if (was_new) {
 	LM_INFO("clusterer_controller: [cluster %d] join deadline expired, "
 	        "no master found - transitioning to CL_CTR_NODE_ACTIVE\n",
 	        cl->cluster_id);
+	cl->granted_by[0]    = '\0';
+	cl->grant_wait_count = 0;
 	cl->join_defer_count = 0;     /* leaving NEW state */
 	cl->join_defer_total = 0;
 	cl->shtag_bootstrapped = -1; /* fresh cluster: eligible to claim active */
