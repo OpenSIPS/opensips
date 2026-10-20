@@ -1318,6 +1318,20 @@ static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
  * Shared between the module's source files
  * ========================================================================= */
 
+/* cl_ctr_election.c */
+int cl_ctr_master_outranks(uint16_t c1, uint32_t t1, const char *ip1,
+                                  uint16_t c2, uint32_t t2, const char *ip2);
+void cl_ctr_note_term(cl_ctr_cluster_t *cl, uint32_t term);
+void cl_ctr_elect_master(cl_ctr_cluster_t *cl);
+int cl_ctr_i_am_master_locked(cl_ctr_cluster_t *cl);
+int cl_ctr_ip_beats_master_locked(unsigned int ip_num, cl_ctr_cluster_t *cl);
+void cl_ctr_apply_shtags_decision(cl_ctr_cluster_t *cl, int i_am_master,
+                                     uint16_t forced);
+void cl_ctr_apply_shtags(cl_ctr_cluster_t *cl);
+void cl_ctr_on_became_master(cl_ctr_cluster_t *cl);
+void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master);
+void cl_ctr_request_rekey(cl_ctr_cluster_t *cl);
+
 /* cl_ctr_join.c */
 void cl_ctr_transition_to_active(cl_ctr_cluster_t *cl);
 void cl_ctr_fmt_cfg_diff(char *out, int outsz, const char *la, const char *lb,
@@ -1424,13 +1438,6 @@ int cl_ctr_mtu_step(int now_mtu, int joined_mtu, int *strikes, int *fails);
 int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
                         char *ipbuf, int ipbuf_sz);
 unsigned int ip_to_num(const char *ip);
-int cl_ctr_master_outranks(uint16_t c1, uint32_t t1, const char *ip1,
-                                  uint16_t c2, uint32_t t2, const char *ip2);
-void cl_ctr_note_term(cl_ctr_cluster_t *cl, uint32_t term);
-void cl_ctr_elect_master(cl_ctr_cluster_t *cl);
-int cl_ctr_i_am_master_locked(cl_ctr_cluster_t *cl);
-int cl_ctr_ip_beats_master_locked(unsigned int ip_num, cl_ctr_cluster_t *cl);
-void cl_ctr_apply_shtags(cl_ctr_cluster_t *cl);
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl);
 void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_cluster_t *cl);
 cl_ctr_peer_t *cl_ctr_peer_by_ip_locked(cl_ctr_cluster_t *cl, const char *ip);
@@ -1443,6 +1450,7 @@ void cl_ctr_update_peer_bin_locked(const char *ip, uint16_t node_id,
                                       uint8_t bin_count,
                                       const char (*bin_sockets)[CL_CTR_MAX_BIN_SOCK_LEN],
                                       cl_ctr_cluster_t *cl);
+int cl_ctr_random_bytes(unsigned char *buf, size_t len);
 int cl_ctr_gen_ecdh_keypair(unsigned char *privkey, unsigned char *pubkey);
 int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[32],
                           const unsigned char *msg2, size_t msg2_len,
@@ -1467,6 +1475,7 @@ int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
                                const struct sockaddr *dest, socklen_t destlen);
 int cl_ctr_seal_and_send(int sock, cl_ctr_cluster_t *cl, char *pkt, int plain_len,
                             const unsigned char *key, unsigned char type);
+void cl_ctr_retx_flush(cl_ctr_cluster_t *cl);
 void cl_ctr_retx_enqueue_bcast(cl_ctr_cluster_t *cl, uint32_t seq,
                             const unsigned char *pkt, int pkt_len);
 void cl_ctr_retx_enqueue_consumer(cl_ctr_cluster_t *cl, uint32_t seq,
@@ -1502,9 +1511,6 @@ void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluster_t *cl
 void cl_ctr_send_key_handoff(int sock, const char *next_master_ip,
                                 const unsigned char *next_master_pubkey,
                                 cl_ctr_cluster_t *cl);
-void cl_ctr_on_became_master(cl_ctr_cluster_t *cl);
-void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master);
-void cl_ctr_request_rekey(cl_ctr_cluster_t *cl);
 void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl);
 
 #endif /* CL_CTR_H */
