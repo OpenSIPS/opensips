@@ -1318,6 +1318,25 @@ static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
  * Shared between the module's source files
  * ========================================================================= */
 
+/* cl_ctr_mod.c */
+extern cl_ctr_cluster_t cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
+extern int cl_ctr_cluster_count;
+extern char *my_ip;
+extern int query_time;
+extern char *password;
+extern int on_config_mismatch;
+extern const char *my_ip_src;
+extern char my_interface_buf[IF_NAMESIZE];
+extern uint16_t my_node_id;
+extern uint64_t cl_ctr_incarnation;
+extern clusterer_ctrl_binds_t clctl;
+extern int clctl_loaded;
+extern int manage_shtags;
+extern int consumer_retries;
+extern int consumer_retry_ms;
+extern int enable_reliable_send;
+extern int master_stickiness;
+
 /* cl_ctr_crypto.c */
 int cl_ctr_random_bytes(unsigned char *buf, size_t len);
 int cl_ctr_hkdf_sha256(const unsigned char *ikm,  size_t ikm_len,
@@ -1524,24 +1543,5 @@ int clctr_send_list(int cluster_id, const int *node_ids, int n,
 int clctr_send_ucast(int cluster_id, int node_id, str *channel,
         str *payload, int flags);
 int load_clctr(clctr_api_t *api);
-
-/* clusterer_controller.c */
-extern cl_ctr_cluster_t cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
-extern int cl_ctr_cluster_count;
-extern char *my_ip;
-extern int query_time;
-extern char *password;
-extern int on_config_mismatch;
-extern const char *my_ip_src;
-extern char my_interface_buf[IF_NAMESIZE];
-extern uint16_t my_node_id;
-extern uint64_t cl_ctr_incarnation;
-extern clusterer_ctrl_binds_t clctl;
-extern int clctl_loaded;
-extern int manage_shtags;
-extern int consumer_retries;
-extern int consumer_retry_ms;
-extern int enable_reliable_send;
-extern int master_stickiness;
 
 #endif /* CL_CTR_H */

@@ -1,5 +1,5 @@
 /*
- * clusterer_controller - zero-config HA control of the clusterer module
+ * clusterer_controller - module exports, parameters, init and destroy
  *
  * Copyright (C) 2026 Yury Kirsanov
  *                          VoIPLine Telecom
