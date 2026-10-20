@@ -149,7 +149,7 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
  */
 int parse_privacy(struct sip_msg *msg)
 {
-	unsigned int val_len, value, values, len;
+	unsigned int val_len, value, values;
 	str next;
 	char *p, *beyond;
 
@@ -175,14 +175,12 @@ int parse_privacy(struct sip_msg *msg)
 
 	values = 0;
 	p = next.s;
-	len = next.len;
-	beyond = p + len;
+	beyond = p + next.len;
 
 	while (p < beyond) {
-		if((val_len = parse_priv_value(p, len, &value)) != 0) {
+		if((val_len = parse_priv_value(p, beyond - p, &value)) != 0) {
 			values |= value;
 			p = p + val_len;
-			len = len - val_len;
 		} else {
 			LM_ERR("invalid privacy value\n");
 			goto parse_error;
