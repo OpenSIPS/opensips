@@ -1318,6 +1318,32 @@ static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
  * Shared between the module's source files
  * ========================================================================= */
 
+/* cl_ctr_join.c */
+void cl_ctr_transition_to_active(cl_ctr_cluster_t *cl);
+void cl_ctr_fmt_cfg_diff(char *out, int outsz, const char *la, const char *lb,
+                            int a_manage, int b_manage, int a_stick, int b_stick,
+                            int a_qt, int b_qt);
+void cl_ctr_adopt_config(cl_ctr_cluster_t *cl, int new_manage, int new_stick,
+                            int new_qt, int is_active);
+void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
+                               uint64_t pkt_inc, cl_ctr_cluster_t *cl,
+                               const struct sockaddr *src, socklen_t src_len);
+void cl_ctr_handle_member_list(const char *payload, int payload_len,
+                                  const char *sender_ip, cl_ctr_cluster_t *cl);
+void cl_ctr_handle_node_assign(const char *payload, int payload_len,
+                                  const char *sender_ip, cl_ctr_cluster_t *cl);
+void cl_ctr_handle_key_grant(const char *payload, int payload_len,
+                                const char *sender_ip, cl_ctr_cluster_t *cl,
+                                uint32_t in_seq, const unsigned char *pkt_cid,
+                                const struct sockaddr *src, socklen_t src_len);
+void cl_ctr_handle_key_handoff(const char *payload, int payload_len,
+                                  const char *sender_ip, cl_ctr_cluster_t *cl);
+int cl_ctr_join_fail_check(const char *src_ip, cl_ctr_cluster_t *cl);
+void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
+                                int reason);
+void cl_ctr_handle_join_reject(const char *payload, int payload_len,
+                                   const char *sender_ip, cl_ctr_cluster_t *cl);
+
 /* cl_ctr_liveness.c */
 void cl_ctr_announce_full_state(cl_ctr_cluster_t *cl, const char *why);
 void cl_ctr_handle_resync(const char *sender_ip, cl_ctr_cluster_t *cl);
@@ -1407,6 +1433,8 @@ int cl_ctr_ip_beats_master_locked(unsigned int ip_num, cl_ctr_cluster_t *cl);
 void cl_ctr_apply_shtags(cl_ctr_cluster_t *cl);
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl);
 void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_cluster_t *cl);
+cl_ctr_peer_t *cl_ctr_peer_by_ip_locked(cl_ctr_cluster_t *cl, const char *ip);
+void cl_ctr_learn_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl);
 void cl_ctr_upsert_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl);
 void cl_ctr_reserve_id_locked(cl_ctr_cluster_t *cl, const char *ip,
                                      uint16_t node_id);
@@ -1416,9 +1444,15 @@ void cl_ctr_update_peer_bin_locked(const char *ip, uint16_t node_id,
                                       const char (*bin_sockets)[CL_CTR_MAX_BIN_SOCK_LEN],
                                       cl_ctr_cluster_t *cl);
 int cl_ctr_gen_ecdh_keypair(unsigned char *privkey, unsigned char *pubkey);
+int cl_ctr_noise_read2(cl_ctr_symstate_t *s, const unsigned char e_priv[32],
+                          const unsigned char *msg2, size_t msg2_len,
+                          unsigned char *payload_out);
+int cl_ctr_derive_session_key(cl_ctr_cluster_t *cl);
 const char *cl_ctr_cid_state_name(int st);
 void cl_ctr_cid_str(const unsigned char *cid, char *out);
 int cl_ctr_cid_is_zero(const unsigned char *cid);
+void cl_ctr_cid_adopt(cl_ctr_cluster_t *cl, const unsigned char *cid,
+                             const char *how);
 void cl_ctr_cid_found(cl_ctr_cluster_t *cl);
 void cl_ctr_cid_tick(cl_ctr_cluster_t *cl);
 int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
@@ -1462,35 +1496,15 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl);
 void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
                            const struct sockaddr *dest, socklen_t destlen);
 void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl);
+void cl_ctr_send_key_grant(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
+                              const unsigned char *msg1, int msg1_len,
+                              const struct sockaddr *dest, socklen_t destlen);
 void cl_ctr_send_key_handoff(int sock, const char *next_master_ip,
                                 const unsigned char *next_master_pubkey,
                                 cl_ctr_cluster_t *cl);
 void cl_ctr_on_became_master(cl_ctr_cluster_t *cl);
 void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master);
 void cl_ctr_request_rekey(cl_ctr_cluster_t *cl);
-void cl_ctr_transition_to_active(cl_ctr_cluster_t *cl);
-void cl_ctr_fmt_cfg_diff(char *out, int outsz, const char *la, const char *lb,
-                            int a_manage, int b_manage, int a_stick, int b_stick,
-                            int a_qt, int b_qt);
-void cl_ctr_adopt_config(cl_ctr_cluster_t *cl, int new_manage, int new_stick,
-                            int new_qt, int is_active);
-void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
-                               uint64_t pkt_inc, cl_ctr_cluster_t *cl,
-                               const struct sockaddr *src, socklen_t src_len);
-void cl_ctr_handle_member_list(const char *payload, int payload_len,
-                                  const char *sender_ip, cl_ctr_cluster_t *cl);
-void cl_ctr_handle_node_assign(const char *payload, int payload_len,
-                                  const char *sender_ip, cl_ctr_cluster_t *cl);
-void cl_ctr_handle_key_grant(const char *payload, int payload_len,
-                                const char *sender_ip, cl_ctr_cluster_t *cl,
-                                uint32_t in_seq, const unsigned char *pkt_cid,
-                                const struct sockaddr *src, socklen_t src_len);
-void cl_ctr_handle_key_handoff(const char *payload, int payload_len,
-                                  const char *sender_ip, cl_ctr_cluster_t *cl);
-int cl_ctr_join_fail_check(const char *src_ip, cl_ctr_cluster_t *cl);
-void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
-                                int reason);
-void cl_ctr_handle_join_reject(const char *payload, int payload_len,
-                                   const char *sender_ip, cl_ctr_cluster_t *cl);
+void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl);
 
 #endif /* CL_CTR_H */
