@@ -1302,10 +1302,21 @@ struct cl_ctr_peers_ {
     int             eff_query_time;
 };
 
+#define CL_CTR_PV_WRAP(_fn, _field) \
+static int _fn(struct sip_msg *msg, pv_param_t *param, pv_value_t *res) \
+{ return cl_ctr_pv_get(msg, param, res, _field); }
+
 
 /* =========================================================================
  * Shared between the module's source files
  * ========================================================================= */
+
+/* cl_ctr_script.c */
+extern char *cl_ctr_script_buf;
+extern int cl_ctr_script_buf_sz;
+extern const pv_export_t cl_ctr_mod_vars[];
+extern const cmd_export_t cl_ctr_cmds[];
+int cl_ctr_script_init(void);
 
 /* cl_ctr_consumer.c */
 extern char *cl_ctr_consumer_pkt;
@@ -1331,6 +1342,8 @@ extern char my_interface_buf[IF_NAMESIZE];
 extern int cc_max_payload;
 extern uint16_t my_node_id;
 extern int enable_reliable_send;
+int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
+                        char *ipbuf, int ipbuf_sz);
 int cl_ctr_seal_and_send_to(int sock, cl_ctr_cluster_t *cl, char *pkt,
                                int plain_len, const unsigned char *key,
                                unsigned char type,
