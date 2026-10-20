@@ -661,3 +661,29 @@ int cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
         cl_ctr_raise_maint_event(cl, chg_id[i], chg_st[i]);
     return master_in && master_chg;
 }
+
+/* How many members this node hears now: entries inside the election window,
+ * itself included - the count masters are ranked on (CL_CTR_LIVE_SZ).  For a
+ * settled member it follows the master's liveness relay.  A peer only forgiven
+ * by a stall check (its last_seen still the value that check gave it) has not
+ * been heard and is not vouched for: a node woken from a pause into a
+ * partition must not out-count the members that really hear each other. */
+uint16_t cl_ctr_live_count(cl_ctr_cluster_t *cl)
+{
+    time_t   cutoff = cl_ctr_now() - (time_t)(query_time * CL_CTR_ELECT_FACTOR);
+    uint16_t n = 0;
+    int      i;
+
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e = &cl->peers->entries[i];
+        if (e->last_seen < cutoff)
+            continue;
+        if (cl->forgiven_at && e->last_seen == cl->forgiven_at &&
+                strcmp(e->ip, my_ip) != 0)
+            continue;
+        n++;
+    }
+    lock_stop_read(cl->peers->lock);
+    return n;
+}

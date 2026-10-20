@@ -376,6 +376,12 @@ static inline long long cl_ctr_now_ms(void)
                                        * split brain; payload = member count 2B BE,
                                        * term 4B BE, config 4B, MTU 2B BE          */
 #define CL_CTR_BEACON_SZ            (2 + 4 + 4 + 2)
+/* The members a master hears now (in its election window), appended to
+ * MASTER_ALIVE and MASTER_BEACON.  Ranking two masters on this, rather than
+ * on their table counts, keeps a node isolated by a partition - whose table
+ * still lists peers it has not purged yet - from out-counting the majority
+ * at the heal.  Absent (an older build) means: rank on table counts. */
+#define CL_CTR_LIVE_SZ              2
 /* After a master has refused to admit us during a merge, how long to ignore
  * it (its keepalives and beacons) instead of trying again, in seconds.  The
  * refusal is about configuration, which does not change without a restart;
@@ -927,6 +933,10 @@ typedef struct cl_ctr_cluster_ {
     /* after a stall, control traffic is not rate-limited until this time:
      * what arrives in a burst then is this node's own backlog */
     long long           rate_grace_until_ms;
+    /* the last_seen value a stall check gave the peers it forgave: a peer
+     * still carrying exactly it has not really been heard since, and is not
+     * counted as live (cl_ctr_live_count()) */
+    time_t              forgiven_at;
     cl_ctr_retx_entry_t retx_q[CL_CTR_RETX_QUEUE_SZ];
     /* Membership-digest resync throttles (worker-local): a member sends at most
      * one RESYNC, and a master re-broadcasts full state at most once, per
@@ -1338,6 +1348,7 @@ struct cl_ctr_peers_ {
     uint32_t        my_term;
     uint32_t        master_term;
     uint16_t        master_count;
+    uint16_t        master_live;      /* its live count; 0 = not announced */
     /* node_ids held for members that left (see cl_ctr_reserve_id_locked()).
      * Kept by EVERY node, since every node sees the GOODBYE or purge, so
      * whichever node is master next already has them. */
@@ -1540,6 +1551,7 @@ void cl_ctr_cid_adopt(cl_ctr_cluster_t *cl, const unsigned char *cid,
 void cl_ctr_cid_found(cl_ctr_cluster_t *cl);
 void cl_ctr_cid_tick(cl_ctr_cluster_t *cl);
 void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint64_t *hash);
+uint16_t cl_ctr_live_count(cl_ctr_cluster_t *cl);
 void cl_ctr_build_alive_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
 void cl_ctr_apply_alive_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm);
 void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl);

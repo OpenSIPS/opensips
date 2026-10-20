@@ -113,6 +113,7 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
     }
     cl->peers->self_stalls++;
     cl->rate_grace_until_ms = now + CL_CTR_STALL_GRACE_MS;
+    cl->forgiven_at         = t_now;
     if (gap > cl->peers->self_stall_max_ms)
         cl->peers->self_stall_max_ms = gap;
     step_down = step_down && was_master;

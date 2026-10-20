@@ -825,7 +825,8 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
     char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
                            + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
                            + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                           + CL_CTR_TAG_SZ];
+                           + CL_CTR_LIVE_SZ + CL_CTR_TAG_SZ];
+    uint16_t           live_be = htons(cl_ctr_live_count(cl));
     uint32_t           seq = htonl(++cl->peers->my_seq);
     uint32_t           term_be = htonl(cl->peers->my_term);
     uint16_t           cnt;
@@ -852,10 +853,13 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
      * the master, never each other's ALIVEs */
     cl_ctr_build_maint_bitmap(cl, (unsigned char *)p);
     p += CL_CTR_ALIVE_BITMAP_SZ;
+    /* the members this master hears now, for cl_ctr_master_outranks() */
+    memcpy(p, &live_be, CL_CTR_LIVE_SZ);
+    p += CL_CTR_LIVE_SZ;
 
     cl_ctr_seal_and_send(sock, cl, pkt,
                      CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                     + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ,
+                     + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ + CL_CTR_LIVE_SZ,
                      cl->session_key, CL_CTR_PKT_MASTER_ALIVE);
 }
 
@@ -943,7 +947,7 @@ void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
 void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl)
 {
     char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
-                           + CL_CTR_BEACON_SZ + CL_CTR_TAG_SZ];
+                           + CL_CTR_BEACON_SZ + CL_CTR_LIVE_SZ + CL_CTR_TAG_SZ];
     uint32_t           seq   = htonl(++cl->peers->my_seq);
     uint32_t           term_be = htonl(cl->peers->my_term);
     uint16_t           cnt, cnt_be;
@@ -971,6 +975,11 @@ void cl_ctr_send_master_beacon(int sock, cl_ctr_cluster_t *cl)
         p[1] = (char)(cl->master_stickiness ? 1 : 0);
         memcpy(p + 2, &qt, 2);                p += CL_CTR_CONFIG_SZ;
         memcpy(p, &m, CL_CTR_MTU_SZ);         p += CL_CTR_MTU_SZ;
+    }
+    /* the members this master hears now - ranked on before the table count */
+    {
+        uint16_t live_be = htons(cl_ctr_live_count(cl));
+        memcpy(p, &live_be, CL_CTR_LIVE_SZ);  p += CL_CTR_LIVE_SZ;
     }
 
     cl_ctr_seal_and_send(sock, cl, pkt,

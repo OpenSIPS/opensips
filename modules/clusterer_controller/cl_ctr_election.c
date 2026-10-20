@@ -50,7 +50,10 @@ static time_t cl_ctr_election_cutoff(void)
  * This one ordering now serves both paths:
  *
  *   1. member count - the larger partition wins, so a heal disturbs as few
- *      nodes as possible;
+ *      nodes as possible.  It is the count each master HEARS (inside its
+ *      election window, CL_CTR_LIVE_SZ) when both announce one, not its
+ *      table: an isolated node still lists peers it has not purged yet, and
+ *      could out-count a majority that has already purged it;
  *   2. term - the more recently established mastership wins.  A node that
  *      takes over (stickiness 0, or after a failover) asserts a term above
  *      every one it has seen, which is what makes it win over the master it

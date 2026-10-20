@@ -415,7 +415,7 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
 {
     int      i_am_master, yielded = 0, ignored = 0;
     int      from_self = (strcmp(sender_ip, my_ip) == 0);
-    uint16_t adv_cnt = 0, my_cnt;
+    uint16_t adv_cnt = 0, my_cnt, adv_live = 0, my_live, cmp_adv, cmp_mine;
     uint32_t adv_term = 0;
     uint64_t my_hash;
 
@@ -435,9 +435,22 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
                CL_CTR_TERM_SZ);
         adv_term = ntohl(t_be);
     }
-    /* our own count, for the same comparison - taken before the write lock,
-     * since the digest takes the read lock itself */
+    /* ... and the members it hears now (after the maintenance relay) */
+    if (payload_len >= CL_CTR_DIGEST_SZ + 2 * CL_CTR_ALIVE_BITMAP_SZ
+                       + CL_CTR_TERM_SZ + CL_CTR_LIVE_SZ) {
+        uint16_t l_be;
+        memcpy(&l_be, payload + CL_CTR_DIGEST_SZ + 2 * CL_CTR_ALIVE_BITMAP_SZ
+                      + CL_CTR_TERM_SZ, CL_CTR_LIVE_SZ);
+        adv_live = ntohs(l_be);
+    }
+    /* our own counts, for the same comparison - taken before the write lock,
+     * since both take the read lock themselves */
     cl_ctr_membership_digest(cl, &my_cnt, &my_hash);
+    my_live = cl_ctr_live_count(cl);
+    /* rank on live members when the claimant announced them, else on table
+     * counts on both sides - like with like */
+    cmp_adv  = adv_live ? adv_live : adv_cnt;
+    cmp_mine = adv_live ? my_live  : my_cnt;
 
     lock_start_write(cl->peers->lock);
     if (!from_self && !cl_ctr_term_sane(cl, adv_term, sender_ip)) {
@@ -450,8 +463,8 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
 
     if (i_am_master) {
         if (!from_self &&
-            cl_ctr_master_outranks(adv_cnt, adv_term, sender_ip,
-                                   my_cnt, cl->peers->my_term, my_ip)) {
+            cl_ctr_master_outranks(cmp_adv, adv_term, sender_ip,
+                                   cmp_mine, cl->peers->my_term, my_ip)) {
             /* Split-brain: another master outranks us - yield.  The actual
              * demotion happens below, OUTSIDE the lock, through
              * cl_ctr_rejoin_superior_master(), which must not be called with
@@ -469,10 +482,12 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
          * out. */
         if (cl->peers->last_master[0] != '\0' &&
             strcmp(sender_ip, cl->peers->last_master) != 0 &&
-            !cl_ctr_master_outranks(adv_cnt, adv_term, sender_ip,
-                                    cl->peers->master_count,
-                                    cl->peers->master_term,
-                                    cl->peers->last_master)) {
+            !cl_ctr_master_outranks(
+                    (adv_live && cl->peers->master_live) ? adv_live : adv_cnt,
+                    adv_term, sender_ip,
+                    (adv_live && cl->peers->master_live)
+                        ? cl->peers->master_live : cl->peers->master_count,
+                    cl->peers->master_term, cl->peers->last_master)) {
             ignored = 1;
         } else {
             /* Track the announcing node as the current master so all nodes
@@ -489,6 +504,7 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
             }
             cl->peers->master_term  = adv_term;
             cl->peers->master_count = adv_cnt;
+            cl->peers->master_live  = adv_live;
         }
     }
     lock_stop_write(cl->peers->lock);
@@ -504,7 +520,7 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
         LM_INFO("clusterer_controller: [cluster %d] yielding mastership to %s "
                 "(members %u, term %u) over ourselves (members %u, term %u) - "
                 "split-brain resolution\n", cl->cluster_id, sender_ip,
-                adv_cnt, adv_term, my_cnt, cl->peers->my_term);
+                cmp_adv, adv_term, cmp_mine, cl->peers->my_term);
         /* Yielding alone is NOT a merge.  The winner learned us only from this
          * packet's sender-upsert, i.e. as a peer with node_id 0, and the ONLY
          * place a node_id is ever assigned is its handle_join_req().  Without
@@ -665,7 +681,7 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
                                     int payload_len, cl_ctr_cluster_t *cl)
 {
     int      i_am_master, is_new, superior;
-    uint16_t our_count, sender_count = 0;
+    uint16_t our_count, sender_count = 0, sender_live = 0, our_live;
     uint32_t our_term, sender_term = 0;
     uint64_t our_hash;
     char     our_master[CL_CTR_MAX_IP_LEN + 1];
@@ -696,6 +712,13 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
         memcpy(&m_be, c + CL_CTR_CONFIG_SZ, CL_CTR_MTU_SZ);
         b_mtu    = ntohs(m_be);
         cfg_present = 1;
+    }
+    if (payload_len >= 2 + CL_CTR_TERM_SZ + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ
+                       + CL_CTR_LIVE_SZ) {
+        uint16_t l_be;
+        memcpy(&l_be, payload + 2 + CL_CTR_TERM_SZ + CL_CTR_CONFIG_SZ
+                      + CL_CTR_MTU_SZ, CL_CTR_LIVE_SZ);
+        sender_live = ntohs(l_be);
     }
 
     /* Would a merge with this master be refused?  The same tests its
@@ -738,6 +761,7 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
     }
 
     cl_ctr_membership_digest(cl, &our_count, &our_hash);
+    our_live = cl_ctr_live_count(cl);
 
     lock_start_write(cl->peers->lock);
     if (!cl_ctr_term_sane(cl, sender_term, sender_ip)) {
@@ -774,8 +798,11 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
     if (our_master[0] == '\0')
         superior = 1;                                   /* we have no master yet */
     else
-        superior = cl_ctr_master_outranks(sender_count, sender_term, sender_ip,
-                                          our_count, our_term, our_master);
+        superior = cl_ctr_master_outranks(
+                       sender_live ? sender_live : sender_count,
+                       sender_term, sender_ip,
+                       sender_live ? our_live : our_count,
+                       our_term, our_master);
 
     if (!superior)
         return;   /* we outrank the sender; it will yield to us on our beacon */
