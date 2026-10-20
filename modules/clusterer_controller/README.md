@@ -45,7 +45,7 @@ The following packet types are defined:
 - **KEY_GRANT** — the master's response to a JOIN_REQ, addressed to the joining node. Carries Noise message 2 (the master's ephemeral plus the AEAD-encrypted master salt), completing the Noise_NNpsk0 handshake. Encrypted with the bootstrap key.
 - **KEY_HANDOFF** — sent by the outgoing master on graceful shutdown to the next-highest-IP peer, delivering the master salt (as an anonymous crypto_box sealed to that peer's long-lived X25519 key, learned from its ALIVE) so it can become the new master without a full re-join cycle. Encrypted with the session key.
 - **JOIN_REJECT** — sent by the master to a joining node whose JOIN_REQ repeatedly fails authentication (wrong password). After *CL_CTR_JOIN_FAIL_LIMIT* (3) consecutive bootstrap-key decryption failures from the same source IP the master sends a JOIN_REJECT to that IP. Encrypted with the bootstrap key so it cannot be forged by a node that does not know the cluster password. A node that has not joined anything yet logs a critical error and shuts down OpenSIPS on receipt; an established node that was merging partitions abandons the merge instead (see *Split-brain handling*).
-- **MASTER_BEACON** — a master-only announcement multicast every few MASTER_ALIVE ticks, carrying this partition's member count, the master's term, its consistency-critical settings and its MTU. Unlike MASTER_ALIVE it is encrypted with the *bootstrap* key, so it is readable even by a master that holds a different session key. This is how a split brain between two independently bootstrapped partitions is detected and merged (see *Master Election*).
+- **MASTER_BEACON** — a master-only announcement multicast every few MASTER_ALIVE ticks, carrying this partition's member count (its table and the members it hears now), the master's term, its consistency-critical settings and its MTU. Unlike MASTER_ALIVE it is encrypted with the *bootstrap* key, so it is readable even by a master that holds a different session key. This is how a split brain between two independently bootstrapped partitions is detected and merged (see *Master Election*).
 
 ### Cluster identity
 
@@ -83,7 +83,7 @@ Only the master handles JOIN_REQ packets, allocates node_ids, and sends NODE_ASS
 
 **Which master survives.** Both paths rank two masters by one ordering, so the two ends always reach the same verdict and can never each yield to the other:
 
-1. **member count** — the larger partition wins, so a heal disturbs as few nodes as possible;
+1. **member count** — the larger partition wins, so a heal disturbs as few nodes as possible. The count is of the members each master hears now (inside its election window), not of its table: a node cut off still lists peers it has not purged yet, and must not out-count a majority that has already purged it;
 2. **term** — the more recently established mastership wins. A node that starts asserting mastership takes a term one above the highest it has heard from any master, and announces it in MASTER_ALIVE and MASTER_BEACON; this is what lets a node that takes over (with *master_stickiness=0*, or after a failover) win against the master it replaces;
 3. **IP** — the higher address, as a total tiebreak.
 

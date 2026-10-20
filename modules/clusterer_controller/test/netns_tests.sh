@@ -127,10 +127,11 @@ nx 2 iptables -D OUTPUT -p udp --dport $PORT -j DROP
 sleep 20
 MM=$(members 3 741); M2=$(members 2 741)
 check "healed: n3 sees 3 members with one master" $([ "$(echo $MM | wc -w)" = 3 ] && [ "$(echo $MM | tr ' ' '\n' | grep -c ':master:')" = 1 ] && echo 1 || echo 0) "$MM"
-# either master may lead the healed cluster (member count, then term, then
-# address decides) - what matters is that both sides name the same one
+# The majority's master leads the healed cluster: masters are ranked on the
+# members they hear now, and the isolated n2 still LISTS peers it has not
+# purged yet - ranked on its table it could tie the majority and win on term.
 H3=$(echo "$MM" | tr ' ' '\n' | grep ':master:' | cut -d: -f1); H2=$(echo "$M2" | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
-check "healed: n2 and n3 name the same master" $([ -n "$H3" ] && [ "$H3" = "$H2" ] && echo 1 || echo 0) "n3: $H3, n2: $H2"
+check "healed: n2 follows the majority's master" $([ -n "$H3" ] && [ "$H3" = "$H2" ] && [ "$H3" != "$(ip4 2)" ] && echo 1 || echo 0) "n3: $H3, n2: $H2"
 
 echo "=== T9 pinned uuid, whole-cluster restart ==="
 for i in 1 2 3; do stop_graceful $i; rm -f $R/n$i.pid; done; sleep 2
@@ -339,6 +340,25 @@ check "both back in service on every node" $([ "$(echo $V | tr ' ' '\n' | sort -
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "still one master, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
+echo "=== T18 one member cut off for 11, 12 and 13 s: the majority's master leads after each heal ==="
+# The isolated node elects itself (a higher term).  Around the purge window the
+# majority has already purged it while it still lists the members it has not
+# purged yet: on table counts that is a tie it wins on term, taking the whole
+# cluster; on the members each master hears it is 3 to 1.  The exact second
+# depends on where the ALIVE and purge ticks fall, so three lengths are tried.
+for cut in 11 12 13; do
+  MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+  for x in 4 3 2 1; do [ "$(ip4 $x)" != "$MIP" ] && break; done
+  nx $x iptables -I INPUT -p udp --dport $PORT -j DROP
+  nx $x iptables -I OUTPUT -p udp --dport $PORT -j DROP
+  sleep $cut
+  CUT18=$(( $(dropped $x INPUT) + $(dropped $x OUTPUT) ))
+  nx $x iptables -D INPUT -p udp --dport $PORT -j DROP
+  nx $x iptables -D OUTPUT -p udp --dport $PORT -j DROP
+  sleep 14
+  MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+  check "${cut} s cut of n$x ($CUT18 dropped): majority's master $MIP leads, named by all" $([ "$CUT18" -gt 0 ] && [ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+done
 echo "=== logs: crashes / criticals ==="
 # "BUG trying to overwrite entry" was core TCP_main on BIN reconnect after T8,
 # fixed in core by #4289; it is checked here so it cannot come back unseen.
