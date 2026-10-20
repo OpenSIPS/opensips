@@ -775,7 +775,7 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	struct aka_user *user;
 	struct aka_av *av, **avs = NULL;
 	int count = aka_count_avs(algmask), new_count;
-	int sync_count, err_count;
+	int sync_count, err_count, fetched_count;
 
 	realm = (_realm?*_realm:str_init(""));
 	if (aka_challenge_pre(_msg, &realm, _code, &hftype, &h, &user, &auts, &sync_count) < 0) {
@@ -818,9 +818,11 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 			ret = -2;
 			goto release;
 		}
-		new_count += aka_avs_new_wait(user, &algmask, avs + new_count, count - new_count - err_count);
-		if (new_count < 0 || new_count > count)
+		fetched_count = aka_avs_new_wait(user, &algmask, avs + new_count,
+				count - new_count - err_count);
+		if (fetched_count < 0 || fetched_count > count - new_count)
 			goto release;
+		new_count += fetched_count;
 		if (new_count < count)
 			LM_WARN("Could not get get %d (out of %d) authentication vectors!\n",
 					count - new_count, count);
@@ -1000,7 +1002,7 @@ static int aka_async_param_unref(struct aka_async_param *param)
 
 static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, int timeout)
 {
-	int left, err_count;
+	int left = 0, err_count;
 	struct aka_async_param *param = _param;
 
 	/* if this handling has already been completed, drop it */
