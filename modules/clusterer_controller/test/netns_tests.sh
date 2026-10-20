@@ -244,6 +244,8 @@ check "woken n1 did not purge its peers" $(since 1 $M1 | grep -aq "purging timed
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "one master, and all four nodes name it" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 echo "    n1 self_stalls: $(cfgval 1 741 self_stalls)"
+MV=$(members $(echo $MS | cut -d' ' -f1 | sed 's/.*\.1//') 741)
+check "the master still knows every member by node_id" $(echo "$MV" | tr ' ' '\n' | grep -q ':0$' && echo 0 || echo 1) "$MV"
 
 echo "=== T14 the master paused past every timeout: one master after it wakes ==="
 OLDM=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); OM=${OLDM##*.}; OM=${OM#1}
@@ -258,6 +260,8 @@ check "one master afterwards, and all four nodes name it" $([ "$(echo $MS | tr '
 FM=$(echo $MS | cut -d' ' -f1)
 echo "    master before $OLDM (term $T0), while paused $NEWM, after $FM (term $(cfgval 2 741 term))"
 check "the master chosen meanwhile kept it - the woken one stood down" $([ "$FM" = "$NEWM" ] && since $OM $MO | grep -aq "stands down" && echo 1 || echo 0) "after=$FM"
+MV=$(members $(echo $FM | sed 's/.*\.1//') 741)
+check "the master knows every member by node_id" $(echo "$MV" | tr ' ' '\n' | grep -q ':0$' && echo 0 || echo 1) "$MV"
 
 echo "=== T15 kernel drops on a full receive buffer are counted ==="
 # n2 is paused while junk floods its cluster port; the kernel drops what does
@@ -298,6 +302,42 @@ check "n$c did not re-elect while cut" $(since $c $MC | grep -aq "went silent .*
 check "n$c held the election because peers still hear the master" $([ "$(cfgval $c 741 election_holds)" -gt "${H0:-0}" ] 2>/dev/null && echo 1 || echo 0) "$(cfgval $c 741 election_holds)"
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "one master, still $MIP, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
+
+echo "=== T17 maintenance: out of election and tags, handover from the master ==="
+# maint <node> <ip> -> that member's maintenance state as <node> sees it
+maint() { mi $1 cl_ctr_list_members | python3 -c '
+import json,sys
+for c in json.load(sys.stdin).get("result",[]):
+    if c.get("cluster_id")==741:
+        for m in c["members"]:
+            if m["ip"]==sys.argv[1]: print(m.get("maintenance"))' $2; }
+role_of() { members $1 741 | tr ' ' '\n' | grep "^$2:" | cut -d: -f2; }
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+BIP=$(members 2 741 | tr ' ' '\n' | grep ':backup:' | cut -d: -f1)
+BN=${BIP##*.}; BN=${BN#1}; MN=${MIP##*.}; MN=${MN#1}
+echo "    master $MIP, backup $BIP"
+mi $BN cl_ctr_maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
+V=""; for i in 1 2 3 4; do V="$V $(maint $i $BIP)"; done
+check "every node lists backup $BIP as evicted" $([ "$(echo $V | tr ' ' '\n' | sort -u)" = evicted ] && echo 1 || echo 0) "$V"
+RO=""; for i in 1 2 3 4; do RO="$RO $(role_of $i $BIP)"; done
+check "no node names $BIP backup any more" $(echo "$RO" | grep -q backup && echo 0 || echo 1) "$RO"
+BID=$(nid $MN $BN)
+echo "    $BIP is node_id '$BID' in the master's view: $(members $MN 741)"
+check "pinning the tag on a node in maintenance is refused" $(mi $MN cl_ctr_shtag_force cluster_id=741 node_id=${BID:-0} | grep -q "maintenance" && echo 1 || echo 0) "$(mi $MN cl_ctr_shtag_force cluster_id=741 node_id=${BID:-0} | cut -c1-120)"
+check "$BIP lists itself as evicted" $([ "$(maint $BN $BIP)" = evicted ] && echo 1 || echo 0) ""
+for i in 1 2 3 4; do eval L$i=$(wc -l < $R/n$i.log); done
+mi $MN cl_ctr_maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+NM=$(echo $MS | cut -d' ' -f1)
+check "the master in maintenance handed over: one new master, named by all" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && [ "$NM" != "$MIP" ] && [ "$NM" != "$BIP" ] && echo 1 || echo 0) "$MS"
+WS=0; for i in 1 2 3 4; do eval m=\$L$i; WS=$((WS + $(since $i $m | grep -ac "went silent"))); done
+check "the handover did not wait for the master watchdog (no 'went silent')" $([ $WS = 0 ] && echo 1 || echo 0) "$WS"
+mi $BN cl_ctr_maintenance cluster_id=741 state=none >/dev/null
+mi $MN cl_ctr_maintenance cluster_id=741 state=none >/dev/null; sleep 4
+V=""; for i in 1 2 3 4; do V="$V $(maint $i $BIP) $(maint $i $MIP)"; done
+check "both back in service on every node" $([ "$(echo $V | tr ' ' '\n' | sort -u)" = none ] && echo 1 || echo 0) "$V"
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "still one master, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
 echo "=== logs: crashes / criticals ==="
 # "BUG trying to overwrite entry" was core TCP_main on BIN reconnect after T8,

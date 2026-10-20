@@ -63,7 +63,7 @@ The *cluster_id* is a number an operator configures, so two separate deployments
 
 Each cluster has three roles: **master** (the active coordinator), **backup** (the standby promoted when the master fails, always the highest-IP non-master) and **member**. The election uses a quantized time window so that all nodes evaluate the same eligible peer set and reach the same result deterministically. No NTP synchronisation between nodes is required for correct election results. Every timeout, election window and purge deadline is measured on the monotonic clock, so a step of the wall clock (NTP correcting a skewed host, an operator setting the date) neither purges live peers nor delays an election.
 
-Silence is only evidence while this node was listening. A node whose own process was paused (SIGSTOP, a VM pause or live migration) or starved of CPU for more than 2 seconds does not judge its peers by the time it lost: on waking it gives every peer a full timeout from that moment, so it neither elects itself nor purges the cluster, and counts the event (*self_stalls*). And a member that stops hearing the master asks up to three peers before electing: if any of them still heard the master within the last 2 seconds, the fault lies between this node and the master, and the election is held (*election_holds*) for up to 30 seconds instead of splitting the cluster. A node that does not know these probes ignores them, and the asker then elects as before.
+Silence is only evidence while this node was listening. A node whose own process was paused (SIGSTOP, a VM pause or live migration) or starved of CPU for more than 2 seconds does not judge its peers by the time it lost: on waking it gives every peer a full timeout from that moment, so it neither elects itself nor purges the cluster, and counts the event (*self_stalls*). A master that was gone longer than its members wait before electing (the 3-second keepalive timeout and one probe round) knows they have chosen another: it stands down without announcing itself and follows the master they elected. And a member that stops hearing the master asks up to three peers before electing: if any of them still heard the master within the last 2 seconds, the fault lies between this node and the master, and the election is held (*election_holds*) for up to 30 seconds instead of splitting the cluster. A node that does not know these probes ignores them, and the asker then elects as before.
 
 The *master_stickiness* parameter (default 1) controls whether a live master is kept when a higher-IP node joins. With stickiness enabled, the master stays put and the higher-IP joiner becomes the backup, minimising handovers; with stickiness disabled the highest-IP node always becomes master. In either mode two live masters are reconciled deterministically (see *Split-brain handling* below). See the *master_stickiness* parameter for details.
 
@@ -495,7 +495,7 @@ The reason to want that is cost rather than doubt. A reliable broadcast draws on
 
 #### cl_ctr_list_members
 
-List all current cluster members with their node_id, status and BIN socket addresses. Status is one of *master*, *backup* (the standby that will be promoted if the master fails) or *member*. Only peers within the current election window are shown.
+List all current cluster members with their node_id, status, maintenance state and BIN socket addresses. Status is one of *master*, *backup* (the standby that will be promoted if the master fails) or *member*; *maintenance* is *none* or *evicted* (see *cl_ctr_maintenance*). Only peers within the current election window are shown.
 
 Parameters: *none*
 
@@ -509,18 +509,21 @@ opensips-cli -x mi cl_ctr_list_members
                 "ip": "10.22.23.191",
                 "node_id": 1,
                 "status": "master",
+                "maintenance": "none",
                 "bin_sockets": [ "bin:10.22.23.191:3857" ]
             },
             {
                 "ip": "10.22.23.193",
                 "node_id": 2,
                 "status": "backup",
+                "maintenance": "none",
                 "bin_sockets": [ "bin:10.22.23.193:3857" ]
             },
             {
                 "ip": "10.22.23.192",
                 "node_id": 3,
                 "status": "member",
+                "maintenance": "none",
                 "bin_sockets": [ "bin:10.22.23.192:3857" ]
             }
         ]
@@ -614,6 +617,22 @@ Parameters:
 opensips-cli -x mi cl_ctr_shtag_auto cluster_id=1
 ```
 
+#### cl_ctr_maintenance
+
+Put THIS node in or out of maintenance, e.g. for a rolling upgrade. A node in maintenance (*evicted*) stays a member - it keeps its node_id, its BIN links and its place in *cl_ctr_list_members* - but it is never master or backup and holds no sharing tag. If it is the master, it hands over at once: its last keepalive carries the new state, and every member elects the successor as soon as it reads it, without waiting for the master watchdog. A *cl_ctr_shtag_force* pin is refused for a node in maintenance, and a pin already on a node that goes into maintenance is cleared (automatic allocation resumes). Only when every node in the election window is in maintenance does the cluster take one of them as master anyway - a cluster must have a master.
+
+The state is announced by the node itself and relayed by the master, so every node agrees on it and it survives a master failover. It is runtime-only: a restart brings the node back in service.
+
+Parameters:
+
+- *cluster_id* — the target cluster.
+- *state* — *evicted* (or *on*) to enter maintenance, *none* (or *off*) to leave it.
+
+```bash title="cl_ctr_maintenance usage"
+opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=evicted
+opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=none
+```
+
 ### Exported Pseudo-Variables
 
 These read-only pseudo-variables expose live cluster state to the routing script, so a decision such as "only the master runs this job" can be made without an MI call. They read directly from shared memory and are therefore available in every process (SIP workers included).
@@ -629,6 +648,7 @@ Each variable optionally takes a cluster id as its argument, e.g. *$cl_ctr_role(
 - **$cl_ctr_members** — number of live members currently in the cluster.
 - **$cl_ctr_shtag_mode** — *auto* (tags follow the elected master) or *forced* (an operator pinned them with *cl_ctr_shtag_force*).
 - **$cl_ctr_forced_node** — the *node_id* the active sharing tag is pinned to (NULL when in *auto* mode).
+- **$cl_ctr_maintenance** — this node's maintenance state: *none* or *evicted* (see *cl_ctr_maintenance*).
 
 ```opensips title="Using $cl_ctr_* in the script"
 # single cluster: run a periodic job only on the master
@@ -643,6 +663,33 @@ xlog("cluster 2 master is $cl_ctr_master_ip(2), I am $cl_ctr_role(2)\n");
 
 
 Per-peer lookups take two arguments *(cluster_id, node_id)* and are therefore script functions rather than pseudo-variables: a comma inside a variable's parentheses is ambiguous when the variable is itself a function argument.
+
+
+#### cl_ctr_set_maintenance(cluster_id, state)
+
+
+Puts this node in or out of maintenance from the routing logic - the script counterpart of the *cl_ctr_maintenance* MI command, with the same effect.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *state* (string) - *evicted* (or *on*) to enter maintenance, *none* (or *off*) to leave it.
+
+
+Returns *1* on success, *-1* if the state is not recognised, the cluster is unknown or the controller worker is not running yet.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_set_maintenance() usage"
+...
+# drain this node: no mastership, no sharing tags
+cl_ctr_set_maintenance(1, "evicted");
+...
+```
 
 
 #### cl_ctr_node_is_master(cluster_id, node_id)
@@ -908,6 +955,20 @@ Parameters:
 - *tag* - the tag the reply carries, matching the request it answers.
 
 
+#### E_CL_CTR_MAINTENANCE
+
+
+Raised on every node that learns that a member's maintenance state changed - this node's own included - so an *event_route* can react (e.g. shift dispatcher weights away from it).
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster;
+- *node_id* - the node whose state changed;
+- *state* - its new state: *none* or *evicted*.
+
+
 ### Messaging Between Nodes
 
 The channel the controller keeps for its own membership traffic is also available to carry other people's messages: a script can talk to its peers, and so can another module. The surface deliberately mirrors the generic messaging the *clusterer* module offers - the same shapes, the same event parameters - so moving between them is familiar. What differs is underneath, and it differs in both directions: one multicast packet instead of a send per peer, over an encrypted channel rather than a plaintext one, but by datagram rather than over a stream, which is the subject of [What delivery guarantees](#what-delivery-guarantees) below.
@@ -1139,6 +1200,8 @@ cluster as a whole.
 
 Upgrade a cluster **as a whole**: stop every node, upgrade them, start them again. A rolling upgrade across a wire-version change does not work. While both versions run, each side sees the other as absent, both sides elect a master, and with *manage_shtags=1* both masters hold the active sharing tags.
 
+Within one wire version, builds are kept compatible in both directions, so they can be rolled node by node: a new field is only ever appended to the end of a packet and every reader checks the length before reading it (an older build ignores what it does not know, a newer one treats a missing field as its default), and a new packet type is simply dropped by a build that does not know it, with a warning at most once a minute. Every mechanism that relies on a new type degrades to the older behaviour when the peer does not answer - the probe a member sends before electing (*election_holds*), for example, falls back to electing as before. A change that alters an existing field, or that a node must not act without, needs a new wire version.
+
 ### Limitations
 
 - IPv4 only. IPv6 multicast is not currently supported.
@@ -1161,19 +1224,11 @@ Upgrade a cluster **as a whole**: stop every node, upgrade them, start them agai
 
 The following features are planned for future releases:
 
-- **Node maintenance mode** — take a node out of duty for a rolling upgrade while it stays in the cluster. A node in maintenance keeps replicating and answering pings and stays visible in *cl_ctr_list_members*, but is excluded from election (never master or backup; if it is master it hands over gracefully first) and sheds its sharing tags (a *cl_ctr_shtag_force* pin on it auto-clears). Two levels are planned:
+- **Node maintenance, the rest of it** — the *evicted* level is implemented (*cl_ctr_maintenance*, *cl_ctr_set_maintenance()*, *$cl_ctr_maintenance*, *E_CL_CTR_MAINTENANCE*). Still planned:
 
-  - *evicted* — out of election and tags; the routing script refuses new work while established dialogs finish.
-  - *full* — additionally marks the node down for clusterer consumers so peers stop routing replication work to it.
-
-  The state is cluster-wide (carried in the ALIVE/MEMBER_LIST control plane, so every node agrees and it survives master failover) and runtime-only — a restart brings the node back in service.
-
-  Interfaces (following the read-only variables and MI commands above):
-
-  - MI *cl_ctr_maintenance* (any node, the master propagates it) sets a target node's state *evicted*/*full*/*off*; *cl_ctr_list_members* gains a maintenance column.
-  - Script function *cl_ctr_set_maintenance()* (a verb - an action) for a node to put itself in or out of maintenance from the routing logic.
-  - Read-only variables *$cl_ctr_maintenance* (this node: none/evicted/full) and *$cl_ctr_node_maint(cluster_id, node_id)* (any peer); *$cl_ctr_role* gains a *maintenance* value.
-  - Event *E_CL_CTR_MAINTENANCE* raised on every node when any member's maintenance state changes, so an *event_route* can react (e.g. shift dispatcher weights).
+  - a *full* level that additionally marks the node down for clusterer consumers, so peers stop routing replication work to it (needs a clusterer hook to set a node's state);
+  - setting another node's state from any node (today a node sets its own);
+  - *$cl_ctr_node_maint(cluster_id, node_id)* for any peer, and a *maintenance* value of *$cl_ctr_role*.
 - **Statistics** — module statistics (current role, member count, master changes, nodes joined/left, JOIN_REJECTs, decrypt failures, config mismatches, split-brain merges) exposed via *get_statistics* and monitoring exporters.
 - **Events** — events raised on state transitions (became master, demoted, node joined/left, split-brain merged, config mismatch, authentication reject), named `E_CL_CTR_*` and consumable from an *event_route* or any event subscriber transport.
 - **IPv6 multicast** — the control plane currently uses IPv4 multicast (groups in *224.0.0.0/4*). Add IPv6 multicast support (*ff00::/8* groups, *AF_INET6* sockets and membership) so the controller can run on IPv6-only or dual-stack deployments.
@@ -1340,13 +1395,13 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, and a member that alone stops hearing the master. It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, and maintenance (a backup and then the master taken out of election and tags, and back). It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
 NEW=/usr/local OLD=/opt/opensips-wire1 ./test/netns_tests.sh
 ```
 
-*NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, is optional and only its test is skipped without it.
+*NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, is optional and only its test is skipped without it. Every cut a test makes with iptables must show dropped packets before it is removed, so a test cannot pass on a fault that never happened. To run two suites at once, start each under its own *unshare -n* with a distinct *RIG_NS_PREFIX* and *RIG_DIR*.
 
 <!-- CONTRIBUTORS -->
 
