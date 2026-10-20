@@ -236,9 +236,26 @@ int cl_ctr_setup_socket(cl_ctr_cluster_t *cl)
      * fragmentation is in play on a low-MTU link such as PPP at 128 bytes. */
     {
 	int rcvbuf = 1 << 20;   /* request 1 MB; kernel may cap lower */
+	int got = 0;
+	socklen_t gl = sizeof(got);
 	if (setsockopt(sock, SOL_SOCKET, SO_RCVBUF,
 	               &rcvbuf, sizeof(rcvbuf)) < 0)
 	    LM_WARN("clusterer_controller: SO_RCVBUF: %s\n", strerror(errno));
+	/* Say so when the kernel granted less: a burst (a join storm, a full
+	 * MEMBER_LIST re-broadcast) then overflows it, and those drops look
+	 * like packet loss on the network.  Linux reports twice the usable
+	 * size it set aside. */
+	if (getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &got, &gl) == 0) {
+	    cl->peers->rcvbuf_bytes = got / 2;
+	    if (got / 2 < rcvbuf)
+		LM_WARN("clusterer_controller: [cluster %d] receive buffer is "
+		        "%d bytes, %d were asked for - capped by "
+		        "net.core.rmem_max; raise it if rx_kernel_drops grows\n",
+		        cl->cluster_id, got / 2, rcvbuf);
+	}
+	/* count what the kernel drops because that buffer was full */
+	if (setsockopt(sock, SOL_SOCKET, SO_RXQ_OVFL, &yes, sizeof(yes)) < 0)
+	    LM_WARN("clusterer_controller: SO_RXQ_OVFL: %s\n", strerror(errno));
     }
 
     memset(&local, 0, sizeof(local));
@@ -859,6 +876,49 @@ void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
 
     cl_ctr_seal_and_send_to(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ,
                         cl->session_key, CL_CTR_PKT_RESYNC, dest, destlen);
+}
+
+/* MASTER_PROBE: [master ip, NUL-terminated], unicast to one peer. */
+void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip,
+                              const char *to_ip)
+{
+    char     pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_MAX_IP_LEN + 1
+                 + CL_CTR_TAG_SZ];
+    uint32_t seq = htonl(++cl->peers->my_seq);
+    int      l   = (int)strnlen(master_ip, CL_CTR_MAX_IP_LEN);
+    struct sockaddr_in d;
+
+    memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
+    pkt[CL_CTR_WIRE_HDR_SZ] = (char)CL_CTR_PKT_MASTER_PROBE;
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ, master_ip, l);
+    pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + l] = '\0';
+    cl_ctr_sockaddr_in(to_ip, cl->multicast_port, &d);
+    cl_ctr_seal_and_send_to(cl->sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + l + 1,
+                            cl->session_key, CL_CTR_PKT_MASTER_PROBE,
+                            (const struct sockaddr *)&d, sizeof(d));
+}
+
+/* MASTER_PROBE_ACK: [master ip, NUL-terminated][ms since heard, 4B BE] */
+void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
+                                  uint32_t heard_ms_ago,
+                                  const struct sockaddr *dest, socklen_t destlen)
+{
+    char     pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_MAX_IP_LEN + 1
+                 + 4 + CL_CTR_TAG_SZ];
+    uint32_t seq = htonl(++cl->peers->my_seq), ago = htonl(heard_ms_ago);
+    int      l   = (int)strnlen(master_ip, CL_CTR_MAX_IP_LEN);
+    char    *p   = pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ;
+
+    memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
+    pkt[CL_CTR_WIRE_HDR_SZ] = (char)CL_CTR_PKT_MASTER_PROBE_ACK;
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
+    memcpy(p, master_ip, l);
+    p[l] = '\0';
+    memcpy(p + l + 1, &ago, 4);
+    cl_ctr_seal_and_send_to(cl->sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + l + 1 + 4,
+                            cl->session_key, CL_CTR_PKT_MASTER_PROBE_ACK,
+                            dest, destlen);
 }
 
 /**

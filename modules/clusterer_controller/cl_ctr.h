@@ -259,6 +259,17 @@ static inline long long cl_ctr_now_ms(void)
  * CL_CTR_STALL_MS between two runs of its loop means the process was paused
  * (SIGSTOP, a VM pause or migration) or starved, and nothing it failed to
  * hear meanwhile is evidence that a peer died. */
+/* A term is raised by one per election.  One that jumps further than this
+ * above every term this node knows is a bug or a corrupted sender, not an
+ * election, and is refused (cl_ctr_term_sane()): accepted, it would stay
+ * the floor of every later term and make every normal MEMBER_LIST look
+ * stale. */
+#define CL_CTR_TERM_JUMP_MAX  1000000u
+/* Foreign clusters remembered for cl_ctr_list_config: other deployments
+ * heard on this group (different cluster uuid), least recently heard
+ * evicted.  The uuid comes from the unauthenticated header, so the table is
+ * small and the first-sight log is rate-limited. */
+#define CL_CTR_FOREIGN_MAX    16
 #define CL_CTR_STALL_TICK_MS  500
 #define CL_CTR_STALL_MS       2000
 #define CL_CTR_CRYPTO_SUITE "XChaCha20-Poly1305 + Argon2id + Noise_NNpsk0"
@@ -319,6 +330,17 @@ static inline long long cl_ctr_now_ms(void)
  * receive path can tell them apart before it parses anything, and so an old
  * build simply does not recognise it instead of half-understanding it. */
 #define CL_CTR_PKT_CONSUMER_REL     0x0E
+/* member -> a few peers, when its master went silent: do you still hear
+ * [master ip]?  The answer carries how long ago the peer last did.  A node
+ * that predates these types drops them, and the asker then elects as it
+ * always did (cl_ctr_probe_step()). */
+#define CL_CTR_PKT_MASTER_PROBE     0x0F
+#define CL_CTR_PKT_MASTER_PROBE_ACK 0x10
+#define CL_CTR_PROBE_FANOUT         3     /* peers asked                       */
+#define CL_CTR_PROBE_WAIT_MS        1000  /* how long the answers are awaited  */
+#define CL_CTR_PROBE_FRESH_MS       2000  /* "still hears it" = within this    */
+#define CL_CTR_PROBE_HOLD_MAX_S     30    /* longest an election is held for   */
+#define CL_CTR_PROBE_NOT_HEARD      0xFFFFFFFFu
 
 /* Consumer messaging (api.h): plaintext payload layout after type+seq is
  * [src_node_id u16 BE][chan_len u8][channel bytes][consumer payload].
@@ -851,6 +873,15 @@ typedef struct cl_ctr_cluster_ {
     int            rejoin_tfd;         /* 1-second JOIN_REQ retry       */
     int            master_alive_tfd;   /* master sends MASTER_ALIVE 1/s */
     int            master_dead_tfd;    /* non-master: fires on ka miss  */
+    /* Indirect probe before electing (worker-local, cl_ctr_probe_step()):
+     * when the followed master was last heard, whether a probe round is
+     * open and for which master, how many peers answered that they still
+     * hear it, and since when the current hold has lasted. */
+    long long      master_heard_ms;
+    int            probing;
+    int            probe_heard;
+    char           probe_master[CL_CTR_MAX_IP_LEN + 1];
+    long long      hold_since_ms;
     int            identity_registered; /* 1 once update_identity called */
     int            shtag_bootstrapped;  /* -1 = eligible, 1 = done       */
     /* Long-lived X25519 keypair - generated in cl_ctr_worker after fork, never
@@ -1306,6 +1337,24 @@ struct cl_ctr_peers_ {
     /* times this node's own worker was found stalled, and the longest stall */
     unsigned long   self_stalls;
     long long       self_stall_max_ms;
+    /* terms refused as absurd jumps (cl_ctr_term_sane()) and when that was
+     * last logged */
+    unsigned long   terms_refused;
+    time_t          terms_refused_warned_at;
+    /* the receive buffer the kernel granted, and datagrams it dropped for
+     * this socket because that buffer was full (SO_RXQ_OVFL, cumulative) */
+    unsigned long   election_holds;   /* elections held: peers still heard the master */
+    int             rcvbuf_bytes;
+    unsigned long   rx_kernel_drops;
+    time_t          rx_drops_warned_at;
+    struct {
+        unsigned char uuid[CL_CTR_CID_SZ];
+        char          last_ip[CL_CTR_MAX_IP_LEN + 1];
+        time_t        first_seen, last_seen;
+        unsigned long pkts;
+    }               foreign[CL_CTR_FOREIGN_MAX];
+    int             foreign_n;
+    time_t          foreign_new_logged_at;
     /* MEMBER_LIST ordering: the sequence this node stamps on the lists it
      * sends as master, and the (term, seq) of the last list it applied. */
     uint32_t        list_seq;
@@ -1481,6 +1530,17 @@ void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl);
 int cl_ctr_master_outranks(uint16_t c1, uint32_t t1, const char *ip1,
                                   uint16_t c2, uint32_t t2, const char *ip2);
 void cl_ctr_note_term(cl_ctr_cluster_t *cl, uint32_t term);
+int cl_ctr_term_sane(cl_ctr_cluster_t *cl, uint32_t term, const char *from);
+void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip,
+                              const char *to_ip);
+void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
+                                  uint32_t heard_ms_ago,
+                                  const struct sockaddr *dest, socklen_t destlen);
+void cl_ctr_handle_master_probe(const char *sender_ip, const char *payload,
+                                int payload_len, cl_ctr_cluster_t *cl,
+                                const struct sockaddr *src, socklen_t src_len);
+void cl_ctr_handle_master_probe_ack(const char *sender_ip, const char *payload,
+                                    int payload_len, cl_ctr_cluster_t *cl);
 void cl_ctr_elect_master(cl_ctr_cluster_t *cl);
 int cl_ctr_i_am_master_locked(cl_ctr_cluster_t *cl);
 int cl_ctr_ip_beats_master_locked(unsigned int ip_num, cl_ctr_cluster_t *cl);
@@ -1539,7 +1599,7 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
                         const struct sockaddr_in *fwd_src);
 
 /* cl_ctr_worker.c */
-void cl_ctr_drain_tfd(int tfd);
+uint64_t cl_ctr_drain_tfd(int tfd);
 void cl_ctr_arm_tfd(int tfd, time_t sec_value, time_t sec_interval);
 void cl_ctr_worker(int rank);
 

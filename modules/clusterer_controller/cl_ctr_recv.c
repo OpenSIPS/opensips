@@ -170,12 +170,44 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	src_addr = *fwd_src;
 	(void)src_len;
     } else {
-	n = recvfrom(sock, buf, sizeof(buf) - 1, 0,
-	             (struct sockaddr *)&src_addr, &src_len);
+	struct iovec   iov = { buf, sizeof(buf) - 1 };
+	char           cbuf[CMSG_SPACE(sizeof(uint32_t))];
+	struct msghdr  mh;
+	struct cmsghdr *cm;
+
+	memset(&mh, 0, sizeof(mh));
+	mh.msg_name       = &src_addr;
+	mh.msg_namelen    = src_len;
+	mh.msg_iov        = &iov;
+	mh.msg_iovlen     = 1;
+	mh.msg_control    = cbuf;
+	mh.msg_controllen = sizeof(cbuf);
+	n = recvmsg(sock, &mh, 0);
 	if (n < 0) {
 	    if (errno != EAGAIN && errno != EWOULDBLOCK)
-		LM_ERR("clusterer_controller: recvfrom(): %s\n", strerror(errno));
+		LM_ERR("clusterer_controller: recvmsg(): %s\n", strerror(errno));
 	    return;
+	}
+	src_len = mh.msg_namelen;
+	/* SO_RXQ_OVFL: the kernel's running count of datagrams it dropped for
+	 * this socket because the receive buffer was full */
+	for (cm = CMSG_FIRSTHDR(&mh); cm; cm = CMSG_NXTHDR(&mh, cm)) {
+	    if (cm->cmsg_level == SOL_SOCKET && cm->cmsg_type == SO_RXQ_OVFL) {
+		uint32_t drops;
+		memcpy(&drops, CMSG_DATA(cm), sizeof(drops));
+		if (drops > cl->peers->rx_kernel_drops) {
+		    time_t now = cl_ctr_now();
+		    if (now - cl->peers->rx_drops_warned_at >= CL_CTR_WIRE_WARN_IVL) {
+			cl->peers->rx_drops_warned_at = now;
+			LM_WARN("clusterer_controller: [cluster %d] the kernel "
+			        "dropped %lu cluster datagram(s) so far because "
+			        "this socket's %d-byte receive buffer was full\n",
+			        cl->cluster_id, (unsigned long)drops,
+			        cl->peers->rcvbuf_bytes);
+		    }
+		    cl->peers->rx_kernel_drops = drops;
+		}
+	    }
 	}
     }
 
@@ -258,6 +290,47 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	        && memcmp(pc, cl->peers->cid, CL_CTR_CID_SZ) != 0) {
 	    time_t now = cl_ctr_now();
 	    cl->peers->foreign_pkts++;
+	    {
+		/* which foreign cluster: remember it for cl_ctr_list_config */
+		char ip[INET_ADDRSTRLEN];
+		int  k, slot = -1, oldest = 0, is_new = 0;
+
+		inet_ntop(AF_INET, &src_addr.sin_addr, ip, sizeof ip);
+		lock_start_write(cl->peers->lock);
+		for (k = 0; k < cl->peers->foreign_n; k++) {
+		    if (memcmp(cl->peers->foreign[k].uuid, pc, CL_CTR_CID_SZ) == 0) {
+			slot = k;
+			break;
+		    }
+		    if (cl->peers->foreign[k].last_seen
+		            < cl->peers->foreign[oldest].last_seen)
+			oldest = k;
+		}
+		if (slot < 0) {
+		    slot = cl->peers->foreign_n < CL_CTR_FOREIGN_MAX
+		           ? cl->peers->foreign_n++ : oldest;
+		    memset(&cl->peers->foreign[slot], 0,
+		           sizeof(cl->peers->foreign[slot]));
+		    memcpy(cl->peers->foreign[slot].uuid, pc, CL_CTR_CID_SZ);
+		    cl->peers->foreign[slot].first_seen = now;
+		    is_new = 1;
+		}
+		memcpy(cl->peers->foreign[slot].last_ip, ip, strlen(ip) + 1);
+		cl->peers->foreign[slot].last_seen = now;
+		cl->peers->foreign[slot].pkts++;
+		if (is_new && (cl->peers->foreign_new_logged_at == 0
+		        || now - cl->peers->foreign_new_logged_at
+		           >= CL_CTR_WIRE_WARN_IVL)) {
+		    char theirs[37];
+		    cl->peers->foreign_new_logged_at = now;
+		    cl_ctr_cid_str(pc, theirs);
+		    LM_ERR("clusterer_controller: [cluster %d] another cluster "
+		           "(uuid %s) is on this group, first heard from %s - "
+		           "see foreign_clusters in cl_ctr_list_config\n",
+		           cl->cluster_id, theirs, ip);
+		}
+		lock_stop_write(cl->peers->lock);
+	    }
 	    if (cl->foreign_warned_at == 0
 	            || now - cl->foreign_warned_at >= CL_CTR_WIRE_WARN_IVL) {
 		char ip[INET_ADDRSTRLEN], theirs[37], ours[37];
@@ -588,6 +661,15 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 
 	case CL_CTR_PKT_MASTER_BEACON:
 	    cl_ctr_handle_master_beacon(sender_ip_buf, payload, payload_len, cl);
+	    break;
+
+	case CL_CTR_PKT_MASTER_PROBE:
+	    cl_ctr_handle_master_probe(sender_ip_buf, payload, payload_len, cl,
+	                               (const struct sockaddr *)&src_addr, src_len);
+	    break;
+
+	case CL_CTR_PKT_MASTER_PROBE_ACK:
+	    cl_ctr_handle_master_probe_ack(sender_ip_buf, payload, payload_len, cl);
 	    break;
 
 	default:

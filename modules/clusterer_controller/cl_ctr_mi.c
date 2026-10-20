@@ -293,8 +293,15 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	unsigned int term = 0;
 	char cid_s[37] = "";
 	const char *cid_st = "none";
-	unsigned long foreign = 0, refused = 0, stalls = 0;
+	unsigned long foreign = 0, refused = 0, stalls = 0, terms_refused = 0,
+	              rx_drops = 0, holds = 0;
+	int           rcvbuf = 0, nforeign = 0, k;
 	long long     stall_max = 0;
+	time_t        tnow = cl_ctr_now();
+	struct { char uuid[37], ip[CL_CTR_MAX_IP_LEN + 1];
+	         long first_ago, last_ago; unsigned long pkts; }
+	              fc[CL_CTR_FOREIGN_MAX];
+	mi_item_t    *fc_arr, *fc_obj;
 	{
 	    uint16_t forced = 0;
 	    if (cl->peers) {
@@ -307,11 +314,24 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 		foreign    = cl->peers->foreign_pkts;
 		refused    = cl->peers->peers_refused;
 		stalls     = cl->peers->self_stalls;
+		terms_refused = cl->peers->terms_refused;
+		rx_drops   = cl->peers->rx_kernel_drops;
+		holds      = cl->peers->election_holds;
+		rcvbuf     = cl->peers->rcvbuf_bytes;
 		stall_max  = cl->peers->self_stall_max_ms;
 		forced     = cl->peers->shtag_forced_node_id;
 		eff_manage = cl->peers->eff_manage_shtags;
 		eff_stick  = cl->peers->eff_master_stickiness;
 		eff_qt     = cl->peers->eff_query_time;
+		nforeign   = cl->peers->foreign_n;
+		for (k = 0; k < nforeign; k++) {
+		    cl_ctr_cid_str(cl->peers->foreign[k].uuid, fc[k].uuid);
+		    memcpy(fc[k].ip, cl->peers->foreign[k].last_ip,
+		           sizeof(fc[k].ip));
+		    fc[k].first_ago = (long)(tnow - cl->peers->foreign[k].first_seen);
+		    fc[k].last_ago  = (long)(tnow - cl->peers->foreign[k].last_seen);
+		    fc[k].pkts      = cl->peers->foreign[k].pkts;
+		}
 		lock_stop_read(cl->peers->lock);
 	    }
 	    /* Current shtag allocation mode: "auto" = master-driven automatic
@@ -347,8 +367,27 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	    add_mi_number(cl_obj, MI_SSTR("peer_capacity"), CL_CTR_MAX_PEERS)     < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("peers_refused"), refused)              < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("self_stalls"), stalls)                 < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("self_stall_max_ms"), stall_max)        < 0)
+	    add_mi_number(cl_obj, MI_SSTR("self_stall_max_ms"), stall_max)        < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("terms_refused"), terms_refused)        < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("election_holds"), holds)               < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("rcvbuf_bytes"), rcvbuf)                < 0 ||
+	    add_mi_number(cl_obj, MI_SSTR("rx_kernel_drops"), rx_drops)           < 0)
 	    goto error;
+	fc_arr = add_mi_array(cl_obj, MI_SSTR("foreign_clusters"));
+	if (!fc_arr)
+	    goto error;
+	for (k = 0; k < nforeign; k++) {
+	    fc_obj = add_mi_object(fc_arr, NULL, 0);
+	    if (!fc_obj ||
+	        add_mi_string(fc_obj, MI_SSTR("cluster_uuid"), fc[k].uuid,
+	                      strlen(fc[k].uuid))                         < 0 ||
+	        add_mi_string(fc_obj, MI_SSTR("last_sender"), fc[k].ip,
+	                      strlen(fc[k].ip))                           < 0 ||
+	        add_mi_number(fc_obj, MI_SSTR("first_seen_s_ago"), fc[k].first_ago) < 0 ||
+	        add_mi_number(fc_obj, MI_SSTR("last_seen_s_ago"), fc[k].last_ago)   < 0 ||
+	        add_mi_number(fc_obj, MI_SSTR("packets"), fc[k].pkts)       < 0)
+		goto error;
+	}
     }
 
     return resp;

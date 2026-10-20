@@ -82,6 +82,34 @@ void cl_ctr_note_term(cl_ctr_cluster_t *cl, uint32_t term)
         cl->peers->term_seen = term;
 }
 
+/* Is @term (announced by @from) a plausible term?  Refuses one more than
+ * CL_CTR_TERM_JUMP_MAX above the highest term this node knows; a node that
+ * knows none yet (0) has nothing to judge by and accepts it.  Counts and
+ * logs (once a minute) what it refuses.  Must be called with
+ * cl->peers->lock held for WRITE. */
+int cl_ctr_term_sane(cl_ctr_cluster_t *cl, uint32_t term, const char *from)
+{
+    uint32_t known = cl->peers->term_seen;
+    time_t   now;
+
+    if (cl->peers->my_term > known)     known = cl->peers->my_term;
+    if (cl->peers->master_term > known) known = cl->peers->master_term;
+    if (known == 0 || term <= known || term - known <= CL_CTR_TERM_JUMP_MAX)
+        return 1;
+    cl->peers->terms_refused++;
+    now = cl_ctr_now();
+    if (cl->peers->terms_refused_warned_at == 0 ||
+            now - cl->peers->terms_refused_warned_at >= CL_CTR_WIRE_WARN_IVL) {
+        cl->peers->terms_refused_warned_at = now;
+        LM_WARN("clusterer_controller: [cluster %d] %s announced term %u, "
+                "more than %u above the highest term this node knows (%u) - "
+                "terms rise by one per election, so the packet is ignored; "
+                "%lu refused so far\n", cl->cluster_id, from, term,
+                CL_CTR_TERM_JUMP_MAX, known, cl->peers->terms_refused);
+    }
+    return 0;
+}
+
 /**
  * cl_ctr_elect_master(cl) - mark the peer with the highest IP as master.
  *

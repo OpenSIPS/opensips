@@ -431,6 +431,10 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
     cl_ctr_membership_digest(cl, &my_cnt, &my_hash);
 
     lock_start_write(cl->peers->lock);
+    if (!from_self && !cl_ctr_term_sane(cl, adv_term, sender_ip)) {
+        lock_stop_write(cl->peers->lock);
+        return;
+    }
     i_am_master = cl_ctr_i_am_master_locked(cl);
     if (!from_self)
         cl_ctr_note_term(cl, adv_term);
@@ -507,6 +511,13 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
     /* Non-masters (including a node that just yielded) watch the keepalive. */
     if (!i_am_master || yielded)
         cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+    /* ... and remember when they last heard it, for peers that probe; a
+     * keepalive also ends any probe round or election hold. */
+    if (!i_am_master && !from_self) {
+        cl->master_heard_ms = cl_ctr_now_ms();
+        cl->probing         = 0;
+        cl->hold_since_ms   = 0;
+    }
 
     /* Liveness relay: the master reports which node_ids it has seen in-window;
      * refresh those peers' last_seen so our election window stays populated even
@@ -676,6 +687,10 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
     cl_ctr_membership_digest(cl, &our_count, &our_hash);
 
     lock_start_write(cl->peers->lock);
+    if (!cl_ctr_term_sane(cl, sender_term, sender_ip)) {
+        lock_stop_write(cl->peers->lock);
+        return;
+    }
     cl_ctr_note_term(cl, sender_term);
     lock_stop_write(cl->peers->lock);
 
@@ -713,4 +728,56 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
         return;   /* we outrank the sender; it will yield to us on our beacon */
 
     cl_ctr_rejoin_superior_master(cl, sender_ip, "beacon");
+}
+
+/*
+ * cl_ctr_handle_master_probe() - a peer's master went silent and it asks
+ * whether this node still hears it.  Answers with how long ago this node
+ * last heard that master, or CL_CTR_PROBE_NOT_HEARD if it is not the master
+ * this node follows.
+ */
+void cl_ctr_handle_master_probe(const char *sender_ip, const char *payload,
+                                int payload_len, cl_ctr_cluster_t *cl,
+                                const struct sockaddr *src, socklen_t src_len)
+{
+    char     m[CL_CTR_MAX_IP_LEN + 1];
+    int      l = (int)strnlen(payload, payload_len < CL_CTR_MAX_IP_LEN
+                                       ? payload_len : CL_CTR_MAX_IP_LEN);
+    uint32_t ago = CL_CTR_PROBE_NOT_HEARD;
+    int      follows;
+
+    if (l == 0 || l >= payload_len || strcmp(sender_ip, my_ip) == 0)
+        return;
+    memcpy(m, payload, l);
+    m[l] = '\0';
+    lock_start_read(cl->peers->lock);
+    follows = !cl_ctr_i_am_master_locked(cl) &&
+              strcmp(cl->peers->last_master, m) == 0;
+    lock_stop_read(cl->peers->lock);
+    if (follows && cl->master_heard_ms) {
+        long long d = cl_ctr_now_ms() - cl->master_heard_ms;
+        ago = d < 0 ? 0 : (d > 0x7FFFFFFF ? 0x7FFFFFFF : (uint32_t)d);
+    }
+    cl_ctr_send_master_probe_ack(cl, m, ago, src, src_len);
+}
+
+/* cl_ctr_handle_master_probe_ack() - one peer's answer to our probe. */
+void cl_ctr_handle_master_probe_ack(const char *sender_ip, const char *payload,
+                                    int payload_len, cl_ctr_cluster_t *cl)
+{
+    int      l = (int)strnlen(payload, payload_len < CL_CTR_MAX_IP_LEN
+                                       ? payload_len : CL_CTR_MAX_IP_LEN);
+    uint32_t ago_be;
+
+    if (!cl->probing || l == 0 || payload_len < l + 1 + 4 ||
+            strncmp(payload, cl->probe_master, l) != 0 ||
+            cl->probe_master[l] != '\0')
+        return;
+    memcpy(&ago_be, payload + l + 1, 4);
+    if (ntohl(ago_be) <= CL_CTR_PROBE_FRESH_MS) {
+        cl->probe_heard++;
+        LM_DBG("clusterer_controller: [cluster %d] %s still hears master %s "
+               "(%u ms ago)\n", cl->cluster_id, sender_ip, cl->probe_master,
+               ntohl(ago_be));
+    }
 }

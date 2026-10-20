@@ -656,6 +656,10 @@ void cl_ctr_handle_member_list(const char *payload, int payload_len,
 	    memcpy(&s_be, st + 4, 4);  lseq  = ntohl(s_be);
 	    lock_start_write(cl->peers->lock);
 	    is_new = (cl->peers->node_state == CL_CTR_NODE_NEW);
+	    if (!cl_ctr_term_sane(cl, lterm, sender_ip)) {
+		lock_stop_write(cl->peers->lock);
+		return;
+	    }
 	    stale  = !is_new &&
 	             (lterm < cl->peers->master_term ||
 	              lterm < cl->peers->list_term_seen ||

@@ -30,11 +30,18 @@
  * ========================================================================= */
 
 /* Drain the expiration counter so the fd stops being readable. */
-void cl_ctr_drain_tfd(int tfd)
+/* Returns how many times the timer expired since last read - 0 when it did
+ * not: a timer re-armed by another handler in the same reactor round still
+ * reports readable once, and its handler must not act on that. */
+uint64_t cl_ctr_drain_tfd(int tfd)
 {
-    uint64_t exp;
-    if (read(tfd, &exp, sizeof(exp)) < 0 && errno != EAGAIN)
-        LM_WARN("clusterer_controller: timerfd read: %s\n", strerror(errno));
+    uint64_t exp = 0;
+    if (read(tfd, &exp, sizeof(exp)) < 0) {
+        if (errno != EAGAIN)
+            LM_WARN("clusterer_controller: timerfd read: %s\n", strerror(errno));
+        return 0;
+    }
+    return exp;
 }
 
 /* Arm a timerfd.  Pass sec_value=0 to disarm. */
@@ -80,33 +87,144 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
 {
     long long now = cl_ctr_now_ms(), gap;
     time_t    t_now;
-    int       i, follow;
+    int       i, follow, was_master = 0, step_down;
 
     gap = cl->loop_seen_ms ? now - cl->loop_seen_ms : 0;
     cl->loop_seen_ms = now;
     if (gap <= CL_CTR_STALL_MS)
         return 0;
 
+    /* A master gone longer than its members wait (the keepalive timeout and
+     * one probe round) has been replaced, or is about to be: they elected
+     * without it.  Coming back and announcing would make it compete with the
+     * master they chose - and win on a member count it never re-checked.  It
+     * stands down silently instead and follows whichever master announces
+     * next; if none does within the watchdog, the normal election runs. */
+    step_down = gap > CL_CTR_MASTER_KA_TIMEOUT * 1000LL + CL_CTR_PROBE_WAIT_MS;
+
     t_now = cl_ctr_now();
     lock_start_write(cl->peers->lock);
     for (i = 0; i < cl->peers->count; i++) {
         cl_ctr_peer_t *e = &cl->peers->entries[i];
-        if (e->last_seen != 0 && strcmp(e->ip, my_ip) != 0)
+        if (strcmp(e->ip, my_ip) == 0)
+            was_master = e->is_master;
+        if (e->last_seen != 0)
             e->last_seen = t_now;
     }
     cl->peers->self_stalls++;
     if (gap > cl->peers->self_stall_max_ms)
         cl->peers->self_stall_max_ms = gap;
-    follow = !cl_ctr_i_am_master_locked(cl) && cl->peers->last_master[0] != '\0';
+    step_down = step_down && was_master;
+    if (step_down) {
+        for (i = 0; i < cl->peers->count; i++)
+            cl->peers->entries[i].is_master = 0;
+        cl->peers->last_master[0] = '\0';
+    }
+    follow = !was_master && cl->peers->last_master[0] != '\0';
     lock_stop_write(cl->peers->lock);
-
-    if (follow)
-        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
 
     LM_WARN("clusterer_controller: [cluster %d] this node did not run for "
             "%lld ms (process paused or starved of CPU) - not treating peers "
             "it could not hear meanwhile as dead; they get a full timeout "
-            "from now\n", cl->cluster_id, gap);
+            "from now%s\n", cl->cluster_id, gap,
+            step_down ? "; it was master and stands down, to follow whichever "
+                        "master the others chose" : "");
+    if (step_down) {
+        cl_ctr_arm_master_timers(cl, 0);  /* stop announcing, arm the watchdog */
+        cl_ctr_apply_shtags(cl);          /* release the active tag */
+    } else if (follow) {
+        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+    }
+    return 1;
+}
+
+/*
+ * cl_ctr_probe_step() - before electing on a silent master, ask the peers.
+ *
+ * A master that stopped reaching THIS node is not necessarily dead: a fault
+ * between the two (one NIC, one switch port, a host firewall rule) looks
+ * the same from here.  Electing on it would split the cluster - this node
+ * picks a new master while every other node keeps the old one.  So on the
+ * first expiry of the master watchdog it asks up to CL_CTR_PROBE_FANOUT
+ * live peers and waits CL_CTR_PROBE_WAIT_MS; on the next, if any of them
+ * heard the master within CL_CTR_PROBE_FRESH_MS, it holds the election and
+ * watches again.  A hold lasts at most CL_CTR_PROBE_HOLD_MAX_S per outage,
+ * and with nobody to ask, or nobody answering, it elects as before.
+ *
+ * Returns 1 when the election is deferred (the watchdog is re-armed).
+ */
+static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
+{
+    long long now = cl_ctr_now_ms();
+    char      to[CL_CTR_PROBE_FANOUT][CL_CTR_MAX_IP_LEN + 1];
+    int       i, n = 0;
+    time_t    cutoff;
+
+    if (cl->probing) {
+        /* the answers are in */
+        cl->probing = 0;
+        if (cl->probe_heard == 0) {
+            cl->hold_since_ms = 0;
+            return 0;
+        }
+        lock_start_write(cl->peers->lock);
+        cl->peers->election_holds++;
+        lock_stop_write(cl->peers->lock);
+        LM_WARN("clusterer_controller: [cluster %d] no keepalive from master "
+                "%s for %ds, but %d peer(s) still hear it - holding the "
+                "election (a fault between this node and the master, not a "
+                "dead master); %lld s of %d held so far\n", cl->cluster_id,
+                cl->probe_master, CL_CTR_MASTER_KA_TIMEOUT, cl->probe_heard,
+                (now - cl->hold_since_ms) / 1000, CL_CTR_PROBE_HOLD_MAX_S);
+        cl_ctr_arm_tfd(cl->master_dead_tfd, CL_CTR_MASTER_KA_TIMEOUT, 0);
+        return 1;
+    }
+
+    if (cl->hold_since_ms &&
+            now - cl->hold_since_ms >= CL_CTR_PROBE_HOLD_MAX_S * 1000LL) {
+        LM_WARN("clusterer_controller: [cluster %d] master %s unreachable "
+                "from this node for over %d s although peers still hear it - "
+                "electing\n", cl->cluster_id, cl->probe_master,
+                CL_CTR_PROBE_HOLD_MAX_S);
+        cl->hold_since_ms = 0;
+        return 0;
+    }
+
+    cl->probe_master[0] = '\0';
+    cutoff = cl_ctr_now() - (time_t)query_time * CL_CTR_ELECT_FACTOR;
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e = &cl->peers->entries[i];
+        if (strcmp(e->ip, my_ip) == 0)
+            continue;
+        if (e->is_master) {
+            memcpy(cl->probe_master, e->ip, sizeof(cl->probe_master));
+            continue;
+        }
+        if (n < CL_CTR_PROBE_FANOUT && e->last_seen >= cutoff)
+            memcpy(to[n++], e->ip, sizeof(to[0]));
+    }
+    lock_stop_read(cl->peers->lock);
+    if (cl->probe_master[0] == '\0' || n == 0)
+        return 0;
+
+    for (i = 0; i < n; i++)
+        cl_ctr_send_master_probe(cl, cl->probe_master, to[i]);
+    cl->probing     = 1;
+    cl->probe_heard = 0;
+    if (!cl->hold_since_ms)
+        cl->hold_since_ms = now;
+    {
+        struct itimerspec its;
+        memset(&its, 0, sizeof(its));
+        its.it_value.tv_sec  = CL_CTR_PROBE_WAIT_MS / 1000;
+        its.it_value.tv_nsec = (CL_CTR_PROBE_WAIT_MS % 1000) * 1000000L;
+        if (timerfd_settime(cl->master_dead_tfd, 0, &its, NULL) < 0)
+            LM_WARN("clusterer_controller: timerfd_settime: %s\n", strerror(errno));
+    }
+    LM_INFO("clusterer_controller: [cluster %d] no keepalive from master %s "
+            "for %ds - asking %d peer(s) whether they still hear it\n",
+            cl->cluster_id, cl->probe_master, CL_CTR_MASTER_KA_TIMEOUT, n);
     return 1;
 }
 
@@ -128,7 +246,8 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
 {
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
     int prev_master, now_master;
-    cl_ctr_drain_tfd(fd);
+    if (!cl_ctr_drain_tfd(fd))
+        return 0;
     cl_ctr_stall_check(cl);
     cl_ctr_cid_tick(cl);
 
@@ -286,7 +405,8 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
 static int cl_ctr_on_join_tfd(int fd, void *param, int was_timeout)
 {
     cl_ctr_cluster_t *cl = (cl_ctr_cluster_t *)param;
-    cl_ctr_drain_tfd(fd);
+    if (!cl_ctr_drain_tfd(fd))
+	return 0;
 
     int was_new, auth_fails;
     lock_start_write(cl->peers->lock);
@@ -494,11 +614,16 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
     int           now_master;
     char          dead_master[CL_CTR_MAX_IP_LEN + 1];
 
-    cl_ctr_drain_tfd(fd);
+    /* re-armed meanwhile (a keepalive, the stall check): not expired */
+    if (!cl_ctr_drain_tfd(fd))
+        return 0;
 
     /* the master's silence means nothing if this node was the one stopped;
      * the check has restarted the watchdog */
     if (cl_ctr_stall_check(cl))
+        return 0;
+    /* ... and may be a fault between it and this node only: ask first */
+    if (cl_ctr_probe_step(cl))
         return 0;
 
     dead_master[0] = '\0';
