@@ -332,13 +332,14 @@ mi_response_t *mi_usrloc_rm_contact(const mi_params_t *params,
 }
 
 
-mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
+mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump,
+		const str *aor_prefix, int limit, int offset)
 {
 	struct urecord* r;
 	dlist_t* dl;
 	udomain_t* dom;
 	time_t t;
-	int i;
+	int i, returned = 0;
 	map_iterator_t it;
 	void ** dest;
 	mi_response_t *resp;
@@ -401,6 +402,16 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 				}
 				r =( urecord_t * ) *dest;
 
+				/* Keep filtering and page skipping under the slot lock. */
+				if (aor_prefix &&
+					(r->aor.len < aor_prefix->len ||
+					 memcmp(r->aor.s, aor_prefix->s, aor_prefix->len) != 0))
+					continue;
+				if (offset > 0) {
+					offset--;
+					continue;
+				}
+
 				aor_item = add_mi_object(aors_arr, NULL, 0);
 				if (!aor_item) {
 					LM_ERR("Failed to add mi item\n");
@@ -412,6 +423,10 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 					LM_ERR("Failed to add AOR info\n");
 					goto error_unlock;
 				}
+				if (limit > 0 && ++returned >= limit) {
+					unlock_ulslot(dom, i);
+					goto dump_done;
+				}
 			}
 
 			unlock_ulslot( dom, i);
@@ -419,6 +434,7 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 
 	}
 
+dump_done:
 	return resp;
 
 error_unlock:
@@ -432,7 +448,7 @@ error:
 mi_response_t *w_mi_usrloc_dump(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	return mi_usrloc_dump(params, 0);
+	return mi_usrloc_dump(params, 0, NULL, 0, 0);
 }
 
 mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
@@ -443,7 +459,58 @@ mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
 	if (get_mi_int_param(params, "brief", &brief) < 0)
 		return init_mi_param_error();
 
-	return mi_usrloc_dump(params, brief);
+	return mi_usrloc_dump(params, brief, NULL, 0, 0);
+}
+
+
+/*
+ * Scoped dump variants. The legacy zero/one-parameter recipes above are
+ * intentionally unchanged, so existing MI clients retain their output.
+ */
+mi_response_t *w_mi_usrloc_dump_filtered(const mi_params_t *params,
+				struct mi_handler *async_hdl)
+{
+	str prefix;
+
+	if (get_mi_string_param(params, "aor_prefix", &prefix.s, &prefix.len) < 0)
+		return init_mi_param_error();
+
+	return mi_usrloc_dump(params, 0, &prefix, 0, 0);
+}
+
+mi_response_t *w_mi_usrloc_dump_paged(const mi_params_t *params,
+				struct mi_handler *async_hdl)
+{
+	str prefix;
+	int limit, offset;
+
+	if (get_mi_string_param(params, "aor_prefix", &prefix.s, &prefix.len) < 0 ||
+			get_mi_int_param(params, "limit", &limit) < 0 ||
+			get_mi_int_param(params, "offset", &offset) < 0)
+		return init_mi_param_error();
+
+	if (limit <= 0 || offset < 0)
+		return init_mi_error(400, MI_SSTR("limit must be > 0 and offset >= 0"));
+
+	return mi_usrloc_dump(params, 0, &prefix, limit, offset);
+}
+
+mi_response_t *w_mi_usrloc_dump_brief_paged(const mi_params_t *params,
+				struct mi_handler *async_hdl)
+{
+	str prefix;
+	int brief, limit, offset;
+
+	if (get_mi_int_param(params, "brief", &brief) < 0 ||
+			get_mi_string_param(params, "aor_prefix", &prefix.s, &prefix.len) < 0 ||
+			get_mi_int_param(params, "limit", &limit) < 0 ||
+			get_mi_int_param(params, "offset", &offset) < 0)
+		return init_mi_param_error();
+
+	if (limit <= 0 || offset < 0)
+		return init_mi_error(400, MI_SSTR("limit must be > 0 and offset >= 0"));
+
+	return mi_usrloc_dump(params, brief, &prefix, limit, offset);
 }
 
 mi_response_t *mi_usrloc_flush(const mi_params_t *params,
