@@ -471,6 +471,33 @@ check "healthy again 25 s after the stutter ends (local_health $V)" $([ "$V" = 0
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "one master throughout, $MIP, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
+echo "=== T24 release_tag_when_isolated: a cut-off master gives up the active tag ==="
+# Off until here: no node may have released anything so far.
+check "with the option off, no tag was released anywhere" $(cat $R/n?.log | grep -aq "releasing the active sharing tag" && echo 0 || echo 1) ""
+for i in 1 2 3 4; do stop_graceful $i; rm -f $R/n$i.pid; done; sleep 2
+for i in 1 2 3 4; do RIG_TAG_RELEASE=1 start $i $NEW 1 2 fleet-a; done; sleep 16
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+check "the option is on everywhere" $([ "$(cfgval $MN 741 release_tag_when_isolated)" = 1 ] && echo 1 || echo 0) ""
+# a member cut off: the master still hears 3 of 4 and keeps the tag
+for x in 1 2 3 4; do [ $x != $MN ] && break; done
+nx $x iptables -I INPUT -p udp --dport $PORT -j DROP; nx $x iptables -I OUTPUT -p udp --dport $PORT -j DROP
+sleep 15
+nx $x iptables -D INPUT -p udp --dport $PORT -j DROP; nx $x iptables -D OUTPUT -p udp --dport $PORT -j DROP
+check "a member cut off: master $MIP (3 of 4) keeps the tag" $([ "$(cfgval $MN 741 tag_released)" = 0 ] && echo 1 || echo 0) "$(cfgval $MN 741 tag_released)"
+sleep 16
+# the master cut off: it hears 1 of 4, releases the tag, the rest elect
+MM=$(wc -l < $R/n$MN.log)
+nx $MN iptables -I INPUT -p udp --dport $PORT -j DROP; nx $MN iptables -I OUTPUT -p udp --dport $PORT -j DROP
+sleep 15
+REL=$(cfgval $MN 741 tag_released)
+NEWM=$(members $x 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
+nx $MN iptables -D INPUT -p udp --dport $PORT -j DROP; nx $MN iptables -D OUTPUT -p udp --dport $PORT -j DROP
+check "the cut-off master released the active tag" $([ "$REL" = 1 ] && since $MN $MM | grep -aq "releasing the active sharing tag" && echo 1 || echo 0) "tag_released=$REL"
+check "the rest elected another master meanwhile" $([ -n "$NEWM" ] && [ "$NEWM" != "$MIP" ] && echo 1 || echo 0) "$NEWM"
+sleep 16
+MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+check "healed: one master, named by all; the old master holds no released state" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && [ "$(cfgval $MN 741 tag_released)" = 0 ] && echo 1 || echo 0) "$MS released=$(cfgval $MN 741 tag_released)"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"

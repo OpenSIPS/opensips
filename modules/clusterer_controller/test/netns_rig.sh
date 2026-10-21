@@ -19,6 +19,7 @@ set -u
 OLD=${OLD:-}
 R=${RIG_DIR:-/tmp/cl_ctr_rig}
 RIG_TM=${RIG_TM:-0}     # 1: load tm with tm_replication_cluster=741
+RIG_TAG_RELEASE=${RIG_TAG_RELEASE:-0}   # 1: release_tag_when_isolated=1
 BR=br74
 NSP=${RIG_NS_PREFIX:-}
 PORT=3741
@@ -97,6 +98,7 @@ modparam("clusterer_controller", "query_time", $QT)
 modparam("clusterer_controller", "master_stickiness", $ST)
 modparam("clusterer_controller", "on_config_mismatch", "reject")
 modparam("clusterer_controller", "consumer_rate_limit", 4000)
+modparam("clusterer_controller", "release_tag_when_isolated", $RIG_TAG_RELEASE)
 modparam("clusterer_controller", "cluster", "id=741,multicast=239.0.74.1:$PORT,bin_socket=bin:$IP:5588$UK")
 modparam("clusterer_controller", "cluster", "id=742,multicast=239.0.74.2:$PORT,bin_socket=bin:$IP:5588$UK")
 

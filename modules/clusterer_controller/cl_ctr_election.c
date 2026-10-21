@@ -393,6 +393,10 @@ void cl_ctr_apply_shtags_decision(cl_ctr_cluster_t *cl, int i_am_master,
         activate = (my_node_id != 0 && (uint16_t)my_node_id == forced);
     else
         activate = i_am_master;
+    /* cut off from most of the cluster (release_tag_when_isolated): hold no
+     * active tag, the majority's master holds it */
+    if (cl->tag_released)
+        activate = 0;
 
     /* Log the reason on this node, but only when the decision or its cause
      * changes - cl_ctr_apply_shtags_decision() is called on every relevant event
@@ -659,6 +663,73 @@ void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st)
                 "sharing tag went into maintenance - resuming automatic "
                 "allocation\n", cl->cluster_id, node_id);
         cl_ctr_send_member_list(cl->sock, cl);
+        cl_ctr_apply_shtags(cl);
+    }
+}
+
+/*
+ * cl_ctr_isolation_round() - once per ALIVE round: is this master cut off
+ * from most of its cluster?
+ *
+ * It remembers the live membership it held steadily (stable_live: grows at
+ * once, shrinks only when a smaller membership of at least half has lasted
+ * three rounds - members that left or were purged).  Hearing strictly
+ * FEWER than half of it for a whole election window means the rest of the
+ * cluster is elsewhere and has most likely elected a master of its own; with
+ * release_tag_when_isolated set, this master then releases the active
+ * sharing tag (it stays master for the control plane) so that two masters do
+ * not both hold it, and takes it back once it hears a majority again.  A
+ * two-node cluster never releases: one of two is not fewer than half.
+ */
+void cl_ctr_isolation_round(cl_ctr_cluster_t *cl, int i_am_master)
+{
+    long long now = cl_ctr_now_ms();
+    uint16_t  live;
+
+    if (!i_am_master) {
+        cl->stable_live       = 0;
+        cl->below_rounds      = 0;
+        cl->isolated_since_ms = 0;
+        if (cl->tag_released) {
+            cl->tag_released = 0;
+            cl->peers->tag_released = 0;
+        }
+        return;
+    }
+    live = cl_ctr_live_count(cl);
+    if (cl->stable_live == 0 || live >= cl->stable_live) {
+        cl->stable_live  = live;
+        cl->below_rounds = 0;
+    }
+    if (2 * (int)live < (int)cl->stable_live) {
+        if (!cl->isolated_since_ms)
+            cl->isolated_since_ms = now;
+        if (release_tag_when_isolated && !cl->tag_released &&
+                now - cl->isolated_since_ms
+                    >= (long long)query_time * CL_CTR_ELECT_FACTOR * 1000) {
+            cl->tag_released        = 1;
+            cl->peers->tag_released = 1;
+            LM_WARN("clusterer_controller: [cluster %d] this master hears only "
+                    "%u of the %u members it held for %d s - it is cut off "
+                    "from most of the cluster, which has most likely elected "
+                    "another master: releasing the active sharing tag until "
+                    "it hears a majority again\n", cl->cluster_id, live,
+                    cl->stable_live, query_time * CL_CTR_ELECT_FACTOR);
+            cl_ctr_apply_shtags(cl);
+        }
+        return;
+    }
+    cl->isolated_since_ms = 0;
+    if (live < cl->stable_live && ++cl->below_rounds >= 3) {
+        cl->stable_live  = live;
+        cl->below_rounds = 0;
+    }
+    if (cl->tag_released) {
+        cl->tag_released        = 0;
+        cl->peers->tag_released = 0;
+        LM_INFO("clusterer_controller: [cluster %d] this master hears %u of "
+                "%u members again - taking the active sharing tag back\n",
+                cl->cluster_id, live, cl->stable_live);
         cl_ctr_apply_shtags(cl);
     }
 }

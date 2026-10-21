@@ -944,6 +944,14 @@ typedef struct cl_ctr_cluster_ {
     int            term_confirmed;
     /* Local Health Multiplier (worker-local): the count, trouble events since
      * the last ALIVE round, and the kernel drop count already accounted. */
+    /* Isolation watch (worker-local, cl_ctr_isolation_round()): the live
+     * membership this master last held steadily, rounds a smaller one has
+     * lasted, since when it hears fewer than half of it, and whether it has
+     * released the active sharing tag for it. */
+    uint16_t       stable_live;
+    int            below_rounds;
+    long long      isolated_since_ms;
+    int            tag_released;
     int            lhm;
     int            lhm_trouble;
     unsigned long  lhm_drops_seen;
@@ -1427,6 +1435,7 @@ struct cl_ctr_peers_ {
     int             ka_mean_ms, ka_dev_ms, ka_margin_ms, ka_timeout_ms;
     unsigned long   ka_false_suspicions;
     int             local_health;     /* this node's LHM, for MI */
+    int             tag_released;     /* the active tag released while cut off */
     int             rcvbuf_bytes;
     unsigned long   rx_kernel_drops;
     time_t          rx_drops_warned_at;
@@ -1491,6 +1500,7 @@ extern int consumer_retries;
 extern int consumer_retry_ms;
 extern int enable_reliable_send;
 extern int master_stickiness;
+extern int release_tag_when_isolated;
 
 /* cl_ctr_crypto.c */
 int cl_ctr_random_bytes(unsigned char *buf, size_t len);
@@ -1632,6 +1642,7 @@ void cl_ctr_ka_sample(cl_ctr_cluster_t *cl, const char *master_ip);
 void cl_ctr_ka_false_suspicion(cl_ctr_cluster_t *cl, const char *why);
 void cl_ctr_lhm_event(cl_ctr_cluster_t *cl, const char *why);
 void cl_ctr_lhm_round(cl_ctr_cluster_t *cl);
+void cl_ctr_isolation_round(cl_ctr_cluster_t *cl, int i_am_master);
 void cl_ctr_send_master_probe(cl_ctr_cluster_t *cl, const char *master_ip);
 void cl_ctr_send_master_probe_ack(cl_ctr_cluster_t *cl, const char *master_ip,
                                   uint32_t heard_ms_ago,

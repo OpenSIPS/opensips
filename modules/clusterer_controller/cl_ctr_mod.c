@@ -101,6 +101,11 @@ int                    enable_reliable_send = 1;
  *   0           = not sticky - pure highest-IP election, so a higher-IP node
  *                 takes over as master as soon as it appears (more handovers). */
 int                    master_stickiness = 1;
+/* release_tag_when_isolated: 1 = a master that hears fewer than half of its
+ * last stable membership for a whole election window gives up the active
+ * sharing tag until it hears a majority again (cl_ctr_isolation_round()).
+ * Off by default - availability first. */
+int                    release_tag_when_isolated = 0;
 static int      consumer_rate_limit = CL_CTR_CONSUMER_RATE_DEFAULT;
 static char     my_bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
 static int      my_bin_count                            = 0;
@@ -142,6 +147,7 @@ static const param_export_t params[] = {
     {"enable_reliable_send", INT_PARAM, &enable_reliable_send},
     {"manage_shtags", INT_PARAM, &manage_shtags},
     {"master_stickiness", INT_PARAM, &master_stickiness},
+    {"release_tag_when_isolated", INT_PARAM, &release_tag_when_isolated},
     {"on_config_mismatch", STR_PARAM, &on_config_mismatch_s},
     {0, 0, 0}
 };

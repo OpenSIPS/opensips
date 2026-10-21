@@ -437,6 +437,20 @@ modparam("clusterer_controller", "cluster",
 ...
 ```
 
+#### release_tag_when_isolated (integer)
+
+When set to *1*, a master that hears strictly fewer than half of the members it last held steadily, for a whole election window (*query_time* x 3 seconds), gives up the active sharing tag - it stays master for the control plane - and takes it back as soon as it hears a majority again. The rest of the cluster is then elsewhere and has most likely elected a master of its own, and two masters holding the active tag at once (the most common failure of leader election under network partitions) is avoided. The membership it compares against grows at once and shrinks only when a smaller membership of at least half has lasted three rounds (members that left or were purged), so being cut off never lowers it. A two-node cluster never releases: one of two is not fewer than half. *cl_ctr_list_config* reports the setting and *tag_released*.
+
+Off by default: availability first - a master cut off from everyone else keeps serving with the tag. Turn it on where a duplicate active tag is worse than none for the length of a partition.
+
+*Default value is 0.*
+
+```opensips title="Set release_tag_when_isolated parameter"
+...
+modparam("clusterer_controller", "release_tag_when_isolated", 1)
+...
+```
+
 #### on_config_mismatch (string)
 
 Policy applied when a node's consistency-critical settings (*manage_shtags*, *master_stickiness*, *query_time*) differ from those of the running cluster. All nodes of a cluster are expected to use identical values; this parameter decides what happens when they do not. One of:

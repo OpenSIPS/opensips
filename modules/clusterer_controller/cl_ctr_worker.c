@@ -505,6 +505,7 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
     }
     if (prev_master != now_master)
         cl_ctr_arm_master_timers(cl, now_master);
+    cl_ctr_isolation_round(cl, now_master);
 
     /* Belt-and-suspenders identity registration (covers paths where
      * cl_ctr_handle_node_assign has not yet run).                      */
