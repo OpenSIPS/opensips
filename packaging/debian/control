@@ -28,6 +28,7 @@ Build-Depends: bison,
                libjwt-dev | base-files,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
+               libgrpc++-dev (>= 1.40.0) <grpc-client>,
                opentelemetry-cpp-dev <opentelemetry>,
                libpcre2-dev,
                libperl-dev,
@@ -68,6 +69,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-diameter-module,
           opensips-emergency-module,
           opensips-geoip-module,
+          opensips-grpc-client-module,
           opensips-http-modules,
           opensips-identity-module,
           opensips-ipsec-module,
@@ -351,6 +353,21 @@ Description: IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
  database; and the non-free GeoIP City database is drop-in
  compatible   Lookups are executed against the freely-available GeoLite City
  database; and the non-free GeoIP City database is drop-in compatible
+
+Package: opensips-grpc-client-module
+Architecture: any
+Multi-Arch: same
+Build-Profiles: <grpc-client>
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: asynchronous gRPC client module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the native asynchronous generic gRPC client module,
+ including TLS/mTLS channels, metadata, deadlines and channel reuse.
 
 Package: opensips-http-modules
 Architecture: any
