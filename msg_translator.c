@@ -2496,6 +2496,198 @@ error:
 }
 
 
+#define VIA_PARAM_PROVIDER_MAX_COUNT 8
+#define VIA_PARAM_PROVIDER_MAX_BYTES 1024
+
+static via_param_provider_f via_param_providers[VIA_PARAM_PROVIDER_MAX_COUNT];
+static unsigned int via_param_provider_count;
+
+int register_via_param_provider(via_param_provider_f provider)
+{
+	unsigned int i;
+
+	if (!provider)
+		return -1;
+
+	for (i = 0; i < via_param_provider_count; i++)
+		if (via_param_providers[i] == provider)
+			return 0;
+
+	if (via_param_provider_count >= VIA_PARAM_PROVIDER_MAX_COUNT) {
+		LM_ERR("too many Via parameter providers (max %d)\n",
+			VIA_PARAM_PROVIDER_MAX_COUNT);
+		return -1;
+	}
+
+	via_param_providers[via_param_provider_count++] = provider;
+	return 0;
+}
+
+static int collect_via_param_provider_params(struct sip_msg *msg, int context,
+	char *buf, int buf_len, str *out)
+{
+	unsigned int i;
+	int used = 0, rc;
+	str part = STR_NULL;
+
+	if (!out || !buf || buf_len <= 0)
+		return -1;
+
+	out->s = NULL;
+	out->len = 0;
+
+	for (i = 0; i < via_param_provider_count; i++) {
+		part = STR_NULL;
+		rc = via_param_providers[i](msg, context, &part);
+		if (rc < 0)
+			return -1;
+		if (rc == 0 || !part.s || part.len <= 0)
+			continue;
+		if (part.len > buf_len - used) {
+			LM_ERR("combined Via provider parameters exceed %d bytes\n",
+				buf_len);
+			return -1;
+		}
+		memcpy(buf + used, part.s, part.len);
+		used += part.len;
+	}
+
+	if (used) {
+		out->s = buf;
+		out->len = used;
+	}
+	return 0;
+}
+
+
+/*
+ * Edits applied while copying the top Via of a locally generated reply:
+ * the provider parameters are inserted right after the last parameter of
+ * the first Via body (not at the end of the header, which may hold several
+ * comma-separated Via bodies), and any parameter of that body having the
+ * same name as a provider parameter is dropped, so that the provider value
+ * replaces it (e.g. RFC 7339 turns ";oc" into ";oc=<value>").
+ */
+#define VIA_PARAM_PROVIDER_MAX_CUTS 16
+
+struct via1_edit {
+	str params;     /* provider parameters to insert */
+	char *ins;      /* insertion point, inside the original Via header */
+	int inserted;
+	int ncuts;
+	int cut_len;    /* total length of the removed parameters */
+	str cuts[VIA_PARAM_PROVIDER_MAX_CUTS];
+};
+
+/* returns the end of a Via param (or host:port) starting at @s, taking
+ * quoted-string values into account */
+static char *via1_token_end(char *s, char *end)
+{
+	int quoted = 0;
+
+	for (; s < end; s++) {
+		if (quoted) {
+			if (*s == '\\' && s + 1 < end)
+				s++;
+			else if (*s == '"')
+				quoted = 0;
+			continue;
+		}
+		switch (*s) {
+			case '"':
+				quoted = 1;
+				break;
+			case ';': case ',': case '(':
+			case ' ': case '\t': case '\r': case '\n':
+				return s;
+		}
+	}
+	return s;
+}
+
+static int via_params_have_name(const str *params, const str *name)
+{
+	char *p = params->s, *end = params->s + params->len, *n;
+
+	while (p < end) {
+		while (p < end && (*p == ';' || *p == ' ' || *p == '\t'))
+			p++;
+		n = p;
+		while (p < end && *p != '=' && *p != ';' && *p != ' ' && *p != '\t')
+			p++;
+		if (p - n == name->len && !strncasecmp(n, name->s, name->len))
+			return 1;
+		p = via1_token_end(p, end);
+		while (p < end && *p != ';')
+			p++;
+	}
+	return 0;
+}
+
+static void via1_edit_init(struct sip_msg *msg, const str *params,
+		struct via1_edit *ed)
+{
+	struct via_body *vb = msg->via1;
+	struct via_param *vp;
+	char *end = msg->h_via1->body.s + msg->h_via1->body.len, *e;
+
+	memset(ed, 0, sizeof *ed);
+	if (!params->s || params->len <= 0)
+		return;
+
+	ed->params = *params;
+	ed->ins = via1_token_end(vb->last_param ? vb->last_param->start :
+		vb->host.s, end);
+
+	for (vp = vb->param_lst; vp; vp = vp->next) {
+		if (vp == vb->branch || vp == vb->rport || vp == vb->received ||
+				!via_params_have_name(params, &vp->name))
+			continue;
+		if (ed->ncuts == VIA_PARAM_PROVIDER_MAX_CUTS) {
+			LM_WARN("too many Via params to replace, keeping the rest\n");
+			break;
+		}
+		e = via1_token_end(vp->start, end);
+		/* also drop the preceding ';' */
+		ed->cuts[ed->ncuts].s = vp->start - 1;
+		ed->cuts[ed->ncuts].len = e - (vp->start - 1);
+		ed->cut_len += ed->cuts[ed->ncuts].len;
+		ed->ncuts++;
+	}
+}
+
+static inline char *via1_copy_plain(char *p, char *from, char *to,
+		struct via1_edit *ed)
+{
+	if (!ed->inserted && ed->ins && ed->ins >= from && ed->ins <= to) {
+		append_str(p, from, ed->ins - from);
+		append_str(p, ed->params.s, ed->params.len);
+		ed->inserted = 1;
+		from = ed->ins;
+	}
+	append_str(p, from, to - from);
+	return p;
+}
+
+/* copies the [from, to) chunk of the original top Via, applying @ed */
+static char *via1_copy(char *p, char *from, char *to, struct via1_edit *ed)
+{
+	int k;
+	char *c_s, *c_e;
+
+	for (k = 0; k < ed->ncuts && from < to; k++) {
+		c_s = ed->cuts[k].s;
+		c_e = c_s + ed->cuts[k].len;
+		if (c_e <= from || c_s >= to)
+			continue;
+		if (c_s > from)
+			p = via1_copy_plain(p, from, c_s, ed);
+		from = c_e < to ? c_e : to;
+	}
+	return via1_copy_plain(p, from, to, ed);
+}
+
+
 char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_tag,
 		struct sip_msg* msg, unsigned int *returned_len, struct bookmark *bmark)
 {
@@ -2507,7 +2699,11 @@ char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_
 	struct lump_rpl *lump, *body;
 	int i;
 	str to_tag;
+	str via_provider_params = STR_NULL;
+	char via_provider_buf[VIA_PARAM_PROVIDER_MAX_BYTES];
+	struct via1_edit via1_ed;
 
+	memset(&via1_ed, 0, sizeof via1_ed);
 	body = 0;
 	buf=0;
 	to_tag.s = 0;
@@ -2522,6 +2718,14 @@ char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_
 	if (parse_headers( msg, HDR_EOH_F, 0 )==-1) {
 		LM_ERR("parse_headers failed\n");
 		goto error00;
+	}
+
+	if (via_param_provider_count && msg->h_via1 && msg->via1) {
+		if (collect_via_param_provider_params(msg, VIA_PARAM_CTX_REPLY,
+				via_provider_buf, sizeof(via_provider_buf),
+				&via_provider_params) < 0)
+			via_provider_params = STR_NULL;
+		via1_edit_init(msg, &via_provider_params, &via1_ed);
 	}
 
 	/*computes the length of the new response buffer*/
@@ -2565,7 +2769,9 @@ char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_
 	for( hdr=msg->h_via1 ; hdr ; hdr=hdr->sibling) {
 		/* we always add CRLF to via*/
 		len+=(hdr->body.s+hdr->body.len)-hdr->name.s+CRLF_LEN;
-		if (hdr==msg->h_via1) len += received_len+rport_len;
+		if (hdr==msg->h_via1)
+			len += received_len + rport_len +
+				via1_ed.params.len - via1_ed.cut_len;
 	}
 	/* copy all Record-Route hdrs */
 	for( hdr=msg->record_route ; hdr ; hdr=hdr->sibling) {
@@ -2640,33 +2846,34 @@ char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_
 				msg->via1->host.len + (msg->via1->port?
 				msg->via1->port_str.len + 1 : 0);
 			/* copy via1 up to params */
-			append_str( p, hdr->name.s, i);
+			p = via1_copy(p, hdr->name.s, hdr->name.s + i, &via1_ed);
 			/* copy received param */
 			append_str( p, received_buf, received_len);
 		}
 		if (rport_buf){
 			if (msg->via1->rport){ /* delete the old one */
 				/* copy until rport */
-				append_str( p, hdr->name.s+i ,
-					msg->via1->rport->start-hdr->name.s-1-i);
+				p = via1_copy(p, hdr->name.s + i,
+					msg->via1->rport->start - 1, &via1_ed);
 				/* copy new rport */
 				append_str(p, rport_buf, rport_len);
 				/* copy the rest of the via */
-				append_str(p, msg->via1->rport->start+
-									msg->via1->rport->size,
-									hdr->body.s+hdr->body.len-
-									msg->via1->rport->start-
-									msg->via1->rport->size);
+				p = via1_copy(p, msg->via1->rport->start +
+					msg->via1->rport->size,
+					hdr->body.s + hdr->body.len, &via1_ed);
 			}else{ /* just copy rport and rest of hdr */
 				append_str(p, rport_buf, rport_len);
-				append_str( p, hdr->name.s+i ,
-					(hdr->body.s+hdr->body.len)-hdr->name.s-i);
+				p = via1_copy(p, hdr->name.s + i,
+					hdr->body.s + hdr->body.len, &via1_ed);
 			}
 		}else{
 			/* normal whole via copy */
-			append_str( p, hdr->name.s+i ,
-				(hdr->body.s+hdr->body.len)-hdr->name.s-i);
+			p = via1_copy(p, hdr->name.s + i,
+				hdr->body.s + hdr->body.len, &via1_ed);
 		}
+		/* safety net, should not happen */
+		if (!via1_ed.inserted && via1_ed.params.len > 0)
+			append_str(p, via1_ed.params.s, via1_ed.params.len);
 		append_str( p, CRLF,CRLF_LEN);
 		/* and now the rest of the VIA hdrs */
 		for( hdr=hdr->sibling ; hdr ; hdr=hdr->sibling) {
@@ -2844,6 +3051,12 @@ char* via_builder( unsigned int *len,
 	int max_len, local_via_len=MY_VIA_LEN;
 	const str* address_str; /* address displayed in via */
 	const str* port_str; /* port no displayed in via */
+	str provider_params = STR_NULL;
+	char provider_buf[VIA_PARAM_PROVIDER_MAX_BYTES];
+
+	if (collect_via_param_provider_params(NULL, VIA_PARAM_CTX_REQUEST,
+			provider_buf, sizeof(provider_buf), &provider_params) < 0)
+		provider_params = STR_NULL;
 
 	/* use pre-set address in via or the outbound socket one */
 	if (hp && hp->host && hp->host->len)
@@ -2861,6 +3074,7 @@ char* via_builder( unsigned int *len,
 		+1 /*':'*/+port_str->len
 		+(branch?(MY_BRANCH_LEN+branch->len):0)
 		+(extra_params?extra_params->len:0)
+		+provider_params.len
 		+CRLF_LEN+1;
 	line_buf=pkg_malloc( max_len );
 	if (line_buf==0){
@@ -2909,6 +3123,10 @@ char* via_builder( unsigned int *len,
 	if (extra_params){
 		memcpy(line_buf+via_len, extra_params->s, extra_params->len);
 		via_len+=extra_params->len;
+	}
+	if (provider_params.s && provider_params.len > 0) {
+		memcpy(line_buf+via_len, provider_params.s, provider_params.len);
+		via_len+=provider_params.len;
 	}
 
 	memcpy(line_buf+via_len, CRLF, CRLF_LEN);
