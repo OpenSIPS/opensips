@@ -19,6 +19,12 @@ for c in r:
     if c.get("cluster_id")==int(sys.argv[1]):
         print(" ".join(sorted("%s:%s:%s"%(m["ip"],m["status"],m["node_id"]) for m in c["members"])))' $2
 }
+tagst() {  # tagst <node> -> state of the cluster-741 sharing tag on that node
+  mi $1 clusterer:list_shtags | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result",[])
+except Exception: sys.exit()
+print(" ".join(sorted(set(t["State"] for t in d if t.get("Cluster")==741))))'; }
 cfgval() { mi $1 clusterer_controller:list_config | python3 -c '
 import json,sys
 for c in json.load(sys.stdin).get("result",[]):
@@ -336,6 +342,8 @@ NM=$(echo $MS | cut -d' ' -f1)
 check "the master in maintenance handed over: one new master, named by all" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && [ "$NM" != "$MIP" ] && [ "$NM" != "$BIP" ] && echo 1 || echo 0) "$MS"
 WS=0; for i in 1 2 3 4; do eval m=\$L$i; WS=$((WS + $(since $i $m | grep -ac "went silent"))); done
 check "the handover did not wait for the master watchdog (no 'went silent')" $([ $WS = 0 ] && echo 1 || echo 0) "$WS"
+NN=${NM##*.}; NN=${NN#1}
+check "the active tag moved with it: $NM active, $MIP backup" $([ "$(tagst $NN)" = active ] && [ "$(tagst $MN)" = backup ] && echo 1 || echo 0) "new $(tagst $NN) old $(tagst $MN)"
 mi $BN clusterer_controller:maintenance cluster_id=741 state=none >/dev/null
 mi $MN clusterer_controller:maintenance cluster_id=741 state=none >/dev/null; sleep 4
 V=""; for i in 1 2 3 4; do V="$V $(maint $i $BIP) $(maint $i $MIP)"; done
@@ -383,6 +391,10 @@ DT=$(python3 -c "import time; print('%.1f' % (time.time() - $T0))")
 check "the survivors agree on a new master within 8 s (took ${DT} s: $NEWM)" $([ -n "$NEWM" ] && python3 -c "import sys; sys.exit(0 if $DT <= 8 else 1)" && echo 1 || echo 0) "$MS"
 CF=0; for i in 1 2 3 4; do [ $i = $MN ] && continue; eval m=\$K$i; CF=$((CF + $(since $i $m | grep -a "cluster 741\]" | grep -ac "confirm that master .* is silent - electing"))); done
 check "survivors elected on their peers' confirmation, not a lone timeout" $([ $CF -gt 0 ] && echo 1 || echo 0) "$CF node(s)"
+NN=${NEWM##*.}; NN=${NN#1}; TS=""; for k in 1 2 3 4; do TS=$(tagst $NN); [ "$TS" = active ] && break; sleep 0.25; done
+LISTED=$(members $NN 741 | tr ' ' '
+' | grep -c "^$MIP:")
+check "the new master took the active tag at once, before purging $MIP (still listed: $LISTED)" $([ "$TS" = active ] && [ "$LISTED" = 1 ] && echo 1 || echo 0) "tag $TS, listed $LISTED"
 start $MN $NEW 1 2 fleet-a; sleep 8
 
 echo "=== T20 a lossy, jittery link into one member: patience, not an election ==="
