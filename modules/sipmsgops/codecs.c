@@ -24,6 +24,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../mem/mem.h"
 #include "../../data_lump.h"
+#include "../../sdp_ops.h"
 #include "../../parser/sdp/sdp.h"
 #include "codecs.h"
 #include "../../route.h"
@@ -64,6 +65,12 @@ static int create_codec_lumps(struct sip_msg * msg)
 	struct sdp_session_cell * cur_session;
 	struct lump * tmp;
 	int count;
+
+	if (have_sdp_ops(msg)) {
+		LM_ERR("codec add/delete is not supported once $sdp/"
+		       "$sdp.line has touched this message's body\n");
+		return -1;
+	}
 
 	/* get the number of streams */
 	lumps_len = 0;
