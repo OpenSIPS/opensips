@@ -1891,6 +1891,18 @@ Replaces obsolete MI command: *dr_number_routing*.
 Gets the matched prefix along with the list of the gateways / carriers to which a number
 would be routed when using the do_routing function.
 
+The response also exposes the matched rule's **Rule ID** and **Rule Priority**,
+and each listed destination's **Weight** and current **Status**. For direct
+gateways, **Address** contains the configured gateway address. A disabled
+gateway is annotated with the corresponding administrative, probing or
+script-disabled state.
+
+These fields explain the currently loaded routing candidates; this command is
+**not** a simulation of a SIP request. No gateway is selected, no script route
+is executed, and weighted or QR-based selection can change the actual
+destination. Values can also change following routing-data reloads or probing
+updates.
+
 
 - if `use_partition` is set to 1 the function will have 3 parameters:
 	* *partition_name*
