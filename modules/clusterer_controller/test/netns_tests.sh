@@ -397,6 +397,28 @@ LISTED=$(members $NN 741 | tr ' ' '
 check "the new master took the active tag at once, before purging $MIP (still listed: $LISTED)" $([ "$TS" = active ] && [ "$LISTED" = 1 ] && echo 1 || echo 0) "tag $TS, listed $LISTED"
 start $MN $NEW 1 2 fleet-a; sleep 8
 
+echo "=== T26 a killed master restarted at once survives the new master's first tag announcement ==="
+# As systemd Restart=always does it: the restarted node asks to join while the
+# survivors still list it and have no master to answer; the master they elect
+# announces the active tag to every node it lists - this one included, before
+# it has an identity (10.22.23.196, 21 Oct: a TCP receiver segfaulted).
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+RL=$(wc -l < $R/n$MN.log)
+stop_hard $MN; rm -f $R/n$MN.pid
+start $MN $NEW 1 2 fleet-a
+PID=$(cat $R/n$MN.pid 2>/dev/null)
+OK=""; for k in $(seq 1 60); do
+  MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+  [ "$(echo $MS | wc -w)" = 4 ] && [ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && { OK=1; break; }
+  sleep 0.25
+done
+sleep 3
+check "n$MN restarted at once is still the same process ($PID)" $(alive $MN && [ "$(cat $R/n$MN.pid 2>/dev/null)" = "$PID" ] && echo 1 || echo 0) "alive=$(alive $MN && echo yes || echo no)"
+check "no segfault on n$MN" $(since $MN $RL | grep -aqi 'segfault' && echo 0 || echo 1) "$(since $MN $RL | grep -ai 'segfault' | head -1 | cut -c1-120)"
+NM=$(echo $MS | cut -d' ' -f1); NN=${NM##*.}; NN=${NN#1}
+check "one master named by all four, holding the active tag ($NM)" $([ -n "$OK" ] && [ "$(tagst $NN)" = active ] && echo 1 || echo 0) "$MS tag $(tagst $NN)"
+alive $MN || { start $MN $NEW 1 2 fleet-a; sleep 8; }
+
 echo "=== T20 a lossy, jittery link into one member: patience, not an election ==="
 # 25% loss and 300 ms +/- 300 ms delay on everything n1 receives, for 90 s.
 # Keepalive gaps of 2-4 s are now routine there: the member must learn a
