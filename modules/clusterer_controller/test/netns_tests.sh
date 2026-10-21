@@ -469,6 +469,14 @@ echo "=== T22 a member cut off for 25 s does not raise the term ==="
 # the cluster's master leads.
 MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
 for x in 1 2 3 4; do [ "$(ip4 $x)" != "$MIP" ] && break; done
+# a rested node: after T21's cut its local health and learned margin stay
+# raised for a while, and a watchdog stretched past the 25 s cut never gets
+# as far as electing itself
+for k in $(seq 1 60); do
+  [ "$(cfgval $x 741 local_health)" = 0 ] && [ "$(cfgval $x 741 master_timeout_ms)" -le 5000 ] 2>/dev/null && break
+  sleep 2
+done
+echo "    n$x before the cut: local health $(cfgval $x 741 local_health), watchdog $(cfgval $x 741 master_timeout_ms) ms"
 TB=$(cfgval $MN 741 term); MX=$(wc -l < $R/n$x.log)
 nx $x iptables -I INPUT -p udp --dport $PORT -j DROP
 nx $x iptables -I OUTPUT -p udp --dport $PORT -j DROP
