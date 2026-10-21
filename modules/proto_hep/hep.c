@@ -1834,7 +1834,19 @@ int send_hep_message(trace_message message, trace_dest dest, const struct socket
 
 	// Check cooldown logic
 	if (atomic_load(hep_failed_retries) >= (long)hep_max_retries && (long)(now - atomic_load(hep_last_attempt)) < (long)hep_retry_cooldown) {
-		LM_ERR("HEP send suppressed: too many failures (%ld), in cooldown (%ld seconds left)\n", atomic_load(hep_failed_retries), hep_retry_cooldown - (now - atomic_load(hep_last_attempt)));
+		/* one line per 10 s per process, not one per traced message -- under load a
+		 * cooldown otherwise writes thousands of ERROR lines a second and the logging costs the proxy CPU. */
+		{
+			static time_t ot_cd_last_log;
+			static unsigned long ot_cd_quiet;
+			if (now - ot_cd_last_log >= 10) {
+				LM_ERR("HEP send suppressed: too many failures (%ld), in cooldown (%ld seconds left); %lu more suppressed sends since the last line\n", atomic_load(hep_failed_retries), hep_retry_cooldown - (now - atomic_load(hep_last_attempt)), ot_cd_quiet);
+				ot_cd_last_log = now;
+				ot_cd_quiet = 0;
+			} else {
+				ot_cd_quiet++;
+			}
+		}
 		free_hep_send_resources(p, to, buf);
 		goto end;
 	}

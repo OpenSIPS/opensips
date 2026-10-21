@@ -274,6 +274,21 @@ static const mi_export_t mi_cmds[] = {
 #ifdef STATISTICS
 #include "../../statistics.h"
 
+/* a failing trace destination logs at most one line per 10 s per process, with the count of
+ * the lines it kept quiet; every traced message used to log two ERROR lines while HEP was in cooldown. */
+static int ot_trace_err_ratelimit(time_t *last, unsigned long *quiet, unsigned long *said)
+{
+	time_t now = time(NULL);
+	if (now - *last >= 10) {
+		*said = *quiet;
+		*last = now;
+		*quiet = 0;
+		return 1;
+	}
+	(*quiet)++;
+	return 0;
+}
+
 stat_var* siptrace_req;
 stat_var* siptrace_rpl;
 
@@ -1282,9 +1297,13 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		case TYPE_HEP:
 			if (send_trace_proto_duplicate(it->el.hep.hep_id,
 					&msg->callid->body, info, conn_id) < 0) {
-				LM_ERR("Failed to duplicate with hep to <%.*s:%u>\n",
-						it->el.hep.hep_id->ip.len, it->el.hep.hep_id->ip.s,
-						it->el.hep.hep_id->port_no);
+				{
+					static time_t ot_dup_last; static unsigned long ot_dup_quiet, ot_dup_said;
+					if (ot_trace_err_ratelimit(&ot_dup_last, &ot_dup_quiet, &ot_dup_said))
+						LM_ERR("Failed to duplicate with hep to <%.*s:%u> (%lu more since the last line)\n",
+								it->el.hep.hep_id->ip.len, it->el.hep.hep_id->ip.s,
+								it->el.hep.hep_id->port_no, ot_dup_said);
+				}
 				continue;
 			}
 
@@ -3562,7 +3581,11 @@ static int send_trace_proto_duplicate(trace_dest dest, str* correlation,
 	}
 
 	if (tprot.send_message(trace_msg, dest, NULL) < 0) {
-		LM_ERR("failed to forward message to destination!\n");
+		{
+			static time_t ot_fwd_last; static unsigned long ot_fwd_quiet, ot_fwd_said;
+			if (ot_trace_err_ratelimit(&ot_fwd_last, &ot_fwd_quiet, &ot_fwd_said))
+				LM_ERR("failed to forward message to destination! (%lu more since the last line)\n", ot_fwd_said);
+		}
 		goto error;
 	}
 
