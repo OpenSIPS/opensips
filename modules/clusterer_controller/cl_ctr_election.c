@@ -538,12 +538,15 @@ void cl_ctr_request_rekey(cl_ctr_cluster_t *cl)
 
 const char *cl_ctr_maint_name(int st)
 {
-    return st == CL_CTR_MAINT_EVICTED ? "evicted" : "none";
+    return st == CL_CTR_MAINT_FULL    ? "full"
+         : st == CL_CTR_MAINT_EVICTED ? "evicted" : "none";
 }
 
 /* "evicted"/"on"/"1" -> CL_CTR_MAINT_EVICTED, "none"/"off"/"0" -> NONE, else -1 */
 int cl_ctr_maint_parse(const char *s, int len)
 {
+    if (len == 4 && strncasecmp(s, "full", 4) == 0)
+        return CL_CTR_MAINT_FULL;
     if ((len == 7 && strncasecmp(s, "evicted", 7) == 0) ||
         (len == 2 && strncasecmp(s, "on", 2) == 0) ||
         (len == 1 && s[0] == '1'))
@@ -603,7 +606,8 @@ void cl_ctr_reelect_now(cl_ctr_cluster_t *cl, const char *why)
  */
 void cl_ctr_maint_sync(cl_ctr_cluster_t *cl)
 {
-    int i, st, was_master = 0;
+    int i, st, old_st, was_master = 0;
+    uint16_t me = 0;
 
     lock_start_write(cl->peers->lock);
     st = cl->peers->my_maint;
@@ -611,11 +615,13 @@ void cl_ctr_maint_sync(cl_ctr_cluster_t *cl)
         lock_stop_write(cl->peers->lock);
         return;
     }
+    old_st        = cl->maint_adv;
     cl->maint_adv = (uint8_t)st;
     for (i = 0; i < cl->peers->count; i++)
         if (strcmp(cl->peers->entries[i].ip, my_ip) == 0) {
             cl->peers->entries[i].maint = (uint8_t)st;
             was_master = cl->peers->entries[i].is_master;
+            me = cl->peers->entries[i].node_id;
         }
     lock_stop_write(cl->peers->lock);
 
@@ -624,7 +630,7 @@ void cl_ctr_maint_sync(cl_ctr_cluster_t *cl)
             cl_ctr_maint_name(st),
             was_master && st != CL_CTR_MAINT_NONE
                 ? " - it is the master and hands over" : "");
-    cl_ctr_raise_maint_event(cl, my_node_id, st);
+    cl_ctr_maint_changed(cl, me, old_st, st);
     cl_ctr_send_alive(cl->sock, cl);
     if (was_master && st != CL_CTR_MAINT_NONE) {
         cl_ctr_send_master_alive(cl->sock, cl);
@@ -638,6 +644,55 @@ void cl_ctr_rpc_maint(int sender, void *param)
     cl_ctr_maint_sync((cl_ctr_cluster_t *)param);
 }
 
+/* An operator's request, made on this node, for ANOTHER node's maintenance
+ * state.  The worker multicasts it (it owns the sequence space); the node
+ * named applies it to itself (cl_ctr_handle_maint_set()). */
+typedef struct {
+    cl_ctr_cluster_t *cl;
+    uint16_t          node_id;
+    uint8_t           st;
+} cl_ctr_maint_req_t;
+
+static void cl_ctr_rpc_maint_remote(int sender, void *param)
+{
+    cl_ctr_maint_req_t *r = (cl_ctr_maint_req_t *)param;
+
+    if (cl_ctr_send_maint_set(r->cl, r->node_id, r->st) < 0)
+        LM_WARN("clusterer_controller: [cluster %d] could not send the request "
+                "for node %u to go into maintenance state %s\n",
+                r->cl->cluster_id, r->node_id, cl_ctr_maint_name(r->st));
+    else
+        LM_INFO("clusterer_controller: [cluster %d] asked node %u into "
+                "maintenance state %s\n", r->cl->cluster_id, r->node_id,
+                cl_ctr_maint_name(r->st));
+    shm_free(r);
+}
+
+/* Request node @node_id's maintenance state @st (MI, any process).
+ * Returns 0, or -1 when the worker is not up yet or out of memory. */
+int cl_ctr_set_node_maint(cl_ctr_cluster_t *cl, uint16_t node_id, int st)
+{
+    cl_ctr_maint_req_t *r;
+    int proc_no;
+
+    lock_start_read(cl->peers->lock);
+    proc_no = cl->peers->worker_proc_no;
+    lock_stop_read(cl->peers->lock);
+    if (proc_no < 0)
+        return -1;
+    r = shm_malloc(sizeof *r);
+    if (!r)
+        return -1;
+    r->cl      = cl;
+    r->node_id = node_id;
+    r->st      = (uint8_t)st;
+    if (ipc_send_rpc(proc_no, cl_ctr_rpc_maint_remote, r) < 0) {
+        shm_free(r);
+        return -1;
+    }
+    return 0;
+}
+
 /*
  * cl_ctr_maint_peer_changed() - a peer announced a new maintenance state
  * (master path: heard in its ALIVE).  Raises the event, and when it went
@@ -648,7 +703,6 @@ void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st)
 {
     int cleared = 0, im;
 
-    cl_ctr_raise_maint_event(cl, node_id, st);
     if (st == CL_CTR_MAINT_NONE || node_id == 0)
         return;
     lock_start_write(cl->peers->lock);
@@ -731,5 +785,45 @@ void cl_ctr_isolation_round(cl_ctr_cluster_t *cl, int i_am_master)
                 "%u members again - taking the active sharing tag back\n",
                 cl->cluster_id, live, cl->stable_live);
         cl_ctr_apply_shtags(cl);
+    }
+}
+
+/*
+ * cl_ctr_maint_changed() - node [node_id]'s maintenance state went from
+ * @old_st to @st, as this node learned it (its own request, a member's ALIVE
+ * on the master, the master's relay on a member).  Raises the event and, for
+ * another node entering or leaving the 'full' level, marks it down or up in
+ * this node's clusterer, so replication stops (or resumes) routing work to
+ * it.  A node does not disable itself: its peers do.  Called without the
+ * peers lock held.
+ */
+void cl_ctr_maint_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int old_st,
+                          int st)
+{
+    uint16_t me = 0;
+    int k;
+
+    cl_ctr_raise_maint_event(cl, node_id, st);
+    if (node_id == 0 || !cl_api_loaded || !cl_api.set_state)
+        return;
+    /* this node's id in THIS cluster (it may differ per cluster): disabling
+     * ourselves in clusterer would cut every link we have */
+    lock_start_read(cl->peers->lock);
+    for (k = 0; k < cl->peers->count; k++)
+        if (strcmp(cl->peers->entries[k].ip, my_ip) == 0)
+            me = cl->peers->entries[k].node_id;
+    lock_stop_read(cl->peers->lock);
+    if (node_id == me)
+        return;
+    if (st == CL_CTR_MAINT_FULL && old_st != CL_CTR_MAINT_FULL) {
+        if (cl_api.set_state(cl->cluster_id, node_id, STATE_DISABLED) == 0)
+            LM_INFO("clusterer_controller: [cluster %d] node %u is in full "
+                    "maintenance - disabled in clusterer here\n",
+                    cl->cluster_id, node_id);
+    } else if (old_st == CL_CTR_MAINT_FULL && st != CL_CTR_MAINT_FULL) {
+        if (cl_api.set_state(cl->cluster_id, node_id, STATE_ENABLED) == 0)
+            LM_INFO("clusterer_controller: [cluster %d] node %u left full "
+                    "maintenance - enabled in clusterer here\n",
+                    cl->cluster_id, node_id);
     }
 }

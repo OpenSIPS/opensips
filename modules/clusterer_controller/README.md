@@ -639,18 +639,22 @@ opensips-cli -x mi clusterer_controller:shtag_auto cluster_id=1
 
 #### clusterer_controller:maintenance
 
-Put THIS node in or out of maintenance, e.g. for a rolling upgrade. A node in maintenance (*evicted*) stays a member - it keeps its node_id, its BIN links and its place in *clusterer_controller:list_members* - but it is never master or backup and holds no sharing tag. If it is the master, it hands over at once: its last keepalive carries the new state, and every member elects the successor as soon as it reads it, without waiting for the master watchdog. A *clusterer_controller:shtag_force* pin is refused for a node in maintenance, and a pin already on a node that goes into maintenance is cleared (automatic allocation resumes). Only when every node in the election window is in maintenance does the cluster take one of them as master anyway - a cluster must have a master.
+Put this node - or, with *node_id*, any member - in or out of maintenance, e.g. for a rolling upgrade. A node in maintenance (*evicted* or *full*) stays a member - it keeps its node_id, its BIN links and its place in *clusterer_controller:list_members* - but it is never master or backup and holds no sharing tag. If it is the master, it hands over at once: its last keepalive carries the new state, and every member elects the successor as soon as it reads it, without waiting for the master watchdog. A *clusterer_controller:shtag_force* pin is refused for a node in maintenance, and a pin already on a node that goes into maintenance is cleared (automatic allocation resumes). Only when every node in the election window is in maintenance does the cluster take one of them as master anyway - a cluster must have a master.
 
-The state is announced by the node itself and relayed by the master, so every node agrees on it and it survives a master failover. It is runtime-only: a restart brings the node back in service.
+At *full*, every other node also disables it in its *clusterer* (as *clusterer:set_status* would), so they take their link to it down and stop sending it replication; leaving *full* enables it again and *clusterer* resumes pinging it. A node never disables itself - its peers do.
+
+The state is announced by the node itself and relayed by the master, so every node agrees on it and it survives a master failover. A request for another node is multicast to the cluster and that node applies it to itself, so it takes effect only while that node is reachable. The state is runtime-only: a restart brings the node back in service.
 
 Parameters:
 
 - *cluster_id* — the target cluster.
-- *state* — *evicted* (or *on*) to enter maintenance, *none* (or *off*) to leave it.
+- *state* — *evicted* (or *on*) or *full* to enter maintenance, *none* (or *off*) to leave it.
+- *node_id* (optional) — the member to act on; this node when omitted.
 
 ```bash title="clusterer_controller:maintenance usage"
 opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=evicted
-opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=none
+opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=full node_id=3
+opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=none node_id=3
 ```
 
 ### Exported Pseudo-Variables
@@ -659,7 +663,7 @@ These read-only pseudo-variables expose live cluster state to the routing script
 
 Each variable optionally takes a cluster id as its argument, e.g. *$cl_ctr_role(2)*. The bare form (*$cl_ctr_role*) resolves to the only configured cluster; when several clusters are defined the bare form returns NULL and logs a one-time warning, so the cluster must be named explicitly. An unknown cluster id, or a value that is not currently known (e.g. no master yet), returns NULL. All of them are read-only - assigning to them fails.
 
-- **$cl_ctr_role** — this node's role in the cluster: *master*, *backup*, *member*, or *joining* (still authenticating / before the first election).
+- **$cl_ctr_role** — this node's role in the cluster: *master*, *backup*, *maintenance* (see *clusterer_controller:maintenance*), *member*, or *joining* (still authenticating / before the first election).
 - **$cl_ctr_is_master** — 1 if this node is the cluster master, 0 otherwise. A fast path for the most common check.
 - **$cl_ctr_master_ip** — IP of the current master (NULL if none is elected yet).
 - **$cl_ctr_backup_ip** — IP of the current backup / standby master (NULL if none).
@@ -668,7 +672,7 @@ Each variable optionally takes a cluster id as its argument, e.g. *$cl_ctr_role(
 - **$cl_ctr_members** — number of live members currently in the cluster.
 - **$cl_ctr_shtag_mode** — *auto* (tags follow the elected master) or *forced* (an operator pinned them with *clusterer_controller:shtag_force*).
 - **$cl_ctr_forced_node** — the *node_id* the active sharing tag is pinned to (NULL when in *auto* mode).
-- **$cl_ctr_maintenance** — this node's maintenance state: *none* or *evicted* (see *clusterer_controller:maintenance*).
+- **$cl_ctr_maintenance** — this node's maintenance state: *none*, *evicted* or *full* (see *clusterer_controller:maintenance*).
 
 ```opensips title="Using $cl_ctr_* in the script"
 # single cluster: run a periodic job only on the master
@@ -695,7 +699,7 @@ Meaning of the parameters is as follows:
 
 
 - *cluster_id* (int) - the cluster;
-- *state* (string) - *evicted* (or *on*) to enter maintenance, *none* (or *off*) to leave it.
+- *state* (string) - *evicted* (or *on*) or *full* to enter maintenance, *none* (or *off*) to leave it.
 
 
 Returns *1* on success, *-1* if the state is not recognised, the cluster is unknown or the controller worker is not running yet.
@@ -769,7 +773,7 @@ if (!cl_ctr_node_present(1, $var(peer)))
 #### cl_ctr_get_node_role(cluster_id, node_id, role_var)
 
 
-Writes a node's role - *master*, *backup* or *member* - into a variable.
+Writes a node's role - *master*, *backup*, *maintenance* or *member* - into a variable.
 
 
 Meaning of the parameters is as follows:
@@ -790,6 +794,34 @@ This function can be used from any route.
 ...
 if (cl_ctr_get_node_role(1, 3, $var(role)))
     xlog("node 3 is $var(role)\n");
+...
+```
+
+
+#### cl_ctr_get_node_maint(cluster_id, node_id, maint_var)
+
+
+Writes a node's maintenance state - *none*, *evicted* or *full* - into a variable.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the node;
+- *maint_var* (var) - receives the state.
+
+
+Returns *1* on success, *-1* if the node is not a member.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_get_node_maint() usage"
+...
+if (cl_ctr_get_node_maint(1, 3, $var(m)) && $var(m) != "none")
+    xlog("node 3 is in maintenance ($var(m))\n");
 ...
 ```
 
@@ -1244,11 +1276,6 @@ Within one wire version, builds are kept compatible in both directions, so they 
 
 The following features are planned for future releases:
 
-- **Node maintenance, the rest of it** — the *evicted* level is implemented (*clusterer_controller:maintenance*, *cl_ctr_set_maintenance()*, *$cl_ctr_maintenance*, *E_CL_CTR_MAINTENANCE*). Still planned:
-
-  - a *full* level that additionally marks the node down for clusterer consumers, so peers stop routing replication work to it (needs a clusterer hook to set a node's state);
-  - setting another node's state from any node (today a node sets its own);
-  - *$cl_ctr_node_maint(cluster_id, node_id)* for any peer, and a *maintenance* value of *$cl_ctr_role*.
 - **Statistics** — module statistics (current role, member count, master changes, nodes joined/left, JOIN_REJECTs, decrypt failures, config mismatches, split-brain merges) exposed via *get_statistics* and monitoring exporters.
 - **Events** — events raised on state transitions (became master, demoted, node joined/left, split-brain merged, config mismatch, authentication reject), named `E_CL_CTR_*` and consumable from an *event_route* or any event subscriber transport.
 - **IPv6 multicast** — the control plane currently uses IPv4 multicast (groups in *224.0.0.0/4*). Add IPv6 multicast support (*ff00::/8* groups, *AF_INET6* sockets and membership) so the controller can run on IPv6-only or dual-stack deployments.

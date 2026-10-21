@@ -32,6 +32,8 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
                                      struct mi_handler *hdl);
 static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
                                             struct mi_handler *hdl);
+static mi_response_t *mi_cl_ctr_maintenance_node(const mi_params_t *params,
+                                                 struct mi_handler *hdl);
 static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
                                         struct mi_handler *hdl);
 static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
@@ -71,11 +73,14 @@ const mi_export_t mi_cmds[] = {
     },
     {
 	"maintenance",
-	"Put THIS node in or out of maintenance (state: evicted|none): it stays "
-	"a member but is never master or backup and holds no sharing tag",
+	"Put this node, or node_id, in or out of maintenance (state: "
+	"evicted|full|none): it stays a member but is never master or backup "
+	"and holds no sharing tag; at full, clusterer also stops sending it "
+	"replication",
 	0, 0,
 	{
 	    {mi_cl_ctr_maintenance, {"cluster_id", "state", 0}},
+	    {mi_cl_ctr_maintenance_node, {"cluster_id", "state", "node_id", 0}},
 	    {EMPTY_MI_RECIPE}
 	}, {"cl_ctr_maintenance", 0}
     },
@@ -488,6 +493,9 @@ static cl_ctr_cluster_t *cl_ctr_mi_find_cluster(int cluster_id)
  *
  *   opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=evicted
  *   opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=none
+ *
+ * With node_id, the request is for that node: it is multicast to the
+ * cluster and the node named applies it to itself.
  */
 static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
                                             struct mi_handler *hdl)
@@ -501,11 +509,45 @@ static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
 	return init_mi_param_error();
     st = cl_ctr_maint_parse(state.s, state.len);
     if (st < 0)
-	return init_mi_error(400, MI_SSTR("state must be evicted or none"));
+	return init_mi_error(400, MI_SSTR("state must be evicted, full or none"));
     cl = cl_ctr_mi_find_cluster(cluster_id);
     if (!cl || !cl->peers)
 	return init_mi_error(404, MI_SSTR("cluster_id not found"));
     if (cl_ctr_set_my_maint(cl, st) < 0)
+	return init_mi_error(500, MI_SSTR("controller worker not running yet"));
+    return init_mi_result_ok();
+}
+
+static mi_response_t *mi_cl_ctr_maintenance_node(const mi_params_t *params,
+                                                 struct mi_handler *hdl)
+{
+    int               cluster_id, node_id, st, k, found = 0, me = 0;
+    str               state;
+    cl_ctr_cluster_t *cl;
+
+    if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0 ||
+        get_mi_string_param(params, "state", &state.s, &state.len) < 0 ||
+        get_mi_int_param(params, "node_id", &node_id) < 0)
+	return init_mi_param_error();
+    st = cl_ctr_maint_parse(state.s, state.len);
+    if (st < 0)
+	return init_mi_error(400, MI_SSTR("state must be evicted, full or none"));
+    cl = cl_ctr_mi_find_cluster(cluster_id);
+    if (!cl || !cl->peers)
+	return init_mi_error(404, MI_SSTR("cluster_id not found"));
+    lock_start_read(cl->peers->lock);
+    for (k = 0; k < cl->peers->count; k++) {
+	cl_ctr_peer_t *e = &cl->peers->entries[k];
+	if (node_id > 0 && e->node_id == node_id)
+	    found = 1;
+	if (strcmp(e->ip, my_ip) == 0)
+	    me = e->node_id;
+    }
+    lock_stop_read(cl->peers->lock);
+    if (!found)
+	return init_mi_error(404, MI_SSTR("node_id not a member of this cluster"));
+    if ((node_id == me ? cl_ctr_set_my_maint(cl, st)
+                       : cl_ctr_set_node_maint(cl, (uint16_t)node_id, st)) < 0)
 	return init_mi_error(500, MI_SSTR("controller worker not running yet"));
     return init_mi_result_ok();
 }

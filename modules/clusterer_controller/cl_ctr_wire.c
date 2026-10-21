@@ -825,7 +825,8 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
     char               pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ
                            + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
                            + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                           + CL_CTR_LIVE_SZ + CL_CTR_TAG_SZ];
+                           + CL_CTR_LIVE_SZ + CL_CTR_ALIVE_BITMAP_SZ
+                           + CL_CTR_TAG_SZ];
     uint16_t           live_be = htons(cl_ctr_live_count(cl));
     uint32_t           seq = htonl(++cl->peers->my_seq);
     uint32_t           term_be = htonl(cl->peers->my_term);
@@ -856,10 +857,14 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
     /* the members this master hears now, for cl_ctr_master_outranks() */
     memcpy(p, &live_be, CL_CTR_LIVE_SZ);
     p += CL_CTR_LIVE_SZ;
+    /* and which of the nodes in maintenance are at the 'full' level */
+    cl_ctr_build_maint_full_bitmap(cl, (unsigned char *)p);
+    p += CL_CTR_ALIVE_BITMAP_SZ;
 
     cl_ctr_seal_and_send(sock, cl, pkt,
                      CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                     + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ + CL_CTR_LIVE_SZ,
+                     + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ + CL_CTR_LIVE_SZ
+                     + CL_CTR_ALIVE_BITMAP_SZ,
                      cl->session_key, CL_CTR_PKT_MASTER_ALIVE);
 }
 
@@ -889,6 +894,29 @@ void cl_ctr_send_resync(int sock, cl_ctr_cluster_t *cl,
 
     cl_ctr_seal_and_send_to(sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ,
                         cl->session_key, CL_CTR_PKT_RESYNC, dest, destlen);
+}
+
+/* MAINT_SET: [node_id 2B BE][state 1B], multicast - the node named applies
+ * it to itself.  Sent three times: it is idempotent, and a lost copy would
+ * leave an operator's request silently undone.  Worker only. */
+int cl_ctr_send_maint_set(cl_ctr_cluster_t *cl, uint16_t node_id, int st)
+{
+    char     pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + 3 + CL_CTR_TAG_SZ];
+    uint16_t nid_be = htons(node_id);
+    int      k, rc = 0;
+
+    for (k = 0; k < 3; k++) {
+        uint32_t seq = htonl(++cl->peers->my_seq);
+        memcpy(pkt, CL_CTR_PACKET_MAGIC, CL_CTR_MAGIC_SZ);
+        pkt[CL_CTR_WIRE_HDR_SZ] = (char)CL_CTR_PKT_MAINT_SET;
+        memcpy(pkt + CL_CTR_WIRE_HDR_SZ + 1, &seq, CL_CTR_SEQ_SZ);
+        memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ, &nid_be, 2);
+        pkt[CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + 2] = (char)st;
+        if (cl_ctr_seal_and_send(cl->sock, cl, pkt, CL_CTR_PLAIN_HDR_SZ + 3,
+                                 cl->session_key, CL_CTR_PKT_MAINT_SET) < 0)
+            rc = -1;
+    }
+    return rc;
 }
 
 /* MASTER_PROBE: [master ip, NUL-terminated], multicast to the group - one

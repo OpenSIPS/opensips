@@ -83,7 +83,7 @@ static str ei_tag_pname   = str_init("tag");
  * ========================================================================= */
 
 enum cl_ctr_pv_field {
-    CL_CTR_PV_ROLE,        /* master | backup | member | joining               */
+    CL_CTR_PV_ROLE,        /* master | backup | maintenance | member | joining */
     CL_CTR_PV_IS_MASTER,   /* 1 / 0                                            */
     CL_CTR_PV_MASTER_IP,   /* current master's IP, NULL if none                */
     CL_CTR_PV_BACKUP_IP,   /* current backup's IP, NULL if none                */
@@ -92,7 +92,7 @@ enum cl_ctr_pv_field {
     CL_CTR_PV_MEMBERS,     /* live member count                                */
     CL_CTR_PV_SHTAG_MODE,  /* auto | forced                                    */
     CL_CTR_PV_FORCED_NODE, /* node pinned by clusterer_controller:shtag_force, NULL if auto  */
-    CL_CTR_PV_MAINT,       /* this node's maintenance state: none | evicted    */
+    CL_CTR_PV_MAINT,       /* this node's maintenance: none | evicted | full   */
 };
 
 /* Optional (cluster_id) argument; bare form leaves the spec zeroed (cid 0). */
@@ -181,6 +181,8 @@ static int cl_ctr_pv_get(struct sip_msg *msg, pv_param_t *param, pv_value_t *res
 	    sval = "master";
 	else if (me && me->is_backup)
 	    sval = "backup";
+	else if (cl->peers->my_maint != CL_CTR_MAINT_NONE)
+	    sval = "maintenance";
 	else
 	    sval = "member";
 	break;
@@ -254,7 +256,7 @@ static int cl_ctr_out_str(struct sip_msg *msg, pv_spec_t *out, const char *str_s
 static int w_cl_ctr_node_is_master(struct sip_msg *msg, int *cid, int *nid)
 {
     int im = 0;
-    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, &im, NULL, NULL, 0) < 0)
+    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, &im, NULL, NULL, NULL, 0) < 0)
 	return -1;
     return im ? 1 : -1;
 }
@@ -262,19 +264,31 @@ static int w_cl_ctr_node_is_master(struct sip_msg *msg, int *cid, int *nid)
 /* cl_ctr_node_present(cluster_id, node_id) -> true if node_id is a live member */
 static int w_cl_ctr_node_present(struct sip_msg *msg, int *cid, int *nid)
 {
-    return cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, NULL, NULL, NULL, 0) == 0
+    return cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, NULL, NULL, NULL, NULL, 0) == 0
            ? 1 : -1;
 }
 
-/* cl_ctr_get_node_role(cluster_id, node_id, out) -> out=master|backup|member */
+/* cl_ctr_get_node_role(cluster_id, node_id, out)
+ *   -> out=master|backup|maintenance|member */
 static int w_cl_ctr_get_node_role(struct sip_msg *msg, int *cid, int *nid,
                                   pv_spec_t *out)
 {
-    int im = 0, ib = 0;
-    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, &im, &ib, NULL, 0) < 0)
+    int im = 0, ib = 0, mt = CL_CTR_MAINT_NONE;
+    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, &im, &ib, &mt, NULL, 0) < 0)
 	return -1;
-    return cl_ctr_out_str(msg, out, im ? "master" : (ib ? "backup" : "member")) == 0
+    return cl_ctr_out_str(msg, out, im ? "master" : ib ? "backup"
+                          : mt != CL_CTR_MAINT_NONE ? "maintenance" : "member") == 0
            ? 1 : -1;
+}
+
+/* cl_ctr_get_node_maint(cluster_id, node_id, out) -> out=none|evicted|full */
+static int w_cl_ctr_get_node_maint(struct sip_msg *msg, int *cid, int *nid,
+                                   pv_spec_t *out)
+{
+    int mt = CL_CTR_MAINT_NONE;
+    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, NULL, NULL, &mt, NULL, 0) < 0)
+	return -1;
+    return cl_ctr_out_str(msg, out, cl_ctr_maint_name(mt)) == 0 ? 1 : -1;
 }
 
 /* cl_ctr_get_node_ip(cluster_id, node_id, out) -> out=that node's IP */
@@ -282,7 +296,7 @@ static int w_cl_ctr_get_node_ip(struct sip_msg *msg, int *cid, int *nid,
                                 pv_spec_t *out)
 {
     char ipbuf[INET_ADDRSTRLEN];
-    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, NULL, NULL,
+    if (cl_ctr_find_peer(cid ? *cid : 0, nid ? *nid : 0, NULL, NULL, NULL,
                      ipbuf, sizeof ipbuf) < 0)
 	return -1;
     return cl_ctr_out_str(msg, out, ipbuf) == 0 ? 1 : -1;
@@ -300,15 +314,15 @@ CL_CTR_PV_WRAP(cl_ctr_pv_shtag_mode,  CL_CTR_PV_SHTAG_MODE)
 CL_CTR_PV_WRAP(cl_ctr_pv_forced_node, CL_CTR_PV_FORCED_NODE)
 CL_CTR_PV_WRAP(cl_ctr_pv_maint,       CL_CTR_PV_MAINT)
 
-/* cl_ctr_set_maintenance(cluster_id, state): put THIS node in ("evicted")
- * or out ("none") of maintenance.  1 on success, -1 otherwise. */
+/* cl_ctr_set_maintenance(cluster_id, state): put THIS node in ("evicted" or
+ * "full") or out ("none") of maintenance.  1 on success, -1 otherwise. */
 static int w_cl_ctr_set_maintenance(struct sip_msg *msg, int *cid, str *state)
 {
     int i, st = cl_ctr_maint_parse(state->s, state->len);
 
     if (st < 0) {
 	LM_ERR("clusterer_controller: cl_ctr_set_maintenance: state must be "
-	       "evicted or none, not '%.*s'\n", state->len, state->s);
+	       "evicted, full or none, not '%.*s'\n", state->len, state->s);
 	return -1;
     }
     for (i = 0; i < cl_ctr_cluster_count; i++)
@@ -351,6 +365,8 @@ const cmd_export_t cl_ctr_cmds[] = {
     {"cl_ctr_node_present", (cmd_function)w_cl_ctr_node_present, {
 	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
     {"cl_ctr_get_node_role", (cmd_function)w_cl_ctr_get_node_role, {
+	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+    {"cl_ctr_get_node_maint", (cmd_function)w_cl_ctr_get_node_maint, {
 	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
     {"cl_ctr_get_node_ip", (cmd_function)w_cl_ctr_get_node_ip, {
 	{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},

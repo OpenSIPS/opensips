@@ -36,7 +36,7 @@
  * Returns 0 and fills the requested out params on success, -1 if the cluster
  * or node is unknown.  Caller must not hold the peers lock. */
 int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
-                        char *ipbuf, int ipbuf_sz)
+                        int *maint, char *ipbuf, int ipbuf_sz)
 {
     cl_ctr_cluster_t *cl = NULL;
     int i, rc = -1;
@@ -61,6 +61,7 @@ int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
 	    continue;
 	if (is_master) *is_master = e->is_master;
 	if (is_backup) *is_backup = e->is_backup;
+	if (maint)     *maint     = e->maint;
 	if (ipbuf) {
 	    strncpy(ipbuf, e->ip, ipbuf_sz - 1);
 	    ipbuf[ipbuf_sz - 1] = '\0';
@@ -632,10 +633,11 @@ void cl_ctr_build_maint_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm)
  * for each node whose state changed.  Returns 1 when @master_ip itself has
  * just gone into maintenance.  Non-master path; call WITHOUT cl->peers->lock held. */
 int cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
+                              const unsigned char *bm_full,
                               const char *master_ip)
 {
     uint16_t chg_id[CL_CTR_MAX_PEERS];
-    uint8_t  chg_st[CL_CTR_MAX_PEERS];
+    uint8_t  chg_st[CL_CTR_MAX_PEERS], chg_old[CL_CTR_MAX_PEERS];
     int      i, n = 0, master_in = 0, master_chg = 0;
 
     lock_start_write(cl->peers->lock);
@@ -647,7 +649,11 @@ int cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
             continue;
         st = (bm[nid >> 3] & (unsigned char)(1u << (nid & 7)))
              ? CL_CTR_MAINT_EVICTED : CL_CTR_MAINT_NONE;
+        if (st != CL_CTR_MAINT_NONE && bm_full &&
+                (bm_full[nid >> 3] & (unsigned char)(1u << (nid & 7))))
+            st = CL_CTR_MAINT_FULL;
         if (st != e->maint) {
+            chg_old[n] = e->maint;
             e->maint = st;
             chg_id[n] = nid;
             chg_st[n++] = st;
@@ -660,7 +666,7 @@ int cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
     lock_stop_write(cl->peers->lock);
 
     for (i = 0; i < n; i++)
-        cl_ctr_raise_maint_event(cl, chg_id[i], chg_st[i]);
+        cl_ctr_maint_changed(cl, chg_id[i], chg_old[i], chg_st[i]);
     return master_in && master_chg;
 }
 
@@ -688,4 +694,21 @@ uint16_t cl_ctr_live_count(cl_ctr_cluster_t *cl)
     }
     lock_stop_read(cl->peers->lock);
     return n;
+}
+
+/* As cl_ctr_build_maint_bitmap(), for the nodes at the 'full' level only. */
+void cl_ctr_build_maint_full_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm)
+{
+    int i;
+
+    memset(bm, 0, CL_CTR_ALIVE_BITMAP_SZ);
+    lock_start_read(cl->peers->lock);
+    for (i = 0; i < cl->peers->count; i++) {
+        cl_ctr_peer_t *e   = &cl->peers->entries[i];
+        uint16_t       nid = e->node_id;
+        if (nid == 0 || nid > CL_CTR_MAX_PEERS || e->maint != CL_CTR_MAINT_FULL)
+            continue;
+        bm[nid >> 3] |= (unsigned char)(1u << (nid & 7));
+    }
+    lock_stop_read(cl->peers->lock);
 }

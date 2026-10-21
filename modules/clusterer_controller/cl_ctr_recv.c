@@ -595,6 +595,10 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	                       + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ + 1)
 		p_maint = (unsigned char)payload[ip_len + 1 + CL_CTR_PUBKEY_SZ
 		                                 + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ];
+	    /* a level a newer build knows and this one does not: still out of
+	     * election and tags - the meaning every level shares */
+	    if (p_maint > CL_CTR_MAINT_FULL)
+		p_maint = CL_CTR_MAINT_EVICTED;
 	    cl_ctr_handle_alive(ip_buf, pubkey, cfg_present, p_manage, p_stick, p_qt,
 	                        p_mtu, p_maint, cl);
 	    break;
@@ -683,6 +687,10 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 
 	case CL_CTR_PKT_MASTER_PROBE_ACK:
 	    cl_ctr_handle_master_probe_ack(sender_ip_buf, payload, payload_len, cl);
+	    break;
+
+	case CL_CTR_PKT_MAINT_SET:
+	    cl_ctr_handle_maint_set(sender_ip_buf, payload, payload_len, cl);
 	    break;
 
 	default: {

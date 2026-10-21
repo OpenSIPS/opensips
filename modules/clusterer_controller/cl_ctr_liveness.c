@@ -130,7 +130,7 @@ void cl_ctr_handle_alive(const char *src_ip,
     int  loc_manage = cl->manage_shtags ? 1 : 0;
     int  loc_stick  = cl->master_stickiness ? 1 : 0;
     int  loc_qt     = query_time;
-    int  mism = 0, changed = 0, maint_changed = 0;
+    int  mism = 0, changed = 0, maint_changed = 0, maint_old = 0;
     uint16_t maint_nid = 0;
 
     lock_start_write(cl->peers->lock);
@@ -176,6 +176,7 @@ void cl_ctr_handle_alive(const char *src_ip,
             }
             /* the node's own word on its maintenance state */
             if (e->maint != (uint8_t)peer_maint) {
+                maint_old     = e->maint;
                 e->maint      = (uint8_t)peer_maint;
                 maint_changed = (strcmp(src_ip, my_ip) != 0);
                 maint_nid     = e->node_id;
@@ -234,8 +235,10 @@ void cl_ctr_handle_alive(const char *src_ip,
                 cl->cluster_id, src_ip, mtu_seen, cc_mtu);
     if (adopt)
         cl_ctr_adopt_config(cl, peer_manage, peer_stick, peer_qt, is_active);
-    if (maint_changed)
+    if (maint_changed) {
+        cl_ctr_maint_changed(cl, maint_nid, maint_old, peer_maint);
         cl_ctr_maint_peer_changed(cl, maint_nid, peer_maint);
+    }
     /* Defer acting as master until we hold the cluster key.  In normal
      * operation a higher-IP joiner has already adopted the key via KEY_GRANT
      * before winning here, so this only guards the pathological case where the
@@ -613,7 +616,15 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
                        + CL_CTR_TERM_SZ &&
         cl_ctr_apply_maint_bitmap(cl, (const unsigned char *)payload
                                       + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                                      + CL_CTR_TERM_SZ, sender_ip))
+                                      + CL_CTR_TERM_SZ,
+                                  payload_len >= CL_CTR_DIGEST_SZ
+                                      + 3 * CL_CTR_ALIVE_BITMAP_SZ
+                                      + CL_CTR_TERM_SZ + CL_CTR_LIVE_SZ
+                                  ? (const unsigned char *)payload
+                                      + CL_CTR_DIGEST_SZ
+                                      + 2 * CL_CTR_ALIVE_BITMAP_SZ
+                                      + CL_CTR_TERM_SZ + CL_CTR_LIVE_SZ
+                                  : NULL, sender_ip))
     {
         cl->term_confirmed = 1;     /* the master handed over (PreVote) */
         cl_ctr_reelect_now(cl, "the master went into maintenance");
@@ -966,4 +977,34 @@ void cl_ctr_ka_false_suspicion(cl_ctr_cluster_t *cl, const char *why)
             "alive (%s) - its watchdog now waits %lld ms\n", cl->cluster_id,
             cl->ka_master[0] ? cl->ka_master : "(unknown)", why,
             cl_ctr_master_timeout_ms(cl));
+}
+
+/* MAINT_SET: an operator (on any node) asked node [node_id] to change its
+ * maintenance state; only that node acts, on itself. */
+void cl_ctr_handle_maint_set(const char *sender_ip, const char *payload,
+                             int payload_len, cl_ctr_cluster_t *cl)
+{
+    uint16_t nid_be;
+    int      st, me = 0, k;
+
+    if (payload_len < 3)
+        return;
+    memcpy(&nid_be, payload, 2);
+    st = (unsigned char)payload[2];
+    if (st > CL_CTR_MAINT_FULL)
+        return;
+    lock_start_read(cl->peers->lock);
+    for (k = 0; k < cl->peers->count; k++)
+        if (strcmp(cl->peers->entries[k].ip, my_ip) == 0)
+            me = cl->peers->entries[k].node_id;
+    lock_stop_read(cl->peers->lock);
+    if (me == 0 || ntohs(nid_be) != me || cl->peers->my_maint == st)
+        return;
+    LM_INFO("clusterer_controller: [cluster %d] %s asks this node into "
+            "maintenance state %s\n", cl->cluster_id, sender_ip,
+            cl_ctr_maint_name(st));
+    lock_start_write(cl->peers->lock);
+    cl->peers->my_maint = (uint8_t)st;
+    lock_stop_write(cl->peers->lock);
+    cl_ctr_maint_sync(cl);
 }

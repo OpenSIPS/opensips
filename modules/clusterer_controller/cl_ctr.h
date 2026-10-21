@@ -211,6 +211,7 @@
 #include "../../pvar.h"         /* pv_export_t - read-only $cl_ctr_* variables */
 
 #include "../clusterer/clusterer_ctrl.h"  /* set_my_identity, add_node, remove_node */
+#include "../clusterer/api.h"   /* set_state() - the 'full' maintenance level */
 
 #include <sys/timerfd.h>    /* timerfd_create(), timerfd_settime()            */
 #include "../../reactor_proc.h" /* reactor_proc_init/add_fd/loop              */
@@ -349,6 +350,12 @@ static inline long long cl_ctr_now_ms(void)
  * the master relays every node's in MASTER_ALIVE. */
 #define CL_CTR_MAINT_NONE           0
 #define CL_CTR_MAINT_EVICTED        1
+/* full: evicted, and every other node marks it down in its own clusterer
+ * (set_state STATE_DISABLED), so replication stops routing work to it */
+#define CL_CTR_MAINT_FULL           2
+/* any node -> group: put node [node_id 2B BE] into maintenance [state 1B];
+ * only the node named applies it, to itself, and announces it as usual */
+#define CL_CTR_PKT_MAINT_SET        0x11
 
 /* Consumer messaging (api.h): plaintext payload layout after type+seq is
  * [src_node_id u16 BE][chan_len u8][channel bytes][consumer payload].
@@ -1494,6 +1501,8 @@ extern char my_interface_buf[IF_NAMESIZE];
 extern uint16_t my_node_id;
 extern uint64_t cl_ctr_incarnation;
 extern clusterer_ctrl_binds_t clctl;
+extern struct clusterer_binds cl_api;     /* the public clusterer API */
+extern int cl_api_loaded;
 extern int clctl_loaded;
 extern int manage_shtags;
 extern int consumer_retries;
@@ -1592,7 +1601,7 @@ int cl_ctr_on_retx_tfd(int fd, void *param, int was_timeout);
 
 /* cl_ctr_peers.c */
 int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
-                        char *ipbuf, int ipbuf_sz);
+                        int *maint, char *ipbuf, int ipbuf_sz);
 unsigned int ip_to_num(const char *ip);
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl);
 void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_cluster_t *cl);
@@ -1630,11 +1639,19 @@ int  cl_ctr_maint_parse(const char *s, int len);
 void cl_ctr_maint_sync(cl_ctr_cluster_t *cl);
 void cl_ctr_rpc_maint(int sender, void *param);
 int  cl_ctr_set_my_maint(cl_ctr_cluster_t *cl, int st);
+int  cl_ctr_set_node_maint(cl_ctr_cluster_t *cl, uint16_t node_id, int st);
 void cl_ctr_build_maint_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
 int  cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
+                               const unsigned char *bm_full,
                                const char *master_ip);
+void cl_ctr_build_maint_full_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
 void cl_ctr_raise_maint_event(cl_ctr_cluster_t *cl, int node_id, int st);
 void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st);
+void cl_ctr_maint_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int old_st,
+                          int st);
+int  cl_ctr_send_maint_set(cl_ctr_cluster_t *cl, uint16_t node_id, int st);
+void cl_ctr_handle_maint_set(const char *sender_ip, const char *payload,
+                             int payload_len, cl_ctr_cluster_t *cl);
 void cl_ctr_reelect_now(cl_ctr_cluster_t *cl, const char *why);
 long long cl_ctr_master_timeout_ms(cl_ctr_cluster_t *cl);
 void cl_ctr_arm_master_watchdog(cl_ctr_cluster_t *cl);

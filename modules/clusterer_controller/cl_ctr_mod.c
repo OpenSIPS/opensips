@@ -63,6 +63,8 @@ uint64_t cl_ctr_incarnation                      = 0;
 
 /* clusterer integration - loaded at mod_init if clusterer use_controller=1 */
 clusterer_ctrl_binds_t clctl;
+struct clusterer_binds cl_api;
+int cl_api_loaded = 0;
 int                    clctl_loaded  = 0;
 int                    manage_shtags = 1;
 int                    consumer_retries = CL_CTR_CONSUMER_RETRIES_DEFAULT;
@@ -987,6 +989,10 @@ static int mod_init(void)
      * standalone even without clusterer loaded.                     */
     {
 	load_clusterer_ctrl_binds_f load_fn;
+	/* the public clusterer API too - its set_state() serves the 'full'
+	 * maintenance level */
+	if (find_export("load_clusterer", 0) && load_clusterer_api(&cl_api) == 0)
+	    cl_api_loaded = 1;
 	load_fn = (load_clusterer_ctrl_binds_f)
 	          find_export("load_clusterer_ctrl_binds", 0);
 	if (load_fn && load_fn(&clctl) == 0) {
