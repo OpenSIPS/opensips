@@ -1415,7 +1415,7 @@ The following tests were performed on a three-node cluster (nodes *A*=10.22.23.1
 Tag state was queried after each operation via:
 
 ```bash
-opensips-cli -x mi clusterer_list_shtags
+opensips-cli -x mi clusterer:list_shtags
 ```
 
 ### Baseline
@@ -1546,7 +1546,7 @@ modparam("clusterer_controller", "cluster",
     "id=2,multicast=239.0.90.1:3334,bin_socket=bin:IP:3857")
 
 # both clusters converge, each with its own master/backup/member roles;
-# clusterer_list shows cluster 1 and cluster 2 both using bin:IP:3857
+# clusterer:list shows cluster 1 and cluster 2 both using bin:IP:3857
 ```
 
 **Result: PASS.** Both clusters formed independently (each `member_count=3` with consistent roles), the BIN links of both were `Up` over the single shared socket, and there were zero decrypt / cross-talk / foreign-cluster errors on any node - the *cluster_id* in each BIN packet keeps the two clusters' replication traffic separate. A control test confirmed that configuring both clusters on the same multicast address:port is refused at startup.
