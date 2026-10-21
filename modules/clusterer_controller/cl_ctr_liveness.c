@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_caps.h"
 
 static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *superior_ip,
                                       const char *via);

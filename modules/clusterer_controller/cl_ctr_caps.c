@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_caps.h"
 
 /* -------------------------------------------------------------------------
  * Capability bits.  The wire version says whether two nodes can talk at

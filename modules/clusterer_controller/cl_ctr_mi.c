@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_caps.h"
 
 static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
                                      struct mi_handler *hdl);

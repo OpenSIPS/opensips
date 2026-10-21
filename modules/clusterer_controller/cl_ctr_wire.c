@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_caps.h"
 const unsigned char CL_CTR_PACKET_MAGIC[CL_CTR_MAGIC_SZ]    = { CL_CTR_WIRE_MAGIC0, 0x00 };
 const unsigned char CL_CTR_BOOTSTRAP_MAGIC[CL_CTR_MAGIC_SZ] = { CL_CTR_WIRE_MAGIC0, 0x01 };
 /* Consumer traffic carries its own magic.  It is encrypted with the same

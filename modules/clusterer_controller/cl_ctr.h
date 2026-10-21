@@ -357,18 +357,6 @@ static inline long long cl_ctr_now_ms(void)
  * only the node named applies it, to itself, and announces it as usual */
 #define CL_CTR_PKT_MAINT_SET        0x11
 
-/* Capability bits (CC-11, cl_ctr_caps.c): what this build implements of the
- * optional mechanisms, advertised on ALIVE after the maintenance byte.  A
- * mechanism that needs the other side's part is used only towards nodes -
- * or, cluster-wide, only while every live member - advertising its bit.
- * Append new bits; never reuse or renumber one. */
-#define CL_CTR_CAP_PROBE            0x00000001u /* answers MASTER_PROBE       */
-#define CL_CTR_CAP_MAINT_SET        0x00000002u /* applies MAINT_SET to itself */
-#define CL_CTR_CAP_MAINT_FULL       0x00000004u /* acts on the full level      */
-#define CL_CTR_CAPS_MINE            (CL_CTR_CAP_PROBE | CL_CTR_CAP_MAINT_SET | \
-                                     CL_CTR_CAP_MAINT_FULL)
-#define CL_CTR_CAPS_SZ              4
-
 /* Consumer messaging (api.h): plaintext payload layout after type+seq is
  * [src_node_id u16 BE][chan_len u8][channel bytes][consumer payload].
  * Bounded to one comfortably-under-MTU datagram; bulk data is the
@@ -1645,13 +1633,6 @@ void cl_ctr_cid_found(cl_ctr_cluster_t *cl);
 void cl_ctr_cid_tick(cl_ctr_cluster_t *cl);
 void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint64_t *hash);
 uint16_t cl_ctr_live_count(cl_ctr_cluster_t *cl);
-/* capability bits (cl_ctr_caps.c) */
-uint32_t cl_ctr_table_caps(cl_ctr_cluster_t *cl);
-uint32_t cl_ctr_cluster_caps(cl_ctr_cluster_t *cl);
-int  cl_ctr_mi_add_caps(mi_item_t *obj, const char *name, int name_len,
-                        uint32_t caps);
-int  cl_ctr_maint_supported(cl_ctr_cluster_t *cl, int remote, int st,
-                            char *why, int why_sz);
 void cl_ctr_build_alive_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
 void cl_ctr_apply_alive_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm);
 void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl);

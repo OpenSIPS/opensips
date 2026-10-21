@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_caps.h"
 
 static void cl_ctr_maybe_forward(const char *buf, int n,
                              const struct sockaddr_in *src, uint16_t pkt_cid,

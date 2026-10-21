@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_caps.h"
 
 static int cmd_cl_ctr_broadcast_req(struct sip_msg *msg, int *cluster_id,
 		str *gen_msg, str *tag, int *reliable);
