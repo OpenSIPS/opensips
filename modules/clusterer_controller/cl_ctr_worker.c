@@ -503,8 +503,10 @@ static int cl_ctr_on_alive_tfd(int fd, void *param, int was_timeout)
         cl_ctr_request_rekey(cl);
         return 0;
     }
-    if (prev_master != now_master)
+    if (prev_master != now_master) {
         cl_ctr_arm_master_timers(cl, now_master);
+        cl_ctr_apply_shtags(cl);
+    }
     cl_ctr_isolation_round(cl, now_master);
 
     /* Belt-and-suspenders identity registration (covers paths where
@@ -809,6 +811,8 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
     }
 
     cl_ctr_arm_master_timers(cl, now_master);
+    /* the tags follow the new master now - not when the old one is purged */
+    cl_ctr_apply_shtags(cl);
 
     /* No full MEMBER_LIST is broadcast: every surviving member ran the same
      * deterministic re-election on its own keepalive timeout, MASTER_ALIVE

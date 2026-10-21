@@ -245,8 +245,10 @@ void cl_ctr_handle_alive(const char *src_ip,
         cl_ctr_request_rekey(cl);
         return;
     }
-    if (prev_master != now_master)
+    if (prev_master != now_master) {
         cl_ctr_arm_master_timers(cl, now_master);
+        cl_ctr_apply_shtags(cl);
+    }
 }
 
 /**
