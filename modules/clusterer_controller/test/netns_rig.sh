@@ -20,6 +20,7 @@ OLD=${OLD:-}
 R=${RIG_DIR:-/tmp/cl_ctr_rig}
 RIG_TM=${RIG_TM:-0}     # 1: load tm with tm_replication_cluster=741
 RIG_TAG_RELEASE=${RIG_TAG_RELEASE:-0}   # 1: release_tag_when_isolated=1
+RIG_EVENTS=${RIG_EVENTS:-1}             # 0: no event routes (an older build has not these events)
 BR=br74
 NSP=${RIG_NS_PREFIX:-}
 PORT=3741
@@ -66,7 +67,17 @@ setup() {
 mkcfg() {
   local i=$1 P=$2 ST=${3:-1} QT=${4:-2} U=${5:-} IP; IP=$(ip4 $1)
   local UK=""; [ -n "$U" ] && UK=",uuid=$U"
-  local TMMOD="" TMRT="" TRMOD=""
+  local TMMOD="" TMRT="" TRMOD="" EVRT=""
+  # every cluster-state event logged as one "EVT" line; the master route also
+  # reads $cl_ctr_role inside the route, which must not deadlock
+  if [ "$RIG_EVENTS" = 1 ]; then
+    EVRT='event_route[E_CL_CTR_ROLE] { xlog("EVT ROLE $param(cluster_id) $param(role) $param(old_role)\n"); }
+event_route[E_CL_CTR_MASTER] { xlog("EVT MASTER $param(cluster_id) $param(master_ip) $param(node_id) now=$cl_ctr_role(741)\n"); }
+event_route[E_CL_CTR_MEMBER] { xlog("EVT MEMBER $param(cluster_id) $param(node_id) $param(ip) $param(state) $param(reason)\n"); }
+event_route[E_CL_CTR_REFUSED] { xlog("EVT REFUSED $param(cluster_id) $param(ip) $param(reason)\n"); }
+event_route[E_CL_CTR_MERGE] { xlog("EVT MERGE $param(cluster_id) $param(master_ip) $param(was_master)\n"); }
+event_route[E_CL_CTR_MAINTENANCE] { xlog("EVT MAINT $param(cluster_id) $param(node_id) $param(state)\n"); }'
+  fi
   # only when on: a build from before the parameter (PREV) refuses it
   [ "$RIG_TAG_RELEASE" != 0 ] && \
     TRMOD="modparam(\"clusterer_controller\", \"release_tag_when_isolated\", $RIG_TAG_RELEASE)"
@@ -115,6 +126,7 @@ route {
     }
     sl_send_reply(200, "ok");
 }
+$EVRT
 event_route[E_CL_CTR_REQ_RECEIVED] {
     xlog("L_NOTICE", "[RX] \$param(msg)\n");
 }

@@ -98,7 +98,7 @@ check "main partition intact: 3 members, n3 master" $([ "$(echo $MM | wc -w)" = 
 echo "=== T6 a wire-version-1 node on the group ==="
 stop_graceful 4; rm -f $R/n4.pid; sleep 2
 if [ -n "$OLD" ]; then
-start 4 $OLD; sleep 10
+RIG_EVENTS=0 start 4 $OLD; sleep 10
 check "new nodes name the v1 peer" $(grep -aq "10.74.0.14 speaks wire version 1, this node speaks 2" $R/n3.log && echo 1 || echo 0) ""
 MM=$(members 3 741)
 check "main partition unaffected: 3 members" $([ "$(echo $MM | wc -w)" = 3 ] && echo 1 || echo 0) "$MM"
@@ -590,7 +590,7 @@ for x in 4 3 2 1; do [ $x != $MN ] && break; done
 for y in 1 2 3 4; do [ $y != $MN ] && [ $y != $x ] && break; done
 XIP=$(ip4 $x); YIP=$(ip4 $y)
 echo "    n$x on the previous build; asking from n$y; master $MIP"
-stop_graceful $x; start $x $PREV 1 2 fleet-a; sleep 10
+stop_graceful $x; RIG_EVENTS=0 start $x $PREV 1 2 fleet-a; sleep 10
 check "n$x rejoined on the previous build" $(alive $x && members $y 741 | tr ' ' '\n' | grep -q "^$XIP:" && echo 1 || echo 0) "$(members $y 741)"
 check "the master lists no capabilities for n$x, all three for n$y" $([ -z "$(capsof $MN $XIP)" ] && [ "$(capsof $MN $YIP)" = "$ALL" ] && echo 1 || echo 0) "n$x '$(capsof $MN $XIP)' n$y '$(capsof $MN $YIP)'"
 check "the cluster's shared capabilities are none while n$x runs it (master and n$y)" $([ -z "$(clcaps $MN)" ] && [ -z "$(clcaps $y)" ] && echo 1 || echo 0) "master '$(clcaps $MN)' n$y '$(clcaps $y)'"
@@ -643,6 +643,34 @@ J0=$(cstat $MN members_joined-741); L0=$(cstat $MN members_left-741)
 stop_graceful $x; sleep 2; start $x $NEW 1 2 fleet-a; sleep 8
 J1=$(cstat $MN members_joined-741); L1=$(cstat $MN members_left-741)
 check "n$x restarted: the master counted it leaving and joining" $([ "${L1:-0}" -gt "${L0:-0}" ] && [ "${J1:-0}" -gt "${J0:-0}" ] && echo 1 || echo 0) "left $L0 -> $L1, joined $J0 -> $J1"
+
+echo "=== T29 events: role, master, members, maintenance ==="
+# the rig's event routes log every cluster-state event as an "EVT ..." line
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for i in 1 2 3 4; do eval V$i=$(wc -l < $R/n$i.log); done
+stop_hard $MN; rm -f $R/n$MN.pid
+NEWM=""; for k in $(seq 1 60); do
+  MS=""; for i in 1 2 3 4; do [ $i = $MN ] && continue; MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+  U=$(echo $MS | tr ' ' '\n' | sort -u)
+  if [ "$(echo $MS | wc -w)" = 3 ] && [ "$(echo "$U" | wc -l)" = 1 ] && [ "$U" != "$MIP" ]; then NEWM=$U; break; fi
+  sleep 0.25
+done
+NN=${NEWM##*.}; NN=${NN#1}; sleep 2
+eval VN=\$V$NN
+check "the new master raised E_CL_CTR_ROLE, to master" $(since $NN $VN | grep -aq "EVT ROLE 741 master " && echo 1 || echo 0) "$(since $NN $VN | grep -a 'EVT ROLE' | tail -1)"
+EM=""; for i in 1 2 3 4; do [ $i = $MN ] && continue; eval m=\$V$i; EM="$EM $(since $i $m | grep -a "EVT MASTER 741 $NEWM " | grep -c .)"; done
+check "every survivor raised E_CL_CTR_MASTER naming $NEWM" $(echo $EM | tr ' ' '\n' | awk '$1<1{b=1} END{print b?0:1}') "$EM"
+check "the event route read \$cl_ctr_role while it ran - no deadlock" $(since $NN $VN | grep -aq "EVT MASTER 741 $NEWM [0-9]* now=master" && echo 1 || echo 0) "$(since $NN $VN | grep -a 'EVT MASTER' | tail -1)"
+for k in $(seq 1 40); do since $NN $VN | grep -aq "EVT MEMBER 741 [0-9]* $MIP left timeout" && break; sleep 0.5; done
+check "the new master raised E_CL_CTR_MEMBER for $MIP: left, timeout" $(since $NN $VN | grep -aq "EVT MEMBER 741 [0-9]* $MIP left timeout" && echo 1 || echo 0) "$(since $NN $VN | grep -a 'EVT MEMBER' | tail -2 | tr '\n' ' ')"
+start $MN $NEW 1 2 fleet-a; sleep 8
+check "... and for $MIP joining again" $(since $NN $VN | grep -aq "EVT MEMBER 741 0 $MIP joined new" && echo 1 || echo 0) ""
+for x in 1 2 3 4; do [ $x != $NN ] && [ $x != $MN ] && break; done
+for i in 1 2 3 4; do eval V$i=$(wc -l < $R/n$i.log); done
+mi $x clusterer_controller:maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
+EV=""; for i in 1 2 3 4; do eval m=\$V$i; EV="$EV $(since $i $m | grep -a "EVT MAINT 741 [0-9]* evicted" | grep -c .)"; done
+check "E_CL_CTR_MAINTENANCE on every node, n$x's own included" $(echo $EV | tr ' ' '\n' | awk '$1<1{b=1} END{print b?0:1}') "$EV"
+mi $x clusterer_controller:maintenance cluster_id=741 state=none >/dev/null; sleep 4
 
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
