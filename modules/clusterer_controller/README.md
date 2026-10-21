@@ -97,6 +97,55 @@ Member count deliberately comes before the term: a node whose link flaps promote
 
 **Partitions that must not merge.** A master compares the settings and MTU carried in another master's beacon with its own *before* ranking. If they differ — the settings only under *on_config_mismatch=reject*, the MTU always, exactly the checks a JOIN_REQ would meet — neither master merges, whichever would have won, and both log a warning naming the other master and the values that differ. The two partitions remain separate until an operator makes the configuration identical. Should a merge still be refused by the other master's JOIN_REJECT, the merging node does **not** shut down: it is a running member with an intact partition, so it forgets the refusing master, re-elects within its own partition and ignores that master for 60 seconds. Only a node that has not joined anything yet still shuts down on a refusal.
 
+### Guarantees
+
+What the module promises, and what it does not. It is failure detection and leader election for a LAN, not a consensus protocol, and it never fences a node.
+
+**In a connected cluster** - every node hears every other:
+
+- the nodes converge on one master and, with *manage_shtags=1*, one active holder of each sharing tag: the master, or the node an operator pinned it to;
+- convergence takes time. Measured on the test cluster, a master that dies is replaced in about 5 s (the learned watchdog, at least 3 s, then one round of questions to the cluster), and a master that stops or goes into maintenance hands over in under a second. Until a new master is elected, no node holds the active tag;
+- a master whose own process was paused for more than 4 s (SIGSTOP, a VM pause) stands down as soon as it runs again, instead of competing with the master elected meanwhile;
+- a node keeps its node_id across its own restarts for as long as the cluster runs; a whole-cluster restart allocates the ids anew.
+
+**In a partition** - the nodes split into groups that cannot hear each other:
+
+- every group without its master elects one, so there is a master, and an active tag holder, in every group;
+- a node raises the term only when its peers confirmed the old master silent, so a node cut off alone keeps its term and cannot outrank the cluster when the partition heals;
+- *release_tag_when_isolated=1* narrows this but does not remove it. A master that hears strictly fewer than half of the members it held steadily, for a whole election window, releases the active tag until it hears a majority again. It does not help when the groups are even - in a 2 and 2 split neither master hears fewer than half - and a member cut off alone that elects itself counts only the members it still heard when it became master, so it may hold the tag for as long as the partition lasts.
+
+**When a partition heals**:
+
+- the masters rank by the members they hear, then term, then IP, and the cluster converges on the larger group's master as soon as the two masters hear each other: their keepalives every second, or a beacon every 5 s when they no longer share a session key. Nodes dropped during the partition rejoin with their node ids;
+- groups whose settings differ never merge: each keeps its master and both log which settings differ. Fix the configuration on the wrong side and restart those nodes.
+
+**Not guaranteed - exclusive ownership.** Failure detection and elections cannot stop two nodes from acting as the tag holder during a partition, and no node holds it for the seconds of a failover. A resource that must have exactly one writer at all times needs fencing outside this module - for example, the downstream system refusing a second writer.
+
+#### Properties and their tests
+
+Each property is checked by the network-namespace suite (*test/netns_tests.sh*, T*n*) and, where it applies, by the real-cluster tests (*test/rtests.sh*, R*n*, run against a six-node test network - see [Automated tests](#automated-tests)):
+
+| Property | netns | real cluster |
+|---|---|---|
+| One master named by every node; the master holds the active tag | T1, T17, T19 | R0, R3, R6 |
+| A dead master is replaced on its peers' confirmation; the new master takes the tag at once | T19, T26 | R6, R6c |
+| A stopped master, or one put into maintenance, hands over without the watchdog | T17 | R6b, R7 |
+| A paused member neither elects itself nor purges; a paused master stands down when it wakes | T13, T14 | R2, R3 |
+| Packet loss and jitter make a member wait longer, not elect | T20 | R8 |
+| A member that alone stops hearing the master holds the election | T16, T21 | R4 |
+| A node cut off alone keeps the term; the heal goes to the cluster's master | T18, T21, T22 | R5 |
+| A partition of one cluster heals; groups with different settings never merge | T8, T5 | - |
+| Another deployment on the same group, password and cluster_id never merges | T7, T9 | - |
+| A node returns with its node_id | T3, T4 | R1, R2, R6 |
+| Traffic sent again is not delivered again; a late MEMBER_LIST does not undo a newer one | T10, T11, the replay check | the replay check |
+| A restarted node survives packets that reach it before it has an identity | T26 | R6c |
+| Maintenance - this node or any member, both levels | T17, T25 | R7, R9 |
+| A master cut off from most of its members releases the tag (*release_tag_when_isolated*) | T24 | - |
+| A member on an older build: the newer mechanisms wait until every member has them | T27 | - |
+| Statistics and events | T28, T29 | - |
+
+Not tested yet: several nodes joining a running cluster at once; a full peer table; a static *clusterer* cluster beside controller clusters on one node; malformed datagrams; a member cut off alone with *release_tag_when_isolated=1*.
+
 ### Security Architecture
 
 The module uses a two-phase key agreement to provide forward secrecy and replay protection for all cluster traffic.
@@ -1357,6 +1406,18 @@ modparam("dispatcher", "cluster_probing_mode", "distributed")
 
 The same configuration file (with the node-specific *socket=bin:IP:PORT* line changed per node) is used on every node. No other per-node customization is required.
 
+### Network requirements
+
+- **IPv4 multicast between every pair of nodes**, on each cluster's *multicast=A.B.C.D:PORT*. The module joins the group on the interface that carries *my_ip* and sends with a multicast TTL of 32, so a routed network works where its routers forward the group (PIM). On a switched network with IGMP snooping, the VLAN needs an IGMP querier - without one, many switches stop forwarding the group a few minutes after the nodes join, and the cluster splits.
+- **The same UDP port, unicast**: settled members send their keepalives to the master's address on the cluster's port, and the join handshake answers to the joiner's address on it.
+- **The BIN socket** of every node (TCP) reachable from every other: *clusterer* replicates over it.
+- **A firewall** has to let in, from the cluster's nodes: UDP to the group and to the node's own address on the cluster's port, IGMP (IP protocol 2) where IGMP is filtered, and TCP to the BIN port.
+- **One MTU** on every node of a cluster (see *Uniform cluster MTU* under *Security Architecture*); a node whose MTU differs is refused.
+
+### Changing the password
+
+Every node of a cluster must use the same password. A node started with a different one cannot authenticate: it keeps re-joining for a few rounds, then logs a CRITICAL line ("cannot authenticate ... wrong password") and shuts down, so a rolling change does not work. To change the password, stop every node of the cluster, change it on all of them, and start them again. The restarted cluster founds a new cluster identity unless *uuid=* pins one. A password that leaked lets its holder join the cluster - see the trust model under *Security Architecture* - so change it as soon as it may have leaked.
+
 ### Upgrading
 
 This version of the module speaks **wire version 2**: every packet carries the cluster identity and its sender's incarnation, and the master's announcements carry its term, settings and MTU. Nodes on different wire versions do not understand each other, so the module refuses the other version's packets before decrypting them, and logs one warning a minute naming the sender, for example:
@@ -1573,6 +1634,12 @@ NEW=/usr/local OLD=/opt/opensips-wire1 PREV=/opt/opensips-prev ./test/netns_test
 ```
 
 *NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, and *PREV*, a build of this wire version from before the capability bits, are optional - only the test that needs one is skipped without it. Every cut a test makes with iptables must show dropped packets before it is removed, so a test cannot pass on a fault that never happened. To run two suites at once, start each under its own *unshare -n* with a distinct *RIG_NS_PREFIX* and *RIG_DIR*.
+
+*test/rtests.sh* runs the real-cluster tests R0 to R9 from another host against a test cluster: a member restarted and paused past the purge window, the master paused, killed, killed and restarted at once, and stopped, a one-sided and a two-sided cut, maintenance of this node and of another at the full level, and 30% loss into one member - every fault undone on exit. Nodes are given by IP; *MI_PORT*, *MI_ROOT* (the *mi_http* root), *PORT*, *LOG*, *UNIT* and *SSH_USER* set the rest. It takes masters down on purpose: run it only on a test cluster.
+
+```bash title="real-cluster tests"
+MI_ROOT=mi ./test/rtests.sh 1 10.0.0.11 10.0.0.12 10.0.0.13
+```
 
 <!-- CONTRIBUTORS -->
 
