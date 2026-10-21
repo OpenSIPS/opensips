@@ -40,6 +40,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
 #include "../../ipc.h"
+#include "../../pt.h"
 #include "../../timer.h"
 #include "pcache_arena.h"
 #include "pcache_mem.h"
@@ -1049,6 +1050,26 @@ static void pcache_flush_rpc(int sender, void *param)
 	pcache_arena_flush_private();
 }
 
+/* The flush goes only to processes that are up and take IPC.  A free or
+ * never-used slot (auto-scaling headroom) has no pipe, and the core's
+ * ipc_send_rpc_all() busy-waits on each such slot (20000 usleep rounds)
+ * before failing with EBADF, so it is not used here. */
+static void flush_live_processes(void)
+{
+	unsigned int p;
+
+	for (p = 1; p < counted_max_processes; p++) {
+		if ((int)p == process_no) {
+			pcache_arena_flush_private();
+			continue;
+		}
+		if (!(pt[p].flags & OSS_PROC_IS_RUNNING) ||
+		        (pt[p].flags & OSS_PROC_NO_IPC) || IPC_FD_WRITE(p) < 0)
+			continue;
+		ipc_send_rpc(p, pcache_flush_rpc, NULL);
+	}
+}
+
 /*
  * One reclaim tick: take each class avail stack, retire drained chunks
  * beyond reclaim_keep and push the rest back.  A chunk still being
@@ -1095,7 +1116,7 @@ void pcache_arena_reclaim_tick(void)
 		arena->flush_tick = arena->tick;
 		arena->flush_broadcasts++;
 		lock_release(&arena->lock);
-		ipc_send_rpc_all(pcache_flush_rpc, NULL);
+		flush_live_processes();
 		return;
 	}
 	lock_release(&arena->lock);
