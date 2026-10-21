@@ -66,7 +66,10 @@ setup() {
 mkcfg() {
   local i=$1 P=$2 ST=${3:-1} QT=${4:-2} U=${5:-} IP; IP=$(ip4 $1)
   local UK=""; [ -n "$U" ] && UK=",uuid=$U"
-  local TMMOD="" TMRT=""
+  local TMMOD="" TMRT="" TRMOD=""
+  # only when on: a build from before the parameter (PREV) refuses it
+  [ "$RIG_TAG_RELEASE" != 0 ] && \
+    TRMOD="modparam(\"clusterer_controller\", \"release_tag_when_isolated\", $RIG_TAG_RELEASE)"
   if [ "$RIG_TM" = 1 ]; then
     TMMOD='loadmodule "tm.so"
 modparam("tm", "tm_replication_cluster", 741)'
@@ -99,7 +102,7 @@ modparam("clusterer_controller", "query_time", $QT)
 modparam("clusterer_controller", "master_stickiness", $ST)
 modparam("clusterer_controller", "on_config_mismatch", "reject")
 modparam("clusterer_controller", "consumer_rate_limit", 4000)
-modparam("clusterer_controller", "release_tag_when_isolated", $RIG_TAG_RELEASE)
+$TRMOD
 modparam("clusterer_controller", "cluster", "id=741,multicast=239.0.74.1:$PORT,bin_socket=bin:$IP:5588$UK")
 modparam("clusterer_controller", "cluster", "id=742,multicast=239.0.74.2:$PORT,bin_socket=bin:$IP:5588$UK")
 

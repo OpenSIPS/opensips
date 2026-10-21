@@ -2,7 +2,10 @@
 # netns_tests.sh - end-to-end tests of clusterer_controller on four network
 # namespaces of this host (see netns_rig.sh and README.md).  Run as root:
 #
-#   NEW=/usr/local/opensips [OLD=/opt/opensips-wire1] ./netns_tests.sh
+#   NEW=/usr/local/opensips [OLD=/opt/opensips-wire1] [PREV=/opt/opensips-prev] ./netns_tests.sh
+#
+# OLD is a wire-version-1 build (T6); PREV a build of this wire version from
+# before the capability bits (T27).  Tests needing one are skipped without it.
 #
 # Assertions are on EFFECTS (delivery counts, member tables, ids, processes),
 # log lines only where the log line IS the behaviour (a warning that must be
@@ -562,6 +565,62 @@ check "back in service on every node" $([ "$(echo $V | tr ' ' '\n' | sort -u)" =
 D=""; for i in 1 2 3 4; do [ $i = $x ] && continue; D="$D $(cl_state $i $XID)"; done
 check "the other nodes enabled n$x again" $([ "$(echo $D | tr ' ' '\n' | sort -u)" = enabled ] && echo 1 || echo 0) "$D"
 check "a node_id outside the cluster is refused" $(mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=999 | grep -q "not a member" && echo 1 || echo 0) "$(mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=999 | cut -c1-100)"
+
+echo "=== T27 a previous build in the cluster: capabilities gate the newer mechanisms ==="
+# PREV = a build of this wire version from before the capability bits (it
+# advertises none) - ideally one from before the master probe too, which is
+# where a mixed cluster used to cost an extra watchdog period at every
+# failover.  One member runs it while the others run this build.
+if [ -z "${PREV:-}" ] || [ ! -x "$PREV/sbin/opensips" ]; then
+  echo "  SKIP  PREV (a build of this wire version without capability bits) not given"
+else
+capsof() { mi $1 clusterer_controller:list_members | python3 -c '
+import json,sys
+for c in json.load(sys.stdin).get("result",[]):
+    if c.get("cluster_id")==741:
+        for m in c["members"]:
+            if m["ip"]==sys.argv[1]: print(" ".join(m.get("capabilities",["(no field)"])))' $2; }
+clcaps() { mi $1 clusterer_controller:list_config | python3 -c '
+import json,sys
+for c in json.load(sys.stdin).get("result",[]):
+    if c.get("cluster_id")==741: print(" ".join(c.get("cluster_capabilities",["(no field)"])))'; }
+ALL="probe maint_set maint_full"
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 4 3 2 1; do [ $x != $MN ] && break; done
+for y in 1 2 3 4; do [ $y != $MN ] && [ $y != $x ] && break; done
+XIP=$(ip4 $x); YIP=$(ip4 $y)
+echo "    n$x on the previous build; asking from n$y; master $MIP"
+stop_graceful $x; start $x $PREV 1 2 fleet-a; sleep 10
+check "n$x rejoined on the previous build" $(alive $x && members $y 741 | tr ' ' '\n' | grep -q "^$XIP:" && echo 1 || echo 0) "$(members $y 741)"
+check "the master lists no capabilities for n$x, all three for n$y" $([ -z "$(capsof $MN $XIP)" ] && [ "$(capsof $MN $YIP)" = "$ALL" ] && echo 1 || echo 0) "n$x '$(capsof $MN $XIP)' n$y '$(capsof $MN $YIP)'"
+check "the cluster's shared capabilities are none while n$x runs it (master and n$y)" $([ -z "$(clcaps $MN)" ] && [ -z "$(clcaps $y)" ] && echo 1 || echo 0) "master '$(clcaps $MN)' n$y '$(clcaps $y)'"
+XID=$(nid $y $x)
+R1=$(mi $y clusterer_controller:maintenance cluster_id=741 state=evicted node_id=${XID:-0})
+sleep 3
+check "remote maintenance of n$x is refused, and nothing changes" $(echo "$R1" | grep -q "maint_set" && [ "$(maint $y $XIP)" = none ] && echo 1 || echo 0) "$(echo "$R1" | cut -c1-140) / $(maint $y $XIP)"
+R2=$(mi $y clusterer_controller:maintenance cluster_id=741 state=full)
+sleep 3
+check "the full level on n$y is refused while n$x would not act on it" $(echo "$R2" | grep -q "maint_full" && [ "$(maint $y $YIP)" = none ] && echo 1 || echo 0) "$(echo "$R2" | cut -c1-140) / $(maint $y $YIP)"
+mi $y clusterer_controller:maintenance cluster_id=741 state=none >/dev/null   # a build without the gate took it
+if [ $MN != $x ]; then
+  for i in 1 2 3 4; do eval Q$i=$(wc -l < $R/n$i.log); done
+  T0=$(date +%s.%N); stop_hard $MN; rm -f $R/n$MN.pid
+  # agreement among the survivors on this build (an older one may not
+  # answer this MI command by its current name)
+  NEWM=""; for k in $(seq 1 60); do
+    MS=""; for i in 1 2 3 4; do [ $i = $MN ] || [ $i = $x ] && continue; MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
+    U=$(echo $MS | tr ' ' '\n' | sort -u)
+    if [ "$(echo $MS | wc -w)" = 2 ] && [ "$(echo "$U" | wc -l)" = 1 ] && [ "$U" != "$MIP" ]; then NEWM=$U; break; fi
+    sleep 0.25
+  done
+  DT=$(python3 -c "import time; print('%.1f' % (time.time() - $T0))")
+  CO=0; for i in 1 2 3 4; do [ $i = $MN ] || [ $i = $x ] && continue; eval m=\$Q$i; CO=$((CO + $(since $i $m | grep -ac "may be the one cut off"))); done
+  check "a master killed with n$x aboard: replaced within 8 s, nobody on this build waiting for n$x's answer (took ${DT} s: $NEWM)" $([ -n "$NEWM" ] && [ $CO = 0 ] && python3 -c "import sys; sys.exit(0 if $DT <= 8 else 1)" && echo 1 || echo 0) "cut-off waits $CO, $MS"
+  start $MN $NEW 1 2 fleet-a
+fi
+stop_graceful $x; start $x $NEW 1 2 fleet-a; sleep 10
+check "all on this build again: the cluster shares every capability" $([ "$(clcaps $y)" = "$ALL" ] && echo 1 || echo 0) "'$(clcaps $y)'"
+fi
 
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
