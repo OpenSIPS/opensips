@@ -117,6 +117,7 @@ struct mid_reg_info {
 
 /* check if a given domain belongs to mid-registrar or not */
 int is_mid_reg_domain(const str *dom);
+int mid_reg_shtag_is_active(void);
 
 extern rw_lock_t *tm_retrans_lk;
 
