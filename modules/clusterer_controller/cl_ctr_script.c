@@ -57,12 +57,6 @@ static str  cl_ctr_script_chan = str_init("_script");
 static str  ei_req_name = str_init("E_CL_CTR_REQ_RECEIVED");
 static str  ei_rpl_name = str_init("E_CL_CTR_RPL_RECEIVED");
 static event_id_t ei_req_id = EVI_ERROR;
-static str  ei_maint_name = str_init("E_CL_CTR_MAINTENANCE");
-static event_id_t ei_maint_id = EVI_ERROR;
-static evi_params_p ei_maint_params;
-static evi_param_p  ei_m_clid_p, ei_m_node_p, ei_m_state_p;
-static str ei_node_pname  = str_init("node_id");
-static str ei_state_pname = str_init("state");
 static event_id_t ei_rpl_id = EVI_ERROR;
 static evi_params_p ei_params;
 static evi_param_p  ei_clid_p, ei_srcid_p, ei_msg_p, ei_tag_p;
@@ -626,20 +620,6 @@ static int cmd_cl_ctr_send_rpl(struct sip_msg *msg, int *cluster_id,
  * taken by a module. */
 int cl_ctr_script_init(void)
 {
-	ei_maint_id = evi_publish_event(ei_maint_name);
-	ei_maint_params = pkg_malloc(sizeof *ei_maint_params);
-	if (ei_maint_id == EVI_ERROR || !ei_maint_params) {
-		LM_ERR("clusterer_controller: cannot publish the maintenance event\n");
-		return -1;
-	}
-	memset(ei_maint_params, 0, sizeof *ei_maint_params);
-	if (!(ei_m_clid_p  = evi_param_create(ei_maint_params, &ei_clid_pname)) ||
-	    !(ei_m_node_p  = evi_param_create(ei_maint_params, &ei_node_pname)) ||
-	    !(ei_m_state_p = evi_param_create(ei_maint_params, &ei_state_pname))) {
-		LM_ERR("clusterer_controller: cannot create the maintenance event "
-		       "parameters\n");
-		return -1;
-	}
 	ei_req_id = evi_publish_event(ei_req_name);
 	ei_rpl_id = evi_publish_event(ei_rpl_name);
 	if (ei_req_id == EVI_ERROR || ei_rpl_id == EVI_ERROR) {
@@ -660,25 +640,4 @@ int cl_ctr_script_init(void)
 		return -1;
 	}
 	return clctr_register_channel(&cl_ctr_script_chan, cl_ctr_script_recv);
-}
-
-/* E_CL_CTR_MAINTENANCE: a node's maintenance state changed (raised on every
- * node that learns of it, for itself included). */
-void cl_ctr_raise_maint_event(cl_ctr_cluster_t *cl, int node_id, int st)
-{
-	int cid = cl->cluster_id;
-	str sv;
-
-	if (ei_maint_id == EVI_ERROR || !evi_probe_event(ei_maint_id))
-		return;
-	sv.s = (char *)cl_ctr_maint_name(st);
-	sv.len = strlen(sv.s);
-	if (evi_param_set_int(ei_m_clid_p, &cid) < 0 ||
-	    evi_param_set_int(ei_m_node_p, &node_id) < 0 ||
-	    evi_param_set_str(ei_m_state_p, &sv) < 0) {
-		LM_ERR("clusterer_controller: cannot fill the maintenance event\n");
-		return;
-	}
-	if (evi_raise_event(ei_maint_id, ei_maint_params) < 0)
-		LM_ERR("clusterer_controller: cannot raise the maintenance event\n");
 }

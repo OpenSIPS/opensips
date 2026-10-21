@@ -33,7 +33,8 @@ int  cl_ctr_stats_register(cl_ctr_cluster_t *cl);
 /* Where cluster state changes, the code says so: each call counts for the
  * statistics.  Worker only, with or without the peers lock held. */
 void cl_ctr_note_role(cl_ctr_cluster_t *cl, int old_role, int new_role);
-void cl_ctr_note_master(cl_ctr_cluster_t *cl, const char *master_ip);
+void cl_ctr_note_master(cl_ctr_cluster_t *cl, const char *master_ip,
+                        uint16_t node_id);
 void cl_ctr_note_member(cl_ctr_cluster_t *cl, const char *ip, uint16_t node_id,
                         int joined, const char *reason);
 void cl_ctr_note_join_refused(cl_ctr_cluster_t *cl, const char *ip,

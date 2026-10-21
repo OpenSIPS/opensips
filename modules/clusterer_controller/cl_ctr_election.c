@@ -24,6 +24,7 @@
 
 #include "cl_ctr.h"
 #include "cl_ctr_stats.h"
+#include "cl_ctr_events.h"
 
 /**
  * cl_ctr_election_cutoff() - quantized stale cutoff for master election.
@@ -262,7 +263,7 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 	 * chosen (highest IP, sticky current master kept over a higher-IP peer, or
 	 * sole surviving node).                                               */
 	if (master_changed)
-	    cl_ctr_note_master(cl, m_ip);
+	    cl_ctr_note_master(cl, m_ip, cl->peers->entries[master_idx].node_id);
 	if (master_changed || backup_changed) {
 	    if (allow_maint)
 		why = "every node in the window is in maintenance";
@@ -647,6 +648,7 @@ void cl_ctr_maint_sync(cl_ctr_cluster_t *cl)
 void cl_ctr_rpc_maint(int sender, void *param)
 {
     cl_ctr_maint_sync((cl_ctr_cluster_t *)param);
+    cl_ctr_events_flush();
 }
 
 /* An operator's request, made on this node, for ANOTHER node's maintenance
@@ -808,7 +810,7 @@ void cl_ctr_maint_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int old_st,
     uint16_t me = 0;
     int k;
 
-    cl_ctr_raise_maint_event(cl, node_id, st);
+    cl_ctr_ev_maintenance(cl, node_id, st);
     if (node_id == 0 || !cl_api_loaded || !cl_api.set_state)
         return;
     /* this node's id in THIS cluster (it may differ per cluster): disabling

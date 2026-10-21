@@ -24,6 +24,7 @@
 
 #include "cl_ctr.h"
 #include "cl_ctr_stats.h"
+#include "cl_ctr_events.h"
 
 static int mod_init(void);
 static int cl_ctr_child_init(int rank);
@@ -594,6 +595,8 @@ static int mod_init(void)
         LM_ERR("clusterer_controller: cannot set up script messaging\n");
         return -1;
     }
+    if (cl_ctr_events_init() < 0)
+        return -1;
 
 
     LM_INFO("clusterer_controller: initialising\n");

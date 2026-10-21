@@ -1054,7 +1054,89 @@ Parameters:
 
 - *cluster_id* - the cluster;
 - *node_id* - the node whose state changed;
-- *state* - its new state: *none* or *evicted*.
+- *state* - its new state: *none*, *evicted* or *full*.
+
+
+The cluster-state events below, and *E_CL_CTR_MAINTENANCE*, are raised by the controller's worker process once it has finished handling the packet or timer that changed the state - so an *event_route* may read *$cl_ctr_** freely. They are raised only while someone subscribes to them.
+
+
+#### E_CL_CTR_ROLE
+
+
+Raised when this node's own role changes.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster;
+- *role* - the new role: *master*, *backup* or *member*;
+- *old_role* - the role it had.
+
+
+#### E_CL_CTR_MASTER
+
+
+Raised when the cluster's master changes, as this node sees it - on every node, at each election that names a different master.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster;
+- *master_ip* - the new master's controller IP;
+- *node_id* - its node id.
+
+
+#### E_CL_CTR_MEMBER
+
+
+Raised when a node enters or leaves this node's peer table.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster;
+- *node_id* - the node; *0* when it joins, since its id is assigned afterwards;
+- *ip* - its controller IP;
+- *state* - *joined* or *left*;
+- *reason* - for *left*: *goodbye* (it stopped), *timeout* (it went silent past the purge window) or *dropped* (removed after a refusal); *new* for *joined*.
+
+
+#### E_CL_CTR_REFUSED
+
+
+Raised on the master when it refuses a node's join, at most once a minute per address and reason.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster;
+- *ip* - the refused node;
+- *reason* - *config* (different settings, with *on_config_mismatch=reject*), *mtu* (a different MTU) or *refused* (a wrong password, or a full peer table).
+
+
+#### E_CL_CTR_MERGE
+
+
+Raised when this node leaves its partition for a superior master after a partition heals.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster;
+- *master_ip* - the master it now follows;
+- *was_master* - *1* if this node was a master itself.
+
+
+```opensips title="E_CL_CTR_MASTER usage"
+event_route[E_CL_CTR_MASTER] {
+    xlog("cluster $param(cluster_id): master is now $param(master_ip) (node $param(node_id))\n");
+}
+```
 
 
 ### Messaging Between Nodes
@@ -1320,7 +1402,6 @@ Each node also advertises on its ALIVE which optional mechanisms its build imple
 
 The following features are planned for future releases:
 
-- **Events** — events raised on state transitions (became master, demoted, node joined/left, split-brain merged, config mismatch, authentication reject), named `E_CL_CTR_*` and consumable from an *event_route* or any event subscriber transport.
 - **IPv6 multicast** — the control plane currently uses IPv4 multicast (groups in *224.0.0.0/4*). Add IPv6 multicast support (*ff00::/8* groups, *AF_INET6* sockets and membership) so the controller can run on IPv6-only or dual-stack deployments.
 
 Read-only script variables for cluster state (*$cl_ctr_role*, *$cl_ctr_is_master*, and the rest) are already available - see [Exported Pseudo-Variables](#exported-pseudo-variables).
@@ -1485,7 +1566,7 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, and the statistics. It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, the statistics and the events. It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
 NEW=/usr/local OLD=/opt/opensips-wire1 PREV=/opt/opensips-prev ./test/netns_tests.sh

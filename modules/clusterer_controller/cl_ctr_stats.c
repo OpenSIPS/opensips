@@ -25,6 +25,8 @@
 #include "cl_ctr.h"
 #include "cl_ctr_stats.h"
 #include "../../statistics.h"
+#include "cl_ctr_stats.h"
+#include "cl_ctr_events.h"
 
 /* -------------------------------------------------------------------------
  * Statistics, one set per cluster, named <statistic>-<cluster_id> in the
@@ -154,41 +156,43 @@ int cl_ctr_stats_register(cl_ctr_cluster_t *cl)
 
 /* -------------------------------------------------------------------------
  * Where cluster state changes, the code says so here.  Each counts for the
- * statistics; called by the worker only, with or without the peers lock
- * held (the counters have that one writer).
+ * statistics and queues its event (cl_ctr_events.c); called by the worker
+ * only, with or without the peers lock held (the counters have that one
+ * writer, and the events are raised once the lock is released).
  * ------------------------------------------------------------------------- */
 
 /* this node's own role changed (CL_CTR_ROLE_*) */
 void cl_ctr_note_role(cl_ctr_cluster_t *cl, int old_role, int new_role)
 {
-    (void)old_role; (void)new_role;
     cl->peers->st_role_changes++;
+    cl_ctr_ev_role(cl, old_role, new_role);
 }
 
-/* the cluster's master changed to @master_ip, as this node sees it */
-void cl_ctr_note_master(cl_ctr_cluster_t *cl, const char *master_ip)
+/* the cluster's master changed to @master_ip (@node_id), as this node sees it */
+void cl_ctr_note_master(cl_ctr_cluster_t *cl, const char *master_ip,
+                        uint16_t node_id)
 {
-    (void)master_ip;
     cl->peers->st_master_changes++;
+    cl_ctr_ev_master(cl, master_ip, node_id);
 }
 
 /* a node entered (@joined) or left this node's peer table; @reason says why */
 void cl_ctr_note_member(cl_ctr_cluster_t *cl, const char *ip, uint16_t node_id,
                         int joined, const char *reason)
 {
-    (void)ip; (void)node_id; (void)reason;
     if (joined)
         cl->peers->st_members_joined++;
     else
         cl->peers->st_members_left++;
+    cl_ctr_ev_member(cl, ip, node_id, joined, reason);
 }
 
 /* this master refused @ip's JOIN_REQ (@reason) */
 void cl_ctr_note_join_refused(cl_ctr_cluster_t *cl, const char *ip,
                               const char *reason)
 {
-    (void)ip; (void)reason;
     cl->peers->st_joins_refused++;
+    cl_ctr_ev_refused(cl, ip, reason);
 }
 
 /* @ip advertises settings that differ from this node's */
@@ -209,6 +213,6 @@ void cl_ctr_note_auth_failure(cl_ctr_cluster_t *cl, const char *ip)
 void cl_ctr_note_merge(cl_ctr_cluster_t *cl, const char *superior_ip,
                        int was_master)
 {
-    (void)superior_ip; (void)was_master;
     cl->peers->st_merges++;
+    cl_ctr_ev_merge(cl, superior_ip, was_master);
 }

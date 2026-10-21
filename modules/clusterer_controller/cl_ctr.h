@@ -1663,7 +1663,6 @@ int  cl_ctr_apply_maint_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm,
                                const unsigned char *bm_full,
                                const char *master_ip);
 void cl_ctr_build_maint_full_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
-void cl_ctr_raise_maint_event(cl_ctr_cluster_t *cl, int node_id, int st);
 void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st);
 void cl_ctr_maint_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int old_st,
                           int st);

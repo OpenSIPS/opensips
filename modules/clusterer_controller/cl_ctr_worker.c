@@ -24,6 +24,7 @@
 
 #include "cl_ctr.h"
 #include "cl_ctr_caps.h"
+#include "cl_ctr_events.h"
 
 
 /* =========================================================================
@@ -834,6 +835,24 @@ static int cl_ctr_on_master_dead_tfd(int fd, void *param, int was_timeout)
     return 0;
 }
 
+/* Every handler leaves the events it queued raised, now that it holds no
+ * lock (cl_ctr_events.c). */
+#define CL_CTR_FLUSHING(_h) \
+static int _h##_ev(int fd, void *param, int was_timeout) \
+{ \
+    int rc = _h(fd, param, was_timeout); \
+    cl_ctr_events_flush(); \
+    return rc; \
+}
+CL_CTR_FLUSHING(cl_ctr_on_sock)
+CL_CTR_FLUSHING(cl_ctr_on_alive_tfd)
+CL_CTR_FLUSHING(cl_ctr_on_join_tfd)
+CL_CTR_FLUSHING(cl_ctr_on_rejoin_tfd)
+CL_CTR_FLUSHING(cl_ctr_on_master_alive_tfd)
+CL_CTR_FLUSHING(cl_ctr_on_master_dead_tfd)
+CL_CTR_FLUSHING(cl_ctr_on_retx_tfd)
+CL_CTR_FLUSHING(cl_ctr_on_stall_tfd)
+
 /**
  * cl_ctr_worker() - the single dedicated background process.
  *
@@ -956,14 +975,14 @@ void cl_ctr_worker(int rank)
 	exit(-1);
     }
 
-    if (reactor_proc_add_fd(cl->sock,            cl_ctr_on_sock,            cl) < 0 ||
-        reactor_proc_add_fd(cl->alive_tfd,       cl_ctr_on_alive_tfd,       cl) < 0 ||
-        reactor_proc_add_fd(cl->join_tfd,        cl_ctr_on_join_tfd,        cl) < 0 ||
-        reactor_proc_add_fd(cl->rejoin_tfd,      cl_ctr_on_rejoin_tfd,      cl) < 0 ||
-        reactor_proc_add_fd(cl->master_alive_tfd, cl_ctr_on_master_alive_tfd, cl) < 0 ||
-        reactor_proc_add_fd(cl->master_dead_tfd,  cl_ctr_on_master_dead_tfd,  cl) < 0 ||
-        reactor_proc_add_fd(cl->retx_tfd,         cl_ctr_on_retx_tfd,         cl) < 0 ||
-        reactor_proc_add_fd(cl->stall_tfd,        cl_ctr_on_stall_tfd,        cl) < 0) {
+    if (reactor_proc_add_fd(cl->sock,            cl_ctr_on_sock_ev,            cl) < 0 ||
+        reactor_proc_add_fd(cl->alive_tfd,       cl_ctr_on_alive_tfd_ev,       cl) < 0 ||
+        reactor_proc_add_fd(cl->join_tfd,        cl_ctr_on_join_tfd_ev,        cl) < 0 ||
+        reactor_proc_add_fd(cl->rejoin_tfd,      cl_ctr_on_rejoin_tfd_ev,      cl) < 0 ||
+        reactor_proc_add_fd(cl->master_alive_tfd, cl_ctr_on_master_alive_tfd_ev, cl) < 0 ||
+        reactor_proc_add_fd(cl->master_dead_tfd,  cl_ctr_on_master_dead_tfd_ev,  cl) < 0 ||
+        reactor_proc_add_fd(cl->retx_tfd,         cl_ctr_on_retx_tfd_ev,         cl) < 0 ||
+        reactor_proc_add_fd(cl->stall_tfd,        cl_ctr_on_stall_tfd_ev,        cl) < 0) {
 	LM_CRIT("clusterer_controller: [cluster %d] reactor_proc_add_fd failed\n",
 	        cl->cluster_id);
 	exit(-1);
