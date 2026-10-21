@@ -134,11 +134,13 @@ void cl_ctr_prune_stale(cl_ctr_cluster_t *cl)
  */
 void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_cluster_t *cl)
 {
-    int i;
+    int      i;
+    uint16_t master_id = 0;
 
     for (i = 0; i < cl->peers->count; i++) {
 	if (strcmp(cl->peers->entries[i].ip, master_ip) == 0) {
 	    cl->peers->entries[i].is_master = 1;
+	    master_id = cl->peers->entries[i].node_id;
 	} else {
 	    cl->peers->entries[i].is_master = 0;
 	}
@@ -148,6 +150,10 @@ void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_cluster_
     if (strcmp(cl->peers->last_master, master_ip) != 0) {
 	cl->peers->list_term_seen = 0;
 	cl->peers->list_seq_seen  = 0;
+	/* a node joining a running cluster learns its master here, not from
+	 * an election of its own */
+	if (master_ip[0])
+	    cl_ctr_note_master(cl, master_ip, master_id);
     }
     memcpy(cl->peers->last_master, master_ip,
            strnlen(master_ip, CL_CTR_MAX_IP_LEN));
