@@ -149,7 +149,8 @@ srv = "%s/mi%s.sock" % (rd, node)
 params = {}
 for kv in sys.argv[4:]:
     k, v = kv.split("=", 1)
-    params[k] = int(v) if v.lstrip("-").isdigit() else v
+    params[k] = (json.loads(v) if v[:1] in "[{" else
+                 int(v) if v.lstrip("-").isdigit() else v)
 me = "%s/cli%d.sock" % (rd, os.getpid())
 s = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM); s.bind(me); s.settimeout(5)
 try:

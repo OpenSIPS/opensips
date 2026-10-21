@@ -622,6 +622,28 @@ stop_graceful $x; start $x $NEW 1 2 fleet-a; sleep 10
 check "all on this build again: the cluster shares every capability" $([ "$(clcaps $y)" = "$ALL" ] && echo 1 || echo 0) "'$(clcaps $y)'"
 fi
 
+echo "=== T28 statistics, one set per cluster ==="
+# stats <node> -> "name=value ..." of the clusterer_controller group
+stats() { mi $1 statistics:get 'statistics=["clusterer_controller:"]' | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result",{})
+except Exception: d={}
+print(" ".join("%s=%s" % (k.split(":",1)[1], v) for k,v in sorted(d.items()) if k.startswith("clusterer_controller:")))'; }
+cstat() { stats $1 | tr ' ' '\n' | grep "^$2=" | cut -d= -f2; }
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 4 3 2 1; do [ $x != $MN ] && break; done
+N741=$(stats $MN | tr ' ' '\n' | grep -c -- '-741='); N742=$(stats $MN | tr ' ' '\n' | grep -c -- '-742=')
+check "every statistic, once per cluster (23 each for 741 and 742)" $([ "$N741" = 23 ] && [ "$N742" = 23 ] && echo 1 || echo 0) "741: $N741, 742: $N742"
+M=""; for i in 1 2 3 4; do M="$M $(cstat $i members-741)/$(cfgval $i 741 member_count)"; done
+check "members-741 is the live count on every node" $(echo $M | tr ' ' '\n' | awk -F/ '$1!=4{b=1} END{print b?0:1}') "$M (stat/table)"
+check "the master: role 2, is_master 1; n$x: is_master 0" $([ "$(cstat $MN role-741)" = 2 ] && [ "$(cstat $MN is_master-741)" = 1 ] && [ "$(cstat $x is_master-741)" = 0 ] && echo 1 || echo 0) "role $(cstat $MN role-741) is_master $(cstat $MN is_master-741) / $(cstat $x is_master-741)"
+check "term-741 matches clusterer_controller:list_config" $([ "$(cstat $MN term-741)" = "$(cfgval $MN 741 term)" ] && echo 1 || echo 0) "$(cstat $MN term-741) vs $(cfgval $MN 741 term)"
+check "every node counted at least one master change" $(for i in 1 2 3 4; do [ "$(cstat $i master_changes-741)" -ge 1 ] 2>/dev/null || { echo 0; exit; }; done; echo 1) "$(for i in 1 2 3 4; do echo -n "$(cstat $i master_changes-741) "; done)"
+J0=$(cstat $MN members_joined-741); L0=$(cstat $MN members_left-741)
+stop_graceful $x; sleep 2; start $x $NEW 1 2 fleet-a; sleep 8
+J1=$(cstat $MN members_joined-741); L1=$(cstat $MN members_left-741)
+check "n$x restarted: the master counted it leaving and joining" $([ "${L1:-0}" -gt "${L0:-0}" ] && [ "${J1:-0}" -gt "${J0:-0}" ] && echo 1 || echo 0) "left $L0 -> $L1, joined $J0 -> $J1"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"
