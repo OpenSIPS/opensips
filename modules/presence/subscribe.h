@@ -92,6 +92,7 @@ int refresh_watcher(str* pres_uri, str* watcher_uri, str* event, int status, str
 typedef int (*refresh_watcher_t)(str*, str*, str*, int, str*);
 
 int restore_db_subs(void);
+int load_db_subs_url(str *url, int *loaded, int *skipped);
 
 typedef int (*handle_expired_func_t)(subs_t* );
 
