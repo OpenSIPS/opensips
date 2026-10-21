@@ -357,6 +357,18 @@ static inline long long cl_ctr_now_ms(void)
  * only the node named applies it, to itself, and announces it as usual */
 #define CL_CTR_PKT_MAINT_SET        0x11
 
+/* Capability bits (CC-11, cl_ctr_caps.c): what this build implements of the
+ * optional mechanisms, advertised on ALIVE after the maintenance byte.  A
+ * mechanism that needs the other side's part is used only towards nodes -
+ * or, cluster-wide, only while every live member - advertising its bit.
+ * Append new bits; never reuse or renumber one. */
+#define CL_CTR_CAP_PROBE            0x00000001u /* answers MASTER_PROBE       */
+#define CL_CTR_CAP_MAINT_SET        0x00000002u /* applies MAINT_SET to itself */
+#define CL_CTR_CAP_MAINT_FULL       0x00000004u /* acts on the full level      */
+#define CL_CTR_CAPS_MINE            (CL_CTR_CAP_PROBE | CL_CTR_CAP_MAINT_SET | \
+                                     CL_CTR_CAP_MAINT_FULL)
+#define CL_CTR_CAPS_SZ              4
+
 /* Consumer messaging (api.h): plaintext payload layout after type+seq is
  * [src_node_id u16 BE][chan_len u8][channel bytes][consumer payload].
  * Bounded to one comfortably-under-MTU datagram; bulk data is the
@@ -1335,6 +1347,10 @@ typedef struct cl_ctr_peer_ {
     int          in_election; /* 1 = currently inside the election window  */
     uint16_t     node_id;     /* allocated by master; 0 = not yet assigned */
     uint8_t      maint;       /* CL_CTR_MAINT_*: as the node announced it  */
+    uint32_t     caps;        /* CL_CTR_CAP_* from its ALIVE: first-hand on the
+                                 master (every member's ALIVE reaches it) and
+                                 for the master's entry; 0 = none, a build
+                                 older than the field, or not heard */
     uint8_t      bin_count;   /* number of BIN listeners reported          */
     char         bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
     unsigned char pubkey[CL_CTR_PUBKEY_SZ];           /* long-lived X25519 pubkey (from ALIVE);
@@ -1471,6 +1487,10 @@ struct cl_ctr_peers_ {
     int             eff_manage_shtags;
     int             eff_master_stickiness;
     int             eff_query_time;
+    /* CL_CTR_CAP_* every live member shares: worked out by the master and
+     * relayed in MASTER_ALIVE; a member keeps the last relayed value (0
+     * from an older master, which relays none) - cl_ctr_caps.c */
+    uint32_t        cluster_caps;
 };
 
 #define cl_ctr_send_alive(sock, cl)    cl_ctr_send_pkt_with_ip((sock), CL_CTR_PKT_ALIVE, (cl), NULL, 0)
@@ -1625,6 +1645,13 @@ void cl_ctr_cid_found(cl_ctr_cluster_t *cl);
 void cl_ctr_cid_tick(cl_ctr_cluster_t *cl);
 void cl_ctr_membership_digest(cl_ctr_cluster_t *cl, uint16_t *count, uint64_t *hash);
 uint16_t cl_ctr_live_count(cl_ctr_cluster_t *cl);
+/* capability bits (cl_ctr_caps.c) */
+uint32_t cl_ctr_table_caps(cl_ctr_cluster_t *cl);
+uint32_t cl_ctr_cluster_caps(cl_ctr_cluster_t *cl);
+int  cl_ctr_mi_add_caps(mi_item_t *obj, const char *name, int name_len,
+                        uint32_t caps);
+int  cl_ctr_maint_supported(cl_ctr_cluster_t *cl, int remote, int st,
+                            char *why, int why_sz);
 void cl_ctr_build_alive_bitmap(cl_ctr_cluster_t *cl, unsigned char *bm);
 void cl_ctr_apply_alive_bitmap(cl_ctr_cluster_t *cl, const unsigned char *bm);
 void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl);
@@ -1713,6 +1740,7 @@ void cl_ctr_handle_alive(const char *src_ip,
                             int cfg_present, int peer_manage,
                             int peer_stick, int peer_qt,
                             int peer_mtu, int peer_maint,
+                            uint32_t peer_caps,
                             cl_ctr_cluster_t *cl);
 void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl);
 void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,

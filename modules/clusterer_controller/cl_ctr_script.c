@@ -326,8 +326,15 @@ static int w_cl_ctr_set_maintenance(struct sip_msg *msg, int *cid, str *state)
 	return -1;
     }
     for (i = 0; i < cl_ctr_cluster_count; i++)
-	if (cl_ctr_clusters[i].cluster_id == *cid && cl_ctr_clusters[i].peers)
+	if (cl_ctr_clusters[i].cluster_id == *cid && cl_ctr_clusters[i].peers) {
+	    char why[192];
+	    if (cl_ctr_maint_supported(&cl_ctr_clusters[i], 0, st, why,
+	                               sizeof why) < 0) {
+		LM_ERR("clusterer_controller: cl_ctr_set_maintenance: %s\n", why);
+		return -1;
+	    }
 	    return cl_ctr_set_my_maint(&cl_ctr_clusters[i], st) == 0 ? 1 : -1;
+	}
     LM_ERR("clusterer_controller: cl_ctr_set_maintenance: no cluster %d\n", *cid);
     return -1;
 }

@@ -129,7 +129,7 @@ static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
 {
     mi_response_t  *resp;
     mi_item_t      *arr, *cl_obj, *members_arr, *peer_obj, *bin_arr;
-    int             i, j, ci;
+    int             i, j, ci, im;
     cl_ctr_cluster_t   *cl;
 
     resp = init_mi_result_array(&arr);
@@ -151,6 +151,10 @@ static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
 	if (!members_arr) goto error;
 
 	lock_start_read(cl->peers->lock);
+	/* capabilities are listed where known first-hand: every member's on the
+	 * master (each member's ALIVE goes there), the master's and its own on
+	 * a member */
+	im = cl_ctr_i_am_master_locked(cl);
 
 	for (i = 0; i < cl->peers->count; i++) {
 	    cl_ctr_peer_t *e = &cl->peers->entries[i];
@@ -169,7 +173,11 @@ static mi_response_t *mi_cl_ctr_members(const mi_params_t *params,
 	                      6) < 0 ||
 	        add_mi_string(peer_obj, MI_SSTR("maintenance"),
 	                      cl_ctr_maint_name(e->maint),
-	                      strlen(cl_ctr_maint_name(e->maint))) < 0) {
+	                      strlen(cl_ctr_maint_name(e->maint))) < 0 ||
+	        ((im || e->is_master || strcmp(e->ip, my_ip) == 0) &&
+	         cl_ctr_mi_add_caps(peer_obj, MI_SSTR("capabilities"),
+	                            strcmp(e->ip, my_ip) == 0 ? CL_CTR_CAPS_MINE
+	                                                      : e->caps) < 0)) {
 		lock_stop_read(cl->peers->lock);
 		goto error;
 	    }
@@ -313,6 +321,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	unsigned int term = 0;
 	char cid_s[37] = "";
 	const char *cid_st = "none";
+	uint32_t      ccaps;
 	unsigned long foreign = 0, refused = 0, stalls = 0, terms_refused = 0,
 	              rx_drops = 0, holds = 0, ka_false = 0;
 	int           ka_mean = 0, ka_dev = 0, ka_margin = 0, ka_to = 0, lhm = 0,
@@ -373,6 +382,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 		snprintf(shtag_mode, sizeof(shtag_mode), "auto");
 	}
 
+	ccaps = cl->peers ? cl_ctr_cluster_caps(cl) : CL_CTR_CAPS_MINE;
 	if (add_mi_number(cl_obj, MI_SSTR("cluster_id"),   cl->cluster_id)        < 0 ||
 	    add_mi_string(cl_obj, MI_SSTR("multicast"),    mcast, strlen(mcast))  < 0 ||
 	    add_mi_string(cl_obj, MI_SSTR("my_ip"),        my_ip, strlen(my_ip))  < 0 ||
@@ -409,7 +419,8 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	                  release_tag_when_isolated)                              < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("tag_released"), released)              < 0 ||
 	    add_mi_number(cl_obj, MI_SSTR("rcvbuf_bytes"), rcvbuf)                < 0 ||
-	    add_mi_number(cl_obj, MI_SSTR("rx_kernel_drops"), rx_drops)           < 0)
+	    add_mi_number(cl_obj, MI_SSTR("rx_kernel_drops"), rx_drops)           < 0 ||
+	    cl_ctr_mi_add_caps(cl_obj, MI_SSTR("cluster_capabilities"), ccaps)  < 0)
 	    goto error;
 	fc_arr = add_mi_array(cl_obj, MI_SSTR("foreign_clusters"));
 	if (!fc_arr)
@@ -503,6 +514,7 @@ static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
     int               cluster_id, st;
     str               state;
     cl_ctr_cluster_t *cl;
+    char              why[192];
 
     if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0 ||
         get_mi_string_param(params, "state", &state.s, &state.len) < 0)
@@ -513,6 +525,9 @@ static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
     cl = cl_ctr_mi_find_cluster(cluster_id);
     if (!cl || !cl->peers)
 	return init_mi_error(404, MI_SSTR("cluster_id not found"));
+    if (cl_ctr_maint_supported(cl, 0, st, why, sizeof why) < 0)
+	return init_mi_error_extra(409, MI_SSTR("not supported by every member"),
+	                           why, strlen(why));
     if (cl_ctr_set_my_maint(cl, st) < 0)
 	return init_mi_error(500, MI_SSTR("controller worker not running yet"));
     return init_mi_result_ok();
@@ -524,6 +539,7 @@ static mi_response_t *mi_cl_ctr_maintenance_node(const mi_params_t *params,
     int               cluster_id, node_id, st, k, found = 0, me = 0;
     str               state;
     cl_ctr_cluster_t *cl;
+    char              why[192];
 
     if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0 ||
         get_mi_string_param(params, "state", &state.s, &state.len) < 0 ||
@@ -546,6 +562,9 @@ static mi_response_t *mi_cl_ctr_maintenance_node(const mi_params_t *params,
     lock_stop_read(cl->peers->lock);
     if (!found)
 	return init_mi_error(404, MI_SSTR("node_id not a member of this cluster"));
+    if (cl_ctr_maint_supported(cl, node_id != me, st, why, sizeof why) < 0)
+	return init_mi_error_extra(409, MI_SSTR("not supported by every member"),
+	                           why, strlen(why));
     if ((node_id == me ? cl_ctr_set_my_maint(cl, st)
                        : cl_ctr_set_node_maint(cl, (uint16_t)node_id, st)) < 0)
 	return init_mi_error(500, MI_SSTR("controller worker not running yet"));

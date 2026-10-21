@@ -121,6 +121,7 @@ void cl_ctr_handle_alive(const char *src_ip,
                             int cfg_present, int peer_manage,
                             int peer_stick, int peer_qt,
                             int peer_mtu, int peer_maint,
+                            uint32_t peer_caps,
                             cl_ctr_cluster_t *cl)
 {
     int  prev_master, now_master;
@@ -174,6 +175,9 @@ void cl_ctr_handle_alive(const char *src_ip,
                 }
                 e->mtu = peer_mtu;
             }
+            /* what its build implements, as of this ALIVE (an upgrade or a
+             * downgrade changes it) */
+            e->caps = peer_caps;
             /* the node's own word on its maintenance state */
             if (e->maint != (uint8_t)peer_maint) {
                 maint_old     = e->maint;
@@ -606,6 +610,22 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
         } else {
             cl->unlisted = 0;
         }
+    }
+
+    /* What every live member shares (CC-11), as the master hears them all;
+     * an older master relays nothing, and shares nothing it does not know. */
+    if (!i_am_master && !from_self) {
+        uint32_t c = 0;
+        if (payload_len >= CL_CTR_DIGEST_SZ + 3 * CL_CTR_ALIVE_BITMAP_SZ
+                           + CL_CTR_TERM_SZ + CL_CTR_LIVE_SZ + CL_CTR_CAPS_SZ) {
+            uint32_t c_be;
+            memcpy(&c_be, payload + CL_CTR_DIGEST_SZ + 3 * CL_CTR_ALIVE_BITMAP_SZ
+                          + CL_CTR_TERM_SZ + CL_CTR_LIVE_SZ, CL_CTR_CAPS_SZ);
+            c = ntohl(c_be);
+        }
+        lock_start_write(cl->peers->lock);
+        cl->peers->cluster_caps = c;
+        lock_stop_write(cl->peers->lock);
     }
 
     /* Maintenance relay: which nodes are in maintenance.  When the master

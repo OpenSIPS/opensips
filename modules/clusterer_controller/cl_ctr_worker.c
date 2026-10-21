@@ -231,8 +231,12 @@ static int cl_ctr_stall_check(cl_ctr_cluster_t *cl)
  *     one more watchdog period and ask again, and elect only if it is still
  *     quiet.
  *
- * With nobody to ask it elects at once, as before.  Returns 1 when the
- * election is deferred (the watchdog is re-armed).
+ * With nobody to ask it elects at once, as before - and so it does while
+ * not every live member answers the question (CL_CTR_CAP_PROBE, as the
+ * master relayed it): an older build drops it, and counting such a peer
+ * would turn every failover in a mixed cluster into "too few answered" and
+ * an extra watchdog period.  Returns 1 when the election is deferred (the
+ * watchdog is re-armed).
  */
 static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
 {
@@ -331,6 +335,12 @@ static int cl_ctr_probe_step(cl_ctr_cluster_t *cl)
     lock_stop_read(cl->peers->lock);
     if (cl->probe_master[0] == '\0' || n == 0)
         return 0;
+    if (!(cl_ctr_cluster_caps(cl) & CL_CTR_CAP_PROBE)) {
+        LM_INFO("clusterer_controller: [cluster %d] master %s is silent and not "
+                "every member's build answers a question about it - electing "
+                "without asking\n", cl->cluster_id, cl->probe_master);
+        return 0;
+    }
 
     cl_ctr_send_master_probe(cl, cl->probe_master);
     cl->probing      = 1;

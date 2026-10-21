@@ -567,6 +567,7 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    const unsigned char *pubkey = NULL;
 	    int            cfg_present = 0, p_manage = 0, p_stick = 0, p_qt = 0;
 	    int            p_mtu = 0, p_maint = 0;
+	    uint32_t       p_caps = 0;
 	    memcpy(ip_buf, payload, ip_len);
 	    ip_buf[ip_len] = '\0';
 	    /* Pubkey appended after NUL-terminated IP */
@@ -599,8 +600,16 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	     * election and tags - the meaning every level shares */
 	    if (p_maint > CL_CTR_MAINT_FULL)
 		p_maint = CL_CTR_MAINT_EVICTED;
+	    /* capability bits after the maintenance byte (absent: none) */
+	    if (payload_len >= ip_len + 1 + (int)CL_CTR_PUBKEY_SZ + CL_CTR_CONFIG_SZ
+	                       + CL_CTR_MTU_SZ + 1 + CL_CTR_CAPS_SZ) {
+		uint32_t c_be;
+		memcpy(&c_be, payload + ip_len + 1 + CL_CTR_PUBKEY_SZ
+		              + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ + 1, CL_CTR_CAPS_SZ);
+		p_caps = ntohl(c_be);
+	    }
 	    cl_ctr_handle_alive(ip_buf, pubkey, cfg_present, p_manage, p_stick, p_qt,
-	                        p_mtu, p_maint, cl);
+	                        p_mtu, p_maint, p_caps, cl);
 	    break;
 	}
 

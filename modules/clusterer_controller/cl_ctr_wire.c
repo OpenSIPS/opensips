@@ -526,9 +526,10 @@ void cl_ctr_send_ack(int sock, cl_ctr_cluster_t *cl, uint32_t acked_seq,
 void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
                                 const struct sockaddr *dest, socklen_t destlen)
 {
-    /* Sized for ALIVE which carries an extra pubkey + config descriptor + MTU */
+    /* Sized for ALIVE: pubkey, config descriptor, MTU, maintenance, caps */
     char               pkt[CL_CTR_SMALL_PKT_SZ + CL_CTR_PUBKEY_SZ
-                           + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ + 1];
+                           + CL_CTR_CONFIG_SZ + CL_CTR_MTU_SZ + 1
+                           + CL_CTR_CAPS_SZ];
     uint32_t           seq     = htonl(++cl->peers->my_seq);
     int                ip_len  = (int)strlen(my_ip);
     int                plain_len;
@@ -571,6 +572,13 @@ void cl_ctr_send_pkt_with_ip(int sock, unsigned char type, cl_ctr_cluster_t *cl,
 	 * ignores the trailing byte; one that has it reads 0 when absent). */
 	pkt[CL_CTR_WIRE_HDR_SZ + plain_len] = (char)cl->maint_adv;
 	plain_len += 1;
+	/* And what this build implements (CC-11) - older builds stop reading
+	 * before it, and are taken to implement none of it. */
+	{
+	    uint32_t c = htonl(CL_CTR_CAPS_MINE);
+	    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + plain_len, &c, CL_CTR_CAPS_SZ);
+	    plain_len += CL_CTR_CAPS_SZ;
+	}
     }
 
     if (dest)
@@ -826,7 +834,7 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
                            + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
                            + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ
                            + CL_CTR_LIVE_SZ + CL_CTR_ALIVE_BITMAP_SZ
-                           + CL_CTR_TAG_SZ];
+                           + CL_CTR_CAPS_SZ + CL_CTR_TAG_SZ];
     uint16_t           live_be = htons(cl_ctr_live_count(cl));
     uint32_t           seq = htonl(++cl->peers->my_seq);
     uint32_t           term_be = htonl(cl->peers->my_term);
@@ -860,11 +868,21 @@ void cl_ctr_send_master_alive(int sock, cl_ctr_cluster_t *cl)
     /* and which of the nodes in maintenance are at the 'full' level */
     cl_ctr_build_maint_full_bitmap(cl, (unsigned char *)p);
     p += CL_CTR_ALIVE_BITMAP_SZ;
+    /* and what every live member shares (CC-11): only the master hears
+     * every member's ALIVE */
+    {
+        uint32_t ccaps = cl_ctr_table_caps(cl), c_be = htonl(ccaps);
+        lock_start_write(cl->peers->lock);
+        cl->peers->cluster_caps = ccaps;
+        lock_stop_write(cl->peers->lock);
+        memcpy(p, &c_be, CL_CTR_CAPS_SZ);
+        p += CL_CTR_CAPS_SZ;
+    }
 
     cl_ctr_seal_and_send(sock, cl, pkt,
                      CL_CTR_PLAIN_HDR_SZ + CL_CTR_DIGEST_SZ + CL_CTR_ALIVE_BITMAP_SZ
                      + CL_CTR_TERM_SZ + CL_CTR_ALIVE_BITMAP_SZ + CL_CTR_LIVE_SZ
-                     + CL_CTR_ALIVE_BITMAP_SZ,
+                     + CL_CTR_ALIVE_BITMAP_SZ + CL_CTR_CAPS_SZ,
                      cl->session_key, CL_CTR_PKT_MASTER_ALIVE);
 }
 

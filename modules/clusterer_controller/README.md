@@ -515,7 +515,7 @@ The reason to want that is cost rather than doubt. A reliable broadcast draws on
 
 #### clusterer_controller:list_members
 
-List all current cluster members with their node_id, status, maintenance state and BIN socket addresses. Status is one of *master*, *backup* (the standby that will be promoted if the master fails) or *member*; *maintenance* is *none* or *evicted* (see *clusterer_controller:maintenance*). Only peers within the current election window are shown.
+List all current cluster members with their node_id, status, maintenance state, capabilities and BIN socket addresses. Status is one of *master*, *backup* (the standby that will be promoted if the master fails) or *member*; *maintenance* is *none*, *evicted* or *full* (see *clusterer_controller:maintenance*); *capabilities* are the optional mechanisms the member's build implements, as it advertises them (see [Upgrading](#upgrading)) - empty for a build older than the field. They are listed where known first-hand: for every member on the master, which every member's ALIVE reaches, and for itself and the master on a member. Only peers within the current election window are shown.
 
 Parameters: *none*
 
@@ -530,6 +530,7 @@ opensips-cli -x mi clusterer_controller:list_members
                 "node_id": 1,
                 "status": "master",
                 "maintenance": "none",
+                "capabilities": [ "probe", "maint_set", "maint_full" ],
                 "bin_sockets": [ "bin:10.22.23.191:3857" ]
             },
             {
@@ -537,6 +538,7 @@ opensips-cli -x mi clusterer_controller:list_members
                 "node_id": 2,
                 "status": "backup",
                 "maintenance": "none",
+                "capabilities": [ "probe", "maint_set", "maint_full" ],
                 "bin_sockets": [ "bin:10.22.23.193:3857" ]
             },
             {
@@ -544,6 +546,7 @@ opensips-cli -x mi clusterer_controller:list_members
                 "node_id": 3,
                 "status": "member",
                 "maintenance": "none",
+                "capabilities": [ "probe", "maint_set", "maint_full" ],
                 "bin_sockets": [ "bin:10.22.23.192:3857" ]
             }
         ]
@@ -605,10 +608,13 @@ opensips-cli -x mi clusterer_controller:list_config
         "election_holds": 0,
         "rcvbuf_bytes": 212992,
         "rx_kernel_drops": 0,
+        "cluster_capabilities": [ "probe", "maint_set", "maint_full" ],
         "foreign_clusters": []
     }
 ]
 ```
+
+*cluster_capabilities* are the capabilities every live member shares, as the master works them out and relays them in its MASTER_ALIVE - during a rolling upgrade a mechanism appears here once the last node without it is gone (see [Upgrading](#upgrading)).
 
 #### clusterer_controller:shtag_force
 
@@ -643,7 +649,7 @@ Put this node - or, with *node_id*, any member - in or out of maintenance, e.g. 
 
 At *full*, every other node also disables it in its *clusterer* (as *clusterer:set_status* would), so they take their link to it down and stop sending it replication; leaving *full* enables it again and *clusterer* resumes pinging it. A node never disables itself - its peers do.
 
-The state is announced by the node itself and relayed by the master, so every node agrees on it and it survives a master failover. A request for another node is multicast to the cluster and that node applies it to itself, so it takes effect only while that node is reachable. The state is runtime-only: a restart brings the node back in service.
+The state is announced by the node itself and relayed by the master, so every node agrees on it and it survives a master failover. A request for another node is multicast to the cluster and that node applies it to itself, so it takes effect only while that node is reachable. During a rolling upgrade the command refuses (409) a request for another node, and the *full* level, while not every live member's build supports it; on the master the reason names a member that lacks it (see [Upgrading](#upgrading)). The state is runtime-only: a restart brings the node back in service.
 
 Parameters:
 
@@ -1252,7 +1258,15 @@ cluster as a whole.
 
 Upgrade a cluster **as a whole**: stop every node, upgrade them, start them again. A rolling upgrade across a wire-version change does not work. While both versions run, each side sees the other as absent, both sides elect a master, and with *manage_shtags=1* both masters hold the active sharing tags.
 
-Within one wire version, builds are kept compatible in both directions, so they can be rolled node by node: a new field is only ever appended to the end of a packet and every reader checks the length before reading it (an older build ignores what it does not know, a newer one treats a missing field as its default), and a new packet type is simply dropped by a build that does not know it, with a warning at most once a minute. Every mechanism that relies on a new type degrades to the older behaviour when the peer does not answer - the probe a member sends before electing (*election_holds*), for example, falls back to electing as before. A change that alters an existing field, or that a node must not act without, needs a new wire version.
+Within one wire version, builds are kept compatible in both directions, so they can be rolled node by node: a new field is only ever appended to the end of a packet and every reader checks the length before reading it (an older build ignores what it does not know, a newer one treats a missing field as its default), and a new packet type is simply dropped by a build that does not know it, with a warning at most once a minute.
+
+Each node also advertises on its ALIVE which optional mechanisms its build implements - its **capabilities** (a build older than the field advertises none). The master, which every member's ALIVE reaches, works out what every live member shares and relays it in its MASTER_ALIVE (an older master relays nothing, which reads as none), and a mechanism that needs the other members' part is used only while every live member has it:
+
+- *probe* - a member that stops hearing the master asks the others whether they still hear it (*election_holds*) only while every live member's build answers; otherwise it elects at once, as before the question existed, instead of waiting for answers that will not come;
+- *maint_set* - *clusterer_controller:maintenance* with a *node_id* is refused while not every live member's build can apply it;
+- *maint_full* - the *full* maintenance level is refused while not every live member acts on it, since otherwise replication would stop towards the node from only some of them.
+
+*clusterer_controller:list_config* shows the *cluster_capabilities* every live member shares, and *clusterer_controller:list_members* on the master each member's *capabilities*: during a rolling upgrade a mechanism becomes available as soon as the last node without it is gone. A change that alters an existing field, or that a node must not act without, needs a new wire version.
 
 ### Limitations
 
@@ -1442,13 +1456,13 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, and maintenance (a backup and then the master taken out of election and tags, and back). It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, and a member on the previous build. It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
-NEW=/usr/local OLD=/opt/opensips-wire1 ./test/netns_tests.sh
+NEW=/usr/local OLD=/opt/opensips-wire1 PREV=/opt/opensips-prev ./test/netns_tests.sh
 ```
 
-*NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, is optional and only its test is skipped without it. Every cut a test makes with iptables must show dropped packets before it is removed, so a test cannot pass on a fault that never happened. To run two suites at once, start each under its own *unshare -n* with a distinct *RIG_NS_PREFIX* and *RIG_DIR*.
+*NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, and *PREV*, a build of this wire version from before the capability bits, are optional - only the test that needs one is skipped without it. Every cut a test makes with iptables must show dropped packets before it is removed, so a test cannot pass on a fault that never happened. To run two suites at once, start each under its own *unshare -n* with a distinct *RIG_NS_PREFIX* and *RIG_DIR*.
 
 <!-- CONTRIBUTORS -->
 
