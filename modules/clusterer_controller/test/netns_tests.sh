@@ -532,6 +532,37 @@ sleep 16
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "healed: one master, named by all; the old master holds no released state" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && [ "$(cfgval $MN 741 tag_released)" = 0 ] && echo 1 || echo 0) "$MS released=$(cfgval $MN 741 tag_released)"
 
+echo "=== T25 maintenance of another node, and the full level ==="
+# cl_state <node> <node_id> -> enabled|disabled: that node as <node>'s clusterer has it
+cl_state() { mi $1 clusterer:list | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result",{})
+except Exception: sys.exit()
+for c in d.get("Clusters",[]):
+    if c.get("cluster_id")==741:
+        for n in c.get("Nodes",[]):
+            if n.get("node_id")==int(sys.argv[1]): print(n.get("state"))' $2; }
+MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 1 2 3 4; do [ $x != $MN ] && break; done
+for y in 1 2 3 4; do [ $y != $MN ] && [ $y != $x ] && break; done
+XID=$(nid $y $x); XIP=$(ip4 $x)
+echo "    from n$y: n$x ($XIP, node_id $XID) into full; master $MIP"
+for i in 1 2 3 4; do eval F$i=$(wc -l < $R/n$i.log); done
+mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=${XID:-0} >/dev/null; sleep 4
+V=""; for i in 1 2 3 4; do V="$V $(maint $i $XIP)"; done
+check "every node lists n$x as full, asked from n$y" $([ "$(echo $V | tr ' ' '\n' | sort -u)" = full ] && echo 1 || echo 0) "$V"
+check "n$x applied it to itself on n$y's request" $(eval m=\$F$x; since $x $m | grep -aq "asks this node into maintenance state full" && echo 1 || echo 0) ""
+D=""; for i in 1 2 3 4; do [ $i = $x ] && continue; D="$D $(cl_state $i $XID)"; done
+check "the other nodes disabled n$x in their clusterer" $([ "$(echo $D | tr ' ' '\n' | sort -u)" = disabled ] && echo 1 || echo 0) "$D"
+RO=""; for i in 1 2 3 4; do RO="$RO $(role_of $i $XIP)"; done
+check "nobody names n$x master or backup" $(echo "$RO" | grep -q 'master\|backup' && echo 0 || echo 1) "$RO"
+mi $y clusterer_controller:maintenance cluster_id=741 state=none node_id=${XID:-0} >/dev/null; sleep 4
+V=""; for i in 1 2 3 4; do V="$V $(maint $i $XIP)"; done
+check "back in service on every node" $([ "$(echo $V | tr ' ' '\n' | sort -u)" = none ] && echo 1 || echo 0) "$V"
+D=""; for i in 1 2 3 4; do [ $i = $x ] && continue; D="$D $(cl_state $i $XID)"; done
+check "the other nodes enabled n$x again" $([ "$(echo $D | tr ' ' '\n' | sort -u)" = enabled ] && echo 1 || echo 0) "$D"
+check "a node_id outside the cluster is refused" $(mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=999 | grep -q "not a member" && echo 1 || echo 0) "$(mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=999 | cut -c1-100)"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"
