@@ -295,18 +295,24 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 			LM_DBG("retransmission_handler : request resending"
 				" (t=%p, %.9s ... )\n", r_buf->my_T, r_buf->buffer.s);
 			set_t(r_buf->my_T);
-			if (SEND_BUFFER( r_buf )==0) {
-				if ( has_tran_tmcbs( r_buf->my_T, TMCB_MSG_SENT_OUT) ) {
-					set_extra_tmcb_params( &r_buf->buffer, &r_buf->dst);
+			{
+				str sent_buffer = STR_NULL;
+				int observe_send = has_tran_tmcbs(r_buf->my_T,
+					TMCB_MSG_SENT_OUT);
+				if (SEND_BUFFER_CAPTURE(r_buf,
+						observe_send ? &sent_buffer : NULL) == 0 &&
+						observe_send) {
+					set_extra_tmcb_params(&sent_buffer, &r_buf->dst);
 					run_trans_callbacks( TMCB_MSG_SENT_OUT, r_buf->my_T,
 						r_buf->my_T->uas.request, 0, 0);
+					release_sent_buffer(&sent_buffer, r_buf->buffer.s);
 				}
+			}
 			/*} else {
 				reset_timer( &r_buf->fr_timer );
 				fake_reply(r_buf->my_T, r_buf->branch, 503 );
 				return;
 			} */
-			}
 
 			set_t(T_UNDEFINED);
 			switch(r_buf->retr_list) {
@@ -1134,6 +1140,7 @@ void timer_routine(unsigned int ticks , void *set)
 
 
 
+
 void utimer_routine(utime_t uticks , void *set)
 {
 	struct timer_link *tl, *tmp_tl;
@@ -1166,4 +1173,3 @@ void utimer_routine(utime_t uticks , void *set)
 	    "now at %d%%+ capacity, inuse_transactions: %lu", (int)(TM_TIMER_LOAD_WARN*100),
 	    (unsigned long)get_stat_val(tm_trans_inuse));
 }
-
