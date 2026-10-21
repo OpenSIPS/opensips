@@ -304,7 +304,9 @@ Parameters
 
 - *name* (string) - the name of the statistic
 *type* (string, optional) - the type of the
-statistic (i.e. *counter* or *gauge*).
+statistic (i.e. *counter* or *gauge*). You may also use *histogram*
+when exporting pre-aggregated histogram samples using
+[prometheus_push_histogram_stat()](#prometheus_push_histogram_statvalue-suffix-label_name-label_value).
 If missing the statistic is declared as *gauge*.
 *help* (string, optional) - an optional value
 used to describe the statistic meaning. If missing, it is not used.
@@ -380,6 +382,37 @@ route[my_custom_prometheus_route] {
 }
 ```
 
+
+#### prometheus_push_histogram_stat(value, suffix, [label_name], [label_value])
+
+Pushes one pre-aggregated Prometheus histogram series for the family most
+recently declared by `prometheus_declare_stat(name, "histogram")` in the
+configured scrape script route. Supported suffixes are `_bucket`,
+`_sum` and `_count`. For bucket series, provide the `le` label.
+You can also supply an entire label block using the raw
+`label_name` argument, like `{le="50",gateway="gw1"}`.
+
+This function **does not observe latencies or aggregate buckets**. It
+serializes integer values already maintained by the caller. Histogram
+buckets must be cumulative, include a `+Inf` bucket, and the
+`_count` value must equal the final bucket count. Use the same
+unit for `_sum` and bucket bounds.
+
+```opensips
+route[my_custom_prometheus_route] {
+    prometheus_declare_stat("opensips_invite_latency_ms", "histogram",
+        "Aggregated INVITE processing latency in milliseconds");
+    prometheus_push_histogram_stat($stat(invite_le_50), "_bucket", "le", "50");
+    prometheus_push_histogram_stat($stat(invite_le_100), "_bucket", "le", "100");
+    prometheus_push_histogram_stat($stat(invite_total), "_bucket", "le", "+Inf");
+    prometheus_push_histogram_stat($stat(invite_sum_ms), "_sum");
+    prometheus_push_histogram_stat($stat(invite_total), "_count");
+}
+```
+
+The example assumes that the referenced statistics are already updated by
+the deployment. This is a formatting helper, not a built-in latency
+Histogram recorder.
 
 ### Examples
 
