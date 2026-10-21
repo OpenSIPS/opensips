@@ -1553,7 +1553,10 @@ reports the reclaim state: *slots_total*, *slots_free_warm*
 (retired, resident), *slots_free_cold* (retired, punched out),
 *chunks_strand* (slots held by classes with nothing live - the
 class-mix ratchet), *chunks_retired*, *flush_broadcasts* (rounds of
-asking every process to send its private cells home), *pages* /
+asking every process to send its private cells home),
+*flush_interval_s* (seconds until the next round may run: it doubles,
+up to 600, while a round leaves as many chunks partly free, since
+those then hold live records rather than idle cells), *pages* /
 *pages_freed*, *released_bytes* (cumulative give-back),
 *cold_bytes*, *reclaim_ticks*, *last_carve_age_s*, and *classes* =
 "size:slots/peak/cells_not_home" per class in use (cells not home are

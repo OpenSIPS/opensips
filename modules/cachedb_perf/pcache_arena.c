@@ -105,6 +105,7 @@ static const unsigned int cell_sizes[PCACHE_NCLASSES] = {
 #define PCACHE_GROUP_SLOTS    8             /* slots per 2 MB huge page */
 #define PCACHE_HPS            (PCACHE_SLOT * PCACHE_GROUP_SLOTS)
 #define PCACHE_REFILL_BATCH   32            /* cells pulled home per refill */
+#define PCACHE_FLUSH_IVL_MAX  600           /* ticks: the slowest flush backoff */
 #define PCACHE_PRIVATE_MAX    256           /* private stack size that triggers */
 #define PCACHE_DONATE         128           /*   sending this many cells home  */
 #define PCACHE_CLS_FREE       0xffffffffU   /* chunk header: the slot is free */
@@ -171,6 +172,8 @@ typedef struct pcache_arena {
 	unsigned long chunks_retired;           /* cumulative */
 	unsigned long flush_broadcasts;         /* flush_private IPC rounds */
 	unsigned int flush_tick;                /* tick of the last broadcast */
+	unsigned int flush_ivl;                 /* ticks to the next broadcast */
+	unsigned int flush_lingering;           /* lingering at the last one */
 	unsigned long pages_freed;              /* cumulative */
 	unsigned long released_bytes;           /* cumulative give-back */
 	unsigned long cold_bytes;               /* currently punched out */
@@ -1079,6 +1082,8 @@ void pcache_arena_reclaim_tick(void)
 {
 	pcache_chunk_t *ch, *next, *head;
 	unsigned int kept, nfree, lingering = 0;
+	unsigned int base_ivl = pcache_reclaim_quiet_s > 0 ?
+		(unsigned int)pcache_reclaim_quiet_s : 1;
 	int c;
 
 	if (backing != PCACHE_BACKING_OWN)
@@ -1111,8 +1116,20 @@ void pcache_arena_reclaim_tick(void)
 			chunk_retire(ch);
 	}
 	giveback_tick();
-	if (lingering &&
-	    arena->tick - arena->flush_tick >= (unsigned int)pcache_reclaim_quiet_s) {
+	if (!lingering || arena->flush_ivl < base_ivl) {
+		arena->flush_ivl = base_ivl;
+		if (!lingering)
+			arena->flush_lingering = 0;     /* the next episode starts fresh */
+	}
+	if (lingering && arena->tick - arena->flush_tick >= arena->flush_ivl) {
+		/* a flush that left as many chunks lingering freed nothing:
+		 * what pins them is live records, not hoards - ask less often */
+		if (arena->flush_lingering && lingering >= arena->flush_lingering)
+			arena->flush_ivl = arena->flush_ivl > PCACHE_FLUSH_IVL_MAX / 2 ?
+				PCACHE_FLUSH_IVL_MAX : arena->flush_ivl * 2;
+		else
+			arena->flush_ivl = base_ivl;
+		arena->flush_lingering = lingering;
 		arena->flush_tick = arena->tick;
 		arena->flush_broadcasts++;
 		lock_release(&arena->lock);
@@ -1180,6 +1197,7 @@ int pcache_arena_mi(mi_item_t *aobj)
 	     add_mi_number(aobj, MI_SSTR("chunks_strand"), strand) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("chunks_retired"), arena->chunks_retired) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("flush_broadcasts"), arena->flush_broadcasts) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("flush_interval_s"), arena->flush_ivl) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("pages"), arena->npages) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("pages_freed"), arena->pages_freed) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("released_bytes"), arena->released_bytes) < 0 ||
