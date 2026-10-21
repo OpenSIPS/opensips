@@ -12,7 +12,7 @@ The *clusterer_controller* module provides automatic peer discovery and topology
 
 When a cluster is registered as controller-managed via *modparam("clusterer", "cluster_options", "cluster_id=N, use_controller=1")*, the *clusterer_controller* module takes over all topology management: it allocates unique node IDs, discovers peer BIN socket addresses, and calls the clusterer internal API to add or remove nodes as they join or leave the cluster.
 
-By default (*manage_shtags=1*), the module also provides fully automatic sharing tag failover. The controller master node is the single decision point for which node holds the active tag — no event routes, MI commands, or *seed_fallback_interval* configuration is needed. Sharing tags are forced to backup at startup regardless of the *=active* config value, and the active tag is claimed by the controller master automatically when the cluster forms or when the active node departs. An operator can override this automatic allocation and pin the active tag to a chosen node with the *cl_ctr_shtag_force* MI command, reverting to automatic allocation with *cl_ctr_shtag_auto*.
+By default (*manage_shtags=1*), the module also provides fully automatic sharing tag failover. The controller master node is the single decision point for which node holds the active tag — no event routes, MI commands, or *seed_fallback_interval* configuration is needed. Sharing tags are forced to backup at startup regardless of the *=active* config value, and the active tag is claimed by the controller master automatically when the cluster forms or when the active node departs. An operator can override this automatic allocation and pin the active tag to a chosen node with the *clusterer_controller:shtag_force* MI command, reverting to automatic allocation with *clusterer_controller:shtag_auto*.
 
 The minimal configuration per node is a single multicast group address. No IP addresses, node IDs, BIN URLs, or sharing tag management scripts need to be hardcoded or maintained. Any number of nodes can join or leave without any configuration change on the remaining nodes.
 
@@ -38,7 +38,7 @@ The following packet types are defined:
 
 - **ALIVE** — periodic heartbeat sent by every active node every *query_time* seconds. Carries the sender IP, its X25519 public key (so peers can prepare for key agreement) and a small descriptor of the sender's consistency-critical settings (*manage_shtags*, *master_stickiness*, *query_time*) used for configuration-drift detection (see Security Architecture). Encrypted with the session key.
 - **JOIN_REQ** — sent at startup by a new node, carrying its IP, BIN socket list, and Noise message 1 (the initiator's fresh ephemeral public key). Encrypted with the bootstrap key so it can be sent before a session key exists.
-- **MEMBER_LIST** — sent by the master in response to a JOIN_REQ, carrying the member count, the operator-forced sharing-tag holder node_id (0 = automatic), and the full peer IP list so the joining node can participate in elections. Only accepted from the current master (except during initial join when no master is yet known). Each list is stamped with the master's term and its own sequence number, and a member drops a list older than the last one it applied from that master, so a list delayed or reordered on the network cannot undo a newer one (a *cl_ctr_shtag_force*, for example).
+- **MEMBER_LIST** — sent by the master in response to a JOIN_REQ, carrying the member count, the operator-forced sharing-tag holder node_id (0 = automatic), and the full peer IP list so the joining node can participate in elections. Only accepted from the current master (except during initial join when no master is yet known). Each list is stamped with the master's term and its own sequence number, and a member drops a list older than the last one it applied from that master, so a list delayed or reordered on the network cannot undo a newer one (a *clusterer_controller:shtag_force*, for example).
 - **NODE_ASSIGN** — sent by the master to multicast, allocating a node_id and BIN socket record for a joining node, together with the incarnation the master admitted it at. All cluster members receive and apply it.
 - **GOODBYE** — sent on graceful shutdown so peers can remove the node immediately without waiting for timeout. Uses the sender's monotonic sequence counter to prevent forgery.
 - **MASTER_ALIVE** — keepalive sent by the master every 1 second (independent of *query_time*). Used by all peers to detect master failure quickly (3-second timeout). Carries the membership digest, the liveness bitmap and the master's *term*. Encrypted with the session key.
@@ -57,15 +57,15 @@ The *cluster_id* is a number an operator configures, so two separate deployments
 - A node with an established identity refuses every packet stamped with another one, before decrypting it, and logs once a minute who it refused and both identities. Packets with no identity (a node not yet in any cluster, and every JOIN_REQ) always pass, which is how new and restarted nodes join.
 - The identity lives in memory only. A rolling restart keeps it (each restarted node adopts it on rejoining); a whole-cluster restart founds a new one, which is harmless. To keep one identity across whole-cluster restarts, pin it with *uuid=* in the [cluster](#cluster-string) string.
 
-*cl_ctr_list_config* reports the identity, its state (*none*, *provisional*, *established* or *pinned*) and how many foreign packets have been refused.
+*clusterer_controller:list_config* reports the identity, its state (*none*, *provisional*, *established* or *pinned*) and how many foreign packets have been refused.
 
 ### Master Election
 
 Each cluster has three roles: **master** (the active coordinator), **backup** (the standby promoted when the master fails, always the highest-IP non-master) and **member**. The election uses a quantized time window so that all nodes evaluate the same eligible peer set and reach the same result deterministically. No NTP synchronisation between nodes is required for correct election results. Every timeout, election window and purge deadline is measured on the monotonic clock, so a step of the wall clock (NTP correcting a skewed host, an operator setting the date) neither purges live peers nor delays an election.
 
-A node in trouble judges its peers more slowly (a Local Health Multiplier, as in HashiCorp's Lifeguard). It counts its own trouble from 0 to 8 - a stall, its timers running late, the kernel dropping cluster datagrams, a question about the master that nobody answered - one up per event and one down per clean round of ALIVEs, and multiplies its own master watchdog and purge window by that count plus one. A stuttering node therefore stops accusing healthy peers, and is back to normal timeouts within a few rounds of running smoothly again. *cl_ctr_list_config* reports it as *local_health*.
+A node in trouble judges its peers more slowly (a Local Health Multiplier, as in HashiCorp's Lifeguard). It counts its own trouble from 0 to 8 - a stall, its timers running late, the kernel dropping cluster datagrams, a question about the master that nobody answered - one up per event and one down per clean round of ALIVEs, and multiplies its own master watchdog and purge window by that count plus one. A stuttering node therefore stops accusing healthy peers, and is back to normal timeouts within a few rounds of running smoothly again. *clusterer_controller:list_config* reports it as *local_health*.
 
-How long a member waits before suspecting the master is learned, not fixed. Every member receives every MASTER_ALIVE (it is multicast) and keeps a smoothed mean and mean deviation of the gaps between them, as TCP learns a round-trip time; it suspects the master only once a keepalive is later than the mean plus four deviations plus a safety margin. Each suspicion that turns out false - peers still hear the master, or its keepalive arrives while this node is asking - widens the margin by a second, and clean keepalives narrow it again (it halves in about three minutes, so patience learned in one burst of loss lasts to the next). The wait never drops below 3 seconds, so a steady LAN fails over exactly as fast as before, and never exceeds 15 seconds, so a dead master is still found; a jittery or lossy link earns more patience instead of an election. *cl_ctr_list_config* reports the learned values (*master_ka_mean_ms*, *master_ka_dev_ms*, *master_ka_margin_ms*, *master_timeout_ms*, *master_false_suspicions*).
+How long a member waits before suspecting the master is learned, not fixed. Every member receives every MASTER_ALIVE (it is multicast) and keeps a smoothed mean and mean deviation of the gaps between them, as TCP learns a round-trip time; it suspects the master only once a keepalive is later than the mean plus four deviations plus a safety margin. Each suspicion that turns out false - peers still hear the master, or its keepalive arrives while this node is asking - widens the margin by a second, and clean keepalives narrow it again (it halves in about three minutes, so patience learned in one burst of loss lasts to the next). The wait never drops below 3 seconds, so a steady LAN fails over exactly as fast as before, and never exceeds 15 seconds, so a dead master is still found; a jittery or lossy link earns more patience instead of an election. *clusterer_controller:list_config* reports the learned values (*master_ka_mean_ms*, *master_ka_dev_ms*, *master_ka_margin_ms*, *master_timeout_ms*, *master_false_suspicions*).
 
 Silence is only evidence while this node was listening. A node whose own process was paused (SIGSTOP, a VM pause or live migration) or starved of CPU for more than 2 seconds does not judge its peers by the time it lost: on waking it gives every peer a full timeout from that moment, so it neither elects itself nor purges the cluster, and counts the event (*self_stalls*). A master that was gone longer than its members wait before electing (the 3-second keepalive timeout and one probe round) knows they have chosen another: it stands down without announcing itself and follows the master they elected. And a member that stops hearing the master asks the cluster before electing - one multicast question, which every member answers: if anyone (the master included) still heard the master within the last 2 seconds, the fault lies between this node and the master, and the election is held (*election_holds*) for up to 30 seconds instead of splitting the cluster; if two peers (or every peer, when fewer) confirm the silence, it elects at once; and if nobody answers, this node is the likeliest one cut off, so it waits one more watchdog period and asks again before electing itself. A master asked about itself answers that it is alive and logs that a member cannot hear it. A node that does not know these probes ignores them, and the asker then elects as before.
 
@@ -93,7 +93,7 @@ Only the master handles JOIN_REQ packets, allocates node_ids, and sends NODE_ASS
 
 A node raises the term only when something confirmed that the old master is gone - peers confirmed its silence, it said GOODBYE, or it handed over for maintenance - or when it founds a cluster (PreVote, as in Raft). A node that elects itself unconfirmed - nobody answered its question, or there was nobody to ask - is most likely the one cut off, and keeps the current term, so at the heal it cannot outrank the cluster on the term, however long the cut lasted.
 
-Member count deliberately comes before the term: a node whose link flaps promotes itself every time it is cut off, each time with a higher term, and ranking the term first would hand the cluster — and its sharing tags — to the least reliable node in it. The current term is reported by *cl_ctr_list_config*.
+Member count deliberately comes before the term: a node whose link flaps promotes itself every time it is cut off, each time with a higher term, and ranking the term first would hand the cluster — and its sharing tags — to the least reliable node in it. The current term is reported by *clusterer_controller:list_config*.
 
 **Partitions that must not merge.** A master compares the settings and MTU carried in another master's beacon with its own *before* ranking. If they differ — the settings only under *on_config_mismatch=reject*, the MTU always, exactly the checks a JOIN_REQ would meet — neither master merges, whichever would have won, and both log a warning naming the other master and the values that differ. The two partitions remain separate until an operator makes the configuration identical. Should a merge still be refused by the other master's JOIN_REJECT, the merging node does **not** shut down: it is a running member with an intact partition, so it forgets the refusing master, re-elects within its own partition and ignores that master for 60 seconds. Only a node that has not joined anything yet still shuts down on a refusal.
 
@@ -148,13 +148,13 @@ A node joining with the *wrong* password cannot decrypt the JOIN_REJECT (it is e
 
 **Rogue traffic isolation:** a node requests a re-key in response to an undecryptable session-key packet only when that packet came from its current master (a legitimate key rotation). Undecryptable session packets from any other source — for example a wrong-password or malicious node broadcasting on the multicast group — are ignored, so such traffic cannot drive the cluster into a re-JOIN churn.
 
-**Peer table exhaustion defence:** the peer table is bounded at *CL_CTR_MAX_PEERS* (256) entries. When the table is full, the master rejects JOIN_REQ packets from unknown IPs with a JOIN_REJECT response. Known peers that are reconnecting after a restart continue to be admitted regardless of the table count, since they already own a slot. This prevents an attacker with the cluster password from exhausting the peer table by flooding JOIN_REQs from spoofed source addresses. A new address that arrives while the table is full is not added; the node logs one warning a minute and counts each refusal in *peers_refused* (*cl_ctr_list_config*).
+**Peer table exhaustion defence:** the peer table is bounded at *CL_CTR_MAX_PEERS* (256) entries. When the table is full, the master rejects JOIN_REQ packets from unknown IPs with a JOIN_REJECT response. Known peers that are reconnecting after a restart continue to be admitted regardless of the table count, since they already own a slot. This prevents an attacker with the cluster password from exhausting the peer table by flooding JOIN_REQs from spoofed source addresses. A new address that arrives while the table is full is not added; the node logs one warning a minute and counts each refusal in *peers_refused* (*clusterer_controller:list_config*).
 
 **Configuration-consistency enforcement:** all nodes of a cluster must use identical consistency-critical settings (*manage_shtags*, *master_stickiness* and *query_time*); a per-node mismatch would otherwise cause silent, inconsistent failover and sharing-tag behaviour (for example, a master with *manage_shtags=0* would leave no node holding the active tag). Each node advertises these effective settings in its ALIVE heartbeat and in its JOIN_REQ, so mismatches are detected. What happens then is controlled by the *on_config_mismatch* modparam:
 
 - *reject* (default) - when a node tries to join an established cluster (a master is alive) with different settings, the master logs the attempt and returns a JOIN_REJECT; the joining node logs the offending settings and shuts down, so a misconfigured node never joins.
 - *warn* - the node is allowed to join, but any peer that observes a different value logs a single loud *CONFIG MISMATCH* warning (repeated only if the peer's advertised configuration changes, cleared once it matches).
-- *adopt* - the joining node adopts the running cluster's (master's) settings at runtime and continues; the adopted values are what *cl_ctr_list_config* reports.
+- *adopt* - the joining node adopts the running cluster's (master's) settings at runtime and continues; the adopted values are what *clusterer_controller:list_config* reports.
 
 This turns an easy-to-miss misconfiguration into an obvious log line, a refused join, or a self-correction rather than a hard-to-diagnose HA failure.
 
@@ -439,7 +439,7 @@ modparam("clusterer_controller", "cluster",
 
 #### release_tag_when_isolated (integer)
 
-When set to *1*, a master that hears strictly fewer than half of the members it last held steadily, for a whole election window (*query_time* x 3 seconds), gives up the active sharing tag - it stays master for the control plane - and takes it back as soon as it hears a majority again. The rest of the cluster is then elsewhere and has most likely elected a master of its own, and two masters holding the active tag at once (the most common failure of leader election under network partitions) is avoided. The membership it compares against grows at once and shrinks only when a smaller membership of at least half has lasted three rounds (members that left or were purged), so being cut off never lowers it. A two-node cluster never releases: one of two is not fewer than half. *cl_ctr_list_config* reports the setting and *tag_released*.
+When set to *1*, a master that hears strictly fewer than half of the members it last held steadily, for a whole election window (*query_time* x 3 seconds), gives up the active sharing tag - it stays master for the control plane - and takes it back as soon as it hears a majority again. The rest of the cluster is then elsewhere and has most likely elected a master of its own, and two masters holding the active tag at once (the most common failure of leader election under network partitions) is avoided. The membership it compares against grows at once and shrinks only when a smaller membership of at least half has lasted three rounds (members that left or were purged), so being cut off never lowers it. A two-node cluster never releases: one of two is not fewer than half. *clusterer_controller:list_config* reports the setting and *tag_released*.
 
 Off by default: availability first - a master cut off from everyone else keeps serving with the tag. Turn it on where a duplicate active tag is worse than none for the length of a partition.
 
@@ -513,14 +513,14 @@ The reason to want that is cost rather than doubt. A reliable broadcast draws on
 
 ### Exported MI Functions
 
-#### cl_ctr_list_members
+#### clusterer_controller:list_members
 
-List all current cluster members with their node_id, status, maintenance state and BIN socket addresses. Status is one of *master*, *backup* (the standby that will be promoted if the master fails) or *member*; *maintenance* is *none* or *evicted* (see *cl_ctr_maintenance*). Only peers within the current election window are shown.
+List all current cluster members with their node_id, status, maintenance state and BIN socket addresses. Status is one of *master*, *backup* (the standby that will be promoted if the master fails) or *member*; *maintenance* is *none* or *evicted* (see *clusterer_controller:maintenance*). Only peers within the current election window are shown.
 
 Parameters: *none*
 
-```bash title="cl_ctr_list_members usage"
-opensips-cli -x mi cl_ctr_list_members
+```bash title="clusterer_controller:list_members usage"
+opensips-cli -x mi clusterer_controller:list_members
 [
     {
         "cluster_id": 1,
@@ -551,7 +551,7 @@ opensips-cli -x mi cl_ctr_list_members
 ]
 ```
 
-#### cl_ctr_node_info
+#### clusterer_controller:node_info
 
 Return full information for a specific node identified by its allocated node_id.
 
@@ -559,8 +559,8 @@ Parameters:
 
 - *node_id* — the integer node_id to look up.
 
-```bash title="cl_ctr_node_info usage"
-opensips-cli -x mi cl_ctr_node_info node_id=2
+```bash title="clusterer_controller:node_info usage"
+opensips-cli -x mi clusterer_controller:node_info node_id=2
 {
     "node_id": 2,
     "ip": "10.22.23.192",
@@ -570,16 +570,16 @@ opensips-cli -x mi cl_ctr_node_info node_id=2
 }
 ```
 
-#### cl_ctr_list_config
+#### clusterer_controller:list_config
 
 List all configured clusters and their resolved settings — the effective values actually in use after global defaults and per-cluster overrides have been applied. Useful for confirming that a per-cluster *master_stickiness* or *manage_shtags* override took effect. The cluster password is never exposed.
 
-The *shtag_mode* field reports the current sharing-tag allocation policy: *auto* when the active tag follows the master automatically, or *override:<node_id>* when an operator has pinned a fixed holder with *cl_ctr_shtag_force*. *term* is the term of the current mastership (see *Split-brain handling*), *mtu* the cluster-plane MTU this node joined at, and *cluster_uuid*, *cluster_uuid_state* and *foreign_packets* describe the [cluster identity](#cluster-identity). *peer_capacity* is the size of the peer table and *peers_refused* the number of times a new address was turned away because the table was full. *self_stalls* counts the times this node found its own worker had not run for over 2 seconds (the process was paused or starved of CPU) and *self_stall_max_ms* is the longest such gap; *election_holds* counts elections this node held because peers still heard a master it could not; *local_health* is this node's own trouble count (0-8, see below), which multiplies its timeouts; *master_timeout_ms* is how long this node now waits for the master's keepalive before suspecting it, learned from *master_ka_mean_ms* and *master_ka_dev_ms* (the smoothed gap between keepalives and its deviation) plus *master_ka_margin_ms*, which grows with each of *master_false_suspicions*; *terms_refused* counts announced terms refused as implausible jumps; *rcvbuf_bytes* is the receive buffer the kernel granted the cluster socket and *rx_kernel_drops* the datagrams it dropped because that buffer was full. *foreign_clusters* lists the other clusters (by uuid) heard on the group, with the last address heard from, when, and how many packets.
+The *shtag_mode* field reports the current sharing-tag allocation policy: *auto* when the active tag follows the master automatically, or *override:<node_id>* when an operator has pinned a fixed holder with *clusterer_controller:shtag_force*. *term* is the term of the current mastership (see *Split-brain handling*), *mtu* the cluster-plane MTU this node joined at, and *cluster_uuid*, *cluster_uuid_state* and *foreign_packets* describe the [cluster identity](#cluster-identity). *peer_capacity* is the size of the peer table and *peers_refused* the number of times a new address was turned away because the table was full. *self_stalls* counts the times this node found its own worker had not run for over 2 seconds (the process was paused or starved of CPU) and *self_stall_max_ms* is the longest such gap; *election_holds* counts elections this node held because peers still heard a master it could not; *local_health* is this node's own trouble count (0-8, see below), which multiplies its timeouts; *master_timeout_ms* is how long this node now waits for the master's keepalive before suspecting it, learned from *master_ka_mean_ms* and *master_ka_dev_ms* (the smoothed gap between keepalives and its deviation) plus *master_ka_margin_ms*, which grows with each of *master_false_suspicions*; *terms_refused* counts announced terms refused as implausible jumps; *rcvbuf_bytes* is the receive buffer the kernel granted the cluster socket and *rx_kernel_drops* the datagrams it dropped because that buffer was full. *foreign_clusters* lists the other clusters (by uuid) heard on the group, with the last address heard from, when, and how many packets.
 
 Parameters: *none*
 
-```bash title="cl_ctr_list_config usage"
-opensips-cli -x mi cl_ctr_list_config
+```bash title="clusterer_controller:list_config usage"
+opensips-cli -x mi clusterer_controller:list_config
 [
     {
         "cluster_id": 1,
@@ -610,36 +610,36 @@ opensips-cli -x mi cl_ctr_list_config
 ]
 ```
 
-#### cl_ctr_shtag_force
+#### clusterer_controller:shtag_force
 
 Force a specific node to hold the active sharing tag, overriding the normal master-driven allocation. This is useful for planned maintenance or manual traffic steering: the chosen node becomes the sole active shtag holder cluster-wide while every other node — including the master — is put into backup for that tag.
 
-The command must be issued on the current *master* (it returns an error otherwise). The override is propagated to all members in the MEMBER_LIST and *survives master fail-over*: a newly elected master keeps honouring it rather than reclaiming the tag. Automatic allocation stays suspended until *cl_ctr_shtag_auto* is called. If the forced node leaves the cluster or times out, the override is cleared automatically and automatic allocation resumes.
+The command must be issued on the current *master* (it returns an error otherwise). The override is propagated to all members in the MEMBER_LIST and *survives master fail-over*: a newly elected master keeps honouring it rather than reclaiming the tag. Automatic allocation stays suspended until *clusterer_controller:shtag_auto* is called. If the forced node leaves the cluster or times out, the override is cleared automatically and automatic allocation resumes.
 
 Parameters:
 
 - *cluster_id* — the target cluster.
 - *node_id* — the node that must hold the active tag; it must be a current member of the cluster.
 
-```bash title="cl_ctr_shtag_force usage"
-opensips-cli -x mi cl_ctr_shtag_force cluster_id=1 node_id=3
+```bash title="clusterer_controller:shtag_force usage"
+opensips-cli -x mi clusterer_controller:shtag_force cluster_id=1 node_id=3
 ```
 
-#### cl_ctr_shtag_auto
+#### clusterer_controller:shtag_auto
 
-Clear any override set by *cl_ctr_shtag_force* and resume automatic, master-driven sharing-tag allocation — the active tag follows the master again. Must be issued on the current master.
+Clear any override set by *clusterer_controller:shtag_force* and resume automatic, master-driven sharing-tag allocation — the active tag follows the master again. Must be issued on the current master.
 
 Parameters:
 
 - *cluster_id* — the target cluster.
 
-```bash title="cl_ctr_shtag_auto usage"
-opensips-cli -x mi cl_ctr_shtag_auto cluster_id=1
+```bash title="clusterer_controller:shtag_auto usage"
+opensips-cli -x mi clusterer_controller:shtag_auto cluster_id=1
 ```
 
-#### cl_ctr_maintenance
+#### clusterer_controller:maintenance
 
-Put THIS node in or out of maintenance, e.g. for a rolling upgrade. A node in maintenance (*evicted*) stays a member - it keeps its node_id, its BIN links and its place in *cl_ctr_list_members* - but it is never master or backup and holds no sharing tag. If it is the master, it hands over at once: its last keepalive carries the new state, and every member elects the successor as soon as it reads it, without waiting for the master watchdog. A *cl_ctr_shtag_force* pin is refused for a node in maintenance, and a pin already on a node that goes into maintenance is cleared (automatic allocation resumes). Only when every node in the election window is in maintenance does the cluster take one of them as master anyway - a cluster must have a master.
+Put THIS node in or out of maintenance, e.g. for a rolling upgrade. A node in maintenance (*evicted*) stays a member - it keeps its node_id, its BIN links and its place in *clusterer_controller:list_members* - but it is never master or backup and holds no sharing tag. If it is the master, it hands over at once: its last keepalive carries the new state, and every member elects the successor as soon as it reads it, without waiting for the master watchdog. A *clusterer_controller:shtag_force* pin is refused for a node in maintenance, and a pin already on a node that goes into maintenance is cleared (automatic allocation resumes). Only when every node in the election window is in maintenance does the cluster take one of them as master anyway - a cluster must have a master.
 
 The state is announced by the node itself and relayed by the master, so every node agrees on it and it survives a master failover. It is runtime-only: a restart brings the node back in service.
 
@@ -648,9 +648,9 @@ Parameters:
 - *cluster_id* — the target cluster.
 - *state* — *evicted* (or *on*) to enter maintenance, *none* (or *off*) to leave it.
 
-```bash title="cl_ctr_maintenance usage"
-opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=evicted
-opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=none
+```bash title="clusterer_controller:maintenance usage"
+opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=evicted
+opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=none
 ```
 
 ### Exported Pseudo-Variables
@@ -666,9 +666,9 @@ Each variable optionally takes a cluster id as its argument, e.g. *$cl_ctr_role(
 - **$cl_ctr_node_id** — this node's *node_id* within that cluster (NULL until assigned). A node may hold different ids in different clusters.
 - **$cl_ctr_my_ip** — the controller identity IP of this node.
 - **$cl_ctr_members** — number of live members currently in the cluster.
-- **$cl_ctr_shtag_mode** — *auto* (tags follow the elected master) or *forced* (an operator pinned them with *cl_ctr_shtag_force*).
+- **$cl_ctr_shtag_mode** — *auto* (tags follow the elected master) or *forced* (an operator pinned them with *clusterer_controller:shtag_force*).
 - **$cl_ctr_forced_node** — the *node_id* the active sharing tag is pinned to (NULL when in *auto* mode).
-- **$cl_ctr_maintenance** — this node's maintenance state: *none* or *evicted* (see *cl_ctr_maintenance*).
+- **$cl_ctr_maintenance** — this node's maintenance state: *none* or *evicted* (see *clusterer_controller:maintenance*).
 
 ```opensips title="Using $cl_ctr_* in the script"
 # single cluster: run a periodic job only on the master
@@ -688,7 +688,7 @@ Per-peer lookups take two arguments *(cluster_id, node_id)* and are therefore sc
 #### cl_ctr_set_maintenance(cluster_id, state)
 
 
-Puts this node in or out of maintenance from the routing logic - the script counterpart of the *cl_ctr_maintenance* MI command, with the same effect.
+Puts this node in or out of maintenance from the routing logic - the script counterpart of the *clusterer_controller:maintenance* MI command, with the same effect.
 
 
 Meaning of the parameters is as follows:
@@ -1244,7 +1244,7 @@ Within one wire version, builds are kept compatible in both directions, so they 
 
 The following features are planned for future releases:
 
-- **Node maintenance, the rest of it** — the *evicted* level is implemented (*cl_ctr_maintenance*, *cl_ctr_set_maintenance()*, *$cl_ctr_maintenance*, *E_CL_CTR_MAINTENANCE*). Still planned:
+- **Node maintenance, the rest of it** — the *evicted* level is implemented (*clusterer_controller:maintenance*, *cl_ctr_set_maintenance()*, *$cl_ctr_maintenance*, *E_CL_CTR_MAINTENANCE*). Still planned:
 
   - a *full* level that additionally marks the node down for clusterer consumers, so peers stop routing replication work to it (needs a clusterer hook to set a node's state);
   - setting another node's state from any node (today a node sets its own);

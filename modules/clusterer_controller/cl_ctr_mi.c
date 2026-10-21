@@ -43,60 +43,60 @@ static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
 
 const mi_export_t mi_cmds[] = {
     {
-	"cl_ctr_list_members",
+	"list_members",
 	"List all current cluster members with node_id, status and BIN sockets",
 	0, 0,
 	{
 	    {mi_cl_ctr_members, {0}},
 	    {EMPTY_MI_RECIPE}
-	}, {0}
+	}, {"cl_ctr_list_members", 0}
     },
     {
-	"cl_ctr_node_info",
+	"node_info",
 	"Return full info for a node_id across all clusters",
 	0, 0,
 	{
 	    {mi_cl_ctr_node_info, {"node_id", 0}},
 	    {EMPTY_MI_RECIPE}
-	}, {0}
+	}, {"cl_ctr_node_info", 0}
     },
     {
-	"cl_ctr_list_config",
+	"list_config",
 	"List all configured clusters and their resolved settings",
 	0, 0,
 	{
 	    {mi_cl_ctr_config, {0}},
 	    {EMPTY_MI_RECIPE}
-	}, {0}
+	}, {"cl_ctr_list_config", 0}
     },
     {
-	"cl_ctr_maintenance",
+	"maintenance",
 	"Put THIS node in or out of maintenance (state: evicted|none): it stays "
 	"a member but is never master or backup and holds no sharing tag",
 	0, 0,
 	{
 	    {mi_cl_ctr_maintenance, {"cluster_id", "state", 0}},
 	    {EMPTY_MI_RECIPE}
-	}, {0}
+	}, {"cl_ctr_maintenance", 0}
     },
     {
-	"cl_ctr_shtag_force",
+	"shtag_force",
 	"Force a node to hold the active sharing tag (master only); "
-	"suspends automatic allocation until cl_ctr_shtag_auto",
+	"suspends automatic allocation until clusterer_controller:shtag_auto",
 	0, 0,
 	{
 	    {mi_cl_ctr_shtag_force, {"cluster_id", "node_id", 0}},
 	    {EMPTY_MI_RECIPE}
-	}, {0}
+	}, {"cl_ctr_shtag_force", 0}
     },
     {
-	"cl_ctr_shtag_auto",
+	"shtag_auto",
 	"Resume automatic master-driven sharing-tag allocation (master only)",
 	0, 0,
 	{
 	    {mi_cl_ctr_shtag_auto, {"cluster_id", 0}},
 	    {EMPTY_MI_RECIPE}
-	}, {0}
+	}, {"cl_ctr_shtag_auto", 0}
     },
     {EMPTY_MI_EXPORT}
 };
@@ -108,7 +108,7 @@ const mi_export_t mi_cmds[] = {
 /**
  * mi_cl_ctr_members() - list active cluster members with their role.
  *
- *   opensips-cli -x mi cl_ctr_list_members
+ *   opensips-cli -x mi clusterer_controller:list_members
  *
  *   [
  *     {"ip": "10.0.0.3", "status": "master"},
@@ -198,7 +198,7 @@ error:
 /**
  * mi_cl_ctr_node_info() - return full info for a specific node_id.
  *
- *   opensips-cli -x mi cl_ctr_node_info node_id=2
+ *   opensips-cli -x mi clusterer_controller:node_info node_id=2
  */
 static mi_response_t *mi_cl_ctr_node_info(const mi_params_t *params,
                                       struct mi_handler *hdl)
@@ -269,7 +269,7 @@ error_node:
 /**
  * mi_cl_ctr_config() - list all configured clusters and their resolved settings.
  *
- *   opensips-cli -x mi cl_ctr_list_config
+ *   opensips-cli -x mi clusterer_controller:list_config
  *
  * Reports per cluster: id, multicast endpoint, master_stickiness,
  * manage_shtags, query_time, this node's BIN socket and current member count.
@@ -360,7 +360,7 @@ static mi_response_t *mi_cl_ctr_config(const mi_params_t *params,
 	    }
 	    /* Current shtag allocation mode: "auto" = master-driven automatic
 	     * allocation; "override:<node_id>" = operator forced a fixed holder
-	     * via cl_ctr_shtag_force.  ("manual" is reserved for the future
+	     * via clusterer_controller:shtag_force.  ("manual" is reserved for the future
 	     * maintenance mode.)                                              */
 	    if (forced)
 		snprintf(shtag_mode, sizeof(shtag_mode), "override:%u", forced);
@@ -475,10 +475,10 @@ static cl_ctr_cluster_t *cl_ctr_mi_find_cluster(int cluster_id)
 /**
  * mi_cl_ctr_shtag_force() - force a specific node to hold the active sharing tag.
  *
- *   opensips-cli -x mi cl_ctr_shtag_force cluster_id=1 node_id=2
+ *   opensips-cli -x mi clusterer_controller:shtag_force cluster_id=1 node_id=2
  *
  * Must be issued on the current master.  Suspends automatic (master-driven)
- * shtag allocation until cl_ctr_shtag_auto is called; the chosen node becomes the
+ * shtag allocation until clusterer_controller:shtag_auto is called; the chosen node becomes the
  * sole active shtag holder cluster-wide.  The override is propagated to every
  * member via the MEMBER_LIST and survives master fail-over, but is cleared
  * automatically if the forced node leaves or times out.
@@ -486,8 +486,8 @@ static cl_ctr_cluster_t *cl_ctr_mi_find_cluster(int cluster_id)
 /*
  * mi_cl_ctr_maintenance() - put THIS node in or out of maintenance.
  *
- *   opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=evicted
- *   opensips-cli -x mi cl_ctr_maintenance cluster_id=1 state=none
+ *   opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=evicted
+ *   opensips-cli -x mi clusterer_controller:maintenance cluster_id=1 state=none
  */
 static mi_response_t *mi_cl_ctr_maintenance(const mi_params_t *params,
                                             struct mi_handler *hdl)
@@ -555,7 +555,7 @@ static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
 
     if (!i_am_master)
 	return init_mi_error(409,
-	        MI_SSTR("not the master - issue cl_ctr_shtag_force on the master node"));
+	        MI_SSTR("not the master - issue clusterer_controller:shtag_force on the master node"));
     if (!found)
 	return init_mi_error(404, MI_SSTR("node_id not a member of this cluster"));
     if (in_maint)
@@ -573,9 +573,9 @@ static mi_response_t *mi_cl_ctr_shtag_force(const mi_params_t *params,
 /**
  * mi_cl_ctr_shtag_auto() - resume automatic (master-driven) shtag allocation.
  *
- *   opensips-cli -x mi cl_ctr_shtag_auto cluster_id=1
+ *   opensips-cli -x mi clusterer_controller:shtag_auto cluster_id=1
  *
- * Clears any operator override set by cl_ctr_shtag_force so the active shtag
+ * Clears any operator override set by clusterer_controller:shtag_force so the active shtag
  * follows the master again.  Must be issued on the current master.
  */
 static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
@@ -601,7 +601,7 @@ static mi_response_t *mi_cl_ctr_shtag_auto(const mi_params_t *params,
 
     if (!i_am_master)
 	return init_mi_error(409,
-	        MI_SSTR("not the master - issue cl_ctr_shtag_auto on the master node"));
+	        MI_SSTR("not the master - issue clusterer_controller:shtag_auto on the master node"));
 
     if (proc_no >= 0)
 	ipc_send_rpc(proc_no, cl_ctr_rpc_apply_shtags, cl);

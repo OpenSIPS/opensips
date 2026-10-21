@@ -377,7 +377,7 @@ int cl_ctr_ip_beats_master_locked(unsigned int ip_num, cl_ctr_cluster_t *cl)
  * is safe both inside and outside cl->peers->lock (clctl uses its own locks).
  *
  *   forced != 0 : the operator pinned node_id 'forced' as the active holder
- *                 (cl_ctr_shtag_force).  Only that node activates; all others go
+ *                 (clusterer_controller:shtag_force).  Only that node activates; all others go
  *                 to backup.  Automatic allocation is suspended.
  *   forced == 0 : automatic mode - the current master is the active holder.
  */

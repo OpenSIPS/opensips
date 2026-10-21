@@ -224,7 +224,7 @@ void cl_ctr_upsert_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl)
     if (cl->peers->count >= CL_CTR_MAX_PEERS) {
 	/* Counted always, said once a minute: this runs per packet, and a
 	 * flood of new sources (or a misconfiguration) must not turn a full
-	 * table into a full disk.  cl_ctr_list_config reports the count. */
+	 * table into a full disk.  clusterer_controller:list_config reports the count. */
 	cl->peers->peers_refused++;
 	if (cl->peers->peers_refused_warned_at == 0
 	        || now - cl->peers->peers_refused_warned_at >= 60) {

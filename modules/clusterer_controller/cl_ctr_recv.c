@@ -299,7 +299,7 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    time_t now = cl_ctr_now();
 	    cl->peers->foreign_pkts++;
 	    {
-		/* which foreign cluster: remember it for cl_ctr_list_config */
+		/* which foreign cluster: remember it for clusterer_controller:list_config */
 		char ip[INET_ADDRSTRLEN];
 		int  k, slot = -1, oldest = 0, is_new = 0;
 
@@ -334,7 +334,7 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 		    cl_ctr_cid_str(pc, theirs);
 		    LM_ERR("clusterer_controller: [cluster %d] another cluster "
 		           "(uuid %s) is on this group, first heard from %s - "
-		           "see foreign_clusters in cl_ctr_list_config\n",
+		           "see foreign_clusters in clusterer_controller:list_config\n",
 		           cl->cluster_id, theirs, ip);
 		}
 		lock_stop_write(cl->peers->lock);

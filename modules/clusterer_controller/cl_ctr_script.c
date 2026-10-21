@@ -91,7 +91,7 @@ enum cl_ctr_pv_field {
     CL_CTR_PV_MY_IP,       /* controller identity IP                           */
     CL_CTR_PV_MEMBERS,     /* live member count                                */
     CL_CTR_PV_SHTAG_MODE,  /* auto | forced                                    */
-    CL_CTR_PV_FORCED_NODE, /* node pinned by cl_ctr_shtag_force, NULL if auto  */
+    CL_CTR_PV_FORCED_NODE, /* node pinned by clusterer_controller:shtag_force, NULL if auto  */
     CL_CTR_PV_MAINT,       /* this node's maintenance state: none | evicted    */
 };
 

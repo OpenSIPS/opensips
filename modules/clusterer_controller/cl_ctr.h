@@ -164,9 +164,9 @@
  * ---------------------------------------
  * The controller drives clusterer sharing tags: normally the MASTER is the sole
  * active holder and every other node is backup.  An operator can override this
- * with the cl_ctr_shtag_force MI command (pin the active tag to a chosen node) and
- * revert with cl_ctr_shtag_auto; the override is carried in MEMBER_LIST, survives
- * master fail-over, and auto-clears if the forced node departs.  cl_ctr_list_config
+ * with the clusterer_controller:shtag_force MI command (pin the active tag to a chosen node) and
+ * revert with clusterer_controller:shtag_auto; the override is carried in MEMBER_LIST, survives
+ * master fail-over, and auto-clears if the forced node departs.  clusterer_controller:list_config
  * reports the current mode (auto / override:<node_id>).
  *
  * =========================================================================
@@ -265,7 +265,7 @@ static inline long long cl_ctr_now_ms(void)
  * the floor of every later term and make every normal MEMBER_LIST look
  * stale. */
 #define CL_CTR_TERM_JUMP_MAX  1000000u
-/* Foreign clusters remembered for cl_ctr_list_config: other deployments
+/* Foreign clusters remembered for clusterer_controller:list_config: other deployments
  * heard on this group (different cluster uuid), least recently heard
  * evicted.  The uuid comes from the unauthenticated header, so the table is
  * small and the first-sight log is rate-limited. */
@@ -343,7 +343,7 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_PROBE_FRESH_MS       2000  /* "still hears it" = within this    */
 #define CL_CTR_PROBE_HOLD_MAX_S     30    /* longest an election is held for   */
 #define CL_CTR_PROBE_NOT_HEARD      0xFFFFFFFFu
-/* Maintenance state of a node (cl_ctr_maintenance / cl_ctr_set_maintenance):
+/* Maintenance state of a node (clusterer_controller:maintenance / cl_ctr_set_maintenance):
  * a node in maintenance stays a member but is never master or backup and
  * holds no sharing tag.  A node announces its own state in its ALIVE, and
  * the master relays every node's in MASTER_ALIVE. */
@@ -776,8 +776,8 @@ typedef enum {
  * local MI command.
  *
  * It would build on what is already here: the sharing-tag override
- * (cl_ctr_shtag_force / cl_ctr_shtag_auto) would auto-clear when the forced
- * node enters maintenance, and cl_ctr_list_members / cl_ctr_list_config would
+ * (clusterer_controller:shtag_force / clusterer_controller:shtag_auto) would auto-clear when the forced
+ * node enters maintenance, and clusterer_controller:list_members / clusterer_controller:list_config would
  * gain a per-node maintenance indicator alongside the existing shtag_mode.
  */
 
@@ -1391,8 +1391,8 @@ struct cl_ctr_peers_ {
     uint32_t        my_consumer_seq;   /* the consumer plane's own counter */
     /* Sharing-tag override: 0 = automatic (master-driven) allocation; nonzero =
      * an operator has forced this node_id to be the active shtag holder for the
-     * cluster (cl_ctr_shtag_force MI), suspending automatic allocation until
-     * cl_ctr_shtag_auto clears it.  Propagated to all nodes in the MEMBER_LIST.  */
+     * cluster (clusterer_controller:shtag_force MI), suspending automatic allocation until
+     * clusterer_controller:shtag_auto clears it.  Propagated to all nodes in the MEMBER_LIST.  */
     uint16_t        shtag_forced_node_id;
     /* this node's maintenance state as requested (MI or script, any
      * process); the worker applies and announces it (cl_ctr_maint_sync()) */
@@ -1401,7 +1401,7 @@ struct cl_ctr_peers_ {
      * highest term this node has heard from any master; my_term is the term
      * of our own current mastership (0 = not master); master_term and
      * master_count are what the master we follow last announced.  In shm so
-     * cl_ctr_list_config can report them; written by the worker only. */
+     * clusterer_controller:list_config can report them; written by the worker only. */
     uint32_t        term_seen;
     uint32_t        my_term;
     uint32_t        master_term;
@@ -1457,7 +1457,7 @@ struct cl_ctr_peers_ {
      * process can target the worker with ipc_send_rpc().  -1 until set.  */
     int             worker_proc_no;
     /* Effective (possibly adopted) consistency-critical settings, mirrored in
-     * shm so MI handlers in another process (cl_ctr_list_config) report the value
+     * shm so MI handlers in another process (clusterer_controller:list_config) report the value
      * actually in force after an on_config_mismatch=adopt.  The worker keeps
      * these in sync with its own cl->manage_shtags / master_stickiness /
      * query_time.  Initialised from the resolved config at mod_init.        */

@@ -104,7 +104,7 @@ void cl_ctr_adopt_config(cl_ctr_cluster_t *cl, int new_manage, int new_stick,
             cl_ctr_arm_tfd(cl->alive_tfd, query_time, query_time);
     }
 
-    /* Mirror the effective values into shm so cl_ctr_list_config (MI process)
+    /* Mirror the effective values into shm so clusterer_controller:list_config (MI process)
      * reports what is actually in force after adoption. */
     cl->peers->eff_manage_shtags     = new_manage ? 1 : 0;
     cl->peers->eff_master_stickiness = cl->master_stickiness;
@@ -639,7 +639,7 @@ void cl_ctr_handle_member_list(const char *payload, int payload_len,
      * EARLIER mastership can arrive late, and two lists of one mastership can
      * arrive in the wrong order - the replay window accepts a delayed packet
      * it has not seen, so applying it would wind state back (an operator's
-     * cl_ctr_shtag_force undone by the list that preceded it, for one).
+     * clusterer_controller:shtag_force undone by the list that preceded it, for one).
      * Drop a list whose term is older than the master's MASTER_ALIVE term or
      * the last applied list's term, or that is not newer than the last list
      * applied from the same term.  The record is per master and is cleared

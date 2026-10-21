@@ -12,14 +12,14 @@ trap 'tc qdisc del dev v1p root 2>/dev/null; teardown' EXIT
 PASS=0; FAIL=0
 check() { if [ "$2" = 1 ]; then echo "  PASS  $1"; PASS=$((PASS+1)); else echo "  FAIL  $1  ($3)"; FAIL=$((FAIL+1)); fi; }
 members() {  # members <node> <cluster> -> "ip:status:id ..." sorted
-  mi $1 cl_ctr_list_members | python3 -c '
+  mi $1 clusterer_controller:list_members | python3 -c '
 import json,sys
 r=json.load(sys.stdin).get("result",[])
 for c in r:
     if c.get("cluster_id")==int(sys.argv[1]):
         print(" ".join(sorted("%s:%s:%s"%(m["ip"],m["status"],m["node_id"]) for m in c["members"])))' $2
 }
-cfgval() { mi $1 cl_ctr_list_config | python3 -c '
+cfgval() { mi $1 clusterer_controller:list_config | python3 -c '
 import json,sys
 for c in json.load(sys.stdin).get("result",[]):
     if c["cluster_id"]==int(sys.argv[1]): print(c.get(sys.argv[2]))' $2 $3; }
@@ -170,19 +170,19 @@ echo "=== T11 an older MEMBER_LIST arriving late does not undo a newer one ==="
 I1=$(nid 3 1); I2=$(nid 3 2)
 nx 2 iptables -I INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
 tap 3 1.5 $R/t11.json >/dev/null & TP=$!
-sleep 0.3; mi 3 cl_ctr_shtag_force cluster_id=741 node_id=$I1 >/dev/null; wait $TP
+sleep 0.3; mi 3 clusterer_controller:shtag_force cluster_id=741 node_id=$I1 >/dev/null; wait $TP
 CUT11=$(dropped 2 INPUT)
 nx 2 iptables -D INPUT -p udp -s $(ip4 3) --dport $PORT -j DROP
 check "the T11 cut fired ($CUT11 dropped)" $([ "$CUT11" -gt 0 ] && echo 1 || echo 0) ""
 N=$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))))' $R/t11.json)
 check "recorded the master's datagrams, L1 among them ($N)" $([ "${N:-0}" -gt 0 ] && echo 1 || echo 0) "$N"
 check "n2 missed L1 (still auto)" $([ "$(cfgval 2 741 shtag_mode)" = auto ] && echo 1 || echo 0) "$(cfgval 2 741 shtag_mode)"
-mi 3 cl_ctr_shtag_force cluster_id=741 node_id=$I2 >/dev/null; sleep 2
+mi 3 clusterer_controller:shtag_force cluster_id=741 node_id=$I2 >/dev/null; sleep 2
 check "n2 applied L2 (override:$I2)" $([ "$(cfgval 2 741 shtag_mode)" = "override:$I2" ] && echo 1 || echo 0) "$(cfgval 2 741 shtag_mode)"
 replay 3 $R/t11.json >/dev/null; sleep 2
 check "after the late L1: n2 still override:$I2" $([ "$(cfgval 2 741 shtag_mode)" = "override:$I2" ] && echo 1 || echo 0) "$(cfgval 2 741 shtag_mode)"
 check "after the late L1: n1 still override:$I2" $([ "$(cfgval 1 741 shtag_mode)" = "override:$I2" ] && echo 1 || echo 0) "$(cfgval 1 741 shtag_mode)"
-mi 3 cl_ctr_shtag_auto cluster_id=741 >/dev/null; sleep 1
+mi 3 clusterer_controller:shtag_auto cluster_id=741 >/dev/null; sleep 1
 
 echo "=== T12 tm anycast Via cid: absent until the node has an id, then the live id ==="
 # A sink on the bridge records the top Via of every request n4 relays
@@ -309,7 +309,7 @@ check "one master, still $MIP, named by all four" $([ "$(echo $MS | tr ' ' '\n' 
 
 echo "=== T17 maintenance: out of election and tags, handover from the master ==="
 # maint <node> <ip> -> that member's maintenance state as <node> sees it
-maint() { mi $1 cl_ctr_list_members | python3 -c '
+maint() { mi $1 clusterer_controller:list_members | python3 -c '
 import json,sys
 for c in json.load(sys.stdin).get("result",[]):
     if c.get("cluster_id")==741:
@@ -320,24 +320,24 @@ MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)
 BIP=$(members 2 741 | tr ' ' '\n' | grep ':backup:' | cut -d: -f1)
 BN=${BIP##*.}; BN=${BN#1}; MN=${MIP##*.}; MN=${MN#1}
 echo "    master $MIP, backup $BIP"
-mi $BN cl_ctr_maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
+mi $BN clusterer_controller:maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
 V=""; for i in 1 2 3 4; do V="$V $(maint $i $BIP)"; done
 check "every node lists backup $BIP as evicted" $([ "$(echo $V | tr ' ' '\n' | sort -u)" = evicted ] && echo 1 || echo 0) "$V"
 RO=""; for i in 1 2 3 4; do RO="$RO $(role_of $i $BIP)"; done
 check "no node names $BIP backup any more" $(echo "$RO" | grep -q backup && echo 0 || echo 1) "$RO"
 BID=$(nid $MN $BN)
 echo "    $BIP is node_id '$BID' in the master's view: $(members $MN 741)"
-check "pinning the tag on a node in maintenance is refused" $(mi $MN cl_ctr_shtag_force cluster_id=741 node_id=${BID:-0} | grep -q "maintenance" && echo 1 || echo 0) "$(mi $MN cl_ctr_shtag_force cluster_id=741 node_id=${BID:-0} | cut -c1-120)"
+check "pinning the tag on a node in maintenance is refused" $(mi $MN clusterer_controller:shtag_force cluster_id=741 node_id=${BID:-0} | grep -q "maintenance" && echo 1 || echo 0) "$(mi $MN clusterer_controller:shtag_force cluster_id=741 node_id=${BID:-0} | cut -c1-120)"
 check "$BIP lists itself as evicted" $([ "$(maint $BN $BIP)" = evicted ] && echo 1 || echo 0) ""
 for i in 1 2 3 4; do eval L$i=$(wc -l < $R/n$i.log); done
-mi $MN cl_ctr_maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
+mi $MN clusterer_controller:maintenance cluster_id=741 state=evicted >/dev/null; sleep 4
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 NM=$(echo $MS | cut -d' ' -f1)
 check "the master in maintenance handed over: one new master, named by all" $([ "$(echo $MS | tr ' ' '\n' | sort -u | wc -l)" = 1 ] && [ "$(echo $MS | wc -w)" = 4 ] && [ "$NM" != "$MIP" ] && [ "$NM" != "$BIP" ] && echo 1 || echo 0) "$MS"
 WS=0; for i in 1 2 3 4; do eval m=\$L$i; WS=$((WS + $(since $i $m | grep -ac "went silent"))); done
 check "the handover did not wait for the master watchdog (no 'went silent')" $([ $WS = 0 ] && echo 1 || echo 0) "$WS"
-mi $BN cl_ctr_maintenance cluster_id=741 state=none >/dev/null
-mi $MN cl_ctr_maintenance cluster_id=741 state=none >/dev/null; sleep 4
+mi $BN clusterer_controller:maintenance cluster_id=741 state=none >/dev/null
+mi $MN clusterer_controller:maintenance cluster_id=741 state=none >/dev/null; sleep 4
 V=""; for i in 1 2 3 4; do V="$V $(maint $i $BIP) $(maint $i $MIP)"; done
 check "both back in service on every node" $([ "$(echo $V | tr ' ' '\n' | sort -u)" = none ] && echo 1 || echo 0) "$V"
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
