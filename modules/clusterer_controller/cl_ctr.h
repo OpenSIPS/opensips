@@ -1479,6 +1479,16 @@ struct cl_ctr_peers_ {
      * relayed in MASTER_ALIVE; a member keeps the last relayed value (0
      * from an older master, which relays none) - cl_ctr_caps.c */
     uint32_t        cluster_caps;
+    /* counters for the statistics (cl_ctr_stats.c); the worker is their
+     * one writer, through the cl_ctr_note_*() calls */
+    unsigned long   st_master_changes;  /* the master changed, as this node saw it */
+    unsigned long   st_role_changes;    /* this node's own role changed      */
+    unsigned long   st_members_joined;  /* nodes entering this node's table  */
+    unsigned long   st_members_left;    /* ... and leaving it                */
+    unsigned long   st_joins_refused;   /* JOIN_REJECTs sent as master       */
+    unsigned long   st_config_mismatches;
+    unsigned long   st_auth_failures;   /* packets failing authentication    */
+    unsigned long   st_merges;          /* partitions left for a superior one */
 };
 
 #define cl_ctr_send_alive(sock, cl)    cl_ctr_send_pkt_with_ip((sock), CL_CTR_PKT_ALIVE, (cl), NULL, 0)

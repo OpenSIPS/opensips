@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_stats.h"
 
 /* -------------------------------------------------------------------------
  * Per-peer lookups: query a *specific* node in a cluster.  These are script
@@ -98,6 +99,7 @@ void cl_ctr_prune_stale(cl_ctr_cluster_t *cl)
 	    LM_INFO("clusterer_controller: purging timed-out peer %s\n",
 	            cl->peers->entries[i].ip);
 	    cl_ctr_reserve_id_locked(cl, cl->peers->entries[i].ip, pruned_id);
+	    cl_ctr_note_member(cl, cl->peers->entries[i].ip, pruned_id, 0, "timeout");
 	    cl->peers->count--;
 	    if (i < cl->peers->count)
 		cl->peers->entries[i] = cl->peers->entries[cl->peers->count];
@@ -247,6 +249,8 @@ void cl_ctr_upsert_peer_locked(const char *src_ip, cl_ctr_cluster_t *cl)
 	cl->peers->count++;
 	LM_INFO("clusterer_controller: new peer %s (total=%d)\n",
 	        src_ip, cl->peers->count);
+	if (strcmp(src_ip, my_ip) != 0)
+	    cl_ctr_note_member(cl, src_ip, 0, 1, "new");
     }
 }
 
@@ -600,6 +604,7 @@ void cl_ctr_drop_peer_locked(const char *ip, cl_ctr_cluster_t *cl)
         if (strcmp(cl->peers->entries[i].ip, ip) != 0)
             continue;
         dropped_id = cl->peers->entries[i].node_id;
+        cl_ctr_note_member(cl, ip, dropped_id, 0, "dropped");
         cl->peers->count--;
         if (i < cl->peers->count)
             cl->peers->entries[i] = cl->peers->entries[cl->peers->count];

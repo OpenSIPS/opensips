@@ -511,6 +511,36 @@ The reason to want that is cost rather than doubt. A reliable broadcast draws on
 
 *Default value is "1".*
 
+### Exported Statistics
+
+One set per cluster, in the *clusterer_controller* group, named *<statistic>-<cluster_id>* - for example *members-1* - so *statistics:get* (*get_statistics*) and the exporters built on it, such as *prometheus*, see every cluster separately. Gauges report the state now; counters only grow and cannot be reset.
+
+Gauges:
+
+- **role-N** — this node's role: *2* master, *1* backup, *0* member.
+- **is_master-N** — *1* on the master, *0* elsewhere.
+- **members-N** — live members.
+- **maintenance-N** — this node's maintenance level: *0* none, *1* evicted, *2* full.
+- **term-N** — the cluster's current term.
+- **local_health-N** — this node's local health, *0* to *8*.
+- **master_timeout_ms-N** — the learned master watchdog.
+- **tag_released-N** — *1* while this master, cut off, has released the active tag.
+
+Counters:
+
+- **master_changes-N** — the cluster's master changed, as this node saw it.
+- **role_changes-N** — this node's own role changed.
+- **members_joined-N**, **members_left-N** — nodes entering and leaving this node's peer table (leaving: a GOODBYE, a timeout, or dropped after a refusal).
+- **joins_refused-N** — JOIN_REJECTs this node sent as master.
+- **config_mismatches-N** — a peer advertising settings that differ from this node's (once per change of those settings).
+- **auth_failures-N** — packets that failed authentication: a wrong password, or a key this node does not hold yet.
+- **merges-N** — this node left its partition for a superior master.
+- **election_holds-N**, **master_false_suspicions-N**, **self_stalls-N**, **terms_refused-N**, **peers_refused-N**, **foreign_packets-N**, **rx_kernel_drops-N** — the counters of the same names in *clusterer_controller:list_config*.
+
+```bash title="statistics:get usage"
+opensips-cli -x mi statistics:get clusterer_controller:
+```
+
 ### Exported MI Functions
 
 #### clusterer_controller:list_members
@@ -1290,7 +1320,6 @@ Each node also advertises on its ALIVE which optional mechanisms its build imple
 
 The following features are planned for future releases:
 
-- **Statistics** — module statistics (current role, member count, master changes, nodes joined/left, JOIN_REJECTs, decrypt failures, config mismatches, split-brain merges) exposed via *get_statistics* and monitoring exporters.
 - **Events** — events raised on state transitions (became master, demoted, node joined/left, split-brain merged, config mismatch, authentication reject), named `E_CL_CTR_*` and consumable from an *event_route* or any event subscriber transport.
 - **IPv6 multicast** — the control plane currently uses IPv4 multicast (groups in *224.0.0.0/4*). Add IPv6 multicast support (*ff00::/8* groups, *AF_INET6* sockets and membership) so the controller can run on IPv6-only or dual-stack deployments.
 
@@ -1456,7 +1485,7 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, and a member on the previous build. It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, and the statistics. It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
 NEW=/usr/local OLD=/opt/opensips-wire1 PREV=/opt/opensips-prev ./test/netns_tests.sh

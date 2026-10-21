@@ -24,6 +24,7 @@
 
 #include "cl_ctr.h"
 #include "cl_ctr_caps.h"
+#include "cl_ctr_stats.h"
 
 static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *superior_ip,
                                       const char *via);
@@ -222,6 +223,7 @@ void cl_ctr_handle_alive(const char *src_ip,
 
     if (warn) {
         char diff[160];
+        cl_ctr_note_config_mismatch(cl, warn_ip);
         cl_ctr_fmt_cfg_diff(diff, sizeof(diff), "local", "peer",
                         loc_manage, peer_manage, loc_stick, peer_stick,
                         loc_qt, peer_qt);
@@ -291,6 +293,7 @@ void cl_ctr_handle_goodbye(int sock, const char *src_ip, cl_ctr_cluster_t *cl)
 	if (strcmp(cl->peers->entries[i].ip, src_ip) == 0) {
 	    departed_node_id = cl->peers->entries[i].node_id;
 	    cl_ctr_reserve_id_locked(cl, src_ip, departed_node_id);
+	    cl_ctr_note_member(cl, src_ip, departed_node_id, 0, "goodbye");
 	    cl->peers->count--;
 	    if (i < cl->peers->count)
 		cl->peers->entries[i] = cl->peers->entries[cl->peers->count];
@@ -699,6 +702,7 @@ static void cl_ctr_rejoin_superior_master(cl_ctr_cluster_t *cl, const char *supe
     cl_ctr_apply_master_from_list_locked(superior_ip, cl);
     cl->peers->node_state = CL_CTR_NODE_ACTIVE;
     lock_stop_write(cl->peers->lock);
+    cl_ctr_note_merge(cl, superior_ip, was_master);
 
     if (was_master) {
         LM_INFO("clusterer_controller: [cluster %d] superior master %s found via "

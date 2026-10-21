@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_stats.h"
 
 /**
  * cl_ctr_transition_to_active() - switch from CL_CTR_NODE_NEW to CL_CTR_NODE_ACTIVE.
@@ -1142,6 +1143,10 @@ void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *
     char               pkt[CL_CTR_SMALL_PKT_SZ + 1 + CL_CTR_MTU_SZ
                           + CL_CTR_CONFIG_SZ];
     uint32_t           seq = htonl(++cl->peers->my_seq);
+
+    cl_ctr_note_join_refused(cl, target_ip,
+                             reason == CL_CTR_REJECT_CONFIG ? "config"
+                             : reason == CL_CTR_REJECT_MTU ? "mtu" : "refused");
     int                ip_len, plain_len;
 
     ip_len = (int)strnlen(target_ip, CL_CTR_MAX_IP_LEN);

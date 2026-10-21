@@ -23,6 +23,7 @@
  */
 
 #include "cl_ctr.h"
+#include "cl_ctr_stats.h"
 
 /**
  * cl_ctr_election_cutoff() - quantized stale cutoff for master election.
@@ -260,6 +261,8 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 	 * who holds each role, which is this node, and WHY the master was
 	 * chosen (highest IP, sticky current master kept over a higher-IP peer, or
 	 * sole surviving node).                                               */
+	if (master_changed)
+	    cl_ctr_note_master(cl, m_ip);
 	if (master_changed || backup_changed) {
 	    if (allow_maint)
 		why = "every node in the window is in maintenance";
@@ -293,6 +296,7 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 		LM_INFO("clusterer_controller: [cluster %d] my role changed: "
 		        "%s -> %s\n", cl->cluster_id,
 		        cl_ctr_role_name(cl->my_role), cl_ctr_role_name(my_new_role));
+		cl_ctr_note_role(cl, cl->my_role, my_new_role);
 		cl->my_role = my_new_role;
 	    }
 	}
@@ -301,6 +305,7 @@ void cl_ctr_elect_master(cl_ctr_cluster_t *cl)
 	if (cl->my_role != CL_CTR_ROLE_MEMBER) {
 	    LM_INFO("clusterer_controller: [cluster %d] my role changed: %s -> "
 	            "member\n", cl->cluster_id, cl_ctr_role_name(cl->my_role));
+	    cl_ctr_note_role(cl, cl->my_role, CL_CTR_ROLE_MEMBER);
 	    cl->my_role = CL_CTR_ROLE_MEMBER;
 	}
 	if (cl->peers->last_master[0] != '\0') {

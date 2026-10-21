@@ -24,6 +24,7 @@
 
 #include "cl_ctr.h"
 #include "cl_ctr_caps.h"
+#include "cl_ctr_stats.h"
 
 static void cl_ctr_maybe_forward(const char *buf, int n,
                              const struct sockaddr_in *src, uint16_t pkt_cid,
@@ -400,6 +401,8 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    _new = (cl->peers->node_state == CL_CTR_NODE_NEW);
 	    memcpy(_lm, cl->peers->last_master, sizeof(_lm));
 	    lock_stop_read(cl->peers->lock);
+	    if (strcmp(sender_ip_buf, my_ip) != 0)
+		cl_ctr_note_auth_failure(cl, sender_ip_buf);
 
 	    /* A packet from another peer we cannot decrypt, seen while still
 	     * joining, means a cluster (or rogue) whose key we do not share is
