@@ -1287,6 +1287,14 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	}
 
 #ifdef CLUSTERER_CTRL_SUPPORT
+	/* no identity yet (see bin_rcv_cl_packets()): a peer that still lists
+	 * this node - e.g. it restarted - can reach it first */
+	if (!cl->current_node) {
+		LM_INFO("Received message, type: %d, for cluster [%d] before local "
+			"identity is established, ignoring\n", packet_type, cluster_id);
+		goto exit;
+	}
+
 	if (source_id == cluster_self_id(cl)) {
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		goto exit;
@@ -1610,6 +1618,15 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 #ifdef CLUSTERER_CTRL_SUPPORT
+	/* no identity yet (see bin_rcv_cl_packets()): replication from a peer
+	 * that still lists this node is dropped - the node syncs once its links
+	 * are up.  Debug level: one line per replicated packet would flood. */
+	if (!cl->current_node) {
+		LM_DBG("Received replication for cluster [%d] before local identity "
+			"is established, ignoring\n", cluster_id);
+		goto exit;
+	}
+
 	if (source_id == cluster_self_id(cl)) {
 		LM_ERR("Received message with bad source - same node id as this instance\n");
 		goto exit;
