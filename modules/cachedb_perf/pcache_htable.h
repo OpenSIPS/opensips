@@ -211,6 +211,9 @@ int pcache_ht_touch(pcache_htable_t *ht, const str *key, unsigned int expires);
 
 /* atomic counter add; creates the counter if absent, converts a numeric
  * string value.  0 = ok (*new_val = result); -1 = error or not an integer */
+/* @expires PCACHE_EXP_PRESERVE: an existing record keeps its expiry, a new
+ * counter never expires */
+#define PCACHE_EXP_PRESERVE 0xFFFFFFFFU
 int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 		unsigned int expires, long long *new_val);
 

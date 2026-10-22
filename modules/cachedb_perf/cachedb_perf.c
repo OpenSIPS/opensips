@@ -4032,7 +4032,8 @@ static int pcache_htable_add(cachedb_con *con, str *attr, int val,
 
 	if (!ht)
 		return -1;
-	if (pcache_ht_add(ht, attr, val, ttl_to_abs(expires), &nv) < 0)
+	if (pcache_ht_add(ht, attr, val, expires > 0 ? ttl_to_abs(expires) :
+	        PCACHE_EXP_PRESERVE, &nv) < 0)
 		return -1;
 	if (new_val)
 		*new_val = (int)nv;
@@ -4047,7 +4048,8 @@ static int pcache_htable_sub(cachedb_con *con, str *attr, int val,
 
 	if (!ht)
 		return -1;
-	if (pcache_ht_add(ht, attr, -(long long)val, ttl_to_abs(expires),
+	if (pcache_ht_add(ht, attr, -(long long)val, expires > 0 ?
+	        ttl_to_abs(expires) : PCACHE_EXP_PRESERVE,
 	        &nv) < 0)
 		return -1;
 	if (new_val)

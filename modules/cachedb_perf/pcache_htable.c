@@ -776,11 +776,18 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 	pcache_rec_t *nr, *r, *old = NULL;
 	struct povf *node = NULL, *on;
 	uint64_t route;
-	unsigned int hash, idx, used;
+	unsigned int hash, idx, used, eff;
 	unsigned char tag;
 	long long cur;
 	int i, inserted = 0;
+	/* PCACHE_EXP_PRESERVE: an existing record keeps its own expiry (what
+	 * cachedb_local and cachedb_redis do for an add without a TTL); a
+	 * counter created under it never expires */
+	const int keep = (expires == PCACHE_EXP_PRESERVE);
 
+	if (keep)
+		expires = 0;
+	eff = expires;
 	if (key->len > 0xFFFF)
 		return -1;
 
@@ -823,9 +830,11 @@ again:
 			cur += delta;
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 			memcpy(r->data + r->klen, &cur, 8);
-			r->expires = expires;
+			if (!keep)
+				r->expires = expires;
+			eff = r->expires;
 			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
-			hint_update(ht, idx, expires);
+			hint_update(ht, idx, eff);
 			old = nr;
 			goto done;
 		}
@@ -834,10 +843,13 @@ again:
 			goto nan;
 		cur += delta;
 		memcpy(nr->data + key->len, &cur, 8);
+		if (keep)
+			nr->expires = r->expires;     /* not published yet */
+		eff = nr->expires;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 		b->slot[i] = nr;
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
-		hint_update(ht, idx, expires);
+		hint_update(ht, idx, eff);
 		old = r;
 		goto done;
 	}
@@ -851,7 +863,9 @@ again:
 				memcpy(&cur, r->data + r->klen, 8);
 				cur += delta;
 				memcpy(r->data + r->klen, &cur, 8);
-				r->expires = expires;
+				if (!keep)
+					r->expires = expires;
+				eff = r->expires;
 				lock_release(&ht->ovf_lock);
 				old = nr;
 				goto done;
@@ -862,6 +876,9 @@ again:
 			}
 			cur += delta;
 			memcpy(nr->data + key->len, &cur, 8);
+			if (keep)
+				nr->expires = r->expires;
+			eff = nr->expires;
 			on->rec = nr;
 			lock_release(&ht->ovf_lock);
 			old = r;
@@ -870,7 +887,9 @@ again:
 		lock_release(&ht->ovf_lock);
 	}
 
-	/* absent: nr already carries the delta as the initial value */
+	/* absent: nr already carries the delta as the initial value; reset its
+	 * expiry, which a conversion path may have set before a retry */
+	nr->expires = expires;
 	used = bkt_used(b);
 	if (used < PCACHE_SLOTS) {
 		__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
@@ -913,7 +932,7 @@ done:
 	if (node)
 		pcache_cell_free(node);
 	HT_ST(ht, stores);
-	if (!expires)
+	if (!eff)
 		HT_ST(ht, stores_immortal);
 	if (inserted)
 		HT_ST(ht, created);
