@@ -21,6 +21,7 @@ R=${RIG_DIR:-/tmp/cl_ctr_rig}
 RIG_TM=${RIG_TM:-0}     # 1: load tm with tm_replication_cluster=741
 RIG_TAG_RELEASE=${RIG_TAG_RELEASE:-0}   # 1: release_tag_when_isolated=1
 RIG_EVENTS=${RIG_EVENTS:-1}             # 0: no event routes (an older build has not these events)
+RIG_PASSWORD=${RIG_PASSWORD:-rig74-not-a-secret-9f3a1c}   # the cluster password (T32 starts a node with another)
 BR=br74
 NSP=${RIG_NS_PREFIX:-}
 PORT=3741
@@ -108,7 +109,7 @@ modparam("clusterer", "cluster_options", "cluster_id=741, use_controller=1")
 modparam("clusterer", "cluster_options", "cluster_id=742, use_controller=1")
 modparam("clusterer", "sharing_tag", "tag741/741=backup")
 modparam("clusterer_controller", "my_ip", "$IP")
-modparam("clusterer_controller", "password", "rig74-not-a-secret-9f3a1c")
+modparam("clusterer_controller", "password", "$RIG_PASSWORD")
 modparam("clusterer_controller", "query_time", $QT)
 modparam("clusterer_controller", "master_stickiness", $ST)
 modparam("clusterer_controller", "on_config_mismatch", "reject")

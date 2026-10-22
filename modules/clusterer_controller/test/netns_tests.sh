@@ -775,13 +775,52 @@ for r in 1 2 3; do
   check "cold round $r: one established uuid per cluster on all four" $([ "$(echo "$UU" | wc -l)" = 1 ] && [ "$ST" = "established established" ] && echo 1 || echo 0) "$(echo $UU) / $(echo $ST)"
 done
 
+echo "=== T32 a JOIN_REJECT sent again does not stop a node ==="
+# A JOIN_REJECT travels under the bootstrap key, which has no replay window,
+# so it is bound to the JOIN_REQ it refuses.  Record the master refusing a
+# member started with a wrong password; start it again with the right one
+# and, while it joins, send it the record from the master's address - the
+# master's own packets to it held back meanwhile, so it is still joining.
+# It must join, not exit.  A refusal it earns - other settings - still stops it.
+MIP=$(members 1 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 1 2 3 4; do [ $x != $MN ] && break; done
+stop_graceful $x; rm -f $R/n$x.pid; sleep 2
+M0=$(wc -l < $R/n$MN.log)
+tap $MN 14 $R/t32.json >/dev/null & TP=$!
+sleep 0.5; RIG_PASSWORD=rig74-the-wrong-one start $x $NEW; wait $TP
+check "the master refused n$x, on the wrong password" $(since $MN $M0 | grep -aq "sent JOIN_REJECT to $(ip4 $x)" && echo 1 || echo 0) ""
+alive $x && stop_hard $x; rm -f $R/n$x.pid
+# the master's bootstrap-key datagrams only - the refusal and its beacons
+python3 -c '
+import json,sys
+p=[d for d in json.load(open(sys.argv[1])) if d["data"].startswith("cd01")]
+json.dump(p,open(sys.argv[2],"w")); print(len(p))' $R/t32.json $R/t32b.json > $R/t32b.n
+X0=$(wc -l < $R/n$x.log)
+nx $x iptables -I INPUT -p udp -s $MIP --sport $PORT -j DROP
+start $x $NEW
+for k in 1 2 3 4 5 6; do replay $MN $R/t32b.json >/dev/null; sleep 0.5; done
+DR=$(dropped $x INPUT)
+nx $x iptables -D INPUT -p udp -s $MIP --sport $PORT -j DROP
+sleep 8
+check "the hold on the master's packets fired ($DR dropped), the record was sent 6 times ($(cat $R/t32b.n) datagrams)" $([ "$DR" -gt 0 ] && [ "$(cat $R/t32b.n)" -gt 0 ] && echo 1 || echo 0) ""
+check "n$x, sent the recorded refusal while joining, joined" $(alive $x && members $MN 741 | tr ' ' '\n' | grep -q "^$(ip4 $x):[a-z]*:[1-9]" && echo 1 || echo 0) "alive: $(alive $x && echo yes || echo no), $(members $MN 741)"
+check "n$x said it ignored a refusal of none of its JOIN_REQs" $(since $x $X0 | grep -aq "ignoring a JOIN_REJECT from $MIP that refuses none of this node's JOIN_REQs" && echo 1 || echo 0) ""
+stop_graceful $x; rm -f $R/n$x.pid; sleep 2
+X0=$(wc -l < $R/n$x.log)
+start $x $NEW 1 3       # query_time 3 against the cluster's 2
+for k in $(seq 1 40); do alive $x || break; sleep 0.5; done
+check "a refusal it earns still stops it: other settings" $(! alive $x && since $x $X0 | grep -aq "JOIN_REJECT from $MIP - the running cluster has different settings" && echo 1 || echo 0) "alive: $(alive $x && echo yes || echo no)"
+rm -f $R/n$x.pid; start $x $NEW; sleep 8
+check "n$x back in" $(members $MN 741 | tr ' ' '\n' | grep -q "^$(ip4 $x):[a-z]*:[1-9]" && echo 1 || echo 0) "$(members $MN 741)"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"
 echo "=== logs: crashes / criticals ==="
 # "BUG trying to overwrite entry" was core TCP_main on BIN reconnect after T8,
 # fixed in core by #4289; it is checked here so it cannot come back unseen.
-C=$(cat $R/n?.log | grep -aic "segfault\|SIGSEGV\|CRITICAL\|BUG trying to overwrite entry")
+# T32's refused nodes stop with a CRITICAL line by design; nothing else may
+C=$(cat $R/n?.log | grep -av "JOIN_REJECT from .* shutting down\|cannot authenticate on .* Shutting down\|join failed after .* Shutting down" | grep -aic "segfault\|SIGSEGV\|CRITICAL\|BUG trying to overwrite entry")
 check "no crashes, CRITICAL or TCP_main BUG lines" $([ "$C" = 0 ] && echo 1 || echo 0) "$C"
 echo
 echo "RESULT: $PASS passed, $FAIL failed"
