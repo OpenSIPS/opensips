@@ -1044,7 +1044,7 @@ group_stats *register_stats_group(const char *name)
 
 int add_stats_group(group_stats *grp, stat_var *stat)
 {
-	stat_var **stats = shm_realloc(grp->vars, sizeof(stat_var) * grp->no + 1);
+	stat_var **stats = shm_realloc(grp->vars, sizeof *grp->vars * (grp->no + 1));
 	if (!stats)
 		return -1;
 	grp->vars = stats;
