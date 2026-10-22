@@ -81,6 +81,10 @@ unsigned int pcache_key_hash(const str *key)
  * debug level */
 static int st_expect_reject;
 
+/* set only by the selftest: runs where a lookup has missed in the bucket
+ * and has not looked in the leg yet */
+static void (*st_leg_hook)(pcache_htable_t *ht);
+
 #define PCACHE_REJECT_LOG(...) \
 	do { \
 		if (st_expect_reject) \
@@ -417,14 +421,33 @@ settled:
 		/* a completed split may have re-routed the key */
 		if (ht->route != route)
 			goto again;
-		if (ht->ovf_count) {
+		if (st_leg_hook)
+			st_leg_hook(ht);
+		if (__atomic_load_n(&ht->ovf_count, __ATOMIC_ACQUIRE))
 			rc = ovf_fetch(ht, key, hash, dst, dstlen, &vlen, &exp, &fl);
-			/* the leg drain moves a record into its bucket, bumping
-			 * the version, before it unlinks it from the leg: a leg
-			 * miss after the bucket changed may be that move */
-			if (rc == -2 && relooks++ < 4 &&
-			        __atomic_load_n(&b->version, __ATOMIC_ACQUIRE) != vs)
+		/* the leg drain moves a record into its bucket, bumping the
+		 * version, before it unlinks it and counts it out of the leg: a
+		 * miss in both after the bucket changed may be that move */
+		if (rc == -2 &&
+		        __atomic_load_n(&b->version, __ATOMIC_ACQUIRE) != vs) {
+			if (relooks++ < 4)
 				goto again;
+			/* still changing: decide under the bucket lock, which a
+			 * move holds; the leg lock nests inside it as for a store */
+			lock_get(&b->lock);
+			bkt_set_owner(b);
+			if (ht->route != route) {
+				bkt_clear_owner(b);
+				lock_release(&b->lock);
+				goto again;
+			}
+			rc = scan_bucket(b, key, hash, tag, dst, dstlen, &vlen, &exp,
+				&fl);
+			if (rc == -2 && ht->ovf_count)
+				rc = ovf_fetch(ht, key, hash, dst, dstlen, &vlen, &exp,
+					&fl);
+			bkt_clear_owner(b);
+			lock_release(&b->lock);
 		}
 	}
 	if (rc == -2) {
@@ -1020,19 +1043,9 @@ again:
 		__atomic_store_n(&r->expires, expires, __ATOMIC_RELAXED);
 		hint_update(ht, idx, expires);
 		rc = 1;
-	}
-	bkt_clear_owner(b);
-	lock_release(&b->lock);
-
-	if (rc)
-		return 1;
-
-	/* a bucket miss may mean a completed split re-routed the key */
-	if (ht->route != route)
-		goto again;
-
-	/* else it may sit in overflow */
-	if (ht->ovf_count) {
+	} else if (ht->ovf_count) {
+		/* the leg under the bucket lock, the store path's order: the
+		 * drain cannot move the record between the two lookups */
 		lock_get(&ht->ovf_lock);
 		on = ovf_find(ht, key, hash, NULL);
 		if (on) {
@@ -1041,6 +1054,11 @@ again:
 		}
 		lock_release(&ht->ovf_lock);
 	}
+	bkt_clear_owner(b);
+	lock_release(&b->lock);
+
+	if (!rc && st_leg_hook)
+		st_leg_hook(ht);
 	return rc;
 }
 
@@ -1521,8 +1539,8 @@ unsigned int pcache_ht_evacuate(pcache_htable_t *ht, unsigned int buckets,
  * one leg lock, for good.  A record whose bucket is full is stepped over
  * within its chain.  The bucket lock is taken before the leg lock, the
  * store path's order, and both are held across the move: a writer sees
- * the record in exactly one place, and the version bump comes before the
- * unlink, which a reader that missed in the leg re-checks.
+ * the record in exactly one place, and the version bumps come before the
+ * unlink and the count, which a reader that missed in both re-checks.
  */
 unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int steps)
 {
@@ -1574,7 +1592,9 @@ unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int steps)
 				__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
 				hint_update(ht, idx, rec->expires);
 				*prev = node->next;
-				__atomic_sub_fetch(&ht->ovf_count, 1, __ATOMIC_RELAXED);
+				/* release: a reader that sees the leg one shorter
+				 * also sees the version bumps above */
+				__atomic_sub_fetch(&ht->ovf_count, 1, __ATOMIC_RELEASE);
 				ht->drain_moved++;
 				moved++;
 				/* the chain is one shorter: the offset now names
@@ -2534,6 +2554,73 @@ static int st_evacuate(void)
 	return 0;
 }
 
+static void st_drain_once(pcache_htable_t *ht)
+{
+	st_leg_hook = NULL;
+	st_drain_pass(ht);
+}
+
+/* a key the leg drain moves between a lookup's bucket miss and its leg
+ * lookup must still be found: by a fetch with another record left in the
+ * leg, by a fetch of the leg's only record (the leg count drops to 0), and
+ * by a touch */
+static int st_leg_move_read(void)
+{
+	static const char *what[] = { "a fetch with another record in the leg",
+		"a fetch of the leg's only record", "a touch" };
+	char keys[PCACHE_SLOTS + 1][32], stuck[PCACHE_SLOTS + 1][32], pfx[16];
+	pcache_htable_t *ht;
+	unsigned int hk, hs;
+	str k, v, out;
+	int c, i, p, rc;
+
+	HCHK(st_chain_keys("move", PCACHE_SLOTS + 1, keys) == 0,
+		"no keys sharing a bucket\n");
+	k.s = keys[0]; k.len = strlen(keys[0]);
+	hk = pcache_key_hash(&k) & 15;
+	for (p = 0, hs = hk; p < 8 && hs == hk; p++) {
+		snprintf(pfx, sizeof pfx, "stuck%d", p);
+		HCHK(st_chain_keys(pfx, PCACHE_SLOTS + 1, stuck) == 0,
+			"no keys sharing a bucket\n");
+		k.s = stuck[0]; k.len = strlen(stuck[0]);
+		hs = pcache_key_hash(&k) & 15;
+	}
+	HCHK(hs != hk, "no second bucket for the stuck records\n");
+	v.s = "v"; v.len = 1;
+	for (c = 0; c < 3; c++) {
+		ht = pcache_htable_new(4);
+		HCHK(ht != NULL, "table creation failed\n");
+		for (i = 0; i <= PCACHE_SLOTS; i++) {     /* the last to the leg */
+			k.s = keys[i]; k.len = strlen(keys[i]);
+			HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "store failed\n");
+			if (c == 1)
+				continue;
+			k.s = stuck[i]; k.len = strlen(stuck[i]);
+			HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "store failed\n");
+		}
+		k.s = keys[0]; k.len = strlen(keys[0]);
+		HCHK(pcache_ht_remove(ht, &k) == 1, "remove failed\n");
+		HCHK(ht->ovf_count == (c == 1 ? 1U : 2U), "%u records in the leg\n",
+			ht->ovf_count);
+		k.s = keys[PCACHE_SLOTS]; k.len = strlen(k.s);
+		st_leg_hook = st_drain_once;
+		if (c < 2) {
+			rc = pcache_ht_fetch(ht, &k, &out);
+			if (rc == 0)
+				pkg_free(out.s);
+		} else {
+			rc = pcache_ht_touch(ht, &k, 1000) == 1 ? 0 : -2;
+		}
+		st_leg_hook = NULL;
+		HCHK(rc == 0, "%s missed a key the drain moved mid-lookup\n",
+			what[c]);
+		if (c < 2)
+			HCHK(ht->ovf_count == (c == 1 ? 0U : 1U), "%s: the drain did "
+				"not move the key mid-lookup\n", what[c]);
+	}
+	return 0;
+}
+
 int pcache_htable_selftest(void)
 {
 	pcache_htable_t *ht;
@@ -2793,7 +2880,7 @@ int pcache_htable_selftest(void)
 		static int (*const cases[])(void) = { st_leg_walk_skip,
 			st_bucket_rewalk, st_passive_promote, st_exp_preserve,
 			st_scan_leg_first, st_leg_drain, st_evacuate, st_keys_only,
-			st_tag_word };
+			st_tag_word, st_leg_move_read };
 		const int ncases = sizeof cases / sizeof *cases;
 		int c, fails = 0;
 
