@@ -233,8 +233,8 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
  * overflow bucket); bucket cursors never carry it */
 #define PCACHE_CURSOR_OVF 0x80000000u
 
-/* Bounded walk from *@cursor (0 to start) over up to @max_buckets buckets,
- * then the overflow leg; *@cursor = where to resume, 0 when done.  Stable
+/* Bounded walk from *@cursor (0 to start): the overflow leg, then up to
+ * @max_buckets buckets; *@cursor = where to resume, 0 when done.  Stable
  * across a resize.  0, or <0 on error / callback stop. */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx);

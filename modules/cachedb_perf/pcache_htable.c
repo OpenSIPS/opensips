@@ -1339,21 +1339,25 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 
 	pcache_arena_extents(&lo, &hi);
 
+	/* the overflow leg first: records only leave it, for a bucket the
+	 * ascending walk has not reached yet */
+	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
+	if (rc < 0)
+		goto out;
 	for (idx = 0; idx < ht->nbuckets; idx++) {
 		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi);
 		if (rc < 0)
 			goto out;
 	}
-
-	/* overflow leg; the lock is dropped around every callback */
-	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
 out:
 	pkg_free(kbuf);
 	return rc < 0 ? rc : 0;
 }
 
 /* buckets never move and the table only grows, so an ascending cursor
- * stays valid across a concurrent resize */
+ * stays valid across a concurrent resize.  The leg comes first, as in
+ * pcache_ht_iter(); the call that finishes it goes on into the buckets
+ * from 0, so a cursor of 0 still means begin and done */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx)
 {
@@ -1380,6 +1384,11 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		oidx = idx & ~PCACHE_CURSOR_OVF;
 		goto leg;
 	}
+	if (!idx && ht->ovf_count) {
+		oidx = 0;
+		goto leg;
+	}
+buckets:
 	end = (idx > nb || nb - idx < max_buckets) ? nb : idx + max_buckets;
 
 	for (; idx < end; idx++) {
@@ -1387,13 +1396,7 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		if (rc < 0)
 			goto out;
 	}
-
-	if (idx < nb) {
-		*cursor = idx;               /* more buckets remain */
-		goto out;
-	}
-	/* the leg starts on the next call */
-	*cursor = ht->ovf_count ? PCACHE_CURSOR_OVF : 0;
+	*cursor = idx < nb ? idx : 0;
 	goto out;
 leg:
 	/* the leg under the same budget, PCACHE_SLOTS records per bucket */
@@ -1401,7 +1404,12 @@ leg:
 		max_buckets * PCACHE_SLOTS);
 	if (rc < 0)
 		goto out;                    /* the cursor stands: retry smaller */
-	*cursor = oidx < PCACHE_OVF_BUCKETS ? (PCACHE_CURSOR_OVF | oidx) : 0;
+	if (oidx < PCACHE_OVF_BUCKETS) {
+		*cursor = PCACHE_CURSOR_OVF | oidx;
+		goto out;
+	}
+	idx = 0;
+	goto buckets;
 out:
 	pkg_free(kbuf);
 	return rc < 0 ? rc : 0;
