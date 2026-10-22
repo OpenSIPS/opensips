@@ -74,6 +74,8 @@ int create_auto_scaling_profile( char *name,
 
 struct scaling_profile *get_scaling_profile(char *name);
 
+int check_scaling_profile_procs(struct scaling_profile *p, char *group);
+
 
 typedef int (fork_new_process_f)(void *);
 typedef ipc_rpc_f terminate_process_f;

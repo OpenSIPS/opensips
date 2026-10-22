@@ -34,6 +34,9 @@
 #include "dprint.h"
 #include "pt.h"
 #include "mem/hg_maint.h"
+#ifdef HG_MALLOC
+#include "mem/hg_arena.h"
+#endif
 #include "bin_interface.h"
 #include "core_stats.h"
 
@@ -441,9 +444,9 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		 * and names struct hg_block, neither of which exists when the
 		 * allocator is not compiled in. PKG_MALLOC alone is not enough -
 		 * a build with pkg on and HG off failed here with an implicit
-		 * declaration, which is how this was found. mem_allocator_pkg can
-		 * never hold MM_HG_MALLOC in such a build (parse_mm rejects the
-		 * name), so the runtime test below is unreachable there anyway.
+		 * declaration, which is how this was found. Such a build refuses
+		 * -a HG_MALLOC when it initialises memory, long before any fork,
+		 * so the runtime test below is unreachable there anyway.
 		 */
 		if (mem_allocator_pkg == MM_HG_MALLOC ||
 		    mem_allocator_pkg == MM_HG_MALLOC_DBG) {
@@ -605,6 +608,13 @@ void dynamic_process_final_exit(void)
 
 	/* if a TCP proc by chance, reset the tcp-related data */
 	tcp_reset_worker_slot();
+
+#ifdef HG_MALLOC
+	/* give the shared arenas back what this process still holds - its
+	 * cached cells and unused chunk tails would otherwise stay counted as
+	 * live until restart */
+	hg_cache_drain_self();
+#endif
 
 	pt_become_idle();
 

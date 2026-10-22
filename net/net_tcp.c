@@ -66,6 +66,9 @@
 #include "tcp_conn_profile.h"
 #include "trans.h"
 #include "net_tcp_dbg.h"
+#ifdef HG_MALLOC
+#include "../mem/hg_arena.h"
+#endif
 
 struct struct_hist_list *con_hist;
 
@@ -1289,6 +1292,12 @@ static void *tcp_thread_routine(void *arg)
 	/* Reactor operations stay in TCP main; IO threads only run read/write
 	 * callbacks and notify completion back to the main thread. */
 	while (1) {
+#ifdef HG_MALLOC
+		/* a job boundary, no lock held: flush this thread's allocator
+		 * caches if a sweep was published since the last one (IPC cannot
+		 * reach this thread - see rpc_hg_cache_flush()) */
+		hg_cache_flush_if_due();
+#endif
 		cond_lock(&tcp_write_queue->cond);
 		while (!tcp_pool.stop && tcp_pool.task_head == NULL &&
 				tcp_write_queue->head == NULL)
@@ -2166,6 +2175,9 @@ int tcp_init(void)
 		if (s_profile==NULL) {
 			LM_WARN("TCP scaling profile <%s> not defined "
 				"-> ignoring it...\n", tcp_auto_scaling_profile);
+		} else if (check_scaling_profile_procs(s_profile,
+		"tcp_workers") < 0) {
+			goto error;
 		} else {
 			auto_scaling_enabled = 1;
 		}

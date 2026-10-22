@@ -118,6 +118,13 @@ int init_pkg_mallocs(void)
 	if (mem_allocator_pkg == MM_NONE)
 		mem_allocator_pkg = mem_allocator;
 
+	/* -M INIT:CAP is parsed for every allocator; only HG_MALLOC grows */
+	if (hg_pkg_cap_bytes && mem_allocator_pkg != MM_HG_MALLOC &&
+	        mem_allocator_pkg != MM_HG_MALLOC_DBG)
+		LM_WARN("-M: the cap after ':' applies to HG_MALLOC only - %s uses "
+			"the initial %lu MB\n", mm_str(mem_allocator_pkg),
+			pkg_mem_size >> 20);
+
 	if (mem_allocator_pkg != MM_HG_MALLOC && mem_allocator_pkg != MM_HG_MALLOC_DBG) {
 		mem_pool = malloc(pkg_mem_size);
 		if (!mem_pool) {
@@ -243,6 +250,7 @@ int init_pkg_mallocs(void)
 #ifdef HG_MALLOC
 	case MM_HG_MALLOC_DBG:
 		mem_block = hg_malloc_init(pkg_mem_size, "pkg", 0, NULL, HG_INIT_INHERITED);
+		hg_dbg_checks = 1;
 		gen_pkg_malloc    = (osips_block_malloc_f)hg_malloc_dbg;
 		gen_pkg_realloc   = (osips_block_realloc_f)hg_realloc_dbg;
 		gen_pkg_free      = (osips_block_free_f)hg_free_dbg;

@@ -154,7 +154,7 @@ int rpm_use_global_lock;
  * initialised INSIDE that mapping. HG_MALLOC reserves and backs its own arenas
  * (see hg_malloc_init()) and cannot be placed into a caller's pool, so it
  * cannot back rpm. When rpm merely inherits the global allocator (-a), take
- * F_MALLOC (or its DBG variant) instead; an explicit -r HG_MALLOC is refused.
+ * F_MALLOC (or its DBG variant) instead; an explicit -e HG_MALLOC is refused.
  */
 static int rpm_resolve_allocator(void)
 {
@@ -162,7 +162,7 @@ static int rpm_resolve_allocator(void)
 	        mem_allocator_rpm == MM_HG_MALLOC_DBG) {
 		LM_ERR("%s cannot back restart persistent memory, which lives in "
 		       "a file-backed pool at a fixed address - select another "
-		       "allocator with -r\n", mm_str(mem_allocator_rpm));
+		       "allocator with -e\n", mm_str(mem_allocator_rpm));
 		return -1;
 	}
 	if (mem_allocator_rpm != MM_NONE)

@@ -606,6 +606,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 #ifdef HG_MALLOC
 	case MM_HG_MALLOC_DBG:
 		shm_block = hg_malloc_init(pool_size, "shm", 1, NULL, 0);
+		hg_dbg_checks = 1;
 		gen_shm_malloc         = (osips_block_malloc_f)hg_malloc_dbg;
 		gen_shm_malloc_unsafe  = (osips_block_malloc_f)hg_malloc_dbg;
 		gen_shm_realloc        = (osips_block_realloc_f)hg_realloc_dbg;
@@ -887,6 +888,13 @@ int shm_mem_init(void)
 
 	if (mem_allocator_shm == MM_NONE)
 		mem_allocator_shm = mem_allocator;
+
+	/* -m INIT:CAP is parsed for every allocator; only HG_MALLOC grows */
+	if (hg_shm_cap_bytes && mem_allocator_shm != MM_HG_MALLOC &&
+	        mem_allocator_shm != MM_HG_MALLOC_DBG)
+		LM_WARN("-m: the cap after ':' applies to HG_MALLOC only - %s uses "
+			"the initial %lu MB\n", mm_str(mem_allocator_shm),
+			shm_mem_size >> 20);
 
 #ifdef F_PARALLEL_MALLOC
 	if (mem_allocator_shm == MM_F_PARALLEL_MALLOC ||

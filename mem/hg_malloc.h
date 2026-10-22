@@ -182,6 +182,11 @@ HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, stat_idx) == HG_CELL_STATS_OFF,
  * distinguishable from genuine corruption (any other out-of-range byte) */
 #define HG_LARGE_MARKER HG_NCLASSES
 
+/* the tag of a large fragment after hg_large_free(): a second free of the
+ * same pointer finds this instead of HG_LARGE_MARKER and is refused as a
+ * double free rather than corrupting the large tier */
+#define HG_LARGE_FREED (HG_NCLASSES + 1)
+
 struct hg_large_chunk;   /* opaque here, defined in hg_large.c */
 
 /*
@@ -417,6 +422,10 @@ enum hg_corrupt_kind {
 
 /* for the two checks that fire where no arena pointer exists */
 extern unsigned long hg_corrupt_noarena[HG_CORRUPT_KINDS];
+
+/* set when HG_MALLOC_DBG serves shm or pkg: enables the checks too costly
+ * for the production free path (a walk of the private free list) */
+extern int hg_dbg_checks;
 
 /*
  * Lock-hold / lock-wait instrumentation. Every hb->lock section is a
@@ -740,6 +749,10 @@ struct hg_block {
 	unsigned int          maint_active;
 	int                   maint_proc;
 	unsigned int          grow_inflight;  /* 0/1 */
+	/* bumped, under the lock, by every grow and hole re-grow that
+	 * published pages - what a waiting grower compares: a trim or a punch
+	 * also holds grow_inflight and moves committed_bytes, the other way */
+	unsigned long         grow_gen;
 	unsigned long         grow_waits;     /* workers that waited for a grow */
 	unsigned long         grow_wait_timeouts; /* ...and gave up (refused) */
 	struct hg_lkstat      lk_grow_wait;   /* their unlocked wait times */

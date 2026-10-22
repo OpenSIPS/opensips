@@ -418,6 +418,7 @@ static long parse_mem_size(const char *s, char **end)
 int main(int argc, char** argv)
 {
 	int c, n;
+	long memv;
 	char *tmp;
 	int tmp_len;
 	int port;
@@ -445,7 +446,14 @@ int main(int argc, char** argv)
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'M':
-					pkg_mem_size=parse_mem_size(optarg, &tmp);
+					/* parsed signed: pkg_mem_size is unsigned, so a
+					 * "-M -5" stored there first would pass any <= 0 test */
+					memv = parse_mem_size(optarg, &tmp);
+					if (memv <= 0) {
+						LM_ERR("bad pkgmem size number: -M %s\n", optarg);
+						goto error00;
+					}
+					pkg_mem_size = memv;
 					/*
 					 * -M INIT[:CAP] - CAP of growth headroom for the
 					 * elastic arena. A COMMAND LINE extension rather
@@ -474,13 +482,18 @@ int main(int argc, char** argv)
 							goto error00;
 						}
 					}
-					if (pkg_mem_size <= 0 || (tmp &&(*tmp))){
+					if (tmp && *tmp) {
 						LM_ERR("bad pkgmem size number: -M %s\n", optarg);
 						goto error00;
 					}
 					break;
 			case 'm':
-					shm_mem_size=parse_mem_size(optarg, &tmp);
+					memv = parse_mem_size(optarg, &tmp);
+					if (memv <= 0) {
+						LM_ERR("bad shmem size number: -m %s\n", optarg);
+						goto error00;
+					}
+					shm_mem_size = memv;
 					/* -m INIT[:CAP], see the -M note above */
 					if (tmp && *tmp == ':') {
 						long capv = parse_mem_size(tmp + 1, &tmp);
@@ -496,7 +509,7 @@ int main(int argc, char** argv)
 							goto error00;
 						}
 					}
-					if (shm_mem_size <= 0 || (tmp &&(*tmp))){
+					if (tmp && *tmp) {
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;
 					}

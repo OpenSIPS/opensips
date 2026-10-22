@@ -288,6 +288,19 @@ void hg_large_free(struct hg_block *hb, struct hg_lfrag *frag)
 
 	hg_lock_enter(hb, HG_LK_LARGE);
 
+	/* a free fragment sits on the free list (prev set); freeing it again
+	 * would link it in twice. The common double free never gets here -
+	 * the freed tag below turns it away in hg_cell_free() - this catches
+	 * the one that still carries HG_LARGE_MARKER */
+	if (frag->prev) {
+		hg_lock_leave(hb);
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
+		LM_CRIT("%s: large fragment %p is already free - double free, "
+			"ignoring the second free\n", hb->name, (void *)frag);
+		return;
+	}
+	HG_CELL_AT((char *)frag + HG_LFRAG_HDR)->cls = HG_LARGE_FREED;
+
 	{
 		struct hg_pstat *ps = hg_pstat_mine(hb);
 		ps->used -= frag->size - HG_CELL_HDR;

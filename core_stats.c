@@ -255,9 +255,10 @@ int hg_pkg_peak_all(unsigned long *peak, unsigned long *sum, int *nproc)
  *     value that is a request behind; a flush is not a reader, so it is
  *     fire-and-forget and the next tick simply tries again.
  *
- * NOT covered, and it needs saying: TCP main's IO pool threads wait on a
- * condition variable rather than the reactor, so IPC never reaches them. Their
- * caches still need a flag checked at a job boundary.
+ * TCP main's IO pool threads wait on a condition variable rather than the
+ * reactor, so IPC never reaches them: the RPC handler below bumps
+ * hg_sweep_gen in the process it runs in, and those threads flush at their
+ * next job boundary (hg_cache_flush_if_due(), net/net_tcp.c).
  */
 #define HG_SWEEP_INTERVAL 30   /* seconds; the caches are a slow leak, not a
                                 * fast one, and each sweep costs a lock per
@@ -265,6 +266,9 @@ int hg_pkg_peak_all(unsigned long *peak, unsigned long *sum, int *nproc)
 
 static void rpc_hg_cache_flush(int sender, void *param)
 {
+	/* runs in the target process: publish the sweep to its threads IPC
+	 * cannot reach (hg_sweep_gen is per process), then flush this one */
+	hg_sweep_gen++;
 	hg_cache_flush_self();
 }
 
@@ -431,17 +435,6 @@ static void hg_cache_sweep(unsigned int ticks, void *param)
 	if (slot == 0) {
 		hg_grow_blocked_event(ticks);
 		hg_oom_report_shared();
-
-		/*
-		 * Publish the sweep to threads IPC cannot reach BEFORE dispatching
-		 * to the ones it can. TCP main's IO pool waits on a condition
-		 * variable rather than the reactor, so those threads never receive
-		 * an RPC job; they compare this counter at a job boundary instead
-		 * (hg_cache_flush_if_due()). Bumping it first means a thread that
-		 * is between jobs right now picks the sweep up immediately rather
-		 * than waiting for the next one.
-		 */
-		hg_sweep_gen++;
 	}
 
 	for (i = 0; i < n; i++) {

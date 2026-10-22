@@ -56,7 +56,7 @@ extern char *udp_auto_scaling_profile;
 extern enum poll_types io_poll_method;
 extern int auto_scaling_enabled;
 
-/* Elastic HG_MALLOC arenas. Defined in main.c UNCONDITIONALLY (the -m/-M
+/* Elastic HG_MALLOC arenas. Defined in globals.c UNCONDITIONALLY (the -m/-M
  * parser and cfg.y reference them in every build); consumed only when the
  * HG allocator is selected - inert otherwise. Caps come from the command
  * line (-m INIT:CAP) because the reservation precedes config parsing; the

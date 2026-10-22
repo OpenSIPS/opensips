@@ -625,7 +625,7 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	 * caller retries its carve against the fresh pages.
 	 */
 	if (hb->grow_inflight) {
-		unsigned long seen = hb->committed_bytes, waited;
+		unsigned long gen = hb->grow_gen, waited;
 
 		hb->grow_waits++;
 		reason = hb->lk_cur;
@@ -635,13 +635,15 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 			usleep(HG_GROW_WAIT_SLICE_US);
 			waited = hg_now_ns() - t0;
 		} while (__atomic_load_n(&hb->grow_inflight, __ATOMIC_ACQUIRE) &&
-		         __atomic_load_n(&hb->committed_bytes,
-		                         __ATOMIC_ACQUIRE) == seen &&
 		         waited < HG_GROW_WAIT_MAX_NS);
 		hg_lock_enter(hb, (enum hg_lock_reason)reason);
 		hg_lkstat_add(&hb->lk_grow_wait, waited);
-		if (hb->committed_bytes != seen)
-			return 0;                 /* it landed: retry the carve */
+		/* a grow or a hole re-grow published pages: retry the carve. The
+		 * token is also held by a trim or a punch, which moves
+		 * committed_bytes the other way - that is not a reason to retry,
+		 * it is a reason to try our own grow below */
+		if (hb->grow_gen != gen)
+			return 0;
 		if (hb->grow_inflight) {
 			hb->grow_wait_timeouts++; /* still populating - give up */
 			hb->grow_refused++;
@@ -766,9 +768,8 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 		hb->collapse_wanting += hb->npages - old_pages;
 		__atomic_store_n(&hb->collapse_pending, 1, __ATOMIC_RELEASE);
 	}
-	/* the published sizes move last, with release semantics: a waiter
-	 * polling committed_bytes lock-free, or hg_owns() reading span_end on
-	 * a free path, must not see the new figure before the pages exist */
+	/* the published sizes move last, with release semantics: nothing that
+	 * reads them lock-free may see the new figure before the pages exist */
 	__atomic_store_n(&hb->span_end, off + delta, __ATOMIC_RELEASE);
 	__atomic_store_n(&hb->committed_bytes, hb->committed_bytes + delta,
 	                 __ATOMIC_RELEASE);
@@ -779,6 +780,7 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	floor_recompute(hb);
 
 	hb->grows++;
+	hb->grow_gen++;
 	hb->grow_bytes += delta;
 	if (why == HG_GROW_PROACTIVE)
 		hb->grows_proactive++;
@@ -1187,6 +1189,7 @@ static int hg_buddy_regrow_holes(struct hg_block *hb, unsigned long need,
 	hb->repins += got;
 	hb->repin_bytes += got << hb->hps_shift;
 	hb->hole_regrows++;
+	hb->grow_gen++;
 	floor_recompute(hb);
 	hb->shrink_quiet = 0;    /* fresh demand voids any quiet window */
 	hb->draining = 0;
@@ -1454,7 +1457,9 @@ static void fl_rebuild(struct hg_block *hb, unsigned int o)
 	for (i = 0; i < hb->npages; i++) {
 		struct hg_page *pg = &hb->pages[i];
 
-		if (pg->punched)
+		/* a page being released is off every free list on purpose and
+		 * its memory may be going away right now */
+		if (pg->punched || pg->releasing)
 			continue;
 		for (leaf = 0; leaf < lpp; leaf += step)
 			if (bit_test(pg->bitmap, node_id(top, o, leaf)))

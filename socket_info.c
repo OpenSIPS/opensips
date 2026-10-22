@@ -196,14 +196,12 @@ struct socket_info_full* new_sock_info(struct socket_id *sid, str *orig_name)
 				LM_WARN("scaling profile <%s> in listener <%.*s> not defined "
 					"-> ignoring it...\n", sid->auto_scaling_profile,
 					si->name.len, si->name.s);
-			} else if (si->s_profile->mem_kb_units) {
-				/* a missing profile is ignorable; a memory-unit profile on
-				 * a process group is a config error - refuse at parse time,
-				 * mirroring what -m/-M do for a malformed reservation */
-				LM_ERR("scaling profile <%s> in listener <%.*s> uses k/m/g "
-					"size units - it sizes a memory arena (shm/"
-					"pkg_auto_scaling_profile), it cannot drive workers\n",
-					sid->auto_scaling_profile, si->name.len, si->name.s);
+			} else if (check_scaling_profile_procs(si->s_profile,
+			"a listener") < 0) {
+				/* a missing profile is ignorable; one that cannot count
+				 * processes is a config error - refuse at parse time */
+				LM_ERR("bad auto-scaling profile in listener <%.*s>\n",
+					si->name.len, si->name.s);
 				goto err_free;
 			} else {
 				auto_scaling_enabled = 1;
@@ -213,11 +211,8 @@ struct socket_info_full* new_sock_info(struct socket_id *sid, str *orig_name)
 			if (si->s_profile==NULL) {
 				LM_WARN("scaling profile <%s> in udp_workers not defined "
 					"-> ignoring it...\n", udp_auto_scaling_profile);
-			} else if (si->s_profile->mem_kb_units) {
-				LM_ERR("scaling profile <%s> in udp_workers uses k/m/g "
-					"size units - it sizes a memory arena (shm/"
-					"pkg_auto_scaling_profile), it cannot drive workers\n",
-					udp_auto_scaling_profile);
+			} else if (check_scaling_profile_procs(si->s_profile,
+			"udp_workers") < 0) {
 				goto err_free;
 			} else {
 				auto_scaling_enabled = 1;

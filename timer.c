@@ -172,6 +172,8 @@ int init_timer(void)
 				timer_auto_scaling_profile);
 			return E_UNSPEC;
 		}
+		if (check_scaling_profile_procs(s_profile, "timer_workers") < 0)
+			return E_UNSPEC;
 		auto_scaling_enabled = 1;
 	}
 

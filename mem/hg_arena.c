@@ -350,8 +350,12 @@ static inline struct hg_chunk *cell_block(struct hg_block *hb, int c, void *p)
 {
 	struct hg_chunk *ch = hg_buddy_block_of(hb, p);
 
-	if (!ch)
+	if (!ch) {
+		hg_corrupt(hb, HG_C_FOREIGN_PTR);
+		LM_CRIT("%s: cell %p (class %d) is not on the arena's page grid - "
+			"not touching it\n", hb->name, p, c);
 		return NULL;
+	}
 	if (ch->cls != (unsigned int)c) {
 		hg_corrupt(hb, HG_C_CLASS_MISMATCH);
 		LM_CRIT("%s: cell %p resolves to block %p of class %u, expected "
@@ -676,7 +680,6 @@ static unsigned int cache_flush_locked(struct hg_block *hb,
 			 * following its "next" would be a wild read. Stop here: the
 			 * rest of the chain leaks, which is the cheapest outcome */
 			if (!cell_block(hb, c, cur)) {
-				hg_corrupt(hb, HG_C_FOREIGN_PTR);
 				LM_CRIT("%s: class %d private chain broken at %p after %u "
 					"cells - dropping the rest\n", hb->name, c, cur, n);
 				break;
@@ -741,6 +744,8 @@ volatile unsigned long hg_sweep_gen;
 /* the two checks that fire where no arena pointer is in scope */
 unsigned long hg_corrupt_noarena[HG_CORRUPT_KINDS];
 
+int hg_dbg_checks;
+
 /*
  * Reserve floor: when free grid space falls below hb->reserve_floor (1/16 of
  * the grid, set in hg_buddy_init), publish a sweep to every thread and say so
@@ -777,8 +782,10 @@ unsigned long hg_corrupt_noarena[HG_CORRUPT_KINDS];
 /*
  * Widen the [lo, hi] extent watermarks to cover a region just handed out.
  *
- * These bound "a pointer this arena could plausibly have returned", and the
- * DBG free guard in hg_malloc_dyn.h ABORTS on anything outside them. They were
+ * These bound "a pointer this arena could plausibly have returned". The DBG
+ * free guard in hg_malloc_dyn.h used to ABORT on anything outside them; since
+ * 2026-10-16 it asks hg_owns_any() instead, so they now only feed the
+ * reports. They were
  * widened in exactly one place - carve_chunk() (and the since-removed
  * hg_region_alloc()) - written when carving was the only way to get memory.
  * The large tier takes
@@ -927,7 +934,6 @@ static unsigned int cache_flush_class(struct hg_block *hb,
 			}
 			if (!cell_block(hb, c, cur)) {
 				/* an overwritten link - stop, leak the rest */
-				hg_corrupt(hb, HG_C_FOREIGN_PTR);
 				LM_CRIT("%s: class %d private chain broken at %p - "
 					"dropping the rest of the chain\n", hb->name, c, cur);
 				pl->cls[c].free_head = NULL;
@@ -1037,6 +1043,73 @@ void hg_cache_flush_self(void)
 		if (n)
 			LM_DBG("%s: idle sweep returned %u cached cells\n", hb->name, n);
 	}
+}
+
+/*
+ * Hand back everything this thread holds in the shared arenas before its
+ * process leaves for good (auto-scaling down): the private free lists AND the
+ * unused rest of every chunk it carved. Without this the cells stay counted
+ * as live in their blocks, which then never drain - shm lost until restart,
+ * once per scaled-down process. A private (pkg) arena dies with the process
+ * and is skipped. The caller holds no arena lock.
+ */
+void hg_cache_drain_self(void)
+{
+	int i, c;
+
+	for (i = 0; i < HG_MAX_INSTANCES; i++) {
+		struct hg_palloc *pl = &palloc_slots[i];
+		struct hg_block *hb = pl->owner;
+		unsigned int n, unused = 0;
+
+		if (!hb || !hb->shared)
+			continue;
+
+		hg_lock_enter(hb, HG_LK_FLUSH);
+		n = cache_flush_locked(hb, pl);
+
+		/* a bump cell was never handed out: it goes to the pool as it is.
+		 * Reclaim waits until all are pushed, as in the flush walk */
+		hb->gc_deferred = 1;
+		for (c = 0; c < HG_NCLASSES; c++) {
+			while (pl->cls[c].left) {
+				char *cell = pl->cls[c].bump;
+
+				pl->cls[c].bump += cell_sizes[c];
+				pl->cls[c].left--;
+				if (gpool_push(hb, c, cell) < 0) {
+					pl->cls[c].left = 0;
+					break;
+				}
+				unused++;
+			}
+		}
+		hb->gc_deferred = 0;
+		for (c = 0; c < HG_NCLASSES; c++)
+			if (hb->ndrained[c] > HG_GC_KEEP)
+				gc_class(hb, c);
+
+		hb->cache_flushes++;
+		hb->cells_flushed += n + unused;
+		hg_lock_leave(hb);
+
+		if (n || unused)
+			LM_DBG("%s: leaving for good, returned %u cached and %u unused "
+				"cells\n", hb->name, n, unused);
+	}
+}
+
+/* is @cell already on this thread's private free list of class @c? Walks at
+ * most nfree links, so a corrupted (cyclic) list cannot hang it */
+static int private_list_has(struct hg_palloc *pl, int c, void *cell)
+{
+	void *cur = pl->cls[c].free_head;
+	unsigned int n = pl->cls[c].nfree;
+
+	for (; cur && n; cur = cell_next(cur), n--)
+		if (cur == cell)
+			return 1;
+	return 0;
 }
 
 /*
@@ -1269,8 +1342,20 @@ static int carve_chunk(struct hg_block *hb, int c, struct hg_palloc *pl)
 	memset(ch->gfree, 0, sizeof ch->gfree);
 
 	cells = (char *)ch + sizeof(struct hg_chunk);
-	for (i = 0; i < ch->cells; i++)
-		HG_CELL_AT(cells + (unsigned long)i * cell_sizes[c])->cls = (unsigned char)c;
+	for (i = 0; i < ch->cells; i++) {
+		struct hg_cell_hdr *h =
+			HG_CELL_AT(cells + (unsigned long)i * cell_sizes[c]);
+
+		h->cls = (unsigned char)c;
+#ifdef DBG_MALLOC
+		/* the block may be recycled memory: without this a cell that was
+		 * never handed out carries the old payload's bytes as file/func,
+		 * and the debug status walk (hg_status_dbg) dereferences them */
+		h->file = NULL;
+		h->func = NULL;
+		h->line = 0;
+#endif
+	}
 
 	ch->next = hb->chunks;
 	ch->prev = NULL;
@@ -1752,11 +1837,18 @@ void hg_cell_free(struct hg_block *hb, void *p)
 		return;
 	}
 
+	if (c == HG_LARGE_FREED) {
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
+		LM_CRIT("%s: large fragment %p freed twice - ignoring the second "
+			"free\n", hb->name, p);
+		return;
+	}
+
 	if (c >= HG_NCLASSES) {
 		/* the class byte was clobbered - freeing through it would
 		 * corrupt the pools; leak the cell and shout instead. (Double
-		 * frees are caught later, at the shared pool, by the per-block
-		 * free map.) */
+		 * frees are caught on the private list below, and at the shared
+		 * pool by the per-block free map.) */
 		hg_corrupt(hb, HG_C_BAD_CLASS);
 		LM_CRIT("%s: cell %p carries invalid class %u - leaking it\n",
 			hb->name, p, c);
@@ -1766,6 +1858,23 @@ void hg_cell_free(struct hg_block *hb, void *p)
 	pl = hg_get_palloc(hb);
 	if (!pl) {
 		hg_cell_free_global(hb, p);
+		return;
+	}
+
+	/*
+	 * A double free that stays on this thread's private list is not seen
+	 * by the per-block free map: the cell would be linked in twice and
+	 * handed out to two callers. The common case - the same cell freed
+	 * twice in a row - is the list head, caught here with one compare in
+	 * every build; HG_MALLOC_DBG walks the whole list (at most priv_max
+	 * cells).
+	 */
+	if (pl->cls[c].free_head == cell_start ||
+	    (hg_dbg_checks && private_list_has(pl, c, cell_start))) {
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
+		LM_CRIT("%s: cell %p (class %d) is already on this process's free "
+			"list - double free, ignoring the second free\n", hb->name,
+			p, c);
 		return;
 	}
 
@@ -1840,6 +1949,7 @@ void hg_cell_free_global(struct hg_block *hb, void *p)
 {
 	char *cell_start;
 	unsigned int c;
+	int pushed;
 
 	if (!p)
 		return;
@@ -1867,6 +1977,12 @@ void hg_cell_free_global(struct hg_block *hb, void *p)
 		hg_large_free(hb, (struct hg_lfrag *)(void *)(cell_start - HG_LFRAG_HDR));
 		return;
 	}
+	if (c == HG_LARGE_FREED) {
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
+		LM_CRIT("%s: large fragment %p freed twice - ignoring the second "
+			"free\n", hb->name, p);
+		return;
+	}
 	if (c >= HG_NCLASSES) {
 		hg_corrupt(hb, HG_C_BAD_CLASS);
 		LM_CRIT("%s: cell %p carries invalid class %u - leaking it\n",
@@ -1877,17 +1993,19 @@ void hg_cell_free_global(struct hg_block *hb, void *p)
 	 * (it returns early when this process has no palloc), and this is that
 	 * function's only caller - so the decrement belongs here, not there.
 	 * Before this, a free taken down this path left used/fragments
-	 * permanently over-reported. */
-	{
+	 * permanently over-reported. A push the pool refuses (a double free,
+	 * already counted there) did not free anything, so it must not move
+	 * the counters either. */
+	hg_lock_enter(hb, HG_LK_RETURN);
+	pushed = gpool_push(hb, c, cell_start);
+	hg_lock_leave(hb);
+
+	if (pushed == 0) {
 		struct hg_pstat *ps = hg_pstat_mine(hb);
 		ps->used -= cell_sizes[c] - HG_CELL_HDR;
 		ps->fragments--;
 		ps->cell_live -= cell_sizes[c];
 	}
-
-	hg_lock_enter(hb, HG_LK_RETURN);
-	gpool_push(hb, c, cell_start);
-	hg_lock_leave(hb);
 }
 
 /*

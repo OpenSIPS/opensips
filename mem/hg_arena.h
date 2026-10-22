@@ -81,10 +81,15 @@ extern volatile unsigned long hg_sweep_gen;
 void hg_reserve_floor_check(struct hg_block *hb);
 
 /* Widen the [lo,hi] extent watermarks over a region just handed out. Called
- * from the buddy layer so every consumer of grid space is covered - the DBG
- * free guard aborts on pointers outside this range. hb->lock must be held. */
+ * from the buddy layer so every consumer of grid space is covered.
+ * hb->lock must be held. */
 void hg_extent_note(struct hg_block *hb, void *base, unsigned long size);
+/* flush the calling thread's caches if a sweep was published since its
+ * last flush - for threads IPC cannot reach (TCP main's IO pool) */
 void hg_cache_flush_if_due(void);
+/* hand back everything the calling thread holds in the shared arenas, the
+ * unused rest of its chunks included - for a process leaving for good */
+void hg_cache_drain_self(void);
 void *hg_backing_aligned(struct hg_block *hb, unsigned long size,
                          unsigned long align);
 

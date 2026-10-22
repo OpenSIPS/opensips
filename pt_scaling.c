@@ -157,6 +157,29 @@ struct scaling_profile *get_scaling_profile(char *name)
 }
 
 
+/* A profile may size an HG_MALLOC arena (MB or k/m/g), so
+ * create_auto_scaling_profile() checks only the relation of its numbers.
+ * One that drives a process group must count processes: call this where
+ * the group takes its profile, so a bad one stops the startup there, as it
+ * always did. */
+int check_scaling_profile_procs(struct scaling_profile *p, char *group)
+{
+	if (p->mem_kb_units) {
+		LM_ERR("auto-scaling profile <%s> for %s uses k/m/g size units - "
+			"it sizes a memory arena (shm/pkg_auto_scaling_profile), it "
+			"cannot drive processes\n", p->name, group);
+		return -1;
+	}
+	if (p->max_procs >= 1000) {
+		LM_ERR("invalid relation or range for MIN/MAX processes [%d,%d] in "
+			"auto-scaling profile <%s> for %s\n", p->min_procs,
+			p->max_procs, p->name, group);
+		return -1;
+	}
+	return 0;
+}
+
+
 #define get_sr_type_name(_type, _s) \
 	do { \
 		if (_type==TYPE_UDP) {              \
