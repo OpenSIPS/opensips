@@ -1138,22 +1138,48 @@ static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
 }
 
 /*
+ * The node to emit next: the one after the most recently emitted node that
+ * is still in the chain.  Nodes are only inserted at a chain's head and
+ * unlinked, so a node after an emitted one was there when that one was
+ * emitted - nothing is skipped, whatever other processes removed while the
+ * lock was dropped.  With every remembered node gone the chain is walked
+ * again from its head: a repeat, which every walker tolerates (a reused
+ * node address can only sit at the head, so it too repeats, never skips).
+ */
+#define LEG_HIST 8
+static struct povf *leg_next(struct povf *head, struct povf *const *hist,
+		unsigned int nh)
+{
+	unsigned int k, lim = nh < LEG_HIST ? nh : LEG_HIST;
+	struct povf *p, *want;
+
+	if (!nh)
+		return head;
+	for (k = 0; k < lim; k++) {          /* the most recent first */
+		want = hist[(nh - 1 - k) % LEG_HIST];
+		for (p = head; p; p = p->next)
+			if (p == want)
+				return p->next;
+	}
+	return head;
+}
+
+/*
  * Walk the overflow leg from chain *@oidx; @budget > 0 stops after the chain
  * in which that many records were emitted, 0 walks to the end.  On return
  * *@oidx is the chain to resume at (PCACHE_OVF_BUCKETS = done).
  *
  * ovf_lock is dropped around every callback, so the callback may touch the
- * leg.  Chains are walked by index, re-resolved under the lock per entry;
- * if the node at the index changed during the callback it was removed and
- * the index does not advance.
+ * leg; the walk resumes by identity (leg_next), so a callback removing its
+ * own record stays exactly-once and concurrent removals never cause a skip.
  */
 static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 		void *ctx, char *kbuf, char *vbuf, unsigned int *oidx,
 		unsigned int budget)
 {
 	pcache_rec_t *r;
-	struct povf *n, *seen;
-	unsigned int idx, i, j, klen, vlen, exp, emitted = 0;
+	struct povf *n, *seen, *hist[LEG_HIST];
+	unsigned int idx, nh, klen, vlen, exp, emitted = 0;
 	unsigned char fl;
 	int rc = 0;
 
@@ -1162,12 +1188,10 @@ static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 		return 0;
 	}
 	for (idx = *oidx; idx < PCACHE_OVF_BUCKETS; idx++) {
-		i = 0;
+		nh = 0;
 		for (;;) {
 			lock_get(&ht->ovf_lock);
-			n = ht->ovf_tab[idx];
-			for (j = 0; n && j < i; j++)
-				n = n->next;
+			n = leg_next(ht->ovf_tab[idx], hist, nh);
 			if (!n) {
 				lock_release(&ht->ovf_lock);
 				break;
@@ -1185,13 +1209,7 @@ static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 			if (rc < 0)
 				break;
 			emitted++;
-			lock_get(&ht->ovf_lock);
-			n = ht->ovf_tab[idx];
-			for (j = 0; n && j < i; j++)
-				n = n->next;
-			lock_release(&ht->ovf_lock);
-			if (n == seen)
-				i++;
+			hist[nh++ % LEG_HIST] = seen;
 		}
 		if (rc < 0)
 			break;
