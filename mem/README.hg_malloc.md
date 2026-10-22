@@ -12,9 +12,9 @@ A memory allocator for shared and private memory, selected at runtime with `-a H
 
 **Small arenas.** An arena with an INIT under one huge page settles its page size by the backing it gets. On plain 4 KB memory it runs in small mode, on 256 KB pages: at least 256 KB with a cap, 512 KB without. On huge pages its INIT is raised to one huge page, and an arena whose cap leaves no room above that page is refused at startup.
 
-**Idle caches are swept.** Every 30 s each process flushes what its private lists hold back to the shared pool (staggered, a process or two per second), keeping a small residue for the classes it is actively using. Without this, a worker that went idle would keep its cached cells forever.
+**Idle caches are swept.** Every 30 s each process flushes what its private lists hold back to the shared pool (staggered, a process or two per second), keeping a small residue for the classes it is actively using; TCP main's I/O threads, which IPC cannot reach, flush at their next job after a sweep. A process that leaves for good - an auto-scaled worker going away - first hands back everything it holds, the unused rest of the blocks it carved included. Without these, a worker that went idle or left would keep its cells forever; one that crashes still does, until restart.
 
-**Integrity checks at the pool boundary.** Each block keeps a map of which of its cells are in the shared pool. A cell that reaches the pool twice is an exact double free: the second copy is refused and counted. Every link the pool follows is checked against the map, so a scribbled free-list link stops the walk instead of leading it off the arena. Both are counted in `core:hg_stats` (`corruption`) and logged at CRITICAL on each detection; the process keeps running. Detection happens when the second copy reaches the shared pool: a cell freed twice and taken again by the same process before its next flush is not caught.
+**Integrity checks.** Each block keeps a map of which of its cells are in the shared pool. A cell that reaches the pool twice is an exact double free: the second copy is refused and counted. Every link the pool follows is checked against the map, so a scribbled free-list link stops the walk instead of leading it off the arena. A cell freed twice in a row is caught earlier, on the freeing thread's private list, in every build; HG_MALLOC_DBG checks that whole list on every free; a large fragment is tagged when freed, so a second free of it is refused. All are counted in `core:hg_stats` (`corruption`) and logged at CRITICAL on each detection; the process keeps running. Not caught in a normal build: a cell freed twice with other frees in between and taken again by the same process before its next flush.
 
 ## 2. Backing memory
 
@@ -159,6 +159,8 @@ A module can ask for its own HG-managed arena with `mem/mem_arena.h` - for a cac
 ## 9. Testing
 
 `modules/hgstress` (excluded from the default build; `include_modules= hgstress`) is a multi-process soak: every worker churns stamped cells across all classes and the large tier, verifies the stamps while the others churn, and reports `PASS`/`FAIL` per worker. Its MI commands park and release stamped memory (`hgstress:hgs_hold`, `hgstress:hgs_release`, to drive grow and shrink) and inject a double free or a scribbled link (`hgstress:hgs_fault`, to exercise the integrity checks). It runs under any `-a` allocator.
+
+The unit tests run under HG_MALLOC with `make test UT_ALLOC=HG_MALLOC UT_MEM="-m 64:1024 -M 16:256"` (`UT_ALLOC=HG_MALLOC_DBG` for the debug variant): the core suites, the allocator stress suite (`mem/test/test_malloc.c`, enabled when HG serves shm and pkg) and the HG cases in `mem/test/test_hg_malloc.c` - pkg memory from before `fork()` realloc'ed and freed in a child, cells freed by another process, the large tier, growth past INIT, a process leaving for good, double frees. CI runs both variants on every compiler and architecture of the unit-test matrix.
 
 ## 10. Configuration
 
@@ -342,3 +344,57 @@ INFO:  pkg: 14 processes at startup, up to 16 with auto-scaling, -M INIT 32 MB: 
 ERROR: pkg: the 14 processes started now need 224 MB of RAM for their -M INIT of 32 MB (after 192 MB from the hugetlb pool), but 0 MB is available above the 11778 MB floor. ...
 ERROR: new process's pkg arena: committing 32 MB now does not fit - ... not forking more processes until memory frees up
 ```
+
+## 11. For reviewers
+
+### Reading order
+
+| file | what it holds |
+|---|---|
+| `mem/hg_malloc.h` | the data structures: `struct hg_block` (one arena), the cell header, size classes, corruption kinds, lock instrumentation |
+| `mem/hg_malloc_dyn.h` | the public entry points (`hg_malloc`/`hg_free`/`hg_realloc`, debug and normal) |
+| `mem/hg_arena.c` | size classes, the per-thread caches, the shared per-class pool, block reclaim, the sweeps, corruption checks, statistics |
+| `mem/hg_buddy.c` | the page grid and buddy allocator; grow, shrink, interior release and re-growth into holes; deferred collapse |
+| `mem/hg_large.c` | requests above 64 KB: a coalescing tier carved from buddy blocks |
+| `mem/hg_malloc.c` | backing memory: the four-tier ladder and its verification, host memory checks, memlock, init and per-child init, status |
+| `mem/hg_maint.c` | the maintenance process |
+| integration | `mem/mem.c`, `mem/shm_mem.c`, `mem/common.c`, `mem/rpm_mem.c`, `pt.c`, `pt_scaling.c`, `main.c`, `cfg.y`, `core_stats.c`, `mi/mi_core.c`, `evi/evi_core.c` |
+| tests | `mem/test/test_hg_malloc.c`, `modules/hgstress` |
+
+### Invariants
+
+1. **One lock per arena.** `hb->lock` (a `gen_lock_t` on its own cache line) guards all shared state of an arena: pools, block lists, the buddy tree, the large tier. No path holds two arena locks, the lock is never re-entered, and the slow system calls - commit, release, re-pin, collapse - run with it released.
+2. **The common path takes no lock.** Each thread keeps, per class, a private free list and a bump region. A hit touches only thread-local state, the cell's class byte and link word, fields fixed at init, and the process's statistics slot. The lock is taken to refill (32 cells), to give back half of a full cache, or to carve a block.
+3. **Ownership is by address.** A pointer belongs to the arena whose reserved range holds it (`hg_owns()`, then a registry of at most 8 arenas inherited across `fork()` - `hg_owner()`); its class is one header byte; its block is computed from the address only when the cell enters the shared pool. A pointer of another arena - pre-fork pkg memory in a child, a module arena - bypasses the private cache and goes to its owner's pool.
+4. **A block is reused only when every cell is back.** A block returns to the buddy, and can be re-cut for another class or the large tier, only when all its cells are in the shared pool (`in_gpool == cells`). A cell in any thread's private cache or bump region still counts as live, so caching can delay a reclaim but never cause a premature one.
+5. **`fork()` never shares private state.** Before allocating anything, a child discards the private cache state it inherited for the shared arenas - otherwise parent and child would hand out the same cells - and gets a pkg arena of its own; pre-fork pkg pointers stay valid and are freed into the child's copy of the inherited arena (`hg_arena_child_init()`, `pt.c`).
+6. **One range operation per arena at a time.** Grow, re-grow, trim and punch take a single in-flight token (`grow_inflight`) under the lock. New pages are published only after they are committed; pages to release are first taken off the free lists and marked `releasing`; a page is released only when it is wholly free; the arena never shrinks below INIT. A grower that finds the token taken waits without the lock and retries only if a grow published pages (`grow_gen`).
+7. **Host memory is checked before it is committed.** Every arena's INIT at creation; all startup processes before the first fork (`hg_capacity_check()`); each child's INIT before its fork - forks are serialized; every grow, under the arena lock, with a pkg grow charged for every process (`hg_grow_ram_refused()`). Concurrent pkg grows therefore cannot together cross the floor. Tier 1 skips the RAM check: its pool pages are reserved at creation.
+8. **The maintenance process owns proactive work** - headroom grows, the profile and shrink gates, deferred collapse - and a worker that runs out still grows the arena itself.
+
+### Known limits
+
+- A double free in a normal build is missed if other frees come between the two and the process takes the cell again before its next flush (see Integrity checks, section 1).
+- A process that crashes keeps its cached cells counted as live until restart; one that exits normally or is scaled down hands them back.
+- The floor checks are not reservations: independent arenas (shm, module arenas, a child's pkg INIT) growing at the same moment can together pass the floor by one step each.
+- If the maintenance process exits, OpenSIPS shuts down. If it hung in the middle of a grow, a worker that runs out would wait 2 s and fail its allocation.
+- TCP main's I/O threads share one statistics slot, so their counters can drift. `E_CORE_HG_LOCK_STALL` is raised for the core shm arena only.
+
+### Properties and the tests that show them
+
+| property | shown by | runs | gap |
+|---|---|---|---|
+| a cell is never handed to two processes at once | `hgstress`: every worker stamps each word of its blocks and re-verifies them; a foreign stamp is a double hand-out | by hand | not in CI |
+| alloc / free / realloc under load, many processes, mixed sizes | the allocator stress suite under HG_MALLOC and HG_MALLOC_DBG | CI | checks alignment and the used-size statistic, not content |
+| a cell freed by another process comes back intact | `test_hg_malloc.c` | CI | |
+| pkg memory from before `fork()` can be realloc'ed and freed in a child | `test_hg_malloc.c`, normal and debug builds | CI | |
+| a process leaving for good gives its cells back | `test_hg_malloc.c`: a child leaves through `dynamic_process_final_exit()` and the arena returns to its baseline | CI | |
+| a double free is refused and counted, not handed out twice | `test_hg_malloc.c` (twice in a row; large fragment); `hgstress` fault injection | CI; by hand | the in-between case (Known limits) |
+| large tier (> 64 KB) | `test_hg_malloc.c` (128 KB - 8 MB, realloc), `hgstress` (1 in 64 allocations) | CI; by hand | |
+| an elastic arena grows past INIT on demand | `test_hg_malloc.c` (one process); `hgstress hold_mb` (every worker, growth seen by all) | CI; by hand | multi-process growth not in CI |
+| the debug status dump walks only valid cells | the HG_MALLOC_DBG unit-test run ends with the shm status dump | CI | |
+| shrink and interior release never free memory still in use | - | by hand, production | no automated test |
+| backing ladder: hugetlb, THP advice, THP collapse, 4 KB | startup log, `core:hg_stats` | by hand | not in CI (runners have no hugetlb pool) |
+| memlock limit: unpinned growth on 4 KB / THP, refusal on hugetlb | - | by hand | not in CI |
+| growth refused at the cap or the host floor returns NULL and raises the event | - | - | no automated test |
+| builds: gcc and clang `-Werror`, x86-64, i386, arm32/arm64, glibc and musl, HG compiled out | upstream CI matrix; i386 and musl by hand | CI; by hand | |
