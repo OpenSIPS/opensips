@@ -1459,6 +1459,92 @@ void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
 		} \
 	} while (0)
 
+/* resident pages in [p, p + len); ~0 = unknown */
+static unsigned int st_resident(char *p, unsigned long len)
+{
+#ifdef __OS_linux
+	unsigned char vec[512];
+	unsigned long i, n, pgsz = (unsigned long)sysconf(_SC_PAGESIZE);
+	unsigned int r = 0;
+
+	n = len / pgsz;
+	if (n > sizeof vec || mincore(p, len, vec) < 0)
+		return ~0U;
+	for (i = 0; i < n; i++)
+		r += vec[i] & 1;
+	return r;
+#else
+	return ~0U;
+#endif
+}
+
+/*
+ * Give-back: carve past the free slots (into new shm pages when the
+ * reservation is small), drain, age the slots past the quiet and cool-off
+ * windows and run one tick.  Empty pages must go back even when the
+ * reservation refused its punch; a punched group must stay out; and the
+ * carve that takes a punched slot again must take its whole group.
+ */
+static int st_giveback(void)
+{
+	const unsigned int bc = PCACHE_NCLASSES - 1;    /* 3 cells a slot */
+	const unsigned int cap = 3 * (8 * PCACHE_GROUP_SLOTS + 4 * PCACHE_PAGE_SLOTS);
+	unsigned int nb = 0, i, g, res, npg0, npg1, cold0;
+	unsigned long freed0;
+	void **big;
+
+	big = pkg_malloc(cap * sizeof *big);
+	CHK(big != NULL, "no pkg for the give-back cells\n");
+	npg0 = arena->npages;
+	while (nb < cap && arena->npages < npg0 + 3 &&
+	        (big[nb] = pcache_cell_alloc(cell_sizes[bc])) != NULL)
+		nb++;
+	npg1 = arena->npages;
+	for (i = 0; i < nb; i++)
+		pcache_cell_free(big[i]);
+	pcache_arena_flush_private();
+	pcache_arena_reclaim_tick();                 /* retires them */
+	arena->tick += pcache_reclaim_quiet_s + pcache_reclaim_cooloff_s;
+	freed0 = arena->pages_freed;
+	pcache_arena_reclaim_tick();                 /* gives back */
+
+	if (npg1 >= npg0 + 3)
+		CHK(arena->pages_freed > freed0, "no empty shm page went back "
+			"(%u pages, giveback_off %u)\n", arena->npages,
+			arena->giveback_off);
+
+	if (!arena->hbase || arena->giveback_off) {
+		LM_NOTICE("arena selftest: %s - group punches not exercised\n",
+			arena->hbase ? "the reservation refused MADV_REMOVE" :
+			"no reservation");
+		pkg_free(big);
+		return 0;
+	}
+	CHK(arena->nfree_cold > 0, "no reservation group was punched out\n");
+	for (g = 0; g < arena->rslots / PCACHE_GROUP_SLOTS; g++) {
+		if (!bit_get(arena->rcold, g * PCACHE_GROUP_SLOTS))
+			continue;
+		res = st_resident(arena->hbase + (unsigned long)g * PCACHE_HPS,
+			PCACHE_HPS);
+		CHK(res != ~0U, "no residency for punched group %u\n", g);
+		CHK(res == 0, "punched group %u has %u pages resident again\n",
+			g, res);
+	}
+
+	cold0 = arena->nfree_cold;
+	for (nb = 0; nb < cap && arena->nfree_cold == cold0 &&
+	        (big[nb] = pcache_cell_alloc(cell_sizes[bc])) != NULL; nb++)
+		;
+	for (i = 0; i < nb; i++)
+		pcache_cell_free(big[i]);
+	pkg_free(big);
+	CHK(arena->nfree_cold < cold0, "no carve took a punched-out slot\n");
+	CHK(cold0 - arena->nfree_cold == PCACHE_GROUP_SLOTS, "a punched-out "
+		"group came back %u slots at a time, not whole\n",
+		cold0 - arena->nfree_cold);
+	return 0;
+}
+
 int pcache_arena_selftest(void)
 {
 	void *a, *b, **ptrs;
@@ -1582,6 +1668,9 @@ int pcache_arena_selftest(void)
 			pcache_cell_free(big[i]);
 	}
 	pcache_arena_stats(&n3, &by1);
+
+	if (pcache_reclaim_giveback && st_giveback() < 0)
+		return -1;
 
 	/* fork-reset path: drop the private state, then allocate fresh */
 	pcache_arena_child_init();
