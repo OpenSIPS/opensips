@@ -238,7 +238,8 @@ static void cl_ctr_cfg_note_reject(const char *src_ip, cl_ctr_cluster_t *cl)
  *   5. If joining IP <= own IP: send MEMBER_LIST (self still master).
  */
 void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
-                               uint64_t pkt_inc, cl_ctr_cluster_t *cl,
+                               uint64_t pkt_inc, const unsigned char *req_nonce,
+                               cl_ctr_cluster_t *cl,
                                const struct sockaddr *src, socklen_t src_len)
 {
     const char    *p         = payload;
@@ -368,7 +369,7 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
 	    LM_WARN("clusterer_controller: [cluster %d] rejecting JOIN_REQ from %s: "
 	            "different settings than the running cluster (%s)\n",
 	            cl->cluster_id, src_ip, diff);
-	    cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_CONFIG);
+	    cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_CONFIG, req_nonce);
 	    cl_ctr_cfg_note_reject(src_ip, cl);
 	    return;
 	}
@@ -404,7 +405,7 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
 	        "member must agree, because an oversized datagram is dropped "
 	        "silently by the smaller link.\n",
 	        cl->cluster_id, src_ip, j_mtu, cc_mtu);
-	cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_MTU);
+	cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_MTU, req_nonce);
 	cl_ctr_mtu_note_reject(src_ip, cl);
 	return;
     }
@@ -435,7 +436,7 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
 	    LM_WARN("clusterer_controller: [cluster %d] peer table full "
 	            "(%d/%d), rejecting JOIN_REQ from %s\n",
 	            cl->cluster_id, cl->peers->count, CL_CTR_MAX_PEERS, src_ip);
-	    cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_GENERIC);
+	    cl_ctr_send_join_reject(sock, src_ip, cl, CL_CTR_REJECT_GENERIC, req_nonce);
 	    return;
 	}
     }
@@ -1102,7 +1103,8 @@ void cl_ctr_handle_key_handoff(const char *payload, int payload_len,
  * Returns 1 the first time a source IP reaches CL_CTR_JOIN_FAIL_LIMIT failures.
  *
  * cl_ctr_send_join_reject() - master: send encrypted JOIN_REJECT via BOOTSTRAP_MAGIC.
- * Wire payload: [target_ip NUL]
+ * Wire payload: [target_ip NUL][reason][MTU 2B][config 4B][nonce 24B] - the
+ * nonce of the refused packet's header, which binds the refusal to it.
  *
  * cl_ctr_handle_join_reject() - joiner: stop OpenSIPS if the reject is for us and
  * we are still in CL_CTR_NODE_NEW (i.e., have not successfully joined yet).
@@ -1151,7 +1153,7 @@ int cl_ctr_join_fail_check(const char *src_ip, cl_ctr_cluster_t *cl)
 }
 
 void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
-                                int reason)
+                                int reason, const unsigned char *req_nonce)
 {
     /* +1 reason byte, +2 the master's MTU, +CL_CTR_CONFIG_SZ the master's
      * config triple.  All three are diagnostic only - NOT cluster state the
@@ -1161,7 +1163,7 @@ void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *
      * cl_ctr_handle_join_reject).  The MTU came first; the config triple is
      * the same idea applied to the reason an operator actually meets. */
     char               pkt[CL_CTR_SMALL_PKT_SZ + 1 + CL_CTR_MTU_SZ
-                          + CL_CTR_CONFIG_SZ];
+                          + CL_CTR_CONFIG_SZ + CL_CTR_NONCE_SZ];
     uint32_t           seq = htonl(++cl->peers->my_seq);
 
     cl_ctr_note_join_refused(cl, target_ip,
@@ -1195,14 +1197,30 @@ void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *
 	c[1] = (char)(cl->master_stickiness ? 1 : 0);
 	memcpy(c + 2, &qt, 2);
     }
+
+    /* last, the nonce of the packet refused: the joiner acts only on a
+     * refusal of a request it sent itself (cl_ctr_handle_join_reject) */
+    memcpy(pkt + CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + ip_len + 2
+               + CL_CTR_MTU_SZ + CL_CTR_CONFIG_SZ, req_nonce, CL_CTR_NONCE_SZ);
     plain_len = CL_CTR_PLAIN_HDR_SZ + ip_len + 1 + 1 + CL_CTR_MTU_SZ
-                + CL_CTR_CONFIG_SZ;
+                + CL_CTR_CONFIG_SZ + CL_CTR_NONCE_SZ;
     if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->key, CL_CTR_PKT_JOIN_REJECT) == 0)
         LM_WARN("clusterer_controller: [cluster %d] sent JOIN_REJECT to %s (%s)\n",
                 cl->cluster_id, target_ip,
                 reason == CL_CTR_REJECT_CONFIG ? "different cluster settings" :
                 reason == CL_CTR_REJECT_MTU    ? "different cluster-plane MTU"
                                            : "repeated auth failure - wrong password?");
+}
+
+/* Is @n the nonce of one of our last JOIN_REQs? */
+static int cl_ctr_join_nonce_ours(cl_ctr_cluster_t *cl, const unsigned char *n)
+{
+    int i;
+
+    for (i = 0; i < cl->join_nonces_n; i++)
+        if (memcmp(cl->join_nonces[i], n, CL_CTR_NONCE_SZ) == 0)
+            return 1;
+    return 0;
 }
 
 void cl_ctr_handle_join_reject(const char *payload, int payload_len,
@@ -1261,6 +1279,40 @@ void cl_ctr_handle_join_reject(const char *payload, int payload_len,
             memcpy(&qt_be, c + 2, 2);
             r_qt        = ntohs(qt_be);
             cfg_present = 1;
+        }
+        /* Which of our JOIN_REQs it refuses: the master echoes that request's
+         * nonce after the config triple.  Bootstrap packets have no replay
+         * window, so a refusal recorded once could otherwise be sent again by
+         * anyone on the group and stop this node whenever it next joins.  One
+         * that echoes none of our recent requests is ignored.  One that
+         * echoes nothing comes from an older master: it is acted on only for
+         * a reason the checks below can hold against what this node runs -
+         * settings or MTU - never for the bare refusal that would shut us
+         * down on its word alone. */
+        {
+            static time_t warned_at;
+            int  echo_off = l + 2 + CL_CTR_MTU_SZ + CL_CTR_CONFIG_SZ;
+            int  stale    = payload_len >= echo_off + CL_CTR_NONCE_SZ
+                            && !cl_ctr_join_nonce_ours(cl,
+                                   (const unsigned char *)payload + echo_off);
+            int  unbound  = payload_len < echo_off + CL_CTR_NONCE_SZ
+                            && reason != CL_CTR_REJECT_MTU
+                            && reason != CL_CTR_REJECT_CONFIG;
+            time_t now    = cl_ctr_now();
+
+            if (stale || unbound) {
+                if (warned_at == 0 || now - warned_at >= CL_CTR_WIRE_WARN_IVL) {
+                    warned_at = now;
+                    LM_WARN("clusterer_controller: [cluster %d] ignoring a "
+                            "JOIN_REJECT from %s that %s\n", cl->cluster_id,
+                            sender_ip, stale
+                            ? "refuses none of this node's JOIN_REQs - sent "
+                              "again, or stale"
+                            : "names no JOIN_REQ of this node (an older "
+                              "master?) and no reason this node can check");
+                }
+                return;
+            }
         }
         /* Only act if the refusal is self-consistent with what WE measure: the
          * master says the cluster runs at X, and our own interface really is

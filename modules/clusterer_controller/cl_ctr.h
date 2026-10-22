@@ -399,6 +399,7 @@ static inline long long cl_ctr_now_ms(void)
 /* Number of consecutive bootstrap-decrypt failures before a JOIN_REJECT is sent */
 #define CL_CTR_JOIN_FAIL_LIMIT      3
 #define CL_CTR_JOIN_FAIL_TABLE_SZ   8   /* max simultaneous rejected IPs tracked by master */
+#define CL_CTR_JOIN_NONCES          8   /* our last JOIN_REQs a JOIN_REJECT may answer */
 
 #define CL_CTR_MAX_IP_LEN        15   /* "255.255.255.255" without NUL            */
 #define CL_CTR_PUBKEY_SZ         32   /* X25519 public key                        */
@@ -989,6 +990,12 @@ typedef struct cl_ctr_cluster_ {
     cl_ctr_symstate_t  noise_hs;
     unsigned char  noise_e_priv[32];
     int            noise_hs_valid;   /* 1 after a JOIN_REQ, until KEY_GRANT/reset */
+    /* The header nonces of our last JOIN_REQs.  A JOIN_REJECT is acted on
+     * only if it echoes one of them: bootstrap packets have no replay window,
+     * so a refusal recorded once could otherwise be sent again by anyone on
+     * the group and stop this node at its next start.  Worker-local. */
+    unsigned char  join_nonces[CL_CTR_JOIN_NONCES][CL_CTR_NONCE_SZ];
+    int            join_nonces_n, join_nonce_next;
     /* Set while a re-key JOIN_REQ is in flight; cleared on KEY_GRANT success
      * or master transition to prevent nonce stomping under packet flood.    */
     int            join_pending;
@@ -1716,7 +1723,8 @@ void cl_ctr_fmt_cfg_diff(char *out, int outsz, const char *la, const char *lb,
 void cl_ctr_adopt_config(cl_ctr_cluster_t *cl, int new_manage, int new_stick,
                             int new_qt, int is_active);
 void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
-                               uint64_t pkt_inc, cl_ctr_cluster_t *cl,
+                               uint64_t pkt_inc, const unsigned char *req_nonce,
+                               cl_ctr_cluster_t *cl,
                                const struct sockaddr *src, socklen_t src_len);
 void cl_ctr_handle_member_list(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
@@ -1730,7 +1738,7 @@ void cl_ctr_handle_key_handoff(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);
 int cl_ctr_join_fail_check(const char *src_ip, cl_ctr_cluster_t *cl);
 void cl_ctr_send_join_reject(int sock, const char *target_ip, cl_ctr_cluster_t *cl,
-                                int reason);
+                                int reason, const unsigned char *req_nonce);
 void cl_ctr_handle_join_reject(const char *payload, int payload_len,
                                    const char *sender_ip, cl_ctr_cluster_t *cl);
 

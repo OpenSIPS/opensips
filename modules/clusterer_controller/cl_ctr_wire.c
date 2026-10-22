@@ -746,9 +746,17 @@ void cl_ctr_send_join_req_pkt(int sock, cl_ctr_cluster_t *cl)
     }
 
     plain_len = (int)(p - (pkt + CL_CTR_WIRE_HDR_SZ));
-    if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->key, CL_CTR_PKT_JOIN_REQ) == 0)
+    if (cl_ctr_seal_and_send(sock, cl, pkt, plain_len, cl->key, CL_CTR_PKT_JOIN_REQ) == 0) {
+	/* sealing left this request's nonce in the header: a refusal of it
+	 * must echo it (cl_ctr_handle_join_reject) */
+	memcpy(cl->join_nonces[cl->join_nonce_next], pkt + CL_CTR_NONCE_OFF,
+	       CL_CTR_NONCE_SZ);
+	cl->join_nonce_next = (cl->join_nonce_next + 1) % CL_CTR_JOIN_NONCES;
+	if (cl->join_nonces_n < CL_CTR_JOIN_NONCES)
+	    cl->join_nonces_n++;
 	LM_DBG("clusterer_controller: [cluster %d] sent JOIN_REQ bin=%s\n",
 	       cl->cluster_id, cl->bin_socket);
+    }
 }
 
 /**

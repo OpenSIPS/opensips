@@ -524,7 +524,8 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 		 * the correct password can read it.  Forgeries are impossible without
 		 * the bootstrap key.                                                  */
 		if (_im && cl_ctr_join_fail_check(sender_ip_buf, cl))
-		    cl_ctr_send_join_reject(sock, sender_ip_buf, cl, CL_CTR_REJECT_GENERIC);
+		    cl_ctr_send_join_reject(sock, sender_ip_buf, cl, CL_CTR_REJECT_GENERIC,
+		        (const unsigned char *)buf + CL_CTR_NONCE_OFF);
 
 		/* Joiner fallback: count bootstrap decrypt failures during CL_CTR_NODE_NEW
 		 * only when the packet came from the known master.  This filters out
@@ -747,7 +748,8 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    break;
 
 	case CL_CTR_PKT_JOIN_REQ:
-	    cl_ctr_handle_join_req(sock, payload, payload_len, pkt_inc, cl,
+	    cl_ctr_handle_join_req(sock, payload, payload_len, pkt_inc,
+	                       (const unsigned char *)buf + CL_CTR_NONCE_OFF, cl,
 	                       (const struct sockaddr *)&src_addr, src_len);
 	    break;
 
