@@ -101,10 +101,14 @@ void cl_ctr_handle_resync(const char *sender_ip, cl_ctr_cluster_t *cl)
     int   i_am_master;
     char  why[64];
 
+    int   member;
+
     lock_start_read(cl->peers->lock);
     i_am_master = cl_ctr_i_am_master_locked(cl);
+    member      = cl_ctr_peer_by_ip_locked(cl, sender_ip) != NULL;
     lock_stop_read(cl->peers->lock);
-    if (!i_am_master)
+    /* a full re-announcement is for a member that lost track, nobody else */
+    if (!i_am_master || !member)
         return;
 
     snprintf(why, sizeof why, "RESYNC from %s", sender_ip);
@@ -902,17 +906,22 @@ void cl_ctr_handle_master_probe(const char *sender_ip, const char *payload,
     int      l = (int)strnlen(payload, payload_len < CL_CTR_MAX_IP_LEN
                                        ? payload_len : CL_CTR_MAX_IP_LEN);
     uint32_t ago = CL_CTR_PROBE_NOT_HEARD;
-    int      follows, is_me;
+    int      follows, is_me, member;
+    struct sockaddr_in to;
 
     if (l == 0 || l >= payload_len || strcmp(sender_ip, my_ip) == 0)
         return;
     memcpy(m, payload, l);
     m[l] = '\0';
     lock_start_read(cl->peers->lock);
+    member  = cl_ctr_peer_by_ip_locked(cl, sender_ip) != NULL;
     is_me   = cl_ctr_i_am_master_locked(cl) && strcmp(m, my_ip) == 0;
     follows = !cl_ctr_i_am_master_locked(cl) &&
               strcmp(cl->peers->last_master, m) == 0;
     lock_stop_read(cl->peers->lock);
+    /* answered to members only, at their own address: no reflector */
+    if (!member || cl_ctr_node_addr(cl, sender_ip, &to) < 0)
+        return;
     if (is_me) {
         /* asked about ourselves: we are alive - and a member cannot hear our
          * keepalives, which is worth saying here, where the fault may be */
@@ -930,7 +939,9 @@ void cl_ctr_handle_master_probe(const char *sender_ip, const char *payload,
         long long d = cl_ctr_now_ms() - cl->master_heard_ms;
         ago = d < 0 ? 0 : (d > 0x7FFFFFFF ? 0x7FFFFFFF : (uint32_t)d);
     }
-    cl_ctr_send_master_probe_ack(cl, m, ago, src, src_len);
+    (void)src; (void)src_len;
+    cl_ctr_send_master_probe_ack(cl, m, ago, (const struct sockaddr *)&to,
+                                 sizeof(to));
 }
 
 /* cl_ctr_handle_master_probe_ack() - one peer's answer to our probe. */

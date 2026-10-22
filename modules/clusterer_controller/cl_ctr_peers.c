@@ -94,6 +94,18 @@ int cl_ctr_ip_valid(const char *ip)
     return inet_pton(AF_INET, ip, &addr) == 1 && addr.s_addr != 0;
 }
 
+/* Where a node listens: its address at the cluster's port.  Replies go here
+ * rather than to a datagram's source, which anyone can set - a packet sent
+ * again from another address must not turn this node into a reflector. */
+int cl_ctr_node_addr(const cl_ctr_cluster_t *cl, const char *ip,
+                     struct sockaddr_in *to)
+{
+    memset(to, 0, sizeof(*to));
+    to->sin_family = AF_INET;
+    to->sin_port   = htons((uint16_t)cl->multicast_port);
+    return inet_pton(AF_INET, ip, &to->sin_addr) == 1 ? 0 : -1;
+}
+
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl)
 {
     /* a node in trouble (Local Health Multiplier) waits longer to purge */

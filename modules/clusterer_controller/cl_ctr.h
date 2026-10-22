@@ -1691,6 +1691,8 @@ int cl_ctr_find_peer(int cid, int nid, int *is_master, int *is_backup,
                         int *maint, char *ipbuf, int ipbuf_sz);
 unsigned int ip_to_num(const char *ip);
 int cl_ctr_ip_valid(const char *ip);
+int cl_ctr_node_addr(const cl_ctr_cluster_t *cl, const char *ip,
+                     struct sockaddr_in *to);
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl);
 void cl_ctr_apply_master_from_list_locked(const char *master_ip, cl_ctr_cluster_t *cl);
 cl_ctr_peer_t *cl_ctr_peer_by_ip_locked(cl_ctr_cluster_t *cl, const char *ip);

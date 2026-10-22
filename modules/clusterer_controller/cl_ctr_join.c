@@ -248,6 +248,7 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
     char           bin_socks[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
     const unsigned char *noise_msg1 = NULL;   /* points into payload */
     int            noise_msg1_len = 0;
+    struct sockaddr_in joiner;
     uint8_t        bin_cnt   = 0;
     int            ip_len, was_master, i;
     int            j_cfg_present = 0, j_manage = 0, j_stick = 0, j_qt = 0;
@@ -278,6 +279,13 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
 	       "%s, dropping\n", cl->cluster_id, src_ip, sender_ip);
 	return;
     }
+    /* Every reply goes to the joiner, at its own address - not to the
+     * datagram's source, so a JOIN_REQ sent again from elsewhere cannot aim
+     * the grant, the assignments and the list at someone else. */
+    if (cl_ctr_node_addr(cl, src_ip, &joiner) < 0)
+	return;
+    src     = (const struct sockaddr *)&joiner;
+    src_len = sizeof(joiner);
 
     /* --- Parse BIN sockets --- */
     memset(bin_socks, 0, sizeof(bin_socks));
