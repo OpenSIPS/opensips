@@ -1581,6 +1581,35 @@ static unsigned int st_resident(char *p, unsigned long len)
 #endif
 }
 
+/* a region of the reservation takes the slots it covers and no more, and
+ * small ones share a slot */
+static int st_regions(void)
+{
+	unsigned long top0;
+	char *a, *b;
+
+	if (!arena->hbase || arena->rtop - arena->hoff < 3 * PCACHE_SLOT) {
+		LM_NOTICE("arena selftest: no reservation room - region carving "
+			"not exercised\n");
+		return 0;
+	}
+	top0 = arena->rtop;
+	a = pcache_region_alloc(PCACHE_SLOT);
+	CHK(a != NULL, "a one-slot region failed\n");
+	CHK(top0 - arena->rtop == PCACHE_SLOT, "a one-slot region carved "
+		"%lu KB\n", (top0 - arena->rtop) >> 10);
+	top0 = arena->rtop;
+	a = pcache_region_alloc(16384);
+	b = pcache_region_alloc(16384);
+	CHK(a && b, "a 16 KB region failed\n");
+	CHK(top0 - arena->rtop <= PCACHE_SLOT, "two 16 KB regions carved "
+		"%lu KB\n", (top0 - arena->rtop) >> 10);
+	CHK(!((unsigned long)a & 63) && !((unsigned long)b & 63) &&
+		(b >= a + 16384 || a >= b + 16384),
+		"16 KB regions misaligned or overlapping\n");
+	return 0;
+}
+
 /*
  * Give-back: carve past the free slots (into new shm pages when the
  * reservation is small), drain, age the slots past the quiet and cool-off
@@ -1772,6 +1801,8 @@ int pcache_arena_selftest(void)
 	}
 	pcache_arena_stats(&n3, &by1);
 
+	if (st_regions() < 0)
+		return -1;
 	if (pcache_reclaim_giveback && st_giveback() < 0)
 		return -1;
 

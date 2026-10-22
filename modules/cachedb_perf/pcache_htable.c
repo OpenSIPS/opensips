@@ -2294,6 +2294,113 @@ static int st_leg_drain(void)
 	return 0;
 }
 
+/* one record of the evacuation case: 5,000-byte values, a class of their
+ * own among the selftest's records */
+static int st_evac_kv(unsigned int i, char *kb, char *vb, str *k, str *v)
+{
+	k->len = snprintf(kb, 32, "evac-%03u", i); k->s = kb;
+	memset(vb, 'a' + i % 26, 5000);
+	memcpy(vb, kb, k->len);
+	v->s = vb; v->len = 5000;
+	return 0;
+}
+
+static unsigned int st_evac_misses(pcache_htable_t *ht, const unsigned char *alive,
+		unsigned int n, char *kb, char *vb)
+{
+	unsigned int i, miss = 0;
+	str k, v, out;
+
+	for (i = 0; i < n; i++) {
+		if (!alive[i])
+			continue;
+		st_evac_kv(i, kb, vb, &k, &v);
+		if (pcache_ht_fetch(ht, &k, &out) != 0) {
+			miss++;
+			continue;
+		}
+		if (out.len != (unsigned int)v.len || memcmp(out.s, vb, v.len))
+			miss++;
+		pkg_free(out.s);
+	}
+	return miss;
+}
+
+/* a mass expiry leaves a few survivors in every chunk of their class: the
+ * arena must find those chunks sparse, the evacuation must move the
+ * survivors into fewer chunks so the rest retire, every survivor must read
+ * back, and once settled nothing more may move - a lone sparse chunk
+ * included */
+static int st_evacuate(void)
+{
+	enum { N = 420 };
+	pcache_htable_t *ht;
+	unsigned char alive[N];
+	unsigned int i, n0, n1, moved, left;
+	unsigned long by;
+	char kb[32], *vb;
+	str k, v;
+
+	if (pcache_arena_backing() != PCACHE_BACKING_OWN)
+		return 0;
+	ht = pcache_htable_new(8);
+	HCHK(ht != NULL, "table creation failed\n");
+	vb = pkg_malloc(5000);
+	HCHK(vb != NULL, "no pkg for the values\n");
+	for (i = 0; i < N; i++) {
+		st_evac_kv(i, kb, vb, &k, &v);
+		HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "store %u failed\n", i);
+		alive[i] = 1;
+	}
+	pcache_arena_flush_private();
+	pcache_arena_stats(&n0, &by);
+	for (i = 0; i < N; i++) {
+		if (!(i % 16))
+			continue;
+		st_evac_kv(i, kb, vb, &k, &v);
+		HCHK(pcache_ht_remove(ht, &k) == 1, "remove %u failed\n", i);
+		alive[i] = 0;
+	}
+	pcache_arena_flush_private();
+	pcache_arena_reclaim_tick();
+	pcache_arena_age(pcache_reclaim_quiet_s + 1);
+	pcache_arena_reclaim_tick();
+	HCHK(pcache_arena_sparse_chunks() > 1, "%u sparse chunks after 15 of "
+		"16 records went\n", pcache_arena_sparse_chunks());
+	moved = pcache_ht_evacuate(ht, ht->nbuckets, 100000);
+	pcache_arena_flush_private();
+	pcache_arena_reclaim_tick();
+	pcache_arena_stats(&n1, &by);
+	HCHK(n1 + 5 <= n0, "the evacuation moved %u records and left %u "
+		"chunks of %u\n", moved, n1, n0);
+	HCHK(!st_evac_misses(ht, alive, N, kb, vb), "survivors lost or "
+		"changed by the evacuation\n");
+
+	pcache_arena_age(pcache_reclaim_quiet_s + 1);
+	pcache_arena_reclaim_tick();
+	moved = pcache_ht_evacuate(ht, ht->nbuckets, 100000);
+	HCHK(moved == 0, "a settled class moved %u more records\n", moved);
+
+	/* down to three survivors in one chunk: it is sparse, and alone */
+	for (i = 0, left = 0; i < N; i++) {
+		if (!alive[i] || ++left <= 3)
+			continue;
+		st_evac_kv(i, kb, vb, &k, &v);
+		HCHK(pcache_ht_remove(ht, &k) == 1, "remove %u failed\n", i);
+		alive[i] = 0;
+	}
+	pcache_arena_flush_private();
+	pcache_arena_reclaim_tick();
+	pcache_arena_age(pcache_reclaim_quiet_s + 1);
+	pcache_arena_reclaim_tick();
+	moved = pcache_ht_evacuate(ht, ht->nbuckets, 100000);
+	HCHK(moved == 0, "a lone sparse chunk's %u records moved, to an empty "
+		"chunk or within their own\n", moved);
+	HCHK(!st_evac_misses(ht, alive, N, kb, vb), "survivors lost\n");
+	pkg_free(vb);
+	return 0;
+}
+
 int pcache_htable_selftest(void)
 {
 	pcache_htable_t *ht;
@@ -2552,7 +2659,7 @@ int pcache_htable_selftest(void)
 	{
 		static int (*const cases[])(void) = { st_leg_walk_skip,
 			st_bucket_rewalk, st_passive_promote, st_exp_preserve,
-			st_scan_leg_first, st_leg_drain };
+			st_scan_leg_first, st_leg_drain, st_evacuate };
 		const int ncases = sizeof cases / sizeof *cases;
 		int c, fails = 0;
 
