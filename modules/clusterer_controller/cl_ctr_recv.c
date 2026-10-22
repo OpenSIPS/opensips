@@ -589,7 +589,10 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 
 	case CL_CTR_PKT_ALIVE: {
 	    char           ip_buf[CL_CTR_MAX_IP_LEN + 1];
-	    int            ip_len = (int)strnlen(payload, CL_CTR_MAX_IP_LEN);
+	    /* bounded by the payload too: past it lie the tag and stale bytes */
+	    int            ip_len = (int)strnlen(payload,
+	                               payload_len < CL_CTR_MAX_IP_LEN
+	                               ? (size_t)payload_len : CL_CTR_MAX_IP_LEN);
 	    const unsigned char *pubkey = NULL;
 	    int            cfg_present = 0, p_manage = 0, p_stick = 0, p_qt = 0;
 	    int            p_mtu = 0, p_maint = 0;

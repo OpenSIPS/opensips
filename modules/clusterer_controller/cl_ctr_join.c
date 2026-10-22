@@ -266,6 +266,15 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
     /* Ignore our own JOIN_REQ via loopback */
     if (strcmp(src_ip, my_ip) == 0)
 	return;
+    if (!cl_ctr_ip_valid(src_ip)) {
+	char from[INET_ADDRSTRLEN] = "?";
+	if (src && src->sa_family == AF_INET)
+	    inet_ntop(AF_INET, &((const struct sockaddr_in *)src)->sin_addr,
+	              from, sizeof(from));
+	LM_WARN("clusterer_controller: [cluster %d] JOIN_REQ from %s names no "
+	        "valid address, dropping\n", cl->cluster_id, from);
+	return;
+    }
 
     /* --- Parse BIN sockets --- */
     memset(bin_socks, 0, sizeof(bin_socks));
@@ -823,9 +832,20 @@ void cl_ctr_handle_node_assign(const char *payload, int payload_len,
 
     /* IP */
     ip_len = (int)strnlen(p, CL_CTR_MAX_IP_LEN);
+    if (p + ip_len >= end) {
+	LM_WARN("clusterer_controller: NODE_ASSIGN payload truncated\n");
+	return;
+    }
     memcpy(ip, p, ip_len);
     ip[ip_len] = '\0';
     p += ip_len + 1;
+    /* a master assigns ids 1..CL_CTR_MAX_PEERS to addresses, nothing else */
+    if (node_id == 0 || node_id > CL_CTR_MAX_PEERS || !cl_ctr_ip_valid(ip)) {
+	LM_WARN("clusterer_controller: [cluster %d] NODE_ASSIGN from %s names "
+	        "no valid node_id and address, dropping\n", cl->cluster_id,
+	        sender_ip);
+	return;
+    }
 
     /* BIN sockets */
     memset(bin_socks, 0, sizeof(bin_socks));

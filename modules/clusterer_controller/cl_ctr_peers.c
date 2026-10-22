@@ -86,6 +86,14 @@ unsigned int ip_to_num(const char *ip)
     return ntohl(addr.s_addr);
 }
 
+/* A node's address as a packet names it: a dotted quad, not 0.0.0.0 -
+ * inet_pton, unlike inet_aton, takes nothing shorter or looser. */
+int cl_ctr_ip_valid(const char *ip)
+{
+    struct in_addr addr;
+    return inet_pton(AF_INET, ip, &addr) == 1 && addr.s_addr != 0;
+}
+
 void cl_ctr_prune_stale(cl_ctr_cluster_t *cl)
 {
     /* a node in trouble (Local Health Multiplier) waits longer to purge */
