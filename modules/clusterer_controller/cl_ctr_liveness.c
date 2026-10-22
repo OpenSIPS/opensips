@@ -465,6 +465,14 @@ void cl_ctr_handle_master_alive(const char *sender_ip, cl_ctr_cluster_t *cl,
                       + CL_CTR_TERM_SZ, CL_CTR_LIVE_SZ);
         adv_live = ntohs(l_be);
     }
+    /* counts no cluster can have were not sent by a master; ranked on what
+     * they claim they would outrank every real one */
+    if (adv_cnt > CL_CTR_MAX_PEERS || adv_live > CL_CTR_MAX_PEERS) {
+        LM_DBG("clusterer_controller: [cluster %d] MASTER_ALIVE from %s counts "
+               "%u members, %u live - out of range, dropping\n",
+               cl->cluster_id, sender_ip, adv_cnt, adv_live);
+        return;
+    }
     /* our own counts, for the same comparison - taken before the write lock,
      * since both take the read lock themselves */
     cl_ctr_membership_digest(cl, &my_cnt, &my_hash);
