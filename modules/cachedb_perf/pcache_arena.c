@@ -194,6 +194,8 @@ typedef struct pcache_arena {
 	unsigned long         hsize;
 	unsigned long         hoff;             /* chunk frontier, grows UP (lock) */
 	unsigned long         rtop;             /* region frontier, grows DOWN */
+	char                 *rtail;            /* unused end of a region slot */
+	unsigned long         rtail_left;
 	enum pcache_mem_tier  htier;
 	unsigned long         hlocked_mb;
 } pcache_arena_t;
@@ -702,6 +704,36 @@ int pcache_arena_init(void)
 	return 0;
 }
 
+/* A region of the reservation needs no header - it is never freed or
+ * listed - so it takes exactly the slots it covers, and one smaller than
+ * the space left at the end of an earlier region slot goes there.  NULL =
+ * no room.  Arena lock held. */
+static void *region_carve(unsigned long size)
+{
+	unsigned long need = (size + 63) & ~63UL, slots, left;
+	char *p;
+
+	if (need <= arena->rtail_left) {
+		p = arena->rtail;
+		arena->rtail += need;
+		arena->rtail_left -= need;
+		return p;
+	}
+	slots = (need + PCACHE_SLOT - 1) >> PCACHE_SLOT_SHIFT;
+	if (arena->hoff + slots * PCACHE_SLOT > arena->rtop)
+		return NULL;
+	arena->rtop -= slots * PCACHE_SLOT;
+	p = arena->hbase + arena->rtop;
+	arena->bytes += slots * PCACHE_SLOT;
+	arena->regions_bytes += slots * PCACHE_SLOT;
+	left = slots * PCACHE_SLOT - need;
+	if (left > arena->rtail_left) {
+		arena->rtail = p + need;
+		arena->rtail_left = left;
+	}
+	return p;
+}
+
 /*
  * Raw memory for an index region, 64-aligned and never freed (tables never
  * shrink).  From the reservation's top frontier when it has room, else shm.
@@ -709,8 +741,9 @@ int pcache_arena_init(void)
 void *pcache_region_alloc(size_t size)
 {
 	pcache_region_t *rg;
-	unsigned long need = size + sizeof(pcache_region_t) + 64, slots;
+	unsigned long need = size + sizeof(pcache_region_t) + 64;
 	char *aligned;
+	void *p;
 
 	if (backing != PCACHE_BACKING_OWN) {
 		/* extents and accounting are HG's */
@@ -725,18 +758,10 @@ void *pcache_region_alloc(size_t size)
 	}
 
 	lock_get(&arena->lock);
-	slots = (need + PCACHE_SLOT - 1) >> PCACHE_SLOT_SHIFT;
-	if (arena->hbase && arena->hoff + slots * PCACHE_SLOT <= arena->rtop) {
-		arena->rtop -= slots * PCACHE_SLOT;
-		rg = (pcache_region_t *)(arena->hbase + arena->rtop);
-		arena->bytes += slots * PCACHE_SLOT;
-		arena->regions_bytes += slots * PCACHE_SLOT;
-		rg->size = 0;                       /* lives in the reservation */
-		lock_release(&arena->lock);
-		return (char *)(((unsigned long)rg + sizeof(pcache_region_t) + 63)
-		                & ~63UL);
-	}
+	p = arena->hbase ? region_carve(size) : NULL;
 	lock_release(&arena->lock);
+	if (p)
+		return p;
 
 	rg = shm_malloc(need);
 	if (!rg) {
