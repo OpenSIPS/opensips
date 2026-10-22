@@ -635,12 +635,14 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 			 * operator can act on - hence a warning, not a debug
 			 * line, rate limited per process because a burst that
 			 * outruns the window outruns it for many packets. */
-			static unsigned int last_old_warn;
+			/* one throttle per line: the jump and the fall
+			 * behind the window are different news */
+			static unsigned int last_warn[2];
 			unsigned int now_t = get_ticks();
+			unsigned int *lw = &last_warn[_seq_rc == CL_CTR_SEQ_JUMP];
 
-			if (last_old_warn == 0 ||
-			    now_t - last_old_warn >= CL_CTR_RELIABLE_WARN_IVL) {
-			    last_old_warn = now_t;
+			if (*lw == 0 || now_t - *lw >= CL_CTR_RELIABLE_WARN_IVL) {
+			    *lw = now_t;
 			    if (_seq_rc == CL_CTR_SEQ_JUMP)
 				LM_WARN("clusterer_controller: reliable message "
 				        "from %s seq=%u is implausibly far ahead "
