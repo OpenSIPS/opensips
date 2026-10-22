@@ -81,6 +81,15 @@ static int cl_ctr_consumer_src_known(cl_ctr_cluster_t *cl, uint32_t src_ip)
     return known;
 }
 
+/* The types a sender seals with the bootstrap key: the admission handshake
+ * (JOIN_REQ, KEY_GRANT and its ACK, JOIN_REJECT) and the master's beacon. */
+static int cl_ctr_bootstrap_type(unsigned char t)
+{
+    return t == CL_CTR_PKT_JOIN_REQ || t == CL_CTR_PKT_KEY_GRANT ||
+           t == CL_CTR_PKT_ACK || t == CL_CTR_PKT_JOIN_REJECT ||
+           t == CL_CTR_PKT_MASTER_BEACON;
+}
+
 static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip,
                              int is_consumer)
 {
@@ -456,6 +465,19 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    return;
 	}
 
+	/* The key that sealed a packet says who can have sent it: the bootstrap
+	 * key belongs to the password, which anyone holding it has, admitted or
+	 * not; the session key only to the members a master admitted.  Only the
+	 * admission handshake and the master's beacon travel under the bootstrap
+	 * key - any other type sealed with it comes from a holder of the password
+	 * that no master admitted, and its parser never sees it. */
+	if (is_bootstrap && !cl_ctr_bootstrap_type((unsigned char)buf[CL_CTR_WIRE_HDR_SZ])) {
+	    LM_DBG("clusterer_controller: [cluster %d] packet type 0x%02x from %s "
+	           "sealed with the bootstrap key, dropping\n", cl->cluster_id,
+	           (unsigned char)buf[CL_CTR_WIRE_HDR_SZ], sender_ip_buf);
+	    return;
+	}
+
 	/* While we belong to no cluster, remember an id we hear on traffic that
 	 * authenticated: if we must found a cluster ourselves, we found into this
 	 * one rather than mint an id its members would refuse. */
@@ -629,10 +651,6 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    break;
 
 	case CL_CTR_PKT_CONSUMER:
-	    /* session-key only: a consumer message under the bootstrap key
-	     * would come from a node that has not even joined - drop it */
-	    if (is_bootstrap)
-		break;
 	    cl_ctr_handle_consumer(payload, payload_len, sender_ip_buf, cl);
 	    break;
 
