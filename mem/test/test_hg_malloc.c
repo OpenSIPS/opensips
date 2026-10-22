@@ -98,6 +98,8 @@ static int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 
 	*hgt_verdict = 0;
 	*hgt_go = 0;
+	/* or the child inherits the unflushed TAP lines and prints them again */
+	fflush(stdout);
 	pid = internal_fork(&ifp);
 	if (pid < 0) {
 		LM_ERR("failed to fork the '%s' child\n", desc);
@@ -311,7 +313,7 @@ static void test_hg_grow(void)
 {
 	struct hg_block *hb = shm_block;
 	void *p[HGT_GROW_MAX];
-	unsigned long grows0, committed0;
+	unsigned long gen0, grows0, committed0;
 	int i, n;
 
 	if (!hg_shm_cap_bytes || hg_shm_cap_bytes <= hb->committed_min) {
@@ -319,22 +321,26 @@ static void test_hg_grow(void)
 		return;
 	}
 
+	gen0 = hb->grow_gen;
 	grows0 = hb->grows;
 	committed0 = hb->committed_bytes;
 
+	/* allocate until the arena grows: what is committed already - more
+	 * than INIT if the maintenance process grew it ahead of demand - has
+	 * to be used up first */
 	for (n = 0; n < HGT_GROW_MAX; n++) {
 		p[n] = shm_malloc(HGT_GROW_CHUNK);
 		if (!p[n])
 			break;
 		hgt_fill(p[n], 64, (unsigned char)n);
-		if (hb->committed_bytes > hb->committed_min + 32 * HGT_GROW_CHUNK)
+		if (hb->grow_gen != gen0)
 			break;
 	}
 	if (n < HGT_GROW_MAX && p[n])
 		n++;
 
-	ok(hb->grows > grows0 && hb->committed_bytes > committed0,
-		"the shm arena grew past INIT on demand (%lu -> %lu MB, %lu grows)",
+	ok(hb->grow_gen != gen0 && hb->committed_bytes > committed0,
+		"an elastic shm arena grows on demand (%lu -> %lu MB, %lu grows)",
 		committed0 >> 20, hb->committed_bytes >> 20, hb->grows - grows0);
 
 	for (i = 0; i < n; i++)

@@ -190,6 +190,9 @@ static void _test_malloc(int procs, unsigned int frag_overhead)
 
 	update_stat(workers, +1);
 
+	/* or every worker inherits the unflushed TAP lines and prints them again */
+	fflush(stdout);
+
 	for (i = 1; i < procs; i++) {
 		update_stat(workers, +1);
 		const struct internal_fork_params ifp_th = {
