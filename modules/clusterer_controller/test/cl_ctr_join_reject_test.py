@@ -25,9 +25,9 @@ Run this on a host on the multicast segment that is NOT a live cluster member
 import argparse, collections, os, socket, struct, threading, time
 
 # --- wire constants (must match cl_ctr.h) ---
-# first magic byte = 0xCB + wire version (CL_CTR_WIRE_VERSION, currently 2)
-BOOTSTRAP_MAGIC = bytes([0xCD, 0x01])
-SESSION_MAGIC   = bytes([0xCD, 0x00])
+# first magic byte = 0xCB + wire version (CL_CTR_WIRE_VERSION, currently 3)
+BOOTSTRAP_MAGIC = bytes([0xCE, 0x01])
+SESSION_MAGIC   = bytes([0xCE, 0x00])
 MAGIC_SZ, CLUSTER_ID_SZ, CID_SZ, NONCE_SZ, TAG_SZ = 2, 2, 16, 24, 16
 
 

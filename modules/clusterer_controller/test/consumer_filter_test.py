@@ -23,8 +23,8 @@ check("a real pull between members still succeeds",
 before=mi(1,"clusterer_controller:node_info") if False else None
 s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 s.bind(("10.94.0.1",0))                      # host bridge IP - not a cluster member
-# consumer magic for wire version 2 (0xCB + version), cluster_id 9
-pkt=bytes([0xCD,0x02])+ (9).to_bytes(2,"big") + b"\x00"*96   # zero uuid + filler
+# consumer magic for wire version 3 (0xCB + version), cluster_id 9
+pkt=bytes([0xCE,0x02])+ (9).to_bytes(2,"big") + b"\x00"*96   # zero uuid + filler
 t0=time.time(); n=0
 while time.time()-t0 < 3:
     for _ in range(200):

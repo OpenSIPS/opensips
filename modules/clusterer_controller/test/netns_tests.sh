@@ -4,8 +4,10 @@
 #
 #   NEW=/usr/local/opensips [OLD=/opt/opensips-wire1] [PREV=/opt/opensips-prev] ./netns_tests.sh
 #
-# OLD is a wire-version-1 build (T6); PREV a build of this wire version from
-# before the capability bits (T27).  Tests needing one are skipped without it.
+# OLD is a build of another wire version, e.g. 1 (T6); PREV a build of this
+# wire version that advertises no capabilities - this tree built with
+# CC_EXTRA_OPTS=-DCL_CTR_CAPS_MINE=0 (T27).  Tests needing one are skipped
+# without it.
 #
 # Assertions are on EFFECTS (delivery counts, member tables, ids, processes),
 # log lines only where the log line IS the behaviour (a warning that must be
@@ -99,7 +101,7 @@ echo "=== T6 a wire-version-1 node on the group ==="
 stop_graceful 4; rm -f $R/n4.pid; sleep 2
 if [ -n "$OLD" ]; then
 RIG_EVENTS=0 start 4 $OLD; sleep 10
-check "new nodes name the v1 peer" $(grep -aq "10.74.0.14 speaks wire version 1, this node speaks 2" $R/n3.log && echo 1 || echo 0) ""
+check "new nodes name the v1 peer" $(grep -aq "10.74.0.14 speaks wire version 1, this node speaks 3" $R/n3.log && echo 1 || echo 0) ""
 MM=$(members 3 741)
 check "main partition unaffected: 3 members" $([ "$(echo $MM | wc -w)" = 3 ] && echo 1 || echo 0) "$MM"
 else
@@ -581,12 +583,13 @@ check "the other nodes enabled n$x again" $([ "$(echo $D | tr ' ' '\n' | sort -u
 check "a node_id outside the cluster is refused" $(mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=999 | grep -q "not a member" && echo 1 || echo 0) "$(mi $y clusterer_controller:maintenance cluster_id=741 state=full node_id=999 | cut -c1-100)"
 
 echo "=== T27 a previous build in the cluster: capabilities gate the newer mechanisms ==="
-# PREV = a build of this wire version from before the capability bits (it
-# advertises none) - ideally one from before the master probe too, which is
-# where a mixed cluster used to cost an extra watchdog period at every
-# failover.  One member runs it while the others run this build.
+# PREV = a build of this wire version that advertises no capabilities - this
+# tree built with -DCL_CTR_CAPS_MINE=0, standing in for an older build.  A
+# mixed cluster used to cost an extra watchdog period at every failover, the
+# survivors waiting for answers the older member would not give.  One member
+# runs it while the others run this build.
 if [ -z "${PREV:-}" ] || [ ! -x "$PREV/sbin/opensips" ]; then
-  echo "  SKIP  PREV (a build of this wire version without capability bits) not given"
+  echo "  SKIP  PREV (a build of this wire version advertising no capabilities) not given"
 else
 capsof() { mi $1 clusterer_controller:list_members | python3 -c '
 import json,sys
@@ -793,7 +796,7 @@ alive $x && stop_hard $x; rm -f $R/n$x.pid
 # the master's bootstrap-key datagrams only - the refusal and its beacons
 python3 -c '
 import json,sys
-p=[d for d in json.load(open(sys.argv[1])) if d["data"].startswith("cd01")]
+p=[d for d in json.load(open(sys.argv[1])) if d["data"].startswith("ce01")]
 json.dump(p,open(sys.argv[2],"w")); print(len(p))' $R/t32.json $R/t32b.json > $R/t32b.n
 X0=$(wc -l < $R/n$x.log)
 nx $x iptables -I INPUT -p udp -s $MIP --sport $PORT -j DROP
@@ -812,6 +815,27 @@ for k in $(seq 1 40); do alive $x || break; sleep 0.5; done
 check "a refusal it earns still stops it: other settings" $(! alive $x && since $x $X0 | grep -aq "JOIN_REJECT from $MIP - the running cluster has different settings" && echo 1 || echo 0) "alive: $(alive $x && echo yes || echo no)"
 rm -f $R/n$x.pid; start $x $NEW; sleep 8
 check "n$x back in" $(members $MN 741 | tr ' ' '\n' | grep -q "^$(ip4 $x):[a-z]*:[1-9]" && echo 1 || echo 0) "$(members $MN 741)"
+
+echo "=== T33 a node's packets recorded and sent again from another address ==="
+# The datagram's source is not authenticated; the sender is what a packet
+# seals (wire version 3).  Record a member's traffic while it stops - its
+# GOODBYE among it - start it again, and send the session-key part of the
+# record from the bridge's address, which no node has in its table: the
+# packets must meet that member's window, as packets from its previous life,
+# and its old GOODBYE must not remove it.
+MIP=$(members 1 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 4 3 2 1; do [ $x != $MN ] && break; done
+tap $x 4 $R/t33.json >/dev/null & TP=$!
+sleep 0.5; stop_graceful $x; rm -f $R/n$x.pid; wait $TP
+start $x $NEW; sleep 8
+python3 -c '
+import json,sys
+p=[d for d in json.load(open(sys.argv[1])) if d["data"][2:4]=="00"]
+json.dump(p,open(sys.argv[2],"w")); print(len(p))' $R/t33.json $R/t33s.json > $R/t33s.n
+check "n$x back as a member, its stop recorded ($(cat $R/t33s.n) session datagrams)" $(members $MN 741 | tr ' ' '\n' | grep -q "^$(ip4 $x):[a-z]*:[1-9]" && [ "$(cat $R/t33s.n)" -gt 0 ] && echo 1 || echo 0) "$(members $MN 741)"
+M0=$(wc -l < $R/n$MN.log)
+python3 "$HERE/wire_tap.py" inject $R/t33s.json 10.74.0.254 >/dev/null; sleep 4
+check "its old GOODBYE, sent from another address, removed nothing" $(! since $MN $M0 | grep -aq "GOODBYE from $(ip4 $x)" && members $MN 741 | tr ' ' '\n' | grep -q "^$(ip4 $x):[a-z]*:[1-9]" && echo 1 || echo 0) "$(since $MN $M0 | grep -a "GOODBYE from" | tail -1 | cut -c1-120) / $(members $MN 741)"
 
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done

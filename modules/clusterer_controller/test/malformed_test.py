@@ -16,7 +16,8 @@ netns_tests.sh (T30).  Sends; checks nothing - the suite checks the nodes.
       known ones and some no build uses, each with payloads of the lengths a
       parser has to bound (empty, one short of each field, exact, one over,
       the largest datagram) and of random, all-zero and all-0xff bytes.
-      These pass decryption and reach the parser of their type.  <src_ips> is
+      These pass decryption and reach the parser of their type; each seals
+      the address it is sent from as its sender.  <src_ips> is
       a comma-separated list of addresses to send from round-robin (the node
       limits each source to 20 control packets a second, so more sources means
       more of the set gets through); <rate> is packets per second per source.
@@ -33,11 +34,12 @@ are needed.
 import ctypes, ctypes.util, json, os, random, socket, struct, sys, time
 
 # --- wire constants (must match cl_ctr.h) ---
-WIRE_MAGIC0 = 0xCB + 2                       # CL_CTR_MAGIC_BASE + wire version
+WIRE_MAGIC0 = 0xCB + 3                       # CL_CTR_MAGIC_BASE + wire version
 PACKET_MAGIC, BOOTSTRAP_MAGIC, CONSUMER_MAGIC = (bytes([WIRE_MAGIC0, t]) for t in (0, 1, 2))
 CID_SZ, NONCE_SZ, TAG_SZ = 16, 24, 16
 HDR_SZ = 2 + 2 + CID_SZ + NONCE_SZ           # CL_CTR_WIRE_HDR_SZ = 44
-MIN_PKT = HDR_SZ + 1 + 4 + 8 + TAG_SZ        # the receiver's minimum, 73
+PLAIN_HDR_SZ = 1 + 4 + 8 + 4                 # type, seq, incarnation, sender
+MIN_PKT = HDR_SZ + PLAIN_HDR_SZ + TAG_SZ      # the receiver's minimum, 77
 MAX_UDP = 65507
 KNOWN_TYPES = list(range(0x01, 0x12))        # CL_CTR_PKT_ALIVE .. CL_CTR_PKT_MAINT_SET
 OTHER_TYPES = [0x00, 0x12, 0x7f, 0x80, 0xff]
@@ -74,7 +76,7 @@ def header(magic, cluster_id, uuid=bytes(CID_SZ)):
 
 def outsider(src_ip, dsts, port, cluster_id, sibling_id, seconds):
     rnd = random.Random(0x7430)
-    other_wire = [bytes([0xCB + v, t]) for v in (1, 3, 4, 15) for t in (0, 1, 2)]
+    other_wire = [bytes([0xCB + v, t]) for v in (1, 2, 4, 15) for t in (0, 1, 2)]
     ours = (PACKET_MAGIC, BOOTSTRAP_MAGIC, CONSUMER_MAGIC)
     pkts = []
     # too short to be a packet: every length below the minimum, random and
@@ -144,9 +146,10 @@ def bootstrap_key(lib, password, group):
     return key.raw
 
 
-def seal(lib, key, cluster_id, ptype, payload):
+def seal(lib, key, cluster_id, ptype, payload, sender):
     hdr = header(BOOTSTRAP_MAGIC, cluster_id)
-    plain = bytes([ptype]) + os.urandom(4) + os.urandom(8) + payload
+    # the sender seals its own address (wire version 3)
+    plain = bytes([ptype]) + os.urandom(4) + os.urandom(8) + socket.inet_aton(sender) + payload
     out = ctypes.create_string_buffer(len(plain) + TAG_SZ)
     olen = ctypes.c_ulonglong(0)
     if lib.crypto_aead_xchacha20poly1305_ietf_encrypt(
@@ -163,8 +166,8 @@ def sealed(src_ips, dsts, port, cluster_id, group, password, rate, lite):
     cases = []
     for t in KNOWN_TYPES + ([] if lite else OTHER_TYPES):
         for n in (LITE_LENGTHS if lite else LENGTHS):
-            if HDR_SZ + 13 + n + TAG_SZ > MAX_UDP:
-                n = MAX_UDP - HDR_SZ - 13 - TAG_SZ
+            if HDR_SZ + PLAIN_HDR_SZ + n + TAG_SZ > MAX_UDP:
+                n = MAX_UDP - HDR_SZ - PLAIN_HDR_SZ - TAG_SZ
             for fill in (("rnd",) if lite else ("rnd", "zero", "ff")):
                 if fill != "rnd" and n > 1472:
                     continue
@@ -175,7 +178,8 @@ def sealed(src_ips, dsts, port, cluster_id, group, password, rate, lite):
     gap = 1.0 / (rate * len(socks))
     t0 = time.time()
     for k, (t, n, fill, body) in enumerate(cases):
-        send(socks[k % len(socks)], seal(lib, key, cluster_id, t, body), dsts, port, sent)
+        i = k % len(socks)
+        send(socks[i], seal(lib, key, cluster_id, t, body, src_ips[i]), dsts, port, sent)
         delay = t0 + (k + 1) * gap - time.time()
         if delay > 0:
             time.sleep(delay)
