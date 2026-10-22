@@ -625,31 +625,45 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	 * caller retries its carve against the fresh pages.
 	 */
 	if (hb->grow_inflight) {
-		unsigned long gen = hb->grow_gen, waited;
+		unsigned long gen = hb->grow_gen, waited = 0;
 
 		hb->grow_waits++;
 		reason = hb->lk_cur;
-		hg_lock_leave(hb);
 		t0 = hg_now_ns();
+		/*
+		 * The token can be taken again between the poll seeing it clear
+		 * and this process getting the lock back - by a grow that follows
+		 * one that was refused, or by the drain's punch right after its
+		 * trim. Finding it taken then is no timeout: wait again, within
+		 * the same budget, until it is clear UNDER the lock or the whole
+		 * wait is spent. Refusing there instead failed an allocation
+		 * after microseconds - found by model-checking this protocol.
+		 */
 		do {
-			usleep(HG_GROW_WAIT_SLICE_US);
-			waited = hg_now_ns() - t0;
-		} while (__atomic_load_n(&hb->grow_inflight, __ATOMIC_ACQUIRE) &&
-		         waited < HG_GROW_WAIT_MAX_NS);
-		hg_lock_enter(hb, (enum hg_lock_reason)reason);
+			hg_lock_leave(hb);
+			do {
+				usleep(HG_GROW_WAIT_SLICE_US);
+				waited = hg_now_ns() - t0;
+			} while (__atomic_load_n(&hb->grow_inflight, __ATOMIC_ACQUIRE) &&
+			         waited < HG_GROW_WAIT_MAX_NS);
+			hg_lock_enter(hb, (enum hg_lock_reason)reason);
+			/* a grow or a hole re-grow published pages: retry the
+			 * carve. The token is also held by a trim or a punch,
+			 * which moves committed_bytes the other way - that is not
+			 * a reason to retry, it is a reason to try our own grow
+			 * below */
+			if (hb->grow_gen != gen) {
+				hg_lkstat_add(&hb->lk_grow_wait, waited);
+				return 0;
+			}
+		} while (hb->grow_inflight && waited < HG_GROW_WAIT_MAX_NS);
 		hg_lkstat_add(&hb->lk_grow_wait, waited);
-		/* a grow or a hole re-grow published pages: retry the carve. The
-		 * token is also held by a trim or a punch, which moves
-		 * committed_bytes the other way - that is not a reason to retry,
-		 * it is a reason to try our own grow below */
-		if (hb->grow_gen != gen)
-			return 0;
 		if (hb->grow_inflight) {
 			hb->grow_wait_timeouts++; /* still populating - give up */
 			hb->grow_refused++;
 			return -1;
 		}
-		/* the in-flight grow was refused; fall through and try ours */
+		/* the in-flight operation went away; fall through and try ours */
 	}
 
 	/* the profile's scale-up target is the admin ceiling WITHIN the
