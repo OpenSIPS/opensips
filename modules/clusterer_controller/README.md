@@ -54,10 +54,10 @@ The *cluster_id* is a number an operator configures, so two separate deployments
 - The node that *founds* a cluster (the first master, at the join deadline) mints it as a UUID v7: its founding time, then random. A node that must found while it has already heard authenticated traffic from an existing cluster founds into that cluster's identity instead.
 - A joining node adopts the master's identity from its KEY_GRANT.
 - For the first 30 seconds the identity is *provisional*: a simultaneous cold start can produce two founders before either hears the other, so during that window a node still hears other identities and can be merged, adopting the winner's. After that the identity is *established* and never changes for the life of the process.
-- A node with an established identity refuses every packet stamped with another one, before decrypting it, and logs once a minute who it refused and both identities. Packets with no identity (a node not yet in any cluster, and every JOIN_REQ) always pass, which is how new and restarted nodes join.
+- A node with an established identity refuses every packet stamped with another one before it is parsed. The identity is cleartext, so anyone can stamp any: only a packet that authenticates - a beacon, KEY_GRANT or JOIN_REJECT of a deployment sharing the password, sealed with the bootstrap key this node holds and stamped with its identity - is recorded as another cluster, and logged once a minute with both identities. A bootstrap packet that does not decrypt counts as an authentication failure; a session packet stamped with another identity is dropped unread. Packets with no identity (a node not yet in any cluster, and every JOIN_REQ) always pass, which is how new and restarted nodes join.
 - The identity lives in memory only. A rolling restart keeps it (each restarted node adopts it on rejoining); a whole-cluster restart founds a new one, which is harmless. To keep one identity across whole-cluster restarts, pin it with *uuid=* in the [cluster](#cluster-string) string.
 
-*clusterer_controller:list_config* reports the identity, its state (*none*, *provisional*, *established* or *pinned*) and how many foreign packets have been refused.
+*clusterer_controller:list_config* reports the identity, its state (*none*, *provisional*, *established* or *pinned*) and how many authenticated packets of another cluster have been refused.
 
 ### Master Election
 
@@ -119,6 +119,11 @@ What the module promises, and what it does not. It is failure detection and lead
 - the masters rank by the members they hear, then term, then IP, and the cluster converges on the larger group's master as soon as the two masters hear each other: their keepalives every second, or a beacon every 5 s when they no longer share a session key. Nodes dropped during the partition rejoin with their node ids;
 - groups whose settings differ never merge: each keeps its master and both log which settings differ. Fix the configuration on the wrong side and restart those nodes.
 
+**Against input that is not the cluster's**:
+
+- a datagram that is no authenticated packet of this cluster - too short, another wire version, a body that does not decrypt, another cluster's identity - is dropped without changing what any running member holds (members, master, term, tags), and each kind is logged at most once a minute per cluster with the count it stands for; *auth_failures* counts every one that fails authentication;
+- the password admits, and no more: under the bootstrap key a node accepts only the admission handshake and the master's beacon, and checks what they carry - a JOIN_REQ's address must be a dotted quad, a beacon must carry every field its build sends and a member count in range - before they change anything. Everything else needs the session key a master hands to the nodes it admitted, and a NODE_ASSIGN under it must still name a dotted quad and a node_id in range.
+
 **Not guaranteed - exclusive ownership.** Failure detection and elections cannot stop two nodes from acting as the tag holder during a partition, and no node holds it for the seconds of a failover. A resource that must have exactly one writer at all times needs fencing outside this module - for example, the downstream system refusing a second writer.
 
 #### Properties and their tests
@@ -143,8 +148,10 @@ Each property is checked by the network-namespace suite (*test/netns_tests.sh*, 
 | A master cut off from most of its members releases the tag, and so does a member cut off alone that elects itself (*release_tag_when_isolated*) | T24 | - |
 | A member on an older build: the newer mechanisms wait until every member has them | T27 | - |
 | Statistics and events | T28, T29 | - |
+| Malformed, unauthenticated, or sealed by a holder of the password that was never admitted: no node stops or changes its view, and the log takes a line per kind of refusal | T30 | - |
+| Several nodes joining at once, and a whole cluster starting cold at once, get one master and distinct node ids | T31 | - |
 
-Not tested yet: several nodes joining a running cluster at once; a full peer table; a static *clusterer* cluster beside controller clusters on one node; malformed datagrams.
+Not tested yet: a full peer table; a static *clusterer* cluster beside controller clusters on one node.
 
 ### Security Architecture
 
@@ -169,11 +176,11 @@ Authentication comes from the shared PSK, forward secrecy from the ephemeral-eph
 session_key = HKDF-SHA256(IKM=password, salt=master_salt, info="cc-session-key")
 ```
 
-The session key is generated once, when the first node bootstraps the cluster, and preserved across every master change: a new master reuses the key that every member already holds, so master transitions require no re-keying. All normal cluster traffic (ALIVE, MEMBER_LIST, NODE_ASSIGN, GOODBYE, MASTER_ALIVE, KEY_HANDOFF) is encrypted with this key.
+The session key is generated once, when the first node bootstraps the cluster, and preserved across every master change: a new master reuses the key that every member already holds, so master transitions require no re-keying. All normal cluster traffic (ALIVE, MEMBER_LIST, NODE_ASSIGN, GOODBYE, MASTER_ALIVE, KEY_HANDOFF) is encrypted with this key. A packet of any of these types that arrives sealed with the bootstrap key is dropped before it is parsed: only the admission handshake (JOIN_REQ, KEY_GRANT and its acknowledgement, JOIN_REJECT) and the master's beacon travel under the bootstrap key, which every holder of the password has, admitted or not.
 
 **Replay protection:** each sender numbers its session-key packets with a 32-bit sequence (control and consumer traffic are numbered separately) and stamps every packet with its *incarnation* — its process start time in microseconds — inside the authenticated plaintext. Each receiver keeps a sliding window per sender and plane that accepts every sequence number exactly once, and keys that window on the sender's incarnation: a packet carrying a *higher* incarnation means the sender restarted and numbers from 1 again, so its windows start afresh on that packet; one carrying a *lower* incarnation is a packet from a previous life and is refused. A restarted node is therefore heard by every peer from its first packet, without depending on any broadcast reaching them. The master also records the incarnation it admitted a node at and carries it in NODE_ASSIGN, which covers a node whose clock was stepped back across its restart (its new incarnation would otherwise read older than the old one). Sequence counters also restart whenever the session key is (re)derived. Replay protection does not depend on clock synchronisation between nodes.
 
-**Rate limiting:** a per-source rate limiter (256 slots, 20 packets/second limit) is applied before any decryption attempt. This prevents CPU exhaustion from packet floods directed at the multicast group.
+**Rate limiting:** a per-source rate limiter (256 slots, 20 packets/second limit) is applied before any decryption attempt. This prevents CPU exhaustion from packet floods directed at the multicast group. What anyone on the group can provoke - packets over the limit, datagrams too short to be a packet, bootstrap packets that do not decrypt - is reported at most once a minute per cluster, with the count it stands for, so a flood does not become a flood of the log.
 
 **Join authentication and rejection:** the master tracks consecutive bootstrap-key decryption failures per source IP in a small worker-local table (*CL_CTR_JOIN_FAIL_TABLE_SZ* = 8 slots). When any source IP accumulates *CL_CTR_JOIN_FAIL_LIMIT* (3) consecutive failures — indicating a node attempting to join with the wrong password — the master sends an encrypted JOIN_REJECT packet and stops responding to further JOIN_REQs from that IP.
 
@@ -1627,7 +1634,7 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, the statistics and the events. It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, the statistics and the events, datagrams that are not packets of the cluster (*test/malformed_test.py* sends them: without the password, and sealed with the bootstrap key it derives as the module does - every type byte, payloads at every field boundary - from addresses that are no member, a member's and the master's), and several nodes, or all four, starting at once. It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
 NEW=/usr/local OLD=/opt/opensips-wire1 PREV=/opt/opensips-prev ./test/netns_tests.sh
