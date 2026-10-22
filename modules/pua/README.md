@@ -379,9 +379,31 @@ typedef struct pua_api {
 	query_dialog_t is_dialog;
 	register_puacb_t register_puacb;
 	add_pua_event_t add_event;
+	is_shtag_active_t is_shtag_active;
 } pua_api_t;
 ...
 ```
+
+
+### is_shtag_active
+
+
+Field type:
+
+
+```c
+...
+typedef int (*is_shtag_active_t)(void);
+...
+```
+
+
+Returns 1 if the pua sharing tag (see
+[cluster_sharing_tag](#cluster_sharing_tag-str)) is active on this
+node, or if clustering is not enabled, and 0 otherwise. A pua-like
+module calls it before publishing a change that every node of the
+cluster sees (like a contact expiry in `pua_usrloc`), so that only
+one node publishes it.
 
 
 ### send_publish
