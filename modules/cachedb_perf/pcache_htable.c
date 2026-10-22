@@ -1818,6 +1818,247 @@ static pcache_rec_t *st_slot_of(pcache_htable_t *ht, const str *key)
 	return i < 0 ? NULL : b->slot[i];
 }
 
+/* keys sharing one overflow chain, and so one bucket of a 16-bucket table:
+ * the low 14 bits of the hash pick the chain */
+static int st_chain_keys(const char *pfx, unsigned int n, char keys[][32])
+{
+	unsigned int c, got = 0, want = 0;
+	str k;
+
+	for (c = 0; c < 4000000 && got < n; c++) {
+		k.s = keys[got];
+		k.len = snprintf(keys[got], 32, "%s-%u", pfx, c);
+		if (!got)
+			want = pcache_key_hash(&k) & (PCACHE_OVF_BUCKETS - 1);
+		if ((pcache_key_hash(&k) & (PCACHE_OVF_BUCKETS - 1)) == want)
+			got++;
+	}
+	return got == n ? 0 : -1;
+}
+
+static int st_key_idx(char (*keys)[32], int n, const str *key)
+{
+	int i;
+
+	for (i = 0; i < n; i++)
+		if ((int)strlen(keys[i]) == key->len &&
+		        !memcmp(keys[i], key->s, key->len))
+			return i;
+	return -1;
+}
+
+static void st_remove_key(pcache_htable_t *ht, const char *s)
+{
+	str k;
+
+	k.s = (char *)s; k.len = strlen(s);
+	pcache_ht_remove(ht, &k);
+}
+
+/* the leg walk drops ovf_lock around each callback; a callback removing
+ * the record before it and its own must not make the walk skip the next */
+#define ST_LEG_N 10                         /* 6 fill the bucket, 4 in the leg */
+struct st_legskip {
+	pcache_htable_t *ht;
+	char (*keys)[32];
+	unsigned char seen[ST_LEG_N];
+	int leg_emits, prev, removed[2];
+};
+
+static int st_legskip_cb(const str *key, const str *val, unsigned int exp,
+		void *ctx)
+{
+	struct st_legskip *s = ctx;
+	int i = st_key_idx(s->keys, ST_LEG_N, key);
+
+	if (i < 0)
+		return 0;
+	s->seen[i]++;
+	if (i < PCACHE_SLOTS)                   /* a bucket record */
+		return 0;
+	if (++s->leg_emits == 1) {
+		s->prev = i;
+	} else if (s->leg_emits == 2) {
+		st_remove_key(s->ht, s->keys[s->prev]);
+		st_remove_key(s->ht, s->keys[i]);
+		s->removed[0] = s->prev; s->removed[1] = i;
+	}
+	return 0;
+}
+
+static int st_leg_walk_skip(void)
+{
+	struct st_legskip s;
+	char keys[ST_LEG_N][32];
+	str k, v;
+	int i;
+
+	memset(&s, 0, sizeof s);
+	s.removed[0] = s.removed[1] = -1;
+	HCHK(st_chain_keys("legskip", ST_LEG_N, keys) == 0,
+		"no %d keys sharing an overflow chain\n", ST_LEG_N);
+	s.ht = pcache_htable_new(4);
+	HCHK(s.ht != NULL, "table creation failed\n");
+	s.keys = keys;
+	v.s = "v"; v.len = 1;
+	for (i = 0; i < ST_LEG_N; i++) {
+		k.s = keys[i]; k.len = strlen(keys[i]);
+		HCHK(pcache_ht_store(s.ht, &k, &v, 0) == 0, "store %s failed\n",
+			keys[i]);
+	}
+	HCHK(s.ht->ovf_count == ST_LEG_N - PCACHE_SLOTS,
+		"expected %d records in the leg, found %u\n",
+		ST_LEG_N - PCACHE_SLOTS, s.ht->ovf_count);
+	HCHK(pcache_ht_iter(s.ht, st_legskip_cb, &s) == 0, "walk failed\n");
+	HCHK(s.leg_emits >= 2, "the leg emitted %d records\n", s.leg_emits);
+	for (i = 0; i < ST_LEG_N; i++)
+		HCHK(s.seen[i] || i == s.removed[0] || i == s.removed[1],
+			"leg walk skipped %s after the callback removed two "
+			"records\n", keys[i]);
+	return 0;
+}
+
+/* a remove moves the bucket's last record into the freed slot; a walk past
+ * that slot must still emit the moved record, and only once */
+struct st_rewalk {
+	pcache_htable_t *ht;
+	char (*keys)[32];
+	unsigned char seen[PCACHE_SLOTS];
+	int emits;
+};
+
+static int st_rewalk_cb(const str *key, const str *val, unsigned int exp,
+		void *ctx)
+{
+	struct st_rewalk *s = ctx;
+	int i = st_key_idx(s->keys, PCACHE_SLOTS, key);
+
+	if (i < 0)
+		return 0;
+	s->seen[i]++;
+	if (++s->emits == 3)                    /* slot 0 already emitted */
+		st_remove_key(s->ht, s->keys[0]);
+	return 0;
+}
+
+static int st_bucket_rewalk(void)
+{
+	struct st_rewalk s;
+	char keys[PCACHE_SLOTS][32];
+	str k, v;
+	int i, scan;
+	unsigned int cur;
+
+	for (scan = 0; scan < 2; scan++) {
+		memset(&s, 0, sizeof s);
+		HCHK(st_chain_keys(scan ? "rescan" : "rewalk", PCACHE_SLOTS,
+			keys) == 0, "no %d keys sharing a bucket\n", PCACHE_SLOTS);
+		s.ht = pcache_htable_new(4);
+		HCHK(s.ht != NULL, "table creation failed\n");
+		s.keys = keys;
+		v.s = "v"; v.len = 1;
+		for (i = 0; i < PCACHE_SLOTS; i++) {
+			k.s = keys[i]; k.len = strlen(keys[i]);
+			HCHK(pcache_ht_store(s.ht, &k, &v, 0) == 0,
+				"store %s failed\n", keys[i]);
+		}
+		HCHK(s.ht->ovf_count == 0, "%u records in the leg\n",
+			s.ht->ovf_count);
+		if (scan) {
+			cur = 0;
+			do {
+				HCHK(pcache_ht_scan(s.ht, &cur, 4, st_rewalk_cb, &s) == 0,
+					"scan failed\n");
+			} while (cur);
+		} else {
+			HCHK(pcache_ht_iter(s.ht, st_rewalk_cb, &s) == 0,
+				"walk failed\n");
+		}
+		for (i = 0; i < PCACHE_SLOTS; i++)
+			HCHK(s.seen[i] == 1, "%s saw %s %u times after a remove "
+				"compacted its bucket\n", scan ? "scan" : "walk",
+				keys[i], s.seen[i]);
+	}
+	return 0;
+}
+
+/* an unchanged-value write only re-arms the TTL: a local one makes a
+ * pulled copy authoritative, a pulled one never demotes a local record */
+static int st_passive_promote(void)
+{
+	pcache_htable_t *ht = pcache_htable_new(4);
+	pcache_rec_t *r;
+	str k, v;
+
+	HCHK(ht != NULL, "table creation failed\n");
+	v.s = "same"; v.len = 4;
+
+	k.s = "pulled"; k.len = 6;
+	HCHK(pcache_ht_store_ex(ht, &k, &v, 100, PCACHE_F_PASSIVE) == 0,
+		"pulled store failed\n");
+	r = st_slot_of(ht, &k);
+	HCHK(r && (r->rflags & PCACHE_F_PASSIVE), "pulled copy not PASSIVE\n");
+	HCHK(pcache_ht_store_ex(ht, &k, &v, 200, 0) == 0, "local store failed\n");
+	r = st_slot_of(ht, &k);
+	HCHK(r && r->expires == 200, "the TTL bump did not land\n");
+	HCHK(!(r->rflags & PCACHE_F_PASSIVE),
+		"a local write of the same value left the copy PASSIVE\n");
+
+	k.s = "local"; k.len = 5;
+	HCHK(pcache_ht_store_ex(ht, &k, &v, 100, 0) == 0, "local store failed\n");
+	HCHK(pcache_ht_store_ex(ht, &k, &v, 200, PCACHE_F_PASSIVE) == 0,
+		"pulled store failed\n");
+	r = st_slot_of(ht, &k);
+	HCHK(r && r->expires == 200, "the TTL bump did not land\n");
+	HCHK(!(r->rflags & PCACHE_F_PASSIVE),
+		"a pulled write of the same value demoted a local record\n");
+	return 0;
+}
+
+/* PCACHE_EXP_PRESERVE: an add keeps the record's expiry, a new counter
+ * never expires, an explicit expiry still re-arms */
+static int st_exp_preserve(void)
+{
+	pcache_htable_t *ht = pcache_htable_new(4);
+	pcache_rec_t *r;
+	long long nv = 0;
+	str k, v;
+
+	HCHK(ht != NULL, "table creation failed\n");
+
+	k.s = "ttl-ctr"; k.len = 7;
+	HCHK(pcache_ht_add(ht, &k, 5, 1000, &nv) == 0 && nv == 5,
+		"counter create: %lld\n", nv);
+	HCHK(pcache_ht_add(ht, &k, 1, PCACHE_EXP_PRESERVE, &nv) == 0 && nv == 6,
+		"preserving add: %lld\n", nv);
+	r = st_slot_of(ht, &k);
+	HCHK(r && r->expires == 1000, "an add without a TTL changed the "
+		"counter's expiry 1000 -> %u\n", r ? r->expires : 0);
+	HCHK(pcache_ht_add(ht, &k, 1, 3000, &nv) == 0 && nv == 7,
+		"re-arming add: %lld\n", nv);
+	r = st_slot_of(ht, &k);
+	HCHK(r && r->expires == 3000, "an add with a TTL did not re-arm: %u\n",
+		r ? r->expires : 0);
+
+	k.s = "new-ctr"; k.len = 7;
+	HCHK(pcache_ht_add(ht, &k, 1, PCACHE_EXP_PRESERVE, &nv) == 0 && nv == 1,
+		"new counter: %lld\n", nv);
+	r = st_slot_of(ht, &k);
+	HCHK(r && r->expires == 0, "a new counter without a TTL expires at "
+		"%u\n", r ? r->expires : 0);
+
+	k.s = "str-ctr"; k.len = 7;
+	v.s = "100"; v.len = 3;
+	HCHK(pcache_ht_store(ht, &k, &v, 2000) == 0, "string store failed\n");
+	HCHK(pcache_ht_add(ht, &k, 1, PCACHE_EXP_PRESERVE, &nv) == 0 &&
+		nv == 101, "converting add: %lld\n", nv);
+	r = st_slot_of(ht, &k);
+	HCHK(r && (r->rflags & PCACHE_F_INT), "the string did not convert\n");
+	HCHK(r->expires == 2000, "a converting add without a TTL changed the "
+		"expiry 2000 -> %u\n", r->expires);
+	return 0;
+}
+
 int pcache_htable_selftest(void)
 {
 	pcache_htable_t *ht;
@@ -2069,6 +2310,18 @@ int pcache_htable_selftest(void)
 			"(%u->%u buckets, %u splits)\n", miss, nb0, g->nbuckets, grown);
 		LM_INFO("htable selftest: growth %u->%u buckets (%u splits), "
 			"all 1000 keys intact\n", nb0, g->nbuckets, grown);
+	}
+
+	/* walk and write-path cases, each on its own table: all of them run,
+	 * the selftest fails after the last if any did */
+	{
+		int fails = 0;
+
+		fails += st_leg_walk_skip() < 0;
+		fails += st_bucket_rewalk() < 0;
+		fails += st_passive_promote() < 0;
+		fails += st_exp_preserve() < 0;
+		HCHK(!fails, "%d of 4 walk/write cases failed\n", fails);
 	}
 
 	/* every bucket must end on an even (stable) version */
