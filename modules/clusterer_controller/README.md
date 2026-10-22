@@ -25,10 +25,10 @@ Every packet is encrypted and authenticated with the XChaCha20-Poly1305 AEAD (se
 - **Bootstrap key** — derived from the configured *password* with the *Argon2id* memory-hard KDF (per-cluster salt), so a password captured from a bootstrap packet cannot be brute-forced cheaply offline. Derived once at startup. It is both the outer AEAD key for the admission handshake (JOIN_REQ, KEY_GRANT, JOIN_REJECT) and the split-brain MASTER_BEACON — traffic that must be readable before a session key exists, or by masters holding different session keys — and the pre-shared key for the Noise join handshake.
 - **Session key** — derived via HKDF-SHA256 from the password and a 32-byte master salt generated once when the cluster first bootstraps. All normal cluster traffic uses this key. It is preserved across master changes (a new master reuses the key every member already holds), so failover needs no re-keying.
 
-Each packet begins with a 2-byte magic value, a 2-byte cluster_id and the 16-byte cluster identity, all in cleartext (they must be readable before decryption to select the key and to filter foreign clusters), followed by a random 24-byte AEAD nonce and the ciphertext. The first magic byte carries the **wire version** (0xCB + version; this build speaks version 2), the second selects the key. The magic, cluster_id and identity are additionally bound into the authentication tag as AAD, so they cannot be altered undetected. The authenticated plaintext begins with a 1-byte packet type, a 4-byte sequence number and the sender's 8-byte *incarnation* (its process start time), which together drive replay protection. A 16-byte authentication tag follows the ciphertext.
+Each packet begins with a 2-byte magic value, a 2-byte cluster_id and the 16-byte cluster identity, all in cleartext (they must be readable before decryption to select the key and to filter foreign clusters), followed by a random 24-byte AEAD nonce and the ciphertext. The first magic byte carries the **wire version** (0xCB + version; this build speaks version 3), the second selects the key. The magic, cluster_id and identity are additionally bound into the authentication tag as AAD, so they cannot be altered undetected. The authenticated plaintext begins with a 1-byte packet type, a 4-byte sequence number, the sender's 8-byte *incarnation* (its process start time) and its 4-byte IPv4 address, which together drive replay protection. The sealed address, not the datagram's source - which anyone can set - names the sender: it keys the replay window, so a packet sent again from any address meets the window of the node that sealed it, and an ALIVE, GOODBYE or JOIN_REQ must name its sender as the node it speaks for. A 16-byte authentication tag follows the ciphertext.
 
 ```text
-[magic 2B][cluster_id 2B][cluster uuid 16B][nonce 24B] [type 1B][seq 4B][incarnation 8B][payload...] [tag 16B]
+[magic 2B][cluster_id 2B][cluster uuid 16B][nonce 24B] [type 1B][seq 4B][incarnation 8B][sender 4B][payload...] [tag 16B]
  '---------------- cleartext, AAD ----------------'      '---------------- encrypted -----------------'
 ```
 
@@ -151,6 +151,7 @@ Each property is checked by the network-namespace suite (*test/netns_tests.sh*, 
 | Malformed, unauthenticated, or sealed by a holder of the password that was never admitted: no node stops or changes its view, and the log takes a line per kind of refusal | T30 | - |
 | Several nodes joining at once, and a whole cluster starting cold at once, get one master and distinct node ids | T31 | - |
 | A JOIN_REJECT recorded and sent again does not stop a joining node; one it earns still does | T32 | - |
+| A node's packets recorded and sent again from another address meet that node's replay window: its old GOODBYE removes nothing | T33 | - |
 
 Not tested yet: a full peer table; a static *clusterer* cluster beside controller clusters on one node.
 
@@ -1430,11 +1431,11 @@ Every node of a cluster must use the same password. A node started with a differ
 
 ### Upgrading
 
-This version of the module speaks **wire version 2**: every packet carries the cluster identity and its sender's incarnation, and the master's announcements carry its term, settings and MTU. Nodes on different wire versions do not understand each other, so the module refuses the other version's packets before decrypting them, and logs one warning a minute naming the sender, for example:
+This version of the module speaks **wire version 3**: every packet carries the cluster identity, its sender's incarnation and its sender's address, sealed, and the master's announcements carry its term, settings and MTU. Version 3 added the sealed sender to version 2; nodes on 2 and 3 do not interoperate. Nodes on different wire versions do not understand each other, so the module refuses the other version's packets before decrypting them, and logs one warning a minute naming the sender, for example:
 
 ```text
-clusterer_controller: [cluster 1] 10.0.0.14 speaks wire version 1, this node
-speaks 2 - refused (12 packet(s) from other versions so far). Every member of a
+clusterer_controller: [cluster 1] 10.0.0.14 speaks wire version 2, this node
+speaks 3 - refused (12 packet(s) from other versions so far). Every member of a
 cluster must run the same clusterer_controller wire version; upgrade the
 cluster as a whole.
 ```
@@ -1637,13 +1638,13 @@ In all five failover tests (1–5): exactly one node held the active sharing tag
 
 ### Automated tests
 
-*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, the statistics and the events, datagrams that are not packets of the cluster (*test/malformed_test.py* sends them: without the password, and sealed with the bootstrap key it derives as the module does - every type byte, payloads at every field boundary - from addresses that are no member, a member's and the master's), several nodes, or all four, starting at once, and a JOIN_REJECT recorded and sent again to a node that is joining. It needs root, iproute2, iptables and python3:
+*test/netns_tests.sh* runs the module end to end on one host: four network namespaces on a private bridge, every node in two clusters that share one port. It covers cold start, consumer delivery, restart and node_id reuse, partition heal, refusal of a foreign or mismatched cluster, a pinned cluster identity, recorded traffic sent again (while the sender runs and after it restarts), a MEMBER_LIST that arrives after a newer one, the *tm* anycast Via cid before and after the node has an id, a member and the master paused past every timeout, a receive buffer overflowed by a flood, a member that alone stops hearing the master, maintenance (a backup and then the master taken out of election and tags, and back), cuts one-sided and both ways and the heals after them, a killed master (also one restarted at once), a lossy and jittery link, a stuttering member, a cut-off master releasing the active tag, another node put into full maintenance, a member on the previous build, the statistics and the events, datagrams that are not packets of the cluster (*test/malformed_test.py* sends them: without the password, and sealed with the bootstrap key it derives as the module does - every type byte, payloads at every field boundary - from addresses that are no member, a member's and the master's), several nodes, or all four, starting at once, a JOIN_REJECT recorded and sent again to a node that is joining, and a node's packets sent again from another address. It needs root, iproute2, iptables and python3:
 
 ```bash title="netns tests"
 NEW=/usr/local OLD=/opt/opensips-wire1 PREV=/opt/opensips-prev ./test/netns_tests.sh
 ```
 
-*NEW* is the install prefix under test; *OLD*, a build speaking wire version 1, and *PREV*, a build of this wire version from before the capability bits, are optional - only the test that needs one is skipped without it. Every cut a test makes with iptables must show dropped packets before it is removed, so a test cannot pass on a fault that never happened. To run two suites at once, start each under its own *unshare -n* with a distinct *RIG_NS_PREFIX* and *RIG_DIR*.
+*NEW* is the install prefix under test; *OLD*, a build speaking another wire version (1, say), and *PREV*, a build of this wire version that advertises no capabilities - this tree built with *CC_EXTRA_OPTS=-DCL_CTR_CAPS_MINE=0* - are optional - only the test that needs one is skipped without it. Every cut a test makes with iptables must show dropped packets before it is removed, so a test cannot pass on a fault that never happened. To run two suites at once, start each under its own *unshare -n* with a distinct *RIG_NS_PREFIX* and *RIG_DIR*.
 
 *test/rtests.sh* runs the real-cluster tests R0 to R9 from another host against a test cluster: a member restarted and paused past the purge window, the master paused, killed, killed and restarted at once, and stopped, a one-sided and a two-sided cut, maintenance of this node and of another at the full level, and 30% loss into one member - every fault undone on exit. Nodes are given by IP; *MI_PORT*, *MI_ROOT* (the *mi_http* root), *PORT*, *LOG*, *UNIT* and *SSH_USER* set the rest. It takes masters down on purpose: run it only on a test cluster.
 
