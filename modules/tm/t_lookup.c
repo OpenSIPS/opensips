@@ -577,8 +577,10 @@ struct cell* t_lookupOriginalT(  struct sip_msg* p_msg )
 	if (cancelled_T!=T_UNDEFINED)
 		return cancelled_T;
 
-	/* start searching in the table */
-	if (!p_msg->hash_index)
+	/* start searching in the table; note that 0 is also a valid hash value,
+	 * so it may be already set (e.g. a CANCEL replicated via the tm cluster,
+	 * where Call-ID and CSeq are not parsed at all) */
+	if (!p_msg->hash_index && p_msg->callid && p_msg->cseq)
 		p_msg->hash_index = tm_hash( p_msg->callid->body,
 			get_cseq(p_msg)->number);
 	hash_index = p_msg->hash_index;
