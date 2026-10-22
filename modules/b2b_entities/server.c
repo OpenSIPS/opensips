@@ -124,13 +124,18 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg, unsigned int maxfwd)
 {
 	dlg_t* td =NULL;
+	char *p;
 
-	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
+	/* the request may be sent with the entity lock released, while the
+	 * dialog is only pinned: the callee tag is stored apart from the dlg
+	 * block and may be replaced meanwhile, so keep our own copy of it */
+	td = (dlg_t*)pkg_malloc(sizeof(dlg_t) + dlg->tag[CALLEE_LEG].len);
 	if(td == NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
 	memset(td, 0, sizeof(dlg_t));
+	p = (char *)(td + 1);
 
 	td->loc_seq.value = dlg->cseq[CALLEE_LEG];
 	td->loc_seq.is_set = 1;
@@ -138,7 +143,7 @@ dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg, unsigned int maxfwd)
 
 	td->id.call_id = dlg->callid;
 	td->id.rem_tag = dlg->tag[CALLER_LEG];
-	td->id.loc_tag = dlg->tag[CALLEE_LEG];
+	b2b_td_str_copy(&td->id.loc_tag, &dlg->tag[CALLEE_LEG], &p);
 
 	td->rem_target = dlg->contact[CALLER_LEG];
 

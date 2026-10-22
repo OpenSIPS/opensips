@@ -67,6 +67,20 @@ static str storage_cap = str_init("b2b-storage-bin");
 
 static void b2b_free_record(b2b_dlg_t *dlg, b2b_table htable);
 
+/* free a dialog replaced in b2b_tm_cback(): it is no longer in the hash
+ * table and its transactions, param and timers moved to its replacement */
+static void b2b_free_replaced(b2b_dlg_t *dlg)
+{
+	/* set by a request sent while the dialog was pinned */
+	if (dlg->uac_tran)
+		tmb.unref_cell(dlg->uac_tran);
+
+	if (dlg->ack_sdp.s)
+		shm_free(dlg->ack_sdp.s);
+
+	shm_free(dlg);
+}
+
 /* called with the entity hash lock held */
 static void b2b_dlg_unref(b2b_dlg_t *dlg, b2b_table htable,
 		unsigned int hash_index)
@@ -74,7 +88,10 @@ static void b2b_dlg_unref(b2b_dlg_t *dlg, b2b_table htable,
 	if (--dlg->ref || !dlg->deleted)
 		return;
 
-	b2b_delete_record(dlg, htable, hash_index);
+	if (dlg->replaced)
+		b2b_free_replaced(dlg);
+	else
+		b2b_delete_record(dlg, htable, hash_index);
 }
 
 #define B2BE_DLG_DELETED (-3)
@@ -1299,14 +1316,15 @@ search_dialog:
 		}
 		else
 		{
-			B2BE_LOCK_RELEASE(table, hash_index);
 			LM_DBG("Received a PRACK - send 200 reply\n");
 			str reason={"OK", 2};
 			/* send 200 OK and exit */
 			tmb.t_newtran( msg );
 			tm_tran = tmb.t_gett();
+			/* the dlg may be gone once the entity lock is released */
 			if (dlg)
 				b2b_run_tracer(dlg, msg, tm_tran);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			run_tm_api(&tmb, t_reply, msg, 200, &reason);
 			if(tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
@@ -2286,6 +2304,10 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	dlg->last_reply_code = code;
 	if (leg)
 		leg->last_reply_code = code;
+	/* store the tag while the entity is still locked: it may be deleted
+	 * once the lock is released below */
+	if (et == B2B_SERVER && b2b_store_callee_tag(dlg, to_tag) < 0)
+		LM_ERR("Failed to store callee tag\n");
 	UPDATE_DBFLAG(dlg);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
@@ -2356,8 +2378,6 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 		LM_ERR("failed to send reply with tm\n");
 		goto error;
 	}
-	if (et == B2B_SERVER && b2b_store_callee_tag(dlg, to_tag) < 0)
-		LM_ERR("Failed to store callee tag\n");
 	if(code >= 200)
 	{
 		if (sip_method != METHOD_INVITE) {
@@ -2681,8 +2701,10 @@ static int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	if(method_value == METHOD_INVITE)
 	{
 		dlg->last_invite_cseq = td->loc_seq.value +1;
-		if(dlg->uac_tran)
+		if(dlg->uac_tran) {
 			tmb.unref_cell(dlg->uac_tran);
+			dlg->uac_tran = NULL;
+		}
 		tmb.setlocalTholder(&dlg->uac_tran);
 	}
 
@@ -3274,6 +3296,7 @@ static int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 {
 	dlg_t* td;
 	int result;
+	str body_copy = {NULL, 0};
 	b2b_table table = etype == B2B_SERVER ? server_htable : client_htable;
 
 	if(!dlg->callid.s || !dlg->callid.len)
@@ -3303,6 +3326,17 @@ static int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 	if (dlg->tracer)
 		b2b_arm_uac_tracing( td, dlg->tracer);
 
+	/* the body may be the dialog's stored ACK SDP, which can be replaced
+	 * once the entity lock is released */
+	if (body && body->s && body->len) {
+		if (pkg_str_dup(&body_copy, body) < 0) {
+			LM_ERR("no more pkg memory\n");
+			free_tm_dlg(td);
+			return -1;
+		}
+		body = &body_copy;
+	}
+
 	/* t_request_within() synchronously executes local_route. */
 	dlg->ref++;
 	B2BE_LOCK_RELEASE(table, hash_index);
@@ -3314,6 +3348,8 @@ static int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 		NULL,               /* callback parameter*/
 		NULL);
 	B2BE_LOCK_GET(table, hash_index);
+	if (body_copy.s)
+		pkg_free(body_copy.s);
 	if (dlg->deleted) {
 		if (current_dlg == dlg)
 			current_dlg = NULL;
@@ -3447,7 +3483,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	int old_route_type;
 	bin_packet_t storage;
 	int b2b_ev = -1;
-	int lock_taken = 0;
+	int lock_taken = 0, dlg_pinned = 0;
 	struct b2b_context *ctx;
 	int b2b_cb_flags = 0;
 	unsigned int reqmask;
@@ -4015,7 +4051,9 @@ dummy_reply:
 			goto b2b_tm_done1;
 		}
 
-		if(dlg->legs == NULL && (dlg->state == B2B_NEW ||
+		/* a deleted dialog is only kept for the holders of its references:
+		 * do not bring it back by replacing it */
+		if(dlg->legs == NULL && !dlg->deleted && (dlg->state == B2B_NEW ||
 					dlg->state == B2B_NEW_AUTH ||
 					dlg->state == B2B_EARLY))
 		{
@@ -4053,9 +4091,20 @@ dummy_reply:
 
 			dlg->next= dlg->prev = NULL;
 			b2b_delete_legs(&dlg->legs);
-			if (dlg->logic_key.s)
+			if (dlg->logic_key.s) {
 				shm_free(dlg->logic_key.s);
-			shm_free(dlg);
+				dlg->logic_key.s = NULL;
+			}
+			dlg->uac_tran = dlg->uas_tran = NULL;
+			if (dlg->ref) {
+				/* pinned by a sender or by b2b_prescript_f() while they
+				 * do not hold the hash lock: they find it deleted when
+				 * they take the lock back and the last one frees it */
+				dlg->deleted = 1;
+				dlg->replaced = 1;
+			} else {
+				b2b_free_replaced(dlg);
+			}
 			dlg = new_dlg;
 			UPDATE_DBFLAG(dlg);
 		}
@@ -4343,6 +4392,19 @@ b2b_route:
 	if (B2BE_SERIALIZE_STORAGE()) {
 		B2BE_LOCK_GET(htable, hash_index);
 		lock_taken = 1;
+
+		/* the dialog may have been deleted while the lock was released */
+		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
+		{
+			if(aux_dlg == dlg)
+				break;
+		}
+		if(!aux_dlg || dlg->deleted)
+		{
+			B2BE_LOCK_RELEASE(htable, hash_index);
+			goto done;
+		}
+
 		if (dlg_state == B2B_CONFIRMED && prev_state == B2B_MODIFIED) {
 
 			if (dlg->state != B2B_TERMINATED) {
@@ -4370,25 +4432,20 @@ b2b_route:
 				b2b_ev = -1;
 			}
 		}
+
+		/* the replication below runs with the lock released */
+		if (b2be_cluster &&
+		(b2b_ev == B2B_EVENT_UPDATE || b2b_ev == B2B_EVENT_CREATE)) {
+			dlg->ref++;
+			dlg_pinned = 1;
+		}
 	}
 
 	current_dlg = 0;
 	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
-		/* the lock is already aquired above, since B2BE_SERIALIZE_STORAGE()
-		 * is true for the WRITE_THROUGH b2be_db_mode */
-
-		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
-		{
-			if(aux_dlg == dlg)
-				break;
-		}
-		if(!aux_dlg)
-		{
-			B2BE_LOCK_RELEASE(htable, hash_index);
-			goto done;
-		}
-
+		/* the lock is already aquired and the dialog found above, since
+		 * B2BE_SERIALIZE_STORAGE() is true for the WRITE_THROUGH b2be_db_mode */
 		if (b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
 		B2BE_LOCK_RELEASE(htable, hash_index);
@@ -4402,6 +4459,12 @@ b2b_route:
 				B2B_EVENT_UPDATE, &storage);
 		if (b2b_ev == B2B_EVENT_CREATE)
 			replicate_entity_create(dlg, etype, hash_index, &storage);
+	}
+
+	if (dlg_pinned) {
+		B2BE_LOCK_GET(htable, hash_index);
+		b2b_dlg_unref(dlg, htable, hash_index);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 	}
 
 	if (to_hdr_parsed.param_lst) {

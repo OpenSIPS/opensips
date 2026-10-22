@@ -306,13 +306,23 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
 {
 	dlg_t* td =NULL;
+	str leg_route_set = {0, 0};
+	char *p;
+	int size = sizeof(dlg_t);
 
-	td = (dlg_t*)pkg_malloc(sizeof(dlg_t));
+	/* the request may be sent with the entity lock released, while the
+	 * dialog is only pinned and its legs can be replaced: keep our own
+	 * copy of everything taken from the leg */
+	if(leg)
+		size += leg->route_set.len + leg->tag.len + leg->contact.len;
+
+	td = (dlg_t*)pkg_malloc(size);
 	if(td == NULL)
 	{
 		ERR_MEM(PKG_MEM_STR);
 	}
 	memset(td, 0, sizeof(dlg_t));
+	p = (char *)(td + 1);
 
 	td->loc_seq.value   = dlg->cseq[CALLER_LEG];
 	dlg->cseq[CALLER_LEG]++;
@@ -338,7 +348,8 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
 	{
 		if(leg->route_set.s && leg->route_set.len)
 		{
-			if(parse_rr_body(leg->route_set.s, leg->route_set.len,
+			b2b_td_str_copy(&leg_route_set, &leg->route_set, &p);
+			if(parse_rr_body(leg_route_set.s, leg_route_set.len,
 				&td->route_set)< 0)
 			{
 				LM_ERR("failed to parse record route body\n");
@@ -346,10 +357,10 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
 			}
 		}
 
-		td->id.rem_tag = leg->tag;
+		b2b_td_str_copy(&td->id.rem_tag, &leg->tag, &p);
 
 		LM_DBG("Rem_target = %.*s\n", leg->contact.len, leg->contact.s);
-		td->rem_target = leg->contact;
+		b2b_td_str_copy(&td->rem_target, &leg->contact, &p);
 	}
 	td->state= DLG_CONFIRMED ;
 	td->send_sock = dlg->send_sock;
