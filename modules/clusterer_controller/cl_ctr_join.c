@@ -284,11 +284,17 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
 	if (bin_cnt > CL_CTR_MAX_BIN_SOCKETS)
 	    bin_cnt = CL_CTR_MAX_BIN_SOCKETS;
 	for (i = 0; i < (int)bin_cnt && p < end; i++) {
-	    int slen = (int)strnlen(p, CL_CTR_MAX_BIN_SOCK_LEN - 1);
+	    /* bounded by the payload too, and the NUL must lie inside it */
+	    int room = (int)(end - p);
+	    int slen = (int)strnlen(p, room < CL_CTR_MAX_BIN_SOCK_LEN - 1
+	                               ? (size_t)room : CL_CTR_MAX_BIN_SOCK_LEN - 1);
+	    if (slen >= room)
+		break;
 	    memcpy(bin_socks[i], p, slen);
 	    bin_socks[i][slen] = '\0';
 	    p += slen + 1;
 	}
+	bin_cnt = (uint8_t)i;
     }
 
     /* --- Parse the Noise msg 1 (appended after BIN info) --- */
@@ -855,11 +861,17 @@ void cl_ctr_handle_node_assign(const char *payload, int payload_len,
 	if (bin_cnt > CL_CTR_MAX_BIN_SOCKETS)
 	    bin_cnt = CL_CTR_MAX_BIN_SOCKETS;
 	for (i = 0; i < (int)bin_cnt && p < end; i++) {
-	    int slen = (int)strnlen(p, CL_CTR_MAX_BIN_SOCK_LEN - 1);
+	    /* bounded by the payload too, and the NUL must lie inside it */
+	    int room = (int)(end - p);
+	    int slen = (int)strnlen(p, room < CL_CTR_MAX_BIN_SOCK_LEN - 1
+	                               ? (size_t)room : CL_CTR_MAX_BIN_SOCK_LEN - 1);
+	    if (slen >= room)
+		break;
 	    memcpy(bin_socks[i], p, slen);
 	    bin_socks[i][slen] = '\0';
 	    p += slen + 1;
 	}
+	bin_cnt = (uint8_t)i;
     }
     /* the incarnation the master admitted that node at */
     if (p + CL_CTR_INC_SZ <= end)
