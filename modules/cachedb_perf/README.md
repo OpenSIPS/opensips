@@ -1562,7 +1562,9 @@ those then hold live records rather than idle cells), *pages* /
 *pages_freed*, *released_bytes* (cumulative give-back),
 *cold_bytes*, *giveback_off* (1 once the reservation refused a
 punch), *pool_empty* (carves that found the hugetlb pool unable to
-take a punched-out group back, and went past it), *reclaim_ticks*,
+take a punched-out group back, and went past it), *punch_calls* /
+*punch_groups* (consecutive groups go back in one call),
+*reclaim_ticks*,
 *last_carve_age_s*, and *classes* =
 "size:slots/peak/cells_not_home" per class in use (cells not home are
 live records plus what processes hold privately - their free stacks

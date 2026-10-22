@@ -166,6 +166,7 @@ typedef struct pcache_arena {
 	 * fullest page, so whole give-back units can drain */
 	unsigned long *rwarm;                   /* reservation: free, resident */
 	unsigned long *rcold;                   /* reservation: free, punched out */
+	unsigned long *rflight;                 /* reservation: being punched */
 	unsigned int rslots;                    /* bits in each bitmap */
 	unsigned int nfree_warm, nfree_cold;    /* reservation + pages / reservation */
 	pcache_page_t *pages;
@@ -184,6 +185,8 @@ typedef struct pcache_arena {
 	unsigned long released_bytes;           /* cumulative give-back */
 	unsigned long cold_bytes;               /* currently punched out */
 	unsigned long pool_empty;               /* cold groups the pool refused */
+	unsigned long punch_calls;              /* madvise calls, one per run */
+	unsigned long punch_groups;             /* groups those calls punched */
 	unsigned int pool_log_tick;
 
 	/* huge-page reservation: pre-fork, never unmapped */
@@ -339,6 +342,12 @@ static int bit_first(const unsigned long *m, unsigned int n)
 static inline unsigned int rslot_idx(const pcache_chunk_t *ch)
 {
 	return ((char *)ch - arena->hbase) >> PCACHE_SLOT_SHIFT;
+}
+
+/* punched out or being punched: the header may not be read */
+static inline int rslot_headerless(unsigned int i)
+{
+	return bit_get(arena->rcold, i) || bit_get(arena->rflight, i);
 }
 
 static inline pcache_chunk_t *rslot_at(unsigned int i)
@@ -669,15 +678,17 @@ int pcache_arena_init(void)
 			arena->hi = (unsigned long)arena->hbase + arena->hsize;
 			arena->rtop = arena->hsize;
 			arena->rslots = arena->hsize >> PCACHE_SLOT_SHIFT;
-			arena->rwarm = shm_malloc(2 * ((arena->rslots + BITS_PER_LONG - 1)
+			arena->rwarm = shm_malloc(3 * ((arena->rslots + BITS_PER_LONG - 1)
 				/ BITS_PER_LONG) * sizeof(unsigned long));
 			if (!arena->rwarm) {
 				LM_ERR("no more shm memory for the slot bitmaps\n");
 				return -1;
 			}
-			memset(arena->rwarm, 0, 2 * ((arena->rslots + BITS_PER_LONG - 1)
+			memset(arena->rwarm, 0, 3 * ((arena->rslots + BITS_PER_LONG - 1)
 				/ BITS_PER_LONG) * sizeof(unsigned long));
 			arena->rcold = arena->rwarm +
+				(arena->rslots + BITS_PER_LONG - 1) / BITS_PER_LONG;
+			arena->rflight = arena->rcold +
 				(arena->rslots + BITS_PER_LONG - 1) / BITS_PER_LONG;
 			LM_NOTICE("huge-page arena: %d MB on %s, %lu MB pinned from swapping\n",
 				pcache_arena_hugepage_mb,
@@ -1028,23 +1039,40 @@ static int range_quiet(char *lo, char *hi)
 	return 1;
 }
 
-/* give memory back to the host - arena lock held */
+/* a run of consecutive punchable groups, released in one madvise */
+struct punch_run {
+	unsigned int g0, n;
+};
+#define PUNCH_RUNS_MAX 256                /* per tick; the rest waits */
+
+/*
+ * Give memory back to the host.  Entered and left with the arena lock held,
+ * which is dropped around the syscalls so writers can carve meanwhile:
+ * groups being punched sit on the in-flight map, where no carve takes them
+ * and no walk reads their headers, and pages being freed are already
+ * unlinked.  The quiet window has excluded any reader still holding a
+ * pointer into either.
+ */
 static void giveback_tick(void)
 {
-	pcache_page_t *pg, **ppg;
-	unsigned int g, i, keep_pages = 0;
+	struct punch_run runs[PUNCH_RUNS_MAX];
+	pcache_page_t *pg, **ppg, *freed = NULL;
+	unsigned int nruns = 0, done, g, i, r, n, keep_pages = 0;
+	unsigned long *to;
 	char *p;
+	int err = 0;
 
 	if (!pcache_reclaim_giveback ||
 	    arena->tick - arena->carve_tick < (unsigned int)pcache_reclaim_cooloff_s)
 		return;
 
-	/* punch whole quiet 2 MB groups out with MADV_REMOVE; the mapping
+	/* whole quiet 2 MB groups, punched out with MADV_REMOVE; the mapping
 	 * stays.  A punched slot is known by the cold map alone: writing its
 	 * header would fault the memory straight back.  A refusal (always,
 	 * on a pinned reservation) stops only this part */
 	if (arena->hbase && !arena->giveback_off) {
-		for (g = 0; (g + 1) * PCACHE_GROUP_SLOTS <= arena->hoff / PCACHE_SLOT; g++) {
+		for (g = 0; (g + 1) * PCACHE_GROUP_SLOTS <= arena->hoff / PCACHE_SLOT &&
+		        nruns < PUNCH_RUNS_MAX; g++) {
 			p = arena->hbase + (unsigned long)g * PCACHE_HPS;
 			for (i = 0; i < PCACHE_GROUP_SLOTS; i++)
 				if (!bit_get(arena->rwarm, g * PCACHE_GROUP_SLOTS + i))
@@ -1053,27 +1081,16 @@ static void giveback_tick(void)
 				continue;
 			for (i = 0; i < PCACHE_GROUP_SLOTS; i++) {
 				bit_clr(arena->rwarm, g * PCACHE_GROUP_SLOTS + i);
-				bit_set(arena->rcold, g * PCACHE_GROUP_SLOTS + i);
+				bit_set(arena->rflight, g * PCACHE_GROUP_SLOTS + i);
 			}
 			arena->nfree_warm -= PCACHE_GROUP_SLOTS;
-			arena->nfree_cold += PCACHE_GROUP_SLOTS;
-			if (madvise(p, PCACHE_HPS, MADV_REMOVE) < 0) {
-				LM_WARN("MADV_REMOVE refused on the %s arena (%s) - "
-					"its free slots stay resident from now on\n",
-					pcache_mem_tier_str(arena->htier), strerror(errno));
-				arena->giveback_off = 1;
-				/* still free, still resident: back to warm */
-				for (i = 0; i < PCACHE_GROUP_SLOTS; i++) {
-					bit_set(arena->rwarm, g * PCACHE_GROUP_SLOTS + i);
-					bit_clr(arena->rcold, g * PCACHE_GROUP_SLOTS + i);
-				}
-				arena->nfree_warm += PCACHE_GROUP_SLOTS;
-				arena->nfree_cold -= PCACHE_GROUP_SLOTS;
-				break;
+			if (nruns && runs[nruns - 1].g0 + runs[nruns - 1].n == g) {
+				runs[nruns - 1].n++;
+			} else {
+				runs[nruns].g0 = g;
+				runs[nruns].n = 1;
+				nruns++;
 			}
-			arena->cold_bytes += PCACHE_HPS;
-			arena->bytes -= PCACHE_HPS;
-			arena->released_bytes += PCACHE_HPS;
 		}
 	}
 
@@ -1096,8 +1113,54 @@ static void giveback_tick(void)
 		*ppg = pg->next;
 		arena->npages--;
 		arena->pages_freed++;
+		pg->next = freed;
+		freed = pg;
+	}
+	if (!nruns && !freed)
+		return;
+
+	lock_release(&arena->lock);
+	for (done = 0; done < nruns; done++)
+		if (madvise(arena->hbase + (unsigned long)runs[done].g0 * PCACHE_HPS,
+		        (size_t)runs[done].n * PCACHE_HPS, MADV_REMOVE) < 0) {
+			err = errno;
+			break;
+		}
+	while (freed) {
+		pg = freed;
+		freed = pg->next;
 		shm_free(pg->raw);
 		shm_free(pg);
+	}
+	lock_get(&arena->lock);
+
+	/* punched runs go cold; a refused run and the ones after it go back
+	 * warm - the refusal seen here, EINVAL on a pinned reservation, comes
+	 * before any page is touched */
+	for (r = 0; r < nruns; r++) {
+		n = runs[r].n;
+		to = r < done ? arena->rcold : arena->rwarm;
+		for (g = runs[r].g0; g < runs[r].g0 + n; g++)
+			for (i = 0; i < PCACHE_GROUP_SLOTS; i++) {
+				bit_clr(arena->rflight, g * PCACHE_GROUP_SLOTS + i);
+				bit_set(to, g * PCACHE_GROUP_SLOTS + i);
+			}
+		if (r >= done) {
+			arena->nfree_warm += n * PCACHE_GROUP_SLOTS;
+			continue;
+		}
+		arena->nfree_cold += n * PCACHE_GROUP_SLOTS;
+		arena->cold_bytes += n * PCACHE_HPS;
+		arena->bytes -= n * PCACHE_HPS;
+		arena->released_bytes += n * PCACHE_HPS;
+		arena->punch_calls++;
+		arena->punch_groups += n;
+	}
+	if (done < nruns) {
+		LM_WARN("MADV_REMOVE refused on the %s arena (%s) - "
+			"its free slots stay resident from now on\n",
+			pcache_mem_tier_str(arena->htier), strerror(err));
+		arena->giveback_off = 1;
 	}
 }
 
@@ -1226,8 +1289,8 @@ int pcache_arena_mi(mi_item_t *aobj)
 	lock_get(&arena->lock);
 	/* cells out (not home) per class */
 	for (off = 0; off < arena->hoff; off += PCACHE_SLOT) {
-		if (bit_get(arena->rcold, off >> PCACHE_SLOT_SHIFT))
-			continue;                   /* punched out: no header */
+		if (rslot_headerless(off >> PCACHE_SLOT_SHIFT))
+			continue;
 		ch = (pcache_chunk_t *)(arena->hbase + off);
 		if (ch->cls < PCACHE_NCLASSES)
 			out[ch->cls] += ch->cells - ch->nfree;
@@ -1261,6 +1324,8 @@ int pcache_arena_mi(mi_item_t *aobj)
 	     add_mi_number(aobj, MI_SSTR("cold_bytes"), arena->cold_bytes) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("giveback_off"), arena->giveback_off) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("pool_empty"), arena->pool_empty) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("punch_calls"), arena->punch_calls) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("punch_groups"), arena->punch_groups) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("reclaim_ticks"), arena->tick) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("last_carve_age_s"),
 	         arena->tick - arena->carve_tick) < 0 ||
@@ -1372,8 +1437,8 @@ void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
 	}
 	lock_get(&arena->lock);
 	for (off = 0; off < arena->hoff; off += PCACHE_SLOT) {
-		if (bit_get(arena->rcold, off >> PCACHE_SLOT_SHIFT))
-			continue;                   /* punched out: no header */
+		if (rslot_headerless(off >> PCACHE_SLOT_SHIFT))
+			continue;
 		ch = (pcache_chunk_t *)(arena->hbase + off);
 		if (ch->cls != PCACHE_CLS_FREE)
 			n++;
