@@ -779,6 +779,17 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
                       + CL_CTR_MTU_SZ, CL_CTR_LIVE_SZ);
         sender_live = ntohs(l_be);
     }
+    /* Every build of this wire version sends the count, term, settings and
+     * MTU.  A beacon without them, or counting no members or more than a
+     * cluster holds, was not sent by a master - and ranked on what it
+     * claims, it could draw this node into a merge with nobody. */
+    if (!cfg_present || sender_count == 0 || sender_count > CL_CTR_MAX_PEERS
+            || sender_live > CL_CTR_MAX_PEERS) {
+        LM_DBG("clusterer_controller: [cluster %d] malformed beacon from %s "
+               "(%d bytes, count %u), dropping\n", cl->cluster_id, sender_ip,
+               payload_len, sender_count);
+        return;
+    }
 
     /* Would a merge with this master be refused?  The same tests its
      * cl_ctr_handle_join_req() would apply to our JOIN_REQ: the settings
@@ -789,11 +800,11 @@ void cl_ctr_handle_master_beacon(const char *sender_ip, const char *payload,
      * was the larger partition, that took down the correctly configured
      * nodes.  Two masters with different settings now stay two partitions,
      * and both say why, until an operator fixes one of them. */
-    cfg_differs = cfg_present && on_config_mismatch == CL_CTR_CFGMISMATCH_REJECT
+    cfg_differs = on_config_mismatch == CL_CTR_CFGMISMATCH_REJECT
                   && (b_manage != (cl->manage_shtags ? 1 : 0)
                       || b_stick != (cl->master_stickiness ? 1 : 0)
                       || b_qt    != (query_time & 0xFFFF));
-    mtu_differs = cfg_present && b_mtu > 0 && cc_mtu > 0
+    mtu_differs = b_mtu > 0 && cc_mtu > 0
                   && b_mtu != cl_ctr_mtu_wire(cc_mtu);
     if (cfg_differs || mtu_differs) {
         time_t now = cl_ctr_now();
