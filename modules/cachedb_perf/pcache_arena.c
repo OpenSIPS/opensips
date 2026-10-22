@@ -129,10 +129,14 @@ typedef struct pcache_chunk {
 	unsigned int cells;
 	unsigned int nfree;          /* cells on free_head */
 	unsigned int in_avail;       /* 1 while on (or heading to) the avail stack */
+	unsigned int sparse;         /* reclaim tick: a few survivors pin it */
 	unsigned int free_at;        /* reclaim tick the slot became free */
 	unsigned int home_since;     /* reclaim tick the first cell came home */
 	/* padded to PCACHE_CHUNK_HDR; cells follow */
 } pcache_chunk_t;
+
+_Static_assert(sizeof(pcache_chunk_t) <= PCACHE_CHUNK_HDR,
+	"the chunk header must fit in front of the cells");
 
 /* a shm block holding PCACHE_PAGE_SLOTS aligned slots */
 struct pcache_page {
@@ -187,6 +191,8 @@ typedef struct pcache_arena {
 	unsigned long pool_empty;               /* cold groups the pool refused */
 	unsigned long punch_calls;              /* madvise calls, one per run */
 	unsigned long punch_groups;             /* groups those calls punched */
+	unsigned int sparse_chunks;             /* as of the last reclaim tick */
+	unsigned long evacuated;                /* cells handed out for a move */
 	unsigned int pool_log_tick;
 
 	/* huge-page reservation: pre-fork, never unmapped */
@@ -535,6 +541,7 @@ static int carve_chunk(int c, struct pcache_palloc *pl)
 	ch->in_avail = 0;
 	ch->free_at = 0;
 	ch->home_since = 0;
+	ch->sparse = 0;
 
 	cells = (char *)ch + PCACHE_CHUNK_HDR;
 	for (i = 0; i < ch->cells; i++)
@@ -1000,6 +1007,66 @@ void pcache_cell_free_global(void *cell)
 }
 
 /* the largest size this cell can hold, from its class byte; 0 = not a cell */
+int pcache_cell_evacuable(const void *cell)
+{
+	return backing == PCACHE_BACKING_OWN &&
+		__atomic_load_n(&cell_chunk(cell)->sparse, __ATOMIC_RELAXED);
+}
+
+/*
+ * A cell of @from's class for moving @from out of its sparse chunk: from
+ * the densest other chunk that is partly used and not sparse, else the
+ * fullest other sparse one, which then stops being sparse and collects
+ * the rest.  Never @from's own chunk or an empty one - a move there frees
+ * nothing, and a class's last few survivors would bounce between two
+ * chunks for good.  The private stack is bypassed, as it is fed from
+ * whichever chunk the process drew last.  NULL = nowhere to go.
+ */
+void *pcache_cell_alloc_dense(const void *from)
+{
+	pcache_chunk_t *src = cell_chunk(from), *ch, *best = NULL;
+	unsigned int nf, best_free = ~0U, c = *(const unsigned char *)from;
+	void *cell = NULL;
+	int pass;
+
+	if (backing != PCACHE_BACKING_OWN || c >= PCACHE_NCLASSES)
+		return NULL;
+	lock_get(&arena->lock);
+	/* chunks leave the stack only under this lock and join it at the
+	 * head, so the walk sees a stable suffix */
+	for (pass = 0; pass < 2 && !best; pass++)
+		for (ch = __atomic_load_n(&arena->avail[c], __ATOMIC_ACQUIRE); ch;
+		        ch = ch->link) {
+			nf = __atomic_load_n(&ch->nfree, __ATOMIC_ACQUIRE);
+			if (ch != src && nf && nf < ch->cells && nf < best_free &&
+			        (pass || !ch->sparse)) {
+				best = ch;
+				best_free = nf;
+			}
+		}
+	if (best) {
+		__atomic_store_n(&best->sparse, 0, __ATOMIC_RELAXED);
+		cell = chunk_pop(best);
+		if (cell)
+			arena->evacuated++;
+	}
+	lock_release(&arena->lock);
+	return cell;
+}
+
+unsigned int pcache_arena_sparse_chunks(void)
+{
+	return backing == PCACHE_BACKING_OWN ?
+		__atomic_load_n(&arena->sparse_chunks, __ATOMIC_RELAXED) : 0;
+}
+
+void pcache_arena_age(unsigned int ticks)
+{
+	lock_get(&arena->lock);
+	arena->tick += ticks;
+	lock_release(&arena->lock);
+}
+
 unsigned int pcache_cell_bound(const void *cell)
 {
 	unsigned char c = *(const unsigned char *)cell;
@@ -1034,6 +1101,7 @@ static void chunk_retire(pcache_chunk_t *ch)
 	ch->free_head = NULL;
 	ch->nfree = 0;
 	ch->in_avail = 0;
+	ch->sparse = 0;
 	ch->cls = PCACHE_CLS_FREE;
 	ch->free_at = arena->tick;
 	if (ch->page) {
@@ -1224,7 +1292,7 @@ static void flush_live_processes(void)
 void pcache_arena_reclaim_tick(void)
 {
 	pcache_chunk_t *ch, *next, *head;
-	unsigned int kept, nfree, lingering = 0;
+	unsigned int kept, nfree, lingering = 0, sparse = 0;
 	unsigned int base_ivl = pcache_reclaim_quiet_s > 0 ?
 		(unsigned int)pcache_reclaim_quiet_s : 1;
 	int c;
@@ -1249,6 +1317,13 @@ void pcache_arena_reclaim_tick(void)
 			if (nfree && nfree < ch->cells &&
 			    arena->tick - ch->home_since >= (unsigned int)pcache_reclaim_quiet_s)
 				lingering++;
+			/* at most an eighth live, quiet for the window: the
+			 * survivors of a mass expiry pin it, and the maintenance
+			 * timer moves them out (pcache_ht_evacuate) */
+			ch->sparse = nfree < ch->cells &&
+				nfree >= ch->cells - ch->cells / 8 &&
+				arena->tick - ch->home_since >= (unsigned int)pcache_reclaim_quiet_s;
+			sparse += ch->sparse;
 			avail_push(c, ch);
 		}
 		/* the allocator's current chunk is not on the stack */
@@ -1258,6 +1333,7 @@ void pcache_arena_reclaim_tick(void)
 		    kept++ >= (unsigned int)pcache_reclaim_keep)
 			chunk_retire(ch);
 	}
+	arena->sparse_chunks = sparse;
 	giveback_tick();
 	if (!lingering || arena->flush_ivl < base_ivl) {
 		arena->flush_ivl = base_ivl;
@@ -1351,6 +1427,8 @@ int pcache_arena_mi(mi_item_t *aobj)
 	     add_mi_number(aobj, MI_SSTR("pool_empty"), arena->pool_empty) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("punch_calls"), arena->punch_calls) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("punch_groups"), arena->punch_groups) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("sparse_chunks"), arena->sparse_chunks) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("evacuated"), arena->evacuated) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("reclaim_ticks"), arena->tick) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("last_carve_age_s"),
 	         arena->tick - arena->carve_tick) < 0 ||

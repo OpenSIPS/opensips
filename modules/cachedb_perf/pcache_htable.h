@@ -136,6 +136,8 @@ typedef struct pcache_htable {
 	unsigned int            drain_next;  /* leg drain: chain cursor */
 	unsigned int            drain_skip;  /*   records stepped over in it */
 	unsigned long           drain_moved; /*   records put back, cumulative */
+	unsigned int            evac_next;   /* evacuation: bucket cursor */
+	unsigned long           evacuated;   /*   records moved, cumulative */
 	gen_lock_t              ovf_lock;
 	struct povf           **ovf_tab;     /* PCACHE_OVF_BUCKETS heads */
 
@@ -170,6 +172,12 @@ unsigned int pcache_ht_overflow(pcache_htable_t *ht);
  * the PCACHE_OVF_BUCKETS chains from a cursor it keeps; returns how many
  * moved.  Single caller only, like pcache_ht_grow() */
 unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int chains);
+
+/* move at most @budget bucket records out of chunks the arena found
+ * sparse, over up to @buckets buckets from a cursor it keeps; returns how
+ * many moved.  Single caller only */
+unsigned int pcache_ht_evacuate(pcache_htable_t *ht, unsigned int buckets,
+		unsigned int budget);
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 

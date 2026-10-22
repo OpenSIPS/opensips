@@ -4391,11 +4391,14 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 
 /* leg chains the maintenance tick drains: a pass over all 16,384 takes 16 s */
 #define PCACHE_DRAIN_CHAINS 1024
+/* buckets visited and records moved per tick while a chunk is sparse */
+#define PCACHE_EVAC_BUCKETS 4096
+#define PCACHE_EVAC_BUDGET  512
 
 /* Maintenance timer: reaps expired records, grows collections past
- * growth_load_factor, bounded per tick, and drains the overflow leg into
- * the room that made.  Runs in one timer process, so it is the sole
- * splitter and drainer. */
+ * growth_load_factor, bounded per tick, drains the overflow leg into the
+ * room that made and moves records out of sparse chunks.  Runs in one
+ * timer process, so it is the sole caller of all three. */
 static void pcache_expire_timer(unsigned int ticks, void *param)
 {
 	pcache_col_t *col;
@@ -4438,6 +4441,11 @@ static void pcache_expire_timer(unsigned int ticks, void *param)
 
 		/* splits make room but never look at the leg */
 		pcache_ht_drain_leg(col->htable, PCACHE_DRAIN_CHAINS);
+
+		/* the survivors of a mass expiry pin their chunks */
+		if (pcache_arena_sparse_chunks())
+			pcache_ht_evacuate(col->htable, PCACHE_EVAC_BUCKETS,
+				PCACHE_EVAC_BUDGET);
 	}
 }
 

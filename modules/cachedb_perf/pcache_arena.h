@@ -73,6 +73,16 @@ void pcache_cell_free_global(void *cell);
  * class in byte 0, or 0 if the byte is not a valid class id */
 unsigned int pcache_cell_bound(const void *cell);
 
+/* in a chunk the reclaim tick found sparse (at most an eighth live) */
+int pcache_cell_evacuable(const void *cell);
+/* a cell for moving @from out of its sparse chunk, from a denser one of
+ * the class; NULL = nowhere to go */
+void *pcache_cell_alloc_dense(const void *from);
+/* chunks found sparse at the last reclaim tick */
+unsigned int pcache_arena_sparse_chunks(void);
+/* selftest: advance the reclaim clock past its quiet windows */
+void pcache_arena_age(unsigned int ticks);
+
 /* monotone address watermarks over all chunks */
 void pcache_arena_extents(unsigned long *lo, unsigned long *hi);
 

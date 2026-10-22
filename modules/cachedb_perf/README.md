@@ -1566,7 +1566,9 @@ those then hold live records rather than idle cells), *pages* /
 punch), *pool_empty* (carves that found the hugetlb pool unable to
 take a punched-out group back, and went past it), *punch_calls* /
 *punch_groups* (consecutive groups go back in one call),
-*reclaim_ticks*,
+*sparse_chunks* (chunks at most an eighth live, whose records the
+maintenance timer is moving into denser ones so they can retire) /
+*evacuated* (records moved so far), *reclaim_ticks*,
 *last_carve_age_s*, and *classes* =
 "size:slots/peak/cells_not_home" per class in use (cells not home are
 live records plus what processes hold privately - their free stacks

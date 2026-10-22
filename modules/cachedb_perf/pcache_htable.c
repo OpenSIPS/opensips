@@ -1436,6 +1436,56 @@ unsigned int pcache_ht_overflow(pcache_htable_t *ht)
 }
 
 /*
+ * A chunk retires only when every cell in it is free, so the survivors of
+ * a mass expiry, spread over the chunks that held the expired records, pin
+ * all of them.  Records in chunks the arena found sparse are copied into a
+ * denser one, the slot swapped under the bucket lock with the version
+ * bumped around it - a reader copying from the old cell retries, as for a
+ * replacing store - and the old cell sent home, where its chunk can drain.
+ * Leg records are left to the drain.  Single caller only.
+ */
+unsigned int pcache_ht_evacuate(pcache_htable_t *ht, unsigned int buckets,
+		unsigned int budget)
+{
+	pcache_rec_t *r, *nr, *old[PCACHE_SLOTS];
+	pcache_bucket_t *b;
+	unsigned int n, i, idx, used, nold, nb, moved = 0;
+
+	nb = __atomic_load_n(&ht->nbuckets, __ATOMIC_RELAXED);
+	for (n = 0; n < buckets && moved < budget; n++) {
+		idx = ht->evac_next % nb;
+		ht->evac_next = (idx + 1) % nb;
+		b = bucket_at(ht, idx);
+		nold = 0;
+		lock_get(&b->lock);
+		bkt_set_owner(b);
+		used = bkt_used(b);
+		for (i = 0; i < used && moved < budget; i++) {
+			r = b->slot[i];
+			if (!pcache_cell_evacuable(r))
+				continue;
+			nr = pcache_cell_alloc_dense(r);
+			if (!nr)
+				continue;
+			memcpy(nr, r, pcache_cell_bound(r));
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
+			b->slot[i] = nr;
+			__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
+			old[nold++] = r;
+			moved++;
+		}
+		bkt_clear_owner(b);
+		lock_release(&b->lock);
+		/* home, not onto this process's stack, which would pin the
+		 * chunk being emptied */
+		for (i = 0; i < nold; i++)
+			pcache_cell_free_global(old[i]);
+	}
+	ht->evacuated += moved;
+	return moved;
+}
+
+/*
  * Splits make room in the buckets but never look at the leg, so without
  * this a record that overflowed during a burst stays there, behind the
  * one leg lock, for good.  A record whose bucket is full is stepped over
