@@ -837,6 +837,42 @@ M0=$(wc -l < $R/n$MN.log)
 python3 "$HERE/wire_tap.py" inject $R/t33s.json 10.74.0.254 >/dev/null; sleep 4
 check "its old GOODBYE, sent from another address, removed nothing" $(! since $MN $M0 | grep -aq "GOODBYE from $(ip4 $x)" && members $MN 741 | tr ' ' '\n' | grep -q "^$(ip4 $x):[a-z]*:[1-9]" && echo 1 || echo 0) "$(since $MN $M0 | grep -a "GOODBYE from" | tail -1 | cut -c1-120) / $(members $MN 741)"
 
+echo "=== T34 a JOIN_REQ recorded and sent again from another address ==="
+# Bootstrap packets have no replay window.  Record a member's JOIN_REQ as it
+# rejoins, then send it again from a socket on the bridge's address that also
+# listens: the master must not admit the node a second time, and must send
+# nothing to that address - its replies go to the joiner itself.
+MIP=$(members 1 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for x in 4 3 2 1; do [ $x != $MN ] && break; done
+XID=$(nid $MN $x)
+stop_graceful $x; rm -f $R/n$x.pid
+tap $x 4 $R/t34.json >/dev/null & TP=$!
+sleep 0.3; start $x $NEW; wait $TP; sleep 6
+python3 -c '
+import json,sys
+p=[d for d in json.load(open(sys.argv[1])) if d["data"][2:4]=="01"]
+json.dump(p,open(sys.argv[2],"w")); print(len(p))' $R/t34.json $R/t34b.json > $R/t34b.n
+XID=$(nid $MN $x)
+check "n$x rejoined, its JOIN_REQ recorded ($(cat $R/t34b.n) bootstrap datagrams)" $([ -n "$XID" ] && [ "$(cat $R/t34b.n)" -gt 0 ] && echo 1 || echo 0) "id '$XID'"
+M0=$(wc -l < $R/n$MN.log)
+GOT=$(python3 - $R/t34b.json <<'PY'
+import json, socket, sys, time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind(("10.74.0.254", 0)); s.settimeout(0.2)
+s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton("10.74.0.254"))
+for d in json.load(open(sys.argv[1])):
+    s.sendto(bytes.fromhex(d["data"]), (d["dst"], d["dport"])); time.sleep(0.05)
+n, end = 0, time.time() + 3
+while time.time() < end:
+    try: s.recv(65535); n += 1
+    except socket.timeout: pass
+print(n)
+PY
+)
+check "the master did not admit n$x again" $(! since $MN $M0 | grep -aq "JOIN_REQ from $(ip4 $x)" && echo 1 || echo 0) "$(since $MN $M0 | grep -ac "JOIN_REQ from $(ip4 $x)") JOIN_REQs processed"
+check "nothing was sent to the address the record came from" $([ "${GOT:-1}" = 0 ] && echo 1 || echo 0) "$GOT datagrams"
+check "n$x kept its node_id ($XID)" $([ "$(nid $MN $x)" = "$XID" ] && echo 1 || echo 0) "$(nid $MN $x)"
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"
