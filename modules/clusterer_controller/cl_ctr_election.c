@@ -88,10 +88,10 @@ void cl_ctr_note_term(cl_ctr_cluster_t *cl, uint32_t term)
 }
 
 /* Is @term (announced by @from) a plausible term?  Refuses one more than
- * CL_CTR_TERM_JUMP_MAX above the highest term this node knows; a node that
- * knows none yet (0) has nothing to judge by and accepts it.  Counts and
- * logs (once a minute) what it refuses.  Must be called with
- * cl->peers->lock held for WRITE. */
+ * CL_CTR_TERM_JUMP_MAX above the highest term this node knows - from 0 too:
+ * a node that knows none yet still takes no term a cluster could not have
+ * reached one election at a time.  Counts and logs (once a minute) what it
+ * refuses.  Must be called with cl->peers->lock held for WRITE. */
 int cl_ctr_term_sane(cl_ctr_cluster_t *cl, uint32_t term, const char *from)
 {
     uint32_t known = cl->peers->term_seen;
@@ -99,7 +99,7 @@ int cl_ctr_term_sane(cl_ctr_cluster_t *cl, uint32_t term, const char *from)
 
     if (cl->peers->my_term > known)     known = cl->peers->my_term;
     if (cl->peers->master_term > known) known = cl->peers->master_term;
-    if (known == 0 || term <= known || term - known <= CL_CTR_TERM_JUMP_MAX)
+    if (term <= known || term - known <= CL_CTR_TERM_JUMP_MAX)
         return 1;
     cl->peers->terms_refused++;
     now = cl_ctr_now();
@@ -494,6 +494,10 @@ void cl_ctr_arm_master_timers(cl_ctr_cluster_t *cl, int i_am_master)
          * term: at the heal it cannot outrank the cluster on it, however long
          * the cut lasted. */
         int raise = cl->term_confirmed || cl->peers->term_seen == 0;
+
+        /* the last term there is stays the last: never wrap to 0 */
+        if (cl->peers->term_seen == UINT32_MAX)
+            raise = 0;
 
         cl->peers->my_term     = cl->peers->term_seen + (raise ? 1 : 0);
         cl->peers->term_seen   = cl->peers->my_term;
