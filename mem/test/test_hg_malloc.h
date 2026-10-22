@@ -23,11 +23,18 @@
 #ifndef __TEST_HG_MALLOC_H__
 #define __TEST_HG_MALLOC_H__
 
-/* children forked by test_hg_malloc(), one at a time (pt.c reserves them) */
-#define TEST_HG_MALLOC_PROCS  5
+#include "test_hg_fuzz.h"
+
+/* children forked by test_hg_malloc(), one at a time (pt.c reserves them),
+ * the fuzz test's included */
+#define TEST_HG_MALLOC_PROCS  (8 + TEST_HG_FUZZ_PROCS)
 
 /* non-zero when HG_MALLOC (or HG_MALLOC_DBG) serves both pkg and shm */
 int hg_ut_selected(void);
+
+/* run @fn(@arg) in a child forked like an OpenSIPS worker: 1 if it returned
+ * 0, 0 if it failed, crashed or timed out */
+int hgt_in_child(char *desc, int (*fn)(void *), void *arg);
 
 void test_hg_malloc(void);
 

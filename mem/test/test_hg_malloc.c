@@ -29,6 +29,8 @@
  */
 
 #include "test_hg_malloc.h"
+#include "test_hg_fuzz.h"
+#include "test_hg_memlimit.h"
 
 #ifdef HG_MALLOC
 
@@ -43,6 +45,7 @@
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/hg_malloc.h"
+#include "../../mem/hg_arena.h"   /* hg_quarantine_drain() */
 
 #define HGT_WAIT_US   (30 * 1000 * 1000)
 #define HGT_STEP_US   (10 * 1000)
@@ -87,7 +90,7 @@ static int hgt_check(const void *p, unsigned long len, unsigned char seed)
 
 /* run @fn in a child forked the way OpenSIPS forks its workers and return
  * 1 if it reported success, 0 if it failed, crashed or timed out */
-static int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
+int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 {
 	const struct internal_fork_params ifp = {
 		.proc_desc = desc,
@@ -107,16 +110,19 @@ static int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 	}
 
 	if (pid == 0) {
-		for (waited = 0; *hgt_go == 0 && waited < HGT_WAIT_US;
-		        waited += HGT_STEP_US)
+		for (waited = 0; !__atomic_load_n(hgt_go, __ATOMIC_ACQUIRE) &&
+		        waited < HGT_WAIT_US; waited += HGT_STEP_US)
 			usleep(HGT_STEP_US);
-		*hgt_verdict = fn(arg) == 0 ? HGT_PASS : HGT_FAIL;
+		/* release: everything fn() wrote - a stale write the parent is
+		 * to find, say - is visible before the verdict is */
+		__atomic_store_n(hgt_verdict, fn(arg) == 0 ? HGT_PASS : HGT_FAIL,
+			__ATOMIC_RELEASE);
 		exit(0);
 	}
-	*hgt_go = 1;
+	__atomic_store_n(hgt_go, 1, __ATOMIC_RELEASE);
 
-	for (waited = 0; *hgt_verdict == 0 && waited < HGT_WAIT_US;
-	        waited += HGT_STEP_US)
+	for (waited = 0; !__atomic_load_n(hgt_verdict, __ATOMIC_ACQUIRE) &&
+	        waited < HGT_WAIT_US; waited += HGT_STEP_US)
 		usleep(HGT_STEP_US);
 
 	if (*hgt_verdict == 0)
@@ -373,7 +379,7 @@ static int hgt_child_exit(void *arg)
 		shm_free(p[i]);
 
 	/* report first: the exit below does not return */
-	*hgt_verdict = HGT_PASS;
+	__atomic_store_n(hgt_verdict, HGT_PASS, __ATOMIC_RELEASE);
 	dynamic_process_final_exit();
 	return 0;
 }
@@ -445,6 +451,254 @@ static void test_hg_double_free(void)
 		"a large fragment freed twice is refused and counted");
 }
 
+/*
+ * The cell header carries the cell's state and a checksum, so a free can be
+ * refused whatever happened in between: a double free with other frees in
+ * between, a header overwritten by the neighbour's overflow, a pointer into
+ * the middle of a cell, a realloc of freed memory. Each runs in a child (the
+ * refused cells leak) and reports whether the refusals were the expected
+ * ones; the parent checks the counters moved by exactly that much.
+ */
+#define HGT_HDR_SIZE  200
+
+static int hgt_child_header(void *arg)
+{
+	char *a, *b, *x, *y, *mid;
+	int fails = 0;
+
+	/* a freed twice, with b freed in between: a is no longer the head of
+	 * the private list, so only the header's state can catch it */
+	a = shm_malloc(HGT_HDR_SIZE);
+	b = shm_malloc(HGT_HDR_SIZE);
+	if (!a || !b)
+		return -1;
+	shm_free(a);
+	shm_free(b);
+	shm_free(a);
+	x = shm_malloc(HGT_HDR_SIZE);
+	y = shm_malloc(HGT_HDR_SIZE);
+	if (!x || !y || x == y) {
+		LM_ERR("double free with a free in between: %p handed out twice\n", x);
+		fails++;
+	}
+
+	/* the header in front of a live cell overwritten (a neighbour's
+	 * overflow would do this): its free must be refused, not followed */
+	a = shm_malloc(HGT_HDR_SIZE);
+	if (!a)
+		return -1;
+	memset(a - HG_CELL_HDR, 0x41, 4);
+	shm_free(a);
+
+	/* a pointer into the middle of a live cell */
+	b = shm_malloc(HGT_HDR_SIZE);
+	if (!b)
+		return -1;
+	mid = b + 64;
+	shm_free(mid);
+	shm_free(b);
+
+	/* realloc of memory already freed */
+	b = shm_malloc(HGT_HDR_SIZE);
+	if (!b)
+		return -1;
+	shm_free(b);
+	if (shm_realloc(b, HGT_HDR_SIZE * 2)) {
+		LM_ERR("realloc of a freed pointer succeeded\n");
+		fails++;
+	}
+
+	return fails ? -1 : 0;
+}
+
+static void test_hg_header(void)
+{
+	struct hg_block *hb = shm_block;
+	unsigned long df0 = hb->corrupt[HG_C_DOUBLE_FREE];
+	unsigned long hd0 = hb->corrupt[HG_C_HEADER];
+	int ok_child;
+
+	ok_child = hgt_in_child("hg cell header", hgt_child_header, NULL);
+	/* double_free: the in-between case and the realloc of a freed cell;
+	 * header: the overwritten header and the mid-cell pointer */
+	ok(ok_child && hb->corrupt[HG_C_DOUBLE_FREE] == df0 + 2 &&
+		hb->corrupt[HG_C_HEADER] == hd0 + 2,
+		"a double free with frees in between, a damaged header, a pointer "
+		"into a cell and a realloc of freed memory are all refused "
+		"(double_free +%lu, header +%lu)",
+		hb->corrupt[HG_C_DOUBLE_FREE] - df0, hb->corrupt[HG_C_HEADER] - hd0);
+}
+
+/*
+ * HG_MALLOC_DBG only: a write past the size asked for is found at the free
+ * (small cell and large fragment) and around an in-place realloc, and a
+ * write to a freed cell is found when the cell leaves the quarantine - also
+ * when the write comes from another process - and the cell is then never
+ * handed out again. A child forked while the parent's quarantine holds a
+ * cell finds its own copy empty: it can never release the parent's cells.
+ * The damaged cells leak, so this runs in children; the parent checks the
+ * counters.
+ */
+#define HGT_DBG_SMALL  201
+#define HGT_DBG_LARGE  (200UL * 1024 + 3)
+#define HGT_DBG_REUSE  64
+
+static int hgt_child_dbg(void *arg)
+{
+	struct hg_block *hb = shm_block;
+	char *a, *b, *r, *u, *n[HGT_DBG_REUSE];
+	unsigned long uf, hd;
+	int i, fails = 0;
+
+	a = shm_malloc(HGT_DBG_SMALL);
+	b = shm_malloc(HGT_DBG_LARGE);
+	r = shm_malloc(100);
+	u = shm_malloc(HGT_DBG_SMALL);
+	if (!a || !b || !r || !u)
+		return -1;
+
+	/* one byte past the request, each */
+	a[HGT_DBG_SMALL] = 0;
+	b[HGT_DBG_LARGE] = 0;
+	r[100] = 0;
+	shm_free(a);
+	shm_free(b);
+	r = shm_realloc(r, 120);
+	if (!r)
+		return -1;
+	r[120] = 0;     /* and one past the new size */
+	shm_free(r);
+
+	/* a write through a dangling pointer, then the quarantine let go: the
+	 * cell is reported and leaked, never handed out again */
+	shm_free(u);
+	u[100] = 0x55;
+	uf = hb->corrupt[HG_C_USE_AFTER_FREE];
+	hd = hb->corrupt[HG_C_HEADER];
+	hg_quarantine_drain(hb);
+	if (hb->corrupt[HG_C_USE_AFTER_FREE] != uf + 1 ||
+	    hb->corrupt[HG_C_HEADER] != hd) {
+		LM_ERR("the stale write was not refused for its poison "
+			"(use_after_free +%lu, header +%lu)\n",
+			hb->corrupt[HG_C_USE_AFTER_FREE] - uf,
+			hb->corrupt[HG_C_HEADER] - hd);
+		fails++;
+	}
+	for (i = 0; i < HGT_DBG_REUSE; i++) {
+		n[i] = shm_malloc(HGT_DBG_SMALL);
+		if (n[i] == u) {
+			LM_ERR("the cell written after its free was handed out "
+				"again\n");
+			fails++;
+		}
+	}
+	for (i = 0; i < HGT_DBG_REUSE; i++)
+		shm_free(n[i]);
+	return fails ? -1 : 0;
+}
+
+/* forked while the parent's quarantine holds @arg: the child's copy of the
+ * quarantine must be empty, and its stale write must be found by the parent */
+static int hgt_child_dbg_xproc(void *arg)
+{
+	char *x = arg;
+	unsigned int n = hg_quarantine_drain((struct hg_block *)shm_block);
+
+	if (n) {
+		LM_ERR("the child released %u cells of the parent's quarantine\n", n);
+		return -1;
+	}
+	x[100] = 0x55;
+	return 0;
+}
+
+static void test_hg_dbg(void)
+{
+	struct hg_block *hb = shm_block;
+	unsigned long of0 = hb->corrupt[HG_C_OVERFLOW];
+	unsigned long uf0 = hb->corrupt[HG_C_USE_AFTER_FREE];
+	int ok_child, ok_xproc = 0;
+	char *x;
+
+	skip(!hb->dbg, 1, "the red zone and quarantine are HG_MALLOC_DBG's");
+	ok_child = hgt_in_child("hg dbg checks", hgt_child_dbg, NULL);
+
+	/* the parent's quarantine emptied - nothing in it may be damaged -
+	 * then holding just x across the fork */
+	hg_quarantine_drain(hb);
+	x = shm_malloc(HGT_DBG_SMALL);
+	if (x && hb->corrupt[HG_C_USE_AFTER_FREE] == uf0 + 1) {
+		shm_free(x);
+		ok_xproc = hgt_in_child("hg dbg cross-process",
+			hgt_child_dbg_xproc, x);
+		hg_quarantine_drain(hb);
+	}
+
+	ok(ok_child && ok_xproc && hb->corrupt[HG_C_OVERFLOW] == of0 + 4 &&
+		hb->corrupt[HG_C_USE_AFTER_FREE] == uf0 + 2,
+		"HG_MALLOC_DBG finds a write past the request at the free and "
+		"around a realloc, and a write after the free - from this or "
+		"another process - when the cell leaves quarantine; a child never "
+		"releases the parent's quarantine (overflow +%lu, use_after_free "
+		"+%lu)", hb->corrupt[HG_C_OVERFLOW] - of0,
+		hb->corrupt[HG_C_USE_AFTER_FREE] - uf0);
+	end_skip;
+}
+
+/*
+ * Under ASan, the hooks of hg_san.h, read straight from ASan's shadow (so
+ * nothing has to crash): a private (pkg) cell handed out is open for the
+ * bytes asked for and closed after them, also after an in-place realloc;
+ * freed, it is closed past its free-list link; a shared (shm) cell is never
+ * closed. The sizes keep every probe inside the cell's own slack, for the
+ * plain, the debug and the SHM_EXTRA_STATS header alike.
+ */
+static void test_hg_san(void)
+{
+#ifdef HG_SAN_ASAN
+	char *p, *r, *s;
+	int good = 1;
+
+	p = pkg_malloc(200);
+	r = pkg_malloc(100);
+	s = shm_malloc(200);
+	if (!p || !r || !s) {
+		ok(0, "allocations for the sanitizer hooks");
+		return;
+	}
+	if (__asan_address_is_poisoned(p + 199) ||
+	    !__asan_address_is_poisoned(p + 200)) {
+		LM_ERR("pkg cell %p: byte 199 %s, byte 200 %s\n", p,
+			__asan_address_is_poisoned(p + 199) ? "closed" : "open",
+			__asan_address_is_poisoned(p + 200) ? "closed" : "open");
+		good = 0;
+	}
+	r = pkg_realloc(r, 110);
+	if (!r || __asan_address_is_poisoned(r + 109) ||
+	    !__asan_address_is_poisoned(r + 110)) {
+		LM_ERR("realloc'ed pkg cell %p is not open for exactly 110 bytes\n",
+			r);
+		good = 0;
+	}
+	if (__asan_address_is_poisoned(s + 200)) {
+		LM_ERR("shm cell %p was closed - shared arenas must not be\n", s);
+		good = 0;
+	}
+	pkg_free(p);
+	if (!__asan_address_is_poisoned(p + 64)) {
+		LM_ERR("freed pkg cell %p is still open\n", p);
+		good = 0;
+	}
+	pkg_free(r);
+	shm_free(s);
+	ok(good, "ASan sees a pkg cell open for the bytes asked for and closed "
+		"after them, closed once freed, and shm cells left alone");
+#else
+	skip(1, 1, "the sanitizer hooks are checked in an ASan build");
+	end_skip;
+#endif
+}
+
 static unsigned long hgt_corruption(void)
 {
 	unsigned long t = hg_corrupt_total((struct hg_block *)shm_block) +
@@ -475,12 +729,19 @@ void test_hg_malloc(void)
 	test_hg_large();
 	test_hg_grow();
 	test_hg_exit_returns_cells();
+	test_hg_san();
+	test_hg_memlimit();
 
 	ok(hgt_corruption() == 0, "no corruption detected in the parent's view "
 		"of the shm and pkg arenas");
 
 	/* last: these count a detection on purpose */
 	test_hg_double_free();
+	test_hg_header();
+	test_hg_dbg();
+
+	/* fuzz last: it uses the child runner, and the verdict slots go below */
+	test_hg_fuzz();
 
 	shm_free((void *)hgt_verdict);
 	shm_free((void *)hgt_go);
