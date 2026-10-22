@@ -516,20 +516,26 @@ check "healthy again 25 s after the stutter ends (local_health $V)" $([ "$V" = 0
 MS=""; for i in 1 2 3 4; do MS="$MS $(members $i 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"; done
 check "one master throughout, $MIP, named by all four" $([ "$(echo $MS | tr ' ' '\n' | sort -u)" = "$MIP" ] && [ "$(echo $MS | wc -w)" = 4 ] && echo 1 || echo 0) "$MS"
 
-echo "=== T24 release_tag_when_isolated: a cut-off master gives up the active tag ==="
+echo "=== T24 release_tag_when_isolated: a cut-off master, or a member cut off alone, gives up the active tag ==="
 # Off until here: no node may have released anything so far.
 check "with the option off, no tag was released anywhere" $(cat $R/n?.log | grep -aq "releasing the active sharing tag" && echo 0 || echo 1) ""
 for i in 1 2 3 4; do stop_graceful $i; rm -f $R/n$i.pid; done; sleep 2
 for i in 1 2 3 4; do RIG_TAG_RELEASE=1 start $i $NEW 1 2 fleet-a; done; sleep 16
 MIP=$(members 2 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
 check "the option is on everywhere" $([ "$(cfgval $MN 741 release_tag_when_isolated)" = 1 ] && echo 1 || echo 0) ""
-# a member cut off: the master still hears 3 of 4 and keeps the tag
+# a member cut off alone: the master still hears 3 of 4 and keeps the tag;
+# the member elects itself and, counting from the 4 it knew as a member,
+# releases the tag (~10 s to elect unconfirmed, then one election window)
 for x in 1 2 3 4; do [ $x != $MN ] && break; done
+MX=$(wc -l < $R/n$x.log)
 nx $x iptables -I INPUT -p udp --dport $PORT -j DROP; nx $x iptables -I OUTPUT -p udp --dport $PORT -j DROP
-sleep 15
+sleep 25
+XREL=$(cfgval $x 741 tag_released); XTAG=$(tagst $x); XROLE=$(members $x 741 | tr ' ' '\n' | grep "^$(ip4 $x):" | cut -d: -f2)
 nx $x iptables -D INPUT -p udp --dport $PORT -j DROP; nx $x iptables -D OUTPUT -p udp --dport $PORT -j DROP
 check "a member cut off: master $MIP (3 of 4) keeps the tag" $([ "$(cfgval $MN 741 tag_released)" = 0 ] && echo 1 || echo 0) "$(cfgval $MN 741 tag_released)"
+check "the member cut off alone elected itself and released the tag" $([ "$XROLE" = master ] && [ "$XREL" = 1 ] && [ "$XTAG" = backup ] && since $x $MX | grep -aq "releasing the active sharing tag" && echo 1 || echo 0) "role $XROLE, tag_released $XREL, tag $XTAG"
 sleep 16
+check "healed: n$x a member again, holding no released state" $([ "$(cfgval $x 741 tag_released)" = 0 ] && [ "$(members $x 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)" = "$MIP" ] && echo 1 || echo 0) "released $(cfgval $x 741 tag_released), master $(members $x 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)"
 # the master cut off: it hears 1 of 4, releases the tag, the rest elect
 MM=$(wc -l < $R/n$MN.log)
 nx $MN iptables -I INPUT -p udp --dport $PORT -j DROP; nx $MN iptables -I OUTPUT -p udp --dport $PORT -j DROP
