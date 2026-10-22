@@ -35,8 +35,13 @@
 #define CL_CTR_CAP_PROBE            0x00000001u /* answers MASTER_PROBE       */
 #define CL_CTR_CAP_MAINT_SET        0x00000002u /* applies MAINT_SET to itself */
 #define CL_CTR_CAP_MAINT_FULL       0x00000004u /* acts on the full level      */
+/* What this build implements.  A test build may define it - built with
+ * -DCL_CTR_CAPS_MINE=0 it stands in for an older build of the same wire
+ * version, which is how the netns suite checks the gating (T27). */
+#ifndef CL_CTR_CAPS_MINE
 #define CL_CTR_CAPS_MINE            (CL_CTR_CAP_PROBE | CL_CTR_CAP_MAINT_SET | \
                                      CL_CTR_CAP_MAINT_FULL)
+#endif
 #define CL_CTR_CAPS_SZ              4
 
 uint32_t cl_ctr_table_caps(cl_ctr_cluster_t *cl);
