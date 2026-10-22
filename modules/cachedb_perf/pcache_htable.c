@@ -2153,6 +2153,97 @@ static int st_exp_preserve(void)
 	return 0;
 }
 
+/* a record the drain moves into a bucket a scan has already passed must
+ * still be seen: the scan stops in its bucket phase, the keys it saw are
+ * removed (room behind the cursor), the drain fills that room from the
+ * leg, and the rest of the scan must meet every key not removed */
+static int st_scan_leg_first(void)
+{
+	pcache_htable_t *ht = pcache_htable_new(4);
+	struct st_walk w;
+	unsigned char gone[200];
+	unsigned int i, cur = 0, calls = 0;
+	char kb[32], vb[32];
+	str k, v;
+
+	HCHK(ht != NULL, "table creation failed\n");
+	for (i = 0; i < 200; i++) {
+		k.len = snprintf(kb, sizeof kb, "spill-%03u", i); k.s = kb;
+		v.len = snprintf(vb, sizeof vb, "payload-%03u", i); v.s = vb;
+		HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "store %u failed\n", i);
+	}
+	HCHK(ht->ovf_count > 0, "200 keys over 16 buckets never overflowed\n");
+	memset(&w, 0, sizeof w);
+	memset(gone, 0, sizeof gone);
+	do {
+		HCHK(pcache_ht_scan(ht, &cur, 2, st_walk_cb, &w) == 0,
+			"scan failed\n");
+		calls++;
+	} while (cur && ((cur & PCACHE_CURSOR_OVF) || cur < 8) && calls < 10000);
+	HCHK(cur && !(cur & PCACHE_CURSOR_OVF),
+		"the scan never stopped in its bucket phase\n");
+	for (i = 0; i < 200; i++) {
+		if (!w.seen[i])
+			continue;
+		k.len = snprintf(kb, sizeof kb, "spill-%03u", i); k.s = kb;
+		HCHK(pcache_ht_remove(ht, &k) == 1, "remove %u failed\n", i);
+		gone[i] = 1;
+	}
+	pcache_ht_drain_leg(ht, PCACHE_OVF_BUCKETS);
+	while (cur && calls < 20000) {
+		HCHK(pcache_ht_scan(ht, &cur, 2, st_walk_cb, &w) == 0,
+			"scan failed\n");
+		calls++;
+	}
+	for (i = 0; i < 200; i++)
+		HCHK(gone[i] || w.seen[i], "spill-%03u was never seen: the drain "
+			"moved it behind the scan cursor\n", i);
+	return 0;
+}
+
+/* a burst into a small table overflows; once growth makes room the drain
+ * must put the leg back with every value intact, and the expiring records
+ * it moved must still be reaped by the sweep */
+static int st_leg_drain(void)
+{
+	pcache_htable_t *ht = pcache_htable_new(4);
+	unsigned int i, ovf0, moved, freed, miss = 0;
+	char kb[32], vb[32];
+	str k, v, out;
+
+	HCHK(ht != NULL, "table creation failed\n");
+	/* the expiring ones last, so they sit in the leg, not in a bucket */
+	for (i = 0; i < 300; i++) {
+		k.len = snprintf(kb, sizeof kb, "drain-%03u", i); k.s = kb;
+		v.len = snprintf(vb, sizeof vb, "dv-%03u", i); v.s = vb;
+		HCHK(pcache_ht_store(ht, &k, &v, i < 200 ? 0 : 50) == 0,
+			"store %u failed\n", i);
+	}
+	ovf0 = ht->ovf_count;
+	HCHK(ovf0 > 0, "300 keys over 16 buckets never overflowed\n");
+	pcache_ht_grow(ht, 2, 100000);
+	moved = pcache_ht_drain_leg(ht, PCACHE_OVF_BUCKETS);
+	HCHK(moved > 0 && ht->ovf_count == ovf0 - moved,
+		"the drain moved %u of %u leg records, %u left in the leg\n",
+		moved, ovf0, ht->ovf_count);
+	for (i = 0; i < 300; i++) {
+		k.len = snprintf(kb, sizeof kb, "drain-%03u", i); k.s = kb;
+		v.len = snprintf(vb, sizeof vb, "dv-%03u", i);
+		if (pcache_ht_fetch(ht, &k, &out) != 0) {
+			miss++;
+			continue;
+		}
+		if (out.len != (unsigned int)v.len || memcmp(out.s, vb, v.len))
+			miss++;
+		pkg_free(out.s);
+	}
+	HCHK(miss == 0, "%u of 300 keys lost or wrong after the drain\n", miss);
+	freed = pcache_ht_sweep(ht, 100, NULL, NULL);
+	HCHK(freed == 100, "the sweep reaped %u of 100 expired records after "
+		"the drain\n", freed);
+	return 0;
+}
+
 int pcache_htable_selftest(void)
 {
 	pcache_htable_t *ht;
@@ -2409,13 +2500,15 @@ int pcache_htable_selftest(void)
 	/* walk and write-path cases, each on its own table: all of them run,
 	 * the selftest fails after the last if any did */
 	{
-		int fails = 0;
+		static int (*const cases[])(void) = { st_leg_walk_skip,
+			st_bucket_rewalk, st_passive_promote, st_exp_preserve,
+			st_scan_leg_first, st_leg_drain };
+		const int ncases = sizeof cases / sizeof *cases;
+		int c, fails = 0;
 
-		fails += st_leg_walk_skip() < 0;
-		fails += st_bucket_rewalk() < 0;
-		fails += st_passive_promote() < 0;
-		fails += st_exp_preserve() < 0;
-		HCHK(!fails, "%d of 4 walk/write cases failed\n", fails);
+		for (c = 0; c < ncases; c++)
+			fails += cases[c]() < 0;
+		HCHK(!fails, "%d of %d walk/write cases failed\n", fails, ncases);
 	}
 
 	/* every bucket must end on an even (stable) version */
