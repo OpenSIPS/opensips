@@ -959,6 +959,7 @@ void cl_ctr_handle_key_grant(const char *payload, int payload_len,
     const char    *end       = payload + payload_len;
     char           target_ip[CL_CTR_MAX_IP_LEN + 1];
     unsigned char  new_salt[CL_CTR_MASTER_SALT_SZ];
+    cl_ctr_symstate_t hs;
     int            ip_len;
 
     /* Parse target_ip */
@@ -996,8 +997,12 @@ void cl_ctr_handle_key_grant(const char *payload, int payload_len,
      * when we sent the JOIN_REQ.  Its AEAD payload is the master_salt.  A stale
      * KEY_GRANT (for a superseded JOIN_REQ) fails here and is dropped - this
      * subsumes the old join_nonce echo check. */
+    /* On a copy: reading msg 2 mixes it into the handshake state before the
+     * tag can tell a stale or replayed one apart, and a spoiled state would
+     * fail the genuine KEY_GRANT that follows. */
+    hs = cl->noise_hs;
     if (!cl->noise_hs_valid ||
-        cl_ctr_noise_read2(&cl->noise_hs, cl->noise_e_priv,
+        cl_ctr_noise_read2(&hs, cl->noise_e_priv,
                        (const unsigned char *)p, CL_CTR_NOISE_MSG2_SZ, new_salt) < 0) {
         LM_DBG("clusterer_controller: KEY_GRANT from %s did not complete the "
                "Noise handshake (stale or wrong key) - dropping\n", sender_ip);
