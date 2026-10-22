@@ -1,0 +1,61 @@
+/*
+ * slab allocator with elastic arenas - host and cgroup memory limits
+ *
+ * Copyright (C) 2026 Yury Kirsanov
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#ifndef hg_memlimit_h
+#define hg_memlimit_h
+
+/*
+ * How much memory may still be committed. /proc/meminfo describes the host;
+ * a process in a memory-limited cgroup - a container started with a memory
+ * limit, a systemd unit with MemoryMax - meets its limit first, and the
+ * kernel's OOM killer acts on the cgroup alone. So every commit check takes
+ * the tighter of the host's room and the cgroup's.
+ */
+
+/* the floor a commit must leave free, in MB, on @total_mb of memory: a
+ * twentieth, at least the smaller of 256 MB and an eighth - 16 MB of
+ * 128 MB, 128 MB of 1 GB, 256 MB from 2 GB to 5 GB */
+long hg_floor_mb_for(long total_mb);
+
+/* the tightest memory cgroup the calling process is in, for the messages */
+struct hg_cg_info {
+	int version;            /* 1 or 2; 0 = no limited level found */
+	unsigned long limit;    /* bytes */
+	unsigned long used;     /* bytes charged, less the reclaimable file cache */
+	unsigned long floor;    /* bytes the floor keeps free */
+};
+
+/*
+ * Bytes the calling process's memory cgroups leave above their floors: the
+ * tightest of its own cgroup and every ancestor that has a limit. ~0UL when
+ * no level is limited, or the cgroup files cannot be read (not Linux, no
+ * memory controller) - the host check then decides alone. @ci, if given,
+ * describes the binding level.
+ */
+unsigned long hg_cgroup_room(struct hg_cg_info *ci);
+
+/* test hook: read the cgroup files under @root and the membership from
+ * @self_cgroup instead of /sys/fs/cgroup and /proc/self/cgroup; NULL
+ * restores the defaults */
+void hg_cgroup_test_paths(const char *root, const char *self_cgroup);
+
+#endif /* hg_memlimit_h */

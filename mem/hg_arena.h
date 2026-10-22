@@ -118,6 +118,14 @@ void hg_cell_free_global(struct hg_block *hb, void *cell);
 /* re-sync after fork(): see hg_malloc_child_init() in hg_malloc.c */
 void hg_arena_child_init(struct hg_block *hb);
 
+/* release every cell the calling thread holds in @hb's quarantine
+ * (HG_MALLOC_DBG), checking each; returns how many left it */
+unsigned int hg_quarantine_drain(struct hg_block *hb);
+/* a FREE cell onto the calling thread's private list of @hb - for hg_dbg.c,
+ * whose quarantine hands cells back this way */
+void hg_cell_push_private(struct hg_block *hb, struct hg_palloc *pl,
+                          unsigned int c, char *cell_start);
+
 void hg_arena_destroy(struct hg_block *hb);
 
 /* hg_slab_recycled() is declared in hg_malloc.h, which this header

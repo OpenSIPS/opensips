@@ -1298,7 +1298,8 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 	{
 		static const char * const kind[HG_CORRUPT_KINDS] = {
 			"class_mismatch", "double_free", "nfree_underflow",
-			"bad_class", "foreign_ptr", "buddy_bad_free", "internal"
+			"bad_class", "foreign_ptr", "buddy_bad_free", "internal",
+			"header", "use_after_free", "overflow"
 		};
 		mi_item_t *co;
 		int k;

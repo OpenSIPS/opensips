@@ -66,7 +66,7 @@ extern unsigned long hg_shm_cap_bytes;
 extern unsigned long hg_pkg_cap_bytes;
 extern char *hg_shm_profile_name;
 extern char *hg_pkg_profile_name;
-extern int hg_ram_floor_mb;        /* 0 = auto: max(256MB, MemTotal/20) */
+extern int hg_ram_floor_mb;        /* 0 = auto: MemTotal/20, >= min(256MB, MemTotal/8) */
 extern int hg_autoscale_dry_run;   /* 1 = ticks log, never act */
 /* one committed-size step per grow event, in bytes; 0 = the built-in
  * default (16 MB huge-page-mode, one page in small mode). Config:

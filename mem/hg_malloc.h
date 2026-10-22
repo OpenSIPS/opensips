@@ -29,6 +29,7 @@
 #include <stdint.h>   /* uint64_t: the per-block free map is 64 bits a word on every ABI */
 #include "meminfo.h"
 #include "common.h"
+#include "hg_san.h"
 /* for process_no, used by hg_pstat_mine() below to pick this process's
  * stats slot. Included explicitly rather than relied on to arrive via
  * some other header - it does on a native build, and does not under a
@@ -78,11 +79,11 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
  *   offset HG_ROUNDTO+HG_CELL_HDR_DBG
  *          (SHM_EXTRA_STATS)          : statistic_index (mem-group index)
  *   offset HG_CELL_HDR                : payload starts here; while a cell
- *                                        is FREE, the first HG_ROUNDTO*2 bytes
- *                                        of payload double as the free-list
- *                                        link (cell_next()/cell_set_next()
- *                                        in hg_arena.c) - safe, since
- *                                        nobody reads payload of a free cell.
+ *                                        is FREE, the payload's first pointer
+ *                                        doubles as the free-list link
+ *                                        (cell_next()/cell_set_next() in
+ *                                        hg_arena.c) - safe, since nobody
+ *                                        reads the payload of a free cell.
  */
 #ifdef DBG_MALLOC
 #define HG_CELL_HDR_DBG (HG_ROUNDTO * 3)  /* file ptr + func ptr + line */
@@ -119,8 +120,19 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
  * The class byte sits alone in the first HG_ROUNDTO bytes.
  */
 struct hg_cell_hdr {
-	unsigned char  cls;                   /* class id, or HG_LARGE_MARKER */
-	unsigned char  _pad0[HG_ROUNDTO - 1];
+	/* the first HG_ROUNDTO bytes (4 on 32-bit, 8 on 64-bit): the class,
+	 * the cell's state and a checksum over both and the cell's address -
+	 * see hg_hdr_set() */
+	union {
+		struct {
+			unsigned char  cls;           /* class id, or HG_LARGE_MARKER */
+			unsigned char  state;         /* HG_ST_FRESH / _FREE / _LIVE */
+			unsigned short check;         /* hg_hdr_sum() */
+		};
+		unsigned int   hw;            /* the three as one word, for the
+		                               * atomic LIVE -> FREE of a free */
+		unsigned char  _slot0[HG_ROUNDTO];
+	};
 #ifdef DBG_MALLOC
 	const char    *file;                  /* HG_ROUNDTO */
 	const char    *func;                  /* HG_ROUNDTO * 2 */
@@ -151,6 +163,11 @@ HG_STATIC_ASSERT(HG_CELL_HDR_RAW == HG_ROUNDTO + HG_CELL_HDR_DBG + HG_CELL_HDR_S
 	"struct hg_cell_hdr is not the documented header layout");
 HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, cls) == 0,
 	"the class byte must be the first byte of the header");
+HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, state) == 1 &&
+	offsetof(struct hg_cell_hdr, check) == 2,
+	"the state byte and the checksum must follow the class byte");
+HG_STATIC_ASSERT(sizeof(unsigned int) == 4 && HG_ROUNDTO >= 4,
+	"class, state and checksum must make up one 32-bit word");
 #ifdef DBG_MALLOC
 HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, file) == HG_ROUNDTO &&
 	offsetof(struct hg_cell_hdr, func) == HG_ROUNDTO * 2 &&
@@ -168,6 +185,154 @@ HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, stat_idx) == HG_CELL_STATS_OFF,
 #define HG_CELL_AT(cs) ((struct hg_cell_hdr *)(void *)(cs))
 #define HG_CLASS(p) (HG_CELL(p)->cls)
 
+/*
+ * Cell state, kept in the header and covered by its checksum. It says
+ * whether a CALLER holds the cell, not where the allocator keeps it:
+ *
+ *   carve                 -> FRESH   (hg_arena.c carve_chunk())
+ *   FRESH or FREE -> LIVE            an allocation, the only way in
+ *   LIVE          -> FREE            a free, by any process - the only way out
+ *
+ * Moving a cell between a private list, the shared pool, the quarantine
+ * (HG_MALLOC_DBG) or the exit drain changes nothing: it stays FREE (or
+ * FRESH). A free requires LIVE and an allocation FRESH or FREE, so a double
+ * free is refused whatever came in between, and a cell is never handed out
+ * twice. A small cell's LIVE -> FREE is one atomic compare-and-swap of the
+ * header word (hg_hdr_claim_free()), so of two frees of one cell at the same
+ * moment, in two processes, exactly one wins; a large fragment's runs under
+ * the arena lock. The values are unlike 0x00/0xff and each other, so a
+ * zeroed or scribbled header does not pass for a valid one even before the
+ * checksum is looked at.
+ */
+#define HG_ST_FRESH  0x3c
+#define HG_ST_FREE   0x5a
+#define HG_ST_LIVE   0xa5
+
+/* per-run secret mixed into every header checksum, set before the first
+ * arena is created (so it is the same in every process) */
+extern unsigned long long hg_hdr_secret;
+
+/*
+ * 16-bit check over the cell's address, class and state. Not cryptographic:
+ * it catches a header overwritten by a neighbouring cell's overflow, a
+ * pointer into the middle of a cell, and a header copied to another address.
+ *
+ * Built as base(address, class) XOR key(state), so it costs one multiply per
+ * operation: a state change is a constant XOR on the base, and a header that
+ * was just checked is re-stamped from the base the check computed. Every
+ * alloc and every free checks and re-stamps a header, so this is on the
+ * allocator's hottest path.
+ */
+#define HG_ST_KEY(st)  ((unsigned short)((st) * 0x0101u))
+
+static inline unsigned short hg_hdr_base(const void *cs, unsigned int cls)
+{
+	/* cells are at least 32-aligned, so the class lands in bits the
+	 * address leaves to the secret; the multiply carries every input bit
+	 * into the top 16 */
+	unsigned long long x = ((unsigned long long)(unsigned long)cs ^
+		hg_hdr_secret ^ cls) * 0x9e3779b97f4a7c15ULL;
+
+	return (unsigned short)(x >> 48);
+}
+
+static inline unsigned short hg_hdr_sum(const void *cs, unsigned int cls,
+                                        unsigned int st)
+{
+	return hg_hdr_base(cs, cls) ^ HG_ST_KEY(st);
+}
+
+/* the header's first word, as the fields struct hg_cell_hdr lays out */
+union hg_hdr_w {
+	struct {
+		unsigned char  cls, state;
+		unsigned short check;
+	} f;
+	unsigned int w;
+};
+
+HG_STATIC_ASSERT(sizeof(union hg_hdr_w) == 4,
+	"the header word must be exactly class, state and checksum");
+
+/* the header word of a cell of class @cls in state @st, from its @base */
+static inline unsigned int hg_hdr_make(unsigned int cls, unsigned int st,
+                                       unsigned short base)
+{
+	union hg_hdr_w h;
+
+	h.f.cls = (unsigned char)cls;
+	h.f.state = (unsigned char)st;
+	h.f.check = (unsigned short)(base ^ HG_ST_KEY(st));
+	return h.w;
+}
+
+/* one store, so a racing hg_hdr_claim_free() never sees half a header */
+static inline void hg_hdr_set_base(void *cs, unsigned int cls, unsigned int st,
+                                   unsigned short base)
+{
+	__atomic_store_n(&HG_CELL_AT(cs)->hw, hg_hdr_make(cls, st, base),
+		__ATOMIC_RELAXED);
+}
+
+static inline void hg_hdr_set(void *cs, unsigned int cls, unsigned int st)
+{
+	hg_hdr_set_base(cs, cls, st, hg_hdr_base(cs, cls));
+}
+
+/*
+ * Read the header once - one word, so never half of one being written - and
+ * check it: the state, or -1 if it does not check. @w and @base come back
+ * for re-stamping the cell without hashing again.
+ */
+static inline int hg_hdr_read(const void *cs, union hg_hdr_w *w,
+                              unsigned short *base)
+{
+	w->w = __atomic_load_n(&((const struct hg_cell_hdr *)cs)->hw,
+		__ATOMIC_RELAXED);
+	*base = hg_hdr_base(cs, w->f.cls);
+	if (w->f.check != (unsigned short)(*base ^ HG_ST_KEY(w->f.state)))
+		return -1;
+	return w->f.state;
+}
+
+static inline int hg_hdr_state(const void *cs)
+{
+	union hg_hdr_w w;
+	unsigned short base;
+
+	return hg_hdr_read(cs, &w, &base);
+}
+
+/*
+ * LIVE -> FREE in one compare-and-swap, from the LIVE word @live and @base
+ * that hg_hdr_read() just returned: 1 if this free took the cell, 0 if the
+ * header no longer holds that word - another free got there first, and the
+ * caller must then touch nothing (no list, no counter).
+ *
+ * Relaxed is enough, by the protocol rather than by any CPU's ordering:
+ *   1. the CAS alone decides the winner; the loser writes nothing;
+ *   2. the winner's later writes (free-list link, HG_MALLOC_DBG poison)
+ *      go to its private list or quarantine, which only its own thread
+ *      reads;
+ *   3. a FREE cell becomes visible to another process or thread at exactly
+ *      one point: gpool_push(), and every gpool_push() runs with hb->lock
+ *      held (private-list donation, the sweep and exit flushes, the free of
+ *      a process with no private slot);
+ *   4. hb->lock lives in the arena's shared mapping, like every shm lock,
+ *      and its release/acquire orders this header word and the link before
+ *      the next owner's gpool_pop(), which takes the same lock.
+ * Exactly-once past this point needs no CAS: the private lists and the
+ * quarantine have one owning thread each, and the shared pool is under the
+ * lock.
+ */
+static inline int hg_hdr_claim_free(void *cs, unsigned int live,
+                                    unsigned int cls, unsigned short base)
+{
+	return __atomic_compare_exchange_n(&HG_CELL_AT(cs)->hw, &live,
+		hg_hdr_make(cls, HG_ST_FREE, base), 0, __ATOMIC_RELAXED,
+		__ATOMIC_RELAXED);
+}
+
 /* valid only when SHM_EXTRA_STATS; uniform for small cells AND large frags,
  * since the tag region (and thus this offset) always sits immediately
  * before payload regardless of what precedes it (fixed chunk cell vs.
@@ -182,10 +347,6 @@ HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, stat_idx) == HG_CELL_STATS_OFF,
  * distinguishable from genuine corruption (any other out-of-range byte) */
 #define HG_LARGE_MARKER HG_NCLASSES
 
-/* the tag of a large fragment after hg_large_free(): a second free of the
- * same pointer finds this instead of HG_LARGE_MARKER and is refused as a
- * double free rather than corrupting the large tier */
-#define HG_LARGE_FREED (HG_NCLASSES + 1)
 
 struct hg_large_chunk;   /* opaque here, defined in hg_large.c */
 
@@ -350,8 +511,13 @@ struct hg_free_blk;  /* hg_buddy.h */
  * hg_block instances can be live in the same process at once (shm, shm_dbg,
  * pkg all selecting HG_MALLOC simultaneously) so this is looked up per-block,
  * not a single global - see hg_get_palloc() in hg_arena.c */
+struct hg_quar;  /* hg_dbg.c: the HG_MALLOC_DBG quarantine */
+
 struct hg_palloc {
 	struct hg_block *owner;   /* which block this state belongs to */
+	/* this thread's quarantine for the block, mapped on the first free
+	 * under HG_MALLOC_DBG; NULL otherwise */
+	struct hg_quar *quar;
 	struct {
 		char *bump;            /* next unused cell in own chunk */
 		unsigned int left;
@@ -417,15 +583,16 @@ enum hg_corrupt_kind {
 	                         /* double-allocate, or the arena's own size  */
 	                         /* accounting out of step (see span_check)   */
 	                         /* - a bug here, not in a peer               */
+	HG_C_HEADER,             /* cell header fails its checksum: overwritten */
+	                         /* by a neighbour's overflow, or not a cell    */
+	HG_C_USE_AFTER_FREE,     /* HG_MALLOC_DBG: a freed cell was written to  */
+	HG_C_OVERFLOW,           /* HG_MALLOC_DBG: written past the size asked  */
 	HG_CORRUPT_KINDS
 };
 
 /* for the two checks that fire where no arena pointer exists */
 extern unsigned long hg_corrupt_noarena[HG_CORRUPT_KINDS];
 
-/* set when HG_MALLOC_DBG serves shm or pkg: enables the checks too costly
- * for the production free path (a walk of the private free list) */
-extern int hg_dbg_checks;
 
 /*
  * Lock-hold / lock-wait instrumentation. Every hb->lock section is a
@@ -513,6 +680,11 @@ struct hg_block {
 	/* upper bound on one chunk, derived from the arena size at init -
 	 * see chunk_size_for() in hg_arena.c */
 	unsigned int chunk_max;
+	/* HG_MALLOC_DBG serves this arena: tail red zones, poisoned frees and
+	 * a quarantine (see hg_dbg.h). Set at creation, never changed. */
+	unsigned int dbg;
+	/* bytes of freed cells one thread may hold in quarantine, when dbg */
+	unsigned long quar_bytes;
 
 	/* slow paths only: gpool + chunk carve. Alone on its line - see the
 	 * note above. lk_t0/lk_cur are the section in progress,
@@ -1304,6 +1476,7 @@ static inline void hg_lock_enter(struct hg_block *hb, enum hg_lock_reason r)
 	unsigned long t0 = hg_now_ns(), t1;
 
 	lock_get(&hb->lock);
+	HG_TSAN_ACQUIRE(&hb->lock);
 	t1 = hg_now_ns();
 	hg_lkstat_add(&hb->lk_wait[r], t1 - t0);
 	hb->lk_t0 = t1;
@@ -1331,6 +1504,7 @@ static inline void hg_lock_leave(struct hg_block *hb)
 		hb->lk_stall_event_due = 1;
 		stalled = 1;
 	}
+	HG_TSAN_RELEASE(&hb->lock);
 	lock_release(&hb->lock);
 	if (stalled)
 		hg_lock_stall_note(hb, r, held);

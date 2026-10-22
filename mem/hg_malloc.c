@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <sys/mman.h>
 #include <sys/resource.h>    /* getrlimit(RLIMIT_MEMLOCK) */
@@ -34,6 +36,8 @@
 #include "hg_malloc.h"
 #include "hg_arena.h"
 #include "hg_large.h"
+#include "hg_dbg.h"
+#include "hg_memlimit.h"
 #include "../dprint.h"
 #include "../globals.h"
 #include "../statistics.h"
@@ -617,20 +621,26 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 #endif /* __OS_linux */
 }
 
-/* the host-memory floor no commit may cross, in MB: hg_ram_floor_mb from
- * the config, else max(256 MB, MemTotal/20). Not cached: arenas created
- * before the config is parsed must not pin the default for later grows. */
+/*
+ * The host-memory floor no commit may cross, in MB: hg_ram_floor_mb from
+ * the config, else a twentieth of the host's memory but at least the
+ * smaller of 256 MB and an eighth of it - 16 MB on a 128 MB host, 128 MB on
+ * 1 GB, 256 MB from 2 GB to 5 GB, MemTotal/20 above. A flat 256 MB minimum
+ * was more than a small host's whole memory: no commit could ever pass it,
+ * and OpenSIPS refused to start there, before the config (and with it
+ * hg_ram_floor_mb) was even read. Not cached: arenas created before the
+ * config is parsed must not pin the default for later grows.
+ */
 static long hg_ram_floor(void)
 {
-	long total_kb, floor_mb;
+	long total_kb;
 
 	if (hg_ram_floor_mb > 0)
 		return hg_ram_floor_mb;
-	floor_mb = 256;
 	total_kb = hg_meminfo_kb("MemTotal");
-	if (total_kb > 0 && total_kb / 20 / 1024 > floor_mb)
-		floor_mb = total_kb / 20 / 1024;
-	return floor_mb;
+	if (total_kb <= 0)
+		return 256;
+	return hg_floor_mb_for(total_kb >> 10);
 }
 
 /* bytes the hugetlb pool can still hand out: free pages not already
@@ -646,18 +656,35 @@ static unsigned long hg_pool_free_bytes(void)
 	return (unsigned long)(free_pg - rsvd_pg) * ((unsigned long)page_kb << 10);
 }
 
-/* bytes of general RAM that can still be committed above the floor;
- * ULONG_MAX when the kernel does not say */
-static unsigned long hg_ram_room(void)
+/* bytes of general RAM that can still be committed: the host's above its
+ * floor, or the memory cgroup's above its own floor when that is tighter
+ * (hg_memlimit.c); ULONG_MAX when neither says. @ci, if given, describes
+ * the cgroup level that binds, version 0 when the host does */
+static unsigned long hg_ram_room_why(struct hg_cg_info *ci)
 {
 	long avail_kb = hg_meminfo_kb("MemAvailable");
-	unsigned long floor_b = (unsigned long)hg_ram_floor() << 20;
+	unsigned long floor_b = (unsigned long)hg_ram_floor() << 20, room, cg;
+	struct hg_cg_info c;
 
 	if (avail_kb < 0)
-		return ~0UL;
-	if ((unsigned long)avail_kb << 10 <= floor_b)
-		return 0;
-	return ((unsigned long)avail_kb << 10) - floor_b;
+		room = ~0UL;
+	else if ((unsigned long)avail_kb << 10 <= floor_b)
+		room = 0;
+	else
+		room = ((unsigned long)avail_kb << 10) - floor_b;
+	cg = hg_cgroup_room(&c);
+	if (cg < room)
+		room = cg;
+	else
+		c.version = 0;
+	if (ci)
+		*ci = c;
+	return room;
+}
+
+static unsigned long hg_ram_room(void)
+{
+	return hg_ram_room_why(NULL);
 }
 
 /*
@@ -673,13 +700,18 @@ static int hg_init_fits(const char *what, unsigned long init,
 	int huge_grid = (apage == HG_HPS);
 	/* an INIT under one huge page may be raised to one on huge pages */
 	unsigned long need = hg_page_round(init, huge_grid ? HG_HPS : apage);
-	unsigned long room = hg_ram_room(), pool;
+	struct hg_cg_info ci;
+	unsigned long room = hg_ram_room_why(&ci), pool;
 
 	if (need <= room)
 		return 1;
 	pool = (huge_grid && !inherited) ? hg_pool_free_bytes() : 0;
 	if (need <= pool)
 		return 1;
+	if (ci.version)
+		LM_ERR("%s: the memory cgroup (v%d) is the tighter limit: %lu MB "
+			"limit, %lu MB in use, %lu MB floor\n", what, ci.version,
+			ci.limit >> 20, ci.used >> 20, ci.floor >> 20);
 	LM_ERR("%s: committing %lu %s now does not fit - %lu MB of RAM is "
 		"available above the %ld MB floor (hg_ram_floor_mb) and the "
 		"hugetlb pool has %lu MB free. Lower INIT (-m/-M), the number of "
@@ -943,8 +975,10 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 /*
  * The host-RAM limb of the growth ceiling - see the prototype comment.
  *
- * The floor it defends is max(256 MB, MemTotal/20), overridable via the
- * hg_ram_floor_mb config global.
+ * The floor it defends is hg_ram_floor(): MemTotal/20, at least the
+ * smaller of 256 MB and MemTotal/8, or the hg_ram_floor_mb config global.
+ * The memory cgroup the process is in, if limited, is held to the same
+ * rule on its own limit (hg_memlimit.c): a container meets that first.
  * MemAvailable is the kernel's own estimate of what can be claimed
  * without swapping - exactly the question here. On a kernel too old to
  * export it the check PASSES: the mlock in hg_mem_commit() still refuses
@@ -960,8 +994,10 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 {
 	long floor_mb;
-	unsigned long effective = delta, nproc = 1;
+	unsigned long effective = delta, nproc = 1, cg_room;
 	long avail_kb;
+	struct hg_cg_info ci;
+	int host_short, cg_short;
 
 	/* tier 1 consumes no new host RAM at commit time: the whole cap was
 	 * reserved from the hugetlb pool at map time, and those pages are
@@ -970,10 +1006,8 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 		return 0;
 
 	floor_mb = hg_ram_floor();
-
 	avail_kb = hg_meminfo_kb("MemAvailable");
-	if (avail_kb < 0)
-		return 0;                   /* cannot tell - let mlock decide */
+	cg_room = hg_cgroup_room(&ci);
 
 	if (!hb->shared) {
 		/* pkg: every worker will grow its own arena under the same
@@ -983,21 +1017,33 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 		effective = delta * nproc;
 	}
 
-	if ((unsigned long)avail_kb * 1024 <
-	    effective + ((unsigned long)floor_mb << 20)) {
-		/* once per episode - see grow_refuse_said's comment */
-		if (!hb->grow_refuse_said) {
-			hb->grow_refuse_said = 1;
+	/* the host (unknown MemAvailable: let mlock decide), then the memory
+	 * cgroup, which a container or a unit's MemoryMax hits first */
+	host_short = avail_kb >= 0 && (unsigned long)avail_kb * 1024 <
+		effective + ((unsigned long)floor_mb << 20);
+	cg_short = cg_room != ~0UL && cg_room < effective;
+	if (!host_short && !cg_short)
+		return 0;
+	/* once per episode - see grow_refuse_said's comment */
+	if (!hb->grow_refuse_said) {
+		hb->grow_refuse_said = 1;
+		if (host_short)
 			LM_WARN("%s: refusing to grow by %lu MB: %lu MB effective"
 				" (x%lu processes) would leave the host under the "
 				"%ld MB floor (MemAvailable %ld MB). Freeing host "
 				"memory or lowering the floor lifts this.\n",
 				hb->name, delta >> 20, effective >> 20, nproc,
 				floor_mb, avail_kb / 1024);
-		}
-		return 1;
+		else
+			LM_WARN("%s: refusing to grow by %lu MB: %lu MB effective"
+				" (x%lu processes) would leave the memory cgroup (v%d) "
+				"under its %lu MB floor (limit %lu MB, %lu MB in use). "
+				"Raising the cgroup's memory limit or freeing memory in "
+				"it lifts this.\n", hb->name, delta >> 20,
+				effective >> 20, nproc, ci.version, ci.floor >> 20,
+				ci.limit >> 20, ci.used >> 20);
 	}
-	return 0;
+	return 1;
 }
 
 /*
@@ -1637,6 +1683,31 @@ struct hg_block *hg_malloc_init(unsigned long size, char *name, int shared,
 		flags);
 }
 
+/* the header-checksum secret: random when the kernel gives randomness,
+ * else derived from the clock and the pid - it only has to differ between
+ * runs, not resist an attacker */
+static void hg_hdr_secret_init(void)
+{
+	unsigned long long s = 0;
+	int fd;
+
+	fd = open("/dev/urandom", O_RDONLY);
+	if (fd >= 0) {
+		if (read(fd, &s, sizeof s) != (ssize_t)sizeof s)
+			s = 0;
+		close(fd);
+	}
+	if (!s) {
+		struct timeval tv;
+
+		gettimeofday(&tv, NULL);
+		s = ((unsigned long long)tv.tv_sec << 32) ^ (unsigned long long)tv.tv_usec
+			^ ((unsigned long long)getpid() << 16)
+			^ (unsigned long long)(unsigned long)&s;
+	}
+	hg_hdr_secret = s | 1;
+}
+
 struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 		char *name, int shared, const char *proc_desc, unsigned int flags)
 {
@@ -1647,6 +1718,11 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 	struct hg_block *hb;
 	int tier_decides;
 	unsigned long cap_asked, mv;
+
+	/* before the first arena, so before any fork: every process then
+	 * checks headers against the same secret */
+	if (!hg_hdr_secret)
+		hg_hdr_secret_init();
 
 	/* The reservation may exceed the committed size, by admin cap.
 	 * cap comes back as what was actually achieved (a hugetlb pool that
@@ -1791,6 +1867,21 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 	hb->unpinned = (tier != HG_MEM_HUGETLB && locked_b == 0);
 	hb->tier_bytes[tier] = hb->committed_bytes;
 	hb->shared = shared;
+	/* the debug checks follow the allocator chosen for the memory this
+	 * arena serves: a shared one (shm, shm_dbg, module arenas) that of shm,
+	 * a private one that of pkg. The quarantine is a thousandth of the
+	 * reservation per thread, within [16 KB, 1 MB]. */
+#ifdef PKG_MALLOC
+	hb->dbg = shared ? mem_allocator_shm == MM_HG_MALLOC_DBG :
+	                   mem_allocator_pkg == MM_HG_MALLOC_DBG;
+#else
+	hb->dbg = shared && mem_allocator_shm == MM_HG_MALLOC_DBG;
+#endif
+	hb->quar_bytes = cap >> 10;
+	if (hb->quar_bytes < HG_QUAR_MIN)
+		hb->quar_bytes = HG_QUAR_MIN;
+	else if (hb->quar_bytes > HG_QUAR_MAX)
+		hb->quar_bytes = HG_QUAR_MAX;
 
 	/*
 	 * A per-child PKG arena created after the config was parsed inherits

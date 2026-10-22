@@ -250,7 +250,6 @@ int init_pkg_mallocs(void)
 #ifdef HG_MALLOC
 	case MM_HG_MALLOC_DBG:
 		mem_block = hg_malloc_init(pkg_mem_size, "pkg", 0, NULL, HG_INIT_INHERITED);
-		hg_dbg_checks = 1;
 		gen_pkg_malloc    = (osips_block_malloc_f)hg_malloc_dbg;
 		gen_pkg_realloc   = (osips_block_realloc_f)hg_realloc_dbg;
 		gen_pkg_free      = (osips_block_free_f)hg_free_dbg;

@@ -606,7 +606,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 #ifdef HG_MALLOC
 	case MM_HG_MALLOC_DBG:
 		shm_block = hg_malloc_init(pool_size, "shm", 1, NULL, 0);
-		hg_dbg_checks = 1;
 		gen_shm_malloc         = (osips_block_malloc_f)hg_malloc_dbg;
 		gen_shm_malloc_unsafe  = (osips_block_malloc_f)hg_malloc_dbg;
 		gen_shm_realloc        = (osips_block_realloc_f)hg_realloc_dbg;

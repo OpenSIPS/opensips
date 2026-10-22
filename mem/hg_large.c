@@ -25,6 +25,7 @@
 #include "hg_malloc.h"
 #include "hg_large.h"
 #include "hg_arena.h"
+#include "hg_dbg.h"
 #include "hg_buddy.h"
 #include "../dprint.h"
 
@@ -101,8 +102,8 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 	 * places the NEXT frag (HG_LFRAG_NEXT), so rounding to 4 on 32-bit
 	 * ARM would walk every subsequent frag - and its payload - off the
 	 * 8-byte boundary the first one started on */
-	need = (HG_CELL_HDR + size + HG_PAYLOAD_ALIGN - 1)
-	       & ~(unsigned long)(HG_PAYLOAD_ALIGN - 1);
+	need = (HG_CELL_HDR + size + (hb->dbg ? HG_DBG_TAIL : 0) +
+	        HG_PAYLOAD_ALIGN - 1) & ~(unsigned long)(HG_PAYLOAD_ALIGN - 1);
 
 	hg_lock_enter(hb, HG_LK_LARGE);
 
@@ -272,7 +273,10 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 	hg_lock_leave(hb);
 
 	tag = (char *)f + HG_LFRAG_HDR;
-	HG_CELL_AT(tag)->cls = HG_LARGE_MARKER;
+	hg_hdr_set(tag, HG_LARGE_MARKER, HG_ST_LIVE);
+	if (hb->dbg)
+		hg_dbg_tail_set(tag, f->size - HG_CELL_HDR, size);
+	hg_san_give(hb, tag, f->size - HG_CELL_HDR, size);
 #ifdef DBG_MALLOC
 	HG_CELL_AT(tag)->file = file;
 	HG_CELL_AT(tag)->func = func;
@@ -288,18 +292,22 @@ void hg_large_free(struct hg_block *hb, struct hg_lfrag *frag)
 
 	hg_lock_enter(hb, HG_LK_LARGE);
 
-	/* a free fragment sits on the free list (prev set); freeing it again
-	 * would link it in twice. The common double free never gets here -
-	 * the freed tag below turns it away in hg_cell_free() - this catches
-	 * the one that still carries HG_LARGE_MARKER */
-	if (frag->prev) {
+	/* the tag's state turns a second free of this pointer away in
+	 * hg_cell_free(), but that check ran before this lock: two frees of
+	 * one fragment at the same moment both passed it. The state is read
+	 * again here, where every large free is serialized, so only the first
+	 * gets through - the second would otherwise coalesce the fragment a
+	 * second time. A fragment still on the free list (prev set) despite a
+	 * LIVE tag is a damaged tier: refused the same way. */
+	if (hg_hdr_state((char *)frag + HG_LFRAG_HDR) != HG_ST_LIVE ||
+	    frag->prev) {
 		hg_lock_leave(hb);
 		hg_corrupt(hb, HG_C_DOUBLE_FREE);
-		LM_CRIT("%s: large fragment %p is already free - double free, "
-			"ignoring the second free\n", hb->name, (void *)frag);
+		LM_CRIT("%s: large fragment %p is already free - refusing to "
+			"free it again\n", hb->name, (void *)frag);
 		return;
 	}
-	HG_CELL_AT((char *)frag + HG_LFRAG_HDR)->cls = HG_LARGE_FREED;
+	hg_hdr_set((char *)frag + HG_LFRAG_HDR, HG_LARGE_MARKER, HG_ST_FREE);
 
 	{
 		struct hg_pstat *ps = hg_pstat_mine(hb);

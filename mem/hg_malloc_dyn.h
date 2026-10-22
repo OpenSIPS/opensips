@@ -161,6 +161,18 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 	 * on the shipped geometry: a 70000-byte request yields frag_size 70072
 	 * = 32 + 40 + 70000. Subtracting only HG_CELL_HDR therefore over-counts
 	 * by exactly HG_LFRAG_HDR_SIZE, on every ABI and every build config. */
+	/* and only a LIVE cell with an intact header: its class byte is what
+	 * the size below is read from */
+	{
+		int st = hg_hdr_state(HG_HDR(p));
+
+		if (st != HG_ST_LIVE) {
+			hg_corrupt(hb, st < 0 ? HG_C_HEADER : HG_C_DOUBLE_FREE);
+			LM_CRIT("%s: realloc of %p, which is %s - refusing it\n",
+				hb->name, p, st < 0 ? "damaged or not a cell" : "free");
+			return NULL;
+		}
+	}
 	cls = HG_CLASS(p);
 	if (cls == HG_LARGE_MARKER) {
 		cur_total = hg_large_frag_size_at(HG_HDR(p) - HG_LFRAG_HDR_SIZE);
@@ -174,8 +186,25 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 		cur_total = hg_cell_total_size(cls);
 		cur_payload = cur_total > HG_CELL_HDR ? cur_total - HG_CELL_HDR : 0;
 		need_total = ((size + HG_ROUNDTO - 1) / HG_ROUNDTO) * HG_ROUNDTO + HG_CELL_HDR;
-		if (need_total <= cur_total)
+		if (hb->dbg)
+			need_total += HG_DBG_TAIL;
+		if (need_total <= cur_total) {
+			/* HG_MALLOC_DBG: the red zone moves to the new size - checked
+			 * first, so a write past the old size is still seen. Judged
+			 * by the arena the cell came from (see hg_owner()). */
+			struct hg_block *own = hb->dbg || HG_SAN_ON ?
+				hg_owner(HG_HDR(p)) : NULL;
+
+			if (own) {
+				hg_san_open(own, HG_HDR(p), cur_payload);
+				if (own->dbg) {
+					hg_dbg_tail_check(own, HG_HDR(p), cur_payload);
+					hg_dbg_tail_set(HG_HDR(p), cur_payload, size);
+				}
+				hg_san_give(own, HG_HDR(p), cur_payload, size);
+			}
 			return p;
+		}
 	}
 
 	#if !defined INLINE_ALLOC && defined DBG_MALLOC
@@ -195,6 +224,14 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 		 * from the large tier copied the WHOLE old payload into whatever
 		 * the new (possibly thousand-fold smaller) allocation was. */
 		copy = cur_payload < size ? cur_payload : size;
+		/* the copy reads past what the caller asked for: a sanitizer
+		 * must see the old payload open first (hg_san.h) */
+		if (HG_SAN_ON) {
+			struct hg_block *own = hg_owner(HG_HDR(p));
+
+			if (own)
+				hg_san_open(own, HG_HDR(p), cur_payload);
+		}
 		memcpy(ptr, p, copy);
 		#if !defined INLINE_ALLOC && defined DBG_MALLOC
 		hg_free_dbg(hb, p, file, func, line);
