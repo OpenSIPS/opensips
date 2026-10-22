@@ -245,6 +245,12 @@ typedef int (*pcache_iter_cb)(const str *key, const str *val,
 		unsigned int expires, void *ctx);
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
 
+/* walk flag: the callback needs keys only and gets an empty value; the
+ * values are not copied out */
+#define PCACHE_WALK_KEYS 0x1
+int pcache_ht_iter_ex(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
+		unsigned int flags);
+
 /* default buckets visited per perf_scan call when count is unset */
 #define PCACHE_SCAN_BUCKETS 100
 
@@ -256,7 +262,8 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
  * @max_buckets buckets; *@cursor = where to resume, 0 when done.  Stable
  * across a resize.  0, or <0 on error / callback stop. */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
-		unsigned int max_buckets, pcache_iter_cb cb, void *ctx);
+		unsigned int max_buckets, unsigned int flags, pcache_iter_cb cb,
+		void *ctx);
 
 /* called per reaped record after the bucket lock is released; @key is
  * valid only during the call */

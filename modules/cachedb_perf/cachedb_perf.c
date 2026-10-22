@@ -1353,7 +1353,8 @@ static mi_response_t *do_perf_keys(str *glob, str *col_s, int limit,
 	w.limit = limit > 0 ? (unsigned int)limit : PCACHE_MI_DEF_LIMIT;
 	w.now = get_ticks();
 	w.with_values = with_values;
-	pcache_ht_iter(col->htable, mi_walk_cb, &w);
+	pcache_ht_iter_ex(col->htable, mi_walk_cb, &w,
+		with_values ? 0 : PCACHE_WALK_KEYS);
 	if (pat) {
 		pkg_free(pat);
 		pat = NULL;
@@ -1414,7 +1415,7 @@ static mi_response_t *do_perf_scan(int cursor_in, str *glob, int count)
 	w.with_values = 0;                  /* SCAN returns names + ttl */
 	cur = (unsigned int)cursor_in;
 	pcache_ht_scan(col->htable, &cur, count > 0 ? (unsigned int)count : 0,
-		mi_walk_cb, &w);
+		PCACHE_WALK_KEYS, mi_walk_cb, &w);
 	if (pat) {
 		pkg_free(pat);
 		pat = NULL;
@@ -1647,7 +1648,7 @@ static int perf_touch_run(pcache_col_t *col, str *glob, unsigned int expires)
 	memset(&tc, 0, sizeof tc);
 	tc.pat = pat;
 	tc.now = get_ticks();
-	pcache_ht_iter(col->htable, touch_collect_cb, &tc);
+	pcache_ht_iter_ex(col->htable, touch_collect_cb, &tc, PCACHE_WALK_KEYS);
 
 	for (i = 0; i < tc.n; i++) {
 		if (pcache_ht_touch(col->htable, &tc.keys[i], expires) == 1)
@@ -4182,7 +4183,7 @@ static int perf_del_run(pcache_col_t *col, str *glob)
 
 	memset(&dc, 0, sizeof dc);
 	dc.pat = pat;
-	pcache_ht_iter(col->htable, del_collect_cb, &dc);
+	pcache_ht_iter_ex(col->htable, del_collect_cb, &dc, PCACHE_WALK_KEYS);
 
 	for (i = 0; i < dc.n; i++) {
 		if (pcache_ht_remove(col->htable, &dc.keys[i]) == 1)

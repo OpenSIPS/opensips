@@ -1101,7 +1101,7 @@ again:
 static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 		char *kbuf, char *vbuf, unsigned int *klen_o, unsigned int *vlen_o,
 		unsigned int *exp_o, unsigned char *fl_o,
-		unsigned long lo, unsigned long hi)
+		unsigned long lo, unsigned long hi, int keys)
 {
 	pcache_rec_t *r;
 	unsigned int v1, v2, tries, bound = 0, klen = 0, vlen = 0, exp = 0;
@@ -1132,7 +1132,8 @@ static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 			if (PCACHE_REC_HDR + klen + vlen > bound)
 				vlen = bound - PCACHE_REC_HDR - klen;  /* see scan_bucket */
 			memcpy(kbuf, r->data, klen);
-			memcpy(vbuf, r->data + klen, vlen);
+			if (!keys)
+				memcpy(vbuf, r->data + klen, vlen);
 			exp = r->expires;
 			fl = r->rflags;
 		}
@@ -1154,7 +1155,8 @@ static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 			exp = r->expires;
 			fl = r->rflags;
 			memcpy(kbuf, r->data, klen);
-			memcpy(vbuf, r->data + klen, vlen);
+			if (!keys)
+				memcpy(vbuf, r->data + klen, vlen);
 			have = 1;
 		}
 		bkt_clear_owner(b);
@@ -1162,7 +1164,7 @@ static int snapshot_slot(pcache_bucket_t *b, unsigned int i,
 	}
 	if (!have)
 		return 0;
-	*klen_o = klen; *vlen_o = vlen; *exp_o = exp; *fl_o = fl;
+	*klen_o = klen; *vlen_o = keys ? 0 : vlen; *exp_o = exp; *fl_o = fl;
 	return 1;
 }
 
@@ -1207,7 +1209,7 @@ static uint64_t walk_fp(const char *k, unsigned int len)
  * settles (a callback rewriting its own record) still finishes.
  */
 static int walk_bucket(pcache_bucket_t *b, pcache_iter_cb cb, void *ctx,
-		char *kbuf, char *vbuf, unsigned long lo, unsigned long hi)
+		char *kbuf, char *vbuf, unsigned long lo, unsigned long hi, int keys)
 {
 	uint64_t seen[BKT_WALKS * PCACHE_SLOTS], fp;
 	unsigned int ver, pass, i, k, ns = 0, klen, vlen, exp;
@@ -1222,7 +1224,7 @@ static int walk_bucket(pcache_bucket_t *b, pcache_iter_cb cb, void *ctx,
 			if (!t[i])
 				continue;
 			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
-			        &exp, &fl, lo, hi))
+			        &exp, &fl, lo, hi, keys))
 				continue;
 			fp = walk_fp(kbuf, klen);
 			for (k = 0; k < ns && seen[k] != fp; k++)
@@ -1278,7 +1280,7 @@ static struct povf *leg_next(struct povf *head, struct povf *const *hist,
  */
 static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 		void *ctx, char *kbuf, char *vbuf, unsigned int *oidx,
-		unsigned int budget)
+		unsigned int budget, int keys)
 {
 	pcache_rec_t *r;
 	struct povf *n, *seen, *hist[LEG_HIST];
@@ -1301,7 +1303,7 @@ static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 			}
 			r = n->rec;
 			klen = r->klen;
-			vlen = r->vlen;
+			vlen = keys ? 0 : r->vlen;
 			exp = r->expires;
 			fl = r->rflags;
 			memcpy(kbuf, r->data, klen);
@@ -1326,15 +1328,22 @@ static int iter_overflow_from(pcache_htable_t *ht, pcache_iter_cb cb,
 }
 
 static int iter_overflow(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
-		char *kbuf, char *vbuf)
+		char *kbuf, char *vbuf, int keys)
 {
 	unsigned int oidx = 0;
 
-	return iter_overflow_from(ht, cb, ctx, kbuf, vbuf, &oidx, 0);
+	return iter_overflow_from(ht, cb, ctx, kbuf, vbuf, &oidx, 0, keys);
 }
 
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 {
+	return pcache_ht_iter_ex(ht, cb, ctx, 0);
+}
+
+int pcache_ht_iter_ex(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
+		unsigned int flags)
+{
+	const int keys = flags & PCACHE_WALK_KEYS;
 	unsigned long lo, hi;
 	unsigned int idx;
 	char *kbuf, *vbuf;
@@ -1351,11 +1360,12 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 
 	/* the overflow leg first: records only leave it, for a bucket the
 	 * ascending walk has not reached yet */
-	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf);
+	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf, keys);
 	if (rc < 0)
 		goto out;
 	for (idx = 0; idx < ht->nbuckets; idx++) {
-		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi);
+		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi,
+			keys);
 		if (rc < 0)
 			goto out;
 	}
@@ -1369,8 +1379,10 @@ out:
  * pcache_ht_iter(); the call that finishes it goes on into the buckets
  * from 0, so a cursor of 0 still means begin and done */
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
-		unsigned int max_buckets, pcache_iter_cb cb, void *ctx)
+		unsigned int max_buckets, unsigned int flags, pcache_iter_cb cb,
+		void *ctx)
 {
+	const int keys = flags & PCACHE_WALK_KEYS;
 	unsigned long lo, hi;
 	unsigned int idx, end, nb;
 	char *kbuf, *vbuf;
@@ -1402,7 +1414,8 @@ buckets:
 	end = (idx > nb || nb - idx < max_buckets) ? nb : idx + max_buckets;
 
 	for (; idx < end; idx++) {
-		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi);
+		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi,
+			keys);
 		if (rc < 0)
 			goto out;
 	}
@@ -1411,7 +1424,7 @@ buckets:
 leg:
 	/* the leg under the same budget, PCACHE_SLOTS records per bucket */
 	rc = iter_overflow_from(ht, cb, ctx, kbuf, vbuf, &oidx,
-		max_buckets * PCACHE_SLOTS);
+		max_buckets * PCACHE_SLOTS, keys);
 	if (rc < 0)
 		goto out;                    /* the cursor stands: retry smaller */
 	if (oidx < PCACHE_OVF_BUCKETS) {
@@ -2118,8 +2131,8 @@ static int st_bucket_rewalk(void)
 		if (scan) {
 			cur = 0;
 			do {
-				HCHK(pcache_ht_scan(s.ht, &cur, 4, st_rewalk_cb, &s) == 0,
-					"scan failed\n");
+				HCHK(pcache_ht_scan(s.ht, &cur, 4, 0, st_rewalk_cb,
+					&s) == 0, "scan failed\n");
 			} while (cur);
 		} else {
 			HCHK(pcache_ht_iter(s.ht, st_rewalk_cb, &s) == 0,
@@ -2210,6 +2223,61 @@ static int st_exp_preserve(void)
 	return 0;
 }
 
+/* keys-only walks hand over every key and no value */
+struct st_keys {
+	unsigned char seen[200];
+	unsigned int valued;
+};
+
+static int st_keys_cb(const str *key, const str *val, unsigned int exp,
+		void *ctx)
+{
+	struct st_keys *w = ctx;
+	unsigned int i;
+
+	if (val->len || val->s[0])
+		w->valued++;
+	if (key->len == 9 && !memcmp(key->s, "keyo-", 5) &&
+	        sscanf(key->s + 5, "%u", &i) == 1 && i < 200)
+		w->seen[i]++;
+	return 0;
+}
+
+static int st_keys_only(void)
+{
+	pcache_htable_t *ht = pcache_htable_new(4);
+	struct st_keys w;
+	unsigned int i, cur = 0, calls = 0, pass;
+	char kb[32], vb[32];
+	str k, v;
+
+	HCHK(ht != NULL, "table creation failed\n");
+	for (i = 0; i < 200; i++) {
+		k.len = snprintf(kb, sizeof kb, "keyo-%04u", i); k.s = kb;
+		v.len = snprintf(vb, sizeof vb, "kv-%03u", i); v.s = vb;
+		HCHK(pcache_ht_store(ht, &k, &v, 0) == 0, "store %u failed\n", i);
+	}
+	HCHK(ht->ovf_count > 0, "200 keys over 16 buckets never overflowed\n");
+	for (pass = 0; pass < 2; pass++) {
+		memset(&w, 0, sizeof w);
+		if (!pass) {
+			HCHK(pcache_ht_iter_ex(ht, st_keys_cb, &w, PCACHE_WALK_KEYS)
+				== 0, "walk failed\n");
+		} else {
+			do {
+				HCHK(pcache_ht_scan(ht, &cur, 4, PCACHE_WALK_KEYS,
+					st_keys_cb, &w) == 0, "scan failed\n");
+			} while (cur && ++calls < 10000);
+		}
+		HCHK(!w.valued, "a keys-only %s handed over %u values\n",
+			pass ? "scan" : "walk", w.valued);
+		for (i = 0; i < 200; i++)
+			HCHK(w.seen[i] == 1, "a keys-only %s saw keyo-%04u %u times\n",
+				pass ? "scan" : "walk", i, w.seen[i]);
+	}
+	return 0;
+}
+
 /* drain until the cursor has walked the whole leg once */
 static unsigned int st_drain_pass(pcache_htable_t *ht)
 {
@@ -2245,7 +2313,7 @@ static int st_scan_leg_first(void)
 	memset(&w, 0, sizeof w);
 	memset(gone, 0, sizeof gone);
 	do {
-		HCHK(pcache_ht_scan(ht, &cur, 2, st_walk_cb, &w) == 0,
+		HCHK(pcache_ht_scan(ht, &cur, 2, 0, st_walk_cb, &w) == 0,
 			"scan failed\n");
 		calls++;
 	} while (cur && ((cur & PCACHE_CURSOR_OVF) || cur < 8) && calls < 10000);
@@ -2260,7 +2328,7 @@ static int st_scan_leg_first(void)
 	}
 	st_drain_pass(ht);
 	while (cur && calls < 20000) {
-		HCHK(pcache_ht_scan(ht, &cur, 2, st_walk_cb, &w) == 0,
+		HCHK(pcache_ht_scan(ht, &cur, 2, 0, st_walk_cb, &w) == 0,
 			"scan failed\n");
 		calls++;
 	}
@@ -2678,7 +2746,7 @@ int pcache_htable_selftest(void)
 	{
 		static int (*const cases[])(void) = { st_leg_walk_skip,
 			st_bucket_rewalk, st_passive_promote, st_exp_preserve,
-			st_scan_leg_first, st_leg_drain, st_evacuate };
+			st_scan_leg_first, st_leg_drain, st_evacuate, st_keys_only };
 		const int ncases = sizeof cases / sizeof *cases;
 		int c, fails = 0;
 
