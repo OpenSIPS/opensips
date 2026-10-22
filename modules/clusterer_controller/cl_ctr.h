@@ -405,6 +405,7 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_JOIN_FAIL_LIMIT      3
 #define CL_CTR_JOIN_FAIL_TABLE_SZ   8   /* max simultaneous rejected IPs tracked by master */
 #define CL_CTR_JOIN_NONCES          8   /* our last JOIN_REQs a JOIN_REJECT may answer */
+#define CL_CTR_BOOT_SEEN           64   /* JOIN_REQs and beacons remembered, by nonce */
 
 #define CL_CTR_MAX_IP_LEN        15   /* "255.255.255.255" without NUL            */
 #define CL_CTR_PUBKEY_SZ         32   /* X25519 public key                        */
@@ -1008,6 +1009,11 @@ typedef struct cl_ctr_cluster_ {
      * the group and stop this node at its next start.  Worker-local. */
     unsigned char  join_nonces[CL_CTR_JOIN_NONCES][CL_CTR_NONCE_SZ];
     int            join_nonces_n, join_nonce_next;
+    /* The header nonces of the last JOIN_REQs and beacons accepted:
+     * bootstrap packets have no replay window, so an exact repeat is caught
+     * here (cl_ctr_boot_replayed()).  Worker-local. */
+    unsigned char  boot_seen[CL_CTR_BOOT_SEEN][CL_CTR_NONCE_SZ];
+    int            boot_seen_n, boot_seen_next;
     /* Set while a re-key JOIN_REQ is in flight; cleared on KEY_GRANT success
      * or master transition to prevent nonce stomping under packet flood.    */
     int            join_pending;

@@ -111,6 +111,51 @@ static void cl_ctr_warn_bootstrap(cl_ctr_cluster_t *cl, const char *ip)
                 cl->cluster_id, k, ip);
 }
 
+/*
+ * cl_ctr_boot_replayed() - is this JOIN_REQ or beacon a recording sent again?
+ *
+ * Bootstrap packets have no replay window, and these two change state where
+ * they land: a JOIN_REQ re-admits its node and resets its windows, a beacon
+ * can start a merge.  Refused: the exact packet seen lately (its header
+ * nonce is random per packet), and a packet from a previous life of a node
+ * whose current life is still heard - an incarnation lower than the one we
+ * hold, from a node heard within two query periods.  A node that really
+ * restarted with a lower incarnation (its clock stepped back) has gone
+ * silent in its old life, and is let in once that grace has passed.  The
+ * nonce of a packet let through is remembered.
+ */
+static int cl_ctr_boot_replayed(cl_ctr_cluster_t *cl, const char *nonce,
+                                const char *sender, uint64_t inc)
+{
+    int i, old_life = 0;
+
+    for (i = 0; i < cl->boot_seen_n; i++)
+        if (memcmp(cl->boot_seen[i], nonce, CL_CTR_NONCE_SZ) == 0) {
+            LM_DBG("clusterer_controller: [cluster %d] bootstrap packet from "
+                   "%s seen before, dropping\n", cl->cluster_id, sender);
+            return 1;
+        }
+    lock_start_read(cl->peers->lock);
+    {
+        cl_ctr_peer_t *e = cl_ctr_peer_by_ip_locked(cl, sender);
+        if (e && e->incarnation && inc < e->incarnation &&
+                cl_ctr_now() - e->last_seen < 2 * (time_t)query_time)
+            old_life = 1;
+    }
+    lock_stop_read(cl->peers->lock);
+    if (old_life) {
+        LM_DBG("clusterer_controller: [cluster %d] bootstrap packet from a "
+               "previous life of %s, which is still heard - dropping\n",
+               cl->cluster_id, sender);
+        return 1;
+    }
+    memcpy(cl->boot_seen[cl->boot_seen_next], nonce, CL_CTR_NONCE_SZ);
+    cl->boot_seen_next = (cl->boot_seen_next + 1) % CL_CTR_BOOT_SEEN;
+    if (cl->boot_seen_n < CL_CTR_BOOT_SEEN)
+        cl->boot_seen_n++;
+    return 0;
+}
+
 /* The types a sender seals with the bootstrap key: the admission handshake
  * (JOIN_REQ, KEY_GRANT and its ACK, JOIN_REJECT) and the master's beacon. */
 static int cl_ctr_bootstrap_type(unsigned char t)
@@ -686,6 +731,14 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 		}
 		return;
 	    }
+	} else {
+	    /* no window for these: a JOIN_REQ or beacon sent again is caught
+	     * by its nonce or its incarnation instead */
+	    unsigned char _t = (unsigned char)buf[CL_CTR_WIRE_HDR_SZ];
+	    if ((_t == CL_CTR_PKT_JOIN_REQ || _t == CL_CTR_PKT_MASTER_BEACON) &&
+	            cl_ctr_boot_replayed(cl, buf + CL_CTR_NONCE_OFF,
+	                                 sender_ip_buf, pkt_inc))
+		return;
 	}
 
 	pkt_type    = (unsigned char)buf[CL_CTR_WIRE_HDR_SZ];
