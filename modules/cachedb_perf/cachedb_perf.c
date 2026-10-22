@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include <fnmatch.h>
 
 #include "../../sr_module.h"
@@ -4389,8 +4390,10 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 }
 
 
-/* leg chains the maintenance tick drains: a pass over all 16,384 takes 16 s */
-#define PCACHE_DRAIN_CHAINS 1024
+/* the leg drain runs in chunks of this many steps (a record, or a chain
+ * found done) until the slice is spent or it has walked the whole leg */
+#define PCACHE_DRAIN_CHUNK    1024
+#define PCACHE_DRAIN_SLICE_US 10000
 /* buckets visited and records moved per tick while a chunk is sparse */
 #define PCACHE_EVAC_BUCKETS 4096
 #define PCACHE_EVAC_BUDGET  512
@@ -4399,6 +4402,14 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
  * growth_load_factor, bounded per tick, drains the overflow leg into the
  * room that made and moves records out of sparse chunks.  Runs in one
  * timer process, so it is the sole caller of all three. */
+static long long pcache_mono_us(void)
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (long long)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+
 static void pcache_expire_timer(unsigned int ticks, void *param)
 {
 	pcache_col_t *col;
@@ -4439,8 +4450,19 @@ static void pcache_expire_timer(unsigned int ticks, void *param)
 			}
 		}
 
-		/* splits make room but never look at the leg */
-		pcache_ht_drain_leg(col->htable, PCACHE_DRAIN_CHAINS);
+		/* splits make room but never look at the leg.  Bounded by time,
+		 * not by a count: what a split has just made placeable sits
+		 * wherever the cursor is not */
+		if (pcache_ht_overflow(col->htable)) {
+			unsigned long p0 = pcache_ht_drain_passes(col->htable);
+			long long t0 = pcache_mono_us();
+
+			do
+				pcache_ht_drain_leg(col->htable, PCACHE_DRAIN_CHUNK);
+			while (pcache_ht_overflow(col->htable) &&
+			       pcache_ht_drain_passes(col->htable) == p0 &&
+			       pcache_mono_us() - t0 < PCACHE_DRAIN_SLICE_US);
+		}
 
 		/* the survivors of a mass expiry pin their chunks */
 		if (pcache_arena_sparse_chunks())

@@ -1435,6 +1435,11 @@ unsigned int pcache_ht_overflow(pcache_htable_t *ht)
 	return __atomic_load_n(&ht->ovf_count, __ATOMIC_RELAXED);
 }
 
+unsigned long pcache_ht_drain_passes(pcache_htable_t *ht)
+{
+	return ht->drain_passes;
+}
+
 /*
  * A chunk retires only when every cell in it is free, so the survivors of
  * a mass expiry, spread over the chunks that held the expired records, pin
@@ -1494,7 +1499,7 @@ unsigned int pcache_ht_evacuate(pcache_htable_t *ht, unsigned int buckets,
  * the record in exactly one place, and the version bump comes before the
  * unlink, which a reader that missed in the leg re-checks.
  */
-unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int chains)
+unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int steps)
 {
 	struct povf *node, **prev;
 	pcache_bucket_t *b;
@@ -1504,7 +1509,7 @@ unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int chains)
 
 	if (!__atomic_load_n(&ht->ovf_count, __ATOMIC_RELAXED))
 		return 0;
-	for (n = 0; n < chains; n++) {
+	for (n = 0; n < steps; n++) {
 		h = ht->drain_next & (PCACHE_OVF_BUCKETS - 1);
 
 		/* a candidate, read under the leg lock only */
@@ -1518,6 +1523,8 @@ unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int chains)
 		if (!node) {
 			ht->drain_next++;              /* chain done */
 			ht->drain_skip = 0;
+			if (!(ht->drain_next & (PCACHE_OVF_BUCKETS - 1)))
+				ht->drain_passes++;
 			continue;
 		}
 
@@ -2203,6 +2210,18 @@ static int st_exp_preserve(void)
 	return 0;
 }
 
+/* drain until the cursor has walked the whole leg once */
+static unsigned int st_drain_pass(pcache_htable_t *ht)
+{
+	unsigned long p0 = pcache_ht_drain_passes(ht);
+	unsigned int moved = 0;
+
+	do
+		moved += pcache_ht_drain_leg(ht, 1024);
+	while (pcache_ht_drain_passes(ht) == p0 && pcache_ht_overflow(ht));
+	return moved;
+}
+
 /* a record the drain moves into a bucket a scan has already passed must
  * still be seen: the scan stops in its bucket phase, the keys it saw are
  * removed (room behind the cursor), the drain fills that room from the
@@ -2239,7 +2258,7 @@ static int st_scan_leg_first(void)
 		HCHK(pcache_ht_remove(ht, &k) == 1, "remove %u failed\n", i);
 		gone[i] = 1;
 	}
-	pcache_ht_drain_leg(ht, PCACHE_OVF_BUCKETS);
+	st_drain_pass(ht);
 	while (cur && calls < 20000) {
 		HCHK(pcache_ht_scan(ht, &cur, 2, st_walk_cb, &w) == 0,
 			"scan failed\n");
@@ -2272,7 +2291,7 @@ static int st_leg_drain(void)
 	ovf0 = ht->ovf_count;
 	HCHK(ovf0 > 0, "300 keys over 16 buckets never overflowed\n");
 	pcache_ht_grow(ht, 2, 100000);
-	moved = pcache_ht_drain_leg(ht, PCACHE_OVF_BUCKETS);
+	moved = st_drain_pass(ht);
 	HCHK(moved > 0 && ht->ovf_count == ovf0 - moved,
 		"the drain moved %u of %u leg records, %u left in the leg\n",
 		moved, ovf0, ht->ovf_count);
