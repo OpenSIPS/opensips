@@ -195,6 +195,21 @@ static inline int pcache_mem_eq(const void *a, const void *b, unsigned int n)
 	return 1;
 }
 
+/* tags[6] in one load, meta masked off; 0 = empty bucket, t[i] == 0 = free
+ * slot.  Slots are packed and a remove copies the last tag down before
+ * clearing it, so a record stable across the read never shows as free */
+static inline int bkt_tags(const pcache_bucket_t *b, unsigned char t[8])
+{
+	static const unsigned char six[8] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+	uint64_t w, m;
+
+	memcpy(&w, b->tags, 8);
+	memcpy(&m, six, 8);
+	w &= m;
+	memcpy(t, &w, 8);
+	return w != 0;
+}
+
 /* meta helpers - writers only, under the bucket lock */
 static inline unsigned int bkt_used(const pcache_bucket_t *b)
 {
@@ -1186,12 +1201,16 @@ static int walk_bucket(pcache_bucket_t *b, pcache_iter_cb cb, void *ctx,
 {
 	uint64_t seen[BKT_WALKS * PCACHE_SLOTS], fp;
 	unsigned int ver, pass, i, k, ns = 0, klen, vlen, exp;
-	unsigned char fl;
+	unsigned char fl, t[8];
 	int rc;
 
 	for (pass = 0; pass < BKT_WALKS; pass++) {
 		ver = __atomic_load_n(&b->version, __ATOMIC_ACQUIRE);
+		if (!bkt_tags(b, t))
+			break;
 		for (i = 0; i < PCACHE_SLOTS; i++) {
+			if (!t[i])
+				continue;
 			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
 			        &exp, &fl, lo, hi))
 				continue;
