@@ -300,6 +300,7 @@ sec_agree_body_t *parse_sec_agree_body(str *body)
 				break;
 			case ',':
 				state = SEC_AGREE_STATE_START;
+				sa = NULL;
 				break;
 			default:
 				s = p;
@@ -331,6 +332,7 @@ sec_agree_body_t *parse_sec_agree_body(str *body)
 				break;
 			case ',':
 				state = SEC_AGREE_STATE_START;
+				sa = NULL;
 				break;
 			case '"':
 				state = SEC_AGREE_STATE_PARAM_VALUE_ENC;
@@ -401,9 +403,10 @@ sec_agree_body_t *parse_sec_agree_body(str *body)
 					state = SEC_AGREE_STATE_INVALID;
 				} else {
 					if (!parse_sec_agree_parameter(sa, &name, &value))
-						if (*p == ',')
+						if (*p == ',') {
 							state = SEC_AGREE_STATE_START;
-						else
+							sa = NULL;
+						} else
 							state = SEC_AGREE_STATE_PARAM_NAME_START;
 					else
 						state = SEC_AGREE_STATE_INVALID;
