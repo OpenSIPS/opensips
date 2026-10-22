@@ -1617,42 +1617,73 @@ static int st_regions(void)
  * reservation refused its punch; a punched group must stay out; and the
  * carve that takes a punched slot again must take its whole group.
  */
-static int st_giveback(void)
+/* one round: the carve (into up to three new shm pages), the drain, the
+ * ageing and the tick.  *pages = pages the carve added; *whole = whole
+ * free groups below the frontier before the tick - kept chunks and the
+ * regions at the top can leave a small reservation without one.  Returns
+ * the pages the tick freed. */
+static unsigned long st_gb_round(void **big, unsigned int cap,
+		unsigned int *pages, unsigned int *whole)
 {
 	const unsigned int bc = PCACHE_NCLASSES - 1;    /* 3 cells a slot */
-	const unsigned int cap = 3 * (8 * PCACHE_GROUP_SLOTS + 4 * PCACHE_PAGE_SLOTS);
-	unsigned int nb = 0, i, g, res, npg0, npg1, cold0;
+	unsigned int nb = 0, i, g, npg0 = arena->npages;
 	unsigned long freed0;
-	void **big;
 
-	big = pkg_malloc(cap * sizeof *big);
-	CHK(big != NULL, "no pkg for the give-back cells\n");
-	npg0 = arena->npages;
 	while (nb < cap && arena->npages < npg0 + 3 &&
 	        (big[nb] = pcache_cell_alloc(cell_sizes[bc])) != NULL)
 		nb++;
-	npg1 = arena->npages;
+	*pages = arena->npages - npg0;
 	for (i = 0; i < nb; i++)
 		pcache_cell_free(big[i]);
 	pcache_arena_flush_private();
 	pcache_arena_reclaim_tick();                 /* retires them */
 	arena->tick += pcache_reclaim_quiet_s + pcache_reclaim_cooloff_s;
+	*whole = 0;
+	for (g = 0; arena->hbase &&
+	        (g + 1) * PCACHE_GROUP_SLOTS <= arena->hoff / PCACHE_SLOT; g++) {
+		for (i = 0; i < PCACHE_GROUP_SLOTS &&
+		        bit_get(arena->rwarm, g * PCACHE_GROUP_SLOTS + i); i++)
+			;
+		*whole += i == PCACHE_GROUP_SLOTS;
+	}
 	freed0 = arena->pages_freed;
 	pcache_arena_reclaim_tick();                 /* gives back */
+	return arena->pages_freed - freed0;
+}
 
-	if (npg1 >= npg0 + 3)
-		CHK(arena->pages_freed > freed0, "no empty shm page went back "
-			"(%u pages, giveback_off %u)\n", arena->npages,
+static int st_giveback(void)
+{
+	const unsigned int bc = PCACHE_NCLASSES - 1;
+	const unsigned int cap = 3 * (8 * PCACHE_GROUP_SLOTS + 4 * PCACHE_PAGE_SLOTS);
+	unsigned int nb, i, g, res, pages, cold0, whole;
+	unsigned long freed;
+	void **big;
+
+	big = pkg_malloc(cap * sizeof *big);
+	CHK(big != NULL, "no pkg for the give-back cells\n");
+	freed = st_gb_round(big, cap, &pages, &whole);
+	if (pages >= 3)
+		CHK(freed > 0, "no empty shm page went back (giveback_off %u)\n",
 			arena->giveback_off);
+	/* a refused punch latches the reservation alone: later ticks must
+	 * still return empty pages */
+	if (arena->hbase && arena->giveback_off) {
+		freed = st_gb_round(big, cap, &pages, &whole);
+		if (pages >= 3)
+			CHK(freed > 0, "no empty shm page went back once the "
+				"reservation had refused its punch\n");
+	}
 
-	if (!arena->hbase || arena->giveback_off) {
+	if (!arena->hbase || arena->giveback_off || !whole) {
 		LM_NOTICE("arena selftest: %s - group punches not exercised\n",
-			arena->hbase ? "the reservation refused MADV_REMOVE" :
-			"no reservation");
+			!arena->hbase ? "no reservation" : arena->giveback_off ?
+			"the reservation refused MADV_REMOVE" :
+			"no whole free group in the reservation");
 		pkg_free(big);
 		return 0;
 	}
-	CHK(arena->nfree_cold > 0, "no reservation group was punched out\n");
+	CHK(arena->nfree_cold > 0, "none of %u whole free groups was punched "
+		"out\n", whole);
 	for (g = 0; g < arena->rslots / PCACHE_GROUP_SLOTS; g++) {
 		if (!bit_get(arena->rcold, g * PCACHE_GROUP_SLOTS))
 			continue;
