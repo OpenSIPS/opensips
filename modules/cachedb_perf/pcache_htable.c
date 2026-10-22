@@ -160,16 +160,28 @@ static inline void hint_update(pcache_htable_t *ht, unsigned int idx,
 			(_ht)->pstats[process_no]._f += (_n); \
 	} while (0)
 
-/* one 8-byte load of tags[6]+meta; 0x80 at byte i = tags[i] matches.
- * The SWAR borrow can produce a false positive after a true match byte -
- * filtered by the key compare, never a false negative. */
+/* one 8-byte load of tags[6]+meta with tags[i] in byte i of the value,
+ * counted from the low end, on either byte order */
+static inline uint64_t tag_word(const pcache_bucket_t *b)
+{
+	/* uint64_t: unsigned long is 4 bytes on ILP32 */
+	uint64_t w;
+
+	memcpy(&w, b->tags, 8);
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	w = __builtin_bswap64(w);
+#endif
+	return w;
+}
+
+/* 0x80 at byte i = tags[i] matches.  The SWAR borrow can produce a false
+ * positive after a true match byte - filtered by the key compare, never a
+ * false negative. */
 static inline uint64_t tag_matches(const pcache_bucket_t *b,
 		unsigned char tag)
 {
-	/* uint64_t: unsigned long is 4 bytes on ILP32 */
-	uint64_t w, x;
+	uint64_t w = tag_word(b), x;
 
-	memcpy(&w, b->tags, 8);
 	x = w ^ (0x0101010101010101ULL * tag);
 	return (x - 0x0101010101010101ULL) & ~x & 0x0000808080808080ULL;
 }
@@ -2223,6 +2235,40 @@ static int st_exp_preserve(void)
 	return 0;
 }
 
+/* the tag word on this host's byte order: every slot holding the queried
+ * tag is reported at its own index, and the meta bytes never match */
+static int st_tag_word(void)
+{
+	pcache_bucket_t b;
+	unsigned int seed = 12345, used, i, r, found;
+	unsigned char t, mt;
+	uint64_t m;
+
+	for (r = 0; r < 2000; r++) {
+		memset(&b, 0, sizeof b);
+		used = 1 + r % PCACHE_SLOTS;
+		for (i = 0; i < used; i++) {
+			seed = seed * 1103515245u + 12345u;
+			b.tags[i] = 1 + (seed >> 16) % (r & 1 ? 4 : 255);
+		}
+		seed = seed * 1103515245u + 12345u;
+		mt = 1 + (seed >> 16) % 255;
+		b.meta = (unsigned short)(mt | mt << 8);
+		for (i = 0; i < used; i++) {
+			t = b.tags[i];
+			for (found = 0, m = tag_matches(&b, t); m; m &= m - 1)
+				found |= (unsigned int)__builtin_ctzll(m) >> 3 == i;
+			HCHK(found, "slot %u of %u holding tag 0x%02x was not "
+				"reported\n", i, used, t);
+		}
+		for (i = 0; i < used && b.tags[i] != mt; i++)
+			;
+		HCHK(i < used || !tag_matches(&b, mt), "the meta bytes matched "
+			"tag 0x%02x\n", mt);
+	}
+	return 0;
+}
+
 /* keys-only walks hand over every key and no value */
 struct st_keys {
 	unsigned char seen[200];
@@ -2746,7 +2792,8 @@ int pcache_htable_selftest(void)
 	{
 		static int (*const cases[])(void) = { st_leg_walk_skip,
 			st_bucket_rewalk, st_passive_promote, st_exp_preserve,
-			st_scan_leg_first, st_leg_drain, st_evacuate, st_keys_only };
+			st_scan_leg_first, st_leg_drain, st_evacuate, st_keys_only,
+			st_tag_word };
 		const int ncases = sizeof cases / sizeof *cases;
 		int c, fails = 0;
 
