@@ -1161,6 +1161,56 @@ static int emit_entry(pcache_iter_cb cb, void *ctx, char *kbuf,
 	return cb(&key, &val, exp, ctx);
 }
 
+/* passes over a bucket whose version keeps moving */
+#define BKT_WALKS 4
+
+/* FNV-1a over the key: tells an emitted key from a new one on a re-walk */
+static uint64_t walk_fp(const char *k, unsigned int len)
+{
+	uint64_t h = 0xcbf29ce484222325ULL;
+
+	while (len--)
+		h = (h ^ (unsigned char)*k++) * 0x100000001b3ULL;
+	return h;
+}
+
+/*
+ * Emit every record in bucket @b.  A removal moves the bucket's last record
+ * into the freed slot, so a pass that is already past that slot misses the
+ * moved record.  While the version moved during a pass the bucket is walked
+ * again, emitting only keys not emitted yet; bounded, so a bucket that never
+ * settles (a callback rewriting its own record) still finishes.
+ */
+static int walk_bucket(pcache_bucket_t *b, pcache_iter_cb cb, void *ctx,
+		char *kbuf, char *vbuf, unsigned long lo, unsigned long hi)
+{
+	uint64_t seen[BKT_WALKS * PCACHE_SLOTS], fp;
+	unsigned int ver, pass, i, k, ns = 0, klen, vlen, exp;
+	unsigned char fl;
+	int rc;
+
+	for (pass = 0; pass < BKT_WALKS; pass++) {
+		ver = __atomic_load_n(&b->version, __ATOMIC_ACQUIRE);
+		for (i = 0; i < PCACHE_SLOTS; i++) {
+			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
+			        &exp, &fl, lo, hi))
+				continue;
+			fp = walk_fp(kbuf, klen);
+			for (k = 0; k < ns && seen[k] != fp; k++)
+				;
+			if (k < ns)
+				continue;
+			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen, exp, fl);
+			if (rc < 0)
+				return rc;
+			seen[ns++] = fp;
+		}
+		if (__atomic_load_n(&b->version, __ATOMIC_ACQUIRE) == ver)
+			break;
+	}
+	return 0;
+}
+
 /*
  * The node to emit next: the one after the most recently emitted node that
  * is still in the chain.  Nodes are only inserted at a chain's head and
@@ -1256,10 +1306,8 @@ static int iter_overflow(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
 
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 {
-	pcache_bucket_t *b;
 	unsigned long lo, hi;
-	unsigned int idx, i, klen, vlen, exp;
-	unsigned char fl;
+	unsigned int idx;
 	char *kbuf, *vbuf;
 	int rc = 0;
 
@@ -1273,15 +1321,9 @@ int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx)
 	pcache_arena_extents(&lo, &hi);
 
 	for (idx = 0; idx < ht->nbuckets; idx++) {
-		b = bucket_at(ht, idx);
-		for (i = 0; i < PCACHE_SLOTS; i++) {
-			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
-			        &exp, &fl, lo, hi))
-				continue;
-			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen, exp, fl);
-			if (rc < 0)
-				goto out;
-		}
+		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi);
+		if (rc < 0)
+			goto out;
 	}
 
 	/* overflow leg; the lock is dropped around every callback */
@@ -1296,10 +1338,8 @@ out:
 int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 		unsigned int max_buckets, pcache_iter_cb cb, void *ctx)
 {
-	pcache_bucket_t *b;
 	unsigned long lo, hi;
-	unsigned int idx, end, i, klen, vlen, exp, nb;
-	unsigned char fl;
+	unsigned int idx, end, nb;
 	char *kbuf, *vbuf;
 	unsigned int oidx;
 	int rc = 0;
@@ -1324,15 +1364,9 @@ int pcache_ht_scan(pcache_htable_t *ht, unsigned int *cursor,
 	end = (idx > nb || nb - idx < max_buckets) ? nb : idx + max_buckets;
 
 	for (; idx < end; idx++) {
-		b = bucket_at(ht, idx);
-		for (i = 0; i < PCACHE_SLOTS; i++) {
-			if (!snapshot_slot(b, i, kbuf, vbuf, &klen, &vlen,
-			        &exp, &fl, lo, hi))
-				continue;
-			rc = emit_entry(cb, ctx, kbuf, klen, vbuf, vlen, exp, fl);
-			if (rc < 0)
-				goto out;
-		}
+		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi);
+		if (rc < 0)
+			goto out;
 	}
 
 	if (idx < nb) {

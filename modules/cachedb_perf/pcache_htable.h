@@ -218,8 +218,10 @@ int pcache_ht_add(pcache_htable_t *ht, const str *key, long long delta,
 		unsigned int expires, long long *new_val);
 
 /* Walk every record; @key/@val are NUL-terminated copies valid during the
- * callback, <0 from it stops the walk.  Concurrently mutated entries may be
- * seen 0-2 times.  No lock is held across the callback. */
+ * callback, <0 from it stops the walk.  A record present for the whole walk
+ * is seen unless its bucket changes through every re-walk; one stored or
+ * removed during the walk may or may not be.  A key may repeat (a bucket
+ * split, the overflow leg).  No lock is held across the callback. */
 typedef int (*pcache_iter_cb)(const str *key, const str *val,
 		unsigned int expires, void *ctx);
 int pcache_ht_iter(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx);
