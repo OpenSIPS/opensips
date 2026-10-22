@@ -317,7 +317,7 @@ int do_assign(struct sip_msg* msg, struct action* a)
 		ret = eval_expr((struct expr*)a->elem[1].u.data, msg, &val);
 		if(ret < 0 || !(val.flags & (PV_VAL_STR | PV_VAL_INT | PV_VAL_NULL)))
 		{
-			LM_WARN("no value in right expression at %s:%d\n",
+			LMR_WARN("no value in right expression at %s:%d\n",
 				a->file, a->line);
 			goto error2;
 		}
