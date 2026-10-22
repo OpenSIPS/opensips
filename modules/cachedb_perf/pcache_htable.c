@@ -352,7 +352,7 @@ static int _pcache_ht_fetch_buf(pcache_htable_t *ht, const str *key,
 {
 	pcache_bucket_t *b;
 	uint64_t route;
-	unsigned int hash, idx, v1, v2, vlen = 0, exp = 0, tries;
+	unsigned int hash, idx, v1, v2, vs, vlen = 0, exp = 0, tries, relooks = 0;
 	unsigned char tag, fl = 0;
 	long long ll;
 	int rc;
@@ -383,14 +383,17 @@ again:
 		rc = scan_bucket(b, key, hash, tag, dst, dstlen, &vlen, &exp, &fl);
 		__atomic_thread_fence(__ATOMIC_ACQUIRE);
 		v2 = __atomic_load_n(&b->version, __ATOMIC_RELAXED);
-		if (v1 == v2)
+		if (v1 == v2) {
+			vs = v1;
 			goto settled;
+		}
 	}
 
 	/* a writer is stalled mid-update: stop spinning, wait on the lock */
 	lock_get(&b->lock);
 	bkt_set_owner(b);
 	rc = scan_bucket(b, key, hash, tag, dst, dstlen, &vlen, &exp, &fl);
+	vs = b->version;
 	bkt_clear_owner(b);
 	lock_release(&b->lock);
 	HT_ST(ht, fallbacks);
@@ -402,8 +405,15 @@ settled:
 		/* a completed split may have re-routed the key */
 		if (ht->route != route)
 			goto again;
-		if (ht->ovf_count)
+		if (ht->ovf_count) {
 			rc = ovf_fetch(ht, key, hash, dst, dstlen, &vlen, &exp, &fl);
+			/* the leg drain moves a record into its bucket, bumping
+			 * the version, before it unlinks it from the leg: a leg
+			 * miss after the bucket changed may be that move */
+			if (rc == -2 && relooks++ < 4 &&
+			        __atomic_load_n(&b->version, __ATOMIC_ACQUIRE) != vs)
+				goto again;
+		}
 	}
 	if (rc == -2) {
 		HT_ST(ht, misses);
@@ -1423,6 +1433,82 @@ unsigned int pcache_ht_nbuckets(pcache_htable_t *ht)
 unsigned int pcache_ht_overflow(pcache_htable_t *ht)
 {
 	return __atomic_load_n(&ht->ovf_count, __ATOMIC_RELAXED);
+}
+
+/*
+ * Splits make room in the buckets but never look at the leg, so without
+ * this a record that overflowed during a burst stays there, behind the
+ * one leg lock, for good.  A record whose bucket is full is stepped over
+ * within its chain.  The bucket lock is taken before the leg lock, the
+ * store path's order, and both are held across the move: a writer sees
+ * the record in exactly one place, and the version bump comes before the
+ * unlink, which a reader that missed in the leg re-checks.
+ */
+unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int chains)
+{
+	struct povf *node, **prev;
+	pcache_bucket_t *b;
+	pcache_rec_t *rec;
+	uint64_t route;
+	unsigned int n, h, k, idx, used, hash, moved = 0;
+
+	if (!__atomic_load_n(&ht->ovf_count, __ATOMIC_RELAXED))
+		return 0;
+	for (n = 0; n < chains; n++) {
+		h = ht->drain_next & (PCACHE_OVF_BUCKETS - 1);
+
+		/* a candidate, read under the leg lock only */
+		lock_get(&ht->ovf_lock);
+		node = ht->ovf_tab[h];
+		for (k = 0; node && k < ht->drain_skip; k++)
+			node = node->next;
+		hash = node ? node->hash : 0;
+		rec = node ? node->rec : NULL;
+		lock_release(&ht->ovf_lock);
+		if (!node) {
+			ht->drain_next++;              /* chain done */
+			ht->drain_skip = 0;
+			continue;
+		}
+
+		idx = route_idx(ht, hash, &route);
+		b = bucket_at(ht, idx);
+		lock_get(&b->lock);
+		bkt_set_owner(b);
+		used = bkt_used(b);
+		if (used < PCACHE_SLOTS) {
+			lock_get(&ht->ovf_lock);
+			/* the chain may have changed while the bucket lock was
+			 * taken: find the record again */
+			for (prev = &ht->ovf_tab[h], node = *prev; node;
+			        prev = &node->next, node = node->next)
+				if (node->rec == rec && node->hash == hash)
+					break;
+			if (node) {
+				__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
+				b->slot[used] = rec;
+				b->tags[used] = tag_of(hash);
+				bkt_set_used(b, used + 1);
+				__atomic_add_fetch(&b->version, 1, __ATOMIC_ACQ_REL);
+				hint_update(ht, idx, rec->expires);
+				*prev = node->next;
+				__atomic_sub_fetch(&ht->ovf_count, 1, __ATOMIC_RELAXED);
+				ht->drain_moved++;
+				moved++;
+				/* the chain is one shorter: the offset now names
+				 * the next record */
+			}
+			lock_release(&ht->ovf_lock);
+		} else {
+			node = NULL;
+			ht->drain_skip++;              /* full: step past it */
+		}
+		bkt_clear_owner(b);
+		lock_release(&b->lock);
+		if (node)
+			pcache_cell_free_global(node);
+	}
+	return moved;
 }
 
 unsigned int pcache_ht_sweep(pcache_htable_t *ht, unsigned int now,

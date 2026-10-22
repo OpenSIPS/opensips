@@ -831,6 +831,7 @@ static int mi_stats_fill(mi_item_t *cobj, pcache_col_t *col)
 	    add_mi_number(cobj, MI_SSTR("buckets"), ht->nbuckets) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("entries"), t.entries) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("overflow"), ht->ovf_count) < 0 ||
+	    add_mi_number(cobj, MI_SSTR("leg_drained"), ht->drain_moved) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("hits"), t.hits) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("misses"), t.misses) < 0 ||
 	    add_mi_number(cobj, MI_SSTR("stores"), t.stores) < 0 ||
@@ -4388,9 +4389,13 @@ static int w_perf_mget_json(struct sip_msg *msg, str *glob, pv_spec_t *dst_pv,
 }
 
 
-/* Maintenance timer: reaps expired records, then grows collections past
- * growth_load_factor, bounded per tick.  Runs in one timer process, so it
- * is the sole splitter. */
+/* leg chains the maintenance tick drains: a pass over all 16,384 takes 16 s */
+#define PCACHE_DRAIN_CHAINS 1024
+
+/* Maintenance timer: reaps expired records, grows collections past
+ * growth_load_factor, bounded per tick, and drains the overflow leg into
+ * the room that made.  Runs in one timer process, so it is the sole
+ * splitter and drainer. */
 static void pcache_expire_timer(unsigned int ticks, void *param)
 {
 	pcache_col_t *col;
@@ -4430,6 +4435,9 @@ static void pcache_expire_timer(unsigned int ticks, void *param)
 					split, t.entries);
 			}
 		}
+
+		/* splits make room but never look at the leg */
+		pcache_ht_drain_leg(col->htable, PCACHE_DRAIN_CHAINS);
 	}
 }
 

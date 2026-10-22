@@ -370,8 +370,10 @@ The target number of entries per bucket the maintenance timer grows
 the table toward. As entries accumulate the timer splits buckets to
 keep the load factor near this value, so lookups stay flat as the
 cache scales - the behaviour *cachedb_local*
-lacks. 0 disables growth, leaving the table fixed at its declared
-size. Default is 2.
+lacks. The same tick moves entries that overflowed while the table was
+smaller back into their bucket once there is room (*leg_drained* in
+*perf_stats*). 0 disables growth, leaving the table fixed at its
+declared size. Default is 2.
 
 
 ```opensips title="Set growth_load_factor parameter"
@@ -1220,7 +1222,7 @@ perf_sync("profiles");
 
 
 Reports per-collection statistics (entries, buckets, overflow,
-hits/misses/stores/removes, load factor, seqlock retries and
+leg_drained, hits/misses/stores/removes, load factor, seqlock retries and
 retries-per-1k-reads) plus the arena occupancy and the achieved
 memory tier. With no parameter it reports every collection; an
 optional collection name restricts it to one.

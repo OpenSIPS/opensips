@@ -133,6 +133,9 @@ typedef struct pcache_htable {
 
 	unsigned int            nbuckets;
 	volatile unsigned int   ovf_count;   /* readers' overflow gate */
+	unsigned int            drain_next;  /* leg drain: chain cursor */
+	unsigned int            drain_skip;  /*   records stepped over in it */
+	unsigned long           drain_moved; /*   records put back, cumulative */
 	gen_lock_t              ovf_lock;
 	struct povf           **ovf_tab;     /* PCACHE_OVF_BUCKETS heads */
 
@@ -162,6 +165,11 @@ void pcache_ht_stats_reset(pcache_htable_t *ht);
 unsigned int pcache_ht_nbuckets(pcache_htable_t *ht);
 /* records in the overflow leg */
 unsigned int pcache_ht_overflow(pcache_htable_t *ht);
+
+/* move leg records whose bucket has room back into it, walking @chains of
+ * the PCACHE_OVF_BUCKETS chains from a cursor it keeps; returns how many
+ * moved.  Single caller only, like pcache_ht_grow() */
+unsigned int pcache_ht_drain_leg(pcache_htable_t *ht, unsigned int chains);
 
 pcache_htable_t *pcache_htable_new(unsigned int size_log2);
 
