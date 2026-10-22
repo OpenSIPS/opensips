@@ -711,7 +711,7 @@ static int hg_init_fits(const char *what, unsigned long init,
 	if (ci.version)
 		LM_ERR("%s: the memory cgroup (v%d) is the tighter limit: %lu MB "
 			"limit, %lu MB in use, %lu MB floor\n", what, ci.version,
-			ci.limit >> 20, ci.used >> 20, ci.floor >> 20);
+			ci.limit_mb, ci.used_mb, ci.floor_mb);
 	LM_ERR("%s: committing %lu %s now does not fit - %lu MB of RAM is "
 		"available above the %ld MB floor (hg_ram_floor_mb) and the "
 		"hugetlb pool has %lu MB free. Lower INIT (-m/-M), the number of "
@@ -1040,8 +1040,8 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 				"under its %lu MB floor (limit %lu MB, %lu MB in use). "
 				"Raising the cgroup's memory limit or freeing memory in "
 				"it lifts this.\n", hb->name, delta >> 20,
-				effective >> 20, nproc, ci.version, ci.floor >> 20,
-				ci.limit >> 20, ci.used >> 20);
+				effective >> 20, nproc, ci.version, ci.floor_mb,
+				ci.limit_mb, ci.used_mb);
 	}
 	return 1;
 }

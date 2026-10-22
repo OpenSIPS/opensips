@@ -36,20 +36,22 @@
  * 128 MB, 128 MB of 1 GB, 256 MB from 2 GB to 5 GB */
 long hg_floor_mb_for(long total_mb);
 
-/* the tightest memory cgroup the calling process is in, for the messages */
+/* the tightest memory cgroup the calling process is in, for the messages;
+ * in MB, which an unsigned long holds on a 32-bit build too */
 struct hg_cg_info {
 	int version;            /* 1 or 2; 0 = no limited level found */
-	unsigned long limit;    /* bytes */
-	unsigned long used;     /* bytes charged, less the reclaimable file cache */
-	unsigned long floor;    /* bytes the floor keeps free */
+	unsigned long limit_mb;
+	unsigned long used_mb;  /* charged, less the reclaimable file cache */
+	unsigned long floor_mb; /* what the floor keeps free */
 };
 
 /*
  * Bytes the calling process's memory cgroups leave above their floors: the
  * tightest of its own cgroup and every ancestor that has a limit. ~0UL when
  * no level is limited, or the cgroup files cannot be read (not Linux, no
- * memory controller) - the host check then decides alone. @ci, if given,
- * describes the binding level.
+ * memory controller) - the host check then decides alone. The files count
+ * in 64-bit bytes; on a 32-bit build a room of ~0UL or more is ~0UL, more
+ * than the process can address. @ci, if given, describes the binding level.
  */
 unsigned long hg_cgroup_room(struct hg_cg_info *ci);
 

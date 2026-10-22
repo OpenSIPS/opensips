@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include "hg_memlimit.h"
 #include "../globals.h"
@@ -48,29 +49,30 @@ void hg_cgroup_test_paths(const char *root, const char *self_cgroup)
 
 #ifdef __OS_linux
 
-/* the number @path starts with; 0 when it does not (missing, or "max") */
-static int read_ul(const char *path, unsigned long *v)
+/* the number @path starts with; 0 when it does not (missing, or "max").
+ * The cgroup files count in 64-bit bytes on every build */
+static int read_ull(const char *path, unsigned long long *v)
 {
 	FILE *f = fopen(path, "r");
 	int ok;
 
 	if (!f)
 		return 0;
-	ok = fscanf(f, "%lu", v) == 1;
+	ok = fscanf(f, "%llu", v) == 1;
 	fclose(f);
 	return ok;
 }
 
 /* @key's value in a memory.stat file, 0 when it is not there */
-static unsigned long stat_value(const char *path, const char *key)
+static unsigned long long stat_value(const char *path, const char *key)
 {
 	char name[64];
-	unsigned long v, r = 0;
+	unsigned long long v, r = 0;
 	FILE *f = fopen(path, "r");
 
 	if (!f)
 		return 0;
-	while (fscanf(f, "%63s %lu", name, &v) == 2)
+	while (fscanf(f, "%63s %llu", name, &v) == 2)
 		if (!strcmp(name, key)) {
 			r = v;
 			break;
@@ -91,32 +93,34 @@ static void cg_level(const char *dir, int v, unsigned long *best,
 	/* @dir is at most 1099 bytes (see hg_cgroup_room()), the longest file
 	 * name "memory.limit_in_bytes" 21 */
 	char p[1100 + 32];
-	unsigned long limit, cur, cache, used, floor, room;
+	unsigned long long limit, cur, cache, used, floor, room;
+	long limit_mb;
 
 	snprintf(p, sizeof p, "%s/%s", dir,
 		v == 2 ? "memory.max" : "memory.limit_in_bytes");
-	if (!read_ul(p, &limit))
+	if (!read_ull(p, &limit))
 		return;
 	/* cgroup v1 says "unlimited" with a number near 2^63 */
-	if (v == 1 && limit >= (1UL << 62))
+	if (v == 1 && limit >= (1ULL << 62))
 		return;
 	snprintf(p, sizeof p, "%s/%s", dir,
 		v == 2 ? "memory.current" : "memory.usage_in_bytes");
-	if (!read_ul(p, &cur))
+	if (!read_ull(p, &cur))
 		return;
 	snprintf(p, sizeof p, "%s/memory.stat", dir);
 	cache = stat_value(p, v == 2 ? "inactive_file" : "total_inactive_file");
 	used = cur > cache ? cur - cache : 0;
-	floor = (unsigned long)(hg_ram_floor_mb > 0 ? hg_ram_floor_mb :
-		hg_floor_mb_for((long)(limit >> 20))) << 20;
+	limit_mb = (limit >> 20) > LONG_MAX ? LONG_MAX : (long)(limit >> 20);
+	floor = (unsigned long long)(hg_ram_floor_mb > 0 ? hg_ram_floor_mb :
+		hg_floor_mb_for(limit_mb)) << 20;
 	room = limit > used + floor ? limit - used - floor : 0;
 	if (room < *best) {
-		*best = room;
+		*best = (unsigned long)room;
 		if (ci) {
 			ci->version = v;
-			ci->limit = limit;
-			ci->used = used;
-			ci->floor = floor;
+			ci->limit_mb = (unsigned long)(limit >> 20);
+			ci->used_mb = (unsigned long)(used >> 20);
+			ci->floor_mb = (unsigned long)(floor >> 20);
 		}
 	}
 }

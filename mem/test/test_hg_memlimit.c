@@ -23,9 +23,9 @@
 /*
  * The floor formula, and the cgroup room read from fake cgroup trees laid
  * out in a temporary directory - cgroup v2 with the limit on an ancestor
- * and then on the process's own level, cgroup v1 on a hybrid host, no
- * limit anywhere, no membership file - so CI checks the parsing and the
- * walk without needing a limited cgroup of its own.
+ * and then on the process's own level, a limit above 4 GB, cgroup v1 on a
+ * hybrid host, no limit anywhere, no membership file - so CI checks the
+ * parsing and the walk without needing a limited cgroup of its own.
  */
 
 #ifdef HG_MALLOC
@@ -128,20 +128,34 @@ void test_hg_memlimit(void)
 	bad |= hml_put("cg/a/b/memory.current", "52428800\n");
 	bad |= hml_put("cg/a/b/memory.stat", "inactive_file 0\n");
 	r = hml_room("self2", &ci);
-	ok(!bad && r == 124 * MB && ci.version == 2 && ci.limit == 256 * MB,
+	ok(!bad && r == 124 * MB && ci.version == 2 && ci.limit_mb == 256,
 		"cgroup v2, limit on an ancestor: %lu MB of room (124 expected), "
-		"limit %lu MB", r / MB, ci.limit >> 20);
+		"limit %lu MB", r / MB, ci.limit_mb);
 
 	/* now a tighter 128 MB limit on the process's own cgroup: 50 MB charged,
 	 * 8 MB of it inactive file cache - 42 MB held, floor 16 MB: 70 MB */
 	bad |= hml_put("cg/a/b/memory.max", "134217728\n");
 	bad |= hml_put("cg/a/b/memory.stat", "anon 44040192\ninactive_file 8388608\n");
 	r = hml_room("self2", &ci);
-	ok(!bad && r == 70 * MB && ci.limit == 128 * MB && ci.used == 42 * MB &&
-		ci.floor == 16 * MB,
+	ok(!bad && r == 70 * MB && ci.limit_mb == 128 && ci.used_mb == 42 &&
+		ci.floor_mb == 16,
 		"cgroup v2, a tighter limit on its own level, cache counted as free: "
 		"%lu MB of room (70 expected), %lu MB held, %lu MB floor",
-		r / MB, ci.used >> 20, ci.floor >> 20);
+		r / MB, ci.used_mb, ci.floor_mb);
+
+	/* a limit above 4 GB, read whole on a 32-bit build too: 6 GB limit,
+	 * 5.5 GB held, floor 307 MB (a twentieth): 205 MB of room */
+	bad |= hml_put("selfb", "0::/big\n");
+	bad |= hml_put("cg/big", NULL);
+	bad |= hml_put("cg/big/memory.max", "6442450944\n");
+	bad |= hml_put("cg/big/memory.current", "5905580032\n");
+	bad |= hml_put("cg/big/memory.stat", "inactive_file 0\n");
+	r = hml_room("selfb", &ci);
+	ok(!bad && r == 205 * MB && ci.limit_mb == 6144 && ci.used_mb == 5632 &&
+		ci.floor_mb == 307,
+		"cgroup v2, a limit above 4 GB: %lu MB of room (205 expected), "
+		"limit %lu MB, %lu MB held, %lu MB floor",
+		r / MB, ci.limit_mb, ci.used_mb, ci.floor_mb);
 
 	/* cgroup v1 on a hybrid host: the memory controller's line wins over
 	 * "0::"; the root reports "unlimited" as a number near 2^63. 64 MB
