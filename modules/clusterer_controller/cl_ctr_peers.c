@@ -345,7 +345,9 @@ uint16_t cl_ctr_alloc_node_id_locked(cl_ctr_cluster_t *cl, const char *ip)
             break;
         }
     }
-    for (id = 1; id < 65535; id++) {
+    /* 1..CL_CTR_MAX_PEERS only: the alive and maintenance bitmaps cover no
+     * more, and receivers refuse a NODE_ASSIGN for any other */
+    for (id = 1; id <= CL_CTR_MAX_PEERS; id++) {
         if (cl_ctr_id_in_use_locked(cl, id))
             continue;
         held = 0;
@@ -359,10 +361,10 @@ uint16_t cl_ctr_alloc_node_id_locked(cl_ctr_cluster_t *cl, const char *ip)
         if (!held)
             return id;
     }
-    for (id = 1; id < 65535; id++)            /* everything is held */
+    for (id = 1; id <= CL_CTR_MAX_PEERS; id++)   /* everything is held */
         if (!cl_ctr_id_in_use_locked(cl, id))
             return id;
-    return 0;   /* table full (shouldn't happen with CL_CTR_MAX_PEERS=256) */
+    return 0;   /* every id in use: the peer table is full */
 }
 
 /**

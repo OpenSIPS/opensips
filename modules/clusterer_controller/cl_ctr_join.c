@@ -866,6 +866,25 @@ void cl_ctr_handle_node_assign(const char *payload, int payload_len,
 	for (i = 0; i < CL_CTR_INC_SZ; i++)
 	    inc = (inc << 8) | (unsigned char)*p++;
 
+    /* Our own entry: before anything is written */
+    if (strcmp(ip, my_ip) == 0) {
+	int follow;
+	lock_start_read(cl->peers->lock);
+	follow = cl->peers->node_state == CL_CTR_NODE_NEW || cl->join_pending
+	         || strcmp(sender_ip, my_ip) == 0
+	         || strcmp(sender_ip, cl->peers->last_master) == 0;
+	lock_stop_read(cl->peers->lock);
+	/* Who we are is the master's to say, and only while we ask or follow
+	 * it: anything else - a NODE_ASSIGN from another node, or one recorded
+	 * and sent again - must not re-identify this node. */
+	if (!follow) {
+	    LM_DBG("clusterer_controller: [cluster %d] NODE_ASSIGN for this node "
+	           "from %s, which is not the master it follows - ignored\n",
+	           cl->cluster_id, sender_ip);
+	    return;
+	}
+    }
+
     lock_start_write(cl->peers->lock);
     /* Membership, not liveness - the same distinction cl_ctr_learn_peer_locked()
      * exists for on the MEMBER_LIST path.  'ip' here comes from the PAYLOAD (the
@@ -884,6 +903,25 @@ void cl_ctr_handle_node_assign(const char *payload, int payload_len,
      * than the author still learn membership here as before. */
     if (strcmp(sender_ip, my_ip) != 0)
 	cl_ctr_learn_peer_locked(ip, cl);
+    {
+	/* two addresses on one id can only come from a confusion upstream -
+	 * say so, once a minute; the assignment still applies */
+	static time_t dup_warned_at;
+	int k;
+	for (k = 0; k < cl->peers->count; k++) {
+	    cl_ctr_peer_t *o = &cl->peers->entries[k];
+	    if (o->node_id == node_id && strcmp(o->ip, ip) != 0) {
+		time_t now = cl_ctr_now();
+		if (dup_warned_at == 0 || now - dup_warned_at >= CL_CTR_WIRE_WARN_IVL) {
+		    dup_warned_at = now;
+		    LM_WARN("clusterer_controller: [cluster %d] %s assigned "
+		            "node_id %u to %s, which %s holds\n", cl->cluster_id,
+		            sender_ip, node_id, ip, o->ip);
+		}
+		break;
+	    }
+	}
+    }
     cl_ctr_update_peer_bin_locked(ip, node_id, bin_cnt,
                                (const char (*)[CL_CTR_MAX_BIN_SOCK_LEN])bin_socks,
                                cl);
