@@ -191,6 +191,42 @@ static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip,
     return 0;
 }
 
+/*
+ * cl_ctr_foreign_authentic() - does a packet stamped with a cluster uuid not
+ * ours really come from another cluster?
+ *
+ * The uuid is cleartext, so anyone can stamp any.  What proves another
+ * cluster is a packet that authenticates: a deployment that shares our group,
+ * password and cluster_id seals its beacons - and KEY_GRANTs and JOIN_REJECTs
+ * - with the same bootstrap key we hold, and stamps its uuid on them (a
+ * JOIN_REQ carries none).  A bootstrap packet that does not decrypt is counted
+ * as an authentication failure, like any other; a session packet stamped so
+ * cannot be checked at all.  Only an authenticated one may be recorded in
+ * foreign_clusters and raise the alarm - garbage must not fill the one or
+ * sound the other.  Charged to the rate limiter first, since it costs a
+ * decryption.
+ */
+static int cl_ctr_foreign_authentic(const char *buf, ssize_t n,
+                                    const struct sockaddr_in *src,
+                                    cl_ctr_cluster_t *cl)
+{
+    static char   tmp[CL_CTR_LIST_PKT_MAX_SZ];   /* worker-local, like buf */
+    char          ip[INET_ADDRSTRLEN];
+
+    if (memcmp(buf, CL_CTR_BOOTSTRAP_MAGIC, CL_CTR_MAGIC_SZ) != 0)
+        return 0;
+    if (n > (ssize_t)sizeof(tmp) ||
+            cl_ctr_rate_check(cl, src->sin_addr.s_addr, 0) < 0)
+        return 0;
+    memcpy(tmp, buf, (size_t)n);
+    inet_ntop(AF_INET, &src->sin_addr, ip, sizeof ip);
+    if (cl_ctr_decrypt_pkt(tmp, n, ip, cl->key, 1) == 0)
+        return 1;
+    cl_ctr_note_auth_failure(cl, ip);
+    cl_ctr_warn_bootstrap(cl, ip);
+    return 0;
+}
+
 /**
  * cl_ctr_recv_one() - read one datagram, validate header, dispatch by type.
  */
@@ -352,6 +388,13 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	        && !cl_ctr_cid_is_zero(pc)
 	        && memcmp(pc, cl->peers->cid, CL_CTR_CID_SZ) != 0) {
 	    time_t now = cl_ctr_now();
+
+	    if (!cl_ctr_foreign_authentic(buf, n, &src_addr, cl)) {
+		LM_DBG("clusterer_controller: [cluster %d] unauthenticated "
+		       "packet stamped with another cluster uuid, dropping\n",
+		       cl->cluster_id);
+		return;
+	    }
 	    cl->peers->foreign_pkts++;
 	    {
 		/* which foreign cluster: remember it for clusterer_controller:list_config */
