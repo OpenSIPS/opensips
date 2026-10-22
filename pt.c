@@ -107,7 +107,8 @@ int init_multi_proc_support(void)
 
 #ifdef UNIT_TESTS
 #include "mem/test/test_malloc.h"
-	counted_max_processes += TEST_MALLOC_PROCS - 1;
+#include "mem/test/test_hg_malloc.h"
+	counted_max_processes += TEST_MALLOC_PROCS - 1 + TEST_HG_MALLOC_PROCS;
 #endif
 
 	/* allocate the PID table to accomodate the maximum possible number of

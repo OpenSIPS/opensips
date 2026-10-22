@@ -28,6 +28,7 @@
 #include "../lib/test/test_digest_auth.h"
 #include "../parser/test/test_parser.h"
 #include "../mem/test/test_malloc.h"
+#include "../mem/test/test_hg_malloc.h"
 #include "test_ut.h"
 
 #include "../str.h"
@@ -47,6 +48,12 @@ void init_unit_tests(void)
 		solve_module_dependencies(modules);
 		init_cachedb_tests();
 		//init_malloc_tests();
+#ifdef HG_MALLOC
+		/* the allocator suites run when HG_MALLOC is selected, e.g.
+		 * make test UT_ALLOC=HG_MALLOC UT_MEM="-m 64:1024 -M 16:256" */
+		if (hg_ut_selected())
+			init_malloc_tests();
+#endif
 	}
 
 	ensure_global_context();
@@ -63,6 +70,12 @@ int run_unit_tests(void)
 		/* remember to update the Makefile.test OpenSIPS command-line with at
 		 * least "-m2048 -M128" before stress-testing any of the allocators! */
 		//test_malloc();
+#ifdef HG_MALLOC
+		if (hg_ut_selected()) {
+			test_hg_malloc();
+			test_malloc();
+		}
+#endif
 		test_cachedb();
 		test_lib_csv();
 		test_parser();
