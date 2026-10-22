@@ -589,8 +589,9 @@ static pcache_rec_t *rec_build(const str *key, const str *val,
 	return r;
 }
 
-/* the identical-bytes TTL-bump path keeps the record's existing flags, so
- * re-pulling the owner's bytes does not demote its copy */
+/* the identical-bytes TTL-bump path takes a local writer's flags (a local
+ * write makes a pulled copy authoritative) but keeps the flags on a pulled
+ * write, so re-pulling the owner's bytes does not demote its copy */
 int pcache_ht_store_ex(pcache_htable_t *ht, const str *key, const str *val,
 		unsigned int expires, unsigned char rflags)
 {
@@ -642,8 +643,12 @@ again:
 		if (old->vlen == (unsigned int)val->len &&
 		        pcache_mem_eq(old->data + key->len, val->s, val->len)) {
 			/* versionless TTL bump: one aligned store readers cannot
-			 * tear */
+			 * tear.  A local write also takes over a pulled copy, or
+			 * this node would keep answering peers "held" for a key
+			 * it now writes itself */
 			__atomic_store_n(&old->expires, expires, __ATOMIC_RELAXED);
+			if (!(rflags & PCACHE_F_PASSIVE))
+				__atomic_store_n(&old->rflags, rflags, __ATOMIC_RELAXED);
 			hint_update(ht, idx, expires);
 			old = nr;                     /* discard the prebuilt one */
 			goto done;
