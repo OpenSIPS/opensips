@@ -734,7 +734,9 @@ void cl_ctr_maint_peer_changed(cl_ctr_cluster_t *cl, uint16_t node_id, int st)
  *
  * It remembers the live membership it held steadily (stable_live: grows at
  * once, shrinks only when a smaller membership of at least half has lasted
- * three rounds - members that left or were purged).  Hearing strictly
+ * three rounds - members that left or were purged).  A node that has just
+ * become master starts from the live count its own master last announced,
+ * so a member cut off alone that elected itself counts as cut off too.  Hearing strictly
  * FEWER than half of it for a whole election window means the rest of the
  * cluster is elsewhere and has most likely elected a master of its own; with
  * release_tag_when_isolated set, this master then releases the active
@@ -758,7 +760,20 @@ void cl_ctr_isolation_round(cl_ctr_cluster_t *cl, int i_am_master)
         return;
     }
     live = cl_ctr_live_count(cl);
-    if (cl->stable_live == 0 || live >= cl->stable_live) {
+    if (cl->stable_live == 0) {
+        /* Just became master: start from the membership this node knew as a
+         * member - the live count its master last announced - rather than
+         * from what it still hears.  A member cut off alone that elected
+         * itself hears only itself, and would otherwise never count as cut
+         * off; a lone survivor cannot tell the two apart and releases too. */
+        uint16_t known;
+
+        lock_start_read(cl->peers->lock);
+        known = cl->peers->master_live;
+        lock_stop_read(cl->peers->lock);
+        cl->stable_live  = live > known ? live : known;
+        cl->below_rounds = 0;
+    } else if (live >= cl->stable_live) {
         cl->stable_live  = live;
         cl->below_rounds = 0;
     }

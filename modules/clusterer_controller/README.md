@@ -112,7 +112,7 @@ What the module promises, and what it does not. It is failure detection and lead
 
 - every group without its master elects one, so there is a master, and an active tag holder, in every group;
 - a node raises the term only when its peers confirmed the old master silent, so a node cut off alone keeps its term and cannot outrank the cluster when the partition heals;
-- *release_tag_when_isolated=1* narrows this but does not remove it. A master that hears strictly fewer than half of the members it held steadily, for a whole election window, releases the active tag until it hears a majority again. It does not help when the groups are even - in a 2 and 2 split neither master hears fewer than half - and a member cut off alone that elects itself counts only the members it still heard when it became master, so it may hold the tag for as long as the partition lasts.
+- *release_tag_when_isolated=1* narrows this but does not remove it. A master that hears strictly fewer than half of the members the cluster had, for a whole election window, releases the active tag until it hears a majority again - including a member cut off alone that elected itself, which counts from the membership it knew as a member. It does not help when the groups are even: in a 2 and 2 split neither master hears fewer than half, and both hold the tag. A node left alone cannot tell being cut off from being the last survivor, and releases the tag in both cases.
 
 **When a partition heals**:
 
@@ -140,11 +140,11 @@ Each property is checked by the network-namespace suite (*test/netns_tests.sh*, 
 | Traffic sent again is not delivered again; a late MEMBER_LIST does not undo a newer one | T10, T11, the replay check | the replay check |
 | A restarted node survives packets that reach it before it has an identity | T26 | R6c |
 | Maintenance - this node or any member, both levels | T17, T25 | R7, R9 |
-| A master cut off from most of its members releases the tag (*release_tag_when_isolated*) | T24 | - |
+| A master cut off from most of its members releases the tag, and so does a member cut off alone that elects itself (*release_tag_when_isolated*) | T24 | - |
 | A member on an older build: the newer mechanisms wait until every member has them | T27 | - |
 | Statistics and events | T28, T29 | - |
 
-Not tested yet: several nodes joining a running cluster at once; a full peer table; a static *clusterer* cluster beside controller clusters on one node; malformed datagrams; a member cut off alone with *release_tag_when_isolated=1*.
+Not tested yet: several nodes joining a running cluster at once; a full peer table; a static *clusterer* cluster beside controller clusters on one node; malformed datagrams.
 
 ### Security Architecture
 
@@ -488,7 +488,7 @@ modparam("clusterer_controller", "cluster",
 
 #### release_tag_when_isolated (integer)
 
-When set to *1*, a master that hears strictly fewer than half of the members it last held steadily, for a whole election window (*query_time* x 3 seconds), gives up the active sharing tag - it stays master for the control plane - and takes it back as soon as it hears a majority again. The rest of the cluster is then elsewhere and has most likely elected a master of its own, and two masters holding the active tag at once (the most common failure of leader election under network partitions) is avoided. The membership it compares against grows at once and shrinks only when a smaller membership of at least half has lasted three rounds (members that left or were purged), so being cut off never lowers it. A two-node cluster never releases: one of two is not fewer than half. *clusterer_controller:list_config* reports the setting and *tag_released*.
+When set to *1*, a master that hears strictly fewer than half of the members it last held steadily, for a whole election window (*query_time* x 3 seconds), gives up the active sharing tag - it stays master for the control plane - and takes it back as soon as it hears a majority again. The rest of the cluster is then elsewhere and has most likely elected a master of its own, and two masters holding the active tag at once (the most common failure of leader election under network partitions) is avoided. The membership it compares against grows at once and shrinks only when a smaller membership of at least half has lasted three rounds (members that left or were purged), so being cut off never lowers it; a node that has just become master starts from the live count its own master last announced, so a member cut off alone that elects itself releases the tag too. A node left alone cannot tell being cut off from being the last survivor, and releases in both cases. A two-node cluster never releases: one of two is not fewer than half. *clusterer_controller:list_config* reports the setting and *tag_released*.
 
 Off by default: availability first - a master cut off from everyone else keeps serving with the tag. Turn it on where a duplicate active tag is worse than none for the length of a partition.
 
