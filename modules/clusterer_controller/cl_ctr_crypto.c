@@ -31,9 +31,9 @@
  * (libsodium).  A fresh random nonce per packet ensures that even identical
  * payloads produce different ciphertext.
  *
- * The plaintext carries a 4-byte sequence number and the sender's 8-byte
- * incarnation.  Receivers run session-key packets through a sliding window
- * per sender and plane that accepts each sequence number once, started
+ * The plaintext carries a 4-byte sequence number, the sender's 8-byte
+ * incarnation and its 4-byte address.  Receivers run session-key packets
+ * through a sliding window per sealed sender and plane that accepts each sequence number once, started
  * afresh when the sender's incarnation changes, when it is first learned and
  * when this node takes a new key (see cl_ctr_replay_check() in cl_ctr.h).
  * Bootstrap-key packets (CL_CTR_BOOTSTRAP_MAGIC) have no window: a KEY_GRANT
@@ -43,7 +43,7 @@
  * Wire layout:
  *   [magic 2B][cluster_id 2B][cluster uuid 16B][nonce 24B][ciphertext][tag 16B]
  * Plaintext:
- *   [type 1B][seq 4B][incarnation 8B][payload]
+ *   [type 1B][seq 4B][incarnation 8B][sender 4B][payload]
  * ========================================================================= */
 
 /* cl_ctr_random_bytes() - fill buf with cryptographically secure random bytes
@@ -427,6 +427,7 @@ int cl_ctr_encrypt_pkt(char *buf, int plain_off, int plain_len,
 {
     uint16_t      cid_be = htons((uint16_t)cluster_id);
     unsigned char *inc   = (unsigned char *)buf + plain_off + 1 + CL_CTR_SEQ_SZ;
+    static struct in_addr me;            /* my_ip, parsed once */
     int           k;
 
     memcpy(buf + CL_CTR_MAGIC_SZ, &cid_be, CL_CTR_CLUSTER_ID_SZ);  /* cleartext selector */
@@ -438,6 +439,11 @@ int cl_ctr_encrypt_pkt(char *buf, int plain_off, int plain_len,
      * single path all packets take - so no builder can forget it. */
     for (k = 0; k < CL_CTR_INC_SZ; k++)
         inc[k] = (unsigned char)(cl_ctr_incarnation >> (56 - 8 * k));
+    /* ... and who sends it: sealed, the sender's address is what receivers
+     * go by (wire version 3) */
+    if (!me.s_addr && my_ip && inet_pton(AF_INET, my_ip, &me) != 1)
+        me.s_addr = 0;
+    memcpy(inc + CL_CTR_INC_SZ, &me.s_addr, CL_CTR_SENDER_SZ);
 
     /* AAD = cleartext header (magic + cluster_id + cluster uuid): binding it
      * to the tag stops

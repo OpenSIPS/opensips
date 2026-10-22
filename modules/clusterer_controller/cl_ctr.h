@@ -283,7 +283,8 @@ static inline long long cl_ctr_now_ms(void)
 /* 2-byte wire magic - a cleartext key-selector at the start of every packet
  * (it must be readable before decryption to choose bootstrap vs session key).
  * The first byte carries the WIRE VERSION (0xCB + version: 0xCC was version 1,
- * 0xCD is version 2); the second byte distinguishes the key tier.  Only a
+ * 0xCD version 2, 0xCE is version 3); the second byte distinguishes the key
+ * tier.  Only a
  * sanity/routing tag on a dedicated multicast group:port - the real
  * confidentiality and integrity come from the XChaCha20-Poly1305 payload, and
  * the magic is part of the AEAD's associated data, so it cannot be re-stamped.
@@ -298,9 +299,13 @@ static inline long long cl_ctr_now_ms(void)
  *   1  0xCC  header [magic][cluster_id 2B][nonce 24B]
  *            plaintext [type 1B][seq 4B]
  *   2  0xCD  header [magic][cluster_id 2B][cluster uuid 16B][nonce 24B]
- *            plaintext [type 1B][seq 4B][incarnation 8B]                     */
+ *            plaintext [type 1B][seq 4B][incarnation 8B]
+ *   3  0xCE  header as 2
+ *            plaintext [type 1B][seq 4B][incarnation 8B][sender 4B]: the
+ *            sender's IPv4 address, sealed - it, not the datagram's source,
+ *            names who sent a packet and keys its replay window             */
 #define CL_CTR_MAGIC_SZ          2
-#define CL_CTR_WIRE_VERSION      2
+#define CL_CTR_WIRE_VERSION      3
 #define CL_CTR_MAGIC_BASE        0xCB
 #define CL_CTR_WIRE_MAGIC0       (CL_CTR_MAGIC_BASE + CL_CTR_WIRE_VERSION)
 /* highest key-tier byte in use - lets the gate recognise another version's
@@ -475,7 +480,14 @@ static inline long long cl_ctr_now_ms(void)
 #define CL_CTR_CID_ESTABLISHED    2
 #define CL_CTR_CID_PINNED         3
 #define CL_CTR_CID_GRACE_SECS    30
-#define CL_CTR_PLAIN_HDR_SZ      (1 + CL_CTR_SEQ_SZ + CL_CTR_INC_SZ) /* type + seq + incarnation = 13 */
+/* The sender's IPv4 address in network order, after the incarnation: the
+ * datagram's source is not authenticated, so a packet captured from one
+ * member and sent again from another address used to meet that address's
+ * replay window, or none - and every handler took the source for the sender.
+ * Sealed, it cannot be changed, and it is what a receiver goes by. */
+#define CL_CTR_SENDER_SZ          4
+#define CL_CTR_SENDER_OFF        (CL_CTR_WIRE_HDR_SZ + 1 + CL_CTR_SEQ_SZ + CL_CTR_INC_SZ)
+#define CL_CTR_PLAIN_HDR_SZ      (1 + CL_CTR_SEQ_SZ + CL_CTR_INC_SZ + CL_CTR_SENDER_SZ) /* type + seq + incarnation + sender = 17 */
 
 /* Bootstrap-key hardening: the join/admission key (also the Noise PSK) is
  * derived from the shared password with Argon2id (memory-hard) instead of a
@@ -1763,7 +1775,7 @@ void cl_ctr_adopt_config(cl_ctr_cluster_t *cl, int new_manage, int new_stick,
                             int new_qt, int is_active);
 void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
                                uint64_t pkt_inc, const unsigned char *req_nonce,
-                               cl_ctr_cluster_t *cl,
+                               const char *sender_ip, cl_ctr_cluster_t *cl,
                                const struct sockaddr *src, socklen_t src_len);
 void cl_ctr_handle_member_list(const char *payload, int payload_len,
                                   const char *sender_ip, cl_ctr_cluster_t *cl);

@@ -239,7 +239,7 @@ static void cl_ctr_cfg_note_reject(const char *src_ip, cl_ctr_cluster_t *cl)
  */
 void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
                                uint64_t pkt_inc, const unsigned char *req_nonce,
-                               cl_ctr_cluster_t *cl,
+                               const char *sender_ip, cl_ctr_cluster_t *cl,
                                const struct sockaddr *src, socklen_t src_len)
 {
     const char    *p         = payload;
@@ -268,12 +268,14 @@ void cl_ctr_handle_join_req(int sock, const char *payload, int payload_len,
     if (strcmp(src_ip, my_ip) == 0)
 	return;
     if (!cl_ctr_ip_valid(src_ip)) {
-	char from[INET_ADDRSTRLEN] = "?";
-	if (src && src->sa_family == AF_INET)
-	    inet_ntop(AF_INET, &((const struct sockaddr_in *)src)->sin_addr,
-	              from, sizeof(from));
 	LM_WARN("clusterer_controller: [cluster %d] JOIN_REQ from %s names no "
-	        "valid address, dropping\n", cl->cluster_id, from);
+	        "valid address, dropping\n", cl->cluster_id, sender_ip);
+	return;
+    }
+    /* a node asks to be admitted for itself, and no other */
+    if (strcmp(src_ip, sender_ip) != 0) {
+	LM_DBG("clusterer_controller: [cluster %d] JOIN_REQ for %s sealed by "
+	       "%s, dropping\n", cl->cluster_id, src_ip, sender_ip);
 	return;
     }
 
@@ -662,7 +664,8 @@ void cl_ctr_handle_member_list(const char *payload, int payload_len,
      * applied from the same term.  The record is per master and is cleared
      * when the master changes or restarts (its MASTER_ALIVE then carries a
      * lower term).  A node still joining takes whatever it is given.  Lists
-     * without a stamp (none exist on wire version 2) are applied as before. */
+     * without a stamp (no build of this wire version sends one) are applied
+     * as before. */
     {
 	const char *st = p + (int)count * CL_CTR_IP_ENTRY_SZ;
 	if (payload_len >= (int)(st - payload) + CL_CTR_LIST_STAMP_SZ) {
