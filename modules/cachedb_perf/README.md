@@ -504,8 +504,10 @@ modparam("cachedb_perf", "reclaim_cooloff_s", 60)
 resident (re-cut for any class, never returned to the host); 1
 (default) gives whole empty groups and pages back as described
 under [reclaim_quiet_s](#reclaim_quiet_s-int). If the kernel
-refuses *MADV_REMOVE* on the reservation the
-module logs it once and behaves as 0 from then on.
+refuses *MADV_REMOVE* on the reservation, as it
+does for a pinned one, the module logs it once and keeps the
+reservation's free slots resident from then on (*giveback_off* in
+*perf_stats*); empty shm pages still go back.
 
 
 ```opensips title="Set reclaim_giveback parameter"
@@ -1558,7 +1560,8 @@ asking every process to send its private cells home),
 up to 600, while a round leaves as many chunks partly free, since
 those then hold live records rather than idle cells), *pages* /
 *pages_freed*, *released_bytes* (cumulative give-back),
-*cold_bytes*, *reclaim_ticks*, *last_carve_age_s*, and *classes* =
+*cold_bytes*, *giveback_off* (1 once the reservation refused a
+punch), *reclaim_ticks*, *last_carve_age_s*, and *classes* =
 "size:slots/peak/cells_not_home" per class in use (cells not home are
 live records plus what processes hold privately - their free stacks
 and the remainder of the slot each is carving from).

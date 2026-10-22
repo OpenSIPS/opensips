@@ -974,13 +974,14 @@ static void giveback_tick(void)
 	unsigned int g, i, keep_pages = 0;
 	char *p;
 
-	if (!pcache_reclaim_giveback || arena->giveback_off ||
+	if (!pcache_reclaim_giveback ||
 	    arena->tick - arena->carve_tick < (unsigned int)pcache_reclaim_cooloff_s)
 		return;
 
 	/* punch whole quiet 2 MB groups out with MADV_REMOVE; the mapping
-	 * stays.  Bookkeeping first: the punch zeroes the slot headers */
-	if (arena->hbase) {
+	 * stays.  Bookkeeping first: the punch zeroes the slot headers.  A
+	 * refusal (always, on a pinned reservation) stops only this part */
+	if (arena->hbase && !arena->giveback_off) {
 		for (g = 0; (g + 1) * PCACHE_GROUP_SLOTS <= arena->hoff / PCACHE_SLOT; g++) {
 			p = arena->hbase + (unsigned long)g * PCACHE_HPS;
 			for (i = 0; i < PCACHE_GROUP_SLOTS; i++)
@@ -996,7 +997,7 @@ static void giveback_tick(void)
 			arena->nfree_cold += PCACHE_GROUP_SLOTS;
 			if (madvise(p, PCACHE_HPS, MADV_REMOVE) < 0) {
 				LM_WARN("MADV_REMOVE refused on the %s arena (%s) - "
-					"free slots stay resident from now on\n",
+					"its free slots stay resident from now on\n",
 					pcache_mem_tier_str(arena->htier), strerror(errno));
 				arena->giveback_off = 1;
 				/* still free, still resident: back to warm */
@@ -1006,7 +1007,7 @@ static void giveback_tick(void)
 				}
 				arena->nfree_warm += PCACHE_GROUP_SLOTS;
 				arena->nfree_cold -= PCACHE_GROUP_SLOTS;
-				return;
+				break;
 			}
 			/* the headers went with the memory: rebuild them cold */
 			for (i = 0; i < PCACHE_GROUP_SLOTS; i++) {
@@ -1202,6 +1203,7 @@ int pcache_arena_mi(mi_item_t *aobj)
 	     add_mi_number(aobj, MI_SSTR("pages_freed"), arena->pages_freed) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("released_bytes"), arena->released_bytes) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("cold_bytes"), arena->cold_bytes) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("giveback_off"), arena->giveback_off) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("reclaim_ticks"), arena->tick) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("last_carve_age_s"),
 	         arena->tick - arena->carve_tick) < 0 ||
