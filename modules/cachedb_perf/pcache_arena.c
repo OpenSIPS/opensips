@@ -122,7 +122,6 @@ typedef struct pcache_chunk {
 	unsigned int cells;
 	unsigned int nfree;          /* cells on free_head */
 	unsigned int in_avail;       /* 1 while on (or heading to) the avail stack */
-	unsigned int cold;           /* memory punched out; a carve re-faults it */
 	unsigned int free_at;        /* reclaim tick the slot became free */
 	unsigned int home_since;     /* reclaim tick the first cell came home */
 	/* padded to PCACHE_CHUNK_HDR; cells follow */
@@ -402,7 +401,7 @@ static pcache_chunk_t *slot_take(void)
 		arena->cold_bytes -= PCACHE_SLOT;
 		arena->bytes += PCACHE_SLOT;
 		ch = rslot_at(i);
-		ch->cold = 0;
+		memset(ch, 0, PCACHE_CHUNK_HDR);  /* a cold slot has no header */
 	} else if (arena->hbase && arena->hoff + PCACHE_SLOT <= arena->rtop) {
 		ch = (pcache_chunk_t *)(arena->hbase + arena->hoff);
 		arena->hoff += PCACHE_SLOT;
@@ -959,7 +958,7 @@ static int range_quiet(char *lo, char *hi)
 
 	for (p = lo; p < hi; p += PCACHE_SLOT) {
 		ch = (pcache_chunk_t *)p;
-		if (ch->cls != PCACHE_CLS_FREE || ch->cold ||
+		if (ch->cls != PCACHE_CLS_FREE ||
 		    arena->tick - ch->free_at < (unsigned int)pcache_reclaim_quiet_s)
 			return 0;
 	}
@@ -970,7 +969,6 @@ static int range_quiet(char *lo, char *hi)
 static void giveback_tick(void)
 {
 	pcache_page_t *pg, **ppg;
-	pcache_chunk_t *ch;
 	unsigned int g, i, keep_pages = 0;
 	char *p;
 
@@ -979,8 +977,9 @@ static void giveback_tick(void)
 		return;
 
 	/* punch whole quiet 2 MB groups out with MADV_REMOVE; the mapping
-	 * stays.  Bookkeeping first: the punch zeroes the slot headers.  A
-	 * refusal (always, on a pinned reservation) stops only this part */
+	 * stays.  A punched slot is known by the cold map alone: writing its
+	 * header would fault the memory straight back.  A refusal (always,
+	 * on a pinned reservation) stops only this part */
 	if (arena->hbase && !arena->giveback_off) {
 		for (g = 0; (g + 1) * PCACHE_GROUP_SLOTS <= arena->hoff / PCACHE_SLOT; g++) {
 			p = arena->hbase + (unsigned long)g * PCACHE_HPS;
@@ -1008,14 +1007,6 @@ static void giveback_tick(void)
 				arena->nfree_warm += PCACHE_GROUP_SLOTS;
 				arena->nfree_cold -= PCACHE_GROUP_SLOTS;
 				break;
-			}
-			/* the headers went with the memory: rebuild them cold */
-			for (i = 0; i < PCACHE_GROUP_SLOTS; i++) {
-				ch = (pcache_chunk_t *)(p + (unsigned long)i * PCACHE_SLOT);
-				memset(ch, 0, PCACHE_CHUNK_HDR);
-				ch->cls = PCACHE_CLS_FREE;
-				ch->cold = 1;
-				ch->free_at = arena->tick;
 			}
 			arena->cold_bytes += PCACHE_HPS;
 			arena->bytes -= PCACHE_HPS;
@@ -1172,6 +1163,8 @@ int pcache_arena_mi(mi_item_t *aobj)
 	lock_get(&arena->lock);
 	/* cells out (not home) per class */
 	for (off = 0; off < arena->hoff; off += PCACHE_SLOT) {
+		if (bit_get(arena->rcold, off >> PCACHE_SLOT_SHIFT))
+			continue;                   /* punched out: no header */
 		ch = (pcache_chunk_t *)(arena->hbase + off);
 		if (ch->cls < PCACHE_NCLASSES)
 			out[ch->cls] += ch->cells - ch->nfree;
@@ -1315,6 +1308,8 @@ void pcache_arena_hugepage_capacity(int *active, unsigned long *total,
 	}
 	lock_get(&arena->lock);
 	for (off = 0; off < arena->hoff; off += PCACHE_SLOT) {
+		if (bit_get(arena->rcold, off >> PCACHE_SLOT_SHIFT))
+			continue;                   /* punched out: no header */
 		ch = (pcache_chunk_t *)(arena->hbase + off);
 		if (ch->cls != PCACHE_CLS_FREE)
 			n++;
