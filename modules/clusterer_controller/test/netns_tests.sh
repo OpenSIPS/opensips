@@ -686,6 +686,95 @@ EV=""; for i in 1 2 3 4; do eval m=\$V$i; EV="$EV $(since $i $m | grep -a "EVT M
 check "E_CL_CTR_MAINTENANCE on every node, n$x's own included" $(echo $EV | tr ' ' '\n' | awk '$1<1{b=1} END{print b?0:1}') "$EV"
 mi $x clusterer_controller:maintenance cluster_id=741 state=none >/dev/null; sleep 4
 
+echo "=== T30 malformed datagrams: no crash, no change, a bounded log ==="
+# Datagrams that are not packets of the cluster: first from an address that
+# has no password (too short, a magic no build uses, another wire version,
+# bodies that do not decrypt, random cluster uuids, other cluster ids, the
+# largest datagram), then sealed by a holder of the password - every type
+# byte with payloads at every field boundary, which pass decryption and reach
+# the parsers - from an address that is no member, from a member's and from
+# the master's.  No node may stop or change its view; a flood from one
+# address may cost a node's log a line per kind of refusal, not one per
+# datagram, while the statistics still count it.
+MAL=$HERE/malformed_test.py; PW=rig74-not-a-secret-9f3a1c
+view() { for i in 1 2 3 4; do echo "$(members $i 741) / $(members $i 742)"; done | sort -u; }
+fuuids() { for i in 1 2 3 4; do for c in 741 742; do mi $i clusterer_controller:list_config | python3 -c '
+import json,sys
+for c in json.load(sys.stdin).get("result",[]):
+    if c["cluster_id"]==int(sys.argv[1]): print(" ".join(sorted(f["cluster_uuid"] for f in c.get("foreign_clusters") or [])))' $c; done; done | tr ' ' '\n' | sort -u | grep . | tr '\n' ' '; }
+alive4() { local a=0 i; for i in 1 2 3 4; do alive $i && a=$((a+1)); done; echo $a; }
+mark() { for i in 1 2 3 4; do eval L$i=$(wc -l < $R/n$i.log); done; }
+lines() { local i m; for i in 1 2 3 4; do eval m=\$L$i; echo -n "$(since $i $m | wc -l) "; done; }
+MIP=$(members 1 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+V0=$(view); TM0=$(cfgval $MN 741 term); FU0=$(fuuids); AF0=$(cstat $MN auth_failures-741)
+mark; sleep 10; Q=$(lines | tr ' ' '\n' | sort -n | tail -1)    # 2Q: a quiet node's lines over the flood's 23 s
+mark
+python3 $MAL outsider 10.74.0.254 $(ip4 1),$(ip4 2),$(ip4 3),$(ip4 4),239.0.74.1,239.0.74.2 $PORT 741 742 20 > $R/mal1.json
+sleep 3
+echo "    no password: $(cat $R/mal1.json)"
+check "no password: every node still running" $([ "$(alive4)" = 4 ] && echo 1 || echo 0) "$(alive4) of 4"
+V1=$(view)
+check "no password: every node's view unchanged" $([ "$V1" = "$V0" ] && [ "$(echo "$V1" | wc -l)" = 1 ] && echo 1 || echo 0) "$V1"
+check "no password: term unchanged" $([ "$(cfgval $MN 741 term)" = "$TM0" ] && echo 1 || echo 0) "$TM0 -> $(cfgval $MN 741 term)"
+LL=$(lines)
+check "no password: a log line per kind of refusal, not per datagram (<= $((2 * Q + 30)) lines a node)" $(echo $LL | tr ' ' '\n' | awk -v b=$((2 * Q + 30)) '$1>b{x=1} END{print x?0:1}') "lines:$LL, quiet ${Q}"
+FC=$(for i in 1 2 3 4; do eval m=\$L$i; since $i $m; done | grep -ac "another cluster")
+check "random cluster uuids are not taken for another cluster" $([ "$(fuuids)" = "$FU0" ] && [ "$FC" = 0 ] && echo 1 || echo 0) "foreign uuids now: $(fuuids | wc -w) (were $(echo $FU0 | wc -w)), $FC log lines"
+AF1=$(cstat $MN auth_failures-741)
+check "the bodies that do not decrypt are counted as authentication failures" $([ "${AF1:-0}" -gt "${AF0:-0}" ] && echo 1 || echo 0) "auth_failures $AF0 -> $AF1"
+# sealed by a holder of the password from twenty addresses that are no member
+SRC=""; for k in $(seq 100 119); do ip addr add 10.74.0.$k/24 dev $BR; SRC="$SRC,10.74.0.$k"; done; SRC=${SRC#,}
+mark; AF2=$(cstat $MN auth_failures-741)
+python3 $MAL sealed $SRC 239.0.74.1 $PORT 741 239.0.74.1 $PW 15 > $R/mal2.json
+sleep 3
+for k in $(seq 100 119); do ip addr del 10.74.0.$k/24 dev $BR; done
+echo "    sealed, no member: $(cat $R/mal2.json)"
+check "sealed: the packets passed decryption (none failed it; the master named a sender's empty JOIN_REQ)" $([ "$(cstat $MN auth_failures-741)" = "$AF2" ] && eval m=\$L$MN && since $MN $m | grep -aq "JOIN_REQ from 10.74.0.1[01][0-9] names no valid address" && echo 1 || echo 0) "auth_failures $AF2 -> $(cstat $MN auth_failures-741)"
+check "sealed, no member: every node still running" $([ "$(alive4)" = 4 ] && echo 1 || echo 0) "$(alive4) of 4"
+V2=$(view)
+check "sealed, no member: every node's view unchanged" $([ "$V2" = "$V0" ] && [ "$(echo "$V2" | wc -l)" = 1 ] && echo 1 || echo 0) "$V2"
+# ... and from a member's own address and the master's, at once
+for x in 1 2 3 4; do [ $x != $MN ] && break; done
+nx $x python3 $MAL sealed $(ip4 $x) 239.0.74.1 $PORT 741 239.0.74.1 $PW 8 lite > $R/mal3.json &
+nx $MN python3 $MAL sealed $(ip4 $MN) 239.0.74.1 $PORT 741 239.0.74.1 $PW 8 lite > $R/mal4.json
+wait; sleep 10
+echo "    sealed from n$x: $(cat $R/mal3.json)"; echo "    sealed from master n$MN: $(cat $R/mal4.json)"
+check "sealed from a member and the master: every node still running" $([ "$(alive4)" = 4 ] && echo 1 || echo 0) "$(alive4) of 4"
+V3=$(view)
+check "sealed from a member and the master: every node's view unchanged" $([ "$V3" = "$V0" ] && [ "$(echo "$V3" | wc -l)" = 1 ] && echo 1 || echo 0) "$V3"
+
+echo "=== T31 several nodes joining at once ==="
+# Three members stopped and started in the same instant, five times (cleanly,
+# then killed): each time all four are back with distinct node ids under the
+# same master.  Then all four started cold at once, three times, with no
+# pinned uuid: one cluster per id, one master, one uuid, distinct node ids.
+ids_ok() { local v; v=$(members $1 $2); [ "$(echo $v | wc -w)" = 4 ] && [ "$(echo $v | tr ' ' '\n' | grep -c ':master:')" = 1 ] && \
+  [ "$(echo $v | tr ' ' '\n' | cut -d: -f3 | grep -v '^0$' | sort -u | wc -l)" = 4 ]; }
+settled() { [ "$(view | wc -l)" = 1 ] && ids_ok 1 741 && ids_ok 1 742; }
+MIP=$(members 1 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1); MN=${MIP##*.}; MN=${MN#1}
+for r in 1 2 3 4 5; do
+  for i in 1 2 3 4; do [ $i = $MN ] && continue
+    if [ $r -le 3 ]; then kill -TERM "$(cat $R/n$i.pid)"; else stop_hard $i; fi; done
+  sleep 3; for i in 1 2 3 4; do [ $i != $MN ] && rm -f $R/n$i.pid; done
+  for i in 1 2 3 4; do [ $i != $MN ] && start $i $NEW 1 2 fleet-a & done; wait
+  T0=$(date +%s.%N); OK=0
+  for k in $(seq 1 80); do settled && { OK=1; break; }; sleep 0.25; done
+  DT=$(python3 -c "import time; print('%.1f' % (time.time() - $T0))"); sleep 3
+  check "round $r ($([ $r -le 3 ] && echo stopped || echo killed)): three back at once in $DT s, distinct ids, master still $MIP" $([ $OK = 1 ] && settled && [ "$(members 1 741 | tr ' ' '\n' | grep ':master:' | cut -d: -f1)" = "$MIP" ] && echo 1 || echo 0) "$(view | tr '\n' '|')"
+done
+for r in 1 2 3; do
+  for i in 1 2 3 4; do stop_hard $i; rm -f $R/n$i.pid; done; sleep 2
+  for i in 1 2 3 4; do start $i $NEW & done; wait
+  T0=$(date +%s.%N); OK=0
+  for k in $(seq 1 160); do settled && { OK=1; break; }; sleep 0.25; done
+  DT=$(python3 -c "import time; print('%.1f' % (time.time() - $T0))")
+  sleep 36            # past the uuid's grace: it must be established, and one
+  UU=$(for i in 1 2 3 4; do echo "$(cfgval $i 741 cluster_uuid) $(cfgval $i 742 cluster_uuid)"; done | sort -u)
+  ST=$(for i in 1 2 3 4; do echo "$(cfgval $i 741 cluster_uuid_state) $(cfgval $i 742 cluster_uuid_state)"; done | sort -u)
+  check "cold round $r: four started at once settled in $DT s - one master, distinct ids, one view" $([ $OK = 1 ] && settled && echo 1 || echo 0) "$(view | tr '\n' '|')"
+  check "cold round $r: one established uuid per cluster on all four" $([ "$(echo "$UU" | wc -l)" = 1 ] && [ "$ST" = "established established" ] && echo 1 || echo 0) "$(echo $UU) / $(echo $ST)"
+done
+
 echo "=== replays after T12: none ==="
 RPN=0; for i in 1 2 3 4; do eval m=\$RP$i; RPN=$((RPN + $(since $i $m | grep -ac "already accepted, dropping\|older than the replay window, dropping"))); done
 check "no control packet refused as a replay since T12 (re-keys keep the sequence)" $([ $RPN = 0 ] && echo 1 || echo 0) "$RPN"
