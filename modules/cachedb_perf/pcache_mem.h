@@ -51,4 +51,7 @@ const char *pcache_mem_tier_str(enum pcache_mem_tier tier);
 void *pcache_mem_reserve(size_t size, enum pcache_mem_tier *tier,
 		unsigned long *locked_mb);
 
+/* free pages in the default-size hugetlb pool; -1 = unknown */
+long pcache_mem_hugetlb_free(void);
+
 #endif /* _PCACHE_MEM_H_ */

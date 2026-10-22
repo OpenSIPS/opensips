@@ -1561,7 +1561,9 @@ up to 600, while a round leaves as many chunks partly free, since
 those then hold live records rather than idle cells), *pages* /
 *pages_freed*, *released_bytes* (cumulative give-back),
 *cold_bytes*, *giveback_off* (1 once the reservation refused a
-punch), *reclaim_ticks*, *last_carve_age_s*, and *classes* =
+punch), *pool_empty* (carves that found the hugetlb pool unable to
+take a punched-out group back, and went past it), *reclaim_ticks*,
+*last_carve_age_s*, and *classes* =
 "size:slots/peak/cells_not_home" per class in use (cells not home are
 live records plus what processes hold privately - their free stacks
 and the remainder of the slot each is carving from).

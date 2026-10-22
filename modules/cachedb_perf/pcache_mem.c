@@ -81,23 +81,35 @@ static int read_vm_int(const char *path)
 /* /proc/meminfo "ShmemHugePages:" in kB.  Used to verify MADV_COLLAPSE:
  * a shmem collapse does not PMD-map the folio in the caller, so smaps shows
  * nothing until a re-fault */
-static long read_shmem_huge_kb(void)
+/* a /proc/meminfo field; -1 = unknown */
+static long read_meminfo(const char *key)
 {
 	FILE *f;
 	char line[256];
-	long kb = -1;
+	size_t kl = strlen(key);
+	long v = -1;
 
 	f = fopen("/proc/meminfo", "r");
 	if (!f)
 		return -1;
 	while (fgets(line, sizeof line, f)) {
-		if (!strncmp(line, "ShmemHugePages:", 15)) {
-			kb = strtol(line + 15, NULL, 10);
+		if (!strncmp(line, key, kl)) {
+			v = strtol(line + kl, NULL, 10);
 			break;
 		}
 	}
 	fclose(f);
-	return kb;
+	return v;
+}
+
+static long read_shmem_huge_kb(void)
+{
+	return read_meminfo("ShmemHugePages:");
+}
+
+long pcache_mem_hugetlb_free(void)
+{
+	return read_meminfo("HugePages_Free:");
 }
 
 /* is the 2M range starting at @addr PMD-mapped in this process? */

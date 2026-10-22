@@ -76,6 +76,13 @@ static inline void mem_arena_usage(mem_arena_t *a, unsigned long *c,
 #define MADV_REMOVE -1
 #endif
 #endif
+#ifndef MADV_POPULATE_WRITE
+#ifdef __OS_linux
+#define MADV_POPULATE_WRITE 23           /* Linux 5.14 */
+#else
+#define MADV_POPULATE_WRITE -1           /* only the hugetlb tier uses it */
+#endif
+#endif
 
 char *pcache_backing_policy = "auto";
 int pcache_arena_hugepage_cap_mb = 0;
@@ -176,6 +183,8 @@ typedef struct pcache_arena {
 	unsigned long pages_freed;              /* cumulative */
 	unsigned long released_bytes;           /* cumulative give-back */
 	unsigned long cold_bytes;               /* currently punched out */
+	unsigned long pool_empty;               /* cold groups the pool refused */
+	unsigned int pool_log_tick;
 
 	/* huge-page reservation: pre-fork, never unmapped */
 	char                 *hbase;
@@ -381,9 +390,65 @@ static int page_add(void)
 	return 0;
 }
 
+/*
+ * Commit a punched hugetlb group again before anything writes to it: a
+ * fault the pool cannot serve is a SIGBUS, not an ENOMEM.
+ * MADV_POPULATE_WRITE (Linux 5.14) reports the empty pool instead of
+ * faulting; on an older kernel the pool's free count is checked, which
+ * leaves only a race with another consumer of the pool.  The other tiers
+ * re-fault plain shmem.  0 = secured.  Arena lock held.
+ */
+static int group_secure(unsigned int g)
+{
+	char *p = arena->hbase + (unsigned long)g * PCACHE_HPS;
+
+	if (arena->htier != PCACHE_MEM_HUGETLB ||
+	        madvise(p, PCACHE_HPS, MADV_POPULATE_WRITE) == 0)
+		return 0;
+	if (errno == EINVAL && pcache_mem_hugetlb_free() > 0) {
+		*(volatile char *)p = 0;           /* the touch is the commit */
+		return 0;
+	}
+	arena->pool_empty++;
+	if (arena->pool_empty == 1 || arena->tick - arena->pool_log_tick >= 10) {
+		arena->pool_log_tick = arena->tick;
+		LM_ERR("hugetlb pool empty: a punched-out 2 MB group of the arena "
+			"cannot be committed again (%lu refused so far); carving "
+			"past it instead\n", arena->pool_empty);
+	}
+	return -1;
+}
+
+/* a cold group comes back whole - on hugetlb the first fault returns all
+ * of it - each slot warm with a fresh header.  Arena lock held. */
+static int group_recommit(unsigned int g)
+{
+	pcache_chunk_t *ch;
+	unsigned int i, s;
+
+	if (group_secure(g) < 0)
+		return -1;
+	for (i = 0; i < PCACHE_GROUP_SLOTS; i++) {
+		s = g * PCACHE_GROUP_SLOTS + i;
+		if (!bit_get(arena->rcold, s))
+			continue;
+		bit_clr(arena->rcold, s);
+		bit_set(arena->rwarm, s);
+		arena->nfree_cold--;
+		arena->nfree_warm++;
+		arena->cold_bytes -= PCACHE_SLOT;
+		arena->bytes += PCACHE_SLOT;
+		ch = rslot_at(s);
+		memset(ch, 0, PCACHE_CHUNK_HDR);
+		ch->cls = PCACHE_CLS_FREE;
+		ch->free_at = arena->tick;
+	}
+	return 0;
+}
+
 /* a free slot for a new chunk, in packing order: lowest resident
- * reservation slot, lowest punched-out one, the frontier, the fullest page,
- * a new page.  Arena lock held. */
+ * reservation slot, lowest punched-out group, the frontier, the fullest
+ * page, a new page.  Arena lock held. */
 static pcache_chunk_t *slot_take(void)
 {
 	pcache_chunk_t *ch = NULL;
@@ -395,13 +460,11 @@ static pcache_chunk_t *slot_take(void)
 		arena->nfree_warm--;
 		ch = rslot_at(i);
 	} else if (arena->hbase &&
-	           (i = bit_first(arena->rcold, arena->rslots)) >= 0) {
-		bit_clr(arena->rcold, i);
-		arena->nfree_cold--;
-		arena->cold_bytes -= PCACHE_SLOT;
-		arena->bytes += PCACHE_SLOT;
+	           (i = bit_first(arena->rcold, arena->rslots)) >= 0 &&
+	           group_recommit(i / PCACHE_GROUP_SLOTS) == 0) {
+		bit_clr(arena->rwarm, i);
+		arena->nfree_warm--;
 		ch = rslot_at(i);
-		memset(ch, 0, PCACHE_CHUNK_HDR);  /* a cold slot has no header */
 	} else if (arena->hbase && arena->hoff + PCACHE_SLOT <= arena->rtop) {
 		ch = (pcache_chunk_t *)(arena->hbase + arena->hoff);
 		arena->hoff += PCACHE_SLOT;
@@ -1197,6 +1260,7 @@ int pcache_arena_mi(mi_item_t *aobj)
 	     add_mi_number(aobj, MI_SSTR("released_bytes"), arena->released_bytes) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("cold_bytes"), arena->cold_bytes) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("giveback_off"), arena->giveback_off) < 0 ||
+	     add_mi_number(aobj, MI_SSTR("pool_empty"), arena->pool_empty) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("reclaim_ticks"), arena->tick) < 0 ||
 	     add_mi_number(aobj, MI_SSTR("last_carve_age_s"),
 	         arena->tick - arena->carve_tick) < 0 ||
