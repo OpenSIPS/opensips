@@ -31,19 +31,19 @@
  * (libsodium).  A fresh random nonce per packet ensures that even identical
  * payloads produce different ciphertext.
  *
- * A 4-byte monotonic sequence number is included inside the plaintext.
- * Receivers track the highest sequence seen from each peer and reject any
- * packet whose sequence is not strictly greater.  This stops replays
- * without requiring NTP-synchronised clocks or a finite nonce cache.
- * The counter resets to 0 on every session key rotation; old packets
- * encrypted with the previous key fail AEAD authentication anyway.
- * Bootstrap-key packets (CL_CTR_BOOTSTRAP_MAGIC) skip the sequence check -
- * their per-exchange join_nonce provides equivalent replay protection.
+ * The plaintext carries a 4-byte sequence number and the sender's 8-byte
+ * incarnation.  Receivers run session-key packets through a sliding window
+ * per sender and plane that accepts each sequence number once, started
+ * afresh when the sender's incarnation changes, when it is first learned and
+ * when this node takes a new key (see cl_ctr_replay_check() in cl_ctr.h).
+ * Bootstrap-key packets (CL_CTR_BOOTSTRAP_MAGIC) have no window: a KEY_GRANT
+ * is bound to its JOIN_REQ by the Noise handshake, a JOIN_REJECT by the
+ * nonce it echoes, and a beacon is checked before it is ranked.
  *
  * Wire layout:
- *   [magic 2B][cluster_id 2B][nonce 24B][ciphertext][Poly1305 tag 16B]
+ *   [magic 2B][cluster_id 2B][cluster uuid 16B][nonce 24B][ciphertext][tag 16B]
  * Plaintext:
- *   [type 1B][seq 4B][payload]
+ *   [type 1B][seq 4B][incarnation 8B][payload]
  * ========================================================================= */
 
 /* cl_ctr_random_bytes() - fill buf with cryptographically secure random bytes

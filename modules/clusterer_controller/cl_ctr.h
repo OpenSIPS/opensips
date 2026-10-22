@@ -1257,8 +1257,8 @@ struct cl_ctr_consumer_job {
  * jump is bounded as well - a step of CL_CTR_REPLAY_MAX_JUMP or more is
  * refused as implausible rather than believed.  Real gaps stay far below it
  * (it is 16.7M messages, ~22 minutes of one peer's output at that ceiling),
- * and a peer that somehow exceeds it is recovered by the window reset that
- * already runs when it re-joins or reappears in a MEMBER_LIST.
+ * and a peer that somehow exceeds it is recovered by CL_CTR_REPLAY_REANCHOR
+ * jumps in a row (see cl_ctr_replay_check()).
  *
  * What remains, and is inherent to a 32-bit counter: a packet held across a
  * FULL 2^32 cycle lands back inside the window and is accepted. That needs
@@ -1273,9 +1273,17 @@ struct cl_ctr_consumer_job {
  * apart. */
 #define CL_CTR_REPLAY_MAX_JUMP   (1u << 24)
 
+/* Forward jumps in a row, each within a window of the one before, that move
+ * the window onto them: a sender's live stream, not a replay (captured
+ * packets are older, and land behind the mark). */
+#define CL_CTR_REPLAY_REANCHOR   3
+
 typedef struct {
     uint32_t last;                            /* highest seq accepted so far  */
     uint64_t win[CL_CTR_REPLAY_WIN_WORDS];    /* circular, slot = seq % BITS  */
+    int      anchored;                        /* 0: the next packet sets last */
+    uint32_t jump_seq;                        /* the last refused forward jump */
+    int      jumps;                           /* ... and how many in a row     */
 } cl_ctr_replay_t;
 
 #define CL_CTR_RP_WORD(s)  ((((uint32_t)(s)) % CL_CTR_REPLAY_WIN_BITS) / 64)
@@ -1295,10 +1303,20 @@ typedef struct {
 #define CL_CTR_SEQ_STALE (-4) /* from an EARLIER incarnation of the sender:   */
                               /* a replay from before it restarted - refuse   */
 
+/*
+ * Start a window afresh: for a sender that restarted, one first learned, or
+ * on a new key.  It is not reset to 0 but left unanchored - the next
+ * authenticated packet sets the mark, whatever its sequence number.  A sender
+ * that has been up long enough to number past CL_CTR_REPLAY_MAX_JUMP would
+ * otherwise be refused as an implausible jump from 0, packet after packet,
+ * for as long as it runs.
+ */
 static inline void cl_ctr_replay_reset(cl_ctr_replay_t *r)
 {
-    r->last = 0;
+    r->last     = 0;
     memset(r->win, 0, sizeof r->win);
+    r->anchored = 0;
+    r->jumps    = 0;
 }
 
 /*
@@ -1310,10 +1328,34 @@ static inline int cl_ctr_replay_check(cl_ctr_replay_t *r, uint32_t seq)
     int32_t  fwd = (int32_t)(seq - r->last);   /* serial-number difference */
     uint32_t d, s;
 
+    if (!r->anchored) {                  /* first packet since a reset        */
+        memset(r->win, 0, sizeof r->win);
+        r->last     = seq;
+        r->anchored = 1;
+        r->jumps    = 0;
+        r->win[CL_CTR_RP_WORD(seq)] |= CL_CTR_RP_MASK(seq);
+        return CL_CTR_SEQ_OK;
+    }
+
     if (fwd > 0) {                       /* forward: the common case          */
         d = (uint32_t)fwd;
-        if (d >= CL_CTR_REPLAY_MAX_JUMP)
-            return CL_CTR_SEQ_JUMP;
+        if (d >= CL_CTR_REPLAY_MAX_JUMP) {
+            /* Refused - unless it is the sender's live stream and the mark
+             * is what is wrong, e.g. set by a replayed old packet that
+             * arrived first after a reset: CL_CTR_REPLAY_REANCHOR jumps in a
+             * row, each close after the last, move the window onto them. */
+            if (r->jumps > 0 && (uint32_t)(seq - r->jump_seq) - 1
+                                    < CL_CTR_REPLAY_WIN_BITS)
+                r->jumps++;
+            else
+                r->jumps = 1;
+            r->jump_seq = seq;
+            if (r->jumps < CL_CTR_REPLAY_REANCHOR)
+                return CL_CTR_SEQ_JUMP;
+            r->anchored = 0;
+            return cl_ctr_replay_check(r, seq);
+        }
+        r->jumps = 0;
         if (d >= CL_CTR_REPLAY_WIN_BITS) {
             memset(r->win, 0, sizeof r->win);
         } else {
@@ -1330,10 +1372,7 @@ static inline int cl_ctr_replay_check(cl_ctr_replay_t *r, uint32_t seq)
     }
 
     /* At or below the mark.  Unsigned subtraction gives the exact backward
-     * distance even across a wrap, and avoids negating INT32_MIN.  Note
-     * seq == last == 0 with an empty window is the untouched state and falls
-     * out here as a legitimate first accept - it costs nothing to allow, and
-     * every sender in fact starts at 1 (++my_seq). */
+     * distance even across a wrap, and avoids negating INT32_MIN. */
     d = r->last - seq;
     if (d >= CL_CTR_REPLAY_WIN_BITS)
         return CL_CTR_SEQ_OLD;
