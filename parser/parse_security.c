@@ -251,15 +251,16 @@ error:
 	} while (0)
 
 
-sec_agree_body_t *parse_sec_agree_body(str *body)
+sec_agree_body_t *parse_sec_agree_body(const str *body)
 {
 	sec_agree_body_t *sa = NULL, *last = NULL, *first = NULL;
-	char *p, *s = NULL, *end = body->s + body->len;
+	str body_copy = *body;
+	char *p, *s = NULL, *end = body_copy.s + body_copy.len;
 	enum sec_agree_state state = SEC_AGREE_STATE_START;
 	str name, value;
 
-	LM_DBG("parsing %.*s\n", body->len, body->s);
-	for (p = body->s; p < end; p++) {
+	LM_DBG("parsing %.*s\n", body_copy.len, body_copy.s);
+	for (p = body_copy.s; p < end; p++) {
 		switch (state) {
 		case SEC_AGREE_STATE_START:
 
