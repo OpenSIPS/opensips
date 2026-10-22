@@ -632,6 +632,14 @@ typedef struct {
     int      consumer_count;
 } cl_ctr_rate_entry_t;
 
+/* A refusal anyone on the group can provoke is reported once a minute, with
+ * the count it stands for, not once a datagram (worker-local). */
+typedef struct {
+    unsigned long pkts;          /* refused so far                      */
+    unsigned long pkts_reported; /* of which a report already counted   */
+    time_t        reported_at;   /* 0: never                            */
+} cl_ctr_warn_t;
+
 /* Max packet sizes: wire(20) = magic(8) + nonce(12); plain(5) = type(1) + seq(4)
  *   MASTER_ALIVE     : wire(20) + plain(5) + tag(16) = 41 bytes
  *   ALIVE            : wire(20) + plain(5) + IP(16) + pubkey(32) + tag(16) = 89 bytes
@@ -890,6 +898,9 @@ typedef struct cl_ctr_cluster_ {
      * and when that was last reported (worker-local). */
     unsigned long  wire_refused_pkts;
     time_t         wire_warned_at;
+    /* datagrams too short to be a packet, bootstrap packets that did not
+     * decrypt, packets over the per-source rate limit (control, consumer) */
+    cl_ctr_warn_t  warn_short, warn_bootstrap, warn_rate[2];
     /* A master we will not merge into (it refused our admission), and until
      * when; plus when we last warned about a master whose settings differ. */
     /* uuid= from the cluster string (pinned identity), parsed at startup */

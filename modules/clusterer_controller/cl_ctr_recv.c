@@ -81,6 +81,36 @@ static int cl_ctr_consumer_src_known(cl_ctr_cluster_t *cl, uint32_t src_ip)
     return known;
 }
 
+/* Count one more refusal on @w; when a report is due - the first at once,
+ * then at most one per CL_CTR_WIRE_WARN_IVL - return how many refusals it
+ * stands for, else 0. */
+static unsigned long cl_ctr_warn_due(cl_ctr_warn_t *w)
+{
+    time_t        now = cl_ctr_now();
+    unsigned long n;
+
+    w->pkts++;
+    if (w->reported_at && now - w->reported_at < CL_CTR_WIRE_WARN_IVL)
+        return 0;
+    n = w->pkts - w->pkts_reported;
+    w->pkts_reported = w->pkts;
+    w->reported_at   = now;
+    return n;
+}
+
+/* A bootstrap packet from @ip that did not decrypt: counted by the caller
+ * (auth_failures), reported here once a minute. */
+static void cl_ctr_warn_bootstrap(cl_ctr_cluster_t *cl, const char *ip)
+{
+    unsigned long k = cl_ctr_warn_due(&cl->warn_bootstrap);
+
+    if (k)
+        LM_WARN("clusterer_controller: [cluster %d] %lu bootstrap packet(s) "
+                "did not decrypt since the last report, the latest from %s - "
+                "wrong password, foreign cluster, or tampered packet\n",
+                cl->cluster_id, k, ip);
+}
+
 /* The types a sender seals with the bootstrap key: the admission handshake
  * (JOIN_REQ, KEY_GRANT and its ACK, JOIN_REJECT) and the master's beacon. */
 static int cl_ctr_bootstrap_type(unsigned char t)
@@ -125,14 +155,21 @@ static int cl_ctr_rate_check(cl_ctr_cluster_t *cl, uint32_t src_ip,
                 return 0;
             }
             if (++(*cnt) > limit) {
-                /* Say so, once per window per source: a silent drop here
-                 * looks exactly like packet loss to whatever was sending,
-                 * which is a miserable thing to debug. */
-                if (*cnt == limit + 1)
+                /* Say so: a silent drop here looks exactly like packet loss
+                 * to whatever was sending, which is a miserable thing to
+                 * debug.  Once a minute, with the count: a flood, from one
+                 * address or many, is what this limit is for, and must not
+                 * turn into a flood of the log. */
+                unsigned long k = cl_ctr_warn_due(&cl->warn_rate[is_consumer ? 1 : 0]);
+                if (k) {
+                    char ip[INET_ADDRSTRLEN];
+                    inet_ntop(AF_INET, &src_ip, ip, sizeof ip);
                     LM_WARN("clusterer_controller: [cluster %d] %s rate "
-                        "limit of %d/s exceeded by a peer - dropping\n",
-                        cl->cluster_id,
-                        is_consumer ? "consumer" : "control", limit);
+                        "limit of %d/s exceeded - %lu packet(s) dropped since "
+                        "the last report, the latest from %s\n",
+                        cl->cluster_id, is_consumer ? "consumer" : "control",
+                        limit, k, ip);
+                }
                 return -1;
             }
             return 0;
@@ -233,8 +270,15 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
     /* Minimum: wire header magic(2)+cluster_id(2)+uuid(16)+nonce(24), plaintext
      * header type(1)+seq(4)+incarnation(8), tag(16) = 73 bytes */
     if (n < CL_CTR_WIRE_HDR_SZ + CL_CTR_PLAIN_HDR_SZ + CL_CTR_TAG_SZ) {
-	LM_WARN("clusterer_controller: short packet (%zd bytes), dropping\n",
-	        n);
+	/* before any filter, so anyone can send these: once a minute */
+	unsigned long k = cl_ctr_warn_due(&cl->warn_short);
+	if (k) {
+	    char ip[INET_ADDRSTRLEN];
+	    inet_ntop(AF_INET, &src_addr.sin_addr, ip, sizeof ip);
+	    LM_WARN("clusterer_controller: [cluster %d] %lu datagram(s) too short "
+	            "to be a packet dropped since the last report, the latest "
+	            "%zd bytes from %s\n", cl->cluster_id, k, n, ip);
+	}
 	return;
     }
 
@@ -412,6 +456,8 @@ void cl_ctr_recv_one(int sock, cl_ctr_cluster_t *cl,
 	    lock_stop_read(cl->peers->lock);
 	    if (strcmp(sender_ip_buf, my_ip) != 0)
 		cl_ctr_note_auth_failure(cl, sender_ip_buf);
+	    if (is_bootstrap && strcmp(sender_ip_buf, my_ip) != 0)
+		cl_ctr_warn_bootstrap(cl, sender_ip_buf);
 
 	    /* A packet from another peer we cannot decrypt, seen while still
 	     * joining, means a cluster (or rogue) whose key we do not share is

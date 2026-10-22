@@ -494,14 +494,10 @@ int cl_ctr_decrypt_pkt(char *buf, ssize_t n, const char *sender_ip,
                 (unsigned long long)(cipher_len + CL_CTR_TAG_SZ),
                 (const unsigned char *)buf, CL_CTR_AAD_SZ,
                 nonce, key) != 0) {
-            if (is_bootstrap)
-                LM_WARN("clusterer_controller: bootstrap decryption failed "
-                        "from %s - wrong password, foreign cluster, or "
-                        "tampered packet\n", sender_ip);
-            else
-                LM_DBG("clusterer_controller: session packet from %s did not "
-                       "decrypt - transient key mismatch during (re)key or "
-                       "split-brain heal\n", sender_ip);
+            /* the caller reports a bootstrap failure, once a minute */
+            LM_DBG("clusterer_controller: %s packet from %s did not "
+                   "decrypt\n", is_bootstrap ? "bootstrap" : "session",
+                   sender_ip);
             return -1;
         }
     }
