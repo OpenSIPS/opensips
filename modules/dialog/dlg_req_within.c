@@ -437,6 +437,8 @@ static dlg_t *build_prack_dialog_info(struct dlg_cell *cell, struct sip_msg *rpl
 	unsigned int skip_rrs = 0;
 	contact_t *ct = NULL;
 	contact_body_t *parsed_body = NULL;
+	struct cell *t;
+	rr_t *rr = NULL;
 
 	if ((!rpl->cseq && parse_headers(rpl, HDR_CSEQ_F, 0) < 0) || !rpl->cseq ||
 			!rpl->cseq->parsed) {
@@ -501,15 +503,31 @@ static dlg_t *build_prack_dialog_info(struct dlg_cell *cell, struct sip_msg *rpl
 		LM_ERR("failed to parse record route headers in provisional reply\n");
 		goto error;
 	}
+	/* the route set towards the callee holds only the RRs added downstream:
+	 * skip the ones received with the INVITE and our own, as for the 2xx */
+	if (!(cell->mod_flags & TOPOH_ONGOING)) {
+		t = d_tmb.t_gett();
+		skip_rrs = cell->from_rr_nb;
+		if (t && t != T_UNDEFINED)
+			skip_rrs += TM_BRANCH(t, d_tmb.get_branch_index()).added_rr;
+	}
 	if (rpl->record_route &&
 			print_rr_body(rpl->record_route, &rr_set, 1, 0, &skip_rrs) != 0) {
 		LM_ERR("failed to print route records from provisional reply\n");
 		goto error;
 	}
-	if (rr_set.s && rr_set.len &&
-			parse_rr_body(rr_set.s, rr_set.len, &td->route_set) != 0) {
-		LM_ERR("failed to parse route set from provisional reply\n");
-		goto error;
+	/* rr_set is freed below, so td must keep its own copy of the route set */
+	if (rr_set.s && rr_set.len) {
+		if (parse_rr_body(rr_set.s, rr_set.len, &rr) != 0) {
+			LM_ERR("failed to parse route set from provisional reply\n");
+			goto error;
+		}
+		if (duplicate_rr(&td->route_set, rr, 0) != 0) {
+			LM_ERR("failed to duplicate route set from provisional reply\n");
+			free_rr(&rr);
+			goto error;
+		}
+		free_rr(&rr);
 	}
 
 	td->rem_target = contact;
