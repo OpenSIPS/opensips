@@ -1162,12 +1162,27 @@ static int rdb_update_scan_cb(struct redis_con *con, const str *rowkey,
 
 /* apply the SET clause to one row: HSET the non-NULL values,
  * HDEL the NULL ones */
+/*
+ * @argv/@argvlen are supplied by the caller and must hold 2 + 2*_un entries.
+ *
+ * They used to be VLAs sized from _un right here. _un is the caller's SET
+ * column count, and on the sqlops sql_update() path that is parsed from
+ * runtime JSON - the schema check above rejects unknown column names but
+ * accepts duplicates and caps nothing, so the count is attacker-influenced
+ * data driving a stack allocation of 32 bytes per column. The sibling
+ * rdb_store_row() has always pkg_malloc'd the identical pair (see the
+ * allocation next to numbufs there), so the heap version is this file's own
+ * convention and the VLA was the anomaly.
+ *
+ * Hoisted into the caller rather than allocated here because the row-scan path
+ * calls this once per matched row: allocating inside would turn one allocation
+ * into one per row for no benefit.
+ */
 static int rdb_apply_update(struct redis_con *con, const str *rowkey,
 		const db_key_t* _uk, const db_val_t* _uv, int _un,
-		char (*numbufs)[RDB_NUM_MAX])
+		char (*numbufs)[RDB_NUM_MAX],
+		const char **argv, size_t *argvlen)
 {
-	const char *argv[2 + 2*_un];
-	size_t argvlen[2 + 2*_un];
 	redisReply *reply;
 	str v;
 	int i, argc;
@@ -1236,6 +1251,8 @@ int db_redis_update(const db_con_t* _h, const db_key_t* _k,
 	struct rdb_upd_ctx ctx;
 	redisReply *hg;
 	char (*numbufs)[RDB_NUM_MAX] = NULL;
+	const char **argv = NULL;
+	size_t *argvlen = NULL;
 	char numbuf[RDB_NUM_MAX], keybuf[RDB_KEY_MAX];
 	str pkval, rowkey;
 	int i, c, fp, is_or, rc = -1;
@@ -1287,8 +1304,14 @@ int db_redis_update(const db_con_t* _h, const db_key_t* _k,
 		ctx.nf = _n;
 	}
 
+	/* One allocation for the whole scan: rdb_apply_update() is called once
+	 * per matched row and reuses these. 2 + 2*_un covers "HSET <key>" plus a
+	 * field/value pair per SET column - the HDEL phase reuses the same array
+	 * and needs strictly less. */
 	numbufs = pkg_malloc(_un * sizeof *numbufs);
-	if (!numbufs) {
+	argv    = pkg_malloc((2 + 2*(size_t)_un) * sizeof *argv);
+	argvlen = pkg_malloc((2 + 2*(size_t)_un) * sizeof *argvlen);
+	if (!numbufs || !argv || !argvlen) {
 		LM_ERR("no more pkg memory for update values\n");
 		goto out;
 	}
@@ -1306,7 +1329,7 @@ int db_redis_update(const db_con_t* _h, const db_key_t* _k,
 		rdb_eval(hg, sch, flt, _n, is_or)) {
 			freeReplyObject(hg);
 			if (rdb_apply_update(con, &rowkey, _uk, _uv, _un,
-			numbufs) < 0)
+			numbufs, argv, argvlen) < 0)
 				goto out;
 		} else {
 			/* no matching row - not an error, zero rows updated */
@@ -1322,7 +1345,7 @@ int db_redis_update(const db_con_t* _h, const db_key_t* _k,
 	rc = 0;
 	for (i = 0; i < ctx.count; i++)
 		if (rdb_apply_update(con, &ctx.keys[i], _uk, _uv, _un,
-		numbufs) < 0)
+		numbufs, argv, argvlen) < 0)
 			rc = -1;
 
 out:
@@ -1333,6 +1356,10 @@ out:
 		pkg_free(ctx.keys);
 	if (numbufs)
 		pkg_free(numbufs);
+	if (argv)
+		pkg_free(argv);
+	if (argvlen)
+		pkg_free(argvlen);
 	if (flt)
 		pkg_free(flt);
 	return rc;
