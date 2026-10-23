@@ -46,18 +46,30 @@ struct hg_cg_info {
 };
 
 /*
- * Bytes the calling process's memory cgroups leave above their floors: the
- * tightest of its own cgroup and every ancestor that has a limit. ~0UL when
- * no level is limited, or the cgroup files cannot be read (not Linux, no
- * memory controller) - the host check then decides alone. The files count
- * in 64-bit bytes; on a 32-bit build a room of ~0UL or more is ~0UL, more
- * than the process can address. @ci, if given, describes the binding level.
+ * Room - what the host or a cgroup leaves above its floor - is counted in
+ * 64-bit bytes on every build: on a 32-bit build each process addresses at
+ * most 4 GB, but the host it runs on, and the processes together, are not
+ * held to that. HG_ROOM_ANY: no limit known.
  */
-unsigned long hg_cgroup_room(struct hg_cg_info *ci);
+#define HG_ROOM_ANY (~0ULL)
+
+/*
+ * The room the calling process's memory cgroups leave above their floors:
+ * the tightest of its own cgroup and every ancestor that has a limit.
+ * HG_ROOM_ANY when no level is limited, or the cgroup files cannot be read
+ * (not Linux, no memory controller) - the host check then decides alone.
+ * @ci, if given, describes the binding level.
+ */
+unsigned long long hg_cgroup_room(struct hg_cg_info *ci);
 
 /* test hook: read the cgroup files under @root and the membership from
  * @self_cgroup instead of /sys/fs/cgroup and /proc/self/cgroup; NULL
  * restores the defaults */
 void hg_cgroup_test_paths(const char *root, const char *self_cgroup);
+
+/* the file host memory is read from, /proc/meminfo; test hook: read it
+ * from @meminfo instead, NULL restores the default */
+extern const char *hg_meminfo_file;
+void hg_meminfo_test_path(const char *meminfo);
 
 #endif /* hg_memlimit_h */

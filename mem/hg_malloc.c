@@ -219,7 +219,7 @@ static long hg_proc_field(const char *path, const char *key, int base)
 
 static long hg_meminfo_kb(const char *key)
 {
-	return hg_proc_field("/proc/meminfo", key, 10);
+	return hg_proc_field(hg_meminfo_file, key, 10);
 }
 
 /*
@@ -283,7 +283,7 @@ static void hg_explain_mlock_refusal(struct hg_block *hb, unsigned long delta,
 
 	if (locked_kb < 0)
 		locked_kb = 0;
-	if (lim && ((unsigned long)locked_kb << 10) + delta > lim) {
+	if (lim && ((unsigned long long)locked_kb << 10) + delta > lim) {
 		LM_WARN("%s: cannot grow by %lu MB: RLIMIT_MEMLOCK is %lu KB and "
 			"this process already has %ld KB locked - every grow is "
 			"mlock()ed, on hugetlb as well. Set LimitMEMLOCK=infinity "
@@ -297,7 +297,8 @@ static void hg_explain_mlock_refusal(struct hg_block *hb, unsigned long delta,
 		rsvd_pg = hg_meminfo_kb("HugePages_Rsvd");
 		page_kb = hg_meminfo_kb("Hugepagesize");
 		if (free_pg >= 0 && rsvd_pg >= 0 && page_kb > 0 &&
-		    (unsigned long)(free_pg - rsvd_pg) * (page_kb << 10) < delta) {
+		    (unsigned long long)(free_pg - rsvd_pg) *
+		    ((unsigned long long)page_kb << 10) < delta) {
 			LM_WARN("%s: cannot grow by %lu MB: the hugetlb pool has %ld "
 				"free pages of %ld KB, %ld of them already reserved, "
 				"and the grow needs %lu. Raise vm.nr_hugepages or "
@@ -644,8 +645,9 @@ static long hg_ram_floor(void)
 }
 
 /* bytes the hugetlb pool can still hand out: free pages not already
- * promised to a mapping */
-static unsigned long hg_pool_free_bytes(void)
+ * promised to a mapping. 64-bit like the room (hg_memlimit.h): the pool
+ * is the host's */
+static unsigned long long hg_pool_free_bytes(void)
 {
 	long free_pg = hg_meminfo_kb("HugePages_Free");
 	long rsvd_pg = hg_meminfo_kb("HugePages_Rsvd");
@@ -653,25 +655,27 @@ static unsigned long hg_pool_free_bytes(void)
 
 	if (free_pg < 0 || rsvd_pg < 0 || page_kb <= 0 || free_pg <= rsvd_pg)
 		return 0;
-	return (unsigned long)(free_pg - rsvd_pg) * ((unsigned long)page_kb << 10);
+	return (unsigned long long)(free_pg - rsvd_pg) *
+		((unsigned long long)page_kb << 10);
 }
 
 /* bytes of general RAM that can still be committed: the host's above its
  * floor, or the memory cgroup's above its own floor when that is tighter
- * (hg_memlimit.c); ULONG_MAX when neither says. @ci, if given, describes
+ * (hg_memlimit.c); HG_ROOM_ANY when neither says. @ci, if given, describes
  * the cgroup level that binds, version 0 when the host does */
-static unsigned long hg_ram_room_why(struct hg_cg_info *ci)
+static unsigned long long hg_ram_room_why(struct hg_cg_info *ci)
 {
 	long avail_kb = hg_meminfo_kb("MemAvailable");
-	unsigned long floor_b = (unsigned long)hg_ram_floor() << 20, room, cg;
+	unsigned long long floor_b = (unsigned long long)hg_ram_floor() << 20;
+	unsigned long long avail_b = (unsigned long long)avail_kb << 10, room, cg;
 	struct hg_cg_info c;
 
 	if (avail_kb < 0)
-		room = ~0UL;
-	else if ((unsigned long)avail_kb << 10 <= floor_b)
+		room = HG_ROOM_ANY;
+	else if (avail_b <= floor_b)
 		room = 0;
 	else
-		room = ((unsigned long)avail_kb << 10) - floor_b;
+		room = avail_b - floor_b;
 	cg = hg_cgroup_room(&c);
 	if (cg < room)
 		room = cg;
@@ -682,7 +686,7 @@ static unsigned long hg_ram_room_why(struct hg_cg_info *ci)
 	return room;
 }
 
-static unsigned long hg_ram_room(void)
+static unsigned long long hg_ram_room(void)
 {
 	return hg_ram_room_why(NULL);
 }
@@ -701,7 +705,7 @@ static int hg_init_fits(const char *what, unsigned long init,
 	/* an INIT under one huge page may be raised to one on huge pages */
 	unsigned long need = hg_page_round(init, huge_grid ? HG_HPS : apage);
 	struct hg_cg_info ci;
-	unsigned long room = hg_ram_room_why(&ci), pool;
+	unsigned long long room = hg_ram_room_why(&ci), pool;
 
 	if (need <= room)
 		return 1;
@@ -717,7 +721,8 @@ static int hg_init_fits(const char *what, unsigned long init,
 		"hugetlb pool has %lu MB free. Lower INIT (-m/-M), the number of "
 		"processes, or the floor, or add memory or huge pages.\n", what,
 		HG_SZ_VAL(need), HG_SZ_UNIT(need),
-		room == ~0UL ? 0 : room >> 20, hg_ram_floor(), pool >> 20);
+		room == HG_ROOM_ANY ? 0 : (unsigned long)(room >> 20), hg_ram_floor(),
+		(unsigned long)(pool >> 20));
 	return 0;
 }
 
@@ -901,8 +906,9 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 	return 0;      /* pkg memory is the system malloc */
 #else
 	unsigned long init = pkg_mem_size, cap, capr, initr_huge, initr_ram;
-	unsigned long pool, pool_left, room, ram_start = 0, ram_max = 0;
-	unsigned long total_kb, caps;
+	/* sums over every process: 64-bit, as the room they are held to */
+	unsigned long long pool, pool_left, room, ram_start = 0, ram_max = 0, caps;
+	long total_kb;
 	unsigned int i, children;
 	int huge_grid;
 
@@ -922,7 +928,8 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 	 * creates its own */
 	children = max_procs > 1 ? max_procs - 1 : 0;
 	for (i = 0; i < children; i++) {
-		unsigned long *ram = (i + 1 < start_procs) ? &ram_start : &ram_max;
+		unsigned long long *ram = (i + 1 < start_procs) ?
+			&ram_start : &ram_max;
 
 		if (pool_left >= capr)
 			pool_left -= capr;
@@ -936,38 +943,40 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 		"-M INIT %lu %s: %lu MB from the hugetlb pool, %lu MB (%lu MB at "
 		"the maximum) from RAM; %ld MB of RAM available above the %ld MB "
 		"floor\n", start_procs, max_procs, HG_SZ_VAL(init),
-		HG_SZ_UNIT(init), (pool - pool_left) >> 20, ram_start >> 20,
-		ram_max >> 20, room == ~0UL ? -1L : (long)(room >> 20),
-		hg_ram_floor());
+		HG_SZ_UNIT(init), (unsigned long)((pool - pool_left) >> 20),
+		(unsigned long)(ram_start >> 20), (unsigned long)(ram_max >> 20),
+		room == HG_ROOM_ANY ? -1L : (long)(room >> 20), hg_ram_floor());
 
-	if (room != ~0UL && ram_start > room) {
+	if (room != HG_ROOM_ANY && ram_start > room) {
 		LM_ERR("pkg: the %u processes started now need %lu MB of RAM for "
 			"their -M INIT of %lu %s (after %lu MB from the hugetlb "
 			"pool), but %lu MB is available above the %ld MB floor. "
 			"Lower -M INIT or the worker counts, or add memory or huge "
-			"pages.\n", start_procs, ram_start >> 20, HG_SZ_VAL(init),
-			HG_SZ_UNIT(init), (pool - pool_left) >> 20, room >> 20,
-			hg_ram_floor());
+			"pages.\n", start_procs, (unsigned long)(ram_start >> 20),
+			HG_SZ_VAL(init), HG_SZ_UNIT(init),
+			(unsigned long)((pool - pool_left) >> 20),
+			(unsigned long)(room >> 20), hg_ram_floor());
 		return -1;
 	}
-	if (room != ~0UL && ram_max > room)
+	if (room != HG_ROOM_ANY && ram_max > room)
 		LM_WARN("pkg: auto-scaling up to %u processes would need %lu MB "
 			"of RAM for their -M INIT, but %lu MB is available above "
 			"the %ld MB floor - processes beyond what fits will not be "
 			"forked. Lower the scale-up maximums or -M INIT to make "
-			"them all fit.\n", max_procs, ram_max >> 20, room >> 20,
-			hg_ram_floor());
+			"them all fit.\n", max_procs, (unsigned long)(ram_max >> 20),
+			(unsigned long)(room >> 20), hg_ram_floor());
 
 	total_kb = hg_meminfo_kb("MemTotal");
-	caps = (unsigned long)children * cap;
+	caps = (unsigned long long)children * cap;
 	if ((mem_allocator_shm == MM_HG_MALLOC ||
 	     mem_allocator_shm == MM_HG_MALLOC_DBG) && shm_block)
 		caps += ((struct hg_block *)shm_block)->hcap;
-	if (total_kb > 0 && caps > ((unsigned long)total_kb << 10))
+	if (total_kb > 0 && caps > ((unsigned long long)total_kb << 10))
 		LM_WARN("the -m cap plus -M cap x %u processes is %lu MB, more "
 			"than the host's %ld MB of memory: those caps can never all "
 			"be met, and growth will be refused at the %ld MB floor\n",
-			children, caps >> 20, total_kb >> 10, hg_ram_floor());
+			children, (unsigned long)(caps >> 20), total_kb >> 10,
+			hg_ram_floor());
 	return 0;
 #endif
 }
@@ -994,7 +1003,9 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 {
 	long floor_mb;
-	unsigned long effective = delta, nproc = 1, cg_room;
+	/* a pkg grow counts once per process: 64-bit, as the room */
+	unsigned long long effective = delta, cg_room;
+	unsigned long nproc = 1;
 	long avail_kb;
 	struct hg_cg_info ci;
 	int host_short, cg_short;
@@ -1014,14 +1025,14 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 		 * workload; the single-arena delta understates the real cost
 		 * by the process count */
 		nproc = counted_max_processes ? counted_max_processes : 1;
-		effective = delta * nproc;
+		effective = (unsigned long long)delta * nproc;
 	}
 
 	/* the host (unknown MemAvailable: let mlock decide), then the memory
 	 * cgroup, which a container or a unit's MemoryMax hits first */
-	host_short = avail_kb >= 0 && (unsigned long)avail_kb * 1024 <
-		effective + ((unsigned long)floor_mb << 20);
-	cg_short = cg_room != ~0UL && cg_room < effective;
+	host_short = avail_kb >= 0 && ((unsigned long long)avail_kb << 10) <
+		effective + ((unsigned long long)floor_mb << 20);
+	cg_short = cg_room != HG_ROOM_ANY && cg_room < effective;
 	if (!host_short && !cg_short)
 		return 0;
 	/* once per episode - see grow_refuse_said's comment */
@@ -1032,16 +1043,16 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 				" (x%lu processes) would leave the host under the "
 				"%ld MB floor (MemAvailable %ld MB). Freeing host "
 				"memory or lowering the floor lifts this.\n",
-				hb->name, delta >> 20, effective >> 20, nproc,
-				floor_mb, avail_kb / 1024);
+				hb->name, delta >> 20, (unsigned long)(effective >> 20),
+				nproc, floor_mb, avail_kb / 1024);
 		else
 			LM_WARN("%s: refusing to grow by %lu MB: %lu MB effective"
 				" (x%lu processes) would leave the memory cgroup (v%d) "
 				"under its %lu MB floor (limit %lu MB, %lu MB in use). "
 				"Raising the cgroup's memory limit or freeing memory in "
 				"it lifts this.\n", hb->name, delta >> 20,
-				effective >> 20, nproc, ci.version, ci.floor_mb,
-				ci.limit_mb, ci.used_mb);
+				(unsigned long)(effective >> 20), nproc, ci.version,
+				ci.floor_mb, ci.limit_mb, ci.used_mb);
 	}
 	return 1;
 }

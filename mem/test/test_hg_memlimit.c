@@ -25,7 +25,9 @@
  * out in a temporary directory - cgroup v2 with the limit on an ancestor
  * and then on the process's own level, a limit above 4 GB, cgroup v1 on a
  * hybrid host, no limit anywhere, no membership file - so CI checks the
- * parsing and the walk without needing a limited cgroup of its own.
+ * parsing and the walk without needing a limited cgroup of its own. Then
+ * the host check on a fake /proc/meminfo with more than 4 GB available,
+ * which a 32-bit build must count whole.
  */
 
 #ifdef HG_MALLOC
@@ -38,13 +40,15 @@
 #include <sys/stat.h>
 
 #include "../../dprint.h"
+#include "../../mem/shm_mem.h"
+#include "../../mem/hg_malloc.h"
 #include "../../mem/hg_memlimit.h"
 #include "test_hg_memlimit.h"
 
 #define MB (1UL << 20)
 
 static char hml_dir[64];
-static char *hml_made[32];
+static char *hml_made[48];
 static int hml_n;
 
 /* @rel under the temp dir: a file with @content, or a directory if NULL */
@@ -86,7 +90,7 @@ static void hml_cleanup(void)
 	rmdir(hml_dir);
 }
 
-static unsigned long hml_room(const char *self, struct hg_cg_info *ci)
+static unsigned long long hml_room(const char *self, struct hg_cg_info *ci)
 {
 	char root[128], selfp[128];
 
@@ -96,10 +100,51 @@ static unsigned long hml_room(const char *self, struct hg_cg_info *ci)
 	return hg_cgroup_room(ci);
 }
 
+/*
+ * The host check, through a grow of the shm arena by 16 MB, on a fake
+ * /proc/meminfo: 8 GB of RAM, floor 409 MB (a twentieth). 4 GB + 100 MB
+ * available must pass - a 32-bit build that counted it in an unsigned long
+ * saw 100 MB, under the floor, and refused every grow - and 8 MB above the
+ * floor must be refused, so the check is shown live on every build. The
+ * cgroup is pointed at a missing membership file, so only the host counts.
+ */
+static void test_hg_host_room(void)
+{
+	struct hg_block *hb = shm_block;
+	char p[96], root[96];
+	unsigned int said = hb->grow_refuse_said;
+	int pass_big = -1, refuse_low = -1, bad;
+
+	skip(hb->tier == HG_MEM_HUGETLB, 1,
+		"a hugetlb arena takes nothing from host RAM at a grow");
+	snprintf(p, sizeof p, "%s/meminfo", hml_dir);
+	snprintf(root, sizeof root, "%s/cg", hml_dir);
+	hg_cgroup_test_paths(root, "/nonexistent/hg-cgroup");
+	hg_meminfo_test_path(p);
+
+	bad = hml_put("meminfo", "MemTotal:        8388608 kB\n"
+		"MemAvailable:    4296704 kB\n");
+	if (!bad)
+		pass_big = hg_grow_ram_refused(hb, 16 * MB);
+	bad |= hml_put("meminfo", "MemTotal:        8388608 kB\n"
+		"MemAvailable:     427008 kB\n");
+	hb->grow_refuse_said = 1;   /* the refusal below is expected: no WARN */
+	if (!bad)
+		refuse_low = hg_grow_ram_refused(hb, 16 * MB);
+
+	hb->grow_refuse_said = said;
+	hg_meminfo_test_path(NULL);
+	ok(!bad && pass_big == 0 && refuse_low == 1,
+		"host memory above 4 GB counted whole: a 16 MB grow with 4196 MB "
+		"available above a 409 MB floor passes (%d, 0 expected), with 8 MB "
+		"above it is refused (%d, 1 expected)", pass_big, refuse_low);
+	end_skip;
+}
+
 void test_hg_memlimit(void)
 {
 	struct hg_cg_info ci;
-	unsigned long r;
+	unsigned long long r;
 	int bad = 0;
 
 	ok(hg_floor_mb_for(128) == 16 && hg_floor_mb_for(256) == 32 &&
@@ -129,7 +174,7 @@ void test_hg_memlimit(void)
 	bad |= hml_put("cg/a/b/memory.stat", "inactive_file 0\n");
 	r = hml_room("self2", &ci);
 	ok(!bad && r == 124 * MB && ci.version == 2 && ci.limit_mb == 256,
-		"cgroup v2, limit on an ancestor: %lu MB of room (124 expected), "
+		"cgroup v2, limit on an ancestor: %llu MB of room (124 expected), "
 		"limit %lu MB", r / MB, ci.limit_mb);
 
 	/* now a tighter 128 MB limit on the process's own cgroup: 50 MB charged,
@@ -140,7 +185,7 @@ void test_hg_memlimit(void)
 	ok(!bad && r == 70 * MB && ci.limit_mb == 128 && ci.used_mb == 42 &&
 		ci.floor_mb == 16,
 		"cgroup v2, a tighter limit on its own level, cache counted as free: "
-		"%lu MB of room (70 expected), %lu MB held, %lu MB floor",
+		"%llu MB of room (70 expected), %lu MB held, %lu MB floor",
 		r / MB, ci.used_mb, ci.floor_mb);
 
 	/* a limit above 4 GB, read whole on a 32-bit build too: 6 GB limit,
@@ -153,7 +198,7 @@ void test_hg_memlimit(void)
 	r = hml_room("selfb", &ci);
 	ok(!bad && r == 205 * MB && ci.limit_mb == 6144 && ci.used_mb == 5632 &&
 		ci.floor_mb == 307,
-		"cgroup v2, a limit above 4 GB: %lu MB of room (205 expected), "
+		"cgroup v2, a limit above 4 GB: %llu MB of room (205 expected), "
 		"limit %lu MB, %lu MB held, %lu MB floor",
 		r / MB, ci.limit_mb, ci.used_mb, ci.floor_mb);
 
@@ -169,7 +214,7 @@ void test_hg_memlimit(void)
 	bad |= hml_put("cg/memory/x/memory.stat", "cache 0\ntotal_inactive_file 4194304\n");
 	r = hml_room("self1", &ci);
 	ok(!bad && r == 50 * MB && ci.version == 1,
-		"cgroup v1 on a hybrid host: %lu MB of room (50 expected), v%d",
+		"cgroup v1 on a hybrid host: %llu MB of room (50 expected), v%d",
 		r / MB, ci.version);
 
 	/* no limit anywhere, and no membership file at all: no cgroup limit */
@@ -177,8 +222,11 @@ void test_hg_memlimit(void)
 	bad |= hml_put("cg/u", NULL) | hml_put("cg/u/memory.max", "max\n");
 	bad |= hml_put("cg/u/memory.current", "1048576\n");
 	r = hml_room("selfu", &ci);
-	ok(!bad && r == ~0UL && ci.version == 0 && hml_room("nosuch", NULL) == ~0UL,
+	ok(!bad && r == HG_ROOM_ANY && ci.version == 0 &&
+		hml_room("nosuch", NULL) == HG_ROOM_ANY,
 		"no limited level, or no membership file: no cgroup limit");
+
+	test_hg_host_room();
 
 	hg_cgroup_test_paths(NULL, NULL);
 	hml_cleanup();

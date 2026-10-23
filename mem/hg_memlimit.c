@@ -47,6 +47,13 @@ void hg_cgroup_test_paths(const char *root, const char *self_cgroup)
 	cg_self = self_cgroup ? self_cgroup : "/proc/self/cgroup";
 }
 
+const char *hg_meminfo_file = "/proc/meminfo";
+
+void hg_meminfo_test_path(const char *meminfo)
+{
+	hg_meminfo_file = meminfo ? meminfo : "/proc/meminfo";
+}
+
 #ifdef __OS_linux
 
 /* the number @path starts with; 0 when it does not (missing, or "max").
@@ -87,7 +94,7 @@ static unsigned long long stat_value(const char *path, const char *key)
  * inactive file cache - the cgroup's counterpart of what MemAvailable counts
  * as reclaimable on the host.
  */
-static void cg_level(const char *dir, int v, unsigned long *best,
+static void cg_level(const char *dir, int v, unsigned long long *best,
                      struct hg_cg_info *ci)
 {
 	/* @dir is at most 1099 bytes (see hg_cgroup_room()), the longest file
@@ -115,7 +122,7 @@ static void cg_level(const char *dir, int v, unsigned long *best,
 		hg_floor_mb_for(limit_mb)) << 20;
 	room = limit > used + floor ? limit - used - floor : 0;
 	if (room < *best) {
-		*best = (unsigned long)room;
+		*best = room;
 		if (ci) {
 			ci->version = v;
 			ci->limit_mb = (unsigned long)(limit >> 20);
@@ -141,10 +148,10 @@ static int has_controller(const char *list, const char *c)
 	return 0;
 }
 
-unsigned long hg_cgroup_room(struct hg_cg_info *ci)
+unsigned long long hg_cgroup_room(struct hg_cg_info *ci)
 {
 	char line[1024], rel[512] = "", dir[1100], *c1, *c2, *slash;
-	unsigned long best = ~0UL;
+	unsigned long long best = HG_ROOM_ANY;
 	int v = 0;
 	FILE *f;
 
@@ -152,7 +159,7 @@ unsigned long hg_cgroup_room(struct hg_cg_info *ci)
 		memset(ci, 0, sizeof *ci);
 	f = fopen(cg_self, "r");
 	if (!f)
-		return ~0UL;
+		return HG_ROOM_ANY;
 	/* "hierarchy:controllers:path" per line. A cgroup v1 memory line wins
 	 * - on a hybrid host the memory controller is there, and the "0::"
 	 * line only tracks processes; otherwise "0::" is cgroup v2 */
@@ -174,7 +181,7 @@ unsigned long hg_cgroup_room(struct hg_cg_info *ci)
 	}
 	fclose(f);
 	if (!v || rel[0] != '/')
-		return ~0UL;
+		return HG_ROOM_ANY;
 
 	/* the process's own cgroup, then each ancestor: the tightest limit
 	 * anywhere above it is the one the kernel enforces first. Inside a
@@ -197,11 +204,11 @@ unsigned long hg_cgroup_room(struct hg_cg_info *ci)
 
 #else /* not Linux: no cgroups */
 
-unsigned long hg_cgroup_room(struct hg_cg_info *ci)
+unsigned long long hg_cgroup_room(struct hg_cg_info *ci)
 {
 	if (ci)
 		memset(ci, 0, sizeof *ci);
-	return ~0UL;
+	return HG_ROOM_ANY;
 }
 
 #endif /* __OS_linux */

@@ -405,5 +405,6 @@ ERROR: new process's pkg arena: committing 32 MB now does not fit - ... not fork
 | shrink and interior release never free memory still in use | - | by hand, production | no automated test |
 | backing ladder: hugetlb, THP advice, THP collapse, 4 KB | startup log, `core:hg_stats` | by hand | not in CI (runners have no hugetlb pool) |
 | memlock limit: unpinned growth on 4 KB / THP, refusal on hugetlb | - | by hand | not in CI |
+| the host floor and the memory cgroup's limit: the default floor, the cgroup's room read from fake cgroup v1 and v2 trees (a limit on an ancestor, on the process's own level, above 4 GB), host memory above 4 GB counted whole on a 32-bit build, a grow refused at the floor | `test_hg_memlimit.c` | CI | |
 | growth refused at the cap or the host floor returns NULL and raises the event | - | - | no automated test |
 | builds: gcc and clang `-Werror`, x86-64, i386, arm32/arm64, glibc and musl, HG compiled out | upstream CI matrix; i386 and musl by hand | CI; by hand | |
