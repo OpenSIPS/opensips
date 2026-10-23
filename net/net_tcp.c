@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <pthread.h>
 #include <stdint.h>
 
@@ -104,6 +105,125 @@ struct tcp_partition {
 /* array of TCP workers - to be used only by TCP MAIN */
 struct tcp_worker *tcp_workers=0;
 static int tcp_dispatch_sock[2] = { -1, -1 };
+
+int tcp_dispatch_mode = TCP_DISPATCH_AUTO;
+/* the mode actually in use, resolved once in tcp_init() */
+static int tcp_dispatch_eff = TCP_DISPATCH_SHARED;
+/* per_worker: one socketpair per worker slot, [r][0] read by worker r,
+ * [r][1] written by TCP main; created by the attendant before forking */
+static int (*tcp_worker_dispatch)[2] = NULL;
+/* per_worker: slot of the last worker TCP main dispatched to */
+static int tcp_dispatch_last = -1;
+
+int parse_tcp_dispatch_mode(const char *s)
+{
+	if (!strcasecmp(s, "auto")) tcp_dispatch_mode = TCP_DISPATCH_AUTO;
+	else if (!strcasecmp(s, "shared")) tcp_dispatch_mode = TCP_DISPATCH_SHARED;
+	else if (!strcasecmp(s, "exclusive"))
+		tcp_dispatch_mode = TCP_DISPATCH_EXCLUSIVE;
+	else if (!strcasecmp(s, "per_worker"))
+		tcp_dispatch_mode = TCP_DISPATCH_PER_WORKER;
+	else return -1;
+	return 0;
+}
+
+static void tcp_dispatch_mode_resolve(void)
+{
+	static const char *names[] = { "auto", "shared", "exclusive", "per_worker" };
+
+	switch (tcp_dispatch_mode) {
+	case TCP_DISPATCH_AUTO:
+	case TCP_DISPATCH_PER_WORKER:
+		tcp_dispatch_eff = TCP_DISPATCH_PER_WORKER;
+		break;
+	case TCP_DISPATCH_EXCLUSIVE:
+#if defined(HAVE_EPOLL) && defined(EPOLLEXCLUSIVE)
+		if (io_poll_method == POLL_EPOLL && os_kernel_at_least(6, 0)) {
+			tcp_dispatch_eff = TCP_DISPATCH_EXCLUSIVE;
+			break;
+		}
+#endif
+		LM_WARN("tcp_dispatch_mode=exclusive needs the epoll reactor on a "
+			"6.0+ Linux kernel, using 'shared'\n");
+		tcp_dispatch_eff = TCP_DISPATCH_SHARED;
+		break;
+	default:
+		tcp_dispatch_eff = TCP_DISPATCH_SHARED;
+	}
+	LM_INFO("TCP dispatch mode: %s (configured: %s)\n",
+		names[tcp_dispatch_eff], names[tcp_dispatch_mode]);
+}
+
+/* the fd worker slot r reads its dispatched jobs from */
+static inline int tcp_worker_dispatch_fd(int r)
+{
+	return tcp_worker_dispatch ? tcp_worker_dispatch[r][0] : tcp_dispatch_sock[0];
+}
+
+/* per_worker: the write end of the next worker to dispatch to - the next
+ * idle active worker after the last one used, else the next active one */
+static int tcp_dispatch_pick_fd(void)
+{
+	int i, r, first = -1;
+
+	for (i = 1; i <= tcp_workers_max_no; i++) {
+		r = (tcp_dispatch_last + i) % tcp_workers_max_no;
+		if (tcp_workers[r].state != STATE_ACTIVE ||
+		tcp_worker_dispatch[r][1] < 0)
+			continue;
+		if (first < 0)
+			first = r;
+		if (!pt[tcp_workers[r].pt_idx].load.is_busy) {
+			first = r;
+			break;
+		}
+	}
+	if (first < 0)
+		return tcp_dispatch_sock[1];
+	tcp_dispatch_last = first;
+	return tcp_worker_dispatch[first][1];
+}
+
+int tcp_dispatch_exclusive(void)
+{
+	return tcp_dispatch_eff == TCP_DISPATCH_EXCLUSIVE;
+}
+
+static int tcp_set_nonblocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL);
+
+	if (flags == -1 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("failed to set non-blocking on TCP dispatch socket: %s\n",
+			strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+static int tcp_create_worker_dispatch(void)
+{
+	int r;
+
+	tcp_worker_dispatch = pkg_malloc(tcp_workers_max_no *
+		sizeof(*tcp_worker_dispatch));
+	if (!tcp_worker_dispatch) {
+		LM_ERR("no more pkg memory for %d dispatch sockets\n",
+			tcp_workers_max_no);
+		return -1;
+	}
+	for (r = 0; r < tcp_workers_max_no; r++) {
+		if (socketpair(AF_UNIX, SOCK_DGRAM, 0, tcp_worker_dispatch[r]) < 0) {
+			LM_ERR("socketpair failed for TCP worker %d dispatch: %s\n", r,
+				strerror(errno));
+			return -1;
+		}
+		if (tcp_set_nonblocking(tcp_worker_dispatch[r][0]) < 0 ||
+		tcp_set_nonblocking(tcp_worker_dispatch[r][1]) < 0)
+			return -1;
+	}
+	return 0;
+}
 
 /* unique for each connection, used for
  * quickly finding the corresponding connection for a reply */
@@ -339,7 +459,8 @@ int tcp_dispatch_msg(char *msg, int len,
 	}
 
 	payload_ptr = (uintptr_t)payload;
-	n = send(tcp_dispatch_sock[1], &payload_ptr, sizeof(payload_ptr), 0);
+	n = send(tcp_worker_dispatch ? tcp_dispatch_pick_fd() : tcp_dispatch_sock[1],
+		&payload_ptr, sizeof(payload_ptr), 0);
 	if (n != (int)sizeof(payload_ptr)) {
 		LM_ERR("failed to dispatch TCP message to worker socket: %s\n",
 			(n < 0) ? strerror(errno) : "short write");
@@ -2182,6 +2303,7 @@ int tcp_init(void)
 		goto error;
 	}
 	memset( tcp_workers, 0, tcp_workers_max_no*sizeof(struct tcp_worker));
+	tcp_dispatch_mode_resolve();
 	/* init globals */
 	connection_id=(unsigned int*)shm_malloc(sizeof(unsigned int));
 	if (connection_id==0){
@@ -2409,7 +2531,7 @@ static int fork_dynamic_tcp_process(void *foo)
 		set_proc_attrs("TCP receiver");
 		tcp_workers[r].pid = getpid();
 
-		if (tcp_worker_proc_reactor_init(tcp_dispatch_sock[0]) < 0 ||
+		if (tcp_worker_proc_reactor_init(tcp_worker_dispatch_fd(r)) < 0 ||
 		init_child(20000) ||
 		self_update_routing_script() < 0)
 			goto error;
@@ -2513,6 +2635,10 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		goto error;
 	}
 
+	if (tcp_dispatch_eff == TCP_DISPATCH_PER_WORKER &&
+	tcp_create_worker_dispatch() < 0)
+		goto error;
+
 	if (auto_scaling_enabled && s_profile &&
 	create_process_group(TYPE_TCP, NULL, s_profile,
 		fork_dynamic_tcp_process, tcp_process_graceful_terminate) != 0)
@@ -2540,7 +2666,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		set_proc_attrs("TCP receiver");
 		tcp_workers[r].pid = getpid();
 
-		if (tcp_worker_proc_reactor_init(tcp_dispatch_sock[0]) < 0 ||
+		if (tcp_worker_proc_reactor_init(tcp_worker_dispatch_fd(r)) < 0 ||
 				init_child(*chd_rank) < 0) {
 			LM_ERR("init_child failed for TCP worker %d\n", r);
 			report_failure_status();

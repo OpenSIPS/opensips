@@ -200,6 +200,8 @@ SCRIPTVAR_START	"$"
 /* config vars. */
 DEBUG_MODE	debug_mode
 UDP_WORKERS	udp_workers
+UDP_RX_MODE	udp_rx_mode
+TCP_DISPATCH_MODE	tcp_dispatch_mode
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 DISABLE_CORE		"disable_core_dump"
@@ -423,6 +425,8 @@ SPACE		[ ]
 
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
+<INITIAL>{UDP_RX_MODE}	{ count(); yylval.strval=yytext; return UDP_RX_MODE; }
+<INITIAL>{TCP_DISPATCH_MODE}	{ count(); yylval.strval=yytext; return TCP_DISPATCH_MODE; }
 <INITIAL>{PI_FRAMEWORK}	{ count(); yylval.strval=yytext; return PI_FRAMEWORK; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
