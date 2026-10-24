@@ -282,4 +282,8 @@ unsigned int pcache_ht_grow(pcache_htable_t *ht, unsigned int target_lf,
 /* modparam-triggered startup selftest; -1 on any mismatch */
 int pcache_htable_selftest(void);
 
+/* selftest only: @fn runs in pcache_ht_iter() between the leg and the
+ * buckets; NULL clears it */
+void pcache_ht_selftest_walk_hook(void (*fn)(pcache_htable_t *ht));
+
 #endif /* _PCACHE_HTABLE_H_ */

@@ -4997,6 +4997,10 @@ static int mod_init(void)
 
 		if (pcache_db_init(&url, &tbl) < 0)
 			return -1;
+		if (htable_selftest && pcache_db_selftest() < 0) {
+			LM_ERR("db selftest failed\n");
+			return -1;
+		}
 		if (db_mode >= 1)
 			for (col = pcache_collection; col; col = col->next)
 				if (col->persist && col->htable)

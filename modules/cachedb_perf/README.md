@@ -88,6 +88,12 @@ expires      int      - absolute unix expiry, 0 = never
 ```
 
 
+A save writes each key once, so a primary key on
+(collection, pkey) is fine. Backends with *replace* (db_sqlite,
+db_mysql) rewrite a key the save meets twice - growth or the overflow
+drain can move a record during the save - and the others skip it.
+
+
 ### Cluster sync
 
 
@@ -538,8 +544,10 @@ modparam("cachedb_perf", "arena_selftest", 1)
 
 
 When set to 1, the hash table and its runtime-growth machinery run a
-self-test at startup and abort startup on any mismatch. Default is 0
-(off).
+self-test at startup and abort startup on any mismatch. With
+[db_url](#db_url-string) set it also saves and reloads a collection
+named "cachedb_perf-selftest" through the table, and removes those
+rows afterwards. Default is 0 (off).
 
 
 ```opensips title="Set htable_selftest parameter"

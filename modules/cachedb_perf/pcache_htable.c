@@ -85,6 +85,14 @@ static int st_expect_reject;
  * and has not looked in the leg yet */
 static void (*st_leg_hook)(pcache_htable_t *ht);
 
+/* set only by the selftest: runs between a walk's leg and its buckets */
+static void (*st_walk_hook)(pcache_htable_t *ht);
+
+void pcache_ht_selftest_walk_hook(void (*fn)(pcache_htable_t *ht))
+{
+	st_walk_hook = fn;
+}
+
 #define PCACHE_REJECT_LOG(...) \
 	do { \
 		if (st_expect_reject) \
@@ -1393,6 +1401,8 @@ int pcache_ht_iter_ex(pcache_htable_t *ht, pcache_iter_cb cb, void *ctx,
 	rc = iter_overflow(ht, cb, ctx, kbuf, vbuf, keys);
 	if (rc < 0)
 		goto out;
+	if (st_walk_hook)
+		st_walk_hook(ht);
 	for (idx = 0; idx < ht->nbuckets; idx++) {
 		rc = walk_bucket(bucket_at(ht, idx), cb, ctx, kbuf, vbuf, lo, hi,
 			keys);

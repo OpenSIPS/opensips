@@ -37,6 +37,7 @@
 
 #include "pcache_db.h"
 #include "pcache_htable.h"
+#include "../../mem/mem.h"
 
 static db_func_t pcache_dbf;
 static int pcache_db_bound;
@@ -133,13 +134,77 @@ int pcache_db_init(const str *db_url, const str *db_table)
 	return 0;
 }
 
+/*
+ * A walk may hand a key over twice: a split, or the leg drain moving a
+ * record, while it runs.  Each key a save writes is remembered by a 64-bit
+ * fingerprint, so the count is of keys; with replace a repeat rewrites its
+ * row, without it a repeat is skipped, as an insert would fail on a unique
+ * (collection, pkey).
+ */
 struct db_save_ctx {
 	db_con_t *dbh;
 	str *coll;
 	unsigned int now_ticks;
 	long now_wall;
 	int n, err;
+	int replace;
+	uint64_t *seen;                 /* open addressing, 0 = empty */
+	unsigned int seen_cap, seen_n;
+	int seen_full;                  /* no memory to grow: not tracked */
 };
+
+/* set only by the selftest: write with insert although replace exists */
+static int st_no_replace;
+
+static void seen_put(uint64_t *tab, unsigned int cap, uint64_t h)
+{
+	unsigned int i;
+
+	for (i = h & (cap - 1); tab[i]; i = (i + 1) & (cap - 1))
+		;
+	tab[i] = h;
+}
+
+/* 1 = first time in this save, 0 = handed over before, -1 = not tracked */
+static int seen_add(struct db_save_ctx *sc, const str *key)
+{
+	uint64_t h = 0xcbf29ce484222325ULL, *tab;
+	unsigned int i, cap;
+	int k;
+
+	if (sc->seen_full)
+		return -1;
+	for (k = 0; k < key->len; k++)
+		h = (h ^ (unsigned char)key->s[k]) * 0x100000001b3ULL;
+	if (!h)
+		h = 1;
+	if (2 * (sc->seen_n + 1) > sc->seen_cap) {      /* at most half full */
+		cap = sc->seen_cap ? 2 * sc->seen_cap : 1024;
+		tab = pkg_malloc(cap * sizeof *tab);
+		if (!tab) {
+			LM_WARN("no pkg memory to track the keys of this save - a "
+				"key handed over twice may be counted twice%s\n",
+				sc->replace ? "" : " or fail on a unique key");
+			sc->seen_full = 1;
+			return -1;
+		}
+		memset(tab, 0, cap * sizeof *tab);
+		for (i = 0; i < sc->seen_cap; i++)
+			if (sc->seen[i])
+				seen_put(tab, cap, sc->seen[i]);
+		if (sc->seen)
+			pkg_free(sc->seen);
+		sc->seen = tab;
+		sc->seen_cap = cap;
+	}
+	for (i = h & (sc->seen_cap - 1); sc->seen[i];
+	        i = (i + 1) & (sc->seen_cap - 1))
+		if (sc->seen[i] == h)
+			return 0;
+	sc->seen[i] = h;
+	sc->seen_n++;
+	return 1;
+}
 
 static int db_save_cb(const str *key, const str *val, unsigned int exp,
 		void *p)
@@ -148,8 +213,12 @@ static int db_save_cb(const str *key, const str *val, unsigned int exp,
 	static db_key_t cols[4] =
 		{ &col_collection, &col_pkey, &col_pvalue, &col_expires };
 	db_val_t vals[4];
+	int first, rc;
 
 	if (exp && exp <= sc->now_ticks)
+		return 0;
+	first = seen_add(sc, key);
+	if (!first && !sc->replace)
 		return 0;
 
 	memset(vals, 0, sizeof vals);
@@ -161,12 +230,16 @@ static int db_save_cb(const str *key, const str *val, unsigned int exp,
 	VAL_INT(&vals[3]) = exp ?
 		(int)(sc->now_wall + (long)(exp - sc->now_ticks)) : 0;
 
-	if (pcache_dbf.insert(sc->dbh, cols, vals, 4) < 0) {
-		LM_ERR("insert failed for key <%.*s>\n", key->len, key->s);
+	rc = sc->replace ? pcache_dbf.replace(sc->dbh, cols, vals, 4) :
+		pcache_dbf.insert(sc->dbh, cols, vals, 4);
+	if (rc < 0) {
+		LM_ERR("%s failed for key <%.*s>\n", sc->replace ? "replace" :
+			"insert", key->len, key->s);
 		sc->err = 1;
 		return -1;                        /* stop the walk */
 	}
-	sc->n++;
+	if (first)
+		sc->n++;
 	return 0;
 }
 
@@ -216,7 +289,10 @@ int pcache_db_save(pcache_col_t *col)
 	sc.coll = &col->col_name;
 	sc.now_ticks = get_ticks();
 	sc.now_wall = (long)time(NULL);
+	sc.replace = DB_CAPABILITY(pcache_dbf, DB_CAP_REPLACE) && !st_no_replace;
 	pcache_ht_iter(col->htable, db_save_cb, &sc);
+	if (sc.seen)
+		pkg_free(sc.seen);
 
 	if (sc.err) {
 		LM_ERR("collection <%.*s>: save failed after %d rows - the previous "
@@ -254,6 +330,92 @@ int pcache_db_save(pcache_col_t *col)
 			SHUTDOWN_TIMEOUT);
 
 	return sc.n;
+}
+
+#define DCHK(cond, ...) \
+	do { \
+		if (!(cond)) { \
+			LM_ERR("db selftest FAILED: " __VA_ARGS__); \
+			return -1; \
+		} \
+	} while (0)
+
+static void st_drain_mid_walk(pcache_htable_t *ht)
+{
+	unsigned long p0 = pcache_ht_drain_passes(ht);
+
+	pcache_ht_selftest_walk_hook(NULL);
+	do
+		pcache_ht_drain_leg(ht, 1024);
+	while (pcache_ht_drain_passes(ht) == p0 && pcache_ht_overflow(ht));
+}
+
+/* a save while the leg drain moves records under its walk writes every key
+ * once, with replace and with insert; rows go to the configured table
+ * under a collection of their own and are removed afterwards */
+int pcache_db_selftest(void)
+{
+	static const char cname[] = "cachedb_perf-selftest";
+	db_key_t wk[1] = { &col_collection };
+	db_val_t wv[1];
+	pcache_col_t col;
+	db_con_t *dbh;
+	unsigned int i, miss;
+	char kb[32];
+	str k, v;
+	int pass, rc;
+
+	memset(&col, 0, sizeof col);
+	col.col_name.s = (char *)cname;
+	col.col_name.len = sizeof cname - 1;
+	v.s = "v"; v.len = 1;
+	for (pass = 0; pass < 2; pass++) {
+		col.htable = pcache_htable_new(4);
+		DCHK(col.htable != NULL, "table creation failed\n");
+		for (i = 0; i < 300; i++) {
+			k.len = snprintf(kb, sizeof kb, "dbst-%03u", i); k.s = kb;
+			DCHK(pcache_ht_store(col.htable, &k, &v, 0) == 0,
+				"store %u failed\n", i);
+		}
+		DCHK(pcache_ht_overflow(col.htable) > 0, "nothing in the leg\n");
+		pcache_ht_grow(col.htable, 2, 100000);      /* room to drain into */
+
+		st_no_replace = pass;
+		pcache_ht_selftest_walk_hook(st_drain_mid_walk);
+		rc = pcache_db_save(&col);
+		pcache_ht_selftest_walk_hook(NULL);
+		st_no_replace = 0;
+		DCHK(col.htable->drain_moved > 0, "the drain moved nothing "
+			"during the save\n");
+		DCHK(rc == 300, "a save with records moving under it (%s) "
+			"wrote %d of 300 keys\n", pass ? "insert" : "replace if "
+			"available", rc);
+
+		col.htable = pcache_htable_new(4);
+		DCHK(col.htable != NULL, "table creation failed\n");
+		rc = pcache_db_load(&col);
+		DCHK(rc == 300, "%d rows came back, 300 expected\n", rc);
+		for (i = 0, miss = 0; i < 300; i++) {
+			k.len = snprintf(kb, sizeof kb, "dbst-%03u", i); k.s = kb;
+			miss += pcache_ht_probe(col.htable, &k, NULL, NULL, NULL) != 0;
+		}
+		DCHK(!miss, "%u of 300 keys missing after the reload\n", miss);
+	}
+
+	dbh = pcache_dbf.init(&pcache_db_url);
+	DCHK(dbh != NULL, "cannot open the DB connection\n");
+	if (pcache_dbf.use_table(dbh, &pcache_db_table) == 0) {
+		memset(wv, 0, sizeof wv);
+		VAL_TYPE(&wv[0]) = DB_STR;
+		VAL_STR(&wv[0]) = col.col_name;
+		pcache_dbf.delete(dbh, wk, NULL, wv, 1);
+	}
+	pcache_dbf.close(dbh);
+	LM_NOTICE("db selftest: PASS - saves with records moving under the "
+		"walk wrote every key once (%s)\n",
+		DB_CAPABILITY(pcache_dbf, DB_CAP_REPLACE) ? "replace, then insert" :
+		"insert twice: the backend has no replace");
+	return 0;
 }
 
 int pcache_db_load(pcache_col_t *col)

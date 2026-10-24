@@ -41,4 +41,8 @@ int pcache_db_save(pcache_col_t *col);
 /* load unexpired rows into the collection; rows loaded or -1 */
 int pcache_db_load(pcache_col_t *col);
 
+/* htable_selftest with db_url set: saves under a mid-walk leg drain write
+ * every key once; -1 on any mismatch */
+int pcache_db_selftest(void);
+
 #endif /* _PCACHE_DB_H_ */
