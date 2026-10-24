@@ -30,6 +30,11 @@
 
 #include "test_malloc.h"
 
+#ifdef HG_MALLOC
+#include "../../globals.h"
+#include "../../mem/hg_malloc.h"
+#endif
+
 static osips_malloc_t  MALLOC;
 static osips_realloc_t REALLOC;
 static osips_free_t    FREE;
@@ -39,7 +44,11 @@ static osips_free_t    FREE;
 
 #define HPT_MAX_PROC_USAGE  .8
 
-#define MY_MAX_USED ((long)((double)HPT_SHM / TEST_MALLOC_PROCS * HPT_MAX_PROC_USAGE))
+/* the shm budget the workers share: HPT_SHM, or less for an elastic HG_MALLOC
+ * arena whose cap is smaller (see init_malloc_tests()) */
+static long hpt_shm = HPT_SHM;
+
+#define MY_MAX_USED ((long)((double)hpt_shm / TEST_MALLOC_PROCS * HPT_MAX_PROC_USAGE))
 #define check_limit() (hpt_my_used < MY_MAX_USED)
 
 /* ensure all allocations are aligned to this multiple (match this to ROUNDTO) */
@@ -180,6 +189,9 @@ static void _test_malloc(int procs, unsigned int frag_overhead)
 	int my_pid = 0, child_pid;
 
 	update_stat(workers, +1);
+
+	/* or every worker inherits the unflushed TAP lines and prints them again */
+	fflush(stdout);
 
 	for (i = 1; i < procs; i++) {
 		update_stat(workers, +1);
@@ -345,6 +357,12 @@ void init_malloc_tests(void)
 		pkg_frag_overhead = HP_FRAG_OVERHEAD;
 		break;
 #endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+	case MM_HG_MALLOC_DBG:
+		pkg_frag_overhead = HG_FRAG_OVERHEAD;
+		break;
+#endif
 	case MM_NONE:
 		LM_ERR("no memory allocator set\n");
 		return;
@@ -369,6 +387,16 @@ void init_malloc_tests(void)
 	case MM_HP_MALLOC:
 	case MM_HP_MALLOC_DBG:
 		shm_frag_overhead = HP_FRAG_OVERHEAD;
+		break;
+#endif
+#ifdef HG_MALLOC
+	case MM_HG_MALLOC:
+	case MM_HG_MALLOC_DBG:
+		shm_frag_overhead = HG_FRAG_OVERHEAD;
+		/* an elastic arena (-m INIT:CAP) grows to its cap on demand: keep
+		 * the workers within half of it */
+		if (hg_shm_cap_bytes && (long)(hg_shm_cap_bytes / 2) < hpt_shm)
+			hpt_shm = hg_shm_cap_bytes / 2;
 		break;
 #endif
 	case MM_NONE:

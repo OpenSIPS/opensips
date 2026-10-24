@@ -64,6 +64,29 @@ int udp_workers_no = UDP_WORKERS_NO;
 char *udp_auto_scaling_profile = NULL;
 /* if the auto-scaling engine is enabled or not - this is autodetected */
 int auto_scaling_enabled = 0;
+
+/* elastic-arena knobs - see globals.h for ownership and timing */
+unsigned long hg_shm_cap_bytes = 0;
+unsigned long hg_pkg_cap_bytes = 0;
+char *hg_shm_profile_name = NULL;
+char *hg_pkg_profile_name = NULL;
+int hg_ram_floor_mb = 0;
+int hg_autoscale_dry_run = 0;
+unsigned long hg_shm_grow_granule = 0;
+unsigned long hg_pkg_grow_granule = 0;
+int hg_lock_stall_us = 1000;
+int hg_grow_ahead = 1;
+/* maintenance ticks per profile cycle: at this default a profile's
+ * "for N cycles" means 30 s per cycle */
+int hg_scaling_cycle = 30;
+/* per drain tick, decoupled from the grow granule. The release runs with
+ * the arena lock RELEASED, so this bounds the window an exhausted carver
+ * may wait on grow_inflight, not a lock hold: measured on kernel 6.12,
+ * 4K-backed shm, ~400 us per 2 MB page -> 64 MB is ~13 ms; hugetlb ~1 us per page */
+unsigned long hg_shrink_step = 64UL << 20;
+/* interior release: off until the elasticity it buys has been measured on the
+ * hugetlb rung as well as the ordinary ones */
+int hg_interior_release = 0;
 /* auto-scaling sampling and checking time cycle is 1 sec by default */
 int auto_scaling_cycle = 1;
 /*!< by default choose the best method */

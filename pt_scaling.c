@@ -87,8 +87,13 @@ int create_auto_scaling_profile( char *name,
 		down_cycles_tocheck = 0;
 		down_cycles_delay = 0;
 	}
-	if (max_procs==0 || max_procs <= min_procs || max_procs>=1000) {
-		LM_ERR("invalid relation or range for MIN/MAX processes [%d,%d]\n",
+	/* a profile is a set of numbers that may drive a process group (counts,
+	 * checked again at create_process_group() time, where a four-digit
+	 * process count is refused) or an HG_MALLOC arena (MB, where 1024 and
+	 * far above are ordinary - or KB when a size suffix was used, where a
+	 * 1 GB target is 1048576) - so only the relation is checked here */
+	if (max_procs==0 || max_procs <= min_procs || max_procs >= (1u << 30)) {
+		LM_ERR("invalid relation or range for MIN/MAX [%d,%d]\n",
 			min_procs, max_procs);
 		return -1;
 	}
@@ -152,6 +157,29 @@ struct scaling_profile *get_scaling_profile(char *name)
 }
 
 
+/* A profile may size an HG_MALLOC arena (MB or k/m/g), so
+ * create_auto_scaling_profile() checks only the relation of its numbers.
+ * One that drives a process group must count processes: call this where
+ * the group takes its profile, so a bad one stops the startup there, as it
+ * always did. */
+int check_scaling_profile_procs(struct scaling_profile *p, char *group)
+{
+	if (p->mem_kb_units) {
+		LM_ERR("auto-scaling profile <%s> for %s uses k/m/g size units - "
+			"it sizes a memory arena (shm/pkg_auto_scaling_profile), it "
+			"cannot drive processes\n", p->name, group);
+		return -1;
+	}
+	if (p->max_procs >= 1000) {
+		LM_ERR("invalid relation or range for MIN/MAX processes [%d,%d] in "
+			"auto-scaling profile <%s> for %s\n", p->min_procs,
+			p->max_procs, p->name, group);
+		return -1;
+	}
+	return 0;
+}
+
+
 #define get_sr_type_name(_type, _s) \
 	do { \
 		if (_type==TYPE_UDP) {              \
@@ -174,6 +202,19 @@ int create_process_group(enum process_type type,
 	struct process_group *pg, *it;
 	int h_size;
 	str type_s;
+
+	if (prof->mem_kb_units) {
+		LM_ERR("profile <%s> uses k/m/g size units - it sizes a memory "
+			"arena (shm/pkg_auto_scaling_profile), not a process "
+			"group\n", prof->name);
+		return -1;
+	}
+	if (prof->max_procs >= 1000) {
+		LM_ERR("profile <%s>: %u is not a plausible number of processes "
+			"(MB-scale targets belong to shm/pkg_auto_scaling_profile)\n",
+			prof->name, prof->max_procs);
+		return -1;
+	}
 
 	/* how much of a history do we need in order to cover both up and down
 	 * tranzitions ? */
