@@ -229,6 +229,7 @@ description: ""
 
 ## OpenSIPS protocols and infrastructure
 * [**CLUSTERER**](../../modules/clusterer/README.md) - Define and configure an OpenSIPS cluster, 🟢 **stable**
+* [**CLUSTERER_CONTROLLER**](../../modules/clusterer_controller/README.md) - Zero-config HA for clusterer: discovery, master election, node ids and sharing-tag failover over encrypted multicast, beta
 * [**TLS_MGM**](../../modules/tls_mgm/README.md) - TLS management module , 🟢 **stable**
 * [**TLS_OPENSSL**](../../modules/tls_openssl/README.md) - TLS operations implemented using the openSSL library , 🟢 **stable**
 * [**TLS_WOLFSSL**](../../modules/tls_wolfssl/README.md) - TLS operations implemented using the wolfSSL library , 🟢 **stable**
