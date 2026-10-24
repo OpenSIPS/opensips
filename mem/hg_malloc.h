@@ -644,6 +644,22 @@ enum hg_grow_why {
 	HG_GROW_PROACTIVE         /* the profile's tick, ahead of demand */
 };
 
+/* what refused a grow - hg_stats' last_grow_refusal, hg_grow_refusal_str() */
+enum hg_grow_refusal {
+	HG_GR_NONE = 0,         /* never refused */
+	HG_GR_CAP,              /* the -m/-M reservation is spent */
+	HG_GR_PROFILE,          /* the profile's scale-up target is reached */
+	HG_GR_DRY_RUN,          /* hg_autoscale_dry_run: growth never acts */
+	HG_GR_WAIT_TIMEOUT,     /* another grow stayed in flight too long */
+	HG_GR_HOST_FLOOR,       /* the host would drop under the RAM floor */
+	HG_GR_CGROUP,           /* the cgroup would drop under its floor */
+	HG_GR_MEMLOCK,          /* RLIMIT_MEMLOCK cannot cover the mlock() */
+	HG_GR_HUGETLB_POOL,     /* the hugetlb pool has too few free pages */
+	HG_GR_MLOCK,            /* mlock() failed, neither of the above */
+	HG_GR_HOLE_REPIN,       /* no punched hugetlb page could be re-pinned */
+	HG_GR_REASONS
+};
+
 struct hg_block {
 	/*
 	 * What the LOCK-FREE fast path reads, grouped first and kept on
@@ -903,6 +919,14 @@ struct hg_block {
 	 * successful grow.
 	 */
 	unsigned int          grow_refuse_said;
+	/* what refused the most recent grow (enum hg_grow_refusal). Kept after
+	 * the episode ends, so hg_stats still names the last cause; whether it
+	 * is current is grow_blocked's to say. grow_refuse_mlock is the cause
+	 * of an mlock() refusal, classified once per episode: telling the
+	 * memory-lock limit from the hugetlb pool reads /proc, and an arena
+	 * that cannot grow retries on every exhausted request. */
+	unsigned int          grow_refuse_why;
+	unsigned int          grow_refuse_mlock;
 	/* lock instrumentation - see enum hg_lock_reason. The section in
 	 * progress (lk_t0/lk_cur) sits with the lock itself, at the top. */
 	struct hg_lkstat      lk_hold[HG_LK_REASONS];
@@ -1233,6 +1257,19 @@ void hg_collapse_deferred(struct hg_block *hb);
  * hb->lock.
  */
 int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta);
+
+const char *hg_grow_refusal_str(unsigned int why);
+
+/*
+ * Why mlock() refused @delta bytes, from what /proc and getrlimit() said:
+ * @lim the binding RLIMIT_MEMLOCK in bytes (0: none), @locked_kb what the
+ * process has locked already (VmLck), and on hugetlb (@hugetlb) the pool's
+ * free and reserved pages of @page_kb each, negative when unreadable.
+ * Pure, so the unit tests can check it without changing the real limits.
+ */
+enum hg_grow_refusal hg_mlock_refusal_why(unsigned long lim, long locked_kb,
+		unsigned long delta, int hugetlb, long free_pg, long rsvd_pg,
+		long page_kb);
 
 /*
  * Host-memory checks for the private arenas every process creates, so a

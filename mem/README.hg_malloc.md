@@ -87,7 +87,7 @@ event_route[E_CORE_SHM_GROW_BLOCKED] {
 }
 ```
 
-Refusal details are logged once per episode; `grow_refused` carries the count.
+Refusal details are logged once per episode; `grow_refused` carries the count, and `last_grow_refusal` in `core:hg_stats` names what refused the latest grow: `cap`, `profile_ceiling`, `host_ram_floor`, `cgroup_limit`, `memlock_limit`, `hugetlb_pool`, `mlock_failed`, `hole_repin_failed`, `grow_wait_timeout` or `dry_run` (`none` until the first refusal). It stays after growth works again; `grow_blocked` says whether it is current.
 
 ### 3.4 Shrink
 
@@ -115,7 +115,8 @@ A module can ask for its own HG-managed arena with `mem/mem_arena.h` - for a cac
 |---|---|
 | `tier`, `tier_bytes` | backing achieved at startup; per-tier split when growth mixed tiers |
 | `committed`, `cap`, `grow_headroom` | elastic state |
-| `grows`, `grows_proactive`, `grows_exhaustion`, `grow_refused`, `grow_blocked` | growth history and the latched gauge |
+| `pinned_mb`, `unpinned` | memory locked in RAM; `unpinned` is 1 when the arena runs swappable because init could not lock it or the memory-lock limit could not cover a grow |
+| `grows`, `grows_proactive`, `grows_exhaustion`, `grow_refused`, `last_grow_refusal`, `grow_blocked` | growth history, what refused the latest grow (section 3.3) and the latched gauge |
 | `shrinks`, `punches`, `draining`, `whole_free_pages` | release history and what could be released now |
 | `live_committed`, per-class carve and reuse | what is in use and where |
 | `lock` | hold and wait histograms per reason (refill, return, flush, large, policy, stats, other), stalls, the worst hold and its reason, commit and release times |

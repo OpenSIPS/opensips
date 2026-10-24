@@ -475,6 +475,7 @@ void hg_grow_unblock(struct hg_block *hb, const char *how)
 	hb->grow_blocked_refuse0 = 0;
 	hb->grow_event_due = 0;
 	hb->grow_refuse_said = 0;
+	hb->grow_refuse_mlock = 0;
 }
 
 /*
@@ -608,6 +609,7 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	 * the arena behaves exactly like a fixed one, with evidence */
 	if (hg_autoscale_dry_run) {
 		hb->grow_refused++;
+		hb->grow_refuse_why = HG_GR_DRY_RUN;
 		if (!hb->pol_dry_said) {
 			hb->pol_dry_said = 1;
 			LM_WARN("%s: DRY RUN - would grow for a %lu byte request "
@@ -661,6 +663,7 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 		if (hb->grow_inflight) {
 			hb->grow_wait_timeouts++; /* still populating - give up */
 			hb->grow_refused++;
+			hb->grow_refuse_why = HG_GR_WAIT_TIMEOUT;
 			return -1;
 		}
 		/* the in-flight operation went away; fall through and try ours */
@@ -678,6 +681,8 @@ int hg_buddy_grow(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 	room = limit > hb->committed_bytes ? limit - hb->committed_bytes : 0;
 	if (room == 0) {
 		hb->grow_refused++;
+		hb->grow_refuse_why = limit == hb->hcap ? HG_GR_CAP
+		                                        : HG_GR_PROFILE;
 		/* an admin-set ceiling doing its job is not an alarm; growth
 		 * being impossible because no cap was ever set is not even
 		 * noteworthy - a fixed arena lives its whole life there. The
@@ -1182,6 +1187,7 @@ static int hg_buddy_regrow_holes(struct hg_block *hb, unsigned long need,
 	hg_lkstat_add(&hb->lk_commit, pin_ns);
 	if (!got) {
 		__atomic_store_n(&hb->grow_inflight, 0, __ATOMIC_RELEASE);
+		hb->grow_refuse_why = HG_GR_HOLE_REPIN;
 		return grow_resource_refused(hb);
 	}
 	for (i = 0; i < got; i++) {

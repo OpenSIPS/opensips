@@ -1145,6 +1145,11 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 		return -1;
 	if (add_mi_number(o, MI_SSTR("pinned_mb"), hb->locked_mb) < 0)
 		return -1;
+	/* 1: the arena is swappable - init could not mlock() it, or a grow
+	 * the memory-lock limit could not cover went on unpinned; pinned_mb
+	 * then stays at what was locked before */
+	if (add_mi_number(o, MI_SSTR("unpinned"), hb->unpinned) < 0)
+		return -1;
 	/* committed vs reserved, and whether growth has happened or been
 	 * refused. committed == cap means a fixed arena (the default). */
 	if (add_mi_number(o, MI_SSTR("committed"), hb->committed_bytes) < 0)
@@ -1187,6 +1192,16 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 		return -1;
 	if (add_mi_number(o, MI_SSTR("grow_refused"), hb->grow_refused) < 0)
 		return -1;
+	/* what refused the latest grow - the cap, a profile ceiling or a
+	 * resource; still shown once growth works again, grow_blocked says
+	 * whether it is current */
+	{
+		const char *why = hg_grow_refusal_str(hb->grow_refuse_why);
+
+		if (add_mi_string(o, MI_SSTR("last_grow_refusal"), (char *)why,
+		                  strlen(why)) < 0)
+			return -1;
+	}
 	/* which path asked for each grow */
 	if (add_mi_number(o, MI_SSTR("grows_proactive"), hb->grows_proactive) < 0)
 		return -1;

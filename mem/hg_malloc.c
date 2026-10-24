@@ -272,48 +272,76 @@ static unsigned long hg_memlock_limit(void)
 	return (unsigned long)rl.rlim_cur;
 }
 
-/* log why mlock() refused @delta bytes of @hb - called once per refusal
- * episode (grow_refuse_said), with the errno of the failed mlock() */
-static void hg_explain_mlock_refusal(struct hg_block *hb, unsigned long delta,
-		int err)
+enum hg_grow_refusal hg_mlock_refusal_why(unsigned long lim, long locked_kb,
+		unsigned long delta, int hugetlb, long free_pg, long rsvd_pg,
+		long page_kb)
+{
+	if (locked_kb < 0)
+		locked_kb = 0;
+	if (lim && ((unsigned long long)locked_kb << 10) + delta > lim)
+		return HG_GR_MEMLOCK;
+	if (hugetlb && free_pg >= 0 && rsvd_pg >= 0 && page_kb > 0 &&
+	    (unsigned long long)(free_pg - rsvd_pg) *
+	    ((unsigned long long)page_kb << 10) < delta)
+		return HG_GR_HUGETLB_POOL;
+	return HG_GR_MLOCK;
+}
+
+/* why mlock() refused @delta bytes of @hb, with the errno of the failed
+ * mlock(); when @say, also the warning that names it */
+static enum hg_grow_refusal hg_mlock_refusal(struct hg_block *hb,
+		unsigned long delta, int err, int say)
 {
 	unsigned long lim = hg_memlock_limit();
 	long locked_kb = hg_proc_field("/proc/self/status", "VmLck", 10);
-	long free_pg, rsvd_pg, page_kb;
-
-	if (locked_kb < 0)
-		locked_kb = 0;
-	if (lim && ((unsigned long long)locked_kb << 10) + delta > lim) {
-		LM_WARN("%s: cannot grow by %lu MB: RLIMIT_MEMLOCK is %lu KB and "
-			"this process already has %ld KB locked - every grow is "
-			"mlock()ed, on hugetlb as well. Set LimitMEMLOCK=infinity "
-			"in the service unit (or ulimit -l unlimited).\n",
-			hb->name, delta >> 20, lim >> 10, locked_kb);
-		return;
-	}
+	long free_pg = -1, rsvd_pg = -1, page_kb = -1;
+	enum hg_grow_refusal why;
 
 	if (hb->tier == HG_MEM_HUGETLB) {
 		free_pg = hg_meminfo_kb("HugePages_Free");
 		rsvd_pg = hg_meminfo_kb("HugePages_Rsvd");
 		page_kb = hg_meminfo_kb("Hugepagesize");
-		if (free_pg >= 0 && rsvd_pg >= 0 && page_kb > 0 &&
-		    (unsigned long long)(free_pg - rsvd_pg) *
-		    ((unsigned long long)page_kb << 10) < delta) {
-			LM_WARN("%s: cannot grow by %lu MB: the hugetlb pool has %ld "
-				"free pages of %ld KB, %ld of them already reserved, "
-				"and the grow needs %lu. Raise vm.nr_hugepages or "
-				"vm.nr_overcommit_hugepages.\n", hb->name, delta >> 20,
-				free_pg, page_kb, rsvd_pg,
-				delta / ((unsigned long)page_kb << 10));
-			return;
-		}
 	}
+	why = hg_mlock_refusal_why(lim, locked_kb, delta,
+		hb->tier == HG_MEM_HUGETLB, free_pg, rsvd_pg, page_kb);
+	if (!say)
+		return why;
+	if (locked_kb < 0)
+		locked_kb = 0;
 
-	LM_WARN("%s: cannot grow by %lu MB: mlock failed (%s), and neither "
-		"RLIMIT_MEMLOCK (%s) nor %s accounts for it.\n", hb->name,
-		delta >> 20, strerror(err), lim ? "set" : "not binding",
-		hb->tier == HG_MEM_HUGETLB ? "the hugetlb pool" :
-		"the locked-memory total");
+	if (why == HG_GR_MEMLOCK)
+		LM_WARN("%s: cannot grow by %lu MB: RLIMIT_MEMLOCK is %lu KB and "
+			"this process already has %ld KB locked - every grow is "
+			"mlock()ed, on hugetlb as well. Set LimitMEMLOCK=infinity "
+			"in the service unit (or ulimit -l unlimited).\n",
+			hb->name, delta >> 20, lim >> 10, locked_kb);
+	else if (why == HG_GR_HUGETLB_POOL)
+		LM_WARN("%s: cannot grow by %lu MB: the hugetlb pool has %ld "
+			"free pages of %ld KB, %ld of them already reserved, "
+			"and the grow needs %lu. Raise vm.nr_hugepages or "
+			"vm.nr_overcommit_hugepages.\n", hb->name, delta >> 20,
+			free_pg, page_kb, rsvd_pg,
+			delta / ((unsigned long)page_kb << 10));
+	else
+		LM_WARN("%s: cannot grow by %lu MB: mlock failed (%s), and "
+			"neither RLIMIT_MEMLOCK (%s) nor %s accounts for it.\n",
+			hb->name, delta >> 20, strerror(err),
+			lim ? "set" : "not binding",
+			hb->tier == HG_MEM_HUGETLB ? "the hugetlb pool" :
+			"the locked-memory total");
+	return why;
+}
+
+/* a grow's mlock() was refused: the cause is classified and logged once per
+ * episode (see grow_refuse_said's comment) and recorded every time */
+static void hg_mlock_refused(struct hg_block *hb, unsigned long delta, int err)
+{
+	if (!hb->grow_refuse_said || !hb->grow_refuse_mlock) {
+		hb->grow_refuse_mlock = hg_mlock_refusal(hb, delta, err,
+			!hb->grow_refuse_said);
+		hb->grow_refuse_said = 1;
+	}
+	hb->grow_refuse_why = hb->grow_refuse_mlock;
 }
 
 /*
@@ -499,7 +527,7 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 	 * tier 1: MAP_HUGETLB - unswappable without an mlock(), so the INIT
 	 * mapping is not limited by RLIMIT_MEMLOCK. Its GROWS are: each one is
 	 * an mlock() of the delta, and mlock() checks the limit on hugetlb too
-	 * (see hg_explain_mlock_refusal()).
+	 * (see hg_mlock_refusal()).
 	 *
 	 * Try the whole cap first, then fall back to the committed size alone.
 	 * hugetlb mappings are backed by a fixed pool, so a cap larger than the
@@ -1035,6 +1063,7 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 	cg_short = cg_room != HG_ROOM_ANY && cg_room < effective;
 	if (!host_short && !cg_short)
 		return 0;
+	hb->grow_refuse_why = host_short ? HG_GR_HOST_FLOOR : HG_GR_CGROUP;
 	/* once per episode - see grow_refuse_said's comment */
 	if (!hb->grow_refuse_said) {
 		hb->grow_refuse_said = 1;
@@ -1102,17 +1131,14 @@ int hg_mem_commit(struct hg_block *hb, unsigned long off, unsigned long delta,
 	if (off + delta > hb->hcap) {
 		LM_BUG("%s: commit of %lu@%lu overruns the %lu byte cap\n",
 			hb->name, delta, off, hb->hcap);
+		hb->grow_refuse_why = HG_GR_CAP;
 		return -1;
 	}
 
 	if (hb->tier == HG_MEM_HUGETLB) {
 		HG_CP_TIME(HG_CP_MLOCK, mlock_rc = mlock(base, delta));
 		if (mlock_rc != 0) {
-			/* once per episode - see grow_refuse_said's comment */
-			if (!hb->grow_refuse_said) {
-				hb->grow_refuse_said = 1;
-				hg_explain_mlock_refusal(hb, delta, errno);
-			}
+			hg_mlock_refused(hb, delta, errno);
 			munlock(base, delta);
 			return -1;
 		}
@@ -1167,11 +1193,7 @@ int hg_mem_commit(struct hg_block *hb, unsigned long off, unsigned long delta,
 			}
 		}
 		if (mlock_rc != 0) {
-			/* once per episode - see grow_refuse_said's comment */
-			if (!hb->grow_refuse_said) {
-				hb->grow_refuse_said = 1;
-				hg_explain_mlock_refusal(hb, delta, errno);
-			}
+			hg_mlock_refused(hb, delta, errno);
 			munlock(base, delta);
 			return -1;
 		}
@@ -1594,6 +1616,25 @@ int hg_autoscale_post_cfg(void)
 		}
 	}
 	return 0;
+}
+
+const char *hg_grow_refusal_str(unsigned int why)
+{
+	static const char * const str[HG_GR_REASONS] = {
+		[HG_GR_NONE]         = "none",
+		[HG_GR_CAP]          = "cap",
+		[HG_GR_PROFILE]      = "profile_ceiling",
+		[HG_GR_DRY_RUN]      = "dry_run",
+		[HG_GR_WAIT_TIMEOUT] = "grow_wait_timeout",
+		[HG_GR_HOST_FLOOR]   = "host_ram_floor",
+		[HG_GR_CGROUP]       = "cgroup_limit",
+		[HG_GR_MEMLOCK]      = "memlock_limit",
+		[HG_GR_HUGETLB_POOL] = "hugetlb_pool",
+		[HG_GR_MLOCK]        = "mlock_failed",
+		[HG_GR_HOLE_REPIN]   = "hole_repin_failed",
+	};
+
+	return why < HG_GR_REASONS ? str[why] : "?";
 }
 
 const char *hg_mem_tier_str(enum hg_mem_tier tier)

@@ -107,15 +107,19 @@ static unsigned long long hml_room(const char *self, struct hg_cg_info *ci)
  * saw 100 MB, under the floor, and refused every grow - and 8 MB above the
  * floor must be refused, so the check is shown live on every build. The
  * cgroup is pointed at a missing membership file, so only the host counts.
+ * Then the cgroup the caller left with 70 MB of room refuses a 128 MB grow
+ * on a host with plenty: each refusal must record its own cause for
+ * hg_stats' last_grow_refusal.
  */
 static void test_hg_host_room(void)
 {
 	struct hg_block *hb = shm_block;
-	char p[96], root[96];
-	unsigned int said = hb->grow_refuse_said;
-	int pass_big = -1, refuse_low = -1, bad;
+	char p[96], root[96], self2[96];
+	unsigned int said = hb->grow_refuse_said, why = hb->grow_refuse_why;
+	unsigned int why_low = HG_GR_NONE, why_cg = HG_GR_NONE;
+	int pass_big = -1, refuse_low = -1, refuse_cg = -1, bad;
 
-	skip(hb->tier == HG_MEM_HUGETLB, 1,
+	skip(hb->tier == HG_MEM_HUGETLB, 2,
 		"a hugetlb arena takes nothing from host RAM at a grow");
 	snprintf(p, sizeof p, "%s/meminfo", hml_dir);
 	snprintf(root, sizeof root, "%s/cg", hml_dir);
@@ -131,13 +135,30 @@ static void test_hg_host_room(void)
 	hb->grow_refuse_said = 1;   /* the refusal below is expected: no WARN */
 	if (!bad)
 		refuse_low = hg_grow_ram_refused(hb, 16 * MB);
+	why_low = hb->grow_refuse_why;
+
+	snprintf(self2, sizeof self2, "%s/self2", hml_dir);
+	hg_cgroup_test_paths(root, self2);
+	bad |= hml_put("meminfo", "MemTotal:       16777216 kB\n"
+		"MemAvailable:    8388608 kB\n");
+	if (!bad)
+		refuse_cg = hg_grow_ram_refused(hb, 128 * MB);
+	why_cg = hb->grow_refuse_why;
 
 	hb->grow_refuse_said = said;
+	hb->grow_refuse_why = why;
 	hg_meminfo_test_path(NULL);
 	ok(!bad && pass_big == 0 && refuse_low == 1,
 		"host memory above 4 GB counted whole: a 16 MB grow with 4196 MB "
 		"available above a 409 MB floor passes (%d, 0 expected), with 8 MB "
 		"above it is refused (%d, 1 expected)", pass_big, refuse_low);
+	ok(!bad && refuse_cg == 1 && why_low == HG_GR_HOST_FLOOR &&
+		why_cg == HG_GR_CGROUP,
+		"a refused grow records its cause: %s under the host floor "
+		"(host_ram_floor expected), %s past the cgroup's room "
+		"(cgroup_limit expected, refused: %d)",
+		hg_grow_refusal_str(why_low), hg_grow_refusal_str(why_cg),
+		refuse_cg);
 	end_skip;
 }
 
@@ -225,6 +246,23 @@ void test_hg_memlimit(void)
 	ok(!bad && r == HG_ROOM_ANY && ci.version == 0 &&
 		hml_room("nosuch", NULL) == HG_ROOM_ANY,
 		"no limited level, or no membership file: no cgroup limit");
+
+	/* what an mlock() refusal is put down to: a 64 KB limit with 32 KB
+	 * locked cannot take a 2 MB grow, whatever the pool holds; one free
+	 * unreserved 2 MB page cannot give 4 MB; with neither short it is the
+	 * kernel's own refusal */
+	ok(hg_mlock_refusal_why(64 * 1024, 32, 2 * MB, 1, 400, 0, 2048) ==
+			HG_GR_MEMLOCK &&
+		hg_mlock_refusal_why(0, 0, 4 * MB, 1, 3, 2, 2048) ==
+			HG_GR_HUGETLB_POOL &&
+		hg_mlock_refusal_why(8 * MB, -1, 4 * MB, 1, 3, 2, 2048) ==
+			HG_GR_HUGETLB_POOL &&
+		hg_mlock_refusal_why(0, 0, 4 * MB, 1, 400, 2, 2048) ==
+			HG_GR_MLOCK &&
+		hg_mlock_refusal_why(0, 0, 4 * MB, 0, -1, -1, -1) ==
+			HG_GR_MLOCK,
+		"an mlock() refusal is put down to the memory-lock limit, the "
+		"hugetlb pool, or neither");
 
 	test_hg_host_room();
 

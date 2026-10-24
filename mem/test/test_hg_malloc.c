@@ -46,6 +46,7 @@
 #include "../../mem/shm_mem.h"
 #include "../../mem/hg_malloc.h"
 #include "../../mem/hg_arena.h"   /* hg_quarantine_drain() */
+#include "../../mem/hg_buddy.h"   /* hg_buddy_grow() */
 
 #define HGT_WAIT_US   (30 * 1000 * 1000)
 #define HGT_STEP_US   (10 * 1000)
@@ -351,6 +352,69 @@ static void test_hg_grow(void)
 
 	for (i = 0; i < n; i++)
 		shm_free(p[i]);
+}
+
+/*
+ * A refused grow records what refused it, for hg_stats' last_grow_refusal.
+ * The policy causes, through hg_buddy_grow() itself under the arena lock:
+ * dry-run mode, then a profile ceiling at what is committed now (on a fixed
+ * arena that ceiling is the reservation, so the cause is the cap). Every
+ * field borrowed is restored before the lock is released, so no other
+ * process sees it. A grow in flight elsewhere would make the call wait with
+ * the lock released, so the check is skipped then.
+ */
+static void test_hg_grow_refusal_cause(void)
+{
+	struct hg_block *hb = shm_block;
+	unsigned long refused = 0, up_bytes = 0;
+	unsigned int why = 0, said = 0, dry_said = 0, active = 0;
+	unsigned int why_dry = HG_GR_NONE, why_ceil = HG_GR_NONE;
+	unsigned int want_ceil = HG_GR_PROFILE;
+	int dry = 0, r_dry = 0, r_ceil = 0, skipped;
+
+	hg_lock_enter(hb, HG_LK_OTHER);
+	skipped = !hb->buddy_ready || hb->grow_inflight;
+	if (!skipped) {
+		refused = hb->grow_refused;
+		why = hb->grow_refuse_why;
+		said = hb->grow_refuse_said;
+		dry_said = hb->pol_dry_said;
+		active = hb->pol.active;
+		up_bytes = hb->pol.up_bytes;
+		dry = hg_autoscale_dry_run;
+
+		hg_autoscale_dry_run = 1;
+		hb->pol_dry_said = 1;          /* expected: no warning */
+		r_dry = hg_buddy_grow(hb, 4096, HG_GROW_EXHAUSTION);
+		why_dry = hb->grow_refuse_why;
+		hg_autoscale_dry_run = 0;
+
+		hb->pol.active = 1;
+		hb->pol.up_bytes = hb->committed_bytes;
+		if (hb->committed_bytes == hb->hcap)
+			want_ceil = HG_GR_CAP;
+		hb->grow_refuse_said = 1;      /* expected: no notice */
+		r_ceil = hg_buddy_grow(hb, 4096, HG_GROW_EXHAUSTION);
+		why_ceil = hb->grow_refuse_why;
+
+		hg_autoscale_dry_run = dry;
+		hb->pol.active = active;
+		hb->pol.up_bytes = up_bytes;
+		hb->pol_dry_said = dry_said;
+		hb->grow_refuse_said = said;
+		hb->grow_refuse_why = why;
+		hb->grow_refused = refused;
+	}
+	hg_lock_leave(hb);
+
+	skip(skipped, 1, "a grow was in flight: refusal causes not checked");
+	ok(r_dry < 0 && why_dry == HG_GR_DRY_RUN && r_ceil < 0 &&
+		why_ceil == want_ceil,
+		"a refused grow records its cause: %s in dry-run mode (dry_run "
+		"expected), %s at the ceiling (%s expected)",
+		hg_grow_refusal_str(why_dry), hg_grow_refusal_str(why_ceil),
+		hg_grow_refusal_str(want_ceil));
+	end_skip;
 }
 
 /*
@@ -728,6 +792,7 @@ void test_hg_malloc(void)
 	test_hg_cross_process_shm();
 	test_hg_large();
 	test_hg_grow();
+	test_hg_grow_refusal_cause();
 	test_hg_exit_returns_cells();
 	test_hg_san();
 	test_hg_memlimit();
