@@ -34,9 +34,12 @@
 #ifdef HG_MALLOC
 
 #include <tap.h>
+#include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "../../dprint.h"
 #include "../../pt.h"
@@ -47,7 +50,9 @@
 #include "../../mem/hg_arena.h"   /* hg_quarantine_drain() */
 #include "../../mem/hg_buddy.h"   /* hg_buddy_grow_unlocks() */
 
-#define HGT_WAIT_US   (30 * 1000 * 1000)
+/* a fuzz seed has taken from 10 to over 30 s under an emulator (the qemu
+ * cross-builds in CI); a child that dies is noticed as it exits, not here */
+#define HGT_WAIT_US   (120 * 1000 * 1000)
 #define HGT_STEP_US   (10 * 1000)
 
 #define HGT_PASS  1
@@ -96,7 +101,8 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 		.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
 		.type = TYPE_NONE,
 	};
-	int pid, waited;
+	int pid, waited, gone = 0;
+	siginfo_t si;
 
 	*hgt_verdict = 0;
 	*hgt_go = 0;
@@ -120,12 +126,34 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 	__atomic_store_n(hgt_go, 1, __ATOMIC_RELEASE);
 
 	for (waited = 0; !__atomic_load_n(hgt_verdict, __ATOMIC_ACQUIRE) &&
-	        waited < HGT_WAIT_US; waited += HGT_STEP_US)
+	        waited < HGT_WAIT_US; waited += HGT_STEP_US) {
+		/* exited (left a zombie, as before: WNOWAIT), or already reaped
+		 * with SIGCHLD ignored; a verdict stored before exit() is visible
+		 * below */
+		si.si_pid = 0;
+		if (waitid(P_PID, pid, &si, WEXITED|WNOHANG|WNOWAIT) < 0 ?
+		        errno == ECHILD : si.si_pid == pid) {
+			gone = 1;
+			break;
+		}
 		usleep(HGT_STEP_US);
+	}
 
-	if (*hgt_verdict == 0)
-		LM_ERR("the '%s' child gave no verdict within %d s - it crashed "
-			"or aborted\n", desc, HGT_WAIT_US / 1000000);
+	if (__atomic_load_n(hgt_verdict, __ATOMIC_ACQUIRE) == 0) {
+		if (gone) {
+			LM_ERR("the '%s' child exited without a verdict - it crashed "
+				"or aborted\n", desc);
+		} else {
+			/* or it goes on using the arenas during the next test, and
+			 * its late verdict is taken for that test's */
+			kill(pid, SIGKILL);
+			while (waitid(P_PID, pid, &si, WEXITED|WNOWAIT) < 0 &&
+			        errno == EINTR)
+				;
+			LM_ERR("the '%s' child gave no verdict within %d s - "
+				"killed it\n", desc, HGT_WAIT_US / 1000000);
+		}
+	}
 
 	return *hgt_verdict == HGT_PASS;
 }
