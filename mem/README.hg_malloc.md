@@ -354,13 +354,26 @@ ERROR: new process's pkg arena: committing 32 MB now does not fit - ... not fork
 
 | file | what it holds |
 |---|---|
-| `mem/hg_malloc.h` | the data structures: `struct hg_block` (one arena), the cell header, size classes, corruption kinds, lock instrumentation |
+| `mem/hg_malloc.h` | the interface to the core: init, status, statistics, the ownership tests, the lock wrappers; it includes the two below |
+| `mem/hg_cell.h` | the cell header and its states, the size classes, rounding |
+| `mem/hg_block.h` | the data structures: `struct hg_block` (one arena), blocks, the per-thread caches, stats slots, corruption kinds, lock instrumentation |
 | `mem/hg_malloc_dyn.h` | the public entry points (`hg_malloc`/`hg_free`/`hg_realloc`, debug and normal) |
-| `mem/hg_arena.c` | size classes, the per-thread caches, the shared per-class pool, block reclaim, the sweeps, corruption checks, statistics |
-| `mem/hg_buddy.c` | the page grid and buddy allocator; grow, shrink, interior release and re-growth into holes; deferred collapse |
+| `mem/hg_arena.c` | the fast path: per-thread caches, cell alloc and free, carving blocks into cells; arena init and per-child reset; flushing this thread's caches; the live-cell walk |
+| `mem/hg_pool.c` | the shared per-class pool and its integrity checks, block fullness lists, drained-block reclaim |
+| `mem/hg_cache.c` | flushing cached cells back to the pool, the sweep's due check, the reserve floor |
+| `mem/hg_stats.c` | statistics, per-thread stats slots, the core statistics; the lock contract check and stall notes |
+| `mem/hg_arena_int.h` | helpers shared by the four files above |
+| `mem/hg_buddy.c` | the page grid and the buddy allocator |
+| `mem/hg_grow.c` | growth: the three-phase grow, re-growth into holes, deferred collapse, the GROW-BLOCKED latch |
+| `mem/hg_shrink.c` | shrinking: trim from the top, interior release, the shrink and drain ticks |
+| `mem/hg_buddy_int.h` | helpers shared by the three files above |
 | `mem/hg_large.c` | requests above 64 KB: a coalescing tier carved from buddy blocks |
-| `mem/hg_malloc.c` | backing memory: the four-tier ladder and its verification, host memory checks, memlock, init and per-child init, status |
+| `mem/hg_backing.c` | backing memory: the four-tier ladder and its verification, commit, release, re-pin, memlock diagnosis |
+| `mem/hg_capacity.c` | host and cgroup memory room, capacity checks at init, fork and grow, the pkg growth figures |
+| `mem/hg_backing.h` | helpers shared by `hg_malloc.c`, `hg_backing.c` and `hg_capacity.c` |
+| `mem/hg_malloc.c` | init and per-child init, the arena registry, auto-scaling profiles, status and info, allocation-failure reports |
 | `mem/hg_maint.c` | the maintenance process |
+| `mem/hg_memlimit.c`, `mem/hg_dbg.c`, `mem/hg_san.h` | cgroup limits, the debug checks, sanitizer hooks |
 | integration | `mem/mem.c`, `mem/shm_mem.c`, `mem/common.c`, `mem/rpm_mem.c`, `pt.c`, `pt_scaling.c`, `main.c`, `cfg.y`, `core_stats.c`, `mi/mi_core.c`, `evi/evi_core.c` |
 | tests | `mem/test/test_hg_malloc.c`, `modules/hgstress` |
 

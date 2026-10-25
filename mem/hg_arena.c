@@ -1,5 +1,5 @@
 /*
- * slab allocator with elastic arenas - arena internals
+ * slab allocator with elastic arenas - cells, per-thread caches, chunk carving
  *
  * Copyright (C) 2026 Yury Kirsanov
  *
@@ -34,25 +34,10 @@
 #include "hg_dbg.h"
 #include "../dprint.h"
 #include "../globals.h"
-
-/* ~x1.5 ladder, all multiples of 32 so cells stay HG_ROUNDTO-aligned; total
- * slot sizes (header + payload) */
-static const unsigned int cell_sizes[HG_NCLASSES] = {
-	64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048,
-	3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152, 65536
-};
-
-/* defined with the carve path; hg_gc_cycle() sizes a class's keep by it */
-static inline unsigned int chunk_size_for(struct hg_block *hb, int c);
+#include "hg_arena_int.h"
 
 #define HG_CHUNK_SMALL    (256 * 1024)  /* ceiling on chunk_max, see below */
 #define HG_CHUNK_MIN      (8 * 1024)    /* floor, however tiny the arena */
-/*
- * Target cells per block. A block is the unit of reclaim: fewer cells drain
- * sooner, more mean fewer carves. Do not raise it without re-measuring how
- * many blocks reach empty.
- */
-#define HG_CELLS_PER_BLOCK 32
 /*
  * GC policy. Drained blocks beyond a class's keep (hg_gc_cycle()) are
  * returned by the maintenance tick, HG_GC_TICK_BUDGET at a time, so the
@@ -140,410 +125,6 @@ static inline struct hg_palloc *hg_get_palloc(struct hg_block *hb)
 }
 
 /*
- * Free-list link, one convention for the private stacks and the shared pool:
- * both helpers take @cell_start (the hidden header) and keep the link at
- * cell_start + HG_CELL_HDR: in the payload, never in the header, whichever
- * list owns the cell.
- */
-static inline void *cell_next(void *cell_start)
-{
-	/* via void *: the link is pointer-aligned (HG_ROUNDTO cells, a
-	 * HG_CELL_HDR multiple); keeps -Wcast-align quiet on strict targets */
-	return *(void **)(void *)((char *)cell_start + HG_CELL_HDR);
-}
-
-static inline void cell_set_next(void *cell_start, void *next)
-{
-	*(void **)(void *)((char *)cell_start + HG_CELL_HDR) = next;
-}
-
-/*
- * Ownership is hg_owns() (hg_malloc.h), against the reservation's bounds,
- * fixed at init - not hb->lo/hi, which widen as chunks are carved and can
- * look too narrow to a lock-free reader. A cell of another hg arena has a
- * valid-looking class byte: taken here, its real owner would reuse it and
- * overwrite the free-list link. Refusing the free leaks one cell; accepting
- * it corrupts the pool.
- */
-/* global pool ops - hb->lock must be held. Both take/return cell_start. */
-/* --- shared free cells, held per block and graded by fullness ---------- */
-
-/*
- * Which fullness list a block belongs on, from its own free-cell count.
- * Grade 0 is the fullest partial (fewest free cells): a refill drains it and
- * leaves the emptier blocks to reach zero.
- */
-static inline unsigned int grade_of(const struct hg_chunk *ch)
-{
-	unsigned int g;
-
-	if (ch->in_gpool == 0)
-		return HG_GRADE_NONE;
-	if (ch->in_gpool >= ch->cells)
-		return HG_GRADE_DRAINED;
-	g = (ch->in_gpool * HG_GRADES) / ch->cells;
-	if (g >= HG_GRADES)
-		g = HG_GRADES - 1;
-	return g;
-}
-
-static inline void list_unlink(struct hg_block *hb, int c, struct hg_chunk *ch)
-{
-	struct hg_chunk **head;
-
-	if (ch->grade == HG_GRADE_NONE)
-		return;
-	head = (ch->grade == HG_GRADE_DRAINED) ? &hb->drained[c]
-	                                       : &hb->bucket[c][ch->grade];
-	if (ch->fprev)
-		ch->fprev->fnext = ch->fnext;
-	else
-		*head = ch->fnext;
-	if (ch->fnext)
-		ch->fnext->fprev = ch->fprev;
-	if (ch->grade == HG_GRADE_DRAINED) {
-		if (hb->drained_tail[c] == ch)
-			hb->drained_tail[c] = ch->fprev;
-		hb->ndrained[c]--;
-		ch->flags &= ~HG_CHUNK_DRAINED;
-	}
-	ch->fnext = ch->fprev = NULL;
-	ch->grade = HG_GRADE_NONE;
-}
-
-static inline void list_link(struct hg_block *hb, int c, struct hg_chunk *ch,
-                             unsigned int g)
-{
-	struct hg_chunk **head;
-
-	if (g == HG_GRADE_NONE) {
-		ch->grade = HG_GRADE_NONE;
-		return;
-	}
-	head = (g == HG_GRADE_DRAINED) ? &hb->drained[c] : &hb->bucket[c][g];
-	ch->fprev = NULL;
-	ch->fnext = *head;
-	if (ch->fnext)
-		ch->fnext->fprev = ch;
-	*head = ch;
-	ch->grade = g;
-	if (g == HG_GRADE_DRAINED) {
-		if (!ch->fnext)
-			hb->drained_tail[c] = ch;          /* was empty */
-		hb->ndrained[c]++;
-		ch->flags |= HG_CHUNK_DRAINED;
-	}
-}
-
-/* move @ch to the list its current fullness calls for; usually a no-op, as
- * the grade changes far less often than the cell count */
-static inline void block_regrade(struct hg_block *hb, int c,
-                                 struct hg_chunk *ch)
-{
-	unsigned int g = grade_of(ch);
-
-	if (g == ch->grade)
-		return;
-	list_unlink(hb, c, ch);
-	list_link(hb, c, ch, g);
-}
-
-/*
- * Resolve a cell to its block; refuse anything that is not a chunk of this
- * class. Large-tier blocks start with a struct hg_large_chunk, and writing
- * in_gpool there would corrupt the large heap.
- */
-static inline struct hg_chunk *cell_block(struct hg_block *hb, int c, void *p)
-{
-	struct hg_chunk *ch = hg_buddy_block_of(hb, p);
-
-	if (!ch) {
-		hg_corrupt(hb, HG_C_FOREIGN_PTR);
-		LM_CRIT("%s: cell %p (class %d) is not on the arena's page grid - "
-			"not touching it\n", hb->name, p, c);
-		return NULL;
-	}
-	if (ch->cls != (unsigned int)c) {
-		hg_corrupt(hb, HG_C_CLASS_MISMATCH);
-		LM_CRIT("%s: cell %p resolves to block %p of class %u, expected "
-			"class %d - not touching it\n",
-			hb->name, p, (void *)ch, ch->cls, c);
-		return NULL;
-	}
-	return ch;
-}
-
-/* the cell's index within its block, or -1 if @cell_start is not a cell
- * boundary of @ch (a link overwritten after the free) */
-static inline long cell_index(const struct hg_chunk *ch, const void *cell_start)
-{
-	unsigned long off = (unsigned long)((const char *)cell_start -
-	                                    ((const char *)ch + sizeof(struct hg_chunk)));
-
-	if ((const char *)cell_start < (const char *)ch + sizeof(struct hg_chunk) ||
-	    off % ch->cell_size || off / ch->cell_size >= ch->cells)
-		return -1;
-	return (long)(off / ch->cell_size);
-}
-
-static inline int map_test(const struct hg_chunk *ch, long i)
-{
-	return (int)((ch->gfree[i / HG_CHUNK_MAP_BITS] >> (i % HG_CHUNK_MAP_BITS)) & 1);
-}
-
-static inline void map_set(struct hg_chunk *ch, long i)
-{
-	ch->gfree[i / HG_CHUNK_MAP_BITS] |= (uint64_t)1 << (i % HG_CHUNK_MAP_BITS);
-}
-
-static inline void map_clear(struct hg_chunk *ch, long i)
-{
-	ch->gfree[i / HG_CHUNK_MAP_BITS] &= ~((uint64_t)1 << (i % HG_CHUNK_MAP_BITS));
-}
-
-/* a link the pool follows must be a map-free cell of the same block, else it
- * was overwritten; NULL is a valid end only when the count agrees */
-static inline int pool_link_ok(struct hg_block *hb, struct hg_chunk *ch,
-                               void *next, unsigned int remaining)
-{
-	long i;
-
-	if (!next)
-		return remaining == 0;
-	i = cell_index(ch, next);
-	if (i < 0 || !map_test(ch, i)) {
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
-		LM_CRIT("%s: block %p (class %u) free chain points at %p, which is "
-			"%s - the link was overwritten after the free; dropping the "
-			"rest of the chain (%u cells leak)\n", hb->name, (void *)ch,
-			ch->cls, next, i < 0 ? "not one of its cells" :
-			"not free by the map", remaining);
-		return 0;
-	}
-	return 1;
-}
-
-/*
- * Hand fully-drained blocks of class @c back to the buddy, down to @keep
- * of them (the class's demand-sized reserve) and at most @limit per call.
- * O(1) per block: a drained block's cells are all on its own list, which is
- * discarded with it. hb->lock must be held.
- */
-static unsigned int gc_class_run(struct hg_block *hb, int c, unsigned int keep,
-                                 unsigned int limit);
-
-/* every block-return pass is timed into hb->lk_gc (lock held) */
-static unsigned int gc_class(struct hg_block *hb, int c, unsigned int keep,
-                             unsigned int limit)
-{
-	unsigned long t0 = hg_now_ns();
-	unsigned int n;
-
-	n = gc_class_run(hb, c, keep, limit);
-	hg_lkstat_add(&hb->lk_gc, hg_now_ns() - t0);
-	return n;
-}
-
-static unsigned int gc_class_run(struct hg_block *hb, int c, unsigned int keep,
-                                 unsigned int limit)
-{
-	struct hg_chunk *ch;
-	unsigned int freed = 0;
-
-	while (hb->ndrained[c] > keep && freed < limit) {
-		unsigned int ord;
-		unsigned long sz;
-
-		/* the oldest drained block (the head, most recently drained, is
-		 * the one worth keeping); the tail pointer saves an O(n^2) walk
-		 * under hb->lock */
-		ch = hb->drained_tail[c];
-#ifdef HG_PARANOIA
-		{
-			/* test builds (-DHG_PARANOIA): check the tail against a
-			 * full walk */
-			struct hg_chunk *w = hb->drained[c];
-
-			while (w && w->fnext)
-				w = w->fnext;
-			if (w != ch) {
-				hg_corrupt(hb, HG_C_INTERNAL);
-				LM_CRIT("%s: class %d drained tail %p disagrees with "
-					"the walked tail %p\n", hb->name, c, (void *)ch,
-					(void *)w);
-				ch = w;
-			}
-		}
-#endif
-		if (!ch) {
-			/* ndrained says there is one, the list has none */
-			hg_corrupt(hb, HG_C_INTERNAL);
-			LM_CRIT("%s: class %d claims %u drained blocks but the list "
-				"is empty - resetting the count\n", hb->name, c,
-				hb->ndrained[c]);
-			hb->ndrained[c] = 0;
-			break;
-		}
-
-		list_unlink(hb, c, ch);
-		hb->gpool_n[c] -= ch->in_gpool;
-		ch->in_gpool = 0;
-		ch->free_head = NULL;
-
-		/* out of the registry, or hg_slab_recycled() counts a capacity
-		 * that is gone and the DBG walker reads a block the buddy has
-		 * since handed to another class */
-		if (ch->prev)
-			ch->prev->next = ch->next;
-		else
-			hb->chunks = ch->next;
-		if (ch->next)
-			ch->next->prev = ch->prev;
-		hb->nchunks--;
-		hb->slab_capacity -= (unsigned long)ch->cells * ch->cell_size;
-
-		ord = ch->order;
-		sz = HG_LEAF_SIZE << ord;
-		hb->real_used -= sz;
-
-		/* every read of ch must precede this: the buddy at once reuses
-		 * the block's first bytes for its own free-list linkage */
-		hg_san_release(hb, ch, sz);
-		hg_buddy_free(hb, ch, ord);
-		freed++;
-	}
-
-	if (freed) {
-		hb->gc_blocks_returned += freed;
-		hb->gc_passes++;
-		LM_DBG("%s gc class %d: returned %u blocks, %u drained kept\n",
-			hb->name, c, freed, hb->ndrained[c]);
-	}
-	return freed;
-}
-
-/* a cell becomes shared: onto its own block's free list */
-static inline int gpool_push(struct hg_block *hb, int c, void *cell_start)
-{
-	struct hg_chunk *ch = cell_block(hb, c, cell_start);
-	long i;
-
-	if (!ch)
-		return -1;                  /* refused above, with a CRIT */
-	i = cell_index(ch, cell_start);
-	if (i < 0) {
-		hg_corrupt(hb, HG_C_FOREIGN_PTR);
-		LM_CRIT("%s: %p is inside block %p (class %u) but not on a cell "
-			"boundary - refusing to pool it\n", hb->name, cell_start,
-			(void *)ch, ch->cls);
-		return -1;
-	}
-	if (map_test(ch, i)) {
-		/* exact: the cell is already in the pool (the block-level test
-		 * below fires only after the damage) */
-		hg_corrupt(hb, HG_C_DOUBLE_FREE);
-		LM_CRIT("%s: cell %p (block %p, class %u, index %ld) is already in "
-			"the global pool - double free, refusing the second copy\n",
-			hb->name, cell_start, (void *)ch, ch->cls, i);
-		return -1;
-	}
-	if (ch->in_gpool >= ch->cells) {
-		hg_corrupt(hb, HG_C_DOUBLE_FREE);
-		LM_CRIT("%s: block %p already has all %u cells free, refusing to "
-			"add another - this is a double free\n",
-			hb->name, (void *)ch, ch->cells);
-		return -1;
-	}
-	map_set(ch, i);
-	cell_set_next(cell_start, ch->free_head);
-	ch->free_head = cell_start;
-	ch->in_gpool++;
-	hb->gpool_n[c]++;
-	block_regrade(hb, c, ch);
-
-	/*
-	 * The maintenance tick returns drained blocks; this path returns a
-	 * batch only once the list is HG_GC_EMERGENCY past keep. Never during a
-	 * flush (gc_deferred), for correctness: the buddy reuses a returned
-	 * block's first bytes at once, and the flush walk may still reach the
-	 * next cell of that block.
-	 */
-	if (!hb->gc_deferred &&
-	    hb->ndrained[c] > hb->gc_keep[c] + HG_GC_EMERGENCY)
-		hb->gc_inline_blocks += gc_class(hb, c, hb->gc_keep[c], HG_GC_EMERGENCY);
-	return 0;
-}
-
-/*
- * Take a shared cell from the fullest partial block, the concentration the
- * reclaim depends on: at most HG_GRADES pointer tests.
- */
-static inline void *gpool_pop(struct hg_block *hb, int c)
-{
-	struct hg_chunk *ch = NULL;
-	void *cell_start;
-	unsigned int g;
-	long i;
-
-	for (g = 0; g < HG_GRADES; g++)
-		if (hb->bucket[c][g]) {
-			ch = hb->bucket[c][g];
-			break;
-		}
-	/* nothing partial: reuse a drained block rather than carve a new one */
-	if (!ch)
-		ch = hb->drained[c];
-	if (!ch)
-		return NULL;
-
-	cell_start = ch->free_head;
-	if (!cell_start) {
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
-		LM_CRIT("%s: block %p claims %u free cells but its list is empty - "
-			"dropping it from the pool\n",
-			hb->name, (void *)ch, ch->in_gpool);
-		hb->gpool_n[c] -= ch->in_gpool;
-		ch->in_gpool = 0;
-		memset(ch->gfree, 0, sizeof ch->gfree);
-		block_regrade(hb, c, ch);
-		return NULL;
-	}
-	/* the head must be a map-free cell of this block (a first push was
-	 * never checked as a link), and its link sound before it is followed */
-	i = cell_index(ch, cell_start);
-	if (i < 0 || !map_test(ch, i) ||
-	    !pool_link_ok(hb, ch, cell_next(cell_start), ch->in_gpool - 1)) {
-		if (i >= 0 && map_test(ch, i)) {
-			/* good head, bad link: serve the head and leak the rest
-			 * rather than hand a cell out twice */
-			map_clear(ch, i);
-			hb->gpool_n[c] -= ch->in_gpool;
-			ch->in_gpool = 0;
-			ch->free_head = NULL;
-			memset(ch->gfree, 0, sizeof ch->gfree);
-			block_regrade(hb, c, ch);
-			return cell_start;
-		}
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
-		LM_CRIT("%s: block %p (class %u) free head %p is not a free cell "
-			"of the block - dropping the block's chain (%u cells leak)\n",
-			hb->name, (void *)ch, ch->cls, cell_start, ch->in_gpool);
-		hb->gpool_n[c] -= ch->in_gpool;
-		ch->in_gpool = 0;
-		ch->free_head = NULL;
-		memset(ch->gfree, 0, sizeof ch->gfree);
-		block_regrade(hb, c, ch);
-		return NULL;
-	}
-	map_clear(ch, i);
-	ch->free_head = cell_next(cell_start);
-	ch->in_gpool--;
-	hb->gpool_n[c]--;
-	block_regrade(hb, c, ch);
-	return cell_start;
-}
-
-/*
  * A freed cell onto this thread's private list - its header already FREE,
  * the counters already moved - donating half the list to the shared pool
  * once it is over the class's bound.
@@ -582,7 +163,7 @@ static inline void cell_push_private(struct hg_block *hb,
 			}
 			pl->cls[c].free_head = cell_next(d);
 			pl->cls[c].nfree--;
-			if (gpool_push(hb, c, d) < 0) {
+			if (hg_gpool_push(hb, c, d) < 0) {
 				/* refused: trust the chain no further */
 				pl->cls[c].free_head = NULL;
 				pl->cls[c].nfree = i + 1;
@@ -639,68 +220,6 @@ unsigned int hg_quarantine_drain(struct hg_block *hb)
 	return 0;
 }
 
-/*
- * Give up every cell this thread has cached, for every class. Only the
- * owning thread can: the caches are __thread. hb->lock must be held.
- * Returns the number of cells handed over.
- */
-static unsigned int cache_flush_locked(struct hg_block *hb,
-                                       struct hg_palloc *pl)
-{
-	unsigned int c, n = 0;
-
-	if (!pl)
-		return 0;
-
-	hb->gc_deferred = 1;
-	for (c = 0; c < HG_NCLASSES; c++) {
-		void *cur = pl->cls[c].free_head;
-
-		while (cur) {
-			void *nxt;
-
-			/* not a cell of this class: an overwritten link, its
-			 * "next" a wild read. Stop and leak the rest */
-			if (!cell_block(hb, c, cur)) {
-				LM_CRIT("%s: class %d private chain broken at %p after %u "
-					"cells - dropping the rest\n", hb->name, c, cur, n);
-				break;
-			}
-			nxt = cell_next(cur);
-			if (gpool_push(hb, c, cur) < 0) {
-				/* refused (likely a double free): the copy in
-				 * the pool owns this cell's link now - stop */
-				LM_CRIT("%s: class %d private chain stops at refused cell "
-					"%p after %u cells - dropping the rest\n", hb->name,
-					c, cur, n);
-				break;
-			}
-			cur = nxt;
-			n++;
-		}
-		pl->cls[c].free_head = NULL;
-		pl->cls[c].nfree = 0;
-	}
-	hb->gc_deferred = 0;
-
-	/* nothing walks the cells now, so blocks may go - all of them: under
-	 * pressure a kept block is memory the carve could use before a grow */
-	for (c = 0; c < HG_NCLASSES; c++)
-		if (hb->ndrained[c])
-			hb->gc_inline_blocks += gc_class(hb, c, 0, UINT_MAX);
-
-	return n;
-}
-
-/*
- * Sweep generation, bumped once per sweep. A thread IPC cannot reach - TCP
- * main's IO pool waits on a condition variable, not the reactor - compares
- * it with its own last-seen value at a job boundary and flushes when they
- * differ. A plain counter: a missed generation only delays a flush to the
- * next sweep, the same fire-and-forget contract as the IPC path.
- */
-volatile unsigned long hg_sweep_gen;
-
 /* the two checks that fire where no arena pointer is in scope */
 unsigned long hg_corrupt_noarena[HG_CORRUPT_KINDS];
 
@@ -724,236 +243,6 @@ void hg_extent_note(struct hg_block *hb, void *base, unsigned long size)
 }
 
 /*
- * Reserve floor: below hb->reserve_floor free leaves (1/16 of the grid, set
- * in hg_buddy_init), publish a sweep through hg_sweep_gen, which reaches even
- * the TCP IO pool. below_floor is the hysteresis; recovery needs 2x the floor.
- *
- * Called from hg_buddy_alloc/_free, the one point every consumer of grid
- * space passes (the large tier bypasses carve_chunk()), and recovery shows
- * only on a free. Only a crossing the arena cannot grow out of (at the
- * ceiling, or growth blocked) is a WARN, once; a quiet crossing that later
- * gets stuck below the floor is upgraded to it, with one more sweep.
- *
- * hb->lock is held by every caller.
- */
-static inline int hg_floor_stuck(struct hg_block *hb)
-{
-	unsigned long limit = (hb->pol.active && hb->pol.up_bytes) ?
-		hb->pol.up_bytes : hb->hcap;
-
-	return hb->committed_bytes >= limit || hb->grow_blocked;
-}
-
-void hg_reserve_floor_check(struct hg_block *hb)
-{
-	if (!hb->buddy_ready || !hb->reserve_floor)
-		return;
-
-	if (hb->buddy_free_leaves < hb->reserve_floor) {
-		if (!hb->below_floor) {
-			hb->below_floor = 1;
-			hb->floor_crossings++;
-		} else if (hb->floor_warned || !hg_floor_stuck(hb)) {
-			return;
-		}
-		hg_sweep_gen++;
-		if (hg_floor_stuck(hb)) {
-			hb->floor_warned = 1;
-			LM_WARN("%s: free space fell below the reserve floor "
-				"(%lu of %lu leaves free, floor %lu) - sweeping every "
-				"thread's cache; raise -m/-M if this repeats\n",
-				hb->name, hb->buddy_free_leaves,
-				hb->npages * hg_leaves_per_page(hb), hb->reserve_floor);
-		} else {
-			LM_DBG("%s: free space fell below the reserve floor "
-				"(%lu of %lu leaves free, floor %lu) - sweeping every "
-				"thread's cache; the arena can still grow\n",
-				hb->name, hb->buddy_free_leaves,
-				hb->npages * hg_leaves_per_page(hb), hb->reserve_floor);
-		}
-	} else if (hb->below_floor &&
-	           hb->buddy_free_leaves > hb->reserve_floor * 2) {
-		hb->below_floor = 0;
-		if (hb->floor_warned)
-			LM_NOTICE("%s: free space recovered above the reserve floor "
-				"(%lu leaves free)\n", hb->name, hb->buddy_free_leaves);
-		else
-			LM_DBG("%s: free space recovered above the reserve floor "
-				"(%lu leaves free)\n", hb->name, hb->buddy_free_leaves);
-		hb->floor_warned = 0;
-		/* the same 2x-floor mark ends a grow-blocked episode: the
-		 * demand that needed the grow has gone. One mark for both,
-		 * so "blocked" cannot outlive the pressure */
-		hg_grow_unblock(hb, "demand fell back below the floor");
-	}
-}
-
-/*
- * The sweep flush takes hb->lock per HG_FLUSH_BATCH cells: the chain is TLS,
- * only the pushes and the GC need the lock. A class used since the last sweep
- * keeps a residue (flush_residue()), so its next allocation is not a locked
- * refill; an untouched class, or any below the reserve floor, gives all back.
- * Dropping the lock between batches is safe: a block is reclaimed only when
- * all its cells are in the pool, so none holds a cell still on this chain.
- * gc_deferred covers the walk within a batch.
- */
-#define HG_FLUSH_BATCH  64   /* cells per lock hold */
-#define HG_FLUSH_KEEP   8    /* residue cap per active class */
-
-static inline unsigned int flush_residue(struct hg_block *hb,
-                                         struct hg_palloc *pl, int c)
-{
-	unsigned int keep;
-
-	if (!pl->cls[c].touched || hb->below_floor)
-		return 0;
-	keep = hb->priv_max[c] / 4;
-	return keep > HG_FLUSH_KEEP ? HG_FLUSH_KEEP : keep;
-}
-
-/* hand class @c's private chain down to @keep cells; returns cells pushed */
-static unsigned int cache_flush_class(struct hg_block *hb,
-                                      struct hg_palloc *pl, int c,
-                                      unsigned int keep)
-{
-	unsigned int claimed = pl->cls[c].nfree, n = 0;
-	int drained = 0;
-
-	while (!drained) {
-		unsigned int b = 0;
-
-		hg_lock_enter(hb, HG_LK_FLUSH);
-		hb->gc_deferred = 1;
-		while (b < HG_FLUSH_BATCH) {
-			void *cur = pl->cls[c].free_head;
-
-			if (!cur) {
-				/* the chain's end; nfree left non-zero is the
-				 * drift cell_push_private() also catches */
-				drained = 1;
-				break;
-			}
-			if (keep && pl->cls[c].nfree <= keep) {
-				drained = 1;
-				break;
-			}
-			if (!cell_block(hb, c, cur)) {
-				/* an overwritten link - stop, leak the rest */
-				LM_CRIT("%s: class %d private chain broken at %p - "
-					"dropping the rest of the chain\n", hb->name, c, cur);
-				pl->cls[c].free_head = NULL;
-				pl->cls[c].nfree = 0;
-				drained = 1;
-				break;
-			}
-			pl->cls[c].free_head = cell_next(cur);
-			if (pl->cls[c].nfree)
-				pl->cls[c].nfree--;
-			if (gpool_push(hb, c, cur) < 0) {
-				LM_CRIT("%s: class %d private chain stops at refused cell "
-					"%p - dropping the rest of the chain\n", hb->name, c, cur);
-				pl->cls[c].free_head = NULL;
-				pl->cls[c].nfree = 0;
-				drained = 1;
-				break;
-			}
-			b++;
-		}
-		hb->gc_deferred = 0;
-		/* only class c's blocks can have drained in this batch */
-		if (hb->ndrained[c] > hb->gc_keep[c])
-			hb->gc_inline_blocks += gc_class(hb, c, hb->gc_keep[c], UINT_MAX);
-		hg_lock_leave(hb);
-		n += b;
-		/* a batch that ended at the chain end or the residue is done:
-		 * decide here, not with one more hold */
-		if (!pl->cls[c].free_head ||
-		    (keep && pl->cls[c].nfree <= keep))
-			drained = 1;
-	}
-	if (!pl->cls[c].free_head && pl->cls[c].nfree) {
-		unsigned int left = pl->cls[c].nfree;
-
-		pl->cls[c].nfree = 0;
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
-		LM_CRIT("%s: class %d chain ran dry after %u cells but nfree "
-			"claimed %u (%u still claimed at the end) - counter resynced "
-			"to 0, pool accounting drifted\n", hb->name, c, n, claimed,
-			left);
-	}
-	return n;
-}
-
-/*
- * Recompute every class's keep from the cycle just ended: the larger of the
- * cycle's carves and half the old keep, capped by a byte budget and
- * HG_GC_KEEP_MAX blocks. hb->lock held.
- */
-void hg_gc_cycle(struct hg_block *hb)
-{
-	unsigned long budget = hb->size >> HG_GC_KEEP_BUDGET_SHIFT;
-	int c;
-
-	for (c = 0; c < HG_NCLASSES; c++) {
-		unsigned int demand = hb->carves_cycle[c], keep = hb->gc_keep[c] / 2;
-		unsigned long bsz = chunk_size_for(hb, c);
-		unsigned long cap = bsz ? budget / bsz : 0;
-
-		hb->carves_cycle[c] = 0;
-		if (demand > keep)
-			keep = demand;
-		if (cap > HG_GC_KEEP_MAX)
-			cap = HG_GC_KEEP_MAX;
-		hb->gc_keep[c] = keep > cap ? (unsigned int)cap : keep;
-	}
-}
-
-/*
- * The deferred GC: return up to @budget drained blocks beyond their classes'
- * keep, round-robin so one class cannot starve the rest. hb->lock held; run
- * by the maintenance tick (shm) or the owner's sweep (private arena).
- */
-unsigned int hg_gc_tick(struct hg_block *hb, unsigned int budget)
-{
-	unsigned int done = 0, n;
-	int i, c;
-
-	for (i = 0; i < HG_NCLASSES && done < budget; i++) {
-		c = (hb->gc_next_class + i) % HG_NCLASSES;
-		if (hb->ndrained[c] <= hb->gc_keep[c])
-			continue;
-		n = gc_class(hb, c, hb->gc_keep[c], budget - done);
-		done += n;
-	}
-	hb->gc_next_class = (hb->gc_next_class + 1) % HG_NCLASSES;
-	hb->gc_tick_blocks += done;
-	return done;
-}
-
-/* does process @proc hold anything in its shared-arena caches since its
- * last flush? Read without the lock - a stale answer costs one interval. */
-int hg_proc_cache_dirty(int proc)
-{
-	struct hg_block *hb = (struct hg_block *)shm_block;
-
-	if (!hb || proc < 0)
-		return 1;
-	return hb->pstat[((unsigned int)(proc + 1)) % HG_STAT_SLOTS].dirty != 0;
-}
-
-static __thread unsigned long hg_sweep_seen;
-
-void hg_cache_flush_if_due(void)
-{
-	unsigned long g = hg_sweep_gen;
-
-	if (g == hg_sweep_seen)
-		return;
-	hg_sweep_seen = g;
-	hg_cache_flush_self();
-}
-
-/*
  * Flush this thread's caches in every arena it holds state for: no arena
  * argument, palloc_slots[] already lists them. MUST run on the owning
  * thread, as the caches are __thread; a worker calls it inline for itself
@@ -974,14 +263,14 @@ void hg_cache_flush_self(void)
 		/* clean before the walk, so a free during it is not lost */
 		hg_pstat_mine(hb)->dirty = 0;
 		for (c = 0; c < HG_NCLASSES; c++) {
-			unsigned int keep = flush_residue(hb, pl, c);
+			unsigned int keep = hg_flush_residue(hb, pl, c);
 
 			pl->cls[c].touched = 0;
 			/* nothing to hand back: empty, or at its residue */
 			if (!pl->cls[c].free_head ||
 			    (keep && pl->cls[c].nfree <= keep))
 				continue;
-			n += cache_flush_class(hb, pl, c, keep);
+			n += hg_cache_flush_class(hb, pl, c, keep);
 		}
 		hg_lock_enter(hb, HG_LK_FLUSH);
 		hb->cache_flushes++;
@@ -1039,7 +328,7 @@ void hg_cache_drain_self(void)
 		hg_quar_drain(hb, pl);
 
 		hg_lock_enter(hb, HG_LK_FLUSH);
-		n = cache_flush_locked(hb, pl);
+		n = hg_cache_flush_locked(hb, pl);
 
 		/* a bump cell was never handed out: it goes to the pool as is.
 		 * Reclaim waits until all are pushed, as in the flush walk */
@@ -1050,7 +339,7 @@ void hg_cache_drain_self(void)
 
 				pl->cls[c].bump += cell_sizes[c];
 				pl->cls[c].left--;
-				if (gpool_push(hb, c, cell) < 0) {
+				if (hg_gpool_push(hb, c, cell) < 0) {
 					pl->cls[c].left = 0;
 					break;
 				}
@@ -1063,7 +352,7 @@ void hg_cache_drain_self(void)
 		for (c = 0; c < HG_NCLASSES; c++)
 			if (hb->ndrained[c] > hb->gc_keep[c])
 				hb->gc_inline_blocks +=
-					gc_class(hb, c, hb->gc_keep[c], UINT_MAX);
+					hg_gc_class(hb, c, hb->gc_keep[c], UINT_MAX);
 
 		hb->cache_flushes++;
 		hb->cells_flushed += n + unused;
@@ -1141,32 +430,6 @@ void *hg_backing_aligned(struct hg_block *hb, unsigned long size,
 	return hb->hbase + aligned_off;
 }
 
-/*
- * Chunk size scales with the arena: a chunk is claimed whole the first time
- * its class is touched, so a fixed 256 KB would cost 21 x 256 KB before the
- * first byte is served, which an 8 MB pkg arena cannot afford. hb->chunk_max
- * caps a chunk at a small fraction of the arena.
- */
-static inline unsigned int chunk_size_for(struct hg_block *hb, int c)
-{
-	unsigned int want, least = sizeof(struct hg_chunk) + cell_sizes[c] * 2;
-
-	/* HG_CELLS_PER_BLOCK cells, at least one buddy leaf: a block comes back
-	 * only when every cell is free, so a block of thousands of small cells
-	 * would essentially never drain */
-	want = cell_sizes[c] * HG_CELLS_PER_BLOCK;
-	if (want < HG_LEAF_SIZE)
-		want = HG_LEAF_SIZE;
-
-	if (want > hb->chunk_max)
-		want = hb->chunk_max;
-	/* ...but always enough for the header plus a couple of cells, or the
-	 * class could never be served at all */
-	if (want < least)
-		want = least;
-	return want;
-}
-
 /* carve a new chunk for class @c - hb->lock must be held, and may be dropped
  * and re-taken (hg_buddy_grow_unlocks()). The class byte of every cell's
  * hidden header is stamped here, before the chunk is reachable by anyone -
@@ -1197,7 +460,7 @@ static int carve_chunk(struct hg_block *hb, int c, struct hg_palloc *pl)
 	 */
 	if (!ch) {
 		unsigned long returned = hb->gc_blocks_returned;
-		unsigned int n = cache_flush_locked(hb, pl);
+		unsigned int n = hg_cache_flush_locked(hb, pl);
 
 		hb->pressure_flushes++;
 		hb->pressure_cells += n;
@@ -1652,7 +915,7 @@ again:
 	/* slow path: refill from the global pool, else carve a chunk */
 	hg_lock_enter(hb, HG_LK_REFILL);
 	for (got = 0; got < HG_REFILL_BATCH; got++) {
-		cell_start = gpool_pop(hb, c);
+		cell_start = hg_gpool_pop(hb, c);
 		if (!cell_start)
 			break;
 		cell_set_next(cell_start, pl->cls[c].free_head);
@@ -1939,7 +1202,7 @@ void hg_cell_free_global(struct hg_block *hb, void *p)
 		return;
 	hg_san_take(hb, cell_start, cell_sizes[c] - HG_CELL_HDR);
 	hg_lock_enter(hb, HG_LK_RETURN);
-	pushed = gpool_push(hb, c, cell_start);
+	pushed = hg_gpool_push(hb, c, cell_start);
 	hg_lock_leave(hb);
 
 	if (pushed == 0) {
@@ -1948,34 +1211,6 @@ void hg_cell_free_global(struct hg_block *hb, void *p)
 		ps->fragments--;
 		ps->cell_live -= cell_sizes[c];
 	}
-}
-
-/*
- * Slab bytes carved into chunks but not handed out - on a private free stack,
- * in the global pool, or never bumped; fully reusable. hg_get_real_used()
- * subtracts it from real_used, so free cells read as free, as a fragment on
- * a q_malloc/f_malloc free list does.
- */
-unsigned long hg_slab_recycled(struct hg_block *hb)
-{
-	unsigned long capacity, live;
-
-	/* no registry walk, which would need hb->lock (gc_class() returns
-	 * chunks to the buddy): slab_capacity is a running sum kept by
-	 * carve_chunk()/gc_class(), read unlocked - a torn read is at worst
-	 * one chunk off, for a figure that is a sample either way */
-	capacity = hb->slab_capacity;
-	live = hg_cell_live(hb);
-	return capacity > live ? capacity - live : 0;
-}
-
-void hg_arena_stats(struct hg_block *hb, unsigned int *nchunks,
-		unsigned long *bytes)
-{
-	hg_lock_enter(hb, HG_LK_STATS);
-	*nchunks = hb->nchunks;
-	*bytes = hb->real_used;
-	hg_lock_leave(hb);
 }
 
 /*
@@ -2144,308 +1379,6 @@ void hg_arena_walk_live(struct hg_block *hb,
 
 	hg_free_set_destroy(&set);
 	hg_lock_leave(hb);
-}
-
-#ifdef SHM_EXTRA_STATS
-static void hg_stats_core_init_cb(void *payload, void *ctx)
-{
-	HG_STATS_IDX(payload) = (unsigned long)*(int *)ctx;
-}
-
-void hg_arena_stats_core_init(struct hg_block *hb, int core_index)
-{
-	hg_arena_walk_live(hb, hg_stats_core_init_cb, &core_index);
-	hg_large_stats_core_init(hb, core_index);
-}
-#endif
-
-
-
-/* =========================================================================
- * Statistics (registered by hg_register_stats() below)
- *
- * The hg_stats figures as core statistics, so a dashboard can attribute
- * huge-page use to the allocator. Named hg_shm_* under "hgmem", apart from a
- * caching module's own huge-page statistics, which describe that module's
- * own reservation - different memory.
- * ========================================================================= */
-
-#include "../statistics.h"
-#include "shm_mem.h"   /* mem_allocator_shm */
-#include "mem.h"       /* mem_allocator_pkg */
-
-/* this thread's stats slot, -1 = the process's own (see hg_pstat_mine) */
-__thread int hg_pstat_slot = -1;
-
-void hg_thread_stats_init(void)
-{
-	struct hg_block *hb = (struct hg_block *)shm_block;
-	static unsigned int local_next = HG_STAT_SLOTS - 1;
-	static int said;
-	unsigned int *next, s;
-
-	if (hg_pstat_slot >= 0)
-		return;
-	/* the shared counter when shm is HG_MALLOC, else a per-process one
-	 * (threads exist in one process today; a second kind would collide only
-	 * on a pkg arena, which is private anyway) */
-	next = (hb && (mem_allocator_shm == MM_HG_MALLOC ||
-	               mem_allocator_shm == MM_HG_MALLOC_DBG)) ?
-	       &hb->thread_slot_next : &local_next;
-	s = __atomic_fetch_sub(next, 1, __ATOMIC_ACQ_REL);
-	if (s <= HG_STAT_SLOTS / 4 || s >= HG_STAT_SLOTS) {
-		/* out of thread slots: share the process slot */
-		if (!said) {
-			said = 1;
-			LM_WARN("no free per-thread stats slot (claimed %u of %u) - this "
-				"thread shares its process's slot\n", s, HG_STAT_SLOTS);
-		}
-		return;
-	}
-	hg_pstat_slot = (int)s;
-}
-
-/* --- lock-stall bookkeeping (called after the release) ----------------- */
-const char * const hg_lk_reason_str[HG_LK_REASONS] = {
-	"refill", "return", "flush", "large", "policy", "stats", "other"
-};
-
-void hg_lock_assert_held(struct hg_block *hb, const char *where)
-{
-	if (hb->lk_cur != HG_LK_NONE)
-		return;
-	hg_corrupt(hb, HG_C_INTERNAL);
-	LM_BUG("%s: %s without hb->lock held - a lock-dropping callee broke its "
-		"contract (hold on entry, held again on return)", hb->name, where);
-}
-
-void hg_lock_stall_note(struct hg_block *hb, int reason, unsigned long held_ns)
-{
-	/* once per second per process: a stall storm must not become a log
-	 * storm, the counters and the deferred event carry the magnitude */
-	static unsigned long last_warn_ns;
-	unsigned long now = hg_now_ns();
-
-	if (last_warn_ns && now - last_warn_ns < 1000000000UL)
-		return;
-	last_warn_ns = now;
-	LM_WARN("%s arena lock held for %lu us by the %s path (threshold "
-		"hg_lock_stall_us=%d; %lu stalls so far, worst %lu us by %s in "
-		"process %d)\n", hb->name, held_ns / 1000,
-		reason >= 0 && reason < HG_LK_REASONS ? hg_lk_reason_str[reason] : "?",
-		hg_lock_stall_us, hb->lk_stalls, hb->lk_worst_ns / 1000,
-		hb->lk_worst_reason >= 0 && hb->lk_worst_reason < HG_LK_REASONS ?
-			hg_lk_reason_str[hb->lk_worst_reason] : "?",
-		hb->lk_worst_proc);
-}
-
-enum hg_stat_field {
-	HGS_TIER = 0, HGS_TOTAL, HGS_PINNED_BYTES, HGS_CARVED, HGS_CARVED_PEAK,
-	HGS_CHUNKS, HGS_FREE_TO_CARVE, HGS_LIVE, HGS_LIVE_PEAK, HGS_PAYLOAD,
-	HGS_CELLS, HGS_SLAB_LIVE, HGS_SLAB_RECYCLED,
-	/* reclaim rates: counters, not events - an EVI event per transition
-	 * would cost more than the allocator it reports on */
-	HGS_BLOCKS_CARVED, HGS_BLOCKS_RETURNED, HGS_GC_PASSES,
-	HGS_CACHE_FLUSHES, HGS_CELLS_FLUSHED, HGS_PRESSURE_FLUSHES, HGS_PRESSURE_CELLS,
-	HGS_GC_TICK_BLOCKS, HGS_GC_INLINE_BLOCKS, HGS_GC_KEPT_BLOCKS, HGS_SWEEPS_SKIPPED,
-	HGS_BUDDY_SPLITS, HGS_BUDDY_MERGES, HGS_BUDDY_FREE_LEAVES,
-	/* large tier footprint, and the reserve floor - without these last
-	 * three the floor is invisible outside a one-shot log line */
-	HGS_LARGE_BACKING, HGS_LARGE_LIVE, HGS_LARGE_RECYCLED,
-	HGS_LARGE_CHUNKS_CARVED, HGS_LARGE_CHUNKS_RETURNED,
-	HGS_RESERVE_FLOOR, HGS_BELOW_FLOOR, HGS_FLOOR_CROSSINGS,
-	/* one number an operator can alert on; the breakdown is in hg_stats */
-	HGS_CORRUPTION,
-	/* elastic arena: committed vs reserved, and the grow ledger. Alert on
-	 * grow_refused rising: demand hit the cap or the host */
-	HGS_COMMITTED, HGS_CAP, HGS_GROWS, HGS_GROW_BYTES, HGS_GROW_REFUSED,
-	HGS_SHRINKS, HGS_SHRINK_BYTES,
-	HGS_PUNCHES, HGS_PUNCH_BYTES, HGS_PUNCHED_PAGES, HGS_WHOLE_FREE_PAGES,
-	HGS_REPINS, HGS_REPIN_FAILED, HGS_HOLE_REGROWS,
-	/* the alertable gauge: 1 while a resource refusal is latched (cap
-	 * refusals never latch - an admin ceiling is policy, not incident) */
-	HGS_GROW_BLOCKED,
-	HGS_LOCK_STALLS, HGS_LOCK_HOLD_MAX_US,
-	HGS_GROWS_PROACTIVE, HGS_GROWS_EXHAUSTION,
-};
-
-static unsigned long hg_shm_stat(void *ctx)
-{
-	struct hg_block *hb = (struct hg_block *)shm_block;
-
-	if (!hb)
-		return 0;
-	switch ((enum hg_stat_field)(long)ctx) {
-	case HGS_TIER:          return hb->tier;
-	case HGS_TOTAL:         return hb->size;
-	/* bytes rather than the MB the MI reports, so it composes with the
-	 * other byte-valued statistics and with node_exporter's page counts */
-	case HGS_PINNED_BYTES:  return (unsigned long)hb->locked_mb << 20;
-	/* carved: slab blocks plus whole large-tier chunks, what free_to_carve
-	 * counts down from. Not monotonic: gc_class() subtracts a returned
-	 * block, so carved below carved_peak means reclaim is working */
-	case HGS_CARVED:        return hb->real_used;
-	case HGS_CARVED_PEAK:   return hb->max_real_used;
-	case HGS_CHUNKS:        return hb->nchunks;
-	case HGS_FREE_TO_CARVE: return hb->size - hb->real_used;
-	/* live: handed out right now. The gap to carved is free cells,
-	 * reusable only within their class - slab behaviour, not a leak */
-	case HGS_LIVE:          return hg_get_real_used(hb);
-	case HGS_LIVE_PEAK:     return hb->max_live_used;
-	case HGS_PAYLOAD:       return hg_used(hb);
-	case HGS_CELLS:         return hg_fragments(hb);
-	/* slab only: large allocations go to the boundary-tag tier and never
-	 * appear here, so this is deliberately not comparable with payload */
-	case HGS_SLAB_LIVE:     return hg_cell_live(hb);
-	case HGS_SLAB_RECYCLED: return hg_slab_recycled(hb);
-	/* reclaim rates: carved minus returned is the live block count, and
-	 * returned/carved shows how well reclaim keeps up */
-	case HGS_BLOCKS_CARVED:   return hb->blocks_carved;
-	case HGS_BLOCKS_RETURNED: return hb->gc_blocks_returned;
-	case HGS_GC_PASSES:       return hb->gc_passes;
-	case HGS_CACHE_FLUSHES:   return hb->cache_flushes;
-	case HGS_CELLS_FLUSHED:   return hb->cells_flushed;
-	case HGS_PRESSURE_FLUSHES: return hb->pressure_flushes;
-	case HGS_PRESSURE_CELLS:  return hb->pressure_cells;
-	case HGS_GC_TICK_BLOCKS:   return hb->gc_tick_blocks;
-	case HGS_GC_INLINE_BLOCKS: return hb->gc_inline_blocks;
-	case HGS_SWEEPS_SKIPPED:   return hb->sweeps_skipped;
-	case HGS_GC_KEPT_BLOCKS: {
-		unsigned long n = 0;
-		int c;
-
-		for (c = 0; c < HG_NCLASSES; c++)
-			n += hb->ndrained[c];
-		return n;
-	}
-	case HGS_BUDDY_SPLITS:    return hb->buddy_splits;
-	case HGS_BUDDY_MERGES:    return hb->buddy_merges;
-	case HGS_BUDDY_FREE_LEAVES: return hb->buddy_free_leaves;
-	case HGS_LARGE_BACKING:   return hb->large_backing;
-	case HGS_LARGE_LIVE:      return hb->large_live;
-	case HGS_LARGE_RECYCLED:  return hg_large_recycled(hb);
-	case HGS_LARGE_CHUNKS_CARVED:   return hb->large_chunks_carved;
-	case HGS_LARGE_CHUNKS_RETURNED: return hb->large_chunks_returned;
-	case HGS_RESERVE_FLOOR:   return hb->reserve_floor;
-	case HGS_BELOW_FLOOR:     return hb->below_floor;
-	case HGS_FLOOR_CROSSINGS: return hb->floor_crossings;
-	case HGS_CORRUPTION:      return hg_corrupt_total(hb);
-	case HGS_COMMITTED:       return hb->committed_bytes;
-	case HGS_CAP:             return hb->hcap;
-	case HGS_GROWS:           return hb->grows;
-	case HGS_GROW_BYTES:      return hb->grow_bytes;
-	case HGS_GROW_REFUSED:    return hb->grow_refused;
-	case HGS_GROW_BLOCKED:    return hb->grow_blocked;
-	case HGS_LOCK_STALLS:     return hb->lk_stalls;
-	case HGS_LOCK_HOLD_MAX_US: return hb->lk_worst_ns / 1000;
-	case HGS_GROWS_PROACTIVE: return hb->grows_proactive;
-	case HGS_GROWS_EXHAUSTION: return hb->grows_exhaustion;
-	case HGS_SHRINKS:         return hb->shrinks;
-	case HGS_SHRINK_BYTES:    return hb->shrink_bytes;
-	case HGS_PUNCHES:         return hb->punches;
-	case HGS_PUNCH_BYTES:     return hb->punch_bytes;
-	case HGS_PUNCHED_PAGES:   return hb->punched_pages;
-	case HGS_WHOLE_FREE_PAGES: return hb->nfree[hb->buddy_top];
-	case HGS_REPINS:          return hb->repins;
-	case HGS_REPIN_FAILED:    return hb->repin_failed;
-	case HGS_HOLE_REGROWS:    return hb->hole_regrows;
-	}
-	return 0;
-}
-
-static const struct {
-	const char *name;
-	enum hg_stat_field field;
-} hg_stat_defs[] = {
-	{"hg_shm_tier",          HGS_TIER},
-	{"hg_shm_total_size",    HGS_TOTAL},
-	{"hg_shm_pinned_bytes",  HGS_PINNED_BYTES},
-	{"hg_shm_carved",        HGS_CARVED},
-	{"hg_shm_carved_peak",   HGS_CARVED_PEAK},
-	{"hg_shm_chunks",        HGS_CHUNKS},
-	{"hg_shm_free_to_carve", HGS_FREE_TO_CARVE},
-	{"hg_shm_live",          HGS_LIVE},
-	{"hg_shm_live_peak",     HGS_LIVE_PEAK},
-	{"hg_shm_live_payload",  HGS_PAYLOAD},
-	{"hg_shm_live_cells",    HGS_CELLS},
-	{"hg_shm_slab_live",     HGS_SLAB_LIVE},
-	{"hg_shm_slab_recycled", HGS_SLAB_RECYCLED},
-	{"hg_shm_blocks_carved",   HGS_BLOCKS_CARVED},
-	{"hg_shm_blocks_returned", HGS_BLOCKS_RETURNED},
-	{"hg_shm_gc_passes",       HGS_GC_PASSES},
-	{"hg_shm_cache_flushes",   HGS_CACHE_FLUSHES},
-	{"hg_shm_cells_flushed",   HGS_CELLS_FLUSHED},
-	{"hg_shm_pressure_flushes", HGS_PRESSURE_FLUSHES},
-	{"hg_shm_pressure_cells",   HGS_PRESSURE_CELLS},
-	{"hg_shm_gc_tick_blocks",   HGS_GC_TICK_BLOCKS},
-	{"hg_shm_gc_inline_blocks", HGS_GC_INLINE_BLOCKS},
-	{"hg_shm_gc_kept_blocks",   HGS_GC_KEPT_BLOCKS},
-	{"hg_shm_sweeps_skipped",   HGS_SWEEPS_SKIPPED},
-	{"hg_shm_buddy_splits",    HGS_BUDDY_SPLITS},
-	{"hg_shm_buddy_merges",    HGS_BUDDY_MERGES},
-	{"hg_shm_buddy_free_leaves", HGS_BUDDY_FREE_LEAVES},
-	{"hg_shm_large_backing",   HGS_LARGE_BACKING},
-	{"hg_shm_large_live",      HGS_LARGE_LIVE},
-	{"hg_shm_large_recycled",  HGS_LARGE_RECYCLED},
-	{"hg_shm_large_chunks_carved",   HGS_LARGE_CHUNKS_CARVED},
-	{"hg_shm_large_chunks_returned", HGS_LARGE_CHUNKS_RETURNED},
-	{"hg_shm_reserve_floor",   HGS_RESERVE_FLOOR},
-	{"hg_shm_below_floor",     HGS_BELOW_FLOOR},
-	{"hg_shm_floor_crossings", HGS_FLOOR_CROSSINGS},
-	{"hg_shm_corruption",      HGS_CORRUPTION},
-	{"hg_shm_committed",       HGS_COMMITTED},
-	{"hg_shm_cap",             HGS_CAP},
-	{"hg_shm_grows",           HGS_GROWS},
-	{"hg_shm_grow_bytes",      HGS_GROW_BYTES},
-	{"hg_shm_grow_refused",    HGS_GROW_REFUSED},
-	{"hg_shm_grow_blocked",    HGS_GROW_BLOCKED},
-	{"hg_shm_lock_stalls",     HGS_LOCK_STALLS},
-	{"hg_shm_lock_hold_max_us", HGS_LOCK_HOLD_MAX_US},
-	{"hg_shm_grows_proactive", HGS_GROWS_PROACTIVE},
-	{"hg_shm_grows_exhaustion", HGS_GROWS_EXHAUSTION},
-	{"hg_shm_shrinks",         HGS_SHRINKS},
-	{"hg_shm_shrink_bytes",    HGS_SHRINK_BYTES},
-	{"hg_shm_punches",         HGS_PUNCHES},
-	{"hg_shm_punch_bytes",     HGS_PUNCH_BYTES},
-	{"hg_shm_punched_pages",   HGS_PUNCHED_PAGES},
-	{"hg_shm_whole_free_pages", HGS_WHOLE_FREE_PAGES},
-	{"hg_shm_repins",          HGS_REPINS},
-	{"hg_shm_repin_failed",    HGS_REPIN_FAILED},
-	{"hg_shm_hole_regrows",    HGS_HOLE_REGROWS},
-	{NULL, 0}
-};
-
-int hg_register_stats(void)
-{
-	int i;
-
-#ifdef PKG_MALLOC
-	if ((mem_allocator_pkg == MM_HG_MALLOC ||
-	     mem_allocator_pkg == MM_HG_MALLOC_DBG) &&
-	    (register_stat2("hgmem", "hg_pkg_grow_refused",
-	        (stat_var **)hg_pkg_pub_stat, STAT_NO_RESET|STAT_IS_FUNC,
-	        (void *)0L, 0) != 0 ||
-	     register_stat2("hgmem", "hg_pkg_grow_blocked",
-	        (stat_var **)hg_pkg_pub_stat, STAT_NO_RESET|STAT_IS_FUNC,
-	        (void *)1L, 0) != 0)) {
-		LM_ERR("failed to add the pkg growth statistics\n");
-		return -1;
-	}
-#endif
-
-	if (mem_allocator_shm != MM_HG_MALLOC &&
-	        mem_allocator_shm != MM_HG_MALLOC_DBG)
-		return 0;       /* another allocator is in use */
-
-	for (i = 0; hg_stat_defs[i].name; i++) {
-		if (register_stat2("hgmem", (char *)hg_stat_defs[i].name,
-		        (stat_var **)hg_shm_stat, STAT_NO_RESET|STAT_IS_FUNC,
-		        (void *)(long)hg_stat_defs[i].field, 0) != 0) {
-			LM_ERR("failed to add the %s statistic\n", hg_stat_defs[i].name);
-			return -1;
-		}
-	}
-	return 0;
 }
 
 #endif /* HG_MALLOC, statistics included */

@@ -83,7 +83,7 @@ void __tsan_release(void *addr);
 #endif
 
 /* the free-list link at a free cell's payload start, the only payload bytes
- * the free lists write (cell_next()/cell_set_next() in hg_arena.c) */
+ * the free lists write (cell_next()/cell_set_next() in hg_arena_int.h) */
 #define HG_SAN_LINK  (sizeof(void *))
 
 #define HG_SAN_PRIVATE(hb)  (HG_SAN_ON && !(hb)->shared)

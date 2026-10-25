@@ -111,7 +111,7 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 		 * large objects does not carve a chunk each time */
 		chunk_size = HG_LFRAG_HDR * 2 + need;
 		/* a 1 MB floor would eat a small arena: there it is capped at
-		 * chunk_max (as chunk_size_for() in hg_arena.c) */
+		 * chunk_max (as chunk_size_for() in hg_arena_int.h) */
 		{
 			unsigned long floor = HG_LARGE_DEFAULT_CHUNK;
 			if (hb->size >= HG_LARGE_BIG_ARENA) {
