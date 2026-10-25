@@ -68,6 +68,9 @@ static int hgs_verify = 2000;     /* full verify sweep every N ops */
 static int hgs_large  = 64;       /* 1-in-N allocations exceed the cell cap */
 static int hgs_fill_on   = 1;     /* 0 = no stamps: the allocator's cost alone */
 static int hgs_max_small = 8000;  /* small sizes are 8 .. 8 + max_small - 1 */
+/* KB of pkg the parent takes in mod_init and keeps: forks every child with
+ * the parent's pkg arena that full, e.g. under its headroom line */
+static int hgs_parent_pkg_kb = 0;
 /*
  * Growth driver. Each worker first allocates and HOLDS hold_mb MB of
  * stamped 128-512K blocks before the churn starts, and keeps them stamped
@@ -536,6 +539,23 @@ static int mod_init(void)
 		hgs_slots = HGS_MAX_SLOTS;
 	if (hgs_max_small < 1)
 		hgs_max_small = 1;
+	if (hgs_parent_pkg_kb > 0) {
+		struct mem_info info;
+		long held = 0;
+
+		while (held < (long)hgs_parent_pkg_kb << 10) {
+			if (!pkg_malloc(16 << 10))
+				break;
+			held += 16 << 10;
+		}
+		memset(&info, 0, sizeof info);
+#ifdef pkg_info
+		pkg_info(&info);
+#endif
+		LM_NOTICE("hgstress parent pkg hold: %ld KB kept (asked %d KB); "
+			"pkg %lu KB, %lu KB free\n", held >> 10, hgs_parent_pkg_kb,
+			info.total_size >> 10, info.free >> 10);
+	}
 
 	if (hgs_again_s > 0 &&
 	    register_timer("hgstress-again", hgs_again, NULL,
@@ -586,6 +606,7 @@ static const param_export_t params[] = {
 	{ "large",   INT_PARAM, &hgs_large   },
 	{ "fill",      INT_PARAM, &hgs_fill_on   },
 	{ "max_small", INT_PARAM, &hgs_max_small },
+	{ "parent_pkg_kb", INT_PARAM, &hgs_parent_pkg_kb },
 	{ "hold_mb",     INT_PARAM, &hgs_hold_mb     },
 	{ "hold_pkg_mb", INT_PARAM, &hgs_hold_pkg_mb },
 	{ "again_s",     INT_PARAM, &hgs_again_s     },
