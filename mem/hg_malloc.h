@@ -477,8 +477,10 @@ struct hg_pstat {
 	 * capacity, which "used" cannot (a 100-byte request fills a 128-byte
 	 * slot). Same private line as the counters above: no extra traffic. */
 	long cell_live;
-	char _pad[HG_STAT_LINE - 3 * sizeof(long)];
+	char _pad[HG_STAT_LINE - 4 * sizeof(long)];
 } __attribute__ ((aligned (HG_STAT_LINE)));
+HG_STATIC_ASSERT(sizeof(struct hg_pstat) == HG_STAT_LINE,
+	"a stats slot is one cache line: resize _pad with the fields");
 
 /*
  * What kind of corruption a check caught, grouped by what an operator would
