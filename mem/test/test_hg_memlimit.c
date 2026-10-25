@@ -21,13 +21,10 @@
  */
 
 /*
- * The floor formula, and the cgroup room read from fake cgroup trees laid
- * out in a temporary directory - cgroup v2 with the limit on an ancestor
- * and then on the process's own level, a limit above 4 GB, cgroup v1 on a
- * hybrid host, no limit anywhere, no membership file - so CI checks the
- * parsing and the walk without needing a limited cgroup of its own. Then
- * the host check on a fake /proc/meminfo with more than 4 GB available,
- * which a 32-bit build must count whole.
+ * The floor formula; the cgroup room read from fake cgroup trees in a
+ * temporary directory, so CI checks the parsing and the walk without a
+ * limited cgroup of its own; and the host check on a fake /proc/meminfo
+ * with more than 4 GB available, which a 32-bit build must count whole.
  */
 
 #ifdef HG_MALLOC
@@ -101,15 +98,12 @@ static unsigned long long hml_room(const char *self, struct hg_cg_info *ci)
 }
 
 /*
- * The host check, through a grow of the shm arena by 16 MB, on a fake
- * /proc/meminfo: 8 GB of RAM, floor 409 MB (a twentieth). 4 GB + 100 MB
- * available must pass - a 32-bit build that counted it in an unsigned long
- * saw 100 MB, under the floor, and refused every grow - and 8 MB above the
- * floor must be refused, so the check is shown live on every build. The
- * cgroup is pointed at a missing membership file, so only the host counts.
- * Then the cgroup the caller left with 70 MB of room refuses a 128 MB grow
- * on a host with plenty: each refusal must record its own cause for
- * hg_stats' last_grow_refusal.
+ * The host check, through a 16 MB shm grow, on a fake /proc/meminfo with
+ * 8 GB of RAM and a 409 MB floor (a twentieth): 4 GB + 100 MB available
+ * must pass (a 32-bit unsigned long would see 100 MB, under the floor),
+ * 8 MB above the floor must be refused. A missing membership file leaves
+ * only the host. Then the cgroup the caller left with 70 MB of room
+ * refuses a 128 MB grow on a roomy host. Each refusal records its cause.
  */
 static void test_hg_host_room(void)
 {

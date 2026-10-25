@@ -24,16 +24,14 @@
 #define hg_memlimit_h
 
 /*
- * How much memory may still be committed. /proc/meminfo describes the host;
- * a process in a memory-limited cgroup - a container started with a memory
- * limit, a systemd unit with MemoryMax - meets its limit first, and the
- * kernel's OOM killer acts on the cgroup alone. So every commit check takes
- * the tighter of the host's room and the cgroup's.
+ * How much memory may still be committed: the tighter of the host's room
+ * (/proc/meminfo) and the memory cgroup's (a container limit, systemd
+ * MemoryMax). A limited cgroup meets its limit first, and the kernel's OOM
+ * killer then acts on the cgroup alone.
  */
 
 /* the floor a commit must leave free, in MB, on @total_mb of memory: a
- * twentieth, at least the smaller of 256 MB and an eighth - 16 MB of
- * 128 MB, 128 MB of 1 GB, 256 MB from 2 GB to 5 GB */
+ * twentieth, but at least the smaller of 256 MB and an eighth */
 long hg_floor_mb_for(long total_mb);
 
 /* the tightest memory cgroup the calling process is in, for the messages;
@@ -46,19 +44,18 @@ struct hg_cg_info {
 };
 
 /*
- * Room - what the host or a cgroup leaves above its floor - is counted in
- * 64-bit bytes on every build: on a 32-bit build each process addresses at
- * most 4 GB, but the host it runs on, and the processes together, are not
- * held to that. HG_ROOM_ANY: no limit known.
+ * Room - what the host or a cgroup leaves above its floor - is in 64-bit
+ * bytes on every build: a 32-bit process addresses at most 4 GB, but the
+ * host and the processes together are not held to that. HG_ROOM_ANY: no
+ * limit known.
  */
 #define HG_ROOM_ANY (~0ULL)
 
 /*
  * The room the calling process's memory cgroups leave above their floors:
- * the tightest of its own cgroup and every ancestor that has a limit.
- * HG_ROOM_ANY when no level is limited, or the cgroup files cannot be read
- * (not Linux, no memory controller) - the host check then decides alone.
- * @ci, if given, describes the binding level.
+ * the tightest of its own and every limited ancestor. HG_ROOM_ANY when none
+ * is limited or the files cannot be read (not Linux, no memory controller);
+ * the host check then decides alone. @ci, if given, gets the binding level.
  */
 unsigned long long hg_cgroup_room(struct hg_cg_info *ci);
 

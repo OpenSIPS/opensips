@@ -21,34 +21,20 @@
  */
 
 /*
- * What a sanitizer cannot see by itself. An HG arena is one big mapping, so
- * to ASan or Valgrind every byte of it is addressable, and a write past a
- * cell or into a freed one goes unnoticed. These hooks tell them which bytes
- * a caller may touch:
+ * Sanitizer hooks. An HG arena is one big mapping, so to ASan or Valgrind
+ * every byte is addressable; the hooks below open and close the bytes a
+ * caller may touch, and the allocator opens a cell itself before it reads
+ * or writes the payload (debug red zone and poison, realloc's copy).
  *
- *   handed out         the bytes asked for are open, the rest of the
- *                      payload is closed
- *   with the allocator a free cell, wherever it sits: closed but for the
- *                      free-list link at the payload's start
- *   in quarantine      (HG_MALLOC_DBG) closed entirely
- *   back to the buddy  a whole block open again, for the buddy and the
- *                      large tier to write their own structures into
- *
- * and the allocator opens a cell itself before it reads or writes its
- * payload (the debug red zone and poison, realloc's copy).
- *
- * PRIVATE arenas only (pkg and a child's own). Both tools keep the state per
- * process: closing a shared cell in the process that freed it would leave it
- * closed in that process after another one allocated it again, and every
- * legitimate access from there would be reported. Shared memory is covered
- * by HG_MALLOC_DBG's in-band poison instead (hg_dbg.c), which every process
- * sees.
+ * PRIVATE arenas only (pkg and a child's own): both tools keep the state per
+ * process, so a shared cell closed by the process that freed it would stay
+ * closed there after another process allocated it again. Shared memory is
+ * covered by HG_MALLOC_DBG's in-band poison (hg_dbg.c).
  *
  * ASan is detected from the compiler; Valgrind's memcheck needs
  * -DHG_VALGRIND and its headers. ThreadSanitizer is told about hb->lock,
- * whose futex or spin implementation it cannot see through - the real
- * synchronization, nothing suppressed. Without a sanitizer every hook
- * compiles to nothing.
+ * whose futex or spin implementation it cannot see through. Without a
+ * sanitizer every hook compiles to nothing.
  */
 
 #ifndef hg_san_h
@@ -96,9 +82,8 @@ void __tsan_release(void *addr);
 #define HG_TSAN_RELEASE(a)  ((void)0)
 #endif
 
-/* the free-list link a free cell keeps at its payload's start - one
- * pointer, the only payload bytes the private lists and the shared pool
- * write (cell_next() / cell_set_next() in hg_arena.c) */
+/* the free-list link at a free cell's payload start, the only payload bytes
+ * the free lists write (cell_next()/cell_set_next() in hg_arena.c) */
 #define HG_SAN_LINK  (sizeof(void *))
 
 #define HG_SAN_PRIVATE(hb)  (HG_SAN_ON && !(hb)->shared)
@@ -114,7 +99,7 @@ void __tsan_release(void *addr);
 		} \
 	} while (0)
 
-/* with the allocator: closed but for the link */
+/* a free cell with the allocator, wherever it sits: closed but for the link */
 #define hg_san_take(hb, cs, cap) do { \
 		if (HG_SAN_PRIVATE(hb)) { \
 			HG_SAN_CLOSE(HG_SAN_PAY(cs), (cap)); \
@@ -135,7 +120,8 @@ void __tsan_release(void *addr);
 			HG_SAN_CLOSE(HG_SAN_PAY(cs), (cap)); \
 	} while (0)
 
-/* @len bytes at @p leaving the cell tiers, back to the buddy */
+/* @len bytes at @p leaving the cell tiers, back to the buddy: open again,
+ * for the buddy and the large tier to write their structures into */
 #define hg_san_release(hb, p, len) do { \
 		if (HG_SAN_PRIVATE(hb)) \
 			HG_SAN_OPEN((p), (len)); \

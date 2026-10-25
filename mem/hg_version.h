@@ -19,10 +19,9 @@
  */
 
 /*
- * The allocator's name, as one string, used everywhere it names itself:
- * the -a/-s/-k selector, the compile-flag list in "opensips -V", the
- * "allocator: ..." line each arena logs at startup, and mm_str().  One
- * definition keeps them in agreement.
+ * The allocator's name wherever it names itself: the -a/-s/-k selector, the
+ * flag list in "opensips -V", each arena's "allocator: ..." startup line and
+ * mm_str().
  */
 
 #ifndef HG_VERSION_H

@@ -18,29 +18,17 @@
  */
 
 /*
- * The HG_MALLOC maintenance process.
+ * The HG_MALLOC maintenance process: proactive growth and shrink of the
+ * shared arenas. A process of its own because timer jobs run in whichever
+ * process reads the timer-job pipe, SIP workers included (net/net_udp.c,
+ * net/net_tcp_proc.c), and a grow there parks the worker for the populate.
  *
- * Why a process of its own: timer jobs are executed by whichever process
- * reads the timer-job pipe - the Timer handlers AND every UDP/TCP worker
- * (net/net_udp.c, net/net_tcp_proc.c) - so a "proactive" grow run from
- * a timer job populated its granule inside a SIP worker, 20-60 ms of
- * page faults on the data path (measured: the 2 s-tick experiment made
- * the tails worse, not better). With the two-phase commit the populate no
- * longer holds the arena lock, but the worker running it is still parked
- * for its duration. Here it runs in a process that serves no request.
- *
- * What it does, every second under the arena lock for microseconds:
- * the headroom rule (grow one granule ahead whenever the free grid is
- * below twice the reserve floor and the reservation has room), and every
- * thirty ticks - the profile's cycle - the profile gate and the shrink
- * gate. The populate itself (hg_mem_commit inside hg_buddy_grow) runs
- * with the lock released, in this process. While it is alive the sweep
- * timer's copies of those ticks stand down (hb->maint_active), so no
- * worker grows proactively any more; exhaustion growth stays armed in
- * every process as the backstop it always was.
- *
- * Only the shared arena: a pkg arena is private to its process and can
- * only be populated there.
+ * Every second it applies the headroom rule (grow one granule ahead when
+ * the free grid is below twice the reserve floor), every hg_scaling_cycle
+ * ticks the profile and shrink gates; the populate runs here with the lock
+ * released. While it is alive (hb->maint_active) the sweep timer's copies
+ * of these ticks stand down; exhaustion growth stays armed everywhere.
+ * pkg arenas are not served: only their own process can populate them.
  */
 
 #ifdef HG_MALLOC
@@ -61,22 +49,15 @@
 #include "hg_maint.h"
 
 #define HG_MAINT_TICK_MS     1000
-/*
- * reactor_main_loop()'s first argument is a timeout in MILLISECONDS since
- * upstream 1968b9ded7 (the same change that added worker_reactor_timeout),
- * so this constant is passed as is. The guard in hg_maint_tick() below
- * is in nanoseconds and needs no unit.
- */
-/* the policy cycle (profile gates, shrink decision) is hg_scaling_cycle
- * ticks */
+/* passed as is: reactor_main_loop() takes its timeout in milliseconds. The
+ * policy cycle (profile gates, shrink decision) is hg_scaling_cycle ticks */
 
 static unsigned long maint_last_ns;
 static unsigned int maint_ticks;
 
-/* a shared arena with a cap above its initial size: the shm arena under
- * -a HG_MALLOC with -m INIT:CAP, or any module arena (hg_arena_create) -
- * the registry has them all, and module arenas exist before the process
- * count (modules initialise first) */
+/* a shared arena with a cap above its initial size: shm with -m INIT:CAP,
+ * or a module arena (hg_arena_create()) - these exist before the process
+ * count, since modules initialise first */
 static int maint_arena(const struct hg_block *hb)
 {
 	return hb && hb->shared && hb->buddy_ready &&
@@ -118,8 +99,8 @@ static void hg_maint_tick(void)
 			continue;
 		hg_lock_enter(hb, HG_LK_POLICY);
 		hg_grow_headroom_tick(hb);
-		/* the deferred GC - drained blocks beyond keep go back here, a
-		 * budget per tick, instead of on the workers' donate path */
+		/* deferred GC: drained blocks beyond keep go back here, a
+		 * budget per tick, not on the workers' donate path */
 		hg_gc_tick(hb, HG_GC_TICK_BUDGET);
 		if (slow) {
 			hg_gc_cycle(hb);   /* next cycle's keep */
@@ -129,8 +110,8 @@ static void hg_maint_tick(void)
 			hg_drain_tick(hb);   /* the decision's execution */
 		}
 		hg_lock_leave(hb);
-		/* pages a worker's grow left on 4 KB - collapsed here, where
-		 * nobody waits for it; takes the lock per page itself */
+		/* pages a worker's grow left on 4 KB, collapsed where nobody
+		 * waits; takes the lock per page itself */
 		hg_collapse_deferred(hb);
 	}
 }

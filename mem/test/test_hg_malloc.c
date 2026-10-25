@@ -23,9 +23,8 @@
 /*
  * Run with HG_MALLOC selected, e.g.
  *   make test UT_ALLOC=HG_MALLOC UT_MEM="-m 64:1024 -M 16:256"
- * A child reports its verdict through shm and the parent waits for it with
- * a timeout, so a child that crashes or aborts fails its test instead of
- * hanging the run.
+ * A child reports its verdict through shm and the parent waits with a
+ * timeout, so a child that crashes fails its test instead of hanging.
  */
 
 #include "test_hg_malloc.h"
@@ -55,10 +54,9 @@
 #define HGT_FAIL  2
 
 static volatile int *hgt_verdict;
-/* set by the parent once internal_fork() has returned: a child that ran
- * and exited within the parent's start-up wait would otherwise be reported
- * as "failed to initialize" (internal_fork() checks for an exited child
- * before it re-reads the start-up result) */
+/* set by the parent once internal_fork() has returned: a child that exited
+ * during the parent's start-up wait would be reported as "failed to
+ * initialize" */
 static volatile int *hgt_go;
 
 int hg_ut_selected(void)
@@ -114,8 +112,7 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 		for (waited = 0; !__atomic_load_n(hgt_go, __ATOMIC_ACQUIRE) &&
 		        waited < HGT_WAIT_US; waited += HGT_STEP_US)
 			usleep(HGT_STEP_US);
-		/* release: everything fn() wrote - a stale write the parent is
-		 * to find, say - is visible before the verdict is */
+		/* release: all fn() wrote is visible before the verdict is */
 		__atomic_store_n(hgt_verdict, fn(arg) == 0 ? HGT_PASS : HGT_FAIL,
 			__ATOMIC_RELEASE);
 		exit(0);
@@ -134,10 +131,8 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 }
 
 /*
- * pkg memory allocated before fork() lives in the arena every child
- * inherits, not in the child's own: a child must be able to realloc and
- * free it (before 2026-10-16 the realloc returned NULL, and the debug
- * free path aborted)
+ * pkg memory allocated before fork() lives in the inherited arena, not in
+ * the child's own: the child must be able to realloc and free it
  */
 #define HGT_PF_A  1000
 #define HGT_PF_B  3000
@@ -332,9 +327,8 @@ static void test_hg_grow(void)
 	grows0 = hb->grows;
 	committed0 = hb->committed_bytes;
 
-	/* allocate until the arena grows: what is committed already - more
-	 * than INIT if the maintenance process grew it ahead of demand - has
-	 * to be used up first */
+	/* allocate until the arena grows; what is committed (more than INIT if
+	 * the maintenance process grew it ahead) is used up first */
 	for (n = 0; n < HGT_GROW_MAX; n++) {
 		p[n] = shm_malloc(HGT_GROW_CHUNK);
 		if (!p[n])
@@ -355,13 +349,11 @@ static void test_hg_grow(void)
 }
 
 /*
- * A refused grow records what refused it, for hg_stats' last_grow_refusal.
- * The policy causes, through hg_buddy_grow_unlocks() under the arena lock:
- * dry-run mode, then a profile ceiling at what is committed now (on a fixed
- * arena that ceiling is the reservation, so the cause is the cap). Every
- * field borrowed is restored before the lock is released, so no other
- * process sees it. A grow in flight elsewhere would make the call wait with
- * the lock released, so the check is skipped then.
+ * A refused grow records its cause for last_grow_refusal: dry-run mode,
+ * then a profile ceiling at the committed size (the cap, when committed is
+ * the whole reservation). Borrowed fields are restored under the lock, so
+ * no other process sees them; skipped while a grow is in flight, which
+ * would make the call wait with the lock released.
  */
 static void test_hg_grow_refusal_cause(void)
 {
@@ -418,11 +410,10 @@ static void test_hg_grow_refusal_cause(void)
 }
 
 /*
- * A process leaving for good (auto-scaling down) must give back what it holds
- * in the shared arena: its cached cells and the unused rest of the chunks it
- * carved. The arena's real_used counts whole carved blocks, so it returns to
- * its baseline only if every block the child touched drained. The size is one
- * the idle processes of a test run do not use.
+ * A process leaving for good must give back its cached shm cells and the
+ * unused rest of the chunks it carved: real_used counts whole carved
+ * blocks, so it returns to its baseline only if every block the child
+ * touched drained. The size is one no idle test process uses.
  */
 #define HGT_EXIT_SIZE   20000
 #define HGT_EXIT_CELLS  100
@@ -470,10 +461,9 @@ static void test_hg_exit_returns_cells(void)
 }
 
 /*
- * A double free must be refused and counted, never hand the same memory to
- * two callers: the same cell freed twice in a row (it stays on the freeing
- * process's private list, which the shared pool's free map cannot see), and
- * a large-tier fragment freed twice.
+ * A double free is refused and counted, never handing one cell to two
+ * callers: a cell freed twice in a row (still on the private list, which
+ * the shared pool's free map cannot see) and a large fragment freed twice.
  */
 static int hgt_child_double_free(void *arg)
 {
@@ -516,12 +506,10 @@ static void test_hg_double_free(void)
 }
 
 /*
- * The cell header carries the cell's state and a checksum, so a free can be
- * refused whatever happened in between: a double free with other frees in
- * between, a header overwritten by the neighbour's overflow, a pointer into
- * the middle of a cell, a realloc of freed memory. Each runs in a child (the
- * refused cells leak) and reports whether the refusals were the expected
- * ones; the parent checks the counters moved by exactly that much.
+ * The header's state and checksum refuse a double free with another free
+ * in between, a header overwritten by a neighbour's overflow, a pointer
+ * into a cell and a realloc of freed memory. In a child, since refused
+ * cells leak; the parent checks the counters moved by exactly that much.
  */
 #define HGT_HDR_SIZE  200
 
@@ -546,8 +534,8 @@ static int hgt_child_header(void *arg)
 		fails++;
 	}
 
-	/* the header in front of a live cell overwritten (a neighbour's
-	 * overflow would do this): its free must be refused, not followed */
+	/* a live cell's header overwritten, as by a neighbour's overflow: its
+	 * free must be refused, not followed */
 	a = shm_malloc(HGT_HDR_SIZE);
 	if (!a)
 		return -1;
@@ -594,14 +582,12 @@ static void test_hg_header(void)
 }
 
 /*
- * HG_MALLOC_DBG only: a write past the size asked for is found at the free
- * (small cell and large fragment) and around an in-place realloc, and a
- * write to a freed cell is found when the cell leaves the quarantine - also
- * when the write comes from another process - and the cell is then never
- * handed out again. A child forked while the parent's quarantine holds a
- * cell finds its own copy empty: it can never release the parent's cells.
- * The damaged cells leak, so this runs in children; the parent checks the
- * counters.
+ * HG_MALLOC_DBG only: a write past the request is found at the free (small
+ * cell, large fragment) and around an in-place realloc; a write after free,
+ * from this or another process, is found when the cell leaves quarantine,
+ * and the cell is never handed out again. A child forked while the parent's
+ * quarantine holds a cell finds its copy empty, so it cannot release the
+ * parent's cells. Damaged cells leak, so this runs in children.
  */
 #define HGT_DBG_SMALL  201
 #define HGT_DBG_LARGE  (200UL * 1024 + 3)
@@ -710,12 +696,11 @@ static void test_hg_dbg(void)
 }
 
 /*
- * Under ASan, the hooks of hg_san.h, read straight from ASan's shadow (so
- * nothing has to crash): a private (pkg) cell handed out is open for the
- * bytes asked for and closed after them, also after an in-place realloc;
- * freed, it is closed past its free-list link; a shared (shm) cell is never
- * closed. The sizes keep every probe inside the cell's own slack, for the
- * plain, the debug and the SHM_EXTRA_STATS header alike.
+ * The hg_san.h hooks under ASan, read from ASan's shadow so nothing has to
+ * crash: a pkg cell is open for the bytes asked for and closed after them,
+ * also after an in-place realloc, and closed past its free-list link once
+ * freed; an shm cell is never closed. The sizes keep every probe inside the
+ * cell's own slack with the plain, debug and SHM_EXTRA_STATS headers alike.
  */
 static void test_hg_san(void)
 {

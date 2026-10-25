@@ -32,11 +32,9 @@
 #include "../dprint.h"
 
 /*
- * The checks HG_MALLOC_DBG adds, on an arena whose hb->dbg is set: the tail
- * red zone of every allocation, and the poisoned quarantine every freed
- * cell passes through before it can be reused. The production paths test
- * the flag and nothing else - see the call sites in hg_arena.c, hg_large.c
- * and hg_malloc_dyn.h.
+ * HG_MALLOC_DBG checks, on an arena with hb->dbg set: a tail red zone on
+ * every allocation and a poisoned quarantine for freed cells. The other
+ * paths only test the flag (hg_arena.c, hg_large.c, hg_malloc_dyn.h).
  */
 
 /* the trailer is stored XORed with this, so neither the red zone's own
@@ -105,12 +103,10 @@ int hg_dbg_tail_check(struct hg_block *hb, void *cs, unsigned long cap)
 }
 
 /*
- * The quarantine: a freed cell is filled with HG_DBG_POISON and parked here,
- * oldest out first, before it goes back on a free list - so a write through
- * a dangling pointer lands in a cell nobody else holds yet, and is seen when
- * the cell leaves. Per thread and per arena like the private lists, so no
- * lock; bounded by HG_QUAR_CELLS cells and hb->quar_bytes. The ring is mapped
- * on the first free, outside the arena it serves.
+ * The quarantine: a freed cell is filled with HG_DBG_POISON and held here,
+ * oldest out first, so a write through a dangling pointer is seen when it
+ * leaves. Per thread and arena, so no lock; bounded by HG_QUAR_CELLS and
+ * hb->quar_bytes. The ring is mapped on the first free, outside the arena.
  */
 struct hg_quar {
 	unsigned int  head;                  /* oldest entry */
@@ -120,9 +116,8 @@ struct hg_quar {
 	unsigned char cls[HG_QUAR_CELLS];    /* their classes */
 };
 
-/* a cell leaving quarantine is still all poison under an intact FREE
- * header, or it was written after its free: then it is leaked, never
- * handed out again */
+/* a cell leaving quarantine must be all poison under an intact FREE
+ * header; if not, it is leaked, never handed out again */
 static int quar_check(struct hg_block *hb, char *cs, unsigned int c)
 {
 	const unsigned char *pay = (const unsigned char *)cs + HG_CELL_HDR;

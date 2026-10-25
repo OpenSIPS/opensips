@@ -19,12 +19,9 @@
  */
 
 /*
- * Thin public-API layer over hg_cell_alloc()/hg_cell_free() (hg_arena.c).
- * Much simpler than f_malloc_dyn.h/q_malloc_dyn.h's split_frag machinery:
- * fixed size classes mean there is no fragment-splitting concept here at
- * all - "does size X fit in cell class C" is a table lookup, not a runtime
- * decision. Same ifdef-spaghetti convention as the other _dyn.h files
- * though, for the same reasons (single/multi allocator x dbg/non-dbg).
+ * Thin public API over hg_cell_alloc()/hg_cell_free() (hg_arena.c): fixed
+ * size classes leave no fragment splitting to do here. Same ifdef convention
+ * as the other _dyn.h files (single/multi allocator x dbg/non-dbg).
  */
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
@@ -68,11 +65,9 @@ void hg_free(struct hg_block *hb, void *p, const char *file,
 #ifdef DBG_MALLOC
 	LM_GEN1(memlog, "%s_free(%p), called from %s: %s(%d)\n", hb->name, p,
 		file, func, line);
-	/* judge by ANY live arena, not by @hb alone: a child freeing what the
-	 * parent allocated pre-fork (every cachedb module's child_init does)
-	 * hands in a pointer from the inherited parent pkg arena, which
-	 * hg_cell_free() redirects to its owner - see hg_owner(). Checking
-	 * @hb's own bounds aborted every child under HG_MALLOC_DBG. */
+	/* judge by ANY live arena, not @hb alone: a child freeing what the
+	 * parent allocated pre-fork hands in a pointer from the inherited pkg
+	 * arena, which hg_cell_free() redirects to its owner (hg_owner()) */
 	if (p && !hg_owns_any(HG_HDR(p))) {
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
@@ -125,42 +120,16 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 		return hg_malloc(hb, size, file, func, line);
 		#endif
 
-	/* fixed size classes: if the new size still fits the SAME class
-	 * (accounting for the hidden header, same rule hg_cell_alloc() uses
-	 * to pick a class), the existing cell is already big enough - no
-	 * copy, no reallocation, unlike f_malloc's frag split/merge.
-	 *
-	 * Large objects (hg_large.c) take the simple path: always alloc new +
-	 * copy + free old, no in-place grow/shrink via the boundary-tag
-	 * frag's neighbors. That optimization is real future work, not
-	 * needed for correctness - large reallocs are rarer still than large
-	 * allocs to begin with. */
-	/* validate ownership BEFORE reading the class - the old order read the
-	 * header first and only then complained about a bad class, so a
-	 * foreign or unmapped pointer faulted before reaching that check. */
-	/* any live arena will do: a cell the parent allocated pre-fork is read
-	 * in place, and a move frees it through hg_free(), which hands it back
-	 * to its owner (see hg_owner()) - other allocators let a child realloc
-	 * inherited pkg memory, and so must this one. */
+	/* ownership BEFORE the header is read: a foreign or unmapped pointer
+	 * would fault there. Any live arena will do, so a child can realloc
+	 * inherited pkg memory: it is read in place, and a move frees it
+	 * through hg_free(), which hands it back to its owner (hg_owner()) */
 	if (!hg_owns_any(HG_HDR(p))) {
 		LM_CRIT("%s: realloc of %p, which is from no live arena - "
 			"refusing it\n", hb->name, p);
 		return NULL;
 	}
 
-	/* cur_payload is what the CALLER can legally read from @p, which is not
-	 * cur_total minus one fixed header: the two tiers stack different
-	 * headers in front of the payload.
-	 *
-	 *   small : [ HG_CELL_HDR | payload ]
-	 *   large : [ HG_LFRAG_HDR_SIZE | HG_CELL_HDR | payload ]
-	 *
-	 * hg_large_frag_size() returns HG_LFRAG_HDR + frag->size (hg_large.c),
-	 * i.e. the whole frag, and the large tier puts the cell header INSIDE
-	 * that frag so the returned pointer looks like any other cell. Measured
-	 * on the shipped geometry: a 70000-byte request yields frag_size 70072
-	 * = 32 + 40 + 70000. Subtracting only HG_CELL_HDR therefore over-counts
-	 * by exactly HG_LFRAG_HDR_SIZE, on every ABI and every build config. */
 	/* and only a LIVE cell with an intact header: its class byte is what
 	 * the size below is read from */
 	{
@@ -173,6 +142,16 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 			return NULL;
 		}
 	}
+	/*
+	 * cur_payload is what the caller may read from @p; the tiers put
+	 * different headers in front of it:
+	 *   small : [ HG_CELL_HDR | payload ]
+	 *   large : [ HG_LFRAG_HDR_SIZE | HG_CELL_HDR | payload ]
+	 * hg_large_frag_size_at() counts the whole frag, so both come off.
+	 * A small cell whose class still fits the new size (same rule as
+	 * hg_cell_alloc()) is kept; a large one always moves (alloc, copy,
+	 * free) - in-place resize via neighbouring frags is not done.
+	 */
 	cls = HG_CLASS(p);
 	if (cls == HG_LARGE_MARKER) {
 		cur_total = hg_large_frag_size_at(HG_HDR(p) - HG_LFRAG_HDR_SIZE);
@@ -216,13 +195,8 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 	#endif
 
 	if (ptr) {
-		/* realloc copies min(old, new) - never more than the caller had,
-		 * and never more than the new allocation can hold. The missing
-		 * clamp was the dangerous half: small cells are shielded by the
-		 * need_total <= cur_total early return above, which catches every
-		 * shrink, but the large branch has no such return, so a shrink
-		 * from the large tier copied the WHOLE old payload into whatever
-		 * the new (possibly thousand-fold smaller) allocation was. */
+		/* copy min(old, new): a small shrink returned above, but a
+		 * shrink from the large tier gets here */
 		copy = cur_payload < size ? cur_payload : size;
 		/* the copy reads past what the caller asked for: a sanitizer
 		 * must see the old payload open first (hg_san.h) */

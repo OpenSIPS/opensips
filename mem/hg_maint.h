@@ -18,10 +18,9 @@
  */
 
 /*
- * HG_MALLOC maintenance process: a dedicated core process that
- * grows an elastic shm arena AHEAD of demand so no SIP worker ever pays
- * a populate, and that runs the profile and shrink policy on its own
- * clock instead of inside whichever worker picks up the sweep timer.
+ * HG_MALLOC maintenance process: grows an elastic shm arena ahead of demand,
+ * so no SIP worker waits on a populate, and runs the profile and shrink
+ * policy on its own clock rather than in whichever worker takes the sweep.
  */
 #ifndef hg_maint_h
 #define hg_maint_h

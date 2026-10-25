@@ -51,12 +51,9 @@
 #include "../lib/dbg/struct_hist.h"
 
 /*
- * The huge-page ladder is Linux-only, and the fallback values below are
- * Linux's. They are defined ONLY under __OS_linux on purpose: the same bit
- * means something else elsewhere (0x40000 is MAP_PREFAULT_READ on FreeBSD),
- * so defining them unconditionally would make mmap() succeed with unrelated
- * semantics and this code would then report a huge-page tier it never got.
- * On every other OS the reservation is a plain anonymous mapping.
+ * Linux values, defined ONLY under __OS_linux: elsewhere the same bits mean
+ * something else (0x40000 is MAP_PREFAULT_READ on FreeBSD), so mmap() would
+ * succeed with unrelated semantics. Other OSes get a plain anonymous mapping.
  */
 #ifdef __OS_linux
 #ifndef MAP_HUGETLB
@@ -74,19 +71,11 @@
 #endif /* __OS_linux */
 
 /*
- * The system's default huge page size, probed once rather than assumed.
- *
- * It is 2M on x86_64 and on arm64 with 4K base pages, but 32M on arm64
- * with 16K pages and 512M with 64K pages. Getting it wrong is not
- * cosmetic: mmap(MAP_HUGETLB) without MAP_HUGE_* bits uses the system
- * default, and the kernel rounds the mapping up to it - so a hardcoded
- * 2M would (a) leave the arena's recorded extent smaller than the VMA,
- * making the matching munmap() fail with EINVAL and leak the arena, and
- * (b) align the THP tiers to 2M instead of the real PMD granularity, so
- * MADV_HUGEPAGE/MADV_COLLAPSE quietly do nothing and every arena silently
- * degrades to 4K while still reporting a huge-page tier.
- *
- * Falls back to 2M only if /proc/meminfo cannot be read at all.
+ * The system's default huge page size, probed once: 2M on x86_64 and on
+ * arm64 with 4K pages, 32M with 16K pages, 512M with 64K pages.
+ * mmap(MAP_HUGETLB) rounds the mapping up to it, so a wrong value makes the
+ * munmap() fail (the arena leaks) and misaligns the THP tiers, which then
+ * silently stay on 4K. Falls back to 2M only if /proc/meminfo cannot be read.
  */
 #define HG_HPS_FALLBACK (2UL * 1024 * 1024)
 
@@ -123,36 +112,18 @@ static unsigned long hg_hps(void)
 
 #define HG_HPS (hg_hps())
 
-/* round @s up to a whole number of huge pages. Used for the reservation
- * length, the alignment of the THP tiers, AND the matching munmap length -
- * they must agree exactly or the unmap fails and the arena leaks, so they
- * all go through this one macro rather than repeating the expression. */
+/* round @s up to a whole number of huge pages */
 #define HG_HPS_ROUND(s) (((s) + HG_HPS - 1) & ~(HG_HPS - 1))
 
 /*
- * Small-arena mode: an arena whose whole reservation cannot even hold one
- * huge page has no use for the hugetlb or THP tiers (a transparent huge
- * page IS a huge page - there is nothing sub-2MB to collapse into), so its
- * page grid runs on 256 KB "pages" instead. Everything downstream - the
- * buddy layout, growth publication, shrink granularity, tier accounting -
- * already reads the per-arena hb->hps/hps_shift, so the geometry follows
- * from this one choice.
- *
- * Why 256 KB and not smaller: a buddy block never spans pages, so the page
- * IS the ceiling on any contiguous allocation - and the arena's own
- * furniture needs that ceiling high enough. The largest slab class (64 KB
- * cells) has a hard chunk floor of header + 2 cells = ~131 KB
- * (chunk_size_for()'s "least"), and core startup takes a single ~140 KB
- * large-tier object (init_pvar_support) before serving anything. A 64 KB
- * page was tried and measured failing on exactly those ("class 19 wants a
- * 98432 byte chunk, larger than the 65536 byte page"). 256 KB clears every
- * fixed cost; with the ~31 KB hg_block header on page 0, TWO pages
- * (512 KB) is the honest minimum for a fixed arena in this mode, and one
- * page for an elastic one, which grows past it on first use.
- *
- * In huge-page mode the minimum is ONE system huge page, not two: the
- * reserve floor, buddy order math and metadata carve were all verified
- * fine at npages=1, and the mapping itself cannot be smaller anyway.
+ * Small-arena mode: an arena whose whole reservation is under one huge page
+ * gets nothing from hugetlb or THP, so its grid runs on 256 KB pages (all
+ * geometry reads hb->hps).
+ * A buddy block never spans pages, and 256 KB fits the largest class's
+ * ~131 KB chunk floor (chunk_size_for()) and the ~140 KB large object core
+ * startup takes. Minimum: two pages (512 KB; the hg_block header takes
+ * ~31 KB of page 0) for a fixed arena, one for an elastic one; in huge-page
+ * mode, one huge page.
  */
 #define HG_SMALL_PAGE_SHIFT 18
 #define HG_SMALL_PAGE (1UL << HG_SMALL_PAGE_SHIFT)
@@ -187,14 +158,9 @@ static inline unsigned long hg_min_viable(unsigned long apage)
 #define ROUNDTO_MASK   (~((unsigned long)HG_ROUNDTO-1))
 #define ROUNDUP_TO(s)  (((s)+(HG_ROUNDTO-1))&ROUNDTO_MASK)
 
-/*
- * Tier ladder + verification, ported near-verbatim from the huge-page
- * reservation code of an earlier caching module: every tier
- * is proven by TRYING it and verifying the result through /proc, never
- * inferred from kernel version or sysfs config alone.
- */
+/* each backing tier is proven by trying it and reading /proc afterwards,
+ * never inferred from the kernel version or sysfs alone */
 
-/* read one "Key:  <n> kB" line; -1 if absent (old kernel, no /proc) */
 /* one numeric field ("Key:   value") from a /proc file, parsed in @base;
  * -1 if the file or the field is missing */
 static long hg_proc_field(const char *path, const char *key, int base)
@@ -223,17 +189,9 @@ static long hg_meminfo_kb(const char *key)
 }
 
 /*
- * RLIMIT_MEMLOCK and the arena's grows.
- *
- * Every grow commits its delta with mlock() (hg_mem_commit()), and mlock()
- * checks RLIMIT_MEMLOCK for EVERY mapping, MAP_HUGETLB included - what a
- * hugetlb mapping is exempt from is only the locked-page accounting
- * AFTERWARDS, not the check. So a process left with a distribution's
- * default limit (64 KB under a systemd unit without LimitMEMLOCK) refuses
- * every 2 MB grow, while the hugetlb pool sits full of free pages. The
- * kernel reports that and a genuinely empty pool with the same ENOMEM;
- * the helpers below tell them apart so the warning names the resource that
- * actually ran out.
+ * Every grow mlock()s its delta, and mlock() checks RLIMIT_MEMLOCK on
+ * hugetlb mappings too. The kernel returns ENOMEM both for that limit and
+ * for an empty hugetlb pool; the helpers below tell the two apart.
  */
 #define HG_CAP_IPC_LOCK	14	/* linux/capability.h; mlock() ignores the
 				 * limit for a process that holds it */
@@ -345,18 +303,10 @@ static void hg_mlock_refused(struct hg_block *hb, unsigned long delta, int err)
 }
 
 /*
- * The huge-page counter a mapping shows up in: shared anonymous memory
- * is shmem (ShmemHugePages), private anonymous memory is AnonHugePages.
- */
-
-/*
- * Does the host's THP policy forbid an explicit MADV_COLLAPSE for this
- * mapping kind? MADV_COLLAPSE deliberately bypasses "never" in the kernel
- * (it is an explicit request), so an admin who disabled THP still gets
- * collapsed arenas unless WE honor the setting: for shmem, only "deny"
- * blocks it kernel-side, but we treat "never" as the admin's intent too;
- * for anon there is no deny at all, so "never" is the only signal there
- * is. Read once per kind and cached - the setting is a host property.
+ * Does the host's THP policy forbid MADV_COLLAPSE for this mapping kind?
+ * The kernel lets an explicit MADV_COLLAPSE bypass "never", so the setting
+ * is honoured here: "never" or "deny" for shmem, "never" for anon (which
+ * has no deny). Read once per kind and cached - it is a host property.
  */
 static int hg_thp_collapse_denied(int shared)
 {
@@ -372,7 +322,7 @@ static int hg_thp_collapse_denied(int shared)
 	if (!f || !fgets(buf, sizeof buf, f)) {
 		if (f)
 			fclose(f);
-		cached[!!shared] = 0;      /* cannot tell - keep old behavior */
+		cached[!!shared] = 0;      /* cannot tell - allow it */
 		return 0;
 	}
 	fclose(f);
@@ -382,16 +332,11 @@ static int hg_thp_collapse_denied(int shared)
 }
 
 /*
- * Why a 4K arena is 4K.  "plain 4K pages" on its own sent an operator
- * hunting a kernel bug when the answer was a host setting - and, for
- * shmem, our own decision to honour it.  MEASURED 2026-09-02: on a 6.12
- * kernel with shmem_enabled=[never], MADV_HUGEPAGE on a MAP_SHARED anon
- * mapping yields nothing (+0 kB ShmemHugePages) while MADV_COLLAPSE on
- * the same mapping yields the whole 32 MB.  So the pages ARE available
- * and we are declining them on purpose; an operator deserves to be told
- * that, and told which knob changes it.  On kernels below 6.1 there is
- * no MADV_COLLAPSE at all (EINVAL, measured on 5.4) and 4K is simply the
- * truth.
+ * Why a 4K arena is on 4K, for its startup line, when a host THP setting
+ * is the cause: with shmem_enabled=never MADV_COLLAPSE would still give
+ * shmem huge pages, so the arena is on 4K because this build honours the
+ * setting, and the operator is told which knob changes it. Below Linux 6.1
+ * there is no MADV_COLLAPSE at all.
  */
 static const char *hg_4k_reason(int shared)
 {
@@ -403,21 +348,18 @@ static const char *hg_4k_reason(int shared)
 		" - host transparent_hugepage/enabled is never";
 }
 
+/* shared anon memory shows up in ShmemHugePages, private in AnonHugePages */
 static long hg_read_huge_kb(int shared)
 {
 	return hg_meminfo_kb(shared ? "ShmemHugePages" : "AnonHugePages");
 }
 
 /*
- * Did a populate of @len bytes land on huge pages? Answered from the
- * system-wide counter delta across the populate - the same test the
- * MADV_COLLAPSE branch has always used - instead of parsing
- * /proc/self/smaps, which walks the page tables of the WHOLE mapping:
- * measured at 8-11 ms per 16 MB grow on a 3 GB arena, under the arena
- * lock (the commit-phase timings). The counter is host-wide, so concurrent huge
- * faults elsewhere can over-count; 90% of the range is demanded to keep
- * a partial fallback from reading as success, and a false negative only
- * costs the collapse retry it would have taken anyway.
+ * Did a populate of @len bytes land on huge pages? Judged from the
+ * system-wide counter delta across it, not from /proc/self/smaps, which
+ * walks the page tables of the whole mapping. Huge faults elsewhere can
+ * over-count; 90% of the range must show so a partial fallback does not
+ * read as success, and a false negative only costs a collapse retry.
  */
 static int hg_delta_is_huge(long before_kb, long after_kb, unsigned long len)
 {
@@ -427,31 +369,12 @@ static int hg_delta_is_huge(long before_kb, long after_kb, unsigned long len)
 
 
 /*
- * Keep the arena out of core dumps - unless someone is trying to debug the
- * allocator, in which case the arena is the only thing worth having.
- *
- * HG_MALLOC pre-faults and mlocks its whole reservation, so unlike the
- * lazily-faulted F_MALLOC/Q_MALLOC pools every page is resident - a
- * crashing worker would otherwise write the ENTIRE arena (-m plus -M, and
- * the shm_memlog_size-derived debug pool on top) into its core file. With
- * one core per worker that is multi-GB of core dumps per crash, which is
- * enough page-cache churn to push a busy box into reclaim, and it buries
- * the actually-useful stack/heap in gigabytes of allocator slab.
- *
- * The cost of that default only became clear when a core was actually needed:
- * VM_DONTDUMP wins over coredump_filter, so no filter setting can bring the
- * arena back, and every core taken during the 2026-08 crash investigation had
- * "Cannot access memory" where shm_block should be. The free lists, the class
- * counters, the cell headers - the entire state that decides whether a crash
- * was corruption or a race - are all inside the region being skipped.
- *
- * So it is opt-in: set HG_DUMP_ARENA=1 in the environment (a systemd
- * Environment= line is enough) and the arena is dumped. Sized deliberately as
- * an environment variable rather than a config parameter, because it must take
- * effect during allocator init, long before the config file is parsed.
- *
- * Best-effort: MADV_DONTDUMP is Linux 3.4+, and failure is harmless
- * (bigger cores, nothing incorrect), so the return value is ignored.
+ * Keep the arena out of core dumps: it is all resident (pre-faulted and
+ * pinned), so every crashing worker would dump the whole reservation.
+ * HG_DUMP_ARENA=1 in the environment keeps it in, to debug the allocator;
+ * coredump_filter cannot, VM_DONTDUMP overrides it. An environment variable
+ * because it applies at allocator init, before the config is parsed.
+ * Best effort (MADV_DONTDUMP is Linux 3.4+): failure only means bigger cores.
  */
 static void hg_exclude_from_core(void *base, unsigned long size)
 {
@@ -459,9 +382,8 @@ static void hg_exclude_from_core(void *base, unsigned long size)
 	const char *want = getenv("HG_DUMP_ARENA");
 
 	if (want && *want && *want != '0') {
-		/* explicit, not merely "leave the default alone" - the mapping
-		 * may have inherited VM_DONTDUMP from a previous madvise on an
-		 * overlapping range */
+		/* explicit: the mapping may have inherited VM_DONTDUMP from an
+		 * earlier madvise on an overlapping range */
 		madvise(base, size, MADV_DODUMP);
 		return;
 	}
@@ -471,26 +393,15 @@ static void hg_exclude_from_core(void *base, unsigned long size)
 }
 
 /*
- * Reserve a huge-page-aligned, huge-page-backed (best effort) region of at least
- * @size bytes, mlock-pinned against swap. Never unmapped until
- * hg_malloc_destroy(). Returns NULL on total mmap failure only - a huge-page
- * miss still returns a valid plain-4K mapping (degrade, don't fail), per
- * hg_mem_tier_str()'s HG_MEM_4K case.
+ * Reserve an aligned region of at least @size bytes, huge-page-backed where
+ * possible and mlock-pinned, mapped until hg_malloc_destroy(); @cap comes
+ * back as what was reserved. NULL only when mmap fails outright: a
+ * huge-page miss still returns a plain 4K mapping.
  *
- * @shared picks MAP_SHARED vs MAP_PRIVATE, and it is NOT cosmetic:
- *
- *   shm  -> MAP_SHARED:  one arena visible to every forked worker, which is
- *                        the entire point of shm.
- *   pkg  -> MAP_PRIVATE: every worker must get its OWN copy-on-write arena
- *                        after fork. Mapping the pkg arena MAP_SHARED (as
- *                        this function originally did unconditionally) put
- *                        the pkg hg_block - including its embedded
- *                        gen_lock_t and its per-class gpool free lists - in
- *                        memory shared by all workers. Under FAST_LOCK that
- *                        lock is a *spinlock*, so every worker's pkg
- *                        allocations serialized on one contended spinlock,
- *                        and "process-private" pkg cells silently migrated
- *                        between processes through the shared gpool.
+ * @shared: MAP_SHARED for shm, one arena for every forked worker. pkg MUST
+ * be MAP_PRIVATE so each worker gets its own copy-on-write arena; shared,
+ * the hg_block with its lock (a spinlock under FAST_LOCK) and free lists
+ * would be common to all workers.
  */
 static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 		enum hg_mem_tier *tier, unsigned long *locked_b, int shared,
@@ -509,9 +420,8 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 	*cap = csize;        /* rewritten below if a fallback shrinks it */
 
 #ifndef __OS_linux
-	/* No verified huge-page route outside Linux: take a plain anonymous
-	 * mapping and report the 4K tier honestly rather than claiming one we
-	 * cannot check. Still pinned and pre-faulted. */
+	/* no verified huge-page route outside Linux: a plain anonymous
+	 * mapping on the 4K tier, still pinned and pre-faulted */
 	p = mmap(NULL, csize, PROT_READ|PROT_WRITE, vis|MAP_ANONYMOUS, -1, 0);
 	if (p == MAP_FAILED)
 		return NULL;
@@ -524,25 +434,15 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 #else
 
 	/*
-	 * tier 1: MAP_HUGETLB - unswappable without an mlock(), so the INIT
-	 * mapping is not limited by RLIMIT_MEMLOCK. Its GROWS are: each one is
-	 * an mlock() of the delta, and mlock() checks the limit on hugetlb too
-	 * (see hg_mlock_refusal()).
+	 * tier 1: MAP_HUGETLB, unswappable without mlock(), so INIT escapes
+	 * RLIMIT_MEMLOCK; a grow does not, it is an mlock() of its delta (see
+	 * hg_mlock_refusal()). Try the whole cap, then INIT alone: a pool too
+	 * small for the cap fails the mmap, and keeping huge pages without
+	 * growth room beats dropping to THP.
 	 *
-	 * Try the whole cap first, then fall back to the committed size alone.
-	 * hugetlb mappings are backed by a fixed pool, so a cap larger than the
-	 * pool can hold makes this mmap fail outright - and silently dropping
-	 * to THP because the admin asked for growth room would be a far worse
-	 * trade than simply not being able to grow. A cap-less tier-1 arena
-	 * keeps its hugetlb backing and gives up only the growth room.
-	 */
-	/*
-	 * ...except for the arena children inherit copy-on-write (the pre-fork
-	 * pkg arena, HG_INIT_INHERITED): a child's write into an inherited
-	 * hugetlb page needs a fresh huge page with no 4K fallback and no
-	 * reservation behind it - an empty pool at that instant is a SIGBUS.
-	 * That arena starts the ladder at THP, whose COW splits to 4K pages
-	 * instead. See the flag's comment in hg_malloc.h.
+	 * Skipped for the arena children inherit copy-on-write
+	 * (HG_INIT_INHERITED): a child's COW fault on a hugetlb page with the
+	 * pool empty is a SIGBUS, while THP's COW falls back to 4K pages.
 	 */
 	p = (inherited || small) ? MAP_FAILED :
 	    mmap(NULL, csize, PROT_READ|PROT_WRITE,
@@ -570,26 +470,17 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 	}
 
 	/*
-	 * tiers 2-4: huge-page-aligned anon mapping. For the shmem
-	 * (MAP_SHARED) case the VA and shmem *file offset* must be congruent
-	 * modulo the huge page size for THP eligibility, so reserve PROT_NONE
-	 * first, then MAP_FIXED the real mapping at a huge-page boundary
-	 * inside it - an atomic replace, no race with other mappings.
-	 * Harmless (and keeps the alignment) for MAP_PRIVATE.
+	 * tiers 2-4: an aligned anon mapping. THP on shmem needs the VA
+	 * congruent with the file offset modulo the huge page size, so reserve
+	 * PROT_NONE first and MAP_FIXED the real mapping at an aligned address
+	 * inside it (an atomic replace); harmless for MAP_PRIVATE.
 	 *
-	 * The real mapping covers the whole CAP, readable and writable, even
-	 * though only asize of it is committed now. That is the load-bearing
-	 * part of growth, not an accident: this mapping is created before
-	 * fork, so it is the one VMA every worker inherits, all of them backed
-	 * by the same shmem object. Growing later means faulting more of that
-	 * object in - visible to every process by construction. The obvious
-	 * alternative - keep the tail PROT_NONE and mmap/mprotect it live at
-	 * grow time - changes only the GROWER's page tables: measured on the
-	 * 5.4 kernel, the grower reads its new pages fine and a forked worker
-	 * SIGSEGVs on the same addresses (userspace test rig, test A vs
-	 * B). An untouched R/W tail costs a few hundred kB of page-table
-	 * entries, not memory - test B: 64 MB of mapped-untouched span held
-	 * RSS at 576 kB.
+	 * The real mapping covers the whole cap R/W, though only asize is
+	 * committed: made before fork, it is the one VMA every worker inherits,
+	 * so a grow only faults in more of the shared object. An mmap/mprotect
+	 * of the tail at grow time would change only the grower's page tables,
+	 * and the other workers would SIGSEGV there. An untouched tail costs
+	 * page-table entries, not memory.
 	 */
 	resv = mmap(NULL, csize + apage, PROT_NONE,
 	            MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
@@ -605,10 +496,8 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 
 	hg_exclude_from_core(base, csize);
 
-	/* a small-mode arena is done here: THP advice on a sub-huge-page
-	 * range can never produce a huge page, so skip the whole detection
-	 * dance and report the 4K tier it genuinely runs on - pinned and
-	 * pre-faulted all the same */
+	/* small mode stops here: THP cannot back a range under one huge
+	 * page, so it is the 4K tier, pinned and pre-faulted all the same */
 	if (small) {
 		if (mlock(base, asize) == 0) {
 			*locked_b = asize;
@@ -621,10 +510,9 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 		return base;
 	}
 
-	/* advise huge before first touch (tier 2), then pin+populate: a cold
-	 * mlock populates to pin, so it doubles as the pre-fault. The advice
-	 * covers the whole cap so growth deltas inherit it - each delta still
-	 * gets its backing VERIFIED at grow time, never assumed from here. */
+	/* advise huge before first touch (tier 2), then pin: a cold mlock
+	 * populates, so it is also the pre-fault. The advice covers the whole
+	 * cap so growth inherits it; each delta is still verified when grown */
 	madvise(base, csize, MADV_HUGEPAGE);
 	shmem_kb = hg_read_huge_kb(shared);
 	if (mlock(base, asize) == 0) {
@@ -651,14 +539,10 @@ static void *hg_mem_reserve(unsigned long size, unsigned long *cap,
 }
 
 /*
- * The host-memory floor no commit may cross, in MB: hg_ram_floor_mb from
- * the config, else a twentieth of the host's memory but at least the
- * smaller of 256 MB and an eighth of it - 16 MB on a 128 MB host, 128 MB on
- * 1 GB, 256 MB from 2 GB to 5 GB, MemTotal/20 above. A flat 256 MB minimum
- * was more than a small host's whole memory: no commit could ever pass it,
- * and OpenSIPS refused to start there, before the config (and with it
- * hg_ram_floor_mb) was even read. Not cached: arenas created before the
- * config is parsed must not pin the default for later grows.
+ * The host-memory floor no commit may cross, in MB: hg_ram_floor_mb, else
+ * MemTotal/20 but at least the smaller of 256 MB and MemTotal/8 (a flat
+ * 256 MB would refuse startup on a small host). Not cached: arenas created
+ * before the config is parsed must not pin the default for later grows.
  */
 static long hg_ram_floor(void)
 {
@@ -783,13 +667,11 @@ void hg_oom_report_shared(void)
 }
 
 /*
- * MADV_COLLAPSE one already-committed range: 1 when it is now on huge pages,
- * otherwise the negated errno (0 if this host's THP policy forbids it). The
- * kernel returns 0 only when every huge-page-aligned part of the range is
- * collapsed, so a success needs no counter check; a failure is often
- * transient (EAGAIN: pages not isolatable yet, e.g. just faulted on another
- * CPU) and worth a retry. For the deferred collapse (hg_collapse_deferred()
- * in hg_buddy.c), which owns the page bookkeeping.
+ * MADV_COLLAPSE one committed range, for hg_collapse_deferred() (which owns
+ * the page bookkeeping): 1 when it is now on huge pages, else the negated
+ * errno, or 0 if the host's THP policy forbids it. The kernel returns 0 only
+ * when every huge-page-aligned part collapsed, so success needs no counter
+ * check; a failure is often transient (EAGAIN) and worth a retry.
  */
 int hg_mem_collapse(struct hg_block *hb, char *base, unsigned long len)
 {
@@ -804,11 +686,9 @@ int hg_mem_collapse(struct hg_block *hb, char *base, unsigned long len)
 
 /*
  * The live peak (live_peak, shmem:max_used_size) is a high-water mark taken
- * when the figure is computed. Refreshed only by statistics reads, it missed
- * any load that nobody was reading during: measured 4 MB reported after a
- * 60 s run that carved 1.5 GB. The sweep timer calls this every second for
- * the shared arenas - O(1) and lock-free, the same computation a statistics
- * read does - so a peak lasting a second or more is kept.
+ * when the figure is computed. The sweep timer calls this every second for
+ * the shared arenas (O(1), lock-free), so a peak lasting a second or more
+ * is kept even when no statistics read happened during it.
  */
 void hg_sample_live_peaks(void)
 {
@@ -885,11 +765,10 @@ unsigned long hg_pkg_pub_stat(void *ctx)
 }
 
 /*
- * Before forking one more process (at startup or by the auto-scaler):
- * can its private arena commit its INIT? A refusal makes the fork fail
- * cleanly - the auto-scaler logs it and keeps the processes it has -
- * instead of the child being OOM-killed, or killing a sibling. Logged
- * once per episode, re-armed when a fork fits again.
+ * Before forking one more process (startup or auto-scaler): can its private
+ * arena commit its INIT? 0 makes the fork fail cleanly - the auto-scaler
+ * keeps the processes it has - instead of an OOM kill. Logged once per
+ * episode, re-armed when a fork fits again.
  */
 int hg_fork_fits(void)
 {
@@ -919,14 +798,12 @@ int hg_fork_fits(void)
 }
 
 /*
- * Startup, once the process counts are known and before anything forks:
- * will every process's private arena fit? Each child commits its own -M
- * INIT. Simulated against the hugetlb pool first (a child takes its whole
- * cap from the pool when it can, else its INIT, else general RAM), then
- * against RAM above the floor. Refuses to start when the processes forked
- * at startup do not fit; warns when the auto-scaling maximum does not, or
- * when the caps could never all be met - the per-fork check stops scaling
- * there instead of the host running out.
+ * Startup, before anything forks: will every child's private arena (its
+ * own -M INIT) fit? Simulated against the hugetlb pool first (a child takes
+ * its whole cap from it when it can, else its INIT), then RAM above the
+ * floor. -1 when the processes forked at startup do not fit; only a warning
+ * for the auto-scaling maximum or caps beyond MemTotal (the per-fork check
+ * stops scaling there).
  */
 int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 {
@@ -1010,23 +887,12 @@ int hg_capacity_check(unsigned int start_procs, unsigned int max_procs)
 }
 
 /*
- * The host-RAM limb of the growth ceiling - see the prototype comment.
- *
- * The floor it defends is hg_ram_floor(): MemTotal/20, at least the
- * smaller of 256 MB and MemTotal/8, or the hg_ram_floor_mb config global.
- * The memory cgroup the process is in, if limited, is held to the same
- * rule on its own limit (hg_memlimit.c): a container meets that first.
- * MemAvailable is the kernel's own estimate of what can be claimed
- * without swapping - exactly the question here. On a kernel too old to
- * export it the check PASSES: the mlock in hg_mem_commit() still refuses
- * with a clean errno when the host truly cannot back the delta, so the
- * failure mode without this limb is a later, harsher refusal, not a
- * crash.
- *
- * Reading /proc under hb->lock is deliberate, same trade as the commit
- * pre-fault: growth is once per granule of genuine demand, and the
- * mlock that follows costs orders of magnitude more than one procfs
- * read.
+ * The host-RAM limb of the growth ceiling (see the prototype), defending
+ * hg_ram_floor(); a limited memory cgroup is held to the same rule on its
+ * own limit (hg_memlimit.c). MemAvailable is the kernel's estimate of what
+ * can be claimed without swapping; a kernel without it passes the check,
+ * and the mlock in hg_mem_commit() still refuses cleanly. Reading /proc
+ * under hb->lock is deliberate: a grow is rare and its mlock costs far more.
  */
 int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 {
@@ -1038,9 +904,8 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 	struct hg_cg_info ci;
 	int host_short, cg_short;
 
-	/* tier 1 consumes no new host RAM at commit time: the whole cap was
-	 * reserved from the hugetlb pool at map time, and those pages are
-	 * already carved out of MemTotal. Charging them here double-counts. */
+	/* tier 1: the whole cap was reserved from the hugetlb pool at map
+	 * time, so a commit takes no new host RAM */
 	if (hb->tier == HG_MEM_HUGETLB)
 		return 0;
 
@@ -1049,9 +914,8 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 	cg_room = hg_cgroup_room(&ci);
 
 	if (!hb->shared) {
-		/* pkg: every worker will grow its own arena under the same
-		 * workload; the single-arena delta understates the real cost
-		 * by the process count */
+		/* pkg: every worker grows its own arena under the same load,
+		 * so the cost is the delta times the process count */
 		nproc = counted_max_processes ? counted_max_processes : 1;
 		effective = (unsigned long long)delta * nproc;
 	}
@@ -1087,27 +951,15 @@ int hg_grow_ram_refused(struct hg_block *hb, unsigned long delta)
 }
 
 /*
- * Commit [hbase+off, +delta) of the reservation: populate, pin, verify the
- * achieved backing. The range is already mapped R/W (the whole cap is, since
- * reserve time - that is what makes the commit visible to every forked
- * worker with no page-table surgery here), so the only work is faulting the
- * pages in and finding out what the kernel faulted them in AS.
- *
- * mlock() is the commit primitive for every tier, chosen for one property:
- * it populates the exact range and reports failure through errno instead of
- * raising SIGBUS in whichever worker touches the shortfall later. A grow
- * that cannot be backed must fail HERE, atomically, while the buddy still
- * considers the range nonexistent.
- *   - tiers 2-4: mlock is also the pin, same as init.
- *   - tier 1: hugetlb pages are unswappable regardless; mlock is used only
- *     as the populate-with-clean-errno vehicle. The pool-exhaustion path
- *     (mlock ENOMEM, nothing SIGBUSes, VM_LOCKED rolled back) is PROVEN by
- *     the hgstress grow harness against a deliberately undersized pool -
- *     do not take this comment's word for it, run the harness.
- *
- * Returns the achieved hg_mem_tier of the delta, or -1 with the range
- * munlock'd again (refuse, never half-commit). No hg_exclude_from_core()
- * here: reserve time already excluded the whole cap.
+ * Commit [hbase+off, +delta): the cap is mapped R/W since reserve time, so
+ * this faults the pages in, pins them and verifies their backing. mlock()
+ * is the commit primitive on every tier because it fails with an errno, not
+ * a later SIGBUS in whichever worker touches the shortfall: an unbackable
+ * grow fails HERE, before the buddy sees the range. On tier 1 (unswappable
+ * anyway) it is only the populate; a short pool gives ENOMEM, no SIGBUS
+ * (hgstress exercises this). Returns the delta's hg_mem_tier, or -1 with
+ * the range munlock'd (refuse, never half-commit). Reserve time already
+ * excluded the whole cap from core dumps.
  */
 const char * const hg_cp_phase_str[HG_CP_PHASES] = {
 	"meminfo", "advise", "mlock_populate", "verify", "collapse"
@@ -1152,15 +1004,13 @@ int hg_mem_commit(struct hg_block *hb, unsigned long off, unsigned long delta,
 
 		HG_CP_TIME(HG_CP_MEMINFO, shmem_kb = hg_read_huge_kb(hb->shared));
 
-		/* re-advise the delta: cheap, and correct even though reserve
-		 * time advised the whole cap - a later madvise elsewhere in the
-		 * VMA may have split it */
+		/* re-advise the delta: cheap, and a later madvise elsewhere in
+		 * the VMA may have split the reserve-time advice */
 		HG_CP_TIME(HG_CP_ADVISE, madvise(base, delta, MADV_HUGEPAGE));
 
 		if (hb->unpinned) {
-			/* the arena runs unpinned (init's mlock failed and it
-			 * carried on) - grow the same way rather than refuse: a
-			 * populating write fault is the pre-fault without the pin */
+			/* unpinned arena (init's mlock failed): a populating
+			 * write fault is the pre-fault without the pin */
 			HG_CP_TIME(HG_CP_MLOCK, {
 				if (madvise(base, delta, MADV_POPULATE_WRITE) != 0)
 					memset(base, 0, delta);   /* pre-5.14 kernels */
@@ -1169,15 +1019,12 @@ int hg_mem_commit(struct hg_block *hb, unsigned long off, unsigned long delta,
 		} else {
 			HG_CP_TIME(HG_CP_MLOCK, mlock_rc = mlock(base, delta));
 			if (mlock_rc != 0 && hg_memlock_limit()) {
-				/* 4 KB and THP memory is swappable, so the pin is a
-				 * latency guarantee here, not a requirement: a grow
-				 * the memory-lock limit cannot cover goes on unpinned,
-				 * as an arena that could not pin at init already does.
-				 * Refusing it made a limit high enough to pin INIT
-				 * fail growth that a lower limit let through. A
-				 * failure with no binding limit is a real resource
-				 * refusal and still refuses below; hugetlb grows
-				 * still need the lock (above). */
+				/* 4 KB/THP memory is swappable: the pin is a
+				 * latency guarantee, not a requirement, so a
+				 * grow the memlock limit cannot cover goes on
+				 * unpinned. A failure with no binding limit
+				 * still refuses below; hugetlb always needs
+				 * the lock (above). */
 				munlock(base, delta);
 				LM_WARN("%s: RLIMIT_MEMLOCK (%lu KB) cannot pin a %lu MB "
 					"grow - the arena continues unpinned (swappable). "
@@ -1200,22 +1047,15 @@ int hg_mem_commit(struct hg_block *hb, unsigned long off, unsigned long delta,
 		if (!hb->unpinned)
 			__sync_fetch_and_add(&hb->locked_mb, delta >> 20);
 
-		/*
-		 * The delta's backing is a fresh negotiation - the arena's init
-		 * tier says NOTHING about what this range just got. Verify it
-		 * the same way init does: read what the kernel actually did.
-		 */
-		/* O(1) verification - the counter delta across the populate,
-		 * not a walk of the whole VMA's page tables */
+		/* the init tier says nothing about this delta's backing: verify
+		 * it from the counter delta across the populate (O(1)) */
 		HG_CP_TIME(HG_CP_VERIFY, is_huge = hg_delta_is_huge(shmem_kb,
 			hg_read_huge_kb(hb->shared), delta));
 		if (is_huge)
 			return HG_MEM_THP_ADVISE;
-		/* a worker that ran out of memory is waiting on this grow, and
-		 * the retrofit is ~4.5 ms per 2 MB page - measured 36 ms per
-		 * 16 MB grow, 107k UDP drops at 60k cps while the arena grew.
-		 * Publish the delta on 4 KB pages now; the maintenance process
-		 * collapses it with nobody waiting (hg_collapse_deferred) */
+		/* a worker is waiting on this grow and a collapse takes
+		 * milliseconds: publish on 4 KB pages now, the maintenance
+		 * process collapses them later (hg_collapse_deferred) */
 		if (collapse_later && shmem_kb >= 0 &&
 		    !hg_thp_collapse_denied(hb->shared)) {
 			*collapse_later = 1;
@@ -1240,7 +1080,7 @@ int hg_mem_commit(struct hg_block *hb, unsigned long off, unsigned long delta,
 #endif
 }
 
-/* the shrink primitive - contract and measurements on the prototype */
+/* the shrink primitive - contract on the prototype */
 int hg_mem_release(struct hg_block *hb, unsigned long off, unsigned long len)
 {
 	char *base = hb->hbase + off;
@@ -1255,12 +1095,10 @@ int hg_mem_release(struct hg_block *hb, unsigned long off, unsigned long len)
 	}
 
 #ifndef __OS_linux
-	/* Off Linux there is no portable way to hand pages back: MADV_REMOVE,
-	 * the only call that frees shared (shmem-backed) pages, is Linux-only;
-	 * remapping a shared range in one process would split it from every
-	 * other process; and MADV_DONTNEED neither frees nor zeroes pages on
-	 * the BSDs or macOS. Refuse it like any structural failure below: the
-	 * arena keeps its memory and stops trying to shrink. */
+	/* no portable release off Linux: MADV_REMOVE (the only call that frees
+	 * shmem pages) is Linux-only, a remap would split the range from the
+	 * other processes, and MADV_DONTNEED neither frees nor zeroes on the
+	 * BSDs or macOS. The arena keeps its memory and stops shrinking. */
 	(void)base;
 	if (!hb->shrink_unsupported) {
 		hb->shrink_unsupported = 1;
@@ -1272,9 +1110,8 @@ int hg_mem_release(struct hg_block *hb, unsigned long off, unsigned long len)
 	munlock(base, len);
 
 	if (madvise(base, len, advice) != 0) {
-		/* structural, not transient: the advice either works on this
-		 * mapping type + kernel or it never will. Say so once and stop
-		 * trying for this arena's lifetime. */
+		/* structural, not transient: said once, and the arena never
+		 * tries to shrink again */
 		hb->shrink_unsupported = 1;
 		LM_WARN("%s: cannot release memory (%s of %lu MB failed: %s) "
 			"- shrink disabled for this arena\n", hb->name,
@@ -1292,32 +1129,16 @@ int hg_mem_release(struct hg_block *hb, unsigned long off, unsigned long len)
 }
 
 /*
- * Bring a punched range back: fault it in and, unless the arena runs
- * deliberately unpinned, pin it AGAIN - in whichever process is calling.
- *
- * "in whichever process is calling" is the whole point, and it is measured,
- * not assumed (on kernels 5.4 and 6.12): mlock() is
- * per-vma and is NOT inherited across fork(), so a child sees the pre-fork
- * arena as entirely unlocked and the maintenance process's munlock() says
- * nothing about a worker's address space. The punch happens in the
- * maintenance process; the refill happens in whatever worker carves. If the
- * carver does not mlock, the page comes back resident and swappable -
- * measured: 2048K resident, 0K locked - and no counter would have shown it.
- *
- * mlock() populates as well as pins, so it is the whole re-commit.
- *
- * On tiers 2-4 a failure does NOT refuse the carve. The memory is valid,
- * just unpinned; refusing would turn a pinning shortfall into an allocation
- * failure under exactly the memory pressure that caused it. It is counted
- * in repin_failed and said once - which is the difference between a
- * degraded promise and a silent one.
- *
- * On the hugetlb tier a failure MUST refuse. A punched huge page went back
- * to the pool with no reservation kept (measured on 6.12: HugePages_Free
- * rises, Rsvd stays 0 - any mapping may take it), so mlock() failing means
- * the page does not exist, and touching it would be a SIGBUS in this
- * process. The hole stays a hole and the caller refuses the request the
- * way an exhausted grow does; the pool is the admin's to size.
+ * Bring a punched range back: populate it and, unless the arena runs
+ * unpinned, mlock() it again IN THE CALLING PROCESS - mlock() is per VMA
+ * and not inherited across fork(), so the maintenance process's munlock()
+ * says nothing about a worker, and a carver that does not mlock gets the
+ * page back swappable. mlock() populates as well as pins.
+ * Tiers 2-4: a failure does not refuse the carve - the memory is valid,
+ * only unpinned; counted in repin_failed and logged once.
+ * Hugetlb: a failure MUST refuse - the punched page went back to the pool
+ * unreserved, so a failed mlock() means it is gone and touching it would
+ * SIGBUS; the caller refuses the request.
  */
 int hg_mem_repin(struct hg_block *hb, unsigned long off, unsigned long len,
                  int tier)
@@ -1331,8 +1152,8 @@ int hg_mem_repin(struct hg_block *hb, unsigned long off, unsigned long len,
 	}
 
 	if (hb->unpinned) {
-		/* init could not pin and the arena went on unpinned; a
-		 * populating write fault is the commit without the pin */
+		/* unpinned arena: a populating write fault is the commit
+		 * without the pin */
 #ifdef __OS_linux
 		if (madvise(base, len, MADV_POPULATE_WRITE) != 0)
 #endif
@@ -1384,29 +1205,13 @@ static struct {
 } hg_pkg_pol_resolved;
 
 /*
- * Fit a profile's targets to the cap the arena ACTUALLY reserved.
- *
- * The validation in hg_autoscale_apply() judges a profile against the cap the
- * admin ASKED for, which is right: a scale-up target above it is a mistake in
- * the config and must fail loudly. But the arena may have ACHIEVED less.
- * hg_mem_reserve() rewrites the cap when the hugetlb pool cannot back it -
- * "hugetlb pool cannot back a %lu MB cap; reserving the %lu MB in use
- * instead", after which the arena keeps its huge pages and simply cannot
- * grow. Nothing re-checked the profile against that smaller number, so
- * pol.up_bytes could sit above hb->hcap; hg_buddy_grow_unlocks() then sized a
- * granule past the end of the mapping on every tick and hg_mem_commit()
- * refused it at "off + delta > hb->hcap" with LM_BUG, a resource refusal
- * and a latched grow-block - once per policy tick, for the life of the
- * process.
- *
- * Clamped rather than refused, deliberately. A target above the REQUEST is a
- * config error the admin can fix by editing a line; a reservation that came up
- * short is this boot's machine, with the configuration perfectly correct, and
- * hg_autoscale_post_cfg()'s failure path aborts startup (mem/shm_mem.c). An
- * arena that works at its initial size is worth more than a process that
- * refuses to run because the hugepage pool was short. Clamped to hcap the
- * ordinary ceiling path takes over: hg_grow_tick() returns at the profile
- * ceiling and hg_buddy_grow_unlocks() reports room==0 once per episode.
+ * Fit a profile's targets to the cap the arena ACTUALLY reserved:
+ * hg_autoscale_apply() validates against the cap asked for, but
+ * hg_mem_reserve() reserves less when the hugetlb pool cannot back it, and
+ * a scale-up target above hb->hcap would have every grow tick overrun the
+ * mapping. Clamped, not refused: the config is correct, only this boot's
+ * pool came up short, and a refusal would abort startup. At hcap the
+ * ordinary ceiling path takes over.
  */
 static void hg_pol_fit_to_cap(struct hg_block *hb, const char *which,
 		const char *pname, unsigned long *up_b, unsigned long *down_b)
@@ -1440,9 +1245,8 @@ static int hg_autoscale_apply(struct hg_block *hb, const char *which,
 		unsigned long cap_bytes)
 {
 	/* profile numbers are MB, or KB when the config used a size suffix
-	 * (p->mem_kb_units, set by the parser); rounding and the viability
-	 * floor follow the page unit THIS arena runs on, so a small-mode
-	 * arena is judged in its own 256 KB currency, not huge pages */
+	 * (p->mem_kb_units); rounding and the viability floor use THIS
+	 * arena's page unit, so a small-mode arena is judged in 256 KB pages */
 	int ush = p->mem_kb_units ? 10 : 20;
 	unsigned long apage = hb ? hb->hps :
 		hg_arena_page(init_bytes, cap_bytes);
@@ -1490,9 +1294,8 @@ static int hg_autoscale_apply(struct hg_block *hb, const char *which,
 	}
 
 	if (hb) {
-		/* every check above judged the ASKED-for cap; this one judges
-		 * what the arena got. @hb is NULL only for the pre-fork pkg
-		 * case, whose arenas do not exist yet - hg_malloc_init_cap()
+		/* the checks above judged the cap ASKED for; this one judges
+		 * what the arena got. For pkg (@hb NULL) hg_malloc_init_cap()
 		 * applies the same fit as each child arena is created. */
 		hg_pol_fit_to_cap(hb, which, p->name, &up_b, &down_b);
 
@@ -1547,9 +1350,8 @@ int hg_autoscale_post_cfg(void)
 	int hg_pkg = 0;     /* pkg memory is the system malloc */
 #endif
 
-	/* the config is parsed now, so tcp_threads is known - re-derive the
-	 * private-cache divisor from the real IO-pool size. Pre-fork, so every
-	 * worker inherits it. */
+	/* tcp_threads is known now: re-derive the private-cache divisor from
+	 * the real IO-pool size, pre-fork so every worker inherits it */
 	if (hg_shm && shm_block)
 		hg_private_caps_retune((struct hg_block *)shm_block);
 	if (hg_pkg && mem_block)
@@ -1662,28 +1464,21 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier)
 }
 
 /*
- * Registry of live arena ranges, for the ownership tests in hg_malloc.h.
- *
- * hg_owns_any() needs to answer "is this pointer from ANY of our arenas?"
- * without being handed a block, because hg_frag_size() is installed into a
- * shared function-pointer interface whose signature we do not control. A
- * fixed-size array is deliberate: this is bootstrap bookkeeping for the
- * allocator itself, so it must not be allocated THROUGH the allocator.
- *
- * Process-local, and correct under fork by construction: a child inherits the
- * parent's entries (its shm mapping is genuinely the same memory) and adds its
- * own private pkg arena when pt.c swaps one in. Keeping the parent's stale pkg
- * entry is a feature here - a parent-allocated pkg pointer freed in a child
- * still resolves to mapped memory, so it is declined rather than dereferenced.
+ * Registry of live arena ranges, for the ownership tests in hg_malloc.h:
+ * hg_owns_any() must place a pointer in any arena without being given a
+ * block (hg_frag_size() has a fixed signature). A fixed array, since the
+ * allocator must not allocate its own bookkeeping. Process-local: a child
+ * inherits the parent's entries and adds its own pkg arena; the parent's
+ * pkg entry stays, so a parent pkg pointer freed in a child still resolves
+ * to mapped memory and is declined, not dereferenced.
  */
 struct hg_arena_range hg_arena_reg[HG_ARENA_REG_MAX];
 
 /*
- * How many frees this process redirected to an arena other than the one the
- * caller named. Not an error count - see hg_owner(). It is expected to be a
- * small constant per child, set at startup and never moving again; a figure
- * that climbs with traffic would mean something is handing pointers across
- * arenas at runtime, which nothing should.
+ * Frees this process redirected to an arena other than the one the caller
+ * named (see hg_owner()); not an error count. Expected to be a small
+ * constant per child, set at startup: a figure that climbs with traffic
+ * means something hands pointers across arenas at runtime.
  */
 unsigned long hg_xarena_frees;
 
@@ -1694,12 +1489,9 @@ static void hg_arena_reg_add(struct hg_block *hb)
 	for (i = 0; i < HG_ARENA_REG_MAX; i++) {
 		if (!hg_arena_reg[i].base) {
 			hg_arena_reg[i].base = hb->hbase;
-			/* the CAP, not the span: growth must not invalidate the
-			 * registry entry, or a pointer into grown space would be
-			 * misread as foreign and "routed" to another arena. The
-			 * whole cap's VA belongs to this arena from reserve time;
-			 * uncommitted ranges cannot hold live cells, so the wider
-			 * range cannot misattribute anything that exists. */
+			/* the CAP, not the span, so a pointer into grown
+			 * space never looks foreign; uncommitted VA holds no
+			 * live cells to misattribute */
 			hg_arena_reg[i].size = hb->hcap;
 			hg_arena_reg[i].hb   = hb;
 			return;
@@ -1727,13 +1519,10 @@ static void hg_arena_reg_del(struct hg_block *hb)
 }
 
 /*
- * hg_malloc_init() reserves its own memory (unlike fm_malloc_init(), which
- * receives an already-mmap'd address from shm_getmem()) and lays the block
- * control structure out at the very start of that reservation - the same
- * "control struct lives inside the memory it manages" pattern fm_block/
- * hp_block use, chosen specifically so HG_MALLOC never needs to call
- * shm_malloc()/pkg_malloc() on itself to bootstrap its own bookkeeping
- * (it cannot: HG_MALLOC IS what those macros dispatch to when selected).
+ * hg_malloc_init() reserves its own memory (fm_malloc_init() is handed
+ * one) and puts the block header at its start, as fm_block/hp_block do, so
+ * HG_MALLOC never allocates its own bookkeeping through shm_malloc() or
+ * pkg_malloc(), which dispatch to it when it is selected.
  */
 struct hg_block *hg_malloc_init(unsigned long size, char *name, int shared,
 		const char *proc_desc, unsigned int flags)
@@ -1785,18 +1574,12 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 	if (!hg_hdr_secret)
 		hg_hdr_secret_init();
 
-	/* The reservation may exceed the committed size, by admin cap.
-	 * cap comes back as what was actually achieved (a hugetlb pool that
-	 * cannot hold the cap degrades to a fixed arena, not to no arena).
-	 * By NAME, not by @shared: shm_dbg is also shared but is a fixed-size
-	 * diagnostic pool computed by hg_get_dbg_pool_size() - handing it the
-	 * shm cap would reserve gigabytes of VA for a pool that must never
-	 * grow past its formula.
-	 *
-	 * The caps arrive via -m INIT:CAP / -M INIT:CAP on the command line -
-	 * they cannot come from the config, which is parsed only after this
-	 * arena exists (and, for tier 1, after the pool reservation is
-	 * already taken). */
+	/* The reservation may exceed INIT, up to the admin cap; cap comes back
+	 * as what was achieved (a hugetlb pool short of the cap gives a fixed
+	 * arena, not none). By NAME, not @shared: shm_dbg is shared too but a
+	 * fixed pool sized by hg_get_dbg_pool_size(). The caps come from
+	 * -m/-M INIT:CAP on the command line: the config is parsed only after
+	 * this arena exists. */
 	if (cap_req != HG_CAP_BY_NAME)
 		cap = cap_req;
 	else if (!strcmp(name, "shm"))
@@ -1834,10 +1617,9 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 	}
 
 	if (tier_decides && tier != HG_MEM_4K) {
-		/* huge pages come in whole pages: INIT is one of them. Refused
-		 * only when the cap ASKED for leaves no room above that page; a
-		 * hugetlb pool too small for the cap already said so and made
-		 * the arena fixed. */
+		/* huge pages come whole: INIT becomes one. Refused only when
+		 * the cap ASKED for leaves no room above that page (a pool
+		 * too small for the cap already made the arena fixed) */
 		if (hg_page_round(cap_asked, HG_HPS) <= HG_HPS) {
 			LM_ERR("%s arena: on huge pages INIT is at least one huge "
 				"page (%lu %s), which leaves no room to grow under the "
@@ -1897,31 +1679,26 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 	hb->committed_min = hb->committed_bytes;
 	hb->span_pending = hb->span_end;
 	hb->hcap = cap;
-	/* one committed-size step per grow: big enough that a growth spurt is
-	 * a handful of commits, small enough that one commit's pre-fault
-	 * stays bounded. A small-mode arena steps one of its own
-	 * 256 KB pages at a time - a 16 MB granule would overshoot its whole
-	 * cap. Overridable by config later. */
+	/* one committed-size step per grow: a growth spurt is a handful of
+	 * commits, and one commit's pre-fault stays bounded. A small-mode
+	 * arena steps one 256 KB page (16 MB would overshoot its cap). */
 	hb->grow_granule = apage < HG_HPS ?
 		apage : HG_HPS_ROUND(16UL << 20);
-	/* config override (shm_grow_granule / pkg_grow_granule): rounded to
-	 * this arena's page, never below one page. The core shm arena exists
-	 * before the config - hg_autoscale_post_cfg() re-applies for it; the
-	 * per-child pkg arenas are created after and take it right here.
-	 * Module arenas keep the default (their own sizing surface). */
+	/* shm_grow_granule / pkg_grow_granule, rounded to this arena's page.
+	 * The shm arena predates the config and takes it in
+	 * hg_autoscale_post_cfg(); per-child pkg arenas take it here. Module
+	 * arenas keep the default. */
 	if (!shared && hg_pkg_grow_granule)
 		hb->grow_granule = hg_page_round(hg_pkg_grow_granule, apage);
 	else if (shared && !strcmp(name, "shm") && hg_shm_grow_granule)
 		hb->grow_granule = hg_page_round(hg_shm_grow_granule, apage);
-	/* the shrink step: config, page-rounded, never below one page. Like
-	 * the granule, the core shm arena predates the config and takes the
-	 * value again in hg_autoscale_post_cfg(). */
+	/* the shrink step: config, page-rounded, at least one page; the shm
+	 * arena takes it again in hg_autoscale_post_cfg() */
 	hb->shrink_step = hg_page_round(hg_shrink_step, apage);
 	if (hb->shrink_step < apage)
 		hb->shrink_step = apage;
-	/* the page unit this arena's whole grid runs on: the probed huge page
-	 * size, or the small-mode 256 KB page - hg_arena_init() lays out the
-	 * page grid from this, never re-probing */
+	/* the page unit of this arena's grid (the huge page or 256 KB);
+	 * hg_arena_init() lays the grid out from it */
 	hb->hps = apage;
 	hb->tier = tier;
 	hb->locked_mb = locked_b >> 20;
@@ -1945,20 +1722,17 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 		hb->quar_bytes = HG_QUAR_MAX;
 
 	/*
-	 * A per-child PKG arena created after the config was parsed inherits
-	 * the resolved pkg policy (the fork copied hg_pkg_pol_resolved). The
-	 * pre-fork parent pkg arena and the shm arena take the other path:
-	 * they exist BEFORE the config, so the shm policy is attached to the
-	 * live block by hg_autoscale_post_cfg() and the parent pkg arena
-	 * simply stays fixed.
+	 * A per-child pkg arena, created after the config was parsed, takes
+	 * the resolved pkg policy (copied by fork). The shm arena and the
+	 * pre-fork parent pkg arena predate the config: shm gets its policy
+	 * in hg_autoscale_post_cfg(), the parent pkg arena none.
 	 */
 	if (!shared && hg_pkg_pol_resolved.valid) {
 		unsigned long up_b   = hg_pkg_pol_resolved.up_bytes;
 		unsigned long down_b = hg_pkg_pol_resolved.down_bytes;
 
-		/* the resolved policy was validated against the cap asked for
-		 * on -M, before any pkg arena existed; THIS arena may have
-		 * reserved less (same hugetlb path, same consequence) */
+		/* validated against the -M cap asked for; THIS arena may have
+		 * reserved less */
 		hg_pol_fit_to_cap(hb, "pkg", "the resolved pkg policy",
 			&up_b, &down_b);
 
@@ -1992,13 +1766,8 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 		return NULL;
 	}
 
-	/* "pinned from swapping" is the real guarantee this reports: tier-1
-	 * MAP_HUGETLB pages are non-swappable by construction (no mlock()
-	 * needed or taken), tiers 2-4 rely on an explicit mlock() instead -
-	 * either way, the reported MB are equally protected against swap,
-	 * just via a different mechanism. Plain "pinned" reads ambiguously
-	 * (looks like "an mlock() call happened") and was caught live during
-	 * a real diagnosis session mid-2026-08-07 being misread that way. */
+	/* "pinned from swapping", not "pinned": tier 1 is unswappable
+	 * without mlock(), tiers 2-4 are mlock()ed - the same guarantee */
 	if (proc_desc)
 		LM_NOTICE("%s " HG_MALLOC_NAME " arena (%s): %lu %s on %s, %lu %s "
 			"pinned from swapping%s\n",
@@ -2024,15 +1793,11 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 			HG_SZ_UNIT(hb->hcap - hb->committed_bytes));
 
 	/*
-	 * An elastic arena grows by mlock()ing each delta, so a memlock
-	 * limit that cannot cover the growth makes the cap a promise the
-	 * arena cannot keep - and it surfaces only at the first refused grow,
-	 * possibly hours into traffic. Say so now, where the operator (and a
-	 * -C config check) sees it. On hugetlb the limit is checked per grow
-	 * against one delta plus whatever else the process has locked, and a
-	 * grow it refuses fails; on the other tiers every committed byte
-	 * counts, so the whole cap must fit to stay pinned - past the limit
-	 * the arena keeps growing, unpinned (hg_mem_commit()).
+	 * Warn now (where -C sees it too), not at the first refused grow, when
+	 * the memlock limit cannot cover growth. On hugetlb each grow must fit
+	 * one delta plus what the process has locked, or it fails; on the other
+	 * tiers the whole cap must fit to stay pinned, and growth past the
+	 * limit goes on unpinned (hg_mem_commit()).
 	 */
 	if (hb->hcap > hb->committed_bytes) {
 		unsigned long lim = hg_memlock_limit();
@@ -2091,20 +1856,13 @@ void hg_malloc_child_init(struct hg_block *hb)
 }
 
 /*
- * Fork reset for EVERY shared arena this process can see - the core shm
- * block, shm_dbg, and every module arena in the registry. The per-arena
- * reasoning lives in hg_arena_child_init(); what this adds is coverage:
- * a module arena that saw pre-fork traffic (a module loading its data in
- * mod_init is enough - one refill batch leaves ~31 cells in the parent's
- * private cache) would otherwise hand every child an identical COW copy of
- * the parent's cached cell list, and the children's later flushes would
- * push the same physical cells onto the shared pool repeatedly - an
- * "already has all N cells free" refusal storm.
- *
- * Private (pkg) blocks are deliberately skipped: a child's COW copy of
- * the pre-fork parent pkg arena is self-consistent private memory, and
- * the child's own fresh pkg arena - created after this runs - must not
- * have its slots cleared.
+ * Fork reset for every SHARED arena this process can see (core shm,
+ * shm_dbg, module arenas); the per-arena logic is hg_arena_child_init().
+ * A module arena used before fork (e.g. loading data in mod_init) leaves
+ * cells in the parent's private cache, and without the reset every child
+ * would flush the same cells into the shared pool. Private (pkg) arenas
+ * are skipped: the inherited copy is self-consistent private memory, and
+ * the child's own pkg arena, created after this, must keep its slots.
  */
 void hg_malloc_child_init_all(void)
 {
@@ -2133,11 +1891,9 @@ void hg_stats_set_index(void *ptr, unsigned long idx)
 	HG_STATS_IDX(ptr) = idx;
 }
 
-/* called once, pre-fork, after the statistics engine but before any worker
- * exists yet (matches hp_init_shm_statistics()'s call site) - single
- * process at this point, so walking "not on any known free list" is exact,
- * unlike hg_status_dbg()'s post-fork best-effort walk (see hg_arena.c's
- * hg_arena_walk_live() comment) */
+/* once, pre-fork, after the statistics engine starts (the call site of
+ * hp_init_shm_statistics()): with one process, the "not on any free list"
+ * walk is exact, unlike post-fork (see hg_arena_walk_live()) */
 void hg_stats_core_init(struct hg_block *hb, int core_index)
 {
 	hg_arena_stats_core_init(hb, core_index);
@@ -2154,19 +1910,16 @@ void hg_info(struct hg_block *hb, struct mem_info *info)
 	info->min_frag = 64; /* smallest cell class, see hg_arena.c cell_sizes */
 	info->used = hg_used(hb);
 
-	/* Report carved-but-idle cell capacity as FREE rather than USED, so
-	 * real_used/free track live demand and fall again when load drops -
-	 * the same thing q_malloc/f_malloc do for a fragment sitting on a free
-	 * list. hb->real_used on its own is the arena's carve footprint, which
-	 * never decreases and would otherwise look like a leak. */
+	/* carved-but-idle cells count as free, as q_malloc/f_malloc count a
+	 * fragment on a free list, so real_used follows live demand;
+	 * hb->real_used alone is the carve footprint, which never decreases */
 	recycled = hg_slab_recycled(hb);
 	info->real_used = hb->real_used > recycled ? hb->real_used - recycled : 0;
 	/* room left to CARVE, not size minus live - see hg_get_free() */
 	info->free = hb->size - hb->real_used;
 
-	/* the peak of what real_used above actually reached - NOT the peak
-	 * carve (hb->max_real_used), which only ever grows and would drift
-	 * away from real_used forever */
+	/* the peak of real_used as computed above, not of the carve
+	 * (hb->max_real_used), which only grows */
 	if (info->real_used > hb->max_live_used)
 		hb->max_live_used = info->real_used;
 	info->max_used = hb->max_live_used;
@@ -2205,13 +1958,9 @@ static void hg_dbg_dump_cb(void *payload, void *ctx)
 	const char *file, *func;
 	unsigned long line;
 
-	/*
-	 * The walker derives cell addresses from chunk bookkeeping rather than
-	 * from a live-cell list, so a single corrupted chunk hands us an
-	 * address that need not be mapped - and this is a DIAGNOSTIC path. A
-	 * memory dump must never be the thing that kills the process, which is
-	 * exactly what happened on 2026-08-09 before this check existed.
-	 */
+	/* the walker derives cell addresses from chunk bookkeeping, so a
+	 * corrupted chunk can yield an unmapped address; a diagnostic dump
+	 * must never be what kills the process */
 	if (!hg_owns_any(tag)) {
 		hg_corrupt(NULL, HG_C_FOREIGN_PTR);
 		LM_CRIT("%s: dump walker produced %p, outside every arena - "
@@ -2219,37 +1968,22 @@ static void hg_dbg_dump_cb(void *payload, void *ctx)
 		return;
 	}
 
-	/*
-	 * Read the DBG fields directly from the tag region, like
-	 * fm_status_dbg reads f->file/func/line straight off the frag
-	 * struct - NOT via hg_frag_file()/func()/line() (hg_malloc.h),
-	 * which are nested inside "#ifdef SHM_EXTRA_STATS" (they exist only
-	 * to serve the shm_frag_file/func/line stats ladder). This function
-	 * is gated on DBG_MALLOC alone, so it must not depend on
-	 * SHM_EXTRA_STATS also being on.
-	 */
+	/* read the DBG fields straight from the cell, as fm_status_dbg does:
+	 * hg_frag_file()/func()/line() exist only under SHM_EXTRA_STATS, and
+	 * this function depends on DBG_MALLOC alone */
 	file = HG_CELL_AT(tag)->file;
 	if (!file)
-		return;   /* stamped before any hg_malloc_dbg() call ever ran
-		           * on this cell (e.g. still on its very first carve
-		           * without having been freed+realloc'd) - matches
-		           * fm_status_dbg's own "if (f->file)" guard */
+		return;   /* not stamped by hg_malloc_dbg() yet (e.g. first
+		           * carve) - as fm_status_dbg's "if (f->file)" */
 	func = HG_CELL_AT(tag)->func;
 	line = HG_CELL_AT(tag)->line;
 
 	/*
-	 * Defence in depth, on top of the walker sizing its set exactly.
-	 *
-	 * The walker infers liveness by absence from that set, so anything that
-	 * leaves the set incomplete turns a FREE cell into an apparently live
-	 * one - and a free cell's payload holds the free-list link, so these
-	 * file/func would be pointers INTO THE ARENA rather than string
-	 * literals. dbg_ht_update() would then consume them as strings.
-	 *
-	 * hg_owns_any() is the exact discriminator: a real __FILE__ lives in the
-	 * binary's rodata and can never be inside an arena; a free-list link
-	 * always is. Costs nothing on a diagnostic path, and turns what was an
-	 * abort into a skipped line.
+	 * Defence in depth: the walker takes a cell missing from its free set
+	 * as live, so an incomplete set makes a free cell look live, and its
+	 * file/func would be free-list linkage INTO THE ARENA, which
+	 * dbg_ht_update() would read as strings. A real __FILE__ is in
+	 * rodata, never in an arena.
 	 */
 	if (hg_owns_any((void *)file) || hg_owns_any((void *)func)) {
 		c->skipped_notlive++;
@@ -2261,13 +1995,11 @@ static void hg_dbg_dump_cb(void *payload, void *ctx)
 }
 
 /*
- * f_malloc-equivalent per-allocation-site summary: walk every live cell/
- * frag, aggregate by (file,func,line) via mem_dbg_hash (mem_dbg_hash.c -
- * same plain-malloc'd, allocator-independent structure fm_status_dbg
- * uses), dump, free. See hg_arena_walk_live()'s comment in hg_arena.c for
- * the one real accuracy caveat: exact pre-fork, best-effort post-fork
- * (can't see cells idling in ANOTHER worker's private free stack) - large
- * frags (hg_large_walk_live) don't share that caveat, they're always exact.
+ * Per-allocation-site summary, as fm_status_dbg's: walk every live cell and
+ * large fragment, aggregate by (file, func, line) in mem_dbg_hash (plain
+ * malloc, allocator-independent), dump, free. Exact pre-fork; post-fork it
+ * cannot see cells idling in another worker's private cache (see
+ * hg_arena_walk_live()). Large fragments are always exact.
  */
 void hg_status_dbg(struct hg_block *hb)
 {
@@ -2309,15 +2041,12 @@ void hg_status_dbg(struct hg_block *hb)
 #endif
 
 /*
- * hg_cell_alloc()/hg_cell_free() (hg_arena.c, a separate translation unit)
- * have a signature fixed ONCE by hg_arena.h's *original* DBG_MALLOC state -
- * unlike f_malloc.c's internal helpers (fm_split_frag etc.), which live
- * inside f_malloc_dyn.h itself and get recompiled fresh on each pass below,
- * so their signature tracks the local #undef/#define correctly.
- * hg_malloc_dyn.h's PASS 2 (after the #undef below) must therefore NOT use
- * a bare "#ifdef DBG_MALLOC" to decide the hg_cell_alloc()/hg_cell_free()
- * call arity - that macro is locally stale during pass 2. This sentinel
- * captures the true, original state before any undef games. */
+ * hg_cell_alloc()/hg_cell_free() live in hg_arena.c, so their arity is
+ * fixed by the ORIGINAL DBG_MALLOC state (f_malloc's helpers are recompiled
+ * in each pass instead). hg_malloc_dyn.h's second pass, after the #undef
+ * below, must NOT test DBG_MALLOC for that arity; this sentinel keeps the
+ * original state.
+ */
 #ifdef DBG_MALLOC
 #define HG_CELL_TAKES_DBG_ARGS 1
 #else
@@ -2334,17 +2063,12 @@ void hg_status_dbg(struct hg_block *hb)
 
 /* --- module arenas ------------------------------------------------------
  *
- * A module that wants its own memory - a cache whose lifetime, class mix and
- * growth have nothing to do with transactions - asks for an arena here and
- * gets one that HG_MALLOC manages completely: the slab classes with their
- * per-process caches, block GC and re-typing, elastic growth and shrink
- * inside the module's own INIT:CAP, the maintenance process (which ticks
- * every registered shared arena), hg_stats. The arena is created BEFORE the
- * fork (mod_init), so every child inherits the one shared mapping exactly
- * as it does the shm arena; the ownership registry routes a free to the
- * arena that owns the pointer, whichever one it is. Independent of the -a
- * choice: the core allocator can be anything while the module's cells live
- * in HG.
+ * A module can get its own arena, managed by HG_MALLOC like shm: slab
+ * classes and per-process caches, block GC and re-typing, growth and shrink
+ * within its INIT:CAP, the maintenance process, hg_stats. Created before
+ * fork (mod_init), so every child inherits the shared mapping; the
+ * registry routes each free to the owning arena. Independent of -a: the
+ * core allocator can be anything.
  */
 struct hg_block *hg_arena_create(char *name, unsigned long init_bytes,
 		unsigned long cap_bytes)

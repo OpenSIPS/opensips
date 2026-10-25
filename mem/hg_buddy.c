@@ -34,35 +34,18 @@
 #include "../globals.h"
 
 /*
- * Two records describe the same tree, because they answer different
- * questions and neither answers both cheaply:
- *
- *   leaforder[leaf]  the order of the block CONTAINING that leaf - every leaf
- *                    of a block carries it, not just the first. That is what
- *                    turns any interior address into its block with a mask,
- *                    which the layers above need: a cell being freed sits
- *                    somewhere in the middle of its block, and finding the
- *                    block is how the live count gets decremented at all.
- *                    Filling the range costs a memset of 2^order bytes on the
- *                    slow path (256 B for a whole 2 MB page) and buys an O(1)
- *                    lookup on a path that would otherwise need a search.
- *                    HG_LEAF_NONE means the leaf is not buddy space - it
- *                    belongs to a multi-page run.
- *
- *   bitmap[node]     1 iff that tree node is a WHOLE FREE block, i.e. it is
- *                    sitting in a free list right now. Not "free" in the
- *                    sense of "contains free space": a split node is 0 even
- *                    though both its halves may be free. That is exactly the
- *                    predicate the merge step needs - "is my buddy free AND
- *                    entire" - and it answers it in one bit test.
- *
- * Keeping both is what makes split and merge O(1) instead of a search.
+ * Two records per page tree make split and merge O(1). leaforder[leaf] is the
+ * order of the block CONTAINING the leaf, kept in every leaf of the block, so
+ * an interior address (a cell being freed) finds its block with a mask;
+ * HG_LEAF_NONE = not buddy space (e.g. part of a multi-page run). bitmap[node]
+ * is 1 iff the node is a WHOLE free block, i.e. on a free list - a split node
+ * is 0 even if both halves are free - which is the merge test "is my buddy
+ * free AND entire".
  */
 
-/* node id in the per-page tree. Level 0 is the whole page (one node), level
- * `top` is the leaves; a complete tree over 2^top leaves has 2^(top+1)-1
- * nodes - 511 for a 2 MB page with 8 KB leaves, which is the 64 byte bitmap
- * the design budgets. */
+/* node id in the per-page tree: level 0 is the whole page, level `top`
+ * the leaves; 2^(top+1)-1 nodes (511, a 64 byte bitmap, for 8 KB leaves
+ * in a 2 MB page) */
 static inline unsigned long node_id(unsigned int top, unsigned int order,
                                     unsigned long leaf)
 {
@@ -92,11 +75,9 @@ static inline void bit_clear(unsigned long *bm, unsigned long n)
 }
 
 /*
- * The whole-free-page bitmap (hb->wfree). The top order IS the page,
- * so "a top-order free block" and "a whole-free page on offer" are the same
- * thing, and a bit per page describes it with nothing stored in the page.
- * prefer-low - serve the LOWEST free page, so carves concentrate at the
- * bottom and the top pages drain for the top-only shrink - is find-first-set.
+ * The top order IS the page, so its free list is a bitmap (hb->wfree), one bit
+ * per page with nothing stored in the page. Find-first-set serves the lowest
+ * page, so carves stay low and the top pages drain for the trim.
  */
 #define HG_WF_BITS (sizeof(long) * 8)
 
@@ -153,10 +134,9 @@ static inline void fl_push(struct hg_block *hb, void *p, unsigned int order)
 {
 	struct hg_free_blk *b = (struct hg_free_blk *)p;
 
-	/* the top order lives in the bitmap; lower orders stay LIFO -
-	 * their blocks live inside pages already carved, where the cell-level
-	 * concentration policy owns placement, and their lists are the long
-	 * ones where an ordered walk would cost */
+	/* the top order lives in the bitmap. Lower orders stay LIFO: inside
+	 * carved pages the cell-level policy owns placement, and ordering
+	 * these long lists would cost a walk */
 	if (order == hb->buddy_top) {
 		wf_set(hb, hg_page_of(hb, p));
 		return;
@@ -196,10 +176,7 @@ static inline struct hg_page *page_of(struct hg_block *hb, const void *p)
 
 /* --- init ------------------------------------------------------------- */
 
-/*
- * Publish one whole page as a single top-order free block. Only valid for a
- * page nothing has been carved out of yet.
- */
+/* publish a whole page, nothing carved from it, as one top-order free block */
 static void page_publish_whole(struct hg_block *hb, struct hg_page *pg)
 {
 	unsigned int top = hb->buddy_top;
@@ -212,17 +189,10 @@ static void page_publish_whole(struct hg_block *hb, struct hg_page *pg)
 }
 
 /*
- * Release the leaves [from, to) of a page that started out wholly reserved.
- *
- * Used for the one page that the block header and the buddy's own metadata
- * partly occupy. Done leaf by leaf through the ordinary free path so the
- * merges happen by the ordinary rules: freeing 24 consecutive leaves yields
- * whatever mix of orders the alignment actually permits, which is fiddly to
- * compute directly and trivial to get by construction.
- *
- * The alternative - refusing to use a partly-occupied page at all - would
- * throw away up to a whole huge page. That is 0.8% of a 256 MB shm arena but
- * 25% of an 8 MB pkg arena, which is not affordable.
+ * Release the leaves [from, to) of the one page the block header and the buddy
+ * metadata partly occupy, leaf by leaf through the ordinary free path so the
+ * merges follow the ordinary rules. Skipping the page instead would waste up
+ * to a huge page, 25% of an 8 MB pkg arena.
  */
 static void page_release_range(struct hg_block *hb, struct hg_page *pg,
                                unsigned long from, unsigned long to)
@@ -261,18 +231,11 @@ int hg_buddy_init(struct hg_block *hb)
 	          (sizeof(long) * 8);
 
 	/*
-	 * One contiguous metadata carve for all pages, from the FRONT of the
-	 * arena via the ordinary bump allocator - so it inherits whatever tier
-	 * the reservation achieved, is shared for shm and private for pkg with
-	 * no decision to make, and costs no extra huge pages. A dedicated page
-	 * would be 25% overhead on an 8 MB pkg arena, and 30 workers each
-	 * wanting one would burn 60 MB to hold 45 KB.
-	 *
-	 * Sized for npages_cap, not npages: descriptors for pages the arena
-	 * could GROW into are laid out now, from committed memory, so a later
-	 * grow only publishes them - it never has to find room for metadata
-	 * in an arena that is, by definition of why it is growing, full. The
-	 * overhead is ~0.05% of each never-committed page, paid up front.
+	 * One metadata carve for all pages, from the FRONT of the arena
+	 * via the bump allocator: it inherits the arena's tier and
+	 * sharing and costs no extra huge page. Sized for npages_cap, so
+	 * a grow only publishes descriptors and never needs room for
+	 * metadata in a full arena.
 	 */
 	wfwords = (hb->npages_cap + HG_WF_BITS - 1) / HG_WF_BITS;
 	meta = hb->npages_cap * (sizeof(struct hg_page) + lpp +
@@ -301,20 +264,16 @@ int hg_buddy_init(struct hg_block *hb)
 		pg->bitmap = (unsigned long *)(void *)cur;
 		cur += bmwords * sizeof(long);
 		memset(pg->leaforder, HG_LEAF_NONE, lpp);
-		/* the committed pages carry init's achieved tier; pages beyond
-		 * get theirs stamped by the grow that commits them */
+		/* init's achieved tier; a grow stamps the pages it commits */
 		pg->tier = (unsigned char)hb->tier;
 		/* starts wholly reserved; pages < npages are published below,
 		 * pages beyond wait for hg_buddy_grow_unlocks() */
 	}
 
 	/*
-	 * Everything below hoff is spoken for - the block header, then the
-	 * metadata just carved. hoff is leaf aligned (hg_arena_init), so the
-	 * boundary lands on a leaf and no partially-consumed leaf can be handed
-	 * out. Round UP anyway: it costs at most one leaf and it means a future
-	 * change to the bump allocator cannot silently start handing out memory
-	 * that is already in use.
+	 * Everything below hoff (block header, then the metadata) is spoken
+	 * for. hoff is leaf aligned (hg_arena_init); round up anyway, so a
+	 * change to the bump allocator cannot hand out a partly used leaf.
 	 */
 	consumed_leaves = 0;
 	{
@@ -342,13 +301,9 @@ int hg_buddy_init(struct hg_block *hb)
 	}
 
 	/*
-	 * Rebase the coalesce counter.  Publishing the straddling page above
-	 * goes through the ordinary free path on purpose - so the tree is built
-	 * by the same rules it will be maintained by - but that means every one
-	 * of those coalesces has just been counted, and they say nothing about
-	 * fragmentation.  Keep the total for the record and restart from zero,
-	 * so buddy_splits and buddy_merges finally share a zero point: without
-	 * this an idle 8 MB pkg arena reports 7 splits against 244 merges.
+	 * Rebase the coalesce counters: the straddling page's merges above say
+	 * nothing about fragmentation. Keep their total and restart from zero,
+	 * so buddy_splits and buddy_merges share a zero point.
 	 */
 	hb->buddy_merges_init = hb->buddy_merges;
 	hb->buddy_merges = 0;
@@ -356,10 +311,8 @@ int hg_buddy_init(struct hg_block *hb)
 
 	hb->buddy_ready = 1;
 	/*
-	 * Reserve floor at 1/16 of the grid. A fraction rather than a constant
-	 * because the arenas differ by three orders of magnitude - 8 MB pkg to
-	 * 5 GB shm - and a fixed page count would be either meaningless on one
-	 * or most of the other.
+	 * Reserve floor at 1/16 of the grid: a fraction, not a constant,
+	 * because arenas range from 8 MB pkg to 5 GB shm.
 	 */
 	hb->reserve_floor = (hb->npages * hg_leaves_per_page(hb)) / 16;
 	LM_DBG("%s buddy: %lu pages, orders 0..%u (%lu B..%lu B), %lu B metadata "
@@ -372,18 +325,14 @@ int hg_buddy_init(struct hg_block *hb)
 }
 
 /*
- * span_end and committed_bytes (struct hg_block) differ once a page is
- * punched: it keeps its address inside the span while its bytes stop
- * being committed. So the invariant is
- * not equality, it is that every byte of the span is either committed or
- * accounted for as a hole:
+ * A punched page keeps its address in the span but its bytes are no longer
+ * committed, so the invariant is:
  *
  *     committed_bytes + punched_pages * hps == span_end
  *
- * Re-checked at every point that moves either number - grow, trim, punch and
- * the re-commit on carve. A mismatch is an accounting slip in this file, not
- * damaged memory; it is counted where every other internal inconsistency is
- * and the arena carries on.
+ * Re-checked wherever either side moves (grow, trim, punch, re-commit). A
+ * mismatch is an accounting slip in this file, not damaged memory: it is
+ * counted as an internal inconsistency and the arena carries on.
  */
 static void span_check(struct hg_block *hb, const char *after)
 {
@@ -398,13 +347,9 @@ static void span_check(struct hg_block *hb, const char *after)
 }
 
 /*
- * Reserve floor at 1/16 of the grid the allocator can actually CARVE - the
- * committed pages, not the span. A hole is an address the arena keeps and
- * memory it does not have; counting it in the floor inflates the floor by
- * exactly what the drain gave back, and the drain then throttles itself on
- * its own holes (measured: a 2 GB arena that had punched 375 pages parked at
- * 274 MB with 3 MB live, the headroom rule holding 258 MB free on a floor
- * computed over a 1 GB span it could no longer use).
+ * Reserve floor at 1/16 of the pages the allocator can carve - committed
+ * pages, not the span. Counting holes would inflate the floor by what the
+ * drain gave back, and the drain would then throttle itself on its own holes.
  */
 static inline void floor_recompute(struct hg_block *hb)
 {
@@ -415,29 +360,9 @@ static inline void floor_recompute(struct hg_block *hb)
 /* --- grow ------------------------------------------------------------- */
 
 /*
- * Commit more of the reservation and publish the new whole pages. Called
- * with hb->lock HELD, from the two places an allocation can die of buddy
- * exhaustion (carve_chunk and the large tier), which also bounds how often
- * it runs: once per granule of genuine demand, never on the fast path.
- *
- * Three phases: the granule's range is RESERVED under the lock, POPULATED
- * by hg_mem_commit() with the lock released (the page faults, the pin and
- * the backing verification take tens of ms per 16 MB and must not stall
- * every other slow path in the arena), then PUBLISHED under the lock.
- * grow_inflight keeps a second grow or a shrink off the range meanwhile.
- *
- * Returns 0 if new pages were published (caller retries its allocation),
- * -1 if the arena cannot grow (at cap, cap never set, or the commit was
- * refused by the host). The caller's existing failure path then reports
- * exhaustion exactly as a fixed arena would.
- */
-/*
- * A RESOURCE refusal - the host, not the admin, said no. Counts, and runs
- * the two-step latch described on grow_blocked's declaration: arm on the
- * first refusal, latch only if the arena is refused again after a full GC
- * pass ran - a spike that reclaim absorbs never alerts. The latch WARNs
- * once and hands the event raise to the sweep timer via grow_event_due;
- * nothing is raised from here, hb->lock is held.
+ * A RESOURCE refusal - the host, not the admin, said no: count it and run the
+ * two-step latch (see grow_blocked's declaration). The event is raised by the
+ * sweep timer via grow_event_due, never here under hb->lock.
  */
 static int grow_resource_refused(struct hg_block *hb)
 {
@@ -447,9 +372,9 @@ static int grow_resource_refused(struct hg_block *hb)
 		return -1;
 
 	if (!hb->grow_blocked_mark) {
-		/* gc_passes + 1 doubles as the "armed" flag: it can never be
-		 * 0, and it is exactly the count a pass must push gc_passes
-		 * PAST for the refusal to have survived one */
+		/* the mark doubles as the "armed" flag: gc_passes + 1
+		 * is never 0, and is the count gc_passes reaches once a
+		 * GC pass has run */
 		hb->grow_blocked_mark = hb->gc_passes + 1;
 		hb->grow_blocked_refuse0 = hb->grow_refused;
 	} else if (hb->gc_passes >= hb->grow_blocked_mark) {
@@ -464,8 +389,7 @@ static int grow_resource_refused(struct hg_block *hb)
 	return -1;
 }
 
-/* the blocked state ends two ways; both say so if there is anything to
- * end, and both re-arm the once-per-episode messages */
+/* end the episode, if any, and re-arm the once-per-episode messages */
 void hg_grow_unblock(struct hg_block *hb, const char *how)
 {
 	if (hb->grow_blocked)
@@ -479,10 +403,8 @@ void hg_grow_unblock(struct hg_block *hb, const char *how)
 }
 
 /*
- * The sweep timer's half of the latch - see grow_blocked_refuse0's
- * declaration for why the GC route alone cannot be trusted. Called once
- * per sweep interval with hb->lock HELD; latches if an armed episode is
- * still accumulating refusals a full interval later.
+ * The sweep timer's half of the latch (see grow_blocked_refuse0), once per
+ * sweep interval with hb->lock held.
  */
 void hg_grow_blocked_tick(struct hg_block *hb)
 {
@@ -503,9 +425,8 @@ void hg_grow_blocked_tick(struct hg_block *hb)
 	}
 }
 
-/* how long an exhausted worker waits, lock released, for a grow that
- * another worker has in flight: a populate takes tens of ms, the collapse
- * retrofit up to ~200 ms; past this the request is refused and counted */
+/* how long an exhausted worker waits, lock released, for a grow another worker
+ * has in flight; past it the request is refused and counted */
 #define HG_GROW_WAIT_MAX_NS  2000000000UL
 #define HG_GROW_WAIT_SLICE_US 100
 
@@ -513,22 +434,16 @@ static int hg_buddy_regrow_holes_unlocks(struct hg_block *hb, unsigned long need
                                          unsigned long room);
 
 /*
- * Deferred collapse. A grow done by a worker on exhaustion publishes a delta
- * that did not come out huge at fault on 4 KB pages, flagged want_collapse
- * (hg_mem_commit()), so the worker is not held for the MADV_COLLAPSE
- * retrofit. The maintenance process calls this every tick and makes at most
- * one pass over the pages per tick: each flagged page is collapsed with the
- * arena lock released, until HG_COLLAPSE_BUDGET_NS is spent. A failed page
- * is retried on later ticks - the usual failure is transient: a page a
- * worker has only just faulted cannot be isolated yet, and a scan that ran
- * right behind the growth failed ~200 pages in a row (measured) - and given
- * up, left on 4 KB, after HG_COLLAPSE_TRIES attempts. The budget trades
- * how soon the arena is on huge pages against pages held under the workers'
- * feet - measured at 60k cps, 1.6 GB grown from 128 MB: 50 ms a second
- * collapsed everything in ~45 s, 100 ms in ~25 s, 200 ms in ~15 s, all with
- * no drops; 500 ms dropped 7,034 datagrams. Pages are only released by this
- * same process (shrink, drain, punch), so a page picked here cannot be
- * released under it.
+ * Deferred collapse. A worker's exhaustion grow publishes a delta that did not
+ * fault in huge on 4 KB pages, flagged want_collapse (hg_mem_commit()), so the
+ * worker does not wait for the MADV_COLLAPSE retrofit. The maintenance process
+ * calls this every tick: at most one pass over the pages, each flagged page
+ * collapsed with the arena lock released, until HG_COLLAPSE_BUDGET_NS is
+ * spent. Failures are usually transient (a page just faulted cannot be
+ * isolated yet), so a page gets HG_COLLAPSE_TRIES attempts over later ticks
+ * before it is left on 4 KB. Pages are only released by this same process, so
+ * a page picked here cannot be released under it; the flag is re-checked
+ * once the lock is back all the same.
  */
 #define HG_COLLAPSE_BUDGET_NS	(100UL * 1000000UL)
 
@@ -596,6 +511,14 @@ void hg_collapse_deferred(struct hg_block *hb)
 	}
 }
 
+/*
+ * Grow in three phases: RESERVE the range under hb->lock, POPULATE it with
+ * hg_mem_commit() with the lock released (faulting, pinning and verifying the
+ * backing are slow and must not stall the arena), PUBLISH under the lock.
+ * grow_inflight keeps every other grow, trim and punch out meanwhile. Reached
+ * on buddy exhaustion (carve_chunk, the large tier) and from the proactive
+ * ticks, never on the fast path.
+ */
 static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow_why why)
 {
 	unsigned long delta, room, old_pages, i, limit, t0, off, commit_ns;
@@ -621,10 +544,8 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 	}
 
 	/*
-	 * Another worker is populating a granule right now. Its publish
-	 * is what this caller needs, so wait for it WITHOUT the lock - every
-	 * other slow path keeps running meanwhile - and report "grew" so the
-	 * caller retries its carve against the fresh pages.
+	 * Another grow is in flight: wait for its publish WITHOUT the lock and
+	 * report "grew", so the caller retries its carve on the new pages.
 	 */
 	if (hb->grow_inflight) {
 		unsigned long gen = hb->grow_gen, waited = 0;
@@ -633,13 +554,11 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 		reason = hb->lk_cur;
 		t0 = hg_now_ns();
 		/*
-		 * The token can be taken again between the poll seeing it clear
-		 * and this process getting the lock back - by a grow that follows
-		 * one that was refused, or by the drain's punch right after its
-		 * trim. Finding it taken then is no timeout: wait again, within
-		 * the same budget, until it is clear UNDER the lock or the whole
-		 * wait is spent. Refusing there instead failed an allocation
-		 * after microseconds - found by model-checking this protocol.
+		 * The token can be re-taken between the poll seeing it
+		 * clear and the lock coming back (a grow after a refused
+		 * one, the drain's punch after its trim). That is no
+		 * timeout: keep waiting, within the same budget, until it
+		 * is clear UNDER the lock.
 		 */
 		do {
 			hg_lock_leave(hb);
@@ -650,10 +569,8 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 			         waited < HG_GROW_WAIT_MAX_NS);
 			hg_lock_enter(hb, (enum hg_lock_reason)reason);
 			/* a grow or a hole re-grow published pages: retry the
-			 * carve. The token is also held by a trim or a punch,
-			 * which moves committed_bytes the other way - that is not
-			 * a reason to retry, it is a reason to try our own grow
-			 * below */
+			 * carve. A trim or a punch also holds the token; after
+			 * one of those, try this caller's own grow below */
 			if (hb->grow_gen != gen) {
 				hg_lkstat_add(&hb->lk_grow_wait, waited);
 				return 0;
@@ -666,32 +583,25 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 			hb->grow_refuse_why = HG_GR_WAIT_TIMEOUT;
 			return -1;
 		}
-		/* the in-flight operation went away; fall through and try ours */
+		/* the in-flight operation went away; fall through and grow */
 	}
 
-	/* the profile's scale-up target is the admin ceiling WITHIN the
-	 * -m INIT:CAP reservation; without a profile the reservation is the
-	 * ceiling */
+	/* the ceiling: the profile's scale-up target (within the -m INIT:CAP
+	 * reservation), else the reservation */
 	limit = (hb->pol.active && hb->pol.up_bytes) ? hb->pol.up_bytes
 	                                             : hb->hcap;
-	/* The room is counted in committed bytes: the ceiling bounds what is
-	 * backed. With interior release a punched hole leaves committed_bytes
-	 * below span_end; holes are refilled first (below), and an append that
-	 * would run past the reservation is refused by hg_mem_commit(). */
+	/* room is counted in committed bytes: the ceiling bounds what is
+	 * backed, not the span. Holes are refilled first (below); an append
+	 * past the reservation is refused by hg_mem_commit() */
 	room = limit > hb->committed_bytes ? limit - hb->committed_bytes : 0;
 	if (room == 0) {
 		hb->grow_refused++;
 		hb->grow_refuse_why = limit == hb->hcap ? HG_GR_CAP
 		                                        : HG_GR_PROFILE;
-		/* an admin-set ceiling doing its job is not an alarm; growth
-		 * being impossible because no cap was ever set is not even
-		 * noteworthy - a fixed arena lives its whole life there. The
-		 * two are told apart by history, not arithmetic: a growable
-		 * arena can only reach room==0 by having grown (committed_bytes
-		 * starts below hcap and moves only in grows), so grows>0 here
-		 * means "the headroom existed and is spent", while grows==0
-		 * means the arena never had any. Said once per episode -
-		 * grow_refused carries the magnitude. */
+		/* a ceiling doing its job is a notice, not an alarm; an arena
+		 * with no cap lives here silently. grows > 0 tells them apart:
+		 * a growable arena reaches room == 0 only by growing. Once per
+		 * episode; grow_refused counts. */
 		if (hb->grows && !hb->grow_refuse_said) {
 			hb->grow_refuse_said = 1;
 			LM_NOTICE("%s: at the %lu MB growth ceiling (%s), "
@@ -705,9 +615,8 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 		return -1;
 	}
 
-	/* holes first: RAM the arena already holds the address of costs a
-	 * pin and no virtual memory to take back, and refilling them is
-	 * what keeps a punched arena from growing past its own free space */
+	/* holes first: re-committing one costs a pin and no new span, and
+	 * keeps a punched arena from growing past its own free space */
 	{
 		int r = hg_buddy_regrow_holes_unlocks(hb, need, room);
 
@@ -728,21 +637,14 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 	if (hg_grow_ram_refused(hb, delta))
 		return grow_resource_refused(hb);
 
-	/*
-	 * Phase 1 - RESERVE under the lock: the granule's range is fixed
-	 * now, nobody else grows or shrinks until it is published or given
-	 * back (shrink checks grow_inflight; a second exhausted worker waits
-	 * above).
-	 */
+	/* phase 1 - RESERVE the range under the lock, taking grow_inflight */
 	off = hb->span_end;
 	hb->grow_inflight = 1;
 	hb->span_pending = off + delta;
 	reason = hb->lk_cur;
 	hg_lock_leave(hb);
 
-	/* phase 2 - POPULATE with the lock released: the page faults, the
-	 * pin and the backing verification (tens of ms for 16 MB) no longer
-	 * stall every other slow path in the arena */
+	/* phase 2 - POPULATE with the lock released */
 	t0 = hg_now_ns();
 	later = 0;
 	tier = hg_mem_commit(hb, off, delta, cp_ns,
@@ -765,13 +667,10 @@ static int buddy_grow_body(struct hg_block *hb, unsigned long need, enum hg_grow
 	}
 
 	hb->tier_bytes[tier] += delta;
-	/* hb->size is the figure every "total/free" surface reports (shmem
-	 * statistics, hg_info, hg_advise's configured_mb) and free_to_carve
-	 * is literally size - real_used: leave it behind and that subtraction
-	 * underflows once carving passes the original size. The per-thread
-	 * cache budget and chunk_max stay on their init-time derivation -
-	 * conservative, and re-deriving them per grow would change cell-cache
-	 * behaviour mid-flight for a marginal win. */
+	/* hb->size feeds every "total/free" report and free_to_carve
+	 * (size - real_used), which underflows if size lags. The per-thread
+	 * cache budget and chunk_max keep their init values, so the cell
+	 * caches do not change behaviour mid-flight. */
 	hb->size += delta;
 	old_pages = hb->npages;
 	hb->npages = (unsigned long)(hb->hbase + off + delta - hb->pbase)
@@ -837,28 +736,14 @@ static inline int page_is_whole_free(const struct hg_block *hb,
                                      const struct hg_page *pg);
 
 /*
- * Release whole-free pages from the TOP of the span, retracting it. Top-only
- * is what keeps every address invariant intact: hg_owns() stays one
- * contiguous test, the registry entry stays valid, and a page below the new
- * top is untouched. Whole-free is what makes it SAFE with no cross-process
- * coordination: eager merging guarantees a whole-free page is one top-order
- * block on the free list, and a cell parked in some thread's private cache
- * has NOT decremented its block's live count - so its page is not whole-free
- * and can never be picked here.
- *
- * Never below committed_min: the admin asked for -m/-M; only growth is
- * elastic.
- *
- * Two-phase, like the grow. The pages are chosen and taken off the
- * free list under hb->lock - from then on no carve can reach them, and
- * grow_inflight keeps every other grow, trim and punch out - then the
- * release syscall runs with the lock RELEASED, and the bookkeeping is
- * finished under it. Measured on kernel 6.12: a 4K-backed release is
- * ~400 us per 2 MB page, so a 256 MB trim under the lock held it 52-67 ms
- * and stalled every allocator; unlocked, the hold is microseconds and the
- * step is bounded by the grow_inflight window instead. If the kernel
- * refuses, the pages are still backed and go straight back on the list.
- *
+ * Trim: release whole-free pages from the TOP of the span, retracting it,
+ * never below committed_min (-m/-M). Top-only keeps hg_owns() one contiguous
+ * test and the registry entry valid. Whole-free needs no cross-process
+ * coordination: a cell in any thread's private cache still counts in its
+ * block's live count, so its page is never whole-free. The pages leave the
+ * free list under hb->lock, out of every carve's reach, and grow_inflight
+ * keeps other range operations out; the release runs with the lock RELEASED
+ * and the bookkeeping finishes under it. A kernel refusal puts the pages back.
  * Returns the number of pages released.
  */
 static unsigned long buddy_shrink_body(struct hg_block *hb)
@@ -870,13 +755,9 @@ static unsigned long buddy_shrink_body(struct hg_block *hb)
 	int reason, rc;
 
 	/*
-	 * A page the punch already gave back costs the committed floor nothing
-	 * when the trim retracts the span over it: its bytes left
-	 * committed_bytes at the punch, and all the trim does is take the hole
-	 * out of the span with the page. So the floor is charged only for
-	 * pages that are still backed ("backed"), in the form that cannot
-	 * wrap: backed never exceeds committed_bytes - committed_min, because
-	 * that is the very test.
+	 * Only still-backed pages ("backed") count against committed_min: a
+	 * punched page's bytes left committed_bytes at the punch. The test
+	 * cannot wrap: backed never exceeds committed_bytes - committed_min.
 	 */
 	while (n < limit) {
 		struct hg_page *pg = &hb->pages[hb->npages - 1 - n];
@@ -888,9 +769,9 @@ static unsigned long buddy_shrink_body(struct hg_block *hb)
 			break;
 		if (hb->committed_bytes - backed < hb->committed_min + cost)
 			break;
-		/* never below the headroom rule's own line, or the next tick
-		 * regrows what this one released: carvable leaves after this
-		 * page against twice the floor after it */
+		/* stay above the headroom rule's line (free leaves after this
+		 * page >= 2x the floor after it), or the next tick regrows
+		 * what this one released */
 		if (hb->buddy_free_leaves < bpages * lpp)
 			break;
 		free_after = hb->buddy_free_leaves - bpages * lpp;
@@ -907,16 +788,14 @@ static unsigned long buddy_shrink_body(struct hg_block *hb)
 	len = n << hb->hps_shift;
 	off = (unsigned long)(hb->pages[hb->npages - n].base - hb->hbase);
 	if (off + len != hb->span_end) {
-		/* a platform where the grid does not end exactly at the span
-		 * end (unaligned non-Linux base) - decline rather than
-		 * approximate */
+		/* the grid does not end at the span end (an unaligned
+		 * non-Linux base): decline rather than approximate */
 		return 0;
 	}
 
-	/* phase 1 - off the free list, invisible to every carve, under the
-	 * lock. The list is intrusive (a node is the first bytes of the free
-	 * page it describes) and the release discards those bytes, so this
-	 * MUST come first. A punched page is already off. */
+	/* phase 1 - off the free set under the lock, out of every carve's
+	 * reach: the release below runs with the lock dropped. A punched
+	 * page is already off. */
 	for (i = hb->npages - n; i < hb->npages; i++) {
 		struct hg_page *pg = &hb->pages[i];
 
@@ -1001,37 +880,21 @@ static unsigned long hg_buddy_shrink_unlocks(struct hg_block *hb)
 }
 
 /*
- * Interior release: give back a whole-free page from ANYWHERE in the span.
+ * Interior release (punch): give back a whole-free page from ANYWHERE in the
+ * span, so one live cell at the top no longer pins the free pages below it
+ * (MADV_REMOVE is valid at any offset of a shared mapping). The page stays in
+ * the span as a hole; its bytes leave committed_bytes and its leaves
+ * buddy_free_leaves, which counts CARVABLE leaves only.
  *
- * The reach failure the task exists to fix is that one live cell in the top
- * page pins every free page beneath it - measured at 1,010 free pages of
- * 1,024 held behind a single startup-lifetime resident, and again on the
- * bench with the tick fixed: the trim stopped at 1,616 MB with 793 pages
- * free behind it; the punch took them. The kernel side already worked -
- * hg_mem_release() is munlock() + MADV_REMOVE(), a hole punch valid at any
- * offset in a shared mapping; only the arena's arithmetic refused, because
- * hsize was both the span and the committed count. Step 1 split those.
+ * The page is unlinked first, so no carve can take it while it is released
+ * with the lock dropped, and stays off until
+ * hg_buddy_regrow_holes_unlocks() re-commits it. Its bitmap and leaforder
+ * (metadata region) are untouched, so page_is_whole_free() stays true.
  *
- * What a punch does to the buddy, and why, was learned from measurement
- * rather than assumed. The node of a top-order free block is the first
- * bytes of the page itself (struct hg_free_blk), and MADV_REMOVE discards
- * them - so a punched page CANNOT stay on the free list. Left there, the
- * first fl_unlink() through its zeroed node nulled the list head and
- * orphaned every page behind it (28 reachable before, 0 after). So the page
- * is unlinked FIRST, while its node can still be read, and stays off the
- * list until hg_buddy_regrow_holes_unlocks() re-commits it. Its bitmap and
- * leaforder live in the metadata region and are untouched:
- * page_is_whole_free() still describes it truthfully, the extent stays a
- * power of two and the double-free detector keeps the bitmap as its
- * authority.
- * buddy_free_leaves counts CARVABLE leaves, so a hole leaves it and the
- * reserve floor and headroom rules keep meaning what they say.
- *
- * Two-phase like the trim: choose and unlink under the lock, release with
- * it dropped (one syscall pair per page - interior pages are scattered),
- * publish under it; a refusal latches shrink_unsupported and puts the
- * remaining pages back. Called with hb->lock held, from the drain, after
- * the top trim has taken what it could. Returns the pages punched.
+ * Phases as in the trim: choose and unlink under hb->lock, release unlocked
+ * (one syscall pair per page), publish under it. A refusal latches
+ * shrink_unsupported and puts the rest back. Called from the drain after the
+ * trim; returns the pages punched.
  */
 #define HG_PAGES_PER_EVENT 128   /* per release or re-commit event */
 static unsigned long buddy_punch_body(struct hg_block *hb)
@@ -1048,11 +911,10 @@ static unsigned long buddy_punch_body(struct hg_block *hb)
 	if (limit > HG_PAGES_PER_EVENT)
 		limit = HG_PAGES_PER_EVENT;
 
-	/* phase 1 - choose from the bottom (the order the re-commit refills
-	 * holes, so what the arena uses stays packed low) and take each page
-	 * off the free list before its node is discarded. A COMMITTED-bytes
-	 * floor: the admin asked for -m/-M of usable memory and a hole is
-	 * memory they do not have; the span never moves here. */
+	/* phase 1 - choose from the bottom, where the re-commit refills
+	 * too, and unlink each page so no carve can take it. The
+	 * floor is in COMMITTED bytes (a hole is not usable memory); the
+	 * span never moves */
 	for (i = 0; i + 1 < hb->npages && got < limit; i++) {
 		struct hg_page *pg = &hb->pages[i];
 
@@ -1142,20 +1004,13 @@ static unsigned long hg_buddy_punch_unlocks(struct hg_block *hb)
 }
 
 /*
- * The other half of the punch, and the one that carries the correctness
- * risk: a hole is re-committed - faulted back in AND re-pinned - before it
- * can be carved again, in THIS process, because mlock() is per-vma and does
- * not survive fork (measured). It runs from
- * hg_buddy_grow_unlocks(), i.e. in whatever process hit exhaustion or in the
- * maintenance process growing ahead, and it runs BEFORE the span is
- * extended: a hole is committed RAM the arena already owns the address of,
- * and taking it back costs a pin and no virtual memory.
- *
- * Two-phase like a span grow: select under the lock (the pages are already
- * off the free list, so nothing can carve them, and grow_inflight keeps the
- * tick's trim and punch away), pin with the lock released, publish under
- * it. Returns 1 if it served the request, 0 if there were no holes to
- * serve it from, -1 if the RAM limb refused.
+ * Re-commit holes, from hg_buddy_grow_unlocks() before it extends the span. A
+ * hole is faulted back in AND re-pinned in THIS process before it can be
+ * carved again: mlock() is per-vma and does not survive fork. Phases as in the
+ * grow: select under hb->lock (holes are off the free list, so no carve
+ * reaches them; grow_inflight keeps trim and punch out), pin with the lock
+ * released, publish under it. Returns 1 if it served the request, 0 if no hole
+ * could serve it, -1 if the RAM limb or every re-pin refused.
  */
 static int buddy_regrow_holes_body(struct hg_block *hb, unsigned long need,
                                    unsigned long room)
@@ -1195,12 +1050,10 @@ static int buddy_regrow_holes_body(struct hg_block *hb, unsigned long need,
 	reason = hb->lk_cur;
 	hg_lock_leave(hb);
 
-	/* phase 2 - pin, in this process, lock released. On the hugetlb
-	 * rung a hole's pages went back to the pool for anyone to take
-	 * (measured: HugePages_Free up, Rsvd unchanged), so the re-commit can
-	 * genuinely fail; those pages stay holes and are compacted out of
-	 * the list here. On the other rungs hg_mem_repin() populates even
-	 * when it cannot pin, and counts that. */
+	/* phase 2 - pin, in this process, lock released. On hugetlb a hole's
+	 * pages went back to the pool for anyone to take, so the re-commit can
+	 * fail and those pages stay holes. The other tiers populate even when
+	 * they cannot pin (hg_mem_repin() counts that). */
 	t0 = hg_now_ns();
 	for (i = 0, ok = 0; i < got; i++) {
 		struct hg_page *pg = &hb->pages[sel[i]];
@@ -1268,23 +1121,16 @@ static int hg_buddy_regrow_holes_unlocks(struct hg_block *hb, unsigned long need
 }
 
 
-/* the no-policy default: consecutive quiet sweep ticks per released
- * granule (two minutes at the 30 s sweep) - deliberately down-slow. A
- * profile replaces this with its own "for N cycles". */
+/* no-profile default: consecutive quiet sweep ticks before a drain starts (two
+ * minutes at the 30 s sweep); a profile sets its own cycle count */
 #define HG_SHRINK_QUIET_TICKS 4
 
 /*
- * The down-slow policy gate, one call per sweep interval, hb->lock held.
- * Counts a tick as "quiet" only while ALL of it holds: elastic bytes
- * exist, nothing is starved (not below the floor, not grow-blocked), the
- * top page is already whole-free, and free space would stay generously
- * clear of the floor's recovery threshold even after giving a granule
- * back - so a shrink can never be the thing that re-triggers pressure.
- * Any failed condition resets the window; so does any grow.
- *
- * These thresholds are the hardcoded seed of the scale-down half of the
- * auto_scaling_profile surface; the profile replaces the constants, not
- * the shape.
+ * The shrink decision, once per sweep interval, hb->lock held. A tick is quiet
+ * only if elastic bytes exist, nothing is starved (below the floor,
+ * grow-blocked) and free space stays well clear of the floor even after a
+ * granule goes back, so a shrink never re-triggers pressure. Any failed
+ * condition, and any grow, resets the window.
  */
 static void shrink_tick_body(struct hg_block *hb)
 {
@@ -1309,18 +1155,10 @@ static void shrink_tick_body(struct hg_block *hb)
 		hb->shrink_quiet = 0;
 		return;
 	}
-	/* the hard SAFETY conditions hold with or without a policy: never
-	 * shrink an arena that is starved or latched.
-	 *
-	 * The top page being in use is a THIRD condition, and it belongs to
-	 * the trim alone: retracting the span can only ever take the topmost
-	 * pages, so a live cell up there ends the matter. An interior punch
-	 * does not care where the free page sits - and a pinned top page is
-	 * precisely the case interior release exists for, so keeping this test in
-	 * front of the whole tick would return before the punch ever ran and
-	 * make the feature a no-op exactly where it is needed.
-	 * hg_buddy_shrink_unlocks() re-tests the top itself and does nothing
-	 * when it is busy, so dropping the test here costs the trim nothing. */
+	/* never shrink an arena that is starved or latched, policy or not. A
+	 * busy top page ends the tick only without interior release: it
+	 * blocks just the trim (which re-tests it), and it is the very case
+	 * the punch exists for */
 	if (hb->below_floor || hb->grow_blocked ||
 	    (!hg_interior_release &&
 	     !page_is_whole_free(hb, &hb->pages[hb->npages - 1]))) {
@@ -1328,9 +1166,9 @@ static void shrink_tick_body(struct hg_block *hb)
 		return;
 	}
 	if (hb->pol.active) {
-		/* the profile's own quiet test: usage at or below its
-		 * down-threshold, plus the giving-a-granule-back-stays-safe
-		 * floor guard */
+		/* the profile's quiet test: usage at or below its
+		 * down-threshold, and free space of at least a granule plus
+		 * twice the floor */
 		if (hg_get_real_used(hb) * 100 > (unsigned long)hb->pol.down_pct *
 		                          hb->committed_bytes ||
 		    hb->buddy_free_leaves <
@@ -1363,9 +1201,8 @@ static void shrink_tick_body(struct hg_block *hb)
 		}
 		return;
 	}
-	/* the decision is made once per cycle; the RELEASE runs once per
-	 * maintenance tick from here on, one step at a time, until a gate
-	 * fails or there is nothing left to take */
+	/* decided once per cycle; from here the drain releases one step per
+	 * maintenance tick until a gate fails or nothing is left */
 	hb->draining = 1;
 	hg_drain_tick(hb);
 }
@@ -1378,14 +1215,11 @@ void hg_shrink_tick(struct hg_block *hb)
 }
 
 /*
- * One step of the drain, hb->lock held: the top trim, then the interior
- * punch. Called every maintenance tick (1 s) while draining is set - and
- * once from the sweep fallback, which has no faster clock. The gates are
- * re-tested per tick, cheaply: the quiet window was the DECISION, and a
- * single tick's worth of demand is enough to withdraw it. Abundance is
- * tested one page beyond the headroom rule's own line (2x the floor with a
- * profile, 4x without - the down-slow default), so a drain can never be the
- * thing that trips the rule that regrows.
+ * One drain step, hb->lock held: the top trim, then the interior punch. Every
+ * maintenance tick (1 s) while draining, and once from the sweep fallback. The
+ * gates are re-tested each step, since one tick of demand withdraws the
+ * decision; free space must exceed the headroom line (2x the floor with a
+ * profile, 4x without) by a page, so a drain never trips the regrow.
  */
 void hg_drain_tick(struct hg_block *hb)
 {
@@ -1413,30 +1247,18 @@ void hg_drain_tick(struct hg_block *hb)
 	}
 
 	released = hg_buddy_shrink_unlocks(hb);
-	/* the trim can only ever reach the top of the span; this reaches the
-	 * rest, and is the only thing that returns memory once a
-	 * startup-lifetime allocation has landed above the free space */
+	/* the trim reaches only the top of the span; the punch also frees what
+	 * sits below a long-lived allocation at the top */
 	released += hg_buddy_punch_unlocks(hb);
 	if (!released)
 		hb->draining = 0;
 }
 
 /*
- * The proactive half of the profile: grow BEFORE exhaustion when usage
- * has crossed the up-threshold often enough. Same call sites and lock
- * contract as hg_shrink_tick(); a profile-less arena never enters (its
- * growth remains exhaustion-triggered, the emergency path, which
- * also stays armed WITH a profile - a burst between ticks must not fail
- * allocations while the timer catches up).
- */
-/*
- * The always-on headroom rule, profile or not. The warm-path tail
- * was measured to be "arena at its reserve floor" (every sweep flushing
- * caches to stay above it); with the commit off the hot path a
- * proactive granule costs the data path nothing, so keep the free grid
- * above twice the floor whenever the reservation allows it. Ticked every
- * second by the maintenance process when there is one, else once per
- * sweep interval. Returns 1 if it grew.
+ * The always-on headroom rule, profile or not: keep the free grid above twice
+ * the floor while the reservation allows, so the arena does not sit at its
+ * floor flushing caches every sweep. Ticked every second by the maintenance
+ * process, else once per sweep interval. Returns 1 if it grew.
  */
 static int grow_headroom_tick_body(struct hg_block *hb)
 {
@@ -1458,6 +1280,12 @@ int hg_grow_headroom_tick(struct hg_block *hb)
 	return r;
 }
 
+/*
+ * The profile's proactive grow: grow BEFORE exhaustion when usage crossed the
+ * up-threshold often enough. Same call sites and lock contract as
+ * hg_shrink_tick(). Exhaustion growth stays armed with a profile too: a burst
+ * between ticks must not fail allocations.
+ */
 static void grow_tick_body(struct hg_block *hb)
 {
 	int hit;
@@ -1507,27 +1335,16 @@ void hg_grow_tick(struct hg_block *hb)
 	hg_lock_assert_held(hb, "hg_grow_tick return");
 }
 
-/*
- * How many whole-free pages can actually be REACHED from the top list's
- * head, against nfree[top]'s claim. (The top order is a bitmap now;
- * the walk became a population count, the check keeps its meaning.) Each node lives
- * in the first bytes of the free block it describes - so anything that
- * discards a free page's contents (a punch) severs the list there while the
- * count stays put. Bounded by the count, so a cycle cannot spin it.
- */
+/* top-order free pages per the wfree bitmap, to check against nfree[top] */
 unsigned long hg_buddy_top_reachable(struct hg_block *hb)
 {
-	/* the bitmap's population, to compare with nfree[top]'s count */
 	return wf_count(hb);
 }
 
 /*
- * Rebuild one order's free list from the per-page bitmaps - the
- * authority for "free, whole, not split" - skipping punched
- * pages, whose blocks belong to hg_buddy_regrow_holes_unlocks() and are
- * republished when it re-commits them. Corruption path only: it is reached
- * when a list head is found on a punched page (below), and it walks every
- * page's every block of the order, so it is not for routine use.
+ * Rebuild one order's free list from the per-page bitmaps, skipping punched
+ * pages (hg_buddy_regrow_holes_unlocks() republishes those). Corruption path
+ * only - reached when a list head is on a punched page - and a full walk.
  */
 static void fl_rebuild(struct hg_block *hb, unsigned int o)
 {
@@ -1568,12 +1385,8 @@ void *hg_buddy_alloc(struct hg_block *hb, unsigned int order)
 	if (!hb->buddy_ready || order > top)
 		return NULL;
 
-	/*
-	 * Smallest free block that fits, so large free blocks are preserved by
-	 * construction (design, "allocation policy"). Scanning UP from the
-	 * requested order is exactly that: the first non-empty list is the
-	 * smallest one that can serve it.
-	 */
+	/* smallest free block that fits - the first non-empty list scanning up
+	 * from the requested order - so large free blocks are preserved */
 	for (o = order; o <= top; o++) {
 		if (o == top) {
 			long idx = wf_first(hb);
@@ -1589,16 +1402,12 @@ void *hg_buddy_alloc(struct hg_block *hb, unsigned int order)
 		if (!pg->punched)
 			break;
 		/*
-		 * The head of this list is on a punched page. The descriptor
-		 * lives in the metadata region and is always readable; the page is
-		 * not: on hugetlb its node faults (a SIGBUS once the pool is
-		 * empty), on the other tiers it reads as zeros and the unlink would
-		 * null the list head and orphan every block behind it. The
-		 * check therefore sits BEFORE the unlink: after it, and
-		 * ignoring the re-pin result, it could also hand out a hugetlb
-		 * page whose first touch is a SIGBUS. Refuse without touching
-		 * the page: rebuild this order's list from the bitmaps, which skip
-		 * punched pages, and serve from the result or move up an order.
+		 * The list head is on a punched page: its descriptor (metadata
+		 * region) is readable, the page is not - on hugetlb a touch
+		 * can SIGBUS, elsewhere it reads as zeros and an unlink would
+		 * orphan the list. So check BEFORE the unlink, never touch the
+		 * page, and rebuild the list from the bitmaps (which skip
+		 * punched pages), then serve from it or move up an order.
 		 */
 		hg_corrupt(hb, HG_C_INTERNAL);
 		LM_CRIT("%s: free list order %u heads at punched page %u - the "
@@ -1687,11 +1496,9 @@ void hg_buddy_free(struct hg_block *hb, void *p, unsigned int order)
 		return;
 	}
 	/*
-	 * Double free. The leaforder check above does NOT catch it: a block that
-	 * failed to merge still records its own order, so freeing it twice would
-	 * look entirely legitimate and push it onto the free list a second time,
-	 * after which two callers get the same address. The bitmap is the
-	 * authority on "already free and entire", which is precisely this.
+	 * Double free: the leaforder check above passes it (a free block that
+	 * did not merge still records its order), and a second push would hand
+	 * the address out twice. The bitmap knows "already free and entire".
 	 */
 	if (bit_test(pg->bitmap, node_id(top, order, leaf))) {
 		hg_corrupt(hb, HG_C_DOUBLE_FREE);
@@ -1704,13 +1511,8 @@ void hg_buddy_free(struct hg_block *hb, void *p, unsigned int order)
 	hb->buddy_free_leaves += 1UL << order;
 
 	/*
-	 * Merge upwards while the buddy is free and entire. The buddy's address
-	 * is this block's with one bit flipped, which is what keeps each step
-	 * O(1); the loop runs at most `top` times.
-	 *
-	 * Note the merge stops at the page. The top order IS the page, so there
-	 * is no cross-page merging to implement and a wholly free top block is
-	 * exactly one huge page - which is the unit a reclaim hands back.
+	 * Merge up while the buddy (leaf ^ (1 << o)) is free and entire: O(1)
+	 * per step, at most `top` steps, ending at the page.
 	 */
 	while (o < top) {
 		unsigned long bleaf = leaf ^ (1UL << o);
@@ -1726,7 +1528,7 @@ void hg_buddy_free(struct hg_block *hb, void *p, unsigned int order)
 		hb->buddy_merges++;
 		pg->leaforder[bleaf] = HG_LEAF_NONE;
 
-		if (bleaf < leaf) {           /* we are the upper half - move down */
+		if (bleaf < leaf) {           /* the upper half: move down */
 			leaf = bleaf;
 			blk = buddy;
 		}
@@ -1762,9 +1564,9 @@ void *hg_buddy_alloc_run(struct hg_block *hb, unsigned long npages)
 		return hg_buddy_alloc(hb, top);
 
 	for (i = 0, start = 0; i < hb->npages; i++) {
-		/* a punched page is whole-free by its bitmap but off the list
-		 * and unbacked; a run must not take it (hg_buddy_grow will
-		 * re-commit it if the arena needs it) */
+		/* a punched page is whole-free by its bitmap but unbacked
+		 * and off the list; a run must not take it (a grow
+		 * re-commits it) */
 		if (hb->pages[i].punched || hb->pages[i].releasing ||
 		    !page_is_whole_free(hb, &hb->pages[i])) {
 			run = 0;

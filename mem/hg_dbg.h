@@ -26,14 +26,12 @@
 #include "hg_malloc.h"
 
 /*
- * HG_MALLOC_DBG checks, on an arena whose hb->dbg is set. Every allocation
- * is sized HG_DBG_TAIL bytes larger than asked: the last HG_DBG_TAIL bytes
- * of the cell hold the size asked for (encoded), and the bytes between the
- * request and that trailer are filled with HG_DBG_REDZONE, so a free finds
- * a write past the request. A freed cell is filled with HG_DBG_POISON and
- * held in a per-thread quarantine before it can be handed out again; a cell
- * leaving the quarantine with a byte changed was written after its free.
- * See hg_dbg.c.
+ * HG_MALLOC_DBG checks, on an arena with hb->dbg set. Each allocation gets
+ * HG_DBG_TAIL extra bytes: the cell's last HG_DBG_TAIL bytes hold the size
+ * asked for (encoded) and the gap up to them is HG_DBG_REDZONE, so a free
+ * finds a write past the request. A freed cell is filled with HG_DBG_POISON
+ * and held in a per-thread quarantine; a byte changed when it leaves means a
+ * write after free.
  */
 #define HG_DBG_TAIL     (sizeof(unsigned long))
 #define HG_DBG_REDZONE  0xcc
