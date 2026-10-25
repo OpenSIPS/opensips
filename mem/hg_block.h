@@ -216,7 +216,8 @@ enum hg_corrupt_kind {
 	HG_C_HEADER,             /* cell header fails its checksum: a
 	                          * neighbour's overflow, or not a cell */
 	HG_C_USE_AFTER_FREE,     /* HG_MALLOC_DBG: freed cell written to */
-	HG_C_OVERFLOW,           /* HG_MALLOC_DBG: written past the request */
+	HG_C_OVERFLOW,           /* written past the request: HG_MALLOC_DBG,
+	                          * or a guard (hg_mem_check) */
 	HG_CORRUPT_KINDS
 };
 
@@ -317,6 +318,10 @@ struct hg_block {
 	/* HG_MALLOC_DBG serves this arena: tail red zones, poisoned frees and
 	 * a quarantine (see hg_dbg.h). Set at creation, never changed. */
 	unsigned int dbg;
+	/* hg_mem_check on an arena without dbg: new allocations get a tail
+	 * guard (hg_guard_set()). Set at creation and after the config is
+	 * read; a cell's state says whether it carries one, not this flag. */
+	unsigned int guard;
 	/* bytes of freed cells one thread may hold in quarantine, when dbg */
 	unsigned long quar_bytes;
 

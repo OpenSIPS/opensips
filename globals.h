@@ -80,6 +80,8 @@ extern int hg_scaling_cycle;       /* seconds per policy cycle: the profile
                                     * drain itself runs every tick */
 extern unsigned long hg_shrink_step; /* max bytes released per drain tick */
 extern int hg_interior_release;    /* 1 = punch whole-free pages anywhere */
+extern int hg_mem_check;           /* 1 = tail guards, 2 = and abort on
+                                    * corruption */
 extern int auto_scaling_cycle;
 
 /* TCP network layer related parameters */

@@ -696,6 +696,86 @@ static void test_hg_dbg(void)
 }
 
 /*
+ * hg_mem_check's guard, on an arena without HG_MALLOC_DBG: one byte past the
+ * request is found at the free (small cell, large fragment, a cell filled to
+ * its last byte but one, pkg) and around an in-place realloc; a cell taken
+ * while the guard was off is freed unchecked after it is turned on. The
+ * flag is set on the arenas directly, so the run needs no config; damaged
+ * cells leak, so this runs in a child.
+ */
+static int hgt_child_guard(void *arg)
+{
+	struct hg_block *hb = shm_block, *pb = mem_block;
+	unsigned long exact = 128 - HG_CELL_HDR - HG_GUARD_ROOM, of;
+	char *a, *b, *r, *e, *k, *p;
+	int fails = 0;
+
+	hb->guard = 0;
+	k = shm_malloc(100);
+	hb->guard = 1;
+	a = shm_malloc(HGT_DBG_SMALL);
+	b = shm_malloc(HGT_DBG_LARGE);
+	r = shm_malloc(100);
+	e = shm_malloc(exact);
+	if (!a || !b || !r || !e || !k) {
+		hb->guard = 0;
+		return -1;
+	}
+
+	a[HGT_DBG_SMALL] = 0;
+	b[HGT_DBG_LARGE] = 0;
+	e[exact] = 0;
+	r[100] = 0;
+	shm_free(a);
+	shm_free(b);
+	shm_free(e);
+	r = shm_realloc(r, 60);     /* in place: checked, then guarded at 60 */
+	if (!r) {
+		hb->guard = 0;
+		return -1;
+	}
+	r[60] = 0;
+	shm_free(r);
+	k[100] = 0;                 /* in k's slack, and k carries no guard */
+	shm_free(k);
+	hb->guard = 0;
+
+	if (!pb || pb->dbg)
+		return 0;
+	of = pb->corrupt[HG_C_OVERFLOW];
+	pb->guard = 1;
+	p = pkg_malloc(HGT_DBG_SMALL);
+	pb->guard = 0;
+	if (!p)
+		return -1;
+	p[HGT_DBG_SMALL] = 0;
+	pkg_free(p);
+	if (pb->corrupt[HG_C_OVERFLOW] != of + 1) {
+		LM_ERR("the pkg overrun was not found (overflow +%lu)\n",
+			pb->corrupt[HG_C_OVERFLOW] - of);
+		fails++;
+	}
+	return fails ? -1 : 0;
+}
+
+static void test_hg_guard(void)
+{
+	struct hg_block *hb = shm_block;
+	unsigned long of0 = hb->corrupt[HG_C_OVERFLOW];
+	int ok_child;
+
+	skip(hb->dbg, 1, "HG_MALLOC_DBG's red zone stands in for the guard");
+	ok_child = hgt_in_child("hg guard", hgt_child_guard, NULL);
+	hb->guard = 0;
+	ok(ok_child && hb->corrupt[HG_C_OVERFLOW] == of0 + 5,
+		"hg_mem_check's guard finds one byte past the request at the free "
+		"(small cell, large fragment, a cell filled but for its guard byte, "
+		"pkg) and around an in-place realloc, and leaves a cell taken "
+		"without it alone (overflow +%lu)", hb->corrupt[HG_C_OVERFLOW] - of0);
+	end_skip;
+}
+
+/*
  * The hg_san.h hooks under ASan, read from ASan's shadow so nothing has to
  * crash: a pkg cell is open for the bytes asked for and closed after them,
  * also after an in-place realloc, and closed past its free-list link once
@@ -789,6 +869,7 @@ void test_hg_malloc(void)
 	test_hg_double_free();
 	test_hg_header();
 	test_hg_dbg();
+	test_hg_guard();
 
 	/* fuzz last: it uses the child runner, and the verdict slots go below */
 	test_hg_fuzz();

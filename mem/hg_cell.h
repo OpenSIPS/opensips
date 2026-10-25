@@ -58,6 +58,8 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
  *   offset HG_ROUNDTO*3         (DBG) : line
  *   offset HG_ROUNDTO+HG_CELL_HDR_DBG
  *          (SHM_EXTRA_STATS)          : statistic_index (mem-group index)
+ *   a spare word, where one is left   : the size a guarded cell was asked
+ *                                       for (hg_mem_check, see HG_REQ_*)
  *   offset HG_CELL_HDR                : payload; while the cell is FREE its
  *                                       first pointer is the free-list link
  *                                       (cell_next() in hg_arena.c)
@@ -84,6 +86,26 @@ const char *hg_mem_tier_str(enum hg_mem_tier tier);
 #define HG_PAYLOAD_ALIGN 8
 
 /*
+ * Where a guarded cell keeps the size asked for, without growing the header:
+ * HG_REQ_SLOT0 in the unused half of the first HG_ROUNDTO bytes (every
+ * 64-bit build), HG_REQ_PAD in the payload padding at the header's end (a
+ * 32-bit build with both DBG_MALLOC and SHM_EXTRA_STATS, or neither), else
+ * HG_REQ_TAIL in the cell's last 4 bytes, after the guard.
+ */
+#if defined(__CPU_sparc64) || defined(__CPU_sparc) || defined(__LP64__) || \
+	defined(_LP64) || (defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__ == 8)
+#define HG_REQ_SLOT0 1
+#define HG_REQ_PAD   0
+#elif defined(DBG_MALLOC) == defined(SHM_EXTRA_STATS)
+#define HG_REQ_SLOT0 0
+#define HG_REQ_PAD   1
+#else
+#define HG_REQ_SLOT0 0
+#define HG_REQ_PAD   0
+#endif
+#define HG_REQ_TAIL  (!HG_REQ_SLOT0 && !HG_REQ_PAD)
+
+/*
  * The header as a struct, so sites name a field instead of computing
  * HG_ROUNDTO * n. The _Static_asserts below pin it to the layout above on
  * every ABI and build configuration.
@@ -94,8 +116,11 @@ struct hg_cell_hdr {
 	union {
 		struct {
 			unsigned char  cls;           /* class id, or HG_LARGE_MARKER */
-			unsigned char  state;         /* HG_ST_FRESH / _FREE / _LIVE */
+			unsigned char  state;         /* HG_ST_FRESH / _FREE / _LIVE[_G] */
 			unsigned short check;         /* hg_hdr_sum() */
+#if HG_REQ_SLOT0
+			unsigned int   req;           /* LIVE_G: keyed size (hg_guard_set()) */
+#endif
 		};
 		unsigned int   hw;            /* the three as one word, for the
 		                               * atomic LIVE -> FREE */
@@ -108,6 +133,9 @@ struct hg_cell_hdr {
 #endif
 #ifdef SHM_EXTRA_STATS
 	unsigned long  stat_idx;              /* HG_ROUNDTO + HG_CELL_HDR_DBG */
+#endif
+#if HG_REQ_PAD
+	unsigned int   req;                   /* LIVE_G: keyed size (hg_guard_set()) */
 #endif
 };
 
@@ -127,8 +155,12 @@ struct hg_cell_hdr {
 #endif
 
 /* the pins: the documented offsets, and the raw size the arithmetic gave */
-HG_STATIC_ASSERT(HG_CELL_HDR_RAW == HG_ROUNDTO + HG_CELL_HDR_DBG + HG_CELL_HDR_STATS,
+HG_STATIC_ASSERT(HG_CELL_HDR_RAW == HG_ROUNDTO + HG_CELL_HDR_DBG + HG_CELL_HDR_STATS +
+	(HG_REQ_PAD ? sizeof(unsigned int) : 0),
 	"struct hg_cell_hdr is not the documented header layout");
+HG_STATIC_ASSERT((!HG_REQ_SLOT0 || HG_ROUNDTO == 8) &&
+	(!HG_REQ_PAD || HG_CELL_HDR == HG_CELL_HDR_RAW),
+	"the guarded size must fit in a word the header leaves spare");
 HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, cls) == 0,
 	"the class byte must be the first byte of the header");
 HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, state) == 1 &&
@@ -161,6 +193,10 @@ HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, stat_idx) == HG_CELL_STATS_OFF,
  *   FRESH or FREE -> LIVE            an allocation, the only way in
  *   LIVE          -> FREE            a free, by any process - the only way out
  *
+ * LIVE_G is LIVE with a tail guard (hg_mem_check, hg_guard_set()): the mark
+ * is the cell's own, so the setting may change while cells of both kinds
+ * are live. Every rule below for LIVE holds for LIVE_G (hg_st_live()).
+ *
  * Moving a cell between private list, shared pool, quarantine (HG_MALLOC_DBG)
  * or exit drain leaves it FREE (or FRESH). A free requires LIVE and an
  * allocation FRESH or FREE, so a double free is always refused and no cell
@@ -173,6 +209,12 @@ HG_STATIC_ASSERT(offsetof(struct hg_cell_hdr, stat_idx) == HG_CELL_STATS_OFF,
 #define HG_ST_FRESH  0x3c
 #define HG_ST_FREE   0x5a
 #define HG_ST_LIVE   0xa5
+#define HG_ST_LIVE_G 0x96
+
+static inline int hg_st_live(int st)
+{
+	return st == HG_ST_LIVE || st == HG_ST_LIVE_G;
+}
 
 /* per-run secret mixed into every header checksum, set before the first
  * arena is created (so it is the same in every process) */
@@ -286,6 +328,70 @@ static inline int hg_hdr_claim_free(void *cs, unsigned int live,
 	return __atomic_compare_exchange_n(&HG_CELL_AT(cs)->hw, &live,
 		hg_hdr_make(cls, HG_ST_FREE, base), 0, __ATOMIC_RELAXED,
 		__ATOMIC_RELAXED);
+}
+
+/*
+ * hg_mem_check's tail guard, on a LIVE_G cell: the size asked for is kept
+ * (HG_REQ_*), keyed by the header's base so a scribbled one reads as no size
+ * at all, and the HG_GUARD_LEN bytes after the request - fewer where the
+ * cell ends sooner, never none: the allocation is sized HG_GUARD_ROOM bytes
+ * up - are HG_GUARD_BYTE. A write past the request changes them; the free
+ * and the realloc see it.
+ */
+#define HG_GUARD_BYTE 0xcc
+#define HG_GUARD_LEN  8
+#define HG_GUARD_WORD 0xccccccccccccccccULL
+#define HG_GUARD_ROOM (1 + (HG_REQ_TAIL ? sizeof(unsigned int) : 0))
+
+/* @cap payload bytes: where the size is kept, and where the guard ends */
+#if HG_REQ_TAIL
+#define HG_GUARD_REQ(cs, cap) ((unsigned int *)(void *)((char *)(cs) + \
+	HG_CELL_HDR + (cap) - sizeof(unsigned int)))
+#else
+#define HG_GUARD_REQ(cs, cap) (&HG_CELL_AT(cs)->req)
+#endif
+#define HG_GUARD_END(cap)     ((cap) - (HG_GUARD_ROOM - 1))
+
+static inline unsigned int hg_guard_key(unsigned short base)
+{
+	return (unsigned int)base * 0x10001u;
+}
+
+/* @size asked for, @size + HG_GUARD_ROOM <= @cap */
+static inline void hg_guard_set(void *cs, unsigned short base,
+                                unsigned long cap, unsigned long size)
+{
+	unsigned char *g = (unsigned char *)cs + HG_CELL_HDR + size;
+	unsigned long long w = HG_GUARD_WORD;
+
+	*HG_GUARD_REQ(cs, cap) = (unsigned int)size ^ hg_guard_key(base);
+	if (HG_GUARD_END(cap) - size >= HG_GUARD_LEN)
+		memcpy(g, &w, HG_GUARD_LEN);
+	else
+		memset(g, HG_GUARD_BYTE, HG_GUARD_END(cap) - size);
+}
+
+/* 1 if the guard is intact; @size is the size kept, HG_GUARD_END(@cap) or
+ * more when that was overwritten */
+static inline int hg_guard_ok(void *cs, unsigned short base,
+                              unsigned long cap, unsigned long *size)
+{
+	const unsigned char *g;
+	unsigned long long w;
+	unsigned long i;
+
+	*size = *HG_GUARD_REQ(cs, cap) ^ hg_guard_key(base);
+	if (*size >= HG_GUARD_END(cap))
+		return 0;
+	g = (const unsigned char *)cs + HG_CELL_HDR + *size;
+	if (HG_GUARD_END(cap) - *size >= HG_GUARD_LEN) {
+		memcpy(&w, g, HG_GUARD_LEN);
+		return w == HG_GUARD_WORD;
+	}
+	for (i = 0; i < HG_GUARD_END(cap) - *size; i++)
+		if (g[i] != HG_GUARD_BYTE)
+			return 0;
+	return 1;
 }
 
 /* valid only when SHM_EXTRA_STATS; the same for small cells and large frags,

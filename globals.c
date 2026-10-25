@@ -87,6 +87,9 @@ unsigned long hg_shrink_step = 64UL << 20;
 /* interior release: off until the elasticity it buys has been measured on the
  * hugetlb rung as well as the ordinary ones */
 int hg_interior_release = 0;
+/* the integrity checks every arena runs anyway; 1 adds a tail guard to each
+ * new allocation, 2 also aborts on the first corruption found */
+int hg_mem_check = 0;
 /* auto-scaling sampling and checking time cycle is 1 sec by default */
 int auto_scaling_cycle = 1;
 /*!< by default choose the best method */

@@ -66,6 +66,8 @@ static int hgs_slots  = 512;      /* live blocks held per worker */
 static int hgs_iters  = 200000;   /* alloc/free ops per worker */
 static int hgs_verify = 2000;     /* full verify sweep every N ops */
 static int hgs_large  = 64;       /* 1-in-N allocations exceed the cell cap */
+static int hgs_fill_on   = 1;     /* 0 = no stamps: the allocator's cost alone */
+static int hgs_max_small = 8000;  /* small sizes are 8 .. 8 + max_small - 1 */
 /*
  * Growth driver. Each worker first allocates and HOLDS hold_mb MB of
  * stamped 128-512K blocks before the churn starts, and keeps them stamped
@@ -165,7 +167,7 @@ static unsigned long hgs_pick_size(unsigned int *seed)
 	 * class-boundary sizes; large: past the 64K cell cap */
 	if (hgs_large > 0 && (rand_r(seed) % hgs_large) == 0)
 		return 65536 + (rand_r(seed) % (512 * 1024));
-	return 8 + (rand_r(seed) % 8000);
+	return 8 + (rand_r(seed) % hgs_max_small);
 }
 
 static int hgs_run(int rank)
@@ -275,7 +277,8 @@ static int hgs_run(int rank)
 		slot = rand_r(&seed) % hgs_slots;
 
 		if (blk[slot].p) {
-			torn += hgs_check(&blk[slot], pid, slot);
+			if (hgs_fill_on)
+				torn += hgs_check(&blk[slot], pid, slot);
 			shm_free(blk[slot].p);
 			blk[slot].p = NULL;
 		} else {
@@ -288,7 +291,8 @@ static int hgs_run(int rank)
 				blk[slot].len = 0;
 				continue;
 			}
-			hgs_fill(&blk[slot], pid, slot);
+			if (hgs_fill_on)
+				hgs_fill(&blk[slot], pid, slot);
 		}
 		ops++;
 
@@ -297,7 +301,7 @@ static int hgs_run(int rank)
 		 * double hand-out is usually noticed long after it happened.
 		 * The hold blocks are swept too - they are the ones living in
 		 * grown pages. */
-		if (hgs_verify > 0 && (i % hgs_verify) == 0) {
+		if (hgs_fill_on && hgs_verify > 0 && (i % hgs_verify) == 0) {
 			for (slot = 0; slot < hgs_slots; slot++)
 				if (blk[slot].p)
 					torn += hgs_check(&blk[slot], pid, slot);
@@ -310,7 +314,8 @@ static int hgs_run(int rank)
 
 	for (slot = 0; slot < hgs_slots; slot++)
 		if (blk[slot].p) {
-			torn += hgs_check(&blk[slot], pid, slot);
+			if (hgs_fill_on)
+				torn += hgs_check(&blk[slot], pid, slot);
 			shm_free(blk[slot].p);
 		}
 	pkg_free(blk);
@@ -447,6 +452,11 @@ static mi_response_t *mi_hgs_release(const mi_params_t *params,
  *   scribble    - two cells freed, then the first's link overwritten (what
  *                 a module writing to freed memory does): the flush walk must
  *                 stop at the bad link instead of following it off the arena.
+ *   overrun, overrun_large, overrun_pkg, overrun_realloc
+ *               - one byte written past a 100-byte shm cell, a 100000-byte
+ *                 large fragment, a 100-byte pkg cell, or a 100-byte shm cell
+ *                 shrunk in place to 60, then freed: with hg_mem_check the
+ *                 free counts an overflow (and with 2 aborts); without, none.
  */
 static mi_response_t *mi_hgs_fault(const mi_params_t *params,
                                    struct mi_handler *async_hdl)
@@ -472,6 +482,32 @@ static mi_response_t *mi_hgs_fault(const mi_params_t *params,
 		shm_free(b);                 /* chain: b -> a -> (older) */
 		memset(a, 0xa5, 2 * sizeof(void *));   /* a's link, after the free */
 		LM_NOTICE("hgstress FAULT: link of freed %p overwritten (chain %p -> %p -> garbage)\n", a, b, a);
+	} else if (kind.len >= 7 && !memcmp(kind.s, "overrun", 7)) {
+		unsigned long n = 100, at = 100;
+		int pkg = 0, re = 0;
+
+		if (kind.len == 13 && !memcmp(kind.s, "overrun_large", 13)) {
+			n = at = 100000;
+		} else if (kind.len == 11 && !memcmp(kind.s, "overrun_pkg", 11)) {
+			pkg = 1;
+		} else if (kind.len == 15 && !memcmp(kind.s, "overrun_realloc", 15)) {
+			re = 1;
+			at = 60;
+		} else if (kind.len != 7) {
+			return init_mi_param_error();
+		}
+		a = pkg ? pkg_malloc(n) : shm_malloc(n);
+		if (a && re)
+			a = shm_realloc(a, at);
+		if (!a)
+			return init_mi_error(500, MI_SSTR("no memory"));
+		a[at] = 0x5a;
+		LM_NOTICE("hgstress FAULT: byte %lu of %lu-byte %s %p written\n",
+			at, at, pkg ? "pkg" : "shm", a);
+		if (pkg)
+			pkg_free(a);
+		else
+			shm_free(a);
 	} else {
 		return init_mi_param_error();
 	}
@@ -479,7 +515,7 @@ static mi_response_t *mi_hgs_fault(const mi_params_t *params,
 }
 
 static const mi_export_t mi_cmds[] = {
-	{ "hgs_fault", "inject a double free or a scribbled link into this process's cache", 0, 0, {
+	{ "hgs_fault", "inject a double free, a scribbled link or a one-byte overrun", 0, 0, {
 		{mi_hgs_fault, {"kind", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
@@ -498,6 +534,8 @@ static int mod_init(void)
 {
 	if (hgs_slots > HGS_MAX_SLOTS)
 		hgs_slots = HGS_MAX_SLOTS;
+	if (hgs_max_small < 1)
+		hgs_max_small = 1;
 
 	if (hgs_again_s > 0 &&
 	    register_timer("hgstress-again", hgs_again, NULL,
@@ -546,6 +584,8 @@ static const param_export_t params[] = {
 	{ "iters",   INT_PARAM, &hgs_iters   },
 	{ "verify",  INT_PARAM, &hgs_verify  },
 	{ "large",   INT_PARAM, &hgs_large   },
+	{ "fill",      INT_PARAM, &hgs_fill_on   },
+	{ "max_small", INT_PARAM, &hgs_max_small },
 	{ "hold_mb",     INT_PARAM, &hgs_hold_mb     },
 	{ "hold_pkg_mb", INT_PARAM, &hgs_hold_pkg_mb },
 	{ "again_s",     INT_PARAM, &hgs_again_s     },

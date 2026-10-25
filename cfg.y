@@ -470,6 +470,7 @@ extern int cfg_parse_only_routes;
 %token HG_INTERIOR_RELEASE
 %token HG_SCALING_CYCLE
 %token HG_SHRINK_STEP
+%token HG_MEM_CHECK
 %token AUTO_SCALING_CYCLE
 %token TIMER_WORKERS
 
@@ -1789,6 +1790,15 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				}
 		| HG_SHRINK_STEP EQUAL error {
 				yyerror("size expected (number, optional k/m/g)");
+				}
+		| HG_MEM_CHECK EQUAL NUMBER { IFOR();
+				if ($3 < 0 || $3 > 2) {
+					yyerror("hg_mem_check must be 0, 1 or 2");
+					YYABORT;
+				}
+				hg_mem_check=$3; }
+		| HG_MEM_CHECK EQUAL error {
+				yyerror("integer value expected");
 				}
 		| AUTO_SCALING_CYCLE EQUAL NUMBER { IFOR();
 				auto_scaling_cycle=$3; }

@@ -85,16 +85,16 @@ static inline struct hg_chunk *cell_block(struct hg_block *hb, int c, void *p)
 	struct hg_chunk *ch = hg_buddy_block_of(hb, p);
 
 	if (!ch) {
-		hg_corrupt(hb, HG_C_FOREIGN_PTR);
 		LM_CRIT("%s: cell %p (class %d) is not on the arena's page grid - "
 			"not touching it\n", hb->name, p, c);
+		hg_corrupt(hb, HG_C_FOREIGN_PTR);
 		return NULL;
 	}
 	if (ch->cls != (unsigned int)c) {
-		hg_corrupt(hb, HG_C_CLASS_MISMATCH);
 		LM_CRIT("%s: cell %p resolves to block %p of class %u, expected "
 			"class %d - not touching it\n",
 			hb->name, p, (void *)ch, ch->cls, c);
+		hg_corrupt(hb, HG_C_CLASS_MISMATCH);
 		return NULL;
 	}
 	return ch;

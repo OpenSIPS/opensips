@@ -87,11 +87,13 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 	/* base MUST start NULL: the grow-and-retry loop below tests it before
 	 * the first attempt assigns it */
 	char *base = NULL, *tag;
+	/* the guarded size is 32 bits: a larger request goes unguarded */
+	unsigned int guard = hb->guard && size < 0xffffffffUL;
 
 	/* round to HG_PAYLOAD_ALIGN, not HG_ROUNDTO: a frag's size places the
 	 * next frag, so rounding to 4 (32-bit ARM) would misalign all later
 	 * frags and their payloads */
-	need = (HG_CELL_HDR + size + (hb->dbg ? HG_DBG_TAIL : 0) +
+	need = (HG_CELL_HDR + size + (hb->dbg ? HG_DBG_TAIL : guard ? HG_GUARD_ROOM : 0) +
 	        HG_PAYLOAD_ALIGN - 1) & ~(unsigned long)(HG_PAYLOAD_ALIGN - 1);
 
 	hg_lock_enter(hb, HG_LK_LARGE);
@@ -244,7 +246,14 @@ void *hg_large_alloc(struct hg_block *hb, unsigned long size)
 	hg_lock_leave(hb);
 
 	tag = (char *)f + HG_LFRAG_HDR;
-	hg_hdr_set(tag, HG_LARGE_MARKER, HG_ST_LIVE);
+	if (guard) {
+		unsigned short hsum = hg_hdr_base(tag, HG_LARGE_MARKER);
+
+		hg_guard_set(tag, hsum, f->size - HG_CELL_HDR, size);
+		hg_hdr_set_base(tag, HG_LARGE_MARKER, HG_ST_LIVE_G, hsum);
+	} else {
+		hg_hdr_set(tag, HG_LARGE_MARKER, HG_ST_LIVE);
+	}
 	if (hb->dbg)
 		hg_dbg_tail_set(tag, f->size - HG_CELL_HDR, size);
 	hg_san_give(hb, tag, f->size - HG_CELL_HDR, size);
@@ -267,12 +276,12 @@ void hg_large_free(struct hg_block *hb, struct hg_lfrag *frag)
 	 * pass hg_cell_free()'s check, and the second would coalesce the
 	 * fragment again. A LIVE frag still on the free list (prev set) is a
 	 * damaged tier: refused the same way. */
-	if (hg_hdr_state((char *)frag + HG_LFRAG_HDR) != HG_ST_LIVE ||
+	if (!hg_st_live(hg_hdr_state((char *)frag + HG_LFRAG_HDR)) ||
 	    frag->prev) {
 		hg_lock_leave(hb);
-		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		LM_CRIT("%s: large fragment %p is already free - refusing to "
 			"free it again\n", hb->name, (void *)frag);
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		return;
 	}
 	hg_hdr_set((char *)frag + HG_LFRAG_HDR, HG_LARGE_MARKER, HG_ST_FREE);

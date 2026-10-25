@@ -250,11 +250,11 @@ unsigned int hg_cache_flush_class(struct hg_block *hb,
 		unsigned int left = pl->cls[c].nfree;
 
 		pl->cls[c].nfree = 0;
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		LM_CRIT("%s: class %d chain ran dry after %u cells but nfree "
 			"claimed %u (%u still claimed at the end) - counter resynced "
 			"to 0, pool accounting drifted\n", hb->name, c, n, claimed,
 			left);
+		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 	}
 	return n;
 }

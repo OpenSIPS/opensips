@@ -264,10 +264,10 @@ void *hg_buddy_alloc(struct hg_block *hb, unsigned int order)
 		 * page, and rebuild the list from the bitmaps (which skip
 		 * punched pages), then serve from it or move up an order.
 		 */
-		hg_corrupt(hb, HG_C_INTERNAL);
 		LM_CRIT("%s: free list order %u heads at punched page %u - the "
 			"list and the page descriptor disagree; rebuilding the list "
 			"from the bitmaps\n", hb->name, o, pg->idx);
+		hg_corrupt(hb, HG_C_INTERNAL);
 		fl_rebuild(hb, o);
 		if (o == top ? wf_first(hb) >= 0 : hb->bfree[o] != NULL)
 			break;
@@ -321,9 +321,9 @@ void hg_buddy_free(struct hg_block *hb, void *p, unsigned int order)
 	char *blk = p;
 
 	if (!hg_in_pages(hb, p)) {
-		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		LM_CRIT("%s: buddy free of %p, which is outside the page grid - "
 			"ignoring\n", hb->name, p);
+		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		return;
 	}
 	pg = page_of(hb, p);
@@ -331,23 +331,23 @@ void hg_buddy_free(struct hg_block *hb, void *p, unsigned int order)
 
 	if (((unsigned long)p & ((HG_LEAF_SIZE << order) - 1)) !=
 	    ((unsigned long)pg->base & ((HG_LEAF_SIZE << order) - 1))) {
-		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		LM_CRIT("%s: buddy free of %p at order %u, which is not aligned to "
 			"its own size - ignoring\n", hb->name, p, order);
+		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		return;
 	}
 	if (leaf & ((1UL << order) - 1)) {
-		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		LM_CRIT("%s: buddy free of %p as order %u, but leaf %lu does not "
 			"start a block of that order - ignoring\n",
 			hb->name, p, order, leaf);
+		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		return;
 	}
 	if (pg->leaforder[leaf] != order) {
-		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		LM_CRIT("%s: buddy free of %p as order %u, but leaf %lu records "
 			"order %u - ignoring\n", hb->name, p, order, leaf,
 			pg->leaforder[leaf]);
+		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		return;
 	}
 	/*
@@ -356,9 +356,9 @@ void hg_buddy_free(struct hg_block *hb, void *p, unsigned int order)
 	 * the address out twice. The bitmap knows "already free and entire".
 	 */
 	if (bit_test(pg->bitmap, node_id(top, order, leaf))) {
-		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		LM_CRIT("%s: double buddy free of %p at order %u - ignoring\n",
 			hb->name, p, order);
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		return;
 	}
 
@@ -458,9 +458,9 @@ void hg_buddy_free_run(struct hg_block *hb, void *p)
 
 	n = hg_buddy_run_len(hb, p);
 	if (n == 0) {
-		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		LM_CRIT("%s: run free of %p, which heads no run - ignoring\n",
 			hb->name, p);
+		hg_corrupt(hb, HG_C_BUDDY_BAD_FREE);
 		return;
 	}
 	start = hg_page_of(hb, p);

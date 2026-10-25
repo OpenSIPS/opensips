@@ -268,6 +268,20 @@ int hg_autoscale_post_cfg(void)
 	if (hg_pkg && mem_block)
 		hg_private_caps_retune((struct hg_block *)mem_block);
 
+	/* and hg_mem_check: the arenas made before the config guard from here
+	 * on; their cells so far carry no guard, and each cell says which it is */
+	{
+		int i;
+
+		for (i = 0; i < HG_ARENA_REG_MAX; i++)
+			if (hg_arena_reg[i].hb)
+				hg_arena_reg[i].hb->guard = !hg_arena_reg[i].hb->dbg &&
+					hg_mem_check > 0;
+	}
+	if (hg_mem_check && !hg_shm && !hg_pkg)
+		LM_WARN("hg_mem_check ignored: neither shm nor pkg is "
+			HG_MALLOC_NAME "\n");
+
 	if (hg_shm_profile_name) {
 		if (!hg_shm) {
 			LM_WARN("shm_auto_scaling_profile ignored: the shm "
@@ -626,6 +640,7 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 #else
 	hb->dbg = shared && mem_allocator_shm == MM_HG_MALLOC_DBG;
 #endif
+	hb->guard = !hb->dbg && hg_mem_check > 0;
 	hb->quar_bytes = cap >> 10;
 	if (hb->quar_bytes < HG_QUAR_MIN)
 		hb->quar_bytes = HG_QUAR_MIN;
@@ -873,9 +888,9 @@ static void hg_dbg_dump_cb(void *payload, void *ctx)
 	 * corrupted chunk can yield an unmapped address; a diagnostic dump
 	 * must never be what kills the process */
 	if (!hg_owns_any(tag)) {
-		hg_corrupt(NULL, HG_C_FOREIGN_PTR);
 		LM_CRIT("%s: dump walker produced %p, outside every arena - "
 			"skipping it\n", HG_MALLOC_NAME, payload);
+		hg_corrupt(NULL, HG_C_FOREIGN_PTR);
 		return;
 	}
 

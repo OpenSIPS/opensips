@@ -88,7 +88,6 @@ int hg_dbg_tail_check(struct hg_block *hb, void *cs, unsigned long cap)
 		/* the trailer itself was overwritten: the size is lost */
 		snprintf(what, sizeof what, "its size (trailer lost)");
 	}
-	hg_corrupt(hb, HG_C_OVERFLOW);
 #ifdef DBG_MALLOC
 	LM_CRIT("%s: %p (%lu bytes) was written past %s - allocated at "
 		"%s: %s(%lu)\n", hb->name, (const void *)pay, cap, what,
@@ -99,6 +98,7 @@ int hg_dbg_tail_check(struct hg_block *hb, void *cs, unsigned long cap)
 	LM_CRIT("%s: %p (%lu bytes) was written past %s\n", hb->name,
 		(const void *)pay, cap, what);
 #endif
+	hg_corrupt(hb, HG_C_OVERFLOW);
 	return -1;
 }
 
@@ -124,15 +124,14 @@ static int quar_check(struct hg_block *hb, char *cs, unsigned int c)
 	unsigned long cap = hg_cell_total_size(c) - HG_CELL_HDR, i;
 
 	if (hg_hdr_state(cs) != HG_ST_FREE || HG_CELL_AT(cs)->cls != c) {
-		hg_corrupt(hb, HG_C_HEADER);
 		LM_CRIT("%s: the header of %p was overwritten while the cell sat "
 			"in quarantine - leaking it\n", hb->name, (const void *)pay);
+		hg_corrupt(hb, HG_C_HEADER);
 		return -1;
 	}
 	i = first_unlike(pay, cap, HG_DBG_POISON);
 	if (i == cap)
 		return 0;
-	hg_corrupt(hb, HG_C_USE_AFTER_FREE);
 #ifdef DBG_MALLOC
 	LM_CRIT("%s: %p (%lu bytes) was written after it was freed - byte %lu "
 		"is 0x%02x; freed at %s: %s(%lu) - leaking it\n", hb->name,
@@ -145,6 +144,7 @@ static int quar_check(struct hg_block *hb, char *cs, unsigned int c)
 		"is 0x%02x - leaking it\n", hb->name, (const void *)pay, cap, i,
 		pay[i]);
 #endif
+	hg_corrupt(hb, HG_C_USE_AFTER_FREE);
 	return -1;
 }
 

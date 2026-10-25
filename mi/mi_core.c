@@ -1150,6 +1150,9 @@ static int hg_stats_one(mi_item_t *parent, char *name, struct hg_block *hb,
 	 * then stays at what was locked before */
 	if (add_mi_number(o, MI_SSTR("unpinned"), hb->unpinned) < 0)
 		return -1;
+	/* 1: new allocations get hg_mem_check's tail guard */
+	if (add_mi_number(o, MI_SSTR("guard"), hb->guard) < 0)
+		return -1;
 	/* committed vs reserved, and whether growth has happened or been
 	 * refused. committed == cap means a fixed arena (the default). */
 	if (add_mi_number(o, MI_SSTR("committed"), hb->committed_bytes) < 0)

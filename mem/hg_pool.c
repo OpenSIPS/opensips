@@ -161,12 +161,12 @@ static inline int pool_link_ok(struct hg_block *hb, struct hg_chunk *ch,
 		return remaining == 0;
 	i = cell_index(ch, next);
 	if (i < 0 || !map_test(ch, i)) {
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		LM_CRIT("%s: block %p (class %u) free chain points at %p, which is "
 			"%s - the link was overwritten after the free; dropping the "
 			"rest of the chain (%u cells leak)\n", hb->name, (void *)ch,
 			ch->cls, next, i < 0 ? "not one of its cells" :
 			"not free by the map", remaining);
+		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		return 0;
 	}
 	return 1;
@@ -216,20 +216,20 @@ static unsigned int gc_class_run(struct hg_block *hb, int c, unsigned int keep,
 			while (w && w->fnext)
 				w = w->fnext;
 			if (w != ch) {
-				hg_corrupt(hb, HG_C_INTERNAL);
 				LM_CRIT("%s: class %d drained tail %p disagrees with "
 					"the walked tail %p\n", hb->name, c, (void *)ch,
 					(void *)w);
+				hg_corrupt(hb, HG_C_INTERNAL);
 				ch = w;
 			}
 		}
 #endif
 		if (!ch) {
 			/* ndrained says there is one, the list has none */
-			hg_corrupt(hb, HG_C_INTERNAL);
 			LM_CRIT("%s: class %d claims %u drained blocks but the list "
 				"is empty - resetting the count\n", hb->name, c,
 				hb->ndrained[c]);
+			hg_corrupt(hb, HG_C_INTERNAL);
 			hb->ndrained[c] = 0;
 			break;
 		}
@@ -281,26 +281,26 @@ int hg_gpool_push(struct hg_block *hb, int c, void *cell_start)
 		return -1;                  /* refused above, with a CRIT */
 	i = cell_index(ch, cell_start);
 	if (i < 0) {
-		hg_corrupt(hb, HG_C_FOREIGN_PTR);
 		LM_CRIT("%s: %p is inside block %p (class %u) but not on a cell "
 			"boundary - refusing to pool it\n", hb->name, cell_start,
 			(void *)ch, ch->cls);
+		hg_corrupt(hb, HG_C_FOREIGN_PTR);
 		return -1;
 	}
 	if (map_test(ch, i)) {
 		/* exact: the cell is already in the pool (the block-level test
 		 * below fires only after the damage) */
-		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		LM_CRIT("%s: cell %p (block %p, class %u, index %ld) is already in "
 			"the global pool - double free, refusing the second copy\n",
 			hb->name, cell_start, (void *)ch, ch->cls, i);
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		return -1;
 	}
 	if (ch->in_gpool >= ch->cells) {
-		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		LM_CRIT("%s: block %p already has all %u cells free, refusing to "
 			"add another - this is a double free\n",
 			hb->name, (void *)ch, ch->cells);
+		hg_corrupt(hb, HG_C_DOUBLE_FREE);
 		return -1;
 	}
 	map_set(ch, i);
@@ -347,10 +347,10 @@ void *hg_gpool_pop(struct hg_block *hb, int c)
 
 	cell_start = ch->free_head;
 	if (!cell_start) {
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		LM_CRIT("%s: block %p claims %u free cells but its list is empty - "
 			"dropping it from the pool\n",
 			hb->name, (void *)ch, ch->in_gpool);
+		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		hb->gpool_n[c] -= ch->in_gpool;
 		ch->in_gpool = 0;
 		memset(ch->gfree, 0, sizeof ch->gfree);
@@ -373,10 +373,10 @@ void *hg_gpool_pop(struct hg_block *hb, int c)
 			block_regrade(hb, c, ch);
 			return cell_start;
 		}
-		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		LM_CRIT("%s: block %p (class %u) free head %p is not a free cell "
 			"of the block - dropping the block's chain (%u cells leak)\n",
 			hb->name, (void *)ch, ch->cls, cell_start, ch->in_gpool);
+		hg_corrupt(hb, HG_C_NFREE_UNDERFLOW);
 		hb->gpool_n[c] -= ch->in_gpool;
 		ch->in_gpool = 0;
 		ch->free_head = NULL;

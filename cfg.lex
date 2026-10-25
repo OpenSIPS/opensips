@@ -302,6 +302,7 @@ HG_GROW_AHEAD "hg_grow_ahead"
 HG_INTERIOR_RELEASE "hg_interior_release"
 HG_SCALING_CYCLE "hg_scaling_cycle"
 HG_SHRINK_STEP "hg_shrink_step"
+HG_MEM_CHECK "hg_mem_check"
 AUTO_SCALING_CYCLE "auto_scaling_cycle"
 TIMER_WORKERS "timer_workers"
 
@@ -579,6 +580,8 @@ SPACE		[ ]
 									return HG_SCALING_CYCLE; }
 <INITIAL>{HG_SHRINK_STEP}	{	count(); yylval.strval=yytext;
 									return HG_SHRINK_STEP; }
+<INITIAL>{HG_MEM_CHECK}	{	count(); yylval.strval=yytext;
+									return HG_MEM_CHECK; }
 <INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
 									return AUTO_SCALING_CYCLE; }
 <INITIAL>{TIMER_WORKERS}	{	count(); yylval.strval=yytext;

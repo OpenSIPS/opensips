@@ -27,6 +27,7 @@
 #include <time.h>
 #include <stddef.h>   /* offsetof, for the header-layout pins */
 #include <stdint.h>   /* uint64_t: 64-bit free-map words on every ABI */
+#include <string.h>   /* memcpy/memset, for the tail guard (hg_cell.h) */
 #include "meminfo.h"
 #include "common.h"
 #include "hg_san.h"
@@ -576,14 +577,28 @@ int hg_arena_set_profile(struct hg_block *hb, const char *profile_name);
 static inline int hg_register_stats(void) { return 0; }
 #endif
 
-/* bump a corruption counter; hb may be NULL where no arena is in scope */
+/* hg_mem_check = 2: log and abort() - in hg_arena.c */
+void hg_corrupt_abort(struct hg_block *hb, enum hg_corrupt_kind k)
+	__attribute__ ((noreturn, cold));
+
+/*
+ * Bump a corruption counter; hb may be NULL where no arena is in scope.
+ * Every site calls it after its own LM_CRIT, so with hg_mem_check = 2 the
+ * process aborts with the details already in the log.
+ */
 static inline void hg_corrupt(struct hg_block *hb, enum hg_corrupt_kind k)
 {
 	if (hb)
 		hb->corrupt[k]++;
 	else
 		hg_corrupt_noarena[k]++;
+	if (hg_mem_check > 1)
+		hg_corrupt_abort(hb, k);
 }
+
+/* a guarded cell failed hg_guard_ok(): logged and counted - in hg_arena.c */
+void hg_guard_bad(struct hg_block *hb, const void *cs, unsigned long cap,
+                  unsigned long size) __attribute__ ((cold));
 
 static inline unsigned long hg_corrupt_total(struct hg_block *hb)
 {

@@ -91,7 +91,10 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 #endif
 {
 	unsigned char cls;
-	unsigned long cur_total = 0, need_total, cur_payload = 0, copy;
+	unsigned long cur_total = 0, need_total, cur_payload = 0, copy, asked;
+	union hg_hdr_w hw;
+	unsigned short hsum;
+	int st;
 	void *ptr;
 
 #ifdef DBG_MALLOC
@@ -127,20 +130,18 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 	if (!hg_owns_any(HG_HDR(p))) {
 		LM_CRIT("%s: realloc of %p, which is from no live arena - "
 			"refusing it\n", hb->name, p);
+		hg_corrupt(hb, HG_C_FOREIGN_PTR);
 		return NULL;
 	}
 
 	/* and only a LIVE cell with an intact header: its class byte is what
 	 * the size below is read from */
-	{
-		int st = hg_hdr_state(HG_HDR(p));
-
-		if (st != HG_ST_LIVE) {
-			hg_corrupt(hb, st < 0 ? HG_C_HEADER : HG_C_DOUBLE_FREE);
-			LM_CRIT("%s: realloc of %p, which is %s - refusing it\n",
-				hb->name, p, st < 0 ? "damaged or not a cell" : "free");
-			return NULL;
-		}
+	st = hg_hdr_read(HG_HDR(p), &hw, &hsum);
+	if (!hg_st_live(st)) {
+		LM_CRIT("%s: realloc of %p, which is %s - refusing it\n",
+			hb->name, p, st < 0 ? "damaged or not a cell" : "free");
+		hg_corrupt(hb, st < 0 ? HG_C_HEADER : HG_C_DOUBLE_FREE);
+		return NULL;
 	}
 	/*
 	 * cur_payload is what the caller may read from @p; the tiers put
@@ -160,25 +161,32 @@ void *hg_realloc(struct hg_block *hb, void *p, unsigned long size,
 	} else if (cls >= HG_NCLASSES) {
 		LM_CRIT("%s: cell %p carries invalid class %u - aborting "
 			"realloc\n", hb->name, p, cls);
+		hg_corrupt(hb, HG_C_BAD_CLASS);
 		return NULL;
 	} else {
 		cur_total = hg_cell_total_size(cls);
 		cur_payload = cur_total > HG_CELL_HDR ? cur_total - HG_CELL_HDR : 0;
-		need_total = ((size + HG_ROUNDTO - 1) / HG_ROUNDTO) * HG_ROUNDTO + HG_CELL_HDR;
+		/* a guarded cell stays guarded, an unguarded one unguarded */
+		need_total = ((size + (st == HG_ST_LIVE_G ? HG_GUARD_ROOM : 0) +
+			HG_ROUNDTO - 1) / HG_ROUNDTO) * HG_ROUNDTO + HG_CELL_HDR;
 		if (hb->dbg)
 			need_total += HG_DBG_TAIL;
 		if (need_total <= cur_total) {
-			/* HG_MALLOC_DBG: the red zone moves to the new size - checked
+			/* HG_MALLOC_DBG and the guard move to the new size - checked
 			 * first, so a write past the old size is still seen. Judged
 			 * by the arena the cell came from (see hg_owner()). */
-			struct hg_block *own = hb->dbg || HG_SAN_ON ?
-				hg_owner(HG_HDR(p)) : NULL;
+			struct hg_block *own = hb->dbg || HG_SAN_ON ||
+				st == HG_ST_LIVE_G ? hg_owner(HG_HDR(p)) : NULL;
 
 			if (own) {
 				hg_san_open(own, HG_HDR(p), cur_payload);
 				if (own->dbg) {
 					hg_dbg_tail_check(own, HG_HDR(p), cur_payload);
 					hg_dbg_tail_set(HG_HDR(p), cur_payload, size);
+				} else if (st == HG_ST_LIVE_G) {
+					if (!hg_guard_ok(HG_HDR(p), hsum, cur_payload, &asked))
+						hg_guard_bad(own, HG_HDR(p), cur_payload, asked);
+					hg_guard_set(HG_HDR(p), hsum, cur_payload, size);
 				}
 				hg_san_give(own, HG_HDR(p), cur_payload, size);
 			}

@@ -83,8 +83,8 @@ static inline int wf_test(const struct hg_block *hb, unsigned long idx)
 static inline void wf_set(struct hg_block *hb, unsigned long idx)
 {
 	if (wf_test(hb, idx)) {
-		hg_corrupt(hb, HG_C_INTERNAL);
 		LM_CRIT("%s: page %lu published as whole-free twice\n", hb->name, idx);
+		hg_corrupt(hb, HG_C_INTERNAL);
 		return;
 	}
 	hb->wfree[idx / HG_WF_BITS] |= 1UL << (idx % HG_WF_BITS);
@@ -94,8 +94,8 @@ static inline void wf_set(struct hg_block *hb, unsigned long idx)
 static inline void wf_clear(struct hg_block *hb, unsigned long idx)
 {
 	if (!wf_test(hb, idx)) {
-		hg_corrupt(hb, HG_C_INTERNAL);
 		LM_CRIT("%s: page %lu taken off offer but was not on it\n", hb->name, idx);
+		hg_corrupt(hb, HG_C_INTERNAL);
 		return;
 	}
 	hb->wfree[idx / HG_WF_BITS] &= ~(1UL << (idx % HG_WF_BITS));
@@ -178,10 +178,10 @@ static inline void span_check(struct hg_block *hb, const char *after)
 
 	if (hb->committed_bytes + holes == hb->span_end)
 		return;
-	hg_corrupt(hb, HG_C_INTERNAL);
 	LM_CRIT("%s: after %s committed_bytes %lu + %lu punched != span_end "
 		"%lu\n", hb->name, after, hb->committed_bytes, holes,
 		hb->span_end);
+	hg_corrupt(hb, HG_C_INTERNAL);
 }
 
 /*
