@@ -101,20 +101,21 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 		.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
 		.type = TYPE_NONE,
 	};
-	int pid, waited, gone = 0;
+	int idx, waited, gone = 0;
+	pid_t pid;
 	siginfo_t si;
 
 	*hgt_verdict = 0;
 	*hgt_go = 0;
 	/* or the child inherits the unflushed TAP lines and prints them again */
 	fflush(stdout);
-	pid = internal_fork(&ifp);
-	if (pid < 0) {
+	idx = internal_fork(&ifp);
+	if (idx < 0) {
 		LM_ERR("failed to fork the '%s' child\n", desc);
 		return 0;
 	}
 
-	if (pid == 0) {
+	if (idx == 0) {
 		for (waited = 0; !__atomic_load_n(hgt_go, __ATOMIC_ACQUIRE) &&
 		        waited < HGT_WAIT_US; waited += HGT_STEP_US)
 			usleep(HGT_STEP_US);
@@ -123,6 +124,9 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 			__ATOMIC_RELEASE);
 		exit(0);
 	}
+	/* internal_fork() returns the child's process-table slot, not its pid;
+	 * the child stored its pid there before its start-up completed */
+	pid = pt[idx].pid;
 	__atomic_store_n(hgt_go, 1, __ATOMIC_RELEASE);
 
 	for (waited = 0; !__atomic_load_n(hgt_verdict, __ATOMIC_ACQUIRE) &&
@@ -131,8 +135,9 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 		 * with SIGCHLD ignored; a verdict stored before exit() is visible
 		 * below */
 		si.si_pid = 0;
-		if (waitid(P_PID, pid, &si, WEXITED|WNOHANG|WNOWAIT) < 0 ?
-		        errno == ECHILD : si.si_pid == pid) {
+		if (pid > 0 &&
+		        (waitid(P_PID, pid, &si, WEXITED|WNOHANG|WNOWAIT) < 0 ?
+		        errno == ECHILD : si.si_pid == pid)) {
 			gone = 1;
 			break;
 		}
@@ -146,12 +151,14 @@ int hgt_in_child(char *desc, int (*fn)(void *), void *arg)
 		} else {
 			/* or it goes on using the arenas during the next test, and
 			 * its late verdict is taken for that test's */
-			kill(pid, SIGKILL);
-			while (waitid(P_PID, pid, &si, WEXITED|WNOWAIT) < 0 &&
-			        errno == EINTR)
-				;
-			LM_ERR("the '%s' child gave no verdict within %d s - "
-				"killed it\n", desc, HGT_WAIT_US / 1000000);
+			if (pid > 0) {
+				kill(pid, SIGKILL);
+				while (waitid(P_PID, pid, &si, WEXITED|WNOWAIT) < 0 &&
+				        errno == EINTR)
+					;
+			}
+			LM_ERR("the '%s' child gave no verdict within %d s%s\n", desc,
+				HGT_WAIT_US / 1000000, pid > 0 ? " - killed it" : "");
 		}
 	}
 
