@@ -349,6 +349,77 @@ static void test_hg_grow(void)
 }
 
 /*
+ * A pkg arena that grew one step shrinks again while more stays live than a
+ * whole step plus four floors would leave room for - the shape of a worker's
+ * arena after a burst. The blocks taken after the grow are freed, so the top
+ * pages come back whole; the shrink ticks run as the sweep runs them, under
+ * the lock. In a child, whose pkg arena is its own.
+ */
+#define HGT_SHRINK_BLK  (256UL * 1024)
+#define HGT_SHRINK_MAX  512
+
+static int hgt_child_pkg_shrink(void *arg)
+{
+	struct hg_block *pb = mem_block;
+	void *p[HGT_SHRINK_MAX];
+	unsigned long gen0, c0, grown, keep;
+	int i, n;
+
+	gen0 = pb->grow_gen;
+	c0 = pb->committed_bytes;
+	for (n = 0; n < HGT_SHRINK_MAX; n++) {
+		p[n] = pkg_malloc(HGT_SHRINK_BLK);
+		if (!p[n])
+			break;
+		if (pb->grow_gen != gen0) {
+			n++;
+			break;
+		}
+	}
+	grown = pb->committed_bytes;
+	if (pb->grow_gen == gen0 || grown <= c0) {
+		LM_ERR("the pkg arena did not grow (%lu KB committed)\n", grown >> 10);
+		for (i = 0; i < n; i++)
+			pkg_free(p[i]);
+		return -1;
+	}
+	/* 5/8 of the size before the grow stays live */
+	keep = c0 * 5 / 8 / HGT_SHRINK_BLK;
+	if (keep > (unsigned long)n)
+		keep = n;
+	for (i = keep; i < n; i++)
+		pkg_free(p[i]);
+
+	hg_lock_enter(pb, HG_LK_POLICY);
+	for (i = 0; i < 16 && pb->committed_bytes >= grown; i++)
+		hg_shrink_tick(pb);
+	hg_lock_leave(pb);
+
+	for (i = 0; i < (int)keep; i++)
+		pkg_free(p[i]);
+	if (pb->committed_bytes >= grown) {
+		LM_ERR("the pkg arena did not shrink: %lu KB committed after growing "
+			"from %lu KB, %lu KB live\n", pb->committed_bytes >> 10,
+			c0 >> 10, (keep * HGT_SHRINK_BLK) >> 10);
+		return -1;
+	}
+	return 0;
+}
+
+static void test_hg_pkg_shrink(void)
+{
+	struct hg_block *pb = mem_block;
+
+	if (!pb || !hg_pkg_cap_bytes || hg_pkg_cap_bytes <= pb->committed_min) {
+		diag("pkg arena is fixed (-M without INIT:CAP), shrink not tested");
+		return;
+	}
+	ok(hgt_in_child("hg pkg shrink", hgt_child_pkg_shrink, NULL),
+		"a pkg arena that grew one step shrinks again with more live than "
+		"a step plus four floors would leave room for");
+}
+
+/*
  * A refused grow records its cause for last_grow_refusal: dry-run mode,
  * then a profile ceiling at the committed size (the cap, when committed is
  * the whole reservation). Borrowed fields are restored under the lock, so
@@ -857,6 +928,7 @@ void test_hg_malloc(void)
 	test_hg_cross_process_shm();
 	test_hg_large();
 	test_hg_grow();
+	test_hg_pkg_shrink();
 	test_hg_grow_refusal_cause();
 	test_hg_exit_returns_cells();
 	test_hg_san();

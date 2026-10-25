@@ -291,13 +291,16 @@ static unsigned long hg_buddy_punch_unlocks(struct hg_block *hb)
 /*
  * The shrink decision, once per sweep interval, hb->lock held. A tick is quiet
  * only if elastic bytes exist, nothing is starved (below the floor,
- * grow-blocked) and free space stays well clear of the floor even after a
- * granule goes back, so a shrink never re-triggers pressure. Any failed
- * condition, and any grow, resets the window.
+ * grow-blocked) and free space passes the drain's own gate (hg_drain_tick()).
+ * The release then re-checks every page against what it would leave
+ * (buddy_shrink_body()), so a shrink never re-triggers pressure; asking here
+ * for a whole grow step on top would keep any arena under about a step plus
+ * four floors from ever shrinking. Any failed condition, and any grow,
+ * resets the window.
  */
 static void shrink_tick_body(struct hg_block *hb)
 {
-	unsigned long granule_leaves;
+	unsigned long lpp = hg_leaves_per_page(hb);
 	unsigned int need_ticks;
 
 	if (!hb->buddy_ready || hb->shrink_unsupported)
@@ -330,21 +333,17 @@ static void shrink_tick_body(struct hg_block *hb)
 	}
 	if (hb->pol.active) {
 		/* the profile's quiet test: usage at or below its
-		 * down-threshold, and free space of at least a granule plus
+		 * down-threshold, and free space of at least a page plus
 		 * twice the floor */
 		if (hg_get_real_used(hb) * 100 > (unsigned long)hb->pol.down_pct *
 		                          hb->committed_bytes ||
-		    hb->buddy_free_leaves <
-		        (hb->grow_granule >> HG_LEAF_SHIFT) +
-		        hb->reserve_floor * 2) {
+		    hb->buddy_free_leaves < lpp + hb->reserve_floor * 2) {
 			hb->shrink_quiet = 0;
 			return;
 		}
 		need_ticks = hb->pol.down_cycles ? hb->pol.down_cycles : 1;
 	} else {
-		granule_leaves = hb->grow_granule >> HG_LEAF_SHIFT;
-		if (hb->buddy_free_leaves <
-		        granule_leaves + hb->reserve_floor * 4) {
+		if (hb->buddy_free_leaves < lpp + hb->reserve_floor * 4) {
 			hb->shrink_quiet = 0;
 			return;
 		}
