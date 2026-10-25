@@ -258,23 +258,6 @@ void hg_guard_bad(struct hg_block *hb, const void *cs, unsigned long cap,
 unsigned long long hg_hdr_secret;
 
 /*
- * Widen the [lo, hi] extent watermarks to cover a region just handed out.
- * Nothing reads them at present: the ownership tests use the fixed
- * reservation (hg_owns(), hg_owns_any()). Called from the buddy
- * layer, like hg_reserve_floor_check(), so the large tier is covered too.
- * hb->lock is held by every caller.
- */
-void hg_extent_note(struct hg_block *hb, void *base, unsigned long size)
-{
-	unsigned long b = (unsigned long)base;
-
-	if (b < hb->lo)
-		hb->lo = b;
-	if (b + size > hb->hi)
-		hb->hi = b + size;
-}
-
-/*
  * Flush this thread's caches in every arena it holds state for: no arena
  * argument, palloc_slots[] already lists them. MUST run on the owning
  * thread, as the caches are __thread; a worker calls it inline for itself
@@ -564,11 +547,6 @@ static int carve_chunk(struct hg_block *hb, int c, struct hg_palloc *pl)
 	hb->real_used += size;
 	if (hb->real_used > hb->max_real_used)
 		hb->max_real_used = hb->real_used;
-
-	if ((unsigned long)ch < hb->lo)
-		hb->lo = (unsigned long)ch;
-	if ((unsigned long)ch + size > hb->hi)
-		hb->hi = (unsigned long)ch + size;
 
 	/* the whole chunk goes to the carving thread's bump region */
 	pl->cls[c].bump = cells;

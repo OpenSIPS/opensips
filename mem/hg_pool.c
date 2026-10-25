@@ -38,11 +38,10 @@
 
 /*
  * Ownership is hg_owns() (hg_malloc.h), against the reservation's bounds,
- * fixed at init - not hb->lo/hi, which widen as chunks are carved and can
- * look too narrow to a lock-free reader. A cell of another hg arena has a
- * valid-looking class byte: taken here, its real owner would reuse it and
- * overwrite the free-list link. Refusing the free leaks one cell; accepting
- * it corrupts the pool.
+ * fixed at init, so a lock-free reader never sees them move. A cell of
+ * another hg arena has a valid-looking class byte: taken here, its real
+ * owner would reuse it and overwrite the free-list link. Refusing the free
+ * leaks one cell; accepting it corrupts the pool.
  */
 /* global pool ops - hb->lock must be held. Both take/return cell_start. */
 /* --- shared free cells, held per block and graded by fullness ---------- */

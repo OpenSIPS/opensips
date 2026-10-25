@@ -347,7 +347,6 @@ struct hg_block {
 	 */
 	struct hg_chunk *bucket[HG_NCLASSES][HG_GRADES];
 	unsigned int gpool_n[HG_NCLASSES];   /* free cells of the class, total */
-	unsigned long lo, hi;           /* extent watermarks, not read */
 
 	/* large-object tier (hg_large.c): independently carved chunks, each an
 	 * f_malloc-style boundary-tag heap, sharing ONE free list; all of it

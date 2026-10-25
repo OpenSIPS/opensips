@@ -595,7 +595,6 @@ struct hg_block *hg_malloc_init_cap(unsigned long size, unsigned long cap_req,
 	memset(hb, 0, sizeof *hb);
 	hb->name = name;
 	hb->size = size;
-	hb->lo = ~0UL;
 	hb->hbase = base;
 	/* one figure assigned to both: the span and the committed count part
 	 * ways only when a hole is punched, and nothing does that yet */

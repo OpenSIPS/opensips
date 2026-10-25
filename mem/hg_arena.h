@@ -73,9 +73,6 @@ extern volatile unsigned long hg_sweep_gen;
  * allocation and free, the one point every consumer passes. hb->lock held */
 void hg_reserve_floor_check(struct hg_block *hb);
 
-/* widen the [lo,hi] extent watermarks over a region just handed out; called
- * from the buddy layer so every consumer is covered. hb->lock held */
-void hg_extent_note(struct hg_block *hb, void *base, unsigned long size);
 /* flush the calling thread's caches if a sweep was published since its last
  * flush (one read of a global). For threads IPC cannot reach - TCP main's IO
  * pool waits on a condvar, not the reactor - at a job boundary */
