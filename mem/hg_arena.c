@@ -296,20 +296,28 @@ void hg_cache_flush_self(void)
 		 * the sweep timer alone, or every worker would tick it */
 		if (!hb->shared) {
 			/* latches or disarms GROW-BLOCKED, as the sweep timer
-			 * does for the shared arena */
-			hg_grow_blocked_tick(hb);
+			 * does for the shared arena - not for a copy inherited
+			 * at fork, which nothing allocates from */
+			if (!hb->inherited)
+				hg_grow_blocked_tick(hb);
 			/* a private arena has no maintenance process - its
 			 * owner's sweep is its policy cycle and its GC tick */
 			hg_gc_cycle(hb);
 			hg_gc_tick(hb, HG_GC_TICK_BUDGET);
-			hg_grow_tick(hb);
+			/* an inherited copy is never grown: frees of pre-fork
+			 * pointers are all that reach it. It still gives back
+			 * what those frees empty */
+			if (!hb->inherited)
+				hg_grow_tick(hb);
 			hg_shrink_tick(hb);
 #ifdef STATISTICS
 			/* the live peak, sampled once per sweep - see
 			 * hg_sample_live_peaks() for the shared arenas */
 			(void)hg_get_real_used(hb);
 #endif
-			if (!strcmp(hb->name, "pkg"))
+			/* the process's own pkg arena only: the copy has the
+			 * same name, and its figures are the parent's */
+			if (!hb->inherited && !strcmp(hb->name, "pkg"))
 				hg_pkg_publish(hb);
 		}
 		hg_lock_leave(hb);

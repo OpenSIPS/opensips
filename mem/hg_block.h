@@ -402,6 +402,11 @@ struct hg_block {
 	/* MAP_SHARED vs MAP_PRIVATE, as passed to hg_malloc_init(): a pkg
 	 * delta is per PROCESS, so the ceiling check multiplies it by nproc */
 	int                   shared;
+	/* set in a child for each private arena it inherited at fork (the
+	 * parent's pkg arena, COW): frees of pre-fork pointers still land in it,
+	 * nothing allocates from it, so no grow or GROW-BLOCKED policy and no
+	 * publishing (hg_cache_flush_self()); flush, GC and shrink still run */
+	int                   inherited;
 
 	/*
 	 * Elastic arena. committed_bytes is COMMITTED (pre-faulted, pinned,

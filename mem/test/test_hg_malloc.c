@@ -420,6 +420,63 @@ static void test_hg_pkg_shrink(void)
 }
 
 /*
+ * A child's copy of the parent's pkg arena is marked as inherited at fork,
+ * and its sweep neither grows it nor publishes its figures: nothing allocates
+ * from it. The copy is put under its headroom line by raising its floor for
+ * the one sweep, which grew it before the mark existed. In a child.
+ */
+static int hgt_child_inherited(void *arg)
+{
+	struct hg_block *own = mem_block, *copy = NULL;
+	unsigned long committed, grows, floor;
+	int i, fails = 0;
+
+	for (i = 0; i < HG_ARENA_REG_MAX; i++) {
+		struct hg_block *hb = hg_arena_reg[i].hb;
+
+		if (hb && !hb->shared && hb != own)
+			copy = hb;
+	}
+	if (!copy || !copy->inherited || own->inherited) {
+		LM_ERR("no inherited pkg arena marked as such (copy %p, %d; own %d)\n",
+			(void *)copy, copy ? copy->inherited : -1, own->inherited);
+		return -1;
+	}
+
+	committed = copy->committed_bytes;
+	grows = copy->grows;
+	hg_lock_enter(copy, HG_LK_POLICY);
+	floor = copy->reserve_floor;
+	copy->reserve_floor = copy->buddy_free_leaves;
+	hg_lock_leave(copy);
+	hg_cache_flush_self();
+	hg_lock_enter(copy, HG_LK_POLICY);
+	copy->reserve_floor = floor;
+	hg_lock_leave(copy);
+
+	if (copy->committed_bytes != committed || copy->grows != grows) {
+		LM_ERR("the inherited pkg arena grew: %lu -> %lu KB, %lu -> %lu "
+			"grows\n", committed >> 10, copy->committed_bytes >> 10, grows,
+			copy->grows);
+		fails++;
+	}
+	return fails ? -1 : 0;
+}
+
+static void test_hg_inherited(void)
+{
+	struct hg_block *pb = mem_block;
+
+	if (!pb || !hg_pkg_cap_bytes || hg_pkg_cap_bytes <= pb->committed_min) {
+		diag("pkg arena is fixed (-M without INIT:CAP), inherited copy not tested");
+		return;
+	}
+	ok(hgt_in_child("hg inherited", hgt_child_inherited, NULL),
+		"a child's copy of the parent's pkg arena is marked as inherited, "
+		"and its sweep does not grow it even under its headroom line");
+}
+
+/*
  * A refused grow records its cause for last_grow_refusal: dry-run mode,
  * then a profile ceiling at the committed size (the cap, when committed is
  * the whole reservation). Borrowed fields are restored under the lock, so
@@ -929,6 +986,7 @@ void test_hg_malloc(void)
 	test_hg_large();
 	test_hg_grow();
 	test_hg_pkg_shrink();
+	test_hg_inherited();
 	test_hg_grow_refusal_cause();
 	test_hg_exit_returns_cells();
 	test_hg_san();

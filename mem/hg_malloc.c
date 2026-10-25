@@ -786,16 +786,24 @@ void hg_malloc_child_init(struct hg_block *hb)
  * A module arena used before fork (e.g. loading data in mod_init) leaves
  * cells in the parent's private cache, and without the reset every child
  * would flush the same cells into the shared pool. Private (pkg) arenas
- * are skipped: the inherited copy is self-consistent private memory, and
- * the child's own pkg arena, created after this, must keep its slots.
+ * keep their slots: the inherited copy is self-consistent private memory, and
+ * the child's own pkg arena, created after this, must keep its slots. Every
+ * private arena registered at this point is such a copy, and is marked so.
  */
 void hg_malloc_child_init_all(void)
 {
 	int i;
 
-	for (i = 0; i < HG_ARENA_REG_MAX; i++)
-		if (hg_arena_reg[i].hb && hg_arena_reg[i].hb->shared)
-			hg_arena_child_init(hg_arena_reg[i].hb);
+	for (i = 0; i < HG_ARENA_REG_MAX; i++) {
+		struct hg_block *hb = hg_arena_reg[i].hb;
+
+		if (!hb)
+			continue;
+		if (hb->shared)
+			hg_arena_child_init(hb);
+		else
+			hb->inherited = 1;
+	}
 }
 
 #ifdef SHM_EXTRA_STATS
