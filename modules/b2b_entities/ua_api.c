@@ -352,8 +352,15 @@ struct ua_sess_t_list *insert_ua_sess_tl(str *b2b_key, unsigned int timeout)
 
 void remove_ua_sess_tl(struct ua_sess_t_list *tl)
 {
-	if (!tl || !ua_dlg_timer->first)
+	if (!tl)
 		return;
+
+	lock_get(ua_dlg_timer->lock);
+
+	if (tl->expired || !ua_dlg_timer->first) {
+		lock_release(ua_dlg_timer->lock);
+		return;
+	}
 
 	if (tl == ua_dlg_timer->first) {
 		if (tl->next)
@@ -371,6 +378,8 @@ void remove_ua_sess_tl(struct ua_sess_t_list *tl)
 			tl->next->prev = tl->prev;
 		}
 	}
+
+	lock_release(ua_dlg_timer->lock);
 
 	shm_free(tl);
 }
@@ -394,7 +403,9 @@ struct ua_sess_t_list *get_ua_sess_expired(unsigned int now)
 	}
 
 	for (tl = ua_dlg_timer->first; tl->next && tl->next->timeout <= now;
-		tl = tl->next) ;
+		tl = tl->next)
+		tl->expired = 1;
+	tl->expired = 1;
 
 	ret = ua_dlg_timer->first;
 
@@ -427,6 +438,27 @@ int ua_terminate_expired(str *b2b_key)
 	return 0;
 }
 
+/* the session no longer owns its timer entry once the timer took it */
+static void ua_sess_tl_release(struct ua_sess_t_list *tl)
+{
+	unsigned int hash_index, local_index;
+	b2b_table tables[2] = {server_htable, client_htable};
+	b2b_dlg_t *dlg;
+	int i;
+
+	if (b2b_parse_key(&tl->b2b_key, &hash_index, &local_index) == 0) {
+		for (i = 0; i < 2; i++) {
+			B2BE_LOCK_GET(tables[i], hash_index);
+			dlg = b2b_search_htable(tables[i], hash_index, local_index);
+			if (dlg && dlg->ua_timer_list == tl)
+				dlg->ua_timer_list = NULL;
+			B2BE_LOCK_RELEASE(tables[i], hash_index);
+		}
+	}
+
+	shm_free(tl);
+}
+
 void ua_dlg_timer_routine(unsigned int ticks, void* param)
 {
 	struct ua_sess_t_list *tl, *tmp;
@@ -439,7 +471,7 @@ void ua_dlg_timer_routine(unsigned int ticks, void* param)
 
 		tmp = tl;
 		tl = tl->next;
-		shm_free(tmp);
+		ua_sess_tl_release(tmp);
 	}
 }
 
