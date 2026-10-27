@@ -106,6 +106,8 @@ struct qm_frag {
 		struct qm_frag *nxt_free;
 		long is_free;
 	} u;
+	/* generation stamp of a used frag (see mem.h pkg_gen_*) */
+	unsigned long gen;
 #ifdef DBG_MALLOC
 	struct qm_frag_dbg dbg[QM_DBG_MALLOC_HIST];
 	unsigned long check;
@@ -175,6 +177,12 @@ void *qm_realloc(struct qm_block*, void *p, unsigned long size);
 void qm_status(struct qm_block*);
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void qm_status_dbg(struct qm_block*);
+#endif
+/* free every used fragment stamped with @gen (see mem.h);
+ * returns the number of bytes freed */
+unsigned long qm_sweep_gen(struct qm_block*, unsigned long gen);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+unsigned long qm_sweep_gen_dbg(struct qm_block*, unsigned long gen);
 #endif
 void qm_info(struct qm_block*, struct mem_info*);
 

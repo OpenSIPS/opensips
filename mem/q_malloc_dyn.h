@@ -125,6 +125,8 @@ void *qm_malloc(struct qm_block *qm, unsigned long size,
 		qm_detach_free(qm, f);
 		/*mark it as "busy"*/
 		f->u.is_free=0;
+		/* generation stamp, 0 outside a reload generation */
+		f->gen = pkg_gen_current;
 		qm->free_hash[hash].no--;
 		/* we ignore split return */
 
@@ -371,6 +373,8 @@ void *qm_realloc(struct qm_block *qm, void *p, unsigned long size,
 			if (ptr) {
 				/* copy, need by libssl */
 				memcpy(ptr, p, orig_size);
+				/* a moved object keeps its generation stamp */
+				QM_FRAG(ptr)->gen = f->gen;
 
 				#if !defined INLINE_ALLOC && defined DBG_MALLOC
 				qm_free_dbg(qm, p, file, func, line);
@@ -397,6 +401,58 @@ void *qm_realloc(struct qm_block *qm, void *p, unsigned long size,
 	pkg_threshold_check();
 	return p;
 }
+
+/* free every used fragment stamped with @gen; collect first,
+ * free second (a free joins neighbours and rewrites the walked headers) */
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+unsigned long qm_sweep_gen_dbg(struct qm_block *qm, unsigned long gen)
+#else
+unsigned long qm_sweep_gen(struct qm_block *qm, unsigned long gen)
+#endif
+{
+	struct qm_frag *f;
+	void **ptrs = NULL, **tmp;
+	unsigned long no = 0, sz = 0, bytes = 0, i;
+
+	if (!qm || gen==0)
+		return 0;
+
+	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag_end;
+	f=FRAG_NEXT(f)) {
+		if (f->u.is_free || f->gen!=gen)
+			continue;
+		if (no==sz) {
+			tmp = realloc(ptrs, (sz+4096)*sizeof(void*));
+			if (tmp==NULL) {
+				LM_ERR("no system memory for the sweep list, "
+					"%lu fragments of generation %lu stay allocated\n",
+					no, gen);
+				break;
+			}
+			ptrs = tmp;
+			sz += 4096;
+		}
+		ptrs[no++] = (char*)f + sizeof(struct qm_frag);
+		bytes += f->size;
+	}
+
+	for (i=0 ; i<no ; i++) {
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		qm_free_dbg(qm, ptrs[i], __FILE__, "qm_sweep_gen", __LINE__);
+		#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
+		qm_free(qm, ptrs[i]);
+		#else
+		qm_free(qm, ptrs[i], __FILE__, "qm_sweep_gen", __LINE__);
+		#endif
+	}
+
+	if (ptrs)
+		free(ptrs);
+	LM_DBG("%s: generation %lu, %lu fragments / %lu bytes freed\n",
+		qm->name, gen, no, bytes);
+	return bytes;
+}
+
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void qm_status_dbg(struct qm_block *qm)

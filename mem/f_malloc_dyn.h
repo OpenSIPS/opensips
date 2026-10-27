@@ -191,6 +191,10 @@ found:
 	fm_split_frag(fm, frag, size, file, "fm_malloc frag", line);
 	#endif
 
+	/* a used frag does not use the free-list link, so it holds
+	 * the generation stamp (0 outside a routes-reload generation) */
+	frag->u.reserved = (long)pkg_gen_current;
+
 	#ifdef DBG_MALLOC
 	frag->file=file;
 	frag->func=func;
@@ -405,6 +409,8 @@ void *fm_realloc(struct fm_block *fm, void *p, unsigned long size,
 			if (ptr) {
 				/* copy, need by libssl */
 				memcpy(ptr, p, orig_size);
+				/* a moved object keeps its generation stamp */
+				FM_FRAG(ptr)->u.reserved = f->u.reserved;
 
 				#if !defined INLINE_ALLOC && defined DBG_MALLOC
 				fm_free_dbg(fm, p, file, func, line);
@@ -435,6 +441,59 @@ void *fm_realloc(struct fm_block *fm, void *p, unsigned long size,
 	pkg_threshold_check();
 	return p;
 }
+
+/* free every used fragment stamped with @gen. Two passes: the
+ * walk collects the pointers first (a free may join its neighbours and
+ * rewrite the headers the walk steps through), then frees them through the
+ * regular free path, so joins and stats stay exact. */
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+unsigned long fm_sweep_gen_dbg(struct fm_block *fm, unsigned long gen)
+#else
+unsigned long fm_sweep_gen(struct fm_block *fm, unsigned long gen)
+#endif
+{
+	struct fm_frag *f;
+	void **ptrs = NULL, **tmp;
+	unsigned long no = 0, sz = 0, bytes = 0, i;
+
+	if (!fm || gen==0)
+		return 0;
+
+	for (f=fm->first_frag; (char*)f<(char*)fm->last_frag; f=FRAG_NEXT(f)) {
+		if (frag_is_free(f) || (unsigned long)f->u.reserved!=gen)
+			continue;
+		if (no==sz) {
+			tmp = realloc(ptrs, (sz+4096)*sizeof(void*));
+			if (tmp==NULL) {
+				LM_ERR("no system memory for the sweep list, "
+					"%lu fragments of generation %lu stay allocated\n",
+					no, gen);
+				break;
+			}
+			ptrs = tmp;
+			sz += 4096;
+		}
+		ptrs[no++] = (char*)f + sizeof(struct fm_frag);
+		bytes += f->size;
+	}
+
+	for (i=0 ; i<no ; i++) {
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		fm_free_dbg(fm, ptrs[i], __FILE__, "fm_sweep_gen", __LINE__);
+		#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
+		fm_free(fm, ptrs[i]);
+		#else
+		fm_free(fm, ptrs[i], __FILE__, "fm_sweep_gen", __LINE__);
+		#endif
+	}
+
+	if (ptrs)
+		free(ptrs);
+	LM_DBG("%s: generation %lu, %lu fragments / %lu bytes freed\n",
+		fm->name, gen, no, bytes);
+	return bytes;
+}
+
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void fm_status_dbg(struct fm_block *fm)

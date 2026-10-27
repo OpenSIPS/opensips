@@ -39,6 +39,7 @@ static script_var_t *script_vars = 0;
 script_var_t* add_var(const str *name)
 {
 	script_var_t *it;
+	unsigned long g;
 
 	if(name==0 || name->s==0 || name->len<=0)
 		return 0;
@@ -49,14 +50,19 @@ script_var_t* add_var(const str *name)
 				&& strncmp(name->s, it->name.s, name->len)==0)
 			return it;
 	}
+	/* the script vars registry outlives any reloaded script tree: keep it
+	   out of the tree's pkg generation */
+	g = pkg_gen_suspend();
 	it = (script_var_t*)pkg_malloc(sizeof(script_var_t));
 	if(it==0)
 	{
+		pkg_gen_resume(g);
 		LM_ERR("out of pkg mem\n");
 		return 0;
 	}
 	memset(it, 0, sizeof(script_var_t));
 	it->name.s = (char*)pkg_malloc((name->len+1)*sizeof(char));
+	pkg_gen_resume(g);
 	it->v.flags = VAR_VAL_NULL;
 
 	if(it->name.s==0)

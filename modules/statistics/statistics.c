@@ -548,6 +548,7 @@ static int fixup_iter_param(void **param)
 {
 	struct list_head *ele;
 	struct stat_iter *iter;
+	unsigned long g;
 
 	list_for_each(ele, &script_iters) {
 		iter = list_entry(ele, struct stat_iter, list);
@@ -558,17 +559,23 @@ static int fixup_iter_param(void **param)
 		}
 	}
 
+	/* script_iters outlives any reloaded script tree: keep its nodes out
+	   of the tree's pkg generation */
+	g = pkg_gen_suspend();
 	iter = pkg_malloc(sizeof *iter);
 	if (!iter) {
+		pkg_gen_resume(g);
 		LM_ERR("oom!\n");
 		return E_OUT_OF_MEM;
 	}
 	memset(iter, 0, sizeof *iter);
 
 	if (pkg_str_dup(&iter->name, (str*)*param) < 0) {
+		pkg_gen_resume(g);
 		LM_ERR("oom!\n");
 		return E_OUT_OF_MEM;
 	}
+	pkg_gen_resume(g);
 
 	list_add(&iter->list, &script_iters);
 
