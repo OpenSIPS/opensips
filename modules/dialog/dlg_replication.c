@@ -249,11 +249,10 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 			get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag, &dlg);
 
 		if (dlg) {
-			if (pkg_ver >= DLG_BIN_V4 &&
-			dlg_repl_id_collision(dlg, &callid, &from_tag, "create")) {
-				dlg_unlock(d_table, d_entry);
-				return 0;
-			}
+			/* another call with this id: only log it; the local dialog still
+			 * gets the sync flags below, or SYNC_DONE would drop it */
+			if (pkg_ver >= DLG_BIN_V4)
+				dlg_repl_id_collision(dlg, &callid, &from_tag, "create");
 
 			LM_DBG("Dialog with ci '%.*s' is already created\n",
 			       callid.len, callid.s);
