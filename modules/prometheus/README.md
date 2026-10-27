@@ -385,34 +385,66 @@ route[my_custom_prometheus_route] {
 
 #### prometheus_push_histogram_stat(value, suffix, [label_name], [label_value])
 
-Pushes one pre-aggregated Prometheus histogram series for the family most
-recently declared by `prometheus_declare_stat(name, "histogram")` in the
-configured scrape script route. Supported suffixes are `_bucket`,
-`_sum` and `_count`. For bucket series, provide the `le` label.
-You can also supply an entire label block using the raw
-`label_name` argument, like `{le="50",gateway="gw1"}`.
 
-This function **does not observe latencies or aggregate buckets**. It
-serializes integer values already maintained by the caller. Histogram
-buckets must be cumulative, include a `+Inf` bucket, and the
-`_count` value must equal the final bucket count. Use the same
-unit for `_sum` and bucket bounds.
+> [!NOTE]
+> This function can only be used in the
+> route declared in the [script_route](#script_routestring) parameter.
 
-```opensips
+
+Pushes one series of a pre-aggregated histogram (a bucket, the sum or
+the count) to the Prometheus server, using the name of the statistic
+most recently declared with
+`prometheus_declare_stat(name, "histogram")`.
+
+
+> [!NOTE]
+> A statistic's value should only be pushed
+> after it had been declared using the
+> [prometheus_declare_stat()](#prometheus_declare_statname-type-help) function.
+
+
+> [!NOTE]
+> This function is only a formatting helper: it does not observe
+> values or aggregate buckets, it only exports integer values already
+> maintained by the script. Buckets must be cumulative, include a
+> `+Inf` bucket, and the `_count` value must equal the `+Inf` bucket.
+> Use the same unit for `_sum` and for the bucket bounds.
+
+
+Parameters
+
+
+- *value* (integer) - the value of the series
+*suffix* (string) - the histogram series to push:
+*_bucket*, *_sum* or *_count*. Any other value is rejected.
+*label_name* (string, optional) - same as for
+[prometheus_push_stat()](#prometheus_push_statvalue-label_name-label_value).
+Bucket series must carry the *le* label.
+*label_value* (string, optional) - the value that
+should be used for the *label_name* parameter label.
+
+
+This function can only be used in the request
+route declared in the [script_route](#script_routestring) parameter.
+
+
+```opensips title="prometheus_push_histogram_stat usage"
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
 route[my_custom_prometheus_route] {
-    prometheus_declare_stat("opensips_invite_latency_ms", "histogram",
-        "Aggregated INVITE processing latency in milliseconds");
-    prometheus_push_histogram_stat($stat(invite_le_50), "_bucket", "le", "50");
-    prometheus_push_histogram_stat($stat(invite_le_100), "_bucket", "le", "100");
-    prometheus_push_histogram_stat($stat(invite_total), "_bucket", "le", "+Inf");
-    prometheus_push_histogram_stat($stat(invite_sum_ms), "_sum");
-    prometheus_push_histogram_stat($stat(invite_total), "_count");
+	...
+	prometheus_declare_stat("opensips_invite_latency_ms", "histogram",
+		"Aggregated INVITE processing latency in milliseconds");
+	prometheus_push_histogram_stat($stat(invite_le_50), "_bucket", "le", "50");
+	prometheus_push_histogram_stat($stat(invite_le_100), "_bucket", "le", "100");
+	prometheus_push_histogram_stat($stat(invite_total), "_bucket", "le", "+Inf");
+	prometheus_push_histogram_stat($stat(invite_sum_ms), "_sum");
+	prometheus_push_histogram_stat($stat(invite_total), "_count");
+	...
 }
 ```
 
-The example assumes that the referenced statistics are already updated by
-the deployment. This is a formatting helper, not a built-in latency
-Histogram recorder.
 
 ### Examples
 
