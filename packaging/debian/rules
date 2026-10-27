@@ -129,6 +129,13 @@ ifeq ($(shell test $(MAJOR_RELEASE) -ge $(REL_STRETCH_OR_XENIAL); echo $$?),0)
 endif
 
 #
+# GRPC_CLIENT package
+#
+ifneq (,$(filter grpc-client,$(DEB_BUILD_PROFILES)))
+	STANDALONE_MODULES += grpc_client
+endif
+
+#
 # OPENTELEMETRY package
 #
 ifneq (,$(filter opentelemetry,$(DEB_BUILD_PROFILES)))

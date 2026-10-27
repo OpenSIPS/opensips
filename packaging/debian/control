@@ -28,6 +28,7 @@ Build-Depends: bison,
                libjwt-dev | base-files,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
+               libgrpc++-dev (>= 1.40.0) <grpc-client>,
                opentelemetry-cpp-dev <opentelemetry>,
                libpcre2-dev,
                libperl-dev,
@@ -69,6 +70,7 @@ Suggests: opensips-module-auth-jwt,
           opensips-modules-diameter,
           opensips-module-emergency,
           opensips-module-mmgeoip,
+          opensips-module-grpc-client,
           opensips-modules-http,
           opensips-module-identity,
           opensips-module-proto-ipsec,
@@ -394,6 +396,16 @@ Replaces: opensips-geoip-module (<< ${binary:Version})
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: OpenSIPS mmgeoip module
  This package contains only the mmgeoip loadable module for OpenSIPS.
+
+Package: opensips-module-grpc-client
+Architecture: any
+Multi-Arch: same
+Build-Profiles: <grpc-client>
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS grpc_client module
+ This package contains only the grpc_client loadable module for OpenSIPS.
 
 Package: opensips-module-httpd
 Architecture: any
