@@ -34,7 +34,8 @@
  */
 ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
              unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags,
-			 str *ownership_tag, struct ct_match *cmatch)
+			 str *ownership_tag, struct ct_match *cmatch,
+			 int _min_exp, int _max_exp)
 {
 	static ucontact_info_t ci;
 	static str no_ua = str_init("n/a");
@@ -133,7 +134,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 		}
 
 		/* set expire time, with an optional random deviation */
-		ci.expires = randomize_expires(_e);
+		ci.expires = randomize_expires(_e, _min_exp, _max_exp);
 
 		if (pn_enable && _reg_flags & REG_SAVE__PN_ON_FLAG) {
 			ci.flags |= FL_PN_ON;
