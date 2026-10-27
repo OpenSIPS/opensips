@@ -93,6 +93,10 @@ struct ct_match {
 	} mode;
 
 	str_list *match_params;
+
+	str instance;	/* if non-empty, a stored contact with this exact
+			   +sip.instance value is the same registration (RFC 5626)
+			   even if its Contact URI differs */
 };
 
 

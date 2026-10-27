@@ -602,6 +602,14 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	else
 		bin_pop_ctmatch(packet, &cmatch);
 
+	/* the contact record itself carries +sip.instance (pushed in
+	 * bin_push_contact); match on it so a sender-side instance-based
+	 * rewrite of the Contact URI still finds the old contact here.
+	 * No bin format change: the instance is taken from ci, not from
+	 * the wire-encoded ct_match. */
+	cmatch.instance = ci.instance;
+	ci.c = &contact_str;
+
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;
 
@@ -768,6 +776,14 @@ static int receive_ucontact_update(bin_packet_t *packet)
 		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
+
+	/* see receive_ucontact_insert: match by the +sip.instance carried in
+	 * the contact record, so a sender-side URI rewrite reaches this
+	 * contact instead of landing as a duplicate insert */
+	cmatch.instance = ci.instance;
+	/* the packet's contact string is the sender's post-update URI; apply
+	 * it too, so this node keeps the same (rewritten) URI */
+	ci.c = &contact_str;
 
 	lock_udomain(domain, &aor);
 
