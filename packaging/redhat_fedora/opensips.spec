@@ -1165,6 +1165,7 @@ fi
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
+%{_libdir}/opensips/modules/media_security.so
 %{_libdir}/opensips/modules/sqlops.so
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
@@ -1269,6 +1270,7 @@ fi
 %doc docdir/README.alias_db
 %doc docdir/README.auth_aaa
 %doc docdir/README.auth_db
+%doc docdir/README.media_security
 %doc docdir/README.sqlops
 %doc docdir/README.b2b_entities
 %doc docdir/README.b2b_logic
