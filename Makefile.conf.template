@@ -10,6 +10,7 @@
 #cachedb_redis= Implementation of a cache system designed to work with Redis servers | Redis client library, hiredis
 #carrierroute= Provides routing, balancing and blacklisting capabilities. | libconfuse, a configuration file parser library
 #cgrates= Provides integration with the CGRateS billing/rating engine. | JSON library, libjson
+#clusterer_controller= Zero-config HA control of the clusterer and its sharing tags over encrypted UDP multicast (Linux only) | libsodium development library, typically libsodium-dev
 #compression= Implements SIP message compression/decompression and base64 encoding | zlib dev library, typically zlib1g-dev
 #cpl_c= Implements a CPL (Call Processing Language) interpreter | library for parsing XML files, typically libxml2 and libxml2-devel
 #db_berkeley= Integrates the Berkeley DB into OpenSIPS | Berkeley embedded database
@@ -76,7 +77,7 @@
 #uuid= UUID generator | uuid-dev
 
 # Modules omitted from the default build, generally due to external dependencies.
-exclude_modules?= aaa_diameter aaa_radius auth_jwt auth_web3 b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc mmgeoip opentelemetry osp perl pi_http presence presence_dialoginfo presence_mwi presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python regex rabbitmq_consumer rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
+exclude_modules?= aaa_diameter aaa_radius auth_jwt auth_web3 b2b_logic_xml cachedb_cassandra cachedb_couchbase cachedb_dynamodb cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates clusterer_controller compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka event_sqs h350 httpd http2d identity jabber json launch_darkly ldap lua mi_xmlrpc mmgeoip opentelemetry osp perl pi_http presence presence_dialoginfo presence_mwi presence_reginfo presence_xml presence_dfks proto_ipsec proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_reginfo pua_usrloc pua_xmpp python regex rabbitmq_consumer rest_client rls rtp.io siprec sngtc snmpstats stir_shaken tls_mgm tls_openssl tls_wolfssl uuid xcap xcap_client xml xmpp
 
 # Modules forced into the build, even when also listed in exclude_modules.
 include_modules?=
