@@ -1,0 +1,28 @@
+name: OpenTelemetry exporter tools
+
+on:
+  pull_request:
+    paths:
+      - 'tools/otel-exporter/**'
+      - '.github/workflows/otel-exporter-tools.yml'
+  push:
+    paths:
+      - 'tools/otel-exporter/**'
+      - '.github/workflows/otel-exporter-tools.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python3 -m unittest discover -s tools/otel-exporter -p 'test_*.py' -v
+      - name: Syntax check
+        run: python3 -m py_compile tools/otel-exporter/exporter.py tools/otel-exporter/test_exporter.py
