@@ -238,7 +238,8 @@ void mid_reg_ct_event(void *binding, ul_cb_type type, ul_cb_extra *_)
 	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)
 	        && reg_mode == MID_REG_THROTTLE_CT) {
 		skip_dereg = ul.get_ucontact_key(c, &ul_key_skip_dereg);
-		if ((skip_dereg && skip_dereg->i == 1) || !ul.is_my_ucontact(c))
+		if ((skip_dereg && skip_dereg->i == 1) || !ul.is_my_ucontact(c)
+		        || !mid_reg_shtag_is_active())
 			return;
 
 		if (unregister_contact(c) != 0)
@@ -262,7 +263,7 @@ void mid_reg_aor_event(void *binding, ul_cb_type type, ul_cb_extra *_)
 
 	if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
 		skip_dereg = ul.get_urecord_key(r, &ul_key_skip_dereg);
-		if (skip_dereg && skip_dereg->i == 1)
+		if ((skip_dereg && skip_dereg->i == 1) || !mid_reg_shtag_is_active())
 			return;
 
 		if (unregister_record(r) != 0)
