@@ -1,0 +1,43 @@
+/*
+ * HG_MALLOC unit tests
+ *
+ * Copyright (C) 2026 Yury Kirsanov
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
+ */
+
+#ifndef __TEST_HG_MALLOC_H__
+#define __TEST_HG_MALLOC_H__
+
+#include "test_hg_fuzz.h"
+
+/* children forked by test_hg_malloc(), one at a time, each in a slot of its
+ * own (pt.c reserves them): pre-fork pkg, shm free, pkg shrink, inherited
+ * pkg, exit, double free, large double free, cell header, the two
+ * HG_MALLOC_DBG checks and the guard - plus the fuzz test's */
+#define TEST_HG_MALLOC_PROCS  (11 + TEST_HG_FUZZ_PROCS)
+
+/* non-zero when HG_MALLOC (or HG_MALLOC_DBG) serves both pkg and shm */
+int hg_ut_selected(void);
+
+/* run @fn(@arg) in a child forked like an OpenSIPS worker: 1 if it returned
+ * 0, 0 if it failed, crashed or timed out */
+int hgt_in_child(char *desc, int (*fn)(void *), void *arg);
+
+void test_hg_malloc(void);
+
+#endif /* __TEST_HG_MALLOC_H__ */

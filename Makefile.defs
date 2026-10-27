@@ -564,6 +564,9 @@ MKTAGS=ctags -R .
 #		decently fast allocator with extra sanity checks + safety buffers
 # -DHP_MALLOC
 #		high performance allocator optimized for shared memory multiprocessing
+# -DHG_MALLOC
+#		slab allocator with a lock-free fast path and elastic arenas
+#		(-m INIT:CAP), on huge pages when the host provides them
 # -DDBG_MALLOC
 #       will cause each of the enabled allocators to also include a "debugging"
 #       flavor of itself;  by running a debugging version of an allocator, you
