@@ -1237,6 +1237,217 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 ```
 
 
+#### rtpengine_subscribe_request([flags[, sock_var[, body_var[, tag_var]]]])
+
+
+Creates a media subscription - a copy of the media of one or more
+participants of an existing call - using the RTP *subscribe request*
+command. This is the first step of a two-step exchange: RTP replies with an
+offer SDP describing the copied (*sendonly*) media, and the subscription is
+completed with
+[rtpengine_subscribe_answer()](#rtpengine_subscribe_answerflags-sock_var-body_var).
+
+
+The subscription is identified by its own tag, which is never one of the
+tags of the call's legs. Unless *to-tag=* is given, RTP generates it and the
+function returns it in *tag_var*; it must then be passed, as *to-tag=*, to
+[rtpengine_subscribe_answer()](#rtpengine_subscribe_answerflags-sock_var-body_var) and
+[rtpengine_unsubscribe()](#rtpengine_unsubscribeflags-sock_var).
+
+
+The media to copy (the source) is selected with:
+- *from-tag=...* - the participant with this tag. This is the default,
+with the tag of the message's From header.
+- *all* - all the participants of the call. The offer SDP then holds one
+*m=* line per participant, and the answer must hold matching ones.
+- *from-tags=[tag1 tag2]* or *label=...* - the given participants.
+
+The call is the one of the message's Call-ID, or the one given with
+*call-id=...*. The tags of the message are used for nothing else, so the
+function can be called from requests and replies, in or out of dialog.
+
+
+Codec transcoding can be requested for the copied media only, with
+*codec=[transcode=[...]]*: for example, *codec=[transcode=[L16/16000]]*
+delivers 16-bit linear PCM at 16 kHz (e.g. to an ASR engine), while the
+call itself keeps its own codecs.
+
+
+> [!IMPORTANT]
+> As for any other media endpoint, RTP only starts sending the copied
+> media once the subscriber's address is confirmed (latched): the
+> subscriber has to send at least one RTP packet to the address and port of
+> the offer SDP. The *trust-address* flag of the subscribe answer may make
+> this unnecessary in some setups.
+
+
+Meaning of the parameters is as follows:
+
+
+- *flags(string, optional)* - the flags described above, plus any other
+flag RTP accepts for this command.
+- *sock_var(var, optional)* - variable used to store/retrieve the RTP
+socket chosen for this call. Pass the same variable to
+[rtpengine_subscribe_answer()](#rtpengine_subscribe_answerflags-sock_var-body_var) and [rtpengine_unsubscribe()](#rtpengine_unsubscribeflags-sock_var), so all the
+commands of one subscription reach the same RTP node.
+- *body_var(var, optional)* - variable that receives the offer SDP of the
+subscription.
+- *tag_var(var, optional)* - variable that receives the tag of the
+subscription.
+
+
+The function fails if RTP refuses the request, if the reply lacks the SDP or
+the tag asked for, or if they cannot be stored in the variables.
+
+
+This function can be used from any route.
+
+
+```opensips title="rtpengine_subscribe_request usage"
+...
+# copy the caller's media of the current call
+if (rtpengine_subscribe_request("from-tag=$ft", $var(rtpe_sock),
+		$var(offer_sdp), $var(sub_tag))) {
+	xlog("subscription $var(sub_tag) offers: $var(offer_sdp)\n");
+	# send $var(offer_sdp) to the subscriber, then complete the
+	# subscription with its answer (see rtpengine_subscribe_answer())
+}
+...
+```
+
+
+```opensips title="rtpengine_subscribe_request with the all flag and L16 transcoding"
+...
+# copy every participant, transcoded to L16/16000 (e.g. for an ASR engine)
+if (rtpengine_subscribe_request("all codec=[transcode=[L16/16000]]",
+		$var(rtpe_sock), $var(offer_sdp), $var(sub_tag))) {
+	# one m= line per participant, on consecutive ports
+	$var(port) = 20000;
+	$var(port2) = $var(port) + 2;
+	$var(answer_sdp) = "v=0\r\no=- 1 1 IN IP4 192.0.2.100\r\ns=-\r\n"
+		+ "c=IN IP4 192.0.2.100\r\nt=0 0\r\n"
+		+ "m=audio " + $var(port) + " RTP/AVP 96\r\n"
+		+ "a=rtpmap:96 L16/16000\r\na=recvonly\r\n"
+		+ "m=audio " + $var(port2) + " RTP/AVP 96\r\n"
+		+ "a=rtpmap:96 L16/16000\r\na=recvonly\r\n";
+
+	rtpengine_subscribe_answer("to-tag=$var(sub_tag) allow-transcoding",
+		$var(rtpe_sock), $var(answer_sdp));
+}
+...
+```
+
+
+#### rtpengine_subscribe_answer(flags, [sock_var[, body_var]])
+
+
+Completes a subscription started by
+[rtpengine_subscribe_request()](#rtpengine_subscribe_requestflags-sock_var-body_var-tag_var),
+using the RTP *subscribe answer* command. The answer SDP tells RTP where to
+send the copied media; it normally has the *recvonly* direction.
+
+
+Meaning of the parameters is as follows:
+
+
+- *flags(string)* - must contain *to-tag=...*, the tag of the
+subscription; without it the function fails before anything is sent to
+RTP. Other useful flags: *allow-transcoding*, *trust-address*.
+- *sock_var(var, optional)* - the variable passed to
+[rtpengine_subscribe_request()](#rtpengine_subscribe_requestflags-sock_var-body_var-tag_var).
+- *body_var(var, optional)* - variable holding the answer SDP. Without it,
+the body of the message is used.
+
+
+This function can be used from any route.
+
+
+```opensips title="rtpengine_subscribe_answer usage"
+...
+# the subscriber receives the copied media on 192.0.2.100:20000
+$var(answer_sdp) = "v=0\r\no=- 1 1 IN IP4 192.0.2.100\r\ns=-\r\n"
+	+ "c=IN IP4 192.0.2.100\r\nt=0 0\r\n"
+	+ "m=audio 20000 RTP/AVP 0\r\na=recvonly\r\n";
+
+if (!rtpengine_subscribe_answer("to-tag=$var(sub_tag)", $var(rtpe_sock),
+		$var(answer_sdp)))
+	xlog("subscription $var(sub_tag) could not be completed\n");
+...
+```
+
+
+#### rtpengine_unsubscribe(flags, [sock_var])
+
+
+Removes a subscription created by
+[rtpengine_subscribe_request()](#rtpengine_subscribe_requestflags-sock_var-body_var-tag_var),
+using the RTP *unsubscribe* command. RTP stops sending the copied media; the
+call itself is not affected. Subscriptions also end with the call.
+
+
+Meaning of the parameters is as follows:
+
+
+- *flags(string)* - must contain *to-tag=...*, the tag of the
+subscription; without it the function fails before anything is sent to
+RTP. Note that RTP accepts an unknown subscription tag.
+- *sock_var(var, optional)* - the variable passed to
+[rtpengine_subscribe_request()](#rtpengine_subscribe_requestflags-sock_var-body_var-tag_var).
+
+
+This function can be used from any route.
+
+
+```opensips title="rtpengine_unsubscribe usage"
+...
+rtpengine_unsubscribe("to-tag=$var(sub_tag)", $var(rtpe_sock));
+...
+```
+
+
+#### rtpengine_publish([flags[, sock_var[, body_var]]])
+
+
+Publishes a media stream using the RTP *publish* command: the publisher
+offers a *sendonly* SDP, and RTP answers with a *recvonly* SDP telling where
+to send the media. Published media can then be copied to other parties
+with
+[rtpengine_subscribe_request()](#rtpengine_subscribe_requestflags-sock_var-body_var-tag_var).
+
+
+The publisher is identified by *from-tag=...*, by default the tag of the
+message's From header, and the call by *call-id=...*, by default the
+message's Call-ID. The message's To tag is never sent. Note that RTP
+creates the call if it does not exist yet.
+
+
+Meaning of the parameters is as follows:
+
+
+- *flags(string, optional)* - flags for the command, e.g. *from-tag=...*
+and *call-id=...*.
+- *sock_var(var, optional)* - variable used to store/retrieve the RTP
+socket chosen for this call.
+- *body_var(var, optional)* - on input, the SDP to publish; on output, the
+answer SDP of RTP. Without it, the SDP is taken from the body of the
+message and the answer is not returned.
+
+
+This function can be used from any route.
+
+
+```opensips title="rtpengine_publish usage"
+...
+# the INVITE of a publisher, with a sendonly SDP
+if (is_method("INVITE") && has_body("application/sdp")) {
+	$var(pub_sdp) = $rb(application/sdp);
+	if (rtpengine_publish(, $var(rtpe_sock), $var(pub_sdp)))
+		xlog("publish answer: $var(pub_sdp)\n");
+}
+...
+```
+
+
 ### Exported Asynchronous Functions
 
 
