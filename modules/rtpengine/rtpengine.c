@@ -2959,6 +2959,34 @@ error:
 	return -1;
 }
 
+#ifdef UNIT_TESTS
+int rtpe_test_build_request(bencode_buffer_t *buf, struct sip_msg *msg,
+		const char *cmd, str *flags, str *body, bencode_item_t **dict)
+{
+	struct ng_flags_parse ng_flags;
+	char *err = NULL;
+	int op;
+
+	for (op = 0; op < sizeof(command_strings)/sizeof(command_strings[0]); op++)
+		if (command_strings[op] && !strcmp(cmd, command_strings[op]))
+			break;
+	if (op == sizeof(command_strings)/sizeof(command_strings[0]))
+		return -1;
+
+	memset(&ng_flags, 0, sizeof ng_flags);
+	if (rtpe_function_call_prepare(buf, msg, op, &ng_flags, flags, body,
+			NULL, &err) < 0) {
+		if (err)
+			LM_DBG("request refused: %s\n", err);
+		bencode_buffer_free(buf);
+		return -1;
+	}
+
+	*dict = ng_flags.dict;
+	return 0;
+}
+#endif
+
 static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_msg *msg,
 	enum rtpe_operation op, str *flags_str, str *body_in, pv_spec_t *spvar,
 	struct rtpe_set *set, str *snode, bencode_item_t *extra_dict)
