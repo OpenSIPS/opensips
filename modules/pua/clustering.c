@@ -243,3 +243,11 @@ void replicate_pres_change(ua_pres_t* pres)
 }
 
 
+int pua_is_shtag_active(void)
+{
+	if (!is_pua_cluster_enabled())
+		return 1;
+
+	return c_api.shtag_get(&pua_sh_tag, pua_cluster_id) ==
+		SHTAG_STATE_ACTIVE ? 1 : 0;
+}
