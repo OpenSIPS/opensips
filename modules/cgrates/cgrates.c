@@ -129,6 +129,7 @@ static const param_export_t params[] = {
 	{"max_async_connections", INT_PARAM, &cgrc_max_conns },
 	{"retry_timeout", INT_PARAM, &cgre_retry_tout },
 	{"compat_mode", INT_PARAM, &cgre_compat_mode },
+	{"usage_precision", STR_PARAM, &cgr_usage_precision_s },
 	{0, 0, 0}
 };
 

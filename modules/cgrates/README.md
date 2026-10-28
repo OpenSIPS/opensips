@@ -287,6 +287,32 @@ modparam("cgrates", "compat_mode", 1)
 ```
 
 
+#### usage_precision (string)
+
+
+The precision of the *Usage* field sent to CGRateS when a
+`cgrates_acc()` session is terminated and in the CDR. The value is
+sent as a Go duration string, so CGRateS applies its own rate increment
+on top of it. Possible values are seconds (*s*),
+milliseconds (*ms*) or microseconds (*us*).
+
+ie, the usage of a call with 8.6s is reported as follows
+- seconds *s*: 8
+- milliseconds *ms*: 8600
+- microseconds *us*: 8600000
+
+*Default value is "ms".*
+
+
+```opensips title="Set usage_precision parameter"
+...
+modparam("cgrates", "usage_precision", "s") 	# seconds
+modparam("cgrates", "usage_precision", "ms")	# milliseconds
+modparam("cgrates", "usage_precision", "us")	# microseconds
+...
+```
+
+
 ### Exported Functions
 
 
