@@ -304,6 +304,12 @@ int ipc_send_rpc_all(ipc_rpc_f *rpc, void *param)
 	for (p = 1; p < counted_max_processes; p++) {
 		if (pt[p].flags & OSS_PROC_NO_IPC)
 			continue;
+		/* a free or never used slot (e.g. auto-scaling headroom) holds no
+		 * process and has no pipe: there is nothing to wait for.  A slot
+		 * being forked gets its pipes before its pid, so it is not
+		 * skipped here */
+		if (pt[p].pid == -1 && IPC_FD_WRITE(p) < 0)
+			continue;
 		if (p == process_no) {
 			/* run line the cmd for the proc itself */
 			rpc(process_no, param);
