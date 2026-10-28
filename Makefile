@@ -115,7 +115,7 @@ endif
 all_modules_to_build=$(selected_module_paths)
 
 modules_basenames=$(notdir $(modules))
-db_module_paths=$(filter %/db_%,$(modules))
+db_module_paths=$(filter modules/db_% modules-contrib/db_%,$(modules))
 modules_full_path=$(foreach m,$(modules),$(m)/$(notdir $(m)).so)
 
 ALLDEP=Makefile Makefile.sources Makefile.defs Makefile.rules Makefile.conf $(deps_gen)
