@@ -574,8 +574,10 @@ static inline char *proto2a(int proto)
 }
 
 
-#define MAX_SOCKET_STR ( 4 + 1 + IP_ADDR_MAX_STR_SIZE+1+INT2STR_MAX_LEN+1)
-#define sock_str_len(_sock,_type) (3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
+/* proto:name:port, where name is an IP, an advertised hostname (up to 255
+ * chars, RFC 1035) or a tag; the proto is budgeted at its longest name */
+#define MAX_SOCKET_STR (PROTO_NAME_MAX_SIZE + 1 + 255 + 1 + INT2STR_MAX_LEN + 1)
+#define sock_str_len(_sock,_type) (PROTO_NAME_MAX_SIZE + 1 + \
 		(((_type)==0) ? (_sock)->address_str.len + (_sock)->port_no_str.len + 1 : \
 				(((_type)==1) ? (_sock)->adv_name_str.len + (_sock)->adv_port_str.len + 1 : \
 						(_sock)->tag.len)))
@@ -599,6 +601,10 @@ static inline char* socket2str(const struct socket_info *sock, char *s, int *len
 		}
 		p = p1 = s;
 	} else {
+		if ( sock_str_len(sock,type) > (int)sizeof(buf) ) {
+			LM_ERR("socket name too long\n");
+			return 0;
+		}
 		p = p1 = buf;
 	}
 
