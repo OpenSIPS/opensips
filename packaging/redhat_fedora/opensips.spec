@@ -2060,7 +2060,7 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__m
 # Generate the dependency-free contrib package manifest. Modules listed in
 # STANDALONE_CONTRIB_MODULES must have opensips-module-contrib-<module>
 # declarations and explicit package file lists below.
-: > modules-contrib.files
+echo '%defattr(-,root,root,-)' > modules-contrib.files
 for module_dir in modules-contrib/*; do
   test -f "$module_dir/Makefile" || continue
   module_name=$(basename "$module_dir")
