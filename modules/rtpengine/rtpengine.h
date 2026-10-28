@@ -87,4 +87,13 @@ struct rtpe_version_head{
 
 #define RTPENGINE_TABLE_VERSION 1
 
+#ifdef UNIT_TESTS
+struct sip_msg;
+/* builds, without sending it, the ng request that the @cmd command (e.g.
+ * "subscribe request") would send for @msg, @flags and @body; returns 0 and
+ * the request in @dict (owned by @buf), or -1 if the request is refused */
+int rtpe_test_build_request(bencode_buffer_t *buf, struct sip_msg *msg,
+		const char *cmd, str *flags, str *body, bencode_item_t **dict);
+#endif
+
 #endif
