@@ -38,6 +38,7 @@
 
 #include "../locking.h"
 #include "../ip_addr.h"
+#include "../timer.h"
 #include "tcp_conn_profile.h"
 #include "proto_tcp/tcp_common_defs.h"
 
