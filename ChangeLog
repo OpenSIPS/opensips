@@ -1,3 +1,975 @@
+=========================== Release 3.6.10 ==============================
+
+2026-10-28  jarrodb  <jarrod@46labs.com>
+        * [aa8b9f3db4] :
+
+        core: bound socket2str()'s static buffer
+
+        MAX_SOCKET_STR sized the static buffer for an IP address, but socket2str()
+        also writes the advertised name, which may be a hostname, and the tag. A TLS
+        listener advertising a hostname longer than about 60 characters overflows the
+        buffer during fix_socket() and corrupts the neighbouring statics, crashing
+        OpenSIPS at startup.
+
+        Size the buffer for a 255 character name and budget the protocol at
+        PROTO_NAME_MAX_SIZE, as sock_str_len() undercounted names longer than "sctp"
+        (e.g. "hep_udp"). Check the length on the static buffer path too, so an
+        oversized tag fails with an error instead of overflowing.
+
+        (cherry picked from commit 9a09d84748e4f81263ae837bc050901cac6ba938)
+
+
+2026-10-27  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [65fbcc4668] :
+
+        Merge pull request #4300 from darwvin-dev/fix/via-quoted-comma
+
+        [parser] Allow commas inside quoted Via parameter values
+
+        (cherry picked from commit 21109c99c7f107cc830097bbd3360fc05b85ef8c)
+
+
+2026-10-27  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [8b4df3319d] :
+
+        parser: handle escaped characters in quoted Via parameter values
+
+        Skip quoted-pair characters when scanning quoted values so escaped quotes do not terminate them. Reject truncated escapes and invalid quoted pairs.
+
+        (cherry picked from commit 84e24f70fe1fcd50feae944ebe5d798dfc38c919)
+
+
+2026-10-27  Razvan Crainea  <razvan@opensips.org>
+        * [615c37914f] :
+
+        siprec: keep a ref of the session until end of req
+
+        (cherry picked from commit 74de285bbc037fbdf07e45cca97ac2ae7284f77c)
+
+
+2026-10-27  Alejandro Pacheco  <alepacheco99@gmail.com>
+        * [bdc30b8564] :
+
+        sipcapture: escape the values of the batched async insert
+
+        In async mode sip_capture() and report_capture() queue each row into a
+        raw INSERT built with a fixed printf format. String values were printed
+        between quotes as they are, so a quote or backslash in a captured
+        message or report ended its value early and changed the query.
+
+        Print each row with one helper, append_db_row(), that writes every value
+        by its db type and quotes string and blob values with quotes and
+        backslashes doubled (a NUL byte as \0): the value reads back unchanged on
+        MySQL and can never end early on MySQL or PostgreSQL. The helper also
+        prints as many values as there are columns (a homer6 report row had 12
+        values for 17 columns) and keeps the query NUL-terminated, as the
+        PostgreSQL backend sends it as a C string.
+
+        (cherry picked from commit 51fc688526165c6b430fc63d159e32a80d656f3e)
+
+
+2026-10-27  Alejandro Pacheco  <alepacheco99@gmail.com>
+        * [001b279bdb] :
+
+        sipcapture: keep report_capture() Event and hep_get() reads in bounds
+
+        report_capture() (homer6) pointed the event column at the "Event" string
+        of the parsed RTCP JSON payload, then freed the JSON tree with
+        cJSON_Delete() before the row was stored, so the insert read freed
+        memory; an "Event" that is not a string (a number, for instance) has no
+        valuestring and crashed in strlen(NULL). Keep the tree until after the
+        store, use the Event value only when it is a string, and always restore
+        the payload byte that was replaced by the terminating NUL (it was left
+        in place when the payload was not valid JSON).
+
+        hep_get() read a custom chunk as uint16/uint32/IPv4/IPv6 from its data
+        without checking the chunk length, reading past the chunk data when it
+        was shorter than the requested type. Return a null value for a chunk too
+        short for the type.
+
+        Add unit tests for both to modules/sipcapture/test.
+
+        (cherry picked from commit fb11b30a36bdd5773b1e96876dee0d63ec21681b)
+
+
+2026-10-27  Alejandro Pacheco  <alepacheco99@gmail.com>
+        * [58dad02797] :
+
+        sipcapture: keep the batched async insert within the query buffer
+
+        With an async capable DB, sip_capture() and report_capture() append each
+        row to a shared query of max_async_queries rows. The row builders added
+        the return of snprintf() to the query length, which is the length the
+        row would have had, so a row that did not fit (one large captured
+        message is enough) made the length run past MAX_QUERY and the next row
+        was written with a negative size, past the buffer. The ',' separator
+        was also written without checking for room.
+
+        Refuse a row (or the query header) that does not fit, check the room
+        for the separator and take it back when the row is refused.
+
+        append_sc_values() is given the values starting at db_vals+1, but read
+        them from index 1 to 43: every column was shifted by one and the last
+        one read past the array. Index them from 0.
+
+        Add a test for the async store to modules/sipcapture/test.
+
+        (cherry picked from commit 16e2f035a0e9fad441fb5b087a88ff225b03adcc)
+
+
+2026-10-27  Alejandro Pacheco  <alepacheco99@gmail.com>
+        * [9b4b91d787] :
+
+        sipcapture: bound the packet rebuilt by hep_relay()
+
+        hepv3_to_buf() and hepv2_to_buf() rebuilt the HEP packet being relayed
+        (every chunk plus the payload) into the static payload_buf[32767]
+        without checking any write against its size. A received HEPv3 packet
+        can be up to 64K long, so relaying one with a payload or custom chunks
+        of more than 32K wrote past the end of payload_buf.
+
+        payload_buf also holds the payload set by hep_set("payload"), so relaying
+        after that copied the payload onto itself at an offset (an overlapping
+        memcpy).
+
+        Make every write of both functions go through hep_buf_add(), which
+        checks the remaining room first, and fail the relay when the packet does
+        not fit. Rebuild the packet in its own 64K hep_relay_buf, the largest
+        length a HEPv3 header can carry.
+
+        Add unit tests relaying a small packet, a packet larger than 32K and a
+        packet longer than a HEP frame.
+
+        (cherry picked from commit 775fa1b71ed5e7c4cda2ce6ad6ee14976bacbaae)
+
+
+2026-10-27  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e0fab2beea] :
+
+        [pua_dialoginfo] fix some cleanup related issues (not crashes, but functionality related).
+
+        1. Custom branch callees are ignored during cleanup - The response callback retrieves the custom callee and uses it as `peer`. The new cleanup instead uses `param->peer`, the original callee. For a branch with a custom callee, it therefore sends the callee-side termination to the wrong presence URI, leaving the actual publication active—now potentially for an hour.
+        2. Branch muting is ignored - Normal response processing uses `should_publish_A/B()`, which honors `dialoginfo_mute_branch()`. Cleanup checks only `DLG_PUB_A/B`. It can therefore send termination publications for a party explicitly muted on that branch
+        3."Trying" publications can linger for 3600 seconds - With `publish_on_trying=1`, a `100–179` reply now creates a publication lasting an hour. However, cleanup only processes branches with `bitmask_early` set, and that bit is set only for `180–199`. A branch that sends `100` and then goes silent gets no termination from either FAILURE/DELETED callback.
+
+        (cherry picked from commit 1ed52f4597b350ce0eb3d1ae6632be83cca8c467)
+
+
+2026-10-20  Razvan Crainea  <razvan@opensips.org>
+        * [dfbaa6335f] :
+
+        b2b_entities: include shared memory allocator header
+
+
+2026-10-20  Razvan Crainea  <razvan@opensips.org>
+        * [e99921ce71] :
+
+        time_rec: free recurrence allocations
+
+        (cherry picked from commit 0955f057d93f1ce877fa5e1f31a92f62232d9ac4)
+
+
+2026-10-19  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [d57b92d048] :
+
+        Merge pull request #4291 from Sahana2524/supported-tag-bounds
+
+        bound option tag lookahead to the body in parse_supported_body
+
+        (cherry picked from commit 4456800e9fc07655de84c7f09a330a97d4d60d10)
+
+
+2026-10-19  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [32cfa06d25] :
+
+        Merge pull request #4372 from gmaruzz/pua_dialoginfo_answered_branch
+
+        pua_dialoginfo: do not terminate the answered branch at TMCB_TRANS_DELETED
+
+        (cherry picked from commit d8a0340df45d4b8143c58cb1e92ac4b051549aee)
+
+
+2026-10-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [9ebebed56f] :
+
+        Merge pull request #4355 from Sahana2524/sst-refresher-bound
+
+        bound refresher lookahead to the body in parse_session_expires_body
+
+        (cherry picked from commit ee74a3123e6c8a18ffeb8db7c66cb3efdfe7d61e)
+
+
+2026-10-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [6819fc2784] :
+
+        [tm] fix T unprotected lump access from t_reply_with_body()
+
+        msg pointer used by the function (T->uas.request)  is a SHARED-memory clone; two processes building a reply for the same transaction race on p_msg->reply_lump and corrupt it (SIGSEGV in add_lump_rpl). Serialize add -> build -> free with the reply lock.
+
+        Credits for report and fix go to @davegreeko2023
+        Closes #3984
+        Closes #4267 (PR with alternative fix)
+
+        (cherry picked from commit fd9af149930ebbcd0c9bb81eb8c30397002fafc0)
+
+
+2026-10-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [0a09ead0d7] :
+
+        Merge pull request #4352 from alepacheco/fix/b2b-sca-hdr-sizes
+
+        b2b_sca: count every byte written in the Call-Info builders
+
+        (cherry picked from commit 3b2d988b958474cf3687bff147e79b32d855aa18)
+
+
+2026-10-16  darwvin-dev  <darwvin@hotmail.com>
+        * [393900ce4a] :
+
+        [rtp_relay] fix ctx double release on stateless reply after engage
+
+        rtp_relay_engage() registered the initial TM callback without taking a
+        reference, so the callback and the message context shared the ctx's
+        initial reference. That was only balanced when a transaction got created
+        and rtp_relay_reqin() dropped the message context pointer. If the INVITE
+        was answered statelessly (i.e. send_reply()), the pending TM callback
+        and the message context both released the same reference, resulting in
+        "invalid ref=0" and a use-after-free.
+
+        Make every holder own its reference: the engage callback takes its own,
+        and moving the ctx from the message context into the transaction
+        transfers that reference instead of taking a new one. This also closes
+        a leak when $rtp_relay was set without engaging and the request was
+        relayed statefully.
+
+        Fixes #4318
+
+        Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+        (cherry picked from commit ef2ac2ece869b2992662055c50d12d17ba11839e)
+
+
+2026-10-16  Juanjo Aroztegi  <juanjo@aroztegi.com>
+        * [114e8018ca] :
+
+        siprec: release the session when the SRS answers after the call ended
+
+        When the final reply for the SIPREC INVITE (a negative one, including
+        the local 408 of an SRS that never answers) arrives after the dialog
+        has been deleted, srec_b2b_notify() returned without releasing anything,
+        so the session, its b2b entity and the siprec ctx were never freed.
+        Also, the no_recording path only dropped the session reference when
+        the ctx was still bound to the dialog, so a session whose dialog had
+        already been destroyed was leaked too, e.g. for a 2xx answer received
+        after the end of the call.
+
+        When the call is already over, skip the failover, delete the b2b entity
+        as the failover path does (so no stop event is raised for a recording
+        that never started) and go through the no_recording cleanup, which now
+        drops the session reference regardless of whether the dialog is still
+        there.
+
+        (cherry picked from commit 0c0e62532515701b74af12a9f261a0dbaae18593)
+
+
+2026-10-16  Juanjo Aroztegi  <juanjo@aroztegi.com>
+        * [84bb4f703c] :
+
+        b2b_entities: do not use the client dlg after sending the request
+
+        _client_new() stores the socket used for the initial request in
+        dlg->send_sock after t_request_within() returns. By then the request is
+        out and the bucket lock is not held, so another process may already
+        have handled the first reply: for a dialog without legs, b2b_tm_cback()
+        replaces the placeholder dlg with a new one and frees it. The
+        assignment then writes into freed shm, and the new dlg is left without
+        a send socket.
+
+        With a peer that answers fast (e.g. a siprec SRS on loopback) this
+        corrupts shm on most runs. Q_MALLOC_DBG aborts with "fragm. ... end
+        overwritten"; with f_malloc the corruption goes unnoticed.
+
+        Look the dlg up again under the bucket lock and set the socket on the
+        current record. Also reset the local transaction holder right after
+        t_request_within(), so it does not keep pointing into the dlg when
+        sending fails.
+
+        (cherry picked from commit affea7f0ff9b01f97feccb05349a771ea876b9f8)
+
+
+2026-10-16  Razvan Crainea  <razvan@opensips.org>
+        * [03a6b43f0f] :
+
+        strcommon: avoid invalid pointer arithmetic in _unescape_user
+
+        (cherry picked from commit 5472b22db25c6ade3bb5a3717ae1f4f87208c25a)
+
+
+2026-10-16  Sahana Bogar  <sahana@digiscrypt.com>
+        * [b5000785e4] :
+
+        bound the escape-sequence lookahead in _unescape_user
+
+        (cherry picked from commit 2a9e8dfb1de45ad0124ed750df3f6a88bb898d46)
+
+
+2026-10-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [af709e392d] :
+
+        Merge pull request #4347 from rrevels-bw/fix/sdp-ops-loglevel
+
+        sdp_ops: fix log level in pv_set_sdp non-NULL branch
+
+2026-10-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [7a9417ac06] :
+
+        Merge pull request #4357 from denys-i-didww/fix/domain-accept-subdomain-col-len
+
+        domain: initialise accept_subdomain_col with its own length
+        (cherry picked from commit 93e03c1c9a8af000b82204fccf6f1193bfcb38d1)
+
+
+2026-10-16  Razvan Crainea  <razvan@opensips.org>
+        * [ff62a32b7f] :
+
+        b2b_entities: avoid logic lock inversion in local route
+
+        Avoid calling TM request generation with lock, to prevent deadlock in
+        local_route context fetching.
+
+        Many thanks to @LCEbay for reporting this in #4251
+
+        (cherry picked from commit 83bfc39cd87279d872d56e3c8d3cee8bcad72548)
+
+
+2026-10-15  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a94dc2a424] :
+
+        [tm] fix pkg leak over lumps in async/failure route.
+
+        The issue was introduced in d5d1760ff135dbfcd6f48c15a91d1fd6bdc2c858, while fixing #3914.
+        Here we did a different solution for the original problem (as described in #3914), but without adding the pkg leak :).
+        Reported by @zbyslb
+        Closes #4322
+
+        (cherry picked from commit 29ec840ae335b3ea65729d71edcbda9062e40ca0)
+
+
+2026-10-14  Razvan Crainea  <razvan@opensips.org>
+        * [0cc7214dd7] :
+
+        rtpengine: avoid replacing unchanged relay node
+
+        (cherry picked from commit ef995a7def8c6927ac2de69a6c9f1f84e4f61e13)
+
+
+2026-10-14  Razvan Crainea  <razvan@opensips.org>
+        * [079e5851a3] :
+
+        aaa_radius: fix radcli build on EL10
+
+        (cherry picked from commit e40fa06cbc5ab5268427975d4b53b6675edc9703)
+
+
+2026-10-13  Richard Revels  <rrevels@bandwidth.com>
+        * [aaedefa1dd] :
+
+        sdp_ops: fix log level in pv_set_sdp non-NULL branch
+
+        The else branch in pv_set_sdp runs when msg->body is already set,
+        i.e. the caller is replacing an existing SDP body.  This is the normal
+        update path and not an error condition, so LM_ERR was incorrect and
+        produced spurious ERROR log entries on every SDP body replacement.
+        Change to LM_DBG and update the message to reflect what is actually
+        happening.
+
+
+2026-10-13  Giovanni Maruzzelli  <gmaruzz@gmail.com>
+        * [2b0726e393] :
+
+        dialog: a replicated value for a missing dialog is a no-op
+
+        dlg_replicated_value() returned -1 when the dialog is not (or no longer)
+        known locally, so the cluster receive handler logged
+        'Failed to process a binary packet 5!' at ERROR for each such value.
+        Under load on a full-sharing dialog cluster the backup node gets many of
+        them (the value can arrive before the dialog is created there, or after
+        it is gone) and nothing is lost: the dialog's values travel again with
+        its next update. Return 0, as dlg_replicated_delete() and
+        dlg_replicated_cseq_updated() already do in the same situation.
+
+        Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+        (cherry picked from commit eabd0988e04aa85a703a7dfa9a9f9e5b29f07527)
+
+
+2026-10-09  Razvan Crainea  <razvan@opensips.org>
+        * [c4b93ac610] :
+
+        siprec: avoid ctx lock self-deadlock
+
+        Avoid taking a lock when the context is already locked.
+
+        (cherry picked from commit ece3cb162c9dc8c3efc767ae15457f887ccbeac1)
+
+
+2026-10-09  Juanjo Aroztegi  <juanjo@aroztegi.com>
+        * [1f3b842d06] :
+
+        siprec: keep the ctx until the dialog is destroyed
+
+        The siprec context (struct src_ctx) registers a DLGCB_DESTROY callback
+        with itself as parameter, but it was freed as soon as its last session
+        was gone, even if the dialog was still alive. When the SRS rejects the
+        SIPREC INVITE, the session is only held by the INVITE transaction, so
+        the ctx is freed when that transaction is deleted, before the dialog
+        ends. When the dialog is destroyed later, srec_dlg_destroy() writes NULL
+        to ctx->dlg in the freed chunk. struct src_ctx has the same size as
+        struct tm_callback and struct dlg_callback (40 bytes on x86_64) and
+        ctx->dlg sits at the offset of their 'param' field, so when the chunk
+        has been reused for one of them, the write clears the parameter of a
+        callback that belongs to another call, which later crashes with a NULL
+        parameter, e.g. _unref_dlg(dlg=0x0) in the dialog TMCB_TRANS_DELETED
+        callback or unref_acc_ctx(ctx=0x0) in acc. The same happens when the
+        SRS does not answer at all and the SIPREC INVITE times out while the
+        call is still up, or when the SRS answer cannot be used.
+
+        Free the ctx only when it has no sessions left and the DLGCB_DESTROY
+        callback has run. The decision is taken under the ctx lock, together
+        with unlinking the session, so that when the dialog destruction and the
+        end of the last session run concurrently in different processes,
+        exactly one of them frees the ctx.
+
+        Fixes #4264
+
+        Thanks to @Jperez903 for the report and the debugging data.
+
+        (cherry picked from commit ac1080e4dedfef2d6d696aba08bc3f03fa5ca57c)
+
+
+2026-10-08  Yury Kirsanov  <yury@kfi.net.au>
+        * [0c3ef5acde] :
+
+        registrar: randomize expiries inside the allowed band, not around it
+
+        randomize_expires() drew the random adjustment first and clamped the result
+        to min_expires/max_expires afterwards. Every draw that fell outside the
+        configured limits was therefore folded onto the limit itself rather than
+        spread, so contacts registering near a limit all received one identical
+        lifetime - the opposite of what expires_max_deviation is for, and a
+        synchronized cohort that re-registers in lockstep.
+
+        With min_expires 60 and expires_max_deviation 100, a 120 s registration put
+        20.6% of contacts on exactly 60 s; with min_expires 120 it was 50.4% on
+        exactly 120 s, and a contact registering at max_expires was affected the same
+        way at the top of the range.
+
+        Clamp the band before drawing from it instead. The resulting range is
+        unchanged, so no deployment receives a lifetime it could not have received
+        before, and registrations that are not near a limit are unaffected. Measured
+        over 200k draws, the worst single value falls from 20.6% to 0.7% at the
+        bottom of the range and from 50.2% to 1.1% at the top.
+
+        (cherry picked from commit e67c3e3576a2888f18d7704beedd48574e99de47)
+
+
+2026-10-08  Liviu Chircu  <liviu@opensips.org>
+        * [7b83e814f5] :
+
+        docs: Fix wording and inline code formatting
+
+
+2026-10-08  Matthias van der Vlies  <674985+killdashnine@users.noreply.github.com>
+        * [6412d7ff59] :
+
+        [rtp_relay] keep the all-branches session across a failed branch
+
+        (cherry picked from commit b2f8593300e9dc55a3ec18c704f015447ba5e376)
+
+
+2026-10-08  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a7c32d90e5] :
+
+        [tm] fix resuming aysnc jobs which initially were handled in sync mode
+
+        if an async() switches to sync mode (due to wrong route type), we use the t==NULL in the async ctx as marker to discard any furhter attempt to run a resume on this job.
+        Real case: async(wait_for_event()) in failure route. The waiting will be resumed in line, but the EBR subscription (already created) will generate a resume on timeout -> this must be supressed.
+        Reported by Nick Altmann @nikbyte
+
+        (cherry picked from commit 190f404ac731a3c07efb997cffbf28751a8d15b7)
+
+
+2026-10-08  Nick Altmann  <nick@altmann.pro>
+        * [59b85ad34b] :
+
+        acc: handle callbacks without a processing context
+
+        (cherry picked from commit e5eddb7cd1515dc8dbbcff8bfe7360c22e3c3868)
+
+
+2026-10-06  Liviu Chircu  <liviu@opensips.org>
+        * [549bcf0a5c] :
+
+        registrar docs: Fix broken examples
+
+        (cherry picked from commit 66b5651c87bce65942449a75e6390ea197cd9141)
+
+
+2026-10-05  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [57215d1695] :
+
+        [pua_dialoginfo] fix handling FAKED_REPLY's
+
+        This issue was introduced with f46ef9337bfd24a7064570b221f063bf64eb5649. The reply can be not only NULL but also FAKED_REPLY -> do not attempt accessing it in neither case.
+
+        (cherry picked from commit 9556ed5ecc39fbb9e4a7f146357ece23dca7a40f)
+
+
+2026-10-05  Razvan Crainea  <razvan@opensips.org>
+        * [8ddbff534b] :
+
+        rtpengine: avoid passing unknown no-from-tag in command
+
+        (cherry picked from commit 00ca32dcacb5b7e5d131981f014c8df605432fa5)
+
+
+2026-10-05  Razvan Crainea  <razvan@opensips.org>
+        * [e1365b8a6b] :
+
+        b2b_sdp_demux: ensure availability of structures outside lock
+
+        This mainly addresses callbacks without the lock taken.
+
+        Many thanks to Nuno Almeida from Five9 for the report, fix and testing.
+
+        (cherry picked from commit 3b615cac184f388598b2383feec12ed306d02202)
+
+
+2026-10-02  Razvan Crainea  <razvan@opensips.org>
+        * [38ac63c62c] :
+
+        net_tcp: guard connection lookup after shutdown
+
+        Late shutdown callbacks may attempt to look up a TCP connection after
+        tcp_destroy() has released the shared hashes and locks.
+
+        Many thanks to Nick Altmann for reporting and fixing this issue!
+
+        (cherry picked from commit 7b0c8c6ea9c3b3a8e1c7bfdd54a8a30cf462ea9c)
+
+
+2026-10-02  Razvan Crainea  <razvan@opensips.org>
+        * [d869c6e112] :
+
+        dialog: avoid setting last leg without a processing context
+
+        Some locally generated replies (timer or locally generated) may run
+        without a processing context, so only store the last destination leg
+        when one is available.
+
+        Many thanks to Nick Altmann for reporting and providing a fix!
+
+        (cherry picked from commit 25fc90c3730f931877be53f462b5d0ed712fc696)
+
+
+2026-10-02  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [3081860566] :
+
+        Merge pull request #4288 from jarrodb/fix/event-kafka-send-job-double-free
+
+        event_kafka: fix double free when a job cannot be sent to the worker
+
+        (cherry picked from commit 147ddf1e59727abd9ddcf06345b3c37ae2e8858f)
+
+
+2026-10-01  Razvan Crainea  <razvan@opensips.org>
+        * [0ddf7b9c60] :
+
+        dialog: store CSeq maps on the source leg
+
+        Use the leg passed to dlg_update_req_info() when saving an INVITE CSeq mapping. This lets ACKs for callee-initiated re-INVITEs recover the relayed CSeq instead of falling back to the destination leg's latest generated value.
+
+        Many thanks to @orenh-gh for reporting this issue and proposing the fix.
+
+        Closes #4285
+
+        (cherry picked from commit 31db3e6a3e460b476bdb1b18a9e4eadedb7b6d75)
+
+
+2026-10-01  Răzvan Crainea  <razvan@opensips.org>
+        * [5c959a64b5] :
+
+        Merge pull request #4287 from denys-i-didww/auth_aka-link-av-timeouts
+
+        auth_aka: link the unused_timeout and pending_timeout modparams
+
+        (cherry picked from commit 15a9faf2a47b6df3ac464ede7f063189e0df1d47)
+
+
+2026-10-01  Răzvan Crainea  <razvan@opensips.org>
+        * [7b30144b78] :
+
+        Merge pull request #4286 from denys-i-didww/docs/parameter-type-labels
+
+        docs: correct parameter type labels that contradict the code
+        (cherry picked from commit 0d730e0a7b30b6a58ed8b4e6a9f27b881f1c036b)
+
+
+2026-09-30  Razvan Crainea  <razvan@opensips.org>
+        * [9622bc6077] :
+
+        rtp_relay: allow B2B engagement without dialog
+
+        dialog is not mandatory when running in B2B mode.
+        Related to #4270
+
+        (cherry picked from commit d43001b591caae317e04c9105217891d180570e3)
+
+
+2026-09-30  Razvan Crainea  <razvan@opensips.org>
+        * [b9d278acdd] :
+
+        rtp_relay: hold a context reference for B2B tuples
+
+        Prevent the ctx from disapearing on sequential.
+
+        Related to #4270
+
+        (cherry picked from commit 4fce9cebc50e1e2a93a30adc2337797dd35c8cc8)
+
+
+2026-09-29  Liviu Chircu  <liviu@opensips.org>
+        * [b1662d9436] :
+
+        usrloc cluster: Fix noisy replication logs
+
+        While processing replicated AoR INSERT events from Active node, do not
+        log "empty K/V string" errors, as this input data is quite normal.
+
+        Many thanks to Evgeniy G for an accurate report and fix suggestions.
+
+        Fixes #4261
+
+        (cherry picked from commit 126494ea63ccd675280a8e9ded2b070e1bdf05fa)
+
+
+2026-09-29  Razvan Crainea  <razvan@opensips.org>
+        * [5c872c07e5] :
+
+        core: reset TCP tracing state before each send
+
+        Clear the per-process connection ID and per-socket real ports before invoking a TCP-based transport, so failed sends fall back to their intended destination instead of inheriting an unrelated connection.
+
+        Thanks to Richard Robson for reporting this issue.
+
+        Closes #4274
+
+
+2026-09-29  Jasper Hafkenscheid  <jasper.hafkenscheid@voys.nl>
+        * [6daee18097] :
+
+        proto_tls: report real ports when the write is queued on async connect
+
+        proto_tls_send() only updated last_outgoing_tcp_id and
+        send_sock->last_real_ports on the send_it path. When tls_async is
+        enabled and no connection exists yet, the first message is attached as a
+        write chunk to the pending connection and the function returns via
+        con_release, leaving both stale from a previous send on that listener.
+
+        The tracer module reads them when building the trace, so the very first
+        request over a new outbound TLS connection (typically the INVITE) is
+        logged with the ports and connection id of an unrelated peer. Every
+        later message on that connection goes through send_it and is correct.
+
+        proto_tcp already does this on both of its async paths.
+
+        Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+        Close: #4226
+
+
+2026-09-29  Razvan Crainea  <razvan@opensips.org>
+        * [95c5d32112] :
+
+        sqlops: mask DB URL passwords in connection errors
+
+        Close #4220
+        Many thanks to @MyPhonesAlex for reporting it!
+
+        (cherry picked from commit 76b41159e75f37b58a043a48e490f64c5c0c7c57)
+
+
+2026-09-29  Răzvan Crainea  <razvan@opensips.org>
+        * [47e8e95ed5] :
+
+        Merge pull request #4268 from NormB/fix/b2b-entities-run-cb-uaf
+
+        b2b_entities: copy callback keys before dropping the bucket lock in b2b_run_cb()
+
+        (cherry picked from commit 46722d066712b3db2cdd402f270dd79d5a3f17c2)
+
+
+2026-09-29  Razvan Crainea  <razvan@opensips.org>
+        * [643200bce5] :
+
+        various: fix high-impact runtime issues
+
+        Fix authentication vector sizing, use the correct media-exchange leg and bound the Redis subkey argument array.
+
+        Coverity CIDs: 417609, 562290, 562368
+
+        (cherry picked from commit b3cf52d2849cb5a2fd76b2a87f79e538f90f5775)
+
+
+2026-09-29  Răzvan Crainea  <razvan@opensips.org>
+        * [163ae1b4b9] :
+
+        Merge pull request #4277 from killdashnine/rtp_relay-indlg-ctx-ref
+
+        [rtp_relay] hold a ctx reference for the in-dialog callback
+
+        (cherry picked from commit 20c6b7655a041bd5685b5e27b318efbdd5c3fbdb)
+
+
+2026-09-29  Razvan Crainea  <razvan@opensips.org>
+        * [78b0f3d346] :
+
+        proto_wss: wait for TLS handshake completion
+
+        This ensures that the entire SSL context is created, including the
+        Kerberos one, before performing any further I/O operations.
+
+        (cherry picked from commit b4d87e5110f16a54cdaff6a2c404e415c9f7faf2)
+
+
+2026-09-28  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [b328ee46db] :
+
+        Merge pull request #4271 from Lt-Flash/fix/th-adv-contact-bare-uri
+
+        topology_hiding: do not splice a bare URI in place of a Contact header
+
+        (cherry picked from commit 691811761952c7ab5657553d132e04e791d01fc6)
+
+
+2026-09-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [5555feb1aa] :
+
+        [pua_dialoginfo] more fixing on dangling branches
+
+        This is a continuation of 2bc0e4348a0062b218e49322aff554b063808c42 :
+
+        * similar scenario of a dangling branch may happen during a parallel forking. If branch A dies and B answers, there will be no "terminated" for A; So, we rely on the TMCB_TRANS_DELETED to do last inspection for dangling branches
+
+        * also fix for the newly added TMCB_ON_FAILURE TMCB_TRANS_DELETED callbacks how the to-tag is fetched - to not take it from t->req as it will be NULL, but take it from the UAC part of the transaction - each branch has a different to-tag!!!
+
+        (cherry picked from commit f46ef9337bfd24a7064570b221f063bf64eb5649)
+
+
+2026-09-25  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [0e2fe96aaf] :
+
+        [b2b_entities] fix ACK tracing
+
+        Avoid double tracing for hopbyhop ACK and do proper tracing of the endtoend ACK
+        This patch was provided by @matrixworker
+        Closes #4265
+
+        (cherry picked from commit 908b79c5f1c8aff72d9822c488f1cf2b6e4989c5)
+
+
+2026-09-25  Razvan Crainea  <razvan@opensips.org>
+        * [de799e2cb2] :
+
+        cachedb_mongodb: support legacy pre-1.13 headers
+
+        Suggested-by: Nick Altmann
+        (cherry picked from commit a2304d6cb8e36f73fb940f80b738f78c86fd2099)
+
+
+2026-09-25  Razvan Crainea  <razvan@opensips.org>
+        * [826fc99f47] :
+
+        rtpengine: restore from-tag on delete
+
+        Fixes #4170
+
+        Thanks to @baevga for the report and Nick Altmann for brainstorming the
+        solution.
+
+        (cherry picked from commit 62651f90c797604788b1372ee3c47c12e085e85c)
+
+
+2026-09-24  Razvan Crainea  <razvan@opensips.org>
+        * [bd12fc67db] :
+
+        proto_ws: log peer on failed server handshake
+
+        Include the remote IP address and port in failed WS and WSS server handshake logs so repeated attempts can be identified.
+
+        Closes #4240
+
+        Many thanks to @robdyck for reporting this issue.
+
+        (cherry picked from commit d112569e2f5b38b424a7f68c0da5edcb1e8801d8)
+
+
+2026-09-24  Razvan Crainea  <razvan@opensips.org>
+        * [c6858cc1b1] :
+
+        f_malloc: fix physical fragment link after defragmentation
+
+        Update the following fragment's back-pointer whenever adjacent free fragments are merged during allocation.
+
+        Closes #4234
+
+        Many thanks to @Lt-Flash for reporting this issue.
+
+        (cherry picked from commit 0378faff6a2e9fb7146af0e00e27f885ab86ed5d)
+
+
+2026-09-23  Razvan Crainea  <razvan@opensips.org>
+        * [b84ccb015b] :
+
+        cgrates: avoid busy loop on EAGAIN
+
+        Yield to the reactor after draining unsolicited requests while keeping asynchronous reply contexts active.
+
+        Closes #4249
+
+        Many thanks to @abisaim for reporting this issue.
+
+        (cherry picked from commit 0b16fef1e1b2d1f525f32d3770bd7091b271fa35)
+
+
+2026-09-23  Răzvan Crainea  <razvan@opensips.org>
+        * [36a3428a1b] :
+
+        Merge pull request #4256 from Lt-Flash/fix/rtp-relay-route-body-ownership
+
+        rtp_relay: give the caller its own copy of the route engine's body
+
+        (cherry picked from commit cc302893896bb6bb824713bf22849fc178cc1db8)
+
+
+2026-09-23  Răzvan Crainea  <razvan@opensips.org>
+        * [9e156396ca] :
+
+        Merge pull request #4263 from zbyslb/rtpengine-bugfixes
+
+        rtpengine/bencode: heap corruption, double close, wrong-fd close and OOM crash fixes
+
+        (cherry picked from commit a85720cb22e914cdf4dfcee004df0ee8ee624793)
+
+
+2026-09-23  Razvan Crainea  <razvan@opensips.org>
+        * [211b5e373c] :
+
+        b2b_logic: aloow adding a body from the reply handling routes
+
+        Many thanks to Andrii Pogrebennyk from NGVoice for providing this patch
+
+        (cherry picked from commit f88b877561853ad5e3af3a64bd39e24628d515d9)
+
+
+2026-09-21  Liviu Chircu  <liviu@opensips.org>
+        * [88a254c876] :
+
+        sql_cacher: fix reload version initialization race
+
+        Replace the non-atomic add(+1)/sub(-1) initialization with add(0), which
+        atomically creates the reload-version counter without changing an
+        existing value.  This avoids failures when an MI reload increments the
+        counter during startup.
+
+        Consolidate counter initialization and increments into a single helper.
+        During full-table startup loads, fetch the current version under the
+        entry write lock and store it with the loaded rows, preventing
+        concurrent reloads from making the startup data immediately stale.
+
+        Also continue initializing later cache entries when one cache fails.
+
+        Co-authored-by: Bence Szigeti <bence.szigeti@gohyda.com>
+        (cherry picked from commit da6e20e729f2a8613364deda9baca665d2296ef8)
+
+
+2026-09-21  Liviu Chircu  <liviu@opensips.org>
+        * [4fa00094dd] :
+
+        aaa_diameter: Fix PKG malloc usage with threads
+
+        Avoid using pkg_malloc() in freeDiameter callbacks which can be
+        concurrently called from various worker threads.  Use a thread-safe
+        allocation function instead, such as system malloc().
+
+        Also restrict the thread-local cJSON SHM hooks to the operations that
+        require them and remove a redundant protected hash lookup.
+
+        Many thanks to Andrii Pogrebennyk from NGVoice for the report and an
+        initial version of this patch.
+
+        (cherry picked from commit caebd8e068e070eab8b6f34f93bc23cbf5b47273)
+
+
+2026-09-18  Razvan Crainea  <razvan@opensips.org>
+        * [6b116aa526] :
+
+        b2b_sdp_demux: guard streams release under lock
+
+        Many thanks to Nuno Almeida from Five9 for reporting this and providing
+        a patch to fix it
+
+        (cherry picked from commit d530f8fc5f34279d9f6df1ac00908e64b7f8d114)
+
+
+2026-09-17  Razvan Crainea  <razvan@opensips.org>
+        * [55de95748c] :
+
+        jabber: bound conference presence address
+
+        Reject conference addresses whose room, server, and nick exceed the presence buffer before copying them.
+
+        Fixes GHSA-7xv8-ff5m-99ww: https://github.com/OpenSIPS/opensips/security/advisories/GHSA-7xv8-ff5m-99ww
+
+        Thanks to @kta1kri for reporting this issue.
+
+        (cherry picked from commit 3d3a59db4a9edc19a8ec5820e90770ded09265e9)
+
+
+2026-09-11  Razvan Crainea  <razvan@opensips.org>
+        * [868268d9de] :
+
+        docs/mi: enhance version docs with revision param
+
+        (cherry picked from commit 3acbc23793429a255bcdf2e211a44e094a6af50c)
+
+
+2026-09-11  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [d8eec3b500] :
+
+        [topology_hiding] fix storing the socket info in no-dlg TH
+
+        Instead of storing the socket name (as proto:ip:port), store the socket tag if available - this allows the TH info to be decoded and understood by other pair OpenSIPS socket (same logical network interface, different IP, same tag).
+        This solves the underlaying issue reported in #4120, for 4.0 and below versions
+
+        (cherry picked from commit ed62c1e8ad9e767f63edf473e450627cdff748b4)
+
+
+2026-09-11  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [1c3f8c102c] :
+
+        Merge pull request #4250 from denys-i-didww/docs/names-the-code-does-not-export
+
+        docs: correct function and statistic names the modules do not export
+        (cherry picked from commit 7e6e45a32a8ccc604ce1ea4acaee8f3108abfa78)
+
+
+2026-09-10  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [6412ce99ca] :
+
+        Merge pull request #4252 from denys-i-didww/docs/remove-sections-for-features-that-were-removed
+
+        docs: remove the sections of features that no longer exist
+        (cherry picked from commit 5ae3bdaf306e1e5937f63c1f402621f1da2589ba)
+
+
 =========================== Release 3.6.9 ==============================
 
 2026-09-08  Liviu Chircu  <liviu@opensips.org>
