@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -405,6 +406,12 @@ static int reg_stat_series_profile( modparam_t type, void* val)
 	if (!sp->group.len)
 		sp->group = sp->name;
 	sp->slot_size = (unsigned long long)sp->window * 1000ULL / sp->slots;
+	if ((unsigned long long)sp->window * 1000ULL > ULLONG_MAX / sp->slots) {
+		LM_ERR("stat series %.*s: window %us of %u slots is too large!\n",
+				name.len, name.s, sp->window, sp->slots);
+		pkg_free(sp);
+		return -1;
+	}
 	LM_DBG("stat series profile %.*s has a window of %us of %u slots of %llums algorithm(%s)\n",
 			name.len, name.s, sp->window, sp->slots, sp->slot_size, stat_series_alg_name(sp->algorithm));
 
@@ -905,9 +912,17 @@ int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
+#define stat_series_window_ms(_ss) \
+	((unsigned long long)(_ss)->profile->window * 1000ULL)
+
+/* buckets are numbered from the epoch, so the number gives both the slot
+ * index and how many buckets passed; split so t * slots cannot overflow */
+#define get_stat_series_bucket(_ss, _ts) \
+	(((_ts) / stat_series_window_ms(_ss)) * (_ss)->profile->slots + \
+	 ((_ts) % stat_series_window_ms(_ss)) * (_ss)->profile->slots / \
+		stat_series_window_ms(_ss))
 #define get_stat_series_slot(_ss, _ts) \
-	(((_ts) % ((unsigned long long)(_ss)->profile->window * 1000ULL)) / \
-		(_ss)->profile->slot_size)
+	(int)(get_stat_series_bucket(_ss, _ts) % (_ss)->profile->slots)
 
 inline static void reset_stat_series_slot(struct stat_series *ss, union stat_series_slot *slot)
 {
@@ -930,26 +945,22 @@ inline static void reset_stat_series_slot(struct stat_series *ss, union stat_ser
 	memset(slot, 0, sizeof *slot);
 }
 
-/* returns the new index where we shall start and cleans up stale data */
+/* returns the new index where we shall start and cleans up stale data;
+ * compares bucket numbers, as an equal index may mean a whole window passed */
 static int reset_stat_series(struct stat_series *ss, unsigned long long t)
 {
-	int new_slot, slot;
+	unsigned long long last, now, b;
 
-	new_slot = get_stat_series_slot(ss, t);
-	if (t - ss->last_ts >= (unsigned long long)ss->profile->window * 1000ULL) {
+	last = get_stat_series_bucket(ss, ss->last_ts);
+	now = get_stat_series_bucket(ss, t);
+	if (now < last || now - last >= ss->profile->slots) {
 		memset(ss->slots, 0, ss->profile->slots * sizeof *ss->slots);
 		memset(&ss->cache, 0, sizeof ss->cache);
-		return new_slot;
+	} else {
+		for (b = last + 1; b <= now; b++)
+			reset_stat_series_slot(ss, &ss->slots[b % ss->profile->slots]);
 	}
-	if (new_slot == ss->last_slot)
-		return ss->last_slot;
-
-	for (slot = (ss->last_slot + 1) % ss->profile->slots;
-			slot != new_slot; slot = (slot + 1) % ss->profile->slots)
-		reset_stat_series_slot(ss, &ss->slots[slot]);
-	reset_stat_series_slot(ss, &ss->slots[new_slot]);
-	memset(&ss->slots[new_slot], 0, sizeof *ss->slots);
-	return new_slot;
+	return get_stat_series_slot(ss, t);
 }
 
 inline static unsigned long long get_stat_now(void)
@@ -991,7 +1002,7 @@ static unsigned long get_stat_series(struct stat_series *ss)
 			break;
 		default:
 			LM_ERR("unknown profile algorithm %d\n", ss->profile->algorithm);
-			return 0;
+			goto end;
 	}
 	ss->last_ts = now;
 	ss->last_slot = new_slot;
@@ -1042,10 +1053,11 @@ static int update_stat_series(struct stat_series *ss, int value)
 {
 	int ret = 0;
 	union stat_series_slot *s;
-	unsigned long long now = get_stat_now();
+	unsigned long long now;
 	int slot_index;
 
 	lock_get(&ss->lock);
+	now = get_stat_now();
 
 	if (ss->last_ts == 0) {
 		/* first run */
