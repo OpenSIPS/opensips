@@ -403,10 +403,8 @@ static int init_cert_crl_reload(void)
 	return 0;
 }
 
-static void parsed_ctx_free(void *param)
+static void parsed_identity_cleanup(struct parsed_identity *parsed)
 {
-	struct parsed_identity *parsed = (struct parsed_identity *)param;
-
 	if (parsed) {
 		cJSON_Delete(parsed->header);
 		cJSON_Delete(parsed->payload);
@@ -414,7 +412,13 @@ static void parsed_ctx_free(void *param)
 		pkg_free(parsed->dec_payload.s);
 		pkg_free(parsed->dec_signature.s);
 	}
+}
 
+static void parsed_ctx_free(void *param)
+{
+	struct parsed_identity *parsed = (struct parsed_identity *)param;
+
+	parsed_identity_cleanup(parsed);
 	pkg_free(parsed);
 }
 
@@ -2430,7 +2434,6 @@ int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
-
 /*
  * MI functions
  */
@@ -2510,3 +2513,96 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
 	}
 
 }
+
+#ifdef UNIT_TESTS
+/*
+ * Keep the unit tests on the production PASSporT code paths without exposing
+ * implementation details in normal module builds.
+ */
+int stir_shaken_test_build_identity(time_t iat, str *attest, str *x5u,
+	str *orig, str *dest, str *origid, str *pkey_buf, str *identity)
+{
+	EVP_PKEY *pkey = NULL;
+	str *built;
+
+	if (load_pkey(&pkey, pkey_buf) < 0)
+		return -1;
+
+	built = build_identity_hf(pkey, iat, attest, x5u, orig, dest, origid);
+	EVP_PKEY_free(pkey);
+	if (!built)
+		return -1;
+
+	*identity = *built;
+	return 0;
+}
+
+int stir_shaken_test_verify_msg(str *raw_msg, str *cert_buf)
+{
+	struct parsed_identity parsed = {0};
+	struct hdr_field *identity_hf;
+	struct sip_msg msg = {0};
+	str orig, dest, passport_orig, passport_dest;
+	char *msg_buf = NULL;
+	X509 *cert = NULL;
+	time_t iat;
+	int rc = -1;
+
+	msg_buf = pkg_malloc(raw_msg->len + 1);
+	if (!msg_buf)
+		return -1;
+	memcpy(msg_buf, raw_msg->s, raw_msg->len);
+	msg_buf[raw_msg->len] = '\0';
+
+	msg.buf = msg_buf;
+	msg.len = raw_msg->len;
+	msg.ruri_q = Q_UNSPECIFIED;
+	if (parse_msg(msg_buf, raw_msg->len, &msg) < 0)
+		goto out;
+
+	if (parse_headers(&msg, HDR_EOH_F, 0) < 0)
+		goto out_msg;
+
+	identity_hf = get_header_by_static_name(&msg, "Identity");
+	if (!identity_hf)
+		goto out_msg;
+	if (parse_identity_hf(&identity_hf->body, &parsed) < 0)
+		goto out_parsed;
+
+	if (str_strcmp(&parsed.ppt_hdr_param,
+			const_str(PPORT_HDR_PPT_VAL)) ||
+		(parsed.alg_hdr_param.s && str_strcmp(&parsed.alg_hdr_param,
+			const_str(PPORT_HDR_ALG_VAL))) ||
+		check_passport_claims(&parsed) < 0)
+		goto out_parsed;
+
+	if (get_orig_tn_from_msg(&msg, &orig) < 0 ||
+		get_dest_tn_from_msg(&msg, &dest) < 0 ||
+		check_passport_phonenum(&orig, L_ERR) < 0 ||
+		check_passport_phonenum(&dest, L_ERR) < 0)
+		goto out_parsed;
+
+	passport_orig.s = parsed.orig_tn->valuestring;
+	passport_orig.len = strlen(passport_orig.s);
+	passport_dest.s = parsed.dest_tn->valuestring;
+	passport_dest.len = strlen(passport_dest.s);
+	if (str_strcmp(&passport_orig, &orig) ||
+		str_strcmp(&passport_dest, &dest))
+		goto out_parsed;
+
+	if (load_cert(&cert, NULL, cert_buf) < 0)
+		goto out_parsed;
+
+	iat = (time_t)parsed.iat->valuedouble;
+	rc = verify_signature(cert, &parsed, iat, &orig, &dest) == 1 ? 0 : -1;
+
+	X509_free(cert);
+out_parsed:
+	parsed_identity_cleanup(&parsed);
+out_msg:
+	free_sip_msg(&msg);
+out:
+	pkg_free(msg_buf);
+	return rc;
+}
+#endif
