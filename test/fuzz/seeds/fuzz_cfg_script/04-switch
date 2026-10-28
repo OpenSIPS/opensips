@@ -1,0 +1,10 @@
+route{
+  switch ($rU) {
+    case "100":
+      forward();
+      break;
+    case "200":
+    default:
+      send("1.2.3.4");
+  }
+}

@@ -1,0 +1,7 @@
+route[abc] {
+  $var(x) = 1 + 2 * 3;
+  $var(y) = "a" + $rU;
+  while ($var(x) < 10) {
+    $var(x) = $var(x) + 1;
+  }
+}

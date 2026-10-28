@@ -1,0 +1,8 @@
+route{
+  if ($rU == "123") {
+    forward();
+  } else {
+    drop;
+  }
+  exit;
+}
