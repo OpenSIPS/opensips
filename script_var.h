@@ -31,6 +31,7 @@
 
 #define VAR_VAL_STR     (1<<0)
 #define VAR_VAL_NULL    (1<<1)
+#define VAR_VAL_BOOL    (1<<2)
 
 typedef struct script_val {
 	int flags;

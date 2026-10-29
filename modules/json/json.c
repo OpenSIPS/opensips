@@ -486,7 +486,7 @@ int pv_get_json_ext(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val, int 
 		int_value = json_object_get_boolean(obj);
 		val->rs = int_value ? str_init("true") : str_init("false");
 		val->ri = int_value;
-		val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR;
+		val->flags |= PV_VAL_INT|PV_TYPE_INT|PV_VAL_STR|PV_VAL_BOOL;
 	}
 	else if( json_object_is_type(obj, json_type_int) )
 	{
@@ -693,7 +693,11 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 	}
 	else
 	{
-		if( pvv_is_int(val))
+		if (val->flags & PV_VAL_BOOL)
+		{
+			obj = json_object_new_boolean(val->ri);
+		}
+		else if( pvv_is_int(val))
 		{
 			obj = json_object_new_int(val->ri);
 		}

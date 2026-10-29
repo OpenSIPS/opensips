@@ -58,6 +58,7 @@
 #define PV_TYPE_INT			16
 #define PV_VAL_PKG			32
 #define PV_VAL_SHM			64
+#define PV_VAL_BOOL			128
 
 #define PV_PARAM_PVV_SHM	1
 

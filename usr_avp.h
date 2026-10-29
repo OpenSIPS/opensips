@@ -41,6 +41,7 @@
  *     0        avp_core          avp has a string name
  *     1        avp_core          avp has a string value
  *     2        core              contact avp qvalue change
+ *     3        avp_core          avp has a boolean value
  *     7        sqlops module     avp was loaded from DB
  *
  */
@@ -73,6 +74,7 @@ struct usr_avp {
 #define AVP_NAME_STR     (1<<0)
 #define AVP_VAL_STR      (1<<1)
 #define AVP_VAL_NULL     (1<<2)
+#define AVP_VAL_BOOL     (1<<3)
 
 #define is_avp_str_name(a)	(a->flags&AVP_NAME_STR)
 #define is_avp_str_val(a)	(a->flags&AVP_VAL_STR)
