@@ -682,6 +682,7 @@ static int l_siplua_scriptVarGet(lua_State *L)
     {
       switch (it->v.flags)
 	{
+	case VAR_VAL_BOOL:
 	case 0:
 	  lua_pushinteger(L, it->v.value.n);
 	  break;

@@ -915,8 +915,8 @@ static int w_shuffle_avps(struct sip_msg* msg, pv_spec_t *pv_name)
 		src_avp = search_index_avp(avp_type, avp_name, &src_val, (n-1));
 		rnd_avp = search_index_avp(avp_type, avp_name, &rnd_val, rnd_idx);
 
-		if ( replace_avp(avp_type|(rnd_avp->flags&AVP_VAL_STR), avp_name, rnd_val, (n-1))==-1 ||
-					replace_avp(avp_type|(src_avp->flags&AVP_VAL_STR), avp_name, src_val, rnd_idx)==-1 ) {
+		if ( replace_avp(avp_type|(rnd_avp->flags&(AVP_VAL_STR|AVP_VAL_BOOL)), avp_name, rnd_val, (n-1))==-1 ||
+					replace_avp(avp_type|(src_avp->flags&(AVP_VAL_STR|AVP_VAL_BOOL)), avp_name, src_val, rnd_idx)==-1 ) {
 			LM_ERR("failed to swap avp\n");
 			goto error;
 		}

@@ -2747,7 +2747,12 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		} else if(avp->flags & AVP_VAL_NULL) {
 			res->flags |= PV_VAL_NULL;
 		} else {
-			res->rs.s = sint2str(avp_value.n, &res->rs.len);
+			if (avp->flags & AVP_VAL_BOOL) {
+				res->rs = avp_value.n ? str_init("true") : str_init("false");
+				res->flags |= PV_VAL_BOOL;
+			} else {
+				res->rs.s = sint2str(avp_value.n, &res->rs.len);
+			}
 			res->ri = avp_value.n;
 			res->flags |= PV_VAL_INT|PV_TYPE_INT;
 		}
@@ -2764,6 +2769,8 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			res->rs = avp_value.s;
 		} else if(avp->flags & AVP_VAL_NULL) {
 			memset(&res->rs, 0, sizeof res->rs);
+		} else if(avp->flags & AVP_VAL_BOOL) {
+			res->rs = avp_value.n ? str_init("true") : str_init("false");
 		} else {
 			res->rs.s = sint2str(avp_value.n, &res->rs.len);
 		}
@@ -2783,6 +2790,8 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 				res->rs = avp_value.s;
 			} else if(avp->flags & AVP_VAL_NULL) {
 				memset(&res->rs, 0, sizeof res->rs);
+			} else if(avp->flags & AVP_VAL_BOOL) {
+				res->rs = avp_value.n ? str_init("true") : str_init("false");
 			} else {
 				res->rs.s = sint2str(avp_value.n, &res->rs.len);
 			}
@@ -2831,7 +2840,12 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 			} else if(avp->flags & AVP_VAL_NULL) {
 				res->flags |= PV_VAL_NULL;
 			} else {
-				res->rs.s = sint2str(avp_value.n, &res->rs.len);
+				if (avp->flags & AVP_VAL_BOOL) {
+					res->rs = avp_value.n ? str_init("true") : str_init("false");
+					res->flags |= PV_VAL_BOOL;
+				} else {
+					res->rs.s = sint2str(avp_value.n, &res->rs.len);
+				}
 				res->ri = avp_value.n;
 				res->flags |= PV_VAL_INT|PV_TYPE_INT;
 			}
@@ -2850,7 +2864,12 @@ static int pv_get_avp(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		} else if(avp->flags & AVP_VAL_NULL) {
 			res->flags |= PV_VAL_NULL;
 		} else {
-			res->rs.s = sint2str(avp_value.n, &res->rs.len);
+			if (avp->flags & AVP_VAL_BOOL) {
+				res->rs = avp_value.n ? str_init("true") : str_init("false");
+				res->flags |= PV_VAL_BOOL;
+			} else {
+				res->rs.s = sint2str(avp_value.n, &res->rs.len);
+			}
 			res->ri = avp_value.n;
 			res->flags |= PV_VAL_INT|PV_TYPE_INT;
 		}
@@ -3217,13 +3236,18 @@ static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 		res->rs = sv->v.value.s;
 		res->flags = PV_VAL_STR;
 	} else {
-		sval = sint2str(sv->v.value.n, &ival);
-
-		res->rs.s = sval;
-		res->rs.len = ival;
+		if (sv->v.flags & VAR_VAL_BOOL) {
+			res->rs = sv->v.value.n ? str_init("true") : str_init("false");
+			res->flags = PV_VAL_BOOL;
+		} else {
+			sval = sint2str(sv->v.value.n, &ival);
+			res->rs.s = sval;
+			res->rs.len = ival;
+			res->flags = 0;
+		}
 
 		res->ri = sv->v.value.n;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		res->flags |= PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	}
 	return 0;
 }
@@ -3277,6 +3301,8 @@ static int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 	if(val->flags&PV_TYPE_INT)
 	{
 		avp_val.n = val->ri;
+		if (val->flags & PV_VAL_BOOL)
+			flags |= AVP_VAL_BOOL;
 	} else {
 		avp_val.s = val->rs;
 		flags |= AVP_VAL_STR;
@@ -3336,7 +3362,7 @@ static int pv_set_scriptvar(struct sip_msg* msg, pv_param_t *param,
 	if(val->flags&PV_TYPE_INT)
 	{
 		avp_val.n = val->ri;
-		flags = 0;
+		flags = val->flags & PV_VAL_BOOL ? VAR_VAL_BOOL : 0;
 	} else {
 		avp_val.s = val->rs;
 		flags = VAR_VAL_STR;
