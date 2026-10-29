@@ -37,6 +37,8 @@
  *  2007-01-25  DNS failover at transaction level added (bogdan)
  */
 
+#include <stdint.h>
+
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../ut.h"
@@ -749,6 +751,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	branch_bm_t  added_branches = BRANCH_BM_ZERO;
 	struct cell *t_invite;
 	int i, success_branch, send_ret;
+	unsigned long long tcp_chunk_fail_token;
 	const struct socket_info *bk_sock;
 	unsigned int bk_bflags;
 	struct msg_branch *branch;
@@ -907,8 +910,11 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 
 					tcp_chunk_fail_token = TM_CHUNK_FAIL_TOKEN(
 						t->hash_index, t->label, i);
+					if (tcp_register_fail_cb(tm_tcp_chunk_fail,
+						(void *)(uintptr_t)tcp_chunk_fail_token, NULL) < 0)
+						LM_ERR("failed to register TCP chunk failure callback\n");
 					send_ret = SEND_BUFFER( &uac->request);
-					tcp_chunk_fail_token = 0;
+					tcp_clear_fail_cb();
 
 					if (send_ret==0) {
 						reset_bavp_list();
