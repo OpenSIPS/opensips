@@ -124,10 +124,17 @@ struct tcp_tls_info {
 };
 
 
-typedef void (tcp_chunk_fail_f)(unsigned long long token);
+typedef void (tcp_fail_f)(void *param);
+typedef void (tcp_fail_free_f)(void *param);
+
+struct tcp_fail_cb {
+	tcp_fail_f *f;
+	void *param;
+	tcp_fail_free_f *free;
+};
 
 struct tcp_async_chunk {
-	unsigned long long fail_token;
+	struct tcp_fail_cb fail_cb;
 	char *buf; /* buffer that needs to be sent out */
 	int len;   /* length of the buffer */
 	int ticks; /* time at which this chunk was initially

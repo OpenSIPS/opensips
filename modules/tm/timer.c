@@ -113,6 +113,7 @@
 #include "t_cancel.h"
 #include "t_lookup.h"
 #include "t_stats.h"
+#include <stdint.h>
 
 
 static struct timer_table *timertable=0;
@@ -275,8 +276,9 @@ static void fake_reply(struct cell *t, int branch, int code )
 
 
 
-void tm_tcp_chunk_fail(unsigned long long token)
+void tm_tcp_chunk_fail(void *param)
 {
+	unsigned long long token = (unsigned long long)(uintptr_t)param;
 	unsigned int hash_index = (token >> 9) & 0xffff;
 	unsigned int label = token >> 25;
 	int branch = (int)(token & 0x1ff) - 1;

@@ -108,7 +108,7 @@ void reset_timer( struct timer_link* tl );
 #define TM_CHUNK_FAIL_TOKEN(_hash, _label, _branch) \
 	(((unsigned long long)(_label) << 25) | ((unsigned long long)(_hash) << 9) | ((_branch) + 1))
 
-void tm_tcp_chunk_fail(unsigned long long token);
+void tm_tcp_chunk_fail(void *param);
 
 /* determine timer length and put on a correct timer list */
 void set_timer( struct timer_link *new_tl, enum lists list_id,
