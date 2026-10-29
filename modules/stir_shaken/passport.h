@@ -124,6 +124,8 @@ struct parsed_identity {
  * Copy the str before the next call; free only its buffer. */
 str *passport_build_identity(EVP_PKEY *pkey, time_t iat, str *attest,
 	str *x5u, str *orig, str *dest, str *origid);
+str *passport_build_div(EVP_PKEY *pkey, time_t iat, str *x5u,
+	str *orig, str *div, str *dest);
 
 /* Pass a zero-initialized parsed object and writable input (decoding temporarily
  * changes padding). Clean up the object even when parsing fails. */

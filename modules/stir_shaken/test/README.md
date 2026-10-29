@@ -18,3 +18,11 @@ checks the exact JWS protected-header and payload segments. ES256 signatures
 are not compared as strings because ECDSA signing may use a fresh nonce; the
 signature segment is instead verified cryptographically with the fixture
 certificate.
+
+DIV AS tests additionally exercise the exported signing implementation:
+default stale-token rejection, trusted prior verification, preservation of the
+original caller, canonical targets, fresh `iat`, STI credential requirements,
+SOS targets, repeated signing, immediate base-plus-DIV signing, unordered
+received headers, and broken/cyclic chain rejection. The DIV signature is
+independently checked over the actual encoded header and payload. The fixture
+SPC certificate and private key are public test data only.

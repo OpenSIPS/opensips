@@ -69,7 +69,7 @@ static int ss_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
 	return tolen;
 }
 
-static char *build_pport_hdr_json(str *cr_url)
+static char *build_pport_hdr_json(str *cr_url, const char *ppt)
 {
 	char *json_str;
 	cJSON *header, *item;
@@ -87,7 +87,7 @@ static char *build_pport_hdr_json(str *cr_url)
 	}
 	cJSON_AddItemToObjectCS(header, PPORT_HDR_ALG, item);
 
-	item = cJSON_CreateString(PPORT_HDR_PPT_VAL);
+	item = cJSON_CreateString(ppt);
 	if (!item) {
 		LM_ERR("Failed to add json item\n");
 		goto error;
@@ -204,12 +204,56 @@ error:
 	return NULL;
 }
 
-static int build_unsigned_pport(str *buf, time_t iat_ts, str *attest,
-	str *cr_url, str *orig_tn, str *dest_tn, str *origid)
+static char *build_div_payload(time_t iat, str *orig, str *div, str *dest)
+{
+	cJSON *payload = cJSON_CreateObject(), *obj, *value;
+	str *ids[] = {dest, div, orig};
+	const char *names[] = {"dest", "div", "orig"};
+	char *json = NULL;
+	int i;
+
+	if (!payload)
+		return NULL;
+	/* Claim order follows PASSporT canonical serialization. */
+	for (i = 0; i < 3; i++) {
+		obj = cJSON_CreateObject();
+		if (!obj)
+			goto out;
+		cJSON_AddItemToObjectCS(payload, names[i], obj);
+		value = cJSON_CreateStr(ids[i]->s, ids[i]->len);
+		if (!value)
+			goto out;
+		if (i == 0) {
+			cJSON *array = cJSON_CreateArray();
+			if (!array) {
+				cJSON_Delete(value);
+				goto out;
+			}
+			cJSON_AddItemToArray(array, value);
+			value = array;
+		}
+		cJSON_AddItemToObjectCS(obj,
+			ids[i]->len >= 4 && !memcmp(ids[i]->s, "urn:", 4) ? "uri" : "tn",
+			value);
+		if (i == 1) {
+			value = cJSON_CreateNumber((double)iat);
+			if (!value)
+				goto out;
+			cJSON_AddItemToObjectCS(payload, "iat", value);
+		}
+	}
+	json = cJSON_PrintUnformatted(payload);
+out:
+	cJSON_Delete(payload);
+	return json;
+}
+
+static int build_unsigned_pport_type(str *buf, time_t iat_ts, str *attest,
+	str *cr_url, str *orig_tn, str *dest_tn, str *origid, str *div)
 {
 	str hdr_json_str = {0,0}, payload_json_str = {0,0};
 
-	hdr_json_str.s = build_pport_hdr_json(cr_url);
+	hdr_json_str.s = build_pport_hdr_json(cr_url, div ? "div" : "shaken");
 	if (!hdr_json_str.s) {
 		LM_ERR("Failed to build PASSporT's json header\n");
 		return -1;
@@ -218,8 +262,8 @@ static int build_unsigned_pport(str *buf, time_t iat_ts, str *attest,
 
 	LM_DBG("Built PASSporT Header: %s\n", hdr_json_str.s);
 
-	payload_json_str.s = build_pport_payload_json(attest, orig_tn, dest_tn,
-		iat_ts, origid);
+	payload_json_str.s = div ? build_div_payload(iat_ts, orig_tn, div, dest_tn) :
+		build_pport_payload_json(attest, orig_tn, dest_tn, iat_ts, origid);
 	if (!payload_json_str.s) {
 		LM_ERR("Failed to build PASSporT's json payload\n");
 		goto error;
@@ -267,6 +311,13 @@ error:
 	return -1;
 }
 
+static int build_unsigned_pport(str *buf, time_t iat, str *attest,
+	str *x5u, str *orig, str *dest, str *origid)
+{
+	return build_unsigned_pport_type(buf, iat, attest, x5u, orig, dest,
+		origid, NULL);
+}
+
 static void ss_ecdsa_sig_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
 	const BIGNUM **ps)
 {
@@ -278,12 +329,12 @@ static void ss_ecdsa_sig_get0(const ECDSA_SIG *sig, const BIGNUM **pr,
 #endif
 }
 
-str *passport_build_identity(EVP_PKEY *pkey,
+static str *build_identity_type(EVP_PKEY *pkey,
 	time_t date_ts, str *attest, str *cr_url, str *orig_tn,
-	str *dest_tn, str *origid)
+	str *dest_tn, str *origid, str *div)
 {
 	static str hdr_buf = {0,0};
-	str unsigned_buf;
+	str unsigned_buf = STR_NULL;
 	str der_sig_buf = {0,0};
 	unsigned char *der_sig_p;
 	unsigned char raw_sig_buf[RAW_SIG_LEN];
@@ -291,9 +342,14 @@ str *passport_build_identity(EVP_PKEY *pkey,
 	ECDSA_SIG *sig = NULL;
 	const BIGNUM *r, *s;
 	int len;
+	size_t sig_len;
+	const char *ppt_param = div ? "ppt=div" : HDR_PPT_PARAM_S;
+	int ppt_len = strlen(ppt_param);
 
-	if (build_unsigned_pport(&unsigned_buf, date_ts, attest, cr_url,
-		orig_tn, dest_tn, origid) < 0) {
+	hdr_buf.s = NULL;
+
+	if (build_unsigned_pport_type(&unsigned_buf, date_ts, attest, cr_url,
+		orig_tn, dest_tn, origid, div) < 0) {
 		LM_ERR("Failed to build PASSporT\n");
 		return NULL;
 	}
@@ -312,11 +368,11 @@ str *passport_build_identity(EVP_PKEY *pkey,
 		goto error;
 	}
 
-	if (EVP_DigestSignFinal(mdctx, NULL, (size_t *)&der_sig_buf.len) <= 0) {
+	if (EVP_DigestSignFinal(mdctx, NULL, &sig_len) <= 0) {
 		LM_ERR("Failed to get maximum signature length\n");
 		goto error;
 	}
-	der_sig_buf.s = pkg_malloc(der_sig_buf.len);
+	der_sig_buf.s = pkg_malloc(sig_len);
 	if (!der_sig_buf.s) {
 		LM_ERR("oom!\n");
 		goto error;
@@ -324,10 +380,11 @@ str *passport_build_identity(EVP_PKEY *pkey,
 	der_sig_p = (unsigned char *)der_sig_buf.s;
 
 	if (EVP_DigestSignFinal(mdctx, (unsigned char*)der_sig_buf.s,
-		(size_t *)&der_sig_buf.len) <= 0) {
+		&sig_len) <= 0) {
 		LM_ERR("Failed to sign data\n");
 		goto error;
 	}
+	der_sig_buf.len = sig_len;
 
 	EVP_MD_CTX_destroy(mdctx);
 	mdctx = NULL;
@@ -361,7 +418,7 @@ str *passport_build_identity(EVP_PKEY *pkey,
 
 	hdr_buf.len = IDENTITY_HDR_LEN + unsigned_buf.len + 1/*'.'*/ +
 		calc_base64_encode_len(RAW_SIG_LEN) + 1/*';'*/ + HDR_INFO_PARAM_LEN +
-		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_ALG_PARAM_LEN + 1/*';'*/ + HDR_PPT_PARAM_LEN + CRLF_LEN;
+		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_ALG_PARAM_LEN + 1/*';'*/ + ppt_len + CRLF_LEN;
 	hdr_buf.s = pkg_malloc(hdr_buf.len);
 	if (!hdr_buf.s) {
 		LM_ERR("oom!\n");
@@ -374,6 +431,7 @@ str *passport_build_identity(EVP_PKEY *pkey,
 	hdr_buf.s[hdr_buf.len++] = PPORT_SEPARATOR;
 
 	pkg_free(unsigned_buf.s);
+	unsigned_buf.s = NULL;
 
 	base64urlencode((unsigned char*)(hdr_buf.s + hdr_buf.len),
 		(unsigned char*)raw_sig_buf, RAW_SIG_LEN);
@@ -394,8 +452,8 @@ str *passport_build_identity(EVP_PKEY *pkey,
 	memcpy(hdr_buf.s + hdr_buf.len, HDR_ALG_PARAM_S, HDR_ALG_PARAM_LEN);
         hdr_buf.len += HDR_ALG_PARAM_LEN;
         hdr_buf.s[hdr_buf.len++] = ';';
-	memcpy(hdr_buf.s + hdr_buf.len, HDR_PPT_PARAM_S, HDR_PPT_PARAM_LEN);
-	hdr_buf.len += HDR_PPT_PARAM_LEN;
+	memcpy(hdr_buf.s + hdr_buf.len, ppt_param, ppt_len);
+	hdr_buf.len += ppt_len;
 	memcpy(hdr_buf.s + hdr_buf.len, CRLF, CRLF_LEN);
 	hdr_buf.len += CRLF_LEN;
 
@@ -413,6 +471,18 @@ error:
 		ECDSA_SIG_free(sig);
 
 	return NULL;
+}
+
+str *passport_build_identity(EVP_PKEY *pkey, time_t iat, str *attest,
+	str *x5u, str *orig, str *dest, str *origid)
+{
+	return build_identity_type(pkey, iat, attest, x5u, orig, dest, origid, NULL);
+}
+
+str *passport_build_div(EVP_PKEY *pkey, time_t iat, str *x5u,
+	str *orig, str *div, str *dest)
+{
+	return build_identity_type(pkey, iat, NULL, x5u, orig, dest, NULL, div);
 }
 
 /* decode base64url without padding

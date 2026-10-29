@@ -286,6 +286,79 @@ stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
 ```
 
 
+#### stir_shaken_auth_div(cert, pkey, x5u, [orig], [div], [dest], [out], [previously_verified])
+
+Append a full-form `div` PASSporT for an authorized retargeting event, following
+ATIS-1000085.v003. An existing `shaken` PASSporT is required. The function
+preserves received Identity headers and follows existing `div` links regardless
+of header order. It also sees Identity headers appended by previous
+`stir_shaken_auth()` and `stir_shaken_auth_div()` calls in the same request.
+
+Before calling, the script must authorize the retargeting entity and ensure
+that the received PASSporTs have been cryptographically verified. This function
+performs structural chain checks; it does not fetch or verify certificates for
+received PASSporTs. The signer must be entitled to fully attest the retargeting
+identity under ATIS-1000085 clause 5.6.3. Presence of a Diversion or History-Info
+header alone does not establish that authorization.
+
+Parameters:
+
+- `cert`, `pkey`, `x5u`: PEM certificate, PEM private key, and certificate URL.
+  The certificate must currently be valid, contain TNAuthList, and match a
+  P-256 private key. Certificate trust, TNAuthList scope, and customer/TN
+  authorization remain SP policy; the function does not infer authority merely
+  from the extension's presence.
+- `orig`: defaults to the innermost `shaken.orig`. An explicit value must match
+  that original TN after canonicalization.
+- `div`: defaults to the current outermost destination. An explicit value must
+  be one of its destinations. Supply this value to select from a multi-target
+  outermost PASSporT.
+- `dest`: defaults to the current Request-URI, including changes made by the
+  routing script. Unlike base SHAKEN signing, this does not default to To.
+- `out`: omit or use `req` to append to the request; alternatively pass a quoted
+  writable variable, such as `"$var(identity_hdr)"`. `rpl` is not supported for
+  ATIS DIV authentication. Variable output is not considered appended until
+  the script actually attaches it to the message.
+- `previously_verified`: optional boolean, default `false`. When `false`, the
+  existing outermost `iat` must satisfy `verify_date_freshness` now. `true`
+  asserts trusted prior verification, including freshness before a legitimate
+  call-handling delay. It skips only this age check, not structural validation
+  or signing-credential checks. A freshness failure recorded by the existing
+  verifier in this processing context always prevents DIV signing.
+
+`orig` is a telephone number. `div` and `dest` accept telephone numbers or
+RFC 5031 `urn:service:sos` URNs; other URI values are rejected. Leading `+` is
+removed from TNs. The canonical destination must change. The generated payload
+contains only `dest`, `div`, a current creation-time `iat`, and `orig`.
+
+Return values:
+
+- `1`: success;
+- `-1`: internal, key-loading, or output error;
+- `-2`: no SHAKEN root;
+- `-3`: invalid argument, changed caller identity, or unchanged destination;
+- `-4`: stale outermost token or recorded freshness failure;
+- `-5`: expired/unsuitable certificate, missing TNAuthList, non-P-256 key,
+  or certificate/key mismatch;
+- `-7`: malformed, broken, cyclic, ambiguous, or excessive chain.
+
+This initial AS implementation accepts up to 64 PASSporTs and one SHAKEN root.
+Additional PASSporT types may coexist; multiple distinct SHAKEN roots and
+branching diversion chains fail rather than selecting one silently.
+
+```opensips
+# Authorize the retargeting customer and verify the received chain first.
+# Apply retargeting before signing, so Request-URI identifies the new target.
+if (!stir_shaken_auth_div($var(cert), $var(key),
+        "https://certs.example.net/stir.pem")) {
+    xlog("L_WARN", "DIV signing failed: $retcode\n");
+}
+
+# Only for a trusted record of successful verification before a call delay:
+stir_shaken_auth_div($var(cert), $var(key),
+    "https://certs.example.net/stir.pem", , , , , true);
+```
+
 #### stir_shaken_verify(cert, err_code, err_reason, [orig], [dest])
 
 

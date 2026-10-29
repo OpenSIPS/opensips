@@ -42,6 +42,7 @@
 #undef _GNU_SOURCE
 
 #include <stdlib.h>
+#include <math.h>
 
 #include "../../dprint.h"
 #include "../../sr_module.h"
@@ -60,6 +61,7 @@
 #include "../../mi/mi.h"
 
 #include "stir_shaken.h"
+#include "div.h"
 
 #define parsed_ctx_get() \
 	(current_processing_ctx == NULL ? NULL : \
@@ -106,6 +108,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code, pv_spec_t *err_reason, str *orig_tn_p, str *dest_tn_p);
 static int w_stir_check(struct sip_msg *msg);
 static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf);
+static int w_stir_auth_div(struct sip_msg *msg, str *cert_buf, str *key_buf,
+	str *x5u, str *orig, str *div, str *dest, struct auth_out_param *out,
+	int *previously_verified);
 static int fixup_attest(void **param);
 static int fixup_check_wrvar(void **param);
 
@@ -141,6 +146,15 @@ static int require_date_hdr = 1;
 static ASN1_OBJECT *tn_authlist_obj;
 
 static int parsed_ctx_idx =-1;
+static int generated_ctx_idx = -1;
+static int stale_ctx_idx = -1;
+
+struct generated_identity {
+	struct sip_msg *msg;
+	unsigned int msg_id;
+	str body;
+	struct generated_identity *next;
+};
 
 static X509_STORE *store;
 static gen_lock_t *ss_openssl_lock;
@@ -166,6 +180,16 @@ static const pv_export_t mod_items[] = {
 };
 
 static const cmd_export_t cmds[] = {
+	{"stir_shaken_auth_div", (cmd_function)w_stir_auth_div, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
+			fixup_auth_out, fixup_free_pkg},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_auth", (cmd_function)w_stir_auth, {
 		{CMD_PARAM_STR, fixup_attest, 0},
 		{CMD_PARAM_STR, 0, 0},
@@ -390,6 +414,43 @@ static void parsed_ctx_free(void *param)
 	pkg_free(parsed);
 }
 
+static void generated_identity_free(void *ptr)
+{
+	struct generated_identity *p = ptr, *next;
+	while (p) {
+		next = p->next;
+		pkg_free(p);
+		p = next;
+	}
+}
+
+/* Track only headers actually appended to this request. Lumps are not visible
+ * to the SIP header parser until the message is serialized. */
+static struct generated_identity *prepare_generated(struct sip_msg *msg,
+	str *header)
+{
+	struct generated_identity *p;
+	if (!current_processing_ctx)
+		return NULL;
+	p = pkg_malloc(sizeof(*p) + header->len);
+	if (!p)
+		return NULL;
+	p->msg = msg;
+	p->msg_id = msg->id;
+	p->body.s = (char *)(p + 1);
+	p->body.len = header->len - IDENTITY_HDR_LEN - CRLF_LEN;
+	memcpy(p->body.s, header->s + IDENTITY_HDR_LEN, p->body.len);
+	p->next = NULL;
+	return p;
+}
+
+static void commit_generated(struct generated_identity *p)
+{
+	p->next = context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+		generated_ctx_idx);
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, generated_ctx_idx, p);
+}
+
 static int mod_init(void)
 {
 	tn_authlist_obj = OBJ_txt2obj(TN_AUTH_LIST_OID, 1);
@@ -402,6 +463,8 @@ static int mod_init(void)
 		return -1;
 
 	parsed_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, parsed_ctx_free);
+	generated_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, generated_identity_free);
+	stale_ctx_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
 	return 0;
 }
@@ -864,6 +927,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	str *hdr_buf = NULL;
 	struct lump* anchor;
 	pv_value_t out_val;
+	struct generated_identity *generated = NULL;
 
 	/* looking for 'Identity' and 'Date' */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -964,6 +1028,11 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	}
 
 	if (!out_p || out_p->type == AUTH_APPEND_TO_REQ) {
+		generated = prepare_generated(msg, hdr_buf);
+		if (!generated) {
+			rc = -1;
+			goto error;
+		}
 		anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 		if (!anchor) {
 			LM_ERR("Failed to get anchor lump\n");
@@ -975,6 +1044,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 			rc = -1;
 			goto error;
 		}
+		commit_generated(generated);
 	} else if (out_p->type == AUTH_APPEND_TO_RPL) {
 		if (!add_lump_rpl(msg, hdr_buf->s, hdr_buf->len, LUMP_RPL_HDR|LUMP_RPL_NODUP)) {
 			LM_ERR("unable to add reply lump\n");
@@ -997,11 +1067,186 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 
 	return 1;
 error:
+	if (generated)
+		pkg_free(generated);
 	if (hdr_buf)
 		pkg_free(hdr_buf->s);
 	X509_free(cert);
 	if (pkey)
 		EVP_PKEY_free(pkey);
+	return rc;
+}
+
+static int has_tn_authlist(X509 *cert)
+{
+	int i;
+	char oid[128];
+	X509_EXTENSION *ext;
+	for (i = 0; i < X509_get_ext_count(cert); i++) {
+		ext = X509_get_ext(cert, i);
+		if (ext && OBJ_obj2txt(oid, sizeof(oid),
+			X509_EXTENSION_get_object(ext), 1) > 0 &&
+			!strcmp(oid, TN_AUTH_LIST_OID))
+			return 1;
+	}
+	return 0;
+}
+
+static int w_stir_auth_div(struct sip_msg *msg, str *cert_buf, str *key_buf,
+	str *x5u, str *orig_arg, str *div_arg, str *dest_arg,
+	struct auth_out_param *out, int *previously_verified)
+{
+	struct div_chain chain = {0};
+	struct hdr_field *hf;
+	struct generated_identity *g, *generated = NULL;
+	struct lump *anchor;
+	struct sip_uri uri;
+	str orig, from, dest, *header = NULL;
+	X509 *cert = NULL;
+	EVP_PKEY *key = NULL;
+	EC_KEY *ec = NULL;
+	pv_value_t val;
+	time_t now;
+	int rc = -1;
+
+	if (!current_processing_ctx || parse_headers(msg, HDR_EOH_F, 0) < 0)
+		goto done;
+	if (context_get_int(CONTEXT_GLOBAL, current_processing_ctx, stale_ctx_idx)) {
+		LM_NOTICE("refusing div authentication after a recorded freshness failure\n");
+		rc = -4;
+		goto done;
+	}
+	if (previously_verified && *previously_verified != 0 && *previously_verified != 1) {
+		rc = -3;
+		goto done;
+	}
+	/* URI delimiters in x5u would corrupt the generated SIP header. */
+	if (!x5u->len || memchr(x5u->s, '\r', x5u->len) ||
+		memchr(x5u->s, '\n', x5u->len) || memchr(x5u->s, '>', x5u->len) ||
+		memchr(x5u->s, '<', x5u->len) || memchr(x5u->s, ' ', x5u->len) ||
+		memchr(x5u->s, '\t', x5u->len)) {
+		rc = -3;
+		goto done;
+	}
+	for (hf = get_header_by_static_name(msg, "Identity"); hf;
+		hf = get_next_header_by_static_name(hf, "Identity")) {
+		if (div_chain_add(&chain, &hf->body) < 0) {
+			rc = -7;
+			goto done;
+		}
+	}
+	for (g = context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+		generated_ctx_idx); g; g = g->next) {
+		if (g->msg == msg && g->msg_id == msg->id &&
+			div_chain_add(&chain, &g->body) < 0) {
+			rc = -7;
+			goto done;
+		}
+	}
+	if (div_arg) {
+		from = *div_arg;
+		if (div_normalize(&from, 1)) {
+			rc = -3;
+			goto done;
+		}
+	}
+	rc = div_chain_select(&chain, div_arg ? &from : NULL);
+	if (rc < 0)
+		goto done;
+	orig = orig_arg ? *orig_arg : chain.orig;
+	if (div_normalize(&orig, 0) || str_strcmp(&orig, &chain.orig)) {
+		rc = -3;
+		goto done;
+	}
+	from = chain.previous;
+	if (dest_arg) {
+		dest = *dest_arg;
+	} else {
+		str ruri = *GET_RURI(msg);
+		if (ruri.len >= 4 && !memcmp(ruri.s, "urn:", 4)) {
+			dest = ruri;
+		} else {
+			if (parse_uri(ruri.s, ruri.len, &uri) < 0 ||
+				(uri.type != SIP_URI_T && uri.type != SIPS_URI_T &&
+				 uri.type != TEL_URI_T && uri.type != TELS_URI_T)) {
+				rc = -3;
+				goto done;
+			}
+			dest = uri.user;
+			trim_user_params(&dest);
+		}
+	}
+	if (div_normalize(&dest, 1) || div_normalize(&from, 1) ||
+		!str_strcmp(&from, &dest)) {
+		rc = -3;
+		goto done;
+	}
+	now = time(NULL);
+	if (now == (time_t)-1) {
+		rc = -1;
+		goto done;
+	}
+	if ((!previously_verified || !*previously_verified) &&
+		fabs(difftime(now, chain.iat)) > verify_date_freshness) {
+		LM_NOTICE("outermost PASSporT is stale; refusing div authentication\n");
+		rc = -4;
+		goto done;
+	}
+	if (load_cert(&cert, NULL, cert_buf) || load_pkey(&key, key_buf)) {
+		rc = -1;
+		goto done;
+	}
+	ec = EVP_PKEY_get1_EC_KEY(key);
+	if (!check_cert_validity(&now, cert) || !has_tn_authlist(cert) ||
+		!ec || EC_GROUP_get_curve_name(EC_KEY_get0_group(ec)) != NID_X9_62_prime256v1 ||
+		X509_check_private_key(cert, key) != 1) {
+		rc = -5;
+		goto done;
+	}
+	/* Trust and TN authorization are SP policy, as with base authentication. */
+	header = passport_build_div(key, now, x5u, &orig, &from, &dest);
+	if (!header) {
+		rc = -1;
+		goto done;
+	}
+	if (!out || out->type == AUTH_APPEND_TO_REQ) {
+		generated = prepare_generated(msg, header);
+		anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+		if (!generated || !anchor ||
+			!insert_new_lump_before(anchor, header->s, header->len, 0)) {
+			rc = -1;
+			goto done;
+		}
+		commit_generated(generated);
+		generated = NULL;
+		header = NULL; /* lump owns the buffer */
+	} else if (out->type == AUTH_OUT_VAR) {
+		val.flags = PV_VAL_STR;
+		val.rs = *header;
+		if (pv_set_value(msg, &out->var, 0, &val)) {
+			rc = -1;
+			goto done;
+		}
+	} else {
+		/* ATIS authenticates the retargeted request, not a 3xx response. */
+		rc = -3;
+		goto done;
+	}
+	rc = 1;
+done:
+	if (rc < 0)
+		LM_NOTICE("DIV authentication failed (rc=%d)\n", rc);
+	if (generated)
+		pkg_free(generated);
+	if (header)
+		pkg_free(header->s);
+	if (key)
+		EVP_PKEY_free(key);
+	if (ec)
+		EC_KEY_free(ec);
+	if (cert)
+		X509_free(cert);
+	div_chain_cleanup(&chain);
 	return rc;
 }
 
@@ -1168,6 +1413,8 @@ static int set_err_resp_vars(struct sip_msg *msg, pv_spec_t *err_code_var,
 
 #define SET_VERIFY_ERR_VARS(_code, _reason)  \
 	do {  \
+		if ((_code) == STALE_DATE_CODE && current_processing_ctx) \
+			context_put_int(CONTEXT_GLOBAL, current_processing_ctx, stale_ctx_idx, 1); \
 		if (set_err_resp_vars(msg, err_code_var, err_reason_var,  \
 			_code, _reason) < 0) {  \
 			LM_ERR("Failed to set error output variables\n");  \
@@ -1647,6 +1894,30 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
 }
 
 #ifdef UNIT_TESTS
+int stir_shaken_test_auth_div(struct sip_msg *msg, str *cert, str *key,
+	str *x5u, str *orig, str *from, str *dest, int verified)
+{
+	return w_stir_auth_div(msg, cert, key, x5u, orig, from, dest, NULL, &verified);
+}
+
+int stir_shaken_test_auth_base(struct sip_msg *msg, str *cert, str *key, str *x5u)
+{
+	str attest = str_init("A"), origid = str_init("test-origid");
+	return w_stir_auth(msg, &attest, &origid, cert, key, x5u, NULL, NULL, NULL);
+}
+
+str *stir_shaken_test_last_generated(void)
+{
+	struct generated_identity *g = context_get_ptr(CONTEXT_GLOBAL,
+		current_processing_ctx, generated_ctx_idx);
+	return g ? &g->body : NULL;
+}
+
+void stir_shaken_test_mark_stale(void)
+{
+	context_put_int(CONTEXT_GLOBAL, current_processing_ctx, stale_ctx_idx, 1);
+}
+
 /*
  * Keep the unit tests on the production PASSporT code paths without exposing
  * implementation details in normal module builds.

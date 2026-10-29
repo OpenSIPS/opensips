@@ -20,8 +20,17 @@
 
 #include <tap.h>
 
+#include "../div.h"
 #include "../../../mem/mem.h"
 #include "../../../str.h"
+#include "../../../context.h"
+#include "../../../ut.h"
+
+int stir_shaken_test_auth_div(struct sip_msg *, str *, str *, str *,
+	str *, str *, str *, int);
+int stir_shaken_test_auth_base(struct sip_msg *, str *, str *, str *);
+str *stir_shaken_test_last_generated(void);
+void stir_shaken_test_mark_stale(void);
 
 int stir_shaken_test_build_identity(time_t iat, str *attest, str *x5u,
 	str *orig, str *dest, str *origid, str *pkey_buf, str *identity);
@@ -141,8 +150,251 @@ static void test_outbound_authentication(void)
 	pkg_free(identity.s);
 }
 
+/* Static test-only SPC certificate; matching key is test_private_key. */
+static const char div_certificate[] =
+	"-----BEGIN CERTIFICATE-----\n"
+	"MIIBpDCCAUqgAwIBAgIUFQEaj/q6Qi/DNrbvnH1C1xC450swCgYIKoZIzj0EAwIw\n"
+	"HDEaMBgGA1UEAwwRT3BlblNJUFMtRElWLVRlc3QwIBcNMjYxMDI5MTU0OTMzWhgP\n"
+	"MjEyNjEwMDUxNTQ5MzNaMBwxGjAYBgNVBAMMEU9wZW5TSVBTLURJVi1UZXN0MFkw\n"
+	"EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjaRI7F43cbJ2U5BSadK1AscH5GFZXHfM\n"
+	"HNOo1peKJIBVGKxg1ZZifF/3qnaNPxCdK0vP8EUNtqpjFEnDJeq0OqNoMGYwHQYD\n"
+	"VR0OBBYEFIzLEW63TVd1F9hLDAtM9e2DTtlJMB8GA1UdIwQYMBaAFIzLEW63TVd1\n"
+	"F9hLDAtM9e2DTtlJMA8GA1UdEwEB/wQFMAMBAf8wEwYIKwYBBQUHARoEBzAFgAMw\n"
+	"MDEwCgYIKoZIzj0EAwIDSAAwRQIgF+K+pusq8y3rbcP4JzNJlgAjanzF1dEZvOqx\n"
+	"6+se3vwCIQD1sWIFSrxetIIhbMipCFsCTaLd0peHpHfBs9FsoaTQFA==\n"
+	"-----END CERTIFICATE-----\n";
+
+static int verify_div_signature(str *body, str *certbuf)
+{
+	struct parsed_identity p = {0};
+	BIO *bio = NULL;
+	X509 *cert = NULL;
+	EVP_PKEY *key = NULL;
+	EVP_MD_CTX *ctx = NULL;
+	ECDSA_SIG *sig = NULL;
+	BIGNUM *r = NULL, *s = NULL;
+	unsigned char der[80], *cursor = der;
+	char *first, *second;
+	int len, rc = 0;
+
+	if (passport_parse_identity(body, &p) < 0 || p.dec_signature.len != 64)
+		goto done;
+	first = memchr(body->s, '.', body->len);
+	second = first ? memchr(first+1, '.', body->len-(first+1-body->s)) : NULL;
+	bio = BIO_new_mem_buf(certbuf->s, certbuf->len);
+	cert = bio ? PEM_read_bio_X509(bio, NULL, 0, NULL) : NULL;
+	key = cert ? X509_get_pubkey(cert) : NULL;
+	ctx = EVP_MD_CTX_create();
+	sig = ECDSA_SIG_new();
+	if (!second || !key || !ctx || !sig)
+		goto done;
+#if defined(WOLFSSL_VERSION) || OPENSSL_VERSION_NUMBER < 0x10100000L
+	r = BN_bin2bn((unsigned char *)p.dec_signature.s, 32, sig->r);
+	s = BN_bin2bn((unsigned char *)p.dec_signature.s+32, 32, sig->s);
+#else
+	r = BN_bin2bn((unsigned char *)p.dec_signature.s, 32, NULL);
+	s = BN_bin2bn((unsigned char *)p.dec_signature.s+32, 32, NULL);
+	if (!r || !s) {
+		BN_free(r);
+		BN_free(s);
+		goto done;
+	}
+	ECDSA_SIG_set0(sig, r, s);
+#endif
+	if (!r || !s)
+		goto done;
+	len = i2d_ECDSA_SIG(sig, &cursor);
+	if (len > 0 && EVP_DigestVerifyInit(ctx, NULL, EVP_sha256(), NULL, key) == 1 &&
+		EVP_DigestVerifyUpdate(ctx, body->s, second-body->s) == 1)
+		rc = EVP_DigestVerifyFinal(ctx, der, len) == 1;
+done:
+	if (sig) ECDSA_SIG_free(sig);
+	if (ctx) EVP_MD_CTX_destroy(ctx);
+	if (key) EVP_PKEY_free(key);
+	if (cert) X509_free(cert);
+	if (bio) BIO_free(bio);
+	passport_identity_cleanup(&p);
+	return rc;
+}
+
+static void test_div_authentication(void)
+{
+	struct sip_msg msg = {0};
+	struct parsed_identity parsed = {0};
+	str cert = STR_NULL, key = {(char *)test_private_key, sizeof(test_private_key)-1};
+	str x5u = str_init(TEST_X5U);
+	str target = str_init("+12155551214"), later = str_init("12155551215");
+	str sos = str_init("urn:service:sos.fire"), bad = str_init("sip:evil@example.test");
+	str wrong_orig = str_init("12155559999"), body;
+	char input[sizeof(inbound_invite)];
+	int rc, yes = 1;
+	time_t before = time(NULL);
+	cJSON *value;
+
+	cert.s = (char *)div_certificate;
+	cert.len = sizeof(div_certificate)-1;
+	push_new_global_context();
+	memcpy(input, inbound_invite, sizeof(input));
+	msg.buf = input;
+	msg.len = sizeof(input)-1;
+	msg.ruri_q = Q_UNSPECIFIED;
+	if (parse_msg(input, msg.len, &msg) < 0) {
+		ok(0, "DIV signing test message setup");
+		goto done;
+	}
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &target, 0);
+	ok(rc == -4, "DIV signing defaults to rejecting stale outermost iat");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		&wrong_orig, NULL, &target, yes);
+	ok(rc == -3, "DIV signing cannot override the original caller");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &bad, yes);
+	ok(rc == -3, "DIV signing rejects arbitrary URI destinations");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, &later, &target, yes);
+	ok(rc == -7, "DIV rejects an explicit retarget-from outside the chain");
+	{
+		str unsuitable = {(char *)test_certificate, sizeof(test_certificate)-1};
+		rc = stir_shaken_test_auth_div(&msg, &unsuitable, &key, &x5u,
+			NULL, NULL, &target, yes);
+		ok(rc == -5, "DIV signing requires TNAuthList on the signing certificate");
+	}
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &target, yes);
+	ok(rc == 1, "trusted prior verification permits signing after a delay");
+	if (rc != 1)
+		goto done;
+	body = *stir_shaken_test_last_generated();
+	ok(verify_div_signature(&body, &cert), "DIV signature verifies over received A.B");
+	rc = passport_parse_identity(&body, &parsed);
+	value = rc == 0 ? cJSON_GetObjectItem(parsed.header, "ppt") : NULL;
+	ok(value && !strcmp(value->valuestring, "div") &&
+		!str_strcmp(&parsed.ppt_hdr_param, const_str("div")),
+		"DIV sets both protected and SIP ppt parameters");
+	ok(parsed.iat && parsed.iat->valuedouble >= before &&
+		parsed.iat->valuedouble <= time(NULL) &&
+		!cJSON_GetObjectItem(parsed.payload, "attest") &&
+		!cJSON_GetObjectItem(parsed.payload, "origid") &&
+		!cJSON_GetObjectItem(parsed.payload, "opt"),
+		"DIV uses fresh iat and does not copy SHAKEN-only claims");
+	ok(parsed.orig_tn && !strcmp(parsed.orig_tn->valuestring, TEST_ORIG) &&
+		parsed.dest_tn && !strcmp(parsed.dest_tn->valuestring, "12155551214") &&
+		!strcmp(cJSON_GetObjectItem(cJSON_GetObjectItem(parsed.payload, "div"),
+			"tn")->valuestring, TEST_DEST),
+		"DIV copies original caller and links canonical old/new targets");
+	passport_identity_cleanup(&parsed);
+	memset(&parsed, 0, sizeof(parsed));
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &later, 0);
+	ok(rc == 1, "subsequent DIV uses freshly appended outermost token");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &later, 0);
+	ok(rc == -3, "DIV rejects an unchanged canonical target");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &sos, 0);
+	ok(rc == 1, "DIV supports an SOS URN destination");
+	stir_shaken_test_mark_stale();
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &target, yes);
+	ok(rc == -4, "trusted flag cannot override a recorded freshness failure");
+done:
+	free_sip_msg(&msg);
+	pop_pushed_global_context();
+
+	/* A freshly generated base token must be visible before serialization. */
+	push_new_global_context();
+	memset(&msg, 0, sizeof(msg));
+	memcpy(input, inbound_invite, sizeof(input));
+	/* Remove the received Identity; the base AS will supply the only token. */
+	{
+		char *start = strstr(input, "Identity: "), *end = strstr(start, "\r\n");
+		memmove(start, end+2, strlen(end+2)+1);
+	}
+	msg.buf = input;
+	msg.len = strlen(input);
+	msg.ruri_q = Q_UNSPECIFIED;
+	parse_msg(input, msg.len, &msg);
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &target, yes);
+	ok(rc == -2, "DIV signing requires an existing SHAKEN token");
+	rc = stir_shaken_test_auth_base(&msg, &cert, &key, &x5u);
+	ok(rc == 1, "base AS appends a new SHAKEN token");
+	/* Exercise Request-URI derivation after a script rewrite. */
+	msg.new_uri = str_init("sip:+12155551214@example.test");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, NULL, 0);
+	ok(rc == 1, "base authentication followed immediately by DIV succeeds");
+	msg.new_uri = STR_NULL; /* literal, not a pkg-owned rewrite */
+	free_sip_msg(&msg);
+	pop_pushed_global_context();
+}
+
+static void test_div_chain_selection(void)
+{
+	struct div_chain chain = {0};
+	str keybuf = {(char *)test_private_key, sizeof(test_private_key)-1};
+	str x5u = str_init(TEST_X5U), orig = str_init(TEST_ORIG);
+	str b = str_init(TEST_DEST), c = str_init("12155551214"), d = str_init("12155551215");
+	str headers[3] = {STR_NULL, STR_NULL, STR_NULL}, body[3], base;
+	char input[sizeof(inbound_invite)];
+	BIO *bio = BIO_new_mem_buf(keybuf.s, keybuf.len);
+	EVP_PKEY *key = bio ? PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL) : NULL;
+	str *built;
+	int i;
+
+	if (!key) {
+		ok(0, "DIV chain test key setup");
+		if (bio) BIO_free(bio);
+		return;
+	}
+	memcpy(input, inbound_invite, sizeof(input));
+	base.s = strstr(input, "Identity: ") + IDENTITY_HDR_LEN;
+	base.len = strstr(base.s, "\r\n") - base.s;
+	for (i = 0; i < 3; i++) {
+		built = passport_build_div(key, TEST_IAT, &x5u, &orig,
+			i == 0 ? &b : i == 1 ? &c : &d,
+			i == 0 ? &c : i == 1 ? &d : &b);
+		if (!built) {
+			ok(0, "DIV chain test token setup");
+			goto done;
+		}
+		headers[i] = *built;
+		body[i].s = built->s + IDENTITY_HDR_LEN;
+		body[i].len = built->len - IDENTITY_HDR_LEN - CRLF_LEN;
+	}
+	ok(div_chain_add(&chain, &body[1]) == 0 &&
+		div_chain_add(&chain, &base) == 0 &&
+		div_chain_add(&chain, &body[0]) == 0 &&
+		div_chain_select(&chain, NULL) == 0 &&
+		!str_strcmp(&chain.previous, &d),
+		"AS orders received DIV headers by links, even with equal iat values");
+	div_chain_cleanup(&chain);
+	memset(&chain, 0, sizeof(chain));
+	ok(div_chain_add(&chain, &base) == 0 &&
+		div_chain_add(&chain, &body[1]) == 0 &&
+		div_chain_select(&chain, NULL) == -7,
+		"AS refuses a chain with a missing diversion link");
+	div_chain_cleanup(&chain);
+	memset(&chain, 0, sizeof(chain));
+	ok(div_chain_add(&chain, &base) == 0 &&
+		div_chain_add(&chain, &body[0]) == 0 &&
+		div_chain_add(&chain, &body[1]) == 0 &&
+		div_chain_add(&chain, &body[2]) == 0 &&
+		div_chain_select(&chain, NULL) == -7,
+		"AS refuses a cyclic diversion chain");
+done:
+	div_chain_cleanup(&chain);
+	for (i = 0; i < 3; i++)
+		if (headers[i].s) pkg_free(headers[i].s);
+	EVP_PKEY_free(key);
+	BIO_free(bio);
+}
+
 void mod_tests(void)
 {
 	test_inbound_verification();
 	test_outbound_authentication();
+	test_div_authentication();
+	test_div_chain_selection();
 }
