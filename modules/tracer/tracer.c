@@ -893,8 +893,14 @@ static int mod_init(void)
 
 	if (trace_default_syslog_facility < 0)
 		trace_default_syslog_facility = log_facility;
-	if (trace_default_syslog_level != 0)
+	if (trace_default_syslog_level == 0)
 		trace_default_syslog_level = *log_level;
+
+	/* update the levels for all tids, if not explicitely set */
+	for (it = trace_list; it; it = it->next) {
+		if (it->type == TYPE_SYSLOG && it->el.syslog.level == 0)
+			it->el.syslog.level = trace_default_syslog_level;
+	}
 
 	LM_INFO("initializing...\n");
 

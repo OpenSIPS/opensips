@@ -200,7 +200,7 @@ modparam("tracer", "trace_id",
 "[tid]uri=file:/path/to/file")
 /*syslog trace id at error (level -1)*/
 modparam("tracer", "trace_id",
-"[tid]uri=syslog:local0:-1")
+"[tid]uri=syslog:LOG_LOCAL0:-1")
 ...
 ```
 
@@ -210,6 +210,9 @@ modparam("tracer", "trace_id",
 
 When *syslog* tracing is used, this parameter specifies
 the log facility to write traces to.
+
+Facility names must use the OpenSIPS names, such as *LOG_LOCAL0* or
+*LOG_DAEMON*. The short form *local0* is not accepted.
 
 
 *Default value is the value of *syslog_facility*.*
