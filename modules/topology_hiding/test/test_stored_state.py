@@ -141,7 +141,7 @@ REDIS_URL = 'redis:th://127.0.0.1:%d/' % REDIS_PORT
 
 
 class Proxy:
-    def __init__(self, name, params):
+    def __init__(self, name, params, must_start=True):
         self.log = os.path.join(work, name + '.log')
         cfg = os.path.join(work, name + '.cfg')
         with open(cfg, 'w') as f:
@@ -150,8 +150,9 @@ class Proxy:
                                   stdout=subprocess.DEVNULL,
                                   stderr=open(self.log, 'w'))
         time.sleep(1.5)
-        check('proxy %s started' % name, self.alive(),
-              ''.join(self.lines('ERROR:')[-3:]).strip())
+        if must_start:
+            check('proxy %s started' % name, self.alive(),
+                  ''.join(self.lines('ERROR:')[-3:]).strip())
 
     def alive(self):
         return self.p.poll() is None
@@ -567,6 +568,20 @@ def scen_options():
             ntf.sock.close()
 
 
+def scen_mongodb():
+    print('== th_state_url on a backend which ignores expiration')
+    # cachedb_mongodb is not loaded: the URL is refused before binding
+    px = Proxy('mongo', th_params('S', 'mongodb:th://127.0.0.1:27017/th.st'),
+               must_start=False)
+    try:
+        time.sleep(1)
+        check('[S] mongodb th_state_url refused at startup',
+              not px.alive() and px.lines('ignores the expiration'),
+              ''.join(px.lines('ERROR:')[:2]).strip())
+    finally:
+        px.stop()
+
+
 def scen_switch():
     print('== switching C -> S -> C in place keeps in-flight dialogs')
     rcli('FLUSHALL')
@@ -617,6 +632,7 @@ SCENARIOS = {
     'invite': lambda: scen_invite('S'),
     'rejected': scen_rejected,
     'options': scen_options,
+    'mongodb': scen_mongodb,
     'switch': scen_switch,
     'miss': scen_miss,
 }

@@ -321,7 +321,7 @@ The information stays in the Contact, compact encoded, for an INVITE or UPDATE w
 A Contact URI param value holding a key is looked up whatever the encoding type of its param, as long as *th_state_url* is set. So a param can be switched in place from *C* to *S* and back: a dialog keeps the encoding it started with.
 
 
-Any cachedb backend supporting get, set and remove, and honouring the expiration of what it stores, can be used. It has to be shared by all the nodes which may receive the sequential requests of a dialog. The stored information is not obfuscated, so the backend must not be reachable from untrusted networks.
+Any cachedb backend supporting get, set and remove, and honouring the expiration of what it stores, can be used: this rules out *cachedb_mongodb*, which is refused at startup. It has to be shared by all the nodes which may receive the sequential requests of a dialog. The stored information is not obfuscated, so the backend must not be reachable from untrusted networks.
 
 
 *Default value is "empty" ( no storage )*
