@@ -629,6 +629,28 @@ int th_store_unpack(str *routes, str *contact, str *flags, str *sock)
 	return 0;
 }
 
+/* a rejected (or challenged) initial SUBSCRIBE gets no dialog to ever use
+ * its subscriber's state; a retry under the same key stores it again */
+void th_store_drop_rejected(struct sip_msg *rpl, const str *pw)
+{
+	char key[TH_KEY_LEN];
+	str *full;
+
+	if (!th_cdbc || rpl->REPLY_STATUS < 300 ||
+	th_msg_method(rpl) != METHOD_SUBSCRIBE)
+		return;
+
+	if (!rpl->callid || parse_from_header(rpl) < 0 ||
+	!get_from(rpl)->tag_value.len)
+		return;
+
+	th_make_key(pw, &rpl->callid->body, &get_from(rpl)->tag_value, key);
+	full = th_full_key(key);
+	if (th_cdbf.remove(th_cdbc, full) < 0)
+		LM_WARN("failed to drop <%.*s>, leaving it to expire\n",
+			full->len, full->s);
+}
+
 /* @wire is the key the request was routed by; the far party may go on
  * using it, so it lives as long as the dialog says */
 void th_store_consumed(struct sip_msg *msg, const str *wire)
