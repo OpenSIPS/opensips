@@ -29,6 +29,7 @@
 
 #include "topo_hiding_logic.h"
 #include "th_no_dlg_logic.h"
+#include "th_store.h"
 
 #include "../../trim.h"
 #include "../../ut.h"
@@ -69,6 +70,7 @@ int ctx_decoded_routes_valid_idx = -1;
 #define TH_ROUTE_PARAMS  4  // Parameters
 
 static int mod_init(void);
+static int child_init(int rank);
 static void mod_destroy(void);
 static int fixup_mmode(void **param);
 static int fixup_th_params(void **param);
@@ -108,6 +110,9 @@ static const param_export_t params[] = {
 	{ "th_auto_route_on_trusted_socket",  INT_PARAM,                &auto_route_on_trusted_socket },
 	{ "th_use_param",                     STR_PARAM,                &th_use_param.s               },
 	{ "th_contact_encode_param_password", STR_PARAM|USE_FUNC_PARAM, th_add_encode_param_password  },
+	{ "th_state_url",                     STR_PARAM,                &th_state_url.s               },
+	{ "th_state_ttl",                     INT_PARAM,                &th_state_ttl                 },
+	{ "th_state_ttl_short",               INT_PARAM,                &th_state_ttl_short           },
 	{0, 0, 0}
 };
 
@@ -141,6 +146,7 @@ static const dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "force_dialog",		get_deps_dialog },
+		{ "th_state_url",		get_deps_cachedb_url },
 		{ NULL, NULL },
 	},
 };
@@ -164,7 +170,7 @@ struct module_exports exports= {
 	mod_init,         /* module initialization function */
 	(response_function) 0,
 	mod_destroy,
-	0,                /* per-child init function */
+	child_init,       /* per-child init function */
 	0                 /* reload confirm function */
 };
 
@@ -243,13 +249,24 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (th_store_init(th_stored_encoding_used()) < 0) {
+		LM_ERR("failed to initialize th_state_url\n");
+		return -1;
+	}
+
 	return 0;
 error:
 	return -1;
 }
 
+static int child_init(int rank)
+{
+	return th_store_child_init();
+}
+
 static void mod_destroy(void)
 {
+	th_store_destroy();
 	th_free_param_passwords();
 }
 
