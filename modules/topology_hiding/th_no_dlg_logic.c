@@ -516,6 +516,9 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 	/* do_rr determined by if the request has a tag, don't add them on sequential */
 	is_sequential = get_to(req)->tag_value.len > 0 && get_to(req)->tag_value.s != NULL;
 
+	if (!is_sequential && encoding_options->stored)
+		th_store_drop_rejected(rpl, &encoding_options->param_password);
+
 	LM_DBG("Original request trusted send sock '%d' reply is trusted send sock '%d'\n", req_one_way_hiding, one_way_hiding);
 
 	if (!req_one_way_hiding && (lmp = restore_vias_from_req(req, rpl)) == NULL) {

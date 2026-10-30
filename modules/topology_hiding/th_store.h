@@ -52,5 +52,6 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 int th_store_fetch(const str *wire);
 int th_store_unpack(str *routes, str *contact, str *flags, str *sock);
 void th_store_consumed(struct sip_msg *msg, const str *wire);
+void th_store_drop_rejected(struct sip_msg *rpl, const str *pw);
 
 #endif

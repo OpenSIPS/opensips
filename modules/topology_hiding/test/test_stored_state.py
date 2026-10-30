@@ -494,6 +494,43 @@ def scen_miss():
         ntf.sock.close()
 
 
+def scen_rejected():
+    print('== rejected and challenged initial SUBSCRIBE')
+    rcli('FLUSHALL')
+    px = Proxy('rej', th_params('S', REDIS_URL))
+    sub, ntf = new_pair()
+    try:
+        d = Dialog(sub, 'sip:%s@127.0.0.1:%d' % (ntf.name, ntf.port))
+        req, rpl = transact(d, ntf, 'SUBSCRIBE',
+                            ['Event: presence', 'Expires: 3600'], code=407,
+                            peer_tag=uuid.uuid4().hex[:10])
+        key = req.thinfo() if req else None
+        check('[S] challenged SUBSCRIBE relayed', rpl is not None and
+              rpl.code == 407 and KEY_RE.match(key or ''))
+        check('[S] the challenge drops the subscriber state',
+              key and ttl(key) == -2, key and ttl(key))
+        req, rpl = transact(d, ntf, 'SUBSCRIBE',
+                            ['Event: presence', 'Expires: 3600'],
+                            rhdrs=['Expires: 3600'],
+                            peer_tag=uuid.uuid4().hex[:10])
+        check('[S] the retry stores it again under the same key',
+              req is not None and req.thinfo() == key and
+              3628 <= ttl(key) <= 3630, key and ttl(key))
+        d2 = Dialog(sub, 'sip:%s@127.0.0.1:%d' % (ntf.name, ntf.port))
+        req, rpl = transact(d2, ntf, 'SUBSCRIBE',
+                            ['Event: presence', 'Expires: 3600'], code=489,
+                            peer_tag=uuid.uuid4().hex[:10])
+        check('[S] a rejected SUBSCRIBE leaves no subscriber state',
+              req is not None and rpl is not None and rpl.code == 489 and
+              ttl(req.thinfo()) == -2, req and ttl(req.thinfo()))
+        check('[S] proxy logged no ERROR', not px.lines('ERROR:'),
+              px.lines('ERROR:')[:3])
+    finally:
+        px.stop()
+        sub.sock.close()
+        ntf.sock.close()
+
+
 def scen_switch():
     print('== switching C -> S -> C in place keeps in-flight dialogs')
     rcli('FLUSHALL')
@@ -542,6 +579,7 @@ SCENARIOS = {
     'compact': scen_compact,
     'subscribe': lambda: scen_subscribe('S'),
     'invite': lambda: scen_invite('S'),
+    'rejected': scen_rejected,
     'switch': scen_switch,
     'miss': scen_miss,
 }
