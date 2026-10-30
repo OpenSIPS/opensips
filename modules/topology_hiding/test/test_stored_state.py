@@ -12,6 +12,8 @@
 #   REDIS_SERVER  redis-server binary (default: redis-server)
 #   REDIS_CLI     redis-cli binary (default: redis-cli)
 #   PORT_BASE     first of the 4 UDP/TCP ports used (default: 25060)
+#   TH_TEST_DIR   keep the cfgs and logs there (default: a temporary dir,
+#                 removed when all checks pass)
 #
 # Usage:
 #   ./test_stored_state.py [scenario ...]
@@ -42,7 +44,8 @@ KEY_RE = re.compile(r'^_[0-9a-f]{16}$')
 
 results = []
 contacts_seen = []
-work = tempfile.mkdtemp(prefix='th_stored.')
+work = os.environ.get('TH_TEST_DIR') or tempfile.mkdtemp(prefix='th_stored.')
+os.makedirs(work, exist_ok=True)
 
 
 def check(desc, ok, detail=''):
@@ -658,7 +661,8 @@ def main(argv):
     if failed or not results:
         print('logs kept in %s' % work)
         return 1
-    shutil.rmtree(work)
+    if not os.environ.get('TH_TEST_DIR'):
+        shutil.rmtree(work)
     return 0
 
 
