@@ -321,7 +321,12 @@ The information stays in the Contact, compact encoded, for an INVITE or UPDATE w
 A Contact URI param value holding a key is looked up whatever the encoding type of its param, as long as *th_state_url* is set. So a param can be switched in place from *C* to *S* and back: a dialog keeps the encoding it started with.
 
 
-Any cachedb backend supporting get, set and remove, and honouring the expiration of what it stores, can be used: this rules out *cachedb_mongodb*, which is refused at startup. It has to be shared by all the nodes which may receive the sequential requests of a dialog. The stored information is not obfuscated, so the backend must not be reachable from untrusted networks.
+The value is the URL of the cachedb module to use, which has to be loaded, such as *redis:th://127.0.0.1:6379/*, *memcached:th://127.0.0.1:11211/* or *local://*. Any cachedb backend supporting get, set and remove, and honouring the expiration of what it stores, can be used: this rules out *cachedb_mongodb*, which is refused at startup. Note that:
+
+
+- the backend has to be shared by all the nodes which may receive the sequential requests of a dialog. With *cachedb_local*, each node only sees its own states, unless the collection is replicated (see its *cluster_id* parameter).
+- *cachedb_sql* and *cachedb_dynamodb* do not check the expiration when reading, so a state may still be found for a while after it expired (up to *cache_clean_period* with *cachedb_sql*).
+- the stored information is not obfuscated, so the backend must not be reachable from untrusted networks.
 
 
 *Default value is "empty" ( no storage )*
@@ -528,6 +533,10 @@ Read only variable that will contain the callid as it is propagated towards the 
 
 
 NULL will be returned if there is no topology hiding dialog for the request or if topology_hiding with callid encoding was not used for the current dialog.
+## Samples
+
+[samples](./samples/samples.md "include")
+
 <!-- CONTRIBUTORS -->
 
 ### License
