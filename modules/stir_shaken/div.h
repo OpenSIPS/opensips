@@ -21,5 +21,7 @@ int div_identity_equal(str a, str b);
 int div_chain_add(struct div_chain *chain, str *body);
 int div_chain_select(struct div_chain *chain, str *requested_div);
 void div_chain_cleanup(struct div_chain *chain);
+int div_get_claim(cJSON *payload, const char *name, int array, int index, str *out);
+int div_has_destination(cJSON *payload, str *id);
 
 #endif

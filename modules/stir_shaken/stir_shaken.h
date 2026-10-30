@@ -74,17 +74,6 @@
 #define AUTH_OUT_REQ_STR "req"
 #define AUTH_OUT_RPL_STR "rpl"
 
-enum pv_identity_field {
-	PV_HEADER,
-	PV_HEADER_X5U,
-	PV_PAYLOAD,
-	PV_PAYLOAD_ATTEST,
-	PV_PAYLOAD_DEST,
-	PV_PAYLOAD_IAT,
-	PV_PAYLOAD_ORIG,
-	PV_PAYLOAD_ORIGID
-};
-
 enum auth_out_type {
 	AUTH_APPEND_TO_REQ,
 	AUTH_APPEND_TO_RPL,

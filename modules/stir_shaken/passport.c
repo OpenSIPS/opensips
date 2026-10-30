@@ -608,6 +608,8 @@ int passport_parse_identity(str *hdr_buf, struct parsed_identity *parsed)
 	}
 
 	sig_str.s++;  /* skip '.' */
+	parsed->signing_input.s = hdr_buf->s;
+	parsed->signing_input.len = sig_str.s - hdr_buf->s - 1;
 	p = q_memchr(sig_str.s, HDR_PARAM_SEPARATOR,
 		hdr_buf->len - header_str.len - payload_str.len - 2);
 	if (!p) {
@@ -631,10 +633,18 @@ int passport_parse_identity(str *hdr_buf, struct parsed_identity *parsed)
 		goto invalid_hdr;
 	}
 	for (it = params; it; it = it->next) {
-		if (!str_strcmp(const_str("alg"), &it->name))
+		if (!str_strcasecmp(_str("alg"), &it->name)) {
+			if (parsed->alg_hdr_param.s) goto invalid_hdr;
 			parsed->alg_hdr_param = it->body;
-		if (!str_strcmp(const_str("ppt"), &it->name))
+		}
+		if (!str_strcasecmp(_str("ppt"), &it->name)) {
+			if (parsed->ppt_hdr_param.s) goto invalid_hdr;
 			parsed->ppt_hdr_param = it->body;
+		}
+		if (!str_strcasecmp(_str("info"), &it->name)) {
+			if (parsed->info_hdr_param.s) goto invalid_hdr;
+			parsed->info_hdr_param = it->body;
+		}
 	}
 
 	parsed->dec_header.len = calc_max_base64_decode_len(header_str.len);
@@ -824,8 +834,9 @@ int passport_check_claims(struct parsed_identity *parsed)
 	return 0;
 }
 
-int passport_verify_signature(X509 *cert,
-	struct parsed_identity *parsed, time_t iat_ts, str *orig_tn, str *dest_tn)
+static int verify_signature_mode(X509 *cert,
+	struct parsed_identity *parsed, time_t iat_ts, str *orig_tn, str *dest_tn,
+	int full)
 {
 	str unsigned_buf = {0,0};
 	EVP_MD_CTX *mdctx = NULL;
@@ -860,19 +871,23 @@ int passport_verify_signature(X509 *cert,
 		goto error;
 	}
 
-	attest_s.s = parsed->attest->valuestring;
-	attest_s.len = strlen(attest_s.s);
+	if (full) {
+		unsigned_buf = parsed->signing_input;
+	} else {
+		attest_s.s = parsed->attest->valuestring;
+		attest_s.len = strlen(attest_s.s);
 
-	x5u_s.s = parsed->x5u->valuestring;
-	x5u_s.len = strlen(x5u_s.s);
+		x5u_s.s = parsed->x5u->valuestring;
+		x5u_s.len = strlen(x5u_s.s);
 
-	origid_s.s = parsed->origid->valuestring;
-	origid_s.len = strlen(origid_s.s);
+		origid_s.s = parsed->origid->valuestring;
+		origid_s.len = strlen(origid_s.s);
 
-	if (build_unsigned_pport(&unsigned_buf, iat_ts, &attest_s, &x5u_s,
-		orig_tn, dest_tn, &origid_s) < 0) {
-		LM_ERR("Failed to build PASSporT\n");
-		goto error;
+		if (build_unsigned_pport(&unsigned_buf, iat_ts, &attest_s, &x5u_s,
+			orig_tn, dest_tn, &origid_s) < 0) {
+			LM_ERR("Failed to build PASSporT\n");
+			goto error;
+		}
 	}
 	if (EVP_DigestVerifyUpdate(mdctx, unsigned_buf.s, unsigned_buf.len) < 1) {
 		LM_ERR("Failed to add PASSporT to verification context\n");
@@ -883,6 +898,8 @@ int passport_verify_signature(X509 *cert,
 	 * with EVP_DigestVerifyFinal() */
 
 	sig = ECDSA_SIG_new();
+	if (!sig)
+		goto error;
 
 	#if defined(WOLFSSL_VERSION) || OPENSSL_VERSION_NUMBER < 0x10100000L
 	/* R and S components are already initialised by ECDSA_SIG_new() so
@@ -906,7 +923,9 @@ int passport_verify_signature(X509 *cert,
 
 	#if !defined(WOLFSSL_VERSION) && OPENSSL_VERSION_NUMBER >= 0x10100000L
 	/* set the R and S components as they were not initialised by ECDSA_SIG_new() */
-	ECDSA_SIG_set0(sig, r_int, s_int);
+	if (ECDSA_SIG_set0(sig, r_int, s_int) != 1)
+		goto error;
+	r_int = s_int = NULL; /* sig now owns both integers */
 	#endif
 
 	der_sig_buf.len = i2d_ECDSA_SIG(sig, NULL);
@@ -938,22 +957,37 @@ int passport_verify_signature(X509 *cert,
 	ECDSA_SIG_free(sig);
 	EVP_PKEY_free(pubkey);
 	EVP_MD_CTX_destroy(mdctx);
-	pkg_free(unsigned_buf.s);
+	if (!full) pkg_free(unsigned_buf.s);
 	pkg_free(der_sig_buf.s);
 
 	return rc;
 
 error:
+	#if !defined(WOLFSSL_VERSION) && OPENSSL_VERSION_NUMBER >= 0x10100000L
+	BN_free(r_int);
+	BN_free(s_int);
+	#endif
 	if (sig)
 		ECDSA_SIG_free(sig);
 	if (pubkey)
 		EVP_PKEY_free(pubkey);
 	if (mdctx)
 		EVP_MD_CTX_destroy(mdctx);
-	if (unsigned_buf.s)
+	if (!full && unsigned_buf.s)
 		pkg_free(unsigned_buf.s);
 	if (der_sig_buf.s)
 		pkg_free(der_sig_buf.s);
 	return rc;
+}
+
+int passport_verify_signature(X509 *cert, struct parsed_identity *parsed,
+	time_t iat, str *orig, str *dest)
+{
+	return verify_signature_mode(cert, parsed, iat, orig, dest, 0);
+}
+
+int passport_verify_full_signature(X509 *cert, struct parsed_identity *parsed)
+{
+	return verify_signature_mode(cert, parsed, 0, NULL, NULL, 1);
 }
 

@@ -113,6 +113,16 @@ int div_chain_add(struct div_chain *chain, str *body)
 	return passport_parse_identity(body, p);
 }
 
+int div_get_claim(cJSON *payload, const char *name, int array, int index, str *out)
+{
+	return claim_value(payload, name, array, index, out);
+}
+
+int div_has_destination(cJSON *payload, str *id)
+{
+	return destination_has(payload, id);
+}
+
 int div_chain_select(struct div_chain *chain, str *requested_div)
 {
 	int root = -1, current, i, next, steps = 0;

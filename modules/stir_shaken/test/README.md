@@ -32,3 +32,10 @@ serializer and reparses the results. It covers duplicate parameters, multiple
 PAI fields and identities, SIP/TEL parameter placement, display/tag preservation,
 invalid arguments, removal of pending sets, discarded/foreign lumps, and atomic
 failure on malformed multi-PAI input.
+
+`test_vs.c` uses a private test trust anchor and signed SHAKEN/DIV messages to
+exercise per-token trust/signatures, dependency ordering, missing links, cycles,
+shared roots, per-call inner freshness, stale outermost rejection, malformed
+extra headers, re-verification invalidation, and indexed result PVs. The
+TNAuthList decoder is checked against individual TN, range, SPC, and malformed
+DER cases.

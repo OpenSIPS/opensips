@@ -63,6 +63,7 @@
 #include "stir_shaken.h"
 #include "div.h"
 #include "verstat.h"
+#include "verify.h"
 
 #define parsed_ctx_get() \
 	(current_processing_ctx == NULL ? NULL : \
@@ -116,13 +117,6 @@ static int fixup_attest(void **param);
 static int fixup_check_wrvar(void **param);
 
 /*
- * Exported Pseudo-Variables
- */
-int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_parse_identity_name(pv_spec_p sp, const str *in);
-
-
-/*
  * MI functions
  */
 mi_response_t *mi_stir_shaken_ca_reload(const mi_params_t *params, struct mi_handler *async_hdl);
@@ -164,6 +158,7 @@ static gen_lock_t *ss_openssl_lock;
 static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
+	{"verify_date_div_freshness", INT_PARAM, &verify_date_div_freshness},
 	{"ca_list", STR_PARAM, &ca_list},
 	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
@@ -175,12 +170,22 @@ static const param_export_t params[] = {
 };
 
 static const pv_export_t mod_items[] = {
-	{str_const_init("identity"), 1000, pv_get_identity,
-		0, pv_parse_identity_name, 0, 0, 0},
+	{str_const_init("identity"), 1000, pv_get_identity_all,
+		0, pv_parse_identity_all, pv_parse_index, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 static const cmd_export_t cmds[] = {
+	{"stir_shaken_verify_passport", (cmd_function)stir_shaken_verify_passport, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
+		{CMD_PARAM_VAR, fixup_check_wrvar, 0}, {0,0,0}}, REQUEST_ROUTE},
+	{"stir_shaken_verify_chain", (cmd_function)stir_shaken_verify_chain, {
+		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
+		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_set_verstat", (cmd_function)stir_shaken_set_verstat, {
 		{CMD_PARAM_STR, 0, 0}, {CMD_PARAM_STR, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_remove_verstat", (cmd_function)stir_shaken_remove_verstat, {
@@ -471,6 +476,8 @@ static int mod_init(void)
 	generated_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, generated_identity_free);
 	stale_ctx_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 	if (verstat_init() < 0)
+		return -1;
+	if (verify_init() < 0)
 		return -1;
 
 	return 0;
@@ -1084,7 +1091,7 @@ error:
 	return rc;
 }
 
-static int has_tn_authlist(X509 *cert)
+static int cert_has_tn_authlist(X509 *cert)
 {
 	int i;
 	char oid[128];
@@ -1204,7 +1211,7 @@ static int w_stir_auth_div(struct sip_msg *msg, str *cert_buf, str *key_buf,
 		goto done;
 	}
 	ec = EVP_PKEY_get1_EC_KEY(key);
-	if (!check_cert_validity(&now, cert) || !has_tn_authlist(cert) ||
+	if (!check_cert_validity(&now, cert) || !cert_has_tn_authlist(cert) ||
 		!ec || EC_GROUP_get_curve_name(EC_KEY_get0_group(ec)) != NID_X9_62_prime256v1 ||
 		X509_check_private_key(cert, key) != 1) {
 		rc = -5;
@@ -1267,7 +1274,8 @@ static int w_stir_disengagement(struct sip_msg *msg, str *token)
 	return 1;
 }
 
-static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
+static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain,
+	str *authority)
 {
 	X509_STORE_CTX *verify_ctx;
 	X509_EXTENSION *ext;
@@ -1326,6 +1334,25 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 	X509_STORE_CTX_set_verify_cb(verify_ctx, verify_callback);
 
 	rc = X509_verify_cert(verify_ctx);
+	if (rc == 1 && authority) {
+		STACK_OF(X509) *path = X509_STORE_CTX_get_chain(verify_ctx);
+		X509 *issuer;
+		int j, k;
+		if (!path || !sk_X509_num(path)) rc = 0;
+		for (j = 0; rc == 1 && j < sk_X509_num(path); j++) {
+			issuer = sk_X509_value(path, j);
+			if (cert_has_tn_authlist(issuer) &&
+				!passport_certificate_authority(issuer, authority)) rc = 0;
+			/* Fail closed on delegated JWT constraints until their complete
+			 * validation profile is supported. Never silently ignore them. */
+			for (k = 0; k < X509_get_ext_count(issuer); k++) {
+				ext = X509_get_ext(issuer, k);
+				if (ext && OBJ_obj2txt(ext_oid, sizeof(ext_oid),
+					X509_EXTENSION_get_object(ext), 1) > 0 &&
+					!strcmp(ext_oid, "1.3.6.1.5.5.7.1.27")) rc = 0;
+			}
+		}
+	}
 
 	X509_STORE_CTX_cleanup(verify_ctx);
 	X509_STORE_CTX_free(verify_ctx);
@@ -1334,6 +1361,92 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 		return rc == 0 ? -8 : -1;
 	else
 		return 0;
+}
+
+int stir_shaken_outer_freshness(void)
+{
+	return verify_date_freshness;
+}
+
+int stir_shaken_verify_caller(struct sip_msg *msg, str *orig)
+{
+	return get_orig_tn_from_msg(msg, orig);
+}
+
+int stir_shaken_verify_destination(struct sip_msg *msg, str *dest)
+{
+	if (parse_to_header(msg) < 0) return -1;
+	*dest = get_to(msg)->uri;
+	if (dest->len >= 15 && !memcmp(dest->s, "urn:service:sos", 15))
+		return div_normalize(dest, 1);
+	return get_dest_tn_from_msg(msg, dest);
+}
+
+int stir_shaken_verify_credential(str *buf, struct parsed_identity *parsed,
+	str *authority)
+{
+	X509 *cert = NULL;
+	STACK_OF(X509) *chain = NULL;
+	EVP_PKEY *pubkey = NULL;
+	EC_KEY *ec = NULL;
+	time_t iat, now = time(NULL);
+	int rc = -8;
+
+	if (load_cert(&cert, &chain, buf)) goto done;
+	/* Check the original signing instant as well as the current trust path. */
+	if (parsed->iat->valuedouble > 2147483647.0 && sizeof(time_t) < 8) goto done;
+	iat = (time_t)parsed->iat->valuedouble;
+	if (now == (time_t)-1 || !check_cert_validity(&iat, cert) ||
+		!check_cert_validity(&now, cert) || validate_certificate(cert, chain, authority) < 0 ||
+		!passport_certificate_authority(cert, authority)) goto done;
+	pubkey = X509_get_pubkey(cert);
+	if (!pubkey) goto done;
+	ec = EVP_PKEY_get1_EC_KEY(pubkey);
+	if (!ec || EC_GROUP_get_curve_name(EC_KEY_get0_group(ec)) != NID_X9_62_prime256v1)
+		goto done;
+	rc = passport_verify_full_signature(cert, parsed) == 1 ? 1 : -9;
+done:
+	if (ec) EC_KEY_free(ec);
+	if (pubkey) EVP_PKEY_free(pubkey);
+	if (cert) X509_free(cert);
+	if (chain) sk_X509_pop_free(chain, X509_free);
+	return rc;
+}
+
+int stir_shaken_verify_result(struct sip_msg *msg, pv_spec_t *code,
+	pv_spec_t *reason, int rc, const char *operation)
+{
+	pv_value_t value;
+	int sipcode;
+	const char *text;
+	switch (rc) {
+	case 1: sipcode = 0; text = ""; break;
+	case -1: sipcode = 500; text = "Internal verification error"; break;
+	case -2: sipcode = 428; text = "Missing PASSporT or invalid index"; break;
+	case -3: sipcode = 400; text = "Invalid verification argument or SIP identity"; break;
+	case -5: sipcode = 438; text = "Unsupported PASSporT type"; break;
+	case -6: sipcode = 403; text = "Stale outermost PASSporT"; break;
+	case -7: sipcode = 438; text = "Broken or cyclic PASSporT chain"; break;
+	case -8: sipcode = 437; text = "Invalid or unauthorized STI credential"; break;
+	case -9: sipcode = 438; text = "Invalid signature or calling identity"; break;
+	case -10: sipcode = 438; text = "PASSporT has not been verified"; break;
+	case -11: sipcode = 403; text = "Stale inner PASSporT"; break;
+	default: sipcode = 438; text = "Malformed PASSporT"; break;
+	}
+	if (rc == -6 && current_processing_ctx)
+		context_put_int(CONTEXT_GLOBAL, current_processing_ctx, stale_ctx_idx, 1);
+	if (rc < 0) LM_NOTICE("%s failed: %s (rc=%d)\n", operation, text, rc);
+	if (code) {
+		memset(&value, 0, sizeof(value));
+		value.flags = PV_VAL_INT|PV_TYPE_INT; value.ri = sipcode;
+		if (pv_set_value(msg, code, 0, &value)) return -1;
+	}
+	if (reason) {
+		memset(&value, 0, sizeof(value));
+		value.flags = PV_VAL_STR; init_str(&value.rs, text);
+		if (pv_set_value(msg, reason, 0, &value)) return -1;
+	}
+	return rc;
 }
 
 static int get_parsed_identity(struct sip_msg *msg,
@@ -1616,7 +1729,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
-	if ((rc = validate_certificate(cert, certchain)) < 0) {
+	if ((rc = validate_certificate(cert, certchain, NULL)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error validating certificate\n");
 			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON_VALIDATE_CERTIFICATE);
@@ -1715,111 +1828,6 @@ static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf)
 	return 1;
 }
 
-int pv_parse_identity_name(pv_spec_p sp, const str *in)
-{
-	if (!in || !in->s || !in->len) {
-		LM_ERR("Bad subname for $identity\n");
-		return -1;
-	}
-
-	if (!str_strcmp(in, const_str("header")))
-		sp->pvp.pvn.u.isname.name.n = PV_HEADER;
-	else if (!str_strcmp(in, const_str(PPORT_HDR_X5U)))
-		sp->pvp.pvn.u.isname.name.n = PV_HEADER_X5U;
-	else if (!str_strcmp(in, const_str("payload")))
-		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD;
-	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ATTEST)))
-		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ATTEST;
-	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_DEST)))
-		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_DEST;
-	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_IAT)))
-		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_IAT;
-	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ORIG)))
-		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIG;
-	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ORIGID)))
-		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIGID;
-	else {
-		LM_ERR("Bad subname for $identity\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
-{
-	struct parsed_identity *parsed;
-	int rc;
-
-	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
-		if (rc == -1)
-			LM_ERR("Failed to parse identity header\n");
-		else
-			LM_INFO("Invalid identity header\n");
-
-		return pv_get_null(msg, param, res);
-	}
-
-	res->flags = PV_VAL_STR;
-
-	switch (param->pvn.u.isname.name.n) {
-		case PV_HEADER:
-			res->rs = parsed->dec_header;
-			break;
-		case PV_HEADER_X5U:
-			if (!parsed->x5u || !parsed->x5u->valuestring)
-				return pv_get_null(msg, param, res);
-
-			res->rs.s = parsed->x5u->valuestring;
-			res->rs.len = strlen(res->rs.s);
-			break;
-		case PV_PAYLOAD:
-			res->rs = parsed->dec_payload;
-			break;
-		case PV_PAYLOAD_ATTEST:
-			if (!parsed->attest || !parsed->attest->valuestring)
-				return pv_get_null(msg, param, res);
-
-			res->rs.s = parsed->attest->valuestring;
-			res->rs.len = strlen(res->rs.s);
-			break;
-		case PV_PAYLOAD_DEST:
-			if (!parsed->dest_tn || !parsed->dest_tn->valuestring)
-				return pv_get_null(msg, param, res);
-
-			res->rs.s = parsed->dest_tn->valuestring;
-			res->rs.len = strlen(res->rs.s);
-			break;
-		case PV_PAYLOAD_IAT:
-			if (!parsed->iat)
-				return pv_get_null(msg, param, res);
-
-			res->rs.s = int2str((uint64_t)parsed->iat->valuedouble, &res->rs.len);
-			res->ri = (int)parsed->iat->valuedouble;
-			res->flags |= PV_VAL_INT|PV_TYPE_INT;
-			break;
-		case PV_PAYLOAD_ORIG:
-			if (!parsed->orig_tn || !parsed->orig_tn->valuestring)
-				return pv_get_null(msg, param, res);
-
-			res->rs.s = parsed->orig_tn->valuestring;
-			res->rs.len = strlen(res->rs.s);
-			break;
-		case PV_PAYLOAD_ORIGID:
-			if (!parsed->origid || !parsed->origid->valuestring)
-				return pv_get_null(msg, param, res);
-
-			res->rs.s = parsed->origid->valuestring;
-			res->rs.len = strlen(res->rs.s);
-			break;
-		default:
-			LM_ERR("Bad subname\n");
-			return pv_get_null(msg, param, res);
-	}
-
-	return 0;
-}
-
 /*
  * MI functions
  */
@@ -1901,6 +1909,16 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
 }
 
 #ifdef UNIT_TESTS
+int stir_shaken_test_trust_vs(str *pem)
+{
+	X509 *cert = NULL;
+	int rc;
+	if (load_cert(&cert, NULL, pem)) return -1;
+	rc = X509_STORE_add_cert(store, cert);
+	X509_free(cert);
+	return rc == 1 ? 0 : -1;
+}
+
 int stir_shaken_test_auth_div(struct sip_msg *msg, str *cert, str *key,
 	str *x5u, str *orig, str *from, str *dest, int verified)
 {

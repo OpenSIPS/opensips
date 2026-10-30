@@ -393,6 +393,7 @@ done:
 
 void test_verstat(void);
 void test_verstat_edges(void);
+void test_vs(str *);
 
 void mod_tests(void)
 {
@@ -402,4 +403,8 @@ void mod_tests(void)
 	test_div_chain_selection();
 	test_verstat();
 	test_verstat_edges();
+	{
+		str key = {(char *)test_private_key, sizeof(test_private_key)-1};
+		test_vs(&key);
+	}
 }

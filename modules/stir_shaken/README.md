@@ -74,8 +74,10 @@ required and the Date header is missing, the *iat* value
 will be used for this check instead.
 
 
-This parameter is only relevant for the
+The Date/reconstruction behavior above applies to the legacy
 [stir_shaken_verify()](#stir_shaken_verifycert-err_code-err_reason-orig-dest) function.
+For `stir_shaken_verify_chain()`, this parameter controls signed `iat` freshness
+of outermost PASSporTs; it cannot be disabled with an inner-token override.
 
 
 The default value is *60*.
@@ -87,6 +89,19 @@ modparam("stir_shaken", "verify_date_freshness", 300)
 ...
 ```
 
+
+#### verify_date_div_freshness (integer)
+
+Default maximum age, in seconds, for earlier PASSporTs when verifying a DIV
+chain. The default is `10800`. Use `-1` to skip inner freshness checking, or a
+value greater than `verify_date_freshness` to select an extended window.
+`stir_shaken_verify_chain()` accepts a final optional argument overriding this
+default per call. This parameter does not affect outermost freshness or the
+legacy single-PASSporT verifier.
+
+```opensips
+modparam("stir_shaken", "verify_date_div_freshness", 10800)
+```
 
 #### ca_list (string)
 
@@ -425,6 +440,107 @@ values, atomicity and repeat-call behavior are the same as for
 `stir_shaken_set_verstat()`. Removal also cancels a pending set on those headers.
 A subsequent set can safely establish a new value.
 
+#### stir_shaken_verify_passport(index, cert, err_code, err_reason)
+
+Verify the received full-form PASSporT at the zero-based Identity-header
+`index`. Headers are indexed in wire order, including malformed entries. The
+script supplies that header's PEM certificate/chain, typically fetched using
+`$(identity(x5u)[$var(i)])`. No HTTP client is required by this module.
+
+This function validates the `shaken`/`div` claim profile, P-256 ES256 signature
+over the exact received encoded `A.B`, certificate validity at signing and
+verification time, the configured trust/CRL policy, and TNAuthList authority.
+Identity-header `ppt`/`alg`/`info` parameters must agree with the protected
+header. For `shaken`, authority applies to `orig`; for `div`, it applies to
+`div`. Individual-TN and range restrictions are enforced, including TNAuthList
+constraints in the validated certificate path. Trusted SPC certificates use
+SHAKEN's provider-attestation model; SPC-to-TN registry lookup is not performed.
+Configure the STI trust anchors with the existing `ca_list`/`ca_dir` parameters.
+
+The result is saved per token. A subsequent failed verification replaces an
+earlier success. This stage does not decide freshness, chain completeness, or
+the relationship to SIP call identities: use `stir_shaken_verify_chain()` after
+checking every received token. `status=verified` alone is not call validation.
+
+Unsupported PASSporT types, including `rph`, `rcd`, and `div-o`, fail explicitly;
+their type-specific validation is not implemented here. Certificates with
+JWTClaimConstraints are rejected until that profile is supported. They are not
+silently accepted under weaker checks.
+
+#### stir_shaken_verify_chain(err_code, err_reason, [orig], [dest], [inner_freshness])
+
+Validate the dependency graph using only tokens which passed
+`stir_shaken_verify_passport()`. Call this after verifying every indexed token.
+No request headers are reordered or removed.
+
+- Each `div` requires at least one predecessor with a matching `dest`.
+- The graph must be acyclic and ultimately rooted in SHAKEN PASSporTs.
+- Every token must preserve the calling TN, matched against P-Asserted-Identity
+  or From (or an explicit `orig` override).
+- Each terminal PASSporT must name the current Request-URI (or explicit `dest`
+  override). Without any DIV tokens, the base destination is taken from To.
+- Shared diversion links and multiple complete chains are supported. An
+  unrelated/malformed token or a branch ending at a different recipient fails
+  the complete request instead of being silently omitted.
+- During linking, `911` and RFC 5031 `sos` URNs are equivalent. Header position
+  and `iat` are never used to infer diversion order.
+
+`verify_date_freshness` applies to every outermost/terminal token. Earlier
+tokens use `verify_date_div_freshness`, default **10800 seconds** (three hours).
+The optional `inner_freshness` argument overrides that value for this call:
+
+- `-1`: skip age checks for earlier tokens;
+- a value greater than `verify_date_freshness`: use that extended window;
+- omitted: use the module default.
+
+Neither `-1` nor any other inner override disables outermost freshness,
+signature, certificate, or dependency checks. An outermost freshness failure
+is retained in the processing context and blocks subsequent DIV signing even
+with `previously_verified=true`. Inner freshness failure is reported separately.
+These APIs use signed `iat` values; they do not reconstruct tokens from Date.
+
+Both verification functions return `1` on success and a negative value on
+failure, setting `err_code`/`err_reason` to the corresponding SIP error. On
+success the outputs are reset to `0` and an empty string. Error values are:
+
+- `-1`: internal error;
+- `-2`: missing token, invalid index, or unavailable Identity collection;
+- `-3`: invalid argument or SIP identity;
+- `-4`: malformed PASSporT/profile;
+- `-5`: unsupported PASSporT type;
+- `-6`: stale outermost token;
+- `-7`: broken/cyclic chain or final-target mismatch;
+- `-8`: invalid, expired, untrusted, or unauthorized credential;
+- `-9`: bad signature or changed calling identity;
+- `-10`: a token has not been individually verified;
+- `-11`: stale earlier token under the selected inner policy.
+
+The collection is limited to 64 Identity fields. Results are scoped to the
+current received message; changed/reparsed Identity fields invalidate cached
+results. Pending Identity insertions made by unrelated text-editing functions
+are not part of the received collection. Complete verification does not set
+`verstat` automatically; the script applies attestation and call policy.
+
+```opensips
+modparam("stir_shaken", "verify_date_div_freshness", 10800)
+
+# Within the request route, fetch/cache each token's certificate separately.
+$var(i) = 0;
+while ($var(i) < $identity(count)) {
+    # Populate $var(cert) with the PEM chain for this token's signed x5u.
+    # URL: $(identity(x5u)[$var(i)])
+    stir_shaken_verify_passport($var(i), $var(cert), $var(code), $var(reason));
+    $var(i) = $var(i) + 1;
+}
+
+if (!stir_shaken_verify_chain($var(code), $var(reason))) {
+    xlog("L_WARN", "Chain validation: $identity(chain_status), $var(reason)\n");
+}
+
+# For a call whose local ACL permits skipping only inner freshness:
+stir_shaken_verify_chain($var(code), $var(reason), , , -1);
+```
+
 #### stir_shaken_verify(cert, err_code, err_reason, [orig], [dest])
 
 
@@ -577,6 +693,34 @@ if ( is_method("INVITE") && !has_totag()) {
 
 
 #### $identity(field)
+
+Without an index, select the first usable SHAKEN PASSporT regardless of header
+position. Use the extended PV syntax to inspect a particular received header:
+
+```opensips
+$identity(count)                       # number of received Identity fields
+$(identity(ppt)[$var(i)])
+$(identity(x5u)[$var(i)])
+$(identity(status)[$var(i)])
+$(identity(div)[$var(i)])
+$(identity(dest_type)[$var(i)])          # tn or uri
+$identity(chain_status)
+$identity(chain_attest)
+```
+
+Additional indexed fields are `ppt`, `status`, `raw` (the complete Identity
+body), `div`, `orig_type`, `dest_type`, and `div_type`. Existing fields also
+support indexing; `dest` returns the first destination TN or SOS URI. A
+malformed header remains in the count, with `raw` and `status` available.
+Unsupported types are exposed for diagnostics but cannot pass full verification.
+Negative and `[*]` indices are not supported.
+
+Per-token `status` is `unverified`, `verified`, `malformed`, `unsupported`, or
+`failed`. Whole-call `chain_status` is `unverified`, `passed`, `failed`,
+`no-validation`, `broken`, `unsupported`, `stale`, or `inner-stale`.
+`chain_attest` is available only after successful chain validation; it reports
+the weakest attestation if multiple SHAKEN roots are present. It is separate
+from `verstat` and must be considered when deciding which indication to deliver.
 
 
 This is a read-only pseudo-variable that provides access to the

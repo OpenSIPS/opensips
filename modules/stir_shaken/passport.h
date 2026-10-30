@@ -115,9 +115,11 @@ struct parsed_identity {
 	str dec_header;
 	str dec_payload;
 	str dec_signature;
+	str signing_input; /* Original encoded A.B, borrowed from the input body. */
 
 	str ppt_hdr_param;
 	str alg_hdr_param;
+	str info_hdr_param;
 };
 
 /* Returns a static str container holding a caller-owned, pkg-allocated header.
@@ -133,6 +135,7 @@ int passport_parse_identity(str *body, struct parsed_identity *parsed);
 int passport_check_claims(struct parsed_identity *parsed);
 int passport_verify_signature(X509 *cert, struct parsed_identity *parsed,
 	time_t iat, str *orig, str *dest);
+int passport_verify_full_signature(X509 *cert, struct parsed_identity *parsed);
 
 /* Releases members, but not the parsed_identity container itself. */
 void passport_identity_cleanup(struct parsed_identity *parsed);
