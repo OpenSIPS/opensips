@@ -1199,6 +1199,37 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 	unsigned int id;
 	unsigned int err_len;
 
+	/* A TLS async write may be waiting for input from the peer.  Do not
+	 * dispatch it through the normal read path, but also do not keep watching
+	 * writability: a connected socket is always writable and would retrigger
+	 * the worker continuously. */
+	if (event_type == IO_WATCH_READ && tcpconn->async &&
+			tcpconn->async->pending &&
+			(tcpconn->flags & F_CONN_ASYNC_WANT_READ)) {
+		if (reactor_del_reader(tcpconn->s, fd_i, 0)==-1)
+			return -1;
+		tcpconn->flags|=F_CONN_REMOVED_READ;
+		tcpconn_ref(tcpconn);
+		sh_log(tcpconn->hist, TCP_REF, "tcpconn async write/read, (%d)",
+			tcpconn->refcnt);
+		sh_log(tcpconn->hist, TCP_SEND2CHILD, "async write/read");
+		if (send2worker(tcpconn,IO_WATCH_WRITE)<0){
+			LM_ERR("no TCP workers available\n");
+			id = tcpconn->id;
+			TCPCONN_LOCK(id);
+			tcpconn->refcnt--;
+			if (tcpconn->refcnt==0){
+				fd=tcpconn->s;
+				tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
+					"No worker for async write/read");
+				_tcpconn_rm(tcpconn,0);
+				close(fd);
+			}else tcpconn->lifetime=0;
+			TCPCONN_UNLOCK(id);
+		}
+		return 0;
+	}
+
 	if (event_type == IO_WATCH_READ) {
 		/* pass it to worker, so remove it from the io watch list */
 		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->s);
@@ -1290,6 +1321,20 @@ async_write:
 			}
 			return 0;
 		}
+	}
+}
+
+static inline void tcpconn_rearm_async_write(struct tcp_connection *tcpconn)
+{
+	if (tcpconn->async && tcpconn->async->pending &&
+			(tcpconn->flags & F_CONN_ASYNC_WANT_READ)) {
+		if (tcpconn->flags & F_CONN_REMOVED_READ) {
+			reactor_add_reader(tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+			tcpconn->flags&=~F_CONN_REMOVED_READ;
+		}
+	} else {
+		reactor_add_writer(tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+		tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 	}
 }
 
@@ -1394,8 +1439,7 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker async write, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
+			tcpconn_rearm_async_write(tcpconn);
 			break;
 		case CONN_ERROR_TCPW:
 			LM_ERR("TCP_DBG - main: received conn %p / %u as faulty "
@@ -1563,8 +1607,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			}
 			tcpconn_put(tcpconn);
 			/* must be after the de-ref*/
-			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
-			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
+			tcpconn_rearm_async_write(tcpconn);
 			break;
 		default:
 			LM_CRIT("unknown cmd %d from worker %d (pid %d)\n", cmd,

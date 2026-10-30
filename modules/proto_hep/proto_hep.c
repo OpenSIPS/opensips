@@ -489,7 +489,7 @@ static int hep_tcp_or_tls_send(const struct socket_info* send_sock,
 				 * connect status */
 				tls_mgm_api.tls_update_fd(c, fd);
 				n = tls_mgm_api.tls_async_connect(c, fd,
-					hep_tls_async_handshake_connect_timeout, NULL);
+					hep_tls_handshake_timeout, NULL);
 				lock_release(&c->write_lock);
 				if (n < 0) {
 					LM_ERR("failed async TLS connect\n");
@@ -851,13 +851,14 @@ static int hep_tls_async_write(struct tcp_connection* con, int fd)
 	int n;
 	struct tcp_async_chunk* chunk;
 
-	n = tls_mgm_api.tls_fix_read_conn(con, fd, hep_tls_handshake_timeout, NULL, 0);
+	n = tls_mgm_api.tls_fix_read_conn(con, fd,
+		hep_tls_handshake_timeout, NULL, 0);
 	if (n < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
 	} else if (n == 0) {
-		LM_DBG("SSL accept/connect still pending!\n");
-		return 1;
+		LM_DBG("SSL connect handshake timed out\n");
+		return -1;
 	}
 
 	tls_mgm_api.tls_update_fd(con, fd);
