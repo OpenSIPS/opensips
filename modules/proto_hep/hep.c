@@ -174,9 +174,11 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 
 	hep_ip = buf + sizeof(struct hep_hdr);
 
-	if (hep_ip > end){
+	/* the address header ends at buf+hl; make sure it is within the
+	 * received packet before dereferencing it */
+	if (buf + hl > end) {
 		LM_ERR("hep_ip is over buf+len\n");
-		return 0;
+		return -1;
 	}
 
 	switch(heph->hp_f){
@@ -196,9 +198,13 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 	/* VOIP payload */
 	hep_payload = buf + offset;
 
-	if (hep_payload > end) {
+	/* for HEPv2 a time header is read at hep_payload before the payload,
+	 * so it must fit too; otherwise we read past buf and payload.len below
+	 * underflows to a negative length */
+	if (hep_payload + (heph->hp_v == 2 ? (int)sizeof(struct hep_timehdr) : 0)
+			> end) {
 		LM_ERR("hep_payload is over buf+len\n");
-		return 0;
+		return -1;
 	}
 
 	/* time */
