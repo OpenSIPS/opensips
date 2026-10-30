@@ -30,6 +30,7 @@
 #include "test_parser.h"
 #include "test_parse_authenticate_body.h"
 #include "test_parse_supported.h"
+#include "test_parse_privacy.h"
 
 void test_parse_uri(void)
 {
@@ -367,4 +368,5 @@ void test_parser(void)
 	test_parse_sst();
 	test_parse_authenticate_body();
 	test_parse_supported();
+	test_parse_privacy();
 }
