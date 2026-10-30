@@ -359,6 +359,72 @@ stir_shaken_auth_div($var(cert), $var(key),
     "https://certs.example.net/stir.pem", , , , , true);
 ```
 
+#### stir_shaken_set_verstat(target, value)
+
+Set the calling-number verification indication in From and/or P-Asserted-Identity.
+`target` is `from`, `pai`, or `both`. `value` must be exactly one of:
+
+- `TN-Validation-Passed`
+- `TN-Validation-Failed`
+- `No-TN-Validation`
+
+This helper edits headers; the script chooses the value from its verification
+result and applies the ATIS attestation policy. Values such as
+`TN-Validation-Passed-A` are rejected. The helper does not perform verification
+or change the AS's recorded freshness result.
+
+All selected header fields and all comma-separated PAI identities are updated.
+For SIP/SIPS URIs, the parameter is placed in the subscriber portion before
+`@`; for TEL/TELS URIs it is a telephone URI parameter. Existing occurrences
+are removed, including duplicates, case variants, host-side SIP parameters,
+and misplaced header-level parameters. Display names, From tags, unrelated
+parameters, and URI headers are preserved. Bare addresses are enclosed in
+angle brackets to keep the resulting parameter placement unambiguous.
+
+Repeated calls are supported, including mixtures of `from`, `pai`, and `both`.
+For each selected header, the last successful call wins. Each header uses one
+pending replacement instead of accumulating insertions or overlapping deletions.
+All selected headers are prepared before any edits are committed, so a failed
+`both` call does not partially update the request. Missing selected headers are
+a successful no-op; the helper does not create PAI or From headers.
+
+Overlapping edits already made by other header-editing functions are refused.
+If the script subsequently removes or alters these managed lumps, a later
+helper call returns an error instead of dereferencing stale pointers. These
+checks do not make arbitrary text edits performed by other functions safe:
+coordinate From/PAI rewriting and check helper return values. Header edits
+remain pending lumps; normal parsed-header variables still show the original
+message until changes are applied/reparsed.
+
+Both helpers are available in REQUEST_ROUTE. Return values:
+
+- `1`: success (including no matching header);
+- `-1`: allocation failure;
+- `-2`: malformed or unsupported selected identity/header, or missing context;
+- `-3`: invalid target or value;
+- `-4`: conflicting, removed, or shared-memory edits.
+
+```opensips
+# Strip untrusted indications at ingress; handle failure under local policy.
+if (!stir_shaken_remove_verstat("both")) {
+    send_reply(400, "Invalid calling identity");
+    exit;
+}
+
+# After verification and the ATIS attestation-policy decision:
+stir_shaken_set_verstat("both", "TN-Validation-Passed");
+
+# Safe replacement: this does not append a second From verstat parameter.
+stir_shaken_set_verstat("from", "No-TN-Validation");
+```
+
+#### stir_shaken_remove_verstat(target)
+
+Remove all verstat parameters from the selected identities. Targets, return
+values, atomicity and repeat-call behavior are the same as for
+`stir_shaken_set_verstat()`. Removal also cancels a pending set on those headers.
+A subsequent set can safely establish a new value.
+
 #### stir_shaken_verify(cert, err_code, err_reason, [orig], [dest])
 
 

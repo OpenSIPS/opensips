@@ -26,3 +26,9 @@ SOS targets, repeated signing, immediate base-plus-DIV signing, unordered
 received headers, and broken/cyclic chain rejection. The DIV signature is
 independently checked over the actual encoded header and payload. The fixture
 SPC certificate and private key are public test data only.
+
+`test_verstat.c` runs repeated and mixed set/remove calls through the real SIP
+serializer and reparses the results. It covers duplicate parameters, multiple
+PAI fields and identities, SIP/TEL parameter placement, display/tag preservation,
+invalid arguments, removal of pending sets, discarded/foreign lumps, and atomic
+failure on malformed multi-PAI input.

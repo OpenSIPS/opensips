@@ -391,10 +391,15 @@ done:
 	BIO_free(bio);
 }
 
+void test_verstat(void);
+void test_verstat_edges(void);
+
 void mod_tests(void)
 {
 	test_inbound_verification();
 	test_outbound_authentication();
 	test_div_authentication();
 	test_div_chain_selection();
+	test_verstat();
+	test_verstat_edges();
 }

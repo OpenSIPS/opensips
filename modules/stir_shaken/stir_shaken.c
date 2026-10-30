@@ -62,6 +62,7 @@
 
 #include "stir_shaken.h"
 #include "div.h"
+#include "verstat.h"
 
 #define parsed_ctx_get() \
 	(current_processing_ctx == NULL ? NULL : \
@@ -180,6 +181,10 @@ static const pv_export_t mod_items[] = {
 };
 
 static const cmd_export_t cmds[] = {
+	{"stir_shaken_set_verstat", (cmd_function)stir_shaken_set_verstat, {
+		{CMD_PARAM_STR, 0, 0}, {CMD_PARAM_STR, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
+	{"stir_shaken_remove_verstat", (cmd_function)stir_shaken_remove_verstat, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_auth_div", (cmd_function)w_stir_auth_div, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
@@ -465,6 +470,8 @@ static int mod_init(void)
 	parsed_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, parsed_ctx_free);
 	generated_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, generated_identity_free);
 	stale_ctx_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	if (verstat_init() < 0)
+		return -1;
 
 	return 0;
 }
