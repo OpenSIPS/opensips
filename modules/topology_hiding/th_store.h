@@ -37,14 +37,17 @@
 extern str th_state_url;
 extern int th_state_ttl;
 extern int th_state_ttl_short;
+extern int th_state_options;
 
 int th_store_init(int stored_encoding);
 int th_store_child_init(void);
 void th_store_destroy(void);
 
+int th_store_no_state(struct sip_msg *msg);
 int th_store_is_key(const str *val);
 int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store);
 
+/* @param_name NULL: no state at all, only the passed params */
 char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 		const str *param_name, const str *pw, struct sip_msg *ttl_src,
 		int *suffix_len);

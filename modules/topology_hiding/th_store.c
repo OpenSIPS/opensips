@@ -52,6 +52,7 @@
 str th_state_url = STR_NULL;
 int th_state_ttl = 3600;
 int th_state_ttl_short = 60;
+int th_state_options = 1;
 
 extern struct th_ct_params *th_param_list;
 extern struct th_ct_params *th_hdr_param_list;
@@ -174,6 +175,12 @@ static str *th_full_key(const char *key)
 
 	memcpy(buf + TH_KEY_PREFIX_LEN, key, TH_KEY_LEN);
 	return &full;
+}
+
+/* nothing is ever routed to the Contact of an OPTIONS or its reply */
+int th_store_no_state(struct sip_msg *msg)
+{
+	return !th_state_options && th_msg_method(msg) == METHOD_OPTIONS;
 }
 
 int th_store_is_key(const str *val)
@@ -527,9 +534,11 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 		return NULL;
 	}
 
-	if (th_store_put(msg, pw, rr_set, &ct->uri, flags, ttl_src, key) < 0)
-		return NULL;
-	len += 1 /* ; */ + param_name->len + 1 /* = */ + TH_KEY_WIRE_LEN;
+	if (param_name) {
+		if (th_store_put(msg, pw, rr_set, &ct->uri, flags, ttl_src, key) < 0)
+			return NULL;
+		len += 1 /* ; */ + param_name->len + 1 /* = */ + TH_KEY_WIRE_LEN;
+	}
 
 	for (el = th_param_list; el; el = el->next)
 		for (i = 0; i < ctu.u_params_no; i++)
@@ -548,13 +557,15 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 	}
 
 	s = suffix;
-	*s++ = ';';
-	memcpy(s, param_name->s, param_name->len);
-	s += param_name->len;
-	*s++ = '=';
-	*s++ = TH_KEY_MARKER;
-	memcpy(s, key, TH_KEY_LEN);
-	s += TH_KEY_LEN;
+	if (param_name) {
+		*s++ = ';';
+		memcpy(s, param_name->s, param_name->len);
+		s += param_name->len;
+		*s++ = '=';
+		*s++ = TH_KEY_MARKER;
+		memcpy(s, key, TH_KEY_LEN);
+		s += TH_KEY_LEN;
+	}
 
 	for (el = th_param_list; el; el = el->next)
 		for (i = 0; i < ctu.u_params_no; i++)
