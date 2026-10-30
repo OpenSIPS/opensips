@@ -64,6 +64,28 @@ static int th_store_on;
 static char th_fetch_buf[TH_STATE_MAX_LEN];
 static str th_fetched;
 
+/* states are only removed by their expiration, which this backend ignores,
+ * and cachedb has no capability telling it */
+static int th_store_check_scheme(void)
+{
+	str scheme;
+	char *p;
+
+	p = q_memchr(th_state_url.s, ':', th_state_url.len);
+	if (!p)
+		return 0;
+
+	scheme.s = th_state_url.s;
+	scheme.len = p - th_state_url.s;
+	if (str_casematch_nt(&scheme, "mongodb")) {
+		LM_ERR("the mongodb backend ignores the expiration of what it "
+			"stores, the states would never be removed from th_state_url\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 int th_store_init(int stored_encoding)
 {
 	if (!th_state_url.s) {
@@ -75,6 +97,9 @@ int th_store_init(int stored_encoding)
 	}
 
 	th_state_url.len = strlen(th_state_url.s);
+
+	if (th_store_check_scheme() < 0)
+		return -1;
 
 	if (th_state_ttl <= 0 || th_state_ttl_short <= 0) {
 		LM_ERR("th_state_ttl and th_state_ttl_short must be positive\n");
