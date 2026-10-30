@@ -367,6 +367,22 @@ modparam("topology_hiding", "th_state_ttl_short", 120)
 ```
 
 
+#### th_state_options (int)
+
+
+When set to 0, an OPTIONS and its reply carry no topology hiding information at all: their Contact is the address of the proxy with no encoded param, and nothing is stored. Nothing is ever routed to such a Contact, so this saves encoding (or storing) what no request will use. Applies to all the encoding types.
+
+
+*Default value is "1" ( OPTIONS are handled like any other request )*
+
+
+```opensips title="Set th_state_options parameter"
+...
+modparam("topology_hiding", "th_state_options", 0)
+...
+```
+
+
 ### Exported Functions
 
 

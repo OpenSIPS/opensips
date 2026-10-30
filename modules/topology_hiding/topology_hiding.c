@@ -113,6 +113,7 @@ static const param_export_t params[] = {
 	{ "th_state_url",                     STR_PARAM,                &th_state_url.s               },
 	{ "th_state_ttl",                     INT_PARAM,                &th_state_ttl                 },
 	{ "th_state_ttl_short",               INT_PARAM,                &th_state_ttl_short           },
+	{ "th_state_options",                 INT_PARAM,                &th_state_options             },
 	{0, 0, 0}
 };
 

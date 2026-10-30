@@ -531,6 +531,42 @@ def scen_rejected():
         ntf.sock.close()
 
 
+def scen_options():
+    print('== OPTIONS with and without th_state_options')
+    bare = 'sip:127.0.0.1:%d' % BASE
+    for enc, opt in (('S', None), ('S', 0), ('C', 0)):
+        rcli('FLUSHALL')
+        extra = [] if opt is None else [('th_state_options', opt)]
+        tag = '%s%s' % (enc, '' if opt is None else ',th_state_options=0')
+        px = Proxy('opt_%s_%s' % (enc, opt),
+                   th_params(enc, REDIS_URL if enc == 'S' else None, extra))
+        sub, ntf = new_pair()
+        try:
+            d = Dialog(sub, 'sip:%s@127.0.0.1:%d' % (ntf.name, ntf.port))
+            req, rpl = transact(d, ntf, 'OPTIONS',
+                                peer_tag=uuid.uuid4().hex[:10])
+            ok = req is not None and rpl is not None and rpl.code == 200
+            check('[%s] OPTIONS answered' % tag, ok)
+            if not ok:
+                continue
+            if opt is None:
+                check('[%s] OPTIONS state stored for th_state_ttl_short' % tag,
+                      KEY_RE.match(req.thinfo() or '') and
+                      0 < ttl(req.thinfo()) <= 60, req.thinfo())
+            else:
+                check('[%s] OPTIONS and its reply carry no state' % tag,
+                      req.contact_uri() == bare and
+                      rpl.contact_uri() == bare and not th_keys(),
+                      '%s %s %s' % (req.contact_uri(), rpl.contact_uri(),
+                                    th_keys()))
+            check('[%s] proxy logged no ERROR' % tag, not px.lines('ERROR:'),
+                  px.lines('ERROR:')[:3])
+        finally:
+            px.stop()
+            sub.sock.close()
+            ntf.sock.close()
+
+
 def scen_switch():
     print('== switching C -> S -> C in place keeps in-flight dialogs')
     rcli('FLUSHALL')
@@ -580,6 +616,7 @@ SCENARIOS = {
     'subscribe': lambda: scen_subscribe('S'),
     'invite': lambda: scen_invite('S'),
     'rejected': scen_rejected,
+    'options': scen_options,
     'switch': scen_switch,
     'miss': scen_miss,
 }

@@ -1191,7 +1191,9 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (encoding_options->stored && th_store_wanted(msg, ttl_src, store))
+	if (th_store_no_state(msg))
+		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, NULL, &suffix_len);
+	else if (encoding_options->stored && th_store_wanted(msg, ttl_src, store))
 		suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
 			&encoding_options->param_password, ttl_src, &suffix_len);
 	else if (encoding_options->compact_encoding)
