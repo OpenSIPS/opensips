@@ -32,7 +32,9 @@ str tm_cid;
 int tm_repl_cluster = 0;
 int tm_repl_auto_cancel = 1;
 str tm_cluster_param = str_init(TM_CLUSTER_DEFAULT_PARAM);
-static int tm_node_id = 0;
+/* length of the fixed ";<param>=" prefix of tm_cid; the node id is appended
+ * live per-request by tm_via_cid() */
+static int tm_cid_prefix_len;
 static str tm_repl_cap = str_init("tm-repl");
 
 struct clusterer_binds cluster_api;
@@ -256,8 +258,6 @@ static void receive_tm_repl(bin_packet_t *packet)
 
 int tm_init_cluster(void)
 {
-	str cid;
-
 	if (tm_repl_cluster == 0) {
 		LM_DBG("tm_replication_cluster not set - not engaging!\n");
 		return 0;
@@ -282,11 +282,9 @@ int tm_init_cluster(void)
 		/* overwrite structure to disable clusterer */
 		goto cluster_error;
 	}
-	tm_node_id = cluster_api.get_my_id();
-
-	/* build the via param */
-	cid.s = int2str(tm_node_id, &cid.len);
-	tm_cid.s = pkg_malloc(1/*;*/ + tm_cluster_param.len + 1/*=*/ + cid.len);
+	/* only the ";<param>=" prefix: a controller assigns the node id at runtime
+	 * and may change it, so tm_via_cid() appends it per request */
+	tm_cid.s = pkg_malloc(1/*;*/ + tm_cluster_param.len + 1/*=*/ + INT2STR_MAX_LEN);
 	if (!tm_cid.s) {
 		LM_ERR("out of pkg memory!\n");
 		goto cluster_error;
@@ -296,14 +294,31 @@ int tm_init_cluster(void)
 	memcpy(tm_cid.s + tm_cid.len, tm_cluster_param.s, tm_cluster_param.len);
 	tm_cid.len += tm_cluster_param.len;
 	tm_cid.s[tm_cid.len++] = '=';
-	memcpy(tm_cid.s + tm_cid.len, cid.s, cid.len);
-	tm_cid.len += cid.len;
+	tm_cid_prefix_len = tm_cid.len;
 
 	return 0;
 
 cluster_error:
 	cluster_api.register_capability = 0;
 	return -1;
+}
+
+str *tm_via_cid(void)
+{
+	char *id_s;
+	int   id, id_len;
+
+	if (!tm_cluster_enabled())
+		return NULL;
+
+	id = cluster_api.get_my_id();
+	if (id < 0)
+		return NULL;
+
+	id_s = int2str((unsigned long)id, &id_len);
+	memcpy(tm_cid.s + tm_cid_prefix_len, id_s, id_len);
+	tm_cid.len = tm_cid_prefix_len + id_len;
+	return &tm_cid;
 }
 
 #define TM_BIN_PUSH(_t, _f, _d) \
@@ -522,7 +537,7 @@ int tm_reply_replicate(struct sip_msg *msg)
 	/* if there was no parameter, or it was, but it was ours, handle it */
 	if (cid < 0)
 		return 0;
-	if (cid == tm_node_id) {
+	if (cid == cluster_api.get_my_id()) {
 		LM_DBG("reply should be processed by us (%d)\n", cid);
 		return 0;
 	}
