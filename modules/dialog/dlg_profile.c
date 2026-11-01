@@ -744,8 +744,7 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 		/* do hash over the value */
 		return core_hash( value, NULL, profile->size);
 	} else {
-		/* do hash over dialog pointer */
-		return ((unsigned long)dlg) & (profile->size - 1);
+		return dlg_profile_ptr_bucket(dlg, profile->size);
 	}
 }
 

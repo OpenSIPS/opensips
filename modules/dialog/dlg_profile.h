@@ -27,6 +27,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../locking.h"
 #include "../../str.h"
+#include "../../hash_func.h"
 
 
 
@@ -162,6 +163,14 @@ extern struct dlg_profile_table *profiles;
 int init_cachedb();
 void destroy_cachedb(int);
 int init_cachedb_utils(void);
+
+/* bucket of a dialog in a profile without values: its address, hashed, as
+ * allocators align it and its low bits alone fill only a few buckets */
+static inline unsigned int dlg_profile_ptr_bucket(const void *dlg,
+		unsigned int size)
+{
+	return core_ulong_hash((unsigned long)dlg, size);
+}
 
 #endif
 
