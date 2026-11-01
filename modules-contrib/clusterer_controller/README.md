@@ -1,6 +1,6 @@
 ---
-title: "CLUSTERER Module"
-description: "The clusterer module is used to organize multiple OpenSIPS instances into groups (clusters) in which the nodes can communicate with each other in order to replicate, share information or perform distributed tasks."
+title: "CLUSTERER_CONTROLLER Module"
+description: "The clusterer module with a controller added: the nodes of a cluster find each other over encrypted UDP multicast and elect a master, which assigns their node IDs and moves the sharing tags on failover. It is loaded instead of clusterer."
 ---
 
 ## Admin Guide
@@ -20,6 +20,29 @@ Note that an OpenSIPS instance can belong to multiple clusters, communicating an
 
 
 An OpenSIPS instance can dynamically learn all the nodes in the cluster if database provisioning is not desired. It is enough to define at least one neighbour in the script in order to discover all the cluster components.
+
+
+*clusterer_controller.so* is this *clusterer* module with a controller added. It registers as *clusterer*, so it is loaded instead of *clusterer.so* (loading both is refused at startup), it is configured with *modparam("clusterer", ...)*, and the modules and scripts that use *clusterer* work with it unchanged.
+
+
+The controller runs the clusters declared with *use_controller=1* in [cluster_options](#cluster_options-string), each described by a [cluster](#cluster-string) entry. Their nodes find each other over encrypted UDP multicast and elect a master, which gives every node its node ID and tells the others its BIN address - no database, *my_node_info* or *neighbor_node_info* is needed, and every node uses the same configuration. By default the master also holds the cluster's sharing tags, which move to the new master on failover. All other clusters work exactly as with *clusterer*; without a *cluster* parameter the controller starts no process.
+
+
+```opensips title="A controller-managed cluster"
+...
+socket=bin:10.0.0.1:5566	# the only line that differs between the nodes
+
+loadmodule "proto_bin.so"
+loadmodule "clusterer_controller.so"
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1")
+modparam("clusterer", "cluster", "id=1,multicast=239.0.0.1:3333")
+modparam("clusterer", "password", "<long random secret>")
+modparam("clusterer", "sharing_tag", "vip/1=backup")
+
+loadmodule "dialog.so"
+modparam("dialog", "dialog_replication_cluster", 1)
+...
+```
 
 
 ### Capabilities layer
@@ -91,7 +114,7 @@ of inter-DC replication channels, for example:
 
 A *new table* has been added to represent the
 inter-cluster replication bridges. Its name is configured using the
-[db_bridge_table](#db_bridge_table) parameter (default: "clusterer_bridge"):
+[db_bridges_table](#db_bridges_table) parameter (default: "clusterer_bridge"):
 
 
 ```c
@@ -126,6 +149,65 @@ parameter, in order to optimize its "CPS pipes broadcasting" replication
 mechanism.
 
 
+### Discovery and master election
+
+
+Every node runs a controller process for each controller-managed cluster it is in. A starting node multicasts a join request; the master checks it (password, MTU and the settings named in [on_config_mismatch](#on_config_mismatch-string)), assigns the node an ID and announces it, with its BIN address, to every member, whose *clusterer* then links to it. Every node of such a cluster is a *seed* node. When no master answers within [query_time](#query_time-integer) seconds, the node founds the cluster as its master. A node that stops says goodbye; one that goes silent drops out of the election after 3 x *query_time* and is removed after 6 x *query_time*.
+
+
+The master is the node with the highest IP among those heard lately, except that with [master_stickiness](#master_stickiness-integer) a live master keeps the role; the *backup* is the highest-IP other node. The master multicasts a keepalive every second. A member that stops hearing it - after 3 to 15 seconds, a wait learned from the gaps between keepalives - first asks the other members, and holds the election (for up to 30 seconds) while one of them still hears the master. A master that stops or enters maintenance hands over at once. When a network split heals, the master that hears more members wins (then the more recent mastership, then the higher IP) and the other side rejoins it.
+
+
+### Node IDs
+
+
+The master assigns the node IDs of a controller-managed cluster, 1 to 256. A joining node proposes one: [my_node_id](#my_node_id) when it is set, otherwise an ID derived from the machine (its SMBIOS product UUID outside containers, else its first MAC address, else a random value) and its controller IP, so that it stays the same across restarts. The master gives a returning node its previous ID - the ID of a node that left is held for its address for an hour - otherwise the proposed ID if it is free, otherwise the lowest free one. Derived IDs may collide, so set *my_node_id* where an ID must never change. A node may have different IDs in different clusters, and every node needs its own IP address (no NAT between the nodes).
+
+
+### Sharing tags and maintenance
+
+
+With [manage_shtags](#manage_shtags-integer) on (the default), the sharing tags of a controller-managed cluster follow its master: every node starts with them in *backup*, whatever [sharing_tag](#sharing_tag) says, and the master activates them, so a restarted node never takes a tag from the node holding it. [clusterer:shtag_force](#clusterershtag_force) pins the tags to another node, and [release_tag_when_isolated](#release_tag_when_isolated-integer) makes a master cut off from most of the cluster release them.
+
+
+Maintenance ([clusterer:maintenance](#clusterermaintenance), [cl_ctr_set_maintenance()](#cl_ctr_set_maintenancecluster_id-state)) drains a node, e.g. before an upgrade: it stays a member, with its node ID and BIN links, but it is never master or backup and holds no sharing tag. At the *full* level the other nodes also stop replicating to it. When every node is in maintenance, one of them is still master. The state is announced by the node itself, survives a master failover and ends when the node restarts.
+
+
+### Multiple clusters
+
+
+A node can be in up to 16 controller-managed clusters, each with its own *cluster_options* and *cluster* entries, controller process, master and node IDs. Each needs its own multicast group and port (clusters may share a group on different ports, or a port on different groups). With more than one, every *cluster* entry names its *bin_socket*; one BIN socket can serve them all.
+
+
+Controller-managed and native clusters (database, or *my_node_info* / *neighbor_node_info*) can be mixed on one node. A cluster ID is either one or the other; the database and *db_mode* concern only the native clusters, whose sharing tags keep their usual handling.
+
+
+### Network requirements
+
+
+- IPv4 multicast (IPv6 is not supported) between all nodes, on each cluster's group and port, with a TTL of 32. The group is joined on the interface of [my_ip](#my_ip-string). With IGMP snooping the VLAN needs an IGMP querier; across routers, multicast routing is needed.
+- Unicast UDP between the nodes on the same port, and TCP to every node's BIN socket.
+- The same MTU on every node of a cluster: it is read from the interface, and a node with a different one is refused.
+- Fragmented UDP must pass: above about 80 nodes (1500-byte MTU) the member list no longer fits one datagram.
+- A firewall must let in, from the other nodes, UDP to the group and to the node's own address on the cluster's port, IGMP where it is filtered, and TCP to the BIN port.
+- One OpenSIPS instance per host and cluster port.
+
+
+### Security
+
+
+The controller's packets are encrypted and authenticated (XChaCha20-Poly1305) with keys derived from the cluster's [password](#password-string), and protected against replay. The password is the only credential: whoever holds it can join the cluster and can become its master. Use a long random secret, the same on every node. A node with another password cannot join and shuts down, so changing it means stopping every node, changing it everywhere and starting them again. In controller-managed clusters, *clusterer* ignores the BIN messages that would change membership or sharing tags, since BIN is not authenticated.
+
+
+Each cluster also has an identity, a UUID chosen by its first master or pinned with *uuid=* in [cluster](#cluster-string), so another deployment using the same group, password and cluster ID is not merged with it.
+
+
+### Upgrading
+
+
+All nodes of a cluster must speak the same controller wire version (3 in this build); a node refuses packets of another version and logs the sender once a minute. A change of wire version needs the whole cluster upgraded at once - stop every node, upgrade, start again - because the two versions do not see each other and each side would elect a master. Within a wire version, nodes can be upgraded one at a time: each advertises its optional capabilities (*probe*, *maint_set*, *maint_full*), and one that needs the other members is used only once every live member has it ([clusterer:list_config](#clustererlist_config) shows what they share).
+
+
 ### Dependencies
 
 
@@ -140,6 +222,9 @@ is *1*.
 - *proto_bin module*.
 
 
+With a [cluster](#cluster-string) parameter, at least one BIN listener is needed, and none may be a wildcard (`socket=bin:IP:PORT`, not `bin:*:PORT`).
+
+
 #### External Libraries or Applications
 
 
@@ -147,7 +232,16 @@ The following libraries or applications must be installed before
 running OpenSIPS with this module loaded:
 
 
-- *None*.
+- *libsodium* - the cryptography of the controller; its development files are needed to build the module.
+
+
+The module builds on Linux only. It is a contrib module, built and installed explicitly:
+
+
+```bash title="build and install"
+make modules=modules-contrib/clusterer_controller modules-contrib
+make modules=modules-contrib/clusterer_controller install-modules-all
+```
 
 
 ### Exported Parameters
@@ -160,7 +254,7 @@ The id of the local instance. This parameter must be equal to one of the
 *node_id* fields in the database.
 
 
-*No default value. This parameter must be explicitly set to a value greater than zero.*
+*No default value. It must be set, to a value greater than zero, for native (database or my_node_info) clusters; in a controller-managed cluster it is only the node ID this node proposes (see [Node IDs](#node-ids)).*
 
 
 ```opensips title="Set my_node_id parameter"
@@ -186,7 +280,10 @@ If DB mode is enabled, only the nodes defined in the database will be
 accepted by this instance.
 
 
-*Default value is "1"*
+Controller-managed clusters never use the database.
+
+
+*Default value is "1", or "0" when neither db_url nor the core's default database URL is set.*
 
 
 ```opensips title="Set db_mode parameter"
@@ -232,7 +329,7 @@ modparam("clusterer", "db_table", "clusterer")
 ```
 
 
-#### db_bridge_table
+#### db_bridges_table
 
 
 The name of the table storing the inter-cluster bridge definitions.
@@ -241,9 +338,9 @@ The name of the table storing the inter-cluster bridge definitions.
 *Default value is "clusterer_bridge".*
 
 
-```opensips title="Set db_bridge_table parameter"
+```opensips title="Set db_bridges_table parameter"
 ...
-modparam("clusterer", "db_bridge_table", "clusterer_bridge")
+modparam("clusterer", "db_bridges_table", "clusterer_bridge")
 ...
 		
 ```
@@ -680,6 +777,252 @@ modparam("clusterer", "enable_rerouting", 0)
 ```
 
 
+#### cluster_options (string)
+
+
+Puts a cluster under the controller: *"cluster_id=N, use_controller=1"*. Set once per controller-managed cluster; each needs a matching [cluster](#cluster-string) entry and the reverse, or startup fails. A cluster ID cannot be both controller-managed and native (database or *my_node_info*); *use_controller=0*, the default, leaves the cluster native.
+
+
+*No default value.*
+
+
+```opensips title="Set cluster_options parameter"
+...
+modparam("clusterer", "cluster_options", "cluster_id=1, use_controller=1")
+...
+```
+
+
+#### cluster (string)
+
+
+How the controller runs one controller-managed cluster, as comma-separated *key=value* pairs:
+
+
+- *id* (required) - the cluster ID, 1 to 65535, as in *cluster_options*.
+- *multicast* (required) - the IPv4 multicast group and UDP port, *A.B.C.D:PORT* (port 3333 when omitted); each cluster of a node needs its own.
+- *password* - this cluster's [password](#password-string).
+- *bin_socket* - the BIN listener advertised for this cluster, *bin:IP:PORT*. Required when several clusters are defined (they may all name the same one); otherwise the only BIN listener is used, or the first one, with a warning.
+- *manage_shtags*, *master_stickiness*, *consumer_rate_limit*, *consumer_retries* (0 to 10), *consumer_retry_ms* (5 to 5000) - this cluster's value of the parameter of that name.
+- *uuid* - pins the cluster's identity: a UUID, or any string, which is hashed into one. All nodes of the cluster must use the same value.
+
+
+Set it once per cluster, up to 16 times.
+
+
+*No default value.*
+
+
+```opensips title="Set cluster parameter"
+...
+modparam("clusterer", "cluster",
+	"id=1,multicast=239.0.0.1:3333,bin_socket=bin:10.0.0.1:5566")
+modparam("clusterer", "cluster",
+	"id=2,multicast=239.0.0.1:3334,bin_socket=bin:10.0.0.1:5566,manage_shtags=0")
+...
+```
+
+
+#### password (string)
+
+
+The shared secret of the controller-managed clusters, from which the keys of their traffic are derived; *password=* in a [cluster](#cluster-string) entry overrides it. Every node of a cluster must use the same one. A startup warning flags the default or a weak password; use a long random string, e.g. from *openssl rand -base64 32*.
+
+
+*Default value is "3eCrEt\*5629" (change it).*
+
+
+```opensips title="Set password parameter"
+...
+modparam("clusterer", "password", "<long random secret>")
+...
+```
+
+
+#### my_ip (string)
+
+
+The IPv4 address of this node's controller: its identity among the peers (the election compares it), and through the interface that owns it, where it joins the multicast groups. Startup fails if no local interface has it. It does not change the BIN socket advertised to *clusterer*.
+
+
+*Default value is auto-detected: the first IPv4 address of [interface](#interface-string) when that is set, else the address the kernel picks to reach the first cluster's multicast group.*
+
+
+```opensips title="Set my_ip parameter"
+...
+modparam("clusterer", "my_ip", "10.0.0.1")
+...
+```
+
+
+#### interface (string)
+
+
+The network interface of the controller's traffic; the controller uses its first IPv4 address (with a warning when it has several). Ignored when [my_ip](#my_ip-string) is set.
+
+
+*Default value is auto-detected (see my_ip).*
+
+
+```opensips title="Set interface parameter"
+...
+modparam("clusterer", "interface", "eth0")
+...
+```
+
+
+#### query_time (integer)
+
+
+Seconds between the heartbeats each node sends. A node not heard for 3 x *query_time* drops out of the election, and after 6 x *query_time* it is removed. From 1 to 60, and the same on every node of a cluster (see [on_config_mismatch](#on_config_mismatch-string)). A failed master is detected by its one-second keepalive, not by this.
+
+
+*Default value is "5".*
+
+
+```opensips title="Set query_time parameter"
+...
+modparam("clusterer", "query_time", 3)
+...
+```
+
+
+#### manage_shtags (integer)
+
+
+With *1*, the controller decides which node holds the sharing tags of each controller-managed cluster (see [Sharing tags and maintenance](#sharing-tags-and-maintenance)); with *0*, the cluster's tags are handled as with *clusterer*. Can be set per cluster in [cluster](#cluster-string), and must be the same on every node of a cluster.
+
+
+*Default value is "1".*
+
+
+```opensips title="Set manage_shtags parameter"
+...
+modparam("clusterer", "manage_shtags", 0)
+...
+```
+
+
+#### master_stickiness (integer)
+
+
+With *1*, a live master keeps its role when a node with a higher IP joins; with *0*, the node with the highest IP always becomes master, at the cost of more handovers. Can be set per cluster in [cluster](#cluster-string), and must be the same on every node of a cluster.
+
+
+*Default value is "1".*
+
+
+```opensips title="Set master_stickiness parameter"
+...
+modparam("clusterer", "master_stickiness", 0)
+...
+```
+
+
+#### release_tag_when_isolated (integer)
+
+
+With *1*, a master that hears fewer than half of the members it last had, for 3 x *query_time*, releases the active sharing tags until it hears a majority again - the others have most likely elected another master. It does not help when a cluster splits in even halves, a node left alone releases too, and a two-node cluster never releases.
+
+
+*Default value is "0".*
+
+
+```opensips title="Set release_tag_when_isolated parameter"
+...
+modparam("clusterer", "release_tag_when_isolated", 1)
+...
+```
+
+
+#### on_config_mismatch (string)
+
+
+What happens when a node's *manage_shtags*, *master_stickiness* or *query_time* differ from the cluster's:
+
+
+- *reject* - the master refuses the node, which logs the difference and shuts down; two partitions whose masters differ do not merge.
+- *warn* - the node joins, and a *CONFIG MISMATCH* warning is logged for each peer that differs.
+- *adopt* - the node joins and takes the master's values.
+
+
+A different MTU is always refused. It applies to the whole node, not per cluster.
+
+
+*Default value is "reject".*
+
+
+```opensips title="Set on_config_mismatch parameter"
+...
+modparam("clusterer", "on_config_mismatch", "warn")
+...
+```
+
+
+#### consumer_rate_limit (integer)
+
+
+Packets per second this node accepts from one address for the messages between nodes - those of the *cl_ctr_* send functions and of modules using the controller's API - counted apart from the controller's own traffic. Can be set per cluster in [cluster](#cluster-string).
+
+
+*Default value is "1000".*
+
+
+```opensips title="Set consumer_rate_limit parameter"
+...
+modparam("clusterer", "consumer_rate_limit", 5000)
+...
+```
+
+
+#### consumer_retries (integer)
+
+
+How many times a message sent with *reliable* set (see [cl_ctr_broadcast_req()](#cl_ctr_broadcast_reqcluster_id-msg-tag-reliable)) is sent again to a node that has not acknowledged it; *0* keeps the acknowledgement but never resends. Can be set per cluster in [cluster](#cluster-string) (0 to 10).
+
+
+*Default value is "2".*
+
+
+```opensips title="Set consumer_retries parameter"
+...
+modparam("clusterer", "consumer_retries", 4)
+...
+```
+
+
+#### consumer_retry_ms (integer)
+
+
+Milliseconds between those resends. Can be set per cluster in [cluster](#cluster-string) (5 to 5000).
+
+
+*Default value is "40".*
+
+
+```opensips title="Set consumer_retry_ms parameter"
+...
+modparam("clusterer", "consumer_retry_ms", 100)
+...
+```
+
+
+#### enable_reliable_send (integer)
+
+
+Set to *0* to turn reliable sending off on this node: a message sent with *reliable* set goes out once, unacknowledged, and a warning is logged.
+
+
+*Default value is "1".*
+
+
+```opensips title="Set enable_reliable_send parameter"
+...
+modparam("clusterer", "enable_reliable_send", 0)
+...
+```
+
+
 ### Exported Functions
 
 
@@ -829,6 +1172,287 @@ if (cluster_check_addr(1, $si)) {
 ```
 
 
+#### cl_ctr_set_maintenance(cluster_id, state)
+
+
+Puts this node in or out of maintenance in a controller-managed cluster, as [clusterer:maintenance](#clusterermaintenance) does.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *state* (string) - *evicted* (or *on*) or *full* to enter maintenance, *none* (or *off*) to leave it.
+
+
+Returns *1* on success, *-1* if the state or the cluster is unknown, *full* is not supported by every member yet, or the controller is not running yet.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_set_maintenance() usage"
+...
+cl_ctr_set_maintenance(1, "evicted");
+...
+```
+
+
+#### cl_ctr_node_is_master(cluster_id, node_id)
+
+
+Checks whether a node is the master of a controller-managed cluster.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the node.
+
+
+Returns *1* if it is, *-1* otherwise.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_node_is_master() usage"
+...
+if (cl_ctr_node_is_master(1, 3))
+	xlog("node 3 is the master of cluster 1\n");
+...
+```
+
+
+#### cl_ctr_node_present(cluster_id, node_id)
+
+
+Checks whether a node is a member of a controller-managed cluster, as [clusterer:list_members](#clustererlist_members) lists them.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the node.
+
+
+Returns *1* if it is, *-1* otherwise.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_node_present() usage"
+...
+if (!cl_ctr_node_present(1, $var(peer)))
+	xlog("node $var(peer) is not in cluster 1\n");
+...
+```
+
+
+#### cl_ctr_get_node_role(cluster_id, node_id, role_var)
+
+
+Writes a member's role into a variable: *master*, *backup*, *maintenance* or *member*.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the node;
+- *role_var* (var) - receives the role.
+
+
+Returns *1* on success, *-1* if the node is not a member.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_get_node_role() usage"
+...
+if (cl_ctr_get_node_role(1, 2, $var(role)))
+	xlog("node 2 is $var(role)\n");	# node 2 is backup
+...
+```
+
+
+#### cl_ctr_get_node_maint(cluster_id, node_id, maint_var)
+
+
+Writes a member's maintenance state into a variable: *none*, *evicted* or *full*.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the node;
+- *maint_var* (var) - receives the state.
+
+
+Returns *1* on success, *-1* if the node is not a member.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_get_node_maint() usage"
+...
+if (cl_ctr_get_node_maint(1, 3, $var(m)) && $var(m) != "none")
+	xlog("node 3 is in maintenance ($var(m))\n");	# node 3 is in maintenance (full)
+...
+```
+
+
+#### cl_ctr_get_node_ip(cluster_id, node_id, ip_var)
+
+
+Writes a member's controller IP into a variable.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the node;
+- *ip_var* (var) - receives the IP.
+
+
+Returns *1* on success, *-1* if the node is not a member.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_get_node_ip() usage"
+...
+if (cl_ctr_get_node_ip(1, 3, $var(ip)))
+	xlog("node 3 is $var(ip)\n");	# node 3 is 10.0.0.3
+...
+```
+
+
+#### cl_ctr_broadcast_req(cluster_id, msg, [tag], [reliable])
+
+
+Sends a message to every other member of a controller-managed cluster, as one multicast packet over the controller's encrypted channel; the members raise [E_CL_CTR_REQ_RECEIVED](#e_cl_ctr_req_received). A message is a datagram: it may be lost, unless *reliable* is set, and the message and its tag together must fit in one - 1359 bytes on a 1500-byte MTU.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *msg* (string) - the message;
+- *tag* (string, optional) - passed to the receivers' event, e.g. to match a reply; up to 255 bytes;
+- *reliable* (int, optional) - *1* makes every member acknowledge the message, and resends it to those that do not (see [consumer_retries](#consumer_retries-integer)).
+
+
+Returns *1* when the message is queued for sending, *-1* for an empty or too long message, an unknown cluster, or a controller not running yet.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_broadcast_req() usage"
+...
+cl_ctr_broadcast_req(1, "cache flushed");
+cl_ctr_broadcast_req(1, "config changed", "cfg", 1);
+...
+```
+
+
+#### cl_ctr_send_req(cluster_id, node_id, msg, [tag], [reliable])
+
+
+Sends a message to one member, as [cl_ctr_broadcast_req()](#cl_ctr_broadcast_reqcluster_id-msg-tag-reliable) does to all. A message for a node that is not a member is dropped.
+
+
+Meaning of the parameters is as follows:
+
+
+- *node_id* (int) - the destination node, 1 to 256;
+- the others as for *cl_ctr_broadcast_req()*.
+
+
+Returns as *cl_ctr_broadcast_req()*.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_send_req() usage"
+...
+cl_ctr_send_req(1, 3, "check user $fU", "q1");
+...
+```
+
+
+#### cl_ctr_send_req_list(cluster_id, nodes_avp, msg, [tag], [sent_var])
+
+
+Sends a message to the nodes listed in an AVP, one unicast each, so the other members never see it. It is not acknowledged.
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *nodes_avp* (var) - an AVP holding the node IDs (non-numeric values are skipped);
+- *msg* (string) - the message;
+- *tag* (string, optional) - as for *cl_ctr_broadcast_req()*;
+- *sent_var* (var, optional) - receives the number of nodes the message was queued for (node IDs outside 1 to 256 are not counted; one that is not a member is dropped later).
+
+
+Returns *1* if the message was queued for at least one node, *-1* otherwise.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_send_req_list() usage"
+...
+$avp(nodes) = 2;
+$avp(nodes) = 3;
+if (cl_ctr_send_req_list(1, $avp(nodes), "just for you", "t1", $var(sent)))
+	xlog("sent to $var(sent) nodes\n");	# sent to 2 nodes
+...
+```
+
+
+#### cl_ctr_send_rpl(cluster_id, node_id, msg, [tag])
+
+
+Sends a reply to a node, normally from an [E_CL_CTR_REQ_RECEIVED](#e_cl_ctr_req_received) route to *$param(src_id)*; the node raises [E_CL_CTR_RPL_RECEIVED](#e_cl_ctr_rpl_received).
+
+
+Meaning of the parameters is as follows:
+
+
+- *cluster_id* (int) - the cluster;
+- *node_id* (int) - the destination node;
+- *msg* (string) - the reply;
+- *tag* (string, optional) - normally the tag of the request.
+
+
+Returns *1* when the reply is queued for sending, *-1* otherwise.
+
+
+This function can be used from any route.
+
+
+```opensips title="cl_ctr_send_rpl() usage"
+...
+event_route[E_CL_CTR_REQ_RECEIVED] {
+	cl_ctr_send_rpl($param(cluster_id), $param(src_id), "ack", $param(tag));
+}
+...
+```
+
+
 ### Exported MI Functions
 
 
@@ -839,6 +1463,8 @@ Replaces obsolete MI command: *clusterer_reload*.
 
 
 Reloads data from the clusterer database. The currently established topology will be lost and the node will rediscover the new topology.
+
+Controller-managed clusters are not in the database: a reload keeps them as they are, and fails when the database defines a cluster with the id of one of them.
 
 
 Name: *clusterer:reload*
@@ -945,6 +1571,9 @@ Replaces obsolete MI command: *clusterer_set_status*.
 Sets the status(Enabled/Disabled) of a node. If the local instance is disabled, the node will not send any messages and ignore received ones thus appearing as a failed node in the topology (from the other node's perspective). If a different node is disabled, the specified node will simply be ignored by the local instance in terms of sending/receiving any messages, as if no longer part of the topology.
 
 
+Refused (403) for a controller-managed cluster - use [clusterer:maintenance](#clusterermaintenance).
+
+
 Name: *clusterer:set_status*
 
 
@@ -983,7 +1612,8 @@ this function, it will be automatically disabled (equivalent to running
 
 
 This function can only be used when [db_mode](#db_mode) is set to
-*0* (disabled).
+*0* (disabled). It is refused (403) for a controller-managed cluster, whose
+departed nodes the controller removes.
 
 
 Name: *clusterer:remove_node*
@@ -1158,6 +1788,10 @@ in order to force any other node that may be active on this tag to
 step down to backup.
 
 
+Refused (403) for a cluster whose tags the controller manages
+([manage_shtags](#manage_shtags-integer)).
+
+
 Name: *clusterer:shtag_set_active*
 
 
@@ -1199,6 +1833,243 @@ $ opensips-cli -x mi clusterer:list_shtags
 ```
 
 
+#### clusterer:list_members
+
+
+Lists the members of each controller-managed cluster as this node knows them: IP, node ID, MTU, *status* (*master*, *backup* or *member*), *maintenance* (*none*, *evicted* or *full*) and BIN sockets. *capabilities* (see [Upgrading](#upgrading)) appear where this node knows them first-hand: for every member on the master, for itself and the master on the other nodes.
+
+
+Name: *clusterer:list_members*
+
+
+Parameters: *none*
+
+
+```bash title="clusterer:list_members usage"
+$ opensips-cli -x mi clusterer:list_members
+[
+    {
+        "cluster_id": 1,
+        "members": [
+            {
+                "mtu": 1500,
+                "ip": "10.0.0.3",
+                "node_id": 3,
+                "status": "master",
+                "maintenance": "none",
+                "capabilities": [
+                    "probe",
+                    "maint_set",
+                    "maint_full"
+                ],
+                "bin_sockets": [
+                    "bin:10.0.0.3:5566"
+                ]
+            },
+            {
+                "mtu": 1500,
+                "ip": "10.0.0.1",
+                "node_id": 1,
+                "status": "member",
+                "maintenance": "none",
+                "capabilities": [
+                    "probe",
+                    "maint_set",
+                    "maint_full"
+                ],
+                "bin_sockets": [
+                    "bin:10.0.0.1:5566"
+                ]
+            },
+            {
+                "mtu": 1500,
+                "ip": "10.0.0.2",
+                "node_id": 2,
+                "status": "backup",
+                "maintenance": "none",
+                "capabilities": [
+                    "probe",
+                    "maint_set",
+                    "maint_full"
+                ],
+                "bin_sockets": [
+                    "bin:10.0.0.2:5566"
+                ]
+            }
+        ]
+    }
+]
+```
+
+
+#### clusterer:node_info
+
+
+Shows a member of a controller-managed cluster by its node ID - the first one found when several clusters have that ID - or error 404.
+
+
+Name: *clusterer:node_info*
+
+
+Parameters:
+
+
+- *node_id* - the node ID.
+
+
+```bash title="clusterer:node_info usage"
+$ opensips-cli -x mi clusterer:node_info node_id=2
+{
+    "mtu": 1500,
+    "node_id": 2,
+    "ip": "10.0.0.2",
+    "cluster_id": 1,
+    "status": "backup",
+    "bin_sockets": [
+        "bin:10.0.0.2:5566"
+    ]
+}
+```
+
+
+#### clusterer:list_config
+
+
+Shows, for each controller-managed cluster, the settings in effect (after the per-cluster values and *on_config_mismatch=adopt*) and the controller's state; the password is never shown. Besides the settings:
+
+
+- *identity_source*, *proposed_node_id* - what this node's proposed ID is derived from (*smbios*, *mac* or *random*) and the ID it proposes (see [Node IDs](#node-ids));
+- *shtag_mode* - *auto*, or *override:N* while the tags are pinned to node N;
+- *member_count* - the members this node knows; *term* - the current master's term, which grows with each new mastership;
+- *cluster_uuid*, *cluster_uuid_state* (*none*, *provisional*, *established* or *pinned*) - the cluster's identity; *foreign_packets*, *foreign_clusters* - what was heard from other clusters on the same group;
+- *master_ka_mean_ms*, *master_ka_dev_ms*, *master_ka_margin_ms*, *master_timeout_ms*, *master_false_suspicions* - the gaps between the master's keepalives, and the wait before suspecting the master that this node learned from them;
+- *local_health* - this node's own trouble count (0 to 8), which lengthens its timeouts; *self_stalls*, *self_stall_max_ms* - how often this node's controller process stopped for more than 2 seconds, and the longest stop;
+- *election_holds* - elections held because other members still heard the master; *terms_refused* - implausible terms refused; *peers_refused* - new nodes refused because the peer table (*peer_capacity*) was full;
+- *tag_released* - *1* while this master has released the tags (*release_tag_when_isolated*);
+- *rcvbuf_bytes*, *rx_kernel_drops* - the socket receive buffer, and the datagrams the kernel dropped because it was full;
+- *cluster_capabilities* - the capabilities every live member has (see [Upgrading](#upgrading)).
+
+
+Name: *clusterer:list_config*
+
+
+Parameters: *none*
+
+
+```bash title="clusterer:list_config usage"
+$ opensips-cli -x mi clusterer:list_config
+[
+    {
+        "cluster_id": 1,
+        "multicast": "239.0.0.1:3333",
+        "my_ip": "10.0.0.1",
+        "bin_socket": "bin:10.0.0.1:5566",
+        "mtu": 1500,
+        "identity_source": "smbios",
+        "proposed_node_id": 1,
+        "interface": "eth0",
+        "query_time": 5,
+        "master_stickiness": 1,
+        "manage_shtags": 1,
+        "shtag_mode": "auto",
+        "member_count": 3,
+        "term": 2,
+        "cluster_uuid": "019a3c5e-8f21-7b4d-a6c2-5e0f9d3b7a14",
+        "cluster_uuid_state": "established",
+        "foreign_packets": 0,
+        "peer_capacity": 256,
+        "peers_refused": 0,
+        "self_stalls": 0,
+        "self_stall_max_ms": 0,
+        "terms_refused": 0,
+        "election_holds": 0,
+        "master_ka_mean_ms": 1000,
+        "master_ka_dev_ms": 2,
+        "master_ka_margin_ms": 0,
+        "master_timeout_ms": 3000,
+        "master_false_suspicions": 0,
+        "local_health": 0,
+        "release_tag_when_isolated": 0,
+        "tag_released": 0,
+        "rcvbuf_bytes": 212992,
+        "rx_kernel_drops": 0,
+        "cluster_capabilities": [
+            "probe",
+            "maint_set",
+            "maint_full"
+        ],
+        "foreign_clusters": []
+    }
+]
+```
+
+
+#### clusterer:maintenance
+
+
+Puts this node - or, with *node_id*, another member - in or out of maintenance (see [Sharing tags and maintenance](#sharing-tags-and-maintenance)). A request for another node is multicast to the cluster and applied by that node, so it needs the node reachable. While some live member's build lacks the capability, a request for another node, or for *full*, is refused with error 409.
+
+
+Name: *clusterer:maintenance*
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *state* - *evicted* (or *on*) or *full* to enter maintenance, *none* (or *off*) to leave it.
+- *node_id* (optional) - the member; this node when missing.
+
+
+```bash title="clusterer:maintenance usage"
+$ opensips-cli -x mi clusterer:maintenance cluster_id=1 state=full node_id=3
+"OK"
+```
+
+
+#### clusterer:shtag_force
+
+
+Pins the active sharing tags of a controller-managed cluster to one member; every other node, the master included, keeps them in backup. Issue it on the master. The pin survives a master failover, and ends with [clusterer:shtag_auto](#clusterershtag_auto) or when the node leaves or enters maintenance. Refused (409) when *manage_shtags* is off for the cluster, on a node that is not the master, or for a node in maintenance, and (404) for a node that is not a member.
+
+
+Name: *clusterer:shtag_force*
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *node_id* - the member that will hold the tags.
+
+
+```bash title="clusterer:shtag_force usage"
+$ opensips-cli -x mi clusterer:shtag_force cluster_id=1 node_id=2
+"OK"
+```
+
+
+#### clusterer:shtag_auto
+
+
+Ends a [clusterer:shtag_force](#clusterershtag_force) pin, so the tags follow the master again. Issue it on the master.
+
+
+Name: *clusterer:shtag_auto*
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+
+
+```bash title="clusterer:shtag_auto usage"
+$ opensips-cli -x mi clusterer:shtag_auto cluster_id=1
+"OK"
+```
+
+
 ### Exported Script Variables
 
 
@@ -1232,6 +2103,126 @@ When reading it value, a sharing tag returns:
 
 A NULL value may returned only as a result of an internal error
 (like memory errors).
+
+
+Assigning it fails for a cluster whose tags the controller manages
+([manage_shtags](#manage_shtags-integer)).
+
+
+#### $cl_ctr_role(cluster_id)
+
+
+This node's role in a controller-managed cluster: *master*, *backup*, *member*, *maintenance* (see [clusterer:maintenance](#clusterermaintenance)) or *joining* (not admitted yet).
+
+
+The *$cl_ctr_* variables are read-only and can be read in any process. The cluster ID may be left out when only one controller-managed cluster is defined; they are NULL for an unknown cluster, for a value not known yet, and without a cluster ID when several clusters are defined (a warning is logged once). The examples run on the backup, 10.0.0.2.
+
+
+```opensips title="$cl_ctr_role usage"
+xlog("role: $cl_ctr_role(1)\n");	# role: backup
+```
+
+
+#### $cl_ctr_is_master(cluster_id)
+
+
+*1* on the master of the cluster, *0* elsewhere.
+
+
+```opensips title="$cl_ctr_is_master usage"
+if ($cl_ctr_is_master(1) == 1)
+	route(master_only_job);
+xlog("master: $cl_ctr_is_master(1)\n");	# master: 0
+```
+
+
+#### $cl_ctr_master_ip(cluster_id)
+
+
+The controller IP of the cluster's master; NULL while there is none.
+
+
+```opensips title="$cl_ctr_master_ip usage"
+xlog("master: $cl_ctr_master_ip(1)\n");	# master: 10.0.0.3
+```
+
+
+#### $cl_ctr_backup_ip(cluster_id)
+
+
+The controller IP of the cluster's backup; NULL while there is none.
+
+
+```opensips title="$cl_ctr_backup_ip usage"
+xlog("backup: $cl_ctr_backup_ip(1)\n");	# backup: 10.0.0.2
+```
+
+
+#### $cl_ctr_node_id(cluster_id)
+
+
+This node's ID in the cluster; NULL until it is assigned.
+
+
+```opensips title="$cl_ctr_node_id usage"
+xlog("node id: $cl_ctr_node_id(1)\n");	# node id: 2
+```
+
+
+#### $cl_ctr_my_ip(cluster_id)
+
+
+This node's controller IP ([my_ip](#my_ip-string)).
+
+
+```opensips title="$cl_ctr_my_ip usage"
+xlog("my ip: $cl_ctr_my_ip(1)\n");	# my ip: 10.0.0.2
+```
+
+
+#### $cl_ctr_members(cluster_id)
+
+
+The number of members this node knows in the cluster, as [clusterer:list_members](#clustererlist_members) lists them.
+
+
+```opensips title="$cl_ctr_members usage"
+xlog("members: $cl_ctr_members(1)\n");	# members: 3
+```
+
+
+#### $cl_ctr_shtag_mode(cluster_id)
+
+
+*auto* while the sharing tags follow the master, *forced* while [clusterer:shtag_force](#clusterershtag_force) pins them.
+
+
+```opensips title="$cl_ctr_shtag_mode usage"
+xlog("tags: $cl_ctr_shtag_mode(1)\n");	# tags: auto
+```
+
+
+#### $cl_ctr_forced_node(cluster_id)
+
+
+The node the sharing tags are pinned to by [clusterer:shtag_force](#clusterershtag_force); NULL in *auto* mode.
+
+
+```opensips title="$cl_ctr_forced_node usage"
+xlog("tags pinned to node $cl_ctr_forced_node(1)\n");
+# after clusterer:shtag_force cluster_id=1 node_id=2: tags pinned to node 2
+```
+
+
+#### $cl_ctr_maintenance(cluster_id)
+
+
+This node's maintenance state: *none*, *evicted* or *full*.
+
+
+```opensips title="$cl_ctr_maintenance usage"
+xlog("maintenance: $cl_ctr_maintenance(1)\n");	# maintenance: none
+```
 
 
 ### Exported Events
@@ -1299,6 +2290,186 @@ the possible values: "active" or "backup".
 - *reason* - short text describing what
 triggered the change of the state, like a another node
 stepping as active, an MI command or script variable.
+
+
+#### E_CL_CTR_REQ_RECEIVED
+
+
+This event is raised when a message sent by another node's *cl_ctr_broadcast_req()*, *cl_ctr_send_req()* or *cl_ctr_send_req_list()* arrives.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *src_id* - the sender's node ID (*0* if it had none yet).
+- *msg* - the message.
+- *tag* - the sender's tag (empty if none).
+
+
+```opensips title="E_CL_CTR_REQ_RECEIVED usage"
+event_route[E_CL_CTR_REQ_RECEIVED] {
+	xlog("cluster $param(cluster_id), node $param(src_id): $param(msg) [$param(tag)]\n");
+	# cluster 1, node 3: config changed [cfg]
+}
+```
+
+
+#### E_CL_CTR_RPL_RECEIVED
+
+
+This event is raised when a reply sent with *cl_ctr_send_rpl()* arrives.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *src_id* - the sender's node ID.
+- *msg* - the reply.
+- *tag* - the reply's tag, normally the request's.
+
+
+```opensips title="E_CL_CTR_RPL_RECEIVED usage"
+event_route[E_CL_CTR_RPL_RECEIVED] {
+	xlog("node $param(src_id) answered $param(tag): $param(msg)\n");
+	# node 2 answered cfg: ack
+}
+```
+
+
+#### E_CL_CTR_MAINTENANCE
+
+
+This event is raised on every node when the maintenance state of a member, this node included, changes. This event and the ones below are raised by the controller's process after it has handled the change, so their routes can read the *$cl_ctr_* variables.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *node_id* - the member.
+- *state* - its new state: *none*, *evicted* or *full*.
+
+
+```opensips title="E_CL_CTR_MAINTENANCE usage"
+event_route[E_CL_CTR_MAINTENANCE] {
+	xlog("cluster $param(cluster_id): node $param(node_id) maintenance $param(state)\n");
+	# cluster 1: node 3 maintenance full
+}
+```
+
+
+#### E_CL_CTR_ROLE
+
+
+This event is raised when this node's role changes.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *role* - the new role: *master*, *backup* or *member*.
+- *old_role* - the previous role.
+
+
+```opensips title="E_CL_CTR_ROLE usage"
+event_route[E_CL_CTR_ROLE] {
+	xlog("cluster $param(cluster_id): $param(old_role) -> $param(role)\n");
+	# cluster 1: backup -> master
+}
+```
+
+
+#### E_CL_CTR_MASTER
+
+
+This event is raised when the master of the cluster changes, as this node sees it.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *master_ip* - the new master's controller IP.
+- *node_id* - its node ID.
+
+
+```opensips title="E_CL_CTR_MASTER usage"
+event_route[E_CL_CTR_MASTER] {
+	xlog("cluster $param(cluster_id): master is $param(master_ip) (node $param(node_id))\n");
+	# cluster 1: master is 10.0.0.2 (node 2)
+}
+```
+
+
+#### E_CL_CTR_MEMBER
+
+
+This event is raised when a node joins or leaves the members this node knows.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *node_id* - the node's ID; *0* when it joins, as it gets its ID afterwards.
+- *ip* - its controller IP.
+- *state* - *joined* or *left*.
+- *reason* - *new* when joined; *goodbye* (it stopped), *timeout* (it went silent) or *dropped* (it was refused) when left.
+
+
+```opensips title="E_CL_CTR_MEMBER usage"
+event_route[E_CL_CTR_MEMBER] {
+	xlog("cluster $param(cluster_id): $param(ip) (node $param(node_id)) $param(state), $param(reason)\n");
+	# cluster 1: 10.0.0.1 (node 1) left, timeout
+}
+```
+
+
+#### E_CL_CTR_REFUSED
+
+
+This event is raised on the master when it refuses a node, at most once a minute per address and reason.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *ip* - the refused node's controller IP.
+- *reason* - *config* (different settings, with *on_config_mismatch=reject*), *mtu* (a different MTU) or *refused* (a wrong password, or a full peer table).
+
+
+```opensips title="E_CL_CTR_REFUSED usage"
+event_route[E_CL_CTR_REFUSED] {
+	xlog("cluster $param(cluster_id) refused $param(ip): $param(reason)\n");
+	# cluster 1 refused 10.0.0.9: mtu
+}
+```
+
+
+#### E_CL_CTR_MERGE
+
+
+This event is raised when, after a network split heals, this node leaves its side to follow a master that outranks its own.
+
+
+Parameters:
+
+
+- *cluster_id* - the cluster.
+- *master_ip* - the master it now follows.
+- *was_master* - *1* if this node was a master itself, else *0*.
+
+
+```opensips title="E_CL_CTR_MERGE usage"
+event_route[E_CL_CTR_MERGE] {
+	xlog("cluster $param(cluster_id): following $param(master_ip), was master: $param(was_master)\n");
+	# cluster 1: following 10.0.0.3, was master: 1
+}
+```
 
 
 ### Exported Status/Report Identifiers
@@ -1495,7 +2666,7 @@ socket= bin:192.168.0.5:5566 # bin listener for Node A
 
 loadmodule "proto_bin.so"
 
-loadmodule "clusterer.so"
+loadmodule "clusterer_controller.so"
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
 modparam("clusterer", "my_node_id", 1) # node_id for Node A
 
@@ -1515,7 +2686,7 @@ socket= bin:192.168.0.6:5566 # bin listener for Node B
 
 loadmodule "proto_bin.so"
 
-loadmodule "clusterer.so"
+loadmodule "clusterer_controller.so"
 # ideally, use the same database for both nodes
 modparam("clusterer", "db_url", "mysql://opensips@192.168.0.7/opensips")
 modparam("clusterer", "my_node_id", 2) # node_id for Node B
@@ -1535,6 +2706,39 @@ efficient and scalable way.
 ### Exported Statistics
 
 
+Besides the three statistics of *clusterer*, the controller registers the others below once per controller-managed cluster, whatever *enable_stats* says, in the *clusterer_controller* group and named *statistic-cluster_id* (e.g. *members-1*). Its counters only grow and cannot be reset.
+
+
+```bash title="statistics:get usage"
+$ opensips-cli -x mi statistics:get clusterer_controller:
+{
+    "clusterer_controller:role-1": 1,
+    "clusterer_controller:is_master-1": 0,
+    "clusterer_controller:members-1": 3,
+    "clusterer_controller:maintenance-1": 0,
+    "clusterer_controller:term-1": 2,
+    "clusterer_controller:local_health-1": 0,
+    "clusterer_controller:master_timeout_ms-1": 3000,
+    "clusterer_controller:tag_released-1": 0,
+    "clusterer_controller:master_changes-1": 1,
+    "clusterer_controller:role_changes-1": 1,
+    "clusterer_controller:members_joined-1": 2,
+    "clusterer_controller:members_left-1": 0,
+    "clusterer_controller:joins_refused-1": 0,
+    "clusterer_controller:config_mismatches-1": 0,
+    "clusterer_controller:auth_failures-1": 0,
+    "clusterer_controller:merges-1": 0,
+    "clusterer_controller:election_holds-1": 0,
+    "clusterer_controller:master_false_suspicions-1": 0,
+    "clusterer_controller:self_stalls-1": 0,
+    "clusterer_controller:terms_refused-1": 0,
+    "clusterer_controller:peers_refused-1": 0,
+    "clusterer_controller:foreign_packets-1": 0,
+    "clusterer_controller:rx_kernel_drops-1": 0
+}
+```
+
+
 #### clusterer_nodes
 
 
@@ -1551,6 +2755,144 @@ Returns the total number of cluster nodes in the UP state.
 
 
 Returns the total number of cluster nodes not in the UP state.
+
+
+#### role-[cluster_id]
+
+
+This node's role: *2* master, *1* backup, *0* member.
+
+
+#### is_master-[cluster_id]
+
+
+*1* on the master, *0* elsewhere.
+
+
+#### members-[cluster_id]
+
+
+The members heard within the last 3 x *query_time*.
+
+
+#### maintenance-[cluster_id]
+
+
+This node's maintenance state: *0* none, *1* evicted, *2* full.
+
+
+#### term-[cluster_id]
+
+
+The highest mastership term this node has heard.
+
+
+#### local_health-[cluster_id]
+
+
+This node's own trouble count, 0 to 8 (see [clusterer:list_config](#clustererlist_config)).
+
+
+#### master_timeout_ms-[cluster_id]
+
+
+How long this node waits for the master's keepalive before suspecting it, in milliseconds.
+
+
+#### tag_released-[cluster_id]
+
+
+*1* while this master has released the sharing tags ([release_tag_when_isolated](#release_tag_when_isolated-integer)).
+
+
+#### master_changes-[cluster_id]
+
+
+Times the master changed, as this node saw it.
+
+
+#### role_changes-[cluster_id]
+
+
+Times this node's role changed.
+
+
+#### members_joined-[cluster_id]
+
+
+Nodes that joined the members this node knows.
+
+
+#### members_left-[cluster_id]
+
+
+Nodes that left them: by goodbye, timeout, or dropped after a refusal.
+
+
+#### joins_refused-[cluster_id]
+
+
+Join requests this node refused as master.
+
+
+#### config_mismatches-[cluster_id]
+
+
+Peers seen with settings that differ from this node's, once per change of their settings.
+
+
+#### auth_failures-[cluster_id]
+
+
+Packets that failed authentication: a wrong password, or a key this node does not hold yet.
+
+
+#### merges-[cluster_id]
+
+
+Times this node left its side of a healed split to follow a master that outranked its own.
+
+
+#### election_holds-[cluster_id]
+
+
+Elections held because other members still heard the master.
+
+
+#### master_false_suspicions-[cluster_id]
+
+
+Times this node suspected the master while it was still alive.
+
+
+#### self_stalls-[cluster_id]
+
+
+Times this node's controller process stopped for more than 2 seconds.
+
+
+#### terms_refused-[cluster_id]
+
+
+Announced terms refused as implausible.
+
+
+#### peers_refused-[cluster_id]
+
+
+New nodes refused because the peer table was full.
+
+
+#### foreign_packets-[cluster_id]
+
+
+Authenticated packets of another cluster identity refused.
+
+
+#### rx_kernel_drops-[cluster_id]
+
+
+Cluster datagrams the kernel dropped because the socket receive buffer was full.
 
 
 ## Developer Guide
@@ -1632,7 +2974,9 @@ Meaning of the parameters is as follows:
 #### get_my_id()
 
 
-This function will return the id of the current node.
+This function will return the id of the current node. When the node is in
+controller-managed clusters, it returns the id only while all its clusters
+give it the same one, and -1 otherwise.
 
 
 #### send_to(packet, cluster_id, node_id)
@@ -1739,6 +3083,24 @@ Possible values for the event signaled through *ev* parameter of the callback fu
 - *CLUSTER_ROUTE_FAILED* - failed to route a received BIN packet destined for another node in the cluster
 - *CLUSTER_NODE_UP* - a node became reachable
 - *CLUSTER_NODE_DOWN* - a node became unreachable
+
+
+#### load_clctr_api(api)
+
+
+Binds the controller's messaging API (*clctr_api.h*), which carries short messages between the nodes of a controller-managed cluster over the controller's encrypted UDP channel - the transport of the *cl_ctr_* script functions. The members of *clctr_api_t*:
+
+
+- *register_channel(channel, cb)* - claims a channel name (up to 31 characters, at most 8 channels) and the callback that receives its messages in the cluster's controller process; from mod_init only;
+- *send_mcast(cluster_id, channel, payload, flags)* - sends to every member, in one multicast packet;
+- *send_ucast(cluster_id, node_id, channel, payload, flags)* - sends to one member;
+- *send_list(cluster_id, node_ids, n, channel, payload, flags, unknown)* - sends one unicast per listed node and returns how many were queued;
+- *get_my_node_id(cluster_id)* - this node's ID, *0* until assigned;
+- *get_my_ip(ip, iface, src)* - the controller IP, its interface and how it was chosen;
+- *get_max_payload()* - the largest payload a message can carry.
+
+
+*send_mcast* and *send_ucast* return *0* when the message is queued, *-1* for bad arguments or an unknown cluster, *-2* while the controller is not running. *CLCTR_SEND_TO_SELF* in *flags* also delivers the message to this node, *CLCTR_SEND_RELIABLE* asks for acknowledgement and resending (see [consumer_retries](#consumer_retries-integer)).
 <!-- CONTRIBUTORS -->
 
 ### License
