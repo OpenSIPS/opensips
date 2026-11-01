@@ -2251,8 +2251,6 @@ fi
 %doc docdir/README
 %doc COPYING
 
-%files -n %{name}-modules-contrib -f modules-contrib.files
-
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth_aaa.so
@@ -2479,6 +2477,8 @@ fi
 %{_libdir}/opensips/modules/nats_consumer.so
 %doc docdir/README.nats_consumer
 %endif
+
+%files -n %{name}-modules-contrib -f modules-contrib.files
 
 %if 0%{?_with_auth_jwt:1}
 %files -n %{name}-module-auth-jwt
