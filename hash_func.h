@@ -109,4 +109,18 @@ static inline unsigned int core_case_hash( str *s1, str *s2, unsigned int size)
 }
 
 
+/* bucket of an address-like key in [0, size): MurmurHash3's 64-bit finalizer
+ * (public domain), as allocators hand out one size at a fixed stride */
+static inline unsigned int core_ulong_hash(unsigned long key, unsigned int size)
+{
+	unsigned long long x = key;
+
+	x ^= x >> 33;
+	x *= 0xff51afd7ed558ccdULL;
+	x ^= x >> 33;
+	x *= 0xc4ceb9fe1a85ec53ULL;
+	x ^= x >> 33;
+	return (unsigned int)(((x & 0xffffffffULL) * size) >> 32);
+}
+
 #endif

@@ -43,6 +43,7 @@
 #include "../../async.h"
 #include "../../usr_avp.h"
 #include "../../lib/list.h"
+#include "../../hash_func.h"
 #include "config.h"
 
 struct s_table;
@@ -389,6 +390,14 @@ extern int syn_branch;
 extern int fr_timeout;
 extern int fr_inv_timeout;
 extern int tm_timer_shift;
+
+/* timer set from the transaction address, hashed: cells of one size in a
+ * slab allocator share their low address bits */
+static inline unsigned short tm_timer_set_of(const void *cell, int shift,
+		unsigned short sets)
+{
+	return (unsigned short)core_ulong_hash((unsigned long)cell >> shift, sets);
+}
 
 
 void reset_kr();

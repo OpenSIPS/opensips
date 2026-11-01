@@ -19,11 +19,14 @@
  */
 
 #include <tap.h>
+#include <limits.h>
+#include <string.h>
 
 #include "../ut.h"
 #include "../str.h"
 #include "../strcommon.h"
 #include "../mod_fix.h"
+#include "../hash_func.h"
 
 #include "../parser/test/test_oob.h"
 
@@ -38,8 +41,65 @@ static void test_unescape_user_oob(const str *tstr, enum oob_position where,
 	ok(1, OOB_CHECK_OK_MSG("_unescape_user", tstr, where));
 }
 
+/* keys base + i * stride, as an allocator hands out objects of one size:
+ * every bucket within half and 1.5 times the average over 64 keys per
+ * bucket, and every run of 8 keys per bucket reaching half the buckets */
+static int ulong_hash_spread(unsigned long base, unsigned long stride,
+		unsigned int size)
+{
+	unsigned int cnt[64], win[64], i, w, used;
+	unsigned long n = 64UL * size, k;
+
+	memset(cnt, 0, sizeof cnt);
+	for (k = 0; k < n; k += 8UL * size) {
+		memset(win, 0, sizeof win);
+		for (i = 0; i < 8 * size; i++) {
+			w = core_ulong_hash(base + (k + i) * stride, size);
+			if (w >= size)
+				return 0;
+			win[w]++;
+			cnt[w]++;
+		}
+		for (i = 0, used = 0; i < size; i++)
+			used += win[i] != 0;
+		if (used * 2 < size)
+			return 0;
+	}
+	for (i = 0; i < size; i++)
+		if (cnt[i] * 2 < 64 || cnt[i] * 2 > 3 * 64)
+			return 0;
+	return 1;
+}
+
+static void test_core_ulong_hash(void)
+{
+	static const unsigned long base[] = { 0x40001000UL, 0xb6c01040UL,
+#if ULONG_MAX > 0xffffffffUL
+		0x7f3a12345000UL, 0x55aa00201a40UL,
+#endif
+	};
+	static const unsigned long stride[] = { 8, 64, 128, 192, 1088, 4096 };
+	static const unsigned int size[] = { 4, 8, 16, 64 };
+	unsigned int b, st, sz, bad = 0, runs = 0;
+
+	for (b = 0; b < sizeof base / sizeof base[0]; b++)
+		for (st = 0; st < sizeof stride / sizeof stride[0]; st++)
+			for (sz = 0; sz < sizeof size / sizeof size[0]; sz++) {
+				runs++;
+				if (!ulong_hash_spread(base[b], stride[st], size[sz])) {
+					bad++;
+					diag("core_ulong_hash: base %lx stride %lu size %u "
+						"is uneven", base[b], stride[st], size[sz]);
+				}
+			}
+	ok(bad == 0, "core_ulong_hash spreads keys at a fixed stride over all "
+		"buckets (%u of %u layouts uneven)", bad, runs);
+}
+
 void test_ut(void)
 {
+	test_core_ulong_hash();
+
 	ok(is_e164(_str("")) == -1, "test-e164-0");
 	ok(is_e164(_str("+")) == -1, "test-e164-1");
 	ok(is_e164(_str("+1")) == -1, "test-e164-2");
