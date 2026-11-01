@@ -168,18 +168,20 @@ int register_builtin_modules(void)
 int register_module(const struct module_exports* e, char* path, void* handle)
 {
 	int ret;
+	size_t path_len = strlen(path) + 1;
 	struct sr_module* mod;
 
 	ret=-1;
 
-	/* add module to the list */
-	if ((mod=pkg_malloc(sizeof(struct sr_module)))==0){
+	/* add module to the list; the path is copied - the loader passes a
+	 * buffer it reuses for the next module */
+	if ((mod=pkg_malloc(sizeof(struct sr_module) + path_len))==0){
 		LM_ERR("no more pkg memory\n");
 		ret=E_OUT_OF_MEM;
 		goto error;
 	}
 	memset(mod,0, sizeof(struct sr_module));
-	mod->path=path;
+	mod->path=memcpy((char *)(mod + 1), path, path_len);
 	mod->handle=handle;
 	mod->exports=e;
 	mod->next=modules;
