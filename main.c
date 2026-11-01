@@ -634,6 +634,10 @@ int main(int argc, char** argv)
 						cfg_file = malloc(100);
 						snprintf(cfg_file, 100, "modules/%s/test/opensips.cfg",
 						         testing_module);
+						if (access(cfg_file, R_OK) != 0)
+							snprintf(cfg_file, 100,
+							         "modules-contrib/%s/test/opensips.cfg",
+							         testing_module);
 					}
 					break;
 #endif
