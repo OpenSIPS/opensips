@@ -1645,7 +1645,7 @@ TWEAK_LIBS=
 ifneq (,$(findstring UNIT_TESTS, $(DEFS)))
 DEFS := $(DEFS) -DUNIT_TESTS
 LIBS := $(LIBS) -ltap
-test_src := $(shell find . -wholename "*/test/*\.c" | grep -vE "^./(modules|test/fuzz)/")
+test_src := $(shell find . -wholename "*/test/*\.c" | grep -vE "^./(modules|modules-contrib|test/fuzz)/")
 test_objs := $(test_src:.c=.o)
 objs := $(objs) $(test_objs)
 endif
