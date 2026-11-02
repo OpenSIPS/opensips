@@ -218,6 +218,7 @@ LOG_EVENT_ENABLED	log_event_enabled
 STDERROR_LEVEL_FILTER	stderror_level_filter
 SYSLOG_LEVEL_FILTER	    syslog_level_filter
 LOG_EVENT_LEVEL_FILTER	log_event_level_filter
+PARSE_ERR_LOG_LEVEL	parse_err_log_level
 STDERROR_FORMAT stderror_log_format
 SYSLOG_FORMAT   syslog_log_format
 LOG_JSON_BUF_SIZE	"log_json_buf_size"
@@ -447,6 +448,7 @@ SPACE		[ ]
 <INITIAL>{STDERROR_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return STDERROR_LEVEL_FILTER; }
 <INITIAL>{SYSLOG_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return SYSLOG_LEVEL_FILTER; }
 <INITIAL>{LOG_EVENT_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return LOG_EVENT_LEVEL_FILTER; }
+<INITIAL>{PARSE_ERR_LOG_LEVEL}	{ count(); yylval.strval=yytext; return PARSE_ERR_LOG_LEVEL; }
 <INITIAL>{STDERROR_FORMAT} { count(); yylval.strval=yytext; return STDERROR_FORMAT; }
 <INITIAL>{SYSLOG_FORMAT} { count(); yylval.strval=yytext; return SYSLOG_FORMAT; }
 <INITIAL>{LOG_JSON_BUF_SIZE}	{	count(); yylval.strval=yytext;

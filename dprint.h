@@ -134,6 +134,7 @@ extern char* log_name;
 extern char ctime_buf[];
 extern enum log_format stderr_log_format, syslog_log_format;
 extern int log_event_level_filter;
+extern int parse_err_log_level;
 extern int log_json_buf_size;
 extern int log_msg_buf_size;
 extern int log_ratelimit_period;
@@ -617,6 +618,9 @@ static inline const char *dp_log_level_str(int log_level)
 				"Please help us make OpenSIPS better by reporting it at " \
 				"https://github.com/OpenSIPS/opensips/issues\n\n", ##args); \
 	} while (0)
+
+#define LM_PARSE(fmt, args...) \
+	LM_GEN(parse_err_log_level, fmt, ##args)
 
 /*
  * Rate-limited logging: LMR_ERR(), LMR_WARN(), ... and LMR_GEN1() log like

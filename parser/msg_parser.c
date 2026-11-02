@@ -89,14 +89,14 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 
 	tmp=parse_hname(buf, end, hdr);
 	if (hdr->type==HDR_ERROR_T){
-		LM_ERR("bad header\n");
+		LM_PARSE("bad header\n");
 		goto error_bad_hdr;
 	}
 
 	/* eliminate leading whitespace */
 	tmp=eat_lws_end(tmp, end);
 	if (tmp>=end) {
-		LM_ERR("hf empty\n");
+		LM_PARSE("hf empty\n");
 		goto error_bad_hdr;
 	}
 
@@ -120,7 +120,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 				hdr->body.s=tmp;
 				tmp=parse_via(tmp, end, vb);
 				if (vb->error==PARSE_ERROR){
-					LM_ERR("bad via\n");
+					LM_PARSE("bad via\n");
 					free_via_list(vb);
 					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing Via");
@@ -141,7 +141,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 					if (match){
 						match++;
 					}else {
-						LM_ERR("bad body for <%.*s>(%d)\n",
+						LM_PARSE("bad body for <%.*s>(%d)\n",
 							 hdr->name.len, hdr->name.s, hdr->type);
 						tmp=end;
 						goto error_bad_hdr;
@@ -163,7 +163,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 				hdr->body.s=tmp;
 				tmp=parse_cseq(tmp, end, cseq_b);
 				if (cseq_b->error==PARSE_ERROR){
-					LM_ERR("bad cseq\n");
+					LM_PARSE("bad cseq\n");
 					pkg_free(cseq_b);
 					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing CSeq`");
@@ -186,7 +186,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 					if (match){
 						match++;
 					}else {
-						LM_ERR("bad body for <%.*s>(%d)\n",
+						LM_PARSE("bad body for <%.*s>(%d)\n",
 							 hdr->name.len, hdr->name.s, hdr->type);
 						tmp=end;
 						goto error_bad_hdr;
@@ -208,7 +208,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 				hdr->body.s=tmp;
 				tmp=parse_to(tmp, end,to_b);
 				if (to_b->error==PARSE_ERROR){
-					LM_ERR("bad to header\n");
+					LM_PARSE("bad to header\n");
 					pkg_free(to_b);
 					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing To header");
@@ -231,7 +231,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 					if (match){
 						match++;
 					}else {
-						LM_ERR("bad body for <%.*s>(%d)\n",
+						LM_PARSE("bad body for <%.*s>(%d)\n",
 							 hdr->name.len, hdr->name.s, hdr->type);
 						tmp=end;
 						goto error_bad_hdr;
@@ -247,7 +247,7 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 				hdr->body.s=tmp;
 				tmp=parse_content_length(tmp,end, &integer);
 				if (tmp==0){
-					LM_ERR("bad content_length header\n");
+					LM_PARSE("bad content_length header\n");
 					set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 						"error parsing Content-Length");
 					set_err_reply(400, "bad Content-Length header");
@@ -944,7 +944,7 @@ parse_error:
 
 error:
 	/* more debugging, msg->orig is/should be null terminated*/
-	LM_ERR("message=<%.*s>\n", (int)len, ZSW(buf));
+	LM_PARSE("message=<%.*s>\n", (int)len, ZSW(buf));
 	return -1;
 }
 

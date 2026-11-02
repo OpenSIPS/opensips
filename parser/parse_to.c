@@ -452,14 +452,14 @@ static inline char* parse_to_param(char *buffer, char *end,
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LM_ERR("spitting out [%c] in status %d\n",*tmp,status );
+						LM_PARSE("spitting out [%c] in status %d\n",*tmp,status );
 						goto error;
 				}
 		}/*switch*/
 	}/*for*/
 
 	if (status==PARA_VALUE_QUOTED) {
-			LM_ERR("unexpected end of header in state %d\n", status);
+			LM_PARSE("unexpected end of header in state %d\n", status);
 			goto parse_error;
 	}
 
@@ -481,7 +481,7 @@ endofheader:
 	return tmp;
 
 parse_error:
-	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
+	LM_PARSE("unexpected char [%c] in status %d: <<%.*s>> .\n",
 	    tmp < end? *tmp : *(end-1),status, (int)(tmp-buffer), ZSW(buffer));
 error:
 	if (param) pkg_free(param);
@@ -799,7 +799,7 @@ endofheader:
 		case E_PARA_VALUE:
 			break;
 		default:
-			LM_ERR("unexpected end of header in state %d\n", status);
+			LM_PARSE("unexpected end of header in state %d\n", status);
 			goto error;
 	}
 
@@ -809,7 +809,7 @@ endofheader:
 	return tmp;
 
 parse_error:
-	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
+	LM_PARSE("unexpected char [%c] in status %d: <<%.*s>> .\n",
 	    tmp < end? *tmp : *(end-1), status, (int)(tmp-buffer), buffer);
 error:
 	first_b->error=PARSE_ERROR;

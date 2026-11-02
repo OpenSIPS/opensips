@@ -98,6 +98,7 @@ int log_consumers_no = 2;
 
 int log_event_enabled = 0;
 int log_event_level_filter = 0;
+int parse_err_log_level = L_ERR;
 static str evi_log_name = str_init("E_CORE_LOG");
 static event_id_t evi_log_id;
 
