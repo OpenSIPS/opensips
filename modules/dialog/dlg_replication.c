@@ -770,6 +770,7 @@ int dlg_replicated_value(bin_packet_t *packet)
 			DLG_BIN_POP(str, packet, val.s, malformed);
 			break;
 		case DLG_VAL_TYPE_INT:
+		case DLG_VAL_TYPE_BOOL:
 			DLG_BIN_POP(int, packet, val.n, malformed);
 			break;
 		default:
@@ -1100,6 +1101,7 @@ void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int t
 			bin_push_str(&packet, &val->s);
 			break;
 		case DLG_VAL_TYPE_INT:
+		case DLG_VAL_TYPE_BOOL:
 			bin_push_int(&packet, val->n);
 			break;
 		default:

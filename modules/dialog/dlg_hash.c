@@ -1547,6 +1547,13 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 						goto error;
 					}
 
+				} else if (dv->type == DLG_VAL_TYPE_BOOL) {
+					values_item = add_mi_object(values_arr, NULL, 0);
+					if (!values_item)
+						goto error;
+					if (add_mi_bool(values_item,dv->name.s,dv->name.len,
+						dv->val.n) < 0)
+						goto error;
 				} else {
 					values_item = add_mi_object(values_arr, NULL, 0);
 					if (!values_item)

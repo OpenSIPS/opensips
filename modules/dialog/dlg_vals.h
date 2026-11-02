@@ -29,6 +29,7 @@
 #define DLG_VAL_TYPE_NONE 0
 #define DLG_VAL_TYPE_STR  1
 #define DLG_VAL_TYPE_INT  2
+#define DLG_VAL_TYPE_BOOL 3
 
 struct dlg_val {
 	unsigned int id;
@@ -61,6 +62,12 @@ int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, int_str *val, int ty
 int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 	int *type, int_str *out_val, int val_has_buf);
 int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf);
+
+/* internal variants which do not normalize BOOL values to INT */
+int fetch_dlg_value_typed(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf);
+int fetch_dlg_value_unsafe_typed(struct dlg_cell *dlg, const str *name,
 	int *type, int_str *out_val, int val_has_buf);
 
 int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
