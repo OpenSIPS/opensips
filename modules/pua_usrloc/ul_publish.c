@@ -200,6 +200,11 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0)
 		return;
 
+	/* in a cluster, every node expires the shared contacts: only the
+	 * node owning the pua sharing tag publishes the expiry */
+	if ((type & UL_CONTACT_EXPIRE) && !pua.is_shtag_active())
+		return;
+
 	if(type & UL_CONTACT_DELETE)
 		LM_DBG("\nul_publish: DELETE type\n");
 	else
