@@ -35,8 +35,8 @@
 #include "../../timer.h"
 #include "../../evi/evi_modules.h"
 #include "../../evi/evi_params.h"
-#include "../sl/sl_api.h"
-#include "../tm/tm_load.h"
+#include "../../modules/sl/sl_api.h"
+#include "../../modules/tm/tm_load.h"
 
 #define DRAIN_EVENT_STATE_NAME "E_DRAIN_STATE_CHANGED"
 #define DRAIN_EVENT_COMPLETE_NAME "E_DRAIN_COMPLETE"
