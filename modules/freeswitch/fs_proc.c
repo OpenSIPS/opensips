@@ -484,12 +484,12 @@ void fs_run_esl_command(int sender, void *_cmd)
 		LM_ERR("failed to run %.*s command on sock %s:%d\n",
 		       cmd->fs_cmd.len, cmd->fs_cmd.s,
 		       cmd->sock->host.s, cmd->sock->port);
-		goto out;
+		reply_text = "-ERR ESL command failed";
+	} else {
+		reply_text = fs_esl_reply_text(cmd->sock->handle);
+		if (!reply_text)
+			reply_text = "";
 	}
-
-	reply_text = fs_esl_reply_text(cmd->sock->handle);
-	if (!reply_text)
-		reply_text = "";
 	LM_DBG("received reply: %s\n", reply_text);
 
 	reply = shm_malloc(sizeof *reply);
@@ -642,6 +642,7 @@ void handle_reconnects(void)
 				continue;
 			}
 			memset(sock->handle, 0, sizeof *sock->handle);
+			sock->handle->sock = ESL_SOCK_INVALID;
 		}
 
 		sock->conn_attempts++;
@@ -680,6 +681,82 @@ void handle_reconnects(void)
 	}
 }
 
+
+/*
+ * fs_esl() stops waiting after esl_cmd_timeout.  Its late replies are no
+ * longer consumed, so expire them here rather than keeping them forever.
+ * Two timeout intervals allow a waiting process to obtain an on-time reply.
+ */
+static void fs_expire_replies(fs_evs *sock, unsigned int now)
+{
+	struct list_head *_, *__;
+	struct fs_esl_reply *reply;
+	unsigned int ttl = esl_cmd_timeout > 0 ?
+		(unsigned int)(esl_cmd_timeout / 1000 + 2) * 2 : 10;
+
+	lock_start_write(sock->lists_lk);
+	list_for_each_safe(_, __, &sock->esl_replies) {
+		reply = list_entry(_, struct fs_esl_reply, list);
+		if ((unsigned int)(now - reply->created_at) <= ttl)
+			continue;
+
+		list_del(&reply->list);
+		shm_free(reply->text.s);
+		shm_free(reply);
+	}
+	lock_stop_write(sock->lists_lk);
+}
+
+/*
+ * A remote FS can disappear without sending FIN/RST.  Check the age of its
+ * last heartbeat so the TCP connection gets rebuilt even across a blackhole.
+ * Keep a 60-second floor because older FreeSWITCH configurations may send
+ * heartbeats every 20 seconds regardless of the OpenSIPS setting.
+ */
+static void fs_check_heartbeats(void)
+{
+	struct list_head *_, *__;
+	struct fs_event *event;
+	fs_evs *sock;
+	str heartbeat = str_init(FS_STATS_EVENT_NAME);
+	unsigned int now = get_ticks(), last;
+	unsigned int timeout = (event_heartbeat_interval > 20 ?
+		event_heartbeat_interval * 3 : 60);
+	int subscribed, fd;
+
+	lock_start_write(sockets_lock);
+	list_for_each_safe(_, __, fs_sockets) {
+		sock = list_entry(_, fs_evs, list);
+		fs_expire_replies(sock, now);
+
+		if (!fs_evs_connected(sock) || sock->ref <= 0)
+			continue;
+
+		lock_start_read(sock->lists_lk);
+		event = get_event(sock, &heartbeat);
+		subscribed = (event && event->refsum > 0);
+		lock_stop_read(sock->lists_lk);
+		if (!subscribed)
+			continue;
+
+		lock_start_read(sock->stats_lk);
+		last = sock->stats.valid ?
+			sock->stats.updated_jiffy : sock->last_conn_jiffy;
+		lock_stop_read(sock->stats_lk);
+		if (!last || (unsigned int)(now - last) <= timeout)
+			continue;
+
+		LM_WARN("no HEARTBEAT from FS %s:%d in %u s; reconnecting\n",
+			sock->host.s, sock->port, (unsigned int)(now - last));
+		fd = sock->handle->sock;
+		if (fd >= 0)
+			fs_reactor_del_reader(fd, -1);
+		esl_disconnect(sock->handle);
+		prepare_reconnect(sock);
+	}
+	lock_stop_write(sockets_lock);
+}
+
 /*
  * - reconnects any socket found in the "fs_sockets_down" list
  * - performs any necessary event subscribe / unsubscribe socket operations
@@ -713,6 +790,9 @@ static void apply_socket_commands(void)
 		INIT_LIST_HEAD(&sock->esl_cmd_list);
 	}
 	lock_stop_write(sockets_esl_lock);
+
+	/* Expire abandoned command replies and detect missing HEARTBEATs. */
+	fs_check_heartbeats();
 
 	/* we may also clean up some sockets */
 	lock_start_write(sockets_lock);
