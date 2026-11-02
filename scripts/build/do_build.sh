@@ -12,6 +12,11 @@ if [ "${BUILD_OS}" != "ubuntu:26.04" ]
 then
   EXCLUDE_MODULES="${EXCLUDE_MODULES} opentelemetry"
 fi
+# grpc_client needs grpc++ >= 1.40, installed only on these releases
+if [ "${BUILD_OS}" != "ubuntu:24.04" -a "${BUILD_OS}" != "ubuntu:26.04" ]
+then
+  EXCLUDE_MODULES="${EXCLUDE_MODULES} grpc_client"
+fi
 if [ "${BUILD_OS}" = "ubuntu:18.04" ]
 then
   EXCLUDE_MODULES="${EXCLUDE_MODULES} aaa_diameter"
