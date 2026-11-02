@@ -24,6 +24,7 @@
 #include "pua_bind.h"
 #include "../../dprint.h"
 #include "hash.h"
+#include "clustering.h"
 
 int bind_pua(pua_api_t* api)
 {
@@ -39,6 +40,7 @@ int bind_pua(pua_api_t* api)
 	api->get_record_id  =  get_record_id;
 	api->add_event      =  add_pua_event;
 	api->get_subs_list  =  get_subs_list;
+	api->is_shtag_active = pua_is_shtag_active;
 
 	return 0;
 }
