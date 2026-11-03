@@ -230,6 +230,19 @@ struct sca_idx *get_sca_index(struct sca_line *line, unsigned int idx)
 }
 
 /*
+ * returns the state of an index, without creating it if missing
+ * (SCA_STATE_NONE if the index is unknown) - it assumes the line is locked
+ */
+unsigned int get_sca_index_state(struct sca_line *line, unsigned int idx)
+{
+	struct sca_idx *scai;
+
+	for (scai = line->indexes; scai && scai->idx < idx; scai = scai->next);
+
+	return (scai && scai->idx == idx) ? scai->state : SCA_STATE_NONE;
+}
+
+/*
  * sets a new state for an index - it assumes the line is locked
  */
 int set_sca_index_state(struct sca_line *line, unsigned int idx,
