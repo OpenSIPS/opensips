@@ -7,6 +7,38 @@ setup_qemu() {
 	${SUDO} ln -sf "/usr/${ARCH1}-linux-${ARCH2}" "/etc/qemu-binfmt/${ARCH1}"
 }
 
+# Ubuntu 22.04's static-pie ldconfig randomly segfaults under qemu-user,
+# depending on the address it gets loaded at.  This fails the libc-bin
+# trigger during "apt-get install".  Divert it to a wrapper that retries
+# when it gets killed by SIGSEGV.
+qemu_ldconfig_retry() {
+	if [ "`dpkg-divert --truename /sbin/ldconfig.real`" = \
+	  "/sbin/ldconfig.real.qemu" ]
+	then
+		return
+	fi
+	${SUDO} cp -p /sbin/ldconfig.real /sbin/ldconfig.real.qemu
+	${SUDO} dpkg-divert --quiet --local --no-rename \
+	  --divert /sbin/ldconfig.real.qemu --add /sbin/ldconfig.real
+	${SUDO} tee /sbin/ldconfig.real.tmp > /dev/null << 'EOF'
+#!/bin/sh
+i=1
+while :
+do
+	/sbin/ldconfig.real.qemu "$@"
+	rc=$?
+	if [ "${rc}" -ne 139 ] || [ "${i}" -ge 10 ]
+	then
+		exit "${rc}"
+	fi
+	echo "ldconfig: killed by SIGSEGV, retrying (${i}/10)" >&2
+	i=$((i + 1))
+done
+EOF
+	${SUDO} chmod 755 /sbin/ldconfig.real.tmp
+	${SUDO} mv -f /sbin/ldconfig.real.tmp /sbin/ldconfig.real
+}
+
 exclude_pkgs() {
 	local _PKGS=""
 	for pkg in ${PKGS}
@@ -92,6 +124,7 @@ gcc-arm64-qemu-cross)
 	export CCACHE_DIR="`pwd`/ccache"
 	CC_EXTRA_OPTS="-Werror -DUDP_RX_REUSEPORT_BUILD=0"
 	DOCKR_PLATFORM="arm64/v8"
+	PRE_INSTALL_CMD="qemu_ldconfig_retry"
 	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
 	;;
@@ -100,6 +133,7 @@ clang-arm64-qemu-cross)
 	export CCACHE_DIR="`pwd`/ccache"
 	CC_EXTRA_OPTS="-Werror -DUDP_RX_REUSEPORT_BUILD=0"
 	DOCKR_PLATFORM="arm64/v8"
+	PRE_INSTALL_CMD="qemu_ldconfig_retry"
 	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
 	;;
