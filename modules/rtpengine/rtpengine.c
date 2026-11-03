@@ -147,30 +147,6 @@
 		} \
 	} while (0)
 
-enum rtpe_operation {
-	OP_OFFER = 1,
-	OP_ANSWER,
-	OP_DELETE,
-	OP_START_RECORDING,
-	OP_STOP_RECORDING,
-	OP_PAUSE_RECORDING,
-	OP_QUERY,
-	OP_START_MEDIA,
-	OP_STOP_MEDIA,
-	OP_BLOCK_MEDIA,
-	OP_UNBLOCK_MEDIA,
-	OP_BLOCK_DTMF,
-	OP_UNBLOCK_DTMF,
-	OP_START_FORWARD,
-	OP_STOP_FORWARD,
-	OP_PLAY_DTMF,
-	OP_SUBSCRIBE_REQUEST,
-	OP_SUBSCRIBE_ANSWER,
-	OP_UNSUBSCRIBE,
-	OP_ROLLBACK,
-	OP_PUBLISH,
-};
-
 enum rtpe_stat {
 	STAT_MOS_AVERAGE,	STAT_JITTER_AVERAGE,	STAT_ROUNDTRIP_AVERAGE,		STAT_PACKETLOSS_AVERAGE,
 	STAT_MOS_MIN,		STAT_JITTER_MIN,		STAT_ROUNDTRIP_MIN,			STAT_PACKETLOSS_MIN,
@@ -206,14 +182,6 @@ struct rtpe_ctx {
 	struct rtpe_set *set;
 } rtpe_ctx_t;
 
-
-struct ng_flags_parse {
-	int via, to, packetize, transport, directional, no_from_tag;
-	int source_selector; /* subscribe request: all, from-tags= or label= */
-	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
-	str call_id, from_tag, to_tag, received_from;
-	str viabranch;
-};
 
 enum rtpe_set_var {
 	RTPE_SET_NONE, RTPE_SET_FIXED
@@ -2734,7 +2702,7 @@ end:
 
 static void pkg_free_wrapper(void *p) { pkg_free(p); }
 
-static int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg *msg, enum rtpe_operation op,
+int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg *msg, enum rtpe_operation op,
          struct ng_flags_parse *ng_flags, str *flags_str, str *body_in, bencode_item_t *extra_dict, char **err)
 {
 	bencode_item_t *item;
@@ -2958,34 +2926,6 @@ error:
 		pkg_free(flags_nt.s);
 	return -1;
 }
-
-#ifdef UNIT_TESTS
-int rtpe_test_build_request(bencode_buffer_t *buf, struct sip_msg *msg,
-		const char *cmd, str *flags, str *body, bencode_item_t **dict)
-{
-	struct ng_flags_parse ng_flags;
-	char *err = NULL;
-	int op;
-
-	for (op = 0; op < sizeof(command_strings)/sizeof(command_strings[0]); op++)
-		if (command_strings[op] && !strcmp(cmd, command_strings[op]))
-			break;
-	if (op == sizeof(command_strings)/sizeof(command_strings[0]))
-		return -1;
-
-	memset(&ng_flags, 0, sizeof ng_flags);
-	if (rtpe_function_call_prepare(buf, msg, op, &ng_flags, flags, body,
-			NULL, &err) < 0) {
-		if (err)
-			LM_DBG("request refused: %s\n", err);
-		bencode_buffer_free(buf);
-		return -1;
-	}
-
-	*dict = ng_flags.dict;
-	return 0;
-}
-#endif
 
 static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_msg *msg,
 	enum rtpe_operation op, str *flags_str, str *body_in, pv_spec_t *spvar,
