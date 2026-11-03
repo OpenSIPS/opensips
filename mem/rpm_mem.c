@@ -148,6 +148,58 @@ void *rpm_block=NULL;
 int rpm_use_global_lock;
 #endif
 
+#if !defined INLINE_ALLOC && defined HG_MALLOC
+/* an inherited HG choice falls back to F_MALLOC/Q_MALLOC; an explicit -e
+ * is refused */
+static int rpm_resolve_allocator(void)
+{
+	if (mem_allocator_rpm == MM_HG_MALLOC ||
+	        mem_allocator_rpm == MM_HG_MALLOC_DBG) {
+		LM_ERR("%s cannot back restart persistent memory, which lives in "
+		       "a file-backed pool at a fixed address - select another "
+		       "allocator with -e\n", mm_str(mem_allocator_rpm));
+		return -1;
+	}
+	if (mem_allocator_rpm != MM_NONE)
+		return 0;
+
+	mem_allocator_rpm = mem_allocator;
+	if (mem_allocator_rpm == MM_HG_MALLOC ||
+	        mem_allocator_rpm == MM_HG_MALLOC_DBG) {
+		int dbg = (mem_allocator_rpm == MM_HG_MALLOC_DBG);
+
+		/* the build's default, as a run without -a HG would use: switching
+		 * -a to HG and back keeps the pool's allocator */
+#ifdef DEFAULT_MALLOC_MM
+		if (DEFAULT_MALLOC_MM != MM_HG_MALLOC)
+			mem_allocator_rpm = dbg ? DEFAULT_MALLOC_MM_DBG :
+				DEFAULT_MALLOC_MM;
+		else
+#endif
+#if defined Q_MALLOC
+			mem_allocator_rpm = dbg ? MM_Q_MALLOC_DBG : MM_Q_MALLOC;
+#elif defined F_MALLOC
+			mem_allocator_rpm = dbg ? MM_F_MALLOC_DBG : MM_F_MALLOC;
+#elif defined HP_MALLOC
+			mem_allocator_rpm = dbg ? MM_HP_MALLOC_DBG : MM_HP_MALLOC;
+#else
+			mem_allocator_rpm = MM_NONE;
+#endif
+		LM_INFO("restart persistent memory uses %s (%s cannot back a "
+		        "file-backed pool)\n", mm_str(mem_allocator_rpm),
+		        mm_str(mem_allocator));
+	}
+	return 0;
+}
+#elif !defined INLINE_ALLOC
+static inline int rpm_resolve_allocator(void)
+{
+	if (mem_allocator_rpm == MM_NONE)
+		mem_allocator_rpm = mem_allocator;
+	return 0;
+}
+#endif
+
 int rpm_mem_init_allocs(void)
 {
 #ifdef HP_MALLOC
@@ -155,8 +207,8 @@ int rpm_mem_init_allocs(void)
 #endif
 
 #ifndef INLINE_ALLOC
-	if (mem_allocator_rpm == MM_NONE)
-		mem_allocator_rpm = mem_allocator;
+	if (rpm_resolve_allocator() < 0)
+		return -1;
 
 #ifdef HP_MALLOC
 	if (mem_allocator_rpm == MM_HP_MALLOC
@@ -340,8 +392,8 @@ int rpm_mem_init_allocs(void)
 int rpm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 {
 #ifndef INLINE_ALLOC
-	if (mem_allocator_rpm == MM_NONE)
-		mem_allocator_rpm = mem_allocator;
+	if (rpm_resolve_allocator() < 0)
+		return -1;
 #endif
 
 #ifdef INLINE_ALLOC
@@ -450,13 +502,18 @@ int load_rpm_file(void)
 #ifdef INLINE_ALLOC
 	alloc = MM_NONE;
 #else
-	if (mem_allocator_rpm != MM_NONE)
-		alloc = mem_allocator;
-	else
-		alloc = mem_allocator_rpm;
+	/* the allocator this run drives the pool with, resolved before the
+	 * pool is trusted */
+	if (rpm_resolve_allocator() < 0) {
+		close(fd);
+		return -1;
+	}
+	alloc = mem_allocator_rpm;
 #endif
 
-	if (tmp.alloc != alloc) {
+	/* a pool made by another allocator would be corrupted by this one; a
+	 * file that recorded none (an older build) is taken as it is */
+	if (tmp.alloc != MM_NONE && tmp.alloc != alloc) {
 		LM_WARN("restart persistency file %s different alloc==%d != expected=%d\n",
 				rpm_mem_file, tmp.alloc, alloc);
 		goto recreate;
@@ -574,6 +631,10 @@ int init_rpm_mallocs(void)
 		rpm_mem_destroy();
 		return -1;
 	}
+#ifndef INLINE_ALLOC
+	/* recorded, so a run with another allocator does not reuse the pool */
+	rpm_map_block->alloc = mem_allocator_rpm;
+#endif
 
 	return 0;
 

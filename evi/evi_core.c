@@ -40,6 +40,10 @@ static str evi_core_table[] = {
 	CORE_EVENT_STR(PKG_THRESHOLD),
 	CORE_EVENT_STR(PROC_AUTO_SCALE),
 	CORE_EVENT_STR(TCP_DISCONNECT),
+	/* always published so event_route[] can subscribe; raised only by
+	 * HG_MALLOC with a growth cap and a latched refusal (core_stats.c) */
+	CORE_EVENT_STR(SHM_GROW_BLOCKED),
+	CORE_EVENT_STR(HG_LOCK_STALL),
 };
 
 int evi_register_core(void)

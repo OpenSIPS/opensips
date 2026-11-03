@@ -53,6 +53,7 @@
 #include "../db/db_pi.h"
 #include "mi.h"
 #include "mi_trace.h"
+#include "mi_hg.h"
 
 
 static str    up_since_ctime;
@@ -1261,6 +1262,12 @@ int init_mi_core(void)
 		LM_ERR("unable to register core MI cmds\n");
 		return -1;
 	}
+#ifdef HG_MALLOC
+	if (register_mi_mod( "core", mi_hg_cmds)<0) {
+		LM_ERR("unable to register HG_MALLOC MI cmds\n");
+		return -1;
+	}
+#endif
 	if (register_mi_mod( "tcp", mi_tcp_cmds)<0) {
 		LM_ERR("unable to register tcp MI cmds\n");
 		return -1;

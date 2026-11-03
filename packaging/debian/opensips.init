@@ -83,12 +83,12 @@ create_radius_seqfile ()
 }
 
 
-S_MEMORY=$((`echo $S_MEMORY | sed -e 's/[^0-9]//g'`))
-P_MEMORY=$((`echo $P_MEMORY | sed -e 's/[^0-9]//g'`))
+# a size in MB, or with a k/m/g suffix, optionally INIT:CAP (HG_MALLOC)
+MEM_RE='^[0-9]*[1-9][0-9]*[kKmMgG]?(:[0-9]*[1-9][0-9]*[kKmMgG]?)?$'
+echo "$S_MEMORY" | grep -Eq "$MEM_RE" || S_MEMORY=32
+echo "$P_MEMORY" | grep -Eq "$MEM_RE" || P_MEMORY=32
 [ -z "$USER" ]  && USER=opensips
 [ -z "$GROUP" ] && GROUP=opensips
-[ $S_MEMORY -le 0 ] && S_MEMORY=32
-[ $P_MEMORY -le 0 ] && P_MEMORY=32
 
 if test "$DUMP_CORE" = "yes" ; then
     # set proper ulimit

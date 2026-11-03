@@ -327,4 +327,242 @@ int init_pkg_stats(int procs_no)
 }
 #endif /* PKG */
 
+
 #endif /* STATISTICS */
+
+/* the sweep flushes caches and ticks the pkg policies: built with or without
+ * STATISTICS */
+#if defined(HG_MALLOC) && !defined(INLINE_ALLOC)
+#include "mem/hg_arena.h"
+#include "mem/hg_buddy.h"
+#include "mem/shm_mem.h"
+#include "evi/evi_core.h"
+#include "evi/evi_modules.h"
+
+/* idle-cache sweep: __thread caches strand memory once a worker stops
+ * allocating, so each owner is told by IPC to flush */
+/* every 4th interval sweeps the clean processes too (their pkg caches) */
+#define HG_SWEEP_FORCE_EVERY 4
+#define HG_SWEEP_INTERVAL 30   /* seconds; a slow leak, and each sweep
+                                * costs a lock per arena per process */
+
+static void rpc_hg_cache_flush(int sender, void *param)
+{
+	/* runs in the target process: publish the sweep to its threads IPC
+	 * cannot reach (hg_sweep_gen is per process), then flush this one */
+	__atomic_fetch_add(&hg_sweep_gen, 1, __ATOMIC_RELAXED);
+	hg_cache_flush_self();
+}
+
+/* GROW-BLOCKED alert: shm arena only (pkg is per process), re-raised
+ * while the latch holds */
+#define HG_GROW_REWARN_SWEEPS 10   /* x 30s sweep = every 5 minutes */
+
+static str hg_gb_arena_str     = str_init("arena");
+static str hg_gb_committed_str = str_init("committed_mb");
+static str hg_gb_cap_str       = str_init("cap_mb");
+static str hg_gb_refused_str   = str_init("grow_refused");
+static str hg_ls_reason_str    = str_init("reason");
+static str hg_ls_hold_str      = str_init("hold_us");
+static str hg_ls_proc_str      = str_init("process");
+static str hg_ls_stalls_str    = str_init("stalls");
+
+static void hg_lock_stall_event(unsigned long hold_ns, int reason, int proc,
+                                unsigned long stalls)
+{
+	evi_params_p list;
+	str arena = str_init("shm");
+	str rs;
+	int hold_us = (int)(hold_ns / 1000), stalls_i = (int)stalls;
+
+	rs.s = (char *)(reason >= 0 && reason < HG_LK_REASONS ?
+	                hg_lk_reason_str[reason] : "?");
+	rs.len = strlen(rs.s);
+	if (!evi_probe_event(EVI_HG_LOCK_STALL_ID))
+		return;           /* hg_shm_lock_stalls has it for pollers */
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &hg_gb_arena_str, &arena) ||
+	    evi_param_add_str(list, &hg_ls_reason_str, &rs) ||
+	    evi_param_add_int(list, &hg_ls_hold_str, &hold_us) ||
+	    evi_param_add_int(list, &hg_ls_proc_str, &proc) ||
+	    evi_param_add_int(list, &hg_ls_stalls_str, &stalls_i)) {
+		LM_ERR("unable to build the lock-stall event parameters\n");
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(EVI_HG_LOCK_STALL_ID, list))
+		LM_ERR("unable to raise the lock-stall event\n");
+}
+
+static void hg_grow_blocked_event(unsigned int ticks)
+{
+	struct hg_block *hb = (struct hg_block *)shm_block;
+	evi_params_p list;
+	int due, committed_mb, cap_mb, refused;
+	unsigned int stall_due;
+	unsigned long stall_ns, stalls;
+	int stall_reason, stall_proc;
+	str arena = str_init("shm");
+
+	/* the sweep also runs for -k HG_MALLOC alone, where shm_block
+	 * belongs to another allocator */
+	if (!hb || (mem_allocator_shm != MM_HG_MALLOC &&
+	            mem_allocator_shm != MM_HG_MALLOC_DBG))
+		return;
+
+	/* consume the due flag and sample the numbers under the lock; the
+	 * raise itself must happen outside it */
+	hg_lock_enter(hb, HG_LK_POLICY);
+	/* promote (or disarm) an armed episode first, so a latch earns its
+	 * event in the same tick that detects it */
+	hg_grow_blocked_tick(hb);
+	/* the shm arena's policy tick; each pkg arena ticks itself from its
+	 * owner's flush path */
+	if (!hb->maint_active) {        /* else the maintenance process ticks */
+		hg_gc_cycle(hb);
+		hg_gc_tick(hb, HG_GC_TICK_BUDGET);
+		hg_grow_tick(hb);
+		hg_shrink_tick(hb);
+	}
+	due = hb->grow_event_due;
+	hb->grow_event_due = 0;
+	if (!due && hb->grow_blocked &&
+	    (ticks / HG_SWEEP_INTERVAL) % HG_GROW_REWARN_SWEEPS == 0)
+		due = 1;
+	committed_mb = (int)(hb->committed_bytes >> 20);
+	cap_mb       = (int)(hb->hcap >> 20);
+	refused      = (int)hb->grow_refused;
+	stall_due    = hb->lk_stall_event_due;
+	hb->lk_stall_event_due = 0;
+	stall_ns     = hb->lk_last_stall_ns;
+	stall_reason = hb->lk_last_stall_reason;
+	stall_proc   = hb->lk_last_stall_proc;
+	stalls       = hb->lk_stalls;
+	hg_lock_leave(hb);
+
+	if (stall_due)
+		hg_lock_stall_event(stall_ns, stall_reason, stall_proc, stalls);
+
+	if (!due)
+		return;
+
+	if (!evi_probe_event(EVI_SHM_GROW_BLOCKED_ID)) {
+		LM_WARN("shm GROW-BLOCKED event due, no subscribers - alert "
+			"on the hg_shm_grow_blocked statistic instead\n");
+		return;
+	}
+
+	list = evi_get_params();
+	if (!list)
+		return;
+	if (evi_param_add_str(list, &hg_gb_arena_str, &arena) ||
+	    evi_param_add_int(list, &hg_gb_committed_str, &committed_mb) ||
+	    evi_param_add_int(list, &hg_gb_cap_str, &cap_mb) ||
+	    evi_param_add_int(list, &hg_gb_refused_str, &refused)) {
+		LM_ERR("unable to build the grow-blocked event parameters\n");
+		evi_free_params(list);
+		return;
+	}
+	if (evi_raise_event(EVI_SHM_GROW_BLOCKED_ID, list))
+		LM_ERR("unable to raise the grow-blocked event\n");
+}
+
+/* module arenas the maintenance process does not serve: their GC cycle */
+static void hg_module_arenas_gc(void)
+{
+	int i;
+
+	for (i = 0; i < HG_ARENA_REG_MAX; i++) {
+		struct hg_block *hb = hg_arena_reg[i].hb;
+
+		if (!hb || !hb->shared || (void *)hb == shm_block ||
+		    hb->maint_active || !hb->buddy_ready)
+			continue;
+		hg_lock_enter(hb, HG_LK_POLICY);
+		hg_gc_cycle(hb);
+		hg_gc_tick(hb, HG_GC_TICK_BUDGET);
+		hg_lock_leave(hb);
+	}
+}
+
+/* staggered: each process gets one second of the interval, so flushes do
+ * not convoy on the arena lock and then all refill at once */
+static void hg_cache_sweep(unsigned int ticks, void *param)
+{
+	/* the timer's tick, not a static counter: timer jobs run in whichever
+	 * process reads the timer pipe, each with its own statics */
+	unsigned int slot = ticks % HG_SWEEP_INTERVAL;
+	int i, n = counted_max_processes;
+
+	hg_sample_live_peaks();
+
+	if (slot == 0) {
+		hg_grow_blocked_event(ticks);
+		hg_module_arenas_gc();
+		hg_oom_report_shared();
+	}
+
+	for (i = 0; i < n; i++) {
+		/* a multiplicative hash of the index spreads contiguous (live,
+		 * low-index) processes over the whole interval, once each */
+		if ((unsigned int)((unsigned int)i * 2654435761u % HG_SWEEP_INTERVAL) != slot)
+			continue;
+		/* skip a process with clean shared caches; its pkg caches are not
+		 * visible here */
+		if ((ticks / HG_SWEEP_INTERVAL) % HG_SWEEP_FORCE_EVERY &&
+		    !hg_proc_cache_dirty(i)) {
+			if (mem_allocator_shm == MM_HG_MALLOC ||
+			    mem_allocator_shm == MM_HG_MALLOC_DBG)
+				((struct hg_block *)shm_block)->sweeps_skipped++;
+			continue;
+		}
+		if (i == process_no) {
+			/* never RPC this process - see signal_pkg_status() */
+			hg_cache_flush_self();
+			continue;
+		}
+		/* no IPC (the attendant, timers, some module processes): a
+		 * flag the process polls from its slow paths */
+		if (IPC_FD_WRITE(i) <= 0) {
+			hg_sweep_request(i);
+			continue;
+		}
+		/* fire and forget: a failed dispatch is not worth logging every
+		 * 30 seconds for a process that may simply be shutting down */
+		ipc_send_rpc(i, rpc_hg_cache_flush, NULL);
+	}
+}
+
+int hg_register_cache_sweep(void)
+{
+	/* both variants: -a HG_MALLOC_DBG resolves to MM_HG_MALLOC_DBG */
+	if (mem_allocator_shm != MM_HG_MALLOC &&
+	    mem_allocator_shm != MM_HG_MALLOC_DBG
+#ifdef PKG_MALLOC
+	    && mem_allocator_pkg != MM_HG_MALLOC &&
+	    mem_allocator_pkg != MM_HG_MALLOC_DBG
+#endif
+	   )
+		return 0;
+
+	if (register_timer("hg-cache-sweep", hg_cache_sweep, NULL,
+	                   1, TIMER_FLAG_SKIP_ON_DELAY) < 0) {
+		LM_ERR("failed to register the HG_MALLOC cache sweep\n");
+		return -1;
+	}
+#ifdef PKG_MALLOC
+	LM_NOTICE("HG_MALLOC idle-cache sweep registered, every %d s per "
+		"process, staggered (shm=%s pkg=%s)\n", HG_SWEEP_INTERVAL,
+		mm_str(mem_allocator_shm), mm_str(mem_allocator_pkg));
+#else
+	LM_NOTICE("HG_MALLOC idle-cache sweep registered, every %d s per "
+		"process, staggered (shm=%s)\n", HG_SWEEP_INTERVAL,
+		mm_str(mem_allocator_shm));
+#endif
+	return 0;
+}
+#else
+int hg_register_cache_sweep(void) { return 0; }
+#endif /* HG_MALLOC */
