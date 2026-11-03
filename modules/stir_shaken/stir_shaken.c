@@ -185,6 +185,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_set_verstat", (cmd_function)stir_shaken_set_verstat, {
 		{CMD_PARAM_STR, 0, 0}, {CMD_PARAM_STR, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
@@ -199,7 +200,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_auth_out, fixup_free_pkg},
-		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
+		{CMD_PARAM_INT|CMD_PARAM_OPT|CMD_PARAM_NULLABLE, 0, 0}, {0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_auth", (cmd_function)w_stir_auth, {
 		{CMD_PARAM_STR, fixup_attest, 0},
 		{CMD_PARAM_STR, 0, 0},
@@ -1042,6 +1043,10 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	}
 
 	if (!out_p || out_p->type == AUTH_APPEND_TO_REQ) {
+		if (stir_shaken_record_authenticated(msg) < 0) {
+			rc = -1;
+			goto error;
+		}
 		generated = prepare_generated(msg, hdr_buf);
 		if (!generated) {
 			rc = -1;
@@ -1130,8 +1135,12 @@ static int w_stir_auth_div(struct sip_msg *msg, str *cert_buf, str *key_buf,
 		rc = -4;
 		goto done;
 	}
-	if (previously_verified && *previously_verified != 0 && *previously_verified != 1) {
-		rc = -3;
+	if (previously_verified)
+		*previously_verified = !!*previously_verified;
+	if (previously_verified && !*previously_verified) {
+		stir_shaken_record_verification(msg, 0);
+		LM_NOTICE("refusing div authentication: prior verification is known to have failed\n");
+		rc = -8;
 		goto done;
 	}
 	/* URI delimiters in x5u would corrupt the generated SIP header. */
@@ -1200,10 +1209,18 @@ static int w_stir_auth_div(struct sip_msg *msg, str *cert_buf, str *key_buf,
 		rc = -1;
 		goto done;
 	}
-	if ((!previously_verified || !*previously_verified) &&
-		fabs(difftime(now, chain.iat)) > verify_date_freshness) {
-		LM_NOTICE("outermost PASSporT is stale; refusing div authentication\n");
-		rc = -4;
+	if (!previously_verified) {
+		int previous = stir_shaken_previous_verification(msg);
+		if (previous != 1) {
+			LM_NOTICE("DIV signing needs a trusted prior result or completed local VS verification\n");
+			rc = previous == 0 ? -8 : -10;
+			goto done;
+		}
+	}
+	/* Bind the trusted assertion to the received Identity snapshot. This does
+	 * not revalidate it or claim that per-token VS calls have been performed. */
+	if (stir_shaken_record_authenticated(msg) < 0) {
+		rc = -1;
 		goto done;
 	}
 	if (load_cert(&cert, NULL, cert_buf) || load_pkey(&key, key_buf)) {
@@ -1922,7 +1939,8 @@ int stir_shaken_test_trust_vs(str *pem)
 int stir_shaken_test_auth_div(struct sip_msg *msg, str *cert, str *key,
 	str *x5u, str *orig, str *from, str *dest, int verified)
 {
-	return w_stir_auth_div(msg, cert, key, x5u, orig, from, dest, NULL, &verified);
+	return w_stir_auth_div(msg, cert, key, x5u, orig, from, dest, NULL,
+		verified == -1 ? NULL : &verified);
 }
 
 int stir_shaken_test_auth_base(struct sip_msg *msg, str *cert, str *key, str *x5u)

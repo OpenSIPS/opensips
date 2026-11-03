@@ -8,6 +8,7 @@
 #include "../../../ut.h"
 
 int stir_shaken_test_trust_vs(str *);
+int stir_shaken_test_auth_div(struct sip_msg *, str *, str *, str *, str *, str *, str *, int);
 
 /* Public test fixture: self-signed trust anchor with explicit SPC TNAuthList. */
 static const char vs_certificate[] =
@@ -115,7 +116,7 @@ static int chain_result(str *tokens, int *order, int n, str *cert,
 	if (make_message(&msg, buf, sizeof(buf), tokens, order, n, recipient)) rc = -100;
 	else {
 		verify_all(&msg, cert, n);
-		rc = stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, inner);
+		rc = stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, inner, NULL);
 	}
 	free_sip_msg(&msg);
 	pop_pushed_global_context();
@@ -130,6 +131,7 @@ void test_vs(str *keybuf)
 	str tokens[5] = {STR_NULL, STR_NULL, STR_NULL, STR_NULL, STR_NULL}, *built;
 	str x5u = str_init("https://cert.example.test/passport.pem"), orig = str_init("12155551212");
 	str b = str_init("12155551213"), c = str_init("12155551214"), d = str_init("12155551215");
+	str next_target = str_init("12155551216"), final_target = str_init("12155551217");
 	str a = str_init("A"), origid = str_init("vs-test");
 	int normal[] = {0, 1, 2}, shuffled[] = {2, 0, 1}, missing[] = {0, 2};
 	int shared[] = {2, 0, 1, 0}, bad_extra[] = {0, 1, 2, 4};
@@ -180,24 +182,33 @@ void test_vs(str *keybuf)
 
 	push_new_global_context();
 	make_message(&msg, buf, sizeof(buf), tokens, shuffled, 3, d.s);
+	ok(stir_shaken_test_auth_div(&msg, &cert, keybuf, &x5u,
+		NULL, NULL, &next_target, -1) == -10,
+		"freshness alone cannot authorize an unknown previous state");
 	ok(pv_is(&msg, "count", -1, "3") && pv_is(&msg, "ppt", 0, "div") &&
 		pv_is(&msg, "ppt", 1, "shaken") && pv_is(&msg, "orig", -1, orig.s),
 		"indexed Identity PVs use wire order and unindexed access selects SHAKEN");
 	i = 0;
 	stir_shaken_verify_passport(&msg, &i, &cert, NULL, NULL);
-	ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL) == -10,
+	ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL, NULL) == -10,
 		"VS refuses to use unverified intermediate and root PASSporTs");
 	verify_all(&msg, &cert, 3);
-	ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL) == 1,
+	ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL, NULL) == 1,
 		"completing per-token verification enables full chain validation");
+	ok(stir_shaken_test_auth_div(&msg, &cert, keybuf, &x5u,
+		NULL, NULL, &next_target, -1) == 1,
+		"omitted previous state reuses completed local VS success");
 	ok(pv_is(&msg, "chain_status", -1, "passed") &&
 		pv_is(&msg, "chain_attest", -1, "A") && pv_is(&msg, "status", 0, "verified"),
 		"chain result and per-token status are available to routing policy");
 	{
 		str absent = str_init("not a certificate");
 		stir_shaken_verify_passport(&msg, &i, &absent, NULL, NULL);
-		ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL) == -8,
+		ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL, NULL) == -8,
 			"failed re-verification clears a previously successful token result");
+		ok(stir_shaken_test_auth_div(&msg, &cert, keybuf, &x5u,
+			NULL, NULL, &final_target, -1) == -8,
+			"omitted previous state refuses a locally recorded VS failure");
 	}
 	free_sip_msg(&msg);
 	pop_pushed_global_context();
@@ -221,6 +232,30 @@ void test_vs(str *keybuf)
 		"inner bypass never bypasses outermost freshness");
 	ok(chain_result(tokens, normal, 3, &cert, d.s, &extended) == -6,
 		"outermost staleness takes priority when inner tokens are stale too");
+	push_new_global_context();
+	make_message(&msg, buf, sizeof(buf), tokens, normal, 3, d.s);
+	verify_all(&msg, &cert, 3);
+	{
+		int pre_retarget_window = 10800, invalid_outer = -1;
+		ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL,
+			NULL, &pre_retarget_window) == 1,
+			"explicit pre-retarget outer window permits delayed verification");
+		ok(stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL,
+			NULL, &invalid_outer) == -3,
+			"outer freshness override cannot disable the outer age check");
+		stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL, &pre_retarget_window);
+		ok(stir_shaken_test_auth_div(&msg, &cert, keybuf, &x5u,
+			NULL, NULL, &next_target, -1) == 1,
+			"AS reuses a delayed VS success without rechecking historical freshness");
+		ok(stir_shaken_test_auth_div(&msg, &cert, keybuf, &x5u,
+			NULL, NULL, &final_target, 0) == -8,
+			"explicit false refuses signing even when a previous success is cached");
+		ok(stir_shaken_test_auth_div(&msg, &cert, keybuf, &x5u,
+			NULL, NULL, &final_target, -1) == -8,
+			"a recorded explicit false is not mistaken for unknown");
+	}
+	free_sip_msg(&msg);
+	pop_pushed_global_context();
 	goto done;
 setup_error:
 	ok(0, "VS signed fixture setup");

@@ -24,6 +24,7 @@ struct vs_snapshot {
 	int status[DIV_MAX_PASSPORTS];
 	const char *chain_status;
 	str attest;
+	int previous_verification;
 };
 
 static void free_snapshot(void *ptr)
@@ -141,6 +142,7 @@ static struct vs_snapshot *snapshot(struct sip_msg *msg)
 	memset(s, 0, sizeof(*s));
 	s->msg = msg; s->buf = msg->buf; s->id = msg->id;
 	s->chain_status = "unverified";
+	s->previous_verification = -1;
 	for (hf = get_header_by_static_name(msg, "Identity"); hf;
 		hf = get_next_header_by_static_name(hf, "Identity")) {
 		if (s->count == DIV_MAX_PASSPORTS) goto error;
@@ -162,6 +164,25 @@ error:
 	return NULL;
 }
 
+int stir_shaken_previous_verification(struct sip_msg *msg)
+{
+	struct vs_snapshot *s = snapshot(msg);
+	return s ? s->previous_verification : -1;
+}
+
+int stir_shaken_record_verification(struct sip_msg *msg, int result)
+{
+	struct vs_snapshot *s = snapshot(msg);
+	if (!s) return -1;
+	s->previous_verification = result;
+	return 0;
+}
+
+int stir_shaken_record_authenticated(struct sip_msg *msg)
+{
+	return stir_shaken_record_verification(msg, 1);
+}
+
 int stir_shaken_verify_passport(struct sip_msg *msg, int *index, str *cert,
 	pv_spec_t *code, pv_spec_t *reason)
 {
@@ -169,7 +190,10 @@ int stir_shaken_verify_passport(struct sip_msg *msg, int *index, str *cert,
 	struct parsed_identity *p;
 	str authority;
 	int rc;
-	if (s) { s->chain_status = "unverified"; s->attest = STR_NULL; }
+	if (s) {
+		s->chain_status = "unverified"; s->attest = STR_NULL;
+		s->previous_verification = -1;
+	}
 	if (!s || !index || *index < 0 || *index >= s->count) rc = -2;
 	else {
 		p = &s->tokens[*index];
@@ -181,6 +205,7 @@ int stir_shaken_verify_passport(struct sip_msg *msg, int *index, str *cert,
 			rc = stir_shaken_verify_credential(cert, p, &authority);
 		}
 		s->status[*index] = rc;
+		if (rc < 0) s->previous_verification = 0;
 	}
 	return stir_shaken_verify_result(msg, code, reason, rc, "PASSporT verification");
 }
@@ -205,7 +230,7 @@ static int visit(struct vs_graph *g, int node)
 }
 
 int stir_shaken_verify_chain(struct sip_msg *msg, pv_spec_t *code,
-	pv_spec_t *reason, str *orig_arg, str *dest_arg, int *inner_arg)
+	pv_spec_t *reason, str *orig_arg, str *dest_arg, int *inner_arg, int *outer_arg)
 {
 	struct vs_snapshot *s = snapshot(msg);
 	struct vs_graph graph = {0};
@@ -213,10 +238,12 @@ int stir_shaken_verify_chain(struct sip_msg *msg, pv_spec_t *code,
 	struct sip_uri uri;
 	int i, j, roots = 0, parent, children, rc = -2, has_div = 0;
 	int inner = inner_arg ? *inner_arg : verify_date_div_freshness;
+	int outer = outer_arg ? *outer_arg : stir_shaken_outer_freshness();
 	time_t now = time(NULL);
 	if (!s) goto done;
 	s->chain_status = "failed"; s->attest = STR_NULL;
 	if (!s->count) { s->chain_status = "no-validation"; goto done; }
+	if (outer < 0) { rc = -3; goto done; }
 	if (inner != -1 && inner <= stir_shaken_outer_freshness()) { rc = -3; goto done; }
 	if (now == (time_t)-1) { rc = -1; goto done; }
 	if (orig_arg) orig = *orig_arg;
@@ -277,7 +304,7 @@ int stir_shaken_verify_chain(struct sip_msg *msg, pv_spec_t *code,
 			rc = -7; goto broken;
 		}
 		if (!children && fabs((double)now - s->tokens[i].iat->valuedouble) >
-			stir_shaken_outer_freshness()) {
+			outer) {
 			rc = -6; s->chain_status = "stale";
 			goto done;
 		}
@@ -299,6 +326,8 @@ int stir_shaken_verify_chain(struct sip_msg *msg, pv_spec_t *code,
 broken:
 	s->chain_status = "broken";
 done:
+	if (s) s->previous_verification = rc == 1 ? 1 :
+		(rc == -1 || rc == -2 || rc == -3 || rc == -10) ? -1 : 0;
 	return stir_shaken_verify_result(msg, code, reason, rc, "PASSporT chain verification");
 }
 

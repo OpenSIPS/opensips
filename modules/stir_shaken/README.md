@@ -95,7 +95,7 @@ modparam("stir_shaken", "verify_date_freshness", 300)
 Default maximum age, in seconds, for earlier PASSporTs when verifying a DIV
 chain. The default is `10800`. Use `-1` to skip inner freshness checking, or a
 value greater than `verify_date_freshness` to select an extended window.
-`stir_shaken_verify_chain()` accepts a final optional argument overriding this
+`stir_shaken_verify_chain()` accepts an `inner_freshness` argument overriding this
 default per call. This parameter does not affect outermost freshness or the
 legacy single-PASSporT verifier.
 
@@ -309,8 +309,8 @@ preserves received Identity headers and follows existing `div` links regardless
 of header order. It also sees Identity headers appended by previous
 `stir_shaken_auth()` and `stir_shaken_auth_div()` calls in the same request.
 
-Before calling, the script must authorize the retargeting entity and ensure
-that the received PASSporTs have been cryptographically verified. This function
+Before calling, the script must authorize the retargeting entity and provide
+a trusted prior verification result or complete local VS verification. This function
 performs structural chain checks; it does not fetch or verify certificates for
 received PASSporTs. The signer must be entitled to fully attest the retargeting
 identity under ATIS-1000085 clause 5.6.3. Presence of a Diversion or History-Info
@@ -334,12 +334,23 @@ Parameters:
   writable variable, such as `"$var(identity_hdr)"`. `rpl` is not supported for
   ATIS DIV authentication. Variable output is not considered appended until
   the script actually attaches it to the message.
-- `previously_verified`: optional boolean, default `false`. When `false`, the
-  existing outermost `iat` must satisfy `verify_date_freshness` now. `true`
-  asserts trusted prior verification, including freshness before a legitimate
-  call-handling delay. It skips only this age check, not structural validation
-  or signing-credential checks. A freshness failure recorded by the existing
-  verifier in this processing context always prevents DIV signing.
+- `previously_verified`: optional tri-state verification result:
+  Integer values are normalized as booleans: zero is `false`, any nonzero
+  integer is `true`.
+  - `true`: assert trusted prior success. Received PASSporTs are not reverified
+    and their historical freshness is not rechecked. Structural chain and
+    current signing-credential checks still apply.
+  - `false`: assert known prior failure and refuse signing (`-8`). This policy
+    covers all known verification failures.
+  - omitted or a null-valued variable: unknown. Reuse successful local
+    `stir_shaken_verify_chain()` verification; otherwise return `-10` to request
+    verification, or `-8` for a recorded failure. The script obtains each
+    certificate and runs the VS functions before retrying. A locally generated
+    SHAKEN PASSporT also permits immediate DIV signing in the same request.
+
+A recorded outermost freshness failure in this processing context always
+prevents DIV signing, including with `true`. Select any extended pre-retarget
+freshness policy on the initial VS invocation, before recording a failure.
 
 `orig` is a telephone number. `div` and `dest` accept telephone numbers or
 RFC 5031 `urn:service:sos` URNs; other URI values are rejected. Leading `+` is
@@ -352,10 +363,12 @@ Return values:
 - `-1`: internal, key-loading, or output error;
 - `-2`: no SHAKEN root;
 - `-3`: invalid argument, changed caller identity, or unchanged destination;
-- `-4`: stale outermost token or recorded freshness failure;
+- `-4`: recorded outermost freshness failure;
 - `-5`: expired/unsuitable certificate, missing TNAuthList, non-P-256 key,
   or certificate/key mismatch;
-- `-7`: malformed, broken, cyclic, ambiguous, or excessive chain.
+- `-7`: malformed, broken, cyclic, ambiguous, or excessive chain;
+- `-8`: prior verification is known to have failed;
+- `-10`: unknown prior result; complete local VS verification first.
 
 This initial AS implementation accepts up to 64 PASSporTs and one SHAKEN root.
 Additional PASSporT types may coexist; multiple distinct SHAKEN roots and
@@ -372,6 +385,11 @@ if (!stir_shaken_auth_div($var(cert), $var(key),
 # Only for a trusted record of successful verification before a call delay:
 stir_shaken_auth_div($var(cert), $var(key),
     "https://certs.example.net/stir.pem", , , , , true);
+
+# A saved nullable result: true, false, or NULL (unknown).
+$var(previously_verified) = NULL;
+stir_shaken_auth_div($var(cert), $var(key),
+    "https://certs.example.net/stir.pem", , , , , $var(previously_verified));
 ```
 
 #### stir_shaken_set_verstat(target, value)
@@ -467,7 +485,7 @@ their type-specific validation is not implemented here. Certificates with
 JWTClaimConstraints are rejected until that profile is supported. They are not
 silently accepted under weaker checks.
 
-#### stir_shaken_verify_chain(err_code, err_reason, [orig], [dest], [inner_freshness])
+#### stir_shaken_verify_chain(err_code, err_reason, [orig], [dest], [inner_freshness], [outer_freshness])
 
 Validate the dependency graph using only tokens which passed
 `stir_shaken_verify_passport()`. Call this after verifying every indexed token.
@@ -485,7 +503,11 @@ No request headers are reordered or removed.
 - During linking, `911` and RFC 5031 `sos` URNs are equivalent. Header position
   and `iat` are never used to infer diversion order.
 
-`verify_date_freshness` applies to every outermost/terminal token. Earlier
+`outer_freshness` overrides `verify_date_freshness` for every outermost/terminal
+token on this invocation. It must be nonnegative; `-1` is rejected. When
+verifying an unknown result before a delayed retargeting, the script may
+explicitly select `10800` seconds (three hours). Ordinary inbound verification
+continues to use `verify_date_freshness` when the argument is omitted. Earlier
 tokens use `verify_date_div_freshness`, default **10800 seconds** (three hours).
 The optional `inner_freshness` argument overrides that value for this call:
 
@@ -539,6 +561,14 @@ if (!stir_shaken_verify_chain($var(code), $var(reason))) {
 
 # For a call whose local ACL permits skipping only inner freshness:
 stir_shaken_verify_chain($var(code), $var(reason), , , -1);
+
+# Alternative initial verification for a delayed retargeting, after verifying
+# each token, and BEFORE changing Request-URI. Select this policy explicitly.
+if (stir_shaken_verify_chain($var(code), $var(reason), , , , 10800)) {
+    $ru = "sip:+12155551217@example.net";
+    stir_shaken_auth_div($var(sti_cert), $var(sti_pkey),
+        "https://certs.example.net/stir.pem");
+}
 ```
 
 #### stir_shaken_verify(cert, err_code, err_reason, [orig], [dest])

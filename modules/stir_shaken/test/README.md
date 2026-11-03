@@ -20,7 +20,7 @@ signature segment is instead verified cryptographically with the fixture
 certificate.
 
 DIV AS tests additionally exercise the exported signing implementation:
-default stale-token rejection, trusted prior verification, preservation of the
+unknown/known-failure rejection, trusted prior verification, preservation of the
 original caller, canonical targets, fresh `iat`, STI credential requirements,
 SOS targets, repeated signing, immediate base-plus-DIV signing, unordered
 received headers, and broken/cyclic chain rejection. The DIV signature is
@@ -35,7 +35,8 @@ failure on malformed multi-PAI input.
 
 `test_vs.c` uses a private test trust anchor and signed SHAKEN/DIV messages to
 exercise per-token trust/signatures, dependency ordering, missing links, cycles,
-shared roots, per-call inner freshness, stale outermost rejection, malformed
+shared roots, per-call inner and outer freshness, stale outermost rejection, malformed
 extra headers, re-verification invalidation, and indexed result PVs. The
 TNAuthList decoder is checked against individual TN, range, SPC, and malformed
-DER cases.
+DER cases. Tri-state AS tests cover cached VS success and failure, delayed
+pre-retarget verification, and explicit false overriding cached success.

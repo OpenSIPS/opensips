@@ -363,6 +363,11 @@ int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
+				if ((tmp_vals[i].flags & PV_VAL_NULL) &&
+					(param->flags & CMD_PARAM_NULLABLE)) {
+					cmdp[i-1] = NULL;
+					break;
+				}
 				if (tmp_vals[i].flags & PV_VAL_NULL ||
 					!(tmp_vals[i].flags & PV_VAL_INT)) {
 					LM_ERR("Variable in param [%d] is not an integer\n", i);

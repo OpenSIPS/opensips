@@ -25,6 +25,8 @@
 #include "../../../str.h"
 #include "../../../context.h"
 #include "../../../ut.h"
+#include "../../../mod_fix.h"
+#include "../../../cmds.h"
 
 int stir_shaken_test_auth_div(struct sip_msg *, str *, str *, str *,
 	str *, str *, str *, int);
@@ -243,8 +245,11 @@ static void test_div_authentication(void)
 		goto done;
 	}
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
+		NULL, NULL, &target, -1);
+	ok(rc == -10, "unknown prior state requires completed VS verification");
+	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
 		NULL, NULL, &target, 0);
-	ok(rc == -4, "DIV signing defaults to rejecting stale outermost iat");
+	ok(rc == -8, "explicit false refuses DIV signing");
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
 		&wrong_orig, NULL, &target, yes);
 	ok(rc == -3, "DIV signing cannot override the original caller");
@@ -286,13 +291,13 @@ static void test_div_authentication(void)
 	passport_identity_cleanup(&parsed);
 	memset(&parsed, 0, sizeof(parsed));
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
-		NULL, NULL, &later, 0);
+		NULL, NULL, &later, -1);
 	ok(rc == 1, "subsequent DIV uses freshly appended outermost token");
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
-		NULL, NULL, &later, 0);
+		NULL, NULL, &later, -1);
 	ok(rc == -3, "DIV rejects an unchanged canonical target");
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
-		NULL, NULL, &sos, 0);
+		NULL, NULL, &sos, -1);
 	ok(rc == 1, "DIV supports an SOS URN destination");
 	stir_shaken_test_mark_stale();
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
@@ -323,7 +328,7 @@ done:
 	/* Exercise Request-URI derivation after a script rewrite. */
 	msg.new_uri = str_init("sip:+12155551214@example.test");
 	rc = stir_shaken_test_auth_div(&msg, &cert, &key, &x5u,
-		NULL, NULL, NULL, 0);
+		NULL, NULL, NULL, -1);
 	ok(rc == 1, "base authentication followed immediately by DIV succeeds");
 	msg.new_uri = STR_NULL; /* literal, not a pkg-owned rewrite */
 	free_sip_msg(&msg);
@@ -395,8 +400,53 @@ void test_verstat(void);
 void test_verstat_edges(void);
 void test_vs(str *);
 
+static void test_nullable_previous_state(void)
+{
+	struct sip_msg msg = {0};
+	pv_spec_t spec = {0};
+	str name = str_init("$var(test_previous_state)");
+	struct cmd_param params[] = {
+		{CMD_PARAM_INT|CMD_PARAM_OPT|CMD_PARAM_NULLABLE, 0, 0}, {0, 0, 0}
+	};
+	gparam_t gp = {0};
+	action_elem_t elems[2] = {{0}};
+	pv_value_t value = {0}, tmp[2] = {0};
+	void *args[1];
+	int state;
+
+	if (!pv_parse_spec(&name, &spec)) {
+		ok(0, "parse nullable previous-state variable");
+		return;
+	}
+	gp.type = GPARAM_TYPE_PVS;
+	gp.pval = &spec;
+	elems[1].u.data = &gp;
+	ok(pv_set_value(&msg, &spec, 0, NULL) == 0 &&
+		get_cmd_fixups(&msg, params, elems, args, tmp) == 0 && !args[0],
+		"null-valued previous-state variable reaches AS as unknown");
+	params[0].flags &= ~CMD_PARAM_NULLABLE;
+	ok(get_cmd_fixups(&msg, params, elems, args, tmp) < 0,
+		"ordinary integer parameters continue rejecting null-valued variables");
+	params[0].flags |= CMD_PARAM_NULLABLE;
+	for (state = 0; state <= 1; state++) {
+		value.flags = PV_VAL_INT|PV_TYPE_INT;
+		value.ri = state;
+		ok(pv_set_value(&msg, &spec, 0, &value) == 0 &&
+			get_cmd_fixups(&msg, params, elems, args, tmp) == 0 &&
+			args[0] && *(int *)args[0] == state,
+			"boolean previous-state variable preserves %s", state ? "true" : "false");
+	}
+	value.flags = PV_VAL_STR;
+	value.rs = str_init("false");
+	ok(pv_set_value(&msg, &spec, 0, &value) == 0 &&
+		get_cmd_fixups(&msg, params, elems, args, tmp) < 0,
+		"nullable integer arguments still reject strings");
+	pv_set_value(&msg, &spec, 0, NULL);
+}
+
 void mod_tests(void)
 {
+	test_nullable_previous_state();
 	test_inbound_verification();
 	test_outbound_authentication();
 	test_div_authentication();
