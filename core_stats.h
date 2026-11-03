@@ -80,4 +80,10 @@ int init_pkg_stats(int no_procs);
 
 #endif /*STATISTICS*/
 
+/* registers the HG_MALLOC idle-cache sweep (no-op otherwise); call it
+ * PRE-FORK, as register_timer() refuses registrations after the fork */
+int hg_register_cache_sweep(void);
+/* one tick of it, the timer's 1 s tick count as @ticks (unit tests too) */
+void hg_cache_sweep(unsigned int ticks, void *param);
+
 #endif /*_CORE_STATS_H_*/
