@@ -40,3 +40,19 @@ extra headers, re-verification invalidation, and indexed result PVs. The
 TNAuthList decoder is checked against individual TN, range, SPC, and malformed
 DER cases. Tri-state AS tests cover cached VS success and failure, delayed
 pre-retarget verification, and explicit false overriding cached success.
+
+Additional VS coverage exercises all six header permutations, equal timestamps,
+distinct signed roots, ambiguous AS links, incomplete/unrelated branches, SOS/911
+equivalence, extra invalid signatures, and a real VS freshness failure followed
+by AS refusal. A test-only signer creates correctly signed negative JSON profiles
+independently of the production payload builder.
+
+`credentials.h` contains public certificate fixtures for expired/untrusted
+credentials, missing or scoped TNAuthList, unsupported JWTClaimConstraints, and
+P-384 keys. Valid trust paths use leaves signed by the existing test root;
+the deliberately untrusted fixture is self-signed. The DIV-only TN fixture
+also checks that authority is evaluated against `div`, rather than `orig`.
+
+The `TEST_VERSTAT_POLICY` route in `opensips.cfg` is executed against real VS
+results for A/B/C, bad signature, stale outermost, broken chain, and absent
+Identity. Tests check its resulting `verstat` on the serialized request.

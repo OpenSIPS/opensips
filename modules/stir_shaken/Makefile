@@ -27,13 +27,16 @@ endif
 
 ifneq ($(SS_WOLFSSL_BUILDER),)
 	DEFS += $(shell $(SS_WOLFSSL_BUILDER) --cflags) -DOPENSSL_EXTRA
-	LIBS += $(shell $(SS_WOLFSSL_BUILDER) --libs) -lm
+	LIBS += $(shell $(SS_WOLFSSL_BUILDER) --libs)
 else
 	DEFS += -I$(LOCALBASE)/include -I$(LOCALBASE)/ssl/include -DOPENSSL_EXTRA
 	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib \
 		-L$(LOCALBASE)/lib64 -L$(LOCALBASE)/ssl/lib64 \
-		-lwolfssl -lm
+		-lwolfssl
 endif
 endif
+
+# Claim validation uses floor(), which may remain a library call at -O0.
+LIBS += -lm
 
 include ../../Makefile.modules

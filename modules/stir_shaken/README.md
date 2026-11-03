@@ -503,6 +503,53 @@ No request headers are reordered or removed.
 - During linking, `911` and RFC 5031 `sos` URNs are equivalent. Header position
   and `iat` are never used to infer diversion order.
 
+The signed claims are matched as follows. Per-token verification checks the
+signature, certificate authority, and claim profile first; the chain verifier
+then checks these relationships to the call and the other tokens:
+
+| PASSporT / claim | Expected identity or value |
+| --- | --- |
+| `shaken.orig` | Calling TN from the first P-Asserted-Identity identity, or From when PAI is absent. |
+| `shaken.dest`, with DIV tokens present | At least one destination must link to a following token's `div`; it is not compared to To. A terminal SHAKEN token must instead name the current recipient. |
+| `shaken.dest`, without DIV tokens | Each SHAKEN token must contain the called TN from To, or its SOS service URN. Request-URI is not used for this base-only case. |
+| `div.orig` | The same calling TN as the SHAKEN root and the selected SIP calling identity. |
+| `div.div` | A destination in at least one preceding signed PASSporT. Diversion, History-Info, and Referred-By are not used to establish this link. |
+| Intermediate `div.dest` | A destination linking to a following token's `div`. |
+| Terminal `div.dest` | At least one destination must match the current Request-URI identity, including a script-rewritten `$ru`. Every terminal token is checked. |
+| `iat`, either type | Current clock and the selected outer/inner freshness policy; no comparison to the SIP Date header. |
+| `shaken.attest` / `shaken.origid` | Signed profile checks: A/B/C attestation and a nonempty string origid. There is no corresponding SIP-header comparison. These claims are rejected on DIV tokens. |
+
+Calling and base-only To identities use the URI user/telephone number after
+removing user parameters. SIP/SIPS and TEL/TELS are accepted; the existing
+`e164_strict_mode` requirement for `user=phone` applies to SIP/SIPS callers and
+base-only To identities. A present but invalid PAI fails rather than falling
+back to From. For DIV-chain recipients, the verifier extracts the number from
+Request-URI or accepts a supported SOS URN directly. TNs are compared after
+removing a leading `+`; `911` and supported SOS URNs are equivalent for chain
+links and recipient matching.
+
+The optional `orig` and `dest` arguments replace the expected calling and
+recipient identities for this invocation. Supply a TN for `orig`, and a TN or
+supported SOS URN for `dest`, rather than a complete SIP URI. An `orig` override
+still has to match every token's original caller. A `dest` override replaces
+To in a base-only request or Request-URI in a request containing DIV tokens.
+Neither override changes signed claims, bypasses signatures/certificate
+authority, nor relaxes chain dependencies or freshness checks.
+
+Verify before locally retargeting the call. If Request-URI has already been
+rewritten, pass the saved pre-retarget recipient as `dest` when verifying the
+received DIV chain:
+
+```opensips
+# $var(received_target) was saved before rewriting Request-URI.
+# Verify each received token first, then compare its chain to that recipient.
+stir_shaken_verify_chain($var(code), $var(reason), , $var(received_target));
+```
+
+The `chain_attest` result is available only after successful chain verification.
+When multiple SHAKEN roots are present, it reports the weakest attestation
+among them (C before B before A), rather than selecting one by header order.
+
 `outer_freshness` overrides `verify_date_freshness` for every outermost/terminal
 token on this invocation. It must be nonnegative; `-1` is rejected. When
 verifying an unknown result before a delayed retargeting, the script may
@@ -558,12 +605,21 @@ while ($var(i) < $identity(count)) {
 if (!stir_shaken_verify_chain($var(code), $var(reason))) {
     xlog("L_WARN", "Chain validation: $identity(chain_status), $var(reason)\n");
 }
+```
 
-# For a call whose local ACL permits skipping only inner freshness:
+For a call whose local ACL permits skipping only inner freshness, use this
+chain-verification invocation instead:
+
+```opensips
 stir_shaken_verify_chain($var(code), $var(reason), , , -1);
+```
 
-# Alternative initial verification for a delayed retargeting, after verifying
-# each token, and BEFORE changing Request-URI. Select this policy explicitly.
+For delayed retargeting with unknown prior verification, choose the extended
+outer window on the initial chain-verification invocation, after verifying
+each token and before changing Request-URI. A previously recorded outermost
+freshness failure still blocks AS, even if a later relaxed check succeeds.
+
+```opensips
 if (stir_shaken_verify_chain($var(code), $var(reason), , , , 10800)) {
     $ru = "sip:+12155551217@example.net";
     stir_shaken_auth_div($var(sti_cert), $var(sti_pkey),

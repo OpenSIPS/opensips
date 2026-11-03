@@ -6,6 +6,9 @@
 #include <tap.h>
 #include "../../../context.h"
 #include "../../../ut.h"
+#include "../../../action.h"
+#include "../../../msg_translator.h"
+#include "credentials.h"
 
 int stir_shaken_test_trust_vs(str *);
 int stir_shaken_test_auth_div(struct sip_msg *, str *, str *, str *, str *, str *, str *, int);
@@ -25,7 +28,7 @@ static const char vs_certificate[] =
 	"-----END CERTIFICATE-----\n";
 
 static int make_message(struct sip_msg *msg, char *buf, size_t size,
-	str *tokens, int *order, int n, const char *recipient)
+	str *tokens, const int *order, int n, const char *recipient)
 {
 	int i, len;
 	len = snprintf(buf, size,
@@ -106,7 +109,81 @@ done:
 	if (bio) BIO_free(bio);
 }
 
-static int chain_result(str *tokens, int *order, int n, str *cert,
+/* Sign arbitrary JSON independently of the production payload builder, so
+ * negative profile tests carry a valid signature rather than testing tampering. */
+static int encode_segment(char *out, const void *data, int len)
+{
+	int n = calc_base64_encode_len(len);
+	base64urlencode((unsigned char *)out, (unsigned char *)data, len);
+	while (n && out[n-1] == '=') n--;
+	return n;
+}
+
+static str signed_json(EVP_PKEY *key, cJSON *header, cJSON *payload)
+{
+	char *h = cJSON_PrintUnformatted(header), *p = cJSON_PrintUnformatted(payload);
+	char input[4096];
+	unsigned char der[256], raw[64] = {0};
+	const unsigned char *cursor = der;
+	const BIGNUM *r, *s;
+	ECDSA_SIG *sig = NULL;
+	EVP_MD_CTX *ctx = EVP_MD_CTX_create();
+	size_t size = sizeof(der);
+	str result = STR_NULL;
+	int n, bytes;
+	cJSON *ppt = cJSON_GetObjectItem(header, "ppt");
+	if (!h || !p || !ctx || !ppt || strlen(h)+strlen(p) > 2500) goto done;
+	n = encode_segment(input, h, strlen(h));
+	input[n++] = '.';
+	n += encode_segment(input+n, p, strlen(p));
+	if (EVP_DigestSignInit(ctx, NULL, EVP_sha256(), NULL, key) <= 0 ||
+		EVP_DigestSignUpdate(ctx, input, n) <= 0 ||
+		EVP_DigestSignFinal(ctx, der, &size) <= 0) goto done;
+	sig = d2i_ECDSA_SIG(NULL, &cursor, size);
+	if (!sig) goto done;
+#if !defined(WOLFSSL_VERSION) && OPENSSL_VERSION_NUMBER >= 0x10100000L
+	ECDSA_SIG_get0(sig, &r, &s);
+#else
+	r = sig->r; s = sig->s;
+#endif
+	bytes = BN_num_bytes(r);
+	if (bytes > 32 || BN_bn2bin(r, raw+32-bytes) != bytes) goto done;
+	bytes = BN_num_bytes(s);
+	if (bytes > 32 || BN_bn2bin(s, raw+64-bytes) != bytes) goto done;
+	input[n++] = '.';
+	n += encode_segment(input+n, raw, sizeof(raw));
+	result.s = pkg_malloc(n+512);
+	if (result.s)
+		result.len = snprintf(result.s, n+512,
+			"Identity: %.*s;info=<https://cert.example.test/passport.pem>;alg=ES256;ppt=%s\r\n",
+			n, input, ppt->valuestring);
+done:
+	if (ctx) EVP_MD_CTX_destroy(ctx);
+	if (sig) ECDSA_SIG_free(sig);
+	cJSON_PurgeString(h); cJSON_PurgeString(p);
+	return result;
+}
+
+static str rewrite_claim(EVP_PKEY *key, str *token, int in_header,
+	const char *name, const char *json)
+{
+	struct parsed_identity parsed = {0};
+	str body = {token->s + IDENTITY_HDR_LEN, token->len - IDENTITY_HDR_LEN - CRLF_LEN};
+	str result = STR_NULL;
+	cJSON *object, *replacement = cJSON_Parse(json);
+	if (!replacement || passport_parse_identity(&body, &parsed)) goto done;
+	object = in_header ? parsed.header : parsed.payload;
+	cJSON_DeleteItemFromObject(object, name);
+	cJSON_AddItemToObject(object, name, replacement);
+	replacement = NULL;
+	result = signed_json(key, parsed.header, parsed.payload);
+done:
+	cJSON_Delete(replacement);
+	passport_identity_cleanup(&parsed);
+	return result;
+}
+
+static int chain_result(str *tokens, const int *order, int n, str *cert,
 	const char *recipient, int *inner)
 {
 	char buf[8192];
@@ -121,6 +198,264 @@ static int chain_result(str *tokens, int *order, int n, str *cert,
 	free_sip_msg(&msg);
 	pop_pushed_global_context();
 	return rc;
+}
+
+static void test_credentials(str *tokens)
+{
+	static const struct {
+		const char *pem, *description;
+	} cases[] = {
+		{credential_expired, "expired certificate with the correct key"},
+		{credential_untrusted, "untrusted certificate with the correct key"},
+		{credential_missing_tn, "trusted certificate missing TNAuthList"},
+		{credential_wrong_tn, "trusted certificate authorizing another TN"},
+		{credential_jwt_constraints, "unsupported JWTClaimConstraints"},
+		{credential_p384, "trusted P-384 key for ES256"}
+	};
+	char buf[8192];
+	struct sip_msg msg = {0};
+	str cert;
+	int order[] = {0,1,2}, i, index = 1, rc;
+	for (i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {
+		init_str(&cert, cases[i].pem);
+		push_new_global_context();
+		rc = 0;
+		if (make_message(&msg, buf, sizeof(buf), tokens, order, 3,
+			"12155551215") == 0)
+			rc = stir_shaken_verify_passport(&msg, &index, &cert, NULL, NULL);
+		if (rc != -8) diag("credential %s: result %d", cases[i].description, rc);
+		ok(rc == -8,
+			"VS rejects %s", cases[i].description);
+		free_sip_msg(&msg);
+		memset(&msg, 0, sizeof(msg));
+		pop_pushed_global_context();
+	}
+	init_str(&cert, credential_div_tn);
+	push_new_global_context();
+	rc = make_message(&msg, buf, sizeof(buf), tokens, order, 3, "12155551215") == 0;
+	if (rc) rc = stir_shaken_verify_passport(&msg, &index, &cert, NULL, NULL);
+	if (rc != 1) diag("DIV-scoped credential: result %d", rc);
+	ok(rc == 1,
+		"DIV certificate scoped to div TN succeeds without authorizing orig");
+	index = 0;
+	ok(rc && stir_shaken_verify_passport(&msg, &index, &cert, NULL, NULL) == -8,
+		"the same DIV-scoped credential cannot authenticate the SHAKEN origin");
+	free_sip_msg(&msg);
+	pop_pushed_global_context();
+}
+
+static int policy_wire(struct sip_msg *msg, const char *expected)
+{
+	struct socket_info sock = {0};
+	unsigned int len;
+	char *wire, parameter[80];
+	int i, result, old_route;
+	for (i = 0; i < RT_NO; i++)
+		if (sroutes->request[i].name &&
+			!strcmp(sroutes->request[i].name, "TEST_VERSTAT_POLICY")) break;
+	if (i == RT_NO) return 0;
+	swap_route_type(old_route, REQUEST_ROUTE);
+	run_top_route(sroutes->request[i], msg);
+	set_route_type(old_route);
+	wire = build_req_buf_from_sip_req(msg, &len, &sock, PROTO_UDP,
+		NULL, MSG_TRANS_NOVIA_FLAG);
+	if (!wire) return 0;
+	snprintf(parameter, sizeof(parameter), ";verstat=%s", expected);
+	result = strstr(wire, parameter) != NULL;
+	pkg_free(wire);
+	return result;
+}
+
+static void test_verstat_policy(EVP_PKEY *key, str *cert, str *tokens, time_t now)
+{
+	static const struct {
+		const char *name, *attest, *expected;
+		int result;
+	} cases[] = {
+		{"A attestation", "\"A\"", "TN-Validation-Passed", 1},
+		{"B attestation", "\"B\"", "No-TN-Validation", 1},
+		{"C attestation", "\"C\"", "No-TN-Validation", 1},
+		{"bad signature", NULL, "TN-Validation-Failed", -9},
+		{"stale outermost", NULL, "TN-Validation-Failed", -6},
+		{"broken chain", NULL, "TN-Validation-Failed", -7},
+		{"absent Identity", NULL, "No-TN-Validation", -2}
+	};
+	str set[3], replacement;
+	struct sip_msg msg = {0};
+	char buf[8192], timestamp[32];
+	int order[] = {0,1,2}, missing[] = {0,2}, i, n, rc;
+	for (i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {
+		memcpy(set, tokens, sizeof(set));
+		replacement = STR_NULL;
+		n = 3;
+		if (cases[i].attest) {
+			replacement = rewrite_claim(key, &tokens[0], 0, "attest", cases[i].attest);
+			set[0] = replacement;
+		} else if (i == 3 || i == 4) {
+			snprintf(timestamp, sizeof(timestamp), "%ld", (long)(i == 4 ? now-600 : now));
+			replacement = rewrite_claim(key, &tokens[2], 0, "iat", timestamp);
+			set[2] = replacement;
+			if (i == 3 && replacement.s) {
+				char *dot = memchr(replacement.s, '.', replacement.len);
+				char *sig = memchr(dot+1, '.', replacement.len-(dot+1-replacement.s))+1;
+				*sig = *sig == 'A' ? 'B' : 'A';
+			}
+		} else n = i == 5 ? 2 : 0;
+		push_new_global_context();
+		rc = (i >= 5 || replacement.s) &&
+			make_message(&msg, buf, sizeof(buf), set, i == 5 ? missing : order, n,
+				"12155551215") == 0;
+		if (rc) {
+			verify_all(&msg, cert, n);
+			rc = stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL, NULL);
+		}
+		ok(rc == cases[i].result && policy_wire(&msg, cases[i].expected),
+			"opensips.cfg maps %s to %s on the serialized request", cases[i].name, cases[i].expected);
+		free_sip_msg(&msg);
+		memset(&msg, 0, sizeof(msg));
+		pop_pushed_global_context();
+		if (replacement.s) pkg_free(replacement.s);
+	}
+}
+
+static void test_chain_edges(EVP_PKEY *key, str *cert, str *keybuf,
+	str *tokens, time_t now)
+{
+	static const int orders[][3] = {
+		{0,1,2}, {0,2,1}, {1,0,2}, {1,2,0}, {2,0,1}, {2,1,0}
+	};
+	static const struct {
+		int token, header;
+		const char *claim, *json, *description;
+		int expected;
+	} invalid[] = {
+		{0,0,"orig","{\"uri\":\"sip:caller@example.test\"}","non-TN original caller",-4},
+		{0,0,"orig","{\"tn\":\"12155559999\"}","SHAKEN caller differs from SIP From",-9},
+		{1,0,"orig","{\"tn\":\"12155559999\"}","DIV changes original caller",-9},
+		{1,0,"div","{\"uri\":\"sip:target@example.test\"}","non-SOS diversion URI",-4},
+		{2,0,"dest","{\"uri\":[\"sip:target@example.test\"]}","non-SOS destination URI",-4},
+		{2,0,"dest","{\"uri\":[\"urn:service:sos..fire\"]}","malformed SOS URN",-4},
+		{2,0,"dest","{\"tn\":[]}","empty destination list",-4},
+		{1,0,"orig","{\"tn\":\"12155551212\",\"uri\":\"urn:service:sos\"}","mixed TN/URI caller",-4},
+		{1,0,"iat","-1","negative iat",-4},
+		{1,0,"iat","1.5","fractional iat",-4},
+		{1,0,"iat","\"now\"","non-numeric iat",-4},
+		{1,0,"attest","\"A\"","SHAKEN-only attestation on DIV",-4},
+		{1,0,"opt","\"nested-token\"","nested opt on DIV",-4},
+		{0,0,"attest","\"D\"","invalid SHAKEN attestation",-4},
+		{0,0,"origid","7","non-string origid",-4},
+		{1,1,"alg","\"HS256\"","wrong signing algorithm",-4},
+		{1,1,"typ","\"JWT\"","wrong protected typ",-4},
+		{1,1,"x5u","\"https://other.example.test/cert.pem\"","x5u/info mismatch",-4},
+		{1,1,"ppt","\"rph\"","unsupported rph alongside SHAKEN",-5},
+		{1,1,"ppt","\"rcd\"","unsupported rcd alongside SHAKEN",-5},
+		{1,1,"ppt","\"div-o\"","unsupported div-o",-5}
+	};
+	str set[4], changed, equal[3] = {STR_NULL, STR_NULL, STR_NULL}, *built;
+	str orig = str_init("12155551212");
+	str c = str_init("12155551214"), d = str_init("12155551215");
+	str other = str_init("12155559999"), next = str_init("12155551216");
+	str x5u = str_init("https://cert.example.test/passport.pem");
+	str sos = str_init("urn:service:sos.fire"), emergency = str_init("911");
+	int order[] = {0,1,2,3}, pair[] = {0,1}, i, n;
+	char timestamp[32], buf[8192];
+	struct sip_msg msg = {0};
+
+	for (i = 0; i < 6; i++)
+		ok(chain_result(tokens, orders[i], 3, cert, d.s, NULL) == 1,
+			"VS accepts header permutation %d%d%d", orders[i][0], orders[i][1], orders[i][2]);
+	snprintf(timestamp, sizeof(timestamp), "%ld", (long)now);
+	for (i = 0; i < 3; i++) equal[i] = rewrite_claim(key, &tokens[i], 0, "iat", timestamp);
+	ok(equal[0].s && equal[1].s && equal[2].s &&
+		chain_result(equal, order, 3, cert, d.s, NULL) == 1,
+		"VS links equal-iat tokens by signed identities");
+	for (i = 0; i < 3; i++) if (equal[i].s) pkg_free(equal[i].s);
+
+	for (i = 0; i < sizeof(invalid)/sizeof(invalid[0]); i++) {
+		memcpy(set, tokens, 3*sizeof(str));
+		changed = rewrite_claim(key, &set[invalid[i].token], invalid[i].header,
+			invalid[i].claim, invalid[i].json);
+		set[invalid[i].token] = changed;
+		ok(changed.s && chain_result(set, order, 3, cert, d.s, NULL) == invalid[i].expected,
+			"VS rejects correctly signed %s", invalid[i].description);
+		if (changed.s) pkg_free(changed.s);
+	}
+
+	/* A separate valid SHAKEN root, not a duplicate token. */
+	memcpy(set, tokens, 3*sizeof(str));
+	set[3] = rewrite_claim(key, &tokens[0], 0, "origid", "\"independent-root\"");
+	ok(set[3].s && chain_result(set, order, 4, cert, d.s, NULL) == 1,
+		"distinct signed SHAKEN roots share a complete diversion path");
+	if (set[3].s) pkg_free(set[3].s);
+
+	/* All signatures pass; a disconnected or unfinished branch still fails. */
+	for (i = 0; i < 2; i++) {
+		built = passport_build_div(key, now, &x5u, &orig, i ? &other : &c, &next);
+		set[3] = built ? *built : STR_NULL;
+		ok(set[3].s && chain_result(set, order, 4, cert, d.s, NULL) == -7,
+			"VS rejects %s DIV", i ? "unrelated" : "a branch ending at another target");
+		if (set[3].s) pkg_free(set[3].s);
+	}
+	set[3] = rewrite_claim(key, &tokens[2], 0, "iat", timestamp);
+	push_new_global_context();
+	n = set[3].s && make_message(&msg, buf, sizeof(buf), set, order, 4, d.s) == 0;
+	ok(n && stir_shaken_test_auth_div(&msg, cert, keybuf, &x5u,
+		NULL, NULL, &next, 1) == -7,
+		"AS rejects ambiguous parallel diversion links rather than selecting one");
+	free_sip_msg(&msg);
+	memset(&msg, 0, sizeof(msg));
+	pop_pushed_global_context();
+	if (set[3].s) pkg_free(set[3].s);
+
+	set[3] = rewrite_claim(key, &tokens[2], 0, "iat", timestamp);
+	if (set[3].s) {
+		char *dot = memchr(set[3].s, '.', set[3].len);
+		char *signature = memchr(dot+1, '.', set[3].len-(dot+1-set[3].s))+1;
+		*signature = *signature == 'A' ? 'B' : 'A';
+	}
+	ok(set[3].s && chain_result(set, order, 4, cert, d.s, NULL) == -9,
+		"a bad-signature extra Identity invalidates an otherwise valid chain");
+	if (set[3].s) pkg_free(set[3].s);
+
+	for (i = 0; i < 2; i++) {
+		set[0] = rewrite_claim(key, &tokens[0], 0, "dest",
+			i ? "{\"uri\":[\"urn:service:sos.police\"]}" : "{\"tn\":[\"911\"]}");
+		built = passport_build_div(key, now, &x5u, &orig, i ? &emergency : &sos, &d);
+		set[1] = built ? *built : STR_NULL;
+		ok(set[0].s && set[1].s && chain_result(set, pair, 2, cert, d.s, NULL) == 1,
+			"VS links emergency identities from %s to %s", i ? "SOS" : "911", i ? "911" : "SOS");
+		if (set[0].s) pkg_free(set[0].s);
+		if (set[1].s) pkg_free(set[1].s);
+	}
+
+	/* The receiving verifier must itself set the guard used by the signer. */
+	memcpy(set, tokens, 3*sizeof(str));
+	snprintf(timestamp, sizeof(timestamp), "%ld", (long)(now-600));
+	set[2] = rewrite_claim(key, &tokens[2], 0, "iat", timestamp);
+	push_new_global_context();
+	n = set[2].s && make_message(&msg, buf, sizeof(buf), set, order, 3, d.s) == 0 &&
+		verify_all(&msg, cert, 3) == 1 &&
+		stir_shaken_verify_chain(&msg, NULL, NULL, NULL, NULL, NULL, NULL) == -6;
+	ok(n && stir_shaken_test_auth_div(&msg, cert, keybuf, &x5u,
+		NULL, NULL, &next, 1) == -4,
+		"real VS outermost freshness failure blocks subsequent trusted AS signing");
+	free_sip_msg(&msg);
+	pop_pushed_global_context();
+	if (set[2].s) pkg_free(set[2].s);
+
+	/* Each call starts from the received chain, avoiding unchanged-target or
+	 * generated-header side effects when testing integer boolean semantics. */
+	for (i = 0; i < 3; i++) {
+		int state = i == 0 ? -2 : i == 1 ? 2 : 42;
+		memset(&msg, 0, sizeof(msg));
+		push_new_global_context();
+		n = make_message(&msg, buf, sizeof(buf), tokens, order, 3, d.s) == 0;
+		ok(n && stir_shaken_test_auth_div(&msg, cert, keybuf, &x5u,
+			NULL, NULL, &next, state) == 1,
+			"previously_verified=%d is normalized to true", state);
+		free_sip_msg(&msg);
+		pop_pushed_global_context();
+	}
 }
 
 void test_vs(str *keybuf)
@@ -158,6 +493,9 @@ void test_vs(str *keybuf)
 	if (!built) goto setup_error;
 	tokens[3] = *built;
 	tokens[4] = str_init("Identity: definitely-not-a-passport\r\n");
+	test_chain_edges(key, &cert, keybuf, tokens, now);
+	test_credentials(tokens);
+	test_verstat_policy(key, &cert, tokens, now);
 
 	ok(chain_result(tokens, normal, 3, &cert, d.s, NULL) == 1,
 		"VS verifies trusted signatures and the complete SHAKEN-DIV chain");
