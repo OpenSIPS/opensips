@@ -330,7 +330,22 @@ int lineseize_subs_handl(struct sip_msg* msg, struct subscription *subs, int *re
 
 			LM_SCA("old seizing found, but it expired -- overwrite it\n");
 		}
-		/* FIXME - check the seized idx is not already in a call */
+		/* the seized idx must not be already in a call */
+		switch (get_sca_index_state(sca, idx)) {
+			case SCA_STATE_PROGRESSING:
+			case SCA_STATE_ALERTING:
+			case SCA_STATE_ACTIVE:
+			case SCA_STATE_HELD:
+				LM_SCA("appearance %u already in a call - reject seize "
+					"attempt\n", idx);
+
+				*reply_code = 480;
+				reply_reason->s = "Temporarily Unavailable";
+				reply_reason->len = sizeof("Temporarily Unavailable")-1;
+				unlock_sca_line(sca);
+				return -1;
+		}
+
 		/* do the seizing */
 		sca->seize_state = idx;
 		sca->seize_expires = get_ticks() + subs->expires;
