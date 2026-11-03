@@ -36,6 +36,7 @@
 #include "../tls_mgm/tls_helper.h"
 
 #include "openssl_trace.h"
+#include "openssl_async.h"
 
 void tls_print_errstack(void);
 void tls_dump_cert_info(char* s, X509* cert);
@@ -641,8 +642,9 @@ static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 	int timeout, trace_dest t_dst)
 {
-	unsigned int elapsed,to,wait_to;
+	unsigned int elapsed, to, timeout_us;
 	unsigned int err_len;
+	short wait_events;
 	int poll_err, n, err;
 	struct timeval begin;
 	str tls_err_s;
@@ -656,8 +658,7 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 
 	/* attempt to do connect and see if we do block or not */
 	poll_err=0;
-	elapsed = 0;
-	to = timeout*1000;
+	timeout_us = timeout * 1000U;
 
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 #else
@@ -725,27 +726,26 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 				/* we need to retry, if time has not passed yet */
 again:
 				elapsed=get_time_diff(&begin);
-				if (elapsed >= to) /* timed out */ {
+				to = openssl_async_timeout_left(timeout_us, elapsed);
+				if (!to) /* timed out */ {
 					LM_DBG("handshake timeout for connection %p %dms elapsed\n",
 							con, timeout);
 					return -1;
 				}
-				/* get_time_diff() is relative to begin, so do not subtract
-				 * cumulative elapsed time from the timeout on every retry. */
-				wait_to = to - elapsed;
+				wait_events = openssl_async_wait_events(err == SSL_ERROR_WANT_READ);
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 				FD_ZERO(&sel_set);
 				FD_SET(fd, &sel_set);
-				timeout_val.tv_sec=wait_to/1000000;
-				timeout_val.tv_usec=wait_to%1000000;
-				n=select(fd+1,
-					err == SSL_ERROR_WANT_READ ? &sel_set : 0,
-					err == SSL_ERROR_WANT_WRITE ? &sel_set : 0,
-					0, &timeout_val);
+				timeout_val.tv_sec=to/1000000;
+				timeout_val.tv_usec=to%1000000;
+				if (wait_events & POLLIN)
+					n=select(fd+1, &sel_set, 0, 0, &timeout_val);
+				else
+					n=select(fd+1, 0, &sel_set, 0, &timeout_val);
 #else
-				pf.events = (err == SSL_ERROR_WANT_READ) ? POLLIN : POLLOUT;
+				pf.events=wait_events;
 				n=poll(&pf, 1,
-					wait_to / 1000 + (wait_to % 1000 != 0));
+					to / 1000 + (to % 1000 != 0));
 #endif
 				if (n<0){
 					if (errno == EINTR)
