@@ -227,7 +227,7 @@ parse_error:
 static int create_time_rec(const str *time_start, const str *time_end,
 		const str *week_days, tmrec_expr_t *trx, tmrec_expr_t **out_rec)
 {
-	int end_h, end_m;
+	int start_h, start_m, end_h, end_m;
 	tmrec_p trec = &trx->tr;
 
 	/* the default, "catch-all" time rec - using NULL is optimal */
@@ -240,7 +240,7 @@ static int create_time_rec(const str *time_start, const str *time_end,
 		*out_rec = trx;
 	}
 
-	if (strtime(time_start, &trec->ts.tm_hour, &trec->ts.tm_min) != 0
+	if (strtime(time_start, &start_h, &start_m) != 0
 			|| strtime(time_end, &end_h, &end_m) != 0)
 		return -1;
 
@@ -249,9 +249,20 @@ static int create_time_rec(const str *time_start, const str *time_end,
 
 	tmrec_init(trec);
 	trec->duration = (end_h * 3600 + end_m * 60) -
-		(trec->ts.tm_hour * 3600 + trec->ts.tm_min * 60);
+		(start_h * 3600 + start_m * 60);
+	if (trec->duration <= 0)
+		trec->duration += 24 * 3600; /* the window crosses midnight */
+
+	/* a daily recurrence starting on a fixed past day at the start time */
+	trec->ts.tm_year = 100;
+	trec->ts.tm_mday = 1;
+	trec->ts.tm_hour = start_h;
+	trec->ts.tm_min = start_m;
 	trec->ts.tm_isdst = -1 /*daylight*/;
-	trec->dtstart = trec->duration;
+	trec->dtstart = mktime(&trec->ts);
+	if (trec->dtstart == TR_NOVAL)
+		return -1;
+	trec->dtend = trec->dtstart + trec->duration;
 	trec->freq = FREQ_DAILY;
 
 	unsigned short day_set = 0;
