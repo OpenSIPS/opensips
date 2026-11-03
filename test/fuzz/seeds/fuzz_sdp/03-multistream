@@ -1,0 +1,11 @@
+v=0
+o=- 3 3 IN IP4 10.0.0.9
+s=two
+t=0 0
+m=audio 1 RTP/AVP 0
+c=IN IP4 10.0.0.9
+m=video 2 RTP/AVP 96
+c=IN IP4 10.0.0.10
+a=sendonly
+m=application 9 UDP/DTLS/SCTP webrtc-datachannel
+a=sctp-port:5000
