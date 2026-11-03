@@ -124,7 +124,7 @@ int rmq_error(char const *context, amqp_rpc_reply_t x)
 			return 0;
 
 		case AMQP_RESPONSE_NONE:
-			LM_ERR("%s: missing RPC reply type!", context);
+			LM_ERR("%s: missing RPC reply type!\n", context);
 			break;
 
 		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
@@ -141,20 +141,20 @@ int rmq_error(char const *context, amqp_rpc_reply_t x)
 			switch (x.reply.id) {
 				case AMQP_CONNECTION_CLOSE_METHOD:
 					mconn = (amqp_connection_close_t *)x.reply.decoded;
-					LM_ERR("%s: server connection error %d, message: %.*s",
+					LM_ERR("%s: server connection error %d, message: %.*s\n",
 							context, mconn->reply_code,
 							(int)mconn->reply_text.len,
 							(char *)mconn->reply_text.bytes);
 					break;
 				case AMQP_CHANNEL_CLOSE_METHOD:
 						mchan = (amqp_channel_close_t *)x.reply.decoded;
-					LM_ERR("%s: server channel error %d, message: %.*s",
+					LM_ERR("%s: server channel error %d, message: %.*s\n",
 							context, mchan->reply_code,
 							(int)mchan->reply_text.len,
 							(char *)mchan->reply_text.bytes);
 					break;
 				default:
-					LM_ERR("%s: unknown server error, method id 0x%08X",
+					LM_ERR("%s: unknown server error, method id 0x%08X\n",
 							context, x.reply.id);
 					break;
 			}
@@ -548,7 +548,7 @@ no_value:
 	}
 	/* if we don't have an uri, we forfeit */
 	if (!suri.s) {
-		LM_ERR("[%.*s] cannot find an uri!", cid.len, cid.s);
+		LM_ERR("[%.*s] cannot find an uri!\n", cid.len, cid.s);
 		return -1;
 	}
 	/* trim the last spaces and ';' of the uri */
