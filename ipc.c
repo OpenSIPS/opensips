@@ -303,8 +303,8 @@ int ipc_send_rpc_all(ipc_rpc_f *rpc, void *param)
 
 	for (p = 1; p < counted_max_processes; p++) {
 		/* a free slot (e.g. auto-scaling headroom) has no process to wait for */
-		if ((pt[p].flags & OSS_PROC_NO_IPC) || !is_process_running(p) ||
-				IPC_FD_WRITE(p) < 0)
+		if ((pt[p].flags & OSS_PROC_NO_IPC) ||
+				!(pt[p].flags & OSS_PROC_IS_RUNNING) || IPC_FD_WRITE(p) < 0)
 			continue;
 		if (p == process_no) {
 			/* run line the cmd for the proc itself */
