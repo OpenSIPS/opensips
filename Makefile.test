@@ -14,6 +14,12 @@ test_module_targets=$(addprefix test-,$(notdir $(test_module_paths)))
 
 .PHONY: test unit_tests system_tests test-modules $(test_module_targets)
 
+# allocator and memory sizes the unit tests run with (default: the build's), e.g.
+#   make test UT_ALLOC=HG_MALLOC UT_MEM="-m 64:1024 -M 16:256"
+UT_ALLOC ?=
+UT_MEM ?=
+UT_OPTS = $(if $(UT_ALLOC),-a $(UT_ALLOC)) $(UT_MEM)
+
 ifneq (,$(findstring UNIT_TESTS,$(DEFS)))
 include Makefile.openssl
 misclibs=lib/digest_auth/libdigest_auth.a
@@ -32,7 +38,7 @@ endif
 
 unit_tests: ensure_test_defs $(NAME)
 	-@echo "          =============   Start Unit Tests   ============="
-	./$(NAME) -dd -T $(module) -w .
+	./$(NAME) -dd -T $(module) -w . $(UT_OPTS)
 	-@echo "          ================================================"
 	-@echo "          ========   Passed All Tests! ᕦ(ò_óˇ)ᕤ   ========"
 	-@echo "          ================================================"
@@ -43,7 +49,7 @@ unit_tests: ensure_test_defs $(NAME)
 define module_test_rule
 test-$(notdir $(1)): ensure_test_defs $$(NAME) $(1)
 	-@echo "          ====   $(notdir $(1))   ===="
-	./$$(NAME) -dd -T $(notdir $(1)) -w .
+	./$$(NAME) -dd -T $(notdir $(1)) -w . $$(UT_OPTS)
 endef
 $(foreach m,$(test_module_paths),$(eval $(call module_test_rule,$(m))))
 

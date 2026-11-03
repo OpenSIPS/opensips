@@ -76,8 +76,17 @@ extern stat_var* slow_msgs;
 
 #ifdef PKG_MALLOC
 int init_pkg_stats(int no_procs);
+
+
+/* max/sum pkg high-water across all processes (IPC-refreshed pkg_status),
+ * for sizing -M by the worst one; 0 ok, -1 if none has reported yet */
+int hg_pkg_peak_all(unsigned long *peak, unsigned long *sum, int *nproc);
 #endif
 
 #endif /*STATISTICS*/
+
+/* registers the HG_MALLOC idle-cache sweep (no-op otherwise); call it
+ * PRE-FORK, as register_timer() refuses registrations after the fork */
+int hg_register_cache_sweep(void);
 
 #endif /*_CORE_STATS_H_*/

@@ -22,6 +22,14 @@ opensips \- flexible and roboust SIP (RFC3261, RFC3263) server for Voice over IP
 ] [
 .BI \-m " shared_mem_size"
 ] [
+.BI \-M " pkg_mem_size"
+] [
+.BI \-a " allocator"
+] [
+.BI \-s " allocator"
+] [
+.BI \-k " allocator"
+] [
 .BI \-w " working\-dir"
 ] [
 .BI \-W " method"
@@ -121,7 +129,30 @@ Specifies the number of children processes forked to handle tcp incoming connect
 Maximum receive buffer size which will not be exceeded by the auto\-probing procedure even if the OS allows.
 .TP 
 .BI \-m " shared_mem_size"
-Size of the shared memory which will be allocated (in Megabytes).
+Size of the shared memory which will be allocated (in Megabytes). A
+.BR k ", " m " or " g
+suffix gives the size in kilobytes, megabytes or gigabytes. With the
+HG_MALLOC allocator the form
+.IR INIT : CAP
+(e.g. \-m 128:1g) makes the arena elastic: it starts at INIT and may grow
+up to CAP; other allocators use INIT only.
+.TP 
+.BI \-M " pkg_mem_size"
+Size of the private (pkg) memory of each process, same form as
+.BR \-m .
+.TP 
+.BI \-a " allocator"
+Memory allocator for both shared and private memory: F_MALLOC, Q_MALLOC,
+HP_MALLOC, F_PARALLEL_MALLOC (shared memory only) or HG_MALLOC, each also
+with a _DBG variant when built with DBG_MALLOC.
+.TP 
+.BI \-s " allocator"
+Shared memory allocator, overriding
+.BR \-a .
+.TP 
+.BI \-k " allocator"
+Private (pkg) memory allocator, overriding
+.BR \-a .
 .TP 
 .BI \-w " working\-dir" 
 Specifies the working directory. In the very improbable event that 
