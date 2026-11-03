@@ -37,6 +37,8 @@
  *  2007-01-25  DNS failover at transaction level added (bogdan)
  */
 
+#include <stdint.h>
+
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../ut.h"
@@ -66,6 +68,7 @@
 #include "../usrloc/ul_evi.h"
 #include "../../msg_callbacks.h"
 #include "../../mod_fix.h"
+#include "../../net/tcp_common.h"
 
 #define NO_BODY_CLONE_MARKER ((struct sip_msg_body*)-1)
 
@@ -747,7 +750,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	str current_uri;
 	branch_bm_t  added_branches = BRANCH_BM_ZERO;
 	struct cell *t_invite;
-	int i, success_branch;
+	int i, success_branch, send_ret;
+	unsigned long long tcp_chunk_fail_token;
 	const struct socket_info *bk_sock;
 	unsigned int bk_bflags;
 	struct msg_branch *branch;
@@ -904,7 +908,15 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 							&uac->request.dst);
 					run_trans_callbacks(TMCB_PRE_SEND_BUFFER, t, p_msg, 0, i);
 
-					if (SEND_BUFFER( &uac->request)==0) {
+					tcp_chunk_fail_token = TM_CHUNK_FAIL_TOKEN(
+						t->hash_index, t->label, i);
+					if (tcp_register_fail_cb(tm_tcp_chunk_fail,
+						(void *)(uintptr_t)tcp_chunk_fail_token, NULL) < 0)
+						LM_ERR("failed to register TCP chunk failure callback\n");
+					send_ret = SEND_BUFFER( &uac->request);
+					tcp_clear_fail_cb();
+
+					if (send_ret==0) {
 						reset_bavp_list();
 						ser_error = 0;
 						break;

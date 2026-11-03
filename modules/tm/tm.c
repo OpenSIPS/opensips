@@ -68,6 +68,7 @@
 #include "ut.h"
 #include "t_reply.h"
 #include "t_fwd.h"
+#include "../../net/tcp_common.h"
 #include "t_lookup.h"
 #include "callid.h"
 #include "t_cancel.h"

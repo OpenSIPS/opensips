@@ -95,7 +95,7 @@ int parse_sec_agree(struct hdr_field* _h);
 /*
  * Parse Security-{Client,Server,Verify} header field body
  */
-sec_agree_body_t *parse_sec_agree_body(str *body);
+sec_agree_body_t *parse_sec_agree_body(const str *body);
 
 /*
  * Free all memory

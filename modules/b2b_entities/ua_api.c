@@ -547,27 +547,34 @@ static int ua_build_hdrs(str *hdrs, int body, str *content_type, str *extra_head
 	return 0;
 }
 
+/* looks the key up in both tables; returns the dialog with its lock
+ * acquired, or NULL with no lock held */
 static b2b_dlg_t *ua_get_dlg_by_key(unsigned int hash_index,
 	unsigned int local_index, int *et)
 {
 	b2b_dlg_t *dlg;
 
-	*et = B2B_SERVER;
-	B2BE_LOCK_GET(server_htable, hash_index);
+	if (hash_index < server_hsize) {
+		*et = B2B_SERVER;
+		B2BE_LOCK_GET(server_htable, hash_index);
 
-	dlg = b2b_search_htable(server_htable, hash_index, local_index);
-	if (!dlg) {
+		dlg = b2b_search_htable(server_htable, hash_index, local_index);
+		if (dlg)
+			return dlg;
 		B2BE_LOCK_RELEASE(server_htable, hash_index);
-
-		*et = B2B_CLIENT;
-		B2BE_LOCK_GET(client_htable, hash_index);
-	
-		dlg = b2b_search_htable(client_htable, hash_index, local_index);
-		if (!dlg)
-			return NULL;
 	}
 
-	return dlg;
+	if (hash_index < client_hsize) {
+		*et = B2B_CLIENT;
+		B2BE_LOCK_GET(client_htable, hash_index);
+
+		dlg = b2b_search_htable(client_htable, hash_index, local_index);
+		if (dlg)
+			return dlg;
+		B2BE_LOCK_RELEASE(client_htable, hash_index);
+	}
+
+	return NULL;
 }
 
 int ua_send_reply(int et, str *b2b_key, int method, int code, str *reason,
@@ -579,7 +586,7 @@ int ua_send_reply(int et, str *b2b_key, int method, int code, str *reason,
 	b2b_dlg_t *dlg = NULL;
 	unsigned int hash_index, local_index;
 
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
@@ -593,7 +600,7 @@ int ua_send_reply(int et, str *b2b_key, int method, int code, str *reason,
 		if (!dlg) {
 			LM_ERR("No dialog found for b2b key [%.*s]\n",
 				b2b_key->len, b2b_key->s);
-			goto error;
+			return -1;
 		}
 	}
 
@@ -636,7 +643,7 @@ int ua_send_request(int et, str *b2b_key, str *method, str *body,
 	b2b_dlg_t *dlg = NULL;
 	unsigned int hash_index, local_index;
 
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
@@ -650,7 +657,7 @@ int ua_send_request(int et, str *b2b_key, str *method, str *body,
 		if (!dlg) {
 			LM_ERR("No dialog found for b2b key [%.*s]\n",
 				b2b_key->len, b2b_key->s);
-			goto error;
+			return -1;
 		}
 	}
 
@@ -690,7 +697,7 @@ int ua_entity_delete(int et, str* b2b_key, int db_del, int remove_tl)
 	b2b_dlg_t* dlg;
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return -1;
@@ -710,7 +717,6 @@ int ua_entity_delete(int et, str* b2b_key, int db_del, int remove_tl)
 		if (!dlg) {
 			LM_ERR("No dialog found for b2b key [%.*s]\n",
 				b2b_key->len, b2b_key->s);
-			B2BE_LOCK_RELEASE(table, hash_index);
 			return -1;
 		}
 	} else {
@@ -1165,7 +1171,8 @@ mi_response_t *b2b_ua_session_list(const mi_params_t *params,
 	}
 
 	if (key.s) {
-		if(b2b_parse_key(&key, &hash_index, &local_index) < 0)
+		if(b2b_parse_key(&key, b2b_et_hsize(B2B_NONE),
+				&hash_index, &local_index) < 0)
 		{
 			LM_ERR("Wrong format for b2b key [%.*s]\n", key.len, key.s);
 			return init_mi_error(400, MI_SSTR("Bad format for b2b key"));
@@ -1181,7 +1188,6 @@ mi_response_t *b2b_ua_session_list(const mi_params_t *params,
 
 		if (!dlg) {
 			LM_ERR("No dialog found for b2b key [%.*s]\n", key.len, key.s);
-			B2BE_LOCK_RELEASE(table, hash_index);
 			return init_mi_error(404, MI_SSTR("Entity not found"));
 		}
 

@@ -158,8 +158,11 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 
 b2b_dlg_t* b2b_htable_search_safe(str callid, str to_tag, str from_tag);
 
-int b2b_parse_key(str* key, unsigned int* hash_index,
+int b2b_parse_key(str* key, unsigned int hsize, unsigned int* hash_index,
 		unsigned int* local_index);
+
+unsigned int b2b_et_hsize(enum b2b_entity_type et);
+unsigned int b2b_table_hsize(b2b_table table);
 
 str* b2b_generate_key(unsigned int hash_index, unsigned int local_index);
 

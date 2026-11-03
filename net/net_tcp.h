@@ -126,6 +126,9 @@ int tcp_run_task(tcp_thread_job_f run, void *data);
 int tcp_async_write_job(struct tcp_connection *tcpconn);
 
 /* either process locally or dispatch to an OpenSIPS worker via IPC */
+/* 1 if the TCP workers watch the shared dispatch socket with EPOLLEXCLUSIVE */
+int tcp_dispatch_exclusive(void);
+
 int tcp_dispatch_msg(char *msg, int len,
 		struct receive_info *rcv, const void *data, int data_len);
 

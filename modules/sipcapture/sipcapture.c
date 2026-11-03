@@ -217,10 +217,6 @@ struct _sipcapture_object {
 #define EMPTY_STR(val) val.s=""; val.len=0;
 #define TABLE_LEN 256
 
-/*
- * WARNING: if you add/remove keys take care to update
- * VALUES_STR
- */
 #define NR_KEYS 44
 
 /* allocate more for HOMERv6 */
@@ -273,14 +269,9 @@ static mi_response_t *sip_capture_mi_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int db_sync_store(db_val_t* vals, db_key_t* keys, int num_keys);
 
-typedef int (*append_db_vals_f)(char *buf, int max_len, db_val_t* db_vals);
-static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals);
-static inline int append_rc_values(char* buf, int max_len, db_val_t* db_vals);
-
 static int
 db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
-	append_db_vals_f append_db_vals, async_ctx *actx,
-	struct tz_table_list* t_el);
+	async_ctx *actx, struct tz_table_list* t_el);
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
 /* setter functions */
@@ -417,18 +408,15 @@ static str hep_app_protos[]= {
 #define MAX_PAYLOAD 32767
 static char payload_buf[MAX_PAYLOAD];
 
+/* a HEP packet rebuilt by hep_relay(); not payload_buf, which may hold the
+ * payload being relayed. 65535 is the largest HEPv3 packet length */
+#define MAX_HEP_RELAY_LEN 65535
+static char hep_relay_buf[MAX_HEP_RELAY_LEN];
+
 /* values to be set from script for hep pvar */
 
 
 
-#define VALUES_STR "(%lld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
-					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
-					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
-					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s','%.*s'," \
-					"'%.*s', '%.*s', '%.*s', '%.*s', '%.*s', '%.*s')"
-
-#define RTCP_VALUES_STR "(%lld, %lld, '%.*s', '%.*s', %d, '%.*s', %d," \
-						"%d, %d, %d, '%.*s', '%.*s')"
 
 int  max_async_queries=5;
 
@@ -2761,8 +2749,7 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 		LM_ERR("failed to insert into database\n");
 		return -1;
 	} else if (actx) {
-		ret = db_async_store(db_vals+1, db_keys+1, NR_KEYS-1, append_sc_values,
-				actx, t_el);
+		ret = db_async_store(db_vals+1, db_keys+1, NR_KEYS-1, actx, t_el);
 	}
 
 	#ifdef STATISTICS
@@ -2795,52 +2782,96 @@ error:
 	return -1;
 }
 
-static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
+/*
+ * Print @s as a quoted SQL string value. Quotes and backslashes are doubled
+ * and a NUL byte becomes \0, so the captured data reads back unchanged on
+ * MySQL and can never end its value early, whatever the backend.
+ */
+static int append_db_str(char *buf, int max_len, const char *s, int len)
 {
-	int len;
+	int i, n = 0;
 
-	len = snprintf(buf, max_len, VALUES_STR,
-			(long long)VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
-			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
-			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
-			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
-			VAL_STR(db_vals+6).len, VAL_STR(db_vals+6).s,
-			VAL_STR(db_vals+7).len, VAL_STR(db_vals+7).s,
-			VAL_STR(db_vals+8).len, VAL_STR(db_vals+8).s,
-			VAL_STR(db_vals+9).len, VAL_STR(db_vals+9).s,
-			VAL_STR(db_vals+10).len, VAL_STR(db_vals+10).s,
-			VAL_STR(db_vals+11).len, VAL_STR(db_vals+11).s,
-			VAL_STR(db_vals+12).len, VAL_STR(db_vals+12).s,
-			VAL_STR(db_vals+13).len, VAL_STR(db_vals+13).s,
-			VAL_STR(db_vals+14).len, VAL_STR(db_vals+14).s,
-			VAL_STR(db_vals+15).len, VAL_STR(db_vals+15).s,
-			VAL_STR(db_vals+16).len, VAL_STR(db_vals+16).s,
-			VAL_STR(db_vals+17).len, VAL_STR(db_vals+17).s,
-			VAL_STR(db_vals+18).len, VAL_STR(db_vals+18).s,
-			VAL_STR(db_vals+19).len, VAL_STR(db_vals+19).s,
-			VAL_STR(db_vals+20).len, VAL_STR(db_vals+20).s,
-			VAL_STR(db_vals+21).len, VAL_STR(db_vals+21).s,
-			VAL_STR(db_vals+22).len, VAL_STR(db_vals+22).s,
-			VAL_STR(db_vals+23).len, VAL_STR(db_vals+23).s,
-			VAL_INT(db_vals+24),
-			VAL_STR(db_vals+25).len, VAL_STR(db_vals+25).s,
-			VAL_INT(db_vals+26),
-			VAL_STR(db_vals+27).len, VAL_STR(db_vals+27).s,
-			VAL_INT(db_vals+28),
-			VAL_STR(db_vals+29).len, VAL_STR(db_vals+29).s,
-			VAL_INT(db_vals+30), VAL_INT(db_vals+31), VAL_INT(db_vals+32),
-			VAL_STR(db_vals+33).len, VAL_STR(db_vals+33).s,
-			VAL_INT(db_vals+34),
-			VAL_STR(db_vals+35).len, VAL_STR(db_vals+35).s,
-			VAL_STR(db_vals+36).len, VAL_STR(db_vals+36).s,
-			VAL_STR(db_vals+37).len, VAL_STR(db_vals+37).s,
-			VAL_STR(db_vals+38).len, VAL_STR(db_vals+38).s,
-			VAL_STR(db_vals+39).len, VAL_STR(db_vals+39).s,
-			VAL_BLOB(db_vals+40).len, VAL_BLOB(db_vals+40).s,
-			VAL_STR(db_vals+41).len, VAL_STR(db_vals+41).s,
-			VAL_STR(db_vals+42).len, VAL_STR(db_vals+42).s,
-			VAL_STR(db_vals+43).len, VAL_STR(db_vals+43).s
-				);
+	if (len < 0 || max_len < 2)
+		return -1;
+
+	buf[n++] = '\'';
+	for (i = 0; i < len; i++) {
+		if (max_len - n < 3)
+			return -1;
+		switch (s[i]) {
+			case '\'':
+			case '\\':
+				buf[n++] = s[i];
+				buf[n++] = s[i];
+				break;
+			case '\0':
+				buf[n++] = '\\';
+				buf[n++] = '0';
+				break;
+			default:
+				buf[n++] = s[i];
+		}
+	}
+	if (max_len - n < 2)
+		return -1;
+	buf[n++] = '\'';
+
+	return n;
+}
+
+/*
+ * Print @vals as one "(v1,v2,...)" row of the batched raw INSERT, each
+ * value by its type; returns the length written or -1 if it does not fit
+ */
+static int append_db_row(char *buf, int max_len, db_val_t *vals, int n)
+{
+	int i, len = 0, ret;
+
+	if (max_len < 1)
+		return -1;
+	buf[len++] = '(';
+
+	for (i = 0; i < n; i++) {
+		if (i) {
+			if (len >= max_len)
+				return -1;
+			buf[len++] = ',';
+		}
+
+		switch (VAL_TYPE(vals + i)) {
+			case DB_INT:
+				ret = snprintf(buf + len, max_len - len, "%d", VAL_INT(vals + i));
+				break;
+			case DB_BIGINT:
+				ret = snprintf(buf + len, max_len - len, "%lld",
+					(long long)VAL_BIGINT(vals + i));
+				break;
+			case DB_DATETIME:
+				ret = snprintf(buf + len, max_len - len, "%lld",
+					(long long)VAL_TIME(vals + i));
+				break;
+			case DB_STR:
+				ret = append_db_str(buf + len, max_len - len,
+					VAL_STR(vals + i).s, VAL_STR(vals + i).len);
+				break;
+			case DB_BLOB:
+				ret = append_db_str(buf + len, max_len - len,
+					VAL_BLOB(vals + i).s, VAL_BLOB(vals + i).len);
+				break;
+			default:
+				LM_BUG("unexpected type %d of value %d\n", VAL_TYPE(vals + i), i);
+				return -1;
+		}
+		if (ret < 0 || ret >= max_len - len)
+			return -1;
+		len += ret;
+	}
+
+	/* the closing ')' and the NUL the query is sent with */
+	if (len + 1 >= max_len)
+		return -1;
+	buf[len++] = ')';
+	buf[len] = '\0';
 
 	return len;
 }
@@ -2854,13 +2885,13 @@ static inline int init_raw_query(char* buf, int max_len, str* table_name,
 
 	for (i=0; i<num_keys-1; i++) {
 		ret = snprintf(buf+len, max_len-len, "%.*s,", keys[i]->len, keys[i]->s);
-		if (ret<0)	return ret;
+		if (ret<0 || ret>=max_len-len)	return -1;
 		len += ret;
 	}
 
 	ret=snprintf(buf+len, max_len-len, "%.*s) VALUES",
 				keys[num_keys-1]->len, keys[num_keys-1]->s);
-	if (ret<0)	return ret;
+	if (ret<0 || ret>=max_len-len)	return -1;
 	len += ret;
 
 	return len;
@@ -2869,8 +2900,7 @@ static inline int init_raw_query(char* buf, int max_len, str* table_name,
 
 static int
 db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
-	append_db_vals_f append_db_vals, async_ctx *actx,
-	struct tz_table_list* t_el)
+	async_ctx *actx, struct tz_table_list* t_el)
 {
 	int ret;
 	int read_fd;
@@ -2902,16 +2932,26 @@ db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
 
 	/* use the global async query; we do this only once */
 	if (CURR_QUERIES(crt_as_query) == 0) {
-		QUERY_LEN(crt_as_query)=init_raw_query(QUERY_BUF(crt_as_query), MAX_QUERY,
+		ret = init_raw_query(QUERY_BUF(crt_as_query), MAX_QUERY,
 				&current_table, keys, num_keys);
+		if (ret < 0)
+			goto no_buffer;
+		QUERY_LEN(crt_as_query) = ret;
 	} else {
+		if (QUERY_LEN(crt_as_query) + 1 >= MAX_QUERY)
+			goto no_buffer;
 		QUERY_BUF(crt_as_query)[QUERY_LEN(crt_as_query)++] = ',';
 	}
 
-	ret=append_db_vals(QUERY_BUF(crt_as_query)+QUERY_LEN(crt_as_query),
-									MAX_QUERY-QUERY_LEN(crt_as_query), vals);
-	if (ret < 0)
+	ret=append_db_row(QUERY_BUF(crt_as_query)+QUERY_LEN(crt_as_query),
+				MAX_QUERY-QUERY_LEN(crt_as_query), vals, num_keys);
+	if (ret < 0) {
+		/* drop the separator added for this row */
+		if (CURR_QUERIES(crt_as_query))
+			QUERY_LEN(crt_as_query)--;
+		QUERY_BUF(crt_as_query)[QUERY_LEN(crt_as_query)] = '\0';
 		goto no_buffer;
+	}
 
 	QUERY_LEN(crt_as_query) += ret;
 
@@ -3805,6 +3845,25 @@ shm_err:
 	return -1;
 }
 
+/* bytes of chunk data read for a @type value */
+static inline unsigned int hep_type_size(int type)
+{
+	switch (type) {
+		case TYPE_UINT8:
+			return sizeof(uint8_t);
+		case TYPE_UINT16:
+			return sizeof(uint16_t);
+		case TYPE_UINT32:
+			return sizeof(uint32_t);
+		case TYPE_INET_ADDR:
+			return sizeof(struct in_addr);
+		case TYPE_INET6_ADDR:
+			return sizeof(struct in6_addr);
+		default:
+			return 0;
+	}
+}
+
 static int w_get_hep(struct sip_msg* msg, void *_id, void *_type,
                      pv_spec_p data_pv, pv_spec_p vendor_pv)
 {
@@ -3854,6 +3913,13 @@ static int w_get_hep(struct sip_msg* msg, void *_id, void *_type,
 		if (it->chunk.type_id == chunk_id) {
 			vendor_val.ri = it->chunk.vendor_id;
 			vendor_val.flags = PV_TYPE_INT;
+
+			if (hep_type_size(data_type) >
+					it->chunk.length - sizeof(hep_chunk_t)) {
+				LM_ERR("chunk %u too short (%d bytes) for its type!\n", chunk_id,
+					(int)(it->chunk.length - sizeof(hep_chunk_t)));
+				goto set_pv_null;
+			}
 
 			switch (data_type) {
 				/* all int types are in big endian */
@@ -4018,43 +4084,63 @@ static inline void osip_to_net_proto(unsigned char* proto)
 }
 
 
-static void hepv2_to_buf(struct hepv12* h2, char* buf, int *len)
+/* append @n bytes to the @size bytes long @buf already holding @buflen */
+static inline int hep_buf_add(char *buf, int size, int *buflen,
+		const void *src, int n)
 {
-	int buflen;
+	if (n < 0 || n > size - *buflen) {
+		LM_ERR("HEP packet too big to relay (over %d bytes)\n", size);
+		return -1;
+	}
+
+	memcpy(buf + *buflen, src, n);
+	*buflen += n;
+	return 0;
+}
+
+static int hepv2_to_buf(struct hepv12* h2, char* buf, int size, int *len)
+{
+	int buflen = 0;
 	int payload_len = *len;
+	int rc;
 
 	/* instead of copying element by element we just convert
 	 * to network order and after convert it back */
 	h2->hdr.hp_sport = htons(h2->hdr.hp_sport);
 	h2->hdr.hp_dport = htons(h2->hdr.hp_dport);
 
-	memcpy(buf, &h2->hdr, sizeof(struct hep_hdr));
-	buflen = sizeof(struct hep_hdr);
+	rc = hep_buf_add(buf, size, &buflen, &h2->hdr, sizeof(struct hep_hdr));
 
 	h2->hdr.hp_sport = ntohs(h2->hdr.hp_sport);
 	h2->hdr.hp_dport = ntohs(h2->hdr.hp_dport);
 
+	if (rc < 0)
+		return -1;
+
 	if (h2->hdr.hp_f==AF_INET) {
-		memcpy(buf+buflen, &h2->addr.hep_ipheader, sizeof(struct hep_iphdr));
-		buflen += sizeof(struct hep_iphdr);
+		if (hep_buf_add(buf, size, &buflen, &h2->addr.hep_ipheader,
+				sizeof(struct hep_iphdr)) < 0)
+			return -1;
 	} else {
-		memcpy(buf+buflen, &h2->addr.hep_ip6header, sizeof(struct hep_ip6hdr));
-		buflen += sizeof(struct hep_ip6hdr);
+		if (hep_buf_add(buf, size, &buflen, &h2->addr.hep_ip6header,
+				sizeof(struct hep_ip6hdr)) < 0)
+			return -1;
 	}
 
 	if (h2->hdr.hp_v == 2) {
-		memcpy(buf + buflen, &h2->hep_time, sizeof(struct hep_timehdr));
-		buflen += sizeof(struct hep_timehdr);
+		if (hep_buf_add(buf, size, &buflen, &h2->hep_time,
+				sizeof(struct hep_timehdr)) < 0)
+			return -1;
 	}
 
+	if (hep_buf_add(buf, size, &buflen, h2->payload.s, payload_len) < 0)
+		return -1;
 
-	memcpy(buf + buflen, h2->payload.s, payload_len);
-
-
-	*len = buflen + payload_len;
+	*len = buflen;
+	return 0;
 }
 
-static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
+static int hepv3_to_buf(struct hepv3* h3, char* buf, int size, int *len)
 {
 	#define CONVERT_HEP_CHUNK(_src_chunk, _dst_chunk)          \
 	do {                                                       \
@@ -4063,15 +4149,21 @@ static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
 		_dst_chunk.type_id   = htons(_src_chunk.type_id);      \
 	} while(0);
 
-
-	#define CHUNK_COPY_AND_UPDATE(buf, len, chunk)             \
+	#define HEP_BUF_ADD(_src, _n)                              \
 		do {                                                   \
-			memcpy(buf+len, &chunk, sizeof(chunk));            \
-			len += sizeof(chunk);                              \
+			if (hep_buf_add(buf, size, &buflen, _src, _n) < 0) \
+				return -1;                                     \
+		} while(0);
+
+	#define HEP_CHUNK_ADD(_chunk)                              \
+		do {                                                   \
+			CONVERT_HEP_CHUNK(_chunk, chunk_copy);             \
+			HEP_BUF_ADD(&chunk_copy, sizeof(chunk_copy));      \
 		} while(0);
 
 	int af;
-	int buflen=sizeof(hep_ctrl_t);
+	int buflen=0;
+	int rc;
 
 	unsigned char osip_proto;
 
@@ -4094,145 +4186,116 @@ static void hepv3_to_buf(struct hepv3* h3, char* buf, int *len)
 		}
 	}
 
+	/* the control header is filled in at the end */
+	if (size < (int)sizeof(hep_ctrl_t))
+		return -1;
+	buflen = sizeof(hep_ctrl_t);
 
 	if (h3->hg.ip_family.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.ip_family.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-		memcpy(buf+buflen, &h3->hg.ip_family.data, sizeof(u_int8_t));
-		buflen += sizeof(u_int8_t);
+		HEP_CHUNK_ADD(h3->hg.ip_family.chunk);
+		HEP_BUF_ADD(&h3->hg.ip_family.data, sizeof(u_int8_t));
 	}
 
 	if (h3->hg.ip_proto.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.ip_proto.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
+		HEP_CHUNK_ADD(h3->hg.ip_proto.chunk);
 
 		osip_proto = h3->hg.ip_proto.data;
 		osip_to_net_proto(&h3->hg.ip_proto.data);
 
-		memcpy(buf+buflen, &h3->hg.ip_proto.data, sizeof(u_int8_t));
-		buflen += sizeof(u_int8_t);
+		rc = hep_buf_add(buf, size, &buflen, &h3->hg.ip_proto.data,
+				sizeof(u_int8_t));
 
 		h3->hg.ip_proto.data = osip_proto;
+
+		if (rc < 0)
+			return -1;
 	}
 
 	if (h3->hg.src_port.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.src_port.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.src_port.chunk);
 		data16 = htons(h3->hg.src_port.data);
-		memcpy(buf+buflen, &data16, sizeof(u_int16_t));
-		buflen += sizeof(u_int16_t);
+		HEP_BUF_ADD(&data16, sizeof(u_int16_t));
 	}
 
 	if (h3->hg.dst_port.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.dst_port.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.dst_port.chunk);
 		data16 = htons(h3->hg.dst_port.data);
-		memcpy(buf+buflen, &data16, sizeof(u_int16_t));
-		buflen += sizeof(u_int16_t);
+		HEP_BUF_ADD(&data16, sizeof(u_int16_t));
 	}
 
 	if (h3->hg.time_sec.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.time_sec.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.time_sec.chunk);
 		data32 = htonl(h3->hg.time_sec.data);
-		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
-		buflen += sizeof(u_int32_t);
+		HEP_BUF_ADD(&data32, sizeof(u_int32_t));
 	}
 
 	if (h3->hg.time_usec.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.time_usec.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.time_usec.chunk);
 		data32 = htonl(h3->hg.time_usec.data);
-		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
-		buflen += sizeof(u_int32_t);
+		HEP_BUF_ADD(&data32, sizeof(u_int32_t));
 	}
 
 	if (h3->hg.proto_t.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.proto_t.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-		memcpy(buf+buflen, &h3->hg.proto_t.data, sizeof(u_int8_t));
-		buflen += sizeof(u_int8_t);
+		HEP_CHUNK_ADD(h3->hg.proto_t.chunk);
+		HEP_BUF_ADD(&h3->hg.proto_t.data, sizeof(u_int8_t));
 	}
 
 	if (h3->hg.capt_id.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->hg.capt_id.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
+		HEP_CHUNK_ADD(h3->hg.capt_id.chunk);
 		data32 = htonl(h3->hg.capt_id.data);
-		memcpy(buf+buflen, &data32, sizeof(u_int32_t));
-		buflen += sizeof(u_int32_t);
+		HEP_BUF_ADD(&data32, sizeof(u_int32_t));
 	}
 
 	if (af == AF_INET) {
 		if (h3->addr.ip4_addr.src_ip4.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip4_addr.src_ip4.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip4_addr.src_ip4.data,
+			HEP_CHUNK_ADD(h3->addr.ip4_addr.src_ip4.chunk);
+			HEP_BUF_ADD(&h3->addr.ip4_addr.src_ip4.data,
 					sizeof(struct in_addr));
-			buflen += sizeof(struct in_addr);
 		}
 
 		if (h3->addr.ip4_addr.dst_ip4.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip4_addr.dst_ip4.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip4_addr.dst_ip4.data,
+			HEP_CHUNK_ADD(h3->addr.ip4_addr.dst_ip4.chunk);
+			HEP_BUF_ADD(&h3->addr.ip4_addr.dst_ip4.data,
 					sizeof(struct in_addr));
-			buflen += sizeof(struct in_addr);
 		}
 	} else {
 		if (h3->addr.ip6_addr.src_ip6.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip6_addr.src_ip6.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip6_addr.src_ip6.data,
+			HEP_CHUNK_ADD(h3->addr.ip6_addr.src_ip6.chunk);
+			HEP_BUF_ADD(&h3->addr.ip6_addr.src_ip6.data,
 					sizeof(struct in6_addr));
-			buflen += sizeof(struct in6_addr);
 		}
 
 		if (h3->addr.ip6_addr.dst_ip6.chunk.length) {
-			CONVERT_HEP_CHUNK(h3->addr.ip6_addr.dst_ip6.chunk, chunk_copy);
-			CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-			memcpy(buf+buflen, &h3->addr.ip6_addr.dst_ip6.data,
+			HEP_CHUNK_ADD(h3->addr.ip6_addr.dst_ip6.chunk);
+			HEP_BUF_ADD(&h3->addr.ip6_addr.dst_ip6.data,
 					sizeof(struct in6_addr));
-			buflen += sizeof(struct in6_addr);
 		}
 	}
 
 	for (it=h3->chunk_list; it; it=it->next) {
-		CONVERT_HEP_CHUNK(it->chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-
-		memcpy(buf+buflen, it->data, it->chunk.length - sizeof(hep_chunk_t));
-		buflen += it->chunk.length - sizeof(hep_chunk_t);
+		HEP_CHUNK_ADD(it->chunk);
+		HEP_BUF_ADD(it->data, it->chunk.length - (int)sizeof(hep_chunk_t));
 	}
 
 	if (h3->payload_chunk.chunk.length) {
-		CONVERT_HEP_CHUNK(h3->payload_chunk.chunk, chunk_copy);
-		CHUNK_COPY_AND_UPDATE(buf, buflen, chunk_copy);
-
-		memcpy(buf+buflen, h3->payload_chunk.data,
-				h3->payload_chunk.chunk.length - sizeof(hep_chunk_t));
-		buflen += (h3->payload_chunk.chunk.length - sizeof(hep_chunk_t));
+		HEP_CHUNK_ADD(h3->payload_chunk.chunk);
+		HEP_BUF_ADD(h3->payload_chunk.data,
+				h3->payload_chunk.chunk.length - (int)sizeof(hep_chunk_t));
 	}
 
 	memcpy(((hep_ctrl_t*)buf)->id, HEP_HEADER_ID, HEP_HEADER_ID_LEN);
 	((hep_ctrl_t*)buf)->length = htons(buflen);
 
 	*len = buflen;
+	return 0;
+
+	#undef HEP_CHUNK_ADD
+	#undef HEP_BUF_ADD
+	#undef CONVERT_HEP_CHUNK
 }
 
 
-static int build_hep_buf(str* hep_buf, int* proto)
+static int build_hep_buf(str* hep_buf, int size, int* proto)
 {
 
 	struct hep_context *ctx;
@@ -4245,10 +4308,12 @@ static int build_hep_buf(str* hep_buf, int* proto)
 
 	if (ctx->h.version == 3) {
 		*proto = ctx->h.u.hepv3.hg.ip_proto.data;
-		hepv3_to_buf(&ctx->h.u.hepv3, hep_buf->s, &hep_buf->len);
+		if (hepv3_to_buf(&ctx->h.u.hepv3, hep_buf->s, size, &hep_buf->len) < 0)
+			return -1;
 	} else {
 		*proto = ctx->h.u.hepv12.hdr.hp_p;
-		hepv2_to_buf(&ctx->h.u.hepv12, hep_buf->s, &hep_buf->len);
+		if (hepv2_to_buf(&ctx->h.u.hepv12, hep_buf->s, size, &hep_buf->len) < 0)
+			return -1;
 	}
 
 	return ctx->h.version;
@@ -4286,12 +4351,12 @@ static int w_hep_relay(struct sip_msg *msg)
 
 
 	/* build everything but the sip message because we don't have it yet*/
-	buf_s.s = payload_buf;
+	buf_s.s = hep_relay_buf;
 
 	/* this way we will know what's the size of the hep payload
 	 * in version 1/2 */
 	buf_s.len = msg->len;
-	if ((hep_version=build_hep_buf(&buf_s, &proto)) < 0) {
+	if ((hep_version=build_hep_buf(&buf_s, sizeof(hep_relay_buf), &proto)) < 0) {
 		LM_ERR("failed to append hep header!\n");
 		return -1;
 	}
@@ -4500,25 +4565,6 @@ static inline void build_hepv2_obj(struct hepv12* h2, struct _sipcapture_object*
 	}
 }
 
-static inline int append_rc_values(char* buf, int max_len, db_val_t* db_vals)
-{
-	int len;
-
-	len = snprintf(buf, max_len, RTCP_VALUES_STR,
-			(long long)VAL_TIME(db_vals+0), VAL_BIGINT(db_vals+1),
-			VAL_STR(db_vals+2).len, VAL_STR(db_vals+2).s,
-			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
-			VAL_INT(db_vals+4),
-			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
-			VAL_INT(db_vals+6), VAL_INT(db_vals+7), VAL_INT(db_vals+8), VAL_INT(db_vals+9),
-			VAL_STR(db_vals+10).len, VAL_STR(db_vals+10).s,
-			VAL_STR(db_vals+11).len, VAL_STR(db_vals+11).s
-		);
-
-	return len;
-}
-
-
 static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		unsigned int* proto_t, struct tz_table_list* t_el,
 		async_ctx *actx)
@@ -4539,7 +4585,8 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	str addr_str, payload_str;
 
 	char addr[INET6_ADDRSTRLEN];
-	cJSON *pld_root, *event;
+	cJSON *pld_root = NULL, *event;
+	int ret;
 
 	if ((ctx=HEP_GET_CONTEXT(hep_api)) == NULL) {
 		LM_WARN("not a hep message!\n");
@@ -4574,7 +4621,7 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		db_vals[0].val.time_val = h->u.hepv3.hg.time_sec.data;
 
 		db_vals[1].type = DB_INT;
-		db_vals[1].val.bigint_val = h->u.hepv3.hg.time_usec.data;
+		db_vals[1].val.int_val = h->u.hepv3.hg.time_usec.data;
 	}
 
 	db_vals[2].type = DB_STR;
@@ -4688,22 +4735,15 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		payload_str.s[payload_str.len] = 0;
 
 		pld_root = cJSON_Parse(payload_str.s);
+		payload_str.s[payload_str.len] = holder;
 
-		if ( pld_root ) {
-			payload_str.s[payload_str.len] = holder;
-
-			/* now search if we have any Event key */
-			event = cJSON_GetObjectItem(pld_root, "Event");
-			db_vals[16].type = DB_STR;
-			if ( event ) {
-				db_vals[16].val.str_val.s = event->valuestring;
-				db_vals[16].val.str_val.len = strlen(event->valuestring);
-			} else {
-				db_vals[16].val.str_val.s = "";
-				db_vals[16].val.str_val.len = 0;
-			}
-
-			cJSON_Delete( pld_root );
+		/* now search if we have any Event key; the tree is kept until the
+		 * row is stored, as the event column points into it */
+		db_vals[16].type = DB_STR;
+		event = pld_root ? cJSON_GetObjectItem(pld_root, "Event") : NULL;
+		if ( event && (event->type & 0xFF) == cJSON_String ) {
+			db_vals[16].val.str_val.s = event->valuestring;
+			db_vals[16].val.str_val.len = strlen(event->valuestring);
 		} else {
 			db_vals[16].val.str_val.s = "";
 			db_vals[16].val.str_val.len = 0;
@@ -4719,15 +4759,18 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	}
 	CON_SET_CURR_PS(db_con, &rc_ps);
 
-	if (!actx && db_sync_store(db_vals, rtcp_db_keys, rtp_keys_no) != 1) {
-		LM_ERR("failed to insert into database\n");
-		return -1;
-	} else if (actx) {
-		return db_async_store(db_vals, rtcp_db_keys, rtp_keys_no,
-			append_rc_values, actx, t_el);
+	if (!actx) {
+		ret = db_sync_store(db_vals, rtcp_db_keys, rtp_keys_no);
+		if (ret != 1)
+			LM_ERR("failed to insert into database\n");
+	} else {
+		ret = db_async_store(db_vals, rtcp_db_keys, rtp_keys_no, actx, t_el);
 	}
 
-	return 1;
+	if (pld_root)
+		cJSON_Delete(pld_root);
+
+	return ret;
 }
 
 static int w_report_capture_async(struct sip_msg* msg, async_ctx *actx,

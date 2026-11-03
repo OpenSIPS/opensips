@@ -55,57 +55,58 @@ Package: opensips
 Architecture: any
 Multi-Arch: foreign
 Depends: adduser, python | python-is-python3, ${misc:Depends}, ${shlibs:Depends}
-Suggests: opensips-auth-jwt-module,
-          opensips-auth-modules,
-          opensips-auth-web3-module,
-          opensips-berkeley-module,
-          opensips-carrierroute-module,
-          opensips-cgrates-module,
-          opensips-compression-module,
-          opensips-cpl-module,
-          opensips-dbhttp-module,
-          opensips-dialplan-module,
-          opensips-diameter-module,
-          opensips-emergency-module,
-          opensips-geoip-module,
-          opensips-http-modules,
-          opensips-identity-module,
-          opensips-ipsec-module,
-          opensips-jabber-module,
-          opensips-json-module,
-          opensips-kafka-module,
-          opensips-ldap-modules,
-          opensips-lua-module,
-          opensips-memcached-module,
-          opensips-mongodb-module,
-          opensips-msrp-modules,
-          opensips-mysql-module,
-          opensips-opentelemetry-module,
-          opensips-perl-modules,
-          opensips-postgres-module,
-          opensips-presence-modules,
-          opensips-prometheus-module,
-          opensips-python-module,
-          opensips-rabbitmq-modules,
-          opensips-radius-modules,
-          opensips-redis-module,
-          opensips-regex-module,
-          opensips-restclient-module,
-          opensips-sctp-module [linux-any],
-          opensips-siprec-module,
-          opensips-snmpstats-module,
-          opensips-sqlite-module,
-          opensips-stir-shaken-module,
-          opensips-tls-module,
-          opensips-tls-openssl-module,
-          opensips-tls-wolfssl-module,
-          opensips-tlsmgm-module,
-          opensips-unixodbc-module,
-          opensips-uuid-module,
-          opensips-wss-module,
-          opensips-xml-module,
-          opensips-xmlrpc-module,
-          opensips-xmpp-module
+Suggests: opensips-module-auth-jwt,
+          opensips-modules-auth,
+          opensips-module-auth-web3,
+          opensips-module-db-berkeley,
+          opensips-module-carrierroute,
+          opensips-module-cgrates,
+          opensips-module-compression,
+          opensips-modules-contrib,
+          opensips-module-cpl-c,
+          opensips-module-db-http,
+          opensips-module-dialplan,
+          opensips-modules-diameter,
+          opensips-module-emergency,
+          opensips-module-mmgeoip,
+          opensips-modules-http,
+          opensips-module-identity,
+          opensips-module-proto-ipsec,
+          opensips-module-jabber,
+          opensips-module-json,
+          opensips-module-event-kafka,
+          opensips-modules-ldap,
+          opensips-module-lua,
+          opensips-module-cachedb-memcached,
+          opensips-module-cachedb-mongodb,
+          opensips-modules-msrp,
+          opensips-module-db-mysql,
+          opensips-module-opentelemetry,
+          opensips-modules-perl,
+          opensips-module-db-postgres,
+          opensips-modules-presence,
+          opensips-module-prometheus,
+          opensips-module-python,
+          opensips-modules-rabbitmq,
+          opensips-modules-radius,
+          opensips-module-cachedb-redis,
+          opensips-module-regex,
+          opensips-module-rest-client,
+          opensips-module-proto-sctp [linux-any],
+          opensips-module-siprec,
+          opensips-module-snmpstats,
+          opensips-module-db-sqlite,
+          opensips-module-stir-shaken,
+          opensips-module-proto-tls,
+          opensips-module-tls-openssl,
+          opensips-module-tls-wolfssl,
+          opensips-module-tls-mgm,
+          opensips-module-db-unixodbc,
+          opensips-module-uuid,
+          opensips-module-proto-wss,
+          opensips-module-xml,
+          opensips-module-mi-xmlrpc,
+          opensips-module-xmpp
 Description: very fast and configurable SIP server
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -124,68 +125,28 @@ Description: very fast and configurable SIP server
  This package contains the main OpenSIPS binary along with the principal modules
  and support binaries.
 
-Package: opensips-auth-jwt-module
+Package: opensips-modules-contrib
 Architecture: any
 Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: JSON Web Tokens authentication module for OpenSIPS
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: community-contributed modules for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- The module implements authentication over JSON Web Tokens. In
- some cases ( ie. WebRTC ) the user authenticates on another
- layer ( other than SIP ), so it makes no sense to
- double-authenticate it on the SIP layer. Thus, the SIP client
- will simply present the JWT auth token it received from the
- server, and pass it on to OpenSIPS which will use that for
- authentication purposes. It relies on two DB tables, one
- containing JWT profiles ( a profile name and it's SIP username
- associated to it ) and one containing JWT secrets. Each secret
- has a corresponding profile, the KEY used for signing the JWT
- and two timestamps describing a validation interval. Multiple
- JWT secrets can point to the same JWT profile.
+ This package contains community-contributed modules which do not require
+ external build dependencies. These modules are not maintained by the
+ OpenSIPS core team and may have different support guarantees.
 
-Package: opensips-auth-web3-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Authentication interfaces for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides Web3-based authentication for OpenSIPS, enabling SIP
- authentication through blockchain technology and ENS (Ethereum Name Service)
- resolution.
-
-Package: opensips-auth-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Authentication interfaces for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the modules that are being used to provide
- SIP authentication in OpenSIPS. It consists of both the
- authentication interface (the auth module), as well as the UAC
- authentication module (uac_auth).
-
-Package: opensips-berkeley-bin
+Package: opensips-module-db-berkeley-bin
 Architecture: any
 Multi-Arch: foreign
+Breaks: opensips-berkeley-bin (<< ${binary:Version})
+Replaces: opensips-berkeley-bin (<< ${binary:Version})
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
-Suggests: opensips-berkeley-module, opensips-berkeley-schema
+Suggests: opensips-module-db-berkeley, opensips-dbschema-berkeley
 Description: Berkeley Database module for OpenSIPS - helper program
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
@@ -193,87 +154,22 @@ Description: Berkeley Database module for OpenSIPS - helper program
  .
  This package provides the berkeley database module for OpenSIPS, a
  high-performance embedded DB kernel. You should normally install
- opensips-berkeley-module and not this package directly.
+ opensips-module-db-berkeley and not this package directly.
 
-Package: opensips-berkeley-module
+Package: opensips-dbschema-berkeley
 Architecture: any
 Multi-Arch: same
-Depends: db-util (>= 4.6.19),
-         opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Suggests: opensips-berkeley-bin, opensips-berkeley-schema
-Description: Berkeley Database module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the berkeley database module for OpenSIPS, a
- high-performance embedded DB kernel. All database tables are stored
- in files, no additional server is necessary.
-
-Package: opensips-berkeley-dbschema
-Architecture: any
-Multi-Arch: same
+Breaks: opensips-berkeley-dbschema (<< ${binary:Version})
+Replaces: opensips-berkeley-dbschema (<< ${binary:Version})
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Suggests: opensips-berkeley-bin, opensips-berkeley-module
+Suggests: opensips-module-db-berkeley-bin, opensips-module-db-berkeley
 Description: Berkeley database schema for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
  This package provides the Berkeley database schema files for OpenSIPS.
-
-Package: opensips-carrierroute-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Carrierroute module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the carrierroute module for OpenSIPS, an integrated
- solution for routing, balancing and blacklisting.
-
-Package: opensips-cgrates-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: CGRateS connector for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a connnector to the CGRateS rating/billing engine.
-
-Package: opensips-compression-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         zlib1g,
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Headers and body compression module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the compression module, that is able to compress
- SIP headers and body, as  well as shrink the size of a SIP package.
-
-Package: opensips-cpl-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: CPL module (CPL interpreter engine) for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a CPL (Call Processing Language) interpreter for
- OpenSIPS, turning OpenSIPS into a CPL server (storage and interpreter).
 
 Package: opensips-dbg
 Architecture: any
@@ -288,228 +184,11 @@ Description: very fast and configurable SIP server [debug symbols]
  This package contains the debugging symbols for the OpenSIPS binaries and
  modules. You only need to install it if you need to debug OpenSIPS.
 
-Package: opensips-dbhttp-module
+Package: opensips-dbschema-mysql
 Architecture: any
 Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: HTTP database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the HTTP-based database driver for OpenSIPS
-
-Package: opensips-dialplan-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Generic string translation module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides dialplan module that implements generic string
- translations based on matching and replacement rules. It can be used to
- manipulate R-URI or a PV and to translated to a new format/value.
-
-Package: opensips-diameter-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Diameter module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a DIAMETER driver for the AAA API from OpenSIPS.
-
-Package: opensips-emergency-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Emergency call module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- The emergency module provides emergency call treatment for OpenSIPS, following
- the architecture i2 specification of the American entity NENA. (National
- Emergency Number Association).
-
-Package: opensips-geoip-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module is a lightweight wrapper for the MaxMind GeoIP API.
- It adds IP address-to-location lookup capability to OpenSIPS
- scripts. Lookups are executed against the freely-available GeoLite City
- database; and the non-free GeoIP City database is drop-in
- compatible   Lookups are executed against the freely-available GeoLite City
- database; and the non-free GeoIP City database is drop-in compatible
-
-Package: opensips-http-modules
-Architecture: any
-Multi-Arch: same
-Depends: libmicrohttpd10|libmicrohttpd12,
-         opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: HTTP transport layer and Management Interface for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an HTTP transport layer and Management Interface for
- OpenSIPS.
-
-Package: opensips-identity-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SIP Identity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides support for SIP Identity (see RFC 4474).
-
-Package: opensips-ipsec-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: IPSec proto module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides IMS IPSec connections (see TS 33.203).
-
-Package: opensips-jabber-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Jabber gateway module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SIP to Jabber translator module for OpenSIPS.
-
-Package: opensips-json-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Support for JSON handling in OpenSIPS script
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package introduces a new type of variable that provides both
- serialization and de-serialization from JSON format. The script variable
- provides ways to access (from script) objects and arrays to add,replace or
- delete values from the script.
-
-Package: opensips-kafka-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Implementation of an Apache Kafka producer
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module is an implementation of an Apache Kafka producer.
- It serves as a transport backend for the Event Interface and
- also provides a stand-alone connector to be used from the
- OpenSIPS script in order to publish messages to Kafka brokers.
-
-Package: opensips-ldap-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: LDAP modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the ldap and h350 modules for OpenSIPS, enabling LDAP
- queries from the OpenSIPS config and storage of SIP account data in an LDAP
- directory.
-
-Package: opensips-lua-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Lua extensions for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an interface for OpenSIPS to utilize Lua extensions.
-
-Package: opensips-memcached-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a memcached server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an implementation of a cache system designed to work
- with a memcached server. It uses libmemcached client library to connect to
- several memcached servers that store data. It registers the three functions for
- storing, fetching and removing a value to the core memcache management
- interface.
-
-Package: opensips-mongodb-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a MongoDB server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module is an implementation of a cache system designed to work with
- MongoDB servers.
-
-Package: opensips-msrp-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-auth-modules (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Implementation of the MSRP protocol
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the MSRP protocol support for OpenSIPS.
-
-Package: opensips-mysql-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Suggests: opensips-mysql-dbschema
-Description: MySQL database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the MySQL database driver for OpenSIPS.
-
-Package: opensips-mysql-dbschema
-Architecture: any
-Multi-Arch: same
+Breaks: opensips-mysql-dbschema (<< ${binary:Version})
+Replaces: opensips-mysql-dbschema (<< ${binary:Version})
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Suggests: opensips-mysql-module
@@ -520,50 +199,11 @@ Description: MySQL database schema for OpenSIPS
  .
  This package provides the MySQL database schema files for OpenSIPS.
 
-Package: opensips-opentelemetry-module
+Package: opensips-dbschema-postgres
 Architecture: any
 Multi-Arch: same
-Build-Profiles: <opentelemetry>
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: OpenSIPS observability using OpenTelemetry
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides OpenSISP observability using OpenTelemetry.
-
-Package: opensips-perl-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Perl extensions and database driver for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an interface for OpenSIPS to write Perl extensions and
- the db_perlvdb database driver for OpenSIPS.
-
-Package: opensips-postgres-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         postgresql-client,
-         ${misc:Depends},
-         ${shlibs:Depends}
-Suggests: opensips-postgres-dbschema
-Description: PostgreSQL database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the PostgreSQL database driver for OpenSIPS.
-
-Package: opensips-postgres-dbschema
-Architecture: any
-Multi-Arch: same
+Breaks: opensips-postgres-dbschema (<< ${binary:Version})
+Replaces: opensips-postgres-dbschema (<< ${binary:Version})
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Suggests: opensips-postgres-module
@@ -574,162 +214,11 @@ Description: PostgreSQL database schema for OpenSIPS
  .
  This package provides the PostgreSQL database schema files for OpenSIPS.
 
-Package: opensips-presence-modules
+Package: opensips-dbschema-sqlite
 Architecture: any
 Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SIMPLE presence modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides several OpenSIPS modules for implementing presence
- server and presence user agent for RICH presence, registrar-based presence,
- external triggered presence and XCAP support.
-
-Package: opensips-prometheus-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-http-modules (= ${binary:Version}),
-         ${shlibs:Depends}, ${misc:Depends}
-Description: Prometheus Monitoring support for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module provides support in OpenSIPS for the Prometheus
- (https://prometheus.io/) monitoring tool.
-
-Package: opensips-python-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Python scripting support
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module provides a Python interface to implement your scripting logic.
-
-Package: opensips-rabbitmq-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a RabbitMQ server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the implementation of a RabbitMQ client for the Event
- Interface. It is used to send AMQP messages to a RabbitMQ server each time
- the Event Interface triggers an event subscribed for. It also provides a
- module to publish RabbitMQ messages to a RabbitMQ server.
-
-Package: opensips-radius-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Radius modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the RADIUS driver for the AAA API from OpenSIPS.
-
-Package: opensips-redis-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a Redis server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an implementation of a cache system designed to
- work with a Redis server. It uses hiredis client library to connect
- to either a single Redis server instance, or to a Redis Server inside
- a Redis Cluster. It uses the Key-Value interface exported from the core.
-
-Package: opensips-regex-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: PCRE regexp modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a module for matching operations against regular
- expressions using the powerful PCRE library. By default, OpenSIPS support
- sed-like regular expressions; PCRE library brings perl-like regular
- expressions.
-
-Package: opensips-restclient-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: REST client module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the REST client support for OpenSIPS.
-
-Package: opensips-sctp-module
-Architecture: linux-any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: SCTP transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SCTP support for OpenSIPS.
-
-Package: opensips-siprec-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SIP Call Recording Implementation for the SIPREC Protocol
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module provides the means to Record Calls using the SIPREC protocol.
-
-Package: opensips-snmpstats-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         snmpd,
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: SNMP AgentX subagent module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the snmpstats module for OpenSIPS. This module acts
- as an AgentX subagent which connects to a master agent.
-
-Package: opensips-sqlite-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Suggests: opensips-sqlite-dbschema
-Description: SQLite database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SQLite database driver for OpenSIPS.
-
-Package: opensips-sqlite-dbschema
-Architecture: any
-Multi-Arch: same
+Breaks: opensips-sqlite-dbschema (<< ${binary:Version})
+Replaces: opensips-sqlite-dbschema (<< ${binary:Version})
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Suggests: opensips-sqlite-module
@@ -740,144 +229,1497 @@ Description: SQLite database schema for OpenSIPS
  .
  This package provides the SQLite database schema files for OpenSIPS.
 
-Package: opensips-stir-shaken-module
+Package: opensips-module-auth-jwt
 Architecture: any
 Multi-Arch: same
+Breaks: opensips-auth-jwt-module (<< ${binary:Version})
+Replaces: opensips-auth-jwt-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS auth_jwt module
+ This package contains only the auth_jwt loadable module for OpenSIPS.
+
+Package: opensips-module-auth-web3
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-auth-web3-module (<< ${binary:Version})
+Replaces: opensips-auth-web3-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS auth_web3 module
+ This package contains only the auth_web3 loadable module for OpenSIPS.
+
+Package: opensips-module-auth
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-auth-modules (<< ${binary:Version})
+Replaces: opensips-auth-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS auth module
+ This package contains only the auth loadable module for OpenSIPS.
+
+Package: opensips-module-auth-aka
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-auth-modules (<< ${binary:Version})
+Replaces: opensips-auth-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-auth (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS auth_aka module
+ This package contains only the auth_aka loadable module for OpenSIPS.
+
+Package: opensips-module-uac-auth
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-auth-modules (<< ${binary:Version})
+Replaces: opensips-auth-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS uac_auth module
+ This package contains only the uac_auth loadable module for OpenSIPS.
+
+Package: opensips-module-db-berkeley
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-berkeley-module (<< ${binary:Version})
+Replaces: opensips-berkeley-module (<< ${binary:Version})
+Depends: db-util (>= 4.6.19),
+         opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-module-db-berkeley-bin, opensips-dbschema-berkeley
+Description: OpenSIPS db_berkeley module
+ This package contains only the db_berkeley loadable module for OpenSIPS.
+
+Package: opensips-module-carrierroute
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-carrierroute-module (<< ${binary:Version})
+Replaces: opensips-carrierroute-module (<< ${binary:Version})
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: STIR/SHAKEN support for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
- Authentication and Verification services in OpenSIPS.
+Description: OpenSIPS carrierroute module
+ This package contains only the carrierroute loadable module for OpenSIPS.
+
+Package: opensips-module-cgrates
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-cgrates-module (<< ${binary:Version})
+Replaces: opensips-cgrates-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS cgrates module
+ This package contains only the cgrates loadable module for OpenSIPS.
+
+Package: opensips-module-compression
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-compression-module (<< ${binary:Version})
+Replaces: opensips-compression-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         zlib1g,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS compression module
+ This package contains only the compression loadable module for OpenSIPS.
+
+Package: opensips-module-cpl-c
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-cpl-module (<< ${binary:Version})
+Replaces: opensips-cpl-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS cpl_c module
+ This package contains only the cpl_c loadable module for OpenSIPS.
+
+Package: opensips-module-db-http
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-dbhttp-module (<< ${binary:Version})
+Replaces: opensips-dbhttp-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS db_http module
+ This package contains only the db_http loadable module for OpenSIPS.
+
+Package: opensips-module-dialplan
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-dialplan-module (<< ${binary:Version})
+Replaces: opensips-dialplan-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS dialplan module
+ This package contains only the dialplan loadable module for OpenSIPS.
+
+Package: opensips-module-aaa-diameter
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-diameter-module (<< ${binary:Version})
+Replaces: opensips-diameter-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS aaa_diameter module
+ This package contains only the aaa_diameter loadable module for OpenSIPS.
+
+Package: opensips-module-aka-av-diameter
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-diameter-module (<< ${binary:Version})
+Replaces: opensips-diameter-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-aaa-diameter (= ${binary:Version}),
+         opensips-module-auth-aka (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS aka_av_diameter module
+ This package contains only the aka_av_diameter loadable module for OpenSIPS.
+
+Package: opensips-module-emergency
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-emergency-module (<< ${binary:Version})
+Replaces: opensips-emergency-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS emergency module
+ This package contains only the emergency loadable module for OpenSIPS.
+
+Package: opensips-module-mmgeoip
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-geoip-module (<< ${binary:Version})
+Replaces: opensips-geoip-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS mmgeoip module
+ This package contains only the mmgeoip loadable module for OpenSIPS.
+
+Package: opensips-module-httpd
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-http-modules (<< ${binary:Version})
+Replaces: opensips-http-modules (<< ${binary:Version})
+Depends: libmicrohttpd10|libmicrohttpd12,
+         opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS httpd module
+ This package contains only the httpd loadable module for OpenSIPS.
+
+Package: opensips-module-mi-html
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-http-modules (<< ${binary:Version})
+Replaces: opensips-http-modules (<< ${binary:Version})
+Depends: libmicrohttpd10|libmicrohttpd12,
+         opensips (= ${binary:Version}),
+         opensips-module-httpd (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS mi_html module
+ This package contains only the mi_html loadable module for OpenSIPS.
+
+Package: opensips-module-mi-http
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-http-modules (<< ${binary:Version})
+Replaces: opensips-http-modules (<< ${binary:Version})
+Depends: libmicrohttpd10|libmicrohttpd12,
+         opensips (= ${binary:Version}),
+         opensips-module-httpd (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS mi_http module
+ This package contains only the mi_http loadable module for OpenSIPS.
+
+Package: opensips-module-pi-http
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-http-modules (<< ${binary:Version})
+Replaces: opensips-http-modules (<< ${binary:Version})
+Depends: libmicrohttpd10|libmicrohttpd12,
+         opensips (= ${binary:Version}),
+         opensips-module-httpd (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pi_http module
+ This package contains only the pi_http loadable module for OpenSIPS.
+
+Package: opensips-module-identity
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-identity-module (<< ${binary:Version})
+Replaces: opensips-identity-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS identity module
+ This package contains only the identity loadable module for OpenSIPS.
+
+Package: opensips-module-proto-ipsec
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-ipsec-module (<< ${binary:Version})
+Replaces: opensips-ipsec-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS proto_ipsec module
+ This package contains only the proto_ipsec loadable module for OpenSIPS.
+
+Package: opensips-module-jabber
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-jabber-module (<< ${binary:Version})
+Replaces: opensips-jabber-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS jabber module
+ This package contains only the jabber loadable module for OpenSIPS.
+
+Package: opensips-module-json
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-json-module (<< ${binary:Version})
+Replaces: opensips-json-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS json module
+ This package contains only the json loadable module for OpenSIPS.
+
+Package: opensips-module-event-kafka
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-kafka-module (<< ${binary:Version})
+Replaces: opensips-kafka-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS event_kafka module
+ This package contains only the event_kafka loadable module for OpenSIPS.
+
+Package: opensips-module-ldap
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-ldap-modules (<< ${binary:Version})
+Replaces: opensips-ldap-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS ldap module
+ This package contains only the ldap loadable module for OpenSIPS.
+
+Package: opensips-module-h350
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-ldap-modules (<< ${binary:Version})
+Replaces: opensips-ldap-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-ldap (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS h350 module
+ This package contains only the h350 loadable module for OpenSIPS.
+
+Package: opensips-module-lua
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-lua-module (<< ${binary:Version})
+Replaces: opensips-lua-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS lua module
+ This package contains only the lua loadable module for OpenSIPS.
+
+Package: opensips-module-cachedb-memcached
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-memcached-module (<< ${binary:Version})
+Replaces: opensips-memcached-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS cachedb_memcached module
+ This package contains only the cachedb_memcached loadable module for OpenSIPS.
+
+Package: opensips-module-cachedb-mongodb
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-mongodb-module (<< ${binary:Version})
+Replaces: opensips-mongodb-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS cachedb_mongodb module
+ This package contains only the cachedb_mongodb loadable module for OpenSIPS.
+
+Package: opensips-module-msrp-gateway
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-msrp-modules (<< ${binary:Version})
+Replaces: opensips-msrp-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-msrp-ua (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS msrp_gateway module
+ This package contains only the msrp_gateway loadable module for OpenSIPS.
+
+Package: opensips-module-msrp-relay
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-msrp-modules (<< ${binary:Version})
+Replaces: opensips-msrp-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-auth (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS msrp_relay module
+ This package contains only the msrp_relay loadable module for OpenSIPS.
+
+Package: opensips-module-msrp-ua
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-msrp-modules (<< ${binary:Version})
+Replaces: opensips-msrp-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-proto-msrp (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS msrp_ua module
+ This package contains only the msrp_ua loadable module for OpenSIPS.
+
+Package: opensips-module-proto-msrp
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-msrp-modules (<< ${binary:Version})
+Replaces: opensips-msrp-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS proto_msrp module
+ This package contains only the proto_msrp loadable module for OpenSIPS.
+
+Package: opensips-module-db-mysql
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-mysql-module (<< ${binary:Version})
+Replaces: opensips-mysql-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-dbschema-mysql
+Description: OpenSIPS db_mysql module
+ This package contains only the db_mysql loadable module for OpenSIPS.
+
+Package: opensips-module-opentelemetry
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-opentelemetry-module (<< ${binary:Version})
+Replaces: opensips-opentelemetry-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS opentelemetry module
+ This package contains only the opentelemetry loadable module for OpenSIPS.
+
+Package: opensips-module-perl
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-perl-modules (<< ${binary:Version})
+Replaces: opensips-perl-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS perl module
+ This package contains only the perl loadable module for OpenSIPS.
+
+Package: opensips-module-db-perlvdb
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-perl-modules (<< ${binary:Version})
+Replaces: opensips-perl-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-perl (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS db_perlvdb module
+ This package contains only the db_perlvdb loadable module for OpenSIPS.
+
+Package: opensips-module-db-postgres
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-postgres-module (<< ${binary:Version})
+Replaces: opensips-postgres-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         postgresql-client,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Suggests: opensips-dbschema-postgres
+Description: OpenSIPS db_postgres module
+ This package contains only the db_postgres loadable module for OpenSIPS.
+
+Package: opensips-module-presence
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS presence module
+ This package contains only the presence loadable module for OpenSIPS.
+
+Package: opensips-module-presence-callinfo
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS presence_callinfo module
+ This package contains only the presence_callinfo loadable module for OpenSIPS.
+
+Package: opensips-module-presence-dialoginfo
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS presence_dialoginfo module
+ This package contains only the presence_dialoginfo loadable module for OpenSIPS.
+
+Package: opensips-module-presence-reginfo
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS presence_reginfo module
+ This package contains only the presence_reginfo loadable module for OpenSIPS.
+
+Package: opensips-module-presence-xml
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS presence_xml module
+ This package contains only the presence_xml loadable module for OpenSIPS.
+
+Package: opensips-module-presence-mwi
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS presence_mwi module
+ This package contains only the presence_mwi loadable module for OpenSIPS.
+
+Package: opensips-module-presence-xcapdiff
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS presence_xcapdiff module
+ This package contains only the presence_xcapdiff loadable module for OpenSIPS.
+
+Package: opensips-module-presence-dfks
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS presence_dfks module
+ This package contains only the presence_dfks loadable module for OpenSIPS.
+
+Package: opensips-module-pua
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS pua module
+ This package contains only the pua loadable module for OpenSIPS.
+
+Package: opensips-module-pua-bla
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pua_bla module
+ This package contains only the pua_bla loadable module for OpenSIPS.
+
+Package: opensips-module-pua-dialoginfo
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pua_dialoginfo module
+ This package contains only the pua_dialoginfo loadable module for OpenSIPS.
+
+Package: opensips-module-pua-mi
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pua_mi module
+ This package contains only the pua_mi loadable module for OpenSIPS.
+
+Package: opensips-module-pua-reginfo
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pua_reginfo module
+ This package contains only the pua_reginfo loadable module for OpenSIPS.
+
+Package: opensips-module-pua-usrloc
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pua_usrloc module
+ This package contains only the pua_usrloc loadable module for OpenSIPS.
+
+Package: opensips-module-pua-xmpp
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         opensips-module-xmpp (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS pua_xmpp module
+ This package contains only the pua_xmpp loadable module for OpenSIPS.
+
+Package: opensips-module-rls
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-presence (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         opensips-module-xcap (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS rls module
+ This package contains only the rls loadable module for OpenSIPS.
+
+Package: opensips-module-xcap
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS xcap module
+ This package contains only the xcap loadable module for OpenSIPS.
+
+Package: opensips-module-xcap-client
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-xcap (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS xcap_client module
+ This package contains only the xcap_client loadable module for OpenSIPS.
+
+Package: opensips-module-prometheus
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-prometheus-module (<< ${binary:Version})
+Replaces: opensips-prometheus-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-modules-http (= ${binary:Version}),
+         ${shlibs:Depends}, ${misc:Depends}
+Description: OpenSIPS prometheus module
+ This package contains only the prometheus loadable module for OpenSIPS.
+
+Package: opensips-module-python
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-python-module (<< ${binary:Version})
+Replaces: opensips-python-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS python module
+ This package contains only the python loadable module for OpenSIPS.
+
+Package: opensips-module-event-rabbitmq
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-rabbitmq-modules (<< ${binary:Version})
+Replaces: opensips-rabbitmq-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-tls-mgm (= ${binary:Version}),
+         opensips-module-tls-openssl (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS event_rabbitmq module
+ This package contains only the event_rabbitmq loadable module for OpenSIPS.
+
+Package: opensips-module-rabbitmq-consumer
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-rabbitmq-modules (<< ${binary:Version})
+Replaces: opensips-rabbitmq-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-tls-mgm (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS rabbitmq_consumer module
+ This package contains only the rabbitmq_consumer loadable module for OpenSIPS.
+
+Package: opensips-module-aaa-radius
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-radius-modules (<< ${binary:Version})
+Replaces: opensips-radius-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS aaa_radius module
+ This package contains only the aaa_radius loadable module for OpenSIPS.
+
+Package: opensips-module-peering
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-radius-modules (<< ${binary:Version})
+Replaces: opensips-radius-modules (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS peering module
+ This package contains only the peering loadable module for OpenSIPS.
+
+Package: opensips-module-cachedb-redis
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-redis-module (<< ${binary:Version})
+Replaces: opensips-redis-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS cachedb_redis module
+ This package contains only the cachedb_redis loadable module for OpenSIPS.
+
+Package: opensips-module-regex
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-regex-module (<< ${binary:Version})
+Replaces: opensips-regex-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS regex module
+ This package contains only the regex loadable module for OpenSIPS.
+
+Package: opensips-module-rest-client
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-restclient-module (<< ${binary:Version})
+Replaces: opensips-restclient-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS rest_client module
+ This package contains only the rest_client loadable module for OpenSIPS.
+
+Package: opensips-module-proto-sctp
+Architecture: linux-any
+Multi-Arch: same
+Breaks: opensips-sctp-module (<< ${binary:Version})
+Replaces: opensips-sctp-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS proto_sctp module
+ This package contains only the proto_sctp loadable module for OpenSIPS.
+
+Package: opensips-module-siprec
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-siprec-module (<< ${binary:Version})
+Replaces: opensips-siprec-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS siprec module
+ This package contains only the siprec loadable module for OpenSIPS.
+
+Package: opensips-module-snmpstats
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-snmpstats-module (<< ${binary:Version})
+Replaces: opensips-snmpstats-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         snmpd,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS snmpstats module
+ This package contains only the snmpstats loadable module for OpenSIPS.
+
+Package: opensips-module-db-sqlite
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-sqlite-module (<< ${binary:Version})
+Replaces: opensips-sqlite-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Suggests: opensips-dbschema-sqlite
+Description: OpenSIPS db_sqlite module
+ This package contains only the db_sqlite loadable module for OpenSIPS.
+
+Package: opensips-module-stir-shaken
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-stir-shaken-module (<< ${binary:Version})
+Replaces: opensips-stir-shaken-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS stir_shaken module
+ This package contains only the stir_shaken loadable module for OpenSIPS.
+
+Package: opensips-module-proto-tls
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-tls-module (<< ${binary:Version})
+Replaces: opensips-tls-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-tls-mgm (= ${binary:Version}),
+         opensips-module-tls-openssl (= ${binary:Version}) | opensips-module-tls-wolfssl (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS proto_tls module
+ This package contains only the proto_tls loadable module for OpenSIPS.
+
+Package: opensips-module-tls-openssl
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-tls-openssl-module (<< ${binary:Version})
+Replaces: opensips-tls-openssl-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-tls-mgm (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS tls_openssl module
+ This package contains only the tls_openssl loadable module for OpenSIPS.
+
+Package: opensips-module-tls-wolfssl
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-tls-wolfssl-module (<< ${binary:Version})
+Replaces: opensips-tls-wolfssl-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-tls-mgm (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS tls_wolfssl module
+ This package contains only the tls_wolfssl loadable module for OpenSIPS.
+
+Package: opensips-module-tls-mgm
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-tlsmgm-module (<< ${binary:Version})
+Replaces: opensips-tlsmgm-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS tls_mgm module
+ This package contains only the tls_mgm loadable module for OpenSIPS.
+
+Package: opensips-module-db-unixodbc
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-unixodbc-module (<< ${binary:Version})
+Replaces: opensips-unixodbc-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS db_unixodbc module
+ This package contains only the db_unixodbc loadable module for OpenSIPS.
+
+Package: opensips-module-uuid
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-uuid-module (<< ${binary:Version})
+Replaces: opensips-uuid-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS uuid module
+ This package contains only the uuid loadable module for OpenSIPS.
+
+Package: opensips-module-proto-wss
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-wss-module (<< ${binary:Version})
+Replaces: opensips-wss-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-module-tls-mgm (= ${binary:Version}),
+         opensips-module-tls-openssl (= ${binary:Version}) | opensips-module-tls-wolfssl (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS proto_wss module
+ This package contains only the proto_wss loadable module for OpenSIPS.
+
+Package: opensips-module-xml
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-xml-module (<< ${binary:Version})
+Replaces: opensips-xml-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS xml module
+ This package contains only the xml loadable module for OpenSIPS.
+
+Package: opensips-module-mi-xmlrpc
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-xmlrpc-module (<< ${binary:Version})
+Replaces: opensips-xmlrpc-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}),
+         opensips-modules-http (= ${binary:Version}),
+         ${shlibs:Depends}, ${misc:Depends}
+Description: OpenSIPS mi_xmlrpc module
+ This package contains only the mi_xmlrpc loadable module for OpenSIPS.
+
+Package: opensips-module-xmpp
+Architecture: any
+Multi-Arch: same
+Breaks: opensips-xmpp-module (<< ${binary:Version})
+Replaces: opensips-xmpp-module (<< ${binary:Version})
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS xmpp module
+ This package contains only the xmpp loadable module for OpenSIPS.
+
+Package: opensips-modules-auth
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-auth-modules (<< ${binary:Version})
+Replaces: opensips-auth-modules (<< ${binary:Version})
+Depends: opensips-module-auth (= ${binary:Version}),
+         opensips-module-auth-aka (= ${binary:Version}),
+         opensips-module-uac-auth (= ${binary:Version}),
+         ${misc:Depends}
+Description: auth module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the auth bundle.
+
+Package: opensips-modules-diameter
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-diameter-module (<< ${binary:Version})
+Replaces: opensips-diameter-module (<< ${binary:Version})
+Depends: opensips-module-aaa-diameter (= ${binary:Version}),
+         opensips-module-aka-av-diameter (= ${binary:Version}),
+         ${misc:Depends}
+Description: diameter module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the diameter bundle.
+
+Package: opensips-modules-http
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-http-modules (<< ${binary:Version})
+Replaces: opensips-http-modules (<< ${binary:Version})
+Depends: opensips-module-httpd (= ${binary:Version}),
+         opensips-module-mi-html (= ${binary:Version}),
+         opensips-module-mi-http (= ${binary:Version}),
+         opensips-module-pi-http (= ${binary:Version}),
+         ${misc:Depends}
+Description: http module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the http bundle.
+
+Package: opensips-modules-ldap
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-ldap-modules (<< ${binary:Version})
+Replaces: opensips-ldap-modules (<< ${binary:Version})
+Depends: opensips-module-ldap (= ${binary:Version}),
+         opensips-module-h350 (= ${binary:Version}),
+         ${misc:Depends}
+Description: ldap module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the ldap bundle.
+
+Package: opensips-modules-msrp
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-msrp-modules (<< ${binary:Version})
+Replaces: opensips-msrp-modules (<< ${binary:Version})
+Depends: opensips-module-msrp-gateway (= ${binary:Version}),
+         opensips-module-msrp-relay (= ${binary:Version}),
+         opensips-module-msrp-ua (= ${binary:Version}),
+         opensips-module-proto-msrp (= ${binary:Version}),
+         ${misc:Depends}
+Description: msrp module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the msrp bundle.
+
+Package: opensips-modules-perl
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-perl-modules (<< ${binary:Version})
+Replaces: opensips-perl-modules (<< ${binary:Version})
+Depends: opensips-module-perl (= ${binary:Version}),
+         opensips-module-db-perlvdb (= ${binary:Version}),
+         ${misc:Depends}
+Description: perl module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the perl bundle.
+
+Package: opensips-modules-presence
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-presence-modules (<< ${binary:Version})
+Replaces: opensips-presence-modules (<< ${binary:Version})
+Depends: opensips-module-presence (= ${binary:Version}),
+         opensips-module-presence-callinfo (= ${binary:Version}),
+         opensips-module-presence-dialoginfo (= ${binary:Version}),
+         opensips-module-presence-reginfo (= ${binary:Version}),
+         opensips-module-presence-xml (= ${binary:Version}),
+         opensips-module-presence-mwi (= ${binary:Version}),
+         opensips-module-presence-xcapdiff (= ${binary:Version}),
+         opensips-module-presence-dfks (= ${binary:Version}),
+         opensips-module-pua (= ${binary:Version}),
+         opensips-module-pua-bla (= ${binary:Version}),
+         opensips-module-pua-dialoginfo (= ${binary:Version}),
+         opensips-module-pua-mi (= ${binary:Version}),
+         opensips-module-pua-reginfo (= ${binary:Version}),
+         opensips-module-pua-usrloc (= ${binary:Version}),
+         opensips-module-pua-xmpp (= ${binary:Version}),
+         opensips-module-rls (= ${binary:Version}),
+         opensips-module-xcap (= ${binary:Version}),
+         opensips-module-xcap-client (= ${binary:Version}),
+         ${misc:Depends}
+Description: presence module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the presence bundle.
+
+Package: opensips-modules-rabbitmq
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-rabbitmq-modules (<< ${binary:Version})
+Replaces: opensips-rabbitmq-modules (<< ${binary:Version})
+Depends: opensips-module-event-rabbitmq (= ${binary:Version}),
+         opensips-module-rabbitmq-consumer (= ${binary:Version}),
+         ${misc:Depends}
+Description: rabbitmq module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the rabbitmq bundle.
+
+Package: opensips-modules-radius
+Architecture: all
+Multi-Arch: foreign
+Breaks: opensips-radius-modules (<< ${binary:Version})
+Replaces: opensips-radius-modules (<< ${binary:Version})
+Depends: opensips-module-aaa-radius (= ${binary:Version}),
+         opensips-module-peering (= ${binary:Version}),
+         ${misc:Depends}
+Description: radius module bundle for OpenSIPS
+ This metapackage installs the OpenSIPS modules in the radius bundle.
+
+
+Package: opensips-auth-jwt-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-auth-jwt (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-auth-jwt
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-auth-jwt.
+
+Package: opensips-auth-web3-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-auth-web3 (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-auth-web3
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-auth-web3.
+
+Package: opensips-auth-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-auth (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-auth
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-auth.
+
+Package: opensips-berkeley-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-berkeley (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-berkeley
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-db-berkeley.
+
+Package: opensips-carrierroute-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-carrierroute (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-carrierroute
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-carrierroute.
+
+Package: opensips-cgrates-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-cgrates (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-cgrates
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-cgrates.
+
+Package: opensips-compression-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-compression (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-compression
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-compression.
+
+Package: opensips-cpl-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-cpl-c (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-cpl-c
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-cpl-c.
+
+Package: opensips-dbhttp-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-http (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-http
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-db-http.
+
+Package: opensips-dialplan-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-dialplan (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-dialplan
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-dialplan.
+
+Package: opensips-diameter-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-diameter (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-diameter
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-diameter.
+
+Package: opensips-emergency-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-emergency (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-emergency
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-emergency.
+
+Package: opensips-geoip-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-mmgeoip (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-mmgeoip
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-mmgeoip.
+
+Package: opensips-http-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-http (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-http
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-http.
+
+Package: opensips-identity-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-identity (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-identity
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-identity.
+
+Package: opensips-ipsec-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-proto-ipsec (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-proto-ipsec
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-proto-ipsec.
+
+Package: opensips-jabber-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-jabber (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-jabber
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-jabber.
+
+Package: opensips-json-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-json (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-json
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-json.
+
+Package: opensips-kafka-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-event-kafka (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-event-kafka
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-event-kafka.
+
+Package: opensips-ldap-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-ldap (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-ldap
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-ldap.
+
+Package: opensips-lua-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-lua (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-lua
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-lua.
+
+Package: opensips-memcached-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-cachedb-memcached (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-cachedb-memcached
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-cachedb-memcached.
+
+Package: opensips-mongodb-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-cachedb-mongodb (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-cachedb-mongodb
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-cachedb-mongodb.
+
+Package: opensips-msrp-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-msrp (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-msrp
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-msrp.
+
+Package: opensips-mysql-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-mysql (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-mysql
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-db-mysql.
+
+Package: opensips-opentelemetry-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-opentelemetry (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-opentelemetry
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-opentelemetry.
+
+Package: opensips-perl-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-perl (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-perl
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-perl.
+
+Package: opensips-postgres-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-postgres (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-postgres
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-db-postgres.
+
+Package: opensips-presence-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-presence (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-presence
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-presence.
+
+Package: opensips-prometheus-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-prometheus (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-prometheus
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-prometheus.
+
+Package: opensips-python-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-python (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-python
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-python.
+
+Package: opensips-rabbitmq-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-rabbitmq (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-rabbitmq
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-rabbitmq.
+
+Package: opensips-radius-modules
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-modules-radius (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-modules-radius
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-modules-radius.
+
+Package: opensips-redis-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-cachedb-redis (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-cachedb-redis
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-cachedb-redis.
+
+Package: opensips-regex-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-regex (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-regex
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-regex.
+
+Package: opensips-restclient-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-rest-client (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-rest-client
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-rest-client.
+
+Package: opensips-sctp-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-proto-sctp (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-proto-sctp
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-proto-sctp.
+
+Package: opensips-siprec-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-siprec (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-siprec
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-siprec.
+
+Package: opensips-snmpstats-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-snmpstats (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-snmpstats
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-snmpstats.
+
+Package: opensips-sqlite-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-sqlite (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-sqlite
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-db-sqlite.
+
+Package: opensips-stir-shaken-module
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-stir-shaken (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-stir-shaken
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-stir-shaken.
 
 Package: opensips-tls-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-tlsmgm-module (= ${binary:Version}),
-         opensips-tls-openssl-module (= ${binary:Version}) | opensips-tls-wolfssl-module (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: TLS transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the TLS support for OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-proto-tls (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-proto-tls
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-proto-tls.
 
 Package: opensips-tls-openssl-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-tlsmgm-module (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: TLS transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the OpenSSL implementation for TLS in OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-tls-openssl (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-tls-openssl
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-tls-openssl.
 
 Package: opensips-tls-wolfssl-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-tlsmgm-module (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: TLS transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the wolfSSL implementation for TLS in OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-tls-wolfssl (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-tls-wolfssl
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-tls-wolfssl.
 
 Package: opensips-tlsmgm-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: TLS management module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides support for TLS management for OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-tls-mgm (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-tls-mgm
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-tls-mgm.
 
 Package: opensips-unixodbc-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: unixODBC database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the unixODBC database driver for OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-unixodbc (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-unixodbc
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-db-unixodbc.
 
 Package: opensips-uuid-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: UUID (Universally Unique Identifier) generator for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a UUID generator for the OpenSIPS script.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-uuid (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-uuid
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-uuid.
 
 Package: opensips-wss-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-tlsmgm-module (= ${binary:Version}),
-         opensips-tls-openssl-module (= ${binary:Version}) | opensips-tls-wolfssl-module (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: WebSocket Secure (WSS) transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the WebSocket Secure (WSS) support for OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-proto-wss (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-proto-wss
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-proto-wss.
 
 Package: opensips-xml-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Support for XML documents handling in OpenSIPS script
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package introduces a new type of variable that provides both
- serialization and de-serialization from a XML document. The script variable
- provides ways to access (from script) objects and arrays to add, replace or
- delete values from the script.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-xml (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-xml
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-xml.
 
 Package: opensips-xmlrpc-module
-Architecture: any
-Depends: opensips (= ${binary:Version}),
-         opensips-http-modules (= ${binary:Version}),
-         ${shlibs:Depends}, ${misc:Depends}
-Multi-Arch: same
-Description: XMLRPC support for OpenSIPS's Management Interface
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the XMLRPC transport implementation for OpenSIPS's
- Management Interface.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-mi-xmlrpc (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-mi-xmlrpc
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-mi-xmlrpc.
 
 Package: opensips-xmpp-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: XMPP gateway module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SIP to XMPP IM translator module for OpenSIPS.
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-xmpp (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-xmpp
+ This package preserves the former OpenSIPS module package name. It can be
+ safely removed after the transition to opensips-module-xmpp.
+
+Package: opensips-berkeley-dbschema
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-dbschema-berkeley (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-dbschema-berkeley
+ This package preserves the former OpenSIPS database schema package name. It
+ can be safely removed after the transition to opensips-dbschema-berkeley.
+
+Package: opensips-mysql-dbschema
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-dbschema-mysql (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-dbschema-mysql
+ This package preserves the former OpenSIPS database schema package name. It
+ can be safely removed after the transition to opensips-dbschema-mysql.
+
+Package: opensips-postgres-dbschema
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-dbschema-postgres (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-dbschema-postgres
+ This package preserves the former OpenSIPS database schema package name. It
+ can be safely removed after the transition to opensips-dbschema-postgres.
+
+Package: opensips-sqlite-dbschema
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-dbschema-sqlite (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-dbschema-sqlite
+ This package preserves the former OpenSIPS database schema package name. It
+ can be safely removed after the transition to opensips-dbschema-sqlite.
+
+Package: opensips-berkeley-bin
+Section: oldlibs
+Architecture: all
+Multi-Arch: foreign
+Depends: opensips-module-db-berkeley-bin (= ${binary:Version}), ${misc:Depends}
+Description: transitional package for opensips-module-db-berkeley-bin
+ This package preserves the former OpenSIPS Berkeley helper package name. It
+ can be safely removed after the transition to
+ opensips-module-db-berkeley-bin.
