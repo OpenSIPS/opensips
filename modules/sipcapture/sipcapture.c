@@ -2868,7 +2868,7 @@ static int append_db_row(char *buf, int max_len, db_val_t *vals, int n)
 	}
 
 	/* the closing ')' and the NUL the query is sent with */
-	if (len + 1 >= max_len)
+	if (max_len - len < 2)
 		return -1;
 	buf[len++] = ')';
 	buf[len] = '\0';
