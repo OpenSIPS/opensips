@@ -2244,6 +2244,7 @@ fi
 %{_libdir}/opensips/modules/mathops.so
 %{_libdir}/opensips/modules/maxfwd.so
 %{_libdir}/opensips/modules/media_exchange.so
+%{_libdir}/opensips/modules/media_qoe.so
 %{_libdir}/opensips/modules/mediaproxy.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
@@ -2346,6 +2347,7 @@ fi
 %doc docdir/README.mangler
 %doc docdir/README.maxfwd
 %doc docdir/README.media_exchange
+%doc docdir/README.media_qoe
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
