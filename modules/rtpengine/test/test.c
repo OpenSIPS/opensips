@@ -346,6 +346,48 @@ static int ps_has(const char *enc, int enc_len, const char *needle, int nlen)
 	return 0;
 }
 
+static const struct {
+	const char *cmd;
+	enum rtpe_operation op;
+} ps_ops[] = {
+	{ "offer",             OP_OFFER },
+	{ "answer",            OP_ANSWER },
+	{ "delete",            OP_DELETE },
+	{ "subscribe request", OP_SUBSCRIBE_REQUEST },
+	{ "subscribe answer",  OP_SUBSCRIBE_ANSWER },
+	{ "unsubscribe",       OP_UNSUBSCRIBE },
+	{ "publish",           OP_PUBLISH },
+};
+
+/* builds, without sending it, the ng request that the @cmd command (e.g.
+ * "subscribe request") would send for @msg, @flags and @body; returns 0 and
+ * the request in @dict (owned by @buf), or -1 if the request is refused */
+static int rtpe_test_build_request(bencode_buffer_t *buf, struct sip_msg *msg,
+		const char *cmd, str *flags, str *body, bencode_item_t **dict)
+{
+	struct ng_flags_parse ng_flags;
+	char *err = NULL;
+	int i;
+
+	for (i = 0; i < sizeof(ps_ops)/sizeof(ps_ops[0]); i++)
+		if (!strcmp(cmd, ps_ops[i].cmd))
+			break;
+	if (i == sizeof(ps_ops)/sizeof(ps_ops[0]))
+		return -1;
+
+	memset(&ng_flags, 0, sizeof ng_flags);
+	if (rtpe_function_call_prepare(buf, msg, ps_ops[i].op, &ng_flags, flags,
+			body, NULL, &err) < 0) {
+		if (err)
+			LM_DBG("request refused: %s\n", err);
+		bencode_buffer_free(buf);
+		return -1;
+	}
+
+	*dict = ng_flags.dict;
+	return 0;
+}
+
 /* builds @cmd for @kind/@flags/@body; returns the encoded request, or NULL
  * if the module refused to build it; @buf must be freed by the caller when
  * the result is not NULL */
