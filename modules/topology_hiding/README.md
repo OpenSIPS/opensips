@@ -133,7 +133,7 @@ The value has the format *param_name[:password[:encoding_type]]*:
 
 - *param_name* - the name of the Contact URI parameter holding the encoded topology hiding information.
 - *password* - the string password used to encode/decode the data. If omitted, the default password "ToPoCtPaSS" is used.
-- *encoding_type* - the encoding layout, one of *C*/*c* (compact, the default) or *L*/*l* (long).
+- *encoding_type* - the encoding layout, one of *C*/*c* (compact, the default), *L*/*l* (long) or *S*/*s* (stored, see *th_state_url*).
 
 
 This parameter may be set more than once in order to define multiple (param name, password) entries, which allows password rotation - data encoded with an older password can still be decoded while new data is encoded with the current one. At most 2 entries are supported. Use *th_use_param* to select which entry is used when encoding.
@@ -306,6 +306,88 @@ modparam("topology_hiding", "th_auto_route_on_trusted_socket", 0)
 ```
 
 
+#### th_state_url (string)
+
+
+A cachedb URL where the topology hiding information of the Contact URI params with the *S* encoding type is kept. Only a 17 characters key, *_* followed by 16 hex digits, then travels in the Contact instead of the whole encoded information, which helps the user agents that truncate long Contact URI params.
+
+
+The key is derived from the param's password, the Call-ID and the tag of the party whose Contact is hidden, so each refresh of a dialog leg overwrites that leg's information in place. The information expires on its own: a SUBSCRIBE or NOTIFY keeps it for its expires plus 30 seconds, an INVITE or UPDATE for its Session-Expires plus 30 seconds, and a reply which says nothing about it as long as its request says. A request routed through the information refreshes it the same way, and the end of a subscription drops it, as does a final reply of 300 or above to an initial SUBSCRIBE (a challenged SUBSCRIBE stores it again when retried).
+
+
+The information stays in the Contact, compact encoded, for an INVITE or UPDATE without Session-Expires, for a message lacking its Call-ID or tag, and for an in-dialog message which is not a target refresh. Note that a stored INVITE relies on the session timers: if the callee answers without Session-Expires, the caller's information may expire before the call ends.
+
+
+A Contact URI param value holding a key is looked up whatever the encoding type of its param, as long as *th_state_url* is set. So a param can be switched in place from *C* to *S* and back: a dialog keeps the encoding it started with.
+
+
+The value is the URL of the cachedb module to use, which has to be loaded, such as *redis:th://127.0.0.1:6379/*, *memcached:th://127.0.0.1:11211/* or *local://*. Any cachedb backend supporting get, set and remove, and honouring the expiration of what it stores, can be used: this rules out *cachedb_mongodb*, which is refused at startup. Note that:
+
+
+- the backend has to be shared by all the nodes which may receive the sequential requests of a dialog. With *cachedb_local*, each node only sees its own states, unless the collection is replicated (see its *cluster_id* parameter).
+- *cachedb_sql* and *cachedb_dynamodb* do not check the expiration when reading, so a state may still be found for a while after it expired (up to *cache_clean_period* with *cachedb_sql*).
+- the stored information is not obfuscated, so the backend must not be reachable from untrusted networks.
+
+
+*Default value is "empty" ( no storage )*
+
+
+```opensips title="Set th_state_url parameter"
+...
+modparam("topology_hiding", "th_contact_encode_param_password", "thinfo:my_topoh_passwd:S")
+modparam("topology_hiding", "th_state_url", "redis:th://127.0.0.1:6379/")
+...
+```
+
+
+#### th_state_ttl (int)
+
+
+The lifetime, in seconds, of the stored information whose message does not say how long its dialog lives.
+
+
+*Default value is "3600"*
+
+
+```opensips title="Set th_state_ttl parameter"
+...
+modparam("topology_hiding", "th_state_ttl", 7200)
+...
+```
+
+
+#### th_state_ttl_short (int)
+
+
+The lifetime, in seconds, of the stored information which is only needed while its transaction runs: OPTIONS, MESSAGE, INFO and PUBLISH, a rejected SUBSCRIBE, and a subscription being ended.
+
+
+*Default value is "60"*
+
+
+```opensips title="Set th_state_ttl_short parameter"
+...
+modparam("topology_hiding", "th_state_ttl_short", 120)
+...
+```
+
+
+#### th_state_options (int)
+
+
+When set to 0, an OPTIONS and its reply carry no topology hiding information at all: their Contact is the address of the proxy with no encoded param, and nothing is stored. Nothing is ever routed to such a Contact, so this saves encoding (or storing) what no request will use. Applies to all the encoding types.
+
+
+*Default value is "1" ( OPTIONS are handled like any other request )*
+
+
+```opensips title="Set th_state_options parameter"
+...
+modparam("topology_hiding", "th_state_options", 0)
+...
+```
+
+
 ### Exported Functions
 
 
@@ -451,6 +533,10 @@ Read only variable that will contain the callid as it is propagated towards the 
 
 
 NULL will be returned if there is no topology hiding dialog for the request or if topology_hiding with callid encoding was not used for the current dialog.
+## Samples
+
+[samples](./samples/samples.md "include")
+
 <!-- CONTRIBUTORS -->
 
 ### License
