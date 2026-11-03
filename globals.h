@@ -80,6 +80,27 @@ int os_kernel_at_least(int major, int minor);
 extern char *udp_auto_scaling_profile;
 extern enum poll_types io_poll_method;
 extern int auto_scaling_enabled;
+
+/* HG_MALLOC arenas: defined in every build (cfg.y, -m/-M parsing), used
+ * only by HG; caps come from -m/-M INIT:CAP, reserved before cfg parsing */
+extern unsigned long hg_shm_cap_bytes;
+extern unsigned long hg_pkg_cap_bytes;
+extern char *hg_shm_profile_name;
+extern char *hg_pkg_profile_name;
+extern int hg_ram_floor_mb;        /* 0 = auto (hg_floor_mb_for()) */
+extern int hg_autoscale_dry_run;   /* 1 = ticks log, never act */
+/* bytes per grow step; 0 = built-in default (16 MB in huge-page mode, one
+ * page in small mode); config takes a plain number as MB, k/m/g suffixes */
+extern unsigned long hg_shm_grow_granule;
+extern unsigned long hg_pkg_grow_granule;
+extern int hg_lock_stall_us;       /* arena lock hold counted as a stall */
+extern int hg_grow_ahead;          /* keep the free grid above 2x the floor */
+extern int hg_scaling_cycle;       /* seconds per profile/shrink-decision
+                                    * cycle; the drain runs every tick */
+extern unsigned long hg_shrink_step; /* max bytes released per drain tick */
+extern int hg_interior_release;    /* 1 = punch whole-free pages anywhere */
+extern int hg_mem_check;           /* 1 = tail guards, 2 = and abort on
+                                    * corruption */
 extern int auto_scaling_cycle;
 
 /* TCP network layer related parameters */

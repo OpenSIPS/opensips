@@ -6,6 +6,11 @@ endif
 
 .PHONY: test unit_tests system_tests
 
+# allocator and memory sizes the unit tests run with, e.g.
+#   make test UT_ALLOC=HG_MALLOC UT_MEM="-m 64:1024 -M 16:256"
+UT_ALLOC ?= HP_MALLOC
+UT_MEM ?=
+
 ifneq (,$(findstring UNIT_TESTS,$(DEFS)))
 include Makefile.openssl
 misclibs=lib/digest_auth/libdigest_auth.a
@@ -24,7 +29,7 @@ endif
 
 unit_tests: ensure_test_defs $(NAME)
 	-@echo "          =============   Start Unit Tests   ============="
-	./$(NAME) -dd -T $(module) -w . -a HP_MALLOC
+	./$(NAME) -dd -T $(module) -w . -a $(UT_ALLOC) $(UT_MEM)
 	-@echo "          ================================================"
 	-@echo "          ========   Passed All Tests! ᕦ(ò_óˇ)ᕤ   ========"
 	-@echo "          ================================================"

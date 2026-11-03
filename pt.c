@@ -33,6 +33,10 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "pt.h"
+#include "mem/hg_maint.h"
+#ifdef HG_MALLOC
+#include "mem/hg_arena.h"
+#endif
 #include "bin_interface.h"
 #include "core_stats.h"
 
@@ -103,7 +107,12 @@ int init_multi_proc_support(void)
 
 #ifdef UNIT_TESTS
 #include "mem/test/test_malloc.h"
-	counted_max_processes += TEST_MALLOC_PROCS - 1;
+#include "mem/test/test_hg_malloc.h"
+	counted_max_processes += TEST_MALLOC_PROCS - 1 + TEST_HG_MALLOC_PROCS;
+#endif
+
+#ifdef HG_MALLOC
+	hg_pstat_slots_check(counted_max_processes);
 #endif
 
 	/* allocate the PID table to accomodate the maximum possible number of
@@ -143,6 +152,19 @@ int init_multi_proc_support(void)
 		return -1;
 	}
 	#endif
+
+#ifdef HG_MALLOC
+	if (hg_capacity_check(count_init_child_processes(),
+	        counted_max_processes) != 0)
+		return -1;
+	if (hg_pkg_pub_init(counted_max_processes) != 0)
+		return -1;
+#endif
+
+	if (hg_register_cache_sweep()!=0) {
+		LM_ERR("failed to register the HG_MALLOC cache sweep\n");
+		return -1;
+	}
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
@@ -225,6 +247,9 @@ void reset_process_slot( int p_id )
 	 * with the inter-process communication fds */
 	pt[p_id].pid = -1;
 	pt[p_id].type = TYPE_NONE;
+#ifdef HG_MALLOC
+	hg_pkg_pub_reset(p_id);
+#endif
 	pt[p_id].pg_filter = NULL;
 	pt[p_id].desc[0] = 0;
 	pt[p_id].flags = 0;
@@ -266,6 +291,15 @@ static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
 
 	/* free the script if not needed */
 	if (!(ifpp->flags & OSS_PROC_NEEDS_SCRIPT) && sroutes) {
+#if defined(PKG_MALLOC) && defined(HG_MALLOC)
+		/* internal_fork() swaps in a fresh pkg arena; freeing the AST
+		 * here would only dirty COW copies of the inherited pages */
+		if (mem_allocator_pkg == MM_HG_MALLOC ||
+		    mem_allocator_pkg == MM_HG_MALLOC_DBG) {
+			sroutes = NULL;
+			return 0;
+		}
+#endif
 		free_route_lists(sroutes);
 		sroutes = NULL;
 	}
@@ -294,6 +328,12 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		LM_BUG("no free process slot found while trying to fork again\n");
 		return -1;
 	}
+
+#ifdef HG_MALLOC
+	/* on a refusal the auto-scaler logs the failure and carries on */
+	if (!hg_fork_fits())
+		return -1;
+#endif
 
 	seed = rand();
 
@@ -331,6 +371,13 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		const struct internal_fork_handler *cfhp;
 		/* child process */
 		is_main = 0; /* a child is not main process */
+
+#ifdef HG_MALLOC
+		/* MUST precede any allocation: copied fast-path state aliases
+		 * the parent's cells in every shared arena, under any -a */
+		hg_malloc_child_init_all();
+#endif
+
 		/* set uid */
 		process_no = new_idx;
 		/* set attributes, pid etc */
@@ -364,6 +411,22 @@ int internal_fork(const struct internal_fork_params *ifpp)
 				child_startup_failed();
 			}
 		}
+#if defined(PKG_MALLOC) && defined(HG_MALLOC)
+		if (mem_allocator_pkg == MM_HG_MALLOC ||
+		    mem_allocator_pkg == MM_HG_MALLOC_DBG) {
+			/* own arena per child: a COW-shared one drains hugetlb;
+			 * after the handlers: their frees hit the old arena */
+			struct hg_block *child_pkg =
+				hg_malloc_init(pkg_mem_size, "pkg", 0, ifpp->proc_desc, 0);
+			if (!child_pkg) {
+				LM_CRIT("failed to init this child's own pkg memory "
+					"(%lu bytes)\n", pkg_mem_size);
+				exit(-1);
+			}
+			mem_block = child_pkg;
+		}
+#endif
+
 		atomic_store(&pt[process_no].startup_result, CHLD_OK);
 		return 0;
 	}else{
@@ -449,6 +512,8 @@ int count_child_processes(void)
 	proc_no += timer_count_processes( &extra );
 	proc_extra_no += extra;
 
+	proc_no += hg_maint_count_processes();
+
 	/* attendent */
 	proc_no++;
 
@@ -472,6 +537,11 @@ void dynamic_process_final_exit(void)
 
 	/* if a TCP proc by chance, reset the tcp-related data */
 	tcp_reset_worker_slot();
+
+#ifdef HG_MALLOC
+	/* or its cached cells stay counted as live until restart */
+	hg_cache_drain_self();
+#endif
 
 	pt_become_idle();
 
