@@ -86,6 +86,8 @@ struct sca_line* get_sca_line(str *line, int create);
 
 void unlock_sca_line(struct sca_line *scal);
 
+unsigned int get_sca_index_state(struct sca_line *line, unsigned int idx);
+
 int set_sca_index_state(struct sca_line *line, unsigned int idx,
 		unsigned int state);
 
