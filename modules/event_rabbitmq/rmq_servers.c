@@ -258,9 +258,14 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 				case TLS_USE_TLSv1_2:
 					method_min = AMQP_TLSv1_2;
 					break;
+				#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 12, 0, 0)
+				case TLS_USE_TLSv1_3:
+					method_min = AMQP_TLSv1_3;
+					break;
+				#endif
 				default:
-					LM_NOTICE("Unsupported TLS minimum method for AMQP, using TLSv1\n");
-					method_min = AMQP_TLSv1;
+					LM_NOTICE("Unsupported TLS minimum method for AMQP, using latest\n");
+					method_min = AMQP_TLSvLATEST;
 				}
 			} else {
 				LM_DBG("Minimum TLS method unspecified, using TLSv1\n");
@@ -275,15 +280,20 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 				case TLS_USE_TLSv1_2:
 					method_max = AMQP_TLSv1_2;
 					break;
+				#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 12, 0, 0)
+				case TLS_USE_TLSv1_3:
+					method_max = AMQP_TLSv1_3;
+					break;
+				#endif
 				default:
 					LM_NOTICE("Unsupported TLS maximum method for AMQP, using latest"
 						" supported by librabbitmq\n");
 					method_max = AMQP_TLSvLATEST;
 				}
 			} else {
-				method_max = AMQP_TLSvLATEST;
 				LM_DBG("Maximum TLS method unspecified, using latest supported by"
 					" librabbitmq\n");
+				method_max = AMQP_TLSvLATEST;
 			}
 
 			if (amqp_ssl_socket_set_ssl_versions(amqp_sock, method_min, method_max) !=
