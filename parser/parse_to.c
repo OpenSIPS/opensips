@@ -815,6 +815,7 @@ error:
 	first_b->error=PARSE_ERROR;
 	free_to_params(first_b);
 	free_to(first_b->next);
+	first_b->next = NULL;
 	return tmp;
 
 }
