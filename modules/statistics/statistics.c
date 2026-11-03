@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <limits.h>
 
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -283,6 +282,7 @@ static int reg_stat_series_profile( modparam_t type, void* val)
 	str param_slots = str_init("slots");
 	str param_factor = str_init("percentage_factor");
 	struct stat_series_profile *sp;
+	unsigned long long window_ms;
 	str params, name, k, v;
 	char *p;
 	unsigned int tmp, factor;
@@ -403,15 +403,17 @@ static int reg_stat_series_profile( modparam_t type, void* val)
 				name.len, name.s, sp->window);
 		sp->slots = sp->window;
 	}
-	if (!sp->group.len)
-		sp->group = sp->name;
-	sp->slot_size = (unsigned long long)sp->window * 1000ULL / sp->slots;
-	if ((unsigned long long)sp->window * 1000ULL > ULLONG_MAX / sp->slots) {
-		LM_ERR("stat series %.*s: window %us of %u slots is too large!\n",
-				name.len, name.s, sp->window, sp->slots);
+	window_ms = (unsigned long long)sp->window * 1000ULL;
+	if (!window_ms || !sp->slots || (unsigned long long)sp->slots > window_ms) {
+		LM_ERR("stat series %.*s: window must be positive and slots (%u) "
+				"must not exceed the window in milliseconds (%llu)\n",
+				name.len, name.s, sp->slots, window_ms);
 		pkg_free(sp);
 		return -1;
 	}
+	if (!sp->group.len)
+		sp->group = sp->name;
+	sp->slot_size = window_ms / sp->slots;
 	LM_DBG("stat series profile %.*s has a window of %us of %u slots of %llums algorithm(%s)\n",
 			name.len, name.s, sp->window, sp->slots, sp->slot_size, stat_series_alg_name(sp->algorithm));
 
