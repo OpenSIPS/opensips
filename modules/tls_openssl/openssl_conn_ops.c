@@ -39,6 +39,7 @@
 #include "../tls_mgm/tls_shared_data.h"
 
 #include "openssl_trace.h"
+#include "openssl_async.h"
 
 void tls_print_errstack(void);
 void tls_dump_cert_info(char* s, X509* cert);
@@ -628,8 +629,9 @@ static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 	int timeout, trace_dest t_dst)
 {
-	unsigned int elapsed,to;
+	unsigned int elapsed, to, timeout_us;
 	unsigned int err_len;
+	short wait_events;
 	int poll_err, n, err;
 	struct timeval begin;
 	str tls_err_s;
@@ -644,15 +646,13 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 
 	/* attempt to do connect and see if we do block or not */
 	poll_err=0;
-	elapsed = 0;
-	to = timeout*1000;
+	timeout_us = timeout * 1000U;
 
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	FD_ZERO(&orig_set);
 	FD_SET(fd, &orig_set);
 #else
 	pf.fd=fd;
-	pf.events=POLLOUT|POLLIN;
 #endif
 
 	if (gettimeofday(&(begin), NULL)) {
@@ -697,18 +697,23 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 				/* we need to retry, if time has not passed yet */
 again:
 				elapsed=get_time_diff(&begin);
-				if (elapsed >= to) /* timed out */ {
+				to = openssl_async_timeout_left(timeout_us, elapsed);
+				if (!to) /* timed out */ {
 					LM_DBG("handshake timeout for connection %p %dms elapsed\n",
 							con, timeout);
 					return 0;
 				}
-				to -= elapsed;
+				wait_events = openssl_async_wait_events(err == SSL_ERROR_WANT_READ);
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 				sel_set=orig_set;
 				timeout_val.tv_sec=to/1000000;
 				timeout_val.tv_usec=to%1000000;
-				n=select(fd+1, 0, &sel_set, 0, &timeout_val);
+				if (wait_events & POLLIN)
+					n=select(fd+1, &sel_set, 0, 0, &timeout_val);
+				else
+					n=select(fd+1, 0, &sel_set, 0, &timeout_val);
 #else
+				pf.events=wait_events;
 				n=poll(&pf, 1, to/1000);
 #endif
 				if (n<0){
