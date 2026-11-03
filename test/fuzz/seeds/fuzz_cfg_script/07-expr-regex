@@ -1,0 +1,6 @@
+route{
+  if (!isflagset(3) && ($ml > 100 || $ua =~ /fuzz/)) {
+    setflag(4);
+  }
+  exit;
+}
