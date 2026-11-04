@@ -4,7 +4,15 @@ ifndef module
 module=core
 endif
 
-.PHONY: test unit_tests system_tests
+# A module carries its suite as test/opensips.cfg plus a mod_tests() export, so
+# the config doubles as the marker for "this module has unit tests".  An
+# excluded module drops out along with its suite, as nothing built its .so.
+test_module_paths=$(filter $(enabled_module_paths), \
+		$(patsubst %/test/opensips.cfg,%, \
+			$(foreach d,$(MODULE_DIRS),$(wildcard $(d)/*/test/opensips.cfg))))
+test_module_targets=$(addprefix test-,$(notdir $(test_module_paths)))
+
+.PHONY: test unit_tests system_tests test-modules $(test_module_targets)
 
 ifneq (,$(findstring UNIT_TESTS,$(DEFS)))
 include Makefile.openssl
@@ -28,6 +36,20 @@ unit_tests: ensure_test_defs $(NAME)
 	-@echo "          ================================================"
 	-@echo "          ========   Passed All Tests! ᕦ(ò_óˇ)ᕤ   ========"
 	-@echo "          ================================================"
+
+# One target per module suite.  The module is a prerequisite because `make all`
+# builds only the modules/ collection (Makefile:113), leaving a contrib module
+# with no .so for its suite to load.
+define module_test_rule
+test-$(notdir $(1)): ensure_test_defs $$(NAME) $(1)
+	-@echo "          ====   $(notdir $(1))   ===="
+	./$$(NAME) -dd -T $(notdir $(1)) -w . -a HP_MALLOC
+endef
+$(foreach m,$(test_module_paths),$(eval $(call module_test_rule,$(m))))
+
+# Every module suite.  Add -k to keep going past a failing one and still exit
+# non-zero; the suites share udp:localhost:5059, so they cannot run under -j.
+test-modules: $(test_module_targets)
 
 system_tests:
 	$(MAKE) -C test/ all
