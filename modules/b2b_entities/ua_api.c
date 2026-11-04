@@ -541,6 +541,8 @@ static int ua_build_hdrs(str *hdrs, int body, str *content_type, str *extra_head
 			if (extra_headers)
 				memcpy(hdrs->s + content_type->len,
 					extra_headers->s, extra_headers->len);
+		} else if (extra_headers) {
+			memcpy(hdrs->s, extra_headers->s, extra_headers->len);
 		}
 	}
 
