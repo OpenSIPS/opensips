@@ -228,6 +228,9 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 	}
 
 	for( num=0,r=0,ci=0 ; _c ; _c = get_next_contact(_c) ) {
+		/* RFC 5626: make +sip.instance visible to usrloc matching */
+		_sctx->cmatch.instance = _c->instance ? _c->instance->body : (str){0,0};
+
 		/* calculate expires */
 		calc_contact_expires(_m, _c->expires, &e, _sctx);
 		/* Skip contacts with zero expires */
@@ -395,6 +398,9 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	}
 
 	for( ; _c ; _c = get_next_contact(_c) ) {
+		/* RFC 5626: make +sip.instance visible to usrloc matching */
+		_sctx->cmatch.instance = _c->instance ? _c->instance->body : (str){0,0};
+
 		/* calculate expires */
 		calc_contact_expires(_m, _c->expires, &e, _sctx);
 

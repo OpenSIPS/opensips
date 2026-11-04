@@ -342,6 +342,11 @@ static int overwrite_req_contacts(struct sip_msg *req,
 
 		ctmap = list_entry(_, struct ct_mapping, list);
 
+		/* RFC 5626: match by +sip.instance so a re-registered contact
+		   (new Call-ID / new URI) keeps its ctid instead of adding a
+		   new contact next to the stale one */
+		mri->cmatch.instance = ctmap->instance;
+
 		/* if uri string points outside the original msg buffer, it means
 		   the URI was already changed, and we cannot do it again */
 		if (c->uri.s < req->buf || c->uri.s > req->buf + req->len) {
@@ -1198,8 +1203,11 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 
 	memset(&ci, 0, sizeof ci);
 
-	/* if doing param-based Contact matching, force an URI update */
-	if (mri->cmatch.mode == CT_MATCH_PARAMS)
+	/* if doing param-based or +sip.instance-based Contact matching, force
+	 * an URI update (the URI may change across reconnects of the same
+	 * instance) */
+	if (mri->cmatch.mode == CT_MATCH_PARAMS ||
+	        (mri->cmatch.instance.len && mri->cmatch.instance.s))
 		ci.c = &ctmap->req_ct_uri;
 
 	/* Get callid of the message */
@@ -1376,6 +1384,10 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 	 * generated out of the former */
 	list_for_each(_, &mri->ct_mappings) {
 		ctmap = list_entry(_, struct ct_mapping, list);
+		/* RFC 5626: match by +sip.instance (shm copy of this contact's
+		   parsed +sip.instance) so a re-registered contact updates its
+		   stored entry instead of adding a new one */
+		mri->cmatch.instance = ctmap->instance;
 		_c = match_contact(ctmap->ctid, rpl);
 
 		/* contact is not present in the reply because it de-registered! */
@@ -1658,6 +1670,10 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 
 	list_for_each(_, &mri->ct_mappings) {
 		ctmap = list_entry(_, struct ct_mapping, list);
+
+		/* RFC 5626: match/trim/delete by +sip.instance (shm copy of this
+		   contact's parsed +sip.instance) */
+		mri->cmatch.instance = ctmap->instance;
 
 		if (!_c) {
 			if (ctmap->expires != 0)
@@ -2251,6 +2267,9 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
+		/* RFC 5626: make +sip.instance visible to usrloc matching */
+		_sctx->cmatch.instance = ct->instance ? ct->instance->body : (str){0,0};
+
 		calc_contact_expires(msg, ct->expires, &e, 1);
 		if (e == 0) {
 			LM_DBG("forwarding REGISTER (ct with expires == 0)\n");
@@ -2436,6 +2455,9 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
+		/* RFC 5626: make +sip.instance visible to usrloc matching */
+		_sctx->cmatch.instance = ct->instance ? ct->instance->body : (str){0,0};
+
 		calc_contact_expires(req, ct->expires, &e, 1);
 		if (e > e_out) {
 			LM_DBG("reducing contact expiration from %d sec to %d sec!\n",
