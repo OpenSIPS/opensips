@@ -632,8 +632,17 @@ int main(int argc, char** argv)
 					testing_module = optarg;
 					if (strcmp(testing_module, "core")) {
 						cfg_file = malloc(100);
-						snprintf(cfg_file, 100, "modules/%s/test/opensips.cfg",
+						/* a module lives under any of the MODULE_DIRS, so
+						 * probe the contrib one and fall back to the
+						 * regular collection, which also keeps the error
+						 * message on the common path */
+						snprintf(cfg_file, 100,
+						         "modules-contrib/%s/test/opensips.cfg",
 						         testing_module);
+						if (access(cfg_file, F_OK) != 0)
+							snprintf(cfg_file, 100,
+							         "modules/%s/test/opensips.cfg",
+							         testing_module);
 					}
 					break;
 #endif
