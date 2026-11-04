@@ -120,12 +120,18 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
 		LM_DBG("has gruu\n");
 
 		/* ;gr param detected */
-		if (memcmp(puri.user.s,TEMP_GRUU,TEMP_GRUU_SIZE) == 0)
+		if (puri.user.len >= TEMP_GRUU_SIZE &&
+				memcmp(puri.user.s,TEMP_GRUU,TEMP_GRUU_SIZE) == 0)
 		{
-			LM_DBG("temp gruu\n");
 			/* temp GRUU, decode and extract aor, sip_instance
 			 * and call_id */
 			tgruu_len = puri.user.len - TEMP_GRUU_SIZE;
+			LM_DBG("temp gruu, encoded length %d\n", tgruu_len);
+			if (tgruu_len > (int)sizeof(tgruu_dec)) {
+				rerrno = R_AOR_LEN;
+				LM_ERR("temporary GRUU too long\n");
+				return -2;
+			}
 			memcpy(tgruu_dec,puri.user.s+TEMP_GRUU_SIZE,tgruu_len);
 
 			if (gruu_secret.s)
