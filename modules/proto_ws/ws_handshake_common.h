@@ -1078,7 +1078,8 @@ static void ws_compute_key(str *key)
 static int ws_is_valid_key(str *key, str *accept)
 {
 	ws_compute_key(key);
-	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len) == 0;
+	return accept->len == WS_ACCEPT_KEY_LEN &&
+		memcmp(ws_accept_buf, accept->s, WS_ACCEPT_KEY_LEN) == 0;
 }
 
 static int ws_complete_handshake(struct tcp_connection *c)
