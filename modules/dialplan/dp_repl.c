@@ -59,7 +59,8 @@ struct subst_expr* repl_exp_parse(str subst)
 	rw_no = 0;
 
 	repl = p;
-	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITHOUT_SEP))< 0)
+	if((rw_no = parse_repl(rw, sizeof(rw)/sizeof(rw[0]), &p, end,
+			&max_pmatch, WITHOUT_SEP))< 0)
 		goto error;
 
 	repl_end=p;
