@@ -147,12 +147,24 @@ jobs:
           MAKE_TGT: 'test'
         run: script -e unit_tests.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
 
+      # -k reports every failing suite instead of stopping at the first one.
+      # Left out under qemu emulation for now: unlike the core suite, a module
+      # suite parses a config, opens a UDP socket and forks workers.
+      - name: Run module tests
+        if: ${{ !endsWith(matrix.compiler, '-qemu-cross') }}
+        env:
+          MAKE_TGT: '-k test-modules'
+        run: script -e module_tests.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
+
       - name: Collect test logs
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: unit_tests-logs_${{ matrix.os }}_${{ matrix.compiler }}
+          if-no-files-found: ignore
           path: |
             unit_tests.log
+            module_tests.log
 
   all_done:
     needs: build_and_test
