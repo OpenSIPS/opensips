@@ -201,6 +201,8 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 			/* if amqp_ssl_socket_get_context() is not available, serialize the CA,
 			 * cert and key loading in order to prevent openssl multiprocess issues */
 			lock_get(ssl_lock);
+
+			/* set CA in AMQP's SSL_CTX to verify server certificate */
 			if (amqp_ssl_socket_set_cacert(amqp_sock, conn->tls_dom->ca.s) !=
 				AMQP_STATUS_OK) {
 				LM_ERR("Failed to set CA certificate\n");
@@ -208,12 +210,16 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 				return -1;
 			}
 
-			if (amqp_ssl_socket_set_key(amqp_sock, conn->tls_dom->cert.s,
-				conn->tls_dom->pkey.s) != AMQP_STATUS_OK) {
-				LM_ERR("Failed to set certificate and private key\n");
-				lock_release(ssl_lock);
-				return -1;
+			/* set client certificate if set */
+			if (conn->tls_dom->cert.s && conn->tls_dom->pkey.s) {
+				if (amqp_ssl_socket_set_key(amqp_sock, conn->tls_dom->cert.s,
+					conn->tls_dom->pkey.s) != AMQP_STATUS_OK) {
+					LM_ERR("Failed to set certificate and private key\n");
+					lock_release(ssl_lock);
+					return -1;
+				}
 			}
+
 			lock_release(ssl_lock);
 			#else
 			/* point the CA, cert and key from librabbitmq's SSL_CTX to
@@ -222,21 +228,24 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 			void *ssl_ctx;
 			ssl_ctx = amqp_ssl_socket_get_context(amqp_sock);
 
-			/* set CA in AMQP's SSL_CTX  */
+			/* set CA in AMQP's SSL_CTX to verify server certificate */
 			openssl_api.ctx_set_cert_store(ssl_ctx,
 				((void**)conn->tls_dom->ctx)[process_no]);
 
-			/* set certificate in AMQP's SSL_CTX */
-			if (openssl_api.ctx_set_cert_chain(ssl_ctx,
-				((void**)conn->tls_dom->ctx)[process_no]) < 0) {
-				LM_ERR("Failed to set certificate\n");
-				return -1;
-			}
+			/* set client certificate if set */
+			if (conn->tls_dom->cert.s && conn->tls_dom->pkey.s) {
+				/* set certificate in AMQP's SSL_CTX */
+				if (openssl_api.ctx_set_cert_chain(ssl_ctx,
+					((void**)conn->tls_dom->ctx)[process_no]) < 0) {
+					LM_ERR("Failed to set certificate\n");
+					return -1;
+				}
 
-			/* set private key in AMQP's SSL_CTX */
-			if (openssl_api.ctx_set_pkey_file(ssl_ctx, conn->tls_dom->pkey.s) < 0) {
-				LM_ERR("Failed to set private key\n");
-				return -1;
+				/* set private key in AMQP's SSL_CTX */
+				if (openssl_api.ctx_set_pkey_file(ssl_ctx, conn->tls_dom->pkey.s) < 0) {
+					LM_ERR("Failed to set private key\n");
+					return -1;
+				}
 			}
 			#endif
 
