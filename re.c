@@ -77,7 +77,7 @@ void replace_lst_free(struct replace_lst* l)
 }
 
 #define MAX_REPLACE_WITH 100
-int parse_repl(struct replace_with * rw, char ** begin,
+int parse_repl(struct replace_with * rw, int rw_size, char ** begin,
 				char * end, int *max_token_nb, int with_sep)
 {
 
@@ -100,6 +100,10 @@ int parse_repl(struct replace_with * rw, char ** begin,
 	escape=0;
 	for(;p<end; p++){
 		if (escape){
+			if (token_nb >= rw_size){
+				LM_ERR("too many replacement tokens in %s\n", *begin);
+				goto error;
+			}
 			escape=0;
 			switch (*p){
 				/* special char escapes */
@@ -170,14 +174,13 @@ int parse_repl(struct replace_with * rw, char ** begin,
 			}
 
 			token_nb++;
-
-			if (token_nb>=MAX_REPLACE_WITH){
-				LM_ERR("too many escapes in the replace part %s\n", *begin);
-				goto error;
-			}
 		}else if (*p=='\\') {
 			escape=1;
 		}else if (*p==PV_MARKER) {
+			if (token_nb >= rw_size){
+				LM_ERR("too many replacement tokens in %s\n", *begin);
+				goto error;
+			}
 			s.s = p;
 			s.len = end - s.s;
 			p0 = pv_parse_spec(&s, &rw[token_nb].u.spec);
@@ -269,7 +272,8 @@ found_re:
 		goto error;
 	}
 	repl=p+1;
-	if((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP))< 0)
+	if((rw_no = parse_repl(rw, sizeof(rw)/sizeof(rw[0]), &p, end,
+			&max_pmatch, WITH_SEP))< 0)
 		goto error;
 
 
