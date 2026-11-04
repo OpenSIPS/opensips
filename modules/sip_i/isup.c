@@ -397,7 +397,8 @@ static void isup_get_number(str *dest, unsigned char *src, int srclen, int oddev
 	dest->len = i;
 }
 
-static void isup_put_number(unsigned char *dest, str src, int *len, int *oddeven)
+static int isup_put_number(unsigned char *dest, int max_len, str src, int *len,
+								int *oddeven)
 {
 	int i = 0;
 
@@ -409,16 +410,21 @@ static void isup_put_number(unsigned char *dest, str src, int *len, int *oddeven
 		*len = src.len/2;
 	}
 
-	while (i < src.len) {
-		dest[i] = 0;
+	if (*len > max_len) {
+		LM_ERR("Number too long: %d digits, max %d\n", src.len, 2 * max_len);
+		return -1;
+	}
 
+	while (i < src.len) {
 		if (!(i % 2))
-			dest[i/2] |= (char2digit(src.s[i]) & 0xf);
+			dest[i/2] = (char2digit(src.s[i]) & 0xf);
 		else
 			dest[i/2] |= ((char2digit(src.s[i]) << 4) & 0xf0);
 
 		i++;
 	}
+
+	return 0;
 }
 
 static inline int get_predef_val(int param_idx, int subfield_idx, str val_alias)
@@ -695,7 +701,9 @@ int called_party_num_writef(int param_idx, int subfield_idx, unsigned char *para
 	}
 
 	if (subfield_idx == 4) {
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		if (isup_put_number(param_val + 2, PARAM_MAX_LEN - 2, num,
+				&num_len, &oddeven) < 0)
+			return -1;
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
 		*len = num_len + 2;
@@ -752,7 +760,9 @@ int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *par
 	}
 
 	if (subfield_idx == 6) {
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		if (isup_put_number(param_val + 2, PARAM_MAX_LEN - 2, num,
+				&num_len, &oddeven) < 0)
+			return -1;
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
 		*len = num_len + 2;
@@ -809,7 +819,9 @@ int generic_num_writef(int param_idx, int subfield_idx, unsigned char *param_val
 	}
 
 	if (subfield_idx == 7) {
-		isup_put_number(param_val + 3, num, &num_len, &oddeven);
+		if (isup_put_number(param_val + 3, PARAM_MAX_LEN - 3, num,
+				&num_len, &oddeven) < 0)
+			return -1;
 		/* also set oddeven, just in case it wasn't already */
 		param_val[1] = SET_BITS(param_val[1], 0x80, 7, oddeven);
 		*len = num_len + 3;
@@ -943,7 +955,9 @@ int connected_num_writef(int param_idx, int subfield_idx, unsigned char *param_v
 	}
 
 	if (subfield_idx == 5) {
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		if (isup_put_number(param_val + 2, PARAM_MAX_LEN - 2, num,
+				&num_len, &oddeven) < 0)
+			return -1;
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
 		*len = num_len + 2;
@@ -1000,7 +1014,9 @@ int original_called_num_writef(int param_idx, int subfield_idx,
 	}
 
 	if (subfield_idx == 4) {
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		if (isup_put_number(param_val + 2, PARAM_MAX_LEN - 2, num,
+				&num_len, &oddeven) < 0)
+			return -1;
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
 		*len = num_len + 2;
@@ -1095,7 +1111,9 @@ int subsequent_num_writef(int param_idx, int subfield_idx, unsigned char *param_
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, new_val);
 		break;
 	case 1:
-		isup_put_number(param_val + 1, num, &num_len, &oddeven);
+		if (isup_put_number(param_val + 1, PARAM_MAX_LEN - 1, num,
+				&num_len, &oddeven) < 0)
+			return -1;
 		/* also set oddeven, just in case */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
 		break;
