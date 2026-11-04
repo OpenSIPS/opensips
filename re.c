@@ -483,6 +483,10 @@ static int replace_build(const char* match, int nmatch, regmatch_t* pmatch,
 				/* ignore it */
 		}
 	}
+	if (dest-rbuf+(end-p)>=REPLACE_BUFFER_SIZE-1){
+		LM_ERR("overflow\n");
+		goto error;
+	}
 	memcpy(dest, p, end-p);
 
 	rpl->len = (dest-rbuf)+(end-p);
