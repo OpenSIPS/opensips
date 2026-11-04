@@ -32,6 +32,7 @@ make
 odbcinst
 patch
 python-dev-is-python3
+tzdata
 unixodbc
 unixodbc-dev
 uuid-dev
