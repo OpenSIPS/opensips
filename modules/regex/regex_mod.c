@@ -774,7 +774,8 @@ found_re:
 	}
 
 	repl = p + 1;
-	if ((rw_no = parse_repl(rw, &p, end, &max_pmatch, WITH_SEP)) < 0)
+	if ((rw_no = parse_repl(rw, sizeof(rw)/sizeof(rw[0]), &p, end,
+			&max_pmatch, WITH_SEP)) < 0)
 		goto error;
 
 	repl_end = p;
