@@ -139,12 +139,21 @@ static inline int decode_uri( str *src , str *dst)
 	int i,j;
 	char c;
 
+	if (!src || !src->s || src->len <= 0) {
+		LM_ERR("cannot decode an empty URI\n");
+		return -1;
+	}
+
 	/* Count '-' at end and disregard them */
-	for( n=0,i=src->len-1; src->s[i]=='-'; i--)
+	for( n=0,i=src->len; i > 0 && src->s[i-1]=='-'; i--)
 		n++;
 
 	dst->len = ((src->len * 6) >> 3) - n;
 	dst->s = buf;
+	if (dst->len < 0) {
+		LM_ERR("invalid URI length\n");
+		return -1;
+	}
 	if (dst->len>MAX_URI_SIZE)
 	{
 		LM_ERR("uri too long\n");
