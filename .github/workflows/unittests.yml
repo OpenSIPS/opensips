@@ -151,10 +151,33 @@ jobs:
       # Left out under qemu emulation for now: unlike the core suite, a module
       # suite parses a config, opens a UDP socket and forks workers.
       - name: Run module tests
+        id: module_tests
         if: ${{ !endsWith(matrix.compiler, '-qemu-cross') }}
         env:
           MAKE_TGT: '-k test-modules'
         run: script -e module_tests.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
+
+      # -k names each failing target as it goes, but that line scrolls past in
+      # the middle of the remaining suites' output.  Restate the failures at
+      # the end of the log, where one looks first.
+      - name: Report failing module suites
+        if: ${{ failure() && steps.module_tests.conclusion == 'failure' }}
+        run: |
+          tr -d '\r' <module_tests.log | awk '
+            /^ *====   [^ ]+   ====$/ { suite = $2 }
+            /^not ok|^#   Failed test at/ { print suite ": " $0; bad[suite] = 1 }
+            # A suite that dies without reporting a single assertion (a crash
+            # while parsing its config, say) shows up only as a make failure.
+            /^make: \*\*\* \[.*test-/ {
+              t = $0; sub(/.*: test-/, "", t); sub(/\].*/, "", t); bad[t] = 1
+            }
+            END {
+              for (s in bad)
+                list = list " " s
+              if (list == "")
+                list = " (none reported - see the log above)"
+              print "::error title=Failing module suites::" substr(list, 2)
+            }'
 
       - name: Collect test logs
         if: always()
