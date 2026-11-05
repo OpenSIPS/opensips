@@ -62,6 +62,9 @@ static int digest_calc_HA1sess(const str_const *nonce, const str_const *cnonce,
 	MD5_CTX Md5Ctx;
 	HASH_MD5 HA1;
 
+	if (!cnonce || !cnonce->s)
+		return -1;
+
 	MD5Init(&Md5Ctx);
 	MD5Update(&Md5Ctx, sess_key->MD5, HASHHEXLEN_MD5);
 	MD5Update(&Md5Ctx, ":", 1);

@@ -91,6 +91,9 @@ static int digest_calc_HA1sess(const str_const *nonce, const str_const *cnonce,
 	EVP_MD_CTX *Sha512t256Ctx;
 	HASH_SHA512t256 HA1;
 
+	if (!cnonce || !cnonce->s)
+		return -1;
+
 	SHA512t256_Init(&Sha512t256Ctx);
 	SHA512t256_Update(&Sha512t256Ctx, sess_key->SHA512t256, HASHHEXLEN_SHA512t256);
 	SHA512t256_Update(&Sha512t256Ctx, ":", 1);
