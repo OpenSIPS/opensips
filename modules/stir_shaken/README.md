@@ -674,8 +674,8 @@ This function can be used from REQUEST_ROUTE.
 ```opensips title="stir_shaken_verify() usage"
 ...
 $var(rc) = stir_shaken_verify($var(cert), $var(err_code), $var(err_reason));
-if ($var(rc) < -1) {
-	send_reply($var(err_sip_code), $var(err_sip_reason));
+if ($var(rc) < 0) {
+	send_reply($var(err_code), $var(err_reason));
 	exit;
 }
 ...
