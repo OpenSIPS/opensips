@@ -674,6 +674,10 @@ char* create_keyname_for_record(char *name,int r_type,int name_len,int *res_len)
 	if (r_type != T_PTR) {
 		/* query is plain text , go ahead and copy it */
 		n=strlen(name);
+		if (n > sizeof(keyname_buff) - 9 - 6) {
+			LM_ERR("DNS name is too long for cache key\n");
+			return NULL;
+		}
 		memcpy(p,name,n);
 		*res_len += n;
 		p+=n;
