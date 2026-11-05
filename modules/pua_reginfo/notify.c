@@ -23,7 +23,7 @@
 #include "notify.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
-#include "../../parser/parse_uri.h"
+#include "../../lib/reg/sip_msg.h"
 #include "../usrloc/usrloc.h"
 #include <libxml/parser.h>
 #include "usrloc_cb.h"
@@ -226,7 +226,6 @@ int process_body(str notify_body, udomain_t *domain)
 	xmlDocPtr doc = NULL;
 	xmlNodePtr doc_root = NULL, registrations = NULL, contacts = NULL,
 			   uris = NULL, params = NULL;
-	char uri[MAX_URI_SIZE];
 	str aor_key = {0, 0};
 	str aor = {0, 0};
 	str callid = {0, 0};
@@ -262,6 +261,8 @@ int process_body(str notify_body, udomain_t *domain)
 	}
 	registrations = doc_root->children;
 	while(registrations) {
+		aor_key.len = 0;
+		ul_record = NULL;
 		/* Only process registration sub-items */
 		if(xmlStrcasecmp(registrations->name, BAD_CAST "registration") != 0)
 			goto next_registration;
@@ -279,28 +280,20 @@ int process_body(str notify_body, udomain_t *domain)
 		aor.len = strlen(aor.s);
 		LM_DBG("AOR %.*s has state \"%d\"\n", aor.len, aor.s, state);
 
-		/* Get username part of the AOR, search for @ in the AOR. */
-		if(parse_uri(aor.s, aor.len, &parsed_aor) < 0) {
+		if(extract_aor(&aor, &aor_key, NULL, NULL, reginfo_use_domain) < 0) {
 			LM_ERR("failed to parse Address of Record (%.*s)\n", aor.len,
 					aor.s);
 			goto next_registration;
 		}
 
-		if(reginfo_use_domain) {
-			aor_key.s = uri;
-		} else {
-			aor_key.s = parsed_aor.user.s;
-		}
-		aor_key.len = strlen(aor_key.s);
 		/* Now let's lock that domain for this AOR: */
 		ul.lock_udomain(domain, &aor_key);
 		/* and retrieve the user-record for this user: */
 		result = ul.get_urecord(domain, &aor_key, &ul_record);
 		if(result < 0) {
-			ul.unlock_udomain(domain, &aor_key);
 			LM_ERR("failed to query usrloc (AOR %.*s)\n", aor_key.len,
 					aor_key.s);
-			goto next_registration;
+			goto unlock_registration;
 		}
 		/* If no contacts found, then set the ul_record to NULL */
 		if(result != 0)
@@ -470,7 +463,7 @@ int process_body(str notify_body, udomain_t *domain)
 					contact_uri.s = (char *)xmlNodeGetContent(uris);
 					if(contact_uri.s == NULL) {
 						LM_ERR("No URI for this contact!\n");
-						goto next_registration;
+						goto unlock_registration;
 					}
 					contact_uri.len = strlen(contact_uri.s);
 					if(contact_params.len > 0) {
@@ -506,13 +499,13 @@ int process_body(str notify_body, udomain_t *domain)
 				contacts = contacts->next;
 			}
 		}
-	next_registration:
+		/* Unlock the domain for this AOR: */
+	unlock_registration:
 		if(ul_record)
 			ul.release_urecord(ul_record, 0);
-		/* Unlock the domain for this AOR: */
-		if(aor_key.len > 0)
-			ul.unlock_udomain(domain, &aor_key);
+		ul.unlock_udomain(domain, &aor_key);
 
+	next_registration:
 		registrations = registrations->next;
 	}
 error:
