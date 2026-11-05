@@ -482,6 +482,8 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h)
 
 				if (compression_api.check_rc(rc)) {
 					LM_ERR("payload decompression failed!\n");
+					if (decompressed_payload.s)
+						pkg_free(decompressed_payload.s);
 					goto safe_exit;
 				}
 
