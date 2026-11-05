@@ -151,6 +151,17 @@ int check_cmd(const struct cmd_param *params, action_elem_t *elems)
 	return 0;
 }
 
+/* a module's fixup runs outside the reload's pkg generation: what it
+ * allocates may be kept by the module (registries) and is not part of the
+ * script tree we sweep */
+static inline int call_fixup(const struct cmd_param *param, void **p)
+{
+	unsigned long g = pkg_gen_suspend();
+	int ret = param->fixup(p);
+	pkg_gen_resume(g);
+	return ret;
+}
+
 int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
@@ -169,7 +180,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 			if (param->flags & CMD_PARAM_OPT) {
 				if (param->fixup && (param->flags & CMD_PARAM_FIX_NULL)) {
 					h = NULL;
-					if (param->fixup(&h) < 0) {
+					if (call_fixup(param, &h) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
@@ -204,7 +215,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 
 				if (param->fixup) {
 					h = gp->pval;
-					if (param->fixup(&gp->pval) < 0) {
+					if (call_fixup(param, &gp->pval) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
@@ -244,7 +255,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 
 					if (param->fixup) {
 						h = gp->pval;
-						if (param->fixup(&gp->pval) < 0) {
+						if (call_fixup(param, &gp->pval) < 0) {
 							LM_ERR("Fixup failed for param [%d]\n", i);
 							ret = E_UNSPEC;
 							goto error;
@@ -286,7 +297,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 
 			gp->pval = elems[i].u.data;
 
-			if (param->fixup && param->fixup(&gp->pval) < 0) {
+			if (param->fixup && call_fixup(param, &gp->pval) < 0) {
 				LM_ERR("Fixup failed for param [%d]\n", i);
 				ret = E_UNSPEC;
 				goto error;
@@ -302,7 +313,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 				gp->pval = re;
 				gp->type = GPARAM_TYPE_VAL;
 
-				if (param->fixup && param->fixup(&gp->pval) < 0) {
+				if (param->fixup && call_fixup(param, &gp->pval) < 0) {
 					LM_ERR("Fixup failed for param [%d]\n", i);
 					ret = E_UNSPEC;
 					goto error;
