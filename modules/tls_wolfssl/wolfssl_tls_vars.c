@@ -345,6 +345,8 @@ int _wolfssl_tls_var_alt(int ind, void *ssl, str *res)
 
 		case GEN_IPADD:
 			ip.len = nm->d.iPAddress->length;
+			if (ip.len != 4 && ip.len != 16)
+				goto err;
 			ip.af = (ip.len == 16) ? AF_INET6 : AF_INET;
 			memcpy(ip.u.addr, nm->d.iPAddress->data, ip.len);
 			text.s = ip_addr2a(&ip);
