@@ -57,6 +57,9 @@ int recv_all(int socket, void* data, int data_len, int flags)
 	int b_read;
 	int n;
 
+	if (data_len <= 0)
+		return data_len == 0 ? 0 : -1;
+
 	b_read=0;
 again:
 	n=recv(socket, (char*)data, data_len, flags);
@@ -68,6 +71,8 @@ again:
 			LM_CRIT("1st recv on %d failed: %s\n", socket, strerror(errno));
 			return n;
 	}
+	if (n > data_len - b_read)
+		return -1;
 	b_read+=n;
 	while( (b_read!=data_len) && (n)){
 		n=recv(socket, (char*)data+b_read, data_len-b_read, MSG_WAITALL);
@@ -78,6 +83,8 @@ again:
 					socket, strerror(errno));
 			return n;
 		}
+		if (n > data_len - b_read)
+			return -1;
 		b_read+=n;
 	}
 	return b_read;

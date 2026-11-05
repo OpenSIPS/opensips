@@ -54,7 +54,7 @@ syn keyword osGlobalParam disable_503_translation import_file server_header
 syn keyword osGlobalParam tcp_max_msg_time abort_on_assert anycast
 syn keyword osGlobalParam log_prefix
 syn keyword osGlobalParam stderror_log_format syslog_log_format
-syn keyword osGlobalParam log_json_buf_size log_msg_buf_size
+syn keyword osGlobalParam log_json_buf_size log_msg_buf_size log_ratelimit_period
 syn keyword osGlobalParam log_event_enabled log_event_level_filter
 syn keyword osGlobalParam shm_memlog_size
 

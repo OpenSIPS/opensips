@@ -463,6 +463,8 @@ oom:
 		shm_free(_bxp->xxx);
 		shm_free(_bxp->req);
 	}
+	_bxp->xxx = NULL;
+	_bxp->req = NULL;
 	return -1;
 }
 
@@ -506,6 +508,8 @@ static inline void tmrec_expr_init(tmrec_expr_t *e)
 	tmrec_init(&e->tr);
 }
 
+static void tmrec_free_members(tmrec_p, char);
+
 tmrec_p tmrec_new(char alloc)
 {
 	tmrec_p _trp;
@@ -528,19 +532,37 @@ void tmrec_free(tmrec *tr)
 	if(!_trp)
 		return;
 
+	tmrec_free_members(_trp, _trp->flags);
+
+	if (_trp->flags & PKG_ALLOC) {
+		pkg_free(_trp);
+	} else {
+		shm_free(_trp);
+	}
+}
+
+static void tmrec_free_members(tmrec_p _trp, char alloc)
+{
+	if (!_trp)
+		return;
+
 	tr_byxxx_free(_trp->byday);
 	tr_byxxx_free(_trp->bymday);
 	tr_byxxx_free(_trp->byyday);
 	tr_byxxx_free(_trp->bymonth);
 	tr_byxxx_free(_trp->byweekno);
 
-	if (_trp->flags & PKG_ALLOC) {
+	if (alloc & PKG_ALLOC)
 		pkg_free(_trp->tz);
-		pkg_free(_trp);
-	} else {
+	else
 		shm_free(_trp->tz);
-		shm_free(_trp);
-	}
+
+	_trp->byday = NULL;
+	_trp->bymday = NULL;
+	_trp->byyday = NULL;
+	_trp->bymonth = NULL;
+	_trp->byweekno = NULL;
+	_trp->tz = NULL;
 }
 
 int tr_parse_tz(tmrec_p _trp, char *_in)
@@ -643,50 +665,80 @@ int tr_parse_interval(tmrec_p _trp, char *_in)
 
 int tr_parse_byday(tmrec_p _trp, char *_in)
 {
+	tr_byxxx_p byday;
+
 	if (!_in)
 		return -1;
 
-	_trp->byday = ic_parse_byday(_in, _trp->flags);
+	byday = ic_parse_byday(_in, _trp->flags);
+	if (!byday)
+		return -1;
+	tr_byxxx_free(_trp->byday);
+	_trp->byday = byday;
 	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
 int tr_parse_bymday(tmrec_p _trp, char *_in)
 {
+	tr_byxxx_p bymday;
+
 	if (!_in)
 		return -1;
 
-	_trp->bymday = ic_parse_byxxx(_in, _trp->flags);
+	bymday = ic_parse_byxxx(_in, _trp->flags);
+	if (!bymday)
+		return -1;
+	tr_byxxx_free(_trp->bymday);
+	_trp->bymday = bymday;
 	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
 int tr_parse_byyday(tmrec_p _trp, char *_in)
 {
+	tr_byxxx_p byyday;
+
 	if (!_in)
 		return -1;
 
-	_trp->byyday = ic_parse_byxxx(_in, _trp->flags);
+	byyday = ic_parse_byxxx(_in, _trp->flags);
+	if (!byyday)
+		return -1;
+	tr_byxxx_free(_trp->byyday);
+	_trp->byyday = byyday;
 	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
 int tr_parse_bymonth(tmrec_p _trp, char *_in)
 {
+	tr_byxxx_p bymonth;
+
 	if (!_in)
 		return -1;
 
-	_trp->bymonth = ic_parse_byxxx(_in, _trp->flags);
+	bymonth = ic_parse_byxxx(_in, _trp->flags);
+	if (!bymonth)
+		return -1;
+	tr_byxxx_free(_trp->bymonth);
+	_trp->bymonth = bymonth;
 	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
 int tr_parse_byweekno(tmrec_p _trp, char *_in)
 {
+	tr_byxxx_p byweekno;
+
 	if (!_in)
 		return -1;
 
-	_trp->byweekno = ic_parse_byxxx(_in, _trp->flags);
+	byweekno = ic_parse_byxxx(_in, _trp->flags);
+	if (!byweekno)
+		return -1;
+	tr_byxxx_free(_trp->byweekno);
+	_trp->byweekno = byweekno;
 	_trp->flags |= TR_BYXXX;
 	return 0;
 }
@@ -1704,13 +1756,13 @@ int _tmrec_check_str(const char *tr, time_t check_time)
 
 	if (_tmrec_parse(tr, &time_rec) < 0) {
 		LM_ERR("failed to parse time rec\n");
+		tmrec_free_members(&time_rec, time_rec.flags);
 		return -2;
 	}
 
 	rc = _tmrec_check(&time_rec, check_time) ? 1 : -1;
 
-	if (time_rec.tz)
-		pkg_free(time_rec.tz);
+	tmrec_free_members(&time_rec, time_rec.flags);
 
 	return rc;
 }
@@ -2198,7 +2250,7 @@ void tmrec_expr_free(tmrec_expr *_trx)
 		tmrec_expr_free(exp);
 	}
 
-	free_f(trx->tr.tz);
+	tmrec_free_members(&trx->tr, trx->flags);
 	free_f(trx);
 }
 

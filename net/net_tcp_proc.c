@@ -261,7 +261,9 @@ int tcp_worker_proc_reactor_init( int unix_sock)
 	}
 
 	/* add the unix socket */
-	if (reactor_add_reader( tcpmain_sock, F_TCPMAIN, RCT_PRIO_PROC, NULL)<0) {
+	if (tcp_dispatch_exclusive() ?
+	reactor_add_reader_excl( tcpmain_sock, F_TCPMAIN, RCT_PRIO_PROC, NULL)<0 :
+	reactor_add_reader( tcpmain_sock, F_TCPMAIN, RCT_PRIO_PROC, NULL)<0) {
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}

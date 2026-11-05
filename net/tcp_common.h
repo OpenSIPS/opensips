@@ -64,6 +64,16 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 int tcp_async_add_chunks(struct tcp_connection *con, const struct iovec *iov,
 			int iovcnt, int lock);
 
+/*
+ * Register callbacks for subsequently queued async chunks.  The registered
+ * list is copied to every chunk until it is cleared.
+ */
+int tcp_register_fail_cb(tcp_fail_f *f, void *param, tcp_fail_free_f *free);
+/* clear the callback registered for subsequently queued chunks */
+void tcp_clear_fail_cb(void);
+
+void tcp_async_fail_chunks(struct tcp_connection *con);
+
 /* returns the first chunk to be written */
 struct tcp_async_chunk *tcp_async_get_chunk(struct tcp_connection *con);
 

@@ -1381,7 +1381,9 @@ mediaproxy_disconnect(void)
 static char*
 send_command(char *command)
 {
-    int cmd_len, bytes, tries, sent, received, count;
+    size_t cmd_len, sent;
+    ssize_t bytes;
+    int tries, received, count;
     struct timeval timeout;
     fd_set rset;
 

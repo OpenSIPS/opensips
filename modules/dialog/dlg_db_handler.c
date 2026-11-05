@@ -361,7 +361,9 @@ static inline char* read_pair(char *b, char *end, str *name, int_str *val,
 
 	if (b>=end) return NULL;
 
-	if ((*b != '0' + DLG_VAL_TYPE_STR) && (*b != '0' + DLG_VAL_TYPE_INT))
+	if ((*b != '0' + DLG_VAL_TYPE_STR) &&
+		(*b != '0' + DLG_VAL_TYPE_INT) &&
+		(*b != '0' + DLG_VAL_TYPE_BOOL))
 		/* unexpected type char */
 		return NULL;
 	*type = *b - '0';
@@ -462,7 +464,7 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 		p = read_pair( p, end, &name, &val, &type);
 		if (p==NULL) break;
 
-		if (type==DLG_VAL_TYPE_INT) {
+		if (type != DLG_VAL_TYPE_STR) {
 			LM_ERR("Bad type when reading profile\n");
 			continue;
 		}
@@ -1271,7 +1273,7 @@ static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
 			b[j++] = val->s.s[i];
 		}
 	} else {
-		b[j++] = DLG_VAL_TYPE_INT + '0';
+		b[j++] = type + '0';
 
 		b[j++] = '#';
 

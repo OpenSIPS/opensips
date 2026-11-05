@@ -803,6 +803,18 @@ If not specified, it is taken from the message/dialog.
 to be sent to all offer/answer requests.
 - *delete* - flags sent
 when the relay session is terminated.
+- *node* - the RTP relay node to use for the initial offer. If set
+before `rtp_relay_engage()`, it is used as the node preference for
+the new session. After an offer succeeds, this value is updated with
+the node actually selected by the relay and can be retrieved at any
+time.
+
+For example:
+
+```opensips
+$rtp_relay_ctx(node) = "udp:127.0.0.1:22222";
+rtp_relay_engage("rtpengine");
+```
 <!-- CONTRIBUTORS -->
 
 ### License

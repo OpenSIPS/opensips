@@ -561,6 +561,11 @@ static int srs_send_invite(struct src_sess *sess)
 		ci.local_contact = ct;
 	}
 
+	/* The reply callback may run before client_new() returns.  Keep the
+	 * session alive until the returned b2b key has been copied, since the
+	 * callback may otherwise drop the recording reference and free sess while
+	 * we are still updating it below. */
+	SIPREC_REF_UNSAFE(sess);
 	client = run_b2be_api(&srec_b2b, client_new, &ci, srec_b2b_notify, srec_b2b_confirm,
 			&mod_name, &sess->ctx->dlg->callid, NULL, sess, NULL);
 	pkg_free(body.s);
@@ -571,6 +576,7 @@ static int srs_send_invite(struct src_sess *sess)
 	if (!client) {
 		LM_ERR("cannot start recording with %.*s!\n",
 				ci.req_uri.len, ci.req_uri.s);
+		SIPREC_UNREF_UNSAFE(sess);
 		return -1;
 	}
 
@@ -581,11 +587,13 @@ static int srs_send_invite(struct src_sess *sess)
 	if (!sess->b2b_key.s) {
 		LM_ERR("out of shm memory!\n");
 		pkg_free(client);
+		SIPREC_UNREF_UNSAFE(sess);
 		return -1;
 	}
 	memcpy(sess->b2b_key.s, client->s, client->len);
 	sess->b2b_key.len = client->len;
 	pkg_free(client);
+	SIPREC_UNREF_UNSAFE(sess);
 
 	return 0;
 }

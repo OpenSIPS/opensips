@@ -26,6 +26,10 @@
 #include "parse_supported.h"
 
 #define IS_DELIM(c) (*(c) == ' ' || *(c) == '\t' || *(c) == '\r' || *(c) == '\n' || *(c) == ',')
+/* an option tag is also terminated by the end of the header body, in which
+ * case there is no next character to look at */
+#define IS_TAG_END(c, off, pos, len) \
+	((pos) + (off) == (len) || IS_DELIM((c) + (off)))
 
 /* from parser/parse_hname2.c: */
 #define LOWER_BYTE(b) ((b) | 0x20)
@@ -52,12 +56,14 @@ int parse_supported_body(str *body, unsigned int *sup)
 		/* skip spaces and commas */
 		for (; pos < len && IS_DELIM(p); ++pos, ++p);
 
-		val = LOWER_DWORD(READ(p));
+		/* the shortest option tag below is 4 chars long, so reading the
+		 * leading dword must not reach past the end of the body */
+		val = (len - pos >= 4) ? LOWER_DWORD(READ(p)) : 0;
 		switch (val) {
 
 			/* "path" */
 			case _path_:
-				if(pos + 4 <= len && IS_DELIM(p+4)) {
+				if(pos + 4 <= len && IS_TAG_END(p, 4, pos, len)) {
 					*sup |= F_SUPPORTED_PATH;
 					pos += 5; p += 5;
 				} else
@@ -66,7 +72,7 @@ int parse_supported_body(str *body, unsigned int *sup)
 
 			/* "gruu" */
 			case _gruu_:
-				if(pos + 4 <= len && IS_DELIM(p+4)) {
+				if(pos + 4 <= len && IS_TAG_END(p, 4, pos, len)) {
 					*sup |= F_SUPPORTED_GRUU;
 					pos += 5; p += 5;
 				} else
@@ -77,7 +83,7 @@ int parse_supported_body(str *body, unsigned int *sup)
 			case _100r_:
 				if ( pos+6 <= len
 					 && LOWER_BYTE(*(p+4))=='e' && LOWER_BYTE(*(p+5))=='l'
-					 && IS_DELIM(p+6)) {
+					 && IS_TAG_END(p, 6, pos, len)) {
 					*sup |= F_SUPPORTED_100REL;
 					pos += SUPPORTED_100REL_LEN + 1;
 					p   += SUPPORTED_100REL_LEN + 1;
@@ -88,7 +94,7 @@ int parse_supported_body(str *body, unsigned int *sup)
 			/* "timer" */
 			case _time_:
 				if ( pos+5 <= len && LOWER_BYTE(*(p+4))=='r'
-					 && IS_DELIM(p+5) ) {
+					 && IS_TAG_END(p, 5, pos, len) ) {
 					*sup |= F_SUPPORTED_TIMER;
 					pos += SUPPORTED_TIMER_LEN + 1;
 					p   += SUPPORTED_TIMER_LEN + 1;
@@ -99,7 +105,7 @@ int parse_supported_body(str *body, unsigned int *sup)
 			/* "eventlist" */
 			case _even_:
 				if ( pos+9 <= len && LOWER_DWORD(READ(p+4))==_tlis_ && LOWER_BYTE(*(p+8))=='t'
-					 && IS_DELIM(p+9) ) {
+					 && IS_TAG_END(p, 9, pos, len) ) {
 					*sup |= F_SUPPORTED_EVENTLIST;
 					pos += SUPPORTED_EVENTLIST_LEN + 1;
 					p   += SUPPORTED_EVENTLIST_LEN + 1;

@@ -325,6 +325,7 @@ extern int cfg_parse_only_routes;
 %token SYSLOG_FORMAT
 %token LOG_JSON_BUF_SIZE
 %token LOG_MSG_BUF_SIZE
+%token LOG_RATELIMIT_PERIOD
 %token SYSLOG_FACILITY
 %token SYSLOG_NAME
 %token AVP_ALIASES
@@ -343,6 +344,8 @@ extern int cfg_parse_only_routes;
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
 %token UDP_WORKERS
+%token UDP_RX_MODE
+%token TCP_DISPATCH_MODE
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
 %token SHM_SECONDARY_HASH_SIZE
@@ -1122,6 +1125,17 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 			}
 		| LOG_MSG_BUF_SIZE EQUAL error { yyerror("number expected"); }
+		| LOG_RATELIMIT_PERIOD EQUAL NUMBER { IFOR();
+			if ($3 > LOG_RATELIMIT_PERIOD_MAX) {
+				LM_WARN("config file %s, line %d: log_ratelimit_period %ld is "
+					"above the maximum, using %d\n", get_cfg_file_name, line,
+					$3, LOG_RATELIMIT_PERIOD_MAX);
+				log_ratelimit_period = LOG_RATELIMIT_PERIOD_MAX;
+			} else {
+				log_ratelimit_period = $3;
+			}
+			}
+		| LOG_RATELIMIT_PERIOD EQUAL error { yyerror("number expected"); }
 		| SYSLOG_FACILITY EQUAL ID { IFOR();
 			if ( (i_tmp=str2facility($3))==-1)
 				yyerror("bad facility (see syslog(3) man page)");
@@ -1157,6 +1171,16 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				udp_auto_scaling_profile=$5;
 		}
 		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
+		| UDP_RX_MODE EQUAL STRING { IFOR();
+				if (parse_udp_rx_mode($3) < 0)
+					yyerror("udp_rx_mode: auto, shared, exclusive or reuseport expected");
+				}
+		| UDP_RX_MODE EQUAL error { yyerror("string value expected"); }
+		| TCP_DISPATCH_MODE EQUAL STRING { IFOR();
+				if (parse_tcp_dispatch_mode($3) < 0)
+					yyerror("tcp_dispatch_mode: auto, shared, exclusive or per_worker expected");
+				}
+		| TCP_DISPATCH_MODE EQUAL error { yyerror("string value expected"); }
 		| TIMER_WORKERS EQUAL NUMBER { IFOR();
 				timer_workers_no=$3;
 		}

@@ -97,6 +97,8 @@ Edit Makefile.conf before compiling:
   targets. Add names to exclude more modules.
 - include_modules forces named modules into the build, including modules from
   exclude_modules. Install each module's external dependencies first.
+- MODULE_DIRS lists the module source collections. Each directory is exposed
+  as a build target, while all-modules builds all configured collections.
 - DEFS controls OpenSIPS compile-time definitions. The template documents the
   available definitions. Some allocator and locking definitions are mutually
   exclusive, so only enable options whose behavior is understood.
@@ -124,7 +126,13 @@ support is enabled by "SCTP=1"):
 make   #builds only opensips core, equivalent to make opensips
 make modules
 
-or make all #builds everything
+# Community-contributed modules, which are not maintained by the OpenSIPS core
+# team, live under modules-contrib and are built only when explicitly requested:
+
+make modules-contrib
+make all-modules         # builds every configured module collection
+
+or make all #builds the core, utilities and the default modules collection
 
 -compile debug mode version
 
@@ -133,6 +141,10 @@ make mode=debug all
 -compile only the textops module
 
 make modules=modules/textops modules
+
+-compile only selected community-contributed modules
+
+make modules=modules-contrib/example modules-contrib
 
 -compile all the "default" modules except textops and db_mysql
 

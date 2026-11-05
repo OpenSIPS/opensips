@@ -161,8 +161,8 @@ static int val_buf_size;
  * -1 - error
  * -2 - not found
  */
-int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
-	int *type, int_str *out_val, int val_has_buf)
+static int fetch_dlg_value_internal(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf, int preserve_type)
 {
 	struct dlg_val *dv;
 	unsigned int id;
@@ -184,7 +184,8 @@ int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
 		if (id==dv->id && name->len==dv->name.len &&
 		memcmp(name->s,dv->name.s,name->len)==0 ) {
-			*type = dv->type;
+			*type = !preserve_type && dv->type == DLG_VAL_TYPE_BOOL ?
+				DLG_VAL_TYPE_INT : dv->type;
 
 			if (dv->type == DLG_VAL_TYPE_STR) {
 				LM_DBG("var found-> <%.*s>!\n",dv->val.s.len,dv->val.s.s);
@@ -222,9 +223,24 @@ int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 	return -2;
 }
 
-/* NOTE: copy/paste from fetch_dlg_value(), except no locking */
-int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
-		int *type, int_str *out_val, int val_has_buf)
+int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf)
+{
+	return fetch_dlg_value_internal(dlg, name, type, out_val,
+		val_has_buf, 0);
+}
+
+int fetch_dlg_value_typed(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf)
+{
+	return fetch_dlg_value_internal(dlg, name, type, out_val,
+		val_has_buf, 1);
+}
+
+/* NOTE: copy/paste from fetch_dlg_value_internal(), except no locking */
+static int fetch_dlg_value_unsafe_internal(struct dlg_cell *dlg,
+		const str *name, int *type, int_str *out_val, int val_has_buf,
+		int preserve_type)
 {
 	struct dlg_val *dv;
 	unsigned int id;
@@ -244,7 +260,8 @@ int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
 		if (id==dv->id && name->len==dv->name.len &&
 		memcmp(name->s,dv->name.s,name->len)==0 ) {
-			*type = dv->type;
+			*type = !preserve_type && dv->type == DLG_VAL_TYPE_BOOL ?
+				DLG_VAL_TYPE_INT : dv->type;
 
 			if (dv->type == DLG_VAL_TYPE_STR) {
 				LM_DBG("var found-> <%.*s>!\n",dv->val.s.len,dv->val.s.s);
@@ -279,6 +296,20 @@ int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
 	return -2;
 }
 
+int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
+		int *type, int_str *out_val, int val_has_buf)
+{
+	return fetch_dlg_value_unsafe_internal(dlg, name, type, out_val,
+		val_has_buf, 0);
+}
+
+int fetch_dlg_value_unsafe_typed(struct dlg_cell *dlg, const str *name,
+		int *type, int_str *out_val, int val_has_buf)
+{
+	return fetch_dlg_value_unsafe_internal(dlg, name, type, out_val,
+		val_has_buf, 1);
+}
+
 
 int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 	pv_spec_t *val, int lock_vals)
@@ -297,7 +328,8 @@ int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 		return -1;
 	}
 	if (pvv_is_int(&pval)) {
-		type = DLG_VAL_TYPE_INT;
+		type = pval.flags & PV_VAL_BOOL ?
+			DLG_VAL_TYPE_BOOL : DLG_VAL_TYPE_INT;
 	} else if (pvv_is_str(&pval)) {
 		type = DLG_VAL_TYPE_STR;
 	} else {
@@ -311,7 +343,9 @@ int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 	/* iterate the list */
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
 		if (id==dv->id && name->len==dv->name.len &&
-		memcmp(name->s,dv->name.s,name->len)==0 && type == dv->type ) {
+		memcmp(name->s,dv->name.s,name->len)==0 &&
+		(type == dv->type || (type != DLG_VAL_TYPE_STR &&
+			dv->type != DLG_VAL_TYPE_STR))) {
 			if (dv->type == DLG_VAL_TYPE_STR) {
 				LM_DBG("var found with val <%.*s>!\n",dv->val.s.len,dv->val.s.s);
 				if ( pval.rs.len==dv->val.s.len &&
@@ -426,7 +460,7 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return pv_get_null(msg, param, res);
 
 	isval.s = param->pvv;
-	if (fetch_dlg_value(dlg, &name, &type, &isval, 1)!=0)
+	if (fetch_dlg_value_typed(dlg, &name, &type, &isval, 1)!=0)
 		return pv_get_null(msg, param, res);
 
 	if (type == DLG_VAL_TYPE_STR) {
@@ -434,8 +468,14 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		res->flags = PV_VAL_STR;
 		res->rs = isval.s;
 	} else {
-		res->flags = PV_VAL_INT|PV_TYPE_INT;
+		if (type == DLG_VAL_TYPE_BOOL) {
+			res->rs = isval.n ? str_init("true") : str_init("false");
+			res->flags = PV_VAL_BOOL|PV_VAL_STR;
+		} else {
+			res->flags = 0;
+		}
 		res->ri = isval.n;
+		res->flags |= PV_VAL_INT|PV_TYPE_INT;
 	}
 
 	return 0;
@@ -477,7 +517,8 @@ int pv_set_dlg_val(struct sip_msg* msg, pv_param_t *param, int op,
 			type = DLG_VAL_TYPE_STR;
 		} else if (pvv_is_int(pval)) {
 			val.n = pval->ri;
-			type = DLG_VAL_TYPE_INT;
+			type = pval->flags & PV_VAL_BOOL ?
+				DLG_VAL_TYPE_BOOL : DLG_VAL_TYPE_INT;
 		} else {
 			LM_ERR("Bad value type\n");
 			return -1;

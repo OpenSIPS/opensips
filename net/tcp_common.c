@@ -26,9 +26,84 @@
 #include "proxy_protocol.h"
 #include "trans.h"
 #include "../tsend.h"
+#include "../ipc.h"
 #include "proto_tcp/tcp_common_defs.h"
 
 #define TCP_DEFAULT_ASYNC_CHUNKS 32
+
+static struct tcp_fail_cb tcp_fail_cb;
+
+struct tcp_fail_job {
+	tcp_fail_f *f;
+	void *param;
+	tcp_fail_free_f *free;
+};
+
+static void tcp_fail_rpc(int sender, void *param)
+{
+	struct tcp_fail_job *job = param;
+
+	job->f(job->param);
+	if (job->free)
+		job->free(job->param);
+	shm_free(job);
+}
+
+int tcp_register_fail_cb(tcp_fail_f *f, void *param, tcp_fail_free_f *free)
+{
+	if (!f)
+		return -1;
+
+	tcp_fail_cb.f = f;
+	tcp_fail_cb.param = param;
+	tcp_fail_cb.free = free;
+	return 0;
+}
+
+void tcp_clear_fail_cb(void)
+{
+	memset(&tcp_fail_cb, 0, sizeof tcp_fail_cb);
+}
+
+static void tcp_free_fail_cb(struct tcp_async_chunk *chunk)
+{
+	if (!chunk->fail_cb.f)
+		return;
+	memset(&chunk->fail_cb, 0, sizeof chunk->fail_cb);
+}
+
+void tcp_async_fail_chunks(struct tcp_connection *con)
+{
+	struct tcp_fail_job *job;
+	struct tcp_fail_cb *cb;
+	int i;
+
+	if (!con->async)
+		return;
+
+	for (i = 0; i < con->async->pending; i++) {
+		cb = &con->async->chunks[i]->fail_cb;
+		if (cb->f) {
+			job = shm_malloc(sizeof *job);
+			if (!job) {
+				LM_ERR("no more SHM for chunk failure notification\n");
+				if (cb->free)
+					cb->free(cb->param);
+			} else {
+				job->f = cb->f;
+				job->param = cb->param;
+				job->free = cb->free;
+				if (ipc_dispatch_rpc(tcp_fail_rpc, job) < 0) {
+					LM_ERR("failed to dispatch chunk failure notification\n");
+					if (job->free)
+						job->free(job->param);
+					shm_free(job);
+				}
+			}
+		}
+		tcp_free_fail_cb(con->async->chunks[i]);
+	}
+}
 
 static int tcp_async_init_data(struct tcp_connection *con)
 {
@@ -410,6 +485,7 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 		return -1;
 	}
 
+	c->fail_cb = tcp_fail_cb;
 	c->len = len;
 	c->ticks = get_ticks();
 	c->buf = (char *)(c+1);
@@ -420,6 +496,7 @@ int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
 			"on conn %p / %u\n", con->async->pending, con, con->id);
 		if (lock)
 			lock_release(&con->write_lock);
+		tcp_free_fail_cb(c);
 		shm_free(c);
 		return -2;
 	}
@@ -489,8 +566,13 @@ void tcp_async_update_write(struct tcp_connection *con, int len)
 		}
 	}
 	con->async->pending -= i;
-	for (c = 0; c < i; c++)
+	for (c = 0; c < i; c++) {
+		if (con->async->chunks[c]->fail_cb.free)
+			con->async->chunks[c]->fail_cb.free(
+				con->async->chunks[c]->fail_cb.param);
+		tcp_free_fail_cb(con->async->chunks[c]);
 		shm_free(con->async->chunks[c]);
+	}
 	if (con->async->pending) {
 		LM_DBG("We still have %d chunks pending on %p\n",
 				con->async->pending, con);

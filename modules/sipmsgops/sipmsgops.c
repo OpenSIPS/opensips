@@ -1950,7 +1950,6 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 		else {
 			/* no body */
 			body.s = NULL;
-			body.len = 0;
 		}
 
 		/* determine the length of the body */

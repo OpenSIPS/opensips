@@ -191,7 +191,7 @@ int b2b_has_leg_idx(enum b2b_entity_type et, str *b2b_key, int leg_idx)
 
 	if (!b2b_key || !b2b_key->s || leg_idx <= 0)
 		return -1;
-	if (b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if (b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 		return -1;
 	table = (et == B2B_SERVER) ? server_htable : client_htable;
 	B2BE_LOCK_GET(table, hash_index);
@@ -216,7 +216,8 @@ int b2b_get_reply_leg(enum b2b_entity_type et, str *b2b_key, str *to_tag)
 	if (!b2b_key || !b2b_key->s || !to_tag || !to_tag->s)
 		return -1;
 
-	if (b2b_parse_key(b2b_key, &hash_index, &local_index) < 0) {
+	if (b2b_parse_key(b2b_key, b2b_et_hsize(et),
+			&hash_index, &local_index) < 0) {
 		LM_ERR("Failed to parse b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
 	}
@@ -480,10 +481,29 @@ err_free:
 	return NULL;
 }
 
+/* size of the hash table holding the entities of type @et;
+ * for B2B_NONE (either table), the larger of the two */
+unsigned int b2b_et_hsize(enum b2b_entity_type et)
+{
+	if (et == B2B_SERVER)
+		return server_hsize;
+	if (et == B2B_NONE)
+		return server_hsize > client_hsize ? server_hsize : client_hsize;
+	return client_hsize;
+}
+
+unsigned int b2b_table_hsize(b2b_table table)
+{
+	return table == server_htable ? server_hsize : client_hsize;
+}
+
 /* key format : B2B.hash_index.local_index.timestamp.random *
+ * @hsize: size of the hash table the key will be looked up in; a key with
+ * a hash_index outside of it is rejected
  */
 
-int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
+int b2b_parse_key(str* key, unsigned int hsize, unsigned int* hash_index,
+		unsigned int* local_index)
 {
 	char* p;
 	str s;
@@ -510,6 +530,11 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 	if(str2int(&s, hash_index) < 0)
 	{
 		LM_DBG("Could not extract hash_index [%.*s]\n", key->len, key->s);
+		return -1;
+	}
+	if(*hash_index >= hsize)
+	{
+		LM_DBG("hash_index out of range [%.*s]\n", key->len, key->s);
 		return -1;
 	}
 
@@ -1198,7 +1223,8 @@ search_dialog:
 	b2b_key = to_tag;
 	/* check if the to tag has the b2b key format -> meaning
 	 * that it is a server request */
-	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index)>=0)
+	if(b2b_key.s && b2b_parse_key(&b2b_key, server_hsize,
+			&hash_index, &local_index)>=0)
 	{
 		LM_DBG("Received a b2b server request [%.*s]\n",
 					msg->first_line.u.request.method.len,
@@ -1210,7 +1236,8 @@ search_dialog:
 		/* check if the callid is in b2b format -> meaning
 		 * that this is a client request */
 		b2b_key = msg->callid->body;
-		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
+		if(b2b_parse_key(&b2b_key, client_hsize,
+				&hash_index, &local_index) >= 0)
 		{
 			LM_DBG("received a b2b client request [%.*s]\n",
 				msg->first_line.u.request.method.len,
@@ -1347,7 +1374,10 @@ logic_notify:
 	{
 		B2BE_LOCK_RELEASE(table, hash_index);
 		run_top_route(sroutes->request[req_route_ref->idx], msg);
-		if (b2b_apply_lumps(msg))
+		ret = b2b_apply_lumps(msg);
+		if (ret < 0)
+			goto scb_drop_msg;
+		if (ret > 0)
 		{
 			if (parse_from_header(msg) < 0)
 			{
@@ -2068,7 +2098,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	}
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return -1;
@@ -2486,7 +2516,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		table = client_htable;
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return;
@@ -2573,7 +2603,7 @@ int b2b_entity_exists(enum b2b_entity_type et, str* b2b_key)
 		table = client_htable;
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return 0;
@@ -2860,7 +2890,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 	}
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
+	if(b2b_parse_key(b2b_key, b2b_et_hsize(et), &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
@@ -3481,7 +3511,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	msg = ps->rpl;
 	b2b_key = (str*)*ps->param;
 
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index)< 0)
+	if(b2b_parse_key(b2b_key, b2b_table_hsize(htable),
+			&hash_index, &local_index)< 0)
 	{
 		LM_ERR("Failed to parse b2b logic key [%.*s]\n",b2b_key->len,b2b_key->s);
 		goto done;
@@ -4626,6 +4657,7 @@ int b2b_apply_lumps(struct sip_msg* msg)
 {
 	str obuf;
 	struct sip_msg tmp;
+	struct sip_msg rebuilt;
 
 	/* faked reply */
 	if (msg==NULL || msg == FAKED_REPLY || msg==&dummy_msg)
@@ -4647,14 +4679,23 @@ int b2b_apply_lumps(struct sip_msg* msg)
 			msg->rcv.bind_address,0);
 
 	if (!obuf.s) {
-		LM_ERR("no more shm mem\n");
+		LM_ERR("failed to build SIP message\n");
+		return -1;
+	}
+	memset(&rebuilt, 0, sizeof(rebuilt));
+	rebuilt.buf = rebuilt.pkg_buf = obuf.s;
+	rebuilt.len = obuf.len;
+	rebuilt.rcv = msg->rcv;
+	if (parse_msg_opt(rebuilt.buf, rebuilt.len, &rebuilt, 0) != 0) {
+		LM_ERR("failed to parse rebuilt SIP message\n");
+		free_sip_msg(&rebuilt);
 		return -1;
 	}
 
 	/* temporary copy */
 	memcpy(&tmp, msg, sizeof(struct sip_msg));
 
-	/* reset dst uri and path vector to avoid freeing - restored later */
+	/* Keep these pkg strings across the reparse. */
 	if(msg->dst_uri.s != NULL)
 	{
 		msg->dst_uri.s = NULL;
@@ -4665,13 +4706,16 @@ int b2b_apply_lumps(struct sip_msg* msg)
 		msg->path_vec.s = NULL;
 		msg->path_vec.len = 0;
 	}
+	msg->set_global_address.s = NULL;
+	msg->set_global_address.len = 0;
+	msg->set_global_port.s = NULL;
+	msg->set_global_port.len = 0;
 
 	/* free old msg structure */
 	free_sip_msg(msg);
-	memset(msg, 0, sizeof(struct sip_msg));
+	memcpy(msg, &rebuilt, sizeof(*msg));
 
 	/* restore msg fields */
-	msg->buf                = tmp.buf;
 	msg->id                 = tmp.id;
 	msg->rcv                = tmp.rcv;
 	msg->set_global_address = tmp.set_global_address;
@@ -4683,22 +4727,8 @@ int b2b_apply_lumps(struct sip_msg* msg)
 	msg->dst_uri            = tmp.dst_uri;
 	msg->path_vec           = tmp.path_vec;
 
-	memcpy(msg->buf, obuf.s, obuf.len);
-	msg->len = obuf.len;
-	msg->buf[msg->len] = '\0';
-
-	/* free new buffer - copied in the static buffer from old struct sip_msg */
-	pkg_free(obuf.s);
-
-	/* reparse the message */
-	if (parse_msg(msg->buf, msg->len, msg) != 0)
-		LM_ERR("parse_msg failed\n");
-
-	/* check for SDP */
-	if (!parse_sdp(msg)) {
-		LM_DBG("failed to parse SDP message\n");
-		return -1;
-	}
+	/* SDP is optional; parse it if present. */
+	parse_sdp(msg);
 
 	return 1;
 }

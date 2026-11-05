@@ -951,7 +951,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							*sizeof(char));
 					if(val->rs.s==0)
 					{
-						LM_ERR("no more memory\n");
+						LMR_ERR("no more memory\n");
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return 0;
@@ -976,7 +976,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					val->rs.s = pkg_malloc(n+1);
 					if (!val->rs.s)
 					{
-						LM_ERR("no more memory\n");
+						LMR_ERR("no more memory\n");
 						pv_value_destroy(&lval);
 						pv_value_destroy(&rval);
 						return 0;

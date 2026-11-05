@@ -1357,8 +1357,11 @@ static inline int is_shtag_active( str *my_tag, str **active_tags)
 void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
 {
-	static db_ps_t my_ps_delete = NULL;
-	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
+	/* it is wrong to reuse the same prepared statements all the time, as the
+	 * function may operate on different connections with different tables,
+	 * like directly from presence module or via API from the RLS module */
+	//static db_ps_t my_ps_delete = NULL;
+	//static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
 	db_key_t query_cols[22], update_cols[8];
 	db_val_t query_vals[22], update_vals[8];
 	db_op_t update_ops[2];
@@ -1585,7 +1588,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 						update_vals[u_reason_col].val.str_val= s->reason;
 						update_vals[u_contact_col].val.str_val= s->contact;
 
-						CON_SET_CURR_PS(db, &my_ps_update);
+						//CON_SET_CURR_PS(db, &my_ps_update);
 						if(dbf->update(db, query_cols, 0, query_vals,
 						update_cols, update_vals, n_query_update,
 						n_update_cols)< 0)
@@ -1634,7 +1637,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 							query_vals[socket_info_col].val.str_val.len = 0;
 						}
 
-						CON_SET_CURR_PS(db, &my_ps_insert);
+						//CON_SET_CURR_PS(db, &my_ps_insert);
 						if (dbf->insert( db, query_cols, query_vals,
 						n_query_cols) < 0)
 						{
@@ -1679,17 +1682,12 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	update_vals[0].val.int_val = (int)(unsigned long)time(NULL);
 	update_ops[0] = OP_LT;
 
-	if (dbf->use_table(db, &active_watchers_table) < 0) {
-		LM_ERR("deleting expired information from database\n");
-		return;
-	}
-
 	if (sh_tags==NULL) {
 
 		/* no clustering, simply delete all expired subs */
 		LM_DBG("delete all expired subscriptions\n");
 
-		CON_SET_CURR_PS(db, &my_ps_delete);
+		//CON_SET_CURR_PS(db, &my_ps_delete);
 		if (dbf->delete(db, update_cols, update_ops, update_vals, 1) < 0)
 			LM_ERR("deleting expired information from database\n");
 
@@ -1707,7 +1705,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 				sh_tags[i]->len, sh_tags[i]->s);
 
 			update_vals[1].val.str_val = *sh_tags[i];
-			CON_SET_CURR_PS(db, &my_ps_delete);
+			//CON_SET_CURR_PS(db, &my_ps_delete);
 			if (dbf->delete(db, update_cols, update_ops, update_vals, 2) < 0)
 				LM_ERR("deleting expired information from database\n");
 			i++;

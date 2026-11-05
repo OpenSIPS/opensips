@@ -1152,7 +1152,7 @@ static int media_fork_pause(struct sip_msg *msg,
 	struct dlg_cell *dlg;
 	struct media_session *ms;
 	struct media_session_leg *msl;
-	int ret = 0;
+	long long ret = 0;
 
 	dlg = media_dlg.get_dlg();
 	if (!dlg) {
@@ -1188,7 +1188,9 @@ static int media_fork_pause(struct sip_msg *msg,
 		LM_DBG("no sessions to resume!\n");
 		return -1;
 	}
-	return ret;
+	if (ret < INT_MIN || ret > INT_MAX)
+		return -1;
+	return (int)ret;
 }
 
 static int media_fork_resume(struct sip_msg *msg,
@@ -1197,7 +1199,7 @@ static int media_fork_resume(struct sip_msg *msg,
 	struct dlg_cell *dlg;
 	struct media_session *ms;
 	struct media_session_leg *msl;
-	int ret = 0;
+	long long ret = 0;
 
 	dlg = media_dlg.get_dlg();
 	if (!dlg) {
@@ -1233,7 +1235,9 @@ static int media_fork_resume(struct sip_msg *msg,
 		LM_DBG("no sessions to resume!\n");
 		return -1;
 	}
-	return ret;
+	if (ret < INT_MIN || ret > INT_MAX)
+		return -1;
+	return (int)ret;
 }
 
 static int media_session_exchange_negative_reply(struct sip_msg *msg, int status, void *param)

@@ -289,12 +289,9 @@ int pi_getDbTableCols(pi_db_url_t *pi_db_urls, pi_db_table_t *db_tables,
 						"%s %s %s\n",
 						val, table_node->name, node->name,
 						PI_XML_VALIDATE_NODE);
-					pi_xml_free(val);
-					val = NULL;
 					goto error;
 				}
 				pi_xml_free(val);
-				val = NULL;
 			}
 			/* Populate the type */
 			val = pi_xml_node_get_node_content_by_name(node->children,

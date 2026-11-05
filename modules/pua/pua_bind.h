@@ -28,6 +28,10 @@
 #include "pua_callback.h"
 #include "hash.h"
 
+/* returns 1 if this node may act on the shared presentities (the pua
+ * sharing tag is active here, or pua clustering is not enabled), 0 if not */
+typedef int (*is_shtag_active_t)(void);
+
 typedef struct pua_api {
 	send_subscribe_t send_subscribe;
 	send_publish_t send_publish;
@@ -36,6 +40,7 @@ typedef struct pua_api {
 	get_record_id_t get_record_id;
 	add_pua_event_t add_event;
 	get_subs_list_t get_subs_list;
+	is_shtag_active_t is_shtag_active;
 } pua_api_t;
 
 typedef int (*bind_pua_t)(pua_api_t* api);

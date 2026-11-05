@@ -107,11 +107,9 @@ static inline sh_var_t* set_shvar_value(sh_var_t* shv, int_str *value, int flags
 	if(value==NULL)
 	{
 		if(shv->v.flags&VAR_VAL_STR)
-		{
 			shm_free(shv->v.value.s.s);
-			shv->v.flags &= ~VAR_VAL_STR;
-		}
 		memset(&shv->v.value, 0, sizeof(int_str));
+		shv->v.flags = 0;
 
 		return shv;
 	}
@@ -141,19 +139,19 @@ static inline sh_var_t* set_shvar_value(sh_var_t* shv, int_str *value, int flags
 				LM_ERR("out of shm!\n");
 				goto error;
 			}
-			shv->v.flags |= VAR_VAL_STR;
 		}
 		strncpy(shv->v.value.s.s, value->s.s, value->s.len);
 		shv->v.value.s.len = value->s.len;
 		shv->v.value.s.s[value->s.len] = '\0';
+		shv->v.flags = VAR_VAL_STR;
 
 	} else {
 		if(shv->v.flags&VAR_VAL_STR)
 		{
 			shm_free(shv->v.value.s.s);
-			shv->v.flags &= ~VAR_VAL_STR;
 			memset(&shv->v.value, 0, sizeof(int_str));
 		}
+		shv->v.flags = flags & VAR_VAL_BOOL;
 		shv->v.value.n = value->n;
 	}
 
@@ -161,7 +159,7 @@ static inline sh_var_t* set_shvar_value(sh_var_t* shv, int_str *value, int flags
 error:
 	/* set the var to init value */
 	memset(&shv->v.value, 0, sizeof(int_str));
-	shv->v.flags &= ~VAR_VAL_STR;
+	shv->v.flags = 0;
 	return NULL;
 }
 
@@ -300,6 +298,7 @@ int pv_get_shvar(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	sh_var_t *shv;
+	int flags;
 
 	if (get_shvar_from_pv_name(msg, &param->pvn, &shv) != 0) {
 		LM_ERR("failed to obtain shared var\n");
@@ -327,11 +326,18 @@ int pv_get_shvar(struct sip_msg *msg, pv_param_t *param,
 			res->flags |= PV_VAL_EMPTY;
 	} else {
 		res->ri = shv->v.value.n;
+		flags = shv->v.flags;
 
 		unlock_shvar(shv);
 
-		res->rs.s = sint2str(res->ri, &res->rs.len);
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		if (flags & VAR_VAL_BOOL) {
+			res->rs = res->ri ? str_init("true") : str_init("false");
+			res->flags = PV_VAL_BOOL;
+		} else {
+			res->rs.s = sint2str(res->ri, &res->rs.len);
+			res->flags = 0;
+		}
+		res->flags |= PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	}
 	return 0;
 }
@@ -359,6 +365,8 @@ int pv_set_shvar(struct sip_msg* msg, pv_param_t *param,
 	if(val->flags&PV_TYPE_INT)
 	{
 		isv.n = val->ri;
+		if (val->flags & PV_VAL_BOOL)
+			flags |= VAR_VAL_BOOL;
 	} else {
 		isv.s = val->rs;
 		flags |= VAR_VAL_STR;

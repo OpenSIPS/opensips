@@ -129,7 +129,7 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 	int offset = 0, hl;
 
 	struct hep_hdr *heph;
-	char *hep_payload, *end, *hep_ip;
+	char *hep_payload, *hep_ip;
 	struct hep_timehdr* heptime_tmp, heptime;
 
 	struct hepv12 h12;
@@ -137,7 +137,6 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
     memset(&heptime, 0, sizeof(struct hep_timehdr));
 
 	hl = offset = sizeof(struct hep_hdr);
-    end = buf + len;
 
 	if (len < offset) {
 		LM_ERR("len less than offset [%d] vs [%d]\n", len, offset);
@@ -161,7 +160,7 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 		break;
 	default:
 		LM_ERR("unsupported family [%d]\n", heph->hp_f);
-		return 0;
+		return -1;
 	}
 
 	/* Check version */
@@ -174,9 +173,11 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 
 	hep_ip = buf + sizeof(struct hep_hdr);
 
-	if (hep_ip > end){
+	/* the address header ends at buf+hl; make sure it is within the
+	 * received packet before dereferencing it */
+	if (hl > len) {
 		LM_ERR("hep_ip is over buf+len\n");
-		return 0;
+		return -1;
 	}
 
 	switch(heph->hp_f){
@@ -196,9 +197,14 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 	/* VOIP payload */
 	hep_payload = buf + offset;
 
-	if (hep_payload > end) {
+	/* for HEPv2 a time header is read at hep_payload before the payload,
+	 * so it must fit too; otherwise we read past buf and payload.len below
+	 * underflows to a negative length (the hl check above already
+	 * guarantees offset <= len) */
+	if (heph->hp_v == 2
+	&& len - offset < (int)sizeof(struct hep_timehdr)) {
 		LM_ERR("hep_payload is over buf+len\n");
-		return 0;
+		return -1;
 	}
 
 	/* time */
@@ -1834,7 +1840,7 @@ int send_hep_message(trace_message message, trace_dest dest, const struct socket
 
 	// Check cooldown logic
 	if (atomic_load(hep_failed_retries) >= (long)hep_max_retries && (long)(now - atomic_load(hep_last_attempt)) < (long)hep_retry_cooldown) {
-		LM_ERR("HEP send suppressed: too many failures (%ld), in cooldown (%ld seconds left)\n", atomic_load(hep_failed_retries), hep_retry_cooldown - (now - atomic_load(hep_last_attempt)));
+		LMR_ERR("HEP send suppressed: too many failures (%ld), in cooldown (%ld seconds left)\n", atomic_load(hep_failed_retries), hep_retry_cooldown - (now - atomic_load(hep_last_attempt)));
 		free_hep_send_resources(p, to, buf);
 		goto end;
 	}

@@ -304,7 +304,9 @@ Parameters
 
 - *name* (string) - the name of the statistic
 *type* (string, optional) - the type of the
-statistic (i.e. *counter* or *gauge*).
+statistic (i.e. *counter* or *gauge*). You may also use *histogram*
+when exporting pre-aggregated histogram samples using
+[prometheus_push_histogram_stat()](#prometheus_push_histogram_statvalue-suffix-label_name-label_value).
 If missing the statistic is declared as *gauge*.
 *help* (string, optional) - an optional value
 used to describe the statistic meaning. If missing, it is not used.
@@ -376,6 +378,69 @@ route[my_custom_prometheus_route] {
 	# the next two are equivalent
 	prometheus_push_stat(10, "{gateway=\"gw1\"}"); # no label is being used
 	prometheus_push_stat(10, "gateway", "gw1"); # same as the above
+	...
+}
+```
+
+
+#### prometheus_push_histogram_stat(value, suffix, [label_name], [label_value])
+
+
+> [!NOTE]
+> This function can only be used in the
+> route declared in the [script_route](#script_routestring) parameter.
+
+
+Pushes one series of a pre-aggregated histogram (a bucket, the sum or
+the count) to the Prometheus server, using the name of the statistic
+most recently declared with
+`prometheus_declare_stat(name, "histogram")`.
+
+
+> [!NOTE]
+> A statistic's value should only be pushed
+> after it had been declared using the
+> [prometheus_declare_stat()](#prometheus_declare_statname-type-help) function.
+
+
+> [!NOTE]
+> This function is only a formatting helper: it does not observe
+> values or aggregate buckets, it only exports integer values already
+> maintained by the script. Buckets must be cumulative, include a
+> `+Inf` bucket, and the `_count` value must equal the `+Inf` bucket.
+> Use the same unit for `_sum` and for the bucket bounds.
+
+
+Parameters
+
+
+- *value* (integer) - the value of the series
+*suffix* (string) - the histogram series to push:
+*_bucket*, *_sum* or *_count*. Any other value is rejected.
+*label_name* (string, optional) - same as for
+[prometheus_push_stat()](#prometheus_push_statvalue-label_name-label_value).
+Bucket series must carry the *le* label.
+*label_value* (string, optional) - the value that
+should be used for the *label_name* parameter label.
+
+
+This function can only be used in the request
+route declared in the [script_route](#script_routestring) parameter.
+
+
+```opensips title="prometheus_push_histogram_stat usage"
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+route[my_custom_prometheus_route] {
+	...
+	prometheus_declare_stat("opensips_invite_latency_ms", "histogram",
+		"Aggregated INVITE processing latency in milliseconds");
+	prometheus_push_histogram_stat($stat(invite_le_50), "_bucket", "le", "50");
+	prometheus_push_histogram_stat($stat(invite_le_100), "_bucket", "le", "100");
+	prometheus_push_histogram_stat($stat(invite_total), "_bucket", "le", "+Inf");
+	prometheus_push_histogram_stat($stat(invite_sum_ms), "_sum");
+	prometheus_push_histogram_stat($stat(invite_total), "_count");
 	...
 }
 ```

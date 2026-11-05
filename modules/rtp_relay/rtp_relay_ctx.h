@@ -120,6 +120,7 @@ struct rtp_relay_ctx {
 	unsigned dlg_id, dlg_entry;
 	str dlg_callid, from_tag, to_tag;
 	str flags, delete;
+	str node;
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *established;

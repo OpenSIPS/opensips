@@ -381,7 +381,8 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 
 		LM_DBG("Received replicated entity [%.*s]\n", b2be_key.len, b2be_key.s);
 
-		if (b2b_parse_key(&b2be_key, &h_idx, &l_idx) < 0) {
+		if (b2b_parse_key(&b2be_key, b2b_table_hsize(htable),
+				&h_idx, &l_idx) < 0) {
 			LM_ERR("Wrong format for b2b key [%.*s]\n",
 				b2be_key.len, b2be_key.s);
 			return -1;
@@ -536,7 +537,8 @@ int receive_entity_update(bin_packet_t *packet)
 	LM_DBG("Received replicated update for entity [%.*s]\n",
 		b2be_key.len, b2be_key.s);
 
-	if (b2b_parse_key(&b2be_key, &hash_index, &local_index) < 0) {
+	if (b2b_parse_key(&b2be_key, b2b_table_hsize(htable),
+			&hash_index, &local_index) < 0) {
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2be_key.len, b2be_key.s);
 		return -1;
 	}
@@ -610,7 +612,8 @@ int receive_entity_delete(bin_packet_t *packet)
 	LM_DBG("Received replicated delete for entity [%.*s]\n",
 		b2be_key->len, b2be_key->s);
 
-	if (b2b_parse_key(b2be_key, &hash_index, &local_index) < 0) {
+	if (b2b_parse_key(b2be_key, b2b_table_hsize(htable),
+			&hash_index, &local_index) < 0) {
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2be_key->len, b2be_key->s);
 		return -1;
 	}
