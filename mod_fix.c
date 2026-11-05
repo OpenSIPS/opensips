@@ -351,25 +351,30 @@ int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 
 			switch (gp->type) {
 			case GPARAM_TYPE_VAL:
-				tmp_vals[i].ri = *(int*)gp->pval;
-				cmdp[i-1] = &tmp_vals[i].ri;
+				tmp_vals[i - 1].ri = *(int*)gp->pval;
+				cmdp[i-1] = &tmp_vals[i - 1].ri;
 				break;
 			case GPARAM_TYPE_FIXUP:
 				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVS:
 				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
-					&tmp_vals[i]) != 0) {
+					&tmp_vals[i - 1]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
-				if (tmp_vals[i].flags & PV_VAL_NULL ||
-					!(tmp_vals[i].flags & PV_VAL_INT)) {
+				if ((tmp_vals[i - 1].flags & PV_VAL_NULL) &&
+					(param->flags & CMD_PARAM_NULLABLE)) {
+					cmdp[i-1] = NULL;
+					break;
+				}
+				if (tmp_vals[i - 1].flags & PV_VAL_NULL ||
+					!(tmp_vals[i - 1].flags & PV_VAL_INT)) {
 					LM_ERR("Variable in param [%d] is not an integer\n", i);
 					return E_UNSPEC;
 				}
 
-				cmdp[i-1] = (void *)&tmp_vals[i].ri;
+				cmdp[i-1] = (void *)&tmp_vals[i - 1].ri;
 
 				/* run fixup as we now have the value of the variable */
 				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
@@ -387,20 +392,20 @@ int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 
 			switch (gp->type) {
 			case GPARAM_TYPE_VAL:
-				tmp_vals[i].rs = *(str*)gp->pval;
-				cmdp[i-1] = &tmp_vals[i].rs;
+				tmp_vals[i - 1].rs = *(str*)gp->pval;
+				cmdp[i-1] = &tmp_vals[i - 1].rs;
 				break;
 			case GPARAM_TYPE_FIXUP:
 				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVE:
 				if (pv_printf_s(msg, (pv_elem_t *)gp->pval,
-					&tmp_vals[i].rs) != 0) {
+					&tmp_vals[i - 1].rs) != 0) {
 					LM_ERR("Failed to print formatted string in param [%d]\n", i);
 					return E_UNSPEC;
 				}
 
-				cmdp[i-1] = &tmp_vals[i].rs;
+				cmdp[i-1] = &tmp_vals[i - 1].rs;
 
 				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
 					LM_ERR("Fixup failed for param [%d]\n", i);
@@ -410,17 +415,17 @@ int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 				break;
 			case GPARAM_TYPE_PVS:
 				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
-					&tmp_vals[i]) != 0) {
+					&tmp_vals[i - 1]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
-				if (tmp_vals[i].flags & PV_VAL_NULL ||
-					!(tmp_vals[i].flags & PV_VAL_STR)) {
+				if (tmp_vals[i - 1].flags & PV_VAL_NULL ||
+					!(tmp_vals[i - 1].flags & PV_VAL_STR)) {
 					LM_ERR("Variable in param [%d] is not a string\n", i);
 					return E_UNSPEC;
 				}
 
-				cmdp[i-1] = &tmp_vals[i].rs;
+				cmdp[i-1] = &tmp_vals[i - 1].rs;
 
 				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
 					LM_ERR("Fixup failed for param [%d]\n", i);
@@ -445,17 +450,17 @@ int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 				break;
 			case GPARAM_TYPE_PVS:
 				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
-					&tmp_vals[i]) != 0) {
+					&tmp_vals[i - 1]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
-				if (tmp_vals[i].flags & PV_VAL_NULL ||
-					!(tmp_vals[i].flags & PV_VAL_STR)) {
+				if (tmp_vals[i - 1].flags & PV_VAL_NULL ||
+					!(tmp_vals[i - 1].flags & PV_VAL_STR)) {
 					LM_ERR("Variable in param [%d] is not a string\n", i);
 					return E_UNSPEC;
 				}
 
-				ret = fixup_regcomp(&re, &tmp_vals[i].rs, 1);
+				ret = fixup_regcomp(&re, &tmp_vals[i - 1].rs, 1);
 				if (ret < 0)
 					return ret;
 				cmdp[i-1] = re;
