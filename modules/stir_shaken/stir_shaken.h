@@ -33,46 +33,17 @@
  *
  */
 
-#define FULL_ATTEST_STR    "A"
-#define PARTIAL_ATTEST_STR "B"
-#define GATEWAY_ATTEST_STR "C"
+#ifndef STIR_SHAKEN_H
+#define STIR_SHAKEN_H
+
+#include "../../pvar.h"
+#include "passport.h"
 
 #define DEFAULT_AUTH_FRESHNESS 60
 #define DEFAULT_VERIFY_FRESHNESS 60
 
 #define DATE_FORMAT "%a, %d %b %Y %H:%M:%S GMT"
 #define DATE_MAX_LEN 64
-
-#define CRLF "\r\n"
-#define CRLF_LEN (sizeof(CRLF) - 1)
-
-#define PPORT_HDR_ALG 	  "alg"
-#define PPORT_HDR_ALG_VAL "ES256"
-#define PPORT_HDR_PPT     "ppt"
-#define PPORT_HDR_PPT_VAL "shaken"
-#define PPORT_HDR_TYP     "typ"
-#define PPORT_HDR_TYP_VAL "passport"
-#define PPORT_HDR_X5U "x5u"
-#define PPORT_PAYLOAD_ATTEST "attest"
-#define PPORT_PAYLOAD_DEST "dest"
-#define PPORT_PAYLOAD_TN "tn"
-#define PPORT_PAYLOAD_IAT "iat"
-#define PPORT_PAYLOAD_ORIG "orig"
-#define PPORT_PAYLOAD_ORIGID "origid"
-#define PPORT_SEPARATOR '.'
-
-#define HDR_PARAM_SEPARATOR ';'
-
-#define BASE64_PAD_CHAR '='
-
-#define IDENTITY_HDR_S "Identity: "
-#define IDENTITY_HDR_LEN (sizeof(IDENTITY_HDR_S)-1)
-#define HDR_INFO_PARAM_S "info="
-#define HDR_INFO_PARAM_LEN (sizeof(HDR_INFO_PARAM_S)-1)
-#define HDR_ALG_PARAM_S "alg=ES256"
-#define HDR_ALG_PARAM_LEN (sizeof(HDR_ALG_PARAM_S)-1)
-#define HDR_PPT_PARAM_S "ppt=shaken"
-#define HDR_PPT_PARAM_LEN (sizeof(HDR_PPT_PARAM_S)-1)
 
 #define BADREQ_CODE 400
 #define BADREQ_ORIG_REASON "Bad Request (PAI/From Number)"
@@ -100,41 +71,8 @@
 #define TN_AUTH_LIST_LN "TNAuthorizationList"
 #define TN_AUTH_LIST_SN "TNAuthList"
 
-#define R_S_INT_LEN 32
-#define RAW_SIG_LEN 64
-
 #define AUTH_OUT_REQ_STR "req"
 #define AUTH_OUT_RPL_STR "rpl"
-
-struct parsed_identity {
-	cJSON *header;
-	cJSON *x5u;
-
-	cJSON *payload;
-	cJSON *attest;
-	cJSON *dest_tn;
-	cJSON *iat;
-	cJSON *orig_tn;
-	cJSON *origid;
-
-	str dec_header;
-	str dec_payload;
-	str dec_signature;
-
-	str ppt_hdr_param;
-	str alg_hdr_param;
-};
-
-enum pv_identity_field {
-	PV_HEADER,
-	PV_HEADER_X5U,
-	PV_PAYLOAD,
-	PV_PAYLOAD_ATTEST,
-	PV_PAYLOAD_DEST,
-	PV_PAYLOAD_IAT,
-	PV_PAYLOAD_ORIG,
-	PV_PAYLOAD_ORIGID
-};
 
 enum auth_out_type {
 	AUTH_APPEND_TO_REQ,
@@ -146,3 +84,5 @@ struct auth_out_param {
 	enum auth_out_type type;
 	pv_spec_t var;
 };
+
+#endif /* STIR_SHAKEN_H */

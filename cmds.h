@@ -38,6 +38,7 @@
 #define CMD_PARAM_FIX_NULL   (1<<5)  /* run fixup even if optional parameter is omitted */
 #define CMD_PARAM_NO_EXPAND  (1<<6)  /* do not pv-expand strings */
 #define CMD_PARAM_STATIC	 (1<<7)  /* don't accept variables or formatted string */
+#define CMD_PARAM_NULLABLE   (1<<8)  /* pass a null-valued integer PV as NULL */
 
 typedef  int (*cmd_function)(struct sip_msg*, void*, void*, void*, void*,
 			void*, void*, void *, void *);
