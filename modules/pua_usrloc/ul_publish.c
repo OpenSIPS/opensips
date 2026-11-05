@@ -273,7 +273,7 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 		if((type & UL_CONTACT_UPDATE) && (error== ERR_PUBLISH_NO_BODY))
 		{
 			LM_DBG("Usrloc Publish for update failed - try Insert\n");
-			publ.body= build_pidf(c);
+			body = publ.body = build_pidf(c);
 			if(publ.body == NULL || publ.body->s == NULL)
 			{
 				LM_ERR("failed to generate publish body\n");
