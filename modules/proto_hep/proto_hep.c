@@ -237,7 +237,7 @@ static int mod_init(void)
 		}
 	}
 
-	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, 0);
+	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, free_hep_context);
 	homer5_delim.len = strlen(homer5_delim.s);
 
 	local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
@@ -697,16 +697,17 @@ static int hep_receive_msg(char *buf, int len, struct receive_info *ri,
 		if (receive_msg(msg.s, msg.len, &local_rcv, ctx, 0) < 0)
 			LM_ERR("receive_msg failed \n");
 	} else {
+		context_destroy(CONTEXT_GLOBAL, ctx);
 		context_free(ctx);
 	}
-
-	free_hep_context(hep_ctx);
 	return 0;
 
 error_free_ctx:
+	context_destroy(CONTEXT_GLOBAL, ctx);
 	context_free(ctx);
 error_free_hep:
-	free_hep_context(hep_ctx);
+	if (!ctx)
+		free_hep_context(hep_ctx);
 	return -1;
 }
 
@@ -1046,18 +1047,19 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 		receive_msg( msg.s, msg.len, &ri, ctx, 0);
 	} else {
 		if (ctx) {
+			context_destroy(CONTEXT_GLOBAL, ctx);
 			context_free(ctx);
 		}
 	}
 
-	free_hep_context(hep_ctx);
-
 	return 0;
 
 error_free_ctx:
+	context_destroy(CONTEXT_GLOBAL, ctx);
 	context_free(ctx);
 error_free_hep:
-	free_hep_context(hep_ctx);
+	if (!ctx)
+		free_hep_context(hep_ctx);
 	return -1;
 
 }
