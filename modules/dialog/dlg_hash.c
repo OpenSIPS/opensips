@@ -410,6 +410,7 @@ static inline int translate_contact_ipport( str *ct, const struct socket_info *s
 	if ((p=q_memchr(ct->s, ':', ct->len))==NULL) {
 		LM_ERR("failed find hdr body in "
 			"advertised contact <%.*s>\n", ct->len, ct->s);
+		return -1;
 	}
 
 	memset( &ct_hdr, 0, sizeof(ct_hdr));
