@@ -35,6 +35,8 @@ struct str_buf{
 	int left;
 };
 
+int load_opensips_cfg_text(const char *cfg_file, const char *preproc_cmdline,
+		str *ret_buffer);
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		str *ret_buffer);
 int cfg_push(const str *cfg_file);
