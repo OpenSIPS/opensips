@@ -296,6 +296,7 @@ static inline int process_routeset(struct sip_msg* msg, str* contact, struct rte
 		if (ptr->type == HDR_RECORDROUTE_T) {
 			if (parse_rr(ptr) < 0) {
 				LM_ERR("failed to parse Record-Route header\n");
+				free_rte_list(head);
 				return -1;
 			}
 
