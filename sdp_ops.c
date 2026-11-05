@@ -630,6 +630,9 @@ int pv_get_sdp_line(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			start = p;
 			while (start < lim && is_ws(*start))
 				start++;
+			if (start >= lim)
+				break;
+			p = start - 1;
 			continue;
 		}
 
@@ -1070,6 +1073,9 @@ int pv_get_sdp_stream(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			start = p;
 			while (start < lim && is_ws(*start))
 				start++;
+			if (start >= lim)
+				break;
+			p = start - 1;
 			continue;
 		}
 
@@ -1362,6 +1368,9 @@ int pv_get_sdp_session(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			start = p;
 			while (start < lim && is_ws(*start))
 				start++;
+			if (start >= lim)
+				break;
+			p = start - 1;
 			continue;
 		}
 
