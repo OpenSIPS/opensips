@@ -1432,7 +1432,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 							server_header->len=strlen($3);
 							}
 		| SERVER_HEADER EQUAL error { yyerror("string value expected"); }
-		| USER_AGENT_HEADER EQUAL STRING { user_agent_header->s=$3;
+		| USER_AGENT_HEADER EQUAL STRING { IFOR();
+			user_agent_header->s=$3;
 			user_agent_header->len=strlen($3);
 									}
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
@@ -1733,7 +1734,7 @@ ipnet:	IPNET	{
 				$$ = net_tmp;
 			}
 		| ip	{
-				$$=mk_net_bitlen($1, $1->len*8);
+				PKG_GEN_MARK( $$=mk_net_bitlen($1, $1->len*8) );
 				pkg_free($1);
 			}
 		;
