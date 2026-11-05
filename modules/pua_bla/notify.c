@@ -119,6 +119,7 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 	str extra_headers= {0, 0};
 	static char buf[255];
 	str contact;
+	contact_body_t *contact_body;
 
 	memset(&publ, 0, sizeof(publ_info_t));
 	memset(&dialog, 0, sizeof(ua_pres_t));
@@ -217,7 +218,12 @@ int bla_handle_notify(struct sip_msg* msg, char* s1, char* s2)
 		LM_ERR("cannot parse contact header\n");
 		return -1;
 	}
-	contact = ((contact_body_t* )msg->contact->parsed)->contacts->uri;
+	contact_body = (contact_body_t *)msg->contact->parsed;
+	if (contact_body->contacts == NULL) {
+		LM_ERR("contact header contains no contact\n");
+		return -1;
+	}
+	contact = contact_body->contacts->uri;
 
 	dialog.to_tag= pfrom->tag_value;
 	dialog.event= BLA_EVENT;
