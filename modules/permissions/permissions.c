@@ -529,6 +529,13 @@ static int load_fixup(void** param, int param_no)
 	idx = find_index(table, pathname);
 
 	if (idx == -1) {
+		if (rules_num >= MAX_RULE_FILES) {
+			LM_ERR("maximum number of rule files reached (%d)\n",
+			       MAX_RULE_FILES);
+			pkg_free(pathname);
+			return -1;
+		}
+
 		     /* Not opened yet, open the file and parse it */
 		table[rules_num].filename = pathname;
 		table[rules_num].rules = parse_config_file(pathname);
