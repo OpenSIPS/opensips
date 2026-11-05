@@ -54,6 +54,13 @@ mi_response_t *w_mi_usrloc_dump(const mi_params_t *params,
 mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
+mi_response_t *w_mi_usrloc_dump_filtered(const mi_params_t *params,
+				struct mi_handler *async_hdl);
+mi_response_t *w_mi_usrloc_dump_paged(const mi_params_t *params,
+				struct mi_handler *async_hdl);
+mi_response_t *w_mi_usrloc_dump_brief_paged(const mi_params_t *params,
+				struct mi_handler *async_hdl);
+
 mi_response_t *mi_usrloc_flush(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
