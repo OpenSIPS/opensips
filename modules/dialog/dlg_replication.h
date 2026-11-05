@@ -51,6 +51,7 @@ extern struct clusterer_binds clusterer_api;
 extern str shtag_dlg_val;
 
 extern int cluster_auto_sync;
+extern int raise_events_as_backup;
 
 int dlg_init_clustering(void);
 

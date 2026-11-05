@@ -1121,11 +1121,11 @@ static void raise_state_changed_event(struct dlg_cell *dlg,
 	if (!evi_probe_event(ei_st_ch_id))
 		return;
 
-	/* a replicated dialog whose sharing tag is BACKUP here belongs to the
-	 * active peer, which raises this event itself. Raising it here too only dispatches an event route
-	 * through the shared IPC pipe -- waking every process -- for a script that has nothing to do on
-	 * the backup. Dialogs without a sharing tag (get_shtag_state < 0) are raised as before. */
-	if (dialog_repl_cluster && get_shtag_state(dlg) == SHTAG_STATE_BACKUP)
+	/* raise_events_as_backup=0: a replicated dialog whose sharing tag is
+	 * BACKUP here belongs to the active peer, which raises the event itself;
+	 * skip it here (dialogs without a sharing tag are raised as before) */
+	if (!raise_events_as_backup && dialog_repl_cluster &&
+			get_shtag_state(dlg) == SHTAG_STATE_BACKUP)
 		return;
 
 	if (evi_param_set_str(id_p, did) < 0) {

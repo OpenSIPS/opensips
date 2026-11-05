@@ -1178,6 +1178,28 @@ modparam("dialog", "cluster_auto_sync", 0)
 ```
 
 
+#### raise_events_as_backup (integer)
+
+
+Specifies whether the *E_DLG_STATE_CHANGED* event is raised for a
+replicated dialog whose sharing tag is in backup state on this node. A
+value of *1* means the event is raised for every dialog, as for an
+active one (a script or an external consumer can still test the sharing
+tag state); *0* means it is not raised for such a dialog. Dialogs without
+a sharing tag are not affected. It applies to all dialogs and all sharing
+tags.
+
+
+*Default value is 1 (raise).*
+
+
+```opensips title="Set raise_events_as_backup parameter"
+...
+modparam("dialog", "raise_events_as_backup", 0)
+...
+```
+
+
 #### auto_prack_hangup_on_failure (int)
 
 
