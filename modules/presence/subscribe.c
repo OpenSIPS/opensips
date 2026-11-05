@@ -1679,11 +1679,6 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	update_vals[0].val.int_val = (int)(unsigned long)time(NULL);
 	update_ops[0] = OP_LT;
 
-	if (dbf->use_table(db, &active_watchers_table) < 0) {
-		LM_ERR("deleting expired information from database\n");
-		return;
-	}
-
 	if (sh_tags==NULL) {
 
 		/* no clustering, simply delete all expired subs */
