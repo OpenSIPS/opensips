@@ -338,6 +338,8 @@ int openssl_tls_var_alt(int ind, void *ssl, str *res)
 
 		case GEN_IPADD:
 			ip.len = ASN1_STRING_length(nm->d.iPAddress);
+			if (ip.len != 4 && ip.len != 16)
+				goto err;
 			ip.af = (ip.len == 16) ? AF_INET6 : AF_INET;
 			memcpy(ip.u.addr, ASN1_STRING_get0_data(nm->d.iPAddress), ip.len);
 			text.s = ip_addr2a(&ip);
