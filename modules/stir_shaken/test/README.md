@@ -56,3 +56,7 @@ also checks that authority is evaluated against `div`, rather than `orig`.
 The `TEST_VERSTAT_POLICY` route in `opensips.cfg` is executed against real VS
 results for A/B/C, bad signature, stale outermost, broken chain, and absent
 Identity. Tests check its resulting `verstat` on the serialized request.
+
+Freshness initialization tests cover the normal three-hour inner default,
+automatic adjustment when the outer window grows, preservation of explicit
+inner settings and `-1`, invalid explicit limits, and integer overflow bounds.

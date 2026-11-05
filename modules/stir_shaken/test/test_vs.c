@@ -4,6 +4,7 @@
 #include "../verify.h"
 #include "../div.h"
 #include <tap.h>
+#include <limits.h>
 #include "../../../context.h"
 #include "../../../ut.h"
 #include "../../../action.h"
@@ -12,6 +13,39 @@
 
 int stir_shaken_test_trust_vs(str *);
 int stir_shaken_test_auth_div(struct sip_msg *, str *, str *, str *, str *, str *, str *, int);
+int stir_shaken_test_freshness(int *, int, int *);
+
+static void test_freshness_defaults(void)
+{
+	static const struct {
+		int outer, inner, configured, expected_rc, expected_outer, expected_inner;
+		const char *name;
+	} cases[] = {
+		{60,10800,0,0,60,10800,"ordinary outer window retains three-hour default"},
+		{10799,10800,0,0,10799,10800,"default already exceeds outer window"},
+		{10800,10800,0,0,10800,10801,"default grows when outer reaches three hours"},
+		{28400,10800,0,0,28400,28401,"untouched default follows enlarged outer window"},
+		{28400,10800,1,-1,28400,10800,"explicit three-hour limit is not silently increased"},
+		{28400,40000,1,0,28400,40000,"explicit larger inner limit is preserved"},
+		{28400,-1,1,0,28400,-1,"explicit inner bypass is preserved"},
+		{-1,10800,0,-1,-1,10800,"negative outer window remains invalid"},
+		{60,0,1,-1,60,0,"explicit zero inner window remains invalid"},
+		{28400,28400,1,-1,28400,28400,"explicit equal inner window remains invalid"},
+		{INT_MAX-1,10800,0,0,INT_MAX-1,INT_MAX,"largest representable inherited limit"},
+		{INT_MAX,10800,0,0,INT_MAX-1,INT_MAX,"maximal outer window leaves room for inner default"},
+		{INT_MAX,-1,1,0,INT_MAX-1,-1,"clamping the outer window preserves explicit inner bypass"},
+		{INT_MAX,INT_MAX,1,0,INT_MAX-1,INT_MAX,"clamping permits an explicit maximal inner window"}
+	};
+	int i, outer, inner, rc;
+	for (i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {
+		outer = cases[i].outer;
+		inner = cases[i].inner;
+		rc = stir_shaken_test_freshness(&outer, cases[i].configured, &inner);
+		ok(rc == cases[i].expected_rc && outer == cases[i].expected_outer &&
+			inner == cases[i].expected_inner,
+			"freshness initialization: %s", cases[i].name);
+	}
+}
 
 /* Public test fixture: self-signed trust anchor with explicit SPC TNAuthList. */
 static const char vs_certificate[] =
@@ -475,6 +509,7 @@ void test_vs(str *keybuf)
 	char buf[8192];
 	struct sip_msg msg = {0};
 
+	test_freshness_defaults();
 	if (!key || stir_shaken_test_trust_vs(&cert)) {
 		ok(0, "VS trust fixture setup");
 		goto done;

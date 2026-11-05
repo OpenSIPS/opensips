@@ -97,6 +97,7 @@ static void mod_destroy(void);
  * Module internal functions
  */
 static int fixup_auth_out(void** param);
+static int set_verify_date_div_freshness(modparam_t type, void *value);
 
 
 /*
@@ -128,6 +129,7 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
  */
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
+static int verify_date_div_freshness_configured;
 static char *ca_list;
 static char *ca_dir;
 static char *crl_list;
@@ -158,7 +160,8 @@ static gen_lock_t *ss_openssl_lock;
 static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
-	{"verify_date_div_freshness", INT_PARAM, &verify_date_div_freshness},
+	{"verify_date_div_freshness", INT_PARAM|USE_FUNC_PARAM,
+		(void *)set_verify_date_div_freshness},
 	{"ca_list", STR_PARAM, &ca_list},
 	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
@@ -462,6 +465,13 @@ static void commit_generated(struct generated_identity *p)
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, generated_ctx_idx, p);
 }
 
+static int set_verify_date_div_freshness(modparam_t type, void *value)
+{
+	verify_date_div_freshness = (int)(long)value;
+	verify_date_div_freshness_configured = 1;
+	return 0;
+}
+
 static int mod_init(void)
 {
 	tn_authlist_obj = OBJ_txt2obj(TN_AUTH_LIST_OID, 1);
@@ -478,7 +488,7 @@ static int mod_init(void)
 	stale_ctx_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 	if (verstat_init() < 0)
 		return -1;
-	if (verify_init() < 0)
+	if (verify_init(&verify_date_freshness, verify_date_div_freshness_configured) < 0)
 		return -1;
 
 	return 0;

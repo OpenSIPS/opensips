@@ -8,7 +8,7 @@
 #include "../../pvar.h"
 
 extern int verify_date_div_freshness;
-int verify_init(void);
+int verify_init(int *outer, int inner_configured);
 int stir_shaken_verify_passport(struct sip_msg *, int *, str *, pv_spec_t *, pv_spec_t *);
 int stir_shaken_verify_chain(struct sip_msg *, pv_spec_t *, pv_spec_t *, str *, str *, int *, int *);
 /* -1 unknown, 0 known failure, 1 trusted prior success for unchanged inputs. */

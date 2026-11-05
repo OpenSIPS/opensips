@@ -77,7 +77,10 @@ will be used for this check instead.
 The Date/reconstruction behavior above applies to the legacy
 [stir_shaken_verify()](#stir_shaken_verifycert-err_code-err_reason-orig-dest) function.
 For `stir_shaken_verify_chain()`, this parameter controls signed `iat` freshness
-of outermost PASSporTs; it cannot be disabled with an inner-token override.
+of outermost PASSporTs, regardless of `ppt`: normally the SHAKEN token, with
+no DIV present. When the call has been diverted and DIV tokens are present,
+the last DIV is outermost instead. It cannot be disabled with an inner-token
+override.
 
 
 The default value is *60*.
@@ -92,12 +95,17 @@ modparam("stir_shaken", "verify_date_freshness", 300)
 
 #### verify_date_div_freshness (integer)
 
-Default maximum age, in seconds, for earlier PASSporTs when verifying a DIV
-chain. The default is `10800`. Use `-1` to skip inner freshness checking, or a
-value greater than `verify_date_freshness` to select an extended window.
-`stir_shaken_verify_chain()` accepts an `inner_freshness` argument overriding this
-default per call. This parameter does not affect outermost freshness or the
-legacy single-PASSporT verifier.
+Maximum age, in seconds, for earlier PASSporTs in a DIV chain: the original
+SHAKEN and earlier DIV tokens. The outermost token uses
+[verify_date_freshness](#verify_date_freshness-integer). With only one received
+token, this parameter has no effect.
+
+When omitted, the default is `10800` (three hours), or
+`verify_date_freshness + 1` if that is larger. An explicit value must exceed
+`verify_date_freshness`, or be `-1` to skip inner freshness checking.
+
+The `inner_freshness` argument to `stir_shaken_verify_chain()` overrides this
+value per call. This parameter does not affect the legacy `stir_shaken_verify()`.
 
 ```opensips
 modparam("stir_shaken", "verify_date_div_freshness", 10800)
@@ -304,7 +312,8 @@ stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
 #### stir_shaken_auth_div(cert, pkey, x5u, [orig], [div], [dest], [out], [previously_verified])
 
 Append a full-form `div` PASSporT for an authorized retargeting event, following
-ATIS-1000085.v003. An existing `shaken` PASSporT is required. The function
+[ATIS-1000085.v003](https://access.atis.org/higherlogic/ws/public/download/81654/ATIS-1000085.pdf).
+An existing `shaken` PASSporT is required. The function
 preserves received Identity headers and follows existing `div` links regardless
 of header order. It also sees Identity headers appended by previous
 `stir_shaken_auth()` and `stir_shaken_auth_div()` calls in the same request.
@@ -343,7 +352,8 @@ Parameters:
   - `false`: assert known prior failure and refuse signing (`-8`). This policy
     covers all known verification failures.
   - omitted or a null-valued variable: unknown. Reuse successful local
-    `stir_shaken_verify_chain()` verification; otherwise return `-10` to request
+    [`stir_shaken_verify_chain()`](#stir_shaken_verify_chainerr_code-err_reason-orig-dest-inner_freshness-outer_freshness)
+    verification; otherwise return `-10` to request
     verification, or `-8` for a recorded failure. The script obtains each
     certificate and runs the VS functions before retrying. A locally generated
     SHAKEN PASSporT also permits immediate DIV signing in the same request.
@@ -485,6 +495,16 @@ their type-specific validation is not implemented here. Certificates with
 JWTClaimConstraints are rejected until that profile is supported. They are not
 silently accepted under weaker checks.
 
+```opensips title="stir_shaken_verify_passport() usage"
+# $var(cert) contains the PEM certificate/chain for the first Identity header.
+$var(rc) = stir_shaken_verify_passport(
+    0, $var(cert), $var(err_code), $var(err_reason));
+if ($var(rc) < 0) {
+    xlog("L_WARN", "PASSporT verification failed: rc=$var(rc), "
+        "code=$var(err_code), reason=$var(err_reason)\n");
+}
+```
+
 #### stir_shaken_verify_chain(err_code, err_reason, [orig], [dest], [inner_freshness], [outer_freshness])
 
 Validate the dependency graph using only tokens which passed
@@ -555,7 +575,9 @@ token on this invocation. It must be nonnegative; `-1` is rejected. When
 verifying an unknown result before a delayed retargeting, the script may
 explicitly select `10800` seconds (three hours). Ordinary inbound verification
 continues to use `verify_date_freshness` when the argument is omitted. Earlier
-tokens use `verify_date_div_freshness`, default **10800 seconds** (three hours).
+tokens use `verify_date_div_freshness`, normally **10800 seconds** (three hours).
+If that parameter is omitted, its startup default increases when necessary to
+exceed `verify_date_freshness`, as described above.
 The optional `inner_freshness` argument overrides that value for this call:
 
 - `-1`: skip age checks for earlier tokens;

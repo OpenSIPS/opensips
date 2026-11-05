@@ -8,8 +8,9 @@
 #include "../../context.h"
 #include "../../parser/parse_uri.h"
 
-/* Default policy extends earlier-token freshness to three hours. Per-call -1
- * disables that age test; it never disables the outermost age test. */
+/* The default earlier-token window is three hours, increased at startup if
+ * needed to exceed the normal outermost window. Per-call -1 disables only
+ * earlier-token age checks. */
 int verify_date_div_freshness = 10800;
 static int snapshot_ctx = -1;
 
@@ -39,17 +40,33 @@ static void free_snapshot(void *ptr)
 	pkg_free(s);
 }
 
-int verify_init(void)
+static int resolve_freshness(int *outer, int inner_configured, int *inner)
 {
-	if (stir_shaken_outer_freshness() < 0) {
+	if (*outer < 0) {
 		LM_ERR("verify_date_freshness must not disable outermost freshness\n");
 		return -1;
 	}
-	if (verify_date_div_freshness != -1 &&
-		verify_date_div_freshness <= stir_shaken_outer_freshness()) {
+	if (*outer >= INT_MAX) {
+		*outer = INT_MAX - 1;
+		LM_WARN("reducing verify_date_freshness to %d to leave room for verify_date_div_freshness\n",
+			*outer);
+	}
+	if (!inner_configured && *inner <= *outer) {
+		*inner = *outer + 1;
+		LM_INFO("using default verify_date_div_freshness=%d to exceed verify_date_freshness=%d\n",
+			*inner, *outer);
+	}
+	if (*inner != -1 && *inner <= *outer) {
 		LM_ERR("verify_date_div_freshness must be -1 or exceed verify_date_freshness\n");
 		return -1;
 	}
+	return 0;
+}
+
+int verify_init(int *outer, int inner_configured)
+{
+	if (resolve_freshness(outer, inner_configured, &verify_date_div_freshness) < 0)
+		return -1;
 	snapshot_ctx = context_register_ptr(CONTEXT_GLOBAL, free_snapshot);
 	return snapshot_ctx < 0 ? -1 : 0;
 }
@@ -415,3 +432,10 @@ string:
 	if (!out.s) return pv_get_null(msg, param, res);
 	return pv_get_strval(msg, param, res, &out);
 }
+
+#ifdef UNIT_TESTS
+int stir_shaken_test_freshness(int *outer, int inner_configured, int *inner)
+{
+	return resolve_freshness(outer, inner_configured, inner);
+}
+#endif
