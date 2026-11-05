@@ -37,10 +37,7 @@ int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
 
 	if (dup_nt) {
 		if (re_str->len + 1 > re_buff_len) {
-			/* a persistent scratch buffer: never part of a tree generation */
-			unsigned long g = pkg_gen_suspend();
 			re_buff = pkg_realloc(re_buff,re_str->len + 1);
-			pkg_gen_resume(g);
 			if (re_buff == NULL) {
 				LM_ERR("No more pkg \n");
 				return E_OUT_OF_MEM;
@@ -65,8 +62,6 @@ int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
 		pkg_free(*re);
 		return E_BAD_RE;
 	}
-	/* libc memory behind the re goes with the tree's generation */
-	pkg_gen_track((void (*)(void *))regfree, *re);
 
 	return 0;
 }
@@ -75,7 +70,8 @@ static inline gparam_p alloc_gp(void)
 {
 	gparam_p gp;
 
-	gp = pkg_malloc(sizeof *gp);
+	/* the param holder belongs to the script tree being fixed */
+	PKG_GEN_MARK( gp = pkg_malloc(sizeof *gp) );
 	if (!gp) {
 		LM_ERR("no more pkg memory\n");
 		return NULL;
@@ -151,17 +147,6 @@ int check_cmd(const struct cmd_param *params, action_elem_t *elems)
 	return 0;
 }
 
-/* a module's fixup runs outside the reload's pkg generation: what it
- * allocates may be kept by the module (registries) and is not part of the
- * script tree we sweep */
-static inline int call_fixup(const struct cmd_param *param, void **p)
-{
-	unsigned long g = pkg_gen_suspend();
-	int ret = param->fixup(p);
-	pkg_gen_resume(g);
-	return ret;
-}
-
 int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
@@ -180,7 +165,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 			if (param->flags & CMD_PARAM_OPT) {
 				if (param->fixup && (param->flags & CMD_PARAM_FIX_NULL)) {
 					h = NULL;
-					if (call_fixup(param, &h) < 0) {
+					if (param->fixup(&h) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
@@ -215,7 +200,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 
 				if (param->fixup) {
 					h = gp->pval;
-					if (call_fixup(param, &gp->pval) < 0) {
+					if (param->fixup(&gp->pval) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
@@ -255,7 +240,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 
 					if (param->fixup) {
 						h = gp->pval;
-						if (call_fixup(param, &gp->pval) < 0) {
+						if (param->fixup(&gp->pval) < 0) {
 							LM_ERR("Fixup failed for param [%d]\n", i);
 							ret = E_UNSPEC;
 							goto error;
@@ -297,7 +282,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 
 			gp->pval = elems[i].u.data;
 
-			if (param->fixup && call_fixup(param, &gp->pval) < 0) {
+			if (param->fixup && param->fixup(&gp->pval) < 0) {
 				LM_ERR("Fixup failed for param [%d]\n", i);
 				ret = E_UNSPEC;
 				goto error;
@@ -313,7 +298,7 @@ int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 				gp->pval = re;
 				gp->type = GPARAM_TYPE_VAL;
 
-				if (param->fixup && call_fixup(param, &gp->pval) < 0) {
+				if (param->fixup && param->fixup(&gp->pval) < 0) {
 					LM_ERR("Fixup failed for param [%d]\n", i);
 					ret = E_UNSPEC;
 					goto error;
@@ -342,10 +327,8 @@ fill_elems:
 error:
 	if (gp)
 		pkg_free(gp);
-	if (re) {
-		pkg_gen_untrack(re);
+	if (re)
 		pkg_free(re);
-	}
 	return ret;
 }
 

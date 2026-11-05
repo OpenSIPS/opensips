@@ -166,7 +166,9 @@ static struct socket_bond_elem *new_socket_bond_elem(char *name);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
 static struct script_return_param *mk_script_return(enum script_return_type type)
 {
-	struct script_return_param *param = pkg_malloc(sizeof *param);
+	struct script_return_param *param;
+
+	PKG_GEN_MARK( param = pkg_malloc(sizeof *param) );
 	if (!param)
 		return NULL;
 	*param = sr_tmp;
@@ -1689,7 +1691,7 @@ ip:		 ipv4  { $$=$1; }
 		;
 
 ipv4:	IPV4ADDR {
-					$$=pkg_malloc(sizeof(struct ip_addr));
+					PKG_GEN_MARK( $$=pkg_malloc(sizeof(struct ip_addr)) );
 					if ($$==0){
 						LM_CRIT("ERROR: cfg. parser: out of memory.\n");
 						YYABORT;
@@ -1705,7 +1707,7 @@ ipv4:	IPV4ADDR {
 	;
 
 ipv6addr:	IPV6ADDR {
-					$$=pkg_malloc(sizeof(struct ip_addr));
+					PKG_GEN_MARK( $$=pkg_malloc(sizeof(struct ip_addr)) );
 					if ($$==0){
 						LM_CRIT("ERROR: cfg. parser: out of memory.\n");
 						YYABORT;
@@ -1741,7 +1743,7 @@ ipnet:	IPNET	{
 
 
 folded_string:	STRING STRING {
-				$$ = pkg_malloc( strlen($1) + strlen($2) + 1);
+				PKG_GEN_MARK( $$ = pkg_malloc( strlen($1) + strlen($2) + 1) );
 				if ($$==0){
 					yyerror("cfg. parser: out of memory");
 					YYABORT;
@@ -1751,7 +1753,7 @@ folded_string:	STRING STRING {
 				}
 			}
 		| folded_string STRING {
-				$$ = pkg_malloc( strlen($1) + strlen($2) + 1);
+				PKG_GEN_MARK( $$ = pkg_malloc( strlen($1) + strlen($2) + 1) );
 				if ($$==0){
 					LM_CRIT("ERROR: cfg. parser: out of memory.\n");
 					YYABORT;
@@ -1766,7 +1768,8 @@ route_name:  ID {
 				}
 		| NUMBER {
 				tmp=int2str($1, &i_tmp);
-				if (($$=pkg_malloc(i_tmp+1))==0) {
+				PKG_GEN_MARK( $$=pkg_malloc(i_tmp+1) );
+				if ($$==0) {
 					yyerror("cfg. parser: out of memory.\n");
 					YYABORT;
 				}
@@ -2922,14 +2925,14 @@ static int parse_ipnet(char *in, int len, struct net **ipnet)
 		}
 		memcpy(mask, ip_tmp, sizeof *mask);
 
-		*ipnet = mk_net(ip, mask);
+		PKG_GEN_MARK( *ipnet = mk_net(ip, mask) );
 	} else {
 		if (str2int(&mask_s, &bitlen) < 0) {
 			LM_ERR("Invalid netmask bitlen\n");
 			return -1;
 		}
 
-		*ipnet = mk_net_bitlen(ip, bitlen);
+		PKG_GEN_MARK( *ipnet = mk_net_bitlen(ip, bitlen) );
 	}
 
 	pkg_free(ip);

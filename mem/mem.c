@@ -60,6 +60,7 @@ unsigned long (*gen_pkg_get_frags)(void *blk);
 
 /* per-generation PKG allocations (see mem.h) */
 unsigned long pkg_gen_current = 0;
+unsigned long pkg_gen_open = 0;
 static unsigned long pkg_gen_last = 0;
 
 struct pkg_gen_hook {
@@ -73,16 +74,17 @@ static unsigned int pkg_gen_hooks_no = 0, pkg_gen_hooks_sz = 0;
 
 unsigned long pkg_gen_begin(void)
 {
-	if (pkg_gen_current)
+	if (pkg_gen_open)
 		LM_BUG("pkg generation %lu still open, starting a new one\n",
-			pkg_gen_current);
-	pkg_gen_current = ++pkg_gen_last;
-	return pkg_gen_current;
+			pkg_gen_open);
+	/* open, but only the PKG_GEN_MARK()ed allocations take its stamp */
+	pkg_gen_open = ++pkg_gen_last;
+	return pkg_gen_open;
 }
 
 void pkg_gen_end(void)
 {
-	pkg_gen_current = 0;
+	pkg_gen_open = 0;
 }
 
 int pkg_gen_track(void (*release)(void *), void *arg)
@@ -109,17 +111,6 @@ int pkg_gen_track(void (*release)(void *), void *arg)
 	return 0;
 }
 
-void pkg_gen_untrack(void *arg)
-{
-	unsigned int i;
-
-	for (i=0 ; i<pkg_gen_hooks_no ; i++)
-		if (pkg_gen_hooks[i].arg==arg) {
-			pkg_gen_hooks[i] = pkg_gen_hooks[--pkg_gen_hooks_no];
-			return;
-		}
-}
-
 static void pkg_gen_run_hooks(unsigned long gen)
 {
 	unsigned int i;
@@ -140,7 +131,7 @@ void pkg_gen_sweep(unsigned long gen)
 
 	if (gen==0)
 		return; /* the startup script / runtime allocations: immortal */
-	if (gen==pkg_gen_current) {
+	if (gen==pkg_gen_open) {
 		LM_BUG("sweeping the open pkg generation %lu\n", gen);
 		return;
 	}

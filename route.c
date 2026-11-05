@@ -104,8 +104,8 @@ struct os_script_routes* new_sroutes_holder( int inc_ver )
 	static unsigned int sr_version = 1;
 	struct os_script_routes *sr;
 
-	sr = (struct os_script_routes *) pkg_malloc
-		( sizeof(struct os_script_routes) );
+	PKG_GEN_MARK( sr = (struct os_script_routes *) pkg_malloc
+		( sizeof(struct os_script_routes) ) );
 	if ( sr==NULL) {
 		LM_ERR("failed to allocate table for script routes\n");
 		return NULL;
@@ -216,13 +216,8 @@ static struct script_route_ref * __ref_script_route_by_name(char *name, int l,
 			}
 		}
 
-		/* no reference found, create a new one; the refs registry outlives
-		   the script tree being parsed, so keep it out of its generation */
-		{
-			unsigned long g = pkg_gen_suspend();
-			ref = pkg_malloc( sizeof *ref + l + 1 );
-			pkg_gen_resume(g);
-		}
+		/* no reference found, create a new one */
+		ref = pkg_malloc( sizeof *ref + l + 1 );
 	} else {
 		ref = shm_malloc( sizeof *ref + l + 1 );
 	}
@@ -1258,7 +1253,7 @@ static int fix_expr(struct expr* exp)
 	}else if (exp->type==ELEM_T){
 			if (exp->op==MATCH_OP || exp->op==NOTMATCH_OP){
 				if (exp->right.type==STR_ST){
-					re=(regex_t*)pkg_malloc(sizeof(regex_t));
+					PKG_GEN_MARK( re=(regex_t*)pkg_malloc(sizeof(regex_t)) );
 					if (re==0){
 						LM_CRIT("out of pkg memory\n");
 						return E_OUT_OF_MEM;
@@ -1275,7 +1270,7 @@ static int fix_expr(struct expr* exp)
 					exp->right.type=RE_ST;
 					/* the compiled re holds libc memory: release it with
 					   the tree's generation (no-op outside a reload) */
-					pkg_gen_track((void (*)(void *))regfree, re);
+					PKG_GEN_MARK( pkg_gen_track((void (*)(void *))regfree, re) );
 				}else if (exp->right.type!=RE_ST
 						&& exp->right.type!=SCRIPTVAR_ST){
 					LM_CRIT("invalid type for match\n");
@@ -1568,7 +1563,7 @@ static int fix_actions(struct action* a)
 						LM_ERR("param is empty string\n");
 						return E_CFG;
 					}
-					xlp = (xl_level_p)pkg_malloc(sizeof(xl_level_t));
+					PKG_GEN_MARK( xlp = (xl_level_p)pkg_malloc(sizeof(xl_level_t)) );
 					if(xlp == NULL)
 					{
 						LM_ERR("no more memory\n");

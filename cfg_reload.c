@@ -85,25 +85,23 @@ static struct os_script_routes *prev_sr=NULL;
 static struct os_script_routes *swap_bk = NULL;
 
 /* every script tree parsed by a reload is built inside a
-   pkg "generation" (see mem/mem.h pkg_gen_*): the holder, the parse and the
-   fixups allocate with that stamp, and the whole tree is later dropped by a
-   single pool sweep, whatever shape the tree has. The startup tree has
-   generation 0 (never swept, immortal as before) */
+   pkg "generation" (see mem/mem.h pkg_gen_*): the allocations the parser
+   and the route fixer mark for the tree take that stamp, and once the tree
+   is dropped the regular free runs first and a pool sweep then frees the
+   marked fragments the regular free does not know about. The startup tree
+   has generation 0 (never swept) */
 static unsigned long sroutes_gen = 0;  /* generation of the running sroutes */
 static unsigned long prev_gen = 0;     /* generation of prev_sr */
 static unsigned long parsed_gen = 0;   /* generation of parsed_sr */
 
-/* drop a script tree: the startup one the old (shallow) way, a reloaded
-   one by sweeping its generation */
+/* drop a script tree: the regular (shallow) free, then, for a reloaded
+   one, the sweep of what was marked in its generation (the holder too) */
 static void dispose_script(struct os_script_routes *sr, unsigned long gen)
 {
 	if (sr==NULL)
 		return;
-	if (gen==0) {
-		free_route_lists(sr);
-	} else {
-		pkg_gen_sweep(gen);
-	}
+	free_route_lists(sr);
+	pkg_gen_sweep(gen);
 }
 
 
@@ -517,7 +515,7 @@ int reload_routing_script(void)
 
 	/* we do not need the cfg, so free it and restore previous set of routes */
 	sroutes = sr_bk;
-	pkg_gen_sweep(gen);
+	dispose_script(sr, gen);
 	sr = NULL;
 	gen = 0;
 
@@ -585,8 +583,10 @@ error:
 	/* do cleanup */
 	if (curr_wdir) free(curr_wdir);
 	pkg_gen_end();
-	if (sr)
+	if (sr) {
 		sroutes = sr_bk;
+		free_route_lists(sr);
+	}
 	if (gen)
 		pkg_gen_sweep(gen);
 	if (cfg_buf.s)
