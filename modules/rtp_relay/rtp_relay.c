@@ -653,6 +653,7 @@ enum rtp_relay_ctx_flags {
 	RTP_RELAY_CTX_TO_TAG,
 	RTP_RELAY_CTX_FLAGS,
 	RTP_RELAY_CTX_DELETE,
+	RTP_RELAY_CTX_NODE,
 	RTP_RELAY_CTX_UNKNOWN,
 };
 
@@ -674,6 +675,8 @@ static enum rtp_relay_ctx_flags rtp_relay_ctx_flags_get(const str *in)
 		return RTP_RELAY_CTX_FLAGS;
 	if (str_casematch_nt(in, "delete"))
 		return RTP_RELAY_CTX_DELETE;
+	if (str_casematch_nt(in, "node"))
+		return RTP_RELAY_CTX_NODE;
 	return RTP_RELAY_CTX_UNKNOWN;
 }
 
@@ -725,6 +728,9 @@ static int pv_get_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 		case RTP_RELAY_CTX_DELETE:
 			sync = &ctx->delete;
 			break;
+		case RTP_RELAY_CTX_NODE:
+			sync = &ctx->node;
+			break;
 		default:
 			LM_BUG("unhandled flag %d\n", flag);
 			break;
@@ -774,6 +780,9 @@ static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 			break;
 		case RTP_RELAY_CTX_DELETE:
 			sync = &ctx->delete;
+			break;
+		case RTP_RELAY_CTX_NODE:
+			sync = &ctx->node;
 			break;
 		default:
 			LM_BUG("unhandled flag %d\n", flag);

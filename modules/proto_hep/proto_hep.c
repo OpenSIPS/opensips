@@ -1027,21 +1027,38 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 
 	if (hep_ctx->h.version == 3) {
 		/* HEPv3 */
+		if (hep_ctx->h.u.hepv3.payload_chunk.chunk.length <
+					sizeof(hep_chunk_t)) {
+			LM_ERR("invalid HEPv3 payload chunk length\n");
+			goto error_free_ctx;
+		}
 		msg.len =
 			hep_ctx->h.u.hepv3.payload_chunk.chunk.length - sizeof(hep_chunk_t);
 		msg.s = hep_ctx->h.u.hepv3.payload_chunk.data;
 	} else {
 		/* HEPv12 */
+		if (hep_ctx->h.u.hepv12.hdr.hp_l > len) {
+			LM_ERR("invalid HEPv12 header length\n");
+			goto error_free_ctx;
+		}
 		msg.len = len - hep_ctx->h.u.hepv12.hdr.hp_l;
 		msg.s = buf + hep_ctx->h.u.hepv12.hdr.hp_l;
 
 		if (hep_ctx->h.u.hepv12.hdr.hp_v == 2) {
+			if (msg.len < (int)sizeof(struct hep_timehdr)) {
+				LM_ERR("invalid HEPv12 time header length\n");
+				goto error_free_ctx;
+			}
 			msg.s += sizeof(struct hep_timehdr);
 			msg.len -= sizeof(struct hep_timehdr);
 		}
 	}
 
 	if (ret != HEP_SCRIPT_SKIP) {
+		if (msg.len < 0) {
+			LM_ERR("invalid HEP payload bounds\n");
+			goto error_free_ctx;
+		}
 		/* receive_msg must free buf too!*/
 		receive_msg( msg.s, msg.len, &ri, ctx, 0);
 	} else {

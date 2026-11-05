@@ -671,6 +671,7 @@ int db_last_inserted_id(const db_con_t* _h)
 
 	ret = db_print_columns(sql_buf + off, SQL_BUF_LEN - off, _k, _n);
 	if (ret < 0) return -1;
+	if (ret > SQL_BUF_LEN - off) goto error;
 	off += ret;
 
 	ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, ") values (");
@@ -679,9 +680,11 @@ int db_last_inserted_id(const db_con_t* _h)
 	ret = db_print_values(_h, sql_buf + off, SQL_BUF_LEN - off, _v, _n,
 		db_sqlite_val2str);
 	if (ret < 0) return -1;
+	if (ret > SQL_BUF_LEN - off || off > SQL_BUF_LEN - 2) goto error;
 	off += ret;
 
-	*(sql_buf + off++) = ')';
+	if (off >= SQL_BUF_LEN - 1) goto error;
+	sql_buf[off++] = ')';
 
 	sql_str.s = sql_buf;
 	sql_str.len = off;

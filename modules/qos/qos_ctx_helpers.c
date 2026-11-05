@@ -504,7 +504,7 @@ void remove_sdp(qos_ctx_t *qos_ctx, unsigned int dir, struct sip_msg *_m, unsign
 {
 	str *cseq_number;
 	int cseq_method_id;
-	qos_sdp_t *qos_sdp;
+	qos_sdp_t *qos_sdp, *next_qos_sdp;
 
 	if ( (!_m->cseq && parse_headers(_m,HDR_CSEQ_F,0)<0) || !_m->cseq || !_m->cseq->parsed) {
 		LM_ERR("bad sip message or missing CSeq hdr\n");
@@ -520,8 +520,8 @@ void remove_sdp(qos_ctx_t *qos_ctx, unsigned int dir, struct sip_msg *_m, unsign
 			case METHOD_UPDATE:
 					/* searching into the pending_sdp list only */
 					qos_sdp = qos_ctx->pending_sdp;
-					if (qos_sdp) qos_sdp = qos_sdp->next;
 					while (qos_sdp) {
+						next_qos_sdp = qos_sdp->next;
 						if (cseq_method_id == qos_sdp->method_id && dir != qos_sdp->method_dir &&
 							qos_sdp->negotiation == N_INVITE_200OK && cseq_number->len == qos_sdp->cseq.len &&
 							0 == strncmp(cseq_number->s, qos_sdp->cseq.s, cseq_number->len)) {
@@ -532,15 +532,14 @@ void remove_sdp(qos_ctx_t *qos_ctx, unsigned int dir, struct sip_msg *_m, unsign
 								LM_DBG("run_qos_callbacks(QOSCB_REMOVE_SDP, qos_ctx=%p, qos_sdp=%p, role=%d, _m=%p)\n",
 									qos_ctx, qos_sdp, role, _m);
 								run_qos_callbacks(QOSCB_REMOVE_SDP, qos_ctx, qos_sdp, role, _m);
-								unlink_negotiated_qos_sdp(qos_ctx, qos_sdp);
-								/* Here we free up the pending qos_sdp */
+								unlink_pending_qos_sdp(qos_ctx, qos_sdp);
+								/* Free the removed pending SDP */
 								destroy_qos(qos_sdp);
-								continue;
 							} else {
 								LM_ERR("skipping search for null sdp for %s\n", (other_role==QOS_CALLER)?"QOS_CALLER":"QOS_CALLEE");
 							}
 						}
-						qos_sdp = qos_sdp->next;
+						qos_sdp = next_qos_sdp;
 					} /* end while (qos_sdp) */
 				break;
 			default:

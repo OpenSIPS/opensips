@@ -127,7 +127,7 @@ script_var_t* set_var_value(script_var_t* var, int_str *value, int flags)
 			pkg_free(var->v.value.s.s);
 			memset(&var->v.value, 0, sizeof(int_str));
 		}
-		var->v.flags = 0; /* no STR, no NULL */
+		var->v.flags = flags & VAR_VAL_BOOL;
 		var->v.value.n = value->n;
 	}
 

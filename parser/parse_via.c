@@ -873,6 +873,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						state=F_VIA;
 						goto endofvalue;
 					case P_STRING:
+						break; /* a quoted-string may contain commas */
 					case F_LF:
 					case F_CR:
 					case F_CRLF:
@@ -914,6 +915,20 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 			case '\0':
 				goto parse_error;
 
+			case '\\':
+				if (state == P_STRING) {
+					if (tmp + 1 >= end)
+						goto parse_error;
+					/* quoted-pair: ASCII except CR and LF. Keep the
+					 * escaped bytes in the value, but do not interpret
+					 * the escaped character as a delimiter. */
+					if ((unsigned char)tmp[1] > 127
+					|| tmp[1] == '\r' || tmp[1] == '\n')
+						goto parse_error;
+					tmp++;
+					break;
+				}
+				/* fall through */
 			default:
 				switch(state){
 					case F_VALUE:

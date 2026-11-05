@@ -545,7 +545,10 @@ static void handle_reply_jsonrpc(struct stream_con *con)
 		}
 
 		/* advance the buffer */
-		bytes_read = end - buf.s;
+		if (end < buf.s || end - buf.s > buf.len ||
+				end - buf.s > INT_MAX)
+			goto error;
+		bytes_read = (int)(end - buf.s);
 		buf.len -= bytes_read;
 		buf.s += bytes_read;
 

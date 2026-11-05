@@ -277,6 +277,8 @@ static void rtp_relay_ctx_free(struct rtp_relay_ctx *ctx)
 		shm_free(ctx->flags.s);
 	if (ctx->delete.s)
 		shm_free(ctx->delete.s);
+	if (ctx->node.s)
+		shm_free(ctx->node.s);
 
 	list_for_each_safe(it, safe, &ctx->sessions)
 		rtp_relay_ctx_free_sess(ctx, list_entry(it, struct rtp_relay_sess, list));
@@ -579,6 +581,10 @@ static struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx,
 	sess->relay = relay;
 	if (set)
 		sess->server.set = *set;
+	if (ctx->node.len && shm_str_dup(&sess->server.node, &ctx->node) < 0) {
+		rtp_relay_ctx_free_sess(ctx, sess);
+		return NULL;
+	}
 	rtp_relay_fill_sess_leg(ctx, sess, RTP_RELAY_CALLER, tag, index);
 	rtp_relay_fill_sess_leg(ctx, sess, RTP_RELAY_CALLEE, NULL, index);
 	list_add(&sess->list, &ctx->sessions);
@@ -1232,6 +1238,10 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 			RTP_RELAY_FLAGS(leg, RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(leg), RTP_RELAY_FLAGS_PEER)) < 0) {
 		LM_ERR("could not engage offer!\n");
+		return -1;
+	}
+	if (shm_str_sync(&ctx->node, &sess->server.node) < 0) {
+		LM_ERR("could not update the RTP relay context node\n");
 		return -1;
 	}
 	if (body && body == &ret_body) {

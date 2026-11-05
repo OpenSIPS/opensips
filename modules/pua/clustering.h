@@ -39,4 +39,6 @@ int init_pua_clustering(void);
 
 void replicate_pres_change(ua_pres_t* pres);
 
+int pua_is_shtag_active(void);
+
 #endif

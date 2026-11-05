@@ -1714,6 +1714,12 @@ static int mc_decompress(struct sip_msg* msg)
 							2 Headers-Algo
 							3 Content-Encoding*/
 
+	/* This module rewrites msg->buf in place and then frees the message. */
+	if (msg->pkg_buf) {
+		LM_ERR("cannot decompress a message with a rebuilt pkg buffer\n");
+		return -1;
+	}
+
 	memset(hdr_vec, 0, HDRS_TO_SKIP * sizeof(struct hdr_field*));
 
 	if (parse_headers(msg, HDR_EOH_F, 0) != 0) {

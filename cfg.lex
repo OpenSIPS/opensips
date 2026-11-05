@@ -200,6 +200,8 @@ SCRIPTVAR_START	"$"
 /* config vars. */
 DEBUG_MODE	debug_mode
 UDP_WORKERS	udp_workers
+UDP_RX_MODE	udp_rx_mode
+TCP_DISPATCH_MODE	tcp_dispatch_mode
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 DISABLE_CORE		"disable_core_dump"
@@ -220,6 +222,7 @@ STDERROR_FORMAT stderror_log_format
 SYSLOG_FORMAT   syslog_log_format
 LOG_JSON_BUF_SIZE	"log_json_buf_size"
 LOG_MSG_BUF_SIZE    "log_msg_buf_size"
+LOG_RATELIMIT_PERIOD	"log_ratelimit_period"
 SYSLOG_FACILITY	syslog_facility
 SYSLOG_NAME	syslog_name
 SOCKET		socket
@@ -423,6 +426,8 @@ SPACE		[ ]
 
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
+<INITIAL>{UDP_RX_MODE}	{ count(); yylval.strval=yytext; return UDP_RX_MODE; }
+<INITIAL>{TCP_DISPATCH_MODE}	{ count(); yylval.strval=yytext; return TCP_DISPATCH_MODE; }
 <INITIAL>{PI_FRAMEWORK}	{ count(); yylval.strval=yytext; return PI_FRAMEWORK; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
@@ -448,6 +453,8 @@ SPACE		[ ]
 									return LOG_JSON_BUF_SIZE; }
 <INITIAL>{LOG_MSG_BUF_SIZE}    {	count(); yylval.strval=yytext;
 									return LOG_MSG_BUF_SIZE; }
+<INITIAL>{LOG_RATELIMIT_PERIOD}	{	count(); yylval.strval=yytext;
+									return LOG_RATELIMIT_PERIOD; }
 <INITIAL>{SYSLOG_FACILITY}	{ yylval.strval=yytext; return SYSLOG_FACILITY; }
 <INITIAL>{SYSLOG_NAME}	{ yylval.strval=yytext; return SYSLOG_NAME; }
 <INITIAL>{SOCKET}	{ count(); yylval.strval=yytext; return SOCKET; }
