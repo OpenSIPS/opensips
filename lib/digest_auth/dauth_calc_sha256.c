@@ -119,6 +119,9 @@ static int digest_calc_HA1sess(const str_const *nonce, const str_const *cnonce,
 	HASH_SHA256 HA1;
 	OS_SHA256_Declare(Sha256Ctx);
 
+	if (!cnonce || !cnonce->s)
+		return -1;
+
 	OS_SHA256_Init(&Sha256Ctx);
 	OS_SHA256_Update(&Sha256Ctx, sess_key->SHA256, HASHHEXLEN_SHA256);
 	OS_SHA256_Update(&Sha256Ctx, ":", 1);
