@@ -252,6 +252,11 @@ static inline int ensure_leg_array(int needed_legs, struct dlg_cell *dlg)
 {
 	struct dlg_leg *new_legs;
 
+	if (needed_legs > 254) {
+		LM_ERR("too many dialog legs: %d\n", needed_legs);
+		return -1;
+	}
+
 	while (((int)dlg->legs_no[DLG_LEGS_ALLOCED] - needed_legs) < 0) {
 		new_legs = shm_realloc(dlg->legs,
 			(dlg->legs_no[DLG_LEGS_ALLOCED] + 2) * sizeof *new_legs);
