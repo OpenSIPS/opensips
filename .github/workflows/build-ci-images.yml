@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/master'
+    if: github.repository == 'OpenSIPS/opensips' && github.ref == 'refs/heads/master'
     name: Ubuntu ${{ matrix.os }} CI image
     runs-on: ubuntu-latest
     permissions:
