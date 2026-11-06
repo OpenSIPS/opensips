@@ -1288,6 +1288,13 @@ int t_lookup_callid(struct cell ** trans, str callid, str cseq) {
 		return -1;
 	}
 
+	/* callid and cseq may come straight from a received request */
+	if (CALLID_LEN + callid.len + CRLF_LEN > sizeof(callid_header) ||
+	CSEQ_LEN + cseq.len + 1 + invite_method.len > sizeof(cseq_header)) {
+		LM_ERR("callid or cseq too long (%d/%d)\n", callid.len, cseq.len);
+		return -1;
+	}
+
 	/* create header fields the same way tm does itself, then compare headers */
 	endpos = print_callid_mini(callid_header, callid);
 	LM_DBG("created comparable call_id header field: >%.*s<\n",
