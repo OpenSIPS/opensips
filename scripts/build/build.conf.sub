@@ -74,6 +74,7 @@ gcc-arm64-cross)
 gcc-arm32-qemu-cross)
 	export CC="/usr/lib/ccache/gcc"
 	export CCACHE_DIR="`pwd`/ccache"
+	CC_EXTRA_OPTS="-Werror -DUDP_RX_REUSEPORT_BUILD=0"
 	DOCKR_PLATFORM="arm/v7"
 	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -81,6 +82,7 @@ gcc-arm32-qemu-cross)
 clang-arm32-qemu-cross)
 	export CC="/usr/lib/ccache/clang"
 	export CCACHE_DIR="`pwd`/ccache"
+	CC_EXTRA_OPTS="-Werror -DUDP_RX_REUSEPORT_BUILD=0"
 	DOCKR_PLATFORM="arm/v7"
 	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -88,6 +90,7 @@ clang-arm32-qemu-cross)
 gcc-arm64-qemu-cross)
 	export CC="/usr/lib/ccache/gcc"
 	export CCACHE_DIR="`pwd`/ccache"
+	CC_EXTRA_OPTS="-Werror -DUDP_RX_REUSEPORT_BUILD=0"
 	DOCKR_PLATFORM="arm64/v8"
 	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
@@ -95,6 +98,7 @@ gcc-arm64-qemu-cross)
 clang-arm64-qemu-cross)
 	export CC="/usr/lib/ccache/clang"
 	export CCACHE_DIR="`pwd`/ccache"
+	CC_EXTRA_OPTS="-Werror -DUDP_RX_REUSEPORT_BUILD=0"
 	DOCKR_PLATFORM="arm64/v8"
 	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
