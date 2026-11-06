@@ -40,6 +40,8 @@ jobs:
     env:
       COMPILER: ${{ matrix.compiler }}
       BUILD_OS: ubuntu:${{ matrix.os }}
+      # Focal's wolfSSL lacks the custom-OID APIs needed for TNAuthList.
+      STIR_SHAKEN_OPENSSL: ${{ matrix.os == '20.04' && '1' || '' }}
 
     strategy:
       fail-fast: false

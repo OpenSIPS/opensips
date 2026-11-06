@@ -32,7 +32,16 @@ The following libraries or applications must be installed before running
 OpenSIPS with this module loaded:
 
 
-- *wolfssl (libwolfssl)*.
+- *wolfssl (libwolfssl)*, or *OpenSSL (libcrypto)* when building with
+  `STIR_SHAKEN_OPENSSL=1`.
+
+Older wolfSSL releases, such as Ubuntu 20.04's packaged version, cannot handle
+the custom TNAuthList OID required by this module. Use the OpenSSL backend on
+these systems:
+
+```console
+make -B -j4 modules/stir_shaken STIR_SHAKEN_OPENSSL=1
+```
 
 
 ### Exported Parameters
