@@ -287,7 +287,7 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 			}
 		}
 		else
-			LM_ERR("failed to send publish\n");
+			LMR_ERR("failed to send publish\n");
 	}
 
 error:
