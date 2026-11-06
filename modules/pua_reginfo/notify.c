@@ -23,7 +23,7 @@
 #include "notify.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
-#include "../../lib/reg/sip_msg.h"
+#include "../../parser/parse_uri.h"
 #include "../usrloc/usrloc.h"
 #include <libxml/parser.h>
 #include "usrloc_cb.h"
@@ -226,6 +226,7 @@ int process_body(str notify_body, udomain_t *domain)
 	xmlDocPtr doc = NULL;
 	xmlNodePtr doc_root = NULL, registrations = NULL, contacts = NULL,
 			   uris = NULL, params = NULL;
+	char uri[MAX_URI_SIZE];
 	str aor_key = {0, 0};
 	str aor = {0, 0};
 	str callid = {0, 0};
@@ -280,10 +281,19 @@ int process_body(str notify_body, udomain_t *domain)
 		aor.len = strlen(aor.s);
 		LM_DBG("AOR %.*s has state \"%d\"\n", aor.len, aor.s, state);
 
-		if(extract_aor(&aor, &aor_key, NULL, NULL, reginfo_use_domain) < 0) {
+		if(parse_uri(aor.s, aor.len, &parsed_aor) < 0) {
 			LM_ERR("failed to parse Address of Record (%.*s)\n", aor.len,
 					aor.s);
 			goto next_registration;
+		}
+		if(reginfo_use_domain) {
+			aor_key.s = uri;
+			aor_key.len = snprintf(uri, sizeof(uri), "%.*s@%.*s",
+				parsed_aor.user.len, parsed_aor.user.s,
+				parsed_aor.host.len, parsed_aor.host.s);
+		} else {
+			aor_key.s = parsed_aor.user.s;
+			aor_key.len = parsed_aor.user.len;
 		}
 
 		/* Now let's lock that domain for this AOR: */
