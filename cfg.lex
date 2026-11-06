@@ -839,7 +839,8 @@ static char* addstr(struct str_buf* dst_b, char* src, int len)
 		size=used+len+1;
 		/* round up to next multiple */
 		size+= STR_BUF_ALLOC_UNIT-size%STR_BUF_ALLOC_UNIT;
-		tmp=pkg_malloc(size);
+		/* the lexer's strings belong to the script tree being parsed */
+		PKG_GEN_MARK( tmp=pkg_malloc(size) );
 		if (tmp==0) goto error;
 		if (dst_b->s){
 			memcpy(tmp, dst_b->s, used);
