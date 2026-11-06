@@ -1121,6 +1121,13 @@ static void raise_state_changed_event(struct dlg_cell *dlg,
 	if (!evi_probe_event(ei_st_ch_id))
 		return;
 
+	/* raise_events_as_backup=0: a replicated dialog whose sharing tag is
+	 * BACKUP here belongs to the active peer, which raises the event itself;
+	 * skip it here (dialogs without a sharing tag are raised as before) */
+	if (!raise_events_as_backup && dialog_repl_cluster &&
+			get_shtag_state(dlg) == SHTAG_STATE_BACKUP)
+		return;
+
 	if (evi_param_set_str(id_p, did) < 0) {
 		LM_ERR("cannot set dialog id parameter\n");
 		return;
