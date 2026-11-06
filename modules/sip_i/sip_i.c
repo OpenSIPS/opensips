@@ -1381,7 +1381,8 @@ set_cgpn:
 		LM_INFO("\"sip:\" URI required for P-Asserted-Identity\n");
 		goto cgpn_err;
 	}
-	if (pai->parsed_uri.user.s[0] != '+') {
+	if (!pai->parsed_uri.user.s || pai->parsed_uri.user.len <= 0 ||
+			pai->parsed_uri.user.s[0] != '+') {
 		LM_INFO("P-Asserted-Identity number should start with \"+\" sign\n");
 		goto cgpn_err;
 	}
