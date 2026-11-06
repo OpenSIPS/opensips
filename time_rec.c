@@ -20,6 +20,7 @@
  */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -56,6 +57,12 @@
 #define SEC_WEEKLY       (7 * SEC_DAILY)
 #define SEC_MONTHLY_MAX  (31 * SEC_DAILY)
 #define SEC_YEARLY_MAX   (366 * SEC_DAILY)
+
+/* Keep the open-ended recurrence horizon representable on both 32-bit and
+ * 64-bit platforms.  Do not cast UINT32_MAX directly to a 32-bit time_t: it
+ * becomes -1, which is TR_NOVAL. */
+#define TR_DTEND_MAX \
+	((time_t)(sizeof(time_t) > sizeof(uint32_t) ? UINT32_MAX : INT32_MAX))
 
 #ifdef USE_YWEEK_U
 #define SUN_WEEK(t)	(int)(((t)->tm_yday + 7 - \
@@ -1669,7 +1676,7 @@ done:
 				     + time_rec->ts.tm_sec); /* until the end of the year */
 				break;
 			default:
-				time_rec->dtend = 4294967295UL; /* auto-fix to +136 years */
+				time_rec->dtend = TR_DTEND_MAX;
 			}
 		}
 
