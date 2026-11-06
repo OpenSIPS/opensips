@@ -96,11 +96,13 @@ Options:\n\
                       F_PARALLEL_MALLOC   F_PARALLEL_MALLOC_DBG\n\
                       Q_MALLOC            Q_MALLOC_DBG\n\
                       HP_MALLOC           HP_MALLOC_DBG\n\
+                      HG_MALLOC           HG_MALLOC_DBG\n\
     -k allocator The pkg memory allocator to use (overrides -a)\n\
     -s allocator The shared memory allocator to use (overrides -a)\n\
     -e allocator The restart-persistent memory allocator to use (overrides -a)\n\
-    -m nr        Size of shared memory allocated in Megabytes\n\
-    -M nr        Size of pkg memory allocated in Megabytes\n\
+    -m nr        Size of shared memory allocated in Megabytes (k/m/g\n\
+                 suffixes; INIT:CAP for an elastic HG_MALLOC arena)\n\
+    -M nr        Size of pkg memory allocated in Megabytes (same form)\n\
     -w dir       Change the working directory to \"dir\" (default \"/\")\n\
     -t dir       Chroot to \"dir\"\n\
     -u uid       Change uid \n\

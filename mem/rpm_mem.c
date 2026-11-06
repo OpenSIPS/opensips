@@ -148,6 +148,46 @@ void *rpm_block=NULL;
 int rpm_use_global_lock;
 #endif
 
+#if !defined INLINE_ALLOC && defined HG_MALLOC
+/* an inherited HG choice falls back to F_MALLOC/Q_MALLOC; an explicit -e
+ * is refused */
+static int rpm_resolve_allocator(void)
+{
+	if (mem_allocator_rpm == MM_HG_MALLOC ||
+	        mem_allocator_rpm == MM_HG_MALLOC_DBG) {
+		LM_ERR("%s cannot back restart persistent memory, which lives in "
+		       "a file-backed pool at a fixed address - select another "
+		       "allocator with -e\n", mm_str(mem_allocator_rpm));
+		return -1;
+	}
+	if (mem_allocator_rpm != MM_NONE)
+		return 0;
+
+	mem_allocator_rpm = mem_allocator;
+	if (mem_allocator_rpm == MM_HG_MALLOC ||
+	        mem_allocator_rpm == MM_HG_MALLOC_DBG) {
+#if defined F_MALLOC
+		mem_allocator_rpm = mem_allocator_rpm == MM_HG_MALLOC ?
+			MM_F_MALLOC : MM_F_MALLOC_DBG;
+#elif defined Q_MALLOC
+		mem_allocator_rpm = mem_allocator_rpm == MM_HG_MALLOC ?
+			MM_Q_MALLOC : MM_Q_MALLOC_DBG;
+#endif
+		LM_INFO("restart persistent memory uses %s (%s cannot back a "
+		        "file-backed pool)\n", mm_str(mem_allocator_rpm),
+		        mm_str(mem_allocator));
+	}
+	return 0;
+}
+#elif !defined INLINE_ALLOC
+static inline int rpm_resolve_allocator(void)
+{
+	if (mem_allocator_rpm == MM_NONE)
+		mem_allocator_rpm = mem_allocator;
+	return 0;
+}
+#endif
+
 int rpm_mem_init_allocs(void)
 {
 #ifdef HP_MALLOC
@@ -155,8 +195,8 @@ int rpm_mem_init_allocs(void)
 #endif
 
 #ifndef INLINE_ALLOC
-	if (mem_allocator_rpm == MM_NONE)
-		mem_allocator_rpm = mem_allocator;
+	if (rpm_resolve_allocator() < 0)
+		return -1;
 
 #ifdef HP_MALLOC
 	if (mem_allocator_rpm == MM_HP_MALLOC
@@ -340,8 +380,8 @@ int rpm_mem_init_allocs(void)
 int rpm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 {
 #ifndef INLINE_ALLOC
-	if (mem_allocator_rpm == MM_NONE)
-		mem_allocator_rpm = mem_allocator;
+	if (rpm_resolve_allocator() < 0)
+		return -1;
 #endif
 
 #ifdef INLINE_ALLOC

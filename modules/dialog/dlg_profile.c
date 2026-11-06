@@ -744,8 +744,10 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 		/* do hash over the value */
 		return core_hash( value, NULL, profile->size);
 	} else {
-		/* do hash over dialog pointer */
-		return ((unsigned long)dlg) & (profile->size - 1);
+		/* Fibonacci hash of the dialog address: allocators align it, so its
+		 * low bits alone fill only a few buckets */
+		return (unsigned int)(((unsigned long long)(unsigned long)dlg *
+			0x9e3779b97f4a7c15ULL) >> 32) & (profile->size - 1);
 	}
 }
 
