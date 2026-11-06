@@ -42,6 +42,7 @@ concurrency:
 
 jobs:
   changed-components:
+    if: github.repository == 'OpenSIPS/opensips'
     name: Find changed documentation components
     runs-on: ubuntu-latest
     outputs:
@@ -152,9 +153,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   dispatch:
+    if: github.repository == 'OpenSIPS/opensips' && needs.changed-components.outputs.has-components == 'true'
     name: Trigger ${{ matrix.component }} publication
     needs: changed-components
-    if: ${{ needs.changed-components.outputs.has-components == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -164,7 +165,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ secrets.OPENSIPS_WEB_APP }}
+          app-id: ${{ secrets.OPENSIPS_WEB_APP }}
           private-key: ${{ secrets.OPENSIPS_WEB_KEY }}
           owner: OpenSIPS
           repositories: ${{ secrets.OPENSIPS_WEB_REPO }}
