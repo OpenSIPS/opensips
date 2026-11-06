@@ -42,7 +42,10 @@
 #include <openssl/x509.h>
 #else
 #include <wolfssl/options.h>
-#include <wolfssl/ssl.h>
+#ifndef OPENSSL_EXTRA
+#define OPENSSL_EXTRA
+#endif
+#include <wolfssl/openssl/ssl.h>
 #include <wolfssl/openssl/x509.h>
 #endif
 
