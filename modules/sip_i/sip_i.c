@@ -1711,6 +1711,14 @@ static int add_isup_part_cmd(struct sip_msg *msg, str *msg_type, str *hdrs)
 				/* 4xx, 5xx -> REL */
 				isup_msg_idx = get_msg_idx_by_type(ISUP_REL);
 			else if (msg->REPLY_STATUS == 200) {
+				if (!msg->cseq && parse_headers(msg, HDR_CSEQ_F, 0) == -1) {
+					LM_WARN("Could not parse CSeq header\n");
+					return -1;
+				}
+				if (!msg->cseq || !msg->cseq->parsed) {
+					LM_WARN("Could not map SIP message to ISUP message type without CSeq\n");
+					return -1;
+				}
 				if (get_cseq(msg)->method_id == METHOD_INVITE)
 					/* 200 OK INVITE -> ANM */
 					isup_msg_idx = get_msg_idx_by_type(ISUP_ANM);
