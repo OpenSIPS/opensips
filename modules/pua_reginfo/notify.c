@@ -238,7 +238,7 @@ int process_body(str notify_body, udomain_t *domain)
 	str path = {0, 0};
 	str user_agent = {0, 0};
 	int state, event, expires, result, final_result = RESULT_ERROR;
-	char *expires_char, *cseq_char;
+	char *expires_char, *cseq_char, *param_name;
 	int cseq = 0;
 	int len;
 	urecord_t *ul_record = NULL;
@@ -344,6 +344,10 @@ int process_body(str notify_body, udomain_t *domain)
 				// If no CallID present, try the "id"-field instead:
 				if(callid.s == NULL)
 					callid.s = xmlGetAttrContentByName(contacts, "id");
+				if(callid.s == NULL) {
+					LM_ERR("No Call-ID or id for this contact!\n");
+					goto next_contact;
+				}
 				callid.len = strlen(callid.s);
 				LM_DBG("Got Call-ID \"%.*s\"\n", callid.len, callid.s);
 				received.s = xmlGetAttrContentByName(contacts, "received");
@@ -408,8 +412,11 @@ int process_body(str notify_body, udomain_t *domain)
 					if(xmlStrcasecmp(params->name, BAD_CAST "unknown-param")
 							!= 0)
 						goto next_param;
+					param_name = xmlGetAttrContentByName(params, "name");
+					if(param_name == NULL)
+						goto next_param;
 					len += 1 /* ; */
-						   + strlen(xmlGetAttrContentByName(params, "name"));
+						   + strlen(param_name);
 					param.s = (char *)xmlNodeGetContent(params);
 					param.len = strlen(param.s);
 					if(param.len > 0)
@@ -430,10 +437,13 @@ int process_body(str notify_body, udomain_t *domain)
 						if(xmlStrcasecmp(params->name, BAD_CAST "unknown-param")
 								!= 0)
 							goto next_param2;
+						param_name = xmlGetAttrContentByName(params, "name");
+						if(param_name == NULL)
+							goto next_param2;
 						contact_params.len += snprintf(
 								contact_params.s + contact_params.len,
 								len - contact_params.len, ";%s",
-								xmlGetAttrContentByName(params, "name"));
+								param_name);
 						param.s = (char *)xmlNodeGetContent(params);
 						param.len = strlen(param.s);
 						if(param.len > 0)
