@@ -1065,8 +1065,17 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 				return -1;
 			}
 		} else if (val->flags & PV_VAL_STR) {
-			if (val->rs.s[0] == '0' && val->rs.s[1] == 'x') {
+			if (val->rs.len >= 2 && val->rs.s[0] == '0' && val->rs.s[1] == 'x') {
 				/* read whole param from hex str */
+				if ((val->rs.len - 2) % 2 ||
+						(val->rs.len - 2) / 2 > PARAM_MAX_LEN) {
+					LM_WARN("Invalid length: %d for $isup_param(%.*s)\n",
+						(val->rs.len - 2) / 2,
+						isup_params[fix->isup_params_idx].name.len,
+						isup_params[fix->isup_params_idx].name.s);
+					return -1;
+				}
+
 				if (param_type == 0 &&
 					(val->rs.len-2)/2 != isup_params[fix->isup_params_idx].len) {
 					LM_WARN("Incorrect length: %d for $isup_param(%.*s), it must be exactly: %d\n",
