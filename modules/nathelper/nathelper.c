@@ -1852,13 +1852,14 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 
 			unlock_hash(cell->hash_id);
 
-			ul.free_ucontact_coords(cell->ct_coords);
 			shm_free(cell);
 
+			/* cachedb coordinates must remain valid until deletion finishes */
 			if (ul.delete_ucontact_from_coords(_d, ct_coords, 0) < 0) {
 				/* we keep going since it might work for other contacts */
 				LM_ERR("failed to remove ucontact from db\n");
 			}
+			ul.free_ucontact_coords(ct_coords);
 
 		} else {
 
