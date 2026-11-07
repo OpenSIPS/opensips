@@ -2203,7 +2203,20 @@ struct rtp_relay_tmp {
 	struct rtp_async_param *param;
 	struct dlg_cell *dlg;
 	struct list_head list;
+	/* one reference for the owner + one per in-flight re-INVITE transaction:
+	 * a late (e.g. retransmitted) reply may still reach the callback after
+	 * the tmp was released */
+	int refs;
+	volatile int released;
 };
+
+static void rtp_relay_tmp_unref(void *param)
+{
+	struct rtp_relay_tmp *tmp = (struct rtp_relay_tmp *)param;
+
+	if (__sync_sub_and_fetch(&tmp->refs, 1) == 0)
+		shm_free(tmp);
+}
 
 static struct rtp_relay_tmp *rtp_relay_new_tmp(struct rtp_relay_ctx *ctx,
 		int set, str *node)
@@ -2215,6 +2228,8 @@ static struct rtp_relay_tmp *rtp_relay_new_tmp(struct rtp_relay_ctx *ctx,
 		return NULL;
 	}
 	tmp->state = 0;
+	tmp->refs = 1;
+	tmp->released = 0;
 	tmp->ctx = ctx;
 	/* create a new session, similar to the existing one */
 	tmp->sess = rtp_relay_dup_sess(ctx, ctx->established);
@@ -2301,7 +2316,8 @@ static int rtp_relay_release_tmp(struct rtp_relay_tmp *tmp, int success)
 	}
 	if (tmp->dlg)
 		rtp_relay_dlg.dlg_unref(tmp->dlg, 1);
-	shm_free(tmp);
+	tmp->released = 1;
+	rtp_relay_tmp_unref(tmp);
 	return ret;
 }
 
@@ -2330,6 +2346,12 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 	if (!param) {
 		LM_BUG("cannot get reinvite param!\n");
 		return -1;
+	}
+
+	if (tmp->released) {
+		/* already completed: a retransmitted or crossing reply */
+		LM_DBG("reply %d for an already released re-INVITE context\n", statuscode);
+		return 0;
 	}
 
 	callid = tmp->dlg->callid;
@@ -2445,9 +2467,15 @@ static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,
 	static str inv = str_init("INVITE");
 	static str content_type_sdp = str_init("application/sdp");
 
-	int ret = run_dlg_api(&rtp_relay_dlg, send_indialog_request, tmp->dlg,
+	int ret;
+
+	/* the transaction holds a reference until it is freed */
+	__sync_add_and_fetch(&tmp->refs, 1);
+	ret = run_dlg_api(&rtp_relay_dlg, send_indialog_request, tmp->dlg,
 			&inv, leg, body, &content_type_sdp, NULL,
-			rtp_relay_reinvite_reply, tmp, NULL);
+			rtp_relay_reinvite_reply, tmp, rtp_relay_tmp_unref);
+	if (ret < 0)
+		__sync_sub_and_fetch(&tmp->refs, 1);
 	if (body && release_body)
 		pkg_free(body->s);
 	return ret;
