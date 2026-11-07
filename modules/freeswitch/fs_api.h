@@ -54,6 +54,7 @@ struct _fs_stats {
 	int max_sess;
 
 	int valid; /* FS stats are invalid until the first heartbeat */
+	unsigned int updated_jiffy; /* tick when last valid HEARTBEAT arrived */
 };
 
 enum fs_event_actions {
@@ -83,6 +84,8 @@ struct fs_event {
 struct fs_esl_reply {
 	str text;
 	unsigned long esl_reply_id;
+	int status; /* 0: command succeeded, -1: FreeSWITCH rejected command */
+	unsigned int created_at;
 
 	struct list_head list;
 };
