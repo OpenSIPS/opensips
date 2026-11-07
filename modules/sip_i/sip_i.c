@@ -1076,6 +1076,13 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 						return -1;
 				}
 
+				if ((val->rs.len-2)/2 > PARAM_MAX_LEN) {
+					LM_WARN("Value too long for $isup_param(%.*s), max length is: %d\n",
+						isup_params[fix->isup_params_idx].name.len,
+						isup_params[fix->isup_params_idx].name.s, PARAM_MAX_LEN);
+					return -1;
+				}
+
 				if (param_type == 3)	/* new optional param */
 					isup_struct->total_len += (val->rs.len-2)/2;
 				else if (param_type == 1 || param_type == 2)
