@@ -883,6 +883,14 @@ Replaces obsolete MI command: *stir_shaken_ca_reload*.
 
 Reload the file containing trusted CA certificates for the verifier
 and the directory containing trusted CA certificates for the verifier.
+At least one of *ca_list* or *ca_dir* must be set.
+
+
+The whole verification store is rebuilt from the current files - trusted CAs,
+system-wide CAs and CRLs - so the CRLs remain in use. The new files are
+first checked in the MI process; if they fail to load, an error is returned and
+nothing changes. Otherwise, every process rebuilds its own store before its
+next certificate verification.
 
 
 Name: *stir_shaken:ca_reload*
@@ -910,6 +918,11 @@ Replaces obsolete MI command: *stir_shaken_crl_reload*.
 
 Reload the file containing certificate revocation lists (CRLs) for the verifier
 and the directory containing certificate revocation lists for the verifier.
+At least one of *crl_list* or *crl_dir* must be set.
+
+
+Same as *stir_shaken:ca_reload*, the whole verification store is rebuilt, so
+the trusted CAs remain in use, and the change reaches every process.
 
 
 Name: *stir_shaken:crl_reload*
