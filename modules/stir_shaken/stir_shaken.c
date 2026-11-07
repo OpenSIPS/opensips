@@ -153,7 +153,15 @@ struct generated_identity {
 	struct generated_identity *next;
 };
 
+/* the X509_STORE is built in each process' private memory; on a CA/CRL
+ * reload, the MI process only bumps the shared generation and every process
+ * rebuilds its own store before its next certificate verification */
 static X509_STORE *store;
+static unsigned int store_local_gen;
+static struct ss_store_gen {
+	gen_lock_t lock;
+	volatile unsigned int gen;
+} *store_gen;
 static gen_lock_t *ss_openssl_lock;
 
 
@@ -310,34 +318,78 @@ static void ss_store_set_verify_cb(X509_STORE *x509_store,
 #endif
 }
 
-// called during mod_init
-static int init_cert_validation(void)
+#define SS_STORE_ERR_ALLOC   -1
+#define SS_STORE_ERR_CA      -4
+#define SS_STORE_ERR_SYS_CA  -5
+#define SS_STORE_ERR_CRL     -6
+
+/* builds a complete verification store - trusted CAs, system-wide CAs and
+ * CRLs - from the current module parameters; used both at startup and on
+ * reload, so that a reload never leaves out what the other one loads */
+static X509_STORE *build_cert_store(int *err)
 {
-	store = X509_STORE_new();
-	if (!store) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
-		return -1;
+	X509_STORE *new_store;
+	int rc;
+
+	new_store = X509_STORE_new();
+	if (!new_store) {
+		LM_ERR("Failed to create X509_STORE object\n");
+		rc = SS_STORE_ERR_ALLOC;
+		goto error;
 	}
-	ss_store_set_verify_cb(store, verify_callback);
+	ss_store_set_verify_cb(new_store, verify_callback);
 
 	if (ca_list || ca_dir) {
-		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
+		if (X509_STORE_load_locations(new_store, ca_list, ca_dir) != 1) {
 			LM_ERR("Failed to load trusted CAs\n");
-			return -1;
+			rc = SS_STORE_ERR_CA;
+			goto error;
 		}
-		if (ss_store_set_default_paths(store) != 1) {
+		if (ss_store_set_default_paths(new_store) != 1) {
 			LM_ERR("Failed to load the system-wide CA certificates\n");
-			return -1;
+			rc = SS_STORE_ERR_SYS_CA;
+			goto error;
 		}
 	}
 
 	if (crl_list || crl_dir) {
-		if (X509_STORE_load_locations(store, crl_list, crl_dir) != 1) {
+		if (X509_STORE_load_locations(new_store, crl_list, crl_dir) != 1) {
 			LM_ERR("Failed to load CRLs\n");
-			return -1;
+			rc = SS_STORE_ERR_CRL;
+			goto error;
 		}
-		X509_STORE_set_flags(store,
+		X509_STORE_set_flags(new_store,
 			X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+	}
+
+	return new_store;
+
+error:
+	if (new_store)
+		X509_STORE_free(new_store);
+	if (err)
+		*err = rc;
+	return NULL;
+}
+
+// called during mod_init
+static int init_cert_validation(void)
+{
+	store = build_cert_store(NULL);
+	if (!store)
+		return -1;
+
+	store_gen = shm_malloc(sizeof *store_gen);
+	if (!store_gen) {
+		LM_ERR("oom for the CA/CRL store generation\n");
+		return -1;
+	}
+	store_gen->gen = 0;
+	if (!lock_init(&store_gen->lock)) {
+		LM_ERR("could not init the CA/CRL store generation lock\n");
+		shm_free(store_gen);
+		store_gen = NULL;
+		return -1;
 	}
 
 	ss_openssl_lock = lock_alloc();
@@ -349,75 +401,46 @@ static int init_cert_validation(void)
 	return 0;
 }
 
-// store check then reload ca_list and ca_dir
-static int init_cert_ca_reload(void)
+/* called by the MI reloads: make sure the new CA/CRL files load, then let
+ * every process know it has to rebuild its own store */
+static int reload_cert_store(void)
 {
-	store = X509_STORE_new();
-	if (!store) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
-		return -1;
-	}
-	ss_store_set_verify_cb(store, verify_callback);
+	X509_STORE *test_store;
+	int rc;
 
-	/* check if ca_list param is set */
-	if (!ca_list) {
-		LM_ERR("Failed, path to a file containing trusted CA certificates for the verifier is not set or the certificates must be in PEM format, one after another.\n");
-		return -2;
-	}
+	test_store = build_cert_store(&rc);
+	if (!test_store)
+		return rc;
+	X509_STORE_free(test_store);
 
-	/* check if ca_dir param is set */
-	if (!ca_dir) {
-		LM_ERR("Failed, path to a directory containing trusted CA certificates for the verifier is not set or the certificates in the directory must be in hashed form, as described in the openssl documentation for the Hashed Directory Method.\n");
-		return -3;
-	}
-
-	/* params are set, do reload */
-	if (ca_list || ca_dir) {
-		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
-			LM_ERR("Failed to load trusted CAs\n");
-			return -4;
-		}
-		if (ss_store_set_default_paths(store) != 1) {
-			LM_ERR("Failed to load the system-wide CA certificates\n");
-			return -5;
-		}
-	}
+	lock_get(&store_gen->lock);
+	store_gen->gen++;
+	lock_release(&store_gen->lock);
 
 	return 0;
 }
 
-// store check then reload crl_list and crl_dir
-static int init_cert_crl_reload(void)
+/* rebuild this process' store if a reload happened since the last one */
+static void refresh_cert_store(void)
 {
-	store = X509_STORE_new();
-	if (!store) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
-		return -1;
-	}
-	ss_store_set_verify_cb(store, verify_callback);
+	X509_STORE *new_store;
+	unsigned int gen;
 
-	/* check if crl_list param is set */
-	if (!crl_list) {
-		LM_ERR("Failed, path to a file containing certificate revocation lists (CRLs) for the verifier is not set.\n");
-		return -2;
-	}
+	if (!store_gen)
+		return;
 
-	/* check if crl_dir param is set */
-	if (!crl_dir) {
-		LM_ERR("Failed, path to a directory containing certificate revocation lists (CRLs) for the verifier is not set or the CRLs in the directory must be in hashed form, as described in the openssl documentation for the Hashed Directory Method.\n");
-		return -3;
-	}
+	gen = store_gen->gen;
+	if (gen == store_local_gen)
+		return;
 
-	/* params are set, do reload */
-	if (crl_list || crl_dir) {
-		if (X509_STORE_load_locations(store, crl_list, crl_dir) != 1) {
-			LM_ERR("Failed to load CRLs\n");
-			return -4;
-		}
-		X509_STORE_set_flags(store, X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+	new_store = build_cert_store(NULL);
+	if (!new_store) {
+		LM_ERR("failed to rebuild the CA/CRL store, keeping the old one\n");
+	} else {
+		X509_STORE_free(store);
+		store = new_store;
 	}
-
-	return 0;
+	store_local_gen = gen;
 }
 
 static void parsed_ctx_free(void *param)
@@ -1347,6 +1370,8 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain,
 		return -8;
 	}
 
+	refresh_cert_store();
+
 	if (!(verify_ctx = X509_STORE_CTX_new())) {
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
 		return -1;
@@ -1859,80 +1884,49 @@ static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf)
  * MI functions
  */
 
-/*! \brief Reload stir ca_list and ca_dir shaken */
-mi_response_t *mi_stir_shaken_ca_reload(const mi_params_t *params, struct mi_handler *async_hdl)
+static mi_response_t *mi_cert_store_reload(const char *what)
 {
 	int rc;
 
-	rc = init_cert_ca_reload();
-	LM_ERR("Engage stir shaken ca reload, result <%i>\n", rc);
+	rc = reload_cert_store();
+	LM_INFO("stir_shaken %s reload, result <%i>\n", what, rc);
 
 	switch(rc) {
 		case 0:
-			/* Reload OK */
 			return init_mi_result_ok();
-			break;
-		case -1:
-			/* X509 Store Error */
+		case SS_STORE_ERR_ALLOC:
 			return init_mi_error(500, MI_SSTR("Error X509 store object."));
-			break;
-		case -2:
-			/* ca_list param */
-			return init_mi_error(500, MI_SSTR("Error ca_list param."));
-			break;
-		case -3:
-			/* ca_dir param */
-			return init_mi_error(500, MI_SSTR("Error ca_dir param."));
-			break;
-		case -4:
-			/* Cert Error */
+		case SS_STORE_ERR_CA:
 			return init_mi_error(500, MI_SSTR("Error failed to load trusted CAs."));
-			break;
-		case -5:
-			/* Path Error */
+		case SS_STORE_ERR_SYS_CA:
 			return init_mi_error(500, MI_SSTR("Error failed to load the system-wide CA certificates."));
-			break;
+		case SS_STORE_ERR_CRL:
+			return init_mi_error(500, MI_SSTR("Error failed to load trusted CRL."));
 		default:
-			/* Any other case */
 			return init_mi_error(500, MI_SSTR("Error"));
 	}
+}
 
+/*! \brief Reload stir ca_list and ca_dir shaken */
+mi_response_t *mi_stir_shaken_ca_reload(const mi_params_t *params, struct mi_handler *async_hdl)
+{
+	if (!ca_list && !ca_dir) {
+		LM_ERR("neither 'ca_list' nor 'ca_dir' is set, nothing to reload\n");
+		return init_mi_error(500, MI_SSTR("Error ca_list/ca_dir param."));
+	}
+
+	return mi_cert_store_reload("CA");
 }
 
 /*! \brief Reload stir crl_list and crl_dir shaken */
 mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_handler *async_hdl)
 {
-	int rc;
-
-	rc = init_cert_crl_reload();
-	LM_ERR("Engage stir shaken crl reload, result <%i>\n", rc);
-
-	switch(rc) {
-		case 0:
-			/* Reload OK */
-			return init_mi_result_ok();
-			break;
-		case -1:
-			/* X509 Store Error */
-			return init_mi_error(500, MI_SSTR("Error X509 store object."));
-			break;
-		case -2:
-			/* crl_list param */
-			return init_mi_error(500, MI_SSTR("Error crl_list param."));
-			break;
-		case -3:
-			/* crl_dir param */
-			return init_mi_error(500, MI_SSTR("Error crl_dir param."));
-			break;
-		case -4:
-			/* Cert Error */
-			return init_mi_error(500, MI_SSTR("Error failed to load trusted CRL."));
-			break;
-		default:
-			/* Any other case */
-			return init_mi_error(500, MI_SSTR("Error"));
+	if (!crl_list && !crl_dir) {
+		LM_ERR("neither 'crl_list' nor 'crl_dir' is set, nothing to reload\n");
+		return init_mi_error(500, MI_SSTR("Error crl_list/crl_dir param."));
 	}
 
+	return mi_cert_store_reload("CRL");
 }
 
 #ifdef UNIT_TESTS
