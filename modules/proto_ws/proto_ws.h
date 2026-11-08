@@ -57,6 +57,8 @@ enum ws_close_code {
  * Later, we should probably store info about origin, resoruce. versions,
  * protocols supported, etc. - razvanc
  */
+#define WS_KEY_LEN 24
+
 struct ws_data {
 	TRACE_PROTO_COMMON;
 
@@ -71,6 +73,9 @@ struct ws_data {
 
 	/* WebSocket Handshake key */
 	str key;
+
+	/* storage for the key we send as a client */
+	char key_buf[WS_KEY_LEN];
 };
 
 #define WS_STATE(_c) \
