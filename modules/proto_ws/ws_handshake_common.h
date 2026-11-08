@@ -118,7 +118,6 @@ static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* 
 static int complete_ws_trace( struct tcp_connection* conn, trans_trace_status status, str* rpl, str* message);
 
 #define WS_TRACE_MAX 1024
-static char ws_trace_buf[WS_TRACE_MAX];
 
 static inline int ws_parse_headers(struct sip_msg *msg)
 {
@@ -256,27 +255,26 @@ static int ws_origin_allowed(const str *origin)
 					WS_PROTO_F)
 
 
-#define WS_KEY_LEN 24
-static char ws_key[WS_KEY_LEN];
 static const char base64alphabet[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 #define BASE64ALPHABET_LEN (sizeof(base64alphabet)-1)
 
 
 /* we're using a completely random key - no reason yet for something else */
-static str ws_rand_key(void)
+static void ws_rand_key(struct tcp_connection *con)
 {
-	static str key = { ws_key, WS_KEY_LEN };
+	char *key = ((struct ws_data *)con->proto_data)->key_buf;
 	int i;
 
 	/* randomly selected 16-byte base64 encoded value requires
 	 * 22 characters and 2 paddings at the end */
 	for (i = 0; i < WS_KEY_LEN - 2; i++)
-		ws_key[i] = base64alphabet[rand() % BASE64ALPHABET_LEN];
-	ws_key[i++] = '=';
-	ws_key[i++] = '=';
+		key[i] = base64alphabet[rand() % BASE64ALPHABET_LEN];
+	key[i++] = '=';
+	key[i++] = '=';
 
-	return key;
+	WS_KEY(con).s = key;
+	WS_KEY(con).len = WS_KEY_LEN;
 }
 
 static inline int ws_client_handshake(struct tcp_connection *con)
@@ -302,7 +300,7 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 #endif
 
 	WS_STATE(con) = WS_CON_HANDSHAKE;
-	WS_KEY(con) = ws_rand_key();
+	ws_rand_key(con);
 	if (ws_start_handshake(con) < 0) {
 		LM_ERR("cannot start handshake\n");
 		return -1;
@@ -1059,46 +1057,49 @@ error:
 	return -1;
 }
 
-/*
- * The Polar library needs this to be 64 bytes, to avoid overflow
- * when computing the SHA1 hash
- */
-unsigned char ws_key_buf[64] = "xxxxxxxxxxxxxxxxxxxxxxxx" /* the key len: 24 */
-		WS_GUID_KEY /* the GUID */;
-unsigned char ws_sha1_buf[WS_SHA1_KEY_LEN];
-unsigned char ws_accept_buf[WS_ACCEPT_KEY_LEN];
-
-static void ws_compute_key(str *key)
+static void ws_compute_key(str *key, unsigned char *accept)
 {
-	memcpy(ws_key_buf, key->s, key->len);
-	sha1(ws_key_buf, key->len + WS_GUID_KEY_LEN, ws_sha1_buf);
-	base64encode(ws_accept_buf, ws_sha1_buf, WS_SHA1_KEY_LEN);
+	/* The Polar library needs this to be 64 bytes, to avoid overflow
+	 * when computing the SHA1 hash */
+	unsigned char key_buf[64];
+	unsigned char sha1_buf[WS_SHA1_KEY_LEN];
+
+	memcpy(key_buf, key->s, key->len);
+	memcpy(key_buf + key->len, WS_GUID_KEY, WS_GUID_KEY_LEN);
+	sha1(key_buf, key->len + WS_GUID_KEY_LEN, sha1_buf);
+	base64encode(accept, sha1_buf, WS_SHA1_KEY_LEN);
 }
 
 static int ws_is_valid_key(str *key, str *accept)
 {
-	ws_compute_key(key);
-	return strncasecmp((char *)ws_accept_buf, accept->s, accept->len) == 0;
+	unsigned char accept_buf[WS_ACCEPT_KEY_LEN];
+
+	if (accept->len != WS_ACCEPT_KEY_LEN)
+		return 0;
+	ws_compute_key(key, accept_buf);
+	return strncasecmp((char *)accept_buf, accept->s, accept->len) == 0;
 }
 
 static int ws_complete_handshake(struct tcp_connection *c)
 {
 	int n;
 	struct timeval get;
-	static struct iovec iov[] = {
+	unsigned char accept_buf[WS_ACCEPT_KEY_LEN];
+	char trace_buf[WS_TRACE_MAX];
+	struct iovec iov[] = {
 		{ (void*)WS_HTTP_ACCEPT, WS_HTTP_ACCEPT_LEN }, /* all mandatory headers */
-		{ (void *)ws_accept_buf, WS_ACCEPT_KEY_LEN }, /* the cookie */
+		{ (void *)accept_buf, WS_ACCEPT_KEY_LEN }, /* the cookie */
 		{ (void *)HTTP_END, HTTP_END_LEN }/* message end */
 	};
 
-	str trace_str = { ws_trace_buf, 0 };
+	str trace_str = { trace_buf, 0 };
 	int iov_len = sizeof(iov) / sizeof(struct iovec), i;
 
 	reset_tcp_vars(c->profile.send_threshold);
 	start_expire_timer(get, c->profile.send_threshold);
 
-	/* compute the ws_key in ws_accept_buf */
-	ws_compute_key(&WS_KEY(c));
+	/* compute the ws_key in accept_buf */
+	ws_compute_key(&WS_KEY(c), accept_buf);
 
 	n = _ws_common_writev(c, c->fd, iov, 3, _ws_common_write_tout);
 	stop_expire_timer(get, c->profile.send_threshold,
@@ -1323,12 +1324,13 @@ static int ws_start_handshake(struct tcp_connection *c)
 	char *ip;
 	char *port;
 	int port_len;
-	static char host_orig_buf[MAX_HOST_LEN];
+	char host_orig_buf[MAX_HOST_LEN];
 	char *h;
 
-	str trace_str = { ws_trace_buf, 0 };
+	char trace_buf[WS_TRACE_MAX];
+	str trace_str = { trace_buf, 0 };
 
-	static struct iovec iov[] = {
+	struct iovec iov[] = {
 		{ (void*)HTTP_GET_METHOD, HTTP_GET_METHOD_LEN },	/* GET method */
 		{ (void*)" ", 1 },
 		{ (void*)NULL, 0 },									/* the resource */
