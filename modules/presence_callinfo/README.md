@@ -115,7 +115,7 @@ alice@example  presence  bob@example  watcher@example
 ```
 
 
-- The watcher subscribes the "Event: dialog" of Bob.
+- The watcher subscribes to Bob's "call-info" event.
 - Alice calls Bob.
 - The publisher is publishing the "alerting" state for Bob.
 - PUBLISH is received and handled by presence module.
@@ -157,10 +157,10 @@ To trigger the internal publishing (from the dialog module) for a
 certain call, use the "sca_engage()" function from the script when
 handling the initial INVITE. It creates the dialog and publishes the
 state of the caller's line, of the callee's line, or of both. For
-outbound calls, "sca_validate_invite_out()" checks that the caller
-has seized its line first. Per branch, "sca_set_called_line()" changes
-the callee's line and "sca_mute_branch()" stops publishing it - see
-the below documentation.
+outbound calls, "sca_validate_invite_out()" checks for a recorded seizure
+on the caller's requested appearance index. Per branch,
+"sca_set_called_line()" changes the callee's line and "sca_mute_branch()"
+stops publishing it - see the below documentation.
 
 
 LIMITATIONS : in this mode, the module does not really check if the
@@ -169,6 +169,57 @@ also there is no check on how many indexes are for each line. Such
 information (lines and indexes) are not provisioned into the module:
 a line becomes known with the first "line-seize" SUBSCRIBE for it,
 and no "call-info" is published for a line that is not known.
+
+
+#### Internal publishing example
+
+
+The following routing fragment handles initial INVITEs to a shared line. Call
+`route(sca_inbound)` after authentication and access control, before resolving
+the called line to its registered contacts. It assumes that the line is already
+known from a previous line-seize subscription, and that the configuration loads
+the registrar/usrloc, rr, sl, and signaling modules in addition to the dependencies
+below. Handle SUBSCRIBE requests with `handle_subscribe()` and route in-dialog
+requests with `loose_route()` in the main request route.
+
+
+```opensips title="Inbound SCA with per-branch publishing"
+route[sca_inbound] {
+	# Save the shared line before lookup rewrites the R-URI to a contact.
+	$var(sca_line) = $ru;
+	if (!sca_engage("B")) {
+		send_reply(500, "Cannot Enable SCA");
+		exit;
+	}
+	record_route();
+	t_on_branch("sca_publish");
+
+	if (!lookup("location")) {
+		send_reply(404, "No Registered Contact");
+		exit;
+	}
+	if (!t_relay()) {
+		sl_reply_error();
+	}
+	exit;
+}
+
+branch_route[sca_publish] {
+	# Example policy: do not publish the callee on a voicemail branch.
+	if ($rU == "voicemail") {
+		sca_mute_branch("B");
+	} else {
+		sca_set_called_line($var(sca_line));
+	}
+}
+```
+
+
+Only the callee's line is published here. For an outbound call from a shared
+line, use `sca_engage("A")`; use `sca_engage("AB")` when both parties are shared
+lines. Both forms include caller-side validation, so handle a negative return
+value before relaying the INVITE. A separate `sca_validate_invite_out()` call is
+only needed if the script needs to check the caller before engaging publishing.
 
 
 ### Dependencies
@@ -181,7 +232,9 @@ The following modules must be loaded before this module:
 
 
 - *presence*.
-- *dialog*.
+- *tm*.
+- *dialog* - required only for internal publishing
+(`disable_dialog_support_for_sca=0`).
 
 
 #### External Libraries or Applications
@@ -271,9 +324,10 @@ modparam("presence_callinfo", "line_hash_size", 128)
 #### caller_spec_param (string)
 
 
-A variable holding the caller's line, as a SIP URI. When the variable
-is set, "sca_engage()" and "sca_validate_invite_out()" use it instead of
-the From URI of the INVITE.
+A variable holding the caller's line, as a SIP URI. When the variable has a
+string value, "sca_engage()" and "sca_validate_invite_out()" use it instead of
+the From URI of the INVITE. An unset or non-string value falls back to the From
+URI; an empty or malformed string is not a valid override and causes an error.
 
 
 *Default value is "NULL"* (the From URI is used).
@@ -290,8 +344,12 @@ modparam("presence_callinfo", "caller_spec_param", "$var(sca_caller)")
 #### callee_spec_param (string)
 
 
-A variable holding the callee's line, as a SIP URI. When the variable
-is set, "sca_engage()" uses it instead of the R-URI of the INVITE.
+A variable holding the callee's line, as a SIP URI. When the variable has a
+string value, "sca_engage()" uses it instead of the R-URI of the INVITE. An
+unset or non-string value falls back to the R-URI; an empty or malformed string
+is not a valid override and causes an error. The value is captured when
+"sca_engage()" first registers the publishing callbacks; use
+"sca_set_called_line()" for subsequent per-branch changes.
 
 
 *Default value is "NULL"* (the R-URI is used).
@@ -312,7 +370,13 @@ The log level of the module's SCA trace messages. It can be changed at
 runtime with the *presence_callinfo:set_log_level* MI command.
 
 
-*Default value is "-3"* (L_ALERT - always printed).
+*Default value is "-3"* (L_ALERT).
+
+
+These messages are subject to the core log level. For example, setting this
+parameter to 4 (L_DBG) only prints SCA trace messages when the core log level
+also permits debug messages. Other module errors and debug messages keep
+their own log levels.
 
 
 ```opensips title="Set log_level parameter"
@@ -331,18 +395,29 @@ modparam("presence_callinfo", "log_level", 4)
 
 The function (to be used only in internal publishing mode) checks an
 outbound call from a shared line: the INVITE must carry a Call-Info
-header with an "appearance-index", and the caller's line (the From URI,
-or "caller_spec_param") must be seized for that index.
+header with a nonzero "appearance-index", and the caller's line (the From URI,
+or "caller_spec_param") must have a recorded seizure for that index.
 
 
-It returns 1 if the call is valid, otherwise:
+This checks recorded seizure information, not whether its expiry is still in
+the future or whether the INVITE sender owns the line-seize subscription. It
+does not replace authentication or access control in the routing script.
 
 
+It returns 1 when the check succeeds, or for a non-INVITE request without
+performing the check. Negative return codes are:
+
+
+- *-1* - internal publishing is disabled, the caller override cannot be parsed,
+or an internal error occurs;
 - *-2* - the line is not known to the module;
-- *-3* - the line is not seized;
-- *-4* - the line is seized for a different index;
+- *-3* - no seizure is recorded for the requested appearance index;
 - *-5* - missing or bogus Call-Info header;
 - *-6* - no index in the Call-Info header.
+
+
+Return code -4 (a seizure on a different index) is no longer used: seizures on
+other indexes are independent and do not satisfy the check for this index.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -374,9 +449,19 @@ the call on the lines given by *parties*:
 line set for the branch by "sca_set_called_line()".
 
 
-If the parameter is missing, both lines are published. With *A*, the
-call is first checked as by "sca_validate_invite_out()", and its error
-code is returned if the check fails.
+The flags are uppercase and may be combined as *AB*. If the parameter is
+missing or empty, both lines are selected. Unsupported characters are logged
+and ignored; if no recognized flag remains, both lines are selected.
+
+
+Whenever *A* is selected, including by default, the caller is checked as by
+"sca_validate_invite_out()". Use *B* for an inbound call whose caller does not
+have a shared line and a recorded seizure.
+
+
+The function returns 1 on success, or for a non-INVITE request without enabling
+publishing. It returns -1 if internal publishing is disabled or setup fails,
+and propagates the caller-validation error codes when *A* is selected.
 
 
 This function can be used from REQUEST_ROUTE.
@@ -396,12 +481,20 @@ This function can be used from REQUEST_ROUTE.
 
 
 The function (to be used only in internal publishing mode) sets the
-callee's line for the current branch, overriding the R-URI. The value
-must be a SIP URI ! Variables are accepted. An empty string drops a
-line set before for the branch.
+callee's line for the current branch, overriding the callee identity captured
+by "sca_engage()". The value must be a SIP URI; variables are accepted. An empty
+string removes a previous branch override and restores the captured identity:
+"callee_spec_param", if it had a string value, otherwise the R-URI at the time
+the publishing callbacks were registered. It does not re-read the branch's
+current R-URI.
 
 
 The dialog must already exist, so call "sca_engage()" first.
+
+
+The function returns 1 on success, or for a non-INVITE request without changing
+the line. It returns -1 if internal publishing is disabled, no dialog exists,
+the line cannot be parsed, or an internal error occurs.
 
 
 This function can be used from REQUEST_ROUTE and BRANCH_ROUTE.
@@ -424,10 +517,20 @@ publishing for the callee's line on the current branch. Only *B* has
 an effect; *A* is accepted, but the caller's line is still published.
 
 
+The flags use the same uppercase *A*, *B*, and *AB* syntax as "sca_engage()".
+An empty string, or a string with no recognized flags, selects both parties;
+currently this still only mutes the callee. To disable caller publishing,
+select only *B* when calling "sca_engage()".
+
+
 The dialog must already exist, so call "sca_engage()" first.
 
 
 This function can be used from BRANCH_ROUTE.
+
+
+It returns 1 when the branch mute settings are stored, or -1 if no dialog
+exists or the settings cannot be stored.
 
 
 ```opensips title="sca_mute_branch() usage"
