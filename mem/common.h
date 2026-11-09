@@ -61,6 +61,25 @@ enum osips_mm {
 	MM_F_PARALLEL_MALLOC_DBG,
 };
 
+#if defined PREFERRED_MALLOC_F_MALLOC
+#define DEFAULT_MALLOC_MM MM_F_MALLOC
+#elif defined PREFERRED_MALLOC_Q_MALLOC
+#define DEFAULT_MALLOC_MM MM_Q_MALLOC
+#elif defined PREFERRED_MALLOC_HP_MALLOC
+#define DEFAULT_MALLOC_MM MM_HP_MALLOC
+#elif defined PREFERRED_MALLOC_F_PARALLEL_MALLOC
+#define DEFAULT_MALLOC_MM MM_F_PARALLEL_MALLOC
+#else
+#error "no default memory allocator selected"
+#endif
+
+#ifdef DBG_MALLOC
+#define DEFAULT_MALLOC_MM_DBG ((enum osips_mm)(DEFAULT_MALLOC_MM + \
+		MM_F_MALLOC_DBG - MM_F_MALLOC))
+#else
+#define DEFAULT_MALLOC_MM_DBG DEFAULT_MALLOC_MM
+#endif
+
 #if defined F_MALLOC
 #include "f_malloc.h"
 #endif
