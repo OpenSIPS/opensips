@@ -32,7 +32,7 @@ endif
 
 unit_tests: ensure_test_defs $(NAME)
 	-@echo "          =============   Start Unit Tests   ============="
-	./$(NAME) -dd -T $(module) -w . -a HP_MALLOC
+	./$(NAME) -dd -T $(module) -w .
 	-@echo "          ================================================"
 	-@echo "          ========   Passed All Tests! ᕦ(ò_óˇ)ᕤ   ========"
 	-@echo "          ================================================"
@@ -43,7 +43,7 @@ unit_tests: ensure_test_defs $(NAME)
 define module_test_rule
 test-$(notdir $(1)): ensure_test_defs $$(NAME) $(1)
 	-@echo "          ====   $(notdir $(1))   ===="
-	./$$(NAME) -dd -T $(notdir $(1)) -w . -a HP_MALLOC
+	./$$(NAME) -dd -T $(notdir $(1)) -w .
 endef
 $(foreach m,$(test_module_paths),$(eval $(call module_test_rule,$(m))))
 
