@@ -348,6 +348,38 @@ Examples of usage:
 
 ```
 
+### which_aliases
+
+Lists all registered MI command aliases and the canonical command each alias
+resolves to.
+
+**Arguments**:
+* *alias* (optional) - an MI alias to resolve to its canonical command
+
+**Output**: without an argument, an array of objects containing `alias` and
+`command`; with an *alias*, the canonical command name as a string.
+
+Example of usage:
+```bash
+
+    $ opensips-mi which_aliases
+    [
+        {
+            "alias": "ul_dump",
+            "command": "usrloc:ul_dump"
+        }
+    ]
+
+```
+
+Resolve one alias:
+```bash
+
+    $ opensips-mi which_aliases ps
+    "core:ps"
+
+```
+
 ### xlog_level [level]
 Get or set the global xlogging level in OpenSIPS processes. If no argument is passed to the **xlog_level** command, it will print the current **xlog_level**. If a logging **level** is given, it will be globally set for all OpenSIPS processes.
 

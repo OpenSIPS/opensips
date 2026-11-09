@@ -302,6 +302,78 @@ static mi_response_t *mi_which(const mi_params_t *params, struct mi_handler *asy
 	return resp;
 }
 
+static mi_response_t *mi_which_aliases(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_arr, *alias_obj;
+	struct mi_cmd *cmds;
+	struct mi_cmd_alias *aliases;
+	int cmds_no, aliases_no;
+	int i;
+
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return 0;
+
+	get_mi_cmds(&cmds, &cmds_no);
+	get_mi_cmd_aliases(&aliases, &aliases_no);
+	for (i = 0; i < aliases_no; i++) {
+		if (aliases[i].cmd_idx < 0 || aliases[i].cmd_idx >= cmds_no) {
+			LM_ERR("invalid MI alias command index %d\n",
+					aliases[i].cmd_idx);
+			free_mi_response(resp);
+			return 0;
+		}
+
+		alias_obj = add_mi_object(resp_arr, NULL, 0);
+		if (!alias_obj ||
+				add_mi_string(alias_obj, MI_SSTR("alias"),
+					aliases[i].name.s, aliases[i].name.len) < 0 ||
+				add_mi_string(alias_obj, MI_SSTR("command"),
+					cmds[aliases[i].cmd_idx].name.s,
+					cmds[aliases[i].cmd_idx].name.len) < 0) {
+			LM_ERR("failed to add MI alias item\n");
+			free_mi_response(resp);
+			return 0;
+		}
+	}
+
+	return resp;
+}
+
+static mi_response_t *mi_which_alias(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	struct mi_cmd *cmds;
+	struct mi_cmd_alias *aliases;
+	str alias;
+	int cmds_no, aliases_no;
+	int cmd_idx = -1;
+	int i;
+
+	if (get_mi_string_param(params, "alias", &alias.s, &alias.len) < 0)
+		return init_mi_param_error();
+
+	get_mi_cmds(&cmds, &cmds_no);
+	get_mi_cmd_aliases(&aliases, &aliases_no);
+	for (i = 0; i < aliases_no; i++) {
+		if (aliases[i].name.len != alias.len ||
+				memcmp(aliases[i].name.s, alias.s, alias.len) != 0)
+			continue;
+		if (cmd_idx >= 0 && cmd_idx != aliases[i].cmd_idx)
+			return init_mi_error(JSONRPC_AMBIG_METHOD_CODE,
+					MI_SSTR(JSONRPC_AMBIG_METHOD_MSG));
+		cmd_idx = aliases[i].cmd_idx;
+	}
+
+	if (cmd_idx < 0 || cmd_idx >= cmds_no)
+		return init_mi_error(404, MI_SSTR("unknown MI alias"));
+
+	return init_mi_result_string(cmds[cmd_idx].name.s,
+			cmds[cmd_idx].name.len);
+}
+
 
 static mi_response_t *mi_ps(const mi_params_t *params,
 						struct mi_handler *async_hdl)
@@ -1012,6 +1084,11 @@ static const mi_export_t mi_core_cmds[] = {
 	{ "which", "lists all available MI commands", 0, 0, {
 		{mi_which, {0}},
 		{mi_which_cmd, {"command", 0}},
+		{EMPTY_MI_RECIPE}}, {0}
+	},
+	{ "which_aliases", "lists all MI command aliases and their canonical commands", 0, 0, {
+		{mi_which_aliases, {0}},
+		{mi_which_alias, {"alias", 0}},
 		{EMPTY_MI_RECIPE}}, {0}
 	},
 	{ "ps", "lists all processes used by OpenSIPS", 0, 0, {
