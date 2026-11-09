@@ -48,6 +48,11 @@
 struct sca_idx {
 	unsigned int idx;
 	unsigned int state;
+	/* Subscription owning this appearance's seizure. Keep the identity after
+	 * release so the final NOTIFY can still identify the appearance. */
+	str seize_callid;
+	str seize_from_tag;
+	unsigned int seize_expires;
 	struct sca_idx *next;
 };
 
@@ -57,10 +62,6 @@ struct sca_line {
 	str user;
 	str domain;
 	str etag;
-
-	/* seizing info */
-	unsigned int seize_state;
-	unsigned int seize_expires;
 
 	/* index info */
 	struct sca_idx *indexes;
@@ -107,6 +108,7 @@ struct sca_line* get_sca_line(str *line, int create);
 void unlock_sca_line(struct sca_line *scal);
 
 struct sca_idx *get_sca_index(struct sca_line *line, unsigned int idx);
+struct sca_idx *find_sca_index(struct sca_line *line, unsigned int idx);
 unsigned int get_sca_index_state(struct sca_line *line, unsigned int idx);
 int set_sca_index_state(struct sca_line *line, unsigned int idx,
 		unsigned int state);

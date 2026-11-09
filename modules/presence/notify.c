@@ -2110,6 +2110,15 @@ jump_over_body:
 	}
 
 	/* build extra headers */
+	if (subs->event->build_notify_headers) {
+		if (notify_extra_hdrs.s) {
+			pkg_free(notify_extra_hdrs.s);
+			notify_extra_hdrs = STR_NULL;
+		}
+		if (subs->event->build_notify_headers(subs, &notify_extra_hdrs) < 0)
+			goto error;
+		extra_hdrs = &notify_extra_hdrs;
+	}
 	if( build_str_hdr( subs, notify_body?1:0, &str_hdr,
 				&ct_body, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 	{

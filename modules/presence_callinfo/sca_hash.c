@@ -213,6 +213,7 @@ struct sca_idx *get_sca_index(struct sca_line *line, unsigned int idx)
 			LM_ERR("not enough shm mem for a new sca index\n");
 			return NULL;
 		}
+		memset(scai, 0, sizeof *scai);
 		scai->idx = idx;
 		/* insert it after prev */
 		if (!prev) {
@@ -235,11 +236,18 @@ struct sca_idx *get_sca_index(struct sca_line *line, unsigned int idx)
  */
 unsigned int get_sca_index_state(struct sca_line *line, unsigned int idx)
 {
+	struct sca_idx *scai = find_sca_index(line, idx);
+
+	return scai ? scai->state : SCA_STATE_NONE;
+}
+
+/* The caller must hold the line lock. Does not allocate a missing index. */
+struct sca_idx *find_sca_index(struct sca_line *line, unsigned int idx)
+{
 	struct sca_idx *scai;
 
 	for (scai = line->indexes; scai && scai->idx < idx; scai = scai->next);
-
-	return (scai && scai->idx == idx) ? scai->state : SCA_STATE_NONE;
+	return (scai && scai->idx == idx) ? scai : NULL;
 }
 
 /*
@@ -248,30 +256,10 @@ unsigned int get_sca_index_state(struct sca_line *line, unsigned int idx)
 int set_sca_index_state(struct sca_line *line, unsigned int idx,
 														unsigned int state)
 {
-	struct sca_idx *scai;
-	struct sca_idx *prev;
+	struct sca_idx *scai = get_sca_index(line, idx);
 
-	/* search for the index */
-	for( scai=line->indexes,prev=NULL ; scai ; prev=scai,scai=scai->next)
-		if (scai->idx>=idx) break;
-
-	/* if not found, add it to the right position */
-	if (scai==NULL || scai->idx!=idx) {
-		scai = (struct sca_idx*)shm_malloc(sizeof(struct sca_idx));
-		if (scai==NULL) {
-			LM_ERR("not enough shm mem for a new sca index\n");
-			return -1;
-		}
-		scai->idx = idx;
-		/* insert it after prev */
-		if (prev==NULL) {
-			scai->next = line->indexes;
-			line->indexes = scai;
-		} else {
-			scai->next = prev->next;
-			prev->next = scai;
-		}
-	}
+	if (!scai)
+		return -1;
 
 	/* set the state */
 	scai->state = state;
@@ -394,6 +382,7 @@ void free_sca_line(struct sca_line *scal)
 	for( idx=scal->indexes ; idx ; ) {
 		tmp = idx;
 		idx = idx->next;
+		shm_free(tmp->seize_callid.s);
 		shm_free(tmp);
 	}
 	/* free main structure */
