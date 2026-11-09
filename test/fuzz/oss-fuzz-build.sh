@@ -35,6 +35,7 @@ ${SED} -i '
   s/^\(DEFS+= -DF_MALLOC\)/#\1/g
   s/^\(DEFS+= -DQ_MALLOC\)/#\1/g
   s/^\(DEFS+= -DHP_MALLOC\)/#\1/g
+  s/^\(DEFS+= -DF_PARALLEL_MALLOC\)/#\1/g
   s/^\(DEFS+= -DDBG_MALLOC\)/#\1/g
   s/^\(DEFS+= -DDBG_MALLOC\)/#\1/g
   s/^#\(DEFS+= -DFUZZ_BUILD\)/\1/g
