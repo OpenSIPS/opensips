@@ -573,6 +573,9 @@ struct cell* t_lookupOriginalT(  struct sip_msg* p_msg )
 	struct via_param *branch;
 	int ret;
 
+	if (!p_msg)
+		return 0;
+
 	/* already looked for it? */
 	if (cancelled_T!=T_UNDEFINED)
 		return cancelled_T;
