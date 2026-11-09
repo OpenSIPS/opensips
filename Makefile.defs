@@ -521,13 +521,29 @@ else
   THISREVISION = unknown
 endif
 
-ifeq (,$(findstring F_MALLOC, $(DEFS)))
-ifeq (,$(findstring Q_MALLOC, $(DEFS)))
-ifeq (,$(findstring HP_MALLOC, $(DEFS)))
-	DEFS+= -DQ_MALLOC
+# Preferred allocator used when no allocator is explicitly selected at
+# runtime.  Keep this separate from the list of compiled allocators: a
+# preferred allocator may not be available in a custom build, in which case
+# the first available allocator below is used instead.
+PREFERRED_MALLOC?=Q_MALLOC
+
+ifneq (,$(findstring $(PREFERRED_MALLOC), $(DEFS)))
+DEFAULT_MALLOC=$(PREFERRED_MALLOC)
+else ifneq (,$(findstring F_MALLOC, $(DEFS)))
+DEFAULT_MALLOC=F_MALLOC
+else ifneq (,$(findstring Q_MALLOC, $(DEFS)))
+DEFAULT_MALLOC=Q_MALLOC
+else ifneq (,$(findstring HP_MALLOC, $(DEFS)))
+DEFAULT_MALLOC=HP_MALLOC
+else ifneq (,$(findstring F_PARALLEL_MALLOC, $(DEFS)))
+DEFAULT_MALLOC=F_PARALLEL_MALLOC
+else
+# Keep the historical default when no allocator was selected at all.
+DEFS+= -DQ_MALLOC
+DEFAULT_MALLOC=Q_MALLOC
 endif
-endif
-endif
+
+DEFS+= -DPREFERRED_MALLOC_$(DEFAULT_MALLOC)
 
 ifneq (,$(MEM_STATS_HDR))
 EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')

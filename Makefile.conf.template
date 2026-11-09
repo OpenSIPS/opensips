@@ -90,6 +90,10 @@ DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
 DEFS+= -DF_PARALLEL_MALLOC #Fast memory allocator with paralel buckets
 #DEFS+= -DQM_DBG_MALLOC_HIST=3 #Size of debug history for Q_MALLOC (default is 1)
+# Preferred allocator when multiple allocators are compiled. If it is not
+# compiled, the first available allocator in F_MALLOC, Q_MALLOC, HP_MALLOC
+# order is used.
+#PREFERRED_MALLOC=Q_MALLOC
 #DEFS+= -DNO_DEBUG #Compile out all debug messages
 #DEFS+= -DNO_LOG #Compile out all logging
 #DEFS_GROUP_START
