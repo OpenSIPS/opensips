@@ -60,12 +60,6 @@ struct mi_mod_group {
 	int end;
 };
 
-struct mi_cmd_alias {
-	int id;
-	str name;
-	int cmd_idx;
-};
-
 static struct mi_mod_group *mi_mod_groups = 0;
 static int mi_mod_groups_no = 0;
 static struct mi_cmd_alias *mi_cmd_aliases = 0;
@@ -645,6 +639,12 @@ void get_mi_cmds( struct mi_cmd** cmds, int *size)
 {
 	*cmds = mi_cmds;
 	*size = mi_cmds_no;
+}
+
+void get_mi_cmd_aliases(struct mi_cmd_alias **aliases, int *size)
+{
+	*aliases = mi_cmd_aliases;
+	*size = mi_cmd_aliases_no;
 }
 
 int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed)

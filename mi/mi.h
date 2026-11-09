@@ -100,6 +100,12 @@ struct mi_cmd {
 	volatile unsigned char* trace_mask;
 };
 
+struct mi_cmd_alias {
+	int id;
+	str name;
+	int cmd_idx;
+};
+
 typedef struct mi_export_ {
 	char *name;
 	char *help;
@@ -143,6 +149,7 @@ mi_response_t *w_mi_help_1(const mi_params_t *params,
 					struct mi_handler *async_hdl);
 
 void get_mi_cmds(struct mi_cmd **cmds, int *size);
+void get_mi_cmd_aliases(struct mi_cmd_alias **aliases, int *size);
 
 void _init_mi_shm_mem_hooks(void);
 void _init_mi_pkg_mem_hooks(void);
