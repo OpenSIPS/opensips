@@ -34,6 +34,13 @@ handling module: presence and it constructs and adds "Call-Info" headers
 to notification events.
 
 
+### Supported specifications
+
+
+The module provides shared call appearance support based on the
+[BroadWorks Shared Call Appearance Interface Specification, Release 23.0](https://opensips.org/uploads/Resources/BW-SharedCallAppearanceInterfaceSpec-R230.pdf).
+
+
 ### Usage modes
 
 
@@ -124,6 +131,14 @@ The active watcher is notified via a NOTIFY SIP request.
 
 
 #### Internal publishing
+
+
+Line seizures are tracked independently for each appearance index, as permitted
+by section 6.1.6 of the BroadWorks Shared Call Appearance Interface Specification.
+Different appearances on the same shared line may be seized concurrently. A
+competing subscription for an index with a live seizure is rejected with 480,
+as is a seizure of an index in progressing, alerting, active, or held state.
+Refreshing or releasing a seizure affects only its owning subscription's index.
 
 
 In this mode, the module requires the "dialog" module to be
@@ -434,6 +449,13 @@ Replaces obsolete MI command: *sca_list_lines*.
 
 
 Lists the SCA lines and indexes currently tracked by the module.
+
+
+Seizure information is returned inside each entry of `indexes`, rather than on
+the line object. `seize_state` is the index number when a seizure is recorded,
+or zero after release. `seize_expires` is the remaining lifetime in seconds
+(negative for an expired seizure), and `seize_expires_ts` is the corresponding
+Unix timestamp. Both expiry fields are zero after release.
 
 
 Parameters:

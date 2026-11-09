@@ -491,6 +491,7 @@ error1:
 static int sca_validate_call_out(struct sip_msg *msg, str *line_s)
 {
 	struct sca_line *line;
+	struct sca_idx *scai;
 	unsigned int idx;
 
 	/* extract the index from the call-info line */
@@ -515,25 +516,16 @@ static int sca_validate_call_out(struct sip_msg *msg, str *line_s)
 		return -2;
 	}
 
-	if (line->seize_state == 0) {
-		LM_ERR("line <%.*s> not seized at the moment\n",
-			line_s->len, line_s->s);
+	scai = find_sca_index(line, idx);
+	if (!scai || !scai->seize_expires) {
+		LM_ERR("line <%.*s> appearance %u not seized at the moment\n",
+			line_s->len, line_s->s, idx);
 		unlock_sca_line(line);
 		return -3;
 	}
 
-	if (line->seize_state != idx) {
-		LM_ERR("line <%.*s> seized for diff index! (idx=%d,seized_for=%d)\n",
-			line_s->len, line_s->s, idx, line->seize_state);
-		unlock_sca_line(line);
-		return -4;
-	}
-
 	/* still locked here! */
 	unlock_sca_line(line);
-
-	// TODO -- find the best way to integrate this line-seize terminated NOTY
-	//terminate_line_sieze(line);
 
 	return 1;
 }
@@ -810,24 +802,8 @@ static int sca_mi_print_line(mi_item_t *line_obj, struct sca_line *ln)
 	if (add_mi_string(line_obj, MI_SSTR("line"), ln->line.s, ln->line.len) < 0)
 		goto error;
 
-	if (add_mi_number(line_obj, MI_SSTR("seize_state"), ln->seize_state) < 0)
-		goto error;
-
 	now = time(NULL);
 	ticks = get_ticks();
-	if (!ln->seize_expires) {
-		diff = 0;
-		expires_ts = 0;
-	} else {
-		diff = (int)ln->seize_expires - (int)ticks;
-		expires_ts = now + ln->seize_expires - ticks;
-	}
-
-	if (add_mi_number(line_obj, MI_SSTR("seize_expires"), diff) < 0)
-		goto error;
-
-	if (add_mi_number(line_obj, MI_SSTR("seize_expires_ts"), expires_ts) < 0)
-		goto error;
 
 	idx_arr = add_mi_array(line_obj, MI_SSTR("indexes"));
 	if (!idx_arr)
@@ -839,6 +815,19 @@ static int sca_mi_print_line(mi_item_t *line_obj, struct sca_line *ln)
 			goto error;
 
 		if (add_mi_number(idx_obj, MI_SSTR("index"), idx->idx) < 0)
+			goto error;
+
+		if (!idx->seize_expires) {
+			diff = 0;
+			expires_ts = 0;
+		} else {
+			diff = (int)idx->seize_expires - (int)ticks;
+			expires_ts = now + diff;
+		}
+		if (add_mi_number(idx_obj, MI_SSTR("seize_state"),
+				idx->seize_expires ? idx->idx : 0) < 0
+				|| add_mi_number(idx_obj, MI_SSTR("seize_expires"), diff) < 0
+				|| add_mi_number(idx_obj, MI_SSTR("seize_expires_ts"), expires_ts) < 0)
 			goto error;
 
 		state = sca_line_state_to_str(idx->state);
@@ -950,6 +939,7 @@ mi_response_t *sca_mi_release_line(const mi_params_t *params,
 				else
 					prev->next = cur_next;
 
+				shm_free(cur->seize_callid.s);
 				shm_free(cur);
 				cur = prev;
 

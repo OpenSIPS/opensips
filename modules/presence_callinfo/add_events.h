@@ -46,6 +46,4 @@ unsigned int get_appearance_index(struct sip_msg *msg);
 
 int do_callinfo_publish(struct sca_line *sca);
 
-int terminate_line_sieze(struct sca_line *sca);
-
 #endif

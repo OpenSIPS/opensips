@@ -45,6 +45,10 @@ typedef int (subs_handling_t)(struct sip_msg*,struct subscription *,int*, str*);
 
 typedef str* (empty_pres_info_t)(str* pres_uri, str* extra_hdrs);
 
+/* Build per-subscription NOTIFY headers (including terminated NOTIFYs).
+ * On success, headers must be pkg allocated; presence frees them. */
+typedef int (notify_headers_t)(struct subscription *subs, str *headers);
+
 typedef str* (agg_nbody_t)(str* pres_user, str* pres_domain, str** body_array, int n, int off_index);
 /* params for agg_body_t
  *	body_array= an array with all the bodies stored for that resource
@@ -138,6 +142,7 @@ struct pres_ev
 	 * available in the presentity table
 	 */
 	empty_pres_info_t  * build_empty_pres_info;
+	notify_headers_t *build_notify_headers;
 	free_body_t* free_body;
 	/* sometimes it is necessary that a module make changes for a body for each
 	 * active watcher (e.g. setting the "version" parameter in an XML document.
