@@ -90,7 +90,7 @@ static const mi_export_t mi_cmds[] = {
 	{ "trace", 0, 0, 0, {
 		{tls_trace_mi, {0}},
 		{tls_trace_mi_1, {"trace_mode", 0}},
-		{EMPTY_MI_RECIPE}}, {"tls_trace", 0}},
+		{EMPTY_MI_RECIPE}}, {"bins_trace", 0}},
 	{EMPTY_MI_EXPORT}
 };
 
