@@ -22,19 +22,23 @@ static void test_freshness_defaults(void)
 		const char *name;
 	} cases[] = {
 		{60,10800,0,0,60,10800,"ordinary outer window retains three-hour default"},
-		{10799,10800,0,0,10799,10800,"default already exceeds outer window"},
-		{10800,10800,0,0,10800,10801,"default grows when outer reaches three hours"},
-		{28400,10800,0,0,28400,28401,"untouched default follows enlarged outer window"},
+		{10740,10800,0,0,10740,10800,"default already has a full minute of margin"},
+		{10741,10800,0,0,10741,10801,"default grows when margin falls below one minute"},
+		{10799,10800,0,0,10799,10859,"default grows even when it already exceeds outer window"},
+		{10799,10800,1,0,10799,10800,"explicit inner window need not adopt the default margin"},
+		{10800,10800,0,0,10800,10860,"default grows when outer reaches three hours"},
+		{28400,10800,0,0,28400,28460,"untouched default follows enlarged outer window"},
 		{28400,10800,1,-1,28400,10800,"explicit three-hour limit is not silently increased"},
 		{28400,40000,1,0,28400,40000,"explicit larger inner limit is preserved"},
 		{28400,-1,1,0,28400,-1,"explicit inner bypass is preserved"},
 		{-1,10800,0,-1,-1,10800,"negative outer window remains invalid"},
 		{60,0,1,-1,60,0,"explicit zero inner window remains invalid"},
 		{28400,28400,1,-1,28400,28400,"explicit equal inner window remains invalid"},
-		{INT_MAX-1,10800,0,0,INT_MAX-1,INT_MAX,"largest representable inherited limit"},
-		{INT_MAX,10800,0,0,INT_MAX-1,INT_MAX,"maximal outer window leaves room for inner default"},
-		{INT_MAX,-1,1,0,INT_MAX-1,-1,"clamping the outer window preserves explicit inner bypass"},
-		{INT_MAX,INT_MAX,1,0,INT_MAX-1,INT_MAX,"clamping permits an explicit maximal inner window"}
+		{INT_MAX-60,10800,0,0,INT_MAX-60,INT_MAX,"largest outer window with a full minute of margin"},
+		{INT_MAX-59,10800,0,0,INT_MAX-60,INT_MAX,"clamping starts when a full minute would overflow"},
+		{INT_MAX,10800,0,0,INT_MAX-60,INT_MAX,"maximal outer window leaves room for inner default"},
+		{INT_MAX,-1,1,0,INT_MAX-60,-1,"clamping the outer window preserves explicit inner bypass"},
+		{INT_MAX,INT_MAX,1,0,INT_MAX-60,INT_MAX,"clamping permits an explicit maximal inner window"}
 	};
 	int i, outer, inner, rc;
 	for (i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {

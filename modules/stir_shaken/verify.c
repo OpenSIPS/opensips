@@ -9,8 +9,9 @@
 #include "../../parser/parse_uri.h"
 
 /* The default earlier-token window is three hours, increased at startup if
- * needed to exceed the normal outermost window. Per-call -1 disables only
- * earlier-token age checks. */
+ * needed to leave 60 seconds above the normal outermost window. Per-call -1
+ * disables only earlier-token age checks. */
+#define INNER_FRESHNESS_MARGIN 60
 int verify_date_div_freshness = 10800;
 static int snapshot_ctx = -1;
 
@@ -46,13 +47,13 @@ static int resolve_freshness(int *outer, int inner_configured, int *inner)
 		LM_ERR("verify_date_freshness must not disable outermost freshness\n");
 		return -1;
 	}
-	if (*outer >= INT_MAX) {
-		*outer = INT_MAX - 1;
+	if (*outer > INT_MAX - INNER_FRESHNESS_MARGIN) {
+		*outer = INT_MAX - INNER_FRESHNESS_MARGIN;
 		LM_WARN("reducing verify_date_freshness to %d to leave room for verify_date_div_freshness\n",
 			*outer);
 	}
-	if (!inner_configured && *inner <= *outer) {
-		*inner = *outer + 1;
+	if (!inner_configured && *inner < *outer + INNER_FRESHNESS_MARGIN) {
+		*inner = *outer + INNER_FRESHNESS_MARGIN;
 		LM_INFO("using default verify_date_div_freshness=%d to exceed verify_date_freshness=%d\n",
 			*inner, *outer);
 	}

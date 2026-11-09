@@ -58,5 +58,6 @@ results for A/B/C, bad signature, stale outermost, broken chain, and absent
 Identity. Tests check its resulting `verstat` on the serialized request.
 
 Freshness initialization tests cover the normal three-hour inner default,
-automatic adjustment when the outer window grows, preservation of explicit
-inner settings and `-1`, invalid explicit limits, and integer overflow bounds.
+automatic adjustment to retain a 60-second margin as the outer window grows,
+preservation of explicit inner settings and `-1`, invalid explicit limits, and
+integer overflow bounds.

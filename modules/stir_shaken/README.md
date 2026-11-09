@@ -110,7 +110,7 @@ SHAKEN and earlier DIV tokens. The outermost token uses
 token, this parameter has no effect.
 
 When omitted, the default is `10800` (three hours), or
-`verify_date_freshness + 1` if that is larger. An explicit value must exceed
+`verify_date_freshness + 60` if that is larger. An explicit value must exceed
 `verify_date_freshness`, or be `-1` to skip inner freshness checking.
 
 The `inner_freshness` argument to `stir_shaken_verify_chain()` overrides this
