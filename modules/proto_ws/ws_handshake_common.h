@@ -1466,11 +1466,7 @@ static int ws_read_http(struct tcp_connection *c, struct tcp_req *r)
 				break;
 
 			case H_STARTWS:
-				switch (*p){
-					content_len_beg_case;
-					crlf_default_skip_case;
-				}
-				p++;
+				r->state=H_SKIP;
 				break;
 			case H_SKIP_EMPTY:
 				switch (*p){
@@ -1532,7 +1528,11 @@ static int ws_read_http(struct tcp_connection *c, struct tcp_req *r)
 			change_state_case(H_CONT_LEN4,  'E', 'e', H_CONT_LEN5);
 			change_state_case(H_CONT_LEN5,  'N', 'n', H_CONT_LEN6);
 			change_state_case(H_CONT_LEN6,  'T', 't', H_CONT_LEN7);
-			change_state_case(H_CONT_LEN7,  '-', '_', H_CONT_LEN8);
+			case H_CONT_LEN7:
+				if (*p == '-') r->state=H_CONT_LEN8;
+				else r->state=H_SKIP;
+				p++;
+				break;
 			change_state_case(H_CONT_LEN8,  'L', 'l', H_CONT_LEN9);
 			change_state_case(H_CONT_LEN9,  'E', 'e', H_CONT_LEN10);
 			change_state_case(H_CONT_LEN10, 'N', 'n', H_CONT_LEN11);
