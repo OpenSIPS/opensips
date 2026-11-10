@@ -843,6 +843,20 @@ Example of usage:
 
 ```
 
+### parse_err_log_level
+
+The log level of the errors reported while parsing incoming SIP messages (bad headers, bad Via, CSeq, To or From bodies, unparsable messages). Set it above [log_level](#log_level) to keep scanners and broken clients from flooding the log; other errors are not affected. Takes the same values as [log_level](#log_level).
+
+Default value is `-1` (error level).
+
+Example of usage:
+```opensips
+
+    # log SIP parse errors only when running with log_level = 3 or higher
+    parse_err_log_level = 3
+
+```
+
 ### pi_framework
 
 The path to the XML provisioning framework used by the active PI transport.
