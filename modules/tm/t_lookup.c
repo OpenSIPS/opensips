@@ -613,6 +613,11 @@ struct cell* t_lookupOriginalT(  struct sip_msg* p_msg )
 	}
 
 	/* no cookies --proceed to old-fashioned pre-3261 t-matching */
+	if (!p_msg->callid || !p_msg->cseq || !get_cseq(p_msg)) {
+		LM_ERR("missing Call-ID or CSeq for legacy transaction matching\n");
+		cancelled_T = NULL;
+		return 0;
+	}
 
 	LOCK_HASH(hash_index);
 
