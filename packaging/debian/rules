@@ -83,6 +83,12 @@ DBSCHEMA_MODULES := berkeley mysql postgres sqlite
 # from that package and installed as opensips-module-contrib-<name>.
 STANDALONE_CONTRIB_MODULES :=
 
+# The NATS modules (modules-contrib/nats and the four modules built on it)
+# need a libnats 3.14 or later at build time, newer than the libnats-dev of
+# most distributions: they are built only with the "nats" build profile
+# (DEB_BUILD_PROFILES=nats), and are never part of opensips-modules-contrib.
+NATS_CONTRIB_MODULES := nats event_nats cachedb_nats cachedb_nats_fts nats_consumer
+
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
 # debian unstable (sid) doesn't output a version number, so emulate one
@@ -136,6 +142,13 @@ ifneq (,$(filter opentelemetry,$(DEB_BUILD_PROFILES)))
 endif
 
 #
+# NATS contrib packages
+#
+ifneq (,$(filter nats,$(DEB_BUILD_PROFILES)))
+	STANDALONE_CONTRIB_MODULES += $(NATS_CONTRIB_MODULES)
+endif
+
+#
 # PROTO_SCTP package
 #
 # add SCTP only on linux systems
@@ -157,7 +170,8 @@ BUILD_MODULE_PATHS = $(addprefix modules/,$(BUILD_MODULES))
 CONTRIB_PKGNAME = opensips-modules-contrib
 CONTRIB_ALL_MOD_PATHS = $(patsubst %/Makefile,%,$(wildcard modules-contrib/*/Makefile))
 STANDALONE_CONTRIB_MOD_PATHS = $(addprefix modules-contrib/,$(STANDALONE_CONTRIB_MODULES))
-CONTRIB_MOD_PATHS = $(filter-out $(STANDALONE_CONTRIB_MOD_PATHS),$(CONTRIB_ALL_MOD_PATHS))
+CONTRIB_MOD_PATHS = $(filter-out $(STANDALONE_CONTRIB_MOD_PATHS) \
+	$(addprefix modules-contrib/,$(NATS_CONTRIB_MODULES)),$(CONTRIB_ALL_MOD_PATHS))
 CONTRIB_BUILD_MOD_PATHS = $(CONTRIB_MOD_PATHS) $(STANDALONE_CONTRIB_MOD_PATHS)
 
 ## modules not in the "main" package or unstable modules that we never want to build

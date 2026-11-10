@@ -49,7 +49,14 @@
 
 # Contrib modules which require external libraries belong here. Each must have
 # matching build requirements and an opensips-module-contrib-<module> package.
-%global STANDALONE_CONTRIB_MODULES %{nil}
+#
+# The NATS modules (modules-contrib/nats and the four modules built on it)
+# need a libnats 3.14 or later at build time, newer than the one most
+# distributions ship: they are built only "--with nats", and are never part
+# of opensips-modules-contrib.
+%global NATS_CONTRIB_MODULES nats event_nats cachedb_nats cachedb_nats_fts nats_consumer
+%global STANDALONE_CONTRIB_MODULES %{?_with_nats:%{NATS_CONTRIB_MODULES}}
+%global SKIP_CONTRIB_MODULES %{!?_with_nats:%{NATS_CONTRIB_MODULES}}
 
 # Database backends shipped as opensips-dbschema-<backend> packages.
 %global DBSCHEMA_MODULES berkeley mysql postgres sqlite
@@ -66,6 +73,9 @@ URL:      https://opensips.org
 BuildRequires:  expat-devel
 BuildRequires:  libxml2-devel
 BuildRequires:  bison
+%if 0%{?_with_nats:1}
+BuildRequires:  pkgconfig(libnats) >= 3.14
+%endif
 BuildRequires:  flex
 BuildRequires:  subversion
 BuildRequires:  which
@@ -159,6 +169,56 @@ per second even on low-budget hardware.
 This package contains community-contributed modules which do not require
 external build dependencies. These modules are not maintained by the OpenSIPS
 core team and may have different support guarantees.
+
+%if 0%{?_with_nats:1}
+%package -n %{name}-module-contrib-nats
+Summary: OpenSIPS nats contrib module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-contrib-nats
+This package contains only the nats contrib module for OpenSIPS: the NATS
+connection shared by the NATS modules. It loads libnats with dlopen() at
+startup, so libnats is not a package dependency: install the libnats it was
+built with (the same major.minor version).
+
+%package -n %{name}-module-contrib-event-nats
+Summary: OpenSIPS event_nats contrib module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-contrib-nats = %{version}-%{release}
+
+%description -n %{name}-module-contrib-event-nats
+This package contains only the event_nats contrib module for OpenSIPS.
+
+%package -n %{name}-module-contrib-cachedb-nats
+Summary: OpenSIPS cachedb_nats contrib module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-contrib-nats = %{version}-%{release}
+
+%description -n %{name}-module-contrib-cachedb-nats
+This package contains only the cachedb_nats contrib module for OpenSIPS.
+
+%package -n %{name}-module-contrib-cachedb-nats-fts
+Summary: OpenSIPS cachedb_nats_fts contrib module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-contrib-cachedb-nats = %{version}-%{release}
+Requires: %{name}-module-contrib-nats = %{version}-%{release}
+
+%description -n %{name}-module-contrib-cachedb-nats-fts
+This package contains only the cachedb_nats_fts contrib module for OpenSIPS.
+
+%package -n %{name}-module-contrib-nats-consumer
+Summary: OpenSIPS nats_consumer contrib module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-module-contrib-nats = %{version}-%{release}
+
+%description -n %{name}-module-contrib-nats-consumer
+This package contains only the nats_consumer contrib module for OpenSIPS.
+%endif
 
 %if 0%{?_with_auth_jwt:1}
 %package  auth-jwt-module
@@ -2034,7 +2094,7 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_w
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
 LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__make} modules-contrib %{?_smp_mflags} \
-  modules="$(find modules-contrib -mindepth 1 -maxdepth 1 -type d -printf '%%p ')" \
+  modules="$(find modules-contrib -mindepth 1 -maxdepth 1 -type d -printf '%%f\n' | while read -r m; do case " %{SKIP_CONTRIB_MODULES} " in *" $m "*) ;; *) printf 'modules-contrib/%%s ' "$m" ;; esac; done)" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules
@@ -2050,7 +2110,7 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{__m
   DBTEXTON=yes # fixed dbtext documentation installation
 
 %{__make} install-modules-files LIBDIR=%{_lib} \
-  modules="$(find modules-contrib -mindepth 1 -maxdepth 1 -type d -printf '%%p ')" \
+  modules="$(find modules-contrib -mindepth 1 -maxdepth 1 -type d -printf '%%f\n' | while read -r m; do case " %{SKIP_CONTRIB_MODULES} " in *" $m "*) ;; *) printf 'modules-contrib/%%s ' "$m" ;; esac; done)" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}/%{_prefix} \
@@ -2064,7 +2124,7 @@ echo '%defattr(-,root,root,-)' > modules-contrib.files
 for module_dir in modules-contrib/*; do
   test -f "$module_dir/Makefile" || continue
   module_name=$(basename "$module_dir")
-  case " %{STANDALONE_CONTRIB_MODULES} " in
+  case " %{STANDALONE_CONTRIB_MODULES} %{SKIP_CONTRIB_MODULES} " in
     *" $module_name "*) continue ;;
   esac
   echo "%{_libdir}/opensips/modules/$module_name.so" >> modules-contrib.files
@@ -2397,6 +2457,28 @@ fi
 %doc docdir/README.uac_registrant
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
+
+%if 0%{?_with_nats:1}
+%files -n %{name}-module-contrib-nats
+%{_libdir}/opensips/modules/nats.so
+%doc docdir/README.nats
+
+%files -n %{name}-module-contrib-event-nats
+%{_libdir}/opensips/modules/event_nats.so
+%doc docdir/README.event_nats
+
+%files -n %{name}-module-contrib-cachedb-nats
+%{_libdir}/opensips/modules/cachedb_nats.so
+%doc docdir/README.cachedb_nats
+
+%files -n %{name}-module-contrib-cachedb-nats-fts
+%{_libdir}/opensips/modules/cachedb_nats_fts.so
+%doc docdir/README.cachedb_nats_fts
+
+%files -n %{name}-module-contrib-nats-consumer
+%{_libdir}/opensips/modules/nats_consumer.so
+%doc docdir/README.nats_consumer
+%endif
 
 %if 0%{?_with_auth_jwt:1}
 %files -n %{name}-module-auth-jwt

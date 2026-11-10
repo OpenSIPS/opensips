@@ -25,6 +25,7 @@ Build-Depends: bison,
                libmemcached-dev,
                libmicrohttpd-dev,
                libmnl-dev,
+               libnats-dev (>= 3.14) <nats>,
                libjwt-dev | base-files,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
@@ -63,6 +64,11 @@ Suggests: opensips-module-auth-jwt,
           opensips-module-cgrates,
           opensips-module-compression,
           opensips-modules-contrib,
+          opensips-module-contrib-cachedb-nats,
+          opensips-module-contrib-cachedb-nats-fts,
+          opensips-module-contrib-event-nats,
+          opensips-module-contrib-nats,
+          opensips-module-contrib-nats-consumer,
           opensips-module-cpl-c,
           opensips-module-db-http,
           opensips-module-dialplan,
@@ -137,6 +143,62 @@ Description: community-contributed modules for OpenSIPS
  This package contains community-contributed modules which do not require
  external build dependencies. These modules are not maintained by the
  OpenSIPS core team and may have different support guarantees.
+
+Package: opensips-module-contrib-nats
+Build-Profiles: <nats>
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS nats contrib module
+ This package contains only the nats contrib module for OpenSIPS: the NATS
+ connection shared by the NATS modules.  It loads libnats with dlopen() at
+ startup, so libnats is not a package dependency: install the libnats it
+ was built with (the same major.minor version).
+
+Package: opensips-module-contrib-event-nats
+Build-Profiles: <nats>
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-module-contrib-nats (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS event_nats contrib module
+ This package contains only the event_nats contrib module for OpenSIPS.
+
+Package: opensips-module-contrib-cachedb-nats
+Build-Profiles: <nats>
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-module-contrib-nats (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS cachedb_nats contrib module
+ This package contains only the cachedb_nats contrib module for OpenSIPS.
+
+Package: opensips-module-contrib-cachedb-nats-fts
+Build-Profiles: <nats>
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-module-contrib-cachedb-nats (= ${binary:Version}),
+         opensips-module-contrib-nats (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS cachedb_nats_fts contrib module
+ This package contains only the cachedb_nats_fts contrib module for OpenSIPS.
+
+Package: opensips-module-contrib-nats-consumer
+Build-Profiles: <nats>
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-module-contrib-nats (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS nats_consumer contrib module
+ This package contains only the nats_consumer contrib module for OpenSIPS.
 
 Package: opensips-module-db-berkeley-bin
 Architecture: any
