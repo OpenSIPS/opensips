@@ -23,6 +23,79 @@ asynchronous HTTP requests.  These connections are not shared among OpenSIPS
 workers — each worker maintains its own set of connections.
 
 
+### Response Caching
+
+
+When [cachedb_url](#cachedb_url-string) is set, the module keeps a local
+cache of the HTTP responses it receives and serves repeated queries from it
+instead of going back to the origin server.
+
+
+Only **GET** responses are stored, in both the blocking and the asynchronous
+flavour. *rest_post()* and *rest_put()* accept the same output variable and
+report *miss:method*, but nothing they fetch is ever cached: a POST or a PUT
+is a request to change something, and the cache key does not cover the
+request body, so two POSTs to one URL that differ only in what they send must
+not be allowed to look alike.
+
+
+The module does not replicate anything itself, so whether the cache is
+private to one instance or shared by a cluster is decided entirely by the
+backend you point it at, and both are useful:
+
+
+- an **in-process** backend (*cachedb_local*, *cachedb_perf*) gives the
+cheapest possible hit, at the cost of each instance having to warm its own
+cache;
+- a **shared** backend (one *cachedb_redis* instance used by the whole
+cluster) means a response fetched by any one node is then served by all of
+them, which raises the hit rate and cuts the load on the origin, at the cost
+of a network round trip per hit.
+
+
+The useful rule is not local-versus-remote but simply that the backend should
+be cheaper than the call it is replacing.  Against an origin that answers in
+milliseconds, a shared redis is a large win and shares the benefit across the
+cluster; against one that answers in microseconds, only an in-process backend
+is worth the trouble.
+
+
+One backend requirement is not negotiable: it must actually honour the expiry
+it is given.  **cachedb_mongodb does not** - it accepts the expiry argument
+and ignores it, so an entry written there never expires and the cache would
+grow without bound.  The module stores an absolute expiry inside each entry
+and refuses to serve one that has passed, so it will not hand out a stale
+response on such a backend, but it cannot reclaim the space either.  Use a
+backend that expires what it is told to.
+
+
+By default the module obeys the origin: a response is cached only if the
+server's own *Cache-Control* and *Expires* headers permit it, and only for as
+long as they allow.  A response carrying *no-store*, *no-cache*, *private*,
+*Set-Cookie* or *Vary* is never stored; neither is a reply whose status falls
+outside the small RFC-cacheable set (200, 203, 204, 300, 301, 308, 404, 405,
+410, 414, 501 - with 206 deliberately excluded, as the cache does not handle
+ranges), nor one larger than [cache_max_body](#cache_max_body-integer).  See
+[cache_policy](#cache_policy-string) for the looser modes, and
+[rest_cache_ctl()](#rest_cache_ctlttl) for overriding the decision on a
+single call.
+
+
+The cache key covers the method, the full URL and any headers queued with
+*rest_append_hf()*.  The headers matter: they are what usually carries the
+Authorization or the tenant identifier, so leaving them out of the key would
+let one subscriber's answer be served to another.  Two calls that differ only
+in an appended header are therefore two distinct cache entries.
+
+
+Every function accepts an optional trailing output variable which reports
+where the answer came from - see the *source_pv* parameter of
+[rest_get()](#rest_geturl-body_pv-ctype_pv-retcode_pv-max_redirects-source_pv).
+Together with the exported statistics this is the way to tell a cache that is
+working from one that is quietly storing nothing because the origin forbids
+it.
+
+
 ### Dependencies
 
 
@@ -301,10 +374,121 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
 ```
 
 
+#### cachedb_url (string)
+
+
+URL of a cachedb backend in which to cache HTTP responses.  Setting it is what
+enables the response cache; without it, no caching is performed and the module
+behaves exactly as before.
+
+
+Any backend that expires what it is told to will do, since only the generic
+*get* and *set* operations are used.  The choice decides whether the cache is
+private to this instance or shared by the cluster, and what a hit costs - see
+[Response Caching](#response-caching), which also explains why
+*cachedb_mongodb* is not a suitable backend.
+
+
+Only *GET* requests are ever cached.
+
+
+*Default value is "NULL" (caching disabled).*
+
+
+```opensips title="Setting the cachedb_url parameter"
+...
+modparam("rest_client", "cachedb_url", "perf:///rest")
+...
+```
+
+
+#### cache_policy (string)
+
+
+How far to go beyond what the origin server explicitly permits.  One of:
+
+
+- *off* - never cache.  Useful to disable caching without removing
+*cachedb_url* from the config.
+- *strict* - cache only what the origin explicitly permits, taking the
+lifetime from its *Cache-Control: max-age* (or *s-maxage*, or *Expires*).  A
+response with no caching headers is not cached.
+- *heuristic* - as strict, but a response whose origin said nothing about
+caching is cached for *cache_ttl* seconds.  An explicit prohibition is still
+honoured.
+- *force* - as heuristic, but responses the origin asked not to store are
+cached anyway, for *cache_ttl* seconds.
+
+
+Under every policy, a response is refused if it is not a GET, if its status
+code is not cacheable, if it carries a *Vary* header, or if it exceeds
+*cache_max_body*.
+
+
+*force* reinterprets every endpoint the module talks to, including ones added
+later.  Prefer [rest_cache_ctl()](#rest_cache_ctlttl) to override a single
+call site.
+
+
+*Default value is "strict".*
+
+
+```opensips title="Setting the cache_policy parameter"
+...
+modparam("rest_client", "cache_policy", "heuristic")
+...
+```
+
+
+#### cache_ttl (integer)
+
+
+Lifetime, in seconds, applied when the origin server gave none and the policy
+allows caching anyway.  Required by the *heuristic* and *force* policies -
+either is rejected at startup if this is not positive, since it would
+otherwise silently cache nothing.
+
+
+It is never used in place of a lifetime the origin did supply.
+
+
+*Default value is "0" (do not cache silent responses).*
+
+
+```opensips title="Setting the cache_ttl parameter"
+...
+modparam("rest_client", "cache_ttl", 300)
+...
+```
+
+
+#### cache_max_body (integer)
+
+
+Largest response body, in bytes, that will be stored.  Anything above it is
+returned to the script as usual but not cached, and reported as
+*miss:oversize*.
+
+
+*Default value is "65536".*
+
+
+Values above 64 KB are clamped to 64 KB with a startup warning - the encoded
+entry lives in a fixed 64 KB buffer, so a larger setting would otherwise pass
+startup and then silently store nothing.
+
+
+```opensips title="Setting the cache_max_body parameter"
+...
+modparam("rest_client", "cache_max_body", 131072)
+...
+```
+
+
 ### Exported Functions
 
 
-#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects])
+#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects], [source_pv])
 
 
 Perform a blocking HTTP GET on the given *url* and
@@ -328,6 +512,12 @@ to follow. A missing or **0** value preserves the previous behavior and does not
 follow redirects. Values from **1** to **30** enable redirects up to the requested
 limit. Only `http` and `https` redirect targets are accepted; values outside the
 **0** to **30** range are invalid.
+- *source_pv* (var, optional) - output variable reporting where the answer
+came from, when the response cache is enabled: *hit* (served from the cache),
+*miss* (fetched and stored), *miss:reason* (fetched but not storable - the
+reason is one of *no-store*, *no-cache*, *private*, *set-cookie*, *vary*,
+*silent*, *status*, *method*, *oversize* or *expired*), or *bypass* (the
+cache was not consulted).
 
 When redirects are enabled, libcurl applies its normal HTTP redirect method
 semantics. In particular, POST requests may be converted to GET after some
@@ -382,7 +572,7 @@ if ($var(rcode) != 200) {
 ```
 
 
-#### rest_post(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
+#### rest_post(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects], [source_pv])
 
 
 Perform a blocking HTTP POST on the given *url*.
@@ -416,6 +606,12 @@ to follow. A missing or **0** value preserves the previous behavior and does not
 follow redirects. Values from **1** to **30** enable redirects up to the requested
 limit. Only `http` and `https` redirect targets are accepted; values outside the
 **0** to **30** range are invalid.
+- *source_pv* (var, optional) - output variable reporting where the answer
+came from, when the response cache is enabled: *hit* (served from the cache),
+*miss* (fetched and stored), *miss:reason* (fetched but not storable - the
+reason is one of *no-store*, *no-cache*, *private*, *set-cookie*, *vary*,
+*silent*, *status*, *method*, *oversize* or *expired*), or *bypass* (the
+cache was not consulted).
 
 When redirects are enabled, libcurl applies its normal HTTP redirect method
 semantics. In particular, POST requests may be converted to GET after some
@@ -467,13 +663,13 @@ if ($var(rcode) != 200) {
 ```
 
 
-#### rest_put(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
+#### rest_put(url, send_body, [send_ctype], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects], [source_pv])
 
 
 Perform a blocking HTTP PUT on the given *url*.
 
 
-Similar to [rest_post()](#rest_posturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv), the *send_body_pv*
+Similar to [rest_post()](#rest_posturl-send_body-send_ctype-recv_body_pv-recv_ctype_pv-retcode_pv-max_redirects-source_pv), the *send_body_pv*
 parameter can also accept a format-string but it cannot be larger than 1024 bytes. For
 larger messages, you must build them in a pseudo-variable and pass it to the function.
 
@@ -499,6 +695,12 @@ to follow. A missing or **0** value preserves the previous behavior and does not
 follow redirects. Values from **1** to **30** enable redirects up to the requested
 limit. Only `http` and `https` redirect targets are accepted; values outside the
 **0** to **30** range are invalid.
+- *source_pv* (var, optional) - output variable reporting where the answer
+came from, when the response cache is enabled: *hit* (served from the cache),
+*miss* (fetched and stored), *miss:reason* (fetched but not storable - the
+reason is one of *no-store*, *no-cache*, *private*, *set-cookie*, *vary*,
+*silent*, *status*, *method*, *oversize* or *expired*), or *bypass* (the
+cache was not consulted).
 
 When redirects are enabled, libcurl applies its normal HTTP redirect method
 semantics.
@@ -581,6 +783,46 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 ```
 
 
+#### rest_cache_ctl(ttl)
+
+
+Overrides the cache decision for the *next* rest_get(), rest_post() or
+rest_put() only, then reverts - the same "applies once" behaviour as
+[rest_append_hf()](#rest_append_hftxt).  Requires *cachedb_url*; without it
+the call is ignored.
+
+
+Meaning of *ttl*:
+
+
+- *0* - bypass the cache entirely for that call: no lookup, no store.  For
+the one endpoint that must always be live.
+- *greater than 0* - serve that call from the cache if present, and store its
+response for that many seconds, regardless of *cache_policy* and of what the
+origin's own cache headers say.
+
+
+This is the recommended way to cache an endpoint whose server sends unhelpful
+headers, in preference to *cache_policy* = *force*, because it affects one
+call site rather than every endpoint the module talks to.
+
+
+This function can be used from any route.
+
+
+```opensips title="rest_cache_ctl usage"
+...
+# this rate lookup is safe to cache for five minutes, whatever it claims
+rest_cache_ctl(300);
+rest_get("http://rates/lookup", $var(body), $var(ct), $var(rc));
+
+# ...but the fraud check must always be live
+rest_cache_ctl(0);
+rest_get("http://fraud/check", $var(body), $var(ct), $var(rc));
+...
+```
+
+
 #### rest_init_client_tls(tls_client_domain)
 
 
@@ -615,7 +857,7 @@ if (!rest_get("https://example.com"))
 ### Exported Asynchronous Functions
 
 
-#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects])
+#### rest_get(url, body_pv, [ctype_pv], [retcode_pv], [max_redirects], [source_pv])
 
 
 Perform an asynchronous HTTP GET.  This function behaves exactly the same as
@@ -651,7 +893,7 @@ route [resume] {
 ```
 
 
-#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
+#### rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects], [source_pv])
 
 
 Perform an asynchronous HTTP POST.  This function behaves exactly the same as
@@ -686,7 +928,7 @@ route [resume] {
 ```
 
 
-#### rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects])
+#### rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv, [recv_ctype_pv], [retcode_pv], [max_redirects], [source_pv])
 
 
 Perform an asynchronous HTTP PUT.  This function behaves exactly the same as
@@ -719,6 +961,50 @@ route [resume] {
 	...
 }
 ```
+
+
+### Exported Statistics
+
+
+The statistics are always exported; while the response cache is disabled the
+counters simply stay at 0 and the hit rate reads 0.
+
+
+#### rest_cache_hits
+
+
+Requests served from the cache, without contacting the origin.
+
+
+#### rest_cache_misses
+
+
+Requests that went to the origin.
+
+
+#### rest_cache_stores
+
+
+Responses actually written to the cache.
+
+
+#### rest_cache_skipped
+
+
+Responses fetched but not storable, because the policy, the origin's headers
+or the size limit refused them.  Worth watching: a cache that stores nothing
+because every origin sends *no-store* is otherwise indistinguishable from one
+that is misconfigured, and neither the hit rate nor response times will tell
+you apart.  The per-response reason is in the debug log and in the
+*source_pv* output variable of each function.
+
+
+#### rest_cache_hit_rate
+
+
+Hits as a whole percentage of lookups, 0 when nothing has been looked up yet.
+It covers the lifetime of the process, so a low value shortly after a restart
+is a cold cache rather than a problem.
 
 
 ### Exported script transformations
@@ -777,6 +1063,165 @@ xlog("$(var(tmp){rest.unescape})\n");
                 
 ```
 <!-- CONTRIBUTORS -->
+
+### Response Cache Examples
+
+
+The examples below all assume an in-process backend, since the point of the
+cache is to be cheaper than the HTTP call it replaces:
+
+
+```opensips title="Response cache: loading the module with a cache backend"
+loadmodule "cachedb_local.so"
+loadmodule "rest_client.so"
+
+modparam("rest_client", "cachedb_url", "local://")
+```
+
+
+#### An origin that sends cache headers
+
+
+Nothing beyond *cachedb_url* is needed.  The default *strict* policy caches
+the response for exactly as long as the server said it may, and re-fetches
+after that:
+
+
+```opensips title="Response cache: an origin that sends cache headers"
+# origin answers with:  Cache-Control: max-age=300
+$var(rc) = rest_get("http://rates.internal/lookup?prefix=$rU",
+                    $var(body), $var(ct), $var(rcode));
+
+# for the next 5 minutes this same prefix is answered locally
+```
+
+
+#### An origin that sends no cache headers
+
+
+Many internal APIs send no *Cache-Control* at all.  Under the default policy
+those responses are never cached - the module will not invent a lifetime the
+server did not give it.  If you know the data is safe to hold for a while, say
+so explicitly:
+
+
+```opensips title="Response cache: an origin that sends no cache headers"
+modparam("rest_client", "cache_policy", "heuristic")
+modparam("rest_client", "cache_ttl", 60)
+```
+
+
+*heuristic* still obeys an origin that actively refuses caching; it only
+fills in a lifetime where the origin was silent.  It is rejected at startup
+without a positive *cache_ttl*, because a heuristic policy with nothing to
+fall back on would silently behave like *strict*.
+
+
+#### Overriding a single call
+
+
+Different endpoints behind the same module often deserve different treatment.
+Rather than loosening the policy globally - which reinterprets every endpoint
+you have, including the ones that were right - override the individual call:
+
+
+```opensips title="Response cache: overriding a single call"
+# an expensive, rarely-changing lookup whose origin forgot the headers:
+# cache it for 5 minutes regardless of policy or origin
+rest_cache_ctl(300);
+$var(rc) = rest_get("http://rates.internal/tariff?id=$var(tid)",
+                    $var(tariff));
+
+# a fraud check must never be answered from a cache, even a warm one
+rest_cache_ctl(0);
+$var(rc) = rest_get("http://fraud.internal/score?num=$fU", $var(score));
+```
+
+
+The override applies to the *next* REST call only and is consumed by it, in
+the same way as [rest_append_hf()](#rest_append_hftxt).  This holds for
+asynchronous calls too: the value is captured when the transfer is
+dispatched, not when it completes, so a later request cannot change how an
+in-flight one is cached.
+
+
+#### Per-account queries
+
+
+Headers queued with *rest_append_hf()* are part of the cache key, so a
+per-tenant or per-subscriber credential separates the entries automatically -
+the two calls below never see each other's response, even though the URL is
+identical:
+
+
+```opensips title="Response cache: per-account queries"
+rest_append_hf("Authorization: Bearer $var(tenant_token)");
+$var(rc) = rest_get("http://api.internal/limits", $var(limits));
+```
+
+
+The header values are hashed into the key rather than stored in it, so a
+bearer token never appears in the backend's key space or in whatever
+dump/inspection tooling the backend offers.
+
+
+#### Asynchronous calls
+
+
+The cache works identically for the asynchronous flavours.  A hit completes
+the call inline - the resume route still runs, and the script sees the same
+variables it would have seen after a real transfer.  The *source_pv* variable
+comes after *max_redirects*, so leave that one empty to keep the default:
+
+
+```opensips title="Response cache: asynchronous calls with the cache"
+route {
+	async(rest_get("http://rates.internal/lookup?prefix=$rU",
+	               $var(body), $var(ct), $var(rcode), , $var(src)), resume);
+}
+
+route [resume] {
+	if ($rc < 0) {
+		xlog("rate lookup failed: $rc\n");
+		send_reply(500, "Server Internal Error");
+		exit;
+	}
+	xlog("rate for $rU came from: $var(src)\n");
+	...
+}
+```
+
+
+#### Knowing whether the cache is doing anything
+
+
+A cache that stores nothing because every origin sends *no-store* looks
+exactly like a working one from the outside: no errors, and a hit rate of zero
+either way.  The trailing output variable says which it is, per call:
+
+
+```opensips title="Response cache: reporting where a response came from"
+$var(rc) = rest_get("http://rates.internal/lookup?prefix=$rU",
+                    $var(body), $var(ct), $var(rcode), , $var(src));
+
+# $var(src) is one of:
+#   hit            served locally, the origin was not contacted
+#   miss           fetched from the origin and stored
+#   miss:no-store  fetched, but the origin forbade storing it
+#   miss:silent    fetched, but the origin gave no lifetime and the
+#                  policy is strict
+#   bypass         the cache was not consulted (disabled, or
+#                  rest_cache_ctl(0))
+if ($var(src) =~ "^miss:") {
+	xlog("L_INFO", "not cacheable ($var(src)): $rU\n");
+}
+```
+
+
+The same reasons are counted in *rest_cache_skipped* and logged at debug
+level, so the question can be answered from monitoring without touching the
+script.
+
 
 ### License
 

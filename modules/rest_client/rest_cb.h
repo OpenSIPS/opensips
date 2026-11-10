@@ -28,6 +28,7 @@
 #include "rest_client.h"
 
 #include "../../str.h"
+#include "rest_cache.h"
 #include "../../mem/mem.h"
 #include "../../error.h"
 #include "../../dprint.h"
@@ -40,6 +41,19 @@
 #define MAX_HEADER_FIELD_LEN	 1024 /* arbitrary */
 
 size_t write_func(char *ptr, size_t size, size_t nmemb, void *userdata);
+/*
+ * What header_func() writes into.  Both members are optional: a script that asks
+ * for no content-type still needs the caching headers parsed, which is why the
+ * callback is installed unconditionally rather than only when a ctype output
+ * variable was supplied - otherwise rest_get(url,$b) and rest_get(url,$b,$ct)
+ * would cache differently, and the async path (which only installed it when a
+ * ctype was present) would never see a Cache-Control header at all.
+ */
+struct rest_hdr_sink {
+	str *ctype;                    /* Content-Type, if the caller wants it */
+	struct rcc_resp_hdrs *cache;   /* caching directives, if caching is on */
+};
+
 size_t header_func(char *ptr, size_t size, size_t nmemb, void *userdata);
 
 #endif /* _REST_CB_H_ */

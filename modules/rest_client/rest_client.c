@@ -39,6 +39,7 @@
 #include "../tls_mgm/api.h"
 #include "rest_client.h"
 #include "rest_methods.h"
+#include "rest_cache.h"
 #include "../../pt.h"
 
 #define REST_CLIENT_MAX_REDIRECTS 30
@@ -91,27 +92,45 @@ static int fixup_max_redirects(void **param);
  */
 static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
                       pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-                      int *max_redirects);
+                      int *max_redirects, pv_spec_t *source_pv);
 static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-					int *max_redirects);
+					int *max_redirects, pv_spec_t *source_pv);
 static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-					int *max_redirects);
+					int *max_redirects, pv_spec_t *source_pv);
 
 static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-				int *max_redirects);
+				int *max_redirects, pv_spec_t *source_pv);
 static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects);
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects,
+			pv_spec_t *source_pv);
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects);
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects,
+			pv_spec_t *source_pv);
 
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv);
+static int w_rest_cache_ctl(struct sip_msg *msg, int *ttl);
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
 int validate_curl_http_version(const int *http_version);
+
+/*
+ * Exported statistics - the aggregate companion to the per-call source
+ * variable.  rest_cache_skipped is the one worth watching: a cache that stores
+ * nothing because every origin says no-store is otherwise indistinguishable
+ * from one that is misconfigured or switched off.
+ */
+static const stat_export_t mod_stats[] = {
+	{"rest_cache_hits",     0,             &rcc_st_hits    },
+	{"rest_cache_misses",   0,             &rcc_st_misses  },
+	{"rest_cache_stores",   0,             &rcc_st_stores  },
+	{"rest_cache_skipped",  0,             &rcc_st_skipped },
+	{"rest_cache_hit_rate", STAT_IS_FUNC,  (stat_var **)rcc_stat_hit_rate},
+	{0, 0, 0}
+};
 
 /* module dependencies */
 static const dep_export_t deps = {
@@ -120,6 +139,7 @@ static const dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 }
 	},
 	{ /* modparam dependencies */
+		{ "cachedb_url", get_deps_cachedb_url },
 		{ NULL, NULL}
 	}
 };
@@ -130,7 +150,8 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
 	{"rest_post",(acmd_function)w_async_rest_post, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -138,7 +159,8 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
 	{"rest_put",(acmd_function)w_async_rest_put, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -146,7 +168,8 @@ static const acmd_export_t acmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
 	{0,0,{{0,0,0}}}
 };
 
@@ -160,7 +183,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_post",(cmd_function)w_rest_post, {
 		{CMD_PARAM_STR,0,0},
@@ -169,7 +193,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_put",(cmd_function)w_rest_put, {
 		{CMD_PARAM_STR,0,0},
@@ -178,10 +203,14 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_max_redirects,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_append_hf",(cmd_function)w_rest_append_hf, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rest_cache_ctl",(cmd_function)w_rest_cache_ctl, {
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_init_client_tls",(cmd_function)w_rest_init_client_tls, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -217,6 +246,10 @@ static const param_export_t params[] = {
 	{ "enable_expect_100",	INT_PARAM, &enable_expect_100	},
 	{ "no_concurrent_connects",	INT_PARAM, &no_concurrent_connects	},
 	{ "curl_conn_lifetime",	INT_PARAM, &curl_conn_lifetime	},
+	{ "cachedb_url",		STR_PARAM, &rcc_cdb_url		},
+	{ "cache_policy",		STR_PARAM, &rcc_policy_str	},
+	{ "cache_ttl",			INT_PARAM, &rcc_cache_ttl	},
+	{ "cache_max_body",		INT_PARAM, &rcc_max_body	},
 	{ 0, 0, 0 }
 };
 
@@ -234,7 +267,7 @@ struct module_exports exports = {
 	cmds,             /* Exported functions */
 	acmds,            /* Exported async functions */
 	params,           /* Exported parameters */
-	NULL,             /* exported statistics */
+	mod_stats,        /* exported statistics */
 	NULL,             /* exported MI functions */
 	NULL,             /* exported pseudo-variables */
 	trans,	          /* exported transformations */
@@ -288,6 +321,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (rcc_init() != 0) {
+		LM_ERR("failed to init the response cache\n");
+		return -1;
+	}
+
 	LM_INFO("Module initialized!\n");
 
 	return 0;
@@ -323,6 +361,7 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
+	rcc_destroy();
 	curl_global_cleanup();
 }
 
@@ -540,7 +579,7 @@ error:
 
 static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
                       pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-                      int *max_redirects)
+                      int *max_redirects, pv_spec_t *source_pv)
 {
 	str url_nt;
 	int lrc = RCL_OK, rc;
@@ -555,7 +594,8 @@ static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
 		return lrc;
 
 	rc = rest_sync_transfer(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL,
-	                          body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
+	                          body_pv, ctype_pv, code_pv,
+	                          max_redirects ? *max_redirects : 0, source_pv);
 
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
@@ -566,7 +606,7 @@ static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
 
 static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-					int *max_redirects)
+					int *max_redirects, pv_spec_t *source_pv)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
@@ -585,7 +625,8 @@ static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 		ctype = *_ctype;
 
 	rc = rest_sync_transfer(REST_CLIENT_POST, msg, url_nt.s, body, &ctype,
-	                          body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
+	                          body_pv, ctype_pv, code_pv,
+	                          max_redirects ? *max_redirects : 0, source_pv);
 
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
@@ -596,7 +637,7 @@ static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
 
 static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-					int *max_redirects)
+					int *max_redirects, pv_spec_t *source_pv)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
@@ -615,7 +656,8 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 		ctype = *_ctype;
 
 	rc = rest_sync_transfer(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype,
-	                          body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
+	                          body_pv, ctype_pv, code_pv,
+	                          max_redirects ? *max_redirects : 0, source_pv);
 
 	if (lrc == RCL_OK_LOCKED)
 		rcl_release_url(host, rc == RCL_OK);
@@ -627,7 +669,7 @@ static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
 int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
                       char *url, str *body, str *ctype, async_ctx *ctx,
                       pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv,
-                      int max_redirects)
+                      int max_redirects, pv_spec_p source_pv)
 {
 	rest_async_param *param;
 	pv_value_t val;
@@ -641,6 +683,48 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		return RCL_INTERNAL_ERR;
 	}
 	memset(param, '\0', sizeof *param);
+	param->rcc.ctl_ttl = RCC_CTL_UNSET;
+
+	/* Cache lookup, while header_list is still pending (it forms the key).
+	 * A hit is served like the ASYNC_SYNC path below - fill the variables and
+	 * finish without going to the network - NOT like ASYNC_NO_IO, which is the
+	 * error path and would hand the script code 0. */
+	{
+		str u;
+
+		init_str(&u, url);
+		if (rcc_prepare(&param->rcc, rest_client_method_str(method), &u,
+		                rest_pending_headers())) {
+			str hbody = STR_NULL, hctype = STR_NULL;
+			int hcode = 0;
+
+			if (rcc_lookup(&param->rcc, &hbody, &hctype, &hcode)) {
+				LM_DBG("async %s %s [%.*s] -> hit\n",
+					rest_client_method_str(method), url,
+					param->rcc.key.len, param->rcc.key.s);
+				rest_clear_pending_headers();
+				if (code_pv) {
+					val.flags = PV_VAL_INT|PV_TYPE_INT;
+					val.ri = hcode;
+					if (pv_set_value(msg, (pv_spec_p)code_pv, 0, &val) != 0)
+						LM_ERR("failed to set output code pv\n");
+				}
+				val.flags = PV_VAL_STR;
+				val.rs = hbody;
+				if (pv_set_value(msg, (pv_spec_p)body_pv, 0, &val) != 0)
+					LM_ERR("failed to set output body pv\n");
+				if (ctype_pv && hctype.len) {
+					val.rs = hctype;
+					if (pv_set_value(msg, (pv_spec_p)ctype_pv, 0, &val) != 0)
+						LM_ERR("failed to set output ctype pv\n");
+				}
+				rcc_set_source(msg, source_pv, &param->rcc);
+				pkg_free(param);
+				async_status = ASYNC_SYNC;   /* completed inline, success */
+				return RCL_OK;
+			}
+		}
+	}
 
 	if (no_concurrent_connects && (lrc=rcl_acquire_url(url, &host)) < RCL_OK)
 		return lrc;
@@ -699,6 +783,22 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 			}
 		}
 
+		if (param->rcc.enabled) {
+			if (!code_pv)   /* http_rc not fetched above; the cache needs it */
+				curl_easy_getinfo(param->handle,
+					CURLINFO_RESPONSE_CODE, &http_rc);
+			rcc_decide(&param->rcc, rest_client_method_str(method),
+				(int)http_rc);
+			if (param->rcc.store_ttl > 0)
+				rcc_store(&param->rcc, &param->body, &param->ctype,
+					(int)http_rc);
+			LM_DBG("async %s %s [%.*s] -> %s\n",
+				rest_client_method_str(method), url,
+				param->rcc.key.len, param->rcc.key.s,
+				param->rcc.src ? param->rcc.src : "miss");
+		}
+		rcc_set_source(msg, source_pv, &param->rcc);
+
 		pkg_free(param->body.s);
 		if (ctype_pv && param->ctype.s)
 			pkg_free(param->ctype.s);
@@ -722,6 +822,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	param->body_pv = (pv_spec_p)body_pv;
 	param->ctype_pv = (pv_spec_p)ctype_pv;
 	param->code_pv = (pv_spec_p)code_pv;
+	param->source_pv = (pv_spec_p)source_pv;
 	ctx->resume_param = param;
 
 	async_status = read_fd;
@@ -735,7 +836,7 @@ done:
 
 static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv,
-				int *max_redirects)
+				int *max_redirects, pv_spec_t *source_pv)
 {
 	str url_nt;
 	int rc;
@@ -749,7 +850,8 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 			body_pv, ctype_pv, code_pv);
 
 	rc = async_rest_method(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL, ctx,
-				body_pv, ctype_pv, code_pv, max_redirects ? *max_redirects : 0);
+				body_pv, ctype_pv, code_pv,
+				max_redirects ? *max_redirects : 0, source_pv);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -757,7 +859,8 @@ static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
 
 static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects)
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects,
+			pv_spec_t *source_pv)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
@@ -776,7 +879,7 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 
 	rc = async_rest_method(REST_CLIENT_POST, msg, url_nt.s, body, &ctype, ctx,
 							body_pv, ctype_pv, code_pv,
-							max_redirects ? *max_redirects : 0);
+							max_redirects ? *max_redirects : 0, source_pv);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -784,7 +887,8 @@ static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
 
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
-			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects)
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv, int *max_redirects,
+			pv_spec_t *source_pv)
 {
 	str ctype = { NULL, 0 };
 	str url_nt;
@@ -803,7 +907,7 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 
 	rc = async_rest_method(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype, ctx,
 						body_pv, ctype_pv, code_pv,
-						max_redirects ? *max_redirects : 0);
+						max_redirects ? *max_redirects : 0, source_pv);
 
 	pkg_free(url_nt.s);
 	return rc;
@@ -812,6 +916,27 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv)
 {
 	return rest_append_hf_method(msg, hfv);
+}
+
+/*
+ * Override the cache decision for the NEXT rest_get/post/put only, in the same
+ * "applies once, then cleared" style as rest_append_hf().  ttl == 0 bypasses
+ * the cache entirely for that call; ttl > 0 forces the response to be served
+ * from and stored in the cache for that many seconds regardless of the module
+ * policy and of what the origin's cache headers say.
+ */
+static int w_rest_cache_ctl(struct sip_msg *msg, int *ttl)
+{
+	if (*ttl < 0) {
+		LM_ERR("rest_cache_ctl: ttl must be >= 0 (0 = bypass), got %d\n", *ttl);
+		return -1;
+	}
+	if (!rcc_enabled()) {
+		LM_DBG("rest_cache_ctl ignored - no response cache configured\n");
+		return 1;
+	}
+	rcc_ctl_ttl = *ttl;
+	return 1;
 }
 
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
