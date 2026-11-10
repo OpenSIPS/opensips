@@ -268,7 +268,7 @@ static ucontact_t **select_contacts(struct sip_msg *msg, ucontact_t *contacts,
 		if (*ret < 0)
 			*ret = LOOKUP_NO_RESULTS;
 
-		if ((flags & REG_LOOKUP_UAFILTER_FLAG) &&
+		if ((flags & REG_LOOKUP_UAFILTER_FLAG) && ua_re &&
 			regexec(ua_re, ct->user_agent.s, 1, &ua_match, 0))
 			continue;
 
