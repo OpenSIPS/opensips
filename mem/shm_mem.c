@@ -292,7 +292,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size,int idx)
 	shm_block = qm_malloc_init(mempool, pool_size, "shm");
 #elif defined HP_MALLOC
 	shm_block = hp_shm_malloc_init(mempool, pool_size, "shm");
-#elif define F_PARALEL_MALLOC
+#elif defined F_PARALLEL_MALLOC
 	shm_blocks[idx] = parallel_malloc_init(mempool, pool_size, "shm", idx);
 #endif
 #else
