@@ -27,6 +27,7 @@
 #define _NET_UDP_H_
 
 #include "../socket_info.h"
+#include "../atomic.h"
 
 
 /**************************** Control functions ******************************/
@@ -41,7 +42,7 @@ void udp_destroy(void);
 int udp_count_processes(unsigned int *extra);
 
 /* starts all UDP related processes */
-int udp_start_processes(int *chd_rank, int *startup_done);
+int udp_start_processes(int *chd_rank, atomic_t *startup_done);
 
 /**************************** Listener functions *****************************/
 
