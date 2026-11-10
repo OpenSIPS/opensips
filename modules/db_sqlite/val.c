@@ -151,7 +151,10 @@ int db_sqlite_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _le
 			_s[0] = 'x';
 			_s[1] = '\'';
 			_s += 2;
-			_s += string2hex(VAL_BLOB(_v).s, l, _s);
+			/* string2hex() emits "0" for empty input, but an empty
+			 * SQLite BLOB must be represented as x''. */
+			if (l)
+				_s += string2hex(VAL_BLOB(_v).s, l, _s);
 			_s[0] = '\'';
 			_s++;
 			*_len = 3 + 2 * l;
