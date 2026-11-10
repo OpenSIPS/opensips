@@ -1271,22 +1271,12 @@ int t_is_local(struct sip_msg* p_msg)
  */
 int t_lookup_callid(struct cell ** trans, str callid, str cseq) {
 	struct cell* p_cell;
+	struct sip_msg *req;
+	str stored_callid, stored_cseq;
 	unsigned int hash_index;
 
-	/* I use MAX_HEADER, not sure if this is a good choice... */
-	char callid_header[MAX_HEADER];
-	char cseq_header[MAX_HEADER];
-	/* save return value of print_* functions here */
-	char* endpos;
-	UNUSED(endpos);
-
-	/* need method, which is always INVITE in our case */
-	/* CANCEL is only useful after INVITE */
-	str invite_method;
-	char* invite_string = INVITE;
-
-	invite_method.s = invite_string;
-	invite_method.len = INVITE_LEN;
+	if (!trans || !callid.s || callid.len <= 0 || !cseq.s || cseq.len <= 0)
+		return -1;
 
 	/* lookup the hash index where the transaction is stored */
 	hash_index=tm_hash(callid, cseq);
@@ -1296,29 +1286,44 @@ int t_lookup_callid(struct cell ** trans, str callid, str cseq) {
 		return -1;
 	}
 
-	/* create header fields the same way tm does itself, then compare headers */
-	endpos = print_callid_mini(callid_header, callid);
-	LM_DBG("created comparable call_id header field: >%.*s<\n",
-			(int)(endpos - callid_header), callid_header);
-
-	endpos = print_cseq_mini(cseq_header, &cseq, &invite_method);
-	LM_DBG("created comparable cseq header field: >%.*s<\n",
-			(int)(endpos - cseq_header), cseq_header);
-
 	LOCK_HASH(hash_index);
 
 	/* all the transactions from the entry are compared */
 	p_cell = get_tm_table()->entrys[hash_index].first_cell;
 	for ( ; p_cell; p_cell = p_cell->next_cell ) {
 
-		/* compare complete header fields, casecmp to make sure invite=INVITE */
-		LM_DBG(" <%.*s>  <%.*s>\n", p_cell->callid.len, p_cell->callid.s,
-			p_cell->cseq_n.len,p_cell->cseq_n.s);
-		if ( (strncmp(callid_header, p_cell->callid.s, p_cell->callid.len) == 0)
-			&& (strncasecmp(cseq_header, p_cell->cseq_n.s, p_cell->cseq_n.len) == 0) ) {
-			LM_DBG("we have a match: callid=>>%.*s<< cseq=>>%.*s<<\n",
-				p_cell->callid.len,p_cell->callid.s, p_cell->cseq_n.len,
-				p_cell->cseq_n.s);
+		req = p_cell->uas.request;
+		if (req) {
+			/* The message cloner preserves Call-ID's body and clones
+			 * the parsed CSeq, rebasing its value pointers. */
+			if (!req->callid || !req->cseq || !req->cseq->parsed)
+				continue;
+			stored_callid = req->callid->body;
+			stored_cseq = get_cseq(req)->number;
+		} else {
+			/* build_uac_req() in t_msgbuilder.c sets these fields via
+			 * print_callid() and print_cseq(): callid includes the
+			 * CALLID prefix and CRLF, while cseq_n includes the CSEQ
+			 * prefix but excludes the method and CRLF. Keep these
+			 * offsets in sync with those builders. */
+			if (!p_cell->callid.s || !p_cell->cseq_n.s
+			|| p_cell->callid.len <= CALLID_LEN + CRLF_LEN
+			|| p_cell->cseq_n.len <= CSEQ_LEN)
+				continue;
+			stored_callid.s = p_cell->callid.s + CALLID_LEN;
+			stored_callid.len = p_cell->callid.len - CALLID_LEN - CRLF_LEN;
+			stored_cseq.s = p_cell->cseq_n.s + CSEQ_LEN;
+			stored_cseq.len = p_cell->cseq_n.len - CSEQ_LEN;
+		}
+
+		if (!stored_callid.s || !stored_cseq.s
+		|| stored_callid.len != callid.len || stored_cseq.len != cseq.len)
+			continue;
+		if (memcmp(stored_callid.s, callid.s, callid.len) == 0
+		&& memcmp(stored_cseq.s, cseq.s, cseq.len) == 0) {
+			LM_DBG("we have a match: callid=%.*s cseq=%.*s\n",
+				stored_callid.len, stored_callid.s,
+				stored_cseq.len, stored_cseq.s);
 			REF_UNSAFE(p_cell);
 			UNLOCK_HASH(hash_index);
 			set_t(p_cell);
