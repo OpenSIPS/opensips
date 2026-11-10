@@ -1,0 +1,167 @@
+/*
+ * modules-contrib/nats/nats_dl_table.def — single source of truth for the libnats
+ * function-pointer table.  Used by nats_dl.h (struct field declarations)
+ * and nats_dl.c (dlsym population).
+ *
+ * Each entry expands via the NATS_DL_FN(name) macro the includer
+ * defines.  See nats_dl.h for the declaration use, nats_dl.c for
+ * the dlsym use.
+ */
+
+/* JetStream context + management */
+NATS_DL_FN(jsAccountInfo_Destroy)
+NATS_DL_FN(js_AddConsumer)
+NATS_DL_FN(js_AddStream)
+NATS_DL_FN(js_Consumers)
+NATS_DL_FN(jsConsumerConfig_Init)
+NATS_DL_FN(jsConsumerInfo_Destroy)
+NATS_DL_FN(jsConsumerInfoList_Destroy)
+NATS_DL_FN(js_CreateKeyValue)
+NATS_DL_FN(jsCtx_Destroy)
+NATS_DL_FN(js_DeleteConsumer)
+NATS_DL_FN(js_DeleteMsg)
+NATS_DL_FN(js_DeleteStream)
+NATS_DL_FN(js_GetAccountInfo)
+NATS_DL_FN(js_GetConsumerInfo)
+NATS_DL_FN(js_GetMsg)
+NATS_DL_FN(js_GetStreamInfo)
+NATS_DL_FN(js_KeyValue)
+NATS_DL_FN(jsMsgMetaData_Destroy)
+NATS_DL_FN(jsOptions_Init)
+NATS_DL_FN(jsPubAck_Destroy)
+NATS_DL_FN(jsPubOptions_Init)
+NATS_DL_FN(js_PublishAsync)
+NATS_DL_FN(js_PublishAsyncComplete)
+/* Synchronous CAS+TTL raw publish with inline
+ * jsPubAck + jsErrCode — drives the per-key-TTL retry loop (the async variant
+ * surfaces the CAS/TTL rejection later on a different thread, so it cannot). */
+NATS_DL_FN(js_PublishMsg)
+/* async resend of a message whose ack failed (JetStream publish retry) */
+NATS_DL_FN(js_PublishMsgAsync)
+NATS_DL_FN(js_PullSubscribe)
+NATS_DL_FN(js_PurgeStream)
+NATS_DL_FN(jsStreamConfig_Init)
+NATS_DL_FN(jsStreamInfo_Destroy)
+NATS_DL_FN(jsStreamInfoList_Destroy)
+NATS_DL_FN(js_Streams)
+NATS_DL_FN(jsSubOptions_Init)
+NATS_DL_FN(js_UpdateConsumer)
+
+/* JetStream KV store */
+NATS_DL_FN(kvEntry_Destroy)
+NATS_DL_FN(kvEntry_Key)
+NATS_DL_FN(kvEntry_Operation)
+NATS_DL_FN(kvEntry_Created)
+NATS_DL_FN(kvEntry_Revision)
+NATS_DL_FN(kvEntry_ValueLen)
+NATS_DL_FN(kvEntry_ValueString)
+NATS_DL_FN(kvEntryList_Destroy)
+NATS_DL_FN(kvKeysList_Destroy)
+NATS_DL_FN(kvStatus_Bucket)
+NATS_DL_FN(kvStatus_Bytes)
+NATS_DL_FN(kvStatus_Destroy)
+NATS_DL_FN(kvStatus_History)
+NATS_DL_FN(kvStatus_Replicas)
+NATS_DL_FN(kvStatus_TTL)
+NATS_DL_FN(kvStatus_Values)
+NATS_DL_FN(kvStore_Create)
+/* length-aware create/put/update: VALUES travel as (ptr,len) --
+ * no NUL-termination copy at the call site, no cnats-internal strlen,
+ * and embedded-NUL values are carried instead of silently truncated.
+ * Keys/subjects stay NUL-terminated C strings (nats_str_to_buf). */
+NATS_DL_FN(kvStore_CreateString)
+NATS_DL_FN(kvStore_CreateWithTTL)
+/* Create-if-absent carrying a per-key TTL; re-creates over a
+ * DEL/PURGE/MaxAge marker first-attempt AND keeps the TTL. */
+NATS_DL_FN(kvStore_Delete)
+NATS_DL_FN(kvStore_Destroy)
+NATS_DL_FN(kvStore_Get)
+NATS_DL_FN(kvStore_History)
+NATS_DL_FN(kvStore_Keys)
+NATS_DL_FN(kvStore_KeysWithFilters)
+NATS_DL_FN(kvStore_Purge)
+NATS_DL_FN(kvStore_Put)
+NATS_DL_FN(kvStore_PutString)
+NATS_DL_FN(kvStore_Status)
+NATS_DL_FN(kvStore_Update)
+NATS_DL_FN(kvStore_UpdateString)
+NATS_DL_FN(kvStore_WatchAll)
+NATS_DL_FN(kvStore_WatchMulti)
+NATS_DL_FN(kvWatchOptions_Init)
+NATS_DL_FN(kvWatcher_Destroy)
+NATS_DL_FN(kvWatcher_Next)
+NATS_DL_FN(kvWatcher_Stop)
+
+/* Core nats_* lifecycle */
+NATS_DL_FN(nats_CloseAndWait)
+NATS_DL_FN(nats_GetLastError)
+NATS_DL_FN(nats_GetLastErrorStack)
+NATS_DL_FN(nats_Open)
+NATS_DL_FN(nats_Sleep)
+
+/* Connection */
+NATS_DL_FN(natsConnection_Connect)
+NATS_DL_FN(natsConnection_Destroy)
+NATS_DL_FN(natsConnection_Drain)
+NATS_DL_FN(natsConnection_DrainTimeout)
+NATS_DL_FN(natsConnection_GetConnectedUrl)
+NATS_DL_FN(natsConnection_JetStream)
+NATS_DL_FN(natsConnection_Publish)
+NATS_DL_FN(natsConnection_PublishMsg)
+NATS_DL_FN(natsConnection_QueueSubscribe)
+NATS_DL_FN(natsConnection_RequestMsg)
+NATS_DL_FN(natsConnection_RequestString)
+NATS_DL_FN(natsConnection_Subscribe)
+
+/* Message */
+NATS_DL_FN(natsMsg_Ack)
+NATS_DL_FN(natsMsg_AckSync)
+NATS_DL_FN(natsMsg_Create)
+NATS_DL_FN(natsMsg_Destroy)
+NATS_DL_FN(natsMsg_GetData)
+NATS_DL_FN(natsMsg_GetDataLength)
+NATS_DL_FN(natsMsg_GetMetaData)
+NATS_DL_FN(natsMsg_GetReply)
+NATS_DL_FN(natsMsg_GetSubject)
+NATS_DL_FN(natsMsgHeader_Get)
+NATS_DL_FN(natsMsgHeader_Keys)
+NATS_DL_FN(natsMsgHeader_Set)
+NATS_DL_FN(natsMsgHeader_Values)
+NATS_DL_FN(natsMsg_InProgress)
+NATS_DL_FN(natsMsgList_Destroy)
+NATS_DL_FN(natsMsg_Nak)
+NATS_DL_FN(natsMsg_NakWithDelay)
+NATS_DL_FN(natsMsg_Term)
+
+/* Options */
+NATS_DL_FN(natsOptions_Create)
+NATS_DL_FN(natsOptions_Destroy)
+NATS_DL_FN(natsOptions_LoadCATrustedCertificates)
+NATS_DL_FN(natsOptions_LoadCertificatesChain)
+NATS_DL_FN(natsOptions_SetCATrustedCertificates)
+NATS_DL_FN(natsOptions_SetCiphers)
+NATS_DL_FN(natsOptions_SetDisconnectedCB)
+NATS_DL_FN(natsOptions_SetExpectedHostname)
+NATS_DL_FN(natsOptions_SetMaxPingsOut)
+NATS_DL_FN(natsOptions_SetMaxReconnect)
+NATS_DL_FN(natsOptions_SetNKeyFromSeed)
+NATS_DL_FN(natsOptions_SetNoRandomize)
+NATS_DL_FN(natsOptions_SetPingInterval)
+NATS_DL_FN(natsOptions_SetReconnectBufSize)
+NATS_DL_FN(natsOptions_SetReconnectedCB)
+NATS_DL_FN(natsOptions_SetReconnectJitter)
+NATS_DL_FN(natsOptions_SetReconnectWait)
+NATS_DL_FN(natsOptions_SetRetryOnFailedConnect)
+NATS_DL_FN(natsOptions_SetSecure)
+NATS_DL_FN(natsOptions_SetServers)
+NATS_DL_FN(natsOptions_SetToken)
+NATS_DL_FN(natsOptions_SetUserCredentialsFromFiles)
+NATS_DL_FN(natsOptions_SetUserInfo)
+NATS_DL_FN(natsOptions_SkipServerVerification)
+
+/* Status / subscription */
+NATS_DL_FN(natsStatus_GetText)
+NATS_DL_FN(natsSubscription_Destroy)
+NATS_DL_FN(natsSubscription_Fetch)
+NATS_DL_FN(natsSubscription_IsValid)
+NATS_DL_FN(natsSubscription_Unsubscribe)

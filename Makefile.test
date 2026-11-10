@@ -39,11 +39,24 @@ unit_tests: ensure_test_defs $(NAME)
 
 # One target per module suite.  The module is a prerequisite because `make all`
 # builds only the modules/ collection (Makefile:113), leaving a contrib module
-# with no .so for its suite to load.
+# with no .so for its suite to load -- and so are the other contrib modules
+# its config loads.
+test_cfg_contrib_modules=$(filter $(enabled_module_paths), \
+		$(wildcard $(addprefix modules-contrib/, \
+			$(shell sed -n 's/^loadmodule "\(.*\)\.so".*/\1/p' \
+				$(1)/test/opensips.cfg))))
+
+# A module whose optional library is missing builds no .so (its Makefile
+# skips itself, e.g. the NATS modules without libnats): there is nothing to
+# load, so its suite is skipped rather than failed.
 define module_test_rule
-test-$(notdir $(1)): ensure_test_defs $$(NAME) $(1)
+test-$(notdir $(1)): ensure_test_defs $$(NAME) $(1) $(call test_cfg_contrib_modules,$(1))
 	-@echo "          ====   $(notdir $(1))   ===="
-	./$$(NAME) -dd -T $(notdir $(1)) -w .
+	@if [ ! -f $(1)/$(notdir $(1)).so ]; then \
+		echo "          skipped: $(notdir $(1)).so was not built"; \
+	else \
+		./$$(NAME) -dd -T $(notdir $(1)) -w .; \
+	fi
 endef
 $(foreach m,$(test_module_paths),$(eval $(call module_test_rule,$(m))))
 

@@ -127,6 +127,14 @@ jobs:
       - name: Install dependencies
         run: sh -x scripts/build/install_depends.sh
 
+      # The NATS modules (modules-contrib/) need libnats >= 3.14, which no
+      # Ubuntu release ships; without it they build nothing and their suites
+      # are skipped.  The cross legs build in another container: there the
+      # script skips itself and so do the suites.
+      - name: Install libnats
+        if: ${{ !endsWith(matrix.compiler, '-cross') }}
+        run: sh -x scripts/build/install_libnats.sh
+
       - name: Get libtap
         run: git clone https://github.com/zorgnax/libtap.git lib/libtap
 
