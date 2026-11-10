@@ -80,6 +80,12 @@ typedef struct publ
 	struct publ* next;
 }publ_t;
 
+
+/* the state is more used for the SUBSCRIBE records */
+enum pua_subs_state {
+	PUA_SUBS_ACTIVE, PUA_SUBS_TERMINATING, PUA_SUBS_TERMINATED
+};
+
 typedef struct ua_pres{
 	/* common*/
 	unsigned int hash_index;
@@ -101,6 +107,9 @@ typedef struct ua_pres{
 	publ_t* pending_publ;
 
 	/* subscribe */
+	/* transient local termination bookkeeping */
+	enum pua_subs_state subs_state;
+	unsigned int expires_queued; /* currently queued expires, or zero */
 	str to_uri;
 	str* watcher_uri;
 	str call_id;

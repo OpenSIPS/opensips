@@ -92,15 +92,33 @@ static str str_desired_expires_col= str_init("desired_expires");
 static str str_sh_tag_col= str_init("sharing_tag");
 static str str_version_col = str_init("version");
 
+
+/* Queue entries own their identity strings, never hash-record pointers.
+ * Lock order: hash bucket, then queue. The timer drops the queue lock
+ * before looking up a hash record. */
+struct subs_termination {
+	unsigned int hash_index, local_index, deadline;
+	str id, call_id;
+	struct subs_termination *next;
+};
+
+static struct {
+	gen_lock_t lock;
+	struct subs_termination *head;
+} *subs_terminations;
+
+
 /* module functions */
 
 static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-static int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final);
+static int update_pua(ua_pres_t* p, unsigned int hash_code,unsigned int final);
 static void db_update(unsigned int ticks,void *param);
 static void hashT_clean(unsigned int ticks,void *param);
+static void subs_termination_timer(unsigned int ticks, void *param);
+
 
 static const cmd_export_t cmds[]={
 	{"pua_update_contact",(cmd_function)update_contact, {{0,0,0}},
@@ -242,6 +260,19 @@ static int mod_init(void)
 		return -1;
 	}
 
+	subs_terminations = shm_malloc(sizeof(*subs_terminations));
+	if (!subs_terminations) {
+		LM_ERR("failed to shm allocate the subs termination list\n");
+		return -1;
+	}
+	memset(subs_terminations, 0, sizeof(*subs_terminations));
+	if (!lock_init(&subs_terminations->lock)) {
+		shm_free(subs_terminations);
+		subs_terminations = NULL;
+		LM_ERR("failed to init the subs termination lock\n");
+		return -1;
+	}
+
 	if(update_period<=0)
 	{
 		LM_ERR("wrong clean_period\n");
@@ -263,6 +294,9 @@ static int mod_init(void)
 		LM_ERR("while adding events\n");
 		return -1;
 	}
+
+	register_timer("pua_subscription_cleanup", subs_termination_timer, 0, 1,
+		TIMER_FLAG_DELAY_ON_DELAY);
 
 	register_timer("pua_clean", hashT_clean, 0, update_period-5,
 		TIMER_FLAG_DELAY_ON_DELAY);
@@ -301,7 +335,18 @@ static int child_init(int rank)
 
 static void destroy(void)
 {
+	struct subs_termination *entry;
 	LM_DBG("destroying module ...\n");
+
+	if (subs_terminations) {
+		while ((entry = subs_terminations->head) != NULL) {
+			subs_terminations->head = entry->next;
+			shm_free(entry);
+		}
+		lock_destroy(&subs_terminations->lock);
+		shm_free(subs_terminations);
+	}
+
 	if (puacb_list)
 		destroy_puacb_list();
 
@@ -691,6 +736,58 @@ static int sh_tag_matches(str **sh_tags, str *sh_tag)
 }
 
 
+static int queue_subs_termination(ua_pres_t *p)
+{
+	struct subs_termination *entry, *old, **at;
+
+	if (p->expires_queued == p->desired_expires)
+		return 0;
+
+	entry = shm_malloc(sizeof(*entry) + p->id.len + p->call_id.len);
+	if (!entry) {
+		LM_ERR("no more memory fo a subs termination record\n");
+		return -1;
+	}
+
+	entry->hash_index = p->hash_index;
+	entry->local_index = p->local_index;
+	entry->deadline = p->desired_expires;
+	entry->id.s = (char *)(entry + 1);
+	entry->id.len = p->id.len;
+	memcpy(entry->id.s, p->id.s, p->id.len);
+	entry->call_id.s = entry->id.s + entry->id.len;
+	entry->call_id.len = p->call_id.len;
+	memcpy(entry->call_id.s, p->call_id.s, p->call_id.len);
+
+	lock_get(&subs_terminations->lock);
+	/* Replace an older schedule if a refresh moved the desired deadline. */
+	if (p->expires_queued) {
+		for (at = &subs_terminations->head; *at; at = &(*at)->next) {
+			old = *at;
+			if (old->hash_index == p->hash_index
+			&& old->local_index == p->local_index
+			&& str_match(&old->id, &p->id)
+			&& str_match(&old->call_id, &p->call_id)) {
+				*at = old->next;
+				shm_free(old);
+				break;
+			}
+		}
+	}
+
+	/* now link it */
+	for (at = &subs_terminations->head;
+	     *at && (*at)->deadline <= entry->deadline; at = &(*at)->next)
+		;
+	entry->next = *at;
+	*at = entry;
+	p->expires_queued = p->desired_expires;
+	lock_release(&subs_terminations->lock);
+
+	return 0;
+}
+
+
 static void hashT_clean(unsigned int ticks,void *param)
 {
 	int i;
@@ -717,6 +814,32 @@ static void hashT_clean(unsigned int ticks,void *param)
 			print_ua_pres(p);
 			LM_DBG("---\n");
 
+			/* for SUBSCRIBE record only */
+			if (p->watcher_uri) {
+				/* ignore the ones with un-SUBSCRIBE send, but
+				 * waiting for reply */
+				if (p->subs_state == PUA_SUBS_TERMINATING) {
+					p = p->next;
+					continue;
+				}
+				/* purge the ones with completed un-SUBSCRIBE and with
+				* NOTIFY waiting done (extra 5 secs) */
+				if (p->subs_state == PUA_SUBS_TERMINATED) {
+					q = p->next;
+					if (p->expires <= now)
+						delete_htable_safe(p, i);
+					p = q;
+					continue;
+				}
+				/* Discover shortening independently of negotiated expiry. */
+				if (p->desired_expires && p->desired_expires < p->expires) {
+					if (queue_subs_termination(p) < 0)
+						LM_ERR("cannot queue subscription termination\n");
+					p = p->next;
+					continue;
+				}
+			}
+
 			/* handle expired presentities with no sharing tag or with an
 			 * active sharing tag (if clustering is enabled) */
 			if ( (p->expires -update_period < now ) &&
@@ -741,10 +864,20 @@ static void hashT_clean(unsigned int ticks,void *param)
 
 				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 						p->pres_uri->s);
-				if(update_pua(p, i, 1)< 0)
-				{
-					LM_ERR("while updating record\n");
+				if (p->watcher_uri) {
+					/* Subscriptions with matching deadlines expire remotely;
+					 * retain local state until actual expiry,
+					 * without unsubscribing. */
+					if (p->expires > now) {
+						p = p->next;
+						continue;
+					}
+				} else {
+					/* PUBLISH record, just update */
+					if (update_pua(p, i, 1) < 0)
+						LM_ERR("while updating record\n");
 				}
+
 				/* delete it */
 				q = p->next;
 				delete_htable_safe(p, p->hash_index);
@@ -757,6 +890,54 @@ static void hashT_clean(unsigned int ticks,void *param)
 	}
 }
 
+
+static void subs_termination_timer(unsigned int ticks, void *param)
+{
+	struct subs_termination *entry;
+	ua_pres_t *p;
+	time_t now = time(NULL);
+	str **sh_tags = is_pua_cluster_enabled() ?
+		c_api.shtag_get_all_active(pua_cluster_id) : NULL;
+
+	for (;;) {
+		lock_get(&subs_terminations->lock);
+		entry = subs_terminations->head;
+		if (!entry || entry->deadline > now) {
+			lock_release(&subs_terminations->lock);
+			return;
+		}
+		subs_terminations->head = entry->next;
+		lock_release(&subs_terminations->lock);
+
+		lock_get(&HashT->p_records[entry->hash_index].lock);
+		p = get_htable_safe(entry->hash_index, entry->local_index);
+		if (p && p->watcher_uri && str_match(&p->id, &entry->id)
+						&& str_match(&p->call_id, &entry->call_id)
+		&& p->expires_queued == entry->deadline) {
+			p->expires_queued = 0;
+			if (p->subs_state == PUA_SUBS_ACTIVE && p->desired_expires
+			&& p->desired_expires < p->expires) {
+				if (p->desired_expires > now) {
+					if (queue_subs_termination(p) < 0)
+						LM_ERR("cannot reschedule subscription termination\n");
+				} else if (!sh_tags || !p->sh_tag.s
+				|| sh_tag_matches(sh_tags, &p->sh_tag)) {
+					p->subs_state = PUA_SUBS_TERMINATING;
+					if (update_pua(p, entry->hash_index, 1) < 0) {
+						p->subs_state = PUA_SUBS_ACTIVE;
+						/* Retry on the next full scan, not repeatedly
+						 * in this timer tick. */
+						LM_ERR("cannot send subscription termination\n");
+					}
+				}
+			}
+		}
+		lock_release(&HashT->p_records[entry->hash_index].lock);
+		shm_free(entry);
+	}
+}
+
+
 int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 {
 	str* str_hdr= NULL;
@@ -766,7 +947,8 @@ int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 	if(final > 0)
 	{
 		expires= 0;
-		p->desired_expires= 0;
+		if (!p->watcher_uri)
+			p->desired_expires= 0;
 	}
 	else
 	{
@@ -835,6 +1017,8 @@ int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final)
 			return -1;
 		}
 		cb_param= subs_cbparam_indlg(p, expires, REQ_ME);
+		if (cb_param && final)
+			cb_param->subs_state = p->subs_state;
 		if(cb_param== NULL)
 		{
 			LM_ERR("while constructing subs callback param\n");
