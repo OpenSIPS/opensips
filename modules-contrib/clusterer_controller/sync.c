@@ -70,7 +70,7 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 		if (get_next_hop(node) == 0)
 			continue;
 
-		if (!match_node(cluster->current_node, node, match_cond))
+		if (!cluster->current_node || !match_node(cluster->current_node, node, match_cond))
 			continue;
 
 		lock_get(node->lock);
@@ -91,17 +91,60 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 	return 0;
 }
 
+/* @prefer_id, when it can serve @capability: reachable, matching, in the OK state */
+static int preferred_sync_source(cluster_info_t *cluster, str *capability,
+                                 enum cl_node_match_op match_cond, int prefer_id)
+{
+	node_info_t *node = get_node_by_id(cluster, prefer_id);
+	struct remote_cap *cap;
+	int ok;
+
+	if (!node || get_next_hop(node) == 0 || !cluster->current_node ||
+			!match_node(cluster->current_node, node, match_cond))
+		return 0;
+
+	lock_get(node->lock);
+	for (cap = node->capabilities; cap; cap = cap->next)
+		if (!str_strcmp(capability, &cap->name))
+			break;
+	ok = cap && (cap->flags & CAP_STATE_OK);
+	lock_release(node->lock);
+
+	return ok ? prefer_id : 0;
+}
+
 int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 {
 	lock_get(cluster->lock);
+
+	/* a seed with no peers has nobody to sync from: self-sync now, not after
+	 * seed_fb_interval; CLUSTER_NODE_UP re-triggers sync when peers join */
+	if (cluster->current_node &&
+	    (cluster->current_node->flags & NODE_IS_SEED) &&
+	    cluster->node_list == NULL) {
+		lcap->flags |= CAP_STATE_OK;
+		lcap->flags &= ~(CAP_SYNC_PENDING | CAP_SYNC_STARTUP);
+		lock_release(cluster->lock);
+		LM_DBG("No peers in cluster %d - capability '%.*s' self-marked as "
+		       "synced (first/lone seed node)\n",
+		       cluster->cluster_id, lcap->reg.name.len, lcap->reg.name.s);
+		sr_set_status(cl_srg, STR2CI(lcap->reg.sr_id), CAP_SR_SYNCED,
+			STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
+		sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0,
+			"No peers present - self-synced as first node in cluster");
+		send_single_cap_update(cluster, lcap, 1);
+		return 0;
+	}
+
 	lcap->flags |= CAP_SYNC_PENDING;
 	if (sr_get_core_status() == STATE_INITIALIZING)
 		lcap->flags |= CAP_SYNC_STARTUP;
 	else
 		lcap->flags &= ~CAP_SYNC_STARTUP;
 
-	if (cluster->current_node->flags & NODE_IS_SEED)
-		gettimeofday(&lcap->sync_req_time, NULL);
+	/* always: with no current_node yet (controller identity comes post-fork) a
+	 * zero sync_req_time would fire the seed fallback at once */
+	gettimeofday(&lcap->sync_req_time, NULL);
 
 	lock_release(cluster->lock);
 
@@ -119,6 +162,12 @@ int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 }
 
 int cl_request_sync(str *capability, int cluster_id, int from_cb)
+{
+	return cl_request_sync_from(capability, cluster_id, from_cb, 0);
+}
+
+int cl_request_sync_from(str *capability, int cluster_id, int from_cb,
+                         int prefer_id)
 {
 	cluster_info_t *cluster;
 	struct local_cap *lcap;
@@ -178,7 +227,10 @@ int cl_request_sync(str *capability, int cluster_id, int from_cb)
 	} else
 		lock_release(cluster->lock);
 
-	source_id = get_sync_source(cluster, capability, lcap->reg.sync_cond);
+	source_id = prefer_id > 0 ? preferred_sync_source(cluster, capability,
+		lcap->reg.sync_cond, prefer_id) : 0;
+	if (source_id == 0)
+		source_id = get_sync_source(cluster, capability, lcap->reg.sync_cond);
 	if (source_id == 0) {	/* we didn't find any node ready to sync from */
 		LM_DBG("donor node not found\n");
 		/* send requst later */
