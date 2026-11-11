@@ -77,7 +77,7 @@ cluster_info_t **cluster_list;
 int load_cluster_bridges(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
-					str *str_vals)
+					str *str_vals, int self_id)
 {
 	char *host;
 	int hlen, port;
@@ -140,7 +140,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	else
 		(*new_info)->flags &= ~NODE_STATE_ENABLED;
 
-	if (int_vals[INT_VALS_NODE_ID_COL] != current_id)
+	if (int_vals[INT_VALS_NODE_ID_COL] != self_id)
 		(*new_info)->link_state = LS_RESTART_PINGING;
 	else
 		(*new_info)->link_state = LS_UP;
@@ -213,7 +213,7 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 
 	(*new_info)->proto = proto;
 
-	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
+	if (int_vals[INT_VALS_NODE_ID_COL] != self_id) {
 		he = sip_resolvehost(&st, (unsigned short *) &port,
 			(unsigned short *)&proto, 0, 0);
 		if (!he) {
@@ -259,19 +259,14 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	}
 	(*new_info)->sp_info->node = *new_info;
 
-	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
-		(*new_info)->next = cluster->node_list;
-		cluster->node_list = *new_info;
-		cluster->no_nodes++;
-		if (cluster->no_nodes > MAX_NO_NODES) {
-			LM_ERR("Defined: %d nodes for cluster: %d, maximum number of nodes "
-				"supported(%d) exceeded\n", cluster->no_nodes,
-				cluster->cluster_id, MAX_NO_NODES);
-			goto error;
-		}
-	} else {
-		(*new_info)->next = NULL;
-		cluster->current_node = *new_info;
+	/* whatever can fail comes before the node is linked: the error path frees
+	 * it, and nodes are added at runtime, with the list in use */
+	if (int_vals[INT_VALS_NODE_ID_COL] != self_id &&
+		cluster->no_nodes >= MAX_NO_NODES) {
+		LM_ERR("Defined: %d nodes for cluster: %d, maximum number of nodes "
+			"supported(%d) exceeded\n", cluster->no_nodes + 1,
+			cluster->cluster_id, MAX_NO_NODES);
+		goto error;
 	}
 
 	if (((*new_info)->lock = lock_alloc()) == NULL) {
@@ -282,6 +277,15 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		lock_dealloc((*new_info)->lock);
 		LM_CRIT("Failed to init lock\n");
 		goto error;
+	}
+
+	if (int_vals[INT_VALS_NODE_ID_COL] != self_id) {
+		(*new_info)->next = cluster->node_list;
+		cluster->node_list = *new_info;
+		cluster->no_nodes++;
+	} else {
+		(*new_info)->next = NULL;
+		cluster->current_node = *new_info;
 	}
 
 	return 0;
@@ -382,7 +386,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list)
 	LM_DBG("DB query - retrieve the list of clusters"
 		" in which the local node runs\n");
 
-	VAL_INT(&clusterer_node_id_value) = current_id;
+	VAL_INT(&clusterer_node_id_value) = GET_CURRENT_ID;
 
 	/* first we see in which clusters the local node runs*/
 	if (dr_dbf->query(db_hdl, &clusterer_node_id_key, &op_eq,
@@ -499,12 +503,14 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list)
 			strlen(str_vals[STR_VALS_DESCRIPTION_COL].s) : 0;
 
 		/* add info to backing list */
-		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals)) != 0) {
+		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals
+				, GET_CURRENT_ID
+				)) != 0) {
 			LM_ERR("Unable to add node info to backing list\n");
 			if (rc < 0) {
 				/* serious error happened, better give up */
 				goto error;
-			} else if (int_vals[INT_VALS_NODE_ID_COL] == current_id) {
+			} else if (int_vals[INT_VALS_NODE_ID_COL] == GET_CURRENT_ID) {
 				LM_ERR("Invalid info for local node\n");
 				/* the node info is bogus, but cannot be skipped
 				 * as it is the current node) */
@@ -770,7 +776,9 @@ int provision_neighbor(modparam_t type, void *val)
 		*cluster_list = NULL;
 	}
 
-	if (add_node_info(&new_info, cluster_list, int_vals, str_vals) < 0) {
+	if (add_node_info(&new_info, cluster_list, int_vals, str_vals
+			, GET_CURRENT_ID
+			) < 0) {
 		LM_ERR("Unable to add node info to backing list\n");
 		return -1;
 	}
@@ -803,13 +811,13 @@ int provision_current(modparam_t type, void *val)
 		return -1;
 	}
 
-	if (int_vals[INT_VALS_NODE_ID_COL] == -1 && current_id == -1) {
+	if (int_vals[INT_VALS_NODE_ID_COL] == -1 && GET_CURRENT_ID == -1) {
 		LM_ERR("Node ID not defined. Set either the value of the 'node_id' proprety"
 			" of 'my_node_info' or set 'my_node_id' parameter before 'my_node_info'!\n");
 		return -1;
 	}
-	if (current_id != -1 && int_vals[INT_VALS_NODE_ID_COL] != -1 &&
-		int_vals[INT_VALS_NODE_ID_COL] != current_id) {
+	if (GET_CURRENT_ID != -1 && int_vals[INT_VALS_NODE_ID_COL] != -1 &&
+		int_vals[INT_VALS_NODE_ID_COL] != GET_CURRENT_ID) {
 		LM_ERR("Bad value in 'my_node_info' parameter, node_id: %d different"
 			" than 'my_node_id' parameter\n", int_vals[INT_VALS_NODE_ID_COL]);
 		return -1;
@@ -817,7 +825,7 @@ int provision_current(modparam_t type, void *val)
 	if (int_vals[INT_VALS_NODE_ID_COL] != -1)
 		current_id = int_vals[INT_VALS_NODE_ID_COL];
 	else
-		int_vals[INT_VALS_NODE_ID_COL] = current_id;
+		int_vals[INT_VALS_NODE_ID_COL] = GET_CURRENT_ID;
 
 	int_vals[INT_VALS_STATE_COL] = 1;
 	if (int_vals[INT_VALS_NO_PING_RETRIES_COL] == -1)
@@ -837,7 +845,9 @@ int provision_current(modparam_t type, void *val)
 		*cluster_list = NULL;
 	}
 
-	if (add_node_info(&new_info, cluster_list, int_vals, str_vals) != 0) {
+	if (add_node_info(&new_info, cluster_list, int_vals, str_vals
+			, GET_CURRENT_ID
+			) != 0) {
 		LM_ERR("Unable to add node info to backing list\n");
 		return -1;
 	}
@@ -864,10 +874,10 @@ int update_db_state(int cluster_id, int node_id, int state) {
 	VAL_NULL(&update_val) = 0;
 	VAL_INT(&update_val) = state;
 
-	if (node_id == current_id) {
+	if (node_id == GET_CURRENT_ID) {
 		VAL_TYPE(&node_id_val) = DB_INT;
 		VAL_NULL(&node_id_val) = 0;
-		VAL_INT(&node_id_val) = current_id;
+		VAL_INT(&node_id_val) = GET_CURRENT_ID;
 
 		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
 			&update_val, 1, 1) < 0)
@@ -891,6 +901,7 @@ int update_db_state(int cluster_id, int node_id, int state) {
 void free_node_info(node_info_t *info)
 {
 	struct remote_cap *cap, *tmp_cap;
+	struct neighbour *neigh;
 
 	if (info->url.s)
 		shm_free(info->url.s);
@@ -901,6 +912,14 @@ void free_node_info(node_info_t *info)
 	if (info->lock) {
 		lock_destroy(info->lock);
 		lock_dealloc(info->lock);
+	}
+	if (info->sp_info)
+		shm_free(info->sp_info);
+
+	/* its own links, as its heartbeats reported them */
+	while ((neigh = info->neighbour_list)) {
+		info->neighbour_list = neigh->next;
+		shm_free(neigh);
 	}
 
 	cap = info->capabilities;
@@ -1119,9 +1138,42 @@ void api_free_next_hop(clusterer_node_t *next_hop)
 		free_clusterer_node(next_hop);
 }
 
+/* this node's id: the one all its clusters hold; -1 while a cluster has none
+ * yet, or when two hold different ones (a controller assigns per cluster) */
 int cl_get_my_id(void)
 {
-	return current_id;
+	static int warned;
+	cluster_info_t *cl;
+	int id = -1, cid = 0, c_id;
+
+	if (!cl_list_lock || !cluster_list || !*cluster_list)
+		return GET_CURRENT_ID;
+
+	lock_start_read(cl_list_lock);
+	for (cl = *cluster_list; cl; cl = cl->next) {
+		c_id = cluster_self_id(cl);
+		if (c_id < 0) {
+			id = -1;
+			break;
+		}
+		if (id < 0) {
+			id = c_id;
+			cid = cl->cluster_id;
+		} else if (c_id != id) {
+			if (!warned) {
+				warned = 1;
+				LM_WARN("this node is node %d in cluster %d and node %d in "
+					"cluster %d - get_my_id() returns -1 to a module that asks "
+					"for one node id for all clusters\n", id, cid, c_id,
+					cl->cluster_id);
+			}
+			id = -1;
+			break;
+		}
+	}
+	lock_stop_read(cl_list_lock);
+
+	return id;
 }
 
 int cl_get_my_sip_addr(int cluster_id, str *out_addr)
@@ -1142,6 +1194,13 @@ int cl_get_my_sip_addr(int cluster_id, str *out_addr)
 		lock_stop_read(cl_list_lock);
 		memset(out_addr, 0, sizeof *out_addr);
 		return -1;
+	}
+
+	/* a controller cluster has no identity until its join completes */
+	if (!cl->current_node) {
+		lock_stop_read(cl_list_lock);
+		memset(out_addr, 0, sizeof *out_addr);
+		return 0;
 	}
 
 	lock_get(cl->current_node->lock);
@@ -1170,6 +1229,7 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 	node_info_t *node;
 	cluster_info_t *cl;
 	struct remote_cap *cap;
+	int self;
 
 	lock_start_read(cl_list_lock);
 
@@ -1179,6 +1239,8 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 		lock_stop_read(cl_list_lock);
 		return -1;
 	}
+	/* read under the lock: the current node is replaced at runtime */
+	self = cluster_self_id(cl);
 
 	*nr_nodes = 0;
 	for (node = cl->node_list; node; node = node->next)
@@ -1203,7 +1265,7 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 		sorted[j+1] = tmp;
 	}
 
-	for (i = 0; i < *nr_nodes && sorted[i] < current_id; i++) ;
+	for (i = 0; i < *nr_nodes && sorted[i] < self; i++) ;
 
 	(*nr_nodes)++;
 	return i;

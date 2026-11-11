@@ -36,14 +36,23 @@
 #define DEFAULT_PING_INTERVAL 4
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
+/* unset, with a controller cluster: a 1 s timeout under load flaps the links
+ * of its full mesh, and every flap is news to every node */
+#define CL_CTR_PING_TIMEOUT 3000
+/* controller: first probes to a new node spread over this much per node, capped */
+#define CL_CTR_PROBE_SPREAD_MS 50
+#define CL_CTR_PROBE_SPREAD_MAX_MS 3000
 #define DEFAULT_SEED_FB_INTERVAL 5
 #define DEFAULT_SYNC_TIMEOUT 15
 #define SYNC_CHECK_INTERVAL 500 /* ms */
+/* a sync cut short (controller: donor left, timeout) or left unanswered is
+ * asked again this often */
+#define CL_CTR_SYNC_RETRIES 3
 #define UPDATE_MAX_PATH_LEN 25
 #define SMALL_MSG 300
 
 #define TAG_RAND_LEN 24
-#define TAG_FIX_MAXLEN 6	/* "XX-YY-" */
+#define TAG_FIX_MAXLEN (2 * INT2STR_MAX_LEN)	/* "<cluster id>-<node id>-" */
 #define AGG_DST_ID    0xC0000000
 
 /* node flags */
@@ -51,6 +60,11 @@
 #define NODE_EVENT_DOWN		(1<<1)
 #define NODE_EVENT_UP		(1<<2)
 #define NODE_IS_SEED		(1<<3)
+#define NODE_LINK_HELD		(1<<4)	/* controller: probing, kept until it fails */
+#define NODE_HEARD		(1<<5)	/* controller: its multicast heartbeat is current */
+#define NODE_REACH		(1<<6)	/* controller: last reachability raised to modules */
+#define NODE_CAPS_NEW		(1<<7)	/* controller: a heartbeat changed its capability states */
+#define NODE_EVENT_BOUNCE	(1<<8)	/* controller: an up follows the queued down */
 
 /* capability flags */
 #define CAP_STATE_OK         (1<<0)
@@ -58,6 +72,10 @@
 #define CAP_SYNC_PENDING     (1<<2)
 #define CAP_SYNC_IN_PROGRESS (1<<3)
 #define CAP_STATE_ENABLED    (1<<4)
+#define CAP_SYNC_WANTED      (1<<5)  /* registered with startup_sync */
+/* controller lone seed: synced (not pending), but syncs from the first peer
+ * that comes up ready for the capability */
+#define CAP_SYNC_FIRST_PEER  (1<<6)
 
 #define CAP_DISABLED 0
 #define CAP_ENABLED  1
@@ -120,6 +138,9 @@ struct local_cap {
 	int last_sync_pkt;
 	int sync_total_chunks_cnt;
 	int sync_cur_chunks_cnt;
+	int sync_donor;		/* the node asked for the sync under way, 0: none */
+	unsigned int sync_req_ticks;	/* get_ticks() when sync_donor was asked */
+	int sync_retries;	/* syncs asked again since the last one that completed */
 	unsigned int flags;
 	struct local_cap *next;
 };
@@ -131,7 +152,10 @@ struct remote_cap {
 };
 
 struct packet_rpc_params {
-	struct capability_reg *cap;
+	/* the capability's callbacks, not the capability: a reload frees that
+	 * before the job runs */
+	cl_packet_cb_f packet_cb;
+	cl_event_cb_f event_cb;
 	int cluster_id;
 	int pkt_src_id;
 	int pkt_type;
@@ -168,6 +192,45 @@ extern str cap_sr_details_str[];
 
 extern int dispatch_jobs;
 
+/* above 0 while this process is in a module callback that is run with
+ * cl_list_lock held: what the module calls from it does not take it again */
+extern int cl_locked_cb;
+
+/* bin_pop_int(), bin_pop_str() and bin_pop_back_int() for what the network
+ * sent: the same results, without the core's error line per short packet */
+static inline int cl_pop_int(bin_packet_t *packet, int *val)
+{
+	long left = packet->buffer.s + packet->buffer.len - packet->front_pointer;
+
+	if (left < (long)sizeof(int))
+		return left == 0 ? 1 : -1;
+
+	return bin_pop_int(packet, val);
+}
+
+static inline int cl_pop_str(bin_packet_t *packet, str *val)
+{
+	long left = packet->buffer.s + packet->buffer.len - packet->front_pointer;
+	int len = 0;
+
+	if (left < (long)LEN_FIELD_SIZE)
+		return left == 0 ? 1 : -1;
+	/* read as bin_pop_str() reads it */
+	memcpy(&len, packet->front_pointer, LEN_FIELD_SIZE);
+	if (left - (long)LEN_FIELD_SIZE < len)
+		return -1;
+
+	return bin_pop_str(packet, val);
+}
+
+static inline int cl_pop_back_int(bin_packet_t *packet, int *val)
+{
+	if (packet->buffer.len < (int)(MIN_BIN_PACKET_SIZE + sizeof(int)))
+		return -1;
+
+	return bin_pop_back_int(packet, val);
+}
+
 void sync_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
@@ -176,11 +239,14 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
 
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
+int cl_get_my_id_in(int cluster_id);
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	int cluster_id, int dst_id, int check_cap, int locked);
 int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
 							int cap_state);
 int send_cap_update(struct node_info *dest_node, int require_reply);
+void cl_ctr_caps_changed(struct cluster_info *cl, struct node_info *node);
+void cl_ctr_link_back(struct cluster_info *cl, struct node_info *node);
 void do_actions_node_ev(struct cluster_info *clusters, int *select_cluster,
 								int no_clusters);
 
@@ -215,6 +281,9 @@ int mi_cap_set_state(int cluster_id, str *capability, int status);
 int get_capability_status(struct cluster_info *cluster, str *capability);
 
 int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
+/* 1 if @cmd_name, by any of its names, is an MI command of this module that
+ * changes membership, maintenance or sharing tags */
+int cl_mi_cmd_changes_cluster(str *cmd_name);
 
 int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
 	int cluster_id);
