@@ -849,7 +849,7 @@ static void udp_process_graceful_terminate(int sender, void *param)
 
 
 /* starts all UDP related processes */
-int udp_start_processes(int *chd_rank, int *startup_done)
+int udp_start_processes(int *chd_rank, atomic_t *startup_done)
 {
 	struct socket_info_full *sif;
 	int p_id;
@@ -900,20 +900,20 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 							init_child(*chd_rank) < 0) {
 						report_failure_status();
 						if (*chd_rank == 1 && startup_done)
-							*startup_done = -1;
+							atomic_store(startup_done, -1);
 						exit(-1);
 					}
 
-					/* first UDP proc runs statup_route (if defined) */
+					/* Only the first SIP worker owns the startup flag. */
 					if(*chd_rank == 1 && startup_done!=NULL) {
 						LM_DBG("running startup for first UDP\n");
 						if(run_startup_route()< 0) {
 							report_failure_status();
-							*startup_done = -1;
+							atomic_store(startup_done, -1);
 							LM_ERR("Startup route processing failed\n");
 							exit(-1);
 						}
-						*startup_done = 1;
+						atomic_store(startup_done, 1);
 					}
 
 					report_conditional_status( (!no_daemon_mode), 0);
@@ -935,11 +935,14 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					if (si->worker_slots)
 						((struct udp_worker_slots *)si->worker_slots)->proc[i] = p_id;
 					/* wait for first proc to finish the startup route */
-					if (*chd_rank == 1 && startup_done)
-						while(!(*startup_done)) {
+					if (*chd_rank == 1 && startup_done) {
+						while (atomic_load(startup_done) == 0) {
 							usleep(5);
 							handle_sigs();
 						}
+						if (atomic_load(startup_done) != 1)
+							goto error;
+					}
 				}
 			} /* procs per listener */
 		} /* looping through the listeners per proto */

@@ -251,7 +251,7 @@ static const struct main_script main_script[] = {
 static int main_loop(void)
 {
 	static int chd_rank;
-	int* startup_done = NULL;
+	atomic_t *startup_done = NULL;
 	utime_t last_check = 0;
 	int rc;
 	static struct internal_fork_handler profiling_handler = {
@@ -269,12 +269,12 @@ static int main_loop(void)
 	}
 
 	if(sroutes->startup.a) {/* if a startup route was defined */
-		startup_done = (int*)shm_malloc(sizeof(int));
+		startup_done = shm_malloc(sizeof(*startup_done));
 		if(startup_done == NULL) {
 			LM_ERR("No more shared memory\n");
 			goto error;
 		}
-		*startup_done = 0;
+		atomic_init(startup_done, 0);
 	}
 
 	/* fork for the timer process*/
@@ -311,8 +311,12 @@ static int main_loop(void)
 	bind_address=0;
 
 	if (startup_done) {
-		if (*startup_done==0)
+		if (atomic_load(startup_done) != 1) {
 			LM_CRIT("BUG: startup route defined, but not run :( \n");
+			goto error;
+		}
+		/* Only the first SIP worker accesses the flag, and its final
+		 * store was observed before starting the remaining workers. */
 		shm_free(startup_done);
 	}
 
