@@ -2158,7 +2158,7 @@ int tcp_count_processes(unsigned int *extra)
 }
 
 
-int tcp_start_processes(int *chd_rank, int *startup_done)
+int tcp_start_processes(int *chd_rank, atomic_t *startup_done)
 {
 	int r, n, p_id;
 	int reader_fd[2]; /* for comm. with the tcp workers read  */
@@ -2209,6 +2209,15 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			tcp_workers[r].state=STATE_ACTIVE;
 			tcp_workers[r].n_reqs=0;
 			tcp_workers[r].pt_idx=p_id;
+			/* Wait for the startup owner before forking more workers. */
+			if (*chd_rank == 1 && startup_done) {
+				while (atomic_load(startup_done) == 0) {
+					usleep(5);
+					handle_sigs();
+				}
+				if (atomic_load(startup_done) != 1)
+					goto error;
+			}
 		}else{
 			/* child */
 			set_proc_attrs("TCP receiver");
@@ -2217,21 +2226,22 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 					init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				report_failure_status();
-				if (startup_done)
-					*startup_done = -1;
+				if (*chd_rank == 1 && startup_done)
+					atomic_store(startup_done, -1);
 				exit(-1);
 			}
 
-			/* was startup route executed so far ? */
-			if (startup_done!=NULL && *startup_done==0 && r==0) {
-				LM_DBG("running startup for first TCP\n");
-				if(run_startup_route()< 0) {
-					LM_ERR("Startup route processing failed\n");
+			/* Only the first SIP worker owns the startup flag.  In a mixed
+			 * setup the first UDP worker has already run the startup route. */
+			if (*chd_rank == 1 && startup_done) {
+				LM_DBG("running startup route for first TCP worker\n");
+				if (run_startup_route() < 0) {
+					LM_ERR("startup route processing failed in TCP worker\n");
 					report_failure_status();
-					*startup_done = -1;
+					atomic_store(startup_done, -1);
 					exit(-1);
 				}
-				*startup_done = 1;
+				atomic_store(startup_done, 1);
 			}
 
 			report_conditional_status( (!no_daemon_mode), 0);
@@ -2239,13 +2249,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			tcp_worker_proc_loop();
 		}
 	}
-
-	/* wait for the startup route to be executed */
-	if (startup_done)
-		while (!(*startup_done)) {
-			usleep(5);
-			handle_sigs();
-		}
 
 	return 0;
 error:
