@@ -1061,8 +1061,9 @@ static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* re
 
 	/* re-assemble the whole body, with all its existing parts */
 
-	/* calculate the new len */
-	out.len = prep_reassemble_body_parts( msg, msg->rcv.bind_address );
+	/* calculate the new len; the SIP headers are left as they are, since
+	 * the output goes to a variable and the message is not changed */
+	out.len = prep_reassemble_body_parts_ex( msg, msg->rcv.bind_address, 0);
 
 	/* get the new buffer */
 	if (out.s)
