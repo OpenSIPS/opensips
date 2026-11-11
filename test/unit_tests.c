@@ -55,8 +55,10 @@ void init_unit_tests(void)
 int run_unit_tests(void)
 {
 	char *error;
+	const char *base;
 	void *mod_handle;
 	mod_tests_f mod_tests;
+	struct sr_module *mod;
 
 	/* core tests */
 	if (!strcmp(testing_module, "core")) {
@@ -73,6 +75,14 @@ int run_unit_tests(void)
 	/* module tests */
 	} else {
 		mod_handle = get_mod_handle(testing_module);
+		/* a module may register under a name other than its file's */
+		for (mod = modules; !mod_handle && mod; mod = mod->next) {
+			base = strrchr(mod->path, '/');
+			base = base ? base + 1 : mod->path;
+			if (!strncmp(base, testing_module, strlen(testing_module)) &&
+			        !strcmp(base + strlen(testing_module), ".so"))
+				mod_handle = mod->handle;
+		}
 		if (!mod_handle) {
 			LM_ERR("module not loaded / not found: '%s'\n", testing_module);
 			return -1;
