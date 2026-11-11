@@ -41,6 +41,7 @@ void handle_pong(bin_packet_t *received, node_info_t *src_node,
 	struct timeval rcv_time, int *ev_actions_required);
 
 int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh);
+void cl_ctr_reach_update_locked(node_info_t *node);
 int set_link_w_neigh_adv(int prev_ls, clusterer_link_state new_ls,
 						node_info_t *neigh);
 int delete_neighbour(node_info_t *from_node, node_info_t *to_delete_n);

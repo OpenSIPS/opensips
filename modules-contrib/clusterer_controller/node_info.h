@@ -94,6 +94,7 @@ struct node_info {
 	int last_ping_state;				/* state(success/error) of the last ping sent to this node */
 	struct timeval last_ping, last_sent;  /* last ping/packet sent to this node */
 	struct timeval last_pong, last_recv;  /* last pong/packet received from this node */
+	struct timeval probe_after;         /* controller: no first probe before this */
 	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
 	int ls_seq_no;                      /* sequence number of the last link state update */
 	int top_seq_no;                     /* sequence number of the last topology update message */
@@ -137,6 +138,17 @@ struct cluster_info {
 
 	cluster_bridge_t *bridges;          /* replication links to other clusters */
 
+	/* set by the controller (manage_shtags=1): blocks MI/script shtag changes */
+	int shtag_managed;
+
+	/* 1 = topology and identity driven by the controller (cluster_options
+	 * use_controller=1), never the DB; 0 = native (DB or static) */
+	int controller_managed;
+	/* BIN from nodes outside a controller-managed cluster: ignored since
+	 * the last warning, and when that was (at most one a minute) */
+	unsigned int ctrl_strangers;
+	time_t ctrl_strangers_warned;
+
 	struct cluster_info *next;
 };
 
@@ -167,16 +179,47 @@ extern str clnk_shtag_col;
 extern str clnk_dst_node_col;
 
 extern int current_id;
+
+/* ids are (re)assigned at runtime, maybe per cluster: cluster_self_id() and this
+ * shm copy (seen by every process after fork) are authoritative, not current_id */
+extern int *_current_id_shm;
+#define GET_CURRENT_ID (_current_id_shm ? *_current_id_shm : current_id)
+
+/* -1 (matches no node) until this cluster's identity is set, so an unjoined
+ * cluster never matches or stamps a real id */
+static inline int cluster_self_id(const struct cluster_info *cl)
+{
+	return (cl && cl->current_node) ? cl->current_node->node_id : -1;
+}
+extern int use_controller;   /* 1 if any cluster_options sets use_controller=1 */
+/* cluster_ids declared controller-managed via cluster_options (use_controller=1) */
+extern int cl_ctr_stub_ids[];
+extern int cl_ctr_stub_count;
+
 extern int db_mode;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
+
+/* controller-managed clusters never use the DB: db_mode=0 for them even when
+ * native clusters are DB-backed */
+static inline int cl_db_mode(const struct cluster_info *cl)
+{
+	return (cl && cl->controller_managed) ? 0 : db_mode;
+}
+
+/* a controller-managed cluster admits nodes only via the controller's JOIN, never
+ * wire discovery - else an expelled node re-enters via NODE_DESCRIPTION */
+static inline int cl_ctr_owns_membership(const struct cluster_info *cl)
+{
+	return cl && cl->controller_managed;
+}
 
 int update_db_state(int cluster_id, int node_id, int state);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
-					str *str_vals);
+					str *str_vals, int self_id);
 void remove_node_list(cluster_info_t *cl, node_info_t *node);
 
 int provision_neighbor(modparam_t type, void* val);
@@ -196,6 +239,7 @@ static inline cluster_info_t *get_cluster_by_id(int cluster_id)
 {
 	cluster_info_t *cl;
 
+	if (!cluster_list || !*cluster_list) return NULL;
 	for (cl = *cluster_list; cl; cl = cl->next)
 		if (cl->cluster_id == cluster_id)
 			return cl;

@@ -34,6 +34,9 @@ struct reply_rpc_params {
 };
 
 int cl_request_sync(str *capability, int cluster_id, int from_cb);
+/* as cl_request_sync(), from @prefer_id when it can serve it */
+int cl_request_sync_from(str *capability, int cluster_id, int from_cb,
+                         int prefer_id);
 bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
                                   short data_version);
 int cl_sync_chunk_iter(bin_packet_t *packet);

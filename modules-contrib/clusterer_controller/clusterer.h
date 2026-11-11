@@ -36,6 +36,12 @@
 #define DEFAULT_PING_INTERVAL 4
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
+/* unset, with a controller cluster: a 1 s timeout under load flaps the links
+ * of its full mesh, and every flap is news to every node */
+#define CL_CTR_PING_TIMEOUT 3000
+/* controller: first probes to a new node spread over this much per node, capped */
+#define CL_CTR_PROBE_SPREAD_MS 50
+#define CL_CTR_PROBE_SPREAD_MAX_MS 3000
 #define DEFAULT_SEED_FB_INTERVAL 5
 #define DEFAULT_SYNC_TIMEOUT 15
 #define SYNC_CHECK_INTERVAL 500 /* ms */
@@ -43,7 +49,7 @@
 #define SMALL_MSG 300
 
 #define TAG_RAND_LEN 24
-#define TAG_FIX_MAXLEN 6	/* "XX-YY-" */
+#define TAG_FIX_MAXLEN (2 * INT2STR_MAX_LEN)	/* "<cluster id>-<node id>-" */
 #define AGG_DST_ID    0xC0000000
 
 /* node flags */
@@ -51,6 +57,10 @@
 #define NODE_EVENT_DOWN		(1<<1)
 #define NODE_EVENT_UP		(1<<2)
 #define NODE_IS_SEED		(1<<3)
+#define NODE_LINK_HELD		(1<<4)	/* controller: probing, kept until it fails */
+#define NODE_HEARD		(1<<5)	/* controller: its multicast heartbeat is current */
+#define NODE_REACH		(1<<6)	/* controller: last reachability raised to modules */
+#define NODE_CAPS_NEW		(1<<7)	/* controller: a heartbeat changed its capability states */
 
 /* capability flags */
 #define CAP_STATE_OK         (1<<0)
@@ -58,6 +68,7 @@
 #define CAP_SYNC_PENDING     (1<<2)
 #define CAP_SYNC_IN_PROGRESS (1<<3)
 #define CAP_STATE_ENABLED    (1<<4)
+#define CAP_SYNC_WANTED      (1<<5)  /* registered with startup_sync */
 
 #define CAP_DISABLED 0
 #define CAP_ENABLED  1
@@ -181,6 +192,7 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
 							int cap_state);
 int send_cap_update(struct node_info *dest_node, int require_reply);
+void cl_ctr_caps_changed(struct cluster_info *cl, struct node_info *node);
 void do_actions_node_ev(struct cluster_info *clusters, int *select_cluster,
 								int no_clusters);
 

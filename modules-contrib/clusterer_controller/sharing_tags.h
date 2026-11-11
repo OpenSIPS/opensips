@@ -43,6 +43,8 @@ int send_shtag_active_info(int c_id, str *tag_name, int node_id);
 void shtag_flush_state(int c_id, int node_id);
 
 void shtag_event_handler(int cluster_id, enum clusterer_event ev, int node_id);
+int  shtag_activate_all_backup(int cluster_id);
+int  shtag_force_all_backup(int cluster_id);
 
 mi_response_t *shtag_mi_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);

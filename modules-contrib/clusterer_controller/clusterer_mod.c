@@ -39,16 +39,144 @@
 #include "clusterer.h"
 #include "sync.h"
 #include "sharing_tags.h"
+#include "clusterer_ctrl.h"
+#include "cl_ctr_mod.h"
+#include "cl_ctr_data.h"   /* mcast_* parameters */
 #include "clusterer_evi.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
-int ping_timeout = DEFAULT_PING_TIMEOUT;
+int ping_timeout = -1;	/* -1: unset, see mod_init() */
 int seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;
 int sync_timeout = DEFAULT_SYNC_TIMEOUT;
 int current_id = -1;
 int db_mode = 1;
 int clusterer_enable_rerouting = 1;
+
+int *_current_id_shm = NULL;
+int use_controller = 0;
+
+int cl_ctr_stub_ids[64];
+int cl_ctr_stub_count = 0;
+
+/* str_trim_spaces_lr() leaves a negative length on a blank string */
+static void cl_ctr_opt_trim(str *s)
+{
+	while (s->len > 0 && (s->s[0] == ' ' || s->s[0] == '\t')) {
+		s->s++;
+		s->len--;
+	}
+	while (s->len > 0 && (s->s[s->len - 1] == ' ' || s->s[s->len - 1] == '\t'))
+		s->len--;
+}
+
+/* "key=value, ...": only cluster_id and use_controller, each at most once, with
+ * an unsigned value; a key left out keeps its value in @cid / @uc */
+int cl_ctr_parse_options(str *descr, int *cid, int *uc)
+{
+	static str keys[2] = {str_init("cluster_id"), str_init("use_controller")};
+	int *outs[2] = {cid, uc}, seen[2] = {0, 0}, k;
+	char *p = descr->s, *end = descr->s + descr->len, *pe, *eq;
+	str seg, key, val;
+
+	for (; p < end; p = pe + 1) {
+		pe = q_memchr(p, ',', end - p);
+		if (!pe)
+			pe = end;
+		seg.s = p;
+		seg.len = pe - p;
+		cl_ctr_opt_trim(&seg);
+		if (seg.len == 0)
+			continue;
+		eq = q_memchr(seg.s, '=', seg.len);
+		if (!eq) {
+			LM_ERR("clusterer: expected key=value in cluster_options, got "
+				"'%.*s'\n", seg.len, seg.s);
+			return -1;
+		}
+		key.s = seg.s;
+		key.len = eq - seg.s;
+		cl_ctr_opt_trim(&key);
+		val.s = eq + 1;
+		val.len = seg.s + seg.len - val.s;
+		cl_ctr_opt_trim(&val);
+		for (k = 0; k < 2 && str_strcmp(&key, &keys[k]); k++)
+			;
+		if (k == 2) {
+			LM_ERR("clusterer: unknown key '%.*s' in cluster_options (known: "
+				"cluster_id, use_controller)\n", key.len, key.s);
+			return -1;
+		}
+		if (seen[k]++) {
+			LM_ERR("clusterer: '%.*s' given twice in cluster_options\n",
+				key.len, key.s);
+			return -1;
+		}
+		if (val.len == 0 || str2int(&val, (unsigned int *)outs[k])) {
+			LM_ERR("clusterer: bad value for '%.*s' in cluster_options\n",
+				key.len, key.s);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/* "cluster_id=N, use_controller=0|1" (default 0 = native); only use_controller=1
+ * registers the cluster, whose identity and peers the controller then drives */
+static int cl_ctr_add_cluster_options(modparam_t type, void *val)
+{
+	str descr;
+	int cid = -1, uc = 0, i;
+
+	if (!val || !*(char *)val) {
+		LM_ERR("clusterer: empty 'cluster_options'\n");
+		return -1;
+	}
+	descr.s = (char *)val;
+	descr.len = strlen(descr.s);
+
+	if (cl_ctr_parse_options(&descr, &cid, &uc) < 0)
+		return -1;
+	if (cid < 1) {
+		LM_ERR("clusterer: 'cluster_options' requires cluster_id >= 1, "
+			"e.g. \"cluster_id=1, use_controller=1\"\n");
+		return -1;
+	}
+
+	if (uc != 0 && uc != 1) {
+		LM_ERR("clusterer: use_controller in 'cluster_options' must be 0 or 1 "
+			"(cluster_id %d)\n", cid);
+		return -1;
+	}
+
+	if (uc == 0)
+		return 0;   /* native (the default): nothing to register */
+
+	for (i = 0; i < cl_ctr_stub_count; i++)
+		if (cl_ctr_stub_ids[i] == cid) {
+			LM_ERR("clusterer: cluster_options declares cluster_id %d as "
+				"controller-managed more than once\n", cid);
+			return -1;
+		}
+	if (cl_ctr_stub_count >= (int)(sizeof cl_ctr_stub_ids / sizeof cl_ctr_stub_ids[0])) {
+		LM_ERR("clusterer: too many controller-managed clusters\n");
+		return -1;
+	}
+	cl_ctr_stub_ids[cl_ctr_stub_count++] = cid;
+	use_controller = 1;
+	return 0;
+}
+
+/* retired interim modparams (never released): kept only to fail with a
+ * migration hint instead of "unknown parameter" */
+static int cl_ctr_retired_param(modparam_t type, void *val)
+{
+	LM_ERR("clusterer: the 'use_controller'/'cluster_id' modparams have been "
+		"replaced; declare each controller-managed cluster with "
+		"modparam(\"clusterer\", \"cluster_options\", "
+		"\"cluster_id=N, use_controller=1\")\n");
+	return -1;
+}
 
 str clusterer_db_url = {NULL, 0};
 
@@ -130,6 +258,19 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
+	/* the controller */
+	{"cl_ctr_set_maintenance", (cmd_function)w_cl_ctr_set_maintenance, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_STR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+	{"cl_ctr_node_is_master", (cmd_function)w_cl_ctr_node_is_master, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+	{"cl_ctr_node_present", (cmd_function)w_cl_ctr_node_present, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+	{"cl_ctr_get_node_role", (cmd_function)w_cl_ctr_get_node_role, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+	{"cl_ctr_get_node_maint", (cmd_function)w_cl_ctr_get_node_maint, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
+	{"cl_ctr_get_node_ip", (cmd_function)w_cl_ctr_get_node_ip, {
+		{CMD_PARAM_INT, 0, 0}, {CMD_PARAM_INT, 0, 0}, {CMD_PARAM_VAR, 0, 0}, {0, 0, 0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -158,6 +299,9 @@ static const param_export_t params[] = {
 	{"flags_col",			STR_PARAM,	&flags_col.s		},
 	{"description_col",		STR_PARAM,	&description_col.s	},
 	{"db_mode",				INT_PARAM,	&db_mode			},
+	{"cluster_options",			STR_PARAM|USE_FUNC_PARAM, (void*)cl_ctr_add_cluster_options},
+	{"use_controller",			INT_PARAM|USE_FUNC_PARAM, (void*)cl_ctr_retired_param},
+	{"cluster_id",				INT_PARAM|USE_FUNC_PARAM, (void*)cl_ctr_retired_param},
 	{"neighbor_node_info",	STR_PARAM|USE_FUNC_PARAM,
 		(void*)&provision_neighbor},
 	{"my_node_info",		STR_PARAM|USE_FUNC_PARAM,
@@ -167,6 +311,19 @@ static const param_export_t params[] = {
 	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
 	{"dispatch_jobs",		INT_PARAM,	&dispatch_jobs		},
 	{"enable_rerouting",		INT_PARAM,	&clusterer_enable_rerouting	},
+	/* the controller */
+	{"cluster",    STR_PARAM | USE_FUNC_PARAM, (void *)cl_ctr_add_cluster_param},
+	{"my_ip",      STR_PARAM, &my_ip},
+	{"interface",  STR_PARAM, &my_interface},
+	{"query_time", INT_PARAM, &query_time},
+	{"password",      STR_PARAM, &password},
+	{"manage_shtags", INT_PARAM, &manage_shtags},
+	{"master_stickiness", INT_PARAM, &master_stickiness},
+	{"release_tag_when_isolated", INT_PARAM, &release_tag_when_isolated},
+	{"on_config_mismatch", STR_PARAM, &on_config_mismatch_s},
+	{"mcast_broadcasts", INT_PARAM, &mcast_broadcasts},
+	{"mcast_workers",    INT_PARAM, &mcast_workers},
+	{"mcast_window",     INT_PARAM, &mcast_window},
 	{0, 0, 0}
 };
 
@@ -221,6 +378,66 @@ static const mi_export_t mi_cmds[] = {
 		{cluster_remove_node, {"cluster_id", "node_id", 0}},
 		{EMPTY_MI_RECIPE}}, {"clusterer_remove_node", 0}
 	},
+	/* the controller */
+	{
+		"list_members",
+		"List all current cluster members with node_id, status and BIN sockets",
+		0, 0,
+		{
+			{mi_cl_ctr_members, {0}},
+			{EMPTY_MI_RECIPE}
+		}, {"cl_ctr_list_members", 0}
+	},
+	{
+		"node_info",
+		"Return full info for a node_id across all clusters",
+		0, 0,
+		{
+			{mi_cl_ctr_node_info, {"node_id", 0}},
+			{EMPTY_MI_RECIPE}
+		}, {"cl_ctr_node_info", 0}
+	},
+	{
+		"list_config",
+		"List all configured clusters and their resolved settings",
+		0, 0,
+		{
+			{mi_cl_ctr_config, {0}},
+			{EMPTY_MI_RECIPE}
+		}, {"cl_ctr_list_config", 0}
+	},
+	{
+		"maintenance",
+		"Put this node, or node_id, in or out of maintenance (state: "
+		"evicted|full|none): it stays a member but is never master or backup "
+		"and holds no sharing tag; at full, clusterer also stops sending it "
+		"replication",
+		0, 0,
+		{
+			{mi_cl_ctr_maintenance, {"cluster_id", "state", 0}},
+			{mi_cl_ctr_maintenance_node, {"cluster_id", "state", "node_id", 0}},
+			{EMPTY_MI_RECIPE}
+		}, {"cl_ctr_maintenance", 0}
+	},
+	{
+		"shtag_force",
+		"Force a node to hold the active sharing tag (master only); "
+		"suspends automatic allocation until clusterer:shtag_auto",
+		0, 0,
+		{
+			{mi_cl_ctr_shtag_force, {"cluster_id", "node_id", 0}},
+			{EMPTY_MI_RECIPE}
+		}, {"cl_ctr_shtag_force", 0}
+	},
+	{
+		"shtag_auto",
+		"Resume automatic master-driven sharing-tag allocation (master only)",
+		0, 0,
+		{
+			{mi_cl_ctr_shtag_auto, {"cluster_id", 0}},
+			{EMPTY_MI_RECIPE}
+		}, {"cl_ctr_shtag_auto", 0}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
@@ -228,6 +445,27 @@ static const mi_export_t mi_cmds[] = {
 static const pv_export_t mod_vars[] = {
 	{ str_const_init("cluster.sh_tag"), 1000, var_get_sh_tag,
 		var_set_sh_tag,  var_parse_sh_tag_name , 0, 0, 0 },
+	/* the controller */
+	{ {"cl_ctr_role",        sizeof("cl_ctr_role")-1},        1100,
+		cl_ctr_pv_role,        0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_is_master",   sizeof("cl_ctr_is_master")-1},   1101,
+		cl_ctr_pv_is_master,   0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_master_ip",   sizeof("cl_ctr_master_ip")-1},   1102,
+		cl_ctr_pv_master_ip,   0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_backup_ip",   sizeof("cl_ctr_backup_ip")-1},   1103,
+		cl_ctr_pv_backup_ip,   0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_node_id",     sizeof("cl_ctr_node_id")-1},     1104,
+		cl_ctr_pv_node_id,     0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_my_ip",       sizeof("cl_ctr_my_ip")-1},       1105,
+		cl_ctr_pv_my_ip,       0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_members",     sizeof("cl_ctr_members")-1},     1106,
+		cl_ctr_pv_members,     0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_shtag_mode",  sizeof("cl_ctr_shtag_mode")-1},  1107,
+		cl_ctr_pv_shtag_mode,  0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_forced_node", sizeof("cl_ctr_forced_node")-1}, 1108,
+		cl_ctr_pv_forced_node, 0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
+	{ {"cl_ctr_maintenance", sizeof("cl_ctr_maintenance")-1}, 1109,
+		cl_ctr_pv_maint,       0, cl_ctr_pv_parse_cluster, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -296,7 +534,7 @@ struct module_exports exports = {
 	mi_cmds,				/* exported MI functions */
 	mod_vars,				/* exported variables */
 	0,						/* exported transformations */
-	0,						/* extra processes */
+	cl_ctr_procs,			/* extra processes */
 	0,						/* module pre-initialization function */
 	mod_init,				/* module initialization function */
 	0,						/* response handling function */
@@ -373,8 +611,20 @@ static int mod_init(void)
 {
 	int heartbeats_timer_interval;
 	cluster_info_t *cl;
+	struct sr_module *m;
+	int same_name = 0;
 
 	LM_INFO("Clusterer module - initializing\n");
+
+	/* clusterer.so and clusterer_controller.so are both named clusterer */
+	for (m = modules; m; m = m->next)
+		if (m->exports && !strcmp(m->exports->name, exports.name))
+			same_name++;
+	if (same_name > 1) {
+		LM_ERR("clusterer_controller.so replaces clusterer.so - load only one "
+			"of them\n");
+		return -1;
+	}
 
 	db_table.len = strlen(db_table.s);
 	db_bridges_table.len = strlen(db_bridges_table.s);
@@ -389,13 +639,22 @@ static int mod_init(void)
 	flags_col.len = strlen(flags_col.s);
 	description_col.len = strlen(description_col.s);
 
+	/* no DB URL means no DB-native clusters: db_mode 0, so controller-only and
+	 * static (my_node_info) setups need no explicit db_mode=0 */
+	if (!clusterer_db_url.s && !db_default_url)
+		db_mode = 0;
+
 	/* only allow the DB URL to be skipped in "P2P discovery" mode */
 	init_db_url(clusterer_db_url, db_mode == 0);
 
-	if (current_id < 1) {
-		LM_CRIT("Invalid 'my_node_id' parameter\n");
+	/* controller clusters get their id at runtime: my_node_id is required only
+	 * for native (DB or static) clusters */
+	if (current_id < 1 && (db_mode != 0 || (cluster_list && *cluster_list != NULL))) {
+		LM_CRIT("Invalid 'my_node_id' parameter (required for DB or static native clusters)\n");
 		return -1;
 	}
+	if (ping_timeout == -1)
+		ping_timeout = use_controller ? CL_CTR_PING_TIMEOUT : DEFAULT_PING_TIMEOUT;
 	if (ping_interval <= 0) {
 		LM_WARN("Invalid ping_interval parameter, using default value\n");
 		ping_interval = DEFAULT_PING_INTERVAL;
@@ -421,6 +680,17 @@ static int mod_init(void)
 		LM_CRIT("Failed to init lock\n");
 		return -1;
 	}
+	{
+		int *_shm_id = shm_malloc(sizeof(int));
+		if (!_shm_id) {
+			LM_CRIT("No shm memory for GET_CURRENT_ID\n");
+			return -1;
+		}
+		/* my_node_id for native clusters; -1 (matches no node) only on a
+		 * controller-only node, whose id comes at runtime */
+		*_shm_id = (current_id >= 1) ? current_id : -1;
+		_current_id_shm = _shm_id;
+	}
 
 	/* if statistics are disabled, prevent their registration to core */
 	if (clusterer_enable_stats==0)
@@ -445,12 +715,14 @@ static int mod_init(void)
 
 			if (cl->current_node->node_id != current_id) {
 				LM_ERR("Bad 'my_node_id' parameter, value: %d different than"
-					" the node_id property in the 'my_node_info' parameter\n", current_id);
+					" the node_id property in the 'my_node_info' parameter\n", GET_CURRENT_ID);
 				goto error;
 			}
 		}
 	}
 
+	/* DB-native clusters load even with the controller active (hybrid); the DB
+	 * never holds controller clusters */
 	if (db_mode) {
 		/* bind to the mysql module */
 		if (db_bind_mod(&clusterer_db_url, &dr_dbf)) {
@@ -471,9 +743,49 @@ static int mod_init(void)
 			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
-
 		dr_dbf.close(db_hdl);
 		db_hdl = NULL;
+	}
+
+	/* a stub per controller-managed cluster_id, so tm/dialog cl_register_cap()
+	 * works before the controller sets identity; a native overlap fails here */
+	if (use_controller) {
+		int _ci;
+		for (_ci = 0; _ci < cl_ctr_stub_count; _ci++) {
+			cluster_info_t *_ex;
+			for (_ex = *cluster_list; _ex; _ex = _ex->next)
+				if (_ex->cluster_id == cl_ctr_stub_ids[_ci]) {
+					LM_ERR("clusterer: cluster_id %d is registered as "
+						"controller-managed (cluster_options use_controller=1) but is "
+						"already defined via native config "
+						"(my_node_info/neighbor_node_info/DB) or listed "
+						"twice - a cluster_id must be unique and either "
+						"controller-managed or native, not both\n",
+						cl_ctr_stub_ids[_ci]);
+					return -1;
+				}
+
+			cluster_info_t *_cl = shm_malloc(sizeof *_cl);
+			if (!_cl) {
+				LM_ERR("clusterer: no shm for cluster %d stub\n",
+				       cl_ctr_stub_ids[_ci]);
+				return -1;
+			}
+			memset(_cl, 0, sizeof *_cl);
+			_cl->cluster_id = cl_ctr_stub_ids[_ci];
+			_cl->controller_managed = 1;
+			_cl->lock = lock_alloc();
+			if (!_cl->lock || lock_init(_cl->lock) == NULL) {
+				LM_ERR("clusterer: lock_alloc failed for cluster %d\n",
+				       cl_ctr_stub_ids[_ci]);
+				shm_free(_cl);
+				return -1;
+			}
+			_cl->next = *cluster_list;
+			*cluster_list = _cl;
+			LM_INFO("clusterer: pre-created controller-managed cluster %d stub\n",
+			        cl_ctr_stub_ids[_ci]);
+		}
 	}
 
 	/* register timer */
@@ -536,7 +848,11 @@ static int mod_init(void)
 	/* check if the cluster IDs in the the sharing tag list are valid */
 	shtag_init_list();
 	shtag_init_reporting();
-	shtag_validate_list();
+	if (!use_controller)
+		shtag_validate_list();
+
+	if (cl_ctr_mod_init() < 0)
+		return -1;
 
 	return 0;
 error:
@@ -559,7 +875,8 @@ static int child_init(int rank)
 			return -1;
 		}
 	}
-	return 0;
+
+	return cl_ctr_child_init(rank);
 }
 
 mi_response_t *clusterer_reload(const mi_params_t *params,
@@ -567,6 +884,7 @@ mi_response_t *clusterer_reload(const mi_params_t *params,
 {
 	cluster_info_t *new_info;
 	cluster_info_t *old_info;
+	cluster_info_t *cl, *new_cl, **old_next, **new_tail;
 
 	if (!db_mode) {
 		LM_ERR("Running in non-DB mode\n");
@@ -579,6 +897,19 @@ mi_response_t *clusterer_reload(const mi_params_t *params,
 	}
 
 	lock_start_write(cl_list_lock);
+	for (cl = *cluster_list; cl; cl = cl->next) {
+		if (!cl->controller_managed)
+			continue;
+		for (new_cl = new_info; new_cl; new_cl = new_cl->next)
+			if (new_cl->cluster_id == cl->cluster_id) {
+				lock_stop_write(cl_list_lock);
+				LM_ERR("cluster %d in the DB is controller-managed here - "
+					"not reloaded\n", cl->cluster_id);
+				free_info(new_info);
+				return init_mi_error(400,
+					MI_SSTR("DB defines a controller-managed cluster"));
+			}
+	}
 	if (preserve_reg_caps(new_info) < 0) {
 		lock_stop_write(cl_list_lock);
 		LM_ERR("Failed to preserve registered capabilities\n");
@@ -589,6 +920,18 @@ mi_response_t *clusterer_reload(const mi_params_t *params,
 		return init_mi_error(500, "Failed to reload", 16);
 	}
 	old_info = *cluster_list;
+	/* the controller clusters are not in the DB: they move over as they are */
+	for (new_tail = &new_info; *new_tail; new_tail = &(*new_tail)->next) ;
+	for (old_next = &old_info; (cl = *old_next); ) {
+		if (cl->controller_managed) {
+			*old_next = cl->next;
+			cl->next = NULL;
+			*new_tail = cl;
+			new_tail = &cl->next;
+		} else {
+			old_next = &cl->next;
+		}
+	}
 	*cluster_list = new_info;
 	lock_stop_write(cl_list_lock);
 
@@ -631,6 +974,14 @@ static mi_response_t *clusterer_set_status(const mi_params_t *params,
 		return init_mi_param_error();
 	if (state != STATE_DISABLED && state != STATE_ENABLED)
 		return init_mi_error(400, MI_SSTR("Bad value for 'status'"));
+
+	/* the controller sets node state in its clusters (the 'full' level) */
+	lock_start_read(cl_list_lock);
+	rc = cl_ctr_owns_membership(get_cluster_by_id(cluster_id));
+	lock_stop_read(cl_list_lock);
+	if (rc)
+		return init_mi_error(403, MI_SSTR("Cluster is managed by the "
+			"controller - use clusterer:maintenance"));
 
 	rc = cl_set_state(cluster_id, node_id, state);
 	if (rc == -1)
@@ -893,7 +1244,7 @@ static mi_response_t *clusterer_list_topology(const mi_params_t *params,
 		if (!node_item)
 			goto error;
 
-		if (add_mi_number(node_item, MI_SSTR("node_id"), current_id) < 0)
+		if (add_mi_number(node_item, MI_SSTR("node_id"), cluster_self_id(cl)) < 0)
 			goto error;
 
 		neigh_arr = add_mi_array(node_item, MI_SSTR("Neighbours"));
@@ -925,7 +1276,7 @@ static mi_response_t *clusterer_list_topology(const mi_params_t *params,
 				}
 
 			if (n_info->link_state == LS_UP)
-				if (add_mi_number(neigh_arr, 0,0, current_id) < 0) {
+				if (add_mi_number(neigh_arr, 0,0, GET_CURRENT_ID) < 0) {
 					lock_release(n_info->lock);
 					goto error;
 				}
@@ -1054,7 +1405,7 @@ static mi_response_t *cluster_send_mi(const mi_params_t *params,
 		return init_mi_param_error();
 	if (node_id < 1)
 		return init_mi_error(400, MI_SSTR("Bad value for 'destination'"));
-	if (node_id == current_id)
+	if (node_id == GET_CURRENT_ID)
 		return init_mi_error(400, MI_SSTR("Local node specified as destination"));
 
 	if (get_mi_string_param(params, "cmd_name", &cmd_name.s, &cmd_name.len) < 0)
@@ -1161,6 +1512,12 @@ static mi_response_t *cluster_remove_node(const mi_params_t *params,
 		resp = init_mi_error(400, MI_SSTR("Unknown cluster id"));
 		goto error;
 	}
+	/* membership is the controller's */
+	if (cl_ctr_owns_membership(cl)) {
+		resp = init_mi_error(403, MI_SSTR("Cluster is managed by the "
+			"controller - a node that left is removed by it"));
+		goto error;
+	}
 
 	if (get_mi_int_param(params, "node_id", &node_id) < 0) {
 		resp = init_mi_param_error();
@@ -1250,7 +1607,8 @@ static inline void generate_msg_tag(pv_value_t *tag_val, int cluster_id)
 	memcpy(tag_val->rs.s, tmp, len);
 	tag_val->rs.s[len] = '-';
 	tag_val->rs.len = len + 1;
-	tmp = int2str(current_id, &len);
+	/* the id in this cluster: a controller assigns one per cluster */
+	tmp = sint2str(clusterer_ctrl_self_id(cluster_id), &len);
 	memcpy(tag_val->rs.s + tag_val->rs.len, tmp, len);
 	tag_val->rs.s[tag_val->rs.len + len] = '-';
 	tag_val->rs.len += len + 1;
@@ -1380,6 +1738,9 @@ int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
 
 static void destroy(void)
 {
+	/* the controller first: its GOODBYE goes out while clusterer still runs */
+	cl_ctr_mod_destroy();
+
 	/* destroy data */
 	if (cluster_list) {
 		if (*cluster_list)

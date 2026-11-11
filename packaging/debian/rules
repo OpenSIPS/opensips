@@ -81,7 +81,7 @@ DBSCHEMA_MODULES := berkeley mysql postgres sqlite
 # Contrib modules without external dependencies are discovered automatically
 # and shipped in opensips-modules-contrib. Modules listed here are excluded
 # from that package and installed as opensips-module-contrib-<name>.
-STANDALONE_CONTRIB_MODULES :=
+STANDALONE_CONTRIB_MODULES := clusterer_controller
 
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)

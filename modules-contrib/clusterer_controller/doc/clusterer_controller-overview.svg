@@ -1,0 +1,352 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1660" height="2292" viewBox="0 0 1660 2292">
+<title>clusterer_controller overview</title>
+<defs><marker id="a-ctl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b6fd8"/></marker><marker id="a-dat" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2e8b4a"/></marker><marker id="a-bin" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c9781b"/></marker><marker id="a-mst" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7a4bc2"/></marker><marker id="a-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c43c3c"/></marker><marker id="a-gry" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker><marker id="a-st" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#111827"/></marker></defs>
+<style>
+text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+.h1 { font-size: 24px; font-weight: 700; fill: #111827; }
+.sub { font-size: 13px; fill: #4b5563; }
+.st { font-size: 17px; font-weight: 700; fill: #111827; }
+.bt { font-size: 13.5px; font-weight: 700; }
+.b { font-size: 13px; fill: #1f2937; }
+.al { font-size: 12px; font-weight: 600; }
+.lane { font-size: 13px; font-weight: 700; }
+</style>
+<rect width="1660" height="2292" fill="#ffffff"/>
+<text x="24" y="40" class="h1">clusterer_controller: how a controller-managed cluster runs</text>
+<text x="24" y="64" class="sub">wire version 4: heartbeats from every member, no routing through other nodes, module broadcasts by multicast</text>
+<rect x="24" y="84" width="524.0" height="95" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="34" y="104" class="bt" fill="#3b6fd8">Control plane · multicast group:port</text>
+<text x="34" y="126" class="b">The controller worker, one process per cluster: membership,</text>
+<text x="34" y="143" class="b">admission, election, keys, heartbeats. Every packet sealed</text>
+<text x="34" y="160" class="b">(XChaCha20-Poly1305), replay windows, a per-source rate limit.</text>
+<rect x="568.0" y="84" width="524.0" height="95" rx="8" fill="#e6f5ea" stroke="#2e8b4a" stroke-width="1.4"/>
+<text x="578.0" y="104" class="bt" fill="#2e8b4a">Broadcasts · multicast group:port+1</text>
+<text x="578.0" y="126" class="b">Any process sends; 2 reader processes (mcast_workers) receive.</text>
+<text x="578.0" y="143" class="b">Module broadcasts, numbered per sender, repaired by unicast,</text>
+<text x="578.0" y="160" class="b">sealed with the data key.</text>
+<rect x="1112.0" y="84" width="524.0" height="95" rx="8" fill="#fdf0e1" stroke="#c9781b" stroke-width="1.4"/>
+<text x="1122.0" y="104" class="bt" fill="#c9781b">BIN · TCP to each node's bin socket</text>
+<text x="1122.0" y="126" class="b">clusterer's own connections, direct only, never relayed: send_to</text>
+<text x="1122.0" y="143" class="b">and replies, sync, bridges, link probes, and broadcasts while a</text>
+<text x="1122.0" y="160" class="b">member lacks mcast-data.</text>
+<rect x="24" y="199" width="660" height="1074" rx="12" fill="#fbfbfc" stroke="#d1d5db"/><text x="40" y="229" class="st">1 · A node's life</text>
+<rect x="700" y="199" width="460" height="1074" rx="12" fill="#fbfbfc" stroke="#d1d5db"/><text x="716" y="229" class="st">2 · The master admits joiners</text>
+<rect x="1176" y="199" width="460" height="1074" rx="12" fill="#fbfbfc" stroke="#d1d5db"/><text x="1192" y="229" class="st">3 · Heartbeats, links, node events</text>
+<rect x="44" y="249" width="260" height="112" rx="8" fill="#ffffff" stroke="#111827" stroke-width="2.2"/>
+<text x="54" y="269" class="bt" fill="#111827">NEW (process started)</text>
+<text x="54" y="291" class="b">JOIN_REQ multicast, bootstrap</text>
+<text x="54" y="308" class="b">key: capability bits, proposed</text>
+<text x="54" y="325" class="b">node id, Noise e. Sent again at</text>
+<text x="54" y="342" class="b">least 0.5 s apart.</text>
+<rect x="454" y="249" width="216" height="112" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="464" y="269" class="bt" fill="#3b6fd8">JOIN_WAIT</text>
+<text x="464" y="291" class="b">from the master (queued:</text>
+<text x="464" y="308" class="b">place, length) or from a</text>
+<text x="464" y="325" class="b">member (no master heard):</text>
+<text x="464" y="342" class="b">hold 3 s, ask again</text>
+<rect x="454" y="373" width="216" height="78" rx="8" fill="#fdeaea" stroke="#c43c3c" stroke-width="1.4"/>
+<text x="464" y="393" class="bt" fill="#c43c3c">JOIN_REJECT</text>
+<text x="464" y="415" class="b">wrong password: after 3</text>
+<text x="464" y="432" class="b">the node shuts down</text>
+<rect x="454" y="463" width="216" height="129" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="464" y="483" class="bt" fill="#7a4bc2">FOUND</text>
+<text x="464" y="505" class="b">nobody answered (deferral</text>
+<text x="464" y="522" class="b">rounds, about 4 s): this</text>
+<text x="464" y="539" class="b">node is master, makes</text>
+<text x="464" y="556" class="b">master_salt and the</text>
+<text x="464" y="573" class="b">cluster uuid</text>
+<path d="M 304 275 L 454 275" fill="none" stroke="#3b6fd8" stroke-width="1.6" marker-end="url(#a-ctl)"/>
+<path d="M 304 295 C 374 295 384 395 454 395" fill="none" stroke="#c43c3c" stroke-width="1.6" marker-end="url(#a-bad)"/>
+<path d="M 304 315 C 374 315 384 491 454 491" fill="none" stroke="#7a4bc2" stroke-width="1.6" marker-end="url(#a-mst)"/>
+<line x1="174.0" y1="361" x2="174.0" y2="616" stroke="#3b6fd8" stroke-width="1.6" marker-end="url(#a-ctl)"/>
+<text x="182.0" y="379" class="al" fill="#3b6fd8" text-anchor="start">KEY_GRANT (Noise answer:</text>
+<text x="182.0" y="394" class="al" fill="#3b6fd8" text-anchor="start">master_salt, hence the session</text>
+<text x="182.0" y="409" class="al" fill="#3b6fd8" text-anchor="start">key) · NODE_ASSIGN (node id,</text>
+<text x="182.0" y="424" class="al" fill="#3b6fd8" text-anchor="start">BIN address) · MEMBER_LIST</text>
+<rect x="44" y="616" width="260" height="129" rx="8" fill="#ffffff" stroke="#111827" stroke-width="2.2"/>
+<text x="54" y="636" class="bt" fill="#111827">ACTIVE · CONNECTING</text>
+<text x="54" y="658" class="b">No role, no sharing tag. Probes</text>
+<text x="54" y="675" class="b">a BIN link to every member,</text>
+<text x="54" y="692" class="b">reports its links in every</text>
+<text x="54" y="709" class="b">ALIVE; the master relays</text>
+<text x="54" y="726" class="b">CONNECTING in MASTER_ALIVE.</text>
+<rect x="454" y="616" width="216" height="197" rx="8" fill="#fdeaea" stroke="#c43c3c" stroke-width="1.4"/>
+<text x="464" y="636" class="bt" fill="#c43c3c">stuck</text>
+<text x="464" y="658" class="b">still connecting after 10</text>
+<text x="464" y="675" class="b">s: a warning names the</text>
+<text x="464" y="692" class="b">pairs down,</text>
+<text x="464" y="709" class="b">E_CL_CTR_ADMISSION,</text>
+<text x="464" y="726" class="b">admissions_stuck; the</text>
+<text x="464" y="743" class="b">master's queue is held.</text>
+<text x="464" y="760" class="b">After 60 s parked: the</text>
+<text x="464" y="777" class="b">queue moves past it (at</text>
+<text x="464" y="794" class="b">most 2 parked)</text>
+<path d="M 304 646 L 454 646" fill="none" stroke="#c43c3c" stroke-width="1.6" marker-end="url(#a-bad)"/>
+<line x1="174.0" y1="745" x2="174.0" y2="877" stroke="#7a4bc2" stroke-width="1.6" marker-end="url(#a-mst)"/>
+<text x="182.0" y="767" class="al" fill="#7a4bc2" text-anchor="start">the master sees every link up,</text>
+<text x="182.0" y="782" class="al" fill="#7a4bc2" text-anchor="start">both ways (it checks each</text>
+<text x="182.0" y="797" class="al" fill="#7a4bc2" text-anchor="start">second)</text>
+<rect x="44" y="877" width="260" height="95" rx="8" fill="#ffffff" stroke="#111827" stroke-width="2.2"/>
+<text x="54" y="897" class="bt" fill="#111827">ACTIVE · ONLINE</text>
+<text x="54" y="919" class="b">Role: master, backup or member.</text>
+<text x="54" y="936" class="b">Capabilities that sync at</text>
+<text x="54" y="953" class="b">startup sync again.</text>
+<rect x="454" y="877" width="216" height="129" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="464" y="897" class="bt" fill="#6b7280">MAINTENANCE</text>
+<text x="464" y="919" class="b">MI or script: still a</text>
+<text x="464" y="936" class="b">member with its id and</text>
+<text x="464" y="953" class="b">links, no role, no tags;</text>
+<text x="464" y="970" class="b">at 'full' nothing is</text>
+<text x="464" y="987" class="b">replicated to it</text>
+<path d="M 304 907 L 454 907" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<line x1="174.0" y1="972" x2="174.0" y2="1056" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<text x="182.0" y="1000" class="al" fill="#6b7280" text-anchor="start">shutdown</text>
+<rect x="44" y="1056" width="260" height="78" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="54" y="1076" class="bt" fill="#6b7280">GOODBYE (session key)</text>
+<text x="54" y="1098" class="b">the others re-elect at once if</text>
+<text x="54" y="1115" class="b">it was master</text>
+<rect x="44" y="1158" width="620" height="95" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="54" y="1178" class="bt" fill="#6b7280">Node ids</text>
+<text x="54" y="1200" class="b">Assigned by the master, 1 to 256. A joiner proposes one (my_node_id, else</text>
+<text x="54" y="1217" class="b">derived from the machine and its IP); a returning node gets its old id back</text>
+<text x="54" y="1234" class="b">(held for 1 h), else the proposal if it is free, else the lowest free one.</text>
+<rect x="720" y="249" width="270" height="40" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="730" y="269" class="bt" fill="#3b6fd8">JOIN_REQ reaches the master</text>
+<line x1="855.0" y1="289" x2="855.0" y2="317" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<rect x="720" y="317" width="270" height="94" rx="14" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="730" y="337" class="bt" fill="#6b7280">A member not heard since I</text>
+<text x="730" y="355" class="bt" fill="#6b7280">became master, or my mastership</text>
+<text x="730" y="373" class="bt" fill="#6b7280">not confirmed yet (3 ×</text>
+<text x="730" y="391" class="bt" fill="#6b7280">query_time)?</text>
+<rect x="1018" y="344.0" width="128" height="40" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="1028" y="364.0" class="bt" fill="#3b6fd8">JOIN_WAIT</text>
+<line x1="990" y1="364.0" x2="1018" y2="364.0" stroke="#3b6fd8" stroke-width="1.6" marker-end="url(#a-ctl)"/>
+<text x="995" y="359.0" class="al" fill="#3b6fd8" text-anchor="start">yes</text>
+<line x1="855.0" y1="411" x2="855.0" y2="439" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<text x="861.0" y="430" class="al" fill="#6b7280" text-anchor="start">no</text>
+<rect x="720" y="439" width="270" height="76" rx="14" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="730" y="459" class="bt" fill="#6b7280">A joiner stuck in CONNECTING (10</text>
+<text x="730" y="477" class="bt" fill="#6b7280">s), not yet parked (60 s), or</text>
+<text x="730" y="495" class="bt" fill="#6b7280">more than 2 parked?</text>
+<rect x="1018" y="457.0" width="128" height="76" rx="8" fill="#fdeaea" stroke="#c43c3c" stroke-width="1.4"/>
+<text x="1028" y="477.0" class="bt" fill="#c43c3c">JOIN_WAIT:</text>
+<text x="1028" y="495.0" class="bt" fill="#c43c3c">the queue is</text>
+<text x="1028" y="513.0" class="bt" fill="#c43c3c">held</text>
+<line x1="990" y1="477.0" x2="1018" y2="477.0" stroke="#c43c3c" stroke-width="1.6" marker-end="url(#a-bad)"/>
+<text x="995" y="472.0" class="al" fill="#c43c3c" text-anchor="start">yes</text>
+<line x1="855.0" y1="515" x2="855.0" y2="543" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<text x="861.0" y="534" class="al" fill="#6b7280" text-anchor="start">no</text>
+<rect x="720" y="543" width="270" height="94" rx="14" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="730" y="563" class="bt" fill="#6b7280">Its place in the queue (by first</text>
+<text x="730" y="581" class="bt" fill="#6b7280">arrival) past the batch: 1 at a</text>
+<text x="730" y="599" class="bt" fill="#6b7280">time under 16 live members, 4</text>
+<text x="730" y="617" class="bt" fill="#6b7280">from 16?</text>
+<rect x="1018" y="570.0" width="128" height="76" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="1028" y="590.0" class="bt" fill="#3b6fd8">JOIN_WAIT</text>
+<text x="1028" y="608.0" class="bt" fill="#3b6fd8">(place,</text>
+<text x="1028" y="626.0" class="bt" fill="#3b6fd8">length)</text>
+<line x1="990" y1="590.0" x2="1018" y2="590.0" stroke="#3b6fd8" stroke-width="1.6" marker-end="url(#a-ctl)"/>
+<text x="995" y="585.0" class="al" fill="#3b6fd8" text-anchor="start">yes</text>
+<line x1="855.0" y1="637" x2="855.0" y2="667" stroke="#7a4bc2" stroke-width="1.6" marker-end="url(#a-mst)"/>
+<text x="861.0" y="657" class="al" fill="#7a4bc2" text-anchor="start">no</text>
+<rect x="720" y="667" width="420" height="146" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="730" y="687" class="bt" fill="#7a4bc2">ADMIT</text>
+<text x="730" y="709" class="b">KEY_GRANT, unicast, bootstrap key: the Noise_NNpsk0</text>
+<text x="730" y="726" class="b">answer carrying master_salt.</text>
+<text x="730" y="743" class="b">NODE_ASSIGN (node id, BIN address) and MEMBER_LIST,</text>
+<text x="730" y="760" class="b">session key.</text>
+<text x="730" y="777" class="b">The joiner is CONNECTING: relayed in every</text>
+<text x="730" y="794" class="b">MASTER_ALIVE, never master or backup, no tag.</text>
+<line x1="855.0" y1="813" x2="855.0" y2="839" stroke="#7a4bc2" stroke-width="1.6" marker-end="url(#a-mst)"/>
+<rect x="720" y="839" width="420" height="129" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="730" y="859" class="bt" fill="#7a4bc2">Each keepalive tick (1 s)</text>
+<text x="730" y="881" class="b">Links up both ways in every member's ALIVE bitmap:</text>
+<text x="730" y="898" class="b">ONLINE, and the next in the queue is admitted. Past</text>
+<text x="730" y="915" class="b">10 s: stuck (warning naming the pairs, event,</text>
+<text x="730" y="932" class="b">statistic), nobody else admitted until it is ONLINE,</text>
+<text x="730" y="949" class="b">gone or parked at 60 s (warning, event).</text>
+<rect x="720" y="990" width="420" height="112" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="730" y="1010" class="bt" fill="#3b6fd8">JOIN_WAIT</text>
+<text x="730" y="1032" class="b">Bootstrap key, echoes the joiner's nonce, so it</text>
+<text x="730" y="1049" class="b">cannot be replayed at another joiner. It also resets</text>
+<text x="730" y="1066" class="b">the joiner's failed-decryption count, so a queued</text>
+<text x="730" y="1083" class="b">node does not give up.</text>
+<rect x="1196" y="249" width="420" height="164" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="1206" y="269" class="bt" fill="#3b6fd8">Every member, every second: ALIVE (multicast,</text>
+<text x="1206" y="287" class="bt" fill="#3b6fd8">session key)</text>
+<text x="1206" y="309" class="b">public key · config · MTU · maintenance</text>
+<text x="1206" y="326" class="b">capability bits: probe, maint_set, maint_full,</text>
+<text x="1206" y="343" class="b">admission, heartbeat, mcast-data</text>
+<text x="1206" y="360" class="b">BIN link bitmap: the nodes it has a link up with</text>
+<text x="1206" y="377" class="b">its last broadcast number</text>
+<text x="1206" y="394" class="b">capability states: who can serve a sync</text>
+<rect x="1196" y="435" width="202.0" height="112" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="1206" y="455" class="bt" fill="#3b6fd8">heard</text>
+<text x="1206" y="477" class="b">an ALIVE within 4 s.</text>
+<text x="1206" y="494" class="b">Many members silent at</text>
+<text x="1206" y="511" class="b">once: suspect myself</text>
+<text x="1206" y="528" class="b">first, wait up to 16 s.</text>
+<rect x="1414.0" y="435" width="202.0" height="163" rx="8" fill="#fdf0e1" stroke="#c9781b" stroke-width="1.4"/>
+<text x="1424.0" y="455" class="bt" fill="#c9781b">BIN link</text>
+<text x="1424.0" y="477" class="b">probed when a node is</text>
+<text x="1424.0" y="494" class="b">first seen or heard</text>
+<text x="1424.0" y="511" class="b">again, spread 50 ms per</text>
+<text x="1424.0" y="528" class="b">node (3 s at most). No</text>
+<text x="1424.0" y="545" class="b">periodic pings, no</text>
+<text x="1424.0" y="562" class="b">link-state floods, no</text>
+<text x="1424.0" y="579" class="b">routing.</text>
+<line x1="1297.0" y1="547" x2="1382.0" y2="628" stroke="#3b6fd8" stroke-width="1.6" marker-end="url(#a-ctl)"/>
+<line x1="1515.0" y1="598" x2="1430.0" y2="628" stroke="#c9781b" stroke-width="1.6" marker-end="url(#a-bin)"/>
+<rect x="1196" y="628" width="420" height="130" rx="8" fill="#ffffff" stroke="#111827" stroke-width="2.2"/>
+<text x="1206" y="648" class="bt" fill="#111827">What modules see: reach = heard AND (link up OR</text>
+<text x="1206" y="666" class="bt" fill="#111827">held)</text>
+<text x="1206" y="688" class="b">A change raises NODE_UP or NODE_DOWN to every</text>
+<text x="1206" y="705" class="b">capability, and E_CLUSTERER_NODE_STATE_CHANGED. A</text>
+<text x="1206" y="722" class="b">capability coming up on a node answers a pending</text>
+<text x="1206" y="739" class="b">sync request.</text>
+<rect x="1196" y="776" width="420" height="112" rx="8" fill="#fdeaea" stroke="#c43c3c" stroke-width="1.4"/>
+<text x="1206" y="796" class="bt" fill="#c43c3c">Link down while heard</text>
+<text x="1206" y="818" class="b">A failed probe while the node is still heard: the</text>
+<text x="1206" y="835" class="b">link is held (still up to modules), probing goes on,</text>
+<text x="1206" y="852" class="b">and a warning names the node: the path to its BIN</text>
+<text x="1206" y="869" class="b">socket needs fixing.</text>
+<rect x="1196" y="906" width="420" height="146" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="1206" y="926" class="bt" fill="#7a4bc2">The master, every second: MASTER_ALIVE (session key)</text>
+<text x="1206" y="948" class="b">member list stamp · CONNECTING bitmap · capabilities</text>
+<text x="1206" y="965" class="b">every live member shares.</text>
+<text x="1206" y="982" class="b">Every 5 s also MASTER_BEACON (bootstrap key): a</text>
+<text x="1206" y="999" class="b">master of another partition hears it, and the lower-</text>
+<text x="1206" y="1016" class="b">ranked one merges (rank: members heard, term, a</text>
+<text x="1206" y="1033" class="b">raised term over one kept, IP).</text>
+<rect x="1196" y="1070" width="420" height="112" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="1206" y="1090" class="bt" fill="#6b7280">Capabilities and sync</text>
+<text x="1206" y="1112" class="b">Capability states ride the heartbeat (no CAP_UPDATE</text>
+<text x="1206" y="1129" class="b">over BIN). A node syncs over TCP from one whose</text>
+<text x="1206" y="1146" class="b">state is OK; the chunks wait for the broadcasts sent</text>
+<text x="1206" y="1163" class="b">before them.</text>
+<rect x="24" y="1289" width="700" height="802" rx="12" fill="#fbfbfc" stroke="#d1d5db"/><text x="40" y="1319" class="st">4 · Master and elections</text>
+<rect x="740" y="1289" width="896" height="802" rx="12" fill="#fbfbfc" stroke="#d1d5db"/><text x="756" y="1319" class="st">5 · Module broadcasts</text>
+<rect x="44" y="1339" width="320" height="180" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="54" y="1359" class="bt" fill="#7a4bc2">Who leads</text>
+<text x="54" y="1381" class="b">Master: the highest IP among members</text>
+<text x="54" y="1398" class="b">seen within 3 × query_time, not in</text>
+<text x="54" y="1415" class="b">maintenance, not connecting; with</text>
+<text x="54" y="1432" class="b">master_stickiness 1 a live master keeps</text>
+<text x="54" y="1449" class="b">the role.</text>
+<text x="54" y="1466" class="b">Backup: the highest-IP other member.</text>
+<text x="54" y="1483" class="b">Sharing tags follow the master</text>
+<text x="54" y="1500" class="b">(manage_shtags).</text>
+<rect x="388" y="1339" width="316" height="78" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="398" y="1359" class="bt" fill="#3b6fd8">A member stops hearing MASTER_ALIVE</text>
+<text x="398" y="1381" class="b">past its learned wait: 3 to 15 s, from</text>
+<text x="398" y="1398" class="b">the gaps it has seen</text>
+<line x1="546.0" y1="1417" x2="546.0" y2="1443" stroke="#3b6fd8" stroke-width="1.6" marker-end="url(#a-ctl)"/>
+<rect x="388" y="1443" width="316" height="78" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="398" y="1463" class="bt" fill="#3b6fd8">MASTER_PROBE to the others</text>
+<text x="398" y="1485" class="b">does anyone still hear it? (answers</text>
+<text x="398" y="1502" class="b">within 1 s)</text>
+<line x1="467.0" y1="1521" x2="467.0" y2="1557" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<text x="461.0" y="1543" class="al" fill="#6b7280" text-anchor="end">heard &lt; 2 s ago</text>
+<line x1="625.0" y1="1521" x2="625.0" y2="1557" stroke="#7a4bc2" stroke-width="1.6" marker-end="url(#a-mst)"/>
+<text x="631.0" y="1543" class="al" fill="#7a4bc2" text-anchor="start">nobody</text>
+<rect x="388" y="1557" width="150.0" height="78" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="398" y="1577" class="bt" fill="#6b7280">hold</text>
+<text x="398" y="1599" class="b">up to 30 s;</text>
+<text x="398" y="1616" class="b">election_holds</text>
+<rect x="554.0" y="1557" width="150.0" height="95" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="564.0" y="1577" class="bt" fill="#7a4bc2">elect</text>
+<text x="564.0" y="1599" class="b">a new term; the</text>
+<text x="564.0" y="1616" class="b">new master takes</text>
+<text x="564.0" y="1633" class="b">the tags</text>
+<rect x="44" y="1674" width="660" height="95" rx="8" fill="#fdeaea" stroke="#c43c3c" stroke-width="1.4"/>
+<text x="54" y="1694" class="bt" fill="#c43c3c">Guards against a second master</text>
+<text x="54" y="1716" class="b">No election between KEY_GRANT and MEMBER_LIST. None for 4 s after going ACTIVE</text>
+<text x="54" y="1733" class="b">while following a master. While no master is heard (an election in progress)</text>
+<text x="54" y="1750" class="b">members tell joiners to wait, so a joiner never founds a cluster of its own.</text>
+<rect x="44" y="1787" width="660" height="163" rx="8" fill="#f1eafb" stroke="#7a4bc2" stroke-width="1.4"/>
+<text x="54" y="1807" class="bt" fill="#7a4bc2">Other ways the master changes</text>
+<text x="54" y="1829" class="b">GOODBYE: the others re-elect at once; KEY_HANDOFF gives master_salt to the next</text>
+<text x="54" y="1846" class="b">master, so the session key survives.</text>
+<text x="54" y="1863" class="b">Two masters after a partition heals: each hears the other's MASTER_BEACON, and the</text>
+<text x="54" y="1880" class="b">one with fewer members heard (then the lower term, then the one that kept its term</text>
+<text x="54" y="1897" class="b">unconfirmed, then the lower IP) merges into the other (E_CL_CTR_MERGE).</text>
+<text x="54" y="1914" class="b">MAINT_SET carries maintenance; RESYNC: a member whose view differs asks the master</text>
+<text x="54" y="1931" class="b">for the state.</text>
+<rect x="44" y="1968" width="660" height="61" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="54" y="1988" class="bt" fill="#6b7280">release_tag_when_isolated</text>
+<text x="54" y="2010" class="b">A master cut off from most of the cluster gives up the active sharing tag.</text>
+<text x="760" y="1351" class="lane" fill="#2e8b4a">sender (the process calling clusterer)</text>
+<text x="1286" y="1351" class="lane" fill="#2e8b4a">each receiver (a reader process)</text>
+<rect x="760" y="1365" width="330" height="58" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="770" y="1385" class="bt" fill="#6b7280">send_all · send_all_having ·</text>
+<text x="770" y="1403" class="bt" fill="#6b7280">cluster_broadcast_req · broadcast_mi</text>
+<line x1="925.0" y1="1423" x2="925.0" y2="1449" stroke="#6b7280" stroke-width="1.6" marker-end="url(#a-gry)"/>
+<rect x="760" y="1449" width="330" height="95" rx="14" fill="#fdf0e1" stroke="#c9781b" stroke-width="1.4"/>
+<text x="770" y="1469" class="bt" fill="#c9781b">Every live member advertises mcast-data?</text>
+<text x="770" y="1491" class="b">no (one runs mcast_broadcasts=0): TCP to</text>
+<text x="770" y="1508" class="b">each reachable node, counted in</text>
+<text x="770" y="1525" class="b">mcast_tcp</text>
+<line x1="925.0" y1="1544" x2="925.0" y2="1572" stroke="#2e8b4a" stroke-width="1.6" marker-end="url(#a-dat)"/>
+<text x="931.0" y="1562" class="al" fill="#2e8b4a" text-anchor="start">yes</text>
+<rect x="760" y="1572" width="330" height="112" rx="8" fill="#e6f5ea" stroke="#2e8b4a" stroke-width="1.4"/>
+<text x="770" y="1592" class="bt" fill="#2e8b4a">Number (64-bit), seal (data key)</text>
+<text x="770" y="1614" class="b">Bigger than a datagram: up to 255</text>
+<text x="770" y="1631" class="b">fragments, one number each. Kept in the</text>
+<text x="770" y="1648" class="b">ring (mcast_window, 2048) before it is</text>
+<text x="770" y="1665" class="b">sent.</text>
+<rect x="1286" y="1572" width="330" height="129" rx="8" fill="#e6f5ea" stroke="#2e8b4a" stroke-width="1.4"/>
+<text x="1296" y="1592" class="bt" fill="#2e8b4a">DATA arrives</text>
+<text x="1296" y="1614" class="b">Opened with the current or the previous</text>
+<text x="1296" y="1631" class="b">key. In order: dispatched through</text>
+<text x="1296" y="1648" class="b">clusterer's BIN path (capability checks,</text>
+<text x="1296" y="1665" class="b">sync buffering, dispatch_jobs). Out of</text>
+<text x="1296" y="1682" class="b">order: held (1024).</text>
+<line x1="1090" y1="1606" x2="1286" y2="1606" stroke="#2e8b4a" stroke-width="1.6" marker-end="url(#a-dat)"/>
+<text x="1188.0" y="1599" class="al" fill="#2e8b4a" text-anchor="middle">DATA → group:port+1</text>
+<rect x="1286" y="1727" width="330" height="112" rx="8" fill="#e6f5ea" stroke="#2e8b4a" stroke-width="1.4"/>
+<text x="1296" y="1747" class="bt" fill="#2e8b4a">A gap</text>
+<text x="1296" y="1769" class="b">after 5 ms: NACK by unicast with the</text>
+<text x="1296" y="1786" class="b">missing ranges, again every 50 ms. The</text>
+<text x="1296" y="1803" class="b">heartbeat's last number shows a lost</text>
+<text x="1296" y="1820" class="b">tail too.</text>
+<rect x="760" y="1727" width="330" height="112" rx="8" fill="#e6f5ea" stroke="#2e8b4a" stroke-width="1.4"/>
+<text x="770" y="1747" class="bt" fill="#2e8b4a">Resend</text>
+<text x="770" y="1769" class="b">RETX from the ring, by unicast; GONE for</text>
+<text x="770" y="1786" class="b">what has left it. A node asking for over</text>
+<text x="770" y="1803" class="b">a fifth of them: a warning, multicast</text>
+<text x="770" y="1820" class="b">filtered on its way?</text>
+<line x1="1286" y1="1757" x2="1090" y2="1757" stroke="#2e8b4a" stroke-width="1.6" marker-end="url(#a-dat)"/>
+<text x="1188.0" y="1750" class="al" fill="#2e8b4a" text-anchor="middle">NACK</text>
+<line x1="1090" y1="1789" x2="1286" y2="1789" stroke="#2e8b4a" stroke-width="1.6" marker-end="url(#a-dat)"/>
+<text x="1188.0" y="1782" class="al" fill="#2e8b4a" text-anchor="middle">RETX / GONE</text>
+<rect x="1286" y="1861" width="330" height="112" rx="8" fill="#fdeaea" stroke="#c43c3c" stroke-width="1.4"/>
+<text x="1296" y="1881" class="bt" fill="#c43c3c">Lost (GONE, 2 s, or the hold full)</text>
+<text x="1296" y="1903" class="b">mcast_gaps and a warning; the sender is</text>
+<text x="1296" y="1920" class="b">reported DOWN then UP to this node's</text>
+<text x="1296" y="1937" class="b">modules, and every capability that syncs</text>
+<text x="1296" y="1954" class="b">at startup syncs again, from the sender.</text>
+<rect x="760" y="1861" width="330" height="112" rx="8" fill="#fdf0e1" stroke="#c9781b" stroke-width="1.4"/>
+<text x="770" y="1881" class="bt" fill="#c9781b">TCP messages (send_to, sync)</text>
+<text x="770" y="1903" class="b">carry the sender's last broadcast number</text>
+<text x="770" y="1920" class="b">in the BIN trailer: dispatched after the</text>
+<text x="770" y="1937" class="b">broadcasts sent before them, waiting 500</text>
+<text x="770" y="1954" class="b">ms at most.</text>
+<rect x="760" y="1993" width="856" height="78" rx="8" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.4"/>
+<text x="770" y="2013" class="bt" fill="#6b7280">Statistics</text>
+<text x="770" y="2035" class="b">mcast_sent · mcast_received · mcast_repairs · mcast_nacks · mcast_gaps · mcast_tcp · mcast_barrier_waits ·</text>
+<text x="770" y="2052" class="b">mcast_barrier_late</text>
+<rect x="24" y="2107" width="1612" height="161" rx="12" fill="#fbfbfc" stroke="#d1d5db"/><text x="40" y="2137" class="st">Keys</text>
+<rect x="44" y="2153" width="516.0" height="78" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="54" y="2173" class="bt" fill="#3b6fd8">bootstrap key = Argon2id(password)</text>
+<text x="54" y="2195" class="b">JOIN_REQ · JOIN_WAIT · JOIN_REJECT · KEY_GRANT · MASTER_BEACON.</text>
+<text x="54" y="2212" class="b">Whoever has the password can join, and can become master.</text>
+<rect x="572.0" y="2153" width="516.0" height="95" rx="8" fill="#e8f0fe" stroke="#3b6fd8" stroke-width="1.4"/>
+<text x="582.0" y="2173" class="bt" fill="#3b6fd8">session key = HKDF(password, master_salt)</text>
+<text x="582.0" y="2195" class="b">ALIVE · MASTER_ALIVE · NODE_ASSIGN · MEMBER_LIST · MASTER_PROBE</text>
+<text x="582.0" y="2212" class="b">and its ACK · RESYNC · MAINT_SET · KEY_HANDOFF · GOODBYE.</text>
+<text x="582.0" y="2229" class="b">master_salt is made by the founder and given in KEY_GRANT.</text>
+<rect x="1100.0" y="2153" width="516.0" height="78" rx="8" fill="#e6f5ea" stroke="#2e8b4a" stroke-width="1.4"/>
+<text x="1110.0" y="2173" class="bt" fill="#2e8b4a">data key = HKDF(password, master_salt, "cl_ctr_data")</text>
+<text x="1110.0" y="2195" class="b">DATA · NACK · GONE on group:port+1. The header names the key; the</text>
+<text x="1110.0" y="2212" class="b">previous one is still accepted after a change.</text>
+</svg>
