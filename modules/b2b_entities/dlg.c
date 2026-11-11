@@ -694,6 +694,46 @@ static void b2b_end_pending_tran(struct cell *tran)
 	tmb.unref_cell(tran);
 }
 
+/* RFC 3311 5.2 / RFC 3261 14.2: reply 500 "Overlapping Requests" with a
+ * Retry-After between 0 and 10 seconds and release the t_newtran() ref of
+ * the rejected transaction */
+#define RETRY_AFTER_HDR "Retry-After: "
+#define RETRY_AFTER_HDR_LEN (sizeof(RETRY_AFTER_HDR)-1)
+static void b2b_reply_overlapping(struct cell *tm_tran, str *to_tag)
+{
+	char ra_s[RETRY_AFTER_HDR_LEN + 3 + CRLF_LEN];
+	str ra = {ra_s, 0};
+	str text = str_init("Overlapping Requests");
+
+	LM_DBG("Received another request when the previous one was in process\n");
+	memcpy(ra.s + ra.len, RETRY_AFTER_HDR, RETRY_AFTER_HDR_LEN);
+	ra.len += RETRY_AFTER_HDR_LEN;
+	/* the retry value is between 0 and 10 */
+	ra.len += btostr(ra.s + ra.len, (unsigned char)(rand()%10));
+	memcpy(ra.s + ra.len, CRLF, CRLF_LEN);
+	ra.len += CRLF_LEN;
+
+	if (run_tm_api(&tmb, t_reply_with_body, tm_tran, 500, &text, 0, &ra,
+	to_tag) < 0)
+		LM_ERR("failed to send reply with tm\n");
+	LM_DBG("Sent reply [500] and unreffed the cell %p\n", tm_tran);
+	tmb.unref_cell(tm_tran); /* for t_newtran() */
+}
+#undef RETRY_AFTER_HDR
+#undef RETRY_AFTER_HDR_LEN
+
+/* Returns 1 if @tran is an UPDATE that has not been finally replied yet.
+ * Otherwise releases it (it is already answered) and returns 0. */
+static int b2b_update_pending(struct cell *tran)
+{
+	if (!tran || tran == T_UNDEFINED)
+		return 0;
+	if (tran->uas.status < 200)
+		return 1;
+	b2b_end_pending_tran(tran);
+	return 0;
+}
+
 void b2b_delete_legs(dlg_leg_t** legs)
 {
 	dlg_leg_t* leg, *aux_leg;
@@ -1473,15 +1513,26 @@ logic_notify:
 					}
 				}
 				if (leg) {
-					if (leg->update_tran)
-						b2b_end_pending_tran(leg->update_tran);
+					if (b2b_update_pending(leg->update_tran)) {
+						/* RFC 3311 5.2: the previous UPDATE on this (early)
+						 * dialog is still pending -> reject the new one with
+						 * 500, keep the pending one untouched */
+						b2b_reply_overlapping(tm_tran, &to_tag);
+						B2BE_LOCK_RELEASE(table, hash_index);
+						goto scb_drop_msg;
+					}
 					leg->update_tran = tm_tran;
 					LM_DBG("UPDATE to-tag [%.*s] -> leg idx [%d], leg [%p], "
 						"tran [%p] on dlg[%p]\n", to_tag.len, to_tag.s,
 						leg_idx, leg, tm_tran, dlg);
 				} else {
-					if (dlg->update_tran)
-						b2b_end_pending_tran(dlg->update_tran);
+					if (b2b_update_pending(dlg->update_tran)) {
+						/* RFC 3311 5.2: the previous UPDATE is still
+						 * pending -> reject the new one with 500 */
+						b2b_reply_overlapping(tm_tran, &to_tag);
+						B2BE_LOCK_RELEASE(table, hash_index);
+						goto scb_drop_msg;
+					}
 					dlg->update_tran = tm_tran;
 					LM_DBG("UPDATE to-tag [%.*s] carries no leg index - stored "
 						"on dlg[%p], tran [%p]\n", to_tag.len, to_tag.s,
@@ -1520,28 +1571,7 @@ logic_notify:
 					if (method_value != METHOD_BYE) {
 						/* We have another UAS ongoing transaction on the dialog
 						 * -> reject with 500, "Overlapping Requests" */
-						#define RETRY_AFTER_HDR "Retry-After: "
-						#define RETRY_AFTER_HDR_LEN (sizeof("Retry-After: ")-1)
-						char ra_s[RETRY_AFTER_HDR_LEN + 3 + CRLF_LEN];
-						str ra = {ra_s, 0};
-						str text = str_init("Overlapping Requests");
-						LM_DBG("Received another request when the previous "
-								"one was in process\n");
-						memcpy( ra.s+ra.len, RETRY_AFTER_HDR, RETRY_AFTER_HDR_LEN);
-						ra.len += RETRY_AFTER_HDR_LEN;
-						/* the retry value is between 0 and 10 */
-						ra.len += btostr(ra.s+ra.len, (unsigned char)(rand()%10) );
-						memcpy( ra.s+ra.len, CRLF, CRLF_LEN);
-						ra.len += CRLF_LEN;
-						/* send reply */
-						if(run_tm_api(&tmb, t_reply_with_body,  tm_tran, 500,
-						&text, 0, &ra, &to_tag) < 0)
-						{
-							LM_ERR("failed to send reply with tm\n");
-						}
-						LM_DBG("Sent reply [500] and unreffed the cell %p\n",
-							tm_tran);
-						tmb.unref_cell(tm_tran); /* for t_newtran() */
+						b2b_reply_overlapping(tm_tran, &to_tag);
 						B2BE_LOCK_RELEASE(table, hash_index);
 						goto scb_drop_msg;
 					} else {
