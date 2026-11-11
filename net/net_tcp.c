@@ -2473,7 +2473,7 @@ int tcp_count_processes(unsigned int *extra)
 }
 
 
-int tcp_start_processes(int *chd_rank, int *startup_done)
+int tcp_start_processes(int *chd_rank, atomic_t *startup_done)
 {
 	int r, p_id, flags;
 	const struct internal_fork_params ifp_sr_tcp = {
@@ -2530,6 +2530,15 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			/* parent */
 			tcp_workers[r].state = STATE_ACTIVE;
 			tcp_workers[r].pt_idx = p_id;
+			/* Wait for the startup owner before forking more workers. */
+			if (*chd_rank == 1 && startup_done) {
+				while (atomic_load(startup_done) == 0) {
+					usleep(5);
+					handle_sigs();
+				}
+				if (atomic_load(startup_done) != 1)
+					goto error;
+			}
 			continue;
 		}
 
@@ -2545,21 +2554,22 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 				init_child(*chd_rank) < 0) {
 			LM_ERR("init_child failed for TCP worker %d\n", r);
 			report_failure_status();
-			if (startup_done)
-				*startup_done = -1;
+			if (*chd_rank == 1 && startup_done)
+				atomic_store(startup_done, -1);
 			exit(-1);
 		}
 
-		/* first TCP worker runs startup_route if not already run */
-		if (startup_done && *startup_done == 0 && r == 0) {
+		/* Only the first SIP worker owns the startup flag.  In a mixed
+		 * setup the first UDP worker has already run the startup route. */
+		if (*chd_rank == 1 && startup_done) {
 			LM_DBG("running startup route for first TCP worker\n");
 			if (run_startup_route() < 0) {
 				LM_ERR("startup route processing failed in TCP worker\n");
 				report_failure_status();
-				*startup_done = -1;
+				atomic_store(startup_done, -1);
 				exit(-1);
 			}
-			*startup_done = 1;
+			atomic_store(startup_done, 1);
 		}
 
 		report_conditional_status((!no_daemon_mode), 0);
@@ -2572,12 +2582,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		close(tcp_dispatch_sock[0]);
 		tcp_dispatch_sock[0] = -1;
 	}
-
-	if (startup_done && tcp_workers_no > 0)
-		while (!(*startup_done)) {
-			usleep(5);
-			handle_sigs();
-		}
 
 	return 0;
 error:

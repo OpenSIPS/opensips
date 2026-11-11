@@ -27,6 +27,7 @@
 #define _NET_TCP_H_
 
 #include "../mi/mi.h"
+#include "../atomic.h"
 #include "tcp_conn_defs.h"
 #include "tcp_conn_profile.h"
 
@@ -52,7 +53,7 @@ int tcp_has_async_write(void);
 int tcp_count_processes(unsigned int *extra);
 
 /* starts all TCP worker processes */
-int tcp_start_processes(int *chd_rank, int *startup_done);
+int tcp_start_processes(int *chd_rank, atomic_t *startup_done);
 
 /* starts the TCP listening process */
 int tcp_start_listener(void);
