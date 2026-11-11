@@ -1265,14 +1265,16 @@ static inline char *body_part_next_start(const struct body_part *part)
 
 /* Prepares a body to be re-assembled. This consists of the following ops:
  *   - run the functions to build the parts (if the case)
- *   - add SIP header lumps to change CT header 
+ *   - add SIP header lumps to change CT header (only if hdr_changes)
  *   - estimating the new len of the body (after applying all the changes)
  * IMPORTANT: keep this function in sync with the reassemble_body_parts()
  *    to be 100% that estimating and building the body leads to the same
  *    result (as len).
+ * A caller that only reads the re-assembled body (get_updated_body_part())
+ * passes hdr_changes 0, so the SIP message headers are left untouched.
  */
-unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
-												const struct socket_info* send_sock)
+unsigned int prep_reassemble_body_parts_ex( struct sip_msg* msg,
+							const struct socket_info* send_sock, int hdr_changes)
 {
 	struct body_part *part;
 	struct lump* lump;
@@ -1294,7 +1296,7 @@ unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 		LM_DBG("no part to be added\n");
 
 		/* Remove Content-Type hdr if present */
-		if (msg->content_type && msg->content_type->name.s
+		if (hdr_changes && msg->content_type && msg->content_type->name.s
 		&& msg->content_type->name.len
 		&& del_lump(msg, msg->content_type->name.s- msg->buf,
 		msg->content_type->len, HDR_CONTENTTYPE_T)==0) {
@@ -1356,14 +1358,17 @@ unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 		if ( (part->flags & SIP_BODY_PART_FLAG_NEW)
 		|| msg->body->part_count>1 ) {
 			/* replace the Content-Type hdr */
-			if (msg->content_type)
+			if (!hdr_changes)
+				ct = NULL;
+			else if (msg->content_type)
 				ct = del_lump(msg, msg->content_type->name.s-msg->buf,
 					msg->content_type->len, HDR_CONTENTTYPE_T);
 			else
 				ct = anchor_lump(msg, msg->unparsed - msg->buf,
 					HDR_CONTENTTYPE_T);
 			if (ct==NULL) {
-				LM_ERR("failed to remove old CT / create anchor\n");
+				if (hdr_changes)
+					LM_ERR("failed to remove old CT / create anchor\n");
 			} else {
 				/* if a new part, we need to build the CT header; if a 
 				 * received part, simply copied from the part */
@@ -1491,14 +1496,17 @@ unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 		len += 2 /* "--" */ + sizeof(OSS_BOUNDARY)-1 + 2 /* "--" */ + CRLF_LEN;
 
 		/* replace the Content-Type hdr */
-		if (msg->content_type)
+		if (!hdr_changes)
+			ct = NULL;
+		else if (msg->content_type)
 			ct = del_lump(msg, msg->content_type->name.s-msg->buf,
 				msg->content_type->len, HDR_CONTENTTYPE_T);
 		else
 			ct = anchor_lump(msg, msg->unparsed - msg->buf,
 				HDR_CONTENTTYPE_T);
 		if (ct==NULL) {
-			LM_ERR("failed to remove old CT / create anchor\n");
+			if (hdr_changes)
+				LM_ERR("failed to remove old CT / create anchor\n");
 		} else {
 			/* "Content-Type: multipart/mixed;boundary=OSS_BOUNDARY CRLF" */
 			hdr = (char*)pkg_malloc( 39 + sizeof(OSS_BOUNDARY)-1 + CRLF_LEN );
