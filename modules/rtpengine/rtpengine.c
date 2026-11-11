@@ -2967,7 +2967,11 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 						else
 							continue; /* one more loop */
 					} else {
-						break; /* break the loop and exit with error */
+						/* not a failover error - fail the call */
+						RTPE_STOP_READ();
+						if (!error.len)
+							err = "proxy returned an error";
+						goto error;
 					}
 				}
 			} else {
