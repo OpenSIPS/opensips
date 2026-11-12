@@ -37,47 +37,46 @@
 #include "sql_cacher.h"
 #include "../../lib/csv.h"
 
-/*
- * cache_lock conditional compilation of atomic variable support
- * so we don't need to acquire a lock for reads 
- * if the cache_table param full_caching_lock_scope is set to row 
- * if atomic ops are not supported then the param has no effect 
- */
-#ifndef NO_ATOMIC_OPS
+/* Row-mode writers serialize with each other, but run alongside readers.
+ * Upgrade to exclusive access only while changing the reload version, state
+ * or column layout.  Readers keep this state stable through fetch + decode.
+ * This also works on platforms without C11 atomics. */
 #define lock_cache_writes(cache_lock) \
 	do { \
-		atomic_store(&cache_lock.is_writing, 1); \
-		lock_start_write(cache_lock.ref_lock); \
+		if ((cache_lock).scope == CACHE_LOCK_ROW) \
+			lock_start_sw_read((cache_lock).ref_lock); \
+		else \
+			lock_start_write((cache_lock).ref_lock); \
 	} while (0)
 #define unlock_cache_writes(cache_lock) \
 	do { \
-		atomic_store(&cache_lock.is_writing, 0); \
-		lock_stop_write(cache_lock.ref_lock); \
+		if ((cache_lock).scope == CACHE_LOCK_ROW) \
+			lock_stop_sw_read((cache_lock).ref_lock); \
+		else \
+			lock_stop_write((cache_lock).ref_lock); \
 	} while (0)
-#define acquire_read_lock(cache_lock) \
+#define lock_cache_state(cache_lock, old) \
 	do { \
-		if (cache_lock.scope == CACHE_LOCK_TABLE) { \
-			lock_start_read(cache_lock.ref_lock);  \
-		} \
+		if ((cache_lock).scope == CACHE_LOCK_ROW) \
+			lock_switch_write((cache_lock).ref_lock, old); \
 	} while (0)
-#define release_read_lock(cache_lock) \
+#define unlock_cache_state(cache_lock, old) \
 	do { \
-		if (cache_lock.scope == CACHE_LOCK_TABLE)  { \
-			lock_stop_read(cache_lock.ref_lock);  \
-		} \
+		if ((cache_lock).scope == CACHE_LOCK_ROW) \
+			lock_switch_read((cache_lock).ref_lock, old); \
 	} while (0)
-#define is_cache_writing(cache_lock) atomic_load(&cache_lock.is_writing)
-#define init_cache_lock ((cache_lock_t){NULL, CACHE_LOCK_ROW, 0})
-#else
-#define lock_cache_writes(cache_lock) lock_start_write(cache_lock.ref_lock)
-#define unlock_cache_writes(cache_lock) lock_stop_write(cache_lock.ref_lock)
-#define acquire_read_lock(cache_lock) lock_start_read(cache_lock.ref_lock)
-#define release_read_lock(cache_lock) lock_stop_read(cache_lock.ref_lock)
-#define is_cache_writing(cache_lock) 0
-#define init_cache_lock ((cache_lock_t){NULL, CACHE_LOCK_ROW})
-#endif
+#define acquire_read_lock(cache_lock) lock_start_read((cache_lock).ref_lock)
+#define release_read_lock(cache_lock) lock_stop_read((cache_lock).ref_lock)
 
-/* end of cache_lock conditional compilation */
+static void finish_cache_reload(cache_lock_t *cache_lock)
+{
+	int old_w_flag = 0;
+
+	lock_cache_state(*cache_lock, old_w_flag);
+	cache_lock->is_writing = 0;
+	unlock_cache_state(*cache_lock, old_w_flag);
+	unlock_cache_writes(*cache_lock);
+}
 
 static int mod_init(void);
 static void destroy(void);
@@ -239,7 +238,9 @@ static int parse_cache_entry(unsigned int type, void *val)
 	new_entry->nr_ints = 0;
 	new_entry->nr_strs = 0;
 	new_entry->column_types = 0;
-	new_entry->cache_lock = init_cache_lock;
+	new_entry->cache_lock.ref_lock = NULL;
+	new_entry->cache_lock.scope = CACHE_LOCK_ROW;
+	new_entry->cache_lock.is_writing = 0;
 
 #define PARSE_TOKEN(_ptr1, _ptr2, field, field_name_str, field_name_len) \
 	do { \
@@ -462,7 +463,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 				goto parse_err;
 			}
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-					parse_str.len - (p2 - parse_str.s + 1));
+						parse_str.len - (p2 - parse_str.s + 1));
 			str str_val;
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				str_val.len = parse_str.len - (p2 - parse_str.s + 1);
@@ -496,7 +497,10 @@ static int parse_cache_entry(unsigned int type, void *val)
 		if (p2 - p1 == EXPIRE_STR_LEN &&
 		    !memcmp(p1, EXPIRE_STR, EXPIRE_STR_LEN)) {
 			str str_val;
-			str_val.len = parse_str.len - (p2 - parse_str.s + 1);
+			tmp = memchr(p2 + 1, spec_delimiter.s[0],
+				parse_str.len - (p2 - parse_str.s + 1));
+			str_val.len = tmp ? tmp - p2 - 1 :
+				parse_str.len - (p2 - parse_str.s + 1);
 			if (str_val.len <= 0) {
 				LM_ERR("expected value of: %.*s\n", EXPIRE_STR_LEN, EXPIRE_STR);
 				goto parse_err;
@@ -520,12 +524,8 @@ static int parse_cache_entry(unsigned int type, void *val)
 			}
 		}
 
-		if (!memcmp(p1, FULL_CACHING_LOCK_SCOPE, FULL_CACHING_LOCK_SCOPE_STR_LEN)) {
-			if (*(p1+FULL_CACHING_LOCK_SCOPE_STR_LEN) != '=') { \
-				LM_ERR("expected: '=' after: %.*s\n", FULL_CACHING_LOCK_SCOPE_STR_LEN, FULL_CACHING_LOCK_SCOPE);
-				goto parse_err;
-			}
-
+		if (p2 - p1 == FULL_CACHING_LOCK_SCOPE_STR_LEN &&
+		    !memcmp(p1, FULL_CACHING_LOCK_SCOPE, FULL_CACHING_LOCK_SCOPE_STR_LEN)) {
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
 						parse_str.len - (p2 - parse_str.s + 1));
 			if (!tmp)
@@ -543,19 +543,15 @@ static int parse_cache_entry(unsigned int type, void *val)
 			else if (len == LOCK_SCOPE_TABLE_STR_LEN && !memcmp(p2+1, LOCK_SCOPE_TABLE, len))
 				new_entry->cache_lock.scope = CACHE_LOCK_TABLE;
 			else {
-				LM_ERR("Unsupported cache lock scope '%.*s' defaulting to row\n", len, p2+1);
+				LM_ERR("Unsupported cache lock scope '%.*s' (expected row or table)\n",
+					len, p2 + 1);
+				goto parse_err;
 			}
 
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				goto end_parsing;
-			else {
-				p1 = tmp + 1;
-				p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
-				if (!p2) {
-					LM_ERR("expected: '='\n");
-					goto parse_err;
-				}
-			}
+			LM_ERR("unexpected parameter after full_caching_lock_scope\n");
+			goto parse_err;
 		} else if (parse_str.len - (p1 - parse_str.s) > 0) {
 			LM_ERR("unknown parameter: %.*s\n",
 				(int)(parse_str.len - (p1 - parse_str.s)), p1);
@@ -1073,6 +1069,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	int i;
 	int reload_vers = 0;
 	int loaded_rec = 0;
+	int old_w_flag = 0;
+	cache_entry_t layout;
 
 	sr_add_report( sql_srg, STR2CI(c_entry->id),
 		CHAR_INT("starting DB data loading"), 0);
@@ -1128,24 +1126,50 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	pkg_free(query_cols);
 
 	lock_cache_writes(db_hdls->c_entry->cache_lock);
-
-	if (update_cache_rld_vers(db_hdls, inc_rld_vers, &reload_vers) < 0) {
-		unlock_cache_writes(db_hdls->c_entry->cache_lock);
-		goto error;
-	}
+	lock_cache_state(c_entry->cache_lock, old_w_flag);
 
 	/* anything loaded ? if not, we can do a quick exit here */
 	if (RES_ROW_N(sql_res) == 0)
-		goto done;
+		goto update_version;
 
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
-	if (get_column_types(c_entry, values + 1, ROW_N(row) - 1) < 0) {
+	layout = *c_entry;
+	if (get_column_types(&layout, values + 1, ROW_N(row) - 1) < 0) {
+		unlock_cache_state(c_entry->cache_lock, old_w_flag);
 		unlock_cache_writes(db_hdls->c_entry->cache_lock);
 		goto error;
 	}
+	/* Old and new rows coexist in row mode, so their layouts must agree. */
+	if (c_entry->cache_lock.scope == CACHE_LOCK_ROW &&
+	    c_entry->nr_ints + c_entry->nr_strs != 0 &&
+	    (layout.nr_ints != c_entry->nr_ints ||
+	     layout.nr_strs != c_entry->nr_strs ||
+	     layout.column_types != c_entry->column_types)) {
+		LM_ERR("Column types changed for cache %.*s; restart OpenSIPS "
+			"to load the new layout\n", c_entry->id.len, c_entry->id.s);
+		unlock_cache_state(c_entry->cache_lock, old_w_flag);
+		unlock_cache_writes(c_entry->cache_lock);
+		goto error;
+	}
+	c_entry->nr_ints = layout.nr_ints;
+	c_entry->nr_strs = layout.nr_strs;
+	c_entry->column_types = layout.column_types;
 
-	/* load the rows into the cahchedb */
+update_version:
+	if (update_cache_rld_vers(db_hdls, inc_rld_vers, &reload_vers) < 0) {
+		unlock_cache_state(c_entry->cache_lock, old_w_flag);
+		unlock_cache_writes(c_entry->cache_lock);
+		goto error;
+	}
+	/* Startup loads do not increment the version and must not revive rows
+	 * invalidated by an earlier reload.  Single-key reloads never set this. */
+	c_entry->cache_lock.is_writing = inc_rld_vers != 0 && RES_ROW_N(sql_res) != 0;
+	unlock_cache_state(c_entry->cache_lock, old_w_flag);
+	if (RES_ROW_N(sql_res) == 0)
+		goto done;
+
+	/* load the rows into the cachedb */
 	do {
 		for (i=0; i < RES_ROW_N(sql_res); i++) {
 			row = RES_ROWS(sql_res) + i;
@@ -1153,7 +1177,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			if (!VAL_NULL(values)) {
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
-					unlock_cache_writes(db_hdls->c_entry->cache_lock);
+					finish_cache_reload(&c_entry->cache_lock);
 					goto error;
 				}
 				loaded_rec++;
@@ -1164,7 +1188,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
 				LM_ERR("Error fetching rows (1) from SQL DB: %s\n",
 					db_url_escape(&c_entry->db_url));
-				unlock_cache_writes(db_hdls->c_entry->cache_lock);
+				finish_cache_reload(&c_entry->cache_lock);
 				goto error;
 			}
 		} else {
@@ -1173,7 +1197,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	} while (RES_ROW_N(sql_res) > 0);
 
 done:
-	unlock_cache_writes(db_hdls->c_entry->cache_lock);
+	finish_cache_reload(&c_entry->cache_lock);
 
 	db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
 
@@ -1215,6 +1239,7 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 	db_row_t *row;
 	db_val_t key_val;
 	str src_key, null_val;
+	int rc, old_w_flag = 0;
 
 	src_key.len = c_entry->id.len + key.len;
 	src_key.s = pkg_malloc(src_key.len);
@@ -1273,9 +1298,16 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 	row = RES_ROWS(*sql_res);
 	*values = ROW_VALUES(row);
 
-	if (c_entry->nr_ints + c_entry->nr_strs == 0 &&
-		get_column_types(c_entry, *values, ROW_N(row)) < 0)
-		goto sql_error;
+	if (c_entry->nr_ints + c_entry->nr_strs == 0) {
+		/* A key reload can precede the initial full-table load. */
+		if (!c_entry->on_demand)
+			lock_cache_state(c_entry->cache_lock, old_w_flag);
+		rc = get_column_types(c_entry, *values, ROW_N(row));
+		if (!c_entry->on_demand)
+			unlock_cache_state(c_entry->cache_lock, old_w_flag);
+		if (rc < 0)
+			goto sql_error;
+	}
 
 	if (insert_in_cachedb(c_entry, db_hdls, &key_val, *values, rld_vers, ROW_N(row)) < 0)
 		goto sql_error;
@@ -1529,7 +1561,7 @@ static int mod_init(void)
 			c_entry->cache_lock.ref_lock = lock_init_rw();
 			if (!c_entry->cache_lock.ref_lock) {
 				LM_ERR("Failed to init readers-writers lock\n");
-				continue;
+				return -1;
 			}
 			if (sr_register_identifier( sql_srg, STR2CI(c_entry->id),
 				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
@@ -1577,7 +1609,8 @@ static int child_init(int rank)
 	}
 
 	/* perform full caching load in the same process but after child_init is done */
-	if ((rank == 1) && ipc_send_rpc(process_no, cache_init_load, NULL) < 0) {
+	if (rank == 1 && db_hdls_list &&
+	    ipc_send_rpc(process_no, cache_init_load, NULL) < 0) {
 		LM_ERR("Failed to RPC full caching load\n");
 		return -1;
 	}
@@ -1639,11 +1672,14 @@ static int cdb_val_decode(const pv_name_fix_t *pv_name, const str *cdb_val, int 
 		goto error;
 	memcpy(&int_val, int_buf, 4);
 
-	if (reload_version != int_val) {
-	    if (!is_cache_writing(pv_name->c_entry->cache_lock) || 
-				(is_cache_writing(pv_name->c_entry->cache_lock) && reload_version != int_val +1))
-			return 3;
-	}
+	/* The caller holds a read lock through fetch + decode.  Only a full
+	 * reload in row mode permits the immediately preceding generation. */
+	if (int_val != reload_version &&
+	    (pv_name->c_entry->on_demand ||
+	     pv_name->c_entry->cache_lock.scope != CACHE_LOCK_ROW ||
+	     !pv_name->c_entry->cache_lock.is_writing ||
+	     reload_version <= 0 || int_val != reload_version - 1))
+		return 3;
 
 	/* null integer value in db */
 	if (!memcmp(cdb_val->s + pv_name->col_offset, zeroes, INT_B64_ENC_LEN))
@@ -2472,3 +2508,7 @@ static int sql_cache_dump(struct sip_msg *msg, db_handlers_t *dbh,
 
 	return n == 0 ? -2 : n;
 }
+
+#ifdef UNIT_TESTS
+#include "test/test_sql_cacher.h"
+#endif

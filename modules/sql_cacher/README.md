@@ -35,9 +35,19 @@ when appropriate keys are requested.
 For on demand caching, the stored values have a configurable expire period after
 which they are permanently removed unless an MI reload function is called for a
 specific key. In the case of full caching the data is automatically reloaded at
-a configurable interval. Consequently if the data in the SQL database changes
-and a MI reload function is  called, the old data remains in cache only
-until it expires.
+a configurable interval. Old full-caching rows may remain physically stored
+until their expiry time, but reload versions control whether they can be read.
+
+Full caching allows reads while an automatic or MI full-table reload writes
+rows into the cache. During the reload, a lookup may return either the new row
+or its value from the immediately preceding reload. Once the reload finishes,
+rows not loaded by that reload are no longer returned, even if their cache
+entries have not expired. Use `full_caching_lock_scope=table` to make reads
+wait for the reload instead.
+
+A reload updates the cache in place. If it fails after writing some rows, those
+rows remain available; rows still carrying the preceding version are no longer
+returned when the failed reload ends. Neither locking mode provides rollback.
 
 
 ### Dependencies
@@ -91,14 +101,20 @@ If not present, all the columns from the table will be cached
 - *expire* : expire period for the values stored
 in the cache for the on demand caching type in seconds
 If not present, default value is "1 hour"
-- *full_caching_lock_scope* : whether to lock reads while loading the table
-into the cache on a row or table basis. With `table`, loading large tables
-can block `$sql_cached_value` reads and stall SIP processing, but ensures
-full-table consistency. `row` allows reads while other rows are being written.
-	- row
-	- table
+- *full_caching_lock_scope* : controls reads during full caching reloads
+(`on_demand=0`):
+	- `row` (default): reads continue while rows are being loaded. CacheDB
+	provides synchronization for individual values. Different lookups,
+	including rows returned by `sql_cache_dump()`, may observe a mix
+	of the new and previous reloads; this is not a table snapshot.
+	- `table`: reads wait while the table is being loaded into the cache.
 
-	*If not present, default value is "row".*
+	Reloads of the same full-caching entry run one at a time within an
+	OpenSIPS instance, including `sql_cacher:reload` calls that specify a `key`.
+	In `row` mode, changing a cached SQL column from an integer type to a
+	string type, or vice versa, requires restarting OpenSIPS before reloading
+	the cache.
+	`full_caching_lock_scope` has no effect on on-demand caching.
 
 
 The parameters must be given in the exact order specified above.

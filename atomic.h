@@ -43,7 +43,6 @@
 #undef NO_ATOMIC_OPS
 
 typedef _Atomic(unsigned long) atomic_t;
-typedef _Atomic(_Bool) atomic_bool_t;
 #else /* HAVE_STDATOMIC */
 
 /************************* i386 & x86_64 ARCH ****************************/
@@ -73,7 +72,6 @@ typedef _Atomic(_Bool) atomic_bool_t;
  * not some alias that contains the same information.
  */
 typedef struct { volatile unsigned int counter; } atomic_t;
-typedef atomic_t atomic_bool_t;
 
 /*! \brief
  * atomic_add - add integer to atomic variable
@@ -143,7 +141,6 @@ static __inline__ void atomic_dec(atomic_t *v)
  * not some alias that contains the same information.
  */
 typedef struct { volatile unsigned long counter; } atomic_t;
-typedef atomic_t atomic_bool_t;
 
 /*! \brief
  * atomic_set - set atomic variable

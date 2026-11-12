@@ -28,7 +28,6 @@
 
 #include "../../db/db.h"
 #include "../../cachedb/cachedb.h"
-#include "../../atomic.h"
 
 #define DEFAULT_SPEC_DELIM "\n"
 #define DEFAULT_COLUMNS_DELIM " "
@@ -87,9 +86,8 @@ typedef enum _caching_lock_scope {
 typedef struct _cache_lock {
 	rw_lock_t *ref_lock;
 	caching_lock_scope scope;
-#ifndef NO_ATOMIC_OPS
-	atomic_bool_t is_writing;
-#endif
+	/* Protected by ref_lock in exclusive mode at reload boundaries. */
+	int is_writing;
 } cache_lock_t;
 
 typedef struct _cache_entry {
