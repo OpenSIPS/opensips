@@ -91,6 +91,14 @@ If not present, all the columns from the table will be cached
 - *expire* : expire period for the values stored
 in the cache for the on demand caching type in seconds
 If not present, default value is "1 hour"
+- *full_caching_lock_scope* : whether to lock reads while loading the table
+into the cache on a row or table basis. With `table`, loading large tables
+can block `$sql_cached_value` reads and stall SIP processing, but ensures
+full-table consistency. `row` allows reads while other rows are being written.
+	- row
+	- table
+
+	*If not present, default value is "row".*
 
 
 The parameters must be given in the exact order specified above.
@@ -108,7 +116,8 @@ cachedb_url=mongodb:mycluster://127.0.0.1:27017/db.col
 table=table_name
 key=column_name_0
 columns=column_name_1 column_name_2 column_name_3
-on_demand=0")
+on_demand=0
+full_caching_lock_scope=row")
 ```
 
 
