@@ -156,7 +156,7 @@ struct module_exports exports = {
 
 static int parse_cache_entry(unsigned int type, void *val)
 {
-	cache_entry_t *new_entry;
+	cache_entry_t *new_entry = NULL;
 	char *p1, *p2, *tmp, *c_tmp1, *c_tmp2;
 	int col_idx;
 	int rc = -1;
@@ -175,26 +175,29 @@ static int parse_cache_entry(unsigned int type, void *val)
 
 	parse_str.len = strlen((char *)val);
 	parse_str.s = pkg_malloc(parse_str.len);
-	if(!parse_str.s){
+	if (!parse_str.s) {
 		LM_ERR("No more pkg memory\n");
-		return -1;
+		goto setup_err;
 	}
 	memcpy(parse_str.s, (char *)val, parse_str.len);
-		new_entry = shm_malloc(sizeof(cache_entry_t));
-		if (!new_entry) {
-			LM_ERR("No more memory for cache entry struct\n");
-			return -1;
-		}
-		new_entry->id.s = NULL;
-		new_entry->columns = NULL;
-		new_entry->key_type = DB_STR;
-		new_entry->nr_columns = 0;
-		new_entry->on_demand = 0;
-		new_entry->expire = DEFAULT_ON_DEMAND_EXPIRE;
-		new_entry->nr_ints = 0;
-		new_entry->nr_strs = 0;
-		new_entry->column_types = 0;
-		new_entry->ref_lock = NULL;
+
+	new_entry = shm_malloc(sizeof(cache_entry_t));
+	if (!new_entry) {
+		LM_ERR("No more memory for cache entry struct\n");
+		goto setup_err;
+	}
+
+	memset(new_entry, 0, sizeof(*new_entry));
+	new_entry->id.s = NULL;
+	new_entry->columns = NULL;
+	new_entry->key_type = DB_STR;
+	new_entry->nr_columns = 0;
+	new_entry->on_demand = 0;
+	new_entry->expire = DEFAULT_ON_DEMAND_EXPIRE;
+	new_entry->nr_ints = 0;
+	new_entry->nr_strs = 0;
+	new_entry->column_types = 0;
+	new_entry->ref_lock = NULL;
 
 #define PARSE_TOKEN(_ptr1, _ptr2, field, field_name_str, field_name_len) \
 	do { \
@@ -204,13 +207,14 @@ static int parse_cache_entry(unsigned int type, void *val)
 			LM_ERR("expected: '=' after %.*s\n", (field_name_len), (field_name_str)); \
 			goto parse_err; \
 		} \
-		if (!memcmp((_ptr1), (field_name_str), (field_name_len))) { \
+		if ((_ptr2) - (_ptr1) == (field_name_len) && \
+		    !memcmp((_ptr1), (field_name_str), (field_name_len))) { \
 			if (*((_ptr1)+(field_name_len)) != '=') { \
 				LM_ERR("expected: '=' after %.*s\n", (field_name_len), (field_name_str)); \
 				goto parse_err; \
 			} \
 			tmp = memchr((_ptr2) + 1, spec_delimiter.s[0], parse_str.len - \
-													((_ptr2) - parse_str.s)); \
+													((_ptr2) - parse_str.s + 1)); \
 			if (!tmp) { \
 				LM_ERR("expected: %c after value of %.*s\n", spec_delimiter.s[0], \
 					(field_name_len), (field_name_str)); \
@@ -222,6 +226,8 @@ static int parse_cache_entry(unsigned int type, void *val)
 				goto parse_err; \
 			} \
 			new_entry->field.s = shm_malloc(new_entry->field.len); \
+			if (!new_entry->field.s) \
+				goto parse_err; \
 			memcpy(new_entry->field.s, p2 + 1, new_entry->field.len); \
 		} else { \
 			LM_ERR("expected: %.*s instead of: %.*s\n", (field_name_len), (field_name_str), \
@@ -253,14 +259,14 @@ static int parse_cache_entry(unsigned int type, void *val)
 			LM_ERR("expected: '=' after %.*s\n", KEY_STR_LEN, KEY_STR);
 			goto parse_err;
 		}
-		if (!memcmp(p1, KEY_STR, KEY_STR_LEN)) {
+		if (p2 - p1 == KEY_STR_LEN && !memcmp(p1, KEY_STR, KEY_STR_LEN)) {
 			if (*(p1+KEY_STR_LEN) != '=') { \
 				LM_ERR("expected: '=' after %.*s\n", KEY_STR_LEN, KEY_STR);
 				goto parse_err;
 			}
 
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-						parse_str.len - (p2 - parse_str.s));
+						parse_str.len - (p2 - parse_str.s + 1));
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				new_entry->key.len = parse_str.len - (p2 - parse_str.s + 1);
 			else
@@ -272,6 +278,8 @@ static int parse_cache_entry(unsigned int type, void *val)
 			}
 
 			new_entry->key.s = shm_malloc(new_entry->key.len);
+			if (!new_entry->key.s)
+				goto parse_err;
 			memcpy(new_entry->key.s, p2 + 1, new_entry->key.len);
 
 			if (!tmp)
@@ -289,7 +297,8 @@ static int parse_cache_entry(unsigned int type, void *val)
 			LM_ERR("expected: '='\n");
 			goto parse_err;
 		}
-		if (!memcmp(p1, KEY_TYPE_STR, KEY_TYPE_STR_LEN)) {
+		if (p2 - p1 == KEY_TYPE_STR_LEN &&
+		    !memcmp(p1, KEY_TYPE_STR, KEY_TYPE_STR_LEN)) {
 			if (*(p1+KEY_TYPE_STR_LEN) != '=') { \
 				LM_ERR("expected: '=' after: %.*s\n", KEY_TYPE_STR_LEN, KEY_TYPE_STR);
 				goto parse_err;
@@ -297,7 +306,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 
 
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-						parse_str.len - (p2 - parse_str.s));
+						parse_str.len - (p2 - parse_str.s + 1));
 			if (!tmp)
 				len = parse_str.len - (p2 - parse_str.s + 1);
 			else
@@ -330,7 +339,8 @@ static int parse_cache_entry(unsigned int type, void *val)
 		}
 
 		/* parse the required column names if present */
-		if (!memcmp(p1, COLUMNS_STR, COLUMNS_STR_LEN)) {
+		if (p2 - p1 == COLUMNS_STR_LEN &&
+		    !memcmp(p1, COLUMNS_STR, COLUMNS_STR_LEN)) {
 			if (*(p1+COLUMNS_STR_LEN) != '=') { \
 				LM_ERR("expected: '=' after: %.*s\n", COLUMNS_STR_LEN, COLUMNS_STR);
 				goto parse_err;
@@ -354,6 +364,9 @@ static int parse_cache_entry(unsigned int type, void *val)
 			}
 			/* allocate array of columns and actually parse */
 			new_entry->columns = shm_malloc(new_entry->nr_columns * sizeof(str*));
+			if (!new_entry->columns)
+				goto parse_err;
+			memset(new_entry->columns, 0, new_entry->nr_columns * sizeof(str *));
 
 			c_tmp1 = p2 + 1;
 			c_tmp2 = memchr(p2 + 1, columns_delimiter.s[0],
@@ -400,13 +413,14 @@ static int parse_cache_entry(unsigned int type, void *val)
 		}
 
 		/* parse on demand parameter */
-		if (!memcmp(p1, ONDEMAND_STR, ONDEMAND_STR_LEN)) {
+		if (p2 - p1 == ONDEMAND_STR_LEN &&
+		    !memcmp(p1, ONDEMAND_STR, ONDEMAND_STR_LEN)) {
 			if (*(p1+ONDEMAND_STR_LEN) != '=') { \
 				LM_ERR("expected: '=' after: %.*s\n", ONDEMAND_STR_LEN, ONDEMAND_STR);
 				goto parse_err;
 			}
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-					parse_str.len - (p2 - parse_str.s));
+					parse_str.len - (p2 - parse_str.s + 1));
 			str str_val;
 			if (!tmp) /* delimiter not found, reached the end of the string to parse */
 				str_val.len = parse_str.len - (p2 - parse_str.s + 1);
@@ -437,7 +451,8 @@ static int parse_cache_entry(unsigned int type, void *val)
 		}
 
 		/* parse expire parameter */
-		if (!memcmp(p1, EXPIRE_STR, EXPIRE_STR_LEN)) {
+		if (p2 - p1 == EXPIRE_STR_LEN &&
+		    !memcmp(p1, EXPIRE_STR, EXPIRE_STR_LEN)) {
 			str str_val;
 			str_val.len = parse_str.len - (p2 - parse_str.s + 1);
 			if (str_val.len <= 0) {
@@ -479,10 +494,25 @@ parse_err:
 				}
 			shm_free(new_entry->columns);
 		}
+		shm_free(new_entry->id.s);
+		shm_free(new_entry->db_url.s);
+		shm_free(new_entry->cachedb_url.s);
+		shm_free(new_entry->table.s);
+		shm_free(new_entry->key.s);
 		shm_free(new_entry);
 		pkg_free(parse_str_copy.s);
 
 	return rc;
+setup_err:
+	if (parse_str.s) {
+		pkg_free(parse_str.s);
+	}
+
+	if (new_entry) {
+		shm_free(new_entry);
+	}
+
+	return -1;
 }
 
 /* get the column types from the sql query result */
