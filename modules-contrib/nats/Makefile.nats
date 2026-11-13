@@ -1,0 +1,49 @@
+# modules-contrib/nats/Makefile.nats — shared NATS dependency detection.
+# Include this from any consumer that needs libnats headers (modules-contrib/nats
+# itself plus modules-contrib/event_nats, modules-contrib/cachedb_nats,
+# modules-contrib/cachedb_nats_fts, modules-contrib/nats_consumer).  Follows the same pattern as Makefile.openssl.
+#
+# Sets:
+#   NATS_FOUND := yes      iff libnats headers are reachable
+#   DEFS  += <cflags>      pkg-config CFLAGS or -I$(LOCALBASE)/include
+#   LIBS  += -ldl          for the dlopen path used by modules-contrib/nats/nats_dl.c
+#
+# Important: this fragment NO LONGER adds -lnats to LIBS.  Since the
+# function-pointer table in modules-contrib/nats/nats_dl.{c,h} dlopens libnats at
+# runtime, no .so produced from this tree should carry DT_NEEDED for
+# libnats.so; the library is chosen at run time (the ld.so search, or
+# $NATS_DL_LIBNATS_PATH).
+#
+# Consumers of this fragment MUST gate their build rules on
+# NATS_FOUND so that hosts without libnats headers produce a clean
+# skip rather than a fatal "nats/nats.h: No such file or directory"
+# at the C compile step.
+
+ifeq ($(CROSS_COMPILE),)
+NATS_BUILDER := $(shell \
+	if pkg-config --exists libnats; then \
+		echo 'pkg-config libnats'; \
+	elif pkg-config --exists nats; then \
+		echo 'pkg-config nats'; \
+	fi)
+endif
+
+ifneq ($(NATS_BUILDER),)
+	NATS_FOUND := yes
+	NATS_CFLAGS := $(shell $(NATS_BUILDER) --cflags)
+	DEFS += $(NATS_CFLAGS)
+	# Headers only.  We deliberately drop --libs (which would add
+	# -lnats); see the file-level comment above.
+	LIBS += -ldl
+else
+	# Fall back to a header probe at LOCALBASE.  Don't blindly emit
+	# -I$(LOCALBASE)/include when the headers aren't there: that
+	# would let the build proceed past Make and only fail at the C
+	# compile step, which is the failure mode that bit CI.
+	ifneq (,$(wildcard $(LOCALBASE)/include/nats/nats.h))
+		NATS_FOUND := yes
+		NATS_CFLAGS := -I$(LOCALBASE)/include
+		DEFS += $(NATS_CFLAGS)
+		LIBS += -ldl
+	endif
+endif
