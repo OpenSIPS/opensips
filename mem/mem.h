@@ -30,8 +30,42 @@
 #include "../dprint.h"
 
 #include "mem_funcs.h"
+#include "common.h"
 
 int set_pkg_mm(const char *mm_name);
+
+/* per-generation PKG allocations.
+ *
+ * Every fragment a pkg allocator hands out carries the value pkg_gen_current
+ * had at allocation time (a realloc that moves a fragment keeps the stamp of
+ * the fragment it moves). A routes reload opens a generation around the
+ * re-parse + fixup of the new script, but nothing is stamped by default:
+ * only the allocations the script parser and the core route fixer make for
+ * the tree itself are marked, one by one, with PKG_GEN_MARK(), and
+ * pkg_gen_sweep() frees every still-allocated fragment of a dropped
+ * generation in one pass over the pool. Whatever is not marked (module
+ * fixups, registries, any helper the parser calls) allocates unstamped and
+ * is never swept: at worst it leaks, as before, it is never freed under a
+ * user. Non-pkg resources compiled for the tree (regexes) register a release
+ * callback with pkg_gen_track() from inside a marked spot; the sweep runs it
+ * before freeing. Generation 0 is never swept (it is the startup script and
+ * everything allocated at runtime). */
+unsigned long pkg_gen_begin(void);
+void pkg_gen_end(void);
+void pkg_gen_sweep(unsigned long gen);
+int pkg_gen_track(void (*release)(void *), void *arg);
+
+extern unsigned long pkg_gen_open;
+
+/* run _stmt (a script-tree allocation) stamped with the open generation;
+ * a no-op outside a routes reload */
+#define PKG_GEN_MARK(_stmt) \
+	do { \
+		unsigned long __pkg_gen_saved = pkg_gen_current; \
+		pkg_gen_current = pkg_gen_open; \
+		_stmt; \
+		pkg_gen_current = __pkg_gen_saved; \
+	} while (0)
 
 #ifdef PKG_MALLOC
 #include "common.h"
