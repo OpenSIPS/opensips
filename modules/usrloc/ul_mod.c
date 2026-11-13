@@ -288,6 +288,9 @@ static const mi_export_t mi_cmds[] = {
 	{ MI_USRLOC_DUMP, 0, 0, 0, {
 		{w_mi_usrloc_dump, {0}},
 		{w_mi_usrloc_dump_1, {"brief", 0}},
+		{w_mi_usrloc_dump_filtered, {"aor_prefix", 0}},
+		{w_mi_usrloc_dump_paged, {"aor_prefix", "limit", "offset", 0}},
+		{w_mi_usrloc_dump_brief_paged, {"brief", "aor_prefix", "limit", "offset", 0}},
 		{EMPTY_MI_RECIPE}}, {"ul_dump", 0}
 	},
 	{ MI_USRLOC_FLUSH, 0, 0, mi_child_init, {
