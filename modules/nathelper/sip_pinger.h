@@ -128,6 +128,9 @@ static int parse_branch(str branch)
 
 	branch.len -= (end - branch.s + 1);
 	branch.s = end + 1;
+	end = q_memchr(branch.s, '.', branch.len);
+	if (end)
+		branch.len = end - branch.s;
 
 	/* reverse_hex2int64() cannot fail in unsafe mode and it will return 
 	   whatever it was able to parse (0 if nothing )*/
@@ -316,6 +319,15 @@ build_branch(char *branch, int *size,
 		*size -= 1;
 
 		ret=int64_2reverse_hex(&branch, size, ct_coords);
+		if (ret < 0)
+			goto out_nospace;
+
+		if (*size < 2)
+			goto out_nospace;
+		*branch++ = '.';
+		*branch++ = 'p';
+		*size -= 2;
+		ret=int2reverse_hex(&branch, size, label);
 		if (ret < 0)
 			goto out_nospace;
 	} else {

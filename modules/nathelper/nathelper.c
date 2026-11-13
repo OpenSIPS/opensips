@@ -1969,3 +1969,7 @@ int fix_ignore_rpl_codes(void)
 	free_csv_record(chopped_codes);
 	return 0;
 }
+
+#ifdef UNIT_TESTS
+#include "test/test_nathelper.h"
+#endif
