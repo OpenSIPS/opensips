@@ -61,7 +61,8 @@ struct cgr_acc_ctx {
 
 	time_t start_time;
 	time_t answer_time;
-	unsigned int duration;
+	unsigned int answer_usec;
+	unsigned long long duration;
 
 	/* variables */
 	struct list_head *sessions;
@@ -81,6 +82,11 @@ int cgr_acc_sessions(json_object *param, json_object **ret);
 #define CGRF_DO_CDR		(1<<0)
 #define CGRF_DO_MISSED	(1<<1)
 #define CGRF_ENGAGED	(1<<2)
+
+#define CGR_USAGE_S		0
+#define CGR_USAGE_MS	1
+#define CGR_USAGE_US	2
+extern char *cgr_usage_precision_s;
 
 #endif /* _CGRATES_ACC_H_ */
 

@@ -19,6 +19,8 @@
  *
  */
 
+#include <sys/time.h>
+
 #include "../../ut.h"
 #include "../../mod_fix.h"
 #include "cgrates_acc.h"
@@ -29,6 +31,9 @@
 
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
+
+char *cgr_usage_precision_s = "ms";
+static int cgr_usage_precision = CGR_USAGE_MS;
 
 static gen_lock_t *cgrates_contexts_lock;
 static struct list_head *cgrates_contexts;
@@ -58,6 +63,18 @@ int cgr_acc_init(void)
 		return -1;
 	}
 	INIT_LIST_HEAD(cgrates_contexts);
+
+	if (!strcmp(cgr_usage_precision_s, "s"))
+		cgr_usage_precision = CGR_USAGE_S;
+	else if (!strcmp(cgr_usage_precision_s, "ms"))
+		cgr_usage_precision = CGR_USAGE_MS;
+	else if (!strcmp(cgr_usage_precision_s, "us"))
+		cgr_usage_precision = CGR_USAGE_US;
+	else {
+		LM_ERR("invalid usage_precision \"%s\": expected s, ms or us\n",
+				cgr_usage_precision_s);
+		return -1;
+	}
 
 	return 0;
 }
@@ -499,14 +516,36 @@ error:
 	return NULL;
 }
 
+/* pushes the Usage node as a Go duration */
+static int cgr_push_usage(json_object *params, struct cgr_acc_ctx *ctx,
+		char *buf, int buf_len)
+{
+	str tmp;
+
+	switch (cgr_usage_precision) {
+	case CGR_USAGE_S:
+		tmp.len = snprintf(buf, buf_len, "%llus", ctx->duration / 1000000);
+		break;
+	case CGR_USAGE_US:
+		tmp.len = snprintf(buf, buf_len, "%lluus", ctx->duration);
+		break;
+	default:
+		tmp.len = snprintf(buf, buf_len, "%llums", ctx->duration / 1000);
+		break;
+	}
+	tmp.s = buf;
+	return cgr_obj_push_str(params, "Usage", &tmp);
+}
+
 static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		struct cgr_acc_ctx *ctx, struct cgr_session *s)
 {
 	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
 	struct dlg_cell *dlg;
 	struct cgr_msg *cmsg = NULL;
-	char int2str_buf[INT2STR_MAX_LEN + 1];
-	time_t now = time(NULL);
+	char usage_buf[INT2STR_MAX_LEN + 3];
+	struct timeval now;
+	long long dur_us;
 	static str cmd_compat = str_init("SMGenericV1.TerminateSession");
 	static str cmd_ng = str_init("SessionSv1.TerminateSession");
 	str *cmd = (cgre_compat_mode ? &cmd_compat: &cmd_ng);
@@ -518,7 +557,10 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		return NULL;
 	}
 
-	ctx->duration = now - ctx->answer_time;
+	/* call duration in microseconds */
+	gettimeofday(&now, NULL);
+	dur_us = (long long)(now.tv_sec - ctx->answer_time) * 1000000LL + (long long)(now.tv_usec - (long)ctx->answer_usec);
+	ctx->duration = dur_us > 0 ? (unsigned long long)dur_us : 0;
 
 	/* OriginID */
 	if ((dlg = cgr_dlgb.get_dlg()) == NULL) {
@@ -572,12 +614,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 		goto error;
 	}
 
-	tmp.s = int2bstr(ctx->duration, int2str_buf, &tmp.len);
-	/* add an s at the end */
-	tmp.s[tmp.len] = 's';
-	tmp.len++;
-	tmp.s[tmp.len] = 0;
-	if (cgr_obj_push_str(cmsg->params, "Usage", &tmp) < 0) {
+	if (cgr_push_usage(cmsg->params, ctx, usage_buf, sizeof(usage_buf)) < 0) {
 		LM_ERR("cannot add Usage node\n");
 		goto error;
 	}
@@ -594,7 +631,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 {
 	str tmp;
 	struct cgr_msg *cmsg = NULL;
-	char int2str_buf[INT2STR_MAX_LEN + 1];
+	char usage_buf[INT2STR_MAX_LEN + 3];
 	static str cmd_compat = str_init("SMGenericV1.ProcessCDR");
 	static str cmd_ng = str_init("SessionSv1.ProcessCDR");
 	struct cgr_acc_sess *si = (struct cgr_acc_sess *)s->acc_info;
@@ -622,12 +659,7 @@ static json_object *cgr_get_cdr_acc_msg(struct sip_msg *msg,
 		goto error;
 	}
 
-	tmp.s = int2bstr(ctx->duration, int2str_buf, &tmp.len);
-	/* add an s at the end */
-	tmp.s[tmp.len] = 's';
-	tmp.len++;
-	tmp.s[tmp.len] = 0;
-	if (cgr_obj_push_str(cmsg->params, "Usage", &tmp) < 0) {
+	if (cgr_push_usage(cmsg->params, ctx, usage_buf, sizeof(usage_buf)) < 0) {
 		LM_ERR("cannot add Usage node\n");
 		goto error;
 	}
@@ -1035,6 +1067,7 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 	struct list_head *l;
 	json_object *jmsg;
 	str terminate_str;
+	struct timeval now;
 	int branch;
 	str callid;
 
@@ -1076,7 +1109,9 @@ static void cgr_tmcb_func(struct cell* t, int type, struct tmcb_params *ps)
 		LM_ERR("cannot find dialog!\n");
 		return;
 	}
-	time(&ctx->answer_time);
+	gettimeofday(&now, NULL);
+	ctx->answer_time = now.tv_sec;
+	ctx->answer_usec = now.tv_usec;
 	list_for_each(l, ctx->sessions) {
 		s = list_entry(l, struct cgr_session, list);
 		si = s->acc_info;
