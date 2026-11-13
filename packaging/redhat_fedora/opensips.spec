@@ -37,6 +37,10 @@
 %global _with_wolfssl 1
 %endif
 
+%if 0%{?rhel} > 8 || 0%{?fedora} > 42
+%global _with_grpc_client 1
+%endif
+
 %if 0%{?rhel} > 10 || 0%{?fedora} > 43
 %global _with_opentelemetry 1
 %endif
@@ -45,7 +49,7 @@
 %global _with_wolfssl_stir_shaken 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_dynamodb:cachedb_dynamodb} %{!?_with_event_sqs:event_sqs} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter aka_av_diameter} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} %{!?_with_grpc_client:grpc_client} %{!?_with_opentelemetry:opentelemetry} launch_darkly http2d rtp.io
 
 # Contrib modules which require external libraries belong here. Each must have
 # matching build requirements and an opensips-module-contrib-<module> package.
@@ -113,6 +117,9 @@ BuildRequires:  systemd-units
 BuildRequires:  libxslt
 BuildRequires:  lynx
 BuildRequires:  json-c-devel
+%if 0%{?_with_grpc_client:1}
+BuildRequires:  grpc-devel >= 1.40.0
+%endif
 
 #Initscripts
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
@@ -1300,6 +1307,17 @@ Requires: %{name} = %{version}-%{release}
 %description -n %{name}-module-mmgeoip
 This package contains only the mmgeoip loadable module for OpenSIPS.
 
+%if 0%{?_with_grpc_client:1}
+%package -n %{name}-module-grpc-client
+Summary: OpenSIPS grpc_client module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: grpc-cpp >= 1.40.0
+
+%description -n %{name}-module-grpc-client
+This package contains only the grpc_client loadable module for OpenSIPS.
+%endif
+
 %package -n %{name}-module-httpd
 Summary: OpenSIPS httpd module
 Group: System Environment/Daemons
@@ -2484,6 +2502,12 @@ fi
 %files -n %{name}-module-mmgeoip
 %{_libdir}/opensips/modules/mmgeoip.so
 %doc docdir/README.mmgeoip
+
+%if 0%{?_with_grpc_client:1}
+%files -n %{name}-module-grpc-client
+%{_libdir}/opensips/modules/grpc_client.so
+%doc docdir/README.grpc_client
+%endif
 
 %files -n %{name}-module-httpd
 %{_libdir}/opensips/modules/httpd.so
