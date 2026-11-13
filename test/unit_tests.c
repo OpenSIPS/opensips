@@ -58,6 +58,11 @@ int run_unit_tests(void)
 	void *mod_handle;
 	mod_tests_f mod_tests;
 
+	/* the global context predates mod_init(), where modules register
+	 * their context slots: run the tests in one sized after it */
+	if (!push_new_global_context())
+		return -1;
+
 	/* core tests */
 	if (!strcmp(testing_module, "core")) {
 		/* remember to update the Makefile.test OpenSIPS command-line with at
