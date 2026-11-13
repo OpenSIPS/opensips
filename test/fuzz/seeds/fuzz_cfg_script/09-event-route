@@ -1,0 +1,3 @@
+event_route[E_CORE_CLASS_ROUTE] {
+  drop;
+}
