@@ -2087,6 +2087,43 @@ static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag),dlg->legs_no[DLG_LEGS_USED]);
 }
 
+/* A sequential request from the caller that carries the to-tag of an early
+ * dialog other than the one confirmed by the 2xx (RFC 3261 13.2.2.4: the UAC
+ * must use the to-tag of the 2xx; some UACs keep the to-tag of the first 18x).
+ * Matched on its own to-tag, the request would be routed on a callee leg that
+ * was never confirmed: ACK with the CSeq of that leg's PRACKs, BYE with no
+ * destination and the dialog left alive. Rewrite the To tag to the confirmed
+ * leg's tag so the request goes to the callee that answered. */
+static int dlg_fix_seq_totag(struct sip_msg *req, struct dlg_cell *dlg,
+														unsigned int leg)
+{
+	struct to_body *to = get_to(req);
+	str *tag = &dlg->legs[leg].tag;
+	struct lump *l;
+	char *s;
+
+	if (!to || !to->tag_value.s || !tag->s || !tag->len)
+		return -1;
+	l = del_lump(req, to->tag_value.s - req->buf, to->tag_value.len, HDR_TO_T);
+	if (!l)
+		return -1;
+	s = pkg_malloc(tag->len);
+	if (!s)
+		return -1;
+	memcpy(s, tag->s, tag->len);
+	if (!insert_new_lump_after(l, s, tag->len, HDR_TO_T)) {
+		pkg_free(s);
+		return -1;
+	}
+	LM_NOTICE("%.*s on the to-tag of an unconfirmed early dialog [%.*s], "
+		"sent to the confirmed one [%.*s] (callid %.*s)\n",
+		req->first_line.u.request.method.len, req->first_line.u.request.method.s,
+		to->tag_value.len, to->tag_value.s, tag->len, tag->s,
+		dlg->callid.len, dlg->callid.s);
+	return 0;
+}
+
+
 void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 {
 	struct dlg_cell *dlg;
@@ -2213,6 +2250,12 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	else {
 		LM_DBG("match_dialog => dst_leg=[%d]\n", dst_leg);
 	}
+	if (dir == DLG_DIR_DOWNSTREAM && dlg->legs_no[DLG_LEG_200OK] != 0 &&
+	dst_leg != (unsigned int)-1 && dst_leg >= DLG_FIRST_CALLEE_LEG &&
+	dst_leg != callee_idx(dlg) &&
+	dlg_fix_seq_totag(req, dlg, callee_idx(dlg)) == 0)
+		dst_leg = callee_idx(dlg);
+
 	update_sequential_sdp(dlg, req,
 			dst_leg == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG);
 
