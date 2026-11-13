@@ -49,7 +49,7 @@
 
 # Contrib modules which require external libraries belong here. Each must have
 # matching build requirements and an opensips-module-contrib-<module> package.
-%global STANDALONE_CONTRIB_MODULES %{nil}
+%global STANDALONE_CONTRIB_MODULES clusterer_controller
 
 # Database backends shipped as opensips-dbschema-<backend> packages.
 %global DBSCHEMA_MODULES berkeley mysql postgres sqlite
@@ -159,6 +159,18 @@ per second even on low-budget hardware.
 This package contains community-contributed modules which do not require
 external build dependencies. These modules are not maintained by the OpenSIPS
 core team and may have different support guarantees.
+
+%package -n %{name}-module-contrib-clusterer-controller
+Summary:  OpenSIPS clusterer_controller module (community-contributed)
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: libsodium-devel
+
+%description -n %{name}-module-contrib-clusterer-controller
+This package contains only the community-contributed clusterer_controller
+loadable module for OpenSIPS: clusterer with a controller that finds the
+cluster's members over multicast and assigns their node ids. It is loaded
+instead of clusterer, not beside it.
 
 %if 0%{?_with_auth_jwt:1}
 %package  auth-jwt-module
@@ -2191,8 +2203,6 @@ fi
 %doc docdir/README
 %doc COPYING
 
-%files -n %{name}-modules-contrib -f modules-contrib.files
-
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth_aaa.so
@@ -2397,6 +2407,12 @@ fi
 %doc docdir/README.uac_registrant
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
+
+%files -n %{name}-modules-contrib -f modules-contrib.files
+
+%files -n %{name}-module-contrib-clusterer-controller
+%{_libdir}/opensips/modules/clusterer_controller.so
+%doc docdir/README.clusterer_controller
 
 %if 0%{?_with_auth_jwt:1}
 %files -n %{name}-module-auth-jwt
