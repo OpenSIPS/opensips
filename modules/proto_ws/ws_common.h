@@ -219,12 +219,7 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 	/* FIN + OPCODE */
 	hdr_buf[0] = WS_BIT_FIN | (op & WS_MASK_OPCODE);
 
-	if (len == 0) {
-		hdr_buf[1] = 0;
-		/* don't have any data, send only the heeader  */
-		v[0].iov_len = WS_MIN_HDR_LEN;
-		return _ws_common_writev(con, fd, v, 1, _ws_common_write_tout);
-	} else if (len < WS_EXT_LEN) {
+	if (len < WS_EXT_LEN) {
 		hdr_buf[1] = len;
 		v[0].iov_len = WS_MIN_HDR_LEN;
 	} else if (len < WS_MAX_ELEN) {
@@ -239,12 +234,19 @@ static inline int ws_send(struct tcp_connection *con, int fd, int op,
 	}
 
 	if (WS_TYPE(con) == WS_CLIENT) {
-		/* set the mask in the message */
+		/* a client must mask every frame, even an empty one
+		 * (RFC 6455, section 5.1), so always set the mask */
 		*(uint32_t *)(v[0].iov_base + v[0].iov_len) = mask;
 		v[0].iov_len += WS_MASK_SIZE;
 		/* also indicate that the message is masked */
 		hdr_buf[1] |= WS_BIT_MASK;
+	}
 
+	if (len == 0)
+		/* no payload, send only the header (and the mask, if any) */
+		return _ws_common_writev(con, fd, v, 1, _ws_common_write_tout);
+
+	if (WS_TYPE(con) == WS_CLIENT) {
 		body_buf = body_buf ? thread_realloc(body_buf, len) :
 			thread_malloc(len);
 		if (!body_buf) {
