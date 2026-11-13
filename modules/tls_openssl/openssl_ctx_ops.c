@@ -44,8 +44,18 @@ void tls_ctx_set_cert_store(void *ctx, void *src_ctx)
 {
 	X509_STORE *store;
 
-	if ((store = SSL_CTX_get_cert_store(src_ctx)))
-		SSL_CTX_set_cert_store(ctx, store);
+	if (!(store = SSL_CTX_get_cert_store(src_ctx)))
+		return;
+
+	/* SSL_CTX_set_cert_store() takes over the caller's reference, but the
+	 * store still belongs to @src_ctx - share it instead of giving it away,
+	 * otherwise it gets freed along with @ctx */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	CRYPTO_add(&store->references, 1, CRYPTO_LOCK_X509_STORE);
+#else
+	X509_STORE_up_ref(store);
+#endif
+	SSL_CTX_set_cert_store(ctx, store);
 }
 
 int tls_ctx_set_cert_chain(void *ctx, void *src_ctx)
@@ -66,7 +76,8 @@ int tls_ctx_set_cert_chain(void *ctx, void *src_ctx)
 		LM_ERR("Failed to get certificate chain from context\n");
 		return -1;
 	}
-	if (sk && SSL_CTX_set0_chain(ctx, sk) != 1) {
+	/* the chain is still owned by @src_ctx, so take our own references */
+	if (sk && SSL_CTX_set1_chain(ctx, sk) != 1) {
 		LM_ERR("Failed to set certificate chain in context\n");
 		return -1;
 	}
