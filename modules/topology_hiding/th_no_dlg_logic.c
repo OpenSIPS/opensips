@@ -21,6 +21,7 @@
 
 #include "th_no_dlg_logic.h"
 #include "thinfo_codec.h"
+#include "th_store.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../forward.h"
@@ -158,8 +159,9 @@ typedef struct {
 typedef decoded_info_buffer_t (*decode_info_fn)(str *, const thinfo_options_t *);
 static decoded_info_buffer_t decode_info_buffer(str *, const thinfo_options_t *);
 static decoded_info_buffer_t decode_info_buffer_legacy(str *, const thinfo_options_t *);
+static decoded_info_buffer_t decode_info_buffer_stored(str *, const thinfo_options_t *);
 
-static int th_no_dlg_encode_contact(struct sip_msg *, uint16_t, str, str *);
+static int th_no_dlg_encode_contact(struct sip_msg *, uint16_t, str, str *, int, struct sip_msg *);
 
 static inline int th_no_dlg_onrequest(struct sip_msg *, uint16_t, str *);
 static void th_no_dlg_onreply(struct cell *, int, struct tmcb_params *);
@@ -313,7 +315,7 @@ static int th_no_dlg_auto_route_seq_handling(struct sip_msg *msg, rr_t auto_rout
 		route_free_str = route_s.s;
 	}
 
-	if (th_no_dlg_encode_contact(msg, flags, route_s, NULL) < 0) {
+	if (th_no_dlg_encode_contact(msg, flags, route_s, NULL, TH_STORE_DECIDE, NULL) < 0) {
 		LM_ERR("Failed to encode contact header\n");
 		if (route_free_str != NULL) {
 			pkg_free(route_free_str);
@@ -383,7 +385,13 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 		for (i = 0; i < request_uri->u_params_no; i++) {
 			thinfo_decode = th_get_options(&request_uri->u_name[i]);
 			if (thinfo_decode != NULL) {
-				if (thinfo_decode->compact_encoding) {
+				if (th_store_is_key(&request_uri->u_val[i])) {
+					LM_DBG("We found stored state key in R-URI %.*s\n",
+						request_uri->u_val[i].len, request_uri->u_val[i].s);
+					if (th_store_fetch(&request_uri->u_val[i]) < 0)
+						return TOPOH_MATCH_FAILURE;
+					return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer_stored, thinfo_decode);
+				} else if (thinfo_decode->compact_encoding) {
 					LM_DBG("We found param in R-URI with value of %.*s\n",
 						request_uri->u_val[i].len, request_uri->u_val[i].s);
 					return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer, thinfo_decode);
@@ -508,6 +516,9 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 	/* do_rr determined by if the request has a tag, don't add them on sequential */
 	is_sequential = get_to(req)->tag_value.len > 0 && get_to(req)->tag_value.s != NULL;
 
+	if (!is_sequential && encoding_options->stored)
+		th_store_drop_rejected(rpl, &encoding_options->param_password);
+
 	LM_DBG("Original request trusted send sock '%d' reply is trusted send sock '%d'\n", req_one_way_hiding, one_way_hiding);
 
 	if (!req_one_way_hiding && (lmp = restore_vias_from_req(req, rpl)) == NULL) {
@@ -617,7 +628,7 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 			rr_free_str = route_s.s;
 		}
 
-        if (th_no_dlg_encode_contact(rpl, flags, route_s, username) < 0) {
+        if (th_no_dlg_encode_contact(rpl, flags, route_s, username, TH_STORE_DECIDE, req) < 0) {
             LM_ERR("Failed to encode contact header \n");
         }
     }
@@ -656,7 +667,7 @@ static inline int th_no_dlg_onrequest(struct sip_msg *req, uint16_t flags, str *
 				}
 			}
 
-            if (th_no_dlg_encode_contact(req, flags, route_s, username) < 0) {
+            if (th_no_dlg_encode_contact(req, flags, route_s, username, TH_STORE_DECIDE, NULL) < 0) {
                 LM_ERR("Failed to encode contact header\n");
                 goto error;
             }
@@ -1113,7 +1124,7 @@ error:
 	return NULL;
 }
 
-static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str routes, str *ct_user) {
+static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str routes, str *ct_user, int store, struct sip_msg *ttl_src) {
 	struct lump* lump;
 	char *prefix = NULL,*suffix = NULL,*ct_username = NULL;
 	int prefix_len, suffix_len = 0, ct_username_len = 0;
@@ -1180,16 +1191,19 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (encoding_options->compact_encoding) {
-		if (!(suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0))) {
-			LM_ERR("Failed to build suffix \n");
-			goto error;
-		}
-	} else {
-		if (!(suffix = build_encoded_contact_suffix_legacy(msg, routes, &suffix_len, flags))) {
-			LM_ERR("Failed to build suffix \n");
-			goto error;
-		}
+	if (th_store_no_state(msg))
+		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, NULL, &suffix_len);
+	else if (encoding_options->stored && th_store_wanted(msg, ttl_src, store))
+		suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
+			&encoding_options->param_password, ttl_src, &suffix_len);
+	else if (encoding_options->compact_encoding)
+		suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
+	else
+		suffix = build_encoded_contact_suffix_legacy(msg, routes, &suffix_len, flags);
+
+	if (!suffix) {
+		LM_ERR("Failed to build suffix \n");
+		goto error;
 	}
 
     if (!(lump = insert_subst_lump_after(lump, SUBST_SND_ALL, 0))) {
@@ -1523,6 +1537,31 @@ error:
 	return (decoded_info_buffer_t) { .state = INVALID_BUF };
 }
 
+/* the state was already fetched by topo_hiding_match_no_dlg() */
+static decoded_info_buffer_t decode_info_buffer_stored(str *info, const thinfo_options_t *options) {
+	str flags_buf = STR_NULL, bind_buf = STR_NULL, host = STR_NULL;
+	int port = 0, proto = 0;
+	unsigned int parsed_flags;
+	decoded_info_buffer_t decoded_buffer = { 0 };
+
+	if (th_store_unpack(&decoded_buffer.routes, &decoded_buffer.contact, &flags_buf, &bind_buf) < 0)
+		return (decoded_info_buffer_t) { .state = INVALID_BUF };
+
+	if (str2int(&flags_buf, &parsed_flags) == 0)
+		decoded_buffer.flags = (uint16_t)parsed_flags;
+
+	if (parse_phostport(bind_buf.s, bind_buf.len, &host.s, &host.len, &port, &proto) != 0) {
+		LM_ERR("bad socket <%.*s>\n", bind_buf.len, bind_buf.s);
+	} else {
+		decoded_buffer.sock = grep_sock_info(&host, (unsigned short) port, proto);
+		if (!decoded_buffer.sock && th_internal_trusted_tag.len > 0)
+			decoded_buffer.sock = grep_internal_sock_info(&th_internal_trusted_tag, 0, proto);
+	}
+
+	FINALIZE_DECODED_BUF_STATE(decoded_buffer);
+	return decoded_buffer;
+}
+
 static char user_buf[UINT16_MAX];
 static str ct_user_buf = { .s = user_buf, .len = 0 };
 
@@ -1579,6 +1618,9 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 		LM_ERR("Failed to decode buffer\n");
 		return -1;
 	}
+
+	if (decode_fn == decode_info_buffer_stored)
+		th_store_consumed(msg, info);
 
 	if (decoded_buffer.flags & TOPOH_KEEP_USER) {
 		if (parse_sip_msg_uri(msg) < 0) {
@@ -1695,7 +1737,9 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 			route_free_str = route_s.s;
 		}
 
-        if (th_no_dlg_encode_contact(msg, decoded_buffer.flags, route_s, NULL) < 0) {
+        /* a dialog stays stored or inline, whichever it came in with */
+        if (th_no_dlg_encode_contact(msg, decoded_buffer.flags, route_s, NULL,
+                decode_fn == decode_info_buffer_stored, NULL) < 0) {
             LM_ERR("Failed to encode contact header \n");
 			if (route_free_str != NULL) {
 				pkg_free(route_free_str);
@@ -2095,8 +2139,12 @@ int th_add_encode_param_password(modparam_t type, void *val) {
 			slot.compact_encoding = 1;
 		} else if (encoding_type ==  'L' || encoding_type == 'l') {
 			slot.compact_encoding = 0;
+		} else if (encoding_type ==  'S' || encoding_type == 's') {
+			/* compact whenever the state cannot be stored */
+			slot.compact_encoding = 1;
+			slot.stored = 1;
 		} else {
-			LM_ERR("Encoding type not set correctly, must be one of C|c|L|l\n");
+			LM_ERR("Encoding type not set correctly, must be one of C|c|L|l|S|s\n");
 			return -1;
 		}
 	}
@@ -2125,4 +2173,14 @@ static thinfo_options_t *th_get_options(const str *pn) {
 int th_set_use_param(str *use_param) {
 	encoding_options = th_get_options(use_param);
 	return encoding_options != NULL;
+}
+
+int th_stored_encoding_used(void) {
+	int i;
+
+	for (i = 0; i < TH_INFO_PASSWORD_ROTATION_SIZE; i++)
+		if (param_passwords[i].stored)
+			return 1;
+
+	return 0;
 }
