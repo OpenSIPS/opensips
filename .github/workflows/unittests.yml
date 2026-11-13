@@ -178,6 +178,27 @@ jobs:
               print "::error title=Failing module suites::" substr(list, 2)
             }'
 
+      # the same tests and the allocator suites with HG_MALLOC; the grep fails
+      # the step if HG_MALLOC was not actually the allocator under test (not
+      # anchored: other processes' log lines can share a line with the TAP one)
+      - name: Run tests with HG_MALLOC
+        env:
+          MAKE_TGT: 'test'
+          UT_ALLOC: 'HG_MALLOC'
+          UT_MEM: '-m 64:1024 -M 16:256'
+        run: |
+          script -e unit_tests_hg.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
+          grep -E 'ok [0-9]+ - HG_MALLOC serves pkg and shm' unit_tests_hg.log | grep -q -v 'not ok'
+
+      - name: Run tests with HG_MALLOC_DBG
+        env:
+          MAKE_TGT: 'test'
+          UT_ALLOC: 'HG_MALLOC_DBG'
+          UT_MEM: '-m 64:1024 -M 16:256'
+        run: |
+          script -e unit_tests_hg_dbg.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
+          grep -E 'ok [0-9]+ - HG_MALLOC serves pkg and shm' unit_tests_hg_dbg.log | grep -q -v 'not ok'
+
       - name: Collect test logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -187,6 +208,8 @@ jobs:
           path: |
             unit_tests.log
             module_tests.log
+            unit_tests_hg.log
+            unit_tests_hg_dbg.log
 
   all_done:
     needs: build_and_test

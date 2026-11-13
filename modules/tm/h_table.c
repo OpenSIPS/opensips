@@ -258,10 +258,10 @@ struct cell*  build_cell( struct sip_msg* p_msg, int full_uas)
 	/* filling with 0 */
 	memset( new_cell, 0, sizeof( struct cell ) + context_size(CONTEXT_TRAN));
 
-	/* get timer set id based on the transaction pointer, but
-	 * devide by 64 to avoid issues because pointer are 64 bits
-	 * aligned */
-	set = ( ((unsigned long)new_cell)>>tm_timer_shift ) % tm_table->timer_sets;
+	/* timer set from the transaction address, Fibonacci-hashed: cells of one
+	 * size in a slab allocator share their low address bits */
+	set = (unsigned short)((((unsigned long long)((unsigned long)new_cell >>
+		tm_timer_shift) * 0x9e3779b97f4a7c15ULL) >> 32) % tm_table->timer_sets);
 
 	/* UAS */
 #ifdef EXTRA_DEBUG

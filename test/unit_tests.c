@@ -28,6 +28,7 @@
 #include "../lib/test/test_digest_auth.h"
 #include "../parser/test/test_parser.h"
 #include "../mem/test/test_malloc.h"
+#include "../mem/test/test_hg_malloc.h"
 #include "test_ut.h"
 
 #include "../str.h"
@@ -47,6 +48,10 @@ void init_unit_tests(void)
 		solve_module_dependencies(modules);
 		init_cachedb_tests();
 		//init_malloc_tests();
+#ifdef HG_MALLOC
+		if (hg_ut_selected())
+			init_malloc_tests();
+#endif
 	}
 
 	ensure_global_context();
@@ -58,11 +63,22 @@ int run_unit_tests(void)
 	void *mod_handle;
 	mod_tests_f mod_tests;
 
+	/* the global context predates mod_init(), where modules register
+	 * their context slots: run the tests in one sized after it */
+	if (!push_new_global_context())
+		return -1;
+
 	/* core tests */
 	if (!strcmp(testing_module, "core")) {
 		/* remember to update the Makefile.test OpenSIPS command-line with at
 		 * least "-m2048 -M128" before stress-testing any of the allocators! */
 		//test_malloc();
+#ifdef HG_MALLOC
+		if (hg_ut_selected()) {
+			test_hg_malloc();
+			test_malloc();
+		}
+#endif
 		test_cachedb();
 		test_lib_csv();
 		test_parser();
