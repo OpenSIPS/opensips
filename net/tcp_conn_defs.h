@@ -209,6 +209,10 @@ struct tcp_connection{
 	unsigned short proto_flags;
 	struct struct_hist *hist;
 	struct tcp_async_data *async;
+	/* endpoints of the message which triggered this (outbound) connection,
+	 * to be advertised via Proxy Protocol once the connect completes;
+	 * valid only if its flags is PP_OK */
+	struct proxy_protocol pp_out;
 	/* protocol specific data attached to this connection, in TCP-main-private memory */
 	void *proto_data;
 };

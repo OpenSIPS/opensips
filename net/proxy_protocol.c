@@ -152,6 +152,29 @@ static inline int should_send_stream_proxy_protocol(const struct tcp_connection 
 		(c->flags & F_CONN_PROXY_OUT_SENT) == 0;
 }
 
+/* Attaches to a newly created outbound connection the endpoints of the
+ * message which triggered it, as the PROXY header is sent only later, when
+ * the connect completes (with no message around anymore).
+ * To be called only by the process which created the connection, before
+ * making it public (the connection is not locked here). */
+void save_stream_proxy_protocol_origin(struct tcp_connection *c,
+		const struct receive_info *ri)
+{
+	if (!ri || !should_send_stream_proxy_protocol(c) ||
+			(c->flags & F_CONN_HASHED) || c->pp_out.flags == PP_OK)
+		return;
+
+	if (ri->real_ep.flags == PP_OK) {
+		c->pp_out = ri->real_ep;
+	} else {
+		c->pp_out.src_ip = ri->src_ip;
+		c->pp_out.src_port = ri->src_port;
+		c->pp_out.dst_ip = ri->dst_ip;
+		c->pp_out.dst_port = ri->dst_port;
+		c->pp_out.flags = PP_OK;
+	}
+}
+
 int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 		int write_timeout, int lock, const struct receive_info *ri,
 		const char *proto_name)
@@ -163,13 +186,23 @@ int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 	if (!should_send_stream_proxy_protocol(c))
 		return 0;
 
-	if (fd < 0 && ((c->flags & F_CONN_INIT) == 0 || c->fd < 0))
+	if (fd < 0 && ((c->flags & F_CONN_INIT) == 0 || c->fd < 0)) {
+		/* the connect is still pending (to be completed by TCP main), so
+		 * the header is to be sent later, upon the first write; there will
+		 * be no message at that time, so remember the original endpoints */
+		save_stream_proxy_protocol_origin(c, ri);
 		return 0;
+	}
 
-	pp_len = build_outbound_proxy_protocol_v1_hdr(ri,
-			&c->rcv.dst_ip, c->rcv.dst_port,
-			&c->rcv.src_ip, c->rcv.src_port,
-			pp_hdr, sizeof(pp_hdr));
+	if (!ri && c->pp_out.flags == PP_OK)
+		pp_len = build_proxy_protocol_v1_hdr(&c->pp_out.src_ip,
+				c->pp_out.src_port, &c->pp_out.dst_ip, c->pp_out.dst_port,
+				pp_hdr, sizeof(pp_hdr));
+	else
+		pp_len = build_outbound_proxy_protocol_v1_hdr(ri,
+				&c->rcv.dst_ip, c->rcv.dst_port,
+				&c->rcv.src_ip, c->rcv.src_port,
+				pp_hdr, sizeof(pp_hdr));
 	if (pp_len < 0) {
 		LM_ERR("failed to build outbound PROXY header\n");
 		return -1;

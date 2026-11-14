@@ -155,8 +155,12 @@ static int tls_async_queue_proxy_header(struct tcp_connection *c,
 	if (!should_send_tls_async_proxy_protocol(c))
 		return 0;
 
-	if ((c->flags & F_CONN_INIT) == 0 || !c->proto_data)
+	if ((c->flags & F_CONN_INIT) == 0 || !c->proto_data) {
+		/* not connected yet - the header will be built at write time, so
+		 * remember the original endpoints for then */
+		save_stream_proxy_protocol_origin(c, msg ? &msg->rcv : NULL);
 		return 0;
+	}
 	data = c->proto_data;
 	if (!data->pp_hdr) {
 		LM_ERR("missing TLS PROXY header buffer on conn %u\n", c->id);

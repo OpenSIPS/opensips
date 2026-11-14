@@ -642,12 +642,13 @@ static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
 {
 	struct tcp_connection *c;
 
-	(void)msg;
-
 	if ((c=ws_sync_connect(send_sock, to, prof))==0) {
 		LM_ERR("connect failed\n");
 		return NULL;
 	}
+	/* the PROXY header is sent when the connect completes, so remember
+	 * the original endpoints for then */
+	save_stream_proxy_protocol_origin(c, msg ? &msg->rcv : NULL);
 	if (ws_prepare_client_conn(c) < 0) {
 		LM_ERR("cannot prepare WebSocket client connection\n");
 		goto error;
