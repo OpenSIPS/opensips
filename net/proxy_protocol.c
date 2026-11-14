@@ -181,15 +181,17 @@ int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 {
 	char pp_hdr[PROXY_PROTOCOL_BUF_MAX];
 	int pp_len, rc, dbg_len;
-	const char *action;
 
 	if (!should_send_stream_proxy_protocol(c))
 		return 0;
 
-	if (fd < 0 && ((c->flags & F_CONN_INIT) == 0 || c->fd < 0)) {
-		/* the connect is still pending (to be completed by TCP main), so
-		 * the header is to be sent later, upon the first write; there will
-		 * be no message at that time, so remember the original endpoints */
+	if (fd < 0) {
+		/* we are not the ones writing on the connection: the header is
+		 * sent only by the process doing the actual write (TCP main),
+		 * ahead of the first data - having it queued from here too would
+		 * race with that, ending up with a duplicated or misplaced header.
+		 * There will be no message at that time, so all we do is to
+		 * remember the original endpoints */
 		save_stream_proxy_protocol_origin(c, ri);
 		return 0;
 	}
@@ -213,33 +215,20 @@ int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 			pp_hdr[dbg_len - 1] == '\n')
 		dbg_len -= 2;
 
-	action = (fd < 0) ? "queueing" : "sending";
-	LM_DBG("%s outbound PROXY header on %s conn %u: %.*s\n",
-			action, proto_name ? proto_name : "stream", c->id,
-			dbg_len, pp_hdr);
+	LM_DBG("sending outbound PROXY header on %s conn %u: %.*s\n",
+			proto_name ? proto_name : "stream", c->id, dbg_len, pp_hdr);
 
-	if (fd < 0) {
-		rc = tcp_async_add_chunk(c, pp_hdr, pp_len, lock);
-	} else {
-		if (lock)
-			lock_get(&c->write_lock);
-		rc = tsend_stream(fd, pp_hdr, pp_len, write_timeout);
-		if (lock)
-			lock_release(&c->write_lock);
-		if (rc != pp_len) {
-			LM_ERR("failed to send outbound PROXY header on %s\n",
-					proto_name ? proto_name : "stream");
-			return -1;
-		}
-		tcp_conn_reset_lifetime(c);
-		rc = 0;
-	}
-
-	if (rc < 0) {
+	if (lock)
+		lock_get(&c->write_lock);
+	rc = tsend_stream(fd, pp_hdr, pp_len, write_timeout);
+	if (lock)
+		lock_release(&c->write_lock);
+	if (rc != pp_len) {
 		LM_ERR("failed to send outbound PROXY header on %s\n",
 				proto_name ? proto_name : "stream");
 		return -1;
 	}
+	tcp_conn_reset_lifetime(c);
 
 	c->flags |= F_CONN_PROXY_OUT_SENT;
 	return 0;
