@@ -42,6 +42,12 @@ struct  dlg_timer
 {
 	struct dlg_tl   first;
 	gen_lock_t      *lock;
+	/* the dialog lifetime timer hangs its dialogs on a wheel of lists, one
+	 * per second, instead of the one sorted list (dlg_timer_wheel.h);
+	 * NULL for a timer that keeps the list */
+	struct dlg_tl   *wheel;
+	/* the last second whose list was looked at */
+	unsigned int    wheel_done;
 };
 
 struct dlg_ping_list

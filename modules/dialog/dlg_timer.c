@@ -45,6 +45,10 @@ str invite_str=str_init("INVITE");
  */
 #define FAKE_DIALOG_TL ((struct dlg_tl*)-1)
 
+#include "dlg_timer_wheel.h"
+
+static void _destroy_gen_dlg_timer(struct dlg_timer **timer);
+
 static int _init_gen_dlg_timer(struct dlg_timer **timer)
 {
 	*timer = (struct dlg_timer*)shm_malloc(sizeof(struct dlg_timer));
@@ -79,7 +83,22 @@ error0:
 int init_dlg_timer(dlg_timer_handler hdl )
 {
 	timer_hdl = hdl;
-	return _init_gen_dlg_timer( &d_timer );
+	if (_init_gen_dlg_timer( &d_timer )<0)
+		return -1;
+
+	/* dialog lifetimes are set per dialog (script, replication, database):
+	 * kept on a wheel, where the place of a new one is not searched for */
+	d_timer->wheel = (struct dlg_tl*)shm_malloc(
+		DLG_WHEEL_SIZE*sizeof(struct dlg_tl));
+	if (d_timer->wheel==0) {
+		LM_ERR("no more shm mem for the dialog timer wheel\n");
+		_destroy_gen_dlg_timer( &d_timer );
+		return -1;
+	}
+	dlg_wheel_init( d_timer->wheel );
+	d_timer->wheel_done = get_ticks();
+
+	return 0;
 }
 
 int init_dlg_del_timer(dlg_timer_handler hdl )
@@ -247,6 +266,8 @@ static void _destroy_gen_dlg_timer(struct dlg_timer **timer)
 	lock_destroy((*timer)->lock);
 	lock_dealloc((*timer)->lock);
 
+	if ((*timer)->wheel)
+		shm_free((*timer)->wheel);
 	shm_free(*timer);
 	*timer = 0;
 }
@@ -265,6 +286,12 @@ void destroy_dlg_del_timer(void)
 static inline void insert_gen_timer_unsafe(struct dlg_timer *timer, struct dlg_tl *tl)
 {
 	struct dlg_tl* ptr;
+
+	if (timer->wheel) {
+		LM_DBG("inserting %p for %d\n", tl,tl->timeout);
+		dlg_wheel_insert( timer, tl );
+		return;
+	}
 
 #ifdef EXTRA_DEBUG
 	debug_gen_timer_list( timer );
@@ -596,6 +623,12 @@ static inline struct dlg_tl* _get_gen_expired_dlgs(struct dlg_timer *timer, unsi
 	struct dlg_tl *tl , *end, *ret;
 
 	lock_get( timer->lock);
+
+	if (timer->wheel) {
+		ret = dlg_wheel_expired( timer, time );
+		lock_release( timer->lock);
+		return ret;
+	}
 
 	if (timer->first.next==&(timer->first)
 	|| timer->first.next->timeout > time ) {

@@ -7,10 +7,17 @@
  * See the project's COPYING file for licensing details.
  */
 
+#include <stdlib.h>
 #include <tap.h>
 
 #include "../dlg_vals.h"
 #include "../dlg_db_handler.h"
+#include "../dlg_timer.h"
+
+#ifndef FAKE_DIALOG_TL
+#define FAKE_DIALOG_TL ((struct dlg_tl*)-1)
+#endif
+#include "../dlg_timer_wheel.h"
 
 static void test_dlg_val_bool(void)
 {
@@ -103,7 +110,212 @@ static void test_dlg_val_bool(void)
 	}
 }
 
+/*
+ * Lifetime timer wheel (dlg_timer_wheel.h), checked against a plain model:
+ * every entry is due at one second and must come out of the timer at the
+ * first look at or after that second, exactly once, unless it was removed
+ * or moved before.
+ */
+struct wheel_ent {
+	struct dlg_tl tl;   /* first: an entry is found from its tl */
+	unsigned int due;
+	int in;
+};
+
+static struct dlg_timer w_timer;
+static struct wheel_ent *w_ent;
+static unsigned int w_n, w_in;
+static int w_bad;
+static unsigned long long w_rs = 88172645463325252ULL;
+
+static unsigned int w_rnd(void)
+{
+	w_rs ^= w_rs << 13; w_rs ^= w_rs >> 7; w_rs ^= w_rs << 17;
+	return (unsigned int)(w_rs >> 11);
+}
+
+#define W_FAIL(...) do { if (!w_bad++) diag(__VA_ARGS__); } while (0)
+
+static void w_setup(unsigned int entries, unsigned int now)
+{
+	w_n = entries; w_in = 0; w_bad = 0;
+	w_ent = calloc(entries, sizeof *w_ent);
+	w_timer.wheel = malloc(DLG_WHEEL_SIZE * sizeof(struct dlg_tl));
+	dlg_wheel_init(w_timer.wheel);
+	w_timer.wheel_done = now;
+}
+
+static void w_teardown(void)
+{
+	free(w_ent);
+	free(w_timer.wheel);
+	w_timer.wheel = NULL;
+}
+
+/* lifetimes as a switch sees them: one second, the 32 s of an
+ * unacknowledged 200 OK, a minute, an hour, four hours, zero, anything up
+ * to past a turn of the wheel */
+static unsigned int w_lifetime(void)
+{
+	unsigned int r = w_rnd() % 100;
+
+	if (r < 30) return 32;
+	if (r < 45) return 1;
+	if (r < 60) return 61;
+	if (r < 70) return 3600;
+	if (r < 82) return 14400;
+	if (r < 85) return 0;
+	if (r < 95) return 1 + w_rnd() % 120;
+	return w_rnd() % (3 * DLG_WHEEL_SIZE);
+}
+
+static void w_put(struct wheel_ent *x, unsigned int timeout)
+{
+	x->tl.timeout = timeout;
+	dlg_wheel_insert(&w_timer, &x->tl);
+	/* only a second that was looked at already moves, to the next one */
+	if (x->tl.timeout != timeout && (timeout > w_timer.wheel_done ||
+			x->tl.timeout != w_timer.wheel_done + 1))
+		W_FAIL("insert changed timeout %u to %u", timeout, x->tl.timeout);
+	x->due = x->tl.timeout;
+	x->in = 1; w_in++;
+}
+
+static void w_take(struct wheel_ent *x)
+{
+	/* as remove_dlg_timer_unsafe() and its caller do */
+	x->tl.prev->next = x->tl.next;
+	x->tl.next->prev = x->tl.prev;
+	x->tl.next = FAKE_DIALOG_TL; x->tl.prev = NULL; x->tl.timeout = 0;
+	x->in = 0; w_in--;
+}
+
+/* the timer routine at <now> */
+static void w_look(unsigned int now)
+{
+	struct dlg_tl *tl = dlg_wheel_expired(&w_timer, now), *c;
+	unsigned int i;
+
+	while (tl != FAKE_DIALOG_TL) {
+		struct wheel_ent *x = (struct wheel_ent *)tl;
+
+		c = tl; tl = tl->next;
+		if (!x->in)
+			W_FAIL("an entry that is not in the timer came out");
+		else if (x->due > now)
+			W_FAIL("an entry came out %u s early", x->due - now);
+		if (c->prev != NULL || c->timeout != 0)
+			W_FAIL("an entry came out without the expired marks");
+		x->in = 0; w_in--;
+		c->next = NULL;
+	}
+	if (w_timer.wheel_done != now)
+		W_FAIL("the wheel did not note the second it looked at");
+	for (i = 0; i < w_n; i++)
+		if (w_ent[i].in && w_ent[i].due <= now) {
+			W_FAIL("an entry due at %u is still in at %u", w_ent[i].due, now);
+			break;
+		}
+}
+
+static void w_shape(void)
+{
+	unsigned int s, count = 0;
+
+	for (s = 0; s < DLG_WHEEL_SIZE; s++) {
+		struct dlg_tl *h = &w_timer.wheel[s], *t;
+
+		for (t = h->next; t != h; t = t->next) {
+			if (t->next->prev != t || t->prev->next != t) {
+				W_FAIL("a list of the wheel is broken");
+				return;
+			}
+			if ((t->timeout & DLG_WHEEL_MASK) != s)
+				W_FAIL("an entry hangs on the wrong list");
+			count++;
+		}
+	}
+	if (count != w_in)
+		W_FAIL("the wheel holds %u entries, the model %u", count, w_in);
+}
+
+static void test_dlg_wheel_model(const char *name, unsigned int entries,
+		unsigned int seconds, unsigned int per_second)
+{
+	unsigned int now = 1000, s, k, i;
+
+	w_setup(entries, now);
+	for (s = 0; s < seconds && !w_bad; s++) {
+		for (k = 0; k < per_second; k++) {
+			struct wheel_ent *x = &w_ent[w_rnd() % entries];
+
+			if (!x->in) {
+				w_put(x, now + w_lifetime());
+			} else if (w_rnd() % 2) {
+				w_take(x);
+			} else {   /* update_dlg_timer() */
+				w_take(x);
+				x->tl.next = NULL;
+				w_put(x, now + w_lifetime());
+			}
+		}
+		/* the clock: a second, a few, or more than a turn of the wheel */
+		i = w_rnd() % 1000;
+		now += i < 960 ? 1 : i < 995 ? 2 + w_rnd() % 30 :
+			i < 999 ? DLG_WHEEL_SIZE / 2 + w_rnd() % DLG_WHEEL_SIZE :
+			2 * DLG_WHEEL_SIZE + w_rnd() % 100;
+		/* the timer routine runs nearly every second, sometimes later */
+		if (w_rnd() % 10)
+			w_look(now);
+		if (s % 257 == 0)
+			w_shape();
+	}
+	w_look(now);
+	w_shape();
+	now += 4 * DLG_WHEEL_SIZE;
+	w_look(now);
+	ok(!w_bad && w_in == 0, "dialog timer wheel: %s", name);
+	w_teardown();
+}
+
+/* A timeout written in place (as the DB sync of a known dialog does) instead
+ * of through update_dlg_timer(): a later one must not be served a turn of
+ * the wheel late, an earlier one no later than its old second. */
+static void test_dlg_wheel_in_place_change(void)
+{
+	unsigned int now = 5000, t;
+	struct wheel_ent *later, *earlier;
+	unsigned int later_out = 0, earlier_out = 0;
+	struct dlg_tl *tl;
+
+	w_setup(2, now);
+	later = &w_ent[0];
+	earlier = &w_ent[1];
+	w_put(later, now + 100);
+	w_put(earlier, now + 200);
+	later->tl.timeout = later->due = now + 5000;
+	earlier->tl.timeout = earlier->due = now + 50;
+
+	for (t = now + 1; t <= now + 6000; t++) {
+		for (tl = dlg_wheel_expired(&w_timer, t); tl != FAKE_DIALOG_TL;
+				tl = tl->next) {
+			if (tl == &later->tl)
+				later_out = t;
+			else if (tl == &earlier->tl)
+				earlier_out = t;
+		}
+	}
+	ok(later_out == now + 5000,
+		"dialog timer wheel: a timeout raised in place expires on time");
+	ok(earlier_out >= now + 50 && earlier_out <= now + 200,
+		"dialog timer wheel: a timeout lowered in place expires by its old second");
+	w_teardown();
+}
+
 void mod_tests(void)
 {
 	test_dlg_val_bool();
+	test_dlg_wheel_model("few entries, every second checked", 300, 100000, 6);
+	test_dlg_wheel_model("thousands of dialogs in progress", 20000, 20000, 900);
+	test_dlg_wheel_in_place_change();
 }
