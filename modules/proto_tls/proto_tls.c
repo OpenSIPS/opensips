@@ -131,6 +131,8 @@ static mi_response_t *tls_trace_mi_1(const mi_params_t *params,
 
 trace_dest t_dst;
 
+extern int is_tcp_main;
+
 struct tls_proto_data {
 	struct tls_data trace;
 	str *pp_hdr;
@@ -155,8 +157,13 @@ static int tls_async_queue_proxy_header(struct tcp_connection *c,
 	if (!should_send_tls_async_proxy_protocol(c))
 		return 0;
 
-	if ((c->flags & F_CONN_INIT) == 0 || !c->proto_data)
+	if (!is_tcp_main || (c->flags & F_CONN_INIT) == 0 || !c->proto_data) {
+		/* not connected yet - the header will be built at write time, so
+		 * remember the original endpoints for then; also, never touch the
+		 * proto_data from other processes, as it is private to TCP main */
+		save_stream_proxy_protocol_origin(c, msg ? &msg->rcv : NULL);
 		return 0;
+	}
 	data = c->proto_data;
 	if (!data->pp_hdr) {
 		LM_ERR("missing TLS PROXY header buffer on conn %u\n", c->id);
