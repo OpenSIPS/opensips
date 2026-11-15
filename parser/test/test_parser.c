@@ -32,6 +32,7 @@
 #include "test_parse_supported.h"
 #include "test_parse_privacy.h"
 #include "test_parse_security.h"
+#include "test_parse_digest.h"
 
 void test_parse_uri(void)
 {
@@ -371,4 +372,5 @@ void test_parser(void)
 	test_parse_supported();
 	test_parse_privacy();
 	test_parse_security();
+	test_parse_digest();
 }
