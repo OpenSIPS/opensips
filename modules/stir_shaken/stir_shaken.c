@@ -794,6 +794,12 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 	}
 	SS_LOCK;
 
+	/* PEM_X509_INFO_read_bio() relies on the last queued error to detect
+	 * the end of the input. wolfSSL's error queue is not a ring buffer: once
+	 * full, new errors are dropped, so stale ones from earlier failures make
+	 * every later parse fail in this process. Always start clean. */
+	ERR_clear_error();
+
 	/* parse end-entity certificate */
 	*cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
 	if (*cert == NULL) {
@@ -1383,6 +1389,10 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain,
 
 	X509_STORE_CTX_cleanup(verify_ctx);
 	X509_STORE_CTX_free(verify_ctx);
+
+	/* the reason was already logged by verify_callback(); do not leave the
+	 * failure queued for unrelated code running later in this process */
+	ERR_clear_error();
 
 	if (rc != 1)
 		return rc == 0 ? -8 : -1;

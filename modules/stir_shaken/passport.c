@@ -946,6 +946,8 @@ static int verify_signature_mode(X509 *cert,
 		goto error;
 	}
 
+	/* so that the error logged below is this one, not a stale one */
+	ERR_clear_error();
 	rc = EVP_DigestVerifyFinal(mdctx, (unsigned char*)der_sig_buf.s,
 		der_sig_buf.len);
 	if (rc < 0) {
