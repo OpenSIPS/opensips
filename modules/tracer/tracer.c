@@ -513,8 +513,8 @@ static void get_siptrace_type(str *name, str *trace_uri, str *param1,
 		trace_uri->s += 5;
 	} else if (IS_SYSLOG_URI(trace_uri)) {
 		*type = TYPE_SYSLOG;
-		trace_uri->len -= 6;
-		trace_uri->s += 6;
+		trace_uri->len -= 7;
+		trace_uri->s += 7;
 	} else {
 		/* need to take the table into account */
 		if (param1 && (param1->s == NULL || param1->len == 0))
