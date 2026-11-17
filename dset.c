@@ -260,12 +260,19 @@ static inline int _dst_malloc(struct dset_ctx **dsct)
 	return 0;
 }
 
+#define _post_copy_branch_update(_br)             \
+	do {                                          \
+		(_br)->branch.uri.s = (_br)->uri;         \
+		(_br)->branch.dst_uri.s = (_br)->dst_uri; \
+		(_br)->branch.path.s = (_br)->path;       \
+	} while(0)
+
 /* ! \brief
  * Add a new branch to current transaction
  */
 int append_msg_branch(struct msg_branch *branch)
 {
-	int idx;
+	int idx, i;
 	struct msg_branch_wrap *new_br;
 	struct dset_ctx *dsct = get_dset_ctx();
 
@@ -295,6 +302,9 @@ int append_msg_branch(struct msg_branch *branch)
 		}
 		memset((char *)new_br + idx * sizeof *new_br, 0,
 				DSET_INCREMENT * sizeof *new_br);
+		/* the array may have moved, update internal links */
+		for ( i=0 ; i<idx ; i++)
+			_post_copy_branch_update( new_br+i );
 
 		dsct->branches = new_br;
 	}
@@ -444,13 +454,6 @@ int update_msg_branch_bflags(unsigned int idx, unsigned int val)
 	return 0;
 }
 
-
-#define _post_copy_branch_update(_br)             \
-	do {                                          \
-		(_br)->branch.uri.s = (_br)->uri;         \
-		(_br)->branch.dst_uri.s = (_br)->dst_uri; \
-		(_br)->branch.path.s = (_br)->path;       \
-	} while(0)
 
 /*! \brief
  * Removes a msg branch by index. The whole array gets shifted, so the

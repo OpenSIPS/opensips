@@ -29,6 +29,7 @@
 #include "../parser/test/test_parser.h"
 #include "../mem/test/test_malloc.h"
 #include "test_ut.h"
+#include "test_dset.h"
 
 #include "../str.h"
 #include "../lib/list.h"
@@ -67,6 +68,7 @@ int run_unit_tests(void)
 		test_lib_csv();
 		test_parser();
 		test_ut();
+		test_dset();
 		test_lib_digest_auth();
 		test_db();
 
