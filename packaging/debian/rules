@@ -56,7 +56,7 @@ STANDALONE_MODULES := \
 	presence_xcapdiff presence_dfks pua pua_bla pua_dialoginfo pua_mi \
 	pua_reginfo pua_usrloc pua_xmpp rls xcap xcap_client prometheus \
 	proto_tls proto_wss python event_rabbitmq rabbitmq_consumer cachedb_redis \
-	aaa_radius peering regex rest_client siprec snmpstats db_sqlite \
+	aaa_radius peering regex rest_client secrets siprec snmpstats db_sqlite \
 	stir_shaken tls_mgm tls_openssl tls_wolfssl db_unixodbc uuid xml \
 	mi_xmlrpc xmpp proto_ipsec
 

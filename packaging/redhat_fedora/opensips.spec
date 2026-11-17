@@ -1770,6 +1770,14 @@ Requires: %{name} = %{version}-%{release}
 %description -n %{name}-module-rest-client
 This package contains only the rest_client loadable module for OpenSIPS.
 
+%package -n %{name}-module-secrets
+Summary: OpenSIPS secrets module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-secrets
+This package contains only the secrets loadable module for OpenSIPS.
+
 %package -n %{name}-module-proto-sctp
 Summary: OpenSIPS proto_sctp module
 Group: System Environment/Daemons
@@ -2734,6 +2742,10 @@ fi
 %files -n %{name}-module-rest-client
 %{_libdir}/opensips/modules/rest_client.so
 %doc docdir/README.rest_client
+
+%files -n %{name}-module-secrets
+%{_libdir}/opensips/modules/secrets.so
+%doc docdir/README.secrets
 
 %files -n %{name}-module-proto-sctp
 %{_libdir}/opensips/modules/proto_sctp.so

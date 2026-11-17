@@ -92,6 +92,7 @@ Suggests: opensips-module-auth-jwt,
           opensips-module-cachedb-redis,
           opensips-module-regex,
           opensips-module-rest-client,
+          opensips-module-secrets,
           opensips-module-proto-sctp [linux-any],
           opensips-module-siprec,
           opensips-module-snmpstats,
@@ -940,6 +941,13 @@ Replaces: opensips-restclient-module (<< ${binary:Version})
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: OpenSIPS rest_client module
  This package contains only the rest_client loadable module for OpenSIPS.
+
+Package: opensips-module-secrets
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS secrets module
+ This package contains only the secrets loadable module for OpenSIPS.
 
 Package: opensips-module-proto-sctp
 Architecture: linux-any
