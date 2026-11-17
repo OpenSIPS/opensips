@@ -1056,12 +1056,44 @@ Consult the [clusterer - Capabilities](../clusterer/README.md#capabilities-layer
 chapter for more details.
 
 
+Nodes without the *instance_id* parameter drop the replication packets
+of the nodes that have it. While a cluster is half upgraded, the old
+nodes get none of the dialogs created on upgraded nodes, and a dialog
+created on an old node stays there until its timeout if it ends through
+an upgraded node. Upgrade a cluster as a whole, or drain each node first.
+
+
 *Default value is "0" (no replication).*
 
 
 ```opensips title="Set dialog_replication_cluster parameter"
 ...
 modparam("dialog", "dialog_replication_cluster", 1)
+...
+```
+
+
+#### instance_id (int)
+
+
+The instance of this OpenSIPS in the dialog ids: it is stored in the top
+byte of the hash entry, so dialogs created by different instances never
+get the same id. Each node replicating dialogs to the others must use a
+different instance.
+
+
+The value must be between 0 and 127; 0 leaves the dialog ids as they were
+before. With an instance, *hash_size* can be at most 16777216.
+OpenSIPS refuses to start with an invalid value.
+
+
+*Default value is the node id in the *dialog_replication_cluster*,
+if set, else "0".*
+
+
+```opensips title="Set instance_id parameter"
+...
+modparam("dialog", "instance_id", 3)
 ...
 ```
 
