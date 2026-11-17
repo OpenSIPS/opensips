@@ -44,6 +44,7 @@ extern unsigned int     global_msg_id;
 extern int ruri_matching;
 extern int via1_matching;
 extern int auto_100trying;
+extern int no_auto_100;
 extern struct tm_id* remote_T;
 
 void init_t();

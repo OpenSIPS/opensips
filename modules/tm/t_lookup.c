@@ -129,6 +129,8 @@ int via1_matching=1;
 
 /* by default we automaticaly send 100 Trying on trasacation creation */
 int auto_100trying=1;
+/* set by t_no_auto_100() for the current request only */
+int no_auto_100=0;
 
 /* this is a global variable which keeps pointer to
    transaction currently processed by a process; it it
@@ -1145,7 +1147,7 @@ int t_newtran( struct sip_msg* p_msg, int full_uas )
 		return E_BAD_VIA;
 	}
 
-	if (auto_100trying && p_msg->REQ_METHOD==METHOD_INVITE) {
+	if (auto_100trying && !no_auto_100 && p_msg->REQ_METHOD==METHOD_INVITE) {
 		ctx_backup = current_processing_ctx;
 		set_global_context(NULL);
 		t_reply( T, p_msg , 100 , &relay_reason_100);
