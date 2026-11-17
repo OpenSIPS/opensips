@@ -114,9 +114,8 @@ The *flags* parameter can have the following values:
   - "b" - specifies that the body of the message shall be
 compressed. Notice that if the message has no body, the flag will have
 no effect.
-  - "h" - specifies that all the headers, except the mandatory
-ones (which will be specified in "whitelist" parameter section) and the
-ones in the whitelist shall be compressed.
+  - "h" - specifies that the headers specified in "whitelist" parameter section
+(except the mandatory ones) shall be compressed.
   - "s" - the headers and the body shall be compressed Separately,
 meaning that a new header named "Comp-Hdrs" will be created, and this
 header will keep the content of the compressed headers. Also, "Headers-Encoding"
@@ -139,7 +138,7 @@ be removed, and the content length header will be the same as the one before the
 compression.
 
 
-This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
 ```opensips title="mc_compress usage"
@@ -200,10 +199,10 @@ must pe separated by '|'.
   - "n" - Do not use short form of headers.
 
 
-This function can be used from REQUEST_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
-```opensips title="mc_compress usage"
+```opensips title="mc_compact usage"
 ...
 if (!mc_compact("Max-Forwards|P-Asserted-Identity"))
 	xlog("compaction failed\n");
