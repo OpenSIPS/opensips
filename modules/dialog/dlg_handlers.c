@@ -2237,7 +2237,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	ctx_dialog_set(dlg);
 	ctx_lastdstleg_set(dst_leg);
 	log_bogus_dst_leg(dlg);
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 
 	/* if there was a transaction created before, store the dialog in it */
 	t = d_tmb.t_gett();
@@ -2858,7 +2858,7 @@ void dlg_ondelete(struct dlg_tl *tl)
 
 	dlg = get_dlg_del_tl_payload(tl);
 
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 
 	dlg_lock( d_table, d_entry);
 
@@ -3288,7 +3288,7 @@ int test_and_set_dlg_flag(struct dlg_cell *dlg, unsigned int mask,
 	if (value)
 		value = mask;
 
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 	dlg_lock (d_table,d_entry);
 
 	if ((dlg->user_flags & mask) == value) {

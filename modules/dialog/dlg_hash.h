@@ -237,6 +237,18 @@ struct dlg_cell *get_current_dialog();
 
 #define dlg_hash(_callid) core_hash(_callid, NULL, d_table->size)
 
+/* the top byte of h_entry holds the instance that created the dialog,
+ * the low bytes the hash table index */
+#define DLG_INSTANCE_SHIFT	24
+#define DLG_INSTANCE_MAX	127
+#define DLG_HASH_SIZE_MAX	(1U << DLG_INSTANCE_SHIFT)
+#define dlg_h_idx(_h_entry) ((_h_entry) & (DLG_HASH_SIZE_MAX - 1))
+#define dlg_h_inst(_h_entry) ((_h_entry) >> DLG_INSTANCE_SHIFT)
+#define dlg_h_entry(_idx, _inst) \
+	((_idx) | ((unsigned int)(_inst) << DLG_INSTANCE_SHIFT))
+
+extern int dlg_instance_id;
+
 #define dlg_lock(_table, _entry) \
 		lock_set_get( (_table)->locks, (_entry)->lock_idx);
 #define dlg_unlock(_table, _entry) \
@@ -247,10 +259,10 @@ struct dlg_cell *get_current_dialog();
 	((_dlg)->legs_no[DLG_LEGS_USED]>_leg)?(_dlg)->legs[_leg]._field.s:"NULL"
 
 #define dlg_lock_dlg(_dlg) \
-	dlg_lock( d_table, &(d_table->entries[_dlg->h_entry]))
+	dlg_lock( d_table, &(d_table->entries[dlg_h_idx(_dlg->h_entry)]))
 
 #define dlg_unlock_dlg(_dlg) \
-	dlg_unlock( d_table, &(d_table->entries[_dlg->h_entry]))
+	dlg_unlock( d_table, &(d_table->entries[dlg_h_idx(_dlg->h_entry)]))
 
 static inline int ensure_leg_array(int needed_legs, struct dlg_cell *dlg)
 {

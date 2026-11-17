@@ -13,6 +13,7 @@
 
 #include "../dlg_vals.h"
 #include "../dlg_db_handler.h"
+#include "../dlg_hash.h"
 #include "../dlg_timer.h"
 
 #ifndef FAKE_DIALOG_TL
@@ -422,6 +423,19 @@ static void test_dlg_wheel_wrap(void)
 	w_teardown();
 }
 
+static void test_dlg_instance_id(void)
+{
+	struct dlg_cell dlg = {0};
+
+	dlg.h_entry = dlg_h_entry(DLG_HASH_SIZE_MAX - 1, DLG_INSTANCE_MAX);
+	dlg.h_id = 0xFFFFFFFF;
+	ok(dlg_h_idx(dlg.h_entry) == DLG_HASH_SIZE_MAX - 1 &&
+		dlg_h_inst(dlg.h_entry) == DLG_INSTANCE_MAX,
+		"split the hash index and the instance back from h_entry");
+	ok((long long)dlg_get_db_id(&dlg) > 0,
+		"dialog DB id of the top instance fits a signed bigint");
+}
+
 void mod_tests(void)
 {
 	test_dlg_val_bool();
@@ -433,4 +447,5 @@ void mod_tests(void)
 		UINT_MAX - 20000, 300, 100000, 6);
 	test_dlg_timer_deadline();
 	test_dlg_wheel_wrap();
+	test_dlg_instance_id();
 }

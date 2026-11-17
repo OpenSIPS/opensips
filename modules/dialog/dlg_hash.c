@@ -341,7 +341,7 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 #endif
 
 	dlg->state = DLG_STATE_UNCONFIRMED;
-	dlg->h_entry = dlg_hash( callid);
+	dlg->h_entry = dlg_h_entry(dlg_hash(callid), dlg_instance_id);
 
 	LM_DBG("new dialog %p (c=%.*s,f=%.*s,t=%.*s,ft=%.*s) on hash %u\n",
 		dlg, callid->len,callid->s, from_uri->len, from_uri->s,
@@ -779,15 +779,15 @@ struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id,
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
 
-	if (h_entry>=d_table->size)
+	if (dlg_h_idx(h_entry)>=d_table->size)
 		goto not_found;
 
-	d_entry = &(d_table->entries[h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(h_entry)]);
 
 	dlg_lock( d_table, d_entry);
 
 	for( dlg=d_entry->first ; dlg ; dlg=dlg->next ) {
-		if (dlg->h_id == h_id) {
+		if (dlg->h_id == h_id && dlg->h_entry == h_entry) {
 			if (active_only && dlg->state==DLG_STATE_DELETED) {
 				dlg_unlock( d_table, d_entry);
 				goto not_found;
@@ -940,17 +940,17 @@ struct dlg_cell* get_dlg_by_did(str *did, int active_only)
 	if (parse_dlg_did(did, &h_entry, &h_id) < 0)
 		return NULL;
 
-	if (h_entry>=d_table->size)
+	if (dlg_h_idx(h_entry)>=d_table->size)
 		return NULL;
 
 	LM_DBG("looking for hentry=%d hid=%d\n", h_entry, h_id);
 
-	d_entry = &(d_table->entries[h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(h_entry)]);
 	dlg_lock( d_table, d_entry);
 	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
 		if (active_only && dlg->state>DLG_STATE_CONFIRMED )
 			continue;
-		if (dlg->h_id == h_id) {
+		if (dlg->h_id == h_id && dlg->h_entry == h_entry) {
 			ref_dlg_unsafe( dlg, 1);
 			dlg_unlock( d_table, d_entry);
 			return dlg;
@@ -992,7 +992,7 @@ void link_dlg(struct dlg_cell *dlg, int extra_refs)
 {
 	struct dlg_entry *d_entry;
 
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 
 	dlg_lock(d_table, d_entry);
 
@@ -1032,7 +1032,7 @@ void _ref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 {
 	struct dlg_entry *d_entry;
 
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 
 	dlg_lock( d_table, d_entry);
 	ref_dlg_unsafe( dlg, cnt);
@@ -1043,7 +1043,7 @@ void _unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 {
 	struct dlg_entry *d_entry;
 
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 
 	dlg_lock( d_table, d_entry);
 	unref_dlg_unsafe( dlg, cnt, d_entry);
@@ -1197,7 +1197,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 {
 	struct dlg_entry *d_entry;
 
-	d_entry = &(d_table->entries[dlg->h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(dlg->h_entry)]);
 	*unref = 0;
 
 	dlg_lock( d_table, d_entry);

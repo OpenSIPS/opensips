@@ -37,8 +37,9 @@
 #define DLG_BIN_V3      3
 #define DLG_BIN_V4      4
 #define DLG_BIN_V5      5
+#define DLG_BIN_V6      6
 
-#define BIN_VERSION DLG_BIN_V5
+#define BIN_VERSION DLG_BIN_V6
 
 extern int dialog_repl_cluster;
 extern int profile_repl_cluster;
