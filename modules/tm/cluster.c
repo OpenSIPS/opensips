@@ -205,6 +205,11 @@ static void receive_tm_repl(bin_packet_t *packet)
 
 	/* first part is common to all messages */
 	TM_BIN_POP(int, &proto, "proto");
+	if (proto < PROTO_FIRST || proto >= PROTO_LAST ||
+			protos[proto].id == PROTO_NONE) {
+		LM_WARN("received replicated message with invalid protocol: %d\n", proto);
+		return;
+	}
 	TM_BIN_POP(str, &tmp, "dst host");
 	TM_BIN_POP(int, &port, "dst port");
 
@@ -227,10 +232,18 @@ static void receive_tm_repl(bin_packet_t *packet)
 	ri.proto_reserved1 = ri.proto_reserved2 = 0;
 
 	TM_BIN_POP(str, &tmp, "src host");
+	if (tmp.len > sizeof(ri.src_ip)) {
+		LM_WARN("received replicated message with oversized source address\n");
+		return;
+	}
 	memcpy((char *)&ri.src_ip, tmp.s, tmp.len);
 	TM_BIN_POP(int, &ri.src_port, "src port");
 	TM_BIN_POP(str, &tmp, "message");
 	/* we need to substract the '\0' termination from message len */
+	if (tmp.len == 0) {
+		LM_WARN("received replicated message without a terminating NUL\n");
+		return;
+	}
 	tmp.len--;
 
 	/* only auto-CANCEL is treated differently */
