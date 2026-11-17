@@ -473,20 +473,22 @@ static void get_siptrace_type(str *name, str *trace_uri, str *param1,
 {
 	#define IS_HEP_URI(__url__) ((__url__->len > 3/*O_o*/ \
 				&& (__url__->s[0]|0x20) == 'h' && (__url__->s[1]|0x20) == 'e' \
-					&& (__url__->s[2]|0x20) == 'p'))
+					&& (__url__->s[2]|0x20) == 'p' && __url__->s[3] == ':'))
 
 	#define IS_SIP_URI(__url__) ((__url__->len > 3/*O_o*/ \
 				&& (__url__->s[0]|0x20) == 's' && (__url__->s[1]|0x20) == 'i' \
-					&& (__url__->s[2]|0x20) == 'p'))
+					&& (__url__->s[2]|0x20) == 'p' && __url__->s[3] == ':'))
 
 	#define IS_FILE_URI(__url__) ((__url__->len > 4 \
 				&& (__url__->s[0]|0x20) == 'f' && (__url__->s[1]|0x20) == 'i' \
-				&& (__url__->s[2]|0x20) == 'l' && (__url__->s[3]|0x20) == 'e'))
+					&& (__url__->s[2]|0x20) == 'l' && (__url__->s[3]|0x20) == 'e' \
+					&& __url__->s[4] == ':'))
 
 	#define IS_SYSLOG_URI(__url__) ((__url__->len >= 6 \
 				&& (__url__->s[0]|0x20) == 's' && (__url__->s[1]|0x20) == 'y' \
 				&& (__url__->s[2]|0x20) == 's'  && (__url__->s[3]|0x20) == 'l'\
-				&& (__url__->s[4]|0x20) == 'o' && (__url__->s[5]|0x20) == 'g'))
+				&& (__url__->s[4]|0x20) == 'o' && (__url__->s[5]|0x20) == 'g' \
+				&& (__url__->len == 6 || __url__->s[6] == ':')))
 
 	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
 				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
@@ -513,8 +515,13 @@ static void get_siptrace_type(str *name, str *trace_uri, str *param1,
 		trace_uri->s += 5;
 	} else if (IS_SYSLOG_URI(trace_uri)) {
 		*type = TYPE_SYSLOG;
-		trace_uri->len -= 7;
-		trace_uri->s += 7;
+		if (trace_uri->len > 6) {
+			trace_uri->len -= 7;
+			trace_uri->s += 7;
+		} else {
+			/* bare "syslog" means use the configured defaults */
+			trace_uri->len = 0;
+		}
 	} else {
 		/* need to take the table into account */
 		if (param1 && (param1->s == NULL || param1->len == 0))
