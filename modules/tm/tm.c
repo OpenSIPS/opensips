@@ -140,6 +140,7 @@ static int child_init(int rank);
 
 /* exported functions */
 static int w_t_newtran(struct sip_msg* p_msg);
+static int w_t_no_auto_100(struct sip_msg* msg);
 static int w_t_reply(struct sip_msg* msg, unsigned int code, str* text);
 static int w_pv_t_reply(struct sip_msg *msg, unsigned int* code, str* text);
 static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *proxy);
@@ -246,6 +247,8 @@ static const dep_export_t deps = {
 
 static const cmd_export_t cmds[]={
 	{"t_newtran", (cmd_function)w_t_newtran, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"t_no_auto_100", (cmd_function)w_t_no_auto_100, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"t_reply", (cmd_function)w_pv_t_reply, {
 		{CMD_PARAM_INT, fixup_reply_code, 0},
@@ -1303,6 +1306,19 @@ static int w_pv_t_reply(struct sip_msg *msg, unsigned int* code, str* text)
 static int w_t_newtran( struct sip_msg* p_msg)
 {
 	return t_newtran( p_msg , 0 /*no full UAS cloning*/);
+}
+
+
+static int w_t_no_auto_100(struct sip_msg* msg)
+{
+	struct cell *t = get_t();
+
+	if (t && t!=T_UNDEFINED) {
+		LM_WARN("transaction already created, 100 Trying not suppressed\n");
+		return -1;
+	}
+	msg->msg_flags |= FL_NO_AUTO_100;
+	return 1;
 }
 
 

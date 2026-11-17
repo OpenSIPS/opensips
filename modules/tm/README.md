@@ -977,7 +977,8 @@ This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 Creates the SIP transaction for the currently processed SIP request,
 thus switching to stateful processing.  For INVITE requests, a 100
 Trying reply will be immediately sent, unless
-[auto_100trying](#auto_100trying-integer) is disabled.  Once a SIP
+[auto_100trying](#auto_100trying-integer) is disabled or
+[t_no_auto_100()](#t_no_auto_100) was called.  Once a SIP
 transaction is created, calling [t_newtran()](#t_newtran) for
 retransmitted requests will end the OpenSIPS script execution, with the
 lastly sent reply being retransmitted upstream.
@@ -992,6 +993,27 @@ t_newtran();  # 100 Trying is fired here
 xlog("doing my complicated routing logic\n");
 ....
 t_relay(); # send the call further
+...
+```
+
+
+#### t_no_auto_100()
+
+
+Disables [auto_100trying](#auto_100trying-integer) for the current
+request only. It must be called before the transaction is created,
+otherwise it returns false. The script is then responsible for sending
+a provisional reply in time (RFC 3261, section 17.2.1).
+
+
+This function can be used from REQUEST_ROUTE.
+
+
+```opensips title="t_no_auto_100 usage"
+...
+t_no_auto_100();
+t_reply(183, "Session Progress");  # first provisional, no 100 before it
+t_relay();
 ...
 ```
 
