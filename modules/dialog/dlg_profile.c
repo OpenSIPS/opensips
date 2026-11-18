@@ -838,7 +838,7 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 	}
 
 	/* link the profile into the dialog */
-	d_entry = &d_table->entries[dlg->h_entry];
+	d_entry = &d_table->entries[dlg_h_idx(dlg->h_entry)];
 
 	if (dlg->locked_by != process_no)
 		dlg_lock(d_table, d_entry);
@@ -910,7 +910,7 @@ int unset_dlg_profile(struct dlg_cell *dlg, str *value,
 	}
 
 	/* check the dialog linkers */
-	d_entry = &d_table->entries[dlg->h_entry];
+	d_entry = &d_table->entries[dlg_h_idx(dlg->h_entry)];
 	/* lock dialog (if not already locked via a callback triggering)*/
 	if (dlg->locked_by!=process_no)
 		dlg_lock( d_table, d_entry);
@@ -969,7 +969,7 @@ int unset_dlg_profile_all_values(struct dlg_cell *dlg, struct dlg_profile_table 
 	}
 
 	/* check the dialog linkers */
-	d_entry = &d_table->entries[dlg->h_entry];
+	d_entry = &d_table->entries[dlg_h_idx(dlg->h_entry)];
 	/* lock dialog (if not already locked via a callback triggering)*/
 	if (dlg->locked_by!=process_no)
 		dlg_lock( d_table, d_entry);
@@ -1025,7 +1025,7 @@ int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 		return -1;
 
 	/* check the dialog linkers */
-	d_entry = &d_table->entries[dlg->h_entry];
+	d_entry = &d_table->entries[dlg_h_idx(dlg->h_entry)];
 	dlg_lock( d_table, d_entry);
 	for( linker=dlg->profile_links ; linker ; linker=linker->next) {
 		if (linker->profile==profile) {
