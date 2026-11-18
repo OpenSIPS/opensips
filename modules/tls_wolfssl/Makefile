@@ -11,6 +11,10 @@ MOD_DIR ?= $(shell realpath `dirname $(_makefile_path)`)/modules/tls_wolfssl
 
 WOLFSSL_FEATURES = \
 	   --enable-opensslextra \
+	   --enable-opensslall \
+	   --enable-certext \
+	   --enable-certgen \
+	   --enable-atomicuser \
 	   --enable-writedup \
 	   --enable-tlsv10 \
 	   --enable-tls13 \
