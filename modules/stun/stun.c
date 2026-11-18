@@ -638,6 +638,11 @@ int getTlvAttribute(IN_OUT Buffer* buf, IN_OUT StunMsg* msg){
     rc = 0;
     b = (char*) buf->buffer;
 
+    if(buf->size < 4){
+	LM_DBG("Attribute header overflows; drop msg\n");
+	return -3;
+    }
+
     type = ntohs(*(T16 *) b);
     b+=2;
 
