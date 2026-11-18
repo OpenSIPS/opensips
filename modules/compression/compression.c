@@ -529,10 +529,11 @@ static int mc_is_in_whitelist(struct hdr_field* hf, mc_whitelist_p wh_list)
 {
 	if (!wh_list)
 		return 0;
-	if (hf->type != HDR_OTHER_T) {
-		return ((1 << (hf->type%MC_BYTE_SIZE))&
-			(wh_list->hdr_mask[hf->type/MC_BYTE_SIZE]));
-	} else {
+	/* The HDR_OTHER_T bit matches all custom headers for "*". */
+	if (wh_list->hdr_mask[hf->type/MC_BYTE_SIZE] &
+			(1 << (hf->type%MC_BYTE_SIZE)))
+		return 1;
+	if (hf->type == HDR_OTHER_T) {
 		mc_other_hdr_lst_p other_hdr = wh_list->other_hdr;
 
 		for ( ; other_hdr; other_hdr=other_hdr->next) {
