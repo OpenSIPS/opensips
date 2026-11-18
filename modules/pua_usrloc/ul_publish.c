@@ -188,6 +188,35 @@ error:
 	return NULL;
 }
 
+/* marks a contact that reached usrloc with no publish from this node
+ * (start-up load, cluster full sync or replication): pua holds no record of
+ * it, so the first update/expiry publish may legitimately find nothing */
+static str ul_nopub_key = str_init("pua_usrloc_nopub");
+
+static inline int ul_nopub_get(ucontact_t *c)
+{
+	int_str_t *v;
+
+	if (!c->kv_storage)
+		return 0;
+
+	v = ul.get_ucontact_key(c, &ul_nopub_key);
+	return v && !v->is_str && v->i;
+}
+
+static inline void ul_nopub_set(ucontact_t *c, int on)
+{
+	int_str_t v;
+
+	if (!c->kv_storage || (!on && !ul_nopub_get(c)))
+		return;
+
+	v.is_str = 0;
+	v.i = on;
+	if (!ul.put_ucontact_key(c, &ul_nopub_key, &v))
+		LM_ERR("oom\n");
+}
+
 void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 {
 	ucontact_t *c = (ucontact_t *)binding;
@@ -195,10 +224,15 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 	str uri= {NULL, 0};
 	char* at= NULL;
 	publ_info_t publ;
-	int error;
+	int error, nopub;
 
-	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0)
+	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0) {
+		/* inserted or updated with no publish from this node (a cluster
+		 * update also replaces the contact's kv storage, dropping the mark) */
+		if (type & (UL_CONTACT_INSERT|UL_CONTACT_UPDATE))
+			ul_nopub_set(c, 1);
 		return;
+	}
 
 	/* in a cluster, every node expires the shared contacts: only the
 	 * node owning the pua sharing tag publishes the expiry */
@@ -263,6 +297,10 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 	else
 		publ.flag= UPDATE_TYPE;
 
+	nopub = !(type & UL_CONTACT_INSERT) && ul_nopub_get(c);
+	if (nopub)
+		publ.flag |= PUBL_SILENT_ERR;
+
 	publ.source_flag|= UL_PUBLISH;
 	publ.event|= PRESENCE_EVENT;
 	publ.extra_headers= NULL;
@@ -285,10 +323,16 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 			{
 			   LM_ERR("failed to send publish\n");
 			}
+			else
+				ul_nopub_set(c, 0);
 		}
+		else if (nopub && error == ERR_PUBLISH_NO_RECORD)
+			LM_DBG("no publish record for a bulk-loaded contact\n");
 		else
 			LM_ERR("failed to send publish\n");
 	}
+	else if (nopub)
+		ul_nopub_set(c, 0);
 
 error:
 

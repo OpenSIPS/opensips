@@ -29,6 +29,10 @@
 
 #define INSERT_TYPE      1<<1
 #define UPDATE_TYPE      1<<2
+/* the caller expects pua may hold no record for this publish (e.g. a
+ * contact bulk-loaded at start-up or by a cluster sync): its "no record" /
+ * "no body" errors are logged at DBG level, the error code is unchanged */
+#define PUBL_SILENT_ERR  1<<3
 
 #define REQ_OTHER  0
 #define REQ_ME     1

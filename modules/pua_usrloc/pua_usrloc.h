@@ -30,6 +30,7 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_);
 int pua_set_publish(struct sip_msg* , char*, char*);
 
 extern pua_api_t pua;
+extern usrloc_api_t ul;
 extern str pres_prefix;
 extern str presence_server;
 extern int pul_status_idx;
