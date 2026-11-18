@@ -138,7 +138,7 @@ be removed, and the content length header will be the same as the one before the
 compression.
 
 
-This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
 ```opensips title="mc_compress usage"
@@ -199,7 +199,7 @@ must pe separated by '|'.
   - "n" - Do not use short form of headers.
 
 
-This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
+This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
 
 
 ```opensips title="mc_compact usage"
