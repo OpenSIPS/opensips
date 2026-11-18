@@ -177,6 +177,28 @@ void bin_push_ctmatch(bin_packet_t *packet, const struct ct_match *match)
 }
 
 /* NOTICE: remember to free @match->match_params when done with it! */
+/* the RFC 5626 reg-id inside a packed (JSON) kv storage, 0 if none */
+static unsigned int packed_kv_reg_id(str *packed)
+{
+	map_t kv;
+	int_str_t *val;
+	unsigned int reg_id = 0;
+
+	if (ZSTRP(packed))
+		return 0;
+
+	kv = store_deserialize(packed);
+	if (!kv)
+		return 0;
+
+	val = kv_get(kv, &ul_regid_key);
+	if (val && !val->is_str)
+		reg_id = (unsigned int)val->i;
+
+	store_destroy(kv);
+	return reg_id;
+}
+
 void bin_pop_ctmatch(bin_packet_t *packet, struct ct_match *match)
 {
 	int np;
@@ -194,7 +216,7 @@ void bin_pop_ctmatch(bin_packet_t *packet, struct ct_match *match)
 		if (!param) {
 			LM_ERR("oom\n");
 			free_pkg_str_list(match->match_params);
-			*match = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+			*match = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 			return;
 		}
 		memset(param, 0, sizeof *param);
@@ -382,7 +404,7 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c,
 	}
 
 	if (!_match)
-		match = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		match = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		match = *_match;
 
@@ -527,7 +549,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
-	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_NONE};
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	memset(&ci, 0, sizeof ci);
@@ -598,17 +620,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	ci.packed_kv_storage = &kv_str;
 
 	if (pkg_ver <= UL_BIN_V2)
-		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
-
-	/* the contact record itself carries +sip.instance (pushed in
-	 * bin_push_contact); match on it so a sender-side instance-based
-	 * rewrite of the Contact URI still finds the old contact here.
-	 * No bin format change: the instance is taken from ci, not from
-	 * the wire-encoded ct_match. */
-	cmatch.instance = ci.instance;
-	ci.c = &contact_str;
 
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;
@@ -697,7 +711,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
-	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_NONE};
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	memset(&ci, 0, sizeof ci);
@@ -773,17 +787,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	unpack_indexes(ci.contact_id, &_, &rlabel, &clabel);
 
 	if (pkg_ver <= UL_BIN_V2)
-		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
-
-	/* see receive_ucontact_insert: match by the +sip.instance carried in
-	 * the contact record, so a sender-side URI rewrite reaches this
-	 * contact instead of landing as a duplicate insert */
-	cmatch.instance = ci.instance;
-	/* the packet's contact string is the sender's post-update URI; apply
-	 * it too, so this node keeps the same (rewritten) URI */
-	ci.c = &contact_str;
 
 	lock_udomain(domain, &aor);
 
@@ -815,6 +821,19 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	} else {
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &cmatch,
 			&contact);
+		if (rc == 1 && ci.instance.s && ci.instance.len) {
+			/* the sender may have matched this contact by +sip.instance and
+			 * reg-id (RFC 5626) and changed its URI: find it the same way and
+			 * take the new URI. No bin format change: both come from the
+			 * contact record (the reg-id from its kv storage) */
+			cmatch.instance = ci.instance;
+			cmatch.reg_id = packed_kv_reg_id(ci.packed_kv_storage);
+			cmatch.instance_mode = CT_INSTANCE_ON;
+			rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1,
+				&cmatch, &contact);
+			if (rc == 0)
+				ci.c = &contact_str;
+		}
 		if (rc == 1) {
 			LM_INFO("contact '%.*s' not found, inserting new (ci: '%.*s')\n",
 				contact_str.len, contact_str.s, callid.len, callid.s);
@@ -859,7 +878,7 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	ucontact_t *contact;
 	str d, aor, contact_str, callid;
 	int cseq, rc;
-	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_NONE};
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	bin_pop_str(packet, &d);
@@ -874,7 +893,7 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	bin_pop_int(packet, &cseq);
 
 	if (pkg_ver <= UL_BIN_V2)
-		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
 
@@ -1002,7 +1021,7 @@ void receive_binary_packets(bin_packet_t *pkt)
 
 static int receive_sync_request(int node_id)
 {
-	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_CONTACT_CALLID};
 	bin_packet_t *sync_packet;
 	dlist_t *dl;
 	udomain_t *dom;

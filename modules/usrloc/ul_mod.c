@@ -255,6 +255,7 @@ static const param_export_t params[] = {
 	{"latency_event_min_us_delta",   INT_PARAM, &latency_event_min_us_delta  },
 	{"attr_column",        STR_PARAM, &attr_col.s        },
 	{"matching_mode",      INT_PARAM, &matching_mode     },
+	{"sip_instance_matching", INT_PARAM, &sip_instance_matching },
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },

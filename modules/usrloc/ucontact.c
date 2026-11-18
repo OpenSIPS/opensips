@@ -94,6 +94,42 @@ static int compute_next_hop(ucontact_t *contact)
 }
 
 
+str ul_regid_key = str_init("_rid");
+
+/*! \brief
+ * RFC 5626 reg-id: kept in the contact's kv storage, so it is persisted and
+ * replicated with no change to the DB schema or the cluster packets. A
+ * locally built contact (no packed kv storage) carries the authoritative
+ * value; a loaded or replicated one already has it in its kv storage.
+ */
+static int ucontact_set_reg_id(map_t kv, ucontact_info_t *ci)
+{
+	int_str_t val;
+
+	if (!kv || !ZSTRP(ci->packed_kv_storage))
+		return 0;
+
+	if (!ci->reg_id) {
+		kv_del(kv, &ul_regid_key);
+		return 0;
+	}
+
+	val.is_str = 0;
+	val.i = (int)ci->reg_id;
+	return kv_put(kv, &ul_regid_key, &val) ? 0 : -1;
+}
+
+unsigned int ucontact_reg_id(ucontact_t *c)
+{
+	int_str_t *val;
+
+	if (!c->kv_storage)
+		return 0;
+
+	val = kv_get(c->kv_storage, &ul_regid_key);
+	return (val && !val->is_str) ? (unsigned int)val->i : 0;
+}
+
 /*! \brief
  * Create a new contact structure
  */
@@ -162,6 +198,9 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		if (shtagp && shm_str_dup(&c->shtag, &shtagp->s) < 0)
 			goto mem_error;
 	}
+
+	if (ucontact_set_reg_id(c->kv_storage, _ci) != 0)
+		goto mem_error;
 
 	get_act_time();
 
@@ -346,6 +385,9 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 			kv_del(_c->kv_storage, &ul_shtag_key);
 		}
 	}
+
+	if (ucontact_set_reg_id(_c->kv_storage, _ci) != 0)
+		goto out_oom;
 
 	if (compute_next_hop(_c) != 0)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",

@@ -136,5 +136,6 @@ extern cachedb_funcs cdbf;
 extern cachedb_con *cdbc;
 
 extern int matching_mode;
+extern int sip_instance_matching;
 
 #endif /* UL_MOD_H */
