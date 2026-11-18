@@ -128,7 +128,8 @@ this flag, by default the module will send the raw compressed message in
 deflate/gzip format.
 - *whitelist* (string, optional) - header names list, separated by '|' which will specify
 which headers shall not be compressed, along with the mandatory ones, which can never be
-compressed. The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
+compressed. Use "*" to select all non-mandatory headers, including custom headers.
+The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
 CALLID. Also, CONTENT_TYPE is mandatory only if CONTENT-LENGTH > 0.
 Also, in case you do not want to use body compression, the Content-Length header will
 become a mandatory header, which can not be compressed. In case you do want body
@@ -143,10 +144,21 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL
 
 ```opensips title="mc_compress usage"
 ...
+# Compress Max-Forwards, Subject and P-Asserted-Identity headers:
 if (!mc_compress(0, "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
 	xlog("compression failed\n");
 ...
 	
+```
+
+
+```opensips title="mc_compress usage"
+...
+# Compress all non-mandatory headers, including custom headers:
+if (!mc_compress(0, "h", "*"))
+    xlog("full header compression failed\n");
+...
+
 ```
 
 
@@ -193,7 +205,7 @@ Meaning of the parameters is as follows:
 
 - *whitelist* (string, optional) - Whitelist of headers not to be
 removed, except from the mandatory ones. The whitelist header names
-must pe separated by '|'.
+must pe separated by '|'. Use "*" to select all non-mandatory headers, including custom headers.
 - *flags* (string) - Controls the behavior of the function. Possible flags are:
 
   - "n" - Do not use short form of headers.
@@ -204,10 +216,21 @@ This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL
 
 ```opensips title="mc_compact usage"
 ...
+# Keep Max-Forwards and P-Asserted-Identity while applying the other compaction steps:
 if (!mc_compact("Max-Forwards|P-Asserted-Identity"))
 	xlog("compaction failed\n");
 ...
 	
+```
+
+
+```opensips title="mc_compact usage"
+...
+# Keep all headers while applying the other compaction steps:
+if (!mc_compact("*"))
+    xlog("compaction failed\n");
+...
+
 ```
 
 
