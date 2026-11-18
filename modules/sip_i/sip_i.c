@@ -964,10 +964,12 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 	struct body_part *isup_part;
 	struct isup_parsed_struct *isup_struct;
 	struct param_parsed_struct *p = NULL;
+	struct param_parsed_struct new_param;
 	struct opt_param *opt_p, *tmp;
 	int pv_idx = -1;
 	int param_type = -1;
 	int rc;
+	int old_len;
 	int new_len = 0;
 	int i;
 	int new_val;
@@ -976,20 +978,14 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			&isup_part, &param_type) < 0)
 		return -1;
 
-	if (!p) {	/* param not found in parsed struct so it should be a new optional param */
-		opt_p = pkg_malloc(sizeof *opt_p);
-		if (!opt_p) {
-			LM_ERR("No more pkg memory!\n");
-			return -1;
-		}
-		opt_p->next = isup_struct->opt_params_list;
-		memset(&opt_p->param, 0, sizeof(struct param_parsed_struct));
-		opt_p->param.param_code = isup_params[fix->isup_params_idx].param_code;
-		isup_struct->opt_params_list = opt_p;
-		isup_struct->no_opt_params++;
-		p = &opt_p->param;
+	if (!p) {
+		/* Stage a new optional parameter until the assignment succeeds. */
+		memset(&new_param, 0, sizeof new_param);
+		new_param.param_code = isup_params[fix->isup_params_idx].param_code;
+		p = &new_param;
 		param_type = 3;
 	}
+	old_len = p->len;
 
 	if (isup_params[fix->isup_params_idx].write_func && fix->subfield_idx >= 0) {
 		if (pv_idx >= 0)
@@ -1000,9 +996,6 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 		new_len = p->len;
 		rc = isup_params[fix->isup_params_idx].write_func(fix->isup_params_idx,
 										fix->subfield_idx, p->val, &new_len, val);
-		if (new_len != p->len)
-			isup_struct->total_len += new_len - p->len;
-		p->len = new_len;
 		if (rc < 0) {
 			LM_WARN("Unable to write $isup_param(%.*s)\n",
 				isup_params[fix->isup_params_idx].name.len,
@@ -1010,9 +1003,8 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			return -1;
 		}
 
-		isup_part->dump_f = (dump_part_function)isup_dump;
-
-		return 0;
+		p->len = new_len;
+		goto written;
 	} else if (!isup_params[fix->isup_params_idx].write_func && fix->subfield_idx >= 0) {
 		LM_ERR("BUG - Subfield known but no specific parse function\n");
 		return -1;
@@ -1021,6 +1013,8 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 	if (pv_idx < 0) {	/* we don't have an index */
 
 		if (val == NULL || val->flags & PV_VAL_NULL) {
+			if (param_type == 3)	/* already absent */
+				return 0;
 			if (param_type < 2)	/* for mandatory params, fill with 0 */
 				memset(p->val, 0, p->len);
 			else {	/* if opt param, remove param from message */
@@ -1046,17 +1040,9 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 		} else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) {
 			/* if we have predefined values for a param that is a single field */
 			if (isup_params[fix->isup_params_idx].single_fld_pvals) {
-				if (param_type == 3)	/* new optional param */
-					isup_struct->total_len += 1;
-				else if (param_type == 1 || param_type == 2)
-					isup_struct->total_len += 1 - p->len;
-
 				p->len = 1;
 				p->val[0] = val->ri;
-
-				isup_part->dump_f = (dump_part_function)isup_dump;
-
-				return 0;
+				goto written;
 			} else {
 				LM_WARN("Hex string value required for $isup_param(%.*s)\n",
 					isup_params[fix->isup_params_idx].name.len,
@@ -1085,23 +1071,16 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 						return -1;
 				}
 
-				if (param_type == 3)	/* new optional param */
-					isup_struct->total_len += (val->rs.len-2)/2;
-				else if (param_type == 1 || param_type == 2)
-					isup_struct->total_len += (val->rs.len-2)/2 - p->len;
-
-				p->len = (val->rs.len-2)/2;
-
-				if (read_hex_param(val->rs.s, p->val, p->len) < 0) {
+				new_len = (val->rs.len-2)/2;
+				if (read_hex_param(val->rs.s, p->val, new_len) < 0) {
 					LM_WARN("Invalid hex value for $isup_param(%.*s)\n",
 						isup_params[fix->isup_params_idx].name.len,
 						isup_params[fix->isup_params_idx].name.s);
 					return -1;
 				}
 
-				isup_part->dump_f = (dump_part_function)isup_dump;
-
-				return 0;
+				p->len = new_len;
+				goto written;
 			} else if (isup_params[fix->isup_params_idx].single_fld_pvals) {
 				/* if we have aliases for a param that is a single field */
 				if (p->len > 1) {
@@ -1120,17 +1099,9 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 					}
 
 				if (new_val != -1) {
-					if (param_type == 3)	/* new optional param */
-						isup_struct->total_len += 1;
-					else if (param_type == 1 || param_type == 2)
-						isup_struct->total_len += 1 - p->len;
-
 					p->len = 1;
 					p->val[0] = new_val;
-
-					isup_part->dump_f = (dump_part_function)isup_dump;
-
-					return 0;
+					goto written;
 				} else {
 					LM_ERR("Unknown value alias <%.*s>\n", val->rs.len, val->rs.s);
 					return -1;
@@ -1160,28 +1131,20 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			if (pv_idx > p->len - 1) {	/* extending the param */
 				/* fill the rest of the bytes up to the index with 0 */
 				memset(p->val + p->len, 0, pv_idx - p->len);
-				isup_struct->total_len += pv_idx + 1 - p->len;
 				p->len = pv_idx + 1;
 			}
 
 			p->val[pv_idx] = 0;
-
-			isup_part->dump_f = (dump_part_function)isup_dump;
-
-			return 0;
+			goto written;
 		} else if (val->flags & PV_TYPE_INT || val->flags & PV_VAL_INT) {
 			if (pv_idx > p->len - 1) {	/* extending the param */
 				/* fill the rest of the bytes up to the index with 0 */
 				memset(p->val + p->len, 0, pv_idx - p->len);
-				isup_struct->total_len += pv_idx + 1 - p->len;
 				p->len = pv_idx + 1;
 			}
 
 			p->val[pv_idx] = val->ri;
-
-			isup_part->dump_f = (dump_part_function)isup_dump;
-
-			return 0;
+			goto written;
 		} else if (val->flags & PV_VAL_STR) {
 			LM_WARN("Integer value required for byte [%d] of $isup_param(%.*s)\n",
 				pv_idx, isup_params[fix->isup_params_idx].name.len,
@@ -1194,6 +1157,22 @@ int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t
 			return -1;
 		}
 	}
+
+written:
+	if (param_type == 3) {
+		opt_p = pkg_malloc(sizeof *opt_p);
+		if (!opt_p) {
+			LM_ERR("No more pkg memory!\n");
+			return -1;
+		}
+		opt_p->param = new_param;
+		opt_p->next = isup_struct->opt_params_list;
+		isup_struct->opt_params_list = opt_p;
+		isup_struct->no_opt_params++;
+	}
+	isup_struct->total_len += p->len - old_len;
+	isup_part->dump_f = (dump_part_function)isup_dump;
+	return 0;
 }
 
 int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
