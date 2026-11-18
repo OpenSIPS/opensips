@@ -200,11 +200,12 @@ int parse_param_name(str* _s, dig_par_t* _type)
 	end = _s->s + _s->len;
 
 	p = _s->s;
-	val = READ(p);
 
 	if (_s->len < 4) {
 		goto other;
 	}
+
+	val = READ(p);
 
         switch(LOWER_DWORD(val)) {
 	FIRST_QUATERNIONS;
@@ -218,7 +219,7 @@ int parse_param_name(str* _s, dig_par_t* _type)
 	_s->s = p;
 
 	trim_leading(_s);
-	if (_s->s[0] == '=') {
+	if (_s->len > 0 && _s->s[0] == '=') {
 		return 0;
 	}
 
