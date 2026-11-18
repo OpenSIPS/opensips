@@ -633,6 +633,12 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
 			GET_STR_VALUE(to_tag, values, 5, 1, 0);
 
+			if (dlg_h_idx(hash_entry) >= d_table->size) {
+				LM_ERR("dialog %u:%u does not fit hash_size %u -> skipping\n",
+					hash_entry, hash_id, d_table->size);
+				continue;
+			}
+
 			d_entry = &d_table->entries[dlg_h_idx(hash_entry)];
 			dlg_lock(d_table, d_entry);
 
@@ -1935,7 +1941,12 @@ static int sync_dlg_db_mem(void)
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
 			GET_STR_VALUE(to_tag, values, 5, 1, 0);
 
-			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
+			if (dlg_h_idx(hash_entry) >= d_table->size) {
+				LM_ERR("dialog %u:%u does not fit hash_size %u -> skipping\n",
+					hash_entry, hash_id, d_table->size);
+				continue;
+			}
+
 			known_dlg = 0;
 			d_entry = &(d_table->entries[dlg_h_idx(hash_entry)]);
 

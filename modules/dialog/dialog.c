@@ -970,8 +970,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (dlg_instance_id && (unsigned int)dlg_hash_size > DLG_HASH_SIZE_MAX) {
-		LM_ERR("hash_size %d is too big with an instance_id, max is %u\n",
+	if ((unsigned int)dlg_hash_size > DLG_HASH_SIZE_MAX) {
+		LM_ERR("hash_size %d is too big, max is %u\n",
 			dlg_hash_size, DLG_HASH_SIZE_MAX);
 		return -1;
 	}

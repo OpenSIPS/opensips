@@ -209,7 +209,7 @@ modparam("dialog", "enable_stats", 0)
 
 The size of the hash table internally used to keep the dialogs. A
 larger table is much faster but consumes more memory. The hash size
-must be a power of 2 number.
+must be a power of 2 number, at most 16777216.
 
 
 IMPORTANT: If dialogs' information should be stored in a database,
@@ -1083,8 +1083,11 @@ different instance.
 
 
 The value must be between 0 and 127; 0 leaves the dialog ids as they were
-before. With an instance, *hash_size* can be at most 16777216.
-OpenSIPS refuses to start with an invalid value.
+before. OpenSIPS refuses to start with an invalid value.
+
+
+Do not downgrade to an OpenSIPS version without this parameter while
+the database holds dialogs created with an instance.
 
 
 *Default value is the node id in the *dialog_replication_cluster*,
