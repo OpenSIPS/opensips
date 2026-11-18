@@ -20,6 +20,8 @@
 #endif
 #include "../dlg_timer_wheel.h"
 
+extern struct dlg_timer *d_timer;
+
 static void test_dlg_val_bool(void)
 {
 	static str true_name = {"bool_true", sizeof("bool_true") - 1};
@@ -282,40 +284,6 @@ static void test_dlg_wheel_model(const char *name, unsigned int start,
 	w_teardown();
 }
 
-/* A timeout written in place (as the DB sync of a known dialog does) instead
- * of through update_dlg_timer(): a later one must not be served a turn of
- * the wheel late, an earlier one no later than its old second. */
-static void test_dlg_wheel_in_place_change(void)
-{
-	unsigned int now = 5000, t;
-	struct wheel_ent *later, *earlier;
-	unsigned int later_out = 0, earlier_out = 0;
-	struct dlg_tl *tl;
-
-	w_setup(2, now);
-	later = &w_ent[0];
-	earlier = &w_ent[1];
-	w_put(later, now + 100);
-	w_put(earlier, now + 200);
-	later->tl.timeout = later->due = now + 5000;
-	earlier->tl.timeout = earlier->due = now + 50;
-
-	for (t = now + 1; t <= now + 6000; t++) {
-		for (tl = dlg_wheel_expired(&w_timer, t); tl != FAKE_DIALOG_TL;
-				tl = tl->next) {
-			if (tl == &later->tl)
-				later_out = t;
-			else if (tl == &earlier->tl)
-				earlier_out = t;
-		}
-	}
-	ok(later_out == now + 5000,
-		"dialog timer wheel: a timeout raised in place expires on time");
-	ok(earlier_out >= now + 50 && earlier_out <= now + 200,
-		"dialog timer wheel: a timeout lowered in place expires by its old second");
-	w_teardown();
-}
-
 /* the timer routine at every second from <from> to <to>, noting for each
  * entry when it came out */
 static void w_run(unsigned int from, unsigned int to)
@@ -335,6 +303,95 @@ static void w_run(unsigned int from, unsigned int to)
 }
 
 #define W_OUT_AT(_x, _t) ((_x)->outs == 1 && (_x)->out == (_t))
+
+/* A timeout that is given as the tick it ends at (the DB sync of a dialog
+ * the node knows already), through update_dlg_timer_deadline() on a timer
+ * of our own: a dialog that waits in the timer expires at its new second,
+ * whether that is before or after the old one. */
+static void test_dlg_timer_deadline(void)
+{
+	struct dlg_timer *saved = d_timer;
+	unsigned int now = 1000;
+	struct wheel_ent *cut, *raised, *kept, *extended, *past, *idle, *gone;
+	int rc_cut, rc_raised, rc_kept, rc_extended, rc_past;
+
+	w_setup(7, now);
+	w_timer.lock = lock_alloc();
+	if (w_timer.lock == NULL || lock_init(w_timer.lock) == 0) {
+		ok(0, "dialog timer deadline: no lock for the timer of the test");
+		w_teardown();
+		return;
+	}
+	d_timer = &w_timer;
+
+	cut = &w_ent[0]; raised = &w_ent[1]; kept = &w_ent[2];
+	extended = &w_ent[3]; past = &w_ent[4]; idle = &w_ent[5];
+	gone = &w_ent[6];
+
+	/* four hours left, and then 30 seconds */
+	w_put(cut, now + 14400);
+	rc_cut = update_dlg_timer_deadline(&cut->tl, now + 30, 0);
+	/* to past a turn of the wheel */
+	w_put(raised, now + 100);
+	rc_raised = update_dlg_timer_deadline(&raised->tl, now + 20000, 0);
+	/* the longest of the two is kept: an earlier one changes nothing */
+	w_put(kept, now + 4000);
+	rc_kept = update_dlg_timer_deadline(&kept->tl, now + 2000, 1);
+	w_put(extended, now + 4000);
+	rc_extended = update_dlg_timer_deadline(&extended->tl, now + 6000, 1);
+	/* an end that has passed already: the next second */
+	w_put(past, now + 8000);
+	rc_past = update_dlg_timer_deadline(&past->tl, now - 100, 0);
+	ok(rc_cut == 0 && rc_raised == 0 && rc_kept == 0 && rc_extended == 0 &&
+		rc_past == 0,
+		"dialog timer deadline: a dialog in the timer stays in the timer");
+
+	/* a moved dialog is in the timer for the others: it can be removed, and
+	 * then it is left alone */
+	w_put(gone, now + 3000);
+	update_dlg_timer_deadline(&gone->tl, now + 50, 0);
+	ok(remove_dlg_timer(&gone->tl) == 0 &&
+		update_dlg_timer_deadline(&gone->tl, now + 60, 0) == -1 &&
+		gone->tl.timeout == 0 && gone->tl.prev == NULL,
+		"dialog timer deadline: a dialog removed from the timer is not put back");
+
+	/* not in the timer: the value is stored, nothing is linked */
+	ok(update_dlg_timer_deadline(&idle->tl, now + 500, 0) == 1 &&
+		idle->tl.timeout == now + 500 &&
+		update_dlg_timer_deadline(&idle->tl, now + 400, 1) == 1 &&
+		idle->tl.timeout == now + 500 &&
+		update_dlg_timer_deadline(&idle->tl, now + 600, 1) == 1 &&
+		idle->tl.timeout == now + 600 &&
+		idle->tl.next == NULL && idle->tl.prev == NULL,
+		"dialog timer deadline: a dialog that is not in the timer only has the value stored");
+
+	w_run(now + 1, now + 21000);
+
+	ok(W_OUT_AT(cut, now + 30),
+		"dialog timer deadline: four hours cut to 30 s expire after 30 s (at %u, %d time(s))",
+		cut->out, cut->outs);
+	ok(W_OUT_AT(raised, now + 20000),
+		"dialog timer deadline: a timeout raised past a turn of the wheel expires on time");
+	ok(W_OUT_AT(kept, now + 4000),
+		"dialog timer deadline: the longest is kept, an earlier end changes nothing");
+	ok(W_OUT_AT(extended, now + 6000),
+		"dialog timer deadline: the longest is kept, a later end replaces it");
+	ok(W_OUT_AT(past, now + 1),
+		"dialog timer deadline: an end that passed already expires at the next second");
+	ok(gone->outs == 0 && idle->outs == 0,
+		"dialog timer deadline: only the dialogs in the timer expire");
+
+	/* handed to the timer routine: its marks are kept */
+	ok(update_dlg_timer_deadline(&cut->tl, now + 30000, 0) == -1 &&
+		cut->tl.timeout == 0 && cut->tl.prev == NULL,
+		"dialog timer deadline: an expired dialog is not put back");
+
+	d_timer = saved;
+	lock_destroy(w_timer.lock);
+	lock_dealloc(w_timer.lock);
+	w_timer.lock = NULL;
+	w_teardown();
+}
 
 /* The tick counter wrapping around: the entries on both sides of the wrap
  * come out at their second, and the wheel goes on turning after it. */
@@ -373,6 +430,6 @@ void mod_tests(void)
 		20000, 20000, 900);
 	test_dlg_wheel_model("across the wrap of the tick counter",
 		UINT_MAX - 20000, 300, 100000, 6);
-	test_dlg_wheel_in_place_change();
+	test_dlg_timer_deadline();
 	test_dlg_wheel_wrap();
 }

@@ -618,6 +618,44 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout )
 	return ret;
 }
 
+/* Sets the tick at which the lifetime of a dialog ends, for a caller that
+ * holds the end itself and not an interval from now (the DB sync). With
+ * <only_later>, only if it is later than the end the dialog has.
+ * A dialog that waits in the timer is moved to the place of its new end,
+ * keeping the reference the timer holds on it. For a dialog that is not in
+ * the timer the value is only stored. A dialog that expired or was removed
+ * from the timer is left with the marks of that.
+ * returns :
+ *     0 - dialog is in the timer, with the new end if it was to be changed
+ *     1 - dialog is not in the timer, the value was stored
+ *    -1 - dialog expired or was removed from the timer, nothing was changed */
+int update_dlg_timer_deadline( struct dlg_tl *tl, unsigned int deadline,
+		int only_later )
+{
+	lock_get( d_timer->lock);
+
+	if ( tl->prev == NULL ) {
+		if ( tl->next ) {
+			/* handed to the timer routine, or removed from the timer */
+			lock_release( d_timer->lock);
+			return -1;
+		}
+		if ( !only_later || DLG_TICK_AFTER(deadline, tl->timeout) )
+			tl->timeout = deadline;
+		lock_release( d_timer->lock);
+		return 1;
+	}
+
+	if ( !only_later || DLG_TICK_AFTER(deadline, tl->timeout) ) {
+		remove_dlg_timer_unsafe(tl);
+		tl->timeout = deadline;
+		insert_gen_timer_unsafe( d_timer, tl );
+	}
+
+	lock_release( d_timer->lock);
+	return 0;
+}
+
 static inline struct dlg_tl* _get_gen_expired_dlgs(struct dlg_timer *timer, unsigned int time)
 {
 	struct dlg_tl *tl , *end, *ret;

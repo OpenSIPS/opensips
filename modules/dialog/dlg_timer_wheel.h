@@ -37,11 +37,14 @@
  * second the timer looks at one list and takes the entries that are due; an
  * entry more than a turn of the wheel away stays where it is for a later
  * turn (the size is above four hours, the default dialog lifetime, so that
- * is rare). An entry found on a list that is not its own (its timeout was
- * written directly instead of through update_dlg_timer()) is moved to its
- * own list then, so it expires on time if its new timeout is later; if it
- * is earlier, it expires when its old list is looked at, as it did in the
- * sorted list.
+ * is rare).
+ *
+ * The list an entry hangs on follows from its timeout, so the timeout of an
+ * entry that is in the timer is never written in place: it is taken out,
+ * given its new timeout and inserted again, with the timer's lock held
+ * (update_dlg_timer(), update_dlg_timer_deadline()). An entry left on the
+ * list of its old timeout would be looked at when that one is due, not the
+ * new one.
  *
  * An entry is linked as in the sorted list (next and prev both set while it
  * is in the timer) and leaves it marked the same way, so the code around
@@ -113,18 +116,9 @@ static inline struct dlg_tl *dlg_wheel_expired(struct dlg_timer *timer,
 		head = &timer->wheel[t & DLG_WHEEL_MASK];
 		for (tl = head->next; tl != head; tl = next) {
 			next = tl->next;
-			if (DLG_TICK_AFTER(tl->timeout, time)) {
-				/* not due yet: a later turn of the wheel, or an entry whose
-				 * timeout was changed in place (the DB sync of a known
-				 * dialog writes tl.timeout directly) and which belongs to
-				 * another list now - move it there */
-				if ((tl->timeout & DLG_WHEEL_MASK) != (t & DLG_WHEEL_MASK)) {
-					tl->prev->next = tl->next;
-					tl->next->prev = tl->prev;
-					dlg_wheel_insert(timer, tl);
-				}
+			/* not due yet: a later turn of the wheel */
+			if (DLG_TICK_AFTER(tl->timeout, time))
 				continue;
-			}
 			tl->prev->next = tl->next;
 			tl->next->prev = tl->prev;
 			tl->prev = 0;

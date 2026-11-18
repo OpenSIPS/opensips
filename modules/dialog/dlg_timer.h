@@ -104,6 +104,9 @@ int remove_ping_timer(struct dlg_cell *dlg);
 
 int update_dlg_timer( struct dlg_tl *tl, int timeout );
 
+int update_dlg_timer_deadline( struct dlg_tl *tl, unsigned int deadline,
+		int only_later );
+
 void dlg_timer_routine(unsigned int ticks , void * attr);
 
 void dlg_options_routine(unsigned int ticks , void * attr);
