@@ -1348,7 +1348,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				} else {
 					if (!(dlg->flags & DLG_FLAG_SYNCED) &&
 						get_shtag_sync_status(dlg) == SHTAG_SYNC_REQUIRED) {
-						LM_DBG("Dropping local dialog [%.*s] - not present in "
+						LM_INFO("Dropping local dialog [%.*s] - not present in "
 							"sync data\n", dlg->callid.len, dlg->callid.s);
 						dlg = drop_dlg(dlg, i);
 						continue;
