@@ -8,6 +8,7 @@
  */
 
 #include <stdlib.h>
+#include <limits.h>
 #include <tap.h>
 
 #include "../dlg_vals.h"
@@ -120,6 +121,8 @@ struct wheel_ent {
 	struct dlg_tl tl;   /* first: an entry is found from its tl */
 	unsigned int due;
 	int in;
+	unsigned int out;   /* the second it came out at, in w_run() */
+	int outs;           /* and how many times it did */
 };
 
 static struct dlg_timer w_timer;
@@ -174,7 +177,8 @@ static void w_put(struct wheel_ent *x, unsigned int timeout)
 	x->tl.timeout = timeout;
 	dlg_wheel_insert(&w_timer, &x->tl);
 	/* only a second that was looked at already moves, to the next one */
-	if (x->tl.timeout != timeout && (timeout > w_timer.wheel_done ||
+	if (x->tl.timeout != timeout &&
+			(DLG_TICK_AFTER(timeout, w_timer.wheel_done) ||
 			x->tl.timeout != w_timer.wheel_done + 1))
 		W_FAIL("insert changed timeout %u to %u", timeout, x->tl.timeout);
 	x->due = x->tl.timeout;
@@ -202,7 +206,7 @@ static void w_look(unsigned int now)
 		c = tl; tl = tl->next;
 		if (!x->in)
 			W_FAIL("an entry that is not in the timer came out");
-		else if (x->due > now)
+		else if (DLG_TICK_AFTER(x->due, now))
 			W_FAIL("an entry came out %u s early", x->due - now);
 		if (c->prev != NULL || c->timeout != 0)
 			W_FAIL("an entry came out without the expired marks");
@@ -212,7 +216,7 @@ static void w_look(unsigned int now)
 	if (w_timer.wheel_done != now)
 		W_FAIL("the wheel did not note the second it looked at");
 	for (i = 0; i < w_n; i++)
-		if (w_ent[i].in && w_ent[i].due <= now) {
+		if (w_ent[i].in && !DLG_TICK_AFTER(w_ent[i].due, now)) {
 			W_FAIL("an entry due at %u is still in at %u", w_ent[i].due, now);
 			break;
 		}
@@ -239,10 +243,10 @@ static void w_shape(void)
 		W_FAIL("the wheel holds %u entries, the model %u", count, w_in);
 }
 
-static void test_dlg_wheel_model(const char *name, unsigned int entries,
-		unsigned int seconds, unsigned int per_second)
+static void test_dlg_wheel_model(const char *name, unsigned int start,
+		unsigned int entries, unsigned int seconds, unsigned int per_second)
 {
-	unsigned int now = 1000, s, k, i;
+	unsigned int now = start, s, k, i;
 
 	w_setup(entries, now);
 	for (s = 0; s < seconds && !w_bad; s++) {
@@ -312,10 +316,63 @@ static void test_dlg_wheel_in_place_change(void)
 	w_teardown();
 }
 
+/* the timer routine at every second from <from> to <to>, noting for each
+ * entry when it came out */
+static void w_run(unsigned int from, unsigned int to)
+{
+	struct dlg_tl *tl;
+	unsigned int t;
+
+	for (t = from; ; t++) {
+		for (tl = dlg_wheel_expired(&w_timer, t); tl != FAKE_DIALOG_TL;
+				tl = tl->next) {
+			((struct wheel_ent *)tl)->out = t;
+			((struct wheel_ent *)tl)->outs++;
+		}
+		if (t == to)
+			break;
+	}
+}
+
+#define W_OUT_AT(_x, _t) ((_x)->outs == 1 && (_x)->out == (_t))
+
+/* The tick counter wrapping around: the entries on both sides of the wrap
+ * come out at their second, and the wheel goes on turning after it. */
+static void test_dlg_wheel_wrap(void)
+{
+	unsigned int now = UINT_MAX - 10;
+
+	w_setup(5, now);
+	w_put(&w_ent[0], now + 8);                    /* before the wrap */
+	w_put(&w_ent[1], now + 10);                   /* the last tick */
+	w_put(&w_ent[2], now + 11);                   /* tick 0 */
+	w_put(&w_ent[3], now + 16);                   /* tick 5 */
+	w_put(&w_ent[4], now + 16 + DLG_WHEEL_SIZE);  /* its list, a turn later */
+	w_run(now + 1, now + 16 + DLG_WHEEL_SIZE + 5);
+	ok(W_OUT_AT(&w_ent[0], now + 8) && W_OUT_AT(&w_ent[1], UINT_MAX) &&
+		W_OUT_AT(&w_ent[2], 0) && W_OUT_AT(&w_ent[3], 5) &&
+		W_OUT_AT(&w_ent[4], 5 + DLG_WHEEL_SIZE),
+		"dialog timer wheel: entries around the wrap of the tick counter expire on time");
+	w_teardown();
+
+	/* the last list looked at is the one of the last tick */
+	w_setup(1, UINT_MAX);
+	w_put(&w_ent[0], 5);
+	w_run(0, 10);
+	ok(W_OUT_AT(&w_ent[0], 5) && w_timer.wheel_done == 10,
+		"dialog timer wheel: the wheel turns on after the last tick of the counter");
+	w_teardown();
+}
+
 void mod_tests(void)
 {
 	test_dlg_val_bool();
-	test_dlg_wheel_model("few entries, every second checked", 300, 100000, 6);
-	test_dlg_wheel_model("thousands of dialogs in progress", 20000, 20000, 900);
+	test_dlg_wheel_model("few entries, every second checked", 1000,
+		300, 100000, 6);
+	test_dlg_wheel_model("thousands of dialogs in progress", 1000,
+		20000, 20000, 900);
+	test_dlg_wheel_model("across the wrap of the tick counter",
+		UINT_MAX - 20000, 300, 100000, 6);
 	test_dlg_wheel_in_place_change();
+	test_dlg_wheel_wrap();
 }

@@ -53,6 +53,16 @@
 #define DLG_WHEEL_SIZE  (1U << DLG_WHEEL_BITS)
 #define DLG_WHEEL_MASK  (DLG_WHEEL_SIZE - 1)
 
+/*
+ * Seconds are compared by their distance on the tick counter and not by
+ * value, so the order holds when the counter wraps around: <_a> is after
+ * <_b> when it is ahead of it by less than half the range of the counter.
+ * The lists need nothing for that, the range being a multiple of the size
+ * of the wheel.
+ */
+#define DLG_TICK_AFTER(_a, _b) \
+	((int)((unsigned int)(_a) - (unsigned int)(_b)) > 0)
+
 static inline void dlg_wheel_init(struct dlg_tl *wheel)
 {
 	unsigned int i;
@@ -70,7 +80,7 @@ static inline void dlg_wheel_insert(struct dlg_timer *timer, struct dlg_tl *tl)
 
 	/* the list of that second has been looked at already (a zero interval,
 	 * or the timer routine running late): due at the next second */
-	if (tl->timeout <= timer->wheel_done)
+	if (!DLG_TICK_AFTER(tl->timeout, timer->wheel_done))
 		tl->timeout = timer->wheel_done + 1;
 
 	head = &timer->wheel[tl->timeout & DLG_WHEEL_MASK];
@@ -91,7 +101,7 @@ static inline struct dlg_tl *dlg_wheel_expired(struct dlg_timer *timer,
 	struct dlg_tl *ret = FAKE_DIALOG_TL, *last = NULL;
 	unsigned int t;
 
-	if (time <= timer->wheel_done)
+	if (!DLG_TICK_AFTER(time, timer->wheel_done))
 		return FAKE_DIALOG_TL;
 
 	t = timer->wheel_done + 1;
@@ -103,7 +113,7 @@ static inline struct dlg_tl *dlg_wheel_expired(struct dlg_timer *timer,
 		head = &timer->wheel[t & DLG_WHEEL_MASK];
 		for (tl = head->next; tl != head; tl = next) {
 			next = tl->next;
-			if (tl->timeout > time) {
+			if (DLG_TICK_AFTER(tl->timeout, time)) {
 				/* not due yet: a later turn of the wheel, or an entry whose
 				 * timeout was changed in place (the DB sync of a known
 				 * dialog writes tl.timeout directly) and which belongs to
