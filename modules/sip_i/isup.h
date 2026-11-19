@@ -188,7 +188,7 @@
 #define MAX_NO_FIXED_PARAMS 4
 #define MAX_NO_VAR_PARAMS 2
 #define PARAM_MAX_LEN 128
-#define PV_RES_BUF_MAXLEN 256
+#define PV_RES_BUF_MAXLEN (2 + 2 * PARAM_MAX_LEN)	/* "0x" + hex dump of a param */
 #define MAX_PREDEF_VALS 15
 
 
