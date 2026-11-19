@@ -471,6 +471,8 @@ int base64decode(unsigned char *out, unsigned char *in, int len)
 		if (c1 == BAD)
 			break;
 
+		if (i >= len)
+			break;
 		do
 		{
 			c2 = base64val[in[i++]];
@@ -481,6 +483,8 @@ int base64decode(unsigned char *out, unsigned char *in, int len)
 
 		out[out_len++] = (c1 << 2) | ((c2 & 0x30) >> 4);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c3 = in[i++];
@@ -495,6 +499,8 @@ int base64decode(unsigned char *out, unsigned char *in, int len)
 
 		out[out_len++] = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c4 = in[i++];
@@ -530,6 +536,8 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 		if (c1 == BAD)
 			break;
 
+		if (i >= len)
+			break;
 		do
 		{
 			c2 = base64urlval[in[i++]];
@@ -540,6 +548,8 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 
 		out[out_len++] = (c1 << 2) | ((c2 & 0x30) >> 4);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c3 = in[i++];
@@ -554,6 +564,8 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 
 		out[out_len++] = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c4 = in[i++];
@@ -589,6 +601,8 @@ int word64decode(unsigned char *out, unsigned char *in, int len)
 		if (c1 == BAD)
 			break;
 
+		if (i >= len)
+			break;
 		do
 		{
 			c2 = word64val[in[i++]];
@@ -599,6 +613,8 @@ int word64decode(unsigned char *out, unsigned char *in, int len)
 
 		out[out_len++] = (c1 << 2) | ((c2 & 0x30) >> 4);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c3 = in[i++];
@@ -613,6 +629,8 @@ int word64decode(unsigned char *out, unsigned char *in, int len)
 
 		out[out_len++] = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c4 = in[i++];
@@ -649,6 +667,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 		if (c1 == BAD)
 			break;
 
+		if (i >= len)
+			break;
 		do
 		{
 			c2 = base32val[in[i++]];
@@ -659,6 +679,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 
 		out[out_len++] = (c1 << 3) | ((c2 & 0x1c) >> 2);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c3 = in[i++];
@@ -670,6 +692,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 		if (c3 == BAD)
 			break;
 
+		if (i >= len)
+			break;
 		do
 		{
 			c4 = in[i++];
@@ -683,6 +707,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 
 		out[out_len++] = ((c2 & 0x03) << 6) | (c3 << 1) | ((c4 & 0x10) >> 4);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c5 = in[i++];
@@ -696,6 +722,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 
 		out[out_len++] = ((c4 & 0x0f) << 4) | ((c5 & 0x1e) >> 1);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c6 = in[i++];
@@ -707,6 +735,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 		if (c6 == BAD)
 			break;
 
+		if (i >= len)
+			break;
 		do
 		{
 			c7 = in[i++];
@@ -720,6 +750,8 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 
 		out[out_len++] = ((c5 & 0x01) << 7) | (c6 << 2) | ((c7 & 0x18) >> 3);
 
+		if (i >= len)
+			break;
 		do
 		{
 			c8 = in[i++];
