@@ -1,0 +1,4 @@
+debug_mode=yes
+loglevel=3
+maxbuffer=65536
+route{ exit; }
