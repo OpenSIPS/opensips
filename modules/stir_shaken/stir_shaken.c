@@ -1098,6 +1098,9 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 	}
 	SS_LOCK;
 
+	/* PEM readers inspect the error queue; discard errors from earlier calls. */
+	ERR_clear_error();
+
 	/* parse end-entity certificate */
 	*cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
 	if (*cert == NULL) {
