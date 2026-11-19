@@ -417,10 +417,8 @@ static int isup_put_number(unsigned char *dest, str src, int max_len,
 	}
 
 	while (i < src.len) {
-		dest[i/2] = 0;
-
 		if (!(i % 2))
-			dest[i/2] |= (char2digit(src.s[i]) & 0xf);
+			dest[i/2] = (char2digit(src.s[i]) & 0xf);
 		else
 			dest[i/2] |= ((char2digit(src.s[i]) << 4) & 0xf0);
 
