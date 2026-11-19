@@ -1045,6 +1045,9 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 	}
 	SS_LOCK;
 
+	/* PEM readers inspect the error queue; discard errors from earlier calls. */
+	ERR_clear_error();
+
 	/* parse end-entity certificate */
 	*cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
 	if (*cert == NULL) {
@@ -2125,6 +2128,20 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
 }
 
 #ifdef UNIT_TESTS
+int stir_shaken_test_load_cert(str *pem)
+{
+	X509 *cert = NULL;
+	STACK_OF(X509) *chain = NULL;
+	int rc;
+
+	rc = load_cert(&cert, &chain, pem);
+	if (cert)
+		X509_free(cert);
+	if (chain)
+		sk_X509_pop_free(chain, X509_free);
+	return rc;
+}
+
 int stir_shaken_test_trust_vs(str *pem)
 {
 	X509 *cert = NULL;

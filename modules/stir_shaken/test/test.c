@@ -37,6 +37,7 @@ void stir_shaken_test_mark_stale(void);
 int stir_shaken_test_build_identity(time_t iat, str *attest, str *x5u,
 	str *orig, str *dest, str *origid, str *pkey_buf, str *identity);
 int stir_shaken_test_verify_msg(str *raw_msg, str *cert_buf);
+int stir_shaken_test_load_cert(str *pem);
 
 #define TEST_IAT 1700000000
 #define TEST_X5U "https://cert.example.test/passport.pem"
@@ -63,6 +64,44 @@ static const char test_certificate[] =
 	"AiBEB4tJpNl3NpjnfG+hC8sxYwa+advB19vbxnFFIq0j7wIgR3AYoLmhE0k/QX2S\n"
 	"eQu2Mv+Iqx6dPEd6Z+Zt+bXF9t4=\n"
 	"-----END CERTIFICATE-----\n";
+
+static void test_certificate_load_recovery(void)
+{
+	/* Valid PEM framing around invalid DER, appended as an intermediate. */
+	static const char invalid_certificate[] =
+		"-----BEGIN CERTIFICATE-----\n"
+		"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
+		"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
+		"-----END CERTIFICATE-----\n";
+	str good = {(char *)test_certificate, sizeof(test_certificate) - 1};
+	str bad;
+	int i, rejected = 0, failed_good = 0;
+
+	bad.len = good.len + sizeof(invalid_certificate) - 1;
+	bad.s = pkg_malloc(bad.len);
+	ok(bad.s != NULL, "allocate malformed certificate chain");
+	if (!bad.s)
+		return;
+	memcpy(bad.s, good.s, good.len);
+	memcpy(bad.s + good.len, invalid_certificate,
+		sizeof(invalid_certificate) - 1);
+
+	ERR_clear_error();
+	ok(stir_shaken_test_load_cert(&good) == 0,
+		"known-good certificate loads before malformed chains");
+	/* Exceed wolfSSL's bounded error queue without draining it in the test. */
+	for (i = 0; i < 64; i++) {
+		rejected += stir_shaken_test_load_cert(&bad) < 0;
+		failed_good += stir_shaken_test_load_cert(&good) < 0;
+	}
+	ok(rejected == 64, "every malformed certificate chain is rejected");
+	ok(failed_good == 0,
+		"good certificates keep loading after failed chains (%d failures)",
+		failed_good);
+	/* Keep the remaining tests independent, including on an unfixed build. */
+	ERR_clear_error();
+	pkg_free(bad.s);
+}
 
 static const char expected_unsigned_passport[] =
 	"eyJhbGciOiJFUzI1NiIsInBwdCI6InNoYWtlbiIsInR5cCI6InBhc3Nwb3J0IiwieDV1IjoiaHR0cHM6Ly9jZXJ0LmV4YW1wbGUudGVzdC9wYXNzcG9ydC5wZW0ifQ."
@@ -446,6 +485,7 @@ static void test_nullable_previous_state(void)
 
 void mod_tests(void)
 {
+	test_certificate_load_recovery();
 	test_nullable_previous_state();
 	test_inbound_verification();
 	test_outbound_authentication();
