@@ -102,7 +102,10 @@ cmake .. \
     -DNATS_BUILD_STREAMING=OFF \
     -DNATS_BUILD_EXAMPLES=OFF \
     -DNATS_BUILD_USE_SODIUM=OFF \
+    -DBUILD_TESTING=OFF \
     -DNATS_BUILD_WITH_TLS="${LIBNATS_TLS}"
+# BUILD_TESTING=OFF skips nats.c's own test suite, which is about two
+# thirds of the build time; only the library is needed here.
 # TLS defaults OFF on purpose: nats.c main's cmake does find_package(OpenSSL
 # 1.1.1 REQUIRED) only under NATS_BUILD_WITH_TLS, and the OpenSIPS NATS modules
 # link libnats at runtime via dlopen, so they only need it to build/link here.
