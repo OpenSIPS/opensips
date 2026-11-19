@@ -51,7 +51,8 @@ int tm_anycast_cancel(struct sip_msg *msg);
 /* returns true if clusterer is enabled */
 #define tm_cluster_enabled() (cluster_api.register_capability != 0)
 
-/* returns the via parameter for the cluster */
-#define tm_via_cid() (tm_cluster_enabled()?&tm_cid:0)
+/* returns the via parameter for the cluster, with the node id read live (a
+ * controller sets it at runtime); NULL when off or no id is assigned yet */
+str *tm_via_cid(void);
 
 #endif /* _TM_CLUSTER_H_ */
