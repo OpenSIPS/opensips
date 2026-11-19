@@ -60,6 +60,7 @@
 #include "../../data_lump_rpl.h"
 #include "../../mi/mi.h"
 #include "../../mem/shm_mem.h"
+#include "../../statistics.h"
 #include <sys/stat.h>
 
 #include "stir_shaken.h"
@@ -172,6 +173,12 @@ static struct ss_shared {
 	unsigned int gen;  /* cur->gen, read without the lock (atomically) */
 } *ss_shared;
 static unsigned int ss_my_gen;
+static stat_var *ss_rebuild_failures;
+
+static const stat_export_t mod_stats[] = {
+	{"store_rebuild_failures", 0, &ss_rebuild_failures},
+	{0, 0, 0}
+};
 
 
 static const param_export_t params[] = {
@@ -279,7 +286,7 @@ struct module_exports exports = {
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* module parameters */
-	0,          /* exported statistics */
+	mod_stats,  /* exported statistics */
 	mi_cmds,	/* exported MI functions */
 	mod_items,  /* exported pseudo-variables */
 	0,			/* exported transformations */
@@ -626,8 +633,10 @@ static void ss_store_refresh(void)
 	ss_snapshot_put(snap);
 
 	if (!new_store) {
-		LM_ERR("failed to load the reloaded CA/CRL store, keeping the "
+		LMR_ERR("failed to load the reloaded CA/CRL store, keeping the "
 			"current one: %.*s\n", err.len, err.s);
+		if (gen != failed_gen)
+			update_stat(ss_rebuild_failures, 1);
 		failed_gen = gen;
 		retry_at = time(NULL) + 1;
 		return;
