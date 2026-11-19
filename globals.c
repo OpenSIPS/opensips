@@ -64,6 +64,23 @@ int udp_workers_no = UDP_WORKERS_NO;
 char *udp_auto_scaling_profile = NULL;
 /* if the auto-scaling engine is enabled or not - this is autodetected */
 int auto_scaling_enabled = 0;
+
+unsigned long hg_shm_cap_bytes = 0;
+unsigned long hg_pkg_cap_bytes = 0;
+char *hg_shm_profile_name = NULL;
+char *hg_pkg_profile_name = NULL;
+int hg_ram_floor_mb = 0;
+int hg_autoscale_dry_run = 0;
+unsigned long hg_shm_grow_granule = 0;
+unsigned long hg_pkg_grow_granule = 0;
+int hg_lock_stall_us = 1000;
+int hg_grow_ahead = 1;
+int hg_scaling_cycle = 30;
+/* released outside the arena lock: bounds how long an exhausted carver
+ * waits on grow_inflight (~13 ms per 64 MB on 4K pages) */
+unsigned long hg_shrink_step = 64UL << 20;
+int hg_interior_release = 0;
+int hg_mem_check = 0;
 /* auto-scaling sampling and checking time cycle is 1 sec by default */
 int auto_scaling_cycle = 1;
 /*!< by default choose the best method */

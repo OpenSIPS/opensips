@@ -569,6 +569,12 @@ static void event_dprint(int level, int facility, const char *module, const char
 
 	if (suppressed)
 		return;
+#ifdef HG_MALLOC
+	/* the event allocates: under an HG_MALLOC arena lock that could take
+	 * the same lock again */
+	if (hg_lock_depth)
+		return;
+#endif
 
 	pt[process_no].suppress_log_event = 1;
 

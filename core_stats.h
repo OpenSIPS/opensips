@@ -80,4 +80,8 @@ int init_pkg_stats(int no_procs);
 
 #endif /*STATISTICS*/
 
+/* registers the HG_MALLOC idle-cache sweep (no-op otherwise); call it
+ * PRE-FORK, as register_timer() refuses registrations after the fork */
+int hg_register_cache_sweep(void);
+
 #endif /*_CORE_STATS_H_*/

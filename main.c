@@ -70,6 +70,7 @@
 #include "reactor_defs.h" /*keep this first*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>
@@ -110,6 +111,11 @@
 #include "db/pi_framework.h"
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "mem/hg_maint.h"
+#ifdef HG_MALLOC
+#include "mem/hg_malloc.h"
+#include "mem/hg_arena.h"
+#endif
 #include "mem/rpm_mem.h"
 #include "sr_module.h"
 #include "timer.h"
@@ -283,6 +289,11 @@ static int main_loop(void)
 		goto error;
 	}
 
+	if (hg_maint_start()!=0) {
+		LM_CRIT("cannot start the HG maintenance process\n");
+		goto error;
+	}
+
 	/* fork all processes required by UDP network layer */
 	if (udp_start_processes( &chd_rank, startup_done)<0) {
 		LM_CRIT("cannot start UDP processes\n");
@@ -393,9 +404,39 @@ error:
  * \return don't return on sucess, -1 on error
  * \see main_loop
  */
+/* one half of -m/-M INIT[:CAP], in BYTES (k/m/g suffix, bare = MB) into
+ * @out; *end is left past what was consumed, for the caller to judge the
+ * rest. -1: no number, zero, signed or too big */
+static int parse_mem_size(const char *s, char **end, unsigned long *out)
+{
+	unsigned long v;
+	int shift;
+
+	/* strtoul() would take a sign and wrap -5 into a huge size */
+	if (*s == '-' || *s == '+')
+		return -1;
+	errno = 0;
+	v = strtoul(s, end, 10);
+	if (*end == s || errno == ERANGE || v == 0)
+		return -1;
+	switch (**end) {
+	case 'k': case 'K': shift = 10; (*end)++; break;
+	case 'g': case 'G': shift = 30; (*end)++; break;
+	case 'm': case 'M': (*end)++;   /* fall through */
+	default:            shift = 20; break;
+	}
+	/* range-checked before the shift, which would otherwise wrap a huge
+	 * value into a small one that passes (17179869185g as 1 GB) */
+	if (v > (ULONG_MAX >> shift))
+		return -1;
+	*out = v << shift;
+	return 0;
+}
+
 int main(int argc, char** argv)
 {
 	int c, n;
+	unsigned long memv, capv;
 	char *tmp;
 	int tmp_len;
 	int port;
@@ -423,15 +464,49 @@ int main(int argc, char** argv)
 	while((c=getopt(argc,argv,options))!=-1){
 		switch(c){
 			case 'M':
-					pkg_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
-					if (tmp &&(*tmp)){
-						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
+					/* signed: pkg_mem_size is unsigned,
+					 * so -M -5 would pass a <= 0 test */
+					if (parse_mem_size(optarg, &tmp, &memv) < 0) {
+						LM_ERR("bad pkgmem size number: -M %s\n", optarg);
+						goto error00;
+					}
+					pkg_mem_size = memv;
+					if (tmp && *tmp == ':') {
+						if (parse_mem_size(tmp + 1, &tmp, &capv) < 0) {
+							LM_ERR("bad -M cap: %s\n", optarg);
+							goto error00;
+						}
+						hg_pkg_cap_bytes = capv;
+						if ((unsigned long)pkg_mem_size > hg_pkg_cap_bytes) {
+							LM_ERR("-M cap smaller than the initial "
+								"size: %s\n", optarg);
+							goto error00;
+						}
+					}
+					if (tmp && *tmp) {
+						LM_ERR("bad pkgmem size number: -M %s\n", optarg);
 						goto error00;
 					}
 					break;
 			case 'm':
-					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
-					if (tmp &&(*tmp)){
+					if (parse_mem_size(optarg, &tmp, &memv) < 0) {
+						LM_ERR("bad shmem size number: -m %s\n", optarg);
+						goto error00;
+					}
+					shm_mem_size = memv;
+					if (tmp && *tmp == ':') {
+						if (parse_mem_size(tmp + 1, &tmp, &capv) < 0) {
+							LM_ERR("bad -m cap: %s\n", optarg);
+							goto error00;
+						}
+						hg_shm_cap_bytes = capv;
+						if ((unsigned long)shm_mem_size > hg_shm_cap_bytes) {
+							LM_ERR("-m cap smaller than the initial "
+								"size: %s\n", optarg);
+							goto error00;
+						}
+					}
+					if (tmp && *tmp) {
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;
 					}
@@ -858,9 +933,16 @@ try_again:
 		}
 
 	} else { /* debug_mode */
+#ifdef HG_MALLOC
+		/* the fork drops this process's shm caches in the daemon */
+		hg_cache_drain_self();
+#endif
 		/* init_daemon */
 		if ( daemonize((log_name==0)?argv[0]:log_name, &own_pgid) <0 )
 			goto error;
+#ifdef HG_MALLOC
+		hg_repin_after_daemonize();
+#endif
 	}
 
 	/* install signal handlers */
@@ -882,11 +964,19 @@ try_again:
 	LM_NOTICE("version: %s\n", version);
 
 	/* print some data about the configuration */
-	LM_NOTICE("using %ld MB of shared memory, allocator: %s\n",
-	          shm_mem_size/1024/1024, mm_str(mem_allocator_shm));
+	if (shm_mem_size < 1024 * 1024)
+		LM_NOTICE("using %ld KB of shared memory, allocator: %s\n",
+		          shm_mem_size/1024, mm_str(mem_allocator_shm));
+	else
+		LM_NOTICE("using %ld MB of shared memory, allocator: %s\n",
+		          shm_mem_size/1024/1024, mm_str(mem_allocator_shm));
 #if defined(PKG_MALLOC)
-	LM_NOTICE("using %ld MB of private process memory, allocator: %s\n",
-	          pkg_mem_size/1024/1024, mm_str(mem_allocator_pkg));
+	if (pkg_mem_size < 1024 * 1024)
+		LM_NOTICE("using %ld KB of private process memory, allocator: %s\n",
+		          pkg_mem_size/1024, mm_str(mem_allocator_pkg));
+	else
+		LM_NOTICE("using %ld MB of private process memory, allocator: %s\n",
+		          pkg_mem_size/1024/1024, mm_str(mem_allocator_pkg));
 #else
 	LM_NOTICE("using system memory for private process memory\n");
 #endif

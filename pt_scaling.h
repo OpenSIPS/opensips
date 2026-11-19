@@ -55,6 +55,10 @@ struct scaling_profile {
 	/* the number of cycles to wait before down scaling (after up or start) */
 	unsigned short down_cycles_delay;
 
+	/* 1: a size suffix was used, so max_procs/min_procs hold KB; only a
+	 * memory arena accepts such a profile */
+	unsigned char mem_kb_units;
+
 	struct scaling_profile *next;
 };
 
@@ -68,6 +72,8 @@ int create_auto_scaling_profile( char *name,
 	unsigned int down_cycles_tocheck, unsigned short down_cycles_delay);
 
 struct scaling_profile *get_scaling_profile(char *name);
+
+int check_scaling_profile_procs(struct scaling_profile *p, char *group);
 
 
 typedef int (fork_new_process_f)(void *);
