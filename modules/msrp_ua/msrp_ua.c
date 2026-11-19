@@ -2098,6 +2098,15 @@ static int handle_msrp_report(struct msrp_msg *req, struct msrpua_session *sess,
 	int run_cb = 0;
 	str status_str;
 
+	if (!req->status || !req->byte_range) {
+		LM_ERR("Invalid MSRP REPORT: missing Status or Byte-Range header\n");
+		hash_unlock(msrpua_sessions, hentry);
+		if (msrp_api.send_reply(msrp_hdl, req, 400,
+				&str_init("Bad Request"), NULL, 0) < 0)
+			LM_ERR("Failed to send reply\n");
+		return -1;
+	}
+
 	if (sess->hdl.name) {
 		run_cb = 1;
 		hdl = sess->hdl;
