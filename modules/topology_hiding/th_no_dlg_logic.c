@@ -1167,7 +1167,7 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	}
 
 	memcpy(prefix, "<sip:", 5);
-	if (flags & TOPOH_KEEP_USER && ct_username_len > 0) {
+	if (ct_username_len > 0) {
 		memcpy(prefix + 5, ct_username, ct_username_len);
 		prefix[prefix_len - 1] = '@';
 	}
