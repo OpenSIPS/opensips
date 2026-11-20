@@ -167,9 +167,15 @@ void pt_become_idle(void)
 			if (_ratio!=1) { \
 				idx_start = (idx_new+(int)(_TYPE##_WINDOW_SIZE*(1-_ratio))) % \
 					_TYPE##_WINDOW_SIZE; \
-				/* the start is between [new,old], so no used recorded yet */ \
-				if (idx_start>=idx_old && idx_start<=idx_new) {\
-					used+= __busy?_TYPE##_WINDOW_TIME*_ratio:0;\
+				/* The last update shares the window's first slot. Only \
+				 * the part of that slot inside the window can count. */ \
+				if (idx_start == idx_old) { \
+					utime_t elapsed = __now - __last; \
+					utime_t overlap = (utime_t)(_TYPE##_WINDOW_TIME * (_ratio)) - elapsed; \
+					utime_t recorded = PT_LOAD(_pno)._TYPE##_window[idx_old]; \
+					used += recorded < overlap ? recorded : overlap; \
+					if (__busy) \
+						used += elapsed; \
 					break; \
 				}\
 			} else { \
