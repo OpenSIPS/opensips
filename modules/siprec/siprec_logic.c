@@ -297,11 +297,19 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 	str body = str_init("");
 	int code = 405;
 
+	if (msg->REQ_METHOD == METHOD_BYE) {
+		if (srec_reply(ss, METHOD_BYE, 200, NULL) < 0)
+			LM_ERR("could not confirm recording session ending!\n");
+
+		srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
+		raise_siprec_stop_event(ss);
+		srec_logic_destroy(ss, 0);
+		return 0;
+	}
+
 	if (get_body(msg, &body) != 0 || body.len==0) {
 		if (msg->REQ_METHOD != METHOD_UPDATE)
 			goto reply;
-		if (msg->REQ_METHOD == METHOD_BYE)
-			raise_siprec_stop_event(ss);
 		code = 200;
 	} else {
 		if (srec_rtp.copy_answer(ss->ctx->rtp, &ss->instance,
