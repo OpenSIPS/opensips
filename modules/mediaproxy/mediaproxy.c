@@ -1558,7 +1558,8 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
             stream = session.streams[i];
             if (stream.transport != TSupported)
                 continue; // skip streams with unsupported transports
-            if (stream.type.len + stream.ip.len + stream.port.len + stream.direction.len + 4 > str_buf.len) {
+            // 4 ':' separators, the ',' terminator and up to 7 bytes for "ice=yes"
+            if (stream.type.len + stream.ip.len + stream.port.len + stream.direction.len + 12 > str_buf.len) {
                 LM_ERR("media stream description is longer than %zu bytes\n", sizeof(media_str));
                 return -1;
             }
