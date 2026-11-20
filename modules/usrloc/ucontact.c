@@ -717,8 +717,8 @@ int db_update_ucontact(ucontact_t* _c)
 	static db_ps_t my_ps = NULL;
 	db_key_t keys1[1];
 	db_val_t vals1[1];
-	db_key_t keys2[16];
-	db_val_t vals2[16];
+	db_key_t keys2[17];
+	db_val_t vals2[17];
 
 	if (_c->flags & FL_MEM) {
 		return 0;
@@ -820,11 +820,17 @@ int db_update_ucontact(ucontact_t* _c)
 	vals2[14].type = DB_INT;
 	vals2[14].val.int_val = (int)_c->reg_id;
 
-	/* callid is part of the update */
-	keys2[15] = &callid_col;
+	/* the Contact URI changes when a contact is matched by +sip.instance */
+	keys2[15] = &contact_col;
 	vals2[15].type = DB_STR;
 	vals2[15].nul = 0;
-	vals2[15].val.str_val = _c->callid;
+	vals2[15].val.str_val = _c->c;
+
+	/* callid is part of the update */
+	keys2[16] = &callid_col;
+	vals2[16].type = DB_STR;
+	vals2[16].nul = 0;
+	vals2[16].val.str_val = _c->callid;
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -832,7 +838,7 @@ int db_update_ucontact(ucontact_t* _c)
 	}
 
 	CON_SET_CURR_PS(ul_dbh, &my_ps);
-	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 16)<0) {
+	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 17)<0) {
 		LM_ERR("updating database failed\n");
 		goto out_err;
 	}
