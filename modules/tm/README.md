@@ -996,6 +996,27 @@ t_relay(); # send the call further
 ```
 
 
+#### t_no_auto_100()
+
+
+Disables [auto_100trying](#auto_100trying-integer) for the current
+request only. It must be called before the transaction is created,
+otherwise it returns false. The script is then responsible for sending
+a provisional reply in time (RFC 3261, section 17.2.1).
+
+
+This function can be used from REQUEST_ROUTE.
+
+
+```opensips title="t_no_auto_100 usage"
+...
+t_no_auto_100();
+t_reply(183, "Session Progress");  # first provisional, no 100 before it
+t_relay();
+...
+```
+
+
 #### t_check_trans()
 
 
