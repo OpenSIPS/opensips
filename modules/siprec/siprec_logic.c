@@ -139,12 +139,22 @@ static int srec_stop_recording(struct src_sess *ss)
 {
 	struct b2b_req_data req;
 	str bye = str_init(BYE);
+	struct src_ctx *ctx = ss->ctx;
 
+	SIPREC_LOCK(ctx);
 	if ((ss->flags & SIPREC_STARTED) == 0) {
+		SIPREC_UNLOCK(ctx);
 		LM_DBG("sess=%p no longer in progress\n", ss);
 		/* the session was not started, or it had been deleted in the meantime */
 		return -1;
 	}
+	if (ss->flags & SIPREC_STOPPED) {
+		SIPREC_UNLOCK(ctx);
+		LM_DBG("sess=%p already stopped\n", ss);
+		return 0;
+	}
+	ss->flags |= SIPREC_STOPPED;
+	SIPREC_UNLOCK(ctx);
 
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
@@ -180,7 +190,7 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 	/* check which participant we are talking about */
 	ss = *_params->param;
 
-	if ((ss->flags & SIPREC_STARTED) == 0) {
+	if ((ss->flags & (SIPREC_STARTED|SIPREC_STOPPED)) != SIPREC_STARTED) {
 		LM_DBG("sess=%p no longer pending\n", ss);
 		return;
 	}
@@ -301,8 +311,11 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 		if (srec_reply(ss, METHOD_BYE, 200, NULL) < 0)
 			LM_ERR("could not confirm recording session ending!\n");
 
-		srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
-		raise_siprec_stop_event(ss);
+		if (!(ss->flags & SIPREC_STOPPED)) {
+			ss->flags |= SIPREC_STOPPED;
+			srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
+			raise_siprec_stop_event(ss);
+		}
 		srec_logic_destroy(ss, 0);
 		return 0;
 	}
@@ -379,6 +392,8 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		 * ongoing media sessions */
 		if (ss->flags & SIPREC_ONGOING)
 			return 0;
+		if (ss->flags & SIPREC_STOPPED)
+			goto no_recording;
 		if (!ss->ctx->dlg || ss->ctx->dlg->state >= DLG_STATE_DELETED) {
 			/* the call is over - no failover, just drop the session; as on
 			 * failover, destroy it first, so no stop event is raised for a
@@ -418,6 +433,8 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		LM_ERR("dialog already in deleted state!\n");
 		goto no_recording;
 	}
+	if (ss->flags & SIPREC_STOPPED)
+		goto no_recording;
 	ss->flags |= SIPREC_ONGOING;
 
 	if (srs_handle_media(msg, ss) < 0) {
@@ -433,7 +450,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 
 	return 0;
 no_recording:
-	if (ret != 0) {
+	if (ret != 0 && !(ss->flags & SIPREC_STOPPED)) {
 		memset(&req, 0, sizeof(req));
 		req.et = B2B_CLIENT;
 		req.b2b_key = &ss->b2b_key;
@@ -445,16 +462,17 @@ no_recording:
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
-	if (ss->ctx->dlg) {
+	if (ss->ctx->dlg && !(ss->flags & SIPREC_STOPPED)) {
 		if (ss->ctx->dlg->state >= DLG_STATE_DELETED)
 			LM_DBG("rtp context=%p already destroyed dlg=%p!\n", ss->ctx, ss->ctx->dlg);
 		else
 			srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
 	}
 
-	if (ss->flags & SIPREC_STARTED)
+	if ((ss->flags & (SIPREC_STARTED|SIPREC_STOPPED)) == SIPREC_STARTED)
 		raise_siprec_stop_event(ss);
 	srec_logic_destroy(ss, 0);
+	ss->flags |= SIPREC_STOPPED;
 
 	if (!(ss->flags & SIPREC_DLG_CBS)) {
 		/* if the dialog has already been engaged, then we need to keep the
@@ -730,7 +748,8 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	str body, sdp;
 
-	if (msg == FAKED_REPLY || (sess->flags & SIPREC_STARTED) == 0)
+	if (msg == FAKED_REPLY ||
+			(sess->flags & (SIPREC_STARTED|SIPREC_STOPPED)) != SIPREC_STARTED)
 		return 0;
 
 	if (srec_get_body(sess, &sdp) < 0) {
@@ -785,7 +804,9 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 	SIPREC_LOCK(ctx);
 	/* engage only on successful calls */
 	/* if session has been started, do not start it again */
-	if (ss->flags & SIPREC_STARTED)
+	if (ss->flags & SIPREC_STOPPED)
+		LM_DBG("Session %p (%s) was explicitly stopped\n", ss, ss->uuid);
+	else if (ss->flags & SIPREC_STARTED)
 		LM_DBG("Session %p (%s) already started!\n", ss, ss->uuid);
 	else if ((ss->flags & SIPREC_ANSWERED) == 0)
 		LM_DBG("Session %p (%s) not answered yet!\n", ss, ss->uuid);
