@@ -165,7 +165,7 @@ static int mod_init(void)
 	init_db_url(db_url, 0 /* cannot be null */);
 
 	if (!smpp_outbound_uri.s) {
-		LM_ERR("missing modparam: 'smpp_outbound_uri'\n");
+		LM_ERR("missing modparam: 'outbound_uri'\n");
 		return -1;
 	}
 
