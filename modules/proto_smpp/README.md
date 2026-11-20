@@ -27,6 +27,21 @@ The module is compatible with the
 [SMPP v3.4](http://opensmpp.org/specs/SMPP_v3_4_Issue1_2.pdf) specifications.
 
 
+Once loaded, the module needs at least one SMPP listener in your
+configuration file, even if OpenSIPS only connects to SMSCs: the
+binds are sent from this socket. Add its IP and, optionally, a port
+(the default is [smpp_port](#smpp_port-integer)), similar to this example:
+
+```opensips
+...
+socket = smpp:127.0.0.1         # listen on the default port
+socket = smpp:127.0.0.1:2775    # listen on a given port
+...
+```
+
+Without it, OpenSIPS does not start.
+
+
 ### SIP to SMPP bridging
 
 
