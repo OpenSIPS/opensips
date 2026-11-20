@@ -43,7 +43,8 @@ in the database.
 When bridging a message received over the SMPP interface,
 OpenSIPS builds a SIP Message and sends it to the outbound
 proxy identified by the [outbound_uri](#outbound_uri-string)
-module's parameter.
+module's parameter. The body of a message received in UCS-2 is UTF-16BE
+written in hexadecimal digits, with `Content-Type: text/plain; charset=UTF-16`.
 
 
 ### SMSC binding
@@ -471,8 +472,14 @@ If missing, the SIP request URI username is used.
 - *body (string, optional)* - the body of the SMS.
 If missing, the SIP message body is used.
 - *UTF-16 (int, optional)* - set to
-*1* if the body of the message is in UTF-16.
-format. If missing or *0*, UTF-8 is used.
+*1* if the body is UTF-16BE written in hexadecimal digits, e.g.
+`00480069` for "Hi"; it is sent in UCS-2. A body that is not hex, such as
+UTF-8 text, is sent corrupted, with *is no hex char* errors in the log. If
+*0*, the body is read as UTF-8
+and sent in the GSM 7-bit alphabet, and characters outside it become `?`.
+If missing, the same as *0*, unless *body* is missing too and the SIP
+message has `Content-Type: text/plain; charset=UTF-16`, in upper case: then
+the same as *1*.
 - *delivery_receipt (int, optional)* - Whether
 the SMSC should confirm delivery for this SMS or not
 
