@@ -70,7 +70,8 @@ static inline gparam_p alloc_gp(void)
 {
 	gparam_p gp;
 
-	gp = pkg_malloc(sizeof *gp);
+	/* the param holder belongs to the script tree being fixed */
+	PKG_GEN_MARK( gp = pkg_malloc(sizeof *gp) );
 	if (!gp) {
 		LM_ERR("no more pkg memory\n");
 		return NULL;
