@@ -249,7 +249,12 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *instance)
 	ss = src_get_session(ctx, instance);
 	if (ss) {
 		LM_DBG("session %p already exists!\n", ss);
-		if (ss->flags & SIPREC_STARTED) {
+		if (ss->flags & SIPREC_STOPPED) {
+			/* Explicit restart: remove the stopped B2B session before creating
+			 * a new one, while keeping the SIPREC session and its variables. */
+			srec_logic_destroy(ss, 0);
+			ss->flags &= ~SIPREC_STOPPED;
+		} else if (ss->flags & SIPREC_STARTED) {
 			LM_WARN("session already started!\n");
 			goto release;
 		}
