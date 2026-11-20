@@ -67,7 +67,8 @@ extern int max_contact_len;
 /* common registrar init code */
 int reg_init_globals(void);
 
-static inline time_t randomize_expires(unsigned int expires_ts)
+static inline time_t randomize_expires(unsigned int expires_ts,
+                                       int min_exp, int max_exp)
 {
 	time_t ret;
 
@@ -83,11 +84,11 @@ static inline time_t randomize_expires(unsigned int expires_ts)
 	 * out-of-range tail onto a single value, so a contact registering near
 	 * min_expires or max_expires is not randomized at all - the opposite of
 	 * what this parameter is for. */
-	if (lo < min_expires)
-		lo = min_expires;
+	if (lo < min_exp)
+		lo = min_exp;
 
-	if (max_expires && hi > max_expires)
-		hi = max_expires;
+	if (max_exp && hi > max_exp)
+		hi = max_exp;
 
 	if (hi < lo)
 		hi = lo;
