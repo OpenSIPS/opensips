@@ -128,6 +128,17 @@ using *enquire_link* SMPP commands to keep the
 connection active.
 
 
+The connection to the SMSc is opened in blocking mode, so it must complete
+within the time set by the `tcp_connect_timeout` core parameter (100 ms by
+default). If the round-trip time to the SMSc is longer, every attempt fails
+with *connect timed out* and the bind is never sent. Raise the timeout in this
+case, for example:
+
+```opensips
+tcp_connect_timeout = 2000
+```
+
+
 ### Dependencies
 
 
