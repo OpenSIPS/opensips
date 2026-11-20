@@ -231,7 +231,7 @@ modparam("proto_smpp", "smpp_send_timeout", 200)
 
 
 This parameter represents the URI of the outbound proxy used to send
-a message converted from SMPP to SIP.
+a message converted from SMPP to SIP. This parameter is mandatory.
 
 
 *Default value is *None*.*
