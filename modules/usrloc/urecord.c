@@ -576,6 +576,9 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 			return -1;
 	}
 
+	if (CDB_DICT_ADD_INT32(ct_fields, "reg_id", ct->reg_id) != 0)
+		return -1;
+
 	if (ZSTR(ct->attr)) {
 		if (CDB_DICT_ADD_NULL(ct_fields, "attr") != 0)
 			return -1;
@@ -1040,7 +1043,7 @@ static inline struct ucontact* contact_instance_match(ucontact_t *contacts,
 		    contacts->instance.len > 0 &&
 		    contacts->instance.len == instance->len &&
 		    memcmp(contacts->instance.s, instance->s, instance->len) == 0 &&
-		    ucontact_reg_id(contacts) == reg_id)
+		    contacts->reg_id == reg_id)
 			return contacts;
 
 		contacts = contacts->next;

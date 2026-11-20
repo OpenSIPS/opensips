@@ -129,6 +129,7 @@ typedef struct ucontact {
 	time_t expires_out;     /*!< Expires value from the 200 OK reply */
 	qvalue_t q;             /*!< q parameter */
 	str instance;			/*!< instance parameter */
+	unsigned int reg_id;		/*!< RFC 5626 reg-id, 0 if none */
 	str callid;             /*!< Call-ID header field of registration */
 	int cseq;               /*!< CSeq value */
 	cstate_t state;         /*!< State of the contact (\ref cstate) */
@@ -238,10 +239,6 @@ new_ucontact(str* _dom, str* _aor, str* _contact,  ucontact_info_t* _ci);
  * Free all memory associated with given contact structure
  */
 void free_ucontact(ucontact_t* _c);
-
-/*! \brief the RFC 5626 reg-id of a stored contact, 0 if none */
-unsigned int ucontact_reg_id(ucontact_t *c);
-extern str ul_regid_key;
 
 
 /*! \brief

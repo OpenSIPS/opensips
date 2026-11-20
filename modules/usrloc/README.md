@@ -521,6 +521,27 @@ modparam("usrloc", "kv_store_column", "json_data")
 ```
 
 
+#### reg_id_column (string)
+
+
+Name of column containing the RFC 5626 *reg-id* of the contact (0 if
+none).
+
+
+*Default value is "reg_id".*
+
+
+An existing location table is upgraded with *ALTER TABLE location ADD
+COLUMN reg_id INT NOT NULL DEFAULT 0* (and the table version set to 1014).
+
+
+```opensips title="Set reg_id_column parameter"
+...
+modparam("usrloc", "reg_id_column", "reg_id")
+...
+```
+
+
 #### attr_column (string)
 
 
@@ -896,9 +917,9 @@ matching off or on for that call, whatever this parameter and the matching
 mode say.
 
 
-The *reg-id* of a contact is kept in its key-value storage (key *_rid*),
-so it is saved in the DB with the *kv_store* column and replicated in a
-cluster.
+The *reg-id* of a contact is kept in its own *reg_id* column of the
+location table. It is always loaded together with the *sip_instance*, in
+every DB mode (including db-only), and replicated in a cluster.
 
 
 *Default value is *1 (enabled)*.*

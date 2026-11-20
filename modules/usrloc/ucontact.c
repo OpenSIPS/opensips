@@ -94,42 +94,6 @@ static int compute_next_hop(ucontact_t *contact)
 }
 
 
-str ul_regid_key = str_init("_rid");
-
-/*! \brief
- * RFC 5626 reg-id: kept in the contact's kv storage, so it is persisted and
- * replicated with no change to the DB schema or the cluster packets. A
- * locally built contact (no packed kv storage) carries the authoritative
- * value; a loaded or replicated one already has it in its kv storage.
- */
-static int ucontact_set_reg_id(map_t kv, ucontact_info_t *ci)
-{
-	int_str_t val;
-
-	if (!kv || !ZSTRP(ci->packed_kv_storage))
-		return 0;
-
-	if (!ci->reg_id) {
-		kv_del(kv, &ul_regid_key);
-		return 0;
-	}
-
-	val.is_str = 0;
-	val.i = (int)ci->reg_id;
-	return kv_put(kv, &ul_regid_key, &val) ? 0 : -1;
-}
-
-unsigned int ucontact_reg_id(ucontact_t *c)
-{
-	int_str_t *val;
-
-	if (!c->kv_storage)
-		return 0;
-
-	val = kv_get(c->kv_storage, &ul_regid_key);
-	return (val && !val->is_str) ? (unsigned int)val->i : 0;
-}
-
 /*! \brief
  * Create a new contact structure
  */
@@ -199,8 +163,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 			goto mem_error;
 	}
 
-	if (ucontact_set_reg_id(c->kv_storage, _ci) != 0)
-		goto mem_error;
+	c->reg_id = _ci->reg_id;
 
 	get_act_time();
 
@@ -386,8 +349,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		}
 	}
 
-	if (ucontact_set_reg_id(_c->kv_storage, _ci) != 0)
-		goto out_oom;
+	_c->reg_id = _ci->reg_id;
 
 	if (compute_next_hop(_c) != 0)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
@@ -593,6 +555,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[15] = &sip_instance_col;
 	keys[16] = &kv_store_col;
 	keys[17] = &attr_col;
+	keys[18] = &reg_id_col;
 	keys[UL_COLS - 1] = &domain_col; /* "domain" always stays last */
 
 	memset(vals, 0, sizeof vals);
@@ -691,6 +654,9 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		vals[17].val.str_val.len = _c->attr.len;
 	}
 
+	vals[18].type = DB_INT;
+	vals[18].val.int_val = (int)_c->reg_id;
+
 	if (use_domain) {
 		vals[UL_COLS - 1].type = DB_STR;
 
@@ -751,8 +717,8 @@ int db_update_ucontact(ucontact_t* _c)
 	static db_ps_t my_ps = NULL;
 	db_key_t keys1[1];
 	db_val_t vals1[1];
-	db_key_t keys2[15];
-	db_val_t vals2[15];
+	db_key_t keys2[16];
+	db_val_t vals2[16];
 
 	if (_c->flags & FL_MEM) {
 		return 0;
@@ -850,11 +816,15 @@ int db_update_ucontact(ucontact_t* _c)
 		vals2[13].val.str_val = _c->attr;
 	}
 
+	keys2[14] = &reg_id_col;
+	vals2[14].type = DB_INT;
+	vals2[14].val.int_val = (int)_c->reg_id;
+
 	/* callid is part of the update */
-	keys2[14] = &callid_col;
-	vals2[14].type = DB_STR;
-	vals2[14].nul = 0;
-	vals2[14].val.str_val = _c->callid;
+	keys2[15] = &callid_col;
+	vals2[15].type = DB_STR;
+	vals2[15].nul = 0;
+	vals2[15].val.str_val = _c->callid;
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -862,7 +832,7 @@ int db_update_ucontact(ucontact_t* _c)
 	}
 
 	CON_SET_CURR_PS(ul_dbh, &my_ps);
-	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 15)<0) {
+	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 16)<0) {
 		LM_ERR("updating database failed\n");
 		goto out_err;
 	}

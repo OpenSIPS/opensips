@@ -177,28 +177,6 @@ void bin_push_ctmatch(bin_packet_t *packet, const struct ct_match *match)
 }
 
 /* NOTICE: remember to free @match->match_params when done with it! */
-/* the RFC 5626 reg-id inside a packed (JSON) kv storage, 0 if none */
-static unsigned int packed_kv_reg_id(str *packed)
-{
-	map_t kv;
-	int_str_t *val;
-	unsigned int reg_id = 0;
-
-	if (ZSTRP(packed))
-		return 0;
-
-	kv = store_deserialize(packed);
-	if (!kv)
-		return 0;
-
-	val = kv_get(kv, &ul_regid_key);
-	if (val && !val->is_str)
-		reg_id = (unsigned int)val->i;
-
-	store_destroy(kv);
-	return reg_id;
-}
-
 void bin_pop_ctmatch(bin_packet_t *packet, struct ct_match *match)
 {
 	int np;
@@ -268,6 +246,8 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c,
 	st = store_serialize(c->kv_storage);
 	bin_push_str(packet, &st);
 	store_free_buffer(&st);
+
+	bin_push_int(packet, c->reg_id);
 
 	bin_push_ctmatch(packet, match);
 }
@@ -361,6 +341,8 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct,
 	st.s = (char *)&ct->contact_id;
 	st.len = sizeof ct->contact_id;
 	bin_push_str(&packet, &st);
+
+	bin_push_int(&packet, ct->reg_id);
 
 	bin_push_ctmatch(&packet, match);
 
@@ -619,6 +601,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	bin_pop_str(packet, &kv_str);
 	ci.packed_kv_storage = &kv_str;
 
+	if (pkg_ver >= UL_BIN_V6)
+		bin_pop_int(packet, (int *)&ci.reg_id);
+
 	if (pkg_ver <= UL_BIN_V2)
 		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
@@ -786,6 +771,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	unpack_indexes(ci.contact_id, &_, &rlabel, &clabel);
 
+	if (pkg_ver >= UL_BIN_V6)
+		bin_pop_int(packet, (int *)&ci.reg_id);
+
 	if (pkg_ver <= UL_BIN_V2)
 		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
@@ -827,7 +815,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			 * take the new URI. No bin format change: both come from the
 			 * contact record (the reg-id from its kv storage) */
 			cmatch.instance = ci.instance;
-			cmatch.reg_id = packed_kv_reg_id(ci.packed_kv_storage);
+			cmatch.reg_id = ci.reg_id;
 			cmatch.instance_mode = CT_INSTANCE_ON;
 			rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1,
 				&cmatch, &contact);

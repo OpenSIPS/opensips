@@ -2,7 +2,7 @@ table_name(string) table_version(int)
 acc:7
 active_watchers:12
 address:5
-aliases:1013
+aliases:1014
 b2b_entities:2
 b2b_logic:5
 b2b_sca:1
@@ -42,7 +42,7 @@ janus:1
 jwt_profiles:1
 jwt_secrets:1
 load_balancer:3
-location:1013
+location:1014
 missed_calls:5
 presentity:5
 pua:9

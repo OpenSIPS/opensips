@@ -82,6 +82,7 @@
 #define METHODS_COL    "methods"
 #define SIP_INSTANCE_COL   "sip_instance"
 #define KV_STORE_COL   "kv_store"
+#define REG_ID_COL     "reg_id"
 #define ATTR_COL       "attr"
 
 static int mod_init(void);        /*!< Module initialization */
@@ -131,6 +132,7 @@ str last_mod_col    = str_init(LAST_MOD_COL);		/*!< Name of column containing th
 str kv_store_col    = str_init(KV_STORE_COL);		/*!< Name of column containing generic key-value data */
 str attr_col        = str_init(ATTR_COL);		/*!< Name of column containing additional info */
 str sip_instance_col = str_init(SIP_INSTANCE_COL);
+str reg_id_col      = str_init(REG_ID_COL);			/*!< Name of column containing the RFC 5626 reg-id */
 str contactid_col   = str_init(CONTACTID_COL);
 
 str db_url          = STR_NULL;					/*!< Database URL */
@@ -249,6 +251,7 @@ static const param_export_t params[] = {
 	{"socket_column",      STR_PARAM, &sock_col.s        },
 	{"methods_column",     STR_PARAM, &methods_col.s     },
 	{"sip_instance_column",STR_PARAM, &sip_instance_col.s},
+	{"reg_id_column",      STR_PARAM, &reg_id_col.s      },
 	{"kv_store_column",    STR_PARAM, &kv_store_col.s    },
 	{"mi_dump_kv_store",   INT_PARAM, &mi_dump_kv_store  },
 	{"latency_event_min_us",   INT_PARAM, &latency_event_min_us  },
@@ -804,6 +807,7 @@ int ul_init_globals(void)
 	sock_col.len = strlen(sock_col.s);
 	methods_col.len = strlen(methods_col.s);
 	sip_instance_col.len = strlen(sip_instance_col.s);
+	reg_id_col.len = strlen(reg_id_col.s);
 	kv_store_col.len = strlen(kv_store_col.s);
 	attr_col.len = strlen(attr_col.s);
 	last_mod_col.len = strlen(last_mod_col.s);
