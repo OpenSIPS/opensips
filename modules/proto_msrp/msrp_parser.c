@@ -243,12 +243,12 @@ error:
 
 void free_msrp_msg( struct msrp_msg *msg)
 {
-	if (msg->headers)
-		free_hdr_field_lst(msg->headers);
-
 	if (msg->to_path && msg->to_path->parsed)
 		free_msrp_path( (struct msrp_url *)msg->to_path->parsed );
 
 	if (msg->from_path && msg->from_path->parsed)
 		free_msrp_path( (struct msrp_url *)msg->from_path->parsed );
+
+	if (msg->headers)
+		free_hdr_field_lst(msg->headers);
 }
