@@ -45,6 +45,10 @@ str invite_str=str_init("INVITE");
  */
 #define FAKE_DIALOG_TL ((struct dlg_tl*)-1)
 
+#include "dlg_timer_wheel.h"
+
+static void _destroy_gen_dlg_timer(struct dlg_timer **timer);
+
 static int _init_gen_dlg_timer(struct dlg_timer **timer)
 {
 	*timer = (struct dlg_timer*)shm_malloc(sizeof(struct dlg_timer));
@@ -79,7 +83,22 @@ error0:
 int init_dlg_timer(dlg_timer_handler hdl )
 {
 	timer_hdl = hdl;
-	return _init_gen_dlg_timer( &d_timer );
+	if (_init_gen_dlg_timer( &d_timer )<0)
+		return -1;
+
+	/* dialog lifetimes are set per dialog (script, replication, database):
+	 * kept on a wheel, where the place of a new one is not searched for */
+	d_timer->wheel = (struct dlg_tl*)shm_malloc(
+		DLG_WHEEL_SIZE*sizeof(struct dlg_tl));
+	if (d_timer->wheel==0) {
+		LM_ERR("no more shm mem for the dialog timer wheel\n");
+		_destroy_gen_dlg_timer( &d_timer );
+		return -1;
+	}
+	dlg_wheel_init( d_timer->wheel );
+	d_timer->wheel_done = get_ticks();
+
+	return 0;
 }
 
 int init_dlg_del_timer(dlg_timer_handler hdl )
@@ -247,6 +266,8 @@ static void _destroy_gen_dlg_timer(struct dlg_timer **timer)
 	lock_destroy((*timer)->lock);
 	lock_dealloc((*timer)->lock);
 
+	if ((*timer)->wheel)
+		shm_free((*timer)->wheel);
 	shm_free(*timer);
 	*timer = 0;
 }
@@ -265,6 +286,12 @@ void destroy_dlg_del_timer(void)
 static inline void insert_gen_timer_unsafe(struct dlg_timer *timer, struct dlg_tl *tl)
 {
 	struct dlg_tl* ptr;
+
+	if (timer->wheel) {
+		LM_DBG("inserting %p for %d\n", tl,tl->timeout);
+		dlg_wheel_insert( timer, tl );
+		return;
+	}
 
 #ifdef EXTRA_DEBUG
 	debug_gen_timer_list( timer );
@@ -591,11 +618,55 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout )
 	return ret;
 }
 
+/* Sets the tick at which the lifetime of a dialog ends, for a caller that
+ * holds the end itself and not an interval from now (the DB sync). With
+ * <only_later>, only if it is later than the end the dialog has.
+ * A dialog that waits in the timer is moved to the place of its new end,
+ * keeping the reference the timer holds on it. For a dialog that is not in
+ * the timer the value is only stored. A dialog that expired or was removed
+ * from the timer is left with the marks of that.
+ * returns :
+ *     0 - dialog is in the timer, with the new end if it was to be changed
+ *     1 - dialog is not in the timer, the value was stored
+ *    -1 - dialog expired or was removed from the timer, nothing was changed */
+int update_dlg_timer_deadline( struct dlg_tl *tl, unsigned int deadline,
+		int only_later )
+{
+	lock_get( d_timer->lock);
+
+	if ( tl->prev == NULL ) {
+		if ( tl->next ) {
+			/* handed to the timer routine, or removed from the timer */
+			lock_release( d_timer->lock);
+			return -1;
+		}
+		if ( !only_later || DLG_TICK_AFTER(deadline, tl->timeout) )
+			tl->timeout = deadline;
+		lock_release( d_timer->lock);
+		return 1;
+	}
+
+	if ( !only_later || DLG_TICK_AFTER(deadline, tl->timeout) ) {
+		remove_dlg_timer_unsafe(tl);
+		tl->timeout = deadline;
+		insert_gen_timer_unsafe( d_timer, tl );
+	}
+
+	lock_release( d_timer->lock);
+	return 0;
+}
+
 static inline struct dlg_tl* _get_gen_expired_dlgs(struct dlg_timer *timer, unsigned int time)
 {
 	struct dlg_tl *tl , *end, *ret;
 
 	lock_get( timer->lock);
+
+	if (timer->wheel) {
+		ret = dlg_wheel_expired( timer, time );
+		lock_release( timer->lock);
+		return ret;
+	}
 
 	if (timer->first.next==&(timer->first)
 	|| timer->first.next->timeout > time ) {

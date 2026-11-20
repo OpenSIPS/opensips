@@ -2148,8 +2148,10 @@ static int sync_dlg_db_mem(void)
 						db_timeout -= (unsigned int)(unsigned long)time(0);
 					db_timeout += get_ticks();
 
-					if (known_dlg->tl.timeout < db_timeout)
-						known_dlg->tl.timeout = db_timeout;
+					/* through the timer: a dialog that waits in it has to
+					 * be moved to the place of its new timeout */
+					update_dlg_timer_deadline( &known_dlg->tl,
+						(unsigned int)db_timeout, 1);
 
 					/* check with is newer cseq for caller leg */
 					if (!VAL_NULL(values+9)) {
@@ -2253,13 +2255,18 @@ static int sync_dlg_db_mem(void)
 					/* set new state */
 					known_dlg->state = VAL_INT(values+7);
 
-					/* update timeout */
-					known_dlg->tl.timeout = (unsigned int)(VAL_INT(values+8));
-					if (known_dlg->tl.timeout<=(unsigned int)(unsigned long)time(0))
-						known_dlg->tl.timeout = 0;
+					/* update timeout - computed aside and set through the
+					 * timer, which moves a dialog that waits in it to the
+					 * place of its new timeout (and never sees a half
+					 * converted value) */
+					db_timeout = (unsigned int)(VAL_INT(values+8));
+					if (db_timeout<=(unsigned int)(unsigned long)time(0))
+						db_timeout = 0;
 					else
-						known_dlg->tl.timeout -= (unsigned int)(unsigned long)time(0);
-					known_dlg->tl.timeout += get_ticks();
+						db_timeout -= (unsigned int)(unsigned long)time(0);
+					db_timeout += get_ticks();
+					update_dlg_timer_deadline( &known_dlg->tl,
+						(unsigned int)db_timeout, 0);
 
 					/* update cseqs */
 					if (!VAL_NULL(values+9)) {
