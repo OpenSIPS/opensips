@@ -1,0 +1,348 @@
+db_redis Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Data Model
+        1.3. Deployment Modes
+
+              1.3.1. Single endpoint
+              1.3.2. Redis Cluster
+
+        1.4. Dependencies
+
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
+
+        1.5. Exported Parameters
+
+              1.5.1. connect_timeout (integer)
+              1.5.2. query_timeout (integer)
+              1.5.3. scan_count (integer)
+              1.5.4. mode (string)
+
+        1.6. Exported Functions
+        1.7. Usage
+        1.8. Limitations
+        1.9. Installation
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set connect_timeout parameter
+   1.2. Set query_timeout parameter
+   1.3. Set scan_count parameter
+   1.4. Set mode parameter
+   1.5. Persisting the dialog table in a single Redis server
+   1.6. Persisting the dialog table in a Redis Cluster
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides a OpenSIPS DB API backend that stores data
+   in a Redis server or a Redis Cluster. It implements the
+   structured database interface used by modules such as dialog,
+   so that their tables can be persisted in Redis instead of a
+   traditional SQL database.
+
+   Unlike the cachedb_redis module, which exposes Redis through
+   the key-value NoSQL interface, db_redis presents Redis as a
+   relational-style backend behind the standard db_url mechanism.
+   A module is switched to Redis simply by pointing its db_url at
+   a redis:// URL; no code change is required in the consuming
+   module.
+
+   The connection type is auto-detected at startup: the module
+   works either against a single Redis endpoint (a standalone
+   server, or the current master reached through an external load
+   balancer/Sentinel setup) or against a fully-enabled Redis
+   Cluster, where it discovers the whole topology and keeps a
+   connection open to every master shard.
+
+1.2. Data Model
+
+   Redis is schemaless, so the module needs the table layout to be
+   declared out of band. Both the schema definitions and the data
+   are stored as Redis hashes:
+     * Schema - the hash “schema:<table>” describes one table. It
+       holds a “__cols” field with the ordered, space-separated
+       list of column names, a “__pk” field naming the primary-key
+       column, and one field per column giving its type as
+       “type[,null][,auto]”. The supported types are int, bigint,
+       double, string, blob and datetime. The null attribute marks
+       a nullable column and auto marks an auto-increment primary
+       key.
+     * Rows - each row is the hash “<table>:<primary key value>”,
+       with one field per non-NULL column. A NULL column is
+       represented by the absence of the field. Values of blob
+       columns are stored verbatim (binary-safe), with no encoding
+       overhead.
+     * Sequences - auto-increment primary keys are generated with
+       INCR on the counter “seq:<table>”.
+     * Table version - the standard OpenSIPS “version” table is
+       provisioned like any other table, with one row per served
+       table, for example “HSET version:dialog table_name dialog
+       table_version 12”.
+
+   The key prefixes “schema:” and “seq:” are reserved by the
+   module and must not be used as table names. Ready-made
+   provisioning files are shipped under the “scripts/redis/”
+   directory; see that directory's README for details. A schema is
+   loaded from Redis on first access to a table and cached for the
+   lifetime of the connection.
+
+1.3. Deployment Modes
+
+   At connection time the module issues an “INFO CLUSTER” command
+   and inspects the “cluster_enabled” field to decide how to
+   operate. The detected behaviour can be pinned with the mode
+   parameter.
+
+1.3.1. Single endpoint
+
+   Used for a standalone Redis server, or when a Redis Sentinel
+   deployment is fronted by an external load balancer that always
+   routes to the current master. The module keeps a single
+   connection and transparently reconnects on I/O errors or when
+   it receives a “-READONLY” reply (which indicates it is talking
+   to a demoted master after a failover). Sentinel discovery and
+   master election are expected to be handled externally.
+
+1.3.2. Redis Cluster
+
+   When the endpoint is a cluster node, the module fetches the
+   full topology (via “CLUSTER SHARDS”, falling back to “CLUSTER
+   SLOTS” on older servers) starting from the single seed host
+   given in db_url. It then opens and keeps warm a connection to
+   every master shard, so that a key routed to any shard can be
+   served immediately over an already established connection
+   rather than paying a new TCP handshake on each redirect.
+
+   Each key is routed to its shard by computing the CRC16 hash
+   slot (honouring “{hash tag}” braces). “MOVED” redirects are
+   served from the warm connection pool and trigger a deferred
+   topology refresh; “ASK” redirects are followed with a one-shot
+   “ASKING”; and “TRYAGAIN” replies (seen during slot migration)
+   are retried after a short back-off. Full-table operations scan
+   every master and merge the results.
+
+   Only master nodes are used; the module always reads from and
+   writes to masters to guarantee read-your-writes consistency.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules.
+
+1.4.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * hiredis - the minimalistic Redis client C library
+       (development package, typically libhiredis-dev).
+
+1.5. Exported Parameters
+
+1.5.1. connect_timeout (integer)
+
+   The timeout, in milliseconds, for establishing a TCP connection
+   to a Redis node. It also bounds how long a failover blackout
+   can stall an operation before it is retried or failed.
+
+   Default value is 1000 (1 second).
+
+   Example 1.1. Set connect_timeout parameter
+...
+modparam("db_redis", "connect_timeout", 500)
+...
+
+1.5.2. query_timeout (integer)
+
+   The send/receive timeout, in milliseconds, applied to commands
+   issued on an established connection. Keep it small enough that
+   a stalled node does not block OpenSIPS worker processes for
+   long, especially when the dialog module is used in realtime
+   db_mode.
+
+   Default value is 2000 (2 seconds).
+
+   Example 1.2. Set query_timeout parameter
+...
+modparam("db_redis", "query_timeout", 1000)
+...
+
+1.5.3. scan_count (integer)
+
+   The “COUNT” hint passed to the Redis “SCAN” command when
+   iterating a whole table (used by full-table loads and by
+   queries that are not addressed by primary key). Larger values
+   reduce the number of round-trips at the cost of larger
+   individual replies.
+
+   Default value is 100.
+
+   Example 1.3. Set scan_count parameter
+...
+modparam("db_redis", "scan_count", 500)
+...
+
+1.5.4. mode (string)
+
+   Pins the connection mode instead of auto-detecting it. Accepted
+   values are:
+     * auto - detect single vs. cluster from “INFO CLUSTER” (the
+       default).
+     * single - force single-endpoint mode; startup fails if the
+       endpoint is a cluster node.
+     * cluster - force cluster mode; startup fails if the endpoint
+       has cluster support disabled.
+
+   Pinning the mode turns an accidental misconfiguration (for
+   example a db_url pointing at the wrong kind of server) into a
+   clear startup error instead of a silently wrong runtime
+   behaviour.
+
+   Default value is "auto".
+
+   Example 1.4. Set mode parameter
+...
+modparam("db_redis", "mode", "cluster")
+...
+
+1.6. Exported Functions
+
+   No function exported to be used from the configuration file.
+
+1.7. Usage
+
+   The module is used by pointing a consuming module's db_url at a
+   redis:// URL. The URL has the standard OpenSIPS form
+   “redis://[:password@]host[:port]/db”. The database path
+   component is mandatory for the URL parser but is only
+   meaningful for a standalone server (it selects the logical
+   database number); it is ignored in cluster mode. A
+   password-only Redis is authenticated with the “:password@”
+   form.
+
+   Example 1.5. Persisting the dialog table in a single Redis
+   server
+...
+loadmodule "db_redis/db_redis.so"
+loadmodule "dialog/dialog.so"
+
+modparam("dialog", "db_mode", 1)
+modparam("dialog", "db_url", "redis://127.0.0.1:6379/0")
+...
+
+   Example 1.6. Persisting the dialog table in a Redis Cluster
+...
+loadmodule "db_redis/db_redis.so"
+loadmodule "dialog/dialog.so"
+
+modparam("dialog", "db_mode", 1)
+# a single cluster node is enough as a seed; the rest of the topology
+# is discovered automatically
+modparam("dialog", "db_url", "redis://:secretpass@10.0.0.20:6379/0")
+...
+
+   Before starting OpenSIPS, provision the table schemas into
+   Redis, for example (add “-c” when talking to a cluster):
+redis-cli [-c] < scripts/redis/dialog-create.redis
+
+1.8. Limitations
+
+     * Queries support equality and the ordering operators (“=”,
+       “<”, “>”, “<=”, “>=”, “!=”) on any column, combined with
+       AND or OR, plus a single “ORDER BY” column. Lookups
+       addressed by the primary key are served directly; every
+       other query performs a table scan and filters in the
+       client. There is no “JOIN” support (the OpenSIPS DB API
+       does not provide one) and no raw-query support.
+     * Updating the value of the primary-key column of an existing
+       row is not supported.
+     * The module is intended for modules that use the structured
+       DB API with per-row primary-key access, such as dialog,
+       dispatcher, clusterer and usrloc. Raw SQL queries are not
+       implemented; a module that relies on them works only if it
+       also offers a structured-query path (as usrloc does for
+       contact loading).
+     * As with the SQL backends, sharing rows between several
+       OpenSIPS instances through the same Redis store requires
+       the instances to use a matching configuration (for the
+       dialog table, an identical hash_size and matching listening
+       sockets).
+
+1.9. Installation
+
+   Because it depends on an external library, the db_redis module
+   is not compiled and installed by default. You can use one of
+   the next options.
+     * - edit the "Makefile" and remove "db_redis" from
+       "excluded_modules" list. Then follow the standard procedure
+       to install OpenSIPS: "make all; make install".
+     * - from command line use: 'make all
+       include_modules="db_redis"; make install
+       include_modules="db_redis"'.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+          Name      DevScore Commits Lines ++ Lines --
+   1. Yury Kirsanov    27       2      2802      4
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/docs/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+          Name        Commit Activity
+   1. Yury Kirsanov Jul 2026 - Jul 2026
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Documentation Copyrights:
+
+   Copyright © 2026 www.opensips-solutions.com
