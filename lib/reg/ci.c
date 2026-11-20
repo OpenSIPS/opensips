@@ -32,6 +32,24 @@
 /*! \brief
  * Fills the common part (for all contacts) of the info structure
  */
+/* the RFC 5626 reg-id of a Contact; 0 if absent, invalid, or the Contact
+ * has no +sip.instance (reg-id is meaningless without it) */
+unsigned int reg_get_reg_id(contact_t *c)
+{
+	static const str regid = str_init("reg-id");
+	param_t *p;
+	unsigned int id;
+
+	if (!c->instance)
+		return 0;
+
+	for (p = c->params; p; p = p->next)
+		if (str_strcasecmp(&p->name, &regid) == 0)
+			return str2int(&p->body, &id) == 0 ? id : 0;
+
+	return 0;
+}
+
 ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
              unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags,
 			 str *ownership_tag, struct ct_match *cmatch)
@@ -121,8 +139,11 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 	}
 
 	if (_c) {
-		/* if doing param-based Contact matching, force an URI update */
-		if (cmatch && cmatch->mode == CT_MATCH_PARAMS)
+		/* if doing param-based or +sip.instance-based Contact matching,
+		 * force an URI update (the URI may change across reconnects of
+		 * the same instance) */
+		if (cmatch && (cmatch->mode == CT_MATCH_PARAMS ||
+		        (cmatch->instance.len && cmatch->instance.s)))
 			ci.c = &_c->uri;
 
 		/* Calculate q value of the contact */
@@ -165,6 +186,7 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 
 		if (_c->instance)
 			ci.instance = _c->instance->body;
+		ci.reg_id = reg_get_reg_id(_c);
 
 		/* get received */
 		if (ci.received.len==0) {

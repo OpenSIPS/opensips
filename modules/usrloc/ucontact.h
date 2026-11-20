@@ -93,6 +93,19 @@ struct ct_match {
 	} mode;
 
 	str_list *match_params;
+
+	/* RFC 5626: the +sip.instance and reg-id (0 = none) of the incoming
+	 * Contact. A stored contact with the same instance and reg-id is the
+	 * same registration, even if its Contact URI or Call-ID differ */
+	str instance;
+	unsigned int reg_id;
+
+	enum ct_instance_mode {
+		CT_INSTANCE_DEFAULT=0, /* the "sip_instance_matching" modparam,
+		                          unless the caller enforced a matching mode */
+		CT_INSTANCE_ON,
+		CT_INSTANCE_OFF,
+	} instance_mode;
 };
 
 
@@ -116,6 +129,7 @@ typedef struct ucontact {
 	time_t expires_out;     /*!< Expires value from the 200 OK reply */
 	qvalue_t q;             /*!< q parameter */
 	str instance;			/*!< instance parameter */
+	unsigned int reg_id;		/*!< RFC 5626 reg-id, 0 if none */
 	str callid;             /*!< Call-ID header field of registration */
 	int cseq;               /*!< CSeq value */
 	cstate_t state;         /*!< State of the contact (\ref cstate) */
@@ -157,6 +171,7 @@ typedef struct ucontact_info {
 	time_t expires_out;
 	qvalue_t q;
 	str instance;
+	unsigned int reg_id;	/*!< RFC 5626 reg-id, 0 if none */
 	str* callid;
 	int cseq;
 	ucontact_flags_t flags;

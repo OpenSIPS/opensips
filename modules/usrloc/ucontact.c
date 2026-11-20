@@ -163,6 +163,8 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 			goto mem_error;
 	}
 
+	c->reg_id = _ci->reg_id;
+
 	get_act_time();
 
 	c->domain = _dom;
@@ -346,6 +348,8 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 			kv_del(_c->kv_storage, &ul_shtag_key);
 		}
 	}
+
+	_c->reg_id = _ci->reg_id;
 
 	if (compute_next_hop(_c) != 0)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
@@ -551,6 +555,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 	keys[15] = &sip_instance_col;
 	keys[16] = &kv_store_col;
 	keys[17] = &attr_col;
+	keys[18] = &reg_id_col;
 	keys[UL_COLS - 1] = &domain_col; /* "domain" always stays last */
 
 	memset(vals, 0, sizeof vals);
@@ -649,6 +654,9 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		vals[17].val.str_val.len = _c->attr.len;
 	}
 
+	vals[18].type = DB_INT;
+	vals[18].val.int_val = (int)_c->reg_id;
+
 	if (use_domain) {
 		vals[UL_COLS - 1].type = DB_STR;
 
@@ -709,8 +717,8 @@ int db_update_ucontact(ucontact_t* _c)
 	static db_ps_t my_ps = NULL;
 	db_key_t keys1[1];
 	db_val_t vals1[1];
-	db_key_t keys2[15];
-	db_val_t vals2[15];
+	db_key_t keys2[17];
+	db_val_t vals2[17];
 
 	if (_c->flags & FL_MEM) {
 		return 0;
@@ -808,11 +816,21 @@ int db_update_ucontact(ucontact_t* _c)
 		vals2[13].val.str_val = _c->attr;
 	}
 
+	keys2[14] = &reg_id_col;
+	vals2[14].type = DB_INT;
+	vals2[14].val.int_val = (int)_c->reg_id;
+
+	/* the Contact URI changes when a contact is matched by +sip.instance */
+	keys2[15] = &contact_col;
+	vals2[15].type = DB_STR;
+	vals2[15].nul = 0;
+	vals2[15].val.str_val = _c->c;
+
 	/* callid is part of the update */
-	keys2[14] = &callid_col;
-	vals2[14].type = DB_STR;
-	vals2[14].nul = 0;
-	vals2[14].val.str_val = _c->callid;
+	keys2[16] = &callid_col;
+	vals2[16].type = DB_STR;
+	vals2[16].nul = 0;
+	vals2[16].val.str_val = _c->callid;
 
 	if (ul_dbf.use_table(ul_dbh, _c->domain) < 0) {
 		LM_ERR("sql use_table failed\n");
@@ -820,7 +838,7 @@ int db_update_ucontact(ucontact_t* _c)
 	}
 
 	CON_SET_CURR_PS(ul_dbh, &my_ps);
-	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 15)<0) {
+	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 17)<0) {
 		LM_ERR("updating database failed\n");
 		goto out_err;
 	}
