@@ -2711,12 +2711,11 @@ int rtpe_function_call_prepare(bencode_buffer_t *bencbuf, struct sip_msg *msg, e
 	int from_tag_given, to_tag_given;
 	str flags_nt = {0,0};
 
-	if (bencode_buffer_init(bencbuf)) {
-		LM_ERR("could not initialize bencode_buffer_t\n");
-		return -1;
-	}
-
 	if (!extra_dict) {
+		if (bencode_buffer_init(bencbuf)) {
+			LM_ERR("could not initialize bencode_buffer_t\n");
+			return -1;
+		}
 		ng_flags->dict = bencode_dictionary(bencbuf);
 	} else {
 		ng_flags->dict = extra_dict;
