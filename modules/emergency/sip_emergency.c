@@ -889,7 +889,10 @@ int find_body_pidf(struct sip_msg *msg, char** pidf_body) {
 		if ( mbody_part->mime_s.len==MIME_PIDF_LEN &&
 		memcmp(mbody_part->mime_s.s, MIME_PIDF, mbody_part->mime_s.len)==0 ) {
 			body_start = strstr(mbody_part->body.s, PRESENCE_START);
-			body_end = strstr(mbody_part->body.s, PRESENCE_END);
+			/* the closing tag has to be looked up after the opening one,
+			   otherwise size_body comes out negative or zero */
+			body_end = body_start ?
+				strstr(body_start, PRESENCE_END) : NULL;
 			if (!body_start || !body_end) {
 				LM_ERR("Cannot create body\n");
 				return -1;
