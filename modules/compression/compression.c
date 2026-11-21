@@ -1054,8 +1054,6 @@ static int mc_compress(struct sip_msg* msg, int *algo_p, int *flags_p,
 	if (wh_list)
 		wh_list = mc_dup_whitelist(wh_list);
 
-	/* Simulate a whitelist which will contain only the Content-Length
-		header in case BODY_COMP_FLG is set */
 	if (flags&HDR_COMP_FLG && wh_list) {
 		/* Remove mandatory headers if they have been set */
 		for (index=0; index < veclen(mnd_hdrs, int); index++) {
@@ -1067,15 +1065,19 @@ static int mc_compress(struct sip_msg* msg, int *algo_p, int *flags_p,
 		}
 	}
 
-
-	/* Content Length must be encoded if asked for body to be encoded*/
 	if (flags&BODY_COMP_FLG) {
+		/* Body compression replaces the original Content-Length on the wire. */
 		if (!wh_list && parse_whitelist(NULL, &wh_list, NULL) < 0) {
 			LM_ERR("could not allocate new list!\n");
 			goto end;
 		}
 		wh_list->hdr_mask[HDR_CONTENTLENGTH_T/MC_BYTE_SIZE] |=
 					1 << (HDR_CONTENTLENGTH_T%MC_BYTE_SIZE);
+	} else if (wh_list && (wh_list->hdr_mask[HDR_OTHER_T/MC_BYTE_SIZE] &
+					(1 << (HDR_OTHER_T%MC_BYTE_SIZE)))) {
+		/* With a "*" whitelist, keep Content-Length alongside the uncompressed body. */
+		wh_list->hdr_mask[HDR_CONTENTLENGTH_T/MC_BYTE_SIZE] &=
+					~(1 << (HDR_CONTENTLENGTH_T%MC_BYTE_SIZE));
 	}
 
 	args=pkg_malloc(sizeof(struct mc_comp_args));
