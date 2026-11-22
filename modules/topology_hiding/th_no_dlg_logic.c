@@ -388,7 +388,8 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg) {
 				if (th_store_is_key(&request_uri->u_val[i])) {
 					LM_DBG("We found stored state key in R-URI %.*s\n",
 						request_uri->u_val[i].len, request_uri->u_val[i].s);
-					if (th_store_fetch(&request_uri->u_val[i]) < 0)
+					if (th_store_fetch(msg, &request_uri->u_val[i],
+					&thinfo_decode->param_password) < 0)
 						return TOPOH_MATCH_FAILURE;
 					return th_no_dlg_seq_handling(msg, &request_uri->u_val[i], decode_info_buffer_stored, thinfo_decode);
 				} else if (thinfo_decode->compact_encoding) {

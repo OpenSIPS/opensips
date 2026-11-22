@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#include <ctype.h>
 #include <string.h>
 #include <time.h>
 
@@ -192,16 +193,29 @@ static str *th_msg_key_tag(struct sip_msg *msg)
 }
 
 /* deterministic, so a refresh of the same leg overwrites its state in
- * place; the password keeps it from being guessed off call-id and tag */
+ * place; the password keeps it from being guessed off call-id and tag.
+ * The lengths go in too, or a call-id and tag split elsewhere would hash
+ * the same */
 static void th_make_key(const str *pw, str *callid, str *tag, char *key)
 {
-	char md5[MD5_LEN];
-	str seeds[3];
+	char md5[MD5_LEN], cl_buf[INT2STR_MAX_LEN], tl_buf[INT2STR_MAX_LEN];
+	str seeds[5], c = *callid, t = *tag;
+	char *p;
 
+	trim(&c);
+	trim(&t);
 	seeds[0] = *pw;
-	seeds[1] = *callid;
-	seeds[2] = *tag;
-	MD5StringArray(md5, seeds, 3);
+	p = int2str(c.len, &seeds[1].len);
+	memcpy(cl_buf, p, seeds[1].len);
+	cl_buf[seeds[1].len++] = ':';
+	seeds[1].s = cl_buf;
+	seeds[2] = c;
+	p = int2str(t.len, &seeds[3].len);
+	memcpy(tl_buf, p, seeds[3].len);
+	tl_buf[seeds[3].len++] = ':';
+	seeds[3].s = tl_buf;
+	seeds[4] = t;
+	MD5StringArray(md5, seeds, 5);
 	memcpy(key, md5, TH_KEY_LEN);
 }
 
@@ -222,8 +236,17 @@ int th_store_no_state(struct sip_msg *msg)
 
 int th_store_is_key(const str *val)
 {
-	return th_store_on && val->len == TH_KEY_WIRE_LEN &&
-		val->s[0] == TH_KEY_MARKER;
+	int i;
+
+	if (!th_store_on || val->len != TH_KEY_WIRE_LEN ||
+	val->s[0] != TH_KEY_MARKER)
+		return 0;
+
+	for (i = 1; i < TH_KEY_WIRE_LEN; i++)
+		if (!isxdigit((unsigned char)val->s[i]))
+			return 0;
+
+	return 1;
 }
 
 /* the Contact ;expires only means something to a REGISTER (RFC 3261
@@ -445,8 +468,14 @@ static int th_msg_target_refresh(struct sip_msg *msg)
 int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store)
 {
 	struct session_expires se;
+	str *tag;
 
-	if (!th_store_on || !store || !th_msg_key_tag(msg))
+	if (!th_store_on || !store || !(tag = th_msg_key_tag(msg)))
+		return 0;
+
+	/* a reply tagged as its caller would take the caller's key */
+	if (msg->first_line.type == SIP_REPLY && parse_from_header(msg) == 0 &&
+	str_match(tag, &get_from(msg)->tag_value))
 		return 0;
 
 	/* a non target refresh would overwrite its leg's state under the same
@@ -656,10 +685,32 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 	return suffix;
 }
 
-int th_store_fetch(const str *wire)
+/* a request may only use the key of the party it is sent to, i.e. the
+ * one of its own call-id and To tag */
+static int th_key_of_request(struct sip_msg *msg, const str *wire,
+		const str *pw)
+{
+	char key[TH_KEY_LEN];
+
+	if ((!msg->callid && (parse_headers(msg, HDR_CALLID_F, 0) < 0 ||
+	!msg->callid)) || parse_to_header(msg) < 0 || !msg->to ||
+	!get_to(msg)->tag_value.len)
+		return 0;
+
+	th_make_key(pw, &msg->callid->body, &get_to(msg)->tag_value, key);
+	return memcmp(key, wire->s + 1, TH_KEY_LEN) == 0;
+}
+
+int th_store_fetch(struct sip_msg *msg, const str *wire, const str *pw)
 {
 	str val = STR_NULL, *full;
 	int rc;
+
+	if (!th_key_of_request(msg, wire, pw)) {
+		LM_WARN("key <%.*s> does not belong to the dialog of the "
+			"request\n", wire->len, wire->s);
+		return -1;
+	}
 
 	if (!th_cdbc) {
 		LM_ERR("not connected to th_state_url\n");

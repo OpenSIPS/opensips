@@ -732,6 +732,59 @@ def scen_expires():
         b.sock.close()
 
 
+def scen_keys():
+    print('== a key only serves the dialog it was made for')
+    rcli('FLUSHALL')
+    px = Proxy('keys', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    c = UA('evil', BASE + 4, 'evil')
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b)
+        k_sub = req and req.thinfo()
+        check('[S] subscription set up', d_sub is not None and k_sub)
+        if d_sub is None:
+            return
+        # the notifier reuses the subscriber key in another dialog
+        fake = Dialog(b, d_ntf.ruri_aor)
+        fake.ltag, fake.rtag, fake.luri = d_ntf.ltag, d_ntf.rtag, d_ntf.luri
+        fake.target = d_ntf.target
+        fake.request('NOTIFY', ['Event: presence',
+                                'Subscription-State: active;expires=600'])
+        r = b.recv()
+        check('[S] a key used under another Call-ID is not routed',
+              r is not None and r.code == 404, r and r.first)
+        # a call-id and tag split elsewhere must not hash to the same key
+        x = d_sub.callid
+        ev = Dialog(c, 'sip:%s@127.0.0.1:%d' % (b.name, b.port),
+                    callid=x[:-4])
+        ev.ltag = x[-4:] + d_sub.ltag
+        ereq, erpl = transact(ev, b, 'SUBSCRIBE',
+                              ['Event: presence', 'Expires: 600'],
+                              rhdrs=['Expires: 600'],
+                              peer_tag=uuid.uuid4().hex[:10])
+        check('[S] a shifted Call-ID/tag gets a key of its own',
+              ereq is not None and ereq.thinfo() != k_sub,
+              ereq and ereq.thinfo())
+        nreq, nrpl = notify(d_ntf, a, 'active;expires=600')
+        check('[S] the subscriber still gets its NOTIFY',
+              nreq is not None and same_target(nreq.ruri, a.contact),
+              nreq and nreq.ruri)
+        # a reply carrying its caller's tag as To tag
+        d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+        se = ['Supported: timer', 'Session-Expires: 1800;refresher=uac']
+        req, rpl = transact(d, b, 'INVITE', se, rhdrs=se, peer_tag=d.ltag)
+        check('[S] a reply tagged as its caller is not stored',
+              rpl is not None and rpl.thinfo() and
+              not KEY_RE.match(rpl.thinfo()) and
+              KEY_RE.match(req.thinfo() or ''),
+              rpl and rpl.thinfo())
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+        c.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -749,6 +802,7 @@ SCENARIOS = {
     'storedown': scen_storedown,
     'ttlcap': scen_ttlcap,
     'expires': scen_expires,
+    'keys': scen_keys,
 }
 
 

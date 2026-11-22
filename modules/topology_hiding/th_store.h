@@ -53,7 +53,7 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 		const str *param_name, const str *pw, struct sip_msg *ttl_src,
 		int *suffix_len);
 
-int th_store_fetch(const str *wire);
+int th_store_fetch(struct sip_msg *msg, const str *wire, const str *pw);
 int th_store_unpack(str *routes, str *contact, str *flags, str *sock);
 void th_store_consumed(struct sip_msg *msg, const str *wire);
 void th_store_drop_rejected(struct sip_msg *rpl, const str *pw);
