@@ -87,6 +87,7 @@ def ttl(key):
 
 CFG = '''
 log_level = 3
+xlog_level = 3
 stderror_enabled = yes
 syslog_enabled = no
 udp_workers = 2
@@ -111,6 +112,7 @@ route {
 	}
 	if (has_totag()) {
 		if (topology_hiding_match()) {
+			xlog("L_INFO", "decoded <$TH_decoded_contact> routes $TH_decoded_routes_count\n");
 			t_relay();
 			exit;
 		}
@@ -977,6 +979,34 @@ def scen_spiral():
         c.sock.close()
 
 
+def scen_decoded():
+    print('== $TH_decoded_* are set for a stored dialog')
+    rcli('FLUSHALL')
+    px = Proxy('decoded', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b)
+        check('[S] subscription set up', d_sub is not None)
+        if d_sub is None:
+            return
+        notify(d_ntf, a, 'active;expires=600')
+        got = px.lines('decoded <')
+        check('[S] $TH_decoded_contact is the real Contact',
+              got and a.contact.split(';')[0] in got[-1] and
+              'routes 0' in got[-1], got[-1:])
+        # garbage under a key: no crash, a clean 404
+        rcli('SET', 'th:' + req.thinfo()[1:], 'garbage', 'EX', '600')
+        d_ntf.request('NOTIFY', ['Event: presence',
+                                 'Subscription-State: active;expires=600'])
+        r = b.recv()
+        check('[S] a malformed stored state gives 404',
+              r is not None and r.code == 404 and px.alive(), r and r.first)
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -999,6 +1029,7 @@ SCENARIOS = {
     'calldlg': scen_calldlg,
     'answer': scen_answer,
     'spiral': scen_spiral,
+    'decoded': scen_decoded,
 }
 
 

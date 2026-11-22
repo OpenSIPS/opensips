@@ -1564,6 +1564,41 @@ error:
 /* the kind of the dialog decode_info_buffer_stored() last found */
 static int stored_kind;
 
+/* the $TH_decoded_* variables read decoded_uris[]: "<contact>", then one
+ * "<route>" each, as the inline decoder leaves them */
+static int stored_set_decoded_uris(const str *contact, const str *routes)
+{
+	char *p = decoded_uri_str, *end = decoded_uri_str + sizeof decoded_uri_str;
+	char *r = routes->s, *rend = routes->s + routes->len, *gt;
+	int n = 0;
+
+	if (contact->len + 2 > end - p)
+		return -1;
+	decoded_uris[n].s = p;
+	*p++ = '<';
+	memcpy(p, contact->s, contact->len);
+	p += contact->len;
+	*p++ = '>';
+	decoded_uris[n].len = p - decoded_uris[n].s;
+	n++;
+
+	while (r < rend && (r = q_memchr(r, '<', rend - r))) {
+		if (!(gt = q_memchr(r, '>', rend - r)) || n == MAX_ENCODED_SIP_URIS ||
+		gt - r + 1 > end - p)
+			return -1;
+		decoded_uris[n].s = p;
+		decoded_uris[n].len = gt - r + 1;
+		memcpy(p, r, decoded_uris[n].len);
+		p += decoded_uris[n].len;
+		n++;
+		r = gt + 1;
+	}
+
+	decoded_uris_count = n;
+	ctx_decoded_routes_set_valid();
+	return 0;
+}
+
 static decoded_info_buffer_t decode_info_buffer_stored(str *info, const thinfo_options_t *options) {
 	str flags_buf = STR_NULL, bind_buf = STR_NULL, host = STR_NULL;
 	int port = 0, proto = 0;
@@ -1574,15 +1609,25 @@ static decoded_info_buffer_t decode_info_buffer_stored(str *info, const thinfo_o
 	&stored_kind) < 0)
 		return (decoded_info_buffer_t) { .state = INVALID_BUF };
 
-	if (str2int(&flags_buf, &parsed_flags) == 0)
-		decoded_buffer.flags = (uint16_t)parsed_flags;
+	/* the backend is trusted, but what it returns is checked like what the
+	 * Contact carried */
+	if (str2int(&flags_buf, &parsed_flags) < 0 || parsed_flags > UINT16_MAX) {
+		LM_ERR("bad flags <%.*s> in the stored state\n", flags_buf.len, flags_buf.s);
+		return (decoded_info_buffer_t) { .state = INVALID_BUF };
+	}
+	decoded_buffer.flags = (uint16_t)parsed_flags;
 
 	if (parse_phostport(bind_buf.s, bind_buf.len, &host.s, &host.len, &port, &proto) != 0) {
-		LM_ERR("bad socket <%.*s>\n", bind_buf.len, bind_buf.s);
-	} else {
-		decoded_buffer.sock = grep_sock_info(&host, (unsigned short) port, proto);
-		if (!decoded_buffer.sock && th_internal_trusted_tag.len > 0)
-			decoded_buffer.sock = grep_internal_sock_info(&th_internal_trusted_tag, 0, proto);
+		LM_ERR("bad socket <%.*s> in the stored state\n", bind_buf.len, bind_buf.s);
+		return (decoded_info_buffer_t) { .state = INVALID_BUF };
+	}
+	decoded_buffer.sock = grep_sock_info(&host, (unsigned short) port, proto);
+	if (!decoded_buffer.sock && th_internal_trusted_tag.len > 0)
+		decoded_buffer.sock = grep_internal_sock_info(&th_internal_trusted_tag, 0, proto);
+
+	if (stored_set_decoded_uris(&decoded_buffer.contact, &decoded_buffer.routes) < 0) {
+		LM_ERR("stored route set too long\n");
+		return (decoded_info_buffer_t) { .state = INVALID_BUF };
 	}
 
 	FINALIZE_DECODED_BUF_STATE(decoded_buffer);
