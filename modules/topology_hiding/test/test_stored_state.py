@@ -224,6 +224,7 @@ class UA:
         self.sock.settimeout(3)
 
     def send(self, text):
+        self.last = text
         self.sock.sendto(text.encode(), PROXY)
 
     def recv(self):
@@ -360,9 +361,10 @@ def scen_subscribe(enc):
               nrpl is not None and nrpl.code == 200,
               nreq and nreq.ruri)
         if enc == 'S':
-            # the 200 OK says nothing of the lifetime, its NOTIFY does
-            check('[S] a reply takes its TTL from its request',
-                  628 <= ttl(s_key) <= 630, ttl(s_key))
+            # the subscriber's 200 may not shorten a key forked notifier
+            # dialogs share
+            check('[S] the subscriber state never goes below th_state_ttl',
+                  3598 <= ttl(s_key) <= 3600, ttl(s_key))
         rreq, rrpl = transact(d_sub, ntf, 'SUBSCRIBE',
                               ['Event: presence', 'Expires: 600'],
                               rhdrs=['Expires: 600'])
@@ -377,27 +379,30 @@ def scen_subscribe(enc):
             check('[S] refreshes keep exactly one key per leg',
                   len(th_keys()) == 2 and nreq.thinfo() == n_key and
                   rreq.thinfo() == s_key, th_keys())
-            check('[S] TTL = Expires + 30 on both legs',
-                  628 <= ttl(s_key) <= 630 and 628 <= ttl(n_key) <= 630,
+            check('[S] notifier TTL = Expires + 30, subscriber th_state_ttl',
+                  3598 <= ttl(s_key) <= 3600 and 628 <= ttl(n_key) <= 630,
                   '%d %d' % (ttl(s_key), ttl(n_key)))
-            # the 200 carries no Contact: only the refresh in place moves it
-            notify(d_ntf, sub, 'active;expires=3000', rcontact=False)
-            check('[S] a NOTIFY refreshes the state it was routed by',
-                  3028 <= ttl(s_key) <= 3030, ttl(s_key))
+            # the reply takes the lifetime of the NOTIFY it answers
+            notify(d_ntf, sub, 'active;expires=5000')
+            check('[S] a NOTIFY 200 takes the NOTIFY lifetime + 30',
+                  5028 <= ttl(s_key) <= 5030, ttl(s_key))
 
         ureq, urpl = transact(d_sub, ntf, 'SUBSCRIBE',
                               ['Event: presence', 'Expires: 0'],
                               rhdrs=['Expires: 0'])
+        if enc == 'S':
+            check('[S] the unsubscribe 200 shortens the notifier state',
+                  0 < ttl(n_key) <= 60, ttl(n_key))
         freq, frpl = notify(d_ntf, sub, 'terminated;reason=timeout',
                             rcontact=False)
         check('[%s] unsubscribe and final NOTIFY routed' % enc,
               urpl is not None and urpl.code == 200 and frpl is not None and
               frpl.code == 200)
         if enc == 'S':
-            check('[S] the final NOTIFY drops the state it was routed by',
-                  ttl(s_key) == -2, ttl(s_key))
-            check('[S] what is left after teardown is short-lived',
-                  0 < ttl(n_key) <= 60 and len(th_keys()) == 1, th_keys())
+            check('[S] the final NOTIFY leaves the notifier state short-lived',
+                  0 < ttl(n_key) <= 60, ttl(n_key))
+            check('[S] the subscriber state stays for forked dialogs',
+                  3590 <= ttl(s_key) <= 3600, ttl(s_key))
         check('[%s] proxy logged no ERROR' % enc, not px.lines('ERROR:'),
               px.lines('ERROR:')[:3])
     finally:
@@ -476,15 +481,15 @@ def scen_miss():
         check('[S] short subscription set up', d_sub is not None)
         if d_sub is None:
             return
-        key = req.thinfo()
+        # the notifier's state: the subscriber's one lasts th_state_ttl
+        key = rpl.thinfo()
         for _ in range(45):
             if ttl(key) == -2:
                 break
             time.sleep(1)
         check('[S] the state expired from redis', ttl(key) == -2, ttl(key))
-        d_ntf.request('NOTIFY', ['Event: presence',
-                                 'Subscription-State: active;expires=1'])
-        r = d_ntf.local.recv()
+        d_sub.request('SUBSCRIBE', ['Event: presence', 'Expires: 1'])
+        r = d_sub.local.recv()
         check('[S] request on an expired state is not matched (404)',
               r is not None and r.code == 404, r and r.first)
         check('[S] the miss is logged as a warning',
@@ -785,6 +790,55 @@ def scen_keys():
         c.sock.close()
 
 
+def scen_teardown():
+    print('== ending a subscription: retransmission, challenge, forks')
+    rcli('FLUSHALL')
+    px = Proxy('tear', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    n2 = UA('ntf2', BASE + 4, 'presence-server-2')
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b)
+        check('[S] subscription set up', d_sub is not None)
+        if d_sub is None:
+            return
+        # a second notifier dialog of the same (forked) SUBSCRIBE
+        d_n2 = Dialog(n2, d_ntf.ruri_aor, callid=d_sub.callid)
+        d_n2.ltag, d_n2.rtag = uuid.uuid4().hex[:10], d_sub.ltag
+        d_n2.luri, d_n2.target = d_ntf.luri, d_ntf.target
+        r2, p2 = notify(d_n2, a, 'active;expires=3600')
+        check('[S] the forked notifier reaches the subscriber',
+              r2 is not None and p2 is not None and p2.code == 200)
+        # the first notifier ends its dialog, its NOTIFY is retransmitted
+        d_ntf.request('NOTIFY', ['Event: presence',
+                                 'Subscription-State: terminated'])
+        nreq = a.recv()
+        b.send(b.last)
+        time.sleep(0.3)
+        if nreq is not None:
+            reply(a, nreq, 200, contact=False)
+        r = b.recv()
+        check('[S] a retransmitted final NOTIFY is not answered 404',
+              r is not None and r.code == 200, r and r.first)
+        r2, p2 = notify(d_n2, a, 'active;expires=3600')
+        check('[S] the forked dialog survives the other one ending',
+              r2 is not None and same_target(r2.ruri, a.contact), r2)
+        # a challenged unsubscribe, then its authenticated retry
+        ureq, urpl = transact(d_sub, b, 'SUBSCRIBE',
+                              ['Event: presence', 'Expires: 0'], code=407)
+        rreq, rrpl = transact(d_sub, b, 'SUBSCRIBE',
+                              ['Event: presence', 'Expires: 0',
+                               'Proxy-Authorization: Digest x'],
+                              rhdrs=['Expires: 0'])
+        check('[S] the retry of a challenged unsubscribe is routed',
+              urpl is not None and urpl.code == 407 and rreq is not None and
+              rrpl is not None and rrpl.code == 200, rreq and rreq.first)
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+        n2.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -803,6 +857,7 @@ SCENARIOS = {
     'ttlcap': scen_ttlcap,
     'expires': scen_expires,
     'keys': scen_keys,
+    'teardown': scen_teardown,
 }
 
 

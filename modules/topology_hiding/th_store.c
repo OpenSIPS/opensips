@@ -352,46 +352,12 @@ static int th_ttl(unsigned long secs)
 	return (int)secs + TH_STATE_TTL_MARGIN;
 }
 
-static int th_msg_ends_subscription(struct sip_msg *msg)
-{
-	int method = th_msg_method(msg);
-
-	if (method != METHOD_SUBSCRIBE && method != METHOD_NOTIFY)
-		return 0;
-
-	return th_sub_expires(msg, method) == 0;
-}
-
-/* only a message carrying its dialog's lifetime may refresh a state, or
- * an in-dialog OPTIONS would cut a call's state down to th_state_ttl_short */
-static int th_msg_refreshes_state(struct sip_msg *msg)
-{
-	struct session_expires se;
-	int method = th_msg_method(msg);
-	long expires;
-
-	switch (method) {
-	case METHOD_SUBSCRIBE:
-	case METHOD_NOTIFY:
-		expires = th_sub_expires(msg, method);
-		return expires > 0 ? th_ttl(expires) : 0;
-	case METHOD_INVITE:
-	case METHOD_UPDATE:
-		if (parse_session_expires(msg, &se) == parse_sst_success &&
-		se.interval > 0)
-			return th_ttl(se.interval);
-		return 0;
-	default:
-		return 0;
-	}
-}
-
 /* @ttl_src is the request a reply answers: a 200 OK may well not repeat
  * the lifetime its NOTIFY or INVITE carried */
 static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 {
 	struct session_expires se;
-	int method = th_msg_method(msg);
+	int ttl, method = th_msg_method(msg);
 	long expires;
 
 	switch (method) {
@@ -404,11 +370,18 @@ static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 		if (expires < 0 && ttl_src)
 			expires = th_sub_expires(ttl_src, th_msg_method(ttl_src));
 		if (expires < 0)
-			return th_state_ttl;
+			ttl = th_state_ttl;
 		/* a subscription being torn down only needs its final NOTIFY */
-		if (expires == 0)
-			return th_state_ttl_short;
-		return th_ttl(expires);
+		else if (expires == 0)
+			ttl = th_state_ttl_short;
+		else
+			ttl = th_ttl(expires);
+		/* a forked SUBSCRIBE gives all its notifier dialogs the subscriber's
+		 * key, which one of them may not shorten under the others */
+		if ((method == METHOD_SUBSCRIBE) == (msg->first_line.type ==
+		SIP_REQUEST) && ttl < th_state_ttl)
+			ttl = th_state_ttl;
+		return ttl;
 	case METHOD_INVITE:
 	case METHOD_UPDATE:
 		if (parse_session_expires(msg, &se) == parse_sst_success &&
@@ -783,25 +756,5 @@ void th_store_drop_rejected(struct sip_msg *rpl, const str *pw)
 	full = th_full_key(key);
 	if (th_cdbf.remove(th_cdbc, full) < 0)
 		LM_WARN("failed to drop <%.*s>, leaving it to expire\n",
-			full->len, full->s);
-}
-
-/* @wire is the key the request was routed by; the far party may go on
- * using it, so it lives as long as the dialog says */
-void th_store_consumed(struct sip_msg *msg, const str *wire)
-{
-	str *full = th_full_key(wire->s + 1);
-	int ttl;
-
-	if (th_msg_ends_subscription(msg)) {
-		if (th_cdbf.remove(th_cdbc, full) < 0)
-			LM_WARN("failed to drop <%.*s>, leaving it to expire\n",
-				full->len, full->s);
-		return;
-	}
-
-	ttl = th_msg_refreshes_state(msg);
-	if (ttl > 0 && th_cdbf.set(th_cdbc, full, &th_fetched, ttl) < 0)
-		LM_WARN("failed to refresh <%.*s>, it may expire while in use\n",
 			full->len, full->s);
 }

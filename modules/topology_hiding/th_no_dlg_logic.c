@@ -1624,9 +1624,6 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 		return -1;
 	}
 
-	if (decode_fn == decode_info_buffer_stored)
-		th_store_consumed(msg, info);
-
 	if (decoded_buffer.flags & TOPOH_KEEP_USER) {
 		if (parse_sip_msg_uri(msg) < 0) {
 			LM_ERR("Failed to parse request URI\n");
