@@ -89,6 +89,10 @@ STANDALONE_CONTRIB_MODULES :=
 # (DEB_BUILD_PROFILES=nats), and are never part of opensips-modules-contrib.
 NATS_CONTRIB_MODULES := nats event_nats cachedb_nats cachedb_nats_fts nats_consumer
 
+# cachedb_perfd needs libperfd 0.7.6.1 or later, which no distribution ships:
+# built only with the "perfd" build profile (DEB_BUILD_PROFILES=perfd).
+PERFD_CONTRIB_MODULES := cachedb_perfd
+
 
 MAJOR_RELEASE=$(shell lsb_release -rs | cut -d "." -f 1)
 # debian unstable (sid) doesn't output a version number, so emulate one
@@ -149,6 +153,13 @@ ifneq (,$(filter nats,$(DEB_BUILD_PROFILES)))
 endif
 
 #
+# cachedb_perfd contrib package
+#
+ifneq (,$(filter perfd,$(DEB_BUILD_PROFILES)))
+	STANDALONE_CONTRIB_MODULES += $(PERFD_CONTRIB_MODULES)
+endif
+
+#
 # PROTO_SCTP package
 #
 # add SCTP only on linux systems
@@ -171,7 +182,7 @@ CONTRIB_PKGNAME = opensips-modules-contrib
 CONTRIB_ALL_MOD_PATHS = $(patsubst %/Makefile,%,$(wildcard modules-contrib/*/Makefile))
 STANDALONE_CONTRIB_MOD_PATHS = $(addprefix modules-contrib/,$(STANDALONE_CONTRIB_MODULES))
 CONTRIB_MOD_PATHS = $(filter-out $(STANDALONE_CONTRIB_MOD_PATHS) \
-	$(addprefix modules-contrib/,$(NATS_CONTRIB_MODULES)),$(CONTRIB_ALL_MOD_PATHS))
+	$(addprefix modules-contrib/,$(NATS_CONTRIB_MODULES) $(PERFD_CONTRIB_MODULES)),$(CONTRIB_ALL_MOD_PATHS))
 CONTRIB_BUILD_MOD_PATHS = $(CONTRIB_MOD_PATHS) $(STANDALONE_CONTRIB_MOD_PATHS)
 
 ## modules not in the "main" package or unstable modules that we never want to build

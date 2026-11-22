@@ -55,8 +55,11 @@
 # distributions ship: they are built only "--with nats", and are never part
 # of opensips-modules-contrib.
 %global NATS_CONTRIB_MODULES nats event_nats cachedb_nats cachedb_nats_fts nats_consumer
-%global STANDALONE_CONTRIB_MODULES %{?_with_nats:%{NATS_CONTRIB_MODULES}}
-%global SKIP_CONTRIB_MODULES %{!?_with_nats:%{NATS_CONTRIB_MODULES}}
+#
+# cachedb_perfd needs libperfd 0.7.6.1 or later, which no distribution ships:
+# built only "--with perfd".
+%global STANDALONE_CONTRIB_MODULES %{?_with_nats:%{NATS_CONTRIB_MODULES}} %{?_with_perfd:cachedb_perfd}
+%global SKIP_CONTRIB_MODULES %{!?_with_nats:%{NATS_CONTRIB_MODULES}} %{!?_with_perfd:cachedb_perfd}
 
 # Database backends shipped as opensips-dbschema-<backend> packages.
 %global DBSCHEMA_MODULES berkeley mysql postgres sqlite
@@ -75,6 +78,9 @@ BuildRequires:  libxml2-devel
 BuildRequires:  bison
 %if 0%{?_with_nats:1}
 BuildRequires:  pkgconfig(libnats) >= 3.14
+%endif
+%if 0%{?_with_perfd:1}
+BuildRequires:  pkgconfig(libperfd) >= 0.7.6.1
 %endif
 BuildRequires:  flex
 BuildRequires:  subversion
@@ -218,6 +224,17 @@ Requires: %{name}-module-contrib-nats = %{version}-%{release}
 
 %description -n %{name}-module-contrib-nats-consumer
 This package contains only the nats_consumer contrib module for OpenSIPS.
+%endif
+
+%if 0%{?_with_perfd:1}
+%package -n %{name}-module-contrib-cachedb-perfd
+Summary: OpenSIPS cachedb_perfd contrib module
+Group: System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description -n %{name}-module-contrib-cachedb-perfd
+This package contains only the cachedb_perfd contrib module for OpenSIPS: a
+CacheDB backend for the perfcached daemon, through libperfd.
 %endif
 
 %if 0%{?_with_auth_jwt:1}
@@ -2478,6 +2495,12 @@ fi
 %files -n %{name}-module-contrib-nats-consumer
 %{_libdir}/opensips/modules/nats_consumer.so
 %doc docdir/README.nats_consumer
+%endif
+
+%if 0%{?_with_perfd:1}
+%files -n %{name}-module-contrib-cachedb-perfd
+%{_libdir}/opensips/modules/cachedb_perfd.so
+%doc docdir/README.cachedb_perfd
 %endif
 
 %if 0%{?_with_auth_jwt:1}
