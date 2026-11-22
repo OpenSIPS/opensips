@@ -134,7 +134,7 @@ route {
 def th_params(enc, url=None, extra=()):
     p = ['modparam("topology_hiding", "th_contact_encode_param_password", '
          '"thinfo:%s:%s")' % (PASSWD, enc)]
-    if url:
+    if url is not None:
         p.append('modparam("topology_hiding", "th_state_url", "%s")' % url)
     for name, val in extra:
         v = val if isinstance(val, int) else '"%s"' % val
@@ -1029,6 +1029,45 @@ def scen_badct():
         b.sock.close()
 
 
+def scen_backend():
+    print('== empty th_state_url; a stored dialog while the store is down')
+    px = Proxy('url_empty', th_params('C', '', []))
+    check('[C] th_state_url "" means no storage', px.alive(),
+          px.lines('ERROR:')[-2:])
+    px.stop()
+    port = BASE + 5
+    redis = redis_start(port)
+    px = Proxy('down2', th_params('S', 'redis:th://127.0.0.1:%d/' % port))
+    a, b = new_pair()
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b)
+        check('[S] stored while the store is up',
+              d_sub is not None and KEY_RE.match(req.thinfo() or ''))
+        if d_sub is None:
+            return
+        redis.terminate()
+        redis.wait()
+        d_ntf.request('NOTIFY', ['Event: presence',
+                                 'Subscription-State: active;expires=600'])
+        r = b.recv()
+        check('[S] a stored dialog cannot be routed while the store is down',
+              r is not None and r.code == 404 and px.alive(), r and r.first)
+        redis = redis_start(port)
+        time.sleep(6)
+        d2, n2, req2, rpl2 = subscribe_dialog(a, b)
+        k2 = req2 and req2.thinfo()
+        check('[S] storing resumes once the store is back',
+              k2 and KEY_RE.match(k2) and
+              rcli('EXISTS', 'th:' + k2[1:], port=port) == '1', k2)
+    finally:
+        px.stop()
+        if redis.poll() is None:
+            redis.terminate()
+            redis.wait()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -1053,6 +1092,7 @@ SCENARIOS = {
     'spiral': scen_spiral,
     'decoded': scen_decoded,
     'badct': scen_badct,
+    'backend': scen_backend,
 }
 
 

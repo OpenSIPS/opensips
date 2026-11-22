@@ -50,6 +50,7 @@
 
 #define TH_STATE_MAX_LEN 4096
 #define TH_PUT_WARN_PERIOD 60
+#define TH_RECONNECT_PERIOD 5
 
 #define SUB_STATE_HDR "Subscription-State"
 #define SUB_STATE_HDR_LEN (sizeof(SUB_STATE_HDR) - 1)
@@ -94,6 +95,9 @@ static int th_store_check_scheme(void)
 
 int th_store_init(int stored_encoding)
 {
+	if (th_state_url.s && !*th_state_url.s)
+		th_state_url.s = NULL;
+
 	if (!th_state_url.s) {
 		if (stored_encoding) {
 			LM_ERR("encoding type S needs th_state_url\n");
@@ -138,18 +142,34 @@ int th_store_init(int stored_encoding)
 	return 0;
 }
 
+/* connects, or retries a failed connection once in a while */
+static cachedb_con *th_store_conn(void)
+{
+	static time_t last;
+	time_t now;
+
+	if (th_cdbc || !th_store_on)
+		return th_cdbc;
+
+	now = time(NULL);
+	if (last && now - last < TH_RECONNECT_PERIOD)
+		return NULL;
+	last = now;
+
+	th_cdbc = th_cdbf.init(&th_state_url);
+	if (!th_cdbc)
+		LM_WARN("cannot connect to th_state_url %s, retrying in %d s\n",
+			db_url_escape(&th_state_url), TH_RECONNECT_PERIOD);
+	return th_cdbc;
+}
+
 int th_store_child_init(void)
 {
 	if (!th_store_on)
 		return 0;
 
-	th_cdbc = th_cdbf.init(&th_state_url);
-	if (!th_cdbc) {
-		LM_ERR("cannot connect to th_state_url %s\n",
-			db_url_escape(&th_state_url));
-		return -1;
-	}
-
+	/* down now, the states go inline until it comes back */
+	th_store_conn();
 	return 0;
 }
 
@@ -588,7 +608,7 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 	char *p;
 	int ttl;
 
-	if (!th_cdbc) {
+	if (!th_store_conn()) {
 		th_put_failed();
 		return -1;
 	}
@@ -750,7 +770,7 @@ int th_store_fetch(struct sip_msg *msg, const str *wire, const str *pw)
 		return -1;
 	}
 
-	if (!th_cdbc) {
+	if (!th_store_conn()) {
 		LM_ERR("not connected to th_state_url\n");
 		return -1;
 	}
@@ -812,7 +832,7 @@ void th_store_drop_rejected(struct sip_msg *rpl, const str *pw)
 	char key[TH_KEY_LEN];
 	str *full;
 
-	if (!th_cdbc || rpl->REPLY_STATUS < 300 ||
+	if (!th_store_conn() || rpl->REPLY_STATUS < 300 ||
 	th_msg_method(rpl) != METHOD_SUBSCRIBE)
 		return;
 
@@ -837,7 +857,7 @@ void th_store_answered(struct sip_msg *rpl, const str *pw)
 	unsigned int se;
 	int ttl;
 
-	if (!th_cdbc || rpl->REPLY_STATUS < 200 || rpl->REPLY_STATUS >= 300)
+	if (!th_store_conn() || rpl->REPLY_STATUS < 200 || rpl->REPLY_STATUS >= 300)
 		return;
 
 	if (!rpl->callid || parse_from_header(rpl) < 0 ||
