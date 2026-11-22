@@ -702,6 +702,36 @@ def scen_ttlcap():
     px.stop()
 
 
+def scen_expires():
+    print('== where a lifetime is read from: REGISTER vs SUBSCRIBE')
+    rcli('FLUSHALL')
+    px = Proxy('exp', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b)
+        n_key = rpl and rpl.thinfo()
+        check('[S] subscription set up', d_sub is not None and n_key)
+        if d_sub is None:
+            return
+        rreq, rrpl = transact(d_sub, b, 'SUBSCRIBE', [
+            'Contact: <%s>;expires=0' % a.contact, 'Event: presence',
+            'Expires: 600'], rhdrs=['Expires: 600'], contact=False)
+        check('[S] a Contact ;expires=0 does not end a SUBSCRIBE refresh',
+              rrpl is not None and rrpl.code == 200 and ttl(n_key) >= 590,
+              ttl(n_key))
+        d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+        req, rpl = transact(d, b, 'REGISTER', ['Expires: 7200'],
+                            rhdrs=['Expires: 7200'])
+        key = req and req.thinfo()
+        check('[S] REGISTER kept for its Expires plus 30 s',
+              key and KEY_RE.match(key) and 7225 <= ttl(key) <= 7230,
+              key and ttl(key))
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -718,6 +748,7 @@ SCENARIOS = {
     'miss': scen_miss,
     'storedown': scen_storedown,
     'ttlcap': scen_ttlcap,
+    'expires': scen_expires,
 }
 
 

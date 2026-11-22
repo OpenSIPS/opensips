@@ -226,15 +226,16 @@ int th_store_is_key(const str *val)
 		val->s[0] == TH_KEY_MARKER;
 }
 
-/* Contact ;expires first, then the Expires header (RFC 3261 10.2.1.1) */
-static long th_msg_expires(struct sip_msg *msg)
+/* the Contact ;expires only means something to a REGISTER (RFC 3261
+ * 10.2.1.1), where it comes before the Expires header */
+static long th_msg_expires(struct sip_msg *msg, int ct_param)
 {
 	exp_body_t *exp;
 	contact_t *ct;
 	unsigned int ct_exp;
 
-	if (msg->contact ||
-	(parse_headers(msg, HDR_CONTACT_F, 0) == 0 && msg->contact)) {
+	if (ct_param && (msg->contact ||
+	(parse_headers(msg, HDR_CONTACT_F, 0) == 0 && msg->contact))) {
 		if (msg->contact->parsed || parse_contact(msg->contact) == 0) {
 			ct = ((contact_body_t *)msg->contact->parsed)->contacts;
 			if (ct && ct->expires && ct->expires->body.len &&
@@ -314,7 +315,7 @@ static long th_sub_expires(struct sip_msg *msg, int method)
 		expires = th_notify_sub_expires(msg);
 
 	if (expires < 0)
-		expires = th_msg_expires(msg);
+		expires = th_msg_expires(msg, 0);
 
 	return expires;
 }
@@ -395,6 +396,13 @@ static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 		se.interval > 0)
 			return th_ttl(se.interval);
 		return th_state_ttl;
+	case METHOD_REGISTER:
+		expires = th_msg_expires(msg, 1);
+		if (expires < 0 && ttl_src)
+			expires = th_msg_expires(ttl_src, 1);
+		if (expires < 0)
+			return th_state_ttl;
+		return expires ? th_ttl(expires) : th_state_ttl_short;
 	case METHOD_OPTIONS:
 	case METHOD_MESSAGE:
 	case METHOD_INFO:
