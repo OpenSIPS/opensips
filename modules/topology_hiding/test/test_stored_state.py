@@ -80,6 +80,9 @@ def th_keys():
 
 
 def ttl(key):
+    """-2 for a missing key, as redis says; -3 when there is no key at all"""
+    if not key:
+        return -3
     return int(rcli('TTL', 'th:' + key[1:]))
 
 
@@ -155,10 +158,33 @@ class Proxy:
         self.p = subprocess.Popen([OPENSIPS, '-F', '-f', cfg, '-w', work],
                                   stdout=subprocess.DEVNULL,
                                   stderr=open(self.log, 'w'))
-        time.sleep(1.5)
+        self.wait_ready()
         if must_start:
             check('proxy %s started' % name, self.alive(),
                   ''.join(self.lines('ERROR:')[-3:]).strip())
+
+    def wait_ready(self):
+        """a Max-Forwards: 0 OPTIONS gets a 483 once the workers run"""
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.bind(('127.0.0.1', 0))
+        probe.settimeout(0.2)
+        port = probe.getsockname()[1]
+        for _ in range(50):
+            if not self.alive():
+                break
+            probe.sendto(('OPTIONS sip:127.0.0.1:%d SIP/2.0\r\n'
+                          'Via: SIP/2.0/UDP 127.0.0.1:%d;branch=z9hG4bK%s\r\n'
+                          'Max-Forwards: 0\r\nFrom: <sip:p@t>;tag=1\r\n'
+                          'To: <sip:p@t>\r\nCall-ID: %s\r\n'
+                          'CSeq: 1 OPTIONS\r\nContent-Length: 0\r\n\r\n'
+                          % (BASE, port, uuid.uuid4().hex[:8],
+                             uuid.uuid4().hex)).encode(), PROXY)
+            try:
+                if b' 483 ' in probe.recv(65535):
+                    break
+            except socket.timeout:
+                pass
+        probe.close()
 
     def alive(self):
         return self.p.poll() is None
@@ -222,7 +248,6 @@ class UA:
         self.name, self.port = name, port
         self.contact = 'sip:%s@127.0.0.1:%d;transport=udp' % (user, port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(('127.0.0.1', port))
         self.sock.settimeout(3)
 
@@ -463,8 +488,8 @@ def scen_invite(enc):
                       '%s %s' % (k1, k2))
             else:
                 check('[S] INVITE without session timers stays inline',
-                      not KEY_RE.match(req.thinfo() or '') and
-                      not KEY_RE.match(rpl.thinfo() or '') and
+                      req.thinfo() and not KEY_RE.match(req.thinfo()) and
+                      rpl.thinfo() and not KEY_RE.match(rpl.thinfo()) and
                       len(th_keys()) == 2, '%s %s' % (req.thinfo(), th_keys()))
         check('[%s] proxy logged no ERROR' % enc, not px.lines('ERROR:'),
               px.lines('ERROR:')[:3])
@@ -562,9 +587,12 @@ def scen_options():
             if not ok:
                 continue
             if opt is None:
-                check('[%s] OPTIONS state stored for th_state_ttl_short' % tag,
-                      KEY_RE.match(req.thinfo() or '') and
-                      0 < ttl(req.thinfo()) <= 60, req.thinfo())
+                check('[%s] OPTIONS and its reply stored for th_state_ttl_short'
+                      % tag, KEY_RE.match(req.thinfo() or '') and
+                      KEY_RE.match(rpl.thinfo() or '') and
+                      0 < ttl(req.thinfo()) <= 60 and
+                      0 < ttl(rpl.thinfo()) <= 60,
+                      '%s %s' % (req.thinfo(), rpl.thinfo()))
             else:
                 check('[%s] OPTIONS and its reply carry no state' % tag,
                       req.contact_uri() == bare and
@@ -597,20 +625,28 @@ def scen_switch():
     print('== switching C -> S -> C in place keeps in-flight dialogs')
     rcli('FLUSHALL')
     sub, ntf = new_pair()
+    d2_ntf = None
     px = Proxy('sw_c', th_params('C'))
     try:
         d1_sub, d1_ntf, req, rpl = subscribe_dialog(sub, ntf, expires=3600)
+        check('[C] compact dialog set up', d1_ntf is not None)
     finally:
         px.stop()
+    if d1_ntf is None:
+        sub.sock.close()
+        ntf.sock.close()
+        return
     px = Proxy('sw_s', th_params('S', REDIS_URL))
     try:
         nreq, nrpl = notify(d1_ntf, sub, 'active;expires=3600')
         check('[C->S] in-flight compact dialog still routed',
               nreq is not None and same_target(nreq.ruri, sub.contact) and
               nrpl is not None and nrpl.code == 200)
-        check('[C->S] and it stays inline',
+        check('[C->S] and it stays inline, its reply too',
               nreq is not None and nreq.thinfo() and
-              not KEY_RE.match(nreq.thinfo()), nreq and nreq.thinfo())
+              not KEY_RE.match(nreq.thinfo()) and nrpl is not None and
+              nrpl.thinfo() and not KEY_RE.match(nrpl.thinfo()),
+              '%s %s' % (nreq and nreq.thinfo(), nrpl and nrpl.thinfo()))
         d2_sub, d2_ntf, req2, rpl2 = subscribe_dialog(sub, ntf, expires=3600)
         check('[C->S] a new dialog gets stored keys',
               req2 is not None and KEY_RE.match(req2.thinfo() or ''))
