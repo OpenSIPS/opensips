@@ -103,6 +103,7 @@ loadmodule "maxfwd.so"
 loadmodule "sipmsgops.so"
 loadmodule "cachedb_redis.so"
 loadmodule "topology_hiding.so"
+modparam("tm", "fr_timeout", 2)
 %(params)s
 
 route {
@@ -1068,6 +1069,29 @@ def scen_backend():
         b.sock.close()
 
 
+def scen_local408():
+    print('== an unanswered initial SUBSCRIBE leaves no state (local 408)')
+    rcli('FLUSHALL')
+    px = Proxy('l408', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    try:
+        d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+        d.request('SUBSCRIBE', ['Event: presence', 'Expires: 3600'])
+        req = b.recv()
+        key = req and req.thinfo()
+        a.sock.settimeout(6)
+        r = a.recv()
+        a.sock.settimeout(3)
+        check('[S] the proxy answers 408 itself',
+              r is not None and r.code == 408, r and r.first)
+        check('[S] the subscriber state is dropped',
+              key and KEY_RE.match(key) and ttl(key) == -2, key and ttl(key))
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -1093,6 +1117,7 @@ SCENARIOS = {
     'decoded': scen_decoded,
     'badct': scen_badct,
     'backend': scen_backend,
+    'local408': scen_local408,
 }
 
 

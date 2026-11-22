@@ -825,26 +825,42 @@ int th_store_unpack(str *routes, str *contact, str *flags, str *sock,
 	return 0;
 }
 
-/* a rejected (or challenged) initial SUBSCRIBE gets no dialog to ever use
- * its subscriber's state; a retry under the same key stores it again */
-void th_store_drop_rejected(struct sip_msg *rpl, const str *pw)
+static void th_store_drop_subscriber(struct sip_msg *msg, const str *pw)
 {
 	char key[TH_KEY_LEN];
 	str *full;
 
-	if (!th_store_conn() || rpl->REPLY_STATUS < 300 ||
-	th_msg_method(rpl) != METHOD_SUBSCRIBE)
+	if (!th_store_conn() || !msg->callid || !msg->from || !msg->from->parsed ||
+	!get_from(msg)->tag_value.len)
 		return;
 
-	if (!rpl->callid || parse_from_header(rpl) < 0 ||
-	!get_from(rpl)->tag_value.len)
-		return;
-
-	th_make_key(pw, &rpl->callid->body, &get_from(rpl)->tag_value, key);
+	th_make_key(pw, &msg->callid->body, &get_from(msg)->tag_value, key);
 	full = th_full_key(key);
 	if (th_cdbf.remove(th_cdbc, full) < 0)
 		LM_WARN("failed to drop <%.*s>, leaving it to expire\n",
 			full->len, full->s);
+}
+
+/* a rejected (or challenged) initial SUBSCRIBE gets no dialog to ever use
+ * its subscriber's state; a retry under the same key stores it again */
+void th_store_drop_rejected(struct sip_msg *rpl, const str *pw)
+{
+	if (rpl->REPLY_STATUS < 300 || th_msg_method(rpl) != METHOD_SUBSCRIBE ||
+	parse_from_header(rpl) < 0)
+		return;
+
+	th_store_drop_subscriber(rpl, pw);
+}
+
+/* the same for a final reply of our own (a timeout, t_reply()), which
+ * comes with the transaction's copy of the request */
+void th_store_drop_local(struct sip_msg *req, int code, const str *pw)
+{
+	if (code < 300 || req->first_line.type != SIP_REQUEST ||
+	req->first_line.u.request.method_value != METHOD_SUBSCRIBE)
+		return;
+
+	th_store_drop_subscriber(req, pw);
 }
 
 /* a stored INVITE got its lifetime from its own Session-Expires, while

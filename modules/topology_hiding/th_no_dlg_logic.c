@@ -172,6 +172,7 @@ static int encoded_kind;
 
 static inline int th_no_dlg_onrequest(struct sip_msg *, uint16_t, str *);
 static void th_no_dlg_onreply(struct cell *, int, struct tmcb_params *);
+static void th_no_dlg_local_reply(struct cell *, int, struct tmcb_params *);
 static int th_no_dlg_seq_handling(struct sip_msg *, str *, decode_info_fn, const thinfo_options_t *);
 static inline int th_no_dlg_one_way_hiding(const struct socket_info *);
 static struct lump* th_no_dlg_add_auto_record_route(struct sip_msg *, uint16_t, struct lump *);
@@ -230,6 +231,11 @@ int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_f
         LM_ERR("failed to register TMCB\n");
         goto error;
     }
+
+    /* a final reply of our own skips TMCB_RESPONSE_FWDED */
+    if (encoded_kind == TH_KIND_SUB && req->REQ_METHOD == METHOD_SUBSCRIBE &&
+    tm_api.register_tmcb(req, 0, TMCB_RESPONSE_OUT, th_no_dlg_local_reply, NULL, NULL) < 0)
+        LM_WARN("a local final reply will leave the subscriber state to expire\n");
 
     return 1;
 error:
@@ -491,6 +497,11 @@ static struct lump *anchor_after_last_record_route(struct sip_msg *msg) {
     }
 
     return anchor_lump(msg, offset, HDR_RECORDROUTE_T);
+}
+
+static void th_no_dlg_local_reply(struct cell *t, int type, struct tmcb_params *param) {
+	if (param->rpl == FAKED_REPLY)
+		th_store_drop_local(param->req, param->code, &encoding_options->param_password);
 }
 
 static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *param) {
