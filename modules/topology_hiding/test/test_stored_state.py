@@ -1007,6 +1007,28 @@ def scen_decoded():
         b.sock.close()
 
 
+def scen_badct():
+    print('== a bad Contact is refused once, not retried inline')
+    rcli('FLUSHALL')
+    px = Proxy('badct', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    try:
+        d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+        d.request('SUBSCRIBE', ['Contact: <%s>, <sip:x@127.0.0.1>' % a.contact,
+                                'Event: presence', 'Expires: 600'],
+                  contact=False)
+        b.recv()
+        time.sleep(0.3)
+        bad = px.lines('bad Contact HDR')
+        check('[S] the bad Contact is logged once', len(bad) == 1,
+              '%d lines' % len(bad))
+        check('[S] nothing is stored for it', not th_keys(), th_keys())
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -1030,6 +1052,7 @@ SCENARIOS = {
     'answer': scen_answer,
     'spiral': scen_spiral,
     'decoded': scen_decoded,
+    'badct': scen_badct,
 }
 
 

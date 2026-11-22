@@ -1142,7 +1142,7 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	struct lump* lump;
 	char *prefix = NULL,*suffix = NULL,*ct_username = NULL;
 	int prefix_len, suffix_len = 0, ct_username_len = 0;
-	int kind;
+	int kind, not_stored = 0;
 
 	encoded_kind = 0;
 	struct sip_uri ctu;
@@ -1210,18 +1210,23 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 
 	suffix = NULL;
 	if (th_store_no_state(msg)) {
-		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, 0, NULL, &suffix_len);
+		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, 0, NULL,
+			&suffix_len, &not_stored);
 	} else {
 		kind = encoding_options->stored ? th_store_wanted(msg, ttl_src, store) : 0;
-		if (kind && (suffix = th_store_ct_suffix(msg, &routes, flags,
-		&encoding_options->param_name, &encoding_options->param_password,
-		kind, ttl_src, &suffix_len)))
-			encoded_kind = kind;
+		if (kind) {
+			suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
+				&encoding_options->param_password, kind, ttl_src, &suffix_len, &not_stored);
+			if (suffix)
+				encoded_kind = kind;
+		}
 		/* a state the store did not take travels inline, as it would unstored */
-		if (!suffix && encoding_options->compact_encoding)
-			suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
-		else if (!suffix)
-			suffix = build_encoded_contact_suffix_legacy(msg, routes, &suffix_len, flags);
+		if (!kind || not_stored) {
+			if (encoding_options->compact_encoding)
+				suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
+			else
+				suffix = build_encoded_contact_suffix_legacy(msg, routes, &suffix_len, flags);
+		}
 	}
 
 	if (!suffix) {

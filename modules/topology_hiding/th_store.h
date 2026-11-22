@@ -53,10 +53,11 @@ int th_store_no_state(struct sip_msg *msg);
 int th_store_is_key(const str *val);
 int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store);
 
-/* @param_name NULL: no state at all, only the passed params */
+/* @param_name NULL: no state at all, only the passed params; @not_stored
+ * is set when the state could not be stored (and may go inline) */
 char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 		const str *param_name, const str *pw, int kind,
-		struct sip_msg *ttl_src, int *suffix_len);
+		struct sip_msg *ttl_src, int *suffix_len, int *not_stored);
 
 int th_store_fetch(struct sip_msg *msg, const str *wire, const str *pw);
 int th_store_unpack(str *routes, str *contact, str *flags, str *sock,

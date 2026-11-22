@@ -607,7 +607,8 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 	val.len = rr_set->len + contact->len + flags_str.len + sock->len +
 		kind_str.len + 5 * INT2STR_MAX_LEN;
 	if (val.len > TH_STATE_MAX_LEN) {
-		LM_ERR("topology hiding state too long (%d)\n", val.len);
+		LM_DBG("topology hiding state too long to store (%d)\n", val.len);
+		th_put_failed();
 		return -1;
 	}
 
@@ -639,7 +640,7 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 
 char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 		const str *param_name, const str *pw, int kind,
-		struct sip_msg *ttl_src, int *suffix_len)
+		struct sip_msg *ttl_src, int *suffix_len, int *not_stored)
 {
 	contact_body_t *cb;
 	contact_t *ct;
@@ -668,12 +669,8 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 		return NULL;
 	}
 
-	if (param_name) {
-		if (th_store_put(msg, pw, rr_set, &ct->uri, flags, kind, ttl_src,
-		key) < 0)
-			return NULL;
+	if (param_name)
 		len += 1 /* ; */ + param_name->len + 1 /* = */ + TH_KEY_WIRE_LEN;
-	}
 
 	for (el = th_param_list; el; el = el->next)
 		for (i = 0; i < ctu.u_params_no; i++)
@@ -688,6 +685,14 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 	suffix = pkg_malloc(len);
 	if (!suffix) {
 		LM_ERR("no more pkg\n");
+		return NULL;
+	}
+
+	/* stored last, so that no later failure leaves it behind */
+	if (param_name && th_store_put(msg, pw, rr_set, &ct->uri, flags, kind,
+	ttl_src, key) < 0) {
+		pkg_free(suffix);
+		*not_stored = 1;
 		return NULL;
 	}
 
