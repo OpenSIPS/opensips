@@ -107,10 +107,23 @@ issue a PUBLISH. The PUBLISH is issued when REGISTER is saved
 in location table.
 
 
+The function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+With mid_registrar, a REGISTER forwarded to the main registrar
+is saved in the location table when its 200 OK reply comes
+back, in the reply's processing context; call
+pua_set_publish() from the onreply_route as well, so the
+first registration publishes presence too.
+
+
 ```opensips title="pua_set_publish usage"
 ...
 if(is_method("REGISTER") && $fu=~"john@opensips.org") 
 	pua_set_publish();
+...
+onreply_route {
+	if (is_method("REGISTER") && $rs == 200)
+		pua_set_publish();
+}
 ...
 ```
 <!-- CONTRIBUTORS -->

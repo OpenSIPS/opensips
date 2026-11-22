@@ -71,7 +71,7 @@ static void destroy(void);
 
 static const cmd_export_t cmds[]={
 	{"pua_set_publish", (cmd_function)pua_set_publish, {{0,0,0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
