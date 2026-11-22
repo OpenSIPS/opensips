@@ -942,6 +942,41 @@ def scen_answer():
         b.sock.close()
 
 
+def scen_spiral():
+    print('== a request hidden twice (spiral) keeps the first state')
+    rcli('FLUSHALL')
+    px = Proxy('spiral', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    c = UA('far', BASE + 4, 'far')
+    try:
+        se = ['Supported: timer', 'Session-Expires: 1800;refresher=uac']
+        d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+        d.request('INVITE', se)
+        req = b.recv()
+        k = req and req.thinfo()
+        check('[S] first pass stores the caller', k and KEY_RE.match(k), k)
+        if not k:
+            return
+        # b sends it on through the proxy again, Contact as it got it
+        d2 = Dialog(b, 'sip:%s@127.0.0.1:%d' % (c.name, c.port),
+                    callid=d.callid)
+        d2.ltag, d2.luri = d.ltag, d.luri
+        d2.request('INVITE', se + ['Contact: <%s>' % req.contact_uri()],
+                   contact=False)
+        req2 = c.recv()
+        check('[S] the second pass nests its state inline',
+              req2 is not None and req2.thinfo() and
+              not KEY_RE.match(req2.thinfo()), req2 and req2.thinfo())
+        check('[S] the first state still holds the real Contact',
+              a.contact.split(';')[0] in rcli('GET', 'th:' + k[1:]),
+              rcli('GET', 'th:' + k[1:]))
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+        c.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -963,6 +998,7 @@ SCENARIOS = {
     'teardown': scen_teardown,
     'calldlg': scen_calldlg,
     'answer': scen_answer,
+    'spiral': scen_spiral,
 }
 
 

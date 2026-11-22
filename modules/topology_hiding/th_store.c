@@ -447,6 +447,30 @@ static unsigned int th_session_timer(struct sip_msg *msg)
 
 #define th_has_session_timer(_msg) (th_session_timer(_msg) > 0)
 
+/* a Contact hidden by a previous pass of ours (a spiral, or another node
+ * sharing the backend) derives the very key it carries */
+static int th_ct_holds_key(struct sip_msg *msg)
+{
+	contact_t *ct;
+	struct sip_uri u;
+	int i;
+
+	if ((!msg->contact && (parse_headers(msg, HDR_CONTACT_F, 0) < 0 ||
+	!msg->contact)) || (!msg->contact->parsed &&
+	parse_contact(msg->contact) < 0))
+		return 0;
+
+	ct = ((contact_body_t *)msg->contact->parsed)->contacts;
+	if (!ct || parse_uri(ct->uri.s, ct->uri.len, &u) < 0)
+		return 0;
+
+	for (i = 0; i < u.u_params_no; i++)
+		if (th_store_is_key(&u.u_val[i]))
+			return 1;
+
+	return 0;
+}
+
 /* @store: TH_STORE_DECIDE for a new dialog, else what it came in with (0 or
  * its kind); @req is the request a reply answers. Returns the kind of
  * dialog to store the state for, or 0 to send it inline */
@@ -461,6 +485,10 @@ int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store)
 	/* a reply tagged as its caller would take the caller's key */
 	if (msg->first_line.type == SIP_REPLY && parse_from_header(msg) == 0 &&
 	str_match(tag, &get_from(msg)->tag_value))
+		return 0;
+
+	/* stored again, it would point at itself: nest it inline instead */
+	if (th_ct_holds_key(msg))
 		return 0;
 
 	method = th_msg_method(msg);
