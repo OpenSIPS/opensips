@@ -918,6 +918,30 @@ def scen_calldlg():
             b.sock.close()
 
 
+def scen_answer():
+    print('== the answer of a stored INVITE sets the caller lifetime')
+    rcli('FLUSHALL')
+    px = Proxy('answer', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    try:
+        for rse, lo, hi in ((None, 3590, 3600), (900, 925, 930)):
+            se = ['Supported: timer', 'Session-Expires: 1800;refresher=uac']
+            d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+            rh = ['Require: timer', 'Session-Expires: %d;refresher=uac' % rse] \
+                if rse else []
+            req, rpl = transact(d, b, 'INVITE', se, rhdrs=rh,
+                                peer_tag=uuid.uuid4().hex[:10])
+            ka = req and req.thinfo()
+            what = 'with Session-Expires %d' % rse if rse else 'without timers'
+            check('[S] answered %s: caller kept %d..%d s' % (what, lo, hi),
+                  ka and KEY_RE.match(ka) and lo <= ttl(ka) <= hi,
+                  ka and ttl(ka))
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -938,6 +962,7 @@ SCENARIOS = {
     'keys': scen_keys,
     'teardown': scen_teardown,
     'calldlg': scen_calldlg,
+    'answer': scen_answer,
 }
 
 

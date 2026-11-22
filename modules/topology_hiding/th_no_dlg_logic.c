@@ -103,6 +103,8 @@ struct th_no_dlg_param {
 	/* what its replies are encoded with: TH_STORE_DECIDE for a new dialog,
 	 * else 0 (inline) or the stored dialog's kind */
 	int store;
+	/* the request's own state was stored for a call */
+	int retime;
 };
 
 static char decoded_uri_str[MAX_ENCODED_URI_SIZE * 3];
@@ -165,6 +167,8 @@ static decoded_info_buffer_t decode_info_buffer_legacy(str *, const thinfo_optio
 static decoded_info_buffer_t decode_info_buffer_stored(str *, const thinfo_options_t *);
 
 static int th_no_dlg_encode_contact(struct sip_msg *, uint16_t, str, str *, int, struct sip_msg *);
+/* the kind the last th_no_dlg_encode_contact() stored its state for, or 0 */
+static int encoded_kind;
 
 static inline int th_no_dlg_onrequest(struct sip_msg *, uint16_t, str *);
 static void th_no_dlg_onreply(struct cell *, int, struct tmcb_params *);
@@ -215,10 +219,12 @@ int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_f
 
 	p->flags = extra_flags;
 
+    encoded_kind = 0;
     if (th_no_dlg_onrequest(req, extra_flags, username) < 0) {
         LM_ERR("Failed to do topology_hiding on request\n");
         goto error;
     }
+    p->retime = encoded_kind == TH_KIND_CALL;
 
     if (tm_api.register_tmcb(req, 0, TMCB_RESPONSE_FWDED, th_no_dlg_onreply, p, shm_free_wrap) < 0) {
         LM_ERR("failed to register TMCB\n");
@@ -524,6 +530,8 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 
 	if (!is_sequential && encoding_options->stored)
 		th_store_drop_rejected(rpl, &encoding_options->param_password);
+	if (p->retime && encoding_options->stored)
+		th_store_answered(rpl, &encoding_options->param_password);
 
 	LM_DBG("Original request trusted send sock '%d' reply is trusted send sock '%d'\n", req_one_way_hiding, one_way_hiding);
 
@@ -1135,6 +1143,8 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	char *prefix = NULL,*suffix = NULL,*ct_username = NULL;
 	int prefix_len, suffix_len = 0, ct_username_len = 0;
 	int kind;
+
+	encoded_kind = 0;
 	struct sip_uri ctu;
 	str contact;
 
@@ -1203,9 +1213,10 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, 0, NULL, &suffix_len);
 	} else {
 		kind = encoding_options->stored ? th_store_wanted(msg, ttl_src, store) : 0;
-		if (kind)
-			suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
-				&encoding_options->param_password, kind, ttl_src, &suffix_len);
+		if (kind && (suffix = th_store_ct_suffix(msg, &routes, flags,
+		&encoding_options->param_name, &encoding_options->param_password,
+		kind, ttl_src, &suffix_len)))
+			encoded_kind = kind;
 		/* a state the store did not take travels inline, as it would unstored */
 		if (!suffix && encoding_options->compact_encoding)
 			suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
@@ -1584,7 +1595,7 @@ static str ct_user_buf = { .s = user_buf, .len = 0 };
 static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn decode_fn, const thinfo_options_t *options) {
 	char *msg_buf = NULL, *route_free_str = NULL;
 	str route_s = STR_NULL;
-	struct th_no_dlg_param *param = NULL;
+	struct th_no_dlg_param *param = NULL, *reg;
 	struct hdr_field *it;
 	struct sip_uri contact_uri = { 0 };
 	int route_flags = ROUTE_SUCCESS;
@@ -1724,6 +1735,7 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 	}
 
 	route_s = param->routes;
+	reg = param;
 	param = NULL;
 
 	if (decoded_buffer.sock != NULL) {
@@ -1760,6 +1772,8 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 			}
             return TOPOH_MATCH_FAILURE;
         }
+		/* still ours: no reply can come before the request is sent */
+		reg->retime = encoded_kind == TH_KIND_CALL;
 
 		if (route_free_str != NULL) {
 			pkg_free(route_free_str);

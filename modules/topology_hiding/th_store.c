@@ -436,13 +436,16 @@ static int th_msg_target_refresh(struct sip_msg *msg)
 	}
 }
 
-static int th_has_session_timer(struct sip_msg *msg)
+/* the Session-Expires interval, 0 if none */
+static unsigned int th_session_timer(struct sip_msg *msg)
 {
 	struct session_expires se;
 
-	return parse_session_expires(msg, &se) == parse_sst_success &&
-		se.interval > 0;
+	return parse_session_expires(msg, &se) == parse_sst_success ?
+		se.interval : 0;
 }
+
+#define th_has_session_timer(_msg) (th_session_timer(_msg) > 0)
 
 /* @store: TH_STORE_DECIDE for a new dialog, else what it came in with (0 or
  * its kind); @req is the request a reply answers. Returns the kind of
@@ -789,4 +792,38 @@ void th_store_drop_rejected(struct sip_msg *rpl, const str *pw)
 	if (th_cdbf.remove(th_cdbc, full) < 0)
 		LM_WARN("failed to drop <%.*s>, leaving it to expire\n",
 			full->len, full->s);
+}
+
+/* a stored INVITE got its lifetime from its own Session-Expires, while
+ * the answer tells what was agreed: none at all means no refreshes, so the
+ * caller's state has to last for th_state_ttl (RFC 4028 7.2) */
+void th_store_answered(struct sip_msg *rpl, const str *pw)
+{
+	char key[TH_KEY_LEN];
+	str val = STR_NULL, *full;
+	unsigned int se;
+	int ttl;
+
+	if (!th_cdbc || rpl->REPLY_STATUS < 200 || rpl->REPLY_STATUS >= 300)
+		return;
+
+	if (!rpl->callid || parse_from_header(rpl) < 0 ||
+	!get_from(rpl)->tag_value.len)
+		return;
+
+	se = th_session_timer(rpl);
+	ttl = se ? th_ttl(se) : th_state_ttl;
+
+	th_make_key(pw, &rpl->callid->body, &get_from(rpl)->tag_value, key);
+	full = th_full_key(key);
+	if (th_cdbf.get(th_cdbc, full, &val) < 0 || !val.len) {
+		if (val.s)
+			pkg_free(val.s);
+		return;
+	}
+
+	if (th_cdbf.set(th_cdbc, full, &val, ttl) < 0)
+		LM_WARN("failed to set the lifetime of <%.*s> to %d s\n",
+			full->len, full->s, ttl);
+	pkg_free(val.s);
 }
