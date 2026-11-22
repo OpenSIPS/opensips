@@ -436,12 +436,21 @@ static int th_msg_target_refresh(struct sip_msg *msg)
 	}
 }
 
-/* @store: TH_STORE_DECIDE for a new state, else what the dialog came in
- * with; @req is the request a reply answers */
-int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store)
+static int th_has_session_timer(struct sip_msg *msg)
 {
 	struct session_expires se;
+
+	return parse_session_expires(msg, &se) == parse_sst_success &&
+		se.interval > 0;
+}
+
+/* @store: TH_STORE_DECIDE for a new dialog, else what it came in with (0 or
+ * its kind); @req is the request a reply answers. Returns the kind of
+ * dialog to store the state for, or 0 to send it inline */
+int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store)
+{
 	str *tag;
+	int method;
 
 	if (!th_store_on || !store || !(tag = th_msg_key_tag(msg)))
 		return 0;
@@ -451,22 +460,37 @@ int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store)
 	str_match(tag, &get_from(msg)->tag_value))
 		return 0;
 
-	/* a non target refresh would overwrite its leg's state under the same
-	 * key, and the far end ignores its Contact (RFC 3261 12.2.1.2) */
-	if (th_msg_in_dialog(msg, req) && !th_msg_target_refresh(msg))
-		return 0;
+	method = th_msg_method(msg);
+	if (th_msg_in_dialog(msg, req)) {
+		if (store < 0)
+			return 0;
+		/* each usage of a dialog shares its keys: only the messages of the
+		 * one which created it may touch them, the rest go inline */
+		switch (store) {
+		case TH_KIND_CALL:
+			return (method == METHOD_INVITE || method == METHOD_UPDATE) &&
+				th_has_session_timer(msg) ? store : 0;
+		case TH_KIND_SUB:
+			return method == METHOD_SUBSCRIBE || method == METHOD_NOTIFY ?
+				store : 0;
+		default:
+			/* a non target refresh would overwrite its leg's state, and
+			 * the far end ignores its Contact (RFC 3261 12.2.1.2) */
+			return th_msg_target_refresh(msg) ? store : 0;
+		}
+	}
 
-	if (store > 0)
-		return 1;
-
-	switch (th_msg_method(msg)) {
+	switch (method) {
 	case METHOD_INVITE:
 	case METHOD_UPDATE:
 		/* only session timers bound a call, else its state stays inline */
-		return parse_session_expires(msg, &se) == parse_sst_success &&
-			se.interval > 0;
+		return th_has_session_timer(msg) ? TH_KIND_CALL : 0;
+	case METHOD_SUBSCRIBE:
+	case METHOD_NOTIFY:
+	case METHOD_REFER:
+		return TH_KIND_SUB;
 	default:
-		return 1;
+		return TH_KIND_OTHER;
 	}
 }
 
@@ -522,8 +546,11 @@ static void th_put_failed(void)
 /* kept as printable "<len>:<bytes>" fields: off the wire, the state
  * needs neither the obfuscation nor the URI-safe encoding */
 static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
-		str *contact, uint16_t flags, struct sip_msg *ttl_src, char *key)
+		str *contact, uint16_t flags, int kind, struct sip_msg *ttl_src,
+		char *key)
 {
+	char kind_buf = '0' + kind;
+	str kind_str = { &kind_buf, 1 };
 	char flags_buf[INT2STR_MAX_LEN];
 	str flags_str, val, *tag;
 	const str *sock;
@@ -547,7 +574,7 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 	sock = &msg->rcv.bind_address->sock_str;
 
 	val.len = rr_set->len + contact->len + flags_str.len + sock->len +
-		4 * INT2STR_MAX_LEN;
+		kind_str.len + 5 * INT2STR_MAX_LEN;
 	if (val.len > TH_STATE_MAX_LEN) {
 		LM_ERR("topology hiding state too long (%d)\n", val.len);
 		return -1;
@@ -563,6 +590,7 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 	p = th_pack_field(p, contact);
 	p = th_pack_field(p, &flags_str);
 	p = th_pack_field(p, sock);
+	p = th_pack_field(p, &kind_str);
 	val.len = p - val.s;
 
 	ttl = th_state_msg_ttl(msg, ttl_src);
@@ -579,8 +607,8 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 }
 
 char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
-		const str *param_name, const str *pw, struct sip_msg *ttl_src,
-		int *suffix_len)
+		const str *param_name, const str *pw, int kind,
+		struct sip_msg *ttl_src, int *suffix_len)
 {
 	contact_body_t *cb;
 	contact_t *ct;
@@ -610,7 +638,8 @@ char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
 	}
 
 	if (param_name) {
-		if (th_store_put(msg, pw, rr_set, &ct->uri, flags, ttl_src, key) < 0)
+		if (th_store_put(msg, pw, rr_set, &ct->uri, flags, kind, ttl_src,
+		key) < 0)
 			return NULL;
 		len += 1 /* ; */ + param_name->len + 1 /* = */ + TH_KEY_WIRE_LEN;
 	}
@@ -722,18 +751,21 @@ int th_store_fetch(struct sip_msg *msg, const str *wire, const str *pw)
 	return 0;
 }
 
-int th_store_unpack(str *routes, str *contact, str *flags, str *sock)
+int th_store_unpack(str *routes, str *contact, str *flags, str *sock,
+		int *kind)
 {
-	str in = th_fetched;
+	str in = th_fetched, k;
 
 	if (th_unpack_field(&in, routes) < 0 || th_unpack_field(&in, contact) < 0 ||
 	th_unpack_field(&in, flags) < 0 || th_unpack_field(&in, sock) < 0 ||
-	in.len) {
+	th_unpack_field(&in, &k) < 0 || in.len || k.len != 1 ||
+	k.s[0] < '0' + TH_KIND_CALL || k.s[0] > '0' + TH_KIND_OTHER) {
 		LM_ERR("malformed topology hiding state <%.*s>\n",
 			th_fetched.len, th_fetched.s);
 		return -1;
 	}
 
+	*kind = k.s[0] - '0';
 	return 0;
 }
 

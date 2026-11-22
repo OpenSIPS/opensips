@@ -34,6 +34,11 @@
 
 #define TH_STORE_DECIDE -1
 
+/* the usage which created a dialog, kept with its state */
+#define TH_KIND_CALL  1
+#define TH_KIND_SUB   2
+#define TH_KIND_OTHER 3
+
 extern str th_state_url;
 extern int th_state_ttl;
 extern int th_state_ttl_short;
@@ -50,11 +55,12 @@ int th_store_wanted(struct sip_msg *msg, struct sip_msg *req, int store);
 
 /* @param_name NULL: no state at all, only the passed params */
 char *th_store_ct_suffix(struct sip_msg *msg, str *rr_set, uint16_t flags,
-		const str *param_name, const str *pw, struct sip_msg *ttl_src,
-		int *suffix_len);
+		const str *param_name, const str *pw, int kind,
+		struct sip_msg *ttl_src, int *suffix_len);
 
 int th_store_fetch(struct sip_msg *msg, const str *wire, const str *pw);
-int th_store_unpack(str *routes, str *contact, str *flags, str *sock);
+int th_store_unpack(str *routes, str *contact, str *flags, str *sock,
+		int *kind);
 void th_store_drop_rejected(struct sip_msg *rpl, const str *pw);
 
 #endif

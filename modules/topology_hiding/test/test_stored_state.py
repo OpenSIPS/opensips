@@ -839,6 +839,85 @@ def scen_teardown():
         n2.sock.close()
 
 
+def call_dialog(a, b, se=1800):
+    """INVITE (with Session-Expires if @se) answered by b; ACKed."""
+    hdrs = ['Supported: timer', 'Session-Expires: %d;refresher=uac' % se] \
+        if se else []
+    d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+    btag = uuid.uuid4().hex[:10]
+    req, rpl = transact(d, b, 'INVITE', hdrs, rhdrs=hdrs, peer_tag=btag)
+    if not req or not rpl or rpl.code != 200:
+        return None, None, req, rpl
+    d.rtag, d.target = btag, rpl.contact_uri()
+    d.request('ACK', cseq=d.cseq, contact=False)
+    b.recv()
+    db = Dialog(b, d.luri, callid=d.callid)
+    db.ltag, db.rtag, db.luri = btag, d.ltag, d.ruri_aor
+    db.target = req.contact_uri()
+    return d, db, req, rpl
+
+
+def scen_calldlg():
+    print('== other usages inside an INVITE dialog leave its state alone')
+    for se in (1800, None):
+        tag = '[S%s]' % (' +SE' if se else ' no SE')
+        rcli('FLUSHALL')
+        px = Proxy('calldlg_%s' % se, th_params('S', REDIS_URL))
+        a, b = new_pair()
+        try:
+            d, db, req, rpl = call_dialog(a, b, se)
+            check('%s call set up' % tag, d is not None)
+            if d is None:
+                continue
+            keys = th_keys()
+            ka, kb = req.thinfo(), rpl.thinfo()
+            # B transfers A: REFER, 202, NOTIFYs active then terminated
+            rreq, rrpl = transact(db, a, 'REFER',
+                                  ['Refer-To: <sip:c@127.0.0.1>'], code=202)
+            nreq, nrpl = transact(d, b, 'NOTIFY', [
+                'Event: refer', 'Subscription-State: active;expires=60'])
+            treq, trpl = transact(d, b, 'NOTIFY', [
+                'Event: refer', 'Subscription-State: terminated'])
+            check('%s REFER and NOTIFYs routed' % tag,
+                  rrpl is not None and nrpl is not None and trpl is not None)
+            inl = [m.thinfo() for m in (rrpl, nreq, nrpl, treq, trpl) if m]
+            check('%s they travel inline' % tag,
+                  len(inl) == 5 and all(t and not KEY_RE.match(t) for t in inl),
+                  inl)
+            check('%s and store nothing' % tag, th_keys() == keys,
+                  '%s -> %s' % (keys, th_keys()))
+            if se:
+                check('%s the call states keep their lifetime' % tag,
+                      ttl(ka) >= 1800 and ttl(kb) >= 1800,
+                      '%d %d' % (ttl(ka), ttl(kb)))
+                # a session refresh: the request and its 2xx store again
+                se9 = ['Supported: timer', 'Session-Expires: 900;refresher=uac']
+                ireq, irpl = transact(d, b, 'INVITE', se9, rhdrs=se9)
+                check('%s a re-INVITE with SE 900 sets both lifetimes' % tag,
+                      irpl is not None and ireq.thinfo() == ka and
+                      irpl.thinfo() == kb and 925 <= ttl(ka) <= 930 and
+                      925 <= ttl(kb) <= 930,
+                      '%d %d' % (ttl(ka), ttl(kb)))
+                d.request('ACK', cseq=d.cseq, contact=False)
+                b.recv()
+                # a re-INVITE without session timers
+                ireq, irpl = transact(d, b, 'INVITE')
+                check('%s a re-INVITE without SE goes inline' % tag,
+                      ireq is not None and ireq.thinfo() and
+                      not KEY_RE.match(ireq.thinfo()) and ttl(ka) <= 930,
+                      '%s %d' % (ireq and ireq.thinfo(), ttl(ka)))
+                d.request('ACK', cseq=d.cseq, contact=False)
+                b.recv()
+            breq, brpl = transact(db, a, 'BYE', contact=False)
+            check('%s BYE still routed to the caller' % tag,
+                  breq is not None and same_target(breq.ruri, a.contact),
+                  breq and breq.ruri)
+        finally:
+            px.stop()
+            a.sock.close()
+            b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -858,6 +937,7 @@ SCENARIOS = {
     'expires': scen_expires,
     'keys': scen_keys,
     'teardown': scen_teardown,
+    'calldlg': scen_calldlg,
 }
 
 

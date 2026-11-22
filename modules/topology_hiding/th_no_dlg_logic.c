@@ -100,6 +100,9 @@ struct th_no_dlg_param {
 	str routes;
 	str username;
 	uint16_t flags;
+	/* what its replies are encoded with: TH_STORE_DECIDE for a new dialog,
+	 * else 0 (inline) or the stored dialog's kind */
+	int store;
 };
 
 static char decoded_uri_str[MAX_ENCODED_URI_SIZE * 3];
@@ -198,7 +201,8 @@ int topo_hiding_no_dlg(struct sip_msg *req, struct cell* t, unsigned int extra_f
 	}
 
 	memset(p, 0, sizeof *p);
-	
+	p->store = TH_STORE_DECIDE;
+
 	if (!(extra_flags & TOPOH_KEEP_USER)) {
 		if (params && params->ct_callee_user.len) {
 			p->username.s = (char *)(p + 1);
@@ -315,7 +319,8 @@ static int th_no_dlg_auto_route_seq_handling(struct sip_msg *msg, rr_t auto_rout
 		route_free_str = route_s.s;
 	}
 
-	if (th_no_dlg_encode_contact(msg, flags, route_s, NULL, TH_STORE_DECIDE, NULL) < 0) {
+	/* reached by its compact route only, a dialog of these stays inline */
+	if (th_no_dlg_encode_contact(msg, flags, route_s, NULL, 0, NULL) < 0) {
 		LM_ERR("Failed to encode contact header\n");
 		if (route_free_str != NULL) {
 			pkg_free(route_free_str);
@@ -629,7 +634,7 @@ static void th_no_dlg_onreply(struct cell *t, int type, struct tmcb_params *para
 			rr_free_str = route_s.s;
 		}
 
-        if (th_no_dlg_encode_contact(rpl, flags, route_s, username, TH_STORE_DECIDE, req) < 0) {
+        if (th_no_dlg_encode_contact(rpl, flags, route_s, username, p->store, req) < 0) {
             LM_ERR("Failed to encode contact header \n");
         }
     }
@@ -1129,6 +1134,7 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	struct lump* lump;
 	char *prefix = NULL,*suffix = NULL,*ct_username = NULL;
 	int prefix_len, suffix_len = 0, ct_username_len = 0;
+	int kind;
 	struct sip_uri ctu;
 	str contact;
 
@@ -1194,11 +1200,12 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 
 	suffix = NULL;
 	if (th_store_no_state(msg)) {
-		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, NULL, &suffix_len);
+		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, 0, NULL, &suffix_len);
 	} else {
-		if (encoding_options->stored && th_store_wanted(msg, ttl_src, store))
+		kind = encoding_options->stored ? th_store_wanted(msg, ttl_src, store) : 0;
+		if (kind)
 			suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
-				&encoding_options->param_password, ttl_src, &suffix_len);
+				&encoding_options->param_password, kind, ttl_src, &suffix_len);
 		/* a state the store did not take travels inline, as it would unstored */
 		if (!suffix && encoding_options->compact_encoding)
 			suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
@@ -1543,13 +1550,17 @@ error:
 }
 
 /* the state was already fetched by topo_hiding_match_no_dlg() */
+/* the kind of the dialog decode_info_buffer_stored() last found */
+static int stored_kind;
+
 static decoded_info_buffer_t decode_info_buffer_stored(str *info, const thinfo_options_t *options) {
 	str flags_buf = STR_NULL, bind_buf = STR_NULL, host = STR_NULL;
 	int port = 0, proto = 0;
 	unsigned int parsed_flags;
 	decoded_info_buffer_t decoded_buffer = { 0 };
 
-	if (th_store_unpack(&decoded_buffer.routes, &decoded_buffer.contact, &flags_buf, &bind_buf) < 0)
+	if (th_store_unpack(&decoded_buffer.routes, &decoded_buffer.contact, &flags_buf, &bind_buf,
+	&stored_kind) < 0)
 		return (decoded_info_buffer_t) { .state = INVALID_BUF };
 
 	if (str2int(&flags_buf, &parsed_flags) == 0)
@@ -1703,6 +1714,8 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 	}
 
 	param->flags = decoded_buffer.flags;
+	/* a dialog stays stored or inline, whichever it came in with */
+	param->store = decode_fn == decode_info_buffer_stored ? stored_kind : 0;
 
 	/* register tm callback for response in  */
 	if (tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_FWDED, th_no_dlg_onreply, param, shm_free_wrap) < 0) {
@@ -1739,9 +1752,8 @@ static int th_no_dlg_seq_handling(struct sip_msg *msg, str *info, decode_info_fn
 			route_free_str = route_s.s;
 		}
 
-        /* a dialog stays stored or inline, whichever it came in with */
         if (th_no_dlg_encode_contact(msg, decoded_buffer.flags, route_s, NULL,
-                decode_fn == decode_info_buffer_stored, NULL) < 0) {
+                decode_fn == decode_info_buffer_stored ? stored_kind : 0, NULL) < 0) {
             LM_ERR("Failed to encode contact header \n");
 			if (route_free_str != NULL) {
 				pkg_free(route_free_str);
