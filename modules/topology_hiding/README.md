@@ -312,13 +312,23 @@ modparam("topology_hiding", "th_auto_route_on_trusted_socket", 0)
 A cachedb URL where the topology hiding information of the Contact URI params with the *S* encoding type is kept. Only a 17 characters key, *_* followed by 16 hex digits, then travels in the Contact instead of the whole encoded information, which helps the user agents that truncate long Contact URI params.
 
 
-The key is derived from the param's password, the Call-ID and the tag of the party whose Contact is hidden, so each refresh of a dialog leg overwrites that leg's information in place. The information expires on its own: a SUBSCRIBE or NOTIFY keeps it for its expires plus 30 seconds, an INVITE or UPDATE for its Session-Expires plus 30 seconds, and a reply which says nothing about it as long as its request says. A request routed through the information refreshes it the same way, and the end of a subscription drops it, as does a final reply of 300 or above to an initial SUBSCRIBE (a challenged SUBSCRIBE stores it again when retried).
+The key is derived from the param's password, the Call-ID and the tag of the party whose Contact is hidden, so each refresh of a dialog leg overwrites that leg's information in place. A sequential request is only routed by the key of its own Call-ID and To tag.
 
 
-The information stays in the Contact, compact encoded, for an INVITE or UPDATE without Session-Expires, for a message lacking its Call-ID or tag, for an in-dialog message which is not a target refresh, and whenever storing it fails, such as while the backend is down (each process logs a warning counting these at most once a minute). Note that a stored INVITE relies on the session timers: if the callee answers without Session-Expires, the caller's information may expire before the call ends.
+The information expires on its own, it is never removed when used:
+
+- a SUBSCRIBE or NOTIFY keeps it for its expires plus 30 seconds. The subscriber's information (stored by its SUBSCRIBEs and its replies to NOTIFYs) never gets less than *th_state_ttl*, as all the notifier dialogs of a forked SUBSCRIBE share it.
+- an INVITE or UPDATE keeps it for its Session-Expires plus 30 seconds. Its 2xx then sets the caller's lifetime again: the 2xx's own Session-Expires plus 30 seconds, or *th_state_ttl* when the callee answered without session timers (nothing refreshes such a call, so *th_state_ttl* bounds how long it can last).
+- a reply which says nothing about it, as long as its request says, and other messages *th_state_ttl* or *th_state_ttl_short*.
+- all of these are cut down to *th_state_ttl_max*.
+
+The reply of the far party to a refresh stores the information again with the lifetime its dialog now has. A final reply of 300 or above to an initial SUBSCRIBE, relayed or our own, drops the subscriber's information (a challenged SUBSCRIBE stores it again when retried).
 
 
-A Contact URI param value holding a key is looked up whatever the encoding type of its param, as long as *th_state_url* is set. So a param can be switched in place from *C* to *S* and back: a dialog keeps the encoding it started with.
+The information stays in the Contact, compact encoded, for an INVITE or UPDATE without Session-Expires (initial or in-dialog), for a message lacking its Call-ID or tag, for a reply carrying its caller's tag as To tag, for a Contact which already carries one of our keys (a request hidden twice, by a spiral or by two nodes sharing the backend, nests the second state inline), and whenever storing it fails, such as while the backend is down (each process logs a warning counting these at most once a minute, and retries a failed connection every 5 seconds). Inside a dialog, only the messages of the usage which created it are stored (INVITE/UPDATE for a call, SUBSCRIBE/NOTIFY for a subscription): a REFER and its NOTIFYs inside a call go inline and leave the call's information alone.
+
+
+A Contact URI param value holding a key is looked up whatever the encoding type of its param, as long as *th_state_url* is set. So a param can be switched in place from *C* to *S* and back: a dialog keeps the encoding it started with, its sequential replies included.
 
 
 The value is the URL of the cachedb module to use, which has to be loaded, such as *redis:th://127.0.0.1:6379/*, *memcached:th://127.0.0.1:11211/* or *local://*. Any cachedb backend supporting get, set and remove, and honouring the expiration of what it stores, can be used: this rules out *cachedb_mongodb*, which is refused at startup. Note that:
@@ -327,9 +337,10 @@ The value is the URL of the cachedb module to use, which has to be loaded, such 
 - the backend has to be shared by all the nodes which may receive the sequential requests of a dialog. With *cachedb_local*, each node only sees its own states, unless the collection is replicated (see its *cluster_id* parameter).
 - *cachedb_sql* and *cachedb_dynamodb* do not check the expiration when reading, so a state may still be found for a while after it expired (up to *cache_clean_period* with *cachedb_sql*).
 - the stored information is not obfuscated, so the backend must not be reachable from untrusted networks.
+- while the backend is down, new states go inline, but the sequential requests of the dialogs already stored cannot be routed until it is back. A backend which loses what it stores on restart (*cachedb_local* without replication, a Redis without persistence) loses those dialogs too.
 
 
-*Default value is "empty" ( no storage )*
+*Default value is "empty" ( no storage ), which an empty string also means*
 
 
 ```opensips title="Set th_state_url parameter"
@@ -359,7 +370,7 @@ modparam("topology_hiding", "th_state_ttl", 7200)
 #### th_state_ttl_short (int)
 
 
-The lifetime, in seconds, of the stored information which is only needed while its transaction runs: OPTIONS, MESSAGE, INFO and PUBLISH, a rejected SUBSCRIBE, and a subscription being ended.
+The lifetime, in seconds, of the stored information which is only needed while its transaction runs: OPTIONS, MESSAGE, INFO and PUBLISH, a rejected SUBSCRIBE, and the notifier's side of a subscription being ended.
 
 
 *Default value is "60"*
