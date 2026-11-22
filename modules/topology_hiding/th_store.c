@@ -19,6 +19,7 @@
  */
 
 #include <string.h>
+#include <time.h>
 
 #include "../../dprint.h"
 #include "../../mem/mem.h"
@@ -45,6 +46,7 @@
 #define TH_STATE_TTL_MARGIN 30
 
 #define TH_STATE_MAX_LEN 4096
+#define TH_PUT_WARN_PERIOD 60
 
 #define SUB_STATE_HDR "Subscription-State"
 #define SUB_STATE_HDR_LEN (sizeof(SUB_STATE_HDR) - 1)
@@ -469,6 +471,23 @@ static int th_unpack_field(str *in, str *f)
 	return 0;
 }
 
+/* an outage fails every write, so tell about them once in a while */
+static void th_put_failed(void)
+{
+	static time_t last;
+	static unsigned int failed;
+	time_t now = time(NULL);
+
+	failed++;
+	if (now - last < TH_PUT_WARN_PERIOD)
+		return;
+
+	LM_WARN("%u topology hiding state(s) could not be stored in "
+		"th_state_url, they travel inline in the Contact\n", failed);
+	last = now;
+	failed = 0;
+}
+
 /* kept as printable "<len>:<bytes>" fields: off the wire, the state
  * needs neither the obfuscation nor the URI-safe encoding */
 static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
@@ -481,7 +500,7 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 	int ttl;
 
 	if (!th_cdbc) {
-		LM_ERR("not connected to th_state_url\n");
+		th_put_failed();
 		return -1;
 	}
 
@@ -517,7 +536,7 @@ static int th_store_put(struct sip_msg *msg, const str *pw, str *rr_set,
 
 	ttl = th_state_msg_ttl(msg, ttl_src);
 	if (th_cdbf.set(th_cdbc, th_full_key(key), &val, ttl) < 0) {
-		LM_ERR("failed to store the topology hiding state\n");
+		th_put_failed();
 		pkg_free(val.s);
 		return -1;
 	}

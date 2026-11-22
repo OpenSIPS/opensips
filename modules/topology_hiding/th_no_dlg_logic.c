@@ -1191,15 +1191,19 @@ static int th_no_dlg_encode_contact(struct sip_msg *msg, uint16_t flags, str rou
 	/* make sure we do not free this string in case of a further error */
 	prefix = NULL;
 
-	if (th_store_no_state(msg))
+	suffix = NULL;
+	if (th_store_no_state(msg)) {
 		suffix = th_store_ct_suffix(msg, &routes, flags, NULL, NULL, NULL, &suffix_len);
-	else if (encoding_options->stored && th_store_wanted(msg, ttl_src, store))
-		suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
-			&encoding_options->param_password, ttl_src, &suffix_len);
-	else if (encoding_options->compact_encoding)
-		suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
-	else
-		suffix = build_encoded_contact_suffix_legacy(msg, routes, &suffix_len, flags);
+	} else {
+		if (encoding_options->stored && th_store_wanted(msg, ttl_src, store))
+			suffix = th_store_ct_suffix(msg, &routes, flags, &encoding_options->param_name,
+				&encoding_options->param_password, ttl_src, &suffix_len);
+		/* a state the store did not take travels inline, as it would unstored */
+		if (!suffix && encoding_options->compact_encoding)
+			suffix = build_encoded_thinfo_suffix(msg, routes, &suffix_len, flags, 0);
+		else if (!suffix)
+			suffix = build_encoded_contact_suffix_legacy(msg, routes, &suffix_len, flags);
+	}
 
 	if (!suffix) {
 		LM_ERR("Failed to build suffix \n");

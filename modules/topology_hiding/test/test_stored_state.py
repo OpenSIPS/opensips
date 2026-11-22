@@ -11,7 +11,7 @@
 #   MPATH         modules directory (default: ../../)
 #   REDIS_SERVER  redis-server binary (default: redis-server)
 #   REDIS_CLI     redis-cli binary (default: redis-cli)
-#   PORT_BASE     first of the 4 UDP/TCP ports used (default: 25060)
+#   PORT_BASE     first of the 6 UDP/TCP ports used (default: 25060)
 #   TH_TEST_DIR   keep the cfgs and logs there (default: a temporary dir,
 #                 removed when all checks pass)
 #
@@ -56,19 +56,19 @@ def check(desc, ok, detail=''):
 
 # --- redis ---------------------------------------------------------------
 
-def rcli(*args):
-    out = subprocess.run([REDIS_CLI, '-h', '127.0.0.1', '-p', str(REDIS_PORT)]
+def rcli(*args, port=REDIS_PORT):
+    out = subprocess.run([REDIS_CLI, '-h', '127.0.0.1', '-p', str(port)]
                          + list(args), capture_output=True, text=True)
     return out.stdout.strip()
 
 
-def redis_start():
+def redis_start(port=REDIS_PORT):
     p = subprocess.Popen([REDIS_SERVER, '--bind', '127.0.0.1', '--port',
-                          str(REDIS_PORT), '--save', '', '--appendonly', 'no',
+                          str(port), '--save', '', '--appendonly', 'no',
                           '--dir', work], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL)
     for _ in range(50):
-        if rcli('PING') == 'PONG':
+        if rcli('PING', port=port) == 'PONG':
             return p
         time.sleep(0.1)
     raise SystemExit('redis-server did not start')
@@ -624,6 +624,53 @@ def scen_switch():
         ntf.sock.close()
 
 
+def scen_storedown():
+    print('== th_state_url going down under a running proxy')
+    port = BASE + 5
+    redis = redis_start(port)
+    px = Proxy('down', th_params('S', 'redis:th://127.0.0.1:%d/' % port))
+    a, b = new_pair()
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b)
+        check('[S] stored while the store is up',
+              d_sub is not None and KEY_RE.match(req.thinfo() or ''))
+        redis.terminate()
+        redis.wait()
+        se = ['Supported: timer', 'Session-Expires: 1800;refresher=uac']
+        for n in range(3):
+            d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+            btag = uuid.uuid4().hex[:10]
+            req, rpl = transact(d, b, 'INVITE', se, rhdrs=se, peer_tag=btag)
+            ok = req is not None and rpl is not None and rpl.code == 200
+            check('[S] INVITE %d answered with the store down' % n, ok)
+            if not ok:
+                continue
+            check('[S] INVITE %d: both Contacts hidden, state inline' % n,
+                  req.thinfo() and not KEY_RE.match(req.thinfo()) and
+                  rpl.thinfo() and not KEY_RE.match(rpl.thinfo()),
+                  '%s / %s' % (req.contact_uri(), rpl.contact_uri()))
+            d.rtag, d.target = btag, rpl.contact_uri()
+            db = Dialog(b, d.luri, callid=d.callid)
+            db.ltag, db.rtag, db.luri = btag, d.ltag, d.ruri_aor
+            db.target = req.contact_uri()
+            breq, brpl = transact(db, a, 'BYE', contact=False)
+            check('[S] INVITE %d: BYE routed to the caller' % n,
+                  breq is not None and same_target(breq.ruri, a.contact) and
+                  brpl is not None and brpl.code == 200, breq and breq.ruri)
+        warns = px.lines('travel inline')
+        # rate limited per worker, and the proxy runs 2 of them
+        check('[S] the failed writes are warned about once per worker',
+              1 <= len(warns) <= 2, '%d lines' % len(warns))
+        check('[S] proxy still running', px.alive())
+    finally:
+        px.stop()
+        if redis.poll() is None:
+            redis.terminate()
+            redis.wait()
+        a.sock.close()
+        b.sock.close()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -638,6 +685,7 @@ SCENARIOS = {
     'mongodb': scen_mongodb,
     'switch': scen_switch,
     'miss': scen_miss,
+    'storedown': scen_storedown,
 }
 
 
