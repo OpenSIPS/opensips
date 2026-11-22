@@ -19,6 +19,7 @@
  */
 
 
+#include <stddef.h>
 #include <string.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -60,6 +61,42 @@
 	}while(0)
 
 
+/* last_time is read by other processes: atomic on 64-bit; on 32-bit, where
+ * it may be 4-byte aligned, a sequence counter keeps the reads untorn */
+#if __SIZEOF_LONG__ >= 8
+#define PT_ATOMIC_STORE_TIME(_p, _v, _mo) __atomic_store_n(_p, _v, _mo)
+#define PT_ATOMIC_LOAD_TIME(_p, _mo) __atomic_load_n(_p, _mo)
+#else
+#define PT_TIME_SEQ(_p) (&((struct proc_load_info *)((char *)(_p) - \
+	offsetof(struct proc_load_info, last_time)))->time_seq)
+
+static inline void pt_seq_store_time(utime_t *t, utime_t v)
+{
+	unsigned int *seq = PT_TIME_SEQ(t);
+
+	__atomic_store_n(seq, *seq + 1, __ATOMIC_RELAXED);
+	__atomic_thread_fence(__ATOMIC_RELEASE);
+	*(volatile utime_t *)t = v;
+	__atomic_store_n(seq, *seq + 1, __ATOMIC_RELEASE);
+}
+
+static inline utime_t pt_seq_load_time(utime_t *t)
+{
+	unsigned int *seq = PT_TIME_SEQ(t), s1, s2;
+	utime_t v;
+
+	do {
+		s1 = __atomic_load_n(seq, __ATOMIC_ACQUIRE);
+		v = *(volatile utime_t *)t;
+		__atomic_thread_fence(__ATOMIC_ACQUIRE);
+		s2 = __atomic_load_n(seq, __ATOMIC_RELAXED);
+	} while ((s1 & 1) || s1 != s2);
+	return v;
+}
+#define PT_ATOMIC_STORE_TIME(_p, _v, _mo) pt_seq_store_time(_p, _v)
+#define PT_ATOMIC_LOAD_TIME(_p, _mo) pt_seq_load_time(_p)
+#endif
+
 void pt_become_active(void)
 {
 	utime_t usec_now;
@@ -76,7 +113,7 @@ void pt_become_active(void)
 	MARK_AS_IDLE( usec_now, ST);
 	MARK_AS_IDLE( usec_now, LT);
 
-	MY_LOAD.last_time = usec_now;
+	PT_ATOMIC_STORE_TIME(&MY_LOAD.last_time, usec_now, __ATOMIC_RELAXED);
 	/* release: a reader seeing the new is_busy also sees the new last_time */
 	__atomic_store_n(&MY_LOAD.is_busy, 1, __ATOMIC_RELEASE);
 }
@@ -131,7 +168,7 @@ void pt_become_idle(void)
 	MARK_AS_ACTIVE( usec_now, ST);
 	MARK_AS_ACTIVE( usec_now, LT);
 
-	MY_LOAD.last_time = usec_now;
+	PT_ATOMIC_STORE_TIME(&MY_LOAD.last_time, usec_now, __ATOMIC_RELAXED);
 	/* release: a reader seeing the new is_busy also sees the new last_time */
 	__atomic_store_n(&MY_LOAD.is_busy, 0, __ATOMIC_RELEASE);
 }
@@ -149,7 +186,7 @@ void pt_become_idle(void)
 		unsigned char __busy = \
 			__atomic_load_n(&PT_LOAD(_pno).is_busy, __ATOMIC_ACQUIRE); \
 		utime_t __last = \
-			__atomic_load_n(&PT_LOAD(_pno).last_time, __ATOMIC_RELAXED); \
+			PT_ATOMIC_LOAD_TIME(&PT_LOAD(_pno).last_time, __ATOMIC_RELAXED); \
 		utime_t __now = ((utime_t)(_now) > __last) ? (utime_t)(_now) : __last; \
 		/* check if the entire time window has the same status */ \
 		if (((long long)__now-(long long)__last) >= \
