@@ -44,6 +44,8 @@
 
 /* a refresh may come right at the end of the interval it renews */
 #define TH_STATE_TTL_MARGIN 30
+/* memcached takes a longer expiration for an absolute time */
+#define TH_STATE_TTL_LIMIT 2592000
 
 #define TH_STATE_MAX_LEN 4096
 #define TH_PUT_WARN_PERIOD 60
@@ -54,6 +56,7 @@
 str th_state_url = STR_NULL;
 int th_state_ttl = 3600;
 int th_state_ttl_short = 60;
+int th_state_ttl_max = 86400;
 int th_state_options = 1;
 
 extern struct th_ct_params *th_param_list;
@@ -103,8 +106,15 @@ int th_store_init(int stored_encoding)
 	if (th_store_check_scheme() < 0)
 		return -1;
 
-	if (th_state_ttl <= 0 || th_state_ttl_short <= 0) {
-		LM_ERR("th_state_ttl and th_state_ttl_short must be positive\n");
+	if (th_state_ttl_max <= 0 || th_state_ttl_max > TH_STATE_TTL_LIMIT) {
+		LM_ERR("th_state_ttl_max must be within 1..%d\n", TH_STATE_TTL_LIMIT);
+		return -1;
+	}
+
+	if (th_state_ttl <= 0 || th_state_ttl_short <= 0 ||
+	th_state_ttl > th_state_ttl_max || th_state_ttl_short > th_state_ttl_max) {
+		LM_ERR("th_state_ttl and th_state_ttl_short must be within "
+			"1..th_state_ttl_max\n");
 		return -1;
 	}
 
@@ -217,7 +227,7 @@ int th_store_is_key(const str *val)
 }
 
 /* Contact ;expires first, then the Expires header (RFC 3261 10.2.1.1) */
-static int th_msg_expires(struct sip_msg *msg)
+static long th_msg_expires(struct sip_msg *msg)
 {
 	exp_body_t *exp;
 	contact_t *ct;
@@ -229,14 +239,14 @@ static int th_msg_expires(struct sip_msg *msg)
 			ct = ((contact_body_t *)msg->contact->parsed)->contacts;
 			if (ct && ct->expires && ct->expires->body.len &&
 			str2int(&ct->expires->body, &ct_exp) == 0)
-				return (int)ct_exp;
+				return ct_exp;
 		}
 	}
 
 	if (parse_headers(msg, HDR_EXPIRES_F, 0) == 0 && msg->expires) {
 		if (msg->expires->parsed || parse_expires(msg->expires) == 0) {
 			exp = (exp_body_t *)msg->expires->parsed;
-			if (exp && exp->valid)
+			if (exp && exp->valid && exp->val >= 0)
 				return exp->val;
 		}
 	}
@@ -246,14 +256,14 @@ static int th_msg_expires(struct sip_msg *msg)
 
 /* what the notifier granted (RFC 6665 4.1.3): 0 if terminated, -1 if
  * the NOTIFY does not say */
-static int th_notify_sub_expires(struct sip_msg *msg)
+static long th_notify_sub_expires(struct sip_msg *msg)
 {
 	struct hdr_field *hf;
 	param_hooks_t hooks;
 	param_t *params = NULL, *p;
 	str body, state;
 	unsigned int val;
-	int ret = -1;
+	long ret = -1;
 	char *sep;
 
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -288,7 +298,7 @@ static int th_notify_sub_expires(struct sip_msg *msg)
 	for (p = params; p; p = p->next)
 		if (p->name.len == 7 && strncasecmp(p->name.s, "expires", 7) == 0) {
 			if (str2int(&p->body, &val) == 0)
-				ret = (int)val;
+				ret = val;
 			break;
 		}
 
@@ -296,9 +306,9 @@ static int th_notify_sub_expires(struct sip_msg *msg)
 	return ret;
 }
 
-static int th_sub_expires(struct sip_msg *msg, int method)
+static long th_sub_expires(struct sip_msg *msg, int method)
 {
-	int expires = -1;
+	long expires = -1;
 
 	if (method == METHOD_NOTIFY)
 		expires = th_notify_sub_expires(msg);
@@ -307,6 +317,15 @@ static int th_sub_expires(struct sip_msg *msg, int method)
 		expires = th_msg_expires(msg);
 
 	return expires;
+}
+
+/* a lifetime out of a header, bounded: it comes from the far end */
+static int th_ttl(unsigned long secs)
+{
+	if (secs >= (unsigned long)th_state_ttl_max - TH_STATE_TTL_MARGIN)
+		return th_state_ttl_max;
+
+	return (int)secs + TH_STATE_TTL_MARGIN;
 }
 
 static int th_msg_ends_subscription(struct sip_msg *msg)
@@ -324,18 +343,19 @@ static int th_msg_ends_subscription(struct sip_msg *msg)
 static int th_msg_refreshes_state(struct sip_msg *msg)
 {
 	struct session_expires se;
-	int expires, method = th_msg_method(msg);
+	int method = th_msg_method(msg);
+	long expires;
 
 	switch (method) {
 	case METHOD_SUBSCRIBE:
 	case METHOD_NOTIFY:
 		expires = th_sub_expires(msg, method);
-		return expires > 0 ? expires + TH_STATE_TTL_MARGIN : 0;
+		return expires > 0 ? th_ttl(expires) : 0;
 	case METHOD_INVITE:
 	case METHOD_UPDATE:
 		if (parse_session_expires(msg, &se) == parse_sst_success &&
 		se.interval > 0)
-			return (int)se.interval + TH_STATE_TTL_MARGIN;
+			return th_ttl(se.interval);
 		return 0;
 	default:
 		return 0;
@@ -347,7 +367,8 @@ static int th_msg_refreshes_state(struct sip_msg *msg)
 static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 {
 	struct session_expires se;
-	int expires, method = th_msg_method(msg);
+	int method = th_msg_method(msg);
+	long expires;
 
 	switch (method) {
 	case METHOD_SUBSCRIBE:
@@ -363,16 +384,16 @@ static int th_state_msg_ttl(struct sip_msg *msg, struct sip_msg *ttl_src)
 		/* a subscription being torn down only needs its final NOTIFY */
 		if (expires == 0)
 			return th_state_ttl_short;
-		return expires + TH_STATE_TTL_MARGIN;
+		return th_ttl(expires);
 	case METHOD_INVITE:
 	case METHOD_UPDATE:
 		if (parse_session_expires(msg, &se) == parse_sst_success &&
 		se.interval > 0)
-			return (int)se.interval + TH_STATE_TTL_MARGIN;
+			return th_ttl(se.interval);
 		if (ttl_src &&
 		parse_session_expires(ttl_src, &se) == parse_sst_success &&
 		se.interval > 0)
-			return (int)se.interval + TH_STATE_TTL_MARGIN;
+			return th_ttl(se.interval);
 		return th_state_ttl;
 	case METHOD_OPTIONS:
 	case METHOD_MESSAGE:

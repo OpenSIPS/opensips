@@ -37,6 +37,7 @@
 extern str th_state_url;
 extern int th_state_ttl;
 extern int th_state_ttl_short;
+extern int th_state_ttl_max;
 extern int th_state_options;
 
 int th_store_init(int stored_encoding);

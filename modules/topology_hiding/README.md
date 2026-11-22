@@ -372,6 +372,22 @@ modparam("topology_hiding", "th_state_ttl_short", 120)
 ```
 
 
+#### th_state_ttl_max (int)
+
+
+The longest lifetime, in seconds, the stored information may get. The lifetimes taken from a message (its expires plus 30 seconds, its Session-Expires plus 30 seconds) come from the far end, so they are cut down to this value. It may not exceed 2592000 (30 days, beyond which memcached takes an expiration for an absolute time), nor be lower than *th_state_ttl* or *th_state_ttl_short*.
+
+
+*Default value is "86400"*
+
+
+```opensips title="Set th_state_ttl_max parameter"
+...
+modparam("topology_hiding", "th_state_ttl_max", 7200)
+...
+```
+
+
 #### th_state_options (int)
 
 

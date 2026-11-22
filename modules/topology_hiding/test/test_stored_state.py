@@ -671,6 +671,37 @@ def scen_storedown():
         b.sock.close()
 
 
+def scen_ttlcap():
+    print('== lifetimes from the far end are bounded by th_state_ttl_max')
+    rcli('FLUSHALL')
+    px = Proxy('cap', th_params('S', REDIS_URL))
+    a, b = new_pair()
+    try:
+        d_sub, d_ntf, req, rpl = subscribe_dialog(a, b, expires=2000000000)
+        key = req and req.thinfo()
+        check('[S] SUBSCRIBE Expires: 2000000000 kept for th_state_ttl_max',
+              key and KEY_RE.match(key) and 86390 <= ttl(key) <= 86400,
+              key and ttl(key))
+        d = Dialog(a, 'sip:%s@127.0.0.1:%d' % (b.name, b.port))
+        se = ['Supported: timer', 'Session-Expires: 2147483640;refresher=uac']
+        req, rpl = transact(d, b, 'INVITE', se, rhdrs=se,
+                            peer_tag=uuid.uuid4().hex[:10])
+        key = req and req.thinfo()
+        check('[S] Session-Expires: 2147483640 kept for th_state_ttl_max',
+              key and KEY_RE.match(key) and 86390 <= ttl(key) <= 86400,
+              key and ttl(key))
+    finally:
+        px.stop()
+        a.sock.close()
+        b.sock.close()
+    px = Proxy('cap_bad', th_params('S', REDIS_URL,
+                                    [('th_state_ttl_max', 2592001)]),
+               must_start=False)
+    check('[S] th_state_ttl_max over 30 days is refused at startup',
+          not px.alive())
+    px.stop()
+
+
 def scen_compact():
     scen_subscribe('C')
     scen_invite('C')
@@ -686,6 +717,7 @@ SCENARIOS = {
     'switch': scen_switch,
     'miss': scen_miss,
     'storedown': scen_storedown,
+    'ttlcap': scen_ttlcap,
 }
 
 
