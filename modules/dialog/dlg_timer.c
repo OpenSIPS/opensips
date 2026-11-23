@@ -649,9 +649,6 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 		timer_hdl( ctl );
 	}
 
-	if (dlg_del_delay==0)
-		return;
-
 	tl = _get_gen_expired_dlgs( ddel_timer, ticks );
 
 	while (tl != FAKE_DIALOG_TL) {
