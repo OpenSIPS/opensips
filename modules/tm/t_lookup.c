@@ -1145,7 +1145,8 @@ int t_newtran( struct sip_msg* p_msg, int full_uas )
 		return E_BAD_VIA;
 	}
 
-	if (auto_100trying && p_msg->REQ_METHOD==METHOD_INVITE) {
+	if (auto_100trying && !(p_msg->msg_flags&FL_NO_AUTO_100) &&
+	p_msg->REQ_METHOD==METHOD_INVITE) {
 		ctx_backup = current_processing_ctx;
 		set_global_context(NULL);
 		t_reply( T, p_msg , 100 , &relay_reason_100);

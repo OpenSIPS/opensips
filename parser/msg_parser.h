@@ -136,6 +136,7 @@ enum request_method {
                                       * b2b into standalone pkg memory, no
                                       * longer sharing the transaction clone
                                       * (GH#3796) */
+#define FL_NO_AUTO_100       (1<<26) /* do not send the automatic 100 Trying */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10
