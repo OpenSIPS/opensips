@@ -593,7 +593,7 @@ mi_response_t *mi_tm_cancel(const mi_params_t *params,
 {
 	struct cell *trans;
 	str callid, cseq;
-	branch_bm_t cancel_bitmap = BRANCH_BM_ALL;
+	branch_bm_t cancel_bitmap = BRANCH_BM_ZERO;
 
 	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
 		return init_mi_param_error();
@@ -606,7 +606,11 @@ mi_response_t *mi_tm_cancel(const mi_params_t *params,
 	/* cancel the call */
 	LM_DBG("cancelling transaction %p\n",trans);
 
-	cancel_uacs( trans, cancel_bitmap/*all branches*/);
+	/* Reserve pending branches under the reply lock before sending CANCELs. */
+	LOCK_REPLIES(trans);
+	which_cancel( trans, cancel_bitmap );
+	UNLOCK_REPLIES(trans);
+	cancel_uacs( trans, cancel_bitmap );
 
 	UNREF(trans);
 
