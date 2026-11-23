@@ -1,4 +1,6 @@
 /*
+ * Copyright (C) 2026 OpenSIPS Project
+ *
  * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify

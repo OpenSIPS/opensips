@@ -145,6 +145,7 @@ static void w_setup(unsigned int entries, unsigned int now)
 {
 	w_n = entries; w_in = 0; w_bad = 0;
 	w_ent = calloc(entries, sizeof *w_ent);
+	w_timer.first.next = w_timer.first.prev = &w_timer.first;
 	w_timer.wheel = malloc(DLG_WHEEL_SIZE * sizeof(struct dlg_tl));
 	dlg_wheel_init(w_timer.wheel);
 	w_timer.wheel_done = now;
