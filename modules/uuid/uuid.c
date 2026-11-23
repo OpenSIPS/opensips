@@ -26,6 +26,17 @@
 #include <unistd.h>
 #include <uuid/uuid.h>
 
+/* getentropy() is available since glibc 2.25. Keep the existing
+ * UUID v7 capability check as a fallback for other/older libc versions. */
+#if defined(__GLIBC__) && defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 25)
+#define HAVE_GETENTROPY 1
+#endif
+#endif
+#if !defined(HAVE_GETENTROPY) && defined(UUID_TYPE_DCE_TIME_V7)
+#define HAVE_GETENTROPY 1
+#endif
+
 #define UUID_STR_BUFSIZE 37
 
 #define RET_ERR   -1
@@ -88,7 +99,7 @@ struct module_exports exports= {
 	0
 };
 
-#ifdef UUID_TYPE_DCE_TIME_V7
+#ifdef HAVE_GETENTROPY
 static int gen_uuidv7(uuid_t value) {
 	// random bytes
 	if (getentropy(value, 16) != 0) {
@@ -128,7 +139,7 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 
 	switch (vers) {
 	case UUID_VERS_7:
-	#ifdef UUID_TYPE_DCE_TIME_V7
+	#ifdef HAVE_GETENTROPY
 		rc = gen_uuidv7(uuid);
 		break;
 	#else
@@ -223,7 +234,7 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 	#ifndef	UUID_TYPE_DCE_SHA1
 	case UUID_VERS_5:
 	#endif
-	#ifndef UUID_TYPE_DCE_TIME_V7
+	#ifndef HAVE_GETENTROPY
 	case UUID_VERS_7:
 	#endif
 		LM_WARN("UUID version: %d not supported! Using default algorithm\n",
@@ -236,7 +247,7 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 	case UUID_VERS_3:
 	#endif
 	case UUID_VERS_4:
-	#ifdef UUID_TYPE_DCE_TIME_V7
+	#ifdef HAVE_GETENTROPY
 	case UUID_VERS_7:
 	#endif
 	#ifdef UUID_TYPE_DCE_SHA1
