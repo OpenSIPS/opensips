@@ -42,6 +42,12 @@ struct  dlg_timer
 {
 	struct dlg_tl   first;
 	gen_lock_t      *lock;
+	/* the dialog lifetime timer hangs its dialogs on a wheel of lists, one
+	 * per second, instead of the one sorted list (dlg_timer_wheel.h);
+	 * NULL for a timer that keeps the list */
+	struct dlg_tl   *wheel;
+	/* the last second whose list was looked at */
+	unsigned int    wheel_done;
 };
 
 struct dlg_ping_list
@@ -97,6 +103,9 @@ int remove_dlg_timer(struct dlg_tl *tl);
 int remove_ping_timer(struct dlg_cell *dlg);
 
 int update_dlg_timer( struct dlg_tl *tl, int timeout );
+
+int update_dlg_timer_deadline( struct dlg_tl *tl, unsigned int deadline,
+		int only_later );
 
 void dlg_timer_routine(unsigned int ticks , void * attr);
 
