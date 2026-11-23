@@ -28,6 +28,7 @@
 #include "siprec_events.h"
 #include "../../mod_fix.h"
 #include "../../error.h"
+#include "../../status_report.h"
 
 int srec_dlg_idx;
 struct b2b_api srec_b2b;
@@ -140,6 +141,14 @@ static int srec_stop_recording(struct src_sess *ss)
 	struct b2b_req_data req;
 	str bye = str_init(BYE);
 	struct src_ctx *ctx = ss->ctx;
+
+	/* no signalling while shutting down: tm is freeing the leftover
+	 * transactions (this is reached from their TRANS_DELETED callbacks via
+	 * the dialog FAILED callback) and can no longer start new ones */
+	if (sr_get_core_status() == STATE_TERMINATING) {
+		LM_DBG("sess=%p shutting down - not ending the recording\n", ss);
+		return -1;
+	}
 
 	SIPREC_LOCK(ctx);
 	if ((ss->flags & SIPREC_STARTED) == 0) {
