@@ -104,7 +104,25 @@ int init_dlg_timer(dlg_timer_handler hdl )
 int init_dlg_del_timer(dlg_timer_handler hdl )
 {
 	del_timer_hdl = hdl;
-	return _init_gen_dlg_timer( &ddel_timer );
+
+	if (_init_gen_dlg_timer( &ddel_timer )<0)
+		return -1;
+
+	/* dialog lifetimes are set per dialog (script, replication, database):
+	 * kept on a wheel, where the place of a new one is not searched for */
+	ddel_timer->wheel = (struct dlg_tl*)shm_malloc(
+		DLG_WHEEL_SIZE*sizeof(struct dlg_tl));
+	if (ddel_timer->wheel==0) {
+		LM_ERR("no more shm mem for the dialog timer wheel\n");
+		_destroy_gen_dlg_timer( &ddel_timer );
+		return -1;
+	}
+	dlg_wheel_init( ddel_timer->wheel );
+	ddel_timer->wheel_done = get_ticks();
+
+	return 0;
+
+
 }
 
 
