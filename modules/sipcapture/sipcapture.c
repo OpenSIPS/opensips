@@ -3341,10 +3341,15 @@ static int w_sip_capture(struct sip_msg *msg, void *table_name,
 	else { EMPTY_STR(sco.callid_aleg);}
 
 	/* VIA 1 */
-	sco.via_1 = msg->h_via1->body;
+	if (msg->h_via1)
+		sco.via_1 = msg->h_via1->body;
+	else {
+		EMPTY_STR(sco.via_1);
+	}
 
 	/* Via branch */
-	if(msg->via1->branch) sco.via_1_branch = msg->via1->branch->value;
+	if (msg->via1 && msg->via1->branch)
+		sco.via_1_branch = msg->via1->branch->value;
 	else { EMPTY_STR(sco.via_1_branch); }
 
 	/* CSEQ */
