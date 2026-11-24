@@ -43,6 +43,7 @@
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
 #include "../../lib/container.h"
+#include "../../status_report.h"
 
 #include "dlg_ctx.h"
 #include "dlg_hash.h"
@@ -138,6 +139,7 @@ static int fixup_check_var(void** param);
 static int fixup_lmode(void **param);
 static int fixup_leg(void **param);
 static int fixup_create_dlg_flags(void **param);
+static int fixup_profile(void **param);
 static int w_set_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_reset_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_is_dlg_flag_set(struct sip_msg *msg, void *mask);
@@ -164,6 +166,10 @@ static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
 static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 		str *body, str *ct, str *headers);
 static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count);
+static int dlg_update_contact(struct sip_msg *msg, struct dlg_profile_table *profile, str *val, int leg, str *contact);
+static mi_response_t *mi_dlg_update_contact(const mi_params_t *params,
+		struct mi_handler *async_hdl);
+static void *dlg_sr_group;
 
 
 /* item/pseudo-variables functions */
@@ -300,6 +306,12 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"dlg_update_contact", (cmd_function)dlg_update_contact, {
+		{CMD_PARAM_STR, fixup_profile, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_leg, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{0,0,0}}, ALL_ROUTES},
 	{"load_dlg", (cmd_function)load_dlg, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -467,6 +479,11 @@ static const mi_export_t mi_cmds[] = {
 		{mi_unset_dlg_profile, {"dlg_id", "profile","value", 0}},
 		{EMPTY_MI_RECIPE}}, {"dlg_unset_profile", 0}
 	},
+	{ "update_contact", 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_dlg_update_contact, {"profile", "leg", "contact", 0}},
+		{mi_dlg_update_contact, {"profile", "value", "leg", "contact", 0}},
+		{EMPTY_MI_RECIPE}}, {"dlg_update_contact", 0}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
@@ -582,6 +599,20 @@ static int fixup_dlg_flag(void** param)
 		return E_CFG;
 	}
 
+	return 0;
+}
+
+static int fixup_profile(void **param)
+{
+	str *prof_name = *param;
+	struct dlg_profile_table *profile;
+
+	profile = search_dlg_profile(prof_name);
+	if (!profile) {
+		LM_ERR("profile <%.*s> not defined\n", prof_name->len, prof_name->s);
+		return E_CFG;
+	}
+	*param = profile;
 	return 0;
 }
 
@@ -749,6 +780,20 @@ static void ctx_dlg_idx_destroy(void *v)
 static int mod_init(void)
 {
 	unsigned int n;
+
+	dlg_sr_group = sr_register_group_with_identifier(CHAR_INT("dialog"),
+		0 /* not public */, CHAR_INT("update_contact_script"),
+		SR_STATUS_READY, CHAR_INT("ready"), 100);
+	if (dlg_sr_group == NULL) {
+		LM_ERR("failed to create dialog status report identifier\n");
+		return -1;
+	}
+	if (sr_register_identifier(dlg_sr_group,
+			CHAR_INT("update_contact_mi"), SR_STATUS_READY,
+			CHAR_INT("ready"), 100) < 0) {
+		LM_ERR("failed to create dialog MI status report identifier\n");
+		return -1;
+	}
 
 	LM_INFO("Dialog module - initializing\n");
 
@@ -2751,7 +2796,7 @@ static int fixup_leg(void **param)
 		}
 	}
 
-	LM_ERR("unsupported dialog indetifier <%.*s>\n",
+	LM_ERR("unsupported dialog leg identifier <%.*s>\n",
 		s->len, s->s);
 	return -1;
 }
@@ -3010,4 +3055,193 @@ static int dlg_inc_cseq(struct sip_msg *msg, str *tag, int *_count)
 end:
 	dlg_unlock_dlg(dlg);
 	return ret;
+}
+
+static int dlg_update_contact(struct sip_msg *msg,
+		struct dlg_profile_table *profile, str *val, int leg, str *contact)
+{
+	int h;
+	int found = 0, updated = 0;
+	struct dlg_profile_link *cur_link;
+	struct dlg_entry *d_entry;
+	struct dlg_cell *dlg;
+
+	if (!profile->has_value && val && val->len) {
+		LM_WARN("non-value profile %.*s used with value (%.*s)! Ignoring it...\n",
+				profile->name.len, profile->name.s, val->len, val->s);
+	}
+
+	for (h=0; h<d_table->size; h++ ) {
+
+		d_entry = &(d_table->entries[h]);
+		dlg_lock( d_table, d_entry);
+
+		/* go through all dialogs on entry */
+		for (dlg = d_entry->first; dlg; dlg = dlg->next) {
+			if (dlg->state > DLG_STATE_CONFIRMED)
+				continue;
+
+			cur_link = dlg->profile_links;
+
+			while (cur_link) {
+				if (cur_link->profile == profile &&
+				( !val || !profile->has_value ||
+				( val->len == cur_link->value.len &&
+				!memcmp(val->s, cur_link->value.s, val->len)))) {
+					int sync_ret;
+
+					found = 1;
+					LM_DBG("updating %s contact for dialog <%.*s> from <%.*s> to <%.*s>\n",
+						leg == DLG_CALLER_LEG ? "caller" : "callee",
+						dlg->callid.len, dlg->callid.s,
+						dlg->legs[leg].contact.len,
+						dlg->legs[leg].contact.s ? dlg->legs[leg].contact.s : "",
+						contact->len, contact->s ? contact->s : "");
+
+					sync_ret = shm_str_sync(&dlg->legs[leg].contact, contact);
+					if (sync_ret < 0) {
+						LM_ERR("failed to update %s contact for dialog <%.*s> to <%.*s>\n",
+							leg == DLG_CALLER_LEG ? "caller" : "callee",
+							dlg->callid.len, dlg->callid.s,
+							contact->len, contact->s ? contact->s : "");
+						if (dlg_sr_group)
+							sr_add_report_fmt(dlg_sr_group,
+								CHAR_INT("update_contact_script"), 0,
+								"failed to update %s contact for dialog <%.*s> to <%.*s>\n",
+								leg == DLG_CALLER_LEG ? "caller" : "callee",
+								dlg->callid.len, dlg->callid.s,
+								contact->len, contact->s ? contact->s : "");
+					} else {
+						updated = 1;
+					}
+				}
+				cur_link = cur_link->next;
+			}
+		}
+
+		dlg_unlock( d_table, d_entry);
+	}
+
+	if (updated)
+		return 1;
+	if (found)
+		return -1;
+	return 2;
+}
+
+static mi_response_t *mi_dlg_update_contact(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	str profile_name = {0, 0}, value = {0, 0};
+	str leg_name = {0, 0}, contact = {0, 0};
+	struct dlg_profile_table *profile;
+	struct dlg_entry *d_entry;
+	struct dlg_cell *dlg;
+	struct dlg_profile_link *cur_link;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *successful, *failed;
+	int leg;
+	unsigned int h;
+
+	if (get_mi_string_param(params, "profile",
+			&profile_name.s, &profile_name.len) < 0 ||
+		get_mi_string_param(params, "leg",
+			&leg_name.s, &leg_name.len) < 0 ||
+		get_mi_string_param(params, "contact",
+			&contact.s, &contact.len) < 0)
+		return init_mi_param_error();
+
+	if (try_get_mi_string_param(params, "value",
+			&value.s, &value.len) == -2)
+		return init_mi_param_error();
+
+	if (leg_name.len == 6 && strncasecmp(leg_name.s, "caller", 6) == 0) {
+		leg = DLG_CALLER_LEG;
+	} else if (leg_name.len == 6 &&
+			strncasecmp(leg_name.s, "callee", 6) == 0) {
+		leg = -1;
+	} else {
+		return init_mi_error(400, MI_SSTR("Invalid leg"));
+	}
+
+	profile = search_dlg_profile(&profile_name);
+	if (!profile)
+		return init_mi_error(404, MI_SSTR("Profile not found"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
+
+	successful = add_mi_array(resp_obj, MI_SSTR("successful"));
+	failed = NULL;
+	if (!successful)
+		goto error;
+
+	if (!profile->has_value && value.s && value.len)
+		LM_WARN("non-value profile %.*s used with value (%.*s)! Ignoring it...\n",
+			profile->name.len, profile->name.s, value.len, value.s);
+
+	for (h = 0; h < d_table->size; h++) {
+		d_entry = &d_table->entries[h];
+		dlg_lock(d_table, d_entry);
+
+		for (dlg = d_entry->first; dlg; dlg = dlg->next) {
+			int dlg_leg;
+
+			if (dlg->state > DLG_STATE_CONFIRMED)
+				continue;
+
+			dlg_leg = leg == DLG_CALLER_LEG ? DLG_CALLER_LEG : callee_idx(dlg);
+
+			for (cur_link = dlg->profile_links; cur_link;
+					cur_link = cur_link->next) {
+				if (cur_link->profile != profile ||
+						(value.s && profile->has_value &&
+						(value.len != cur_link->value.len ||
+						memcmp(value.s, cur_link->value.s, value.len))))
+					continue;
+
+				LM_DBG("updating %s contact for dialog <%.*s> from <%.*s> to <%.*s>\n",
+					dlg_leg == DLG_CALLER_LEG ? "caller" : "callee",
+					dlg->callid.len, dlg->callid.s,
+					dlg->legs[dlg_leg].contact.len,
+					dlg->legs[dlg_leg].contact.s ? dlg->legs[dlg_leg].contact.s : "",
+					contact.len, contact.s ? contact.s : "");
+
+				if (shm_str_sync(&dlg->legs[dlg_leg].contact, &contact) < 0) {
+					LM_ERR("failed to update %s contact for dialog <%.*s> to <%.*s>\n",
+						dlg_leg == DLG_CALLER_LEG ? "caller" : "callee",
+						dlg->callid.len, dlg->callid.s,
+						contact.len, contact.s ? contact.s : "");
+					if (dlg_sr_group) {
+						sr_add_report_fmt(dlg_sr_group,
+			CHAR_INT("update_contact_mi"), 0,
+							"failed to update %s contact for dialog <%.*s> to <%.*s>\n",
+								dlg_leg == DLG_CALLER_LEG ? "caller" : "callee",
+							dlg->callid.len, dlg->callid.s,
+							contact.len, contact.s ? contact.s : "");
+					}
+					if (!failed)
+						failed = add_mi_array(resp_obj, MI_SSTR("failed"));
+					if (!failed || add_mi_string(failed, 0, 0, dlg->callid.s,
+								dlg->callid.len) < 0)
+							goto error_unlock;
+				} else if (add_mi_string(successful, 0, 0, dlg->callid.s,
+						dlg->callid.len) < 0) {
+					goto error_unlock;
+				}
+				break;
+			}
+		}
+
+		dlg_unlock(d_table, d_entry);
+	}
+
+	return resp;
+
+error_unlock:
+	dlg_unlock(d_table, d_entry);
+error:
+	free_mi_response(resp);
+	return NULL;
 }

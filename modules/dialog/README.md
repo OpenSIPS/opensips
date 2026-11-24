@@ -1833,6 +1833,45 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ```
 
 
+#### dlg_update_contact(profile, [value], [leg], contact)
+
+
+Updates the contact URI stored for a dialog leg on all active dialogs that
+belong to the specified profile. If the profile supports values, the lookup
+can be restricted to dialogs having the specified profile value. For profiles
+without values, a supplied value is ignored.
+
+
+Parameters:
+
+
+- *profile (string)* - name of the dialog profile used for the lookup.
+- *value (string, optional)* - profile value used to restrict the lookup.
+- *leg (string, optional)* - dialog leg whose contact is updated. Possible
+  values are `caller` and `callee`. The default is `caller`.
+- *contact (string)* - new contact URI to store for the selected dialog leg.
+
+
+The function returns *1* if at least one matching dialog contact was updated,
+*2* if no matching contact was found, or *-1* if matching contacts were found
+but all contact updates failed. If at least one contact update succeeds, the
+function returns *1* even when other matching updates fail. Such failures are
+published through the `dialog/update_contact_script` Status/Report
+identifier. The corresponding MI command uses the
+`dialog/update_contact_mi` identifier.
+The function can be used from any type of route.
+
+
+```opensips title="dlg_update_contact usage"
+...
+dlg_update_contact("caller", $fu, "callee", $ru);
+
+# Update the caller leg for all dialogs in a profile without values
+dlg_update_contact("inboundCalls", , , $var(contact));
+...
+```
+
+
 #### set_dlg_flag(flag)
 
 
@@ -2618,6 +2657,43 @@ MI FIFO Command Format:
 
 ```bash
 opensips-cli -x mi dialog:profile_end_dlgs inboundCalls
+```
+
+
+#### dialog:update_contact
+
+
+Updates the contact URI for the selected leg on all active dialogs belonging
+to a profile. The response contains separate `successful` and `failed` arrays
+with the matching dialog Call-IDs.
+
+
+Parameters:
+
+
+- *profile* - name of the dialog profile.
+- *value* (optional) - profile value used to restrict the lookup.
+- *leg* - `caller` or `callee`.
+- *contact* - new contact URI.
+
+
+MI response example:
+
+
+```json
+{
+  "successful": ["call-id-1"],
+  "failed": ["call-id-2"]
+}
+```
+
+
+MI FIFO Command Format:
+
+
+```bash
+opensips-cli -x mi dialog:update_contact \
+    profile=inboundCalls leg=callee contact=sip:new-contact@example.com
 ```
 
 
