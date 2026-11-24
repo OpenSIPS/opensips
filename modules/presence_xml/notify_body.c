@@ -578,7 +578,8 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
             continue;
         }
 
-        if(!(xmlStrcasecmp(current_doc_root->name, (unsigned char*)root_name)==0 && xmlStrcasecmp(current_doc_root->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf")==0))
+        if(!(xmlStrcasecmp(current_doc_root->name, (unsigned char*)root_name)==0 && current_doc_root->ns
+                    && xmlStrcasecmp(current_doc_root->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf")==0))
         {
             LM_ERR("invalid root element\n");
             continue;
@@ -590,7 +591,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
 	        continue;
 
             /* Handle tuple elements */
-            if(xmlStrcasecmp(node->name, (unsigned char*)tuple_name)==0 && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf")==0)
+            if(xmlStrcasecmp(node->name, (unsigned char*)tuple_name)==0 && node->ns && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf")==0)
             {
                 id = xmlNodeGetAttrContentByName(node, "id");
                 if(id == NULL)
@@ -612,14 +613,14 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
             }
 
             /* Handle note elements */
-            if(xmlStrcasecmp(node->name, (unsigned char*)note_name)==0 && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf")==0)
+            if(xmlStrcasecmp(node->name, (unsigned char*)note_name)==0 && node->ns && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf")==0)
             {
                 ADD_NODE(node, notes_head, notes_tail);
                 continue;
             }
 
             /* Handle person elements */
-            if(xmlStrcasecmp(node->name, (unsigned char*)person_name)==0 && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf:data-model")==0)
+            if(xmlStrcasecmp(node->name, (unsigned char*)person_name)==0 && node->ns && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf:data-model")==0)
             {
                 id = xmlNodeGetAttrContentByName(node, "id");
                 if(id == NULL)
@@ -641,7 +642,7 @@ str* agregate_presence_xmls(str* pres_user, str* pres_domain, str** body_array, 
             }
 
             /* Handle device elements */
-            if(xmlStrcasecmp(node->name, (unsigned char*)device_name)==0 && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf:data-model")==0)
+            if(xmlStrcasecmp(node->name, (unsigned char*)device_name)==0 && node->ns && xmlStrcasecmp(node->ns->href, BAD_CAST "urn:ietf:params:xml:ns:pidf:data-model")==0)
             {
                 id = xmlNodeGetAttrContentByName(node, "id");
                 if(id == NULL)
