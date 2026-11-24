@@ -87,7 +87,7 @@ void cleanup(int show_status)
 		|| mem_locks
 #endif
 		))
-		shm_free(pt);
+		free_process_table();
 	pt=0;
 	if (show_status){
 			LM_GEN1(memdump, "Memory status (shm):\n");

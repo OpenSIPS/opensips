@@ -108,6 +108,7 @@ extern unsigned int counted_max_processes;
 extern int _termination_in_progress;
 
 int   init_multi_proc_support();
+void  free_process_table(void);
 void  set_proc_attrs(const char *fmt, ...);
 int   count_init_child_processes(void);
 int   count_child_processes(void);

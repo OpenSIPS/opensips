@@ -49,7 +49,7 @@ struct proc_load_info {
 
 	/* the system time (usecs) when the process did the last load 
 	 * update (when switching to idle/busy) */
-	utime_t last_time;
+	utime_t last_time __attribute__((aligned(8)));
 
 	/* set to 1 when the process switched to busy; set on 0 if idle */
 	unsigned char is_busy;
