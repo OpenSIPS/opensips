@@ -188,6 +188,44 @@ error:
 	return NULL;
 }
 
+/*
+ * Remember that this node skipped publishing a contact INSERT or UPDATE.
+ * For example, cluster sync can restore a contact after restart without
+ * running pua_set_publish(). A later local REGISTER refresh then updates
+ * an existing contact even though PUA may have no publication for it.
+ *
+ * Keep the marker in the contact's KV storage so it survives the callback
+ * that skipped the publish. Its value describes what that callback did.
+ * PUA still looks up the publication when asked to refresh or withdraw it.
+ * SQL startup preload inserts contacts directly in memory and bypasses
+ * this callback, so preload alone does not set a new marker.
+ */
+static str ul_nopub_key = str_init("pua_usrloc_nopub");
+
+static inline int ul_nopub_get(ucontact_t *c)
+{
+	int_str_t *v;
+
+	if (!c->kv_storage)
+		return 0;
+
+	v = ul.get_ucontact_key(c, &ul_nopub_key);
+	return v && !v->is_str && v->i;
+}
+
+static inline void ul_nopub_set(ucontact_t *c, int on)
+{
+	int_str_t v;
+
+	if (!c->kv_storage || (!on && !ul_nopub_get(c)))
+		return;
+
+	v.is_str = 0;
+	v.i = on;
+	if (!ul.put_ucontact_key(c, &ul_nopub_key, &v))
+		LM_ERR("oom\n");
+}
+
 void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 {
 	ucontact_t *c = (ucontact_t *)binding;
@@ -195,10 +233,15 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 	str uri= {NULL, 0};
 	char* at= NULL;
 	publ_info_t publ;
-	int error;
+	int error, nopub;
 
-	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0)
+	if (!(type & UL_CONTACT_EXPIRE) && ctx_pul_get()==0) {
+		/* Mark updates too: an incoming replicated update can replace
+		 * the contact's KV storage before this callback runs. */
+		if (type & (UL_CONTACT_INSERT|UL_CONTACT_UPDATE))
+			ul_nopub_set(c, 1);
 		return;
+	}
 
 	/* in a cluster, every node expires the shared contacts: only the
 	 * node owning the pua sharing tag publishes the expiry */
@@ -263,6 +306,13 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 	else
 		publ.flag= UPDATE_TYPE;
 
+	/* A marked contact can legitimately have nothing to refresh or
+	 * withdraw. For a bodyless refresh, ask PUA to log the missing body
+	 * at DBG. For a withdrawal, handle ERR_PUBLISH_NO_RECORD below. */
+	nopub = !(type & UL_CONTACT_INSERT) && ul_nopub_get(c);
+	if (nopub)
+		publ.flag |= PUBL_SILENT_ERR;
+
 	publ.source_flag|= UL_PUBLISH;
 	publ.event|= PRESENCE_EVENT;
 	publ.extra_headers= NULL;
@@ -279,16 +329,25 @@ void ul_contact_publish(void *binding, ul_cb_type type, ul_cb_extra *_)
 				LM_ERR("failed to generate publish body\n");
 				goto error;
 			}
+			/* Retry as an initial PUBLISH with PIDF and normal logging.
+			 * Clear the marker once PUA accepts the request, as for a
+			 * successful refresh. The SIP reply arrives asynchronously. */
 			publ.flag= INSERT_TYPE;
 
 			if(pua_send_publish(&publ)< 0)
 			{
 			   LM_ERR("failed to send publish\n");
 			}
+			else
+				ul_nopub_set(c, 0);
 		}
+		else if (nopub && error == ERR_PUBLISH_NO_RECORD)
+			LM_DBG("no publish record for a bulk-loaded contact\n");
 		else
 			LM_ERR("failed to send publish\n");
 	}
+	else if (nopub)
+		ul_nopub_set(c, 0);
 
 error:
 

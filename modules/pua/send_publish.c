@@ -517,8 +517,12 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		if(publ->body== NULL)
 		{
 			if (ev->content_type.s && ev->content_type.len) {
-				LM_ERR("New '%.*s' PUBLISH and no body found - invalid request\n",
-					ev->name.len, ev->name.s);
+				if (publ->flag & PUBL_SILENT_ERR)
+					LM_DBG("New '%.*s' PUBLISH and no body found\n",
+						ev->name.len, ev->name.s);
+				else
+					LM_ERR("New '%.*s' PUBLISH and no body found - invalid request\n",
+						ev->name.len, ev->name.s);
 				ret = ERR_PUBLISH_NO_BODY;
 				goto error;
 			}
@@ -617,7 +621,7 @@ int send_publish( publ_info_t* publ )
 
 	lock_get(&HashT->p_records[hash_code].lock);
 
-	if(publ->flag != INSERT_TYPE) {
+	if(!(publ->flag & INSERT_TYPE)) {
 		presentity= search_htable(&pres, hash_code);
 		if (presentity==NULL && is_pua_cluster_enabled()) {
 			lock_release(&HashT->p_records[hash_code].lock);
