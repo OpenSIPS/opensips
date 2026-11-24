@@ -76,7 +76,7 @@ void pt_become_active(void)
 	MARK_AS_IDLE( usec_now, ST);
 	MARK_AS_IDLE( usec_now, LT);
 
-	MY_LOAD.last_time = usec_now;
+	__atomic_store_n(&MY_LOAD.last_time, usec_now, __ATOMIC_RELAXED);
 	/* release: a reader seeing the new is_busy also sees the new last_time */
 	__atomic_store_n(&MY_LOAD.is_busy, 1, __ATOMIC_RELEASE);
 }
@@ -131,7 +131,7 @@ void pt_become_idle(void)
 	MARK_AS_ACTIVE( usec_now, ST);
 	MARK_AS_ACTIVE( usec_now, LT);
 
-	MY_LOAD.last_time = usec_now;
+	__atomic_store_n(&MY_LOAD.last_time, usec_now, __ATOMIC_RELAXED);
 	/* release: a reader seeing the new is_busy also sees the new last_time */
 	__atomic_store_n(&MY_LOAD.is_busy, 0, __ATOMIC_RELEASE);
 }

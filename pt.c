@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "lib/dbg/profiling.h"
 #include "mem/shm_mem.h"
@@ -40,6 +41,13 @@
 /* array with children pids, 0= main proc,
  * alloc'ed in shared mem if possible */
 struct process_table *pt = NULL;
+static void *pt_storage;
+
+void free_process_table(void)
+{
+	shm_free(pt_storage);
+	pt_storage = NULL;
+}
 
 /* The maximum number of processes that will ever exist in OpenSIPS. This is
  * actually the size of the process table
@@ -96,6 +104,8 @@ static unsigned long count_running_processes(void *x)
 
 int init_multi_proc_support(void)
 {
+	const size_t alignment = __alignof__(struct process_table);
+	size_t table_size;
 	int i;
 	/* at this point we know exactly the possible number of processes, since
 	 * all the other modules already adjusted their extra numbers */
@@ -109,12 +119,16 @@ int init_multi_proc_support(void)
 	/* allocate the PID table to accomodate the maximum possible number of
 	 * process we may have during runtime (covering extra procs created 
 	 * due auto-scaling) */
-	pt = shm_malloc(sizeof(struct process_table)*counted_max_processes);
-	if (pt==0){
+	table_size = sizeof(*pt) * counted_max_processes;
+	/* The shared-memory allocator may only provide pointer alignment. */
+	pt_storage = shm_malloc(table_size + alignment - 1);
+	if (!pt_storage) {
 		LM_ERR("out of memory\n");
 		return -1;
 	}
-	memset(pt, 0, sizeof(struct process_table)*counted_max_processes);
+	pt = (struct process_table *)(((uintptr_t)pt_storage + alignment - 1) &
+			~(uintptr_t)(alignment - 1));
+	memset(pt, 0, table_size);
 
 	for( i=0 ; i<counted_max_processes ; i++ ) {
 		/* reset fds to prevent bogus ops */
