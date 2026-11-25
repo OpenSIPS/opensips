@@ -115,6 +115,12 @@ int search_hdr(mc_whitelist_p wh_list, str* hdr_name)
 	struct hdr_field hdr;
 	str temp;
 
+	if (hdr_name->len == 1 && hdr_name->s[0] == '*') {
+		/* Include all known types and all custom headers (HDR_OTHER_T). */
+		memset(wh_list->hdr_mask, 0xff, sizeof(wh_list->hdr_mask));
+		return 0;
+	}
+
 	temp.len = hdr_name->len;
 	temp.s = parse_hdr_name;
 	memcpy(temp.s, hdr_name->s, hdr_name->len);
