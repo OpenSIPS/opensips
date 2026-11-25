@@ -46,6 +46,7 @@
 #include "../globals.h"
 #include "../locking.h"
 #include "../socket_info.h"
+#include "../async.h"
 #include "../ut.h"
 #include "../pt.h"
 #include "../pt_load.h"
@@ -2099,6 +2100,15 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			break;
 		case F_IPC:
 			ipc_handle_job(fm->fd);
+			break;
+		case F_FD_ASYNC:
+			/* an FD registered via register_async_fd() - typically by a module
+			 * connecting to an external engine from its child_init(), which
+			 * runs for every rank, including TCP main.  Drain it exactly like
+			 * the TCP worker reactor (net_tcp_proc.c) does; without this case
+			 * the FD is never read, stays readable, and the reactor spins on
+			 * it forever logging "unknown fd type 2" at ~40k lines/burst. */
+			ret = async_fd_resume(fm->fd, fm->data);
 			break;
 		case F_NONE:
 			LM_CRIT("empty fd map\n");
