@@ -26,6 +26,7 @@ Build-Depends: bison,
                libmicrohttpd-dev,
                libmnl-dev,
                libnats-dev (>= 3.14) <nats>,
+               libperfd-dev (>= 0.7.6.1) <perfd>,
                libjwt-dev | base-files,
                libbson-dev | base-files,
                libmongoc-dev | base-files,
@@ -65,6 +66,7 @@ Suggests: opensips-module-auth-jwt,
           opensips-module-compression,
           opensips-modules-contrib,
           opensips-module-contrib-cachedb-nats,
+          opensips-module-contrib-cachedb-perfd,
           opensips-module-contrib-cachedb-nats-fts,
           opensips-module-contrib-event-nats,
           opensips-module-contrib-nats,
@@ -199,6 +201,15 @@ Depends: opensips (= ${binary:Version}),
          ${shlibs:Depends}
 Description: OpenSIPS nats_consumer contrib module
  This package contains only the nats_consumer contrib module for OpenSIPS.
+
+Package: opensips-module-contrib-cachedb-perfd
+Build-Profiles: <perfd>
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: OpenSIPS cachedb_perfd contrib module
+ This package contains only the cachedb_perfd contrib module for OpenSIPS:
+ a CacheDB backend for the perfcached daemon, through libperfd.
 
 Package: opensips-module-db-berkeley-bin
 Architecture: any

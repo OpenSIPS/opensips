@@ -274,6 +274,10 @@ Files: modules/cachedb_mongodb/*
 Copyright: 2011-2017, OpenSIPS Solutions
 License: GPL-2+
 
+Files: modules-contrib/cachedb_perfd/*
+Copyright: 2026, Yury Kirsanov
+License: GPL-2+
+
 Files: modules/cachedb_redis/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
