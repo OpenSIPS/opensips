@@ -1830,23 +1830,24 @@ smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,
 	session->session_status = SMPP_UNKNOWN;
 	session->sequence_number = 0;
 
-	if (system_id->len > MAX_SYSTEM_ID_LEN) {
-		LM_INFO("[%.*s] system id %.*s is too long, trimming it to %d\n",
+	/* the limits include the terminating NUL */
+	if (system_id->len >= MAX_SYSTEM_ID_LEN) {
+		LM_WARN("[%.*s] system id %.*s is too long, trimming it to %d\n",
 				name->len, name->s, system_id->len, system_id->s,
-				MAX_SYSTEM_ID_LEN);
-		system_id->len = MAX_SYSTEM_ID_LEN;
+				MAX_SYSTEM_ID_LEN - 1);
+		system_id->len = MAX_SYSTEM_ID_LEN - 1;
 	}
-	if (password->len > MAX_PASSWORD_LEN) {
-		LM_INFO("[%.*s] password for %.*s is too long, trimming it to %d\n",
+	if (password->len >= MAX_PASSWORD_LEN) {
+		LM_WARN("[%.*s] password for %.*s is too long, trimming it to %d\n",
 				name->len, name->s, system_id->len, system_id->s,
-				MAX_PASSWORD_LEN);
-		password->len = MAX_PASSWORD_LEN;
+				MAX_PASSWORD_LEN - 1);
+		password->len = MAX_PASSWORD_LEN - 1;
 	}
-	if (system_type->len > MAX_SYSTEM_TYPE_LEN) {
-		LM_INFO("[%.*s] system type %.*s of %.*s is too long, trimming it to %d\n",
+	if (system_type->len >= MAX_SYSTEM_TYPE_LEN) {
+		LM_WARN("[%.*s] system type %.*s of %.*s is too long, trimming it to %d\n",
 				name->len, name->s, system_type->len, system_type->s,
-				system_id->len, system_id->s, MAX_SYSTEM_TYPE_LEN);
-		system_type->len = MAX_SYSTEM_TYPE_LEN;
+				system_id->len, system_id->s, MAX_SYSTEM_TYPE_LEN - 1);
+		system_type->len = MAX_SYSTEM_TYPE_LEN - 1;
 	}
 
 	session->name.len = name->len;
