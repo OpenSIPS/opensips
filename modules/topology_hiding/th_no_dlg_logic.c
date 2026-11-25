@@ -891,6 +891,15 @@ error:
 	return NULL;
 }
 
+#ifdef UNIT_TESTS
+int th_test_build_encoded_contact_suffix(struct sip_msg *msg, int *suffix_len,
+		char **suffix)
+{
+	*suffix = build_encoded_contact_suffix_legacy(msg, STR_NULL, suffix_len, 0);
+	return *suffix ? 0 : -1;
+}
+#endif
+
 static int th_binary_encode_record_route(rr_t *record_route, rr_t **out_rr, int encode_self) {
 	struct sip_uri rr_uri = { 0 }, rr_uri_r2 = { 0 };
 	const struct socket_info *rr_sock = NULL;

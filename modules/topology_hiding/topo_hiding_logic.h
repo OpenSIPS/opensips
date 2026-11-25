@@ -52,4 +52,10 @@ void th_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);
 char *th_get_encoded_callid(struct sip_msg *msg, str *tag, int *enc_len);
 
+#ifdef UNIT_TESTS
+int th_test_build_encoded_contact_suffix(struct sip_msg *msg, int *suffix_len,
+		char **suffix);
+int th_test_encode_callid_raw(str *data);
+#endif
+
 #endif
