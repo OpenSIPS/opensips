@@ -1874,6 +1874,9 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	}
 
 	dlg->flags |= flags;
+	/* the sync data cannot hold a dialog created before the sync is done */
+	if (dialog_repl_cluster && *dlg_sync_in_progress)
+		dlg->flags |= DLG_FLAG_SYNCED;
 
 	/* save caller's tag, cseq, contact and record route*/
 	if (update_leg_info(0, dlg, req, &(get_from(req)->tag_value),NULL,NULL ) !=0) {
