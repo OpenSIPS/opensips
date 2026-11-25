@@ -1,0 +1,7 @@
+v=0
+m=audio 50000 RTP/AVP 0 8 9 18 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110
+a=rtpmap:96 AMR-WB/16000
+a=fmtp:96 octet-align=0
+a=imageattr:97 send [x=640,y=480] recv [x=320,y=240]
+a=rtcp-fb:96 nack
+a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level

@@ -1,0 +1,6 @@
+v=0
+o=- 5 5 IN IP4 10.0.0.2
+s=held
+t=3037084800T00:00Z-3037384800T00:00Z
+m=audio 0 RTP/AVP 0
+a=recvonly
