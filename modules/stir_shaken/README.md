@@ -249,6 +249,19 @@ modparam("stir_shaken", "require_date_hdr", 0)
 ```
 
 
+### Exported Statistics
+
+
+#### store_rebuild_failures
+
+
+How many times a process could not rebuild its certificate store from a
+reloaded *ca_list*/*crl_list*, counted once per process and reload. Such a
+process keeps verifying with its previous store and retries about once a
+second, so a non-zero value means some processes may still use the CA
+certificates and CRLs from before the reload.
+
+
 ### Exported Functions
 
 
@@ -899,7 +912,8 @@ if the files change again on disk. *ca_dir*, *crl_dir* and the system's
 default CA certificates are not part of this copy: each process reads them
 from disk when it first needs a certificate from them. "OK" means the new
 contents were published; a process that fails to switch to them logs an
-error, keeps its previous store and retries about once a second.
+error, keeps its previous store, retries about once a second and is counted
+in the *store_rebuild_failures* statistic.
 
 
 Name: *stir_shaken:ca_reload*
@@ -941,7 +955,8 @@ if the files change again on disk. *ca_dir*, *crl_dir* and the system's
 default CA certificates are not part of this copy: each process reads them
 from disk when it first needs a certificate from them. "OK" means the new
 contents were published; a process that fails to switch to them logs an
-error, keeps its previous store and retries about once a second.
+error, keeps its previous store, retries about once a second and is counted
+in the *store_rebuild_failures* statistic.
 
 
 Name: *stir_shaken:crl_reload*
