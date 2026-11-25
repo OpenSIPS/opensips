@@ -710,8 +710,11 @@ int fs_esl(fs_evs *sock, const str *fs_cmd, str *reply_txt)
 				       reply->text.len, reply->text.s);
 
 				*reply_txt = reply->text;
-				shm_free(reply);
-				return 0;
+				{
+					int result = reply->status;
+					shm_free(reply);
+					return result;
+				}
 			}
 		}
 		lock_stop_write(sock->lists_lk);
