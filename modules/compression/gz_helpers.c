@@ -35,7 +35,8 @@
 int gzip_compress(unsigned char* in, unsigned long ilen, str* out, unsigned long* olen, int level)
 {
 	z_stream zlibStream;
-	int rc, neededSize;
+	int rc;
+	unsigned long neededSize;
 
 	if (!in || ilen == 0) {
 		LM_ERR("nothing to compress\n");
@@ -73,16 +74,18 @@ int gzip_compress(unsigned char* in, unsigned long ilen, str* out, unsigned long
 		return rc;
 	}
 
-	/* zlib doc states that dest buffer size must be 10% +12 larger than
-		the input buffer */
-	neededSize = (int)((float)ilen * 1.1 + 12);
+	neededSize = deflateBound(&zlibStream, ilen);
+	if (neededSize > INT_MAX) {
+		deflateEnd(&zlibStream);
+		return Z_BUF_ERROR;
+	}
 
 	if (!out->s) {
 		out->s = pkg_malloc(neededSize);
 		out->len = neededSize;
 		if (!out->s)
 			goto memerr;
-	} else if (ilen > out->len) {
+	} else if (out->len < neededSize) {
 		out->s = pkg_realloc(out->s, neededSize);
 		out->len = neededSize;
 		if (!out->s)
@@ -106,6 +109,7 @@ int gzip_compress(unsigned char* in, unsigned long ilen, str* out, unsigned long
 
 	return Z_OK;
 memerr:
+	deflateEnd(&zlibStream);
 	LM_ERR("no more pkg mem\n");
 	return -1;
 }
