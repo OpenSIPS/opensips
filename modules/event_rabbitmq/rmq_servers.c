@@ -124,7 +124,7 @@ int rmq_error(char const *context, amqp_rpc_reply_t x)
 			return 0;
 
 		case AMQP_RESPONSE_NONE:
-			LM_ERR("%s: missing RPC reply type!", context);
+			LM_ERR("%s: missing RPC reply type!\n", context);
 			break;
 
 		case AMQP_RESPONSE_LIBRARY_EXCEPTION:
@@ -141,20 +141,20 @@ int rmq_error(char const *context, amqp_rpc_reply_t x)
 			switch (x.reply.id) {
 				case AMQP_CONNECTION_CLOSE_METHOD:
 					mconn = (amqp_connection_close_t *)x.reply.decoded;
-					LM_ERR("%s: server connection error %d, message: %.*s",
+					LM_ERR("%s: server connection error %d, message: %.*s\n",
 							context, mconn->reply_code,
 							(int)mconn->reply_text.len,
 							(char *)mconn->reply_text.bytes);
 					break;
 				case AMQP_CHANNEL_CLOSE_METHOD:
 						mchan = (amqp_channel_close_t *)x.reply.decoded;
-					LM_ERR("%s: server channel error %d, message: %.*s",
+					LM_ERR("%s: server channel error %d, message: %.*s\n",
 							context, mchan->reply_code,
 							(int)mchan->reply_text.len,
 							(char *)mchan->reply_text.bytes);
 					break;
 				default:
-					LM_ERR("%s: unknown server error, method id 0x%08X",
+					LM_ERR("%s: unknown server error, method id 0x%08X\n",
 							context, x.reply.id);
 					break;
 			}
@@ -201,6 +201,8 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 			/* if amqp_ssl_socket_get_context() is not available, serialize the CA,
 			 * cert and key loading in order to prevent openssl multiprocess issues */
 			lock_get(ssl_lock);
+
+			/* set CA in AMQP's SSL_CTX to verify server certificate */
 			if (amqp_ssl_socket_set_cacert(amqp_sock, conn->tls_dom->ca.s) !=
 				AMQP_STATUS_OK) {
 				LM_ERR("Failed to set CA certificate\n");
@@ -208,12 +210,16 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 				return -1;
 			}
 
-			if (amqp_ssl_socket_set_key(amqp_sock, conn->tls_dom->cert.s,
-				conn->tls_dom->pkey.s) != AMQP_STATUS_OK) {
-				LM_ERR("Failed to set certificate and private key\n");
-				lock_release(ssl_lock);
-				return -1;
+			/* set client certificate if set */
+			if (conn->tls_dom->cert.s && conn->tls_dom->pkey.s) {
+				if (amqp_ssl_socket_set_key(amqp_sock, conn->tls_dom->cert.s,
+					conn->tls_dom->pkey.s) != AMQP_STATUS_OK) {
+					LM_ERR("Failed to set certificate and private key\n");
+					lock_release(ssl_lock);
+					return -1;
+				}
 			}
+
 			lock_release(ssl_lock);
 			#else
 			/* point the CA, cert and key from librabbitmq's SSL_CTX to
@@ -222,21 +228,24 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 			void *ssl_ctx;
 			ssl_ctx = amqp_ssl_socket_get_context(amqp_sock);
 
-			/* set CA in AMQP's SSL_CTX  */
+			/* set CA in AMQP's SSL_CTX to verify server certificate */
 			openssl_api.ctx_set_cert_store(ssl_ctx,
 				((void**)conn->tls_dom->ctx)[process_no]);
 
-			/* set certificate in AMQP's SSL_CTX */
-			if (openssl_api.ctx_set_cert_chain(ssl_ctx,
-				((void**)conn->tls_dom->ctx)[process_no]) < 0) {
-				LM_ERR("Failed to set certificate\n");
-				return -1;
-			}
+			/* set client certificate if set */
+			if (conn->tls_dom->cert.s && conn->tls_dom->pkey.s) {
+				/* set certificate in AMQP's SSL_CTX */
+				if (openssl_api.ctx_set_cert_chain(ssl_ctx,
+					((void**)conn->tls_dom->ctx)[process_no]) < 0) {
+					LM_ERR("Failed to set certificate\n");
+					return -1;
+				}
 
-			/* set private key in AMQP's SSL_CTX */
-			if (openssl_api.ctx_set_pkey_file(ssl_ctx, conn->tls_dom->pkey.s) < 0) {
-				LM_ERR("Failed to set private key\n");
-				return -1;
+				/* set private key in AMQP's SSL_CTX */
+				if (openssl_api.ctx_set_pkey_file(ssl_ctx, conn->tls_dom->pkey.s) < 0) {
+					LM_ERR("Failed to set private key\n");
+					return -1;
+				}
 			}
 			#endif
 
@@ -258,9 +267,14 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 				case TLS_USE_TLSv1_2:
 					method_min = AMQP_TLSv1_2;
 					break;
+				#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 12, 0, 0)
+				case TLS_USE_TLSv1_3:
+					method_min = AMQP_TLSv1_3;
+					break;
+				#endif
 				default:
-					LM_NOTICE("Unsupported TLS minimum method for AMQP, using TLSv1\n");
-					method_min = AMQP_TLSv1;
+					LM_NOTICE("Unsupported TLS minimum method for AMQP, using latest\n");
+					method_min = AMQP_TLSvLATEST;
 				}
 			} else {
 				LM_DBG("Minimum TLS method unspecified, using TLSv1\n");
@@ -275,15 +289,20 @@ int rmq_server_reconnect(rmq_connection_t *conn, char *address, int port, int ma
 				case TLS_USE_TLSv1_2:
 					method_max = AMQP_TLSv1_2;
 					break;
+				#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 12, 0, 0)
+				case TLS_USE_TLSv1_3:
+					method_max = AMQP_TLSv1_3;
+					break;
+				#endif
 				default:
 					LM_NOTICE("Unsupported TLS maximum method for AMQP, using latest"
 						" supported by librabbitmq\n");
 					method_max = AMQP_TLSvLATEST;
 				}
 			} else {
-				method_max = AMQP_TLSvLATEST;
 				LM_DBG("Maximum TLS method unspecified, using latest supported by"
 					" librabbitmq\n");
+				method_max = AMQP_TLSvLATEST;
 			}
 
 			if (amqp_ssl_socket_set_ssl_versions(amqp_sock, method_min, method_max) !=
@@ -548,7 +567,7 @@ no_value:
 	}
 	/* if we don't have an uri, we forfeit */
 	if (!suri.s) {
-		LM_ERR("[%.*s] cannot find an uri!", cid.len, cid.s);
+		LM_ERR("[%.*s] cannot find an uri!\n", cid.len, cid.s);
 		return -1;
 	}
 	/* trim the last spaces and ';' of the uri */
