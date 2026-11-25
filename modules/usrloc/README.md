@@ -1345,16 +1345,18 @@ Parameters:
 - *aor_prefix* (string, optional): only include AoRs beginning with this
   **case-sensitive** prefix. An empty prefix matches all AoRs.
 - *limit* (positive integer): maximum number of AoR records to return.
-  Must be supplied together with *aor_prefix* and *offset*.
-- *offset* (non-negative integer): skip this many matching AoRs.
-  Must be supplied together with *aor_prefix* and *limit*.
+  Must be supplied together with *offset*.
+- *offset* (non-negative integer): skip this many (matching) AoRs.
+  Must be supplied together with *limit*.
 
-Supported combinations: no arguments; `brief`; `aor_prefix`;
+Supported combinations: no arguments; `brief`; `limit, offset`;
+`brief, limit, offset`; `aor_prefix`; `brief, aor_prefix`;
 `aor_prefix, limit, offset`; or `brief, aor_prefix, limit, offset`.
 The output retains its existing `Domains` / `AORs` structure.
 `limit` counts AoRs (not Contacts), across all domains. For example:
 
 ```sh
+opensips-cli -x mi usrloc:dump limit=100 offset=0
 opensips-cli -x mi usrloc:dump aor_prefix=10 limit=100 offset=0
 ```
 
