@@ -33,6 +33,10 @@ extern void *shm_dbg_block;
 extern void *rpm_block;
 extern void **shm_blocks;
 extern int init_done;
+
+/* stamp written into every fragment a pkg allocator hands out;
+ * 0 outside a routes-reload generation (see pkg_gen_*() in mem.h) */
+extern unsigned long pkg_gen_current;
 extern gen_lock_t *hash_locks[TOTAL_F_PARALLEL_POOLS];
 
 #include "meminfo.h"
