@@ -883,9 +883,10 @@ int ul_check_db(void)
 			return -1;
 		}
 
+		/* DB_CAP_RAW_QUERY is not required: contact loading has a
+		 * structured-query fallback for backends without raw query
+		 * support (e.g. db_redis) */
 		db_caps = DB_CAP_ALL;
-		if (cluster_mode == CM_SQL_ONLY)
-			db_caps |= DB_CAP_RAW_QUERY;
 
 		if (!DB_CAPABILITY(ul_dbf, db_caps)) {
 			LM_ERR("database module does not implement all functions"
