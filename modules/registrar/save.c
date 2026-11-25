@@ -269,7 +269,8 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 		/* pack the contact_info */
 		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, ul.nat_flag,
-		_sctx->flags, &_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
+		_sctx->flags, &_sctx->ownership_tag, &_sctx->cmatch,
+			_sctx->min_expires, _sctx->max_expires))==0 ) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
@@ -370,7 +371,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 	/* pack the contact_info */
 	if ( (ci=pack_ci( _m, 0, 0, cflags, ul.nat_flag, _sctx->flags,
-					&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
+					&_sctx->ownership_tag, &_sctx->cmatch,
+			_sctx->min_expires, _sctx->max_expires))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
@@ -445,7 +447,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 			/* pack the contact_info */
 			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-							&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
+							&_sctx->ownership_tag, &_sctx->cmatch,
+			_sctx->min_expires, _sctx->max_expires))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -513,7 +516,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 				/* pack the contact specific info */
 				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-								&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
+								&_sctx->ownership_tag, &_sctx->cmatch,
+			_sctx->min_expires, _sctx->max_expires))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
