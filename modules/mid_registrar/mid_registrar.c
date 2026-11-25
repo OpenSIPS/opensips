@@ -524,6 +524,7 @@ struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 	new->pn_provider_state = mri->pn_provider_state;
 
 	new->cmatch.mode = mri->cmatch.mode;
+	new->cmatch.instance_mode = mri->cmatch.instance_mode;
 	if (mri->cmatch.match_params)
 		new->cmatch.match_params = dup_shm_str_list(new->cmatch.match_params);
 

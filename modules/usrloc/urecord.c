@@ -58,6 +58,7 @@ extern db_val_t *cid_vals;
 extern int cid_len;
 
 int matching_mode = CT_MATCH_CONTACT_ONLY;
+int sip_instance_matching = 1;
 
 int cseq_delay = 20;
 
@@ -575,6 +576,9 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 			return -1;
 	}
 
+	if (CDB_DICT_ADD_INT32(ct_fields, "reg_id", ct->reg_id) != 0)
+		return -1;
+
 	if (ZSTR(ct->attr)) {
 		if (CDB_DICT_ADD_NULL(ct_fields, "attr") != 0)
 			return -1;
@@ -1027,6 +1031,29 @@ next_contact:;
 
 
 /*! \brief
+ * Match a stored contact by its +sip.instance and reg-id (RFC 5626).
+ * Expired contacts are skipped, so an expired registration with the same
+ * instance does not block a fresh insert.
+ */
+static inline struct ucontact* contact_instance_match(ucontact_t *contacts,
+                                       str *instance, unsigned int reg_id)
+{
+	while (contacts) {
+		if (contacts->expires != UL_EXPIRED_TIME &&
+		    contacts->instance.len > 0 &&
+		    contacts->instance.len == instance->len &&
+		    memcmp(contacts->instance.s, instance->s, instance->len) == 0 &&
+		    contacts->reg_id == reg_id)
+			return contacts;
+
+		contacts = contacts->next;
+	}
+
+	return NULL;
+}
+
+
+/*! \brief
  * Get pointer to ucontact with given contact
  * Returns:
  *      0 - found
@@ -1039,16 +1066,39 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 {
 	struct ct_match match = *_match;
 	ucontact_t* ptr;
-	int no_callid;
+	int no_callid, use_instance;
 
 	ptr = 0;
 	no_callid = 0;
 	*_co = 0;
 
+	/* RFC 5626: an incoming Contact carrying +sip.instance (and reg-id) is
+	 * the same registration as a stored contact with that instance and
+	 * reg-id, even when the Contact URI changed (e.g. a browser tab
+	 * reconnect) -> update the stored contact instead of adding a new one.
+	 * Enabled by the "sip_instance_matching" modparam, unless the caller
+	 * enforced a matching mode; a per-call ON/OFF wins over both */
+	use_instance = match.instance.len && match.instance.s &&
+		(match.instance_mode == CT_INSTANCE_ON ||
+		 (match.instance_mode == CT_INSTANCE_DEFAULT &&
+		  match.mode == CT_MATCH_NONE && sip_instance_matching));
+
 	if (match.mode == CT_MATCH_NONE)
 		match.mode = matching_mode;
 
-	LM_DBG("using ct matching mode %d\n", match.mode);
+	LM_DBG("using ct matching mode %d, +sip.instance matching %d\n",
+	       match.mode, use_instance);
+
+	if (use_instance) {
+		ptr = contact_instance_match(_r->contacts, &match.instance,
+		                             match.reg_id);
+		if (ptr) {
+			LM_DBG("matched contact '%.*s' by +sip.instance\n",
+			       ptr->c.len, ptr->c.s);
+			goto matched;
+		}
+	}
+
 	switch (match.mode) {
 	case CT_MATCH_CONTACT_ONLY:
 		ptr = contact_match(_r->contacts, _c);
@@ -1065,6 +1115,7 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		return -1;
 	}
 
+matched:
 	if (ptr) {
 		LM_DBG("successfully matched contact '%.*s'\n", ptr->c.len, ptr->c.s);
 

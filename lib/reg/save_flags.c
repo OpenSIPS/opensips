@@ -37,13 +37,14 @@ static str save_flag_names[] = {
 	STR_NULL
 };
 
-#define SAVE_KV_FLAGS_NO 4
+#define SAVE_KV_FLAGS_NO 5
 
 static str save_kv_flag_names[] = {
 	str_init("max-contacts"),
 	str_init("min-expires"),
 	str_init("max-expires"),
 	str_init("matching-mode"),
+	str_init("sip-instance"),
 	STR_NULL
 };
 
@@ -121,6 +122,19 @@ int reg_fixup_save_flags(void** param, struct save_flags *default_flags)
 		} else {
 			LM_ERR("invalid value for 'matching-mode' param, "
 				"discarding trailing <%c>\n", *p);
+		}
+	}
+	/* sip-instance: +sip.instance / reg-id matching (RFC 5626) on or off for
+	 * this call, whatever the matching mode and the usrloc modparam say */
+	if (flag_vals[4].s) {
+		if (flag_vals[4].len == 1 && flag_vals[4].s[0] == '1')
+			save_flags->cmatch.instance_mode = CT_INSTANCE_ON;
+		else if (flag_vals[4].len == 1 && flag_vals[4].s[0] == '0')
+			save_flags->cmatch.instance_mode = CT_INSTANCE_OFF;
+		else {
+			LM_ERR("sip-instance [%.*s] must be 0 or 1\n",
+				flag_vals[4].len, flag_vals[4].s);
+			return -1;
 		}
 	}
 

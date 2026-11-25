@@ -188,6 +188,14 @@ one - so be careful how you deal with REGISTER retransmissions in
 this case.
 
 
+On top of these, a Contact carrying the RFC 5626 *+sip.instance*
+parameter (and optionally *reg-id*) is matched to a stored contact with the
+same *+sip.instance* and *reg-id* first, even if its URI or Call-ID changed
+(a client that reconnects from a new address or with a new Call-ID updates
+its registration instead of adding a new one). See
+**[sip_instance_matching](#sip_instance_matching-integer)**.
+
+
 For more details on how to control/select the contact matching algorithm,
 please go to
 **[matching_mode](#matching_mode-integer)**.
@@ -509,6 +517,27 @@ Name of column containing generic key-value data.
 ```opensips title="Set kv_store_column parameter"
 ...
 modparam("usrloc", "kv_store_column", "json_data")
+...
+```
+
+
+#### reg_id_column (string)
+
+
+Name of column containing the RFC 5626 *reg-id* of the contact (0 if
+none).
+
+
+*Default value is "reg_id".*
+
+
+An existing location table is upgraded with *ALTER TABLE location ADD
+COLUMN reg_id INT NOT NULL DEFAULT 0* (and the table version set to 1014).
+
+
+```opensips title="Set reg_id_column parameter"
+...
+modparam("usrloc", "reg_id_column", "reg_id")
 ...
 ```
 
@@ -864,6 +893,42 @@ matching algorithm.
 ```opensips title="Set matching_mode parameter"
 ...
 modparam("usrloc", "matching_mode", 1)
+...
+```
+
+
+#### sip_instance_matching (integer)
+
+
+Enables the RFC 5626 contact matching: a REGISTER Contact carrying a
+*+sip.instance* parameter is the same registration as a stored, not
+expired contact of the same AoR having the same *+sip.instance* and the
+same *reg-id* (a missing *reg-id* only matches a missing one). The stored
+contact is updated, including its Contact URI, instead of adding a new one.
+If no such contact is found, the [matching_mode](#matching_mode-integer)
+algorithm is used as before. Contacts without *+sip.instance* are not
+affected.
+
+
+The parameter applies only when the save function does not enforce its own
+matching mode: a *matching-mode* save flag turns it off for that call. The
+*sip-instance=0/1* save flag (registrar and mid_registrar) turns the
+matching off or on for that call, whatever this parameter and the matching
+mode say.
+
+
+The *reg-id* of a contact is kept in its own *reg_id* column of the
+location table. It is always loaded together with the *sip_instance*, in
+every DB mode (including db-only), and replicated in a cluster.
+
+
+*Default value is *1 (enabled)*.*
+
+
+```opensips title="Set sip_instance_matching parameter"
+...
+# match contacts only by the matching_mode algorithm, as before
+modparam("usrloc", "sip_instance_matching", 0)
 ...
 ```
 

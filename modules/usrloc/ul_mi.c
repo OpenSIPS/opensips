@@ -469,7 +469,7 @@ mi_response_t *mi_usrloc_flush(const mi_params_t *params,
 mi_response_t *mi_usrloc_add(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_CONTACT_CALLID};
 	ucontact_info_t ci;
 	urecord_t* r;
 	ucontact_t* c;

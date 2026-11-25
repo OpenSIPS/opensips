@@ -39,4 +39,6 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 
 void print_ci(ucontact_info_t *ci);
 
+unsigned int reg_get_reg_id(contact_t *c);
+
 #endif /* __LIB_REG_CI__ */

@@ -1142,6 +1142,7 @@
 		<column><field>sip_instance</field><type>DB_STR</type></column>
 		<column><field>kv_store</field><type>DB_BLOB</type></column>
 		<column><field>attr</field><type>DB_STR</type></column>
+		<column><field>reg_id</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declare all mods
 		Each mod must have:
@@ -5485,6 +5486,7 @@
 				<col><field>sip_instance</field></col>
 				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
+				<col><field>reg_id</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -5509,6 +5511,7 @@
 				<col><field>sip_instance</field></col>
 				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
+				<col><field>reg_id</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -5536,6 +5539,7 @@
 				<col><field>sip_instance</field></col>
 				<col><field>kv_store</field></col>
 				<col><field>attr</field></col>
+				<col><field>reg_id</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

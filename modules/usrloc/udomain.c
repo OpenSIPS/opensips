@@ -224,8 +224,12 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 			ci.q = pair->val.val.i32;
 			break;
 		case 'r':
-			received = pair->val.val.st;
-			ci.received = received;
+			if (pair->key.name.s[1] == 'e' && pair->key.name.s[2] == 'g') {
+				ci.reg_id = (unsigned int)pair->val.val.i32;
+			} else {
+				received = pair->val.val.st;
+				ci.received = received;
+			}
 			break;
 		case 's':
 			switch (pair->key.name.s[1]) {
@@ -265,7 +269,8 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 /*! \brief
  * expects (UL_COLS - 2) columns:
  *   contact_id, contact, expires, q, callid, cseq, flags, cflags, ua,
- *   received, path, socket, methods, last_modified, instance, kv_store, attr)
+ *   received, path, socket, methods, last_modified, instance, kv_store, attr,
+ *   reg_id)
  */
 static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 {
@@ -416,6 +421,8 @@ static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 
 	ci.attr = &attr;
 
+	ci.reg_id = VAL_NULL(vals+17) ? 0 : (unsigned int)VAL_INT(vals+17);
+
 	return &ci;
 }
 
@@ -464,6 +471,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	columns[15] = &sip_instance_col;
 	columns[16] = &kv_store_col;
 	columns[17] = &attr_col;
+	columns[18] = &reg_id_col;
 	columns[UL_COLS - 1] = &domain_col; /* "domain" always stays last */
 
 	if (ul_dbf.use_table(_c, _d->name) < 0) {
@@ -765,6 +773,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	columns[14] = &sip_instance_col;
 	columns[15] = &kv_store_col;
 	columns[16] = &attr_col;
+	columns[17] = &reg_id_col;
 
 	if (desc_time_order)
 		order = &last_mod_col;

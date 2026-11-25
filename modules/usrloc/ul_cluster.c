@@ -194,7 +194,7 @@ void bin_pop_ctmatch(bin_packet_t *packet, struct ct_match *match)
 		if (!param) {
 			LM_ERR("oom\n");
 			free_pkg_str_list(match->match_params);
-			*match = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+			*match = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 			return;
 		}
 		memset(param, 0, sizeof *param);
@@ -246,6 +246,8 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c,
 	st = store_serialize(c->kv_storage);
 	bin_push_str(packet, &st);
 	store_free_buffer(&st);
+
+	bin_push_int(packet, c->reg_id);
 
 	bin_push_ctmatch(packet, match);
 }
@@ -340,6 +342,8 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct,
 	st.len = sizeof ct->contact_id;
 	bin_push_str(&packet, &st);
 
+	bin_push_int(&packet, ct->reg_id);
+
 	bin_push_ctmatch(&packet, match);
 
 	if (cluster_mode == CM_FEDERATION_CACHEDB)
@@ -382,7 +386,7 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c,
 	}
 
 	if (!_match)
-		match = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		match = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		match = *_match;
 
@@ -527,7 +531,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
-	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_NONE};
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	memset(&ci, 0, sizeof ci);
@@ -597,8 +601,11 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	bin_pop_str(packet, &kv_str);
 	ci.packed_kv_storage = &kv_str;
 
+	if (pkg_ver >= UL_BIN_V6)
+		bin_pop_int(packet, (int *)&ci.reg_id);
+
 	if (pkg_ver <= UL_BIN_V2)
-		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
 
@@ -689,7 +696,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
-	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_NONE};
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	memset(&ci, 0, sizeof ci);
@@ -764,8 +771,11 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	unpack_indexes(ci.contact_id, &_, &rlabel, &clabel);
 
+	if (pkg_ver >= UL_BIN_V6)
+		bin_pop_int(packet, (int *)&ci.reg_id);
+
 	if (pkg_ver <= UL_BIN_V2)
-		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
 
@@ -799,6 +809,19 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	} else {
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &cmatch,
 			&contact);
+		if (rc == 1 && ci.instance.s && ci.instance.len) {
+			/* the sender may have matched this contact by +sip.instance and
+			 * reg-id (RFC 5626) and changed its URI: find it the same way and
+			 * take the new URI. No bin format change: both come from the
+			 * contact record (the reg-id from its kv storage) */
+			cmatch.instance = ci.instance;
+			cmatch.reg_id = ci.reg_id;
+			cmatch.instance_mode = CT_INSTANCE_ON;
+			rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1,
+				&cmatch, &contact);
+			if (rc == 0)
+				ci.c = &contact_str;
+		}
 		if (rc == 1) {
 			LM_INFO("contact '%.*s' not found, inserting new (ci: '%.*s')\n",
 				contact_str.len, contact_str.s, callid.len, callid.s);
@@ -843,7 +866,7 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	ucontact_t *contact;
 	str d, aor, contact_str, callid;
 	int cseq, rc;
-	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_NONE};
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	bin_pop_str(packet, &d);
@@ -858,7 +881,7 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	bin_pop_int(packet, &cseq);
 
 	if (pkg_ver <= UL_BIN_V2)
-		cmatch = (struct ct_match){CT_MATCH_CONTACT_CALLID, NULL};
+		cmatch = (struct ct_match){.mode = CT_MATCH_CONTACT_CALLID};
 	else
 		bin_pop_ctmatch(packet, &cmatch);
 
@@ -946,32 +969,32 @@ void receive_binary_packets(bin_packet_t *pkt)
 
 	switch (pkt->type) {
 	case REPL_URECORD_INSERT:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-ins packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_VERSION, "usrloc aor-ins packet");
 		rc = receive_urecord_insert(pkt);
 		break;
 
 	case REPL_URECORD_DELETE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc aor-del packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_VERSION, "usrloc aor-del packet");
 		rc = receive_urecord_delete(pkt);
 		break;
 
 	case REPL_UCONTACT_INSERT:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-ins packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_VERSION, "usrloc ct-ins packet");
 		rc = receive_ucontact_insert(pkt);
 		break;
 
 	case REPL_UCONTACT_UPDATE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-upd packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_VERSION, "usrloc ct-upd packet");
 		rc = receive_ucontact_update(pkt);
 		break;
 
 	case REPL_UCONTACT_DELETE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc ct-del packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_VERSION, "usrloc ct-del packet");
 		rc = receive_ucontact_delete(pkt);
 		break;
 
 	case SYNC_PACKET_TYPE:
-		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_V5, "usrloc sync packet");
+		_ensure_bin_version2(pkt, UL_BIN_V2, UL_BIN_VERSION, "usrloc sync packet");
 		rc = receive_sync_packet(pkt);
 		break;
 
@@ -986,7 +1009,7 @@ void receive_binary_packets(bin_packet_t *pkt)
 
 static int receive_sync_request(int node_id)
 {
-	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
+	struct ct_match cmatch = {.mode = CT_MATCH_CONTACT_CALLID};
 	bin_packet_t *sync_packet;
 	dlist_t *dl;
 	udomain_t *dom;
