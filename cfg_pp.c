@@ -61,8 +61,12 @@ static void cfg_context_reset_all(void);
 static void cfg_context_append_line(struct cfg_context *con,
                                     char *line, int len);
 
-int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
-															str *ret_buffer)
+/* OT ADDITION (#601): split the text loading (flatten + optional
+   preprocessing) out of parse_opensips_cfg(), so a routes reload can
+   compare the freshly-read cfg text against the installed one before
+   paying for a full re-parse in the MI process. */
+int load_opensips_cfg_text(const char *cfg_file, const char *preproc_cmdline,
+														str *ret_buffer)
 {
 	FILE *cfg_stream;
 	str cfg_buf, pp_buf;
@@ -112,6 +116,30 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		}
 	}
 
+	*ret_buffer = cfg_buf;
+	return 0;
+
+out_free:
+	free(cfg_buf.s);
+	return -1;
+}
+
+int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
+														str *ret_buffer)
+{
+	FILE *cfg_stream;
+	str cfg_buf;
+
+	if (load_opensips_cfg_text(cfg_file, preproc_cmdline, &cfg_buf) < 0)
+		return -1;
+
+	cfg_stream = fmemopen(cfg_buf.s, cfg_buf.len, "r");
+	if (!cfg_stream) {
+		LM_ERR("failed to open file for cfg buffer\n");
+		free(cfg_buf.s);
+		return -1;
+	}
+
 #ifdef DEBUG_PARSER
 	/* used for parser debugging */
 	yydebug = 1;
@@ -125,7 +153,8 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
 		fclose(cfg_stream);
-		goto out_free;
+		free(cfg_buf.s);
+		return -1;
 	}
 
 	fclose(cfg_stream);
@@ -137,10 +166,6 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		free(cfg_buf.s);
 
 	return 0;
-
-out_free:
-	free(cfg_buf.s);
-	return -1;
 }
 
 static int extend_cfg_buf(char **buf, int *sz, int *bytes_left, int needed)
