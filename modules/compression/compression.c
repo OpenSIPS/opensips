@@ -565,8 +565,9 @@ static int append_hf2lst(struct hdr_field** lst, struct hdr_field* hf,
 		/* OTHER hdr type */
 		while (temp) {
 			/* Header already exists */
-			if (!strncasecmp(temp->name.s, hf->name.s,
-							temp->name.len)) {
+			if (temp->name.len == hf->name.len &&
+					!strncasecmp(temp->name.s, hf->name.s,
+						hf->name.len)) {
 				while (temp->sibling)
 					temp = temp->sibling;
 
@@ -1074,6 +1075,10 @@ static int mc_compress(struct sip_msg* msg, int *algo_p, int *flags_p,
 		}
 		wh_list->hdr_mask[HDR_CONTENTLENGTH_T/MC_BYTE_SIZE] |=
 					1 << (HDR_CONTENTLENGTH_T%MC_BYTE_SIZE);
+	} else if (wh_list) {
+		/* Keep Content-Length alongside the uncompressed body. */
+		wh_list->hdr_mask[HDR_CONTENTLENGTH_T/MC_BYTE_SIZE] &=
+					~(1 << (HDR_CONTENTLENGTH_T%MC_BYTE_SIZE));
 	}
 
 	args=pkg_malloc(sizeof(struct mc_comp_args));

@@ -130,12 +130,9 @@ deflate/gzip format.
 which headers shall not be compressed, along with the mandatory ones, which can never be
 compressed. The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
 CALLID. Also, CONTENT_TYPE is mandatory only if CONTENT-LENGTH > 0.
-Also, in case you do not want to use body compression, the Content-Length header will
-become a mandatory header, which can not be compressed. In case you do want body
-compression, the old Content-Length Header will be compressed, and a new content length
-will be calculated. When you will want to do decompression, the compressed length will
-be removed, and the content length header will be the same as the one before the
-compression.
+Without body compression, Content-Length stays in the plain SIP headers even
+if the whitelist selects it. When the body is compressed, a new Content-Length
+describes the compressed body, and decompression restores the original length.
 
 
 This function can be used from REQUEST_ROUTE, BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE, FAILURE_ROUTE.
