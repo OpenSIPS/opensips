@@ -1499,24 +1499,54 @@ static void rtp_relay_delete_ctx(struct rtp_relay_ctx *ctx,
 	rtp_relay_delete(&info, ctx, sess, leg);
 }
 
+/* fetch the From tag of a request; a request cloned by tm in shared memory
+ * (e.g. the local BYE of a dialog ended by OpenSIPS, given by the dialog
+ * module to the DLGCB_TERMINATED callbacks) is not parsed directly: its
+ * parsed From would be allocated in this process' private memory, hooked
+ * into the shared clone and never released (same as tracer, see #3038) */
+static int rtp_relay_get_from_tag(struct sip_msg *msg, str *tag)
+{
+	struct to_body from_b;
+
+	if (!(msg->msg_flags & FL_SHM_CLONE)) {
+		if (parse_headers(msg, HDR_FROM_F, 0) < 0 || !msg->from ||
+				parse_from_header(msg) < 0)
+			return -1;
+		*tag = get_from(msg)->tag_value;
+		return 0;
+	}
+	/* the headers of a shm clone are already found - only parse the body */
+	if (!msg->from)
+		return -1;
+	if (get_from(msg)) {
+		*tag = get_from(msg)->tag_value;
+		return 0;
+	}
+	parse_to(msg->from->body.s, msg->from->body.s + msg->from->body.len + 1,
+			&from_b);
+	if (from_b.error == PARSE_ERROR)
+		return -1;
+	*tag = from_b.tag_value;
+	free_to_params(&from_b);
+	return 0;
+}
+
 static int rtp_relay_indlg_get_type(struct sip_msg *msg,
 		struct rtp_relay_ctx *ctx)
 {
 	int ltype;
 	struct rtp_relay_leg *leg;
+	str tag;
 	if (!ctx->established)
 		return -1;
-	if (parse_headers(msg, HDR_FROM_F, 0) < 0 || !msg->from ||
-			parse_from_header(msg) < 0 || !get_from(msg)->tag_value.len) {
+	if (rtp_relay_get_from_tag(msg, &tag) < 0 || !tag.len) {
 		LM_ERR("bad request or missing From header\n");
 		return -1;
 	}
-	leg = rtp_relay_get_leg(ctx, &get_from(msg)->tag_value,
-			RTP_RELAY_ALL_BRANCHES);
+	leg = rtp_relay_get_leg(ctx, &tag, RTP_RELAY_ALL_BRANCHES);
 	if (!leg)
 		return -1;
-	if (!leg->tag.s && shm_str_sync(&leg->tag,
-			&get_from(msg)->tag_value) < 0) {
+	if (!leg->tag.s && shm_str_sync(&leg->tag, &tag) < 0) {
 		LM_ERR("could not store From tag\n");
 		return -1;
 	}
