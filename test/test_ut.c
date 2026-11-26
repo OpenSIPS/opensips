@@ -38,6 +38,27 @@ static void test_unescape_user_oob(const str *tstr, enum oob_position where,
 	ok(1, OOB_CHECK_OK_MSG("_unescape_user", tstr, where));
 }
 
+struct decode_test {
+	const char *name;
+	int (*decode)(unsigned char *, unsigned char *, int);
+	str in;
+};
+
+static int _word32decode(unsigned char *out, unsigned char *in, int len)
+{
+	return word32decode(out, in, len);
+}
+
+static void test_decode_oob(const str *tstr, enum oob_position where,
+		void *farg)
+{
+	struct decode_test *t = (struct decode_test *)farg;
+	unsigned char obuf[64];
+
+	t->decode(obuf, (unsigned char *)tstr->s, tstr->len);
+	ok(1, OOB_CHECK_OK_MSG(t->name, tstr, where));
+}
+
 void test_ut(void)
 {
 	ok(is_e164(_str("")) == -1, "test-e164-0");
@@ -220,5 +241,32 @@ void test_ut(void)
 
 		for (i = 0; escaped[i].s != NULL; i++)
 			test_oob(&escaped[i], test_unescape_user_oob, NULL);
+	}
+
+	/* base64/word64/base32 decoders read-past-end regression: an input
+	 * that ends inside a group must not have the rest of the group read
+	 * from beyond len, nor decoded into more than calc_max_*_decode_len()
+	 * bytes. The '!' (invalid in every alphabet) shifts the groups. */
+	{
+		struct decode_test dtests[] = {
+			{"base64decode", base64decode, str_init("QUJD!REVGRw")},
+			{"base64urldecode", base64urldecode, str_init("QUJD!REVGRw")},
+			{"word64decode", word64decode, str_init("QUJD!REVGRw")},
+			{"word32decode", _word32decode, str_init("IFBEG!RCFI5DS")},
+		};
+		unsigned char obuf[16];
+		int i;
+
+		for (i = 0; i < sizeof(dtests)/sizeof(dtests[0]); i++)
+			test_oob(&dtests[i].in, test_decode_oob, &dtests[i]);
+
+		ok(base64decode(obuf, (unsigned char *)"QUJD", 2) == 1,
+			"test-base64decode-len-0");
+		ok(base64urldecode(obuf, (unsigned char *)"QUJD", 3) == 2,
+			"test-base64urldecode-len-0");
+		ok(word64decode(obuf, (unsigned char *)"QUJD", 1) == 0,
+			"test-word64decode-len-0");
+		ok(word32decode(obuf, (unsigned char *)"IFBEGRCF", 7) == 4,
+			"test-word32decode-len-0");
 	}
 }
