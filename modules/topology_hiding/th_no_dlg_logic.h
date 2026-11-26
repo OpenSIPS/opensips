@@ -41,6 +41,7 @@ typedef struct {
 	str param_name;
 	str param_password;
 	int compact_encoding;
+	int stored;
 } thinfo_options_t;
 
 extern str decoded_uris[MAX_ENCODED_SIP_URIS];
@@ -59,5 +60,6 @@ int topo_hiding_match_no_dlg(struct sip_msg *msg);
 void th_free_param_passwords(void);
 int th_add_encode_param_password(modparam_t type, void *val);
 int th_set_use_param(str *);
+int th_stored_encoding_used(void);
 
 #endif
