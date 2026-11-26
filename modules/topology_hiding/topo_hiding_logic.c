@@ -1025,6 +1025,16 @@ int topo_callid_post_raw(str *data, struct sip_msg* foo)
 		goto done;
 	}
 
+	/* only mask messages that belong to the dialog itself; requests generated
+	 * by other modules while processing this dialog (e.g. the SIPREC INVITE
+	 * towards the SRS) carry their own Call-ID and must be left untouched */
+	if (msg.callid == NULL || msg.callid->body.len != dlg->callid.len ||
+	memcmp(msg.callid->body.s, dlg->callid.s, dlg->callid.len) != 0) {
+		LM_DBG("message does not belong to dialog [%.*s] - not masking callid\n",
+			dlg->callid.len, dlg->callid.s);
+		goto done;
+	}
+
 	if (msg.first_line.type==SIP_REQUEST) {
 		if (get_to(&msg)->tag_value.len>0) {
 			/* sequential request, check if callid needs to be unmasked */
