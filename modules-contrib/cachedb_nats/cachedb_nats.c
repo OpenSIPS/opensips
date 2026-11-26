@@ -71,6 +71,8 @@
 #include "cachedb_nats.h"
 #include "cachedb_nats_dbase.h"
 #include "cachedb_nats_json.h"
+#include "cachedb_nats_json_internal.h"
+#include "cachedb_nats_json_api.h"
 #include "../cachedb_nats_fts/cachedb_nats_fts_api.h"
 #include "cachedb_nats_watch.h"
 #include "cachedb_nats_native.h"
@@ -358,6 +360,18 @@ static const param_export_t params[] = {
 	{0, 0, 0}
 };
 
+/* "cdbn_json_bind": the JSON walkers for cachedb_nats_fts (see
+ * cachedb_nats_json_api.h) */
+static int cdbn_json_bind(cdbn_json_api_t *api)
+{
+	if (!api)
+		return -1;
+	api->skip_ws           = cdbn_skip_ws;
+	api->parse_json_string = cdbn_parse_json_string;
+	api->skip_json_value   = cdbn_skip_json_value;
+	return 0;
+}
+
 static const cmd_export_t cmds[] = {
 	/* Synchronous NATS request/reply from script is provided ONLY by
 	 * the nats_consumer module (headers + async support); this module's
@@ -398,6 +412,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR, 0, 0},   /* revision pvar (output) */
 		{0, 0, 0}},
 	ALL_ROUTES},
+	/* the JSON walkers, for cachedb_nats_fts (cachedb_nats_json_api.h) */
+	{"cdbn_json_bind", (cmd_function)cdbn_json_bind, {{0, 0, 0}}, 0},
 	{0, 0, {{0, 0, 0}}, 0}
 };
 
@@ -502,10 +518,12 @@ struct module_exports exports = {
 	"cachedb_nats",             /* module name */
 	MOD_TYPE_CACHEDB,           /* class of this module */
 	MODULE_VERSION,
-	RTLD_NOW | RTLD_GLOBAL,     /* dlopen flags: GLOBAL so the optional
-	                             * cachedb_nats_fts module (loaded after
-	                             * us) resolves the shared JSON walkers
-	                             * this module defines */
+	DEFAULT_DLFLAGS,            /* dlopen flags: never RTLD_GLOBAL, which
+	                             * would let this module's symbols, its
+	                             * exports included, stand in for those
+	                             * of modules loaded after it;
+	                             * cachedb_nats_fts takes the JSON walkers
+	                             * through cdbn_json_bind instead */
 	0,                          /* load function */
 	&deps,                      /* OpenSIPS module dependencies */
 	cmds,                       /* exported functions */

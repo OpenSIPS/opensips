@@ -25,6 +25,7 @@ void cn_ut_fmt_table(void);
 void cn_ut_fts_optional(void);
 void cn_ut_index_stale_recovery(void);
 void cn_ut_insecure_url_warn(void);
+void cn_ut_json_bind_scope(void);
 void cn_ut_json_escape(void);
 void cn_ut_json_foreach(void);
 void cn_ut_json_name_passthrough(void);
