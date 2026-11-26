@@ -154,8 +154,12 @@ static int srec_stop_recording(struct src_sess *ss)
 		return 0;
 	}
 	ss->flags |= SIPREC_STOPPED;
-	SIPREC_UNLOCK(ctx);
 
+	/* end the session while still holding the ctx lock: the SRS reply and
+	 * request handlers (srec_b2b_notify(), srec_b2b_req()) delete the media
+	 * copy and release the b2b key under the same lock, and all the
+	 * recording sessions of the call keep their media copies in the same
+	 * rtp_relay context */
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
 	req.b2b_key = &ss->b2b_key;
@@ -168,6 +172,7 @@ static int srec_stop_recording(struct src_sess *ss)
 				req.b2b_key->len, req.b2b_key->s);
 	srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
 	raise_siprec_stop_event(ss);
+	SIPREC_UNLOCK(ctx);
 	return 0;
 }
 
@@ -311,12 +316,17 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 		if (srec_reply(ss, METHOD_BYE, 200, NULL) < 0)
 			LM_ERR("could not confirm recording session ending!\n");
 
+		/* a stop running in parallel (see srec_stop_recording()) marks the
+		 * recording as stopped and deletes the media copy under the ctx
+		 * lock - only one of them must delete it */
+		SIPREC_LOCK(ss->ctx);
 		if (!(ss->flags & SIPREC_STOPPED)) {
 			ss->flags |= SIPREC_STOPPED;
 			srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
 			raise_siprec_stop_event(ss);
 		}
 		srec_logic_destroy(ss, 0);
+		SIPREC_UNLOCK(ss->ctx);
 		return 0;
 	}
 
@@ -325,16 +335,29 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 			goto reply;
 		code = 200;
 	} else {
+		/* the media copy is deleted by a stop under the ctx lock - only
+		 * update it under the same lock, if not stopped in the meantime */
+		SIPREC_LOCK(ss->ctx);
+		if (ss->flags & SIPREC_STOPPED) {
+			SIPREC_UNLOCK(ss->ctx);
+			LM_DBG("recording %p already stopped\n", ss);
+			body.len = 0;
+			code = 481;
+			goto reply;
+		}
 		if (srec_rtp.copy_answer(ss->ctx->rtp, &ss->instance,
 				&ss->media, &body) < 0) {
+			SIPREC_UNLOCK(ss->ctx);
 			LM_ERR("could not offer new SDP!\n");
 			code = 488;
 			goto reply;
 		}
 		if (srec_get_body(ss, &body) < 0) {
+			SIPREC_UNLOCK(ss->ctx);
 			LM_ERR("could not refresh recording!\n");
 			goto reply;
 		}
+		SIPREC_UNLOCK(ss->ctx);
 		code = 200;
 	}
 
@@ -348,7 +371,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 {
 	struct b2b_req_data req;
 	struct src_sess *ss;
-	int ret = -1;
+	int ret = -1, stopped;
 	str ack = str_init(ACK);
 	str bye = str_init(BYE);
 
@@ -392,6 +415,10 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		 * ongoing media sessions */
 		if (ss->flags & SIPREC_ONGOING)
 			return 0;
+		/* handle the failure under the ctx lock, where a stop marks the
+		 * recording as stopped (see srec_stop_recording()); the failover
+		 * sends the new INVITE under the lock, just like the initial one */
+		SIPREC_LOCK(ss->ctx);
 		if (ss->flags & SIPREC_STOPPED)
 			goto no_recording;
 		if (!ss->ctx->dlg || ss->ctx->dlg->state >= DLG_STATE_DELETED) {
@@ -405,11 +432,18 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 				srs_do_failover(ss) < 0) {
 			LM_DBG("no more to failover!\n");
 			goto no_recording;
-		} else
-			return 0;
+		}
+		SIPREC_UNLOCK(ss->ctx);
+		return 0;
 	}
 	ret = -1;
 
+	/* the rest of the reply handling, the cleanup included, is done under
+	 * the ctx lock: a stop running in parallel (see srec_stop_recording())
+	 * marks the recording as stopped and deletes its media copy under the
+	 * same lock, so the media copy is only answered if the recording was not
+	 * stopped, and it is deleted only once */
+	SIPREC_LOCK(ss->ctx);
 	if (ss->initial_sdp.s) {
 		shm_free(ss->initial_sdp.s);
 		ss->initial_sdp.s = NULL;
@@ -447,10 +481,16 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		goto no_recording;
 	}
 	raise_siprec_start_event(ss);
+	SIPREC_UNLOCK(ss->ctx);
 
 	return 0;
 no_recording:
-	if (ret != 0 && !(ss->flags & SIPREC_STOPPED)) {
+	/* called with the ctx lock held: whoever marks the recording as stopped
+	 * first, here or in srec_stop_recording(), ends the session and deletes
+	 * its media copy */
+	stopped = ss->flags & SIPREC_STOPPED;
+	ss->flags |= SIPREC_STOPPED;
+	if (ret != 0 && !stopped) {
 		memset(&req, 0, sizeof(req));
 		req.et = B2B_CLIENT;
 		req.b2b_key = &ss->b2b_key;
@@ -462,17 +502,17 @@ no_recording:
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
-	if (ss->ctx->dlg && !(ss->flags & SIPREC_STOPPED)) {
+	if (ss->ctx->dlg && !stopped) {
 		if (ss->ctx->dlg->state >= DLG_STATE_DELETED)
 			LM_DBG("rtp context=%p already destroyed dlg=%p!\n", ss->ctx, ss->ctx->dlg);
 		else
 			srec_rtp.copy_delete(ss->ctx->rtp, &ss->instance, &ss->media);
 	}
 
-	if ((ss->flags & (SIPREC_STARTED|SIPREC_STOPPED)) == SIPREC_STARTED)
+	if ((ss->flags & SIPREC_STARTED) && !stopped)
 		raise_siprec_stop_event(ss);
 	srec_logic_destroy(ss, 0);
-	ss->flags |= SIPREC_STOPPED;
+	SIPREC_UNLOCK(ss->ctx);
 
 	if (!(ss->flags & SIPREC_DLG_CBS)) {
 		/* if the dialog has already been engaged, then we need to keep the
@@ -797,11 +837,13 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 		return;
 
 	body = get_body_part(ps->rpl, TYPE_APPLICATION, SUBTYPE_SDP);
-	if (body && body->len)
-		ss->flags |= SIPREC_ANSWERED;
 
 	ctx = ss->ctx;
 	SIPREC_LOCK(ctx);
+	/* the flags are also changed by other processes (e.g. by a stop), always
+	 * under the ctx lock - an unlocked update here could drop their change */
+	if (body && body->len)
+		ss->flags |= SIPREC_ANSWERED;
 	/* engage only on successful calls */
 	/* if session has been started, do not start it again */
 	if (ss->flags & SIPREC_STOPPED)
