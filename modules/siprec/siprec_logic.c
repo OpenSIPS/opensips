@@ -340,6 +340,10 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 
 reply:
 	srec_reply(ss, msg->REQ_METHOD, code, (body.len?&body:NULL));
+	/* a 200 OK with a body carries the new SDP of the media copy, which
+	 * srec_get_body() allocated for us - the reply has its own copy */
+	if (code == 200 && body.len)
+		pkg_free(body.s);
 	return 0;
 }
 
@@ -764,6 +768,8 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	pkg_free(sdp.s);
 	srs_send_update_invite(sess, &body);
+	/* the request has its own copy of the body, as in srs_send_invite() */
+	pkg_free(body.s);
 
 	return 0;
 error:
