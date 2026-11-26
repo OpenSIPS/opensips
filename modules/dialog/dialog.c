@@ -479,7 +479,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_unset_dlg_profile, {"dlg_id", "profile","value", 0}},
 		{EMPTY_MI_RECIPE}}, {"dlg_unset_profile", 0}
 	},
-	{ "update_contact", 0, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "update_contact", 0, 0, 0, {
 		{mi_dlg_update_contact, {"profile", "leg", "contact", 0}},
 		{mi_dlg_update_contact, {"profile", "value", "leg", "contact", 0}},
 		{EMPTY_MI_RECIPE}}, {"dlg_update_contact", 0}
