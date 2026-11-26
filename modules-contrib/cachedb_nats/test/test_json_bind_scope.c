@@ -69,8 +69,9 @@ static void global_scope(const struct sr_module *m)
 
 	/* The main program's handle searches the global scope only: the
 	 * program, its startup libraries and RTLD_GLOBAL objects.
-	 * RTLD_DEFAULT cannot be used here, as glibc searches it from the
-	 * scope of the caller, which always holds cachedb_nats.so itself. */
+	 * RTLD_DEFAULT cannot be used here: it is a GNU extension, and
+	 * glibc searches it from the scope of the caller, which always
+	 * holds cachedb_nats.so itself. */
 	main_h = dlopen(NULL, RTLD_NOW);
 	ok(main_h != NULL, "json_bind_scope: dlopen(NULL) gives the global scope");
 	if (!main_h)

@@ -127,8 +127,11 @@ static void global_scope(void)
 	ok(dlsym(main_h, "cdbn_skip_json_value") == NULL,
 		"json_bind: cdbn_skip_json_value does not resolve in the "
 		"global scope");
-	ok(dlsym(RTLD_DEFAULT, "cdbn_skip_ws") == NULL,
-		"json_bind: nor from this module's own scope");
+	/* the rest of this module's lookup scope: itself and its
+	 * dependencies (the handle form is POSIX; RTLD_DEFAULT is a GNU
+	 * extension, declared only under _GNU_SOURCE) */
+	ok(dlsym(fts->handle, "cdbn_skip_ws") == NULL,
+		"json_bind: nor in cachedb_nats_fts.so and its dependencies");
 	dlclose(main_h);
 }
 
