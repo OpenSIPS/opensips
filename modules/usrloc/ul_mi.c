@@ -332,13 +332,14 @@ mi_response_t *mi_usrloc_rm_contact(const mi_params_t *params,
 }
 
 
-mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
+mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump,
+		const str *aor_prefix, int limit, int offset)
 {
 	struct urecord* r;
 	dlist_t* dl;
 	udomain_t* dom;
 	time_t t;
-	int i;
+	int i, returned = 0;
 	map_iterator_t it;
 	void ** dest;
 	mi_response_t *resp;
@@ -401,6 +402,16 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 				}
 				r =( urecord_t * ) *dest;
 
+				/* Keep filtering and page skipping under the slot lock. */
+				if (aor_prefix &&
+					(r->aor.len < aor_prefix->len ||
+					 memcmp(r->aor.s, aor_prefix->s, aor_prefix->len) != 0))
+					continue;
+				if (offset > 0) {
+					offset--;
+					continue;
+				}
+
 				aor_item = add_mi_object(aors_arr, NULL, 0);
 				if (!aor_item) {
 					LM_ERR("Failed to add mi item\n");
@@ -412,6 +423,10 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 					LM_ERR("Failed to add AOR info\n");
 					goto error_unlock;
 				}
+				if (limit > 0 && ++returned >= limit) {
+					unlock_ulslot(dom, i);
+					goto dump_done;
+				}
 			}
 
 			unlock_ulslot( dom, i);
@@ -419,6 +434,7 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 
 	}
 
+dump_done:
 	return resp;
 
 error_unlock:
@@ -432,7 +448,7 @@ error:
 mi_response_t *w_mi_usrloc_dump(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	return mi_usrloc_dump(params, 0);
+	return mi_usrloc_dump(params, 0, NULL, 0, 0);
 }
 
 mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
@@ -443,7 +459,41 @@ mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
 	if (get_mi_int_param(params, "brief", &brief) < 0)
 		return init_mi_param_error();
 
-	return mi_usrloc_dump(params, brief);
+	return mi_usrloc_dump(params, brief, NULL, 0, 0);
+}
+
+
+/*
+ * Scoped dump variant: any of brief / aor_prefix / limit / offset may be
+ * present, as selected by the registered recipes. The legacy zero/one
+ * parameter recipes above are intentionally unchanged, so existing MI
+ * clients retain their output.
+ */
+mi_response_t *w_mi_usrloc_dump_scoped(const mi_params_t *params,
+				struct mi_handler *async_hdl)
+{
+	str prefix = STR_NULL;
+	int brief = 0, limit = 0, offset = 0, rc;
+
+	rc = try_get_mi_int_param(params, "brief", &brief);
+	if (rc < 0 && rc != -1)
+		return init_mi_param_error();
+	rc = try_get_mi_string_param(params, "aor_prefix", &prefix.s, &prefix.len);
+	if (rc < 0 && rc != -1)
+		return init_mi_param_error();
+	rc = try_get_mi_int_param(params, "limit", &limit);
+	if (rc < 0 && rc != -1)
+		return init_mi_param_error();
+	if (rc == 0 && limit <= 0)
+		return init_mi_error(400, MI_SSTR("limit must be > 0 and offset >= 0"));
+	rc = try_get_mi_int_param(params, "offset", &offset);
+	if (rc < 0 && rc != -1)
+		return init_mi_param_error();
+	if (offset < 0)
+		return init_mi_error(400, MI_SSTR("limit must be > 0 and offset >= 0"));
+
+	return mi_usrloc_dump(params, brief, prefix.s ? &prefix : NULL,
+			limit, offset);
 }
 
 mi_response_t *mi_usrloc_flush(const mi_params_t *params,

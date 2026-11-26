@@ -1333,20 +1333,39 @@ is on).
 
 #### usrloc:dump
 
-
 Replaces obsolete MI command: *ul_dump*.
 
-
-Dumps the entire content of the USRLOC in memory cache
-
+Dumps the content of the USRLOC in-memory cache. With no parameters the
+existing full-dump behavior is preserved.
 
 Parameters:
 
+- *brief* (integer, optional): when nonzero, only AoRs are returned
+  without contact details.
+- *aor_prefix* (string, optional): only include AoRs beginning with this
+  **case-sensitive** prefix. An empty prefix matches all AoRs.
+- *limit* (positive integer): maximum number of AoR records to return.
+  Must be supplied together with *offset*.
+- *offset* (non-negative integer): skip this many (matching) AoRs.
+  Must be supplied together with *limit*.
 
-- *brief* - (optional, may not be present); if
-equals to string "brief", a brief dump will be
-done (only AOR and contacts, with no other details)
+Supported combinations: no arguments; `brief`; `limit, offset`;
+`brief, limit, offset`; `aor_prefix`; `brief, aor_prefix`;
+`aor_prefix, limit, offset`; or `brief, aor_prefix, limit, offset`.
+The output retains its existing `Domains` / `AORs` structure.
+`limit` counts AoRs (not Contacts), across all domains. For example:
 
+```sh
+opensips-cli -x mi usrloc:dump limit=100 offset=0
+opensips-cli -x mi usrloc:dump aor_prefix=10 limit=100 offset=0
+```
+
+**Important:** offset-based pagination is not a consistent snapshot.
+Registrations can be inserted, removed or refreshed between calls; AoR
+iteration order is not guaranteed. Clients must not rely on stable pages
+or exact-once traversal under concurrent updates. Limit the MI endpoint
+to trusted management networks, since dump results contain SIP
+registration details.
 
 #### usrloc:flush
 
