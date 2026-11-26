@@ -152,24 +152,59 @@ static inline int should_send_stream_proxy_protocol(const struct tcp_connection 
 		(c->flags & F_CONN_PROXY_OUT_SENT) == 0;
 }
 
+/* Attaches to a newly created outbound connection the endpoints of the
+ * message which triggered it, as the PROXY header is sent only later, when
+ * the connect completes (with no message around anymore).
+ * To be called only by the process which created the connection, before
+ * making it public (the connection is not locked here). */
+void save_stream_proxy_protocol_origin(struct tcp_connection *c,
+		const struct receive_info *ri)
+{
+	if (!ri || !should_send_stream_proxy_protocol(c) ||
+			(c->flags & F_CONN_HASHED) || c->pp_out.flags == PP_OK)
+		return;
+
+	if (ri->real_ep.flags == PP_OK) {
+		c->pp_out = ri->real_ep;
+	} else {
+		c->pp_out.src_ip = ri->src_ip;
+		c->pp_out.src_port = ri->src_port;
+		c->pp_out.dst_ip = ri->dst_ip;
+		c->pp_out.dst_port = ri->dst_port;
+		c->pp_out.flags = PP_OK;
+	}
+}
+
 int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 		int write_timeout, int lock, const struct receive_info *ri,
 		const char *proto_name)
 {
 	char pp_hdr[PROXY_PROTOCOL_BUF_MAX];
 	int pp_len, rc, dbg_len;
-	const char *action;
 
 	if (!should_send_stream_proxy_protocol(c))
 		return 0;
 
-	if (fd < 0 && ((c->flags & F_CONN_INIT) == 0 || c->fd < 0))
+	if (fd < 0) {
+		/* we are not the ones writing on the connection: the header is
+		 * sent only by the process doing the actual write (TCP main),
+		 * ahead of the first data - having it queued from here too would
+		 * race with that, ending up with a duplicated or misplaced header.
+		 * There will be no message at that time, so all we do is to
+		 * remember the original endpoints */
+		save_stream_proxy_protocol_origin(c, ri);
 		return 0;
+	}
 
-	pp_len = build_outbound_proxy_protocol_v1_hdr(ri,
-			&c->rcv.dst_ip, c->rcv.dst_port,
-			&c->rcv.src_ip, c->rcv.src_port,
-			pp_hdr, sizeof(pp_hdr));
+	if (!ri && c->pp_out.flags == PP_OK)
+		pp_len = build_proxy_protocol_v1_hdr(&c->pp_out.src_ip,
+				c->pp_out.src_port, &c->pp_out.dst_ip, c->pp_out.dst_port,
+				pp_hdr, sizeof(pp_hdr));
+	else
+		pp_len = build_outbound_proxy_protocol_v1_hdr(ri,
+				&c->rcv.dst_ip, c->rcv.dst_port,
+				&c->rcv.src_ip, c->rcv.src_port,
+				pp_hdr, sizeof(pp_hdr));
 	if (pp_len < 0) {
 		LM_ERR("failed to build outbound PROXY header\n");
 		return -1;
@@ -180,33 +215,20 @@ int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 			pp_hdr[dbg_len - 1] == '\n')
 		dbg_len -= 2;
 
-	action = (fd < 0) ? "queueing" : "sending";
-	LM_DBG("%s outbound PROXY header on %s conn %u: %.*s\n",
-			action, proto_name ? proto_name : "stream", c->id,
-			dbg_len, pp_hdr);
+	LM_DBG("sending outbound PROXY header on %s conn %u: %.*s\n",
+			proto_name ? proto_name : "stream", c->id, dbg_len, pp_hdr);
 
-	if (fd < 0) {
-		rc = tcp_async_add_chunk(c, pp_hdr, pp_len, lock);
-	} else {
-		if (lock)
-			lock_get(&c->write_lock);
-		rc = tsend_stream(fd, pp_hdr, pp_len, write_timeout);
-		if (lock)
-			lock_release(&c->write_lock);
-		if (rc != pp_len) {
-			LM_ERR("failed to send outbound PROXY header on %s\n",
-					proto_name ? proto_name : "stream");
-			return -1;
-		}
-		tcp_conn_reset_lifetime(c);
-		rc = 0;
-	}
-
-	if (rc < 0) {
+	if (lock)
+		lock_get(&c->write_lock);
+	rc = tsend_stream(fd, pp_hdr, pp_len, write_timeout);
+	if (lock)
+		lock_release(&c->write_lock);
+	if (rc != pp_len) {
 		LM_ERR("failed to send outbound PROXY header on %s\n",
 				proto_name ? proto_name : "stream");
 		return -1;
 	}
+	tcp_conn_reset_lifetime(c);
 
 	c->flags |= F_CONN_PROXY_OUT_SENT;
 	return 0;

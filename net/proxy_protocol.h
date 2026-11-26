@@ -37,6 +37,8 @@ int build_outbound_proxy_protocol_v1_hdr(const struct receive_info *ri,
 		const struct ip_addr *fallback_dst_ip,
 		unsigned short fallback_dst_port,
 		char *buf, int size);
+void save_stream_proxy_protocol_origin(struct tcp_connection *c,
+		const struct receive_info *ri);
 int send_stream_proxy_protocol_v1(struct tcp_connection *c, int fd,
 		int write_timeout, int lock,
 		const struct receive_info *ri, const char *proto_name);

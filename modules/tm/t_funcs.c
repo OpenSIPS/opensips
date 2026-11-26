@@ -64,10 +64,22 @@ int send_pr_buffer( struct retr_buf *rb, void *buf, int len,
 #endif
 					void* ctx)
 {
-	if (buf && len && rb )
-		return msg_send( rb->dst.send_sock, rb->dst.proto, &rb->dst.to,
-				         rb->dst.proto_reserved1, buf, len, ctx);
-	else {
+	struct sip_msg *req = NULL;
+
+	if (buf && len && rb ) {
+		/* a request sent out on behalf of a received one (relayed request,
+		 * its retransmissions, hop-by-hop ACK or CANCEL): let the transport
+		 * layer know (read-only) which was the original request, as it may
+		 * need its receive info (e.g. Proxy Protocol); local transactions
+		 * and replies have no such "original" endpoints */
+		if (ctx)
+			req = ctx;
+		else if (rb->my_T && rb != &rb->my_T->uas.response &&
+		!is_local(rb->my_T))
+			req = rb->my_T->uas.request;
+		return msg_send_rcv( rb->dst.send_sock, rb->dst.proto, &rb->dst.to,
+				         rb->dst.proto_reserved1, buf, len, ctx, req);
+	} else {
 #ifdef EXTRA_DEBUG
 		LM_CRIT("sending an empty buffer from %s: %s (%d)\n",file,
 				function, line);

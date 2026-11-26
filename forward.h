@@ -86,11 +86,18 @@ int forward_reply( struct sip_msg* msg);
  *       that generated them; use 0 if you don't want this)
  * \param buf - the buffer containing the message to be sent
  * \param len - the length of the message to be sent
+ * \param msg - the SIP message being processed (if any), handed to the
+ *       raw processing callbacks
+ * \param rcv_msg - the SIP message (if any) that triggered this sending;
+ *       it is only read by the transport layer, in order to learn the
+ *       receive info of the original message (e.g. for advertising the
+ *       original endpoints via Proxy Protocol). It may be a shm clone.
  * \return 0 if ok, -1 on error
  */
-static inline int msg_send( const struct socket_info* send_sock, int proto,
+static inline int msg_send_rcv( const struct socket_info* send_sock, int proto,
 							union sockaddr_union* to, unsigned int id,
-							char* buf, int len, struct sip_msg* msg)
+							char* buf, int len, struct sip_msg* msg,
+							struct sip_msg* rcv_msg)
 {
 	str out_buff;
 	unsigned short port;
@@ -138,7 +145,7 @@ static inline int msg_send( const struct socket_info* send_sock, int proto,
 	}
 
 	if (protos[proto].tran.send(send_sock, out_buff.s, out_buff.len, to, id,
-			msg) < 0){
+			rcv_msg) < 0){
 		get_su_info(to, ip, port);
 		LM_ERR("send() to %s:%hu for proto %s/%d failed\n",
 				ip, port, proto2a(proto),proto);
@@ -154,6 +161,16 @@ error:
 	if (out_buff.s != buf)
 		pkg_free(out_buff.s);
 	return -1;
+}
+
+
+/*! \brief same as msg_send_rcv(), with the processed SIP message (if any)
+ * also being the one providing the receive info to the transport layer */
+static inline int msg_send( const struct socket_info* send_sock, int proto,
+							union sockaddr_union* to, unsigned int id,
+							char* buf, int len, struct sip_msg* msg)
+{
+	return msg_send_rcv(send_sock, proto, to, id, buf, len, msg, msg);
 }
 
 
