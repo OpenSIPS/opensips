@@ -368,12 +368,16 @@ static struct th_params *th_params_dup(struct th_params *params)
 		LM_ERR("oom for username dup\n");
 		return NULL;
 	}
+	/* one block: the caller username, then the callee one; either may
+	 * be unset (NULL, 0) */
 	ret->ct_caller_user.s = (char *)(ret + 1);
-	memcpy(ret->ct_caller_user.s, params->ct_caller_user.s, params->ct_caller_user.len);
 	ret->ct_caller_user.len = params->ct_caller_user.len;
-	ret->ct_callee_user.s = ret->ct_caller_user.s;
-	memcpy(ret->ct_callee_user.s, params->ct_callee_user.s, params->ct_callee_user.len);
+	if (ret->ct_caller_user.len)
+		memcpy(ret->ct_caller_user.s, params->ct_caller_user.s, ret->ct_caller_user.len);
+	ret->ct_callee_user.s = ret->ct_caller_user.s + ret->ct_caller_user.len;
 	ret->ct_callee_user.len = params->ct_callee_user.len;
+	if (ret->ct_callee_user.len)
+		memcpy(ret->ct_callee_user.s, params->ct_callee_user.s, ret->ct_callee_user.len);
 	return ret;
 }
 
@@ -533,7 +537,8 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 	int dir = params->direction;
 	struct sip_msg *req = params->msg;
 	int adv_leg = -1, leg;
-	str *ct_user = (str *)(*params->param);
+	struct th_params *ct_users = (struct th_params *)(*params->param);
+	str *ct_user = NULL;
 
 	if (!req) {
 		LM_ERR("Called with NULL SIP message \n");
@@ -574,6 +579,11 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 
 	leg = (params->dst_leg < 0?DLG_CALLER_LEG:params->dst_leg);
 	req->force_send_socket = dlg->legs[leg].bind_addr;
+	/* advertise the username meant for the side the request goes to:
+	 * the caller (upstream) or the callee (downstream) */
+	if (ct_users)
+		ct_user = (dir == DLG_DIR_UPSTREAM) ?
+			&ct_users->ct_caller_user : &ct_users->ct_callee_user;
 	switch (dir) {
 	case DLG_DIR_UPSTREAM:
 		if (dlg_api.is_mod_flag_set(dlg, TOPOH_KEEP_ADV_A))
