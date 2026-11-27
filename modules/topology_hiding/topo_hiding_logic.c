@@ -368,12 +368,16 @@ static struct th_params *th_params_dup(struct th_params *params)
 		LM_ERR("oom for username dup\n");
 		return NULL;
 	}
+	/* one block: the caller username, then the callee one; either may
+	 * be unset (NULL, 0) */
 	ret->ct_caller_user.s = (char *)(ret + 1);
-	memcpy(ret->ct_caller_user.s, params->ct_caller_user.s, params->ct_caller_user.len);
 	ret->ct_caller_user.len = params->ct_caller_user.len;
-	ret->ct_callee_user.s = ret->ct_caller_user.s;
-	memcpy(ret->ct_callee_user.s, params->ct_callee_user.s, params->ct_callee_user.len);
+	if (ret->ct_caller_user.len)
+		memcpy(ret->ct_caller_user.s, params->ct_caller_user.s, ret->ct_caller_user.len);
+	ret->ct_callee_user.s = ret->ct_caller_user.s + ret->ct_caller_user.len;
 	ret->ct_callee_user.len = params->ct_callee_user.len;
+	if (ret->ct_callee_user.len)
+		memcpy(ret->ct_callee_user.s, params->ct_callee_user.s, ret->ct_callee_user.len);
 	return ret;
 }
 
