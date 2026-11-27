@@ -1914,17 +1914,12 @@ static inline int calculate_body_diff(struct sip_msg *msg,
 													const struct socket_info *sock )
 {
 	str body, rcv_body = STR_NULL;
-	struct sdp_body_part_ops *ops;
 
 	if (have_sdp_ops(msg)) {
-		if (get_body(msg, &body) != 0 || body.len==0)
+		if (get_body(msg, &body) != 0)
 			return 0;
 
-		ops = msg->sdp_ops;
-		msg->sdp_ops = NULL;
-		get_body(msg, &rcv_body);
-		msg->sdp_ops = ops;
-
+		get_received_body(msg, &rcv_body);
 		return body.len - rcv_body.len;
 	}
 
@@ -1948,25 +1943,28 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 							unsigned int max_offset)
 {
 	unsigned int size;
-	str body;
+	str body, rcv_body;
 
 	/* apply changes over the SIP headers */
 	process_lumps(msg, msg->add_rm, new_buf, new_offs, orig_offs, sock, -1);
 
 	/* real-time SDP changes */
 	if (have_sdp_ops(msg)) {
-		if (get_body(msg, &body) != 0 || body.len==0)
+		if (get_body(msg, &body) != 0)
 			return;
 
-		size = msg->body->body.s ?
-			((msg->body->body.s - msg->buf) - *orig_offs)  /* msg had body */
-			: (msg->len - *orig_offs);                     /* no body at all */
+		/* The body offset must come from the original message buffer. */
+		size = max_offset - *orig_offs;
+		if (get_received_body(msg, &rcv_body) == 0)
+			size -= rcv_body.len;
 		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, size );
 		*new_offs += size;
 		*orig_offs += size;
 
-		memcpy(new_buf+*new_offs, body.s, body.len);
-		*new_offs += body.len;
+		if (body.len) {
+			memcpy(new_buf+*new_offs, body.s, body.len);
+			*new_offs += body.len;
+		}
 		return;
 	}
 
@@ -2361,7 +2359,8 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 
 build_msg:
 	/* adjust len to the useful part of the message */
-	if (!have_sdp_ops(msg) && get_body(msg, &body) == 0 && body.len)
+	if (get_received_body(msg, &body) == 0 && body.s &&
+			(body.len || have_sdp_ops(msg)))
 		len -= (msg->buf + msg->len - body.s - body.len);
 
 	/* compute new msg len and fix overlapping zones*/
@@ -2467,7 +2466,8 @@ char * build_res_buf_from_sip_res( struct sip_msg* msg,
 	}
 
 	/* adjust len to the useful part of the message */
-	if (get_body(msg, &body) == 0 && body.len)
+	if (get_received_body(msg, &body) == 0 && body.s &&
+			(body.len || have_sdp_ops(msg)))
 		len -= (msg->buf + msg->len - body.s - body.len);
 	new_len=len+body_delta+lumps_len(msg, msg->add_rm, sock, -1);
 

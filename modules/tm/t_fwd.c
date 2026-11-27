@@ -53,6 +53,7 @@
 #include "../../mem/mem.h"
 #include "../../parser/parser_f.h"
 #include "../../parser/parse_body.h"
+#include "../../sdp_ops.h"
 #include "../../context.h"
 #include "t_funcs.h"
 #include "t_hooks.h"
@@ -71,6 +72,12 @@
 #include "../../net/tcp_common.h"
 
 #define NO_BODY_CLONE_MARKER ((struct sip_msg_body*)-1)
+
+struct branch_body_backup {
+	struct sip_msg_body *body;
+	struct sdp_body_part_ops *sdp_ops;
+	int sdp_ops_saved;
+};
 
 /* route to execute for the branches */
 static struct script_route_ref *goto_on_branch;
@@ -99,10 +106,11 @@ struct script_route_ref *get_on_branch(void)
 
 
 static inline int pre_print_uac_request( struct cell *t, int branch,
-					struct sip_msg *request, struct sip_msg_body **body_clone)
+					struct sip_msg *request, struct branch_body_backup *backup)
 {
 	int backup_route_type;
 	struct usr_avp **backup_list;
+	struct sdp_body_part_ops *branch_sdp_ops;
 	char *p;
 	struct ua_client* uac = & TM_BRANCH( t, branch);
 
@@ -160,6 +168,19 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/********** run route & callback ************/
 
+	/* Both the branch route and forwarding callbacks can change the SDP. */
+	if (have_sdp_ops(request)) {
+		free_sip_body(request->body);
+		request->body = NULL;
+	}
+	if (clone_sdp_ops(request, &branch_sdp_ops) != 0) {
+		LM_ERR("failed to clone SDP edits for branch\n");
+		goto error;
+	}
+	backup->sdp_ops = request->sdp_ops;
+	backup->sdp_ops_saved = 1;
+	request->sdp_ops = branch_sdp_ops;
+
 	/* run branch route, if any; run it before RURI's DNS lookup
 	 * to allow to be changed --bogdan */
 	if ( ref_script_route_check_and_update(t->on_branch)) {
@@ -183,7 +204,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		request->new_uri.s = p;
 		request->parsed_uri_ok = 0;
 		/* make a clone of the original body, to restore it later */
-		if (clone_sip_msg_body( request, NULL, body_clone, 0)!=0) {
+		if (clone_sip_msg_body( request, NULL, &backup->body, 0)!=0) {
 			LM_ERR("faile to clone the body, branch route changes will be"
 				" preserved\n");
 		}
@@ -259,7 +280,7 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 
 
 static inline void post_print_uac_request(struct sip_msg *request,
-			const str *org_uri, str *org_dst, struct sip_msg_body *body_clone)
+			const str *org_uri, str *org_dst, const struct branch_body_backup *backup)
 {
 	reset_init_lump_flags();
 	/* delete inserted branch lumps */
@@ -281,9 +302,17 @@ static inline void post_print_uac_request(struct sip_msg *request,
 		request->dst_uri.len = 0;
 	}
 	/* if cloned, restore the original body to the msg */
-	if (body_clone!=NO_BODY_CLONE_MARKER) {
+	if (backup->body!=NO_BODY_CLONE_MARKER) {
 		free_sip_body(request->body);
-		request->body = body_clone;
+		request->body = backup->body;
+	}
+	if (backup->sdp_ops_saved) {
+		if (backup->body == NO_BODY_CLONE_MARKER && have_sdp_ops(request)) {
+			free_sip_body(request->body);
+			request->body = NULL;
+		}
+		free_sdp_ops(request->sdp_ops);
+		request->sdp_ops = backup->sdp_ops;
 	}
 }
 
@@ -429,7 +458,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 		int q, struct usr_avp **attrs, struct proxy_l *proxy)
 {
 	unsigned short branch;
-	struct sip_msg_body *body_clone=NO_BODY_CLONE_MARKER;
+	struct branch_body_backup body_backup = { .body = NO_BODY_CLONE_MARKER };
 	int do_free_proxy;
 	int ret;
 	struct ua_client* uac;
@@ -473,7 +502,7 @@ static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 		*attrs = NULL;
 	}
 
-	if ( pre_print_uac_request( t, branch, request, &body_clone)!= 0 ) {
+	if ( pre_print_uac_request( t, branch, request, &body_backup)!= 0 ) {
 		ret = -1;
 		goto error01;
 	}
@@ -532,7 +561,7 @@ error02:
 		pkg_free( proxy );
 	}
 error01:
-	post_print_uac_request( request, uri, next_hop, body_clone);
+	post_print_uac_request( request, uri, next_hop, &body_backup);
 	if (ret < 0) {
 		/* destroy all the bavps added, the path vector and the destination,
 		 * since this branch will never be properly added to
