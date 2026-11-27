@@ -71,6 +71,7 @@
 #include "../../pvar.h"
 #include "../../db/db.h"
 #include "../../msg_translator.h"
+#include "../../sdp_ops.h"
 #include "../../usr_avp.h"
 #include "../../socket_info.h"
 #include "../../mod_fix.h"
@@ -3485,6 +3486,27 @@ static bencode_item_t *rtpe_function_call_process(bencode_buffer_t *bencbuf, cha
         return resp;
 }
 
+/* On success, the message takes ownership of the RTPengine SDP buffer. */
+static int replace_rtpengine_sdp(struct sip_msg *msg, const str *oldbody,
+		const str *newbody)
+{
+	struct lump *anchor;
+
+	if (have_sdp_ops(msg))
+		return replace_custom_sdp(msg, newbody);
+
+	anchor = del_lump(msg, oldbody->s - msg->buf, oldbody->len, 0);
+	if (!anchor)
+		return -1;
+	if (!insert_new_lump_after(anchor, newbody->s, newbody->len, 0)) {
+		/* Keep the original body if the insertion could not be allocated. */
+		anchor->op = LUMP_NOP;
+		anchor->len = 0;
+		return -1;
+	}
+	return 0;
+}
+
 enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, void *_param)
 {
 	int len = 0, cookielen = 0;
@@ -3493,7 +3515,6 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 	bencode_item_t *dict;
 	str oldbody = { 0, 0 };
 	str newbody;
-	struct lump *anchor;
 	pv_value_t val;
 	struct rtpe_ctx *ctx;
 	rtpe_async_param *param = (rtpe_async_param *)_param;
@@ -3578,19 +3599,10 @@ enum async_ret_code resume_async_send_rtpe_command(int fd, struct sip_msg *msg, 
 			if(pv_set_value(msg, param->bpvar, (int)EQ_T, &val)<0)
 				LM_ERR("setting PV failed\n");
 			pkg_free(newbody.s);
-		} else if (extract_body(msg, &oldbody) > 0) {
-			/* otherwise directly set the body of the message */
-			anchor = del_lump(msg, oldbody.s - msg->buf, oldbody.len, 0);
-			if (!anchor) {
-				LM_ERR("del_lump failed\n");
-				goto error;
-			}
-			if (!insert_new_lump_after(anchor, newbody.s, newbody.len, 0)) {
-				LM_ERR("insert_new_lump_after failed\n");
-				goto error;
-			}
-		} else {
-			LM_ERR("cannot parse old body!\n");
+		} else if (extract_body(msg, &oldbody) < 0 ||
+				replace_rtpengine_sdp(msg, &oldbody, &newbody) < 0) {
+			LM_ERR("failed to replace SDP body\n");
+			pkg_free(newbody.s);
 			goto error;
 		}
 	}
@@ -4045,7 +4057,6 @@ rtpengine_offer_answer_body(struct sip_msg *msg, str *flags, str *node,
 	bencode_buffer_t bencbuf;
 	bencode_item_t *dict;
 	str oldbody, newbody;
-	struct lump *anchor;
 
 	if (!body) {
 		if (extract_body(msg, &oldbody) == -1) {
@@ -4067,27 +4078,16 @@ rtpengine_offer_answer_body(struct sip_msg *msg, str *flags, str *node,
 
 	if (outbody) {
 		*outbody = newbody;
-	} else if (!body || (extract_body(msg, &oldbody) > 0)) {
-		/* otherwise directly set the body of the message */
-		anchor = del_lump(msg, oldbody.s - msg->buf, oldbody.len, 0);
-		if (!anchor) {
-			LM_ERR("del_lump failed\n");
-			goto error_free;
-		}
-		if (!insert_new_lump_after(anchor, newbody.s, newbody.len, 0)) {
-			LM_ERR("insert_new_lump_after failed\n");
-			goto error_free;
-		}
-	} else {
-		LM_ERR("cannot change old body!\n");
-		goto error_free;
+	} else if ((body && extract_body(msg, &oldbody) < 0) ||
+			replace_rtpengine_sdp(msg, &oldbody, &newbody) < 0) {
+		LM_ERR("failed to replace SDP body\n");
+		pkg_free(newbody.s);
+		goto error;
 	}
 
 	bencode_buffer_free(&bencbuf);
 	return 1;
 
-error_free:
-	pkg_free(newbody.s);
 error:
 	bencode_buffer_free(&bencbuf);
 	return -1;

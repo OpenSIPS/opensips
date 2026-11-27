@@ -428,17 +428,11 @@ inline static int char_msg_val( struct sip_msg *msg, char *cv )
 }
 
 
-/* returns the body of the SIP message (if none, an empty body will be returned)
- */
-inline static int get_body(struct sip_msg *msg, str *body)
+/* Return the body from the original message buffer, before any SDP edits. */
+inline static int get_received_body(struct sip_msg *msg, str *body)
 {
 	unsigned int hdrs_len;
 	int ct_len;
-
-	if (sdp_get_custom_body(msg, body) == 0) {
-		LM_DBG("found custom 'SDP ops' body, len: %d\n", body->len);
-		return 0;
-	}
 
 	if ( parse_headers(msg,HDR_EOH_F, 0)==-1 )
 		return -1;
@@ -479,6 +473,14 @@ inline static int get_body(struct sip_msg *msg, str *body)
 	}
 
 	return 0;
+}
+
+/* Return the current body, including any SDP edits. */
+inline static int get_body(struct sip_msg *msg, str *body)
+{
+	if (sdp_get_custom_body(msg, body) == 0)
+		return 0;
+	return get_received_body(msg, body);
 }
 
 /*
