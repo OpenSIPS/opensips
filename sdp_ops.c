@@ -855,8 +855,8 @@ int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 
 				p = q_memchr(p, '/', in.s + in.len - p);
 				if (!p) {
-					matches[midx++]->prefix = tok;
-					break;
+					matches[midx]->prefix = tok;
+					goto parsed;
 				}
 			} else {
 				p = in.s + i;
@@ -868,13 +868,15 @@ int pv_parse_sdp_line_name(pv_spec_p sp, const str *_in)
 			tok.s = in.s + i+1;
 		}
 
-		if ((i+1) == in.len) {
-			tok.len = i+1 - (tok.s - in.s);
-			trim_leading(&tok);
-			matches[midx++]->prefix = tok;
-		}
+	}
+	/* Unescaping can shorten the input on the last iteration. */
+	if (matches[midx]) {
+		tok.len = in.s + in.len - tok.s;
+		trim_leading(&tok);
+		matches[midx]->prefix = tok;
 	}
 
+parsed:
 	LM_DBG("parse sdp.line name: '%.*s', c1: '%.*s/%p'[%s], c2: '%.*s/%p'[%s], c3: '%.*s/%p'[%s]\n",
 	        in.len, in.s,
 			param->match_stream.prefix.len, param->match_stream.prefix.s, param->match_stream.prefix.s, IDX_STR(&param->match_stream.idx),
@@ -955,8 +957,8 @@ int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 
 				p = q_memchr(p, '/', in.s + in.len - p);
 				if (!p) {
-					matches[midx++]->prefix = tok;
-					break;
+					matches[midx]->prefix = tok;
+					goto parsed;
 				}
 			} else {
 				p = in.s + i;
@@ -968,13 +970,14 @@ int pv_parse_sdp_stream_name(pv_spec_p sp, const str *_in)
 			tok.s = in.s + i+1;
 		}
 
-		if ((i+1) == in.len) {
-			tok.len = i+1 - (tok.s - in.s);
-			trim_leading(&tok);
-			matches[midx++]->prefix = tok;
-		}
+	}
+	if (matches[midx]) {
+		tok.len = in.s + in.len - tok.s;
+		trim_leading(&tok);
+		matches[midx]->prefix = tok;
 	}
 
+parsed:
 	LM_DBG("parse sdp.stream name: '%.*s',"
 	            " c1: '%.*s/%p'[%s], c2: '%.*s/%p'[%s], c3: '%.*s/%p'[%s]\n",
 	        in.len, in.s,
@@ -1728,4 +1731,58 @@ void free_sdp_ops(struct sdp_body_part_ops *ops)
 	pkg_free(ops->sdp.s);
 	pkg_free(ops->rebuilt_sdp.s);
 	pkg_free(ops);
+}
+
+int replace_custom_sdp(struct sip_msg *msg, const str *body)
+{
+	struct sdp_body_part_ops *ops = msg->sdp_ops;
+	sdp_info_t parsed = {0};
+	str candidate = *body;
+	int ret;
+
+	if (!candidate.s || candidate.len <= 0)
+		return -1;
+
+	/* Validate the replacement before touching the current body or its cache. */
+	ret = parse_sdp_session(&candidate, 0, NULL, &parsed);
+	free_sdp_content(&parsed);
+	if (ret < 0)
+		return -1;
+
+	free_sip_body(msg->body);
+	msg->body = NULL;
+	free_sdp_ops_lines(ops);
+	pkg_free(ops->sdp.s);
+	pkg_free(ops->rebuilt_sdp.s);
+	ops->rebuilt_sdp = STR_NULL;
+	ops->sdp = *body;
+	ops->flags = 0;
+	return 0;
+}
+
+int clone_sdp_ops(struct sip_msg *msg, struct sdp_body_part_ops **clone)
+{
+	struct sdp_body_part_ops *ops;
+	str body;
+
+	*clone = NULL;
+	if (!have_sdp_ops(msg))
+		return 0;
+
+	if (sdp_get_custom_body(msg, &body) < 0)
+		return -1;
+	ops = mk_sdp_ops();
+	if (!ops)
+		return -1;
+
+	/* Start the branch with the effective SDP. Its lines can be parsed lazily. */
+	if (msg->sdp_ops->flags & SDP_OPS_FL_NULL) {
+		ops->flags = SDP_OPS_FL_NULL;
+	} else if (pkg_str_dup(&ops->sdp, &body) < 0) {
+		free_sdp_ops(ops);
+		return -1;
+	}
+
+	*clone = ops;
+	return 0;
 }

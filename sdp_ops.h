@@ -76,6 +76,9 @@ static inline int have_sdp_ops(struct sip_msg *msg)
 			|| msg->sdp_ops->sdp.s || msg->sdp_ops->rebuilt_sdp.s);
 }
 void free_sdp_ops(struct sdp_body_part_ops *ops);
+int clone_sdp_ops(struct sip_msg *msg, struct sdp_body_part_ops **clone);
+/* Replace an active custom SDP body. Take ownership of the pkg buffer on success. */
+int replace_custom_sdp(struct sip_msg *msg, const str *body);
 
 int pv_set_sdp(struct sip_msg *msg, pv_param_t *param, int op, pv_value_t *val);
 int pv_parse_sdp_name(pv_spec_p sp, const str *in);

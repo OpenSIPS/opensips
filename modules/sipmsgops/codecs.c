@@ -24,6 +24,7 @@
 #include "../../parser/msg_parser.h"
 #include "../../mem/mem.h"
 #include "../../data_lump.h"
+#include "../../sdp_ops.h"
 #include "../../parser/sdp/sdp.h"
 #include "codecs.h"
 #include "../../route.h"
@@ -233,6 +234,11 @@ static int clone_codec_lumps(void)
 static int get_codec_lumps( struct sip_msg *msg )
 {
 	int rc;
+
+	if (have_sdp_ops(msg)) {
+		LM_ERR("codec editing via lumps is unavailable after SDP edits\n");
+		return -1;
+	}
 
 	rc = find_codec_lumps(msg);
 	if (rc<0) {
