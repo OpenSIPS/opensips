@@ -137,6 +137,8 @@ static int mod_init(void)
 
 	if (nats_bind_api("cachedb_nats_fts") < 0)
 		return -1;
+	if (fts_json_bind((cdbn_json_bind_f)find_export("cdbn_json_bind", 0)) < 0)
+		return -1;
 	if (nats_intern_init(nats_idx_buckets) < 0) {
 		LM_ERR("doc-key intern table init failed\n");
 		return -1;

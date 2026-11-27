@@ -37,6 +37,7 @@ typedef struct __kvStore kvStore;
 
 #include <nats/nats.h>
 #include "../../cachedb/cachedb.h"
+#include "../cachedb_nats/cachedb_nats_json_api.h"
 #include <pthread.h>
 
 /*
@@ -168,6 +169,23 @@ typedef struct _nats_search_idx {
  * Thread safety: NOT thread-safe.  Call once pre-fork from mod_init.
  */
 int nats_json_index_init(void);
+
+/* The JSON walkers of cachedb_nats, bound by fts_json_bind() in
+ * mod_init (cachedb_nats is not opened RTLD_GLOBAL, so they do not
+ * resolve as symbols). */
+extern cdbn_json_api_t fts_json;
+
+/*
+ * Fill fts_json through cachedb_nats's cdbn_json_bind command.
+ *
+ * @param bind The command, as find_export("cdbn_json_bind", 0) returns
+ *             it; NULL when cachedb_nats is not loaded.
+ * @return 0 on success; -1 when @bind is NULL, fails or leaves a walker
+ *         unset.  fts_json is left unchanged on failure.
+ *
+ * Thread safety: NOT thread-safe.  Call once pre-fork from mod_init.
+ */
+int fts_json_bind(cdbn_json_bind_f bind);
 
 /*
  * Build the search index from existing KV data.

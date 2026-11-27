@@ -36,6 +36,7 @@ void fts_ut_query(void);
 void fts_ut_revmap(void);
 void fts_ut_entry_oom(void);
 void fts_ut_index_partial_snapshot(void);
+void fts_ut_json_bind(void);
 
 /* puts `t` in place of this process's intern table, returns the old one */
 void *fts_ut_intern_swap(void *t);

@@ -38,4 +38,5 @@ void mod_tests(void)
 	fts_ut_revmap();
 	fts_ut_entry_oom();
 	fts_ut_index_partial_snapshot();
+	fts_ut_json_bind();
 }

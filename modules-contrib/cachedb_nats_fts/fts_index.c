@@ -110,9 +110,30 @@ unsigned int fts_hash(const char *s, int len)
 /* ------------------------------------------------------------------ */
 
 /* The shared JSON walkers (cdbn_skip_ws, cdbn_parse_json_string,
- * cdbn_skip_json_value, cdbn_safe_json_to_dict) stay in cachedb_nats's JSON
- * layer (cachedb_nats_json.c) -- both sides use them via
- * cachedb_nats_json_internal.h. */
+ * cdbn_skip_json_value) stay in cachedb_nats's JSON layer
+ * (cachedb_nats_json_walk.c).  cachedb_nats is not opened RTLD_GLOBAL,
+ * so this module reaches them through its cdbn_json_bind command
+ * (cachedb_nats_json_api.h), bound once in mod_init. */
+cdbn_json_api_t fts_json;
+
+int fts_json_bind(cdbn_json_bind_f bind)
+{
+	cdbn_json_api_t api;
+
+	if (!bind) {
+		LM_ERR("cachedb_nats_fts needs cachedb_nats: its cdbn_json_bind "
+			"command was not found (loadmodule \"cachedb_nats.so\")\n");
+		return -1;
+	}
+	memset(&api, 0, sizeof api);
+	if (bind(&api) < 0 || !api.skip_ws || !api.parse_json_string
+			|| !api.skip_json_value) {
+		LM_ERR("cannot bind the JSON walkers of cachedb_nats\n");
+		return -1;
+	}
+	fts_json = api;
+	return 0;
+}
 
 
 /**
@@ -144,13 +165,13 @@ static int parse_json_fields(const char *json, int len,
 	int flen, vlen;
 	int count = 0;
 
-	p = cdbn_skip_ws(p, end);
+	p = fts_json.skip_ws(p, end);
 	if (p >= end || *p != '{')
 		return -1;
 	p++; /* skip '{' */
 
 	while (1) {
-		p = cdbn_skip_ws(p, end);
+		p = fts_json.skip_ws(p, end);
 		if (p >= end)
 			return -1;
 		if (*p == '}')
@@ -159,18 +180,18 @@ static int parse_json_fields(const char *json, int len,
 		/* expect comma between pairs (skip it) */
 		if (*p == ',') {
 			p++;
-			p = cdbn_skip_ws(p, end);
+			p = fts_json.skip_ws(p, end);
 			if (p >= end)
 				return -1;
 		}
 
 		/* parse field name */
-		p = cdbn_parse_json_string(p, end, &field, &flen);
+		p = fts_json.parse_json_string(p, end, &field, &flen);
 		if (!p)
 			return -1;
 
 		/* expect colon */
-		p = cdbn_skip_ws(p, end);
+		p = fts_json.skip_ws(p, end);
 		if (p >= end || *p != ':')
 			return -1;
 		p++;
@@ -178,21 +199,21 @@ static int parse_json_fields(const char *json, int len,
 			return -1;
 
 		/* check if value is a string */
-		p = cdbn_skip_ws(p, end);
+		p = fts_json.skip_ws(p, end);
 		if (p >= end)
 			return -1;
 
 		if (*p == '"') {
 			/* string value — parse and invoke the caller's callback
 			 * with field name + value slices from the original buffer */
-			p = cdbn_parse_json_string(p, end, &val, &vlen);
+			p = fts_json.parse_json_string(p, end, &val, &vlen);
 			if (!p)
 				return -1;
 			callback(field, flen, val, vlen, ctx);
 			count++;
 		} else {
 			/* non-string value — skip without invoking callback */
-			p = cdbn_skip_json_value(p, end);
+			p = fts_json.skip_json_value(p, end);
 			if (!p)
 				return -1;
 		}

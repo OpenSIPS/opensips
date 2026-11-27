@@ -25,6 +25,7 @@ void cn_ut_all(void)
 	cn_ut_fts_optional();
 	cn_ut_index_stale_recovery();
 	cn_ut_insecure_url_warn();
+	cn_ut_json_bind_scope();
 	cn_ut_json_escape();
 	cn_ut_json_foreach();
 	cn_ut_json_name_passthrough();
