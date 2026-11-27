@@ -113,6 +113,14 @@ typedef int (*check_addr_f)(int cluster_id, str *ip_str,
 typedef int (*get_my_id_f)(void);
 
 /*
+ * Get the node id of the current node within cluster @cluster_id, the one
+ * its messages carry (a controller may assign a different id per cluster).
+ * Return: -1 while the node has no id in that cluster yet.
+ * A clusterer without it leaves this NULL: use get_my_id() then.
+ */
+typedef int (*get_my_id_in_f)(int cluster_id);
+
+/*
  * Get the SIP address of the current node within cluster @cluster_id.
  *
  * Return: 0 on success, -1 otherwise.
@@ -314,6 +322,7 @@ struct clusterer_binds {
 	shtag_get_sync_status_f shtag_get_sync_status;
 	shtag_set_sync_status_f shtag_set_sync_status;
 	shtag_sync_all_backup_f shtag_sync_all_backup;
+	get_my_id_in_f get_my_id_in;
 };
 
 typedef int (*load_clusterer_f)(struct clusterer_binds *binds);

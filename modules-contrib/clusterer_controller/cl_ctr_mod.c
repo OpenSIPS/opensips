@@ -1,0 +1,1051 @@
+/*
+ * clusterer_controller - the controller's parameters, init and destroy
+ *
+ * Copyright (C) 2026 Yury Kirsanov
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+#include "cl_ctr.h"
+#include "cl_ctr_stats.h"
+#include "cl_ctr_events.h"
+#include "cl_ctr_identity.h"
+#include "cl_ctr_data.h"
+#include "cl_ctr_caps.h"
+#include "../../pt.h"
+
+cl_ctr_cluster_t  cl_ctr_clusters[CL_CTR_MAX_CLUSTERS];
+int           cl_ctr_cluster_count = 0;
+
+/* Raw "cluster" strings collected during modparam parsing */
+static char *cl_ctr_cluster_strs[CL_CTR_MAX_CLUSTERS];
+static int   cl_ctr_cluster_str_count = 0;
+
+/* Global modparams - apply to all clusters unless overridden per-cluster */
+char *my_ip             = NULL;  /* explicit IP, or NULL for auto-detect */
+char *my_interface      = NULL;  /* explicit interface name, or NULL      */
+int   query_time        = 5;
+char *password          = CL_CTR_DEFAULT_PASSWORD; /* default; falls back per cluster */
+char *on_config_mismatch_s = NULL;                     /* raw modparam string   */
+int   on_config_mismatch   = CL_CTR_CFGMISMATCH_REJECT; /* resolved; default reject */
+
+/* Resolved at mod_init time - always valid after cl_ctr_resolve_local_identity() */
+static char my_ip_buf[INET_ADDRSTRLEN];
+char my_interface_buf[IF_NAMESIZE];
+
+
+/* Local node identity - populated at mod_init by scanning the config file */
+uint16_t my_node_id                              = 0;
+/* This process's incarnation (see CL_CTR_INC_SZ) - set once in mod_init and
+ * inherited across fork, so the worker and mod_destroy's GOODBYE agree. */
+uint64_t cl_ctr_incarnation                      = 0;
+
+/* clusterer integration - loaded at mod_init if clusterer use_controller=1 */
+struct clusterer_binds cl_api;
+int cl_api_loaded = 0;
+int                    clctl_loaded  = 0;
+int                    manage_shtags = 1;
+/* 1: a live master keeps the role and the highest-IP non-master is BACKUP,
+ * taking over on failure; 0: pure highest-IP election (more handovers) */
+int                    master_stickiness = 1;
+/* 1: a master hearing under half its last stable membership for an election
+ * window drops the active tag until a majority returns; off = availability */
+int                    release_tag_when_isolated = 0;
+static char     my_bin_sockets[CL_CTR_MAX_BIN_SOCKETS][CL_CTR_MAX_BIN_SOCK_LEN];
+static int      my_bin_count                            = 0;
+
+
+/* only collects the string; mod_init parses it once all params are set */
+int cl_ctr_add_cluster_param(modparam_t type, void *val)
+{
+    if (cl_ctr_cluster_str_count >= CL_CTR_MAX_CLUSTERS) {
+	LM_ERR("clusterer_controller: too many clusters (max %d)\n",
+	       CL_CTR_MAX_CLUSTERS);
+	return -1;
+    }
+    {
+	size_t _len = strlen((char *)val) + 1;
+	cl_ctr_cluster_strs[cl_ctr_cluster_str_count] = pkg_malloc(_len);
+	if (!cl_ctr_cluster_strs[cl_ctr_cluster_str_count]) {
+	    LM_ERR("clusterer_controller: pkg_malloc failed\n");
+	    return -1;
+	}
+	memcpy(cl_ctr_cluster_strs[cl_ctr_cluster_str_count], (char *)val, _len);
+    }
+    cl_ctr_cluster_str_count++;
+    cl_ctr_set_proc_counts();
+    return 0;
+}
+
+/* the launcher counts the processes before mod_init runs, so the counts are
+ * set here, from the modparams alone: a worker per cluster, the readers */
+void cl_ctr_set_proc_counts(void)
+{
+    cl_ctr_procs[0].no = cl_ctr_cluster_str_count;
+    cl_ctr_procs[1].no = mcast_broadcasts && cl_ctr_cluster_str_count
+                         ? mcast_workers : 0;
+}
+
+int cl_ctr_set_mcast_broadcasts(modparam_t type, void *val)
+{
+    mcast_broadcasts = (int)(long)val;
+    cl_ctr_set_proc_counts();
+    return 0;
+}
+
+int cl_ctr_set_mcast_workers(modparam_t type, void *val)
+{
+    mcast_workers = (int)(long)val;
+    cl_ctr_set_proc_counts();
+    return 0;
+}
+
+proc_export_t cl_ctr_procs[] = {
+    /* NEEDS_SCRIPT: the E_CL_CTR_* events raise event routes here, which crash
+     * without the route structures set up in this process */
+    {"clusterer_controller worker", 0, 0, cl_ctr_worker, 0,
+        PROC_FLAG_INITCHILD | PROC_FLAG_HAS_IPC | PROC_FLAG_NEEDS_SCRIPT},
+    /* read module broadcasts; with dispatch_jobs=0 module callbacks run here */
+    {"clusterer_controller broadcasts", 0, 0, cl_ctr_data_proc, 0,
+        PROC_FLAG_INITCHILD | PROC_FLAG_HAS_IPC | PROC_FLAG_NEEDS_SCRIPT},
+    {0, 0, 0, 0, 0, 0}
+};
+
+/* the whole of @s is a decimal number in [lo, hi] */
+static int cl_ctr_parse_int(const char *s, long lo, long hi, int *out)
+{
+    char *end;
+    long  v;
+
+    errno = 0;
+    v = strtol(s, &end, 10);
+    if (errno || end == s || *end != '\0' || v < lo || v > hi)
+	return -1;
+    *out = (int)v;
+    return 0;
+}
+
+/* what an error may show of a 'cluster' value: its leading characters out of
+ * @set - after a wrong separator the rest can be the password */
+#define CL_CTR_ADDR_CHARS  "0123456789."
+#define CL_CTR_SOCK_CHARS  "bin:0123456789."
+static int cl_ctr_shown_len(const char *s, const char *set, int max)
+{
+    int n = (int)strspn(s, set);
+
+    return n > max ? max : n;
+}
+
+/* the keys of a 'cluster' value; each may be given once */
+static const char *const cl_ctr_cluster_keys[] = {
+    "id", "multicast", "password", "bin_socket", "manage_shtags",
+    "master_stickiness", "uuid", "data_port"
+};
+#define CL_CTR_CLUSTER_KEYS \
+    (int)(sizeof(cl_ctr_cluster_keys) / sizeof(cl_ctr_cluster_keys[0]))
+/* what inet_aton() takes as the end of an address, ignoring all after it */
+#define CL_CTR_BLANKS  " \t\r\n\v\f"
+
+/* "id=N,multicast=A.B.C.D:PORT[,key=val]..." - id and multicast required, the
+ * rest fall back to the global modparams (bin_socket: to a discovered one).
+ * Errors never print the string: it may hold a password. */
+static int cl_ctr_parse_cluster_buf(char *buf, cl_ctr_cluster_t *cl)
+{
+    char       *p, *tok, *key, *val, *colon, *end;
+    struct in_addr addr;
+    unsigned char  first_octet;
+    int         has_id = 0, has_mcast = 0, k;
+    unsigned int seen = 0;
+
+    cl->multicast_port = 3333;
+    if (strlen(password) >= sizeof(cl->password)) {
+	LM_ERR("clusterer_controller: 'password' longer than %d characters\n",
+	       (int)sizeof(cl->password) - 1);
+	return -1;
+    }
+    memcpy(cl->password, password, strlen(password) + 1);
+    cl->manage_shtags = -1; /* sentinel: inherit global default in mod_init */
+    cl->master_stickiness = -1;
+
+    for (tok = strtok_r(buf, ",", &p); tok; tok = strtok_r(NULL, ",", &p)) {
+	while (*tok == ' ' || *tok == '\t') tok++;
+	if (*tok == '\0')
+	    continue;               /* a blank part, as after a last comma */
+	key = tok;
+	val = strchr(tok, '=');
+	if (!val) {
+	    LM_ERR("clusterer_controller: 'cluster' value has a part with no '=' "
+	           "(a comma inside a value is not supported)\n");
+	    return -1;
+	}
+	*val++ = '\0';
+
+	for (k = 0; k < CL_CTR_CLUSTER_KEYS; k++)
+	    if (strcmp(key, cl_ctr_cluster_keys[k]) == 0)
+		break;
+	if (k < CL_CTR_CLUSTER_KEYS) {
+	    if (seen & (1u << k)) {
+		LM_ERR("clusterer_controller: '%s' given twice in a 'cluster' "
+		       "value\n", cl_ctr_cluster_keys[k]);
+		return -1;
+	    }
+	    seen |= 1u << k;
+	}
+
+	if (strcmp(key, "id") == 0) {
+	    if (cl_ctr_parse_int(val, 1, 65535, &cl->cluster_id) < 0) {
+		LM_ERR("clusterer_controller: cluster id must be 1..65535 "
+		       "(carried as a 2-byte field on the wire)\n");
+		return -1;
+	    }
+	    has_id = 1;
+
+	} else if (strcmp(key, "multicast") == 0) {
+	    colon = strrchr(val, ':');
+	    if (colon) {
+		*colon = '\0';
+		if (cl_ctr_parse_int(colon + 1, 1, 65535, &cl->multicast_port) < 0) {
+		    LM_ERR("clusterer_controller: invalid multicast port in cluster "
+		           "%d\n", cl->cluster_id);
+		    return -1;
+		}
+	    }
+	    end = val + strlen(val);
+	    while (end > val && strchr(CL_CTR_BLANKS, end[-1]))
+		*--end = '\0';
+	    if (strlen(val) >= INET_ADDRSTRLEN || strpbrk(val, CL_CTR_BLANKS) ||
+	            inet_aton(val, &addr) == 0) {
+		LM_ERR("clusterer_controller: invalid multicast address '%.*s' "
+		       "(the value is %d characters long)\n",
+		       cl_ctr_shown_len(val, CL_CTR_ADDR_CHARS, INET_ADDRSTRLEN - 1),
+		       val, (int)strlen(val));
+		return -1;
+	    }
+	    /* one spelling per group ("239.1" is 239.0.0.1): the duplicate check
+	     * and the bootstrap key both use the string */
+	    inet_ntop(AF_INET, &addr, cl->multicast_address, INET_ADDRSTRLEN);
+	    first_octet = (unsigned char)((ntohl(addr.s_addr) >> 24) & 0xFF);
+	    if (first_octet < 224 || first_octet > 239) {
+		LM_ERR("clusterer_controller: '%s' is not a multicast address\n",
+		       cl->multicast_address);
+		return -1;
+	    }
+	    has_mcast = 1;
+
+	} else if (strcmp(key, "password") == 0) {
+	    if (strlen(val) >= sizeof(cl->password)) {
+		LM_ERR("clusterer_controller: password in cluster %d longer than %d "
+		       "characters\n", cl->cluster_id, (int)sizeof(cl->password) - 1);
+		return -1;
+	    }
+	    memcpy(cl->password, val, strlen(val) + 1);
+
+	} else if (strcmp(key, "bin_socket") == 0) {
+	    if (strlen(val) >= CL_CTR_MAX_BIN_SOCK_LEN) {
+		LM_ERR("clusterer_controller: bin_socket value too long\n");
+		return -1;
+	    }
+	    memcpy(cl->bin_socket, val, strlen(val) + 1);
+
+	} else if (strcmp(key, "manage_shtags") == 0) {
+	    if (cl_ctr_parse_int(val, 0, 1, &cl->manage_shtags) < 0) {
+		LM_ERR("clusterer_controller: manage_shtags must be 0 or 1\n");
+		return -1;
+	    }
+
+	} else if (strcmp(key, "master_stickiness") == 0) {
+	    if (cl_ctr_parse_int(val, 0, 1, &cl->master_stickiness) < 0) {
+		LM_ERR("clusterer_controller: master_stickiness must be 0 or 1\n");
+		return -1;
+	    }
+
+	} else if (strcmp(key, "uuid") == 0) {
+	    if (cl_ctr_cid_parse_pin(val, cl->cid_pin) < 0) {
+		LM_ERR("clusterer_controller: empty uuid= in cluster %d\n",
+		       cl->cluster_id);
+		return -1;
+	    }
+	    if (cl_ctr_cid_is_zero(cl->cid_pin)) {
+		LM_ERR("clusterer_controller: uuid= in cluster %d is all zeros, "
+		       "which stands for \"in no cluster\" - pin another value\n",
+		       cl->cluster_id);
+		return -1;
+	    }
+	    cl->cid_pinned = 1;
+
+	} else if (strcmp(key, "data_port") == 0) {
+	    if (cl_ctr_parse_int(val, 1, 65535, &cl->data_port) < 0) {
+		LM_ERR("clusterer_controller: invalid data_port in cluster %d\n",
+		       cl->cluster_id);
+		return -1;
+	    }
+	} else {
+	    /* not named: after a comma inside a password it is part of it */
+	    LM_ERR("clusterer_controller: unknown key in 'cluster' (a comma inside "
+	           "a value is not supported)\n");
+	    return -1;
+	}
+    }
+
+    if (!has_id) {
+	LM_ERR("clusterer_controller: a 'cluster' value has no id=\n");
+	return -1;
+    }
+    if (!has_mcast) {
+	LM_ERR("clusterer_controller: cluster %d has no multicast=\n", cl->cluster_id);
+	return -1;
+    }
+    if (!cl->data_port) {
+	if (cl->multicast_port == 65535) {
+	    LM_ERR("clusterer_controller: multicast port 65535 leaves no port + 1 "
+	           "for broadcasts - set data_port= in cluster %d\n", cl->cluster_id);
+	    return -1;
+	}
+	cl->data_port = cl->multicast_port + 1;
+    }
+    return 0;
+}
+
+int cl_ctr_parse_cluster_str(const char *str, cl_ctr_cluster_t *cl)
+{
+    char  buf[2048];
+    int   rc;
+
+    if (strlen(str) >= sizeof(buf)) {
+	LM_ERR("clusterer_controller: 'cluster' value longer than %d characters\n",
+	       (int)sizeof(buf) - 1);
+	return -1;
+    }
+    memcpy(buf, str, strlen(str) + 1);
+    rc = cl_ctr_parse_cluster_buf(buf, cl);
+    /* the working copy holds the password */
+    sodium_memzero(buf, sizeof(buf));
+    return rc;
+}
+
+/* the collected 'cluster' values hold the passwords: wiped, then freed */
+static void cl_ctr_drop_cluster_strs(void)
+{
+    int i;
+
+    for (i = 0; i < cl_ctr_cluster_str_count; i++) {
+	if (!cl_ctr_cluster_strs[i])
+	    continue;
+	sodium_memzero(cl_ctr_cluster_strs[i], strlen(cl_ctr_cluster_strs[i]));
+	pkg_free(cl_ctr_cluster_strs[i]);
+	cl_ctr_cluster_strs[i] = NULL;
+    }
+}
+
+/* sets my_ip and my_interface_buf from my_ip, else interface, else the route
+ * to the first cluster's group */
+static int cl_ctr_resolve_local_identity(void)
+{
+    struct ifaddrs *ifap = NULL, *ifa;
+    int             found = 0;
+
+    if (getifaddrs(&ifap) < 0) {
+	LM_ERR("clusterer_controller: getifaddrs() failed: %s\n",
+	       strerror(errno));
+	return -1;
+    }
+
+    if (my_ip && *my_ip) {
+	/* ---- Mode 1: ip= explicitly provided - find owning interface ---- */
+	struct in_addr target;
+	const char    *s = my_ip + strspn(my_ip, CL_CTR_BLANKS);
+	size_t         l = strlen(s);
+
+	while (l > 0 && strchr(CL_CTR_BLANKS, s[l - 1]))
+	    l--;
+	if (l < sizeof(my_ip_buf)) {
+	    memcpy(my_ip_buf, s, l);
+	    my_ip_buf[l] = '\0';
+	}
+	if (l >= sizeof(my_ip_buf) ||
+	        inet_pton(AF_INET, my_ip_buf, &target) != 1) {
+	    LM_ERR("clusterer_controller: 'my_ip' '%.64s' is not an IPv4 address "
+	           "written as a.b.c.d (four decimal numbers, no leading zeros)\n",
+	           my_ip);
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+	/* kept as inet_ntop() writes it: packets are sealed with inet_pton() of
+	 * this string and peers compare addresses with strcmp() */
+	inet_ntop(AF_INET, &target, my_ip_buf, sizeof(my_ip_buf));
+	my_ip = my_ip_buf;
+	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+	    if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+		continue;
+	    if (((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr
+	            == target.s_addr) {
+		strncpy(my_interface_buf, ifa->ifa_name, IF_NAMESIZE - 1);
+		my_interface_buf[IF_NAMESIZE - 1] = '\0';
+		found = 1;
+		break;
+	    }
+	}
+	if (!found) {
+	    LM_ERR("clusterer_controller: no local interface owns IP '%s'\n",
+	           my_ip);
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+	LM_INFO("clusterer_controller: using IP %s on interface %s\n",
+	        my_ip, my_interface_buf);
+
+    } else if (my_interface && *my_interface) {
+	/* ---- Mode 2: interface= provided - derive IP from it ---- */
+	int addr_count = 0;
+
+	strncpy(my_interface_buf, my_interface, IF_NAMESIZE - 1);
+	my_interface_buf[IF_NAMESIZE - 1] = '\0';
+
+	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+	    if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+		continue;
+	    if (strcmp(ifa->ifa_name, my_interface) != 0)
+		continue;
+	    addr_count++;
+	    if (addr_count == 1) {
+		struct in_addr a =
+		    ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+		inet_ntop(AF_INET, &a, my_ip_buf, sizeof(my_ip_buf));
+		my_ip = my_ip_buf;
+		found = 1;
+	    }
+	}
+	if (!found) {
+	    LM_ERR("clusterer_controller: interface '%s' not found or "
+	           "has no IPv4 address\n", my_interface);
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+	if (addr_count > 1)
+	    LM_WARN("clusterer_controller: interface '%s' has %d IPv4 "
+	            "addresses, using %s (first returned by kernel) - "
+	            "use 'my_ip' modparam to override\n",
+	            my_interface, addr_count, my_ip);
+	else
+	    LM_INFO("clusterer_controller: using IP %s on interface %s\n",
+	            my_ip, my_interface_buf);
+
+    } else {
+	/* ---- Mode 3: the source IP the kernel picks for the group (nothing sent) ---- */
+	struct sockaddr_in dest, local;
+	socklen_t          local_len = sizeof(local);
+	int                probe;
+
+	memset(&dest, 0, sizeof(dest));
+	dest.sin_family      = AF_INET;
+	dest.sin_port        = htons((uint16_t)cl_ctr_clusters[0].multicast_port);
+	dest.sin_addr.s_addr = inet_addr(cl_ctr_clusters[0].multicast_address);
+
+	probe = socket(AF_INET, SOCK_DGRAM, 0);
+	if (probe < 0) {
+	    LM_ERR("clusterer_controller: auto-detect socket: %s\n",
+	           strerror(errno));
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+	if (connect(probe, (struct sockaddr *)&dest, sizeof(dest)) < 0) {
+	    LM_ERR("clusterer_controller: auto-detect connect: %s\n",
+	           strerror(errno));
+	    close(probe);
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+	memset(&local, 0, sizeof(local));
+	if (getsockname(probe, (struct sockaddr *)&local, &local_len) < 0) {
+	    LM_ERR("clusterer_controller: auto-detect getsockname: %s\n",
+	           strerror(errno));
+	    close(probe);
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+	close(probe);
+
+	inet_ntop(AF_INET, &local.sin_addr, my_ip_buf, sizeof(my_ip_buf));
+	my_ip = my_ip_buf;
+
+	/* Reverse-look up the interface name */
+	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+	    if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+		continue;
+	    if (((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr
+	            == local.sin_addr.s_addr) {
+		strncpy(my_interface_buf, ifa->ifa_name, IF_NAMESIZE - 1);
+		my_interface_buf[IF_NAMESIZE - 1] = '\0';
+		found = 1;
+		break;
+	    }
+	}
+	if (found) {
+	    LM_INFO("clusterer_controller: auto-detected IP %s on "
+	            "interface %s\n", my_ip, my_interface_buf);
+	} else {
+	    /* fatal: the interface name is the only route to the MTU, which decides
+	     * admission; the explicit modes always yield a name */
+	    LM_ERR("clusterer_controller: auto-detected IP %s but no interface "
+	           "owns it, so its MTU cannot be read - and the cluster admits "
+	           "only nodes whose MTU matches. Set the 'interface' modparam "
+	           "(or 'my_ip') so the link is unambiguous\n", my_ip);
+	    freeifaddrs(ifap);
+	    return -1;
+	}
+    }
+
+    freeifaddrs(ifap);
+    return 0;
+}
+
+/* fills my_bin_sockets[] from proto_bin's listeners (so proto_bin must be
+ * loaded before this module); -1 if there are none */
+static int cl_ctr_discover_bin_sockets(void)
+{
+    struct socket_info_full *sif;
+    struct socket_info *si;
+    char                buf[CL_CTR_MAX_BIN_SOCK_LEN];
+    int                 len;
+
+    /* On devel, protos[].listeners is a list of socket_info_full (next/prev),
+     * each embedding the socket_info as its first member. */
+    for (sif = protos[PROTO_BIN].listeners; sif; sif = sif->next) {
+	si = &sif->socket_info;
+	/* all entries here are PROTO_BIN by construction */
+	if (si->proto != PROTO_BIN)
+	    continue;
+	/* no wildcard: clusterer needs an explicit IP to set send_sock */
+	if (si->address_str.len == 0
+	    || (si->address_str.len == 1 && si->address_str.s[0] == '*')
+	    || (si->address_str.len == 7
+	        && memcmp(si->address_str.s, "0.0.0.0", 7) == 0)) {
+	    LM_ERR("clusterer_controller: wildcard BIN socket "
+	           "(bin:*:%u) is not allowed - use an explicit IP "
+	           "(e.g. socket=bin:%s:%u)\n",
+	           si->port_no, my_ip ? my_ip : "YOUR_IP", si->port_no);
+	    return -1;
+	}
+	if (my_bin_count >= CL_CTR_MAX_BIN_SOCKETS) {
+	    LM_WARN("clusterer_controller: more than %d BIN sockets, "
+	            "ignoring the rest\n", CL_CTR_MAX_BIN_SOCKETS);
+	    break;
+	}
+	len = snprintf(buf, sizeof(buf), "bin:%.*s:%u",
+	               si->address_str.len, si->address_str.s,
+	               si->port_no);
+	if (len <= 0 || len >= CL_CTR_MAX_BIN_SOCK_LEN) {
+	    LM_WARN("clusterer_controller: BIN socket name too long, "
+	            "skipping\n");
+	    continue;
+	}
+	memcpy(my_bin_sockets[my_bin_count], buf, len + 1);
+	LM_INFO("clusterer_controller: found BIN socket: %s\n", buf);
+	my_bin_count++;
+    }
+
+    if (my_bin_count == 0) {
+	LM_ERR("clusterer_controller: no BIN sockets found - "
+	       "is proto_bin loaded and socket=bin: configured?\n");
+	return -1;
+    }
+
+    return 0;
+}
+
+int cl_ctr_mod_init(void)
+{
+    struct in_addr addr;
+    int            i, j, n_managed;
+    const int     *managed_ids;
+
+    if (cl_ctr_events_init() < 0)
+        return -1;
+
+    /* no 'cluster' modparam: the module is clusterer alone, no worker */
+    if (cl_ctr_cluster_str_count == 0) {
+	if (clusterer_ctrl_managed(&managed_ids) > 0) {
+	    LM_ERR("clusterer_controller: cluster %d is controller-managed "
+	           "(cluster_options use_controller=1) but has no 'cluster' "
+	           "modparam - add one for it, or drop use_controller\n",
+	           managed_ids[0]);
+	    return -1;
+	}
+	return 0;
+    }
+
+    LM_INFO("clusterer_controller: initialising\n");
+
+    if (sodium_init() < 0) {
+	LM_ERR("clusterer_controller: sodium_init() failed\n");
+	return -1;
+    }
+
+    /* start time in us, so every restart numbers above the last; if the clock
+     * stepped back, peers take it from the master's NODE_ASSIGN on re-admission */
+    {
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	cl_ctr_incarnation = (uint64_t)ts.tv_sec * 1000000ULL
+	                     + (uint64_t)ts.tv_nsec / 1000ULL;
+	if (cl_ctr_incarnation == 0)
+	    cl_ctr_incarnation = 1;     /* 0 means "not seen yet" to peers */
+    }
+
+    if (on_config_mismatch_s) {
+	if (strcasecmp(on_config_mismatch_s, "warn") == 0)
+	    on_config_mismatch = CL_CTR_CFGMISMATCH_WARN;
+	else if (strcasecmp(on_config_mismatch_s, "reject") == 0)
+	    on_config_mismatch = CL_CTR_CFGMISMATCH_REJECT;
+	else if (strcasecmp(on_config_mismatch_s, "adopt") == 0)
+	    on_config_mismatch = CL_CTR_CFGMISMATCH_ADOPT;
+	else {
+	    LM_ERR("clusterer_controller: invalid on_config_mismatch '%s' "
+	           "(expected warn|reject|adopt)\n", on_config_mismatch_s);
+	    return -1;
+	}
+    }
+
+    /* ---- Global param validation --------------------------------------- */
+
+    if (query_time < 1) {
+	LM_WARN("clusterer_controller: 'query_time' %d below min, clamping to 1s\n",
+	        query_time);
+	query_time = 1;
+    } else if (query_time > 60) {
+	LM_WARN("clusterer_controller: 'query_time' %d exceeds max, clamping to 60s\n",
+	        query_time);
+	query_time = 60;
+    }
+
+    /* ---- Parse and validate all cluster strings ------------------------ */
+
+    for (i = 0; i < cl_ctr_cluster_str_count; i++) {
+	cl_ctr_cluster_t *cl = &cl_ctr_clusters[i];
+	if (cl_ctr_parse_cluster_str(cl_ctr_cluster_strs[i], cl) < 0) {
+	    cl_ctr_drop_cluster_strs();
+	    return -1;
+	}
+	/* built once in the main process: the workers inherit it and mod_destroy's
+	 * GOODBYE uses it */
+	memset(&cl->mcast_dest, 0, sizeof(cl->mcast_dest));
+	cl->mcast_dest.sin_family      = AF_INET;
+	cl->mcast_dest.sin_port        = htons((uint16_t)cl->multicast_port);
+	cl->mcast_dest.sin_addr.s_addr = inet_addr(cl->multicast_address);
+	cl_ctr_cluster_count++;
+    }
+    cl_ctr_drop_cluster_strs();
+
+    /* sockets bind INADDR_ANY:port, so local clusters sharing a port get each
+     * other's unicasts - cl_ctr_maybe_forward() reroutes them by cluster_id */
+    for (i = 0; i < cl_ctr_cluster_count; i++) {
+	for (j = i + 1; j < cl_ctr_cluster_count; j++) {
+	    if (cl_ctr_clusters[i].cluster_id == cl_ctr_clusters[j].cluster_id) {
+		LM_ERR("clusterer_controller: duplicate cluster_id %d\n",
+		       cl_ctr_clusters[i].cluster_id);
+		return -1;
+	    }
+	    if (cl_ctr_clusters[i].multicast_port != cl_ctr_clusters[j].multicast_port) {
+		/* one group and one broadcast port: each would read the other's */
+		if (cl_ctr_clusters[i].data_port == cl_ctr_clusters[j].data_port &&
+		    strcmp(cl_ctr_clusters[i].multicast_address,
+		           cl_ctr_clusters[j].multicast_address) == 0) {
+		    LM_ERR("clusterer_controller: clusters %d and %d share the "
+		           "group %s and the broadcast port %d - set another "
+		           "data_port= or multicast= for one of them\n",
+		           cl_ctr_clusters[i].cluster_id,
+		           cl_ctr_clusters[j].cluster_id,
+		           cl_ctr_clusters[i].multicast_address,
+		           cl_ctr_clusters[i].data_port);
+		    return -1;
+		}
+		continue;
+	    }
+	    if (strcmp(cl_ctr_clusters[i].multicast_address,
+	               cl_ctr_clusters[j].multicast_address) == 0) {
+		LM_ERR("clusterer_controller: duplicate multicast %s:%d\n",
+		       cl_ctr_clusters[i].multicast_address,
+		       cl_ctr_clusters[i].multicast_port);
+		return -1;
+	    }
+	    LM_INFO("clusterer_controller: clusters %d and %d share multicast "
+	            "port %d - unicast is routed by cluster_id\n",
+	            cl_ctr_clusters[i].cluster_id, cl_ctr_clusters[j].cluster_id,
+	            cl_ctr_clusters[i].multicast_port);
+	}
+	for (j = 0; j < cl_ctr_cluster_count; j++)
+	    if (cl_ctr_clusters[i].data_port == cl_ctr_clusters[j].multicast_port) {
+		LM_ERR("clusterer_controller: cluster %d's broadcast port %d is "
+		       "cluster %d's multicast port - set another data_port=\n",
+		       cl_ctr_clusters[i].cluster_id, cl_ctr_clusters[i].data_port,
+		       cl_ctr_clusters[j].cluster_id);
+		return -1;
+	    }
+    }
+
+    /* ---- Resolve local identity using first cluster for Mode 3 probe --- */
+
+    if (cl_ctr_resolve_local_identity() < 0)
+	return -1;
+    cl_ctr_identity_init(clusterer_ctrl_configured_id());
+
+    {
+	int _probe_mtu = cl_ctr_read_iface_mtu();
+	if (_probe_mtu <= 0) {
+	    /* detected, never configured, so it cannot disagree with the kernel;
+	     * a node that cannot tell whether it may join must not serve SIP */
+	    LM_ERR("clusterer_controller: cannot read the MTU of %s (%s) - the "
+	           "cluster admits only nodes whose MTU matches, so this node "
+	           "cannot establish whether it belongs and will not start\n",
+	           my_interface_buf[0] ? my_interface_buf : "(no interface)",
+	           my_interface_buf[0] ? strerror(errno) : "interface unresolved");
+	    return -1;
+	}
+	cc_mtu = cc_mtu_now = _probe_mtu;
+	LM_INFO("clusterer_controller: interface %s MTU=%d - every cluster member "
+	        "must run at this MTU; one that does not is refused at join\n",
+	        my_interface_buf, cc_mtu);
+    }
+
+    if (cl_ctr_discover_bin_sockets() < 0)
+	return -1;
+
+    if (strlen(my_ip) > CL_CTR_MAX_IP_LEN) {
+	LM_ERR("clusterer_controller: resolved my_ip too long\n");
+	return -1;
+    }
+    if (inet_pton(AF_INET, my_ip, &addr) != 1) {
+	LM_ERR("clusterer_controller: cannot parse resolved my_ip '%s'\n", my_ip);
+	return -1;
+    }
+
+    /* ---- Multi-cluster: each cluster must name its BIN socket ---------- */
+
+    if (cl_ctr_cluster_count > 1) {
+	for (i = 0; i < cl_ctr_cluster_count; i++) {
+	    if (cl_ctr_clusters[i].bin_socket[0] == '\0') {
+		LM_ERR("clusterer_controller: cluster %d has no bin_socket= "
+		       "defined - required when multiple clusters are configured "
+		       "(e.g. id=%d,multicast=...,bin_socket=bin:IP:PORT)\n",
+		       cl_ctr_clusters[i].cluster_id, cl_ctr_clusters[i].cluster_id);
+		return -1;
+	    }
+	}
+    }
+
+    /* ---- Per-cluster: resolve BIN socket, derive key, allocate peers --- */
+
+    for (i = 0; i < cl_ctr_cluster_count; i++) {
+	cl_ctr_cluster_t *cl = &cl_ctr_clusters[i];
+
+	/* -1 = not set in the cluster string: take the global default here, before
+	 * the fork, so MI always reports a concrete value */
+	if (cl->master_stickiness == -1)
+	    cl->master_stickiness = master_stickiness ? 1 : 0;
+	if (cl->manage_shtags == -1)
+	    cl->manage_shtags = manage_shtags ? 1 : 0;
+
+	/* explicit bin_socket= (must be a discovered one), else the sole
+	 * discovered socket, else the first one with a warning */
+	if (cl->bin_socket[0] != '\0') {
+	    int found_bs = 0, bi;
+	    for (bi = 0; bi < my_bin_count; bi++) {
+		if (strcmp(my_bin_sockets[bi], cl->bin_socket) == 0) {
+		    found_bs = 1;
+		    break;
+		}
+	    }
+	    if (!found_bs) {
+	    	char _disc[CL_CTR_MAX_BIN_SOCKETS * (CL_CTR_MAX_BIN_SOCK_LEN + 2)];
+	    	int  _o = 0, _b;
+	    	_disc[0] = '\0';
+	    	for (_b = 0; _b < my_bin_count; _b++)
+	    		_o += snprintf(_disc + _o, sizeof(_disc) - _o, "%s%s",
+	    		               _b ? ", " : "", my_bin_sockets[_b]);
+	    	LM_ERR("clusterer_controller: cluster %d bin_socket='%.*s' (the "
+	    	       "value is %d characters long) does not "
+	    	       "match any configured BIN listener (discovered: %s) - peers "
+	    	       "cannot connect and clusterer replication would silently "
+	    	       "fail; fix bin_socket= or the socket=bin: line\n",
+	    	       cl->cluster_id,
+	    	       cl_ctr_shown_len(cl->bin_socket, CL_CTR_SOCK_CHARS,
+	    	                        CL_CTR_MAX_BIN_SOCK_LEN - 1),
+	    	       cl->bin_socket, (int)strlen(cl->bin_socket), _disc);
+	    	return -1;
+	    }
+	} else if (my_bin_count == 1) {
+	    {
+		size_t _l = strnlen(my_bin_sockets[0], CL_CTR_MAX_BIN_SOCK_LEN - 1);
+		memcpy(cl->bin_socket, my_bin_sockets[0], _l);
+		cl->bin_socket[_l] = '\0';
+	    }
+	} else {
+	    {
+		size_t _l = strnlen(my_bin_sockets[0], CL_CTR_MAX_BIN_SOCK_LEN - 1);
+		memcpy(cl->bin_socket, my_bin_sockets[0], _l);
+		cl->bin_socket[_l] = '\0';
+	    }
+	    LM_WARN("clusterer_controller: cluster %d has no bin_socket= override "
+	            "and multiple BIN sockets exist - using %s; add bin_socket= "
+	            "to the cluster string to be explicit\n",
+	            cl->cluster_id, cl->bin_socket);
+	}
+	LM_INFO("clusterer_controller: cluster %d: bin_socket=%s\n",
+	        cl->cluster_id, cl->bin_socket);
+
+	if (cl_ctr_derive_key(cl) < 0)
+	    return -1;
+
+	cl->peers = shm_malloc(sizeof(cl_ctr_peers_t));
+	if (!cl->peers) {
+	    LM_ERR("clusterer_controller: no shm memory for cluster %d peer table\n",
+	           cl->cluster_id);
+	    return -1;
+	}
+	memset(cl->peers, 0, sizeof(cl_ctr_peers_t));
+	cl->peers->node_state = CL_CTR_NODE_NEW;
+	cl->peers->worker_proc_no = -1;   /* published by cl_ctr_worker after fork */
+	cl->peers->eff_manage_shtags     = cl->manage_shtags;
+	cl->peers->eff_master_stickiness = cl->master_stickiness;
+	cl->peers->eff_query_time        = query_time;
+	if (cl->cid_pinned) {
+	    char sp[37];
+	    memcpy(cl->peers->cid, cl->cid_pin, CL_CTR_CID_SZ);
+	    cl->peers->cid_state = CL_CTR_CID_PINNED;
+	    cl->peers->cid_since = cl_ctr_now();
+	    cl_ctr_cid_str(cl->cid_pin, sp);
+	    LM_INFO("clusterer_controller: [cluster %d] cluster uuid pinned to %s\n",
+	            cl->cluster_id, sp);
+	}
+
+	cl->peers->lock = lock_init_rw();
+	if (!cl->peers->lock) {
+	    LM_ERR("clusterer_controller: lock_init_rw() failed for cluster %d\n",
+	           cl->cluster_id);
+	    shm_free(cl->peers);
+	    cl->peers = NULL;
+	    return -1;
+	}
+	if (cl_ctr_stats_register(cl) < 0)
+	    return -1;
+
+	LM_INFO("clusterer_controller: cluster %d: multicast=%s:%d bin=%s\n",
+	        cl->cluster_id, cl->multicast_address, cl->multicast_port,
+	        cl->bin_socket);
+    }
+
+    LM_INFO("clusterer_controller: my_ip=%s interface=%s query_time=%ds "
+            "clusters=%d bin_sockets=%d crypto=%s\n",
+            my_ip, my_interface_buf[0] ? my_interface_buf : "(unknown)",
+            query_time, cl_ctr_cluster_count, my_bin_count, CL_CTR_CRYPTO_SUITE);
+
+    if (cl_ctr_data_mod_init() < 0)
+	return -1;
+
+    /* clusterer's side of the controller, in this same module */
+    {
+	/* the public clusterer API too - its set_state() serves the 'full'
+	 * maintenance level */
+	if (load_clusterer(&cl_api) != -1)
+	    cl_api_loaded = 1;
+	{
+	    clctl_loaded = 1;
+	    n_managed = clusterer_ctrl_managed(&managed_ids);
+
+	    /* the use_controller=1 ids and our 'cluster' configs must match exactly:
+	     * neither half is usable without the other */
+
+	    /* (a) clusterer marks a cluster managed that we have no config for */
+	    {
+		int m, k, found;
+		for (m = 0; m < n_managed; m++) {
+		    found = 0;
+		    for (k = 0; k < cl_ctr_cluster_count; k++)
+			if (cl_ctr_clusters[k].cluster_id == managed_ids[m]) {
+			    found = 1;
+			    break;
+			}
+		    if (!found) {
+			LM_ERR("clusterer_controller: the clusterer marks cluster %d "
+			       "controller-managed (cluster_options use_controller=1) "
+			       "but this module has no configuration for it - add "
+			       "modparam(\"clusterer\", \"cluster\", "
+			       "\"id=%d, ...\"), or drop use_controller for that "
+			       "cluster.\n",
+			       managed_ids[m], managed_ids[m]);
+			return -1;
+		    }
+		}
+	    }
+
+	    /* (b) we have a config for a cluster the clusterer did not mark managed */
+	    {
+		int k, m, managed;
+		for (k = 0; k < cl_ctr_cluster_count; k++) {
+		    managed = 0;
+		    for (m = 0; m < n_managed; m++)
+			if (managed_ids[m] == cl_ctr_clusters[k].cluster_id) {
+			    managed = 1;
+			    break;
+			}
+		    if (!managed) {
+			LM_ERR("clusterer_controller: cluster %d is configured here "
+			       "but the clusterer did not mark it controller-managed "
+			       "- add modparam(\"clusterer\", \"cluster_options\", "
+			       "\"cluster_id=%d, use_controller=1\"), or remove this "
+			       "module's 'cluster' config for it.\n",
+			       cl_ctr_clusters[k].cluster_id, cl_ctr_clusters[k].cluster_id);
+			return -1;
+		    }
+		}
+	    }
+
+	    /* managed tags start BACKUP and are locked against MI/script - the
+	     * controller master picks the active one */
+	    {
+		int _ci;
+		for (_ci = 0; _ci < cl_ctr_cluster_count; _ci++) {
+		    if (!cl_ctr_clusters[_ci].manage_shtags)
+			continue;
+		    clusterer_ctrl_force_backup_shtags(cl_ctr_clusters[_ci].cluster_id);
+		    clusterer_ctrl_set_shtag_managed(cl_ctr_clusters[_ci].cluster_id);
+		}
+	    }
+
+	}
+    }
+
+    return 0;
+}
+
+int cl_ctr_child_init(int rank)
+{
+	/* Re-seed the CSPRNG after fork - each worker must have independent state. */
+	randombytes_stir();
+
+	return 0;
+}
+
+/* 1 while another process may still run: after a failed startup the children
+ * are signalled, not waited for; a normal shutdown has reaped them all */
+static int cl_ctr_children_left(void)
+{
+    unsigned int i;
+
+    if (!pt)
+	return 0;
+    for (i = 1; i < counted_max_processes; i++)
+	if (pt[i].pid != -1)
+	    return 1;
+    return 0;
+}
+
+void cl_ctr_mod_destroy(void)
+{
+    int            i, sock, busy;
+    unsigned char  ttl = 32;
+    cl_ctr_cluster_t  *cl;
+
+    if (!my_ip)
+	goto cleanup;
+
+    /* Send GOODBYE on each cluster's multicast group so peers re-elect */
+    for (i = 0; i < cl_ctr_cluster_count; i++) {
+	cl = &cl_ctr_clusters[i];
+	if (!cl->peers)
+	    continue;
+	/* the worker's have_session_key is its own; in shm, ACTIVE with a
+	 * master salt is a node that was a member and holds the group key */
+	if (cl->peers->node_state != CL_CTR_NODE_ACTIVE ||
+	        sodium_is_zero(cl->peers->master_salt, CL_CTR_MASTER_SALT_SZ)) {
+	    LM_INFO("clusterer_controller: [cluster %d] not a member yet, "
+	            "skipping GOODBYE\n", cl->cluster_id);
+	    continue;
+	}
+	if (cl->peers->count <= 1) {
+	    LM_INFO("clusterer_controller: [cluster %d] sole node, "
+	            "skipping GOODBYE\n", cl->cluster_id);
+	    continue;
+	}
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0) {
+	    LM_ERR("clusterer_controller: [cluster %d] goodbye socket(): %s\n",
+	           cl->cluster_id, strerror(errno));
+	    continue;
+	}
+	setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+	{
+	    /* out of my_ip's interface, as the worker's socket: peers drop a
+	     * packet whose source is not its sealed sender */
+	    struct in_addr mif;
+	    mif.s_addr = inet_addr(my_ip);
+	    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &mif, sizeof(mif));
+	}
+	/* Derive session_key locally from master_salt in shm so we can encrypt
+	 * GOODBYE - the worker's cl->session_key is in a different process. */
+	{
+	    size_t plen = strlen(cl->password);
+	    cl_ctr_hkdf_sha256((unsigned char *)cl->password, plen,
+	                   cl->peers->master_salt, CL_CTR_MASTER_SALT_SZ,
+	                   "cl_ctr_session", cl->session_key);
+	}
+	/* a master hands the salt to the next one first, so members keep the key
+	 * (the workers are gone by now: this is the last process that can) */
+	if (cl_ctr_i_am_master_locked(cl)) {
+	    time_t       cutoff  = cl_ctr_live_cutoff(cl);
+	    unsigned int best_ip = 0;
+	    int          k, best = -1;
+	    /* the one the others elect next: heard lately, admitted, with a
+	     * role (no maintenance, not CONNECTING), its public key known */
+	    for (k = 0; k < cl->peers->count; k++) {
+		cl_ctr_peer_t *e = &cl->peers->entries[k];
+		if (strcmp(e->ip, my_ip) == 0 || !e->node_id ||
+		        e->last_seen < cutoff || CL_CTR_NO_ROLE(e) ||
+		        sodium_is_zero(e->pubkey, CL_CTR_PUBKEY_SZ))
+		    continue;
+		if (e->ip_num > best_ip) {
+		    best_ip = e->ip_num;
+		    best    = k;
+		}
+	    }
+	    if (best >= 0)
+		cl_ctr_send_key_handoff(sock, cl->peers->entries[best].ip,
+		                        cl->peers->entries[best].pubkey, cl);
+	}
+	cl_ctr_send_pkt_with_ip(sock, CL_CTR_PKT_GOODBYE, cl, NULL, 0);
+	close(sock);
+	LM_INFO("clusterer_controller: [cluster %d] GOODBYE sent\n",
+	        cl->cluster_id);
+    }
+
+cleanup:
+    /* a child still running uses the tables: left to the exit of the process */
+    busy = cl_ctr_children_left();
+    for (i = 0; !busy && i < cl_ctr_cluster_count; i++) {
+	cl = &cl_ctr_clusters[i];
+	if (!cl->peers)
+	    continue;
+	if (cl->peers->lock) {
+	    lock_destroy_rw(cl->peers->lock);
+	    cl->peers->lock = NULL;
+	}
+	shm_free(cl->peers);
+	cl->peers = NULL;
+    }
+    LM_INFO("clusterer_controller: shut down\n");
+}

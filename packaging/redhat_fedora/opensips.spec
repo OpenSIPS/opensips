@@ -55,8 +55,11 @@
 # distributions ship: they are built only "--with nats", and are never part
 # of opensips-modules-contrib.
 %global NATS_CONTRIB_MODULES nats event_nats cachedb_nats cachedb_nats_fts nats_consumer
-%global STANDALONE_CONTRIB_MODULES %{?_with_nats:%{NATS_CONTRIB_MODULES}}
-%global SKIP_CONTRIB_MODULES %{!?_with_nats:%{NATS_CONTRIB_MODULES}}
+#
+# clusterer_controller needs libsodium (EPEL on RHEL): built by default,
+# left out with "--without clusterer_controller".
+%global STANDALONE_CONTRIB_MODULES %{!?_without_clusterer_controller:clusterer_controller} %{?_with_nats:%{NATS_CONTRIB_MODULES}}
+%global SKIP_CONTRIB_MODULES %{?_without_clusterer_controller:clusterer_controller} %{!?_with_nats:%{NATS_CONTRIB_MODULES}}
 
 # Database backends shipped as opensips-dbschema-<backend> packages.
 %global DBSCHEMA_MODULES berkeley mysql postgres sqlite
@@ -218,6 +221,20 @@ Requires: %{name}-module-contrib-nats = %{version}-%{release}
 
 %description -n %{name}-module-contrib-nats-consumer
 This package contains only the nats_consumer contrib module for OpenSIPS.
+%endif
+
+%if 0%{!?_without_clusterer_controller:1}
+%package -n %{name}-module-contrib-clusterer-controller
+Summary:  OpenSIPS clusterer_controller module (community-contributed)
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: libsodium-devel
+
+%description -n %{name}-module-contrib-clusterer-controller
+This package contains only the community-contributed clusterer_controller
+loadable module for OpenSIPS: clusterer with a controller that finds the
+cluster's members over multicast and assigns their node ids. It is loaded
+instead of clusterer, not beside it.
 %endif
 
 %if 0%{?_with_auth_jwt:1}
@@ -2251,8 +2268,6 @@ fi
 %doc docdir/README
 %doc COPYING
 
-%files -n %{name}-modules-contrib -f modules-contrib.files
-
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth_aaa.so
@@ -2478,6 +2493,14 @@ fi
 %files -n %{name}-module-contrib-nats-consumer
 %{_libdir}/opensips/modules/nats_consumer.so
 %doc docdir/README.nats_consumer
+%endif
+
+%files -n %{name}-modules-contrib -f modules-contrib.files
+
+%if 0%{!?_without_clusterer_controller:1}
+%files -n %{name}-module-contrib-clusterer-controller
+%{_libdir}/opensips/modules/clusterer_controller.so
+%doc docdir/README.clusterer_controller
 %endif
 
 %if 0%{?_with_auth_jwt:1}

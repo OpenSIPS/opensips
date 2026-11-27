@@ -37,6 +37,7 @@ Build-Depends: bison,
                libradcli-dev | libfreeradius-client-dev,
                libsctp-dev [linux-any],
                libsnmp-dev,
+               libsodium-dev [linux-any],
                libsqlite3-dev,
                libssl-dev,
                libwolfssl-dev <!nowolfssl>,
@@ -199,6 +200,18 @@ Depends: opensips (= ${binary:Version}),
          ${shlibs:Depends}
 Description: OpenSIPS nats_consumer contrib module
  This package contains only the nats_consumer contrib module for OpenSIPS.
+
+Package: opensips-module-contrib-clusterer-controller
+Architecture: linux-any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: OpenSIPS clusterer_controller module (community-contributed)
+ This package contains only the community-contributed clusterer_controller
+ loadable module for OpenSIPS: clusterer with a controller that finds the
+ cluster's members over multicast and assigns their node ids. It is loaded
+ instead of clusterer, not beside it.
 
 Package: opensips-module-db-berkeley-bin
 Architecture: any
