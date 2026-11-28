@@ -98,13 +98,13 @@ static struct dlg_cell *lookup_dlg_unsafe(unsigned int h_entry, unsigned int h_i
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
 
-	if (h_entry>=d_table->size)
+	if (dlg_h_idx(h_entry)>=d_table->size)
 		goto not_found;
 
-	d_entry = &(d_table->entries[h_entry]);
+	d_entry = &(d_table->entries[dlg_h_idx(h_entry)]);
 
 	for( dlg=d_entry->first ; dlg ; dlg=dlg->next ) {
-		if (dlg->h_id == h_id) {
+		if (dlg->h_id == h_id && dlg->h_entry == h_entry) {
 			LM_DBG("dialog id=%u found on entry %u\n", h_id, h_entry);
 			return dlg;
 		}
@@ -113,6 +113,48 @@ static struct dlg_cell *lookup_dlg_unsafe(unsigned int h_entry, unsigned int h_i
 not_found:
 	LM_DBG("no dialog id=%u found on entry %u\n", h_id, h_entry);
 	return 0;
+}
+
+/* the instance follows h_id since DLG_BIN_V6; older packets carry none */
+static int dlg_bin_pop_instance(bin_packet_t *packet, unsigned int *inst)
+{
+	*inst = 0;
+	if (get_bin_pkg_version(packet) < DLG_BIN_V6)
+		return 0;
+
+	if (bin_pop_int(packet, inst) != 0 || *inst > DLG_INSTANCE_MAX) {
+		LM_WARN("bad dialog instance in bin packet!\n");
+		return -1;
+	}
+	return 0;
+}
+
+/* a dialog found by id must also be the call the packet describes, else two
+ * nodes share an instance; call with the dialog's entry locked */
+static int dlg_repl_id_collision(struct dlg_cell *dlg, str *callid,
+		str *ftag, const char *what)
+{
+	str *loc_ftag = &dlg->legs[DLG_CALLER_LEG].tag;
+
+	if (str_match(&dlg->callid, callid) &&
+	(!ftag || str_match(loc_ftag, ftag)))
+		return 0;
+
+	/* value packets carry no From tag */
+	if (ftag)
+		LM_ERR("dialog id collision [%u:%u], same instance_id on two nodes?: "
+			"ignoring replicated %s for "
+			"callid |%.*s| ftag |%.*s|, local dialog has callid |%.*s| "
+			"ftag |%.*s|\n", dlg->h_entry, dlg->h_id, what,
+			callid->len, callid->s, ftag->len, ftag->s,
+			dlg->callid.len, dlg->callid.s, loc_ftag->len, ZSW(loc_ftag->s));
+	else
+		LM_ERR("dialog id collision [%u:%u], same instance_id on two nodes?: "
+			"ignoring replicated %s for "
+			"callid |%.*s|, local dialog has callid |%.*s|\n",
+			dlg->h_entry, dlg->h_id, what, callid->len, callid->s,
+			dlg->callid.len, dlg->callid.s);
+	return 1;
 }
 
 int dlg_init_clustering(void)
@@ -174,7 +216,8 @@ int dlg_init_clustering(void)
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	str *ftag, str *ttag, unsigned int hid, int safe, int from_sync)
 {
-	int h_entry, rc;
+	unsigned int h_entry;
+	int rc;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, adv_ct1, adv_ct2;
 	str rroute1, rroute2, mangled_fu, mangled_tu;
@@ -184,7 +227,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	const struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
 	int_str tag_name;
-	unsigned int h_id;
+	unsigned int h_id, inst;
 	unsigned int state;
 	unsigned int start_ts;
 	unsigned int options_ping_interval_val;
@@ -201,14 +244,16 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 		DLG_BIN_POP(str, packet, from_uri, malformed);
 		DLG_BIN_POP(str, packet, to_uri, malformed);
 		DLG_BIN_POP(int, packet, h_id, malformed);
+		if (dlg_bin_pop_instance(packet, &inst) < 0)
+			goto malformed;
 	}
 
 	DLG_BIN_POP(int, packet, start_ts, malformed);
 	DLG_BIN_POP(int, packet, state, malformed);
 
 	if (!cell) {
-		h_entry = dlg_hash(&callid);
-		d_entry = &d_table->entries[h_entry];
+		h_entry = dlg_h_entry(dlg_hash(&callid), inst);
+		d_entry = &d_table->entries[dlg_h_idx(h_entry)];
 
 		if (!safe)
 			dlg_lock(d_table, d_entry);
@@ -219,6 +264,11 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 			get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag, &dlg);
 
 		if (dlg) {
+			/* another call with this id: only log it; the local dialog still
+			 * gets the sync flags below, or SYNC_DONE would drop it */
+			if (pkg_ver >= DLG_BIN_V4)
+				dlg_repl_id_collision(dlg, &callid, &from_tag, "create");
+
 			LM_DBG("Dialog with ci '%.*s' is already created\n",
 			       callid.len, callid.s);
 			/* unmark dlg as loaded from DB (otherwise it would have been
@@ -236,9 +286,10 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 			LM_ERR("Failed to create replicated dialog!\n");
 			goto pre_linking_error;
 		}
+		dlg->h_entry = h_entry;
 	} else {
-		h_entry = dlg_hash(&cell->callid);
-		d_entry = &d_table->entries[h_entry];
+		h_entry = cell->h_entry;
+		d_entry = &d_table->entries[dlg_h_idx(h_entry)];
 
 		if (!safe)
 			dlg_lock(d_table, d_entry);
@@ -255,8 +306,8 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	dlg->state = state;
 
 	/* next_id follows the max value of all replicated ids */
-	if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
-		d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
+	if (d_table->entries[dlg_h_idx(dlg->h_entry)].next_id <= dlg->h_id)
+		d_table->entries[dlg_h_idx(dlg->h_entry)].next_id = dlg->h_id + 1;
 
 	DLG_BIN_POP(str, packet, sock, pre_linking_error);
 
@@ -453,7 +504,8 @@ int dlg_replicated_update(bin_packet_t *packet)
 {
 	struct dlg_cell *dlg = NULL;
 	str call_id, from_tag, to_tag, from_uri, to_uri, vars, profiles;
-	int timeout, h_entry;
+	unsigned int h_entry;
+	int timeout;
 	str st;
 	struct dlg_entry *d_entry;
 	int rcv_flags, save_new_flag, save_sync_flag;
@@ -461,7 +513,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 	unsigned int reinvite_ping_interval_val;
 	int update_options_ping_timer = 0;
 	int update_reinvite_ping_timer = 0;
-	unsigned int h_id;
+	unsigned int h_id, inst;
 	unsigned int new_state;
 	short pkg_ver = get_bin_pkg_version(packet);
 	int state;
@@ -473,13 +525,15 @@ int dlg_replicated_update(bin_packet_t *packet)
 	bin_pop_str(packet, &to_uri);
 
 	bin_pop_int(packet, &h_id);
+	if (dlg_bin_pop_instance(packet, &inst) < 0)
+		return -1;
 
 	LM_DBG("replicated update for ['%.*s' '%.*s' '%.*s' '%.*s' '%.*s']\n",
 		call_id.len, call_id.s, from_tag.len, from_tag.s, to_tag.len, to_tag.s,
 		from_uri.len, from_uri.s, to_uri.len, to_uri.s);
 
-	h_entry = dlg_hash(&call_id);
-	d_entry = &d_table->entries[h_entry];
+	h_entry = dlg_h_entry(dlg_hash(&call_id), inst);
+	d_entry = &d_table->entries[dlg_h_idx(h_entry)];
 
 	dlg_lock(d_table, d_entry);
 
@@ -487,6 +541,13 @@ int dlg_replicated_update(bin_packet_t *packet)
 		dlg = lookup_dlg_unsafe(h_entry, h_id);
 	else
 		get_dlg_unsafe(d_entry, &call_id, &from_tag, &to_tag, &dlg);
+
+	/* the id is taken by another call: do not build a duplicate either */
+	if (dlg && pkg_ver >= DLG_BIN_V4 &&
+	dlg_repl_id_collision(dlg, &call_id, &from_tag, "update")) {
+		dlg_unlock(d_table, d_entry);
+		return 0;
+	}
 
 	if (!dlg) {
 		LM_DBG("dialog not found, building new\n");
@@ -496,6 +557,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 			LM_ERR("Failed to create replicated dialog!\n");
 			goto error;
 		}
+		dlg->h_entry = h_entry;
 
 		return dlg_replicated_create(packet ,dlg, &from_tag, &to_tag, h_id, 1, 0);
 	}
@@ -658,9 +720,8 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	str call_id, from_tag, to_tag;
 	unsigned int dir, _ = -1;
 	struct dlg_cell *dlg;
-	int old_state, new_state, unref, ret;
-	unsigned int h_id;
-	int h_entry;
+	int old_state, new_state, unref, ret, collision;
+	unsigned int h_id, inst, h_entry;
 	short pkg_ver = get_bin_pkg_version(packet);
 
 	DLG_BIN_POP(str, packet, call_id, malformed);
@@ -671,9 +732,21 @@ int dlg_replicated_delete(bin_packet_t *packet)
 
 	if (pkg_ver >= DLG_BIN_V4) {
 		DLG_BIN_POP(int, packet, h_id, malformed);
+		if (dlg_bin_pop_instance(packet, &inst) < 0)
+			goto malformed;
 
-		h_entry = dlg_hash(&call_id);
+		h_entry = dlg_h_entry(dlg_hash(&call_id), inst);
 		dlg = lookup_dlg(h_entry, h_id, 1);
+		if (dlg) {
+			dlg_lock_dlg(dlg);
+			collision = dlg_repl_id_collision(dlg, &call_id, &from_tag,
+				"delete");
+			dlg_unlock_dlg(dlg);
+			if (collision) {
+				unref_dlg(dlg, 1);
+				return 0;
+			}
+		}
 	} else {
 		dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &_);
 	}
@@ -741,8 +814,7 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 	unsigned int dir, dst_leg = -1;
 	unsigned int cseq;
 	struct dlg_cell *dlg;
-	unsigned int h_id;
-	int h_entry;
+	unsigned int h_id, inst = 0, h_entry;
 	struct dlg_entry *d_entry;
 	short pkg_ver = get_bin_pkg_version(packet);
 
@@ -752,12 +824,15 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 
 	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
 
-	if (pkg_ver >= DLG_BIN_V4)
+	if (pkg_ver >= DLG_BIN_V4) {
 		DLG_BIN_POP(int, packet, h_id, malformed);
+		if (dlg_bin_pop_instance(packet, &inst) < 0)
+			goto malformed;
+	}
 	DLG_BIN_POP(int, packet, cseq, malformed);
 
-	h_entry = dlg_hash(&call_id);
-	d_entry = &(d_table->entries[h_entry]);
+	h_entry = dlg_h_entry(dlg_hash(&call_id), inst);
+	d_entry = &(d_table->entries[dlg_h_idx(h_entry)]);
 	dlg_lock(d_table, d_entry);
 
 	if (pkg_ver >= DLG_BIN_V4)
@@ -798,13 +873,16 @@ int dlg_replicated_value(bin_packet_t *packet)
 {
 	str call_id, name;
 	struct dlg_cell *dlg;
-	unsigned int h_id;
-	int h_entry, type, ret;
+	unsigned int h_id, inst;
+	unsigned int h_entry;
+	int type, ret;
 	struct dlg_entry *d_entry;
 	int_str val;
 
 	DLG_BIN_POP(str, packet, call_id, malformed);
 	DLG_BIN_POP(int, packet, h_id, malformed);
+	if (dlg_bin_pop_instance(packet, &inst) < 0)
+		goto malformed;
 	DLG_BIN_POP(str, packet, name, malformed);
 	DLG_BIN_POP(int, packet, type, malformed);
 	switch (type) {
@@ -820,8 +898,8 @@ int dlg_replicated_value(bin_packet_t *packet)
 	}
 
 	LM_DBG("Updating value for dialog with callid: %.*s\n", call_id.len, call_id.s);
-	h_entry = dlg_hash(&call_id);
-	d_entry = &(d_table->entries[h_entry]);
+	h_entry = dlg_h_entry(dlg_hash(&call_id), inst);
+	d_entry = &(d_table->entries[dlg_h_idx(h_entry)]);
 
 	dlg_lock(d_table, d_entry);
 
@@ -829,14 +907,19 @@ int dlg_replicated_value(bin_packet_t *packet)
 	if (!dlg) {
 		/* not created here yet, or already deleted: nothing to update,
 		 * as for the delete and cseq packets above */
-		LM_DBG("dialog not found (callid: |%.*s| [%u:%d]\n",
+		LM_DBG("dialog not found (callid: |%.*s| [%u:%u]\n",
 				call_id.len, call_id.s, h_id, h_entry);
 		dlg_unlock(d_table, d_entry);
 		return 0;
 	}
 
+	if (dlg_repl_id_collision(dlg, &call_id, NULL, "value")) {
+		dlg_unlock(d_table, d_entry);
+		return 0;
+	}
+
 	if (dlg->state == DLG_STATE_DELETED) {
-		LM_DBG("dialog already deleted (callid: |%.*s| [%u:%d]\n",
+		LM_DBG("dialog already deleted (callid: |%.*s| [%u:%u]\n",
 				call_id.len, call_id.s, h_id, h_entry);
 		dlg_unlock(d_table, d_entry);
 		return 0;
@@ -885,6 +968,7 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_str(packet, &dlg->to_uri);
 
 	bin_push_int(packet, dlg->h_id);
+	bin_push_int(packet, dlg_h_inst(dlg->h_entry));
 	bin_push_int(packet, dlg->start_ts);
 	bin_push_int(packet, dlg->state);
 
@@ -1081,6 +1165,7 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 	bin_push_str(&packet, &dlg->legs[DLG_CALLER_LEG].tag);
 	bin_push_str(&packet, &dlg->legs[callee_idx(dlg)].tag);
 	bin_push_int(&packet, dlg->h_id);
+	bin_push_int(&packet, dlg_h_inst(dlg->h_entry));
 
 	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error_free);
 
@@ -1110,6 +1195,7 @@ void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg)
 			&dlg->legs[leg == DLG_CALLER_LEG?callee_idx(dlg):DLG_CALLER_LEG].tag);
 	bin_push_str(&packet, &dlg->legs[leg].tag);
 	bin_push_int(&packet, dlg->h_id);
+	bin_push_int(&packet, dlg_h_inst(dlg->h_entry));
 
 	bin_push_int(&packet, dlg->legs[leg].last_gen_cseq);
 
@@ -1136,6 +1222,7 @@ void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int t
 
 	bin_push_str(&packet, &dlg->callid);
 	bin_push_int(&packet, dlg->h_id);
+	bin_push_int(&packet, dlg_h_inst(dlg->h_entry));
 	bin_push_str(&packet, name);
 	bin_push_int(&packet, type);
 	if (!val)
@@ -1172,7 +1259,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 
 	switch (pkt->type) {
 	case REPLICATION_DLG_CREATED:
-		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4)
+		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4 && ver != DLG_BIN_V5)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		dlg_event_is_replicated = 1;
@@ -1180,7 +1267,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if_update_stat(dlg_enable_stats, create_recv, 1);
 		break;
 	case REPLICATION_DLG_UPDATED:
-		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4)
+		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4 && ver != DLG_BIN_V5)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		dlg_event_is_replicated = 1;
@@ -1188,7 +1275,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if_update_stat(dlg_enable_stats, update_recv, 1);
 		break;
 	case REPLICATION_DLG_DELETED:
-		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4)
+		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4 && ver != DLG_BIN_V5)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		dlg_event_is_replicated = 1;
@@ -1196,21 +1283,21 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if_update_stat(dlg_enable_stats, delete_recv, 1);
 		break;
 	case REPLICATION_DLG_CSEQ:
-		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4)
+		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4 && ver != DLG_BIN_V5)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_cseq_updated(pkt);
 		break;
 	case REPLICATION_DLG_VALUE:
-		if (ver != DLG_BIN_V4)
+		if (ver != DLG_BIN_V4 && ver != DLG_BIN_V5)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_value(pkt);
 		break;
 	case SYNC_PACKET_TYPE:
-		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4)
+		if (ver != DLG_BIN_V3 && ver != DLG_BIN_V4 && ver != DLG_BIN_V5)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		dlg_event_is_replicated = 1;

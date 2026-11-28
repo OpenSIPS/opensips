@@ -112,6 +112,8 @@ str cdb_url = {0,0};
 /* dialog replication using clusterer */
 int dialog_repl_cluster = 0;
 int profile_repl_cluster = 0;
+/* -1: the node id in dialog_replication_cluster, if set */
+int dlg_instance_id = -1;
 str dlg_repl_cap = str_init("dialog-dlg-repl");
 str prof_repl_cap = str_init("dialog-prof-repl");
 
@@ -368,6 +370,7 @@ static const param_export_t mod_params[]={
 	{ "profile_timeout",         INT_PARAM, &profile_timeout        },
 	/* dialog replication through clusterer using TCP binary packets */
 	{ "dialog_replication_cluster",     INT_PARAM, &dialog_repl_cluster  },
+	{ "instance_id",                    INT_PARAM, &dlg_instance_id      },
 	{ "profile_replication_cluster",	INT_PARAM, &profile_repl_cluster },
 	{ "replicate_profiles_timer", INT_PARAM, &repl_prof_utimer      },
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
@@ -996,6 +999,26 @@ static int mod_init(void)
 			dlg_hash_size = 1<<(n-1);
 			break;
 		}
+	}
+
+	if (dlg_instance_id == -1) {
+		dlg_instance_id = dialog_repl_cluster ? clusterer_api.get_my_id() : 0;
+		if (dlg_instance_id < 0 || dlg_instance_id > DLG_INSTANCE_MAX) {
+			LM_ERR("node id %d in dialog_replication_cluster is not a valid "
+				"dialog instance (0-%d), set instance_id\n",
+				dlg_instance_id, DLG_INSTANCE_MAX);
+			return -1;
+		}
+	} else if (dlg_instance_id < 0 || dlg_instance_id > DLG_INSTANCE_MAX) {
+		LM_ERR("invalid instance_id %d, must be 0-%d\n",
+			dlg_instance_id, DLG_INSTANCE_MAX);
+		return -1;
+	}
+
+	if ((unsigned int)dlg_hash_size > DLG_HASH_SIZE_MAX) {
+		LM_ERR("hash_size %d is too big, max is %u\n",
+			dlg_hash_size, DLG_HASH_SIZE_MAX);
+		return -1;
 	}
 
 	if ( init_dlg_table(dlg_hash_size)<0 ) {

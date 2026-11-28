@@ -633,7 +633,13 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
 			GET_STR_VALUE(to_tag, values, 5, 1, 0);
 
-			d_entry = &d_table->entries[hash_entry];
+			if (dlg_h_idx(hash_entry) >= d_table->size) {
+				LM_ERR("dialog %u:%u does not fit hash_size %u -> skipping\n",
+					hash_entry, hash_id, d_table->size);
+				continue;
+			}
+
+			d_entry = &d_table->entries[dlg_h_idx(hash_entry)];
 			dlg_lock(d_table, d_entry);
 
 			if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag,
@@ -666,7 +672,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				goto error_unlock;
 			}
 
-			if(dlg->h_entry != hash_entry){
+			if(dlg_h_idx(dlg->h_entry) != dlg_h_idx(hash_entry)){
 				dlg_unlock(d_table, d_entry);
 				LM_ERR("inconsistent hash data in the dialog database: "
 					"you may have restarted opensips using a different "
@@ -681,11 +687,12 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			/* link the dialog */
 			link_dlg_unsafe(d_entry, dlg);
 
+			dlg->h_entry = hash_entry;
 			dlg->h_id = hash_id;
 
 			/* next_id follows the max value of all loaded ids */
-			if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
-				d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
+			if (d_table->entries[dlg_h_idx(dlg->h_entry)].next_id <= dlg->h_id)
+				d_table->entries[dlg_h_idx(dlg->h_entry)].next_id = dlg->h_id + 1;
 
 			GET_STR_VALUE(to_tag, values, 5, 1, 1);
 
@@ -944,7 +951,7 @@ int dlg_timer_remove_from_db(struct dlg_cell *cell)
 		/* from timer point of view, we are done with the dialogs */
 		for (i=0;i<dlg_bulk_del_no;i++) {
 			cell = dlg_del_holder[i];
-			unref_dlg_unsafe(cell,1,&(d_table->entries[cell->h_entry]));
+			unref_dlg_unsafe(cell,1,&(d_table->entries[dlg_h_idx(cell->h_entry)]));
 		}
 
 		dlg_del_curr_no = 0;
@@ -1034,7 +1041,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	VAL_TYPE(values+1) = DB_INT;
 
 	/* lock the entry */
-	entry = (d_table->entries)[cell->h_entry];
+	entry = (d_table->entries)[dlg_h_idx(cell->h_entry)];
 	dlg_lock( d_table, &entry);
 
 	SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
@@ -1108,7 +1115,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
-		entry = (d_table->entries)[cell->h_entry];
+		entry = (d_table->entries)[dlg_h_idx(cell->h_entry)];
 		dlg_lock( d_table, &entry);
 
 		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
@@ -1177,7 +1184,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
-		entry = (d_table->entries)[cell->h_entry];
+		entry = (d_table->entries)[dlg_h_idx(cell->h_entry)];
 		dlg_lock( d_table, &entry);
 
 		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
@@ -1214,7 +1221,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+21) = DB_INT;
 
 		/* lock the entry */
-		entry = (d_table->entries)[cell->h_entry];
+		entry = (d_table->entries)[dlg_h_idx(cell->h_entry)];
 		dlg_lock( d_table, &entry);
 
 		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
@@ -1934,9 +1941,14 @@ static int sync_dlg_db_mem(void)
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
 			GET_STR_VALUE(to_tag, values, 5, 1, 0);
 
-			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
+			if (dlg_h_idx(hash_entry) >= d_table->size) {
+				LM_ERR("dialog %u:%u does not fit hash_size %u -> skipping\n",
+					hash_entry, hash_id, d_table->size);
+				continue;
+			}
+
 			known_dlg = 0;
-			d_entry = &(d_table->entries[hash_entry]);
+			d_entry = &(d_table->entries[dlg_h_idx(hash_entry)]);
 
 			/* lock the whole entry */
 			dlg_lock( d_table, d_entry);
@@ -1961,7 +1973,7 @@ static int sync_dlg_db_mem(void)
 					goto error;
 				}
 
-				if(dlg->h_entry != hash_entry){
+				if(dlg_h_idx(dlg->h_entry) != dlg_h_idx(hash_entry)){
 					LM_ERR("inconsistent hash data in the dialog database: "
 						"you may have restarted opensips using a different "
 						"hash_size: please erase %.*s database and restart\n",
@@ -1973,11 +1985,12 @@ static int sync_dlg_db_mem(void)
 				/*link the dialog*/
 				link_dlg(dlg, 0);
 
+				dlg->h_entry = hash_entry;
 				dlg->h_id = hash_id;
 
 				/* next_id follows the max value of all loaded ids */
-				if (d_table->entries[dlg->h_entry].next_id <= dlg->h_id)
-					d_table->entries[dlg->h_entry].next_id = dlg->h_id + 1;
+				if (d_table->entries[dlg_h_idx(dlg->h_entry)].next_id <= dlg->h_id)
+					d_table->entries[dlg_h_idx(dlg->h_entry)].next_id = dlg->h_id + 1;
 
 				dlg->start_ts	= VAL_INT(values+6);
 
