@@ -1024,7 +1024,9 @@ static int getCert(X509 ** certp, STACK_OF(X509) ** certchainp,
 
 	//begin and end of uri (filename)
 	begin = strchr( identityInfo->body.s, '<');
-	end = strchr( identityInfo->body.s, '>');
+	/* the closing '>' has to be looked up after the opening '<', otherwise
+	   a header field like ">x<y;alg=rsa-sha1" yields a negative uriLen */
+	end = begin ? strchr( begin, '>') : NULL;
 
 	identityInfo->body.s[identityInfo->body.len] = backup;
 
