@@ -569,7 +569,7 @@ static int sdp_ops_find_token(str *line, int idx, str *pfx, str *tok)
 		start = p;
 		while (p < lim && !is_ws(*p))
 			p++;
-		if (pfx->len && (pfx->len > p - start ||
+		if (pfx->len > 0 && (pfx->len > p - start ||
 				strncasecmp(pfx->s, start, pfx->len)))
 			continue;
 
