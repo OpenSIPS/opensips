@@ -1993,8 +1993,16 @@ static int mc_decompress(struct sip_msg* msg)
 	}
 
 	/* new buffer because msg_final(out_buf) will
-	 * be overwritten at next iteration */
-	new_buf = msg->buf;
+	 * be overwritten at next iteration. The decompressed message can be
+	 * larger than the one received off the wire, so it does not fit back
+	 * into msg->buf (the received network buffer has no spare capacity,
+	 * especially over TCP). Hand a pkg buffer to the message instead and
+	 * let free_sip_msg() release it, the same way b2b_apply_lumps() does. */
+	new_buf = pkg_malloc(msg_final.len + 1);
+	if (!new_buf) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
 
 	memcpy(new_buf, msg_final.s, msg_final.len);
 	new_buf[msg_final.len] = '\0';
@@ -2030,6 +2038,7 @@ static int mc_decompress(struct sip_msg* msg)
 	msg->path_vec           = tmp.path_vec;
 	/* set the new ones */
 	msg->buf = new_buf;
+	msg->pkg_buf = new_buf;
 	msg->len = msg_final.len;
 
 	/* reparse the message */
