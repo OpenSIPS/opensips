@@ -349,7 +349,10 @@ void send_sync_repl(int sender, void *param)
 
 	no_sync_chunks_sent = 0;
 
-	cap->reg.event_cb(SYNC_REQ_RCV, p->node_id);
+	/* a capability registered without an event callback has no data to
+	 * send: the request is still answered, with an empty sync */
+	if (cap->reg.event_cb)
+		cap->reg.event_cb(SYNC_REQ_RCV, p->node_id);
 
 	lock_start_read(cl_list_lock);
 
@@ -485,7 +488,7 @@ static void run_cb_buf_pkt(int sender, void *param)
 		packet.src_id = p->pkt_src_id;
 
 		p->cap->packet_cb(&packet);
-	} else {
+	} else if (p->cap->event_cb) {
 		p->cap->event_cb(SYNC_DONE, p->pkt_src_id);
 	}
 
